@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiUrl } from '../api';
 import { motion } from 'motion/react';
 import { 
   ChevronLeft, 
@@ -20,7 +21,7 @@ export default function VocabularyPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/api/vocabulary', {
+    fetch(apiUrl('/api/vocabulary'), {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -29,7 +30,7 @@ export default function VocabularyPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/vocabulary', {
+    const res = await fetch(apiUrl('/api/vocabulary'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

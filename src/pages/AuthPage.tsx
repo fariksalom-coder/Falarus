@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiUrl } from '../api';
 import { motion } from 'motion/react';
 import { BookOpen, UserPlus, LogIn } from 'lucide-react';
 
@@ -26,7 +27,7 @@ export default function AuthPage() {
       return;
     }
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const endpoint = apiUrl(isLogin ? '/api/auth/login' : '/api/auth/register');
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

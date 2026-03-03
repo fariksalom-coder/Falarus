@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiUrl } from '../api';
 import { motion } from 'motion/react';
 import { GraduationCap, Rocket, CheckCircle2 } from 'lucide-react';
 
@@ -20,7 +21,7 @@ export default function OnboardingPage() {
   ];
 
   const handleStartFromZero = async () => {
-    const res = await fetch('/api/user/onboard', {
+    const res = await fetch(apiUrl('/api/user/onboard'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,7 +41,7 @@ export default function OnboardingPage() {
     else if (finalScore >= 3) level = 'A2';
     else if (finalScore >= 1) level = 'A1';
 
-    const res = await fetch('/api/user/onboard', {
+    const res = await fetch(apiUrl('/api/user/onboard'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

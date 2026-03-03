@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiUrl } from '../api';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronLeft, 
@@ -22,7 +23,7 @@ export default function LessonPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`/api/lessons/${id}`, {
+    fetch(apiUrl(`/api/lessons/${id}`), {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -43,7 +44,7 @@ export default function LessonPage() {
       setIsCorrect(null);
     } else {
       // Complete lesson
-      const res = await fetch(`/api/lessons/${id}/complete`, {
+      const res = await fetch(apiUrl(`/api/lessons/${id}/complete`), {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

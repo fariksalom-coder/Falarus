@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { apiUrl } from '../api';
 
 interface User {
   id: number;
@@ -28,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (token) {
-      fetch('/api/user/me', {
+      fetch(apiUrl('/api/user/me'), {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => {
