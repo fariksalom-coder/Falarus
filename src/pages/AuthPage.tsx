@@ -1,0 +1,152 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { motion } from 'motion/react';
+import { BookOpen, UserPlus, LogIn } from 'lucide-react';
+
+export default function AuthPage() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!isLogin && formData.password !== formData.confirmPassword) {
+      setError('Parollar mos kelmadi');
+      return;
+    }
+
+    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      login(data.token, data.user);
+      navigate('/');
+    } else {
+      setError(data.error || 'Xatolik yuz berdi');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8"
+      >
+        <div className="flex justify-center mb-8">
+          <div className="bg-indigo-600 p-3 rounded-xl">
+            <BookOpen className="w-8 h-8 text-white" />
+          </div>
+        </div>
+        
+        <h2 className="text-2xl font-bold text-center text-slate-900 mb-2">
+          {isLogin ? 'Xush kelibsiz!' : 'Ro‘yxatdan o‘tish'}
+        </h2>
+        <p className="text-slate-500 text-center mb-8">
+          {isLogin ? 'Hisobingizga kiring' : 'Yangi hisob yarating'}
+        </p>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {!isLogin && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Ism</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Familiya</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <input
+              type="email"
+              required
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Parol</label>
+            <input
+              type="password"
+              required
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
+
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Parolni tasdiqlash</label>
+              <input
+                type="password"
+                required
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              />
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+          >
+            {isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+            {isLogin ? 'Kirish' : 'Ro‘yxatdan o‘tish'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-indigo-600 text-sm font-medium hover:underline"
+          >
+            {isLogin ? 'Hisobingiz yo‘qmi? Ro‘yxatdan o‘ting' : 'Hisobingiz bormi? Kirish'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
