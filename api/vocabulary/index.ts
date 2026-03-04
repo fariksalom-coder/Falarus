@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase } from '../_lib/supabase';
-import { setCors, handleOptions } from '../_lib/cors';
-import { requireAuth } from '../_lib/auth';
+import { supabase } from '../_lib/supabase.js';
+import { setCors, handleOptions } from '../_lib/cors.js';
+import { requireAuth } from '../_lib/auth.js';
 
 function parseBody(body: unknown): Record<string, unknown> {
   if (body == null) return {};

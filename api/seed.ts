@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase } from './_lib/supabase';
-import { setCors, handleOptions } from './_lib/cors';
-import { courseData } from '../src/data/courseData';
+import { supabase } from './_lib/supabase.js';
+import { setCors, handleOptions } from './_lib/cors.js';
+import { courseData } from '../src/data/courseData.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);

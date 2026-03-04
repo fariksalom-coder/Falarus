@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { supabase } from '../_lib/supabase';
-import { setCors, handleOptions } from '../_lib/cors';
+import { supabase } from '../_lib/supabase.js';
+import { setCors, handleOptions } from '../_lib/cors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-uz-ru';
 
