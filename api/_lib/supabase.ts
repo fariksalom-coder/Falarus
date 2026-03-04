@@ -7,7 +7,9 @@ function getSupabaseClient(): SupabaseClient {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment');
+    const msg = 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment';
+    console.error('[Supabase]', msg);
+    throw new Error(msg);
   }
   _client = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
@@ -17,6 +19,6 @@ function getSupabaseClient(): SupabaseClient {
 
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_, prop) {
-    return (getSupabaseClient() as any)[prop];
+    return (getSupabaseClient() as unknown as Record<string, unknown>)[prop as string];
   },
 });

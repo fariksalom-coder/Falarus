@@ -22,8 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
@@ -33,8 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const email = body.email as string | undefined;
     const password = body.password as string | undefined;
     if (!email || !password) {
-      res.status(400).json({ error: 'Email va parol kiritilishi shart' });
-      return;
+      return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -51,14 +49,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) {
       if (error.code === '23505') {
-        res.status(400).json({ error: 'Email allaqachon mavjud' });
-        return;
+        return res.status(400).json({ error: 'Email allaqachon mavjud' });
       }
-      throw error;
+      console.error('[api/auth/register] Supabase error:', error.code, error.message);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+    if (!user) {
+      console.error('[api/auth/register] No user returned after insert');
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
 
     const token = jwt.sign({ id: user.id }, JWT_SECRET);
-    res.status(200).json({
+    return res.status(200).json({
       token,
       user: {
         id: user.id,
@@ -70,7 +72,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Xatolik yuz berdi' });
+    const err = e instanceof Error ? e : new Error(String(e));
+    console.error('[api/auth/register]', err.message, err.stack);
+    if (err.message.includes('SUPABASE')) {
+      return res.status(503).json({ error: 'Server configuration error' });
+    }
+    return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
 }

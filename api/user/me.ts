@@ -7,8 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const userId = requireAuth(req, res);
@@ -19,14 +18,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .from('users')
       .select('id, first_name, last_name, email, level, onboarded, progress')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error || !user) {
-      res.status(404).json({ error: 'User topilmadi' });
-      return;
+    if (error) {
+      console.error('[api/user/me] Supabase error:', error.message);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+    if (!user) {
+      return res.status(404).json({ error: 'User topilmadi' });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       id: user.id,
       firstName: user.first_name,
       lastName: user.last_name,
@@ -36,7 +38,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       progress: user.progress,
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Xatolik yuz berdi' });
+    const err = e instanceof Error ? e : new Error(String(e));
+    console.error('[api/user/me]', err.message, err.stack);
+    if (err.message.includes('SUPABASE')) {
+      return res.status(503).json({ error: 'Server configuration error' });
+    }
+    return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
 }
