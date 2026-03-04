@@ -34,8 +34,23 @@ export default function AuthPage() {
       body: JSON.stringify(formData),
     });
 
-    const data = await response.json();
-    if (response.ok) {
+    let data: { token?: string; user?: unknown; error?: string } = {};
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      try {
+        data = await response.json();
+      } catch {
+        setError('Server javobi noto\'g\'ri');
+        return;
+      }
+    } else {
+      const text = await response.text();
+      console.error('API returned non-JSON:', text?.slice(0, 200));
+      setError(response.ok ? 'Xatolik yuz berdi' : 'Server xatosi. Keyinroq urinib ko\'ring.');
+      return;
+    }
+
+    if (response.ok && data.token && data.user) {
       login(data.token, data.user);
       navigate('/');
     } else {

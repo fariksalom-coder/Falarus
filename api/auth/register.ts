@@ -18,21 +18,25 @@ function parseBody(body: unknown): Record<string, unknown> {
   return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCors(res);
-  if (req.method === 'OPTIONS') return handleOptions(res);
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+function sendJson(res: VercelResponse, status: number, body: object) {
+  res.setHeader('Content-Type', 'application/json');
+  return res.status(status).json(body);
+}
 
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    setCors(res);
+    if (req.method === 'OPTIONS') return handleOptions(res);
+    if (req.method !== 'POST') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
     const body = parseBody(req.body);
     const firstName = body.firstName as string | undefined;
     const lastName = body.lastName as string | undefined;
     const email = body.email as string | undefined;
     const password = body.password as string | undefined;
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
+      return sendJson(res, 400, { error: 'Email va parol kiritilishi shart' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -49,18 +53,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) {
       if (error.code === '23505') {
-        return res.status(400).json({ error: 'Email allaqachon mavjud' });
+        return sendJson(res, 400, { error: 'Email allaqachon mavjud' });
       }
       console.error('[api/auth/register] Supabase error:', error.code, error.message);
-      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+      return sendJson(res, 500, { error: 'Xatolik yuz berdi' });
     }
     if (!user) {
       console.error('[api/auth/register] No user returned after insert');
-      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+      return sendJson(res, 500, { error: 'Xatolik yuz berdi' });
     }
 
     const token = jwt.sign({ id: user.id }, JWT_SECRET);
-    return res.status(200).json({
+    return sendJson(res, 200, {
       token,
       user: {
         id: user.id,
@@ -74,9 +78,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
     console.error('[api/auth/register]', err.message, err.stack);
-    if (err.message.includes('SUPABASE')) {
-      return res.status(503).json({ error: 'Server configuration error' });
+    try {
+      if (err.message.includes('SUPABASE')) {
+        return sendJson(res, 503, { error: 'Server configuration error' });
+      }
+      return sendJson(res, 500, { error: 'Xatolik yuz berdi' });
+    } catch (_) {
+      res.status(500).end(JSON.stringify({ error: 'Xatolik yuz berdi' }));
     }
-    return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
 }
