@@ -24,13 +24,27 @@
 
 ---
 
-## 1. Запуск сайта на Vercel (фронтенд)
+## 1. Запуск сайта на Vercel (фронтенд + API)
+
+В проекте есть папка **`api/`** — это Vercel Serverless Functions. Все маршруты (`/api/auth/register`, `/api/auth/login`, `/api/user/me`, `/api/lessons`, `/api/vocabulary` и т.д.) работают на том же домене, что и фронт.
 
 1. [vercel.com](https://vercel.com) → **Add New** → **Project** → репозиторий `fariksalom-coder/Falarus`.
 2. **Build Command:** `npm run build`, **Output Directory:** `dist`.
-3. В **Environment Variables** добавьте:
-   - `VITE_API_URL` = `https://ВАШ-БЭКЕНД-URL` (без слэша в конце; после деплоя бэкенда).
-4. **Deploy**.
+3. В **Environment Variables** добавьте (обязательно для API):
+   - `SUPABASE_URL` — URL проекта Supabase
+   - `SUPABASE_SERVICE_ROLE_KEY` — секретный ключ service_role из Supabase  
+   При желании: `JWT_SECRET`, `CORS_ORIGIN`.
+4. **`VITE_API_URL`** оставьте **пустым** — фронт ходит на тот же домен (`/api/...`).
+5. **Deploy**.
+
+После первого деплоя один раз откройте в браузере (чтобы заполнить уроки в БД):  
+**`https://ВАШ-ПРОЕКТ.vercel.app/api/seed`**
+
+---
+
+## 1b. Вариант: фронт на Vercel, бэкенд отдельно (Railway/Render)
+
+Если хотите оставить API на Express (Railway/Render), задайте в Vercel переменную **`VITE_API_URL`** = URL вашего бэкенда. Тогда запросы пойдут на бэкенд, а не на serverless-функции Vercel.
 
 ---
 
@@ -61,7 +75,7 @@
 
 | Где        | Что деплоится              | База данных   |
 |-----------|----------------------------|---------------|
-| **Vercel** | Фронтенд (статика)          | —             |
-| **Railway / Render** | Express-сервер (API) | **Supabase**  |
+| **Vercel** | Фронт + API (папка `api/`) | **Supabase**  |
+| **Railway / Render** (по желанию) | Express (server.ts) | **Supabase**  |
 
-После настройки Supabase и деплоя бэкенда укажите URL бэкенда в `VITE_API_URL` на Vercel и задеплойте фронт заново.
+Рекомендуемый вариант: один проект на **Vercel** с переменными `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY`. После деплоя откройте `/api/seed` один раз для заполнения уроков.
