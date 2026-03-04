@@ -34,7 +34,7 @@ export default function AuthPage() {
       body: JSON.stringify(formData),
     });
 
-    let data: { token?: string; user?: unknown; error?: string } = {};
+    let data: { token?: string; user?: any; error?: string } = {};
     const contentType = response.headers.get('content-type');
     if (contentType?.includes('application/json')) {
       try {
