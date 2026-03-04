@@ -31,8 +31,10 @@
 1. [vercel.com](https://vercel.com) → **Add New** → **Project** → репозиторий `fariksalom-coder/Falarus`.
 2. **Build Command:** `npm run build`, **Output Directory:** `dist`.
 3. В **Environment Variables** добавьте (обязательно для API):
-   - `SUPABASE_URL` — URL проекта Supabase
-   - `SUPABASE_SERVICE_ROLE_KEY` — секретный ключ service_role из Supabase  
+   - **`SUPABASE_URL`** — URL проекта Supabase (например `https://xxxx.supabase.co`).
+   - **`SUPABASE_SERVICE_ROLE_KEY`** — секретный ключ **service_role** из Supabase (Settings → API → Project API keys).  
+   **Имя переменной должно быть именно `SUPABASE_SERVICE_ROLE_KEY`** (не `SUPABASE_SERVICE_KEY` и не другое).  
+   Без этих двух переменных API на Vercel будет падать с ошибкой (FUNCTION_INVOCATION_FAILED) или возвращать 500.
    При желании: `JWT_SECRET`, `CORS_ORIGIN`.
 4. **`VITE_API_URL`** оставьте **пустым** — фронт ходит на тот же домен (`/api/...`).
 5. **Deploy**.

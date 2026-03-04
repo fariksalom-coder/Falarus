@@ -6,6 +6,18 @@ import { setCors, handleOptions } from '../_lib/cors';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-uz-ru';
 
+function parseBody(body: unknown): Record<string, unknown> {
+  if (body == null) return {};
+  if (typeof body === 'string') {
+    try {
+      return JSON.parse(body) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
@@ -14,13 +26,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { firstName, lastName, email, password } = req.body || {};
-  if (!email || !password) {
-    res.status(400).json({ error: 'Email va parol kiritilishi shart' });
-    return;
-  }
-
   try {
+    const body = parseBody(req.body);
+    const firstName = body.firstName as string | undefined;
+    const lastName = body.lastName as string | undefined;
+    const email = body.email as string | undefined;
+    const password = body.password as string | undefined;
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email va parol kiritilishi shart' });
+      return;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const { data: user, error } = await supabase
       .from('users')
