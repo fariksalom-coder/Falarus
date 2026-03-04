@@ -321,7 +321,7 @@ export default function LessonThirteenTaskOnePage() {
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <p className="text-base font-semibold text-slate-900">{currentTask.prompt}</p>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="mt-4 grid grid-cols-2 gap-3">
               <div className="space-y-3">
                 {matchLeft.map((card) => {
                   const isSelected = matchSelected?.id === card.id;

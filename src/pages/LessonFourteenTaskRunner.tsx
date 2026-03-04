@@ -180,7 +180,7 @@ export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/le
               </div>
             )}
             {currentTask.type === 'matching' && (
-              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="space-y-3">
                   {matchLeft.map((card) => {
                     const isMatched = matchedPairIds.includes(card.pairId);
