@@ -18,6 +18,7 @@ import LessonElevenPage from './pages/LessonElevenPage';
 import LessonTwelvePage from './pages/LessonTwelvePage';
 import LessonThirteenPage from './pages/LessonThirteenPage';
 import LessonFourteenPage from './pages/LessonFourteenPage';
+import LessonFifteenPage from './pages/LessonFifteenPage';
 import GreetingTestPage from './pages/GreetingTestPage';
 import GreetingQuizPage from './pages/GreetingQuizPage';
 import MatchingPairsPage from './pages/MatchingPairsPage';
@@ -116,6 +117,7 @@ function AppRoutes() {
       <Route path="/lesson-12" element={<LessonTwelvePage />} />
       <Route path="/lesson-13" element={<LessonThirteenPage />} />
       <Route path="/lesson-14" element={<LessonFourteenPage />} />
+      <Route path="/lesson-15" element={<LessonFifteenPage />} />
       <Route path="/lesson-1/salomlashish-test" element={<GreetingTestPage />} />
       <Route path="/lesson-1/salomlashish-test/quiz" element={<GreetingQuizPage />} />
       <Route path="/lesson-1/juftini-toping" element={<MatchingPairsPage />} />

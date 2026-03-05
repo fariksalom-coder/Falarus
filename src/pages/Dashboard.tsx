@@ -22,6 +22,7 @@ export default function Dashboard() {
   const openLessonTwelveBlocks = () => navigate('/lesson-12');
   const openLessonThirteenBlocks = () => navigate('/lesson-13');
   const openLessonFourteenBlocks = () => navigate('/lesson-14');
+  const openLessonFifteenBlocks = () => navigate('/lesson-15');
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -149,6 +150,13 @@ export default function Dashboard() {
                 className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
               >
                 <h3 className="text-lg font-bold text-slate-900">14-dars — Noto‘g‘ri fe’llar</h3>
+              </button>
+              <button
+                type="button"
+                onClick={openLessonFifteenBlocks}
+                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
+              >
+                <h3 className="text-lg font-bold text-slate-900">15-dars — Ўтган замон</h3>
               </button>
             </div>
           </div>
