@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export type ChoiceTask = { type: 'choice'; prompt: string; options: string[]; correct: string };
-export type MatchingTask = { type: 'matching'; prompt: string; pairs: { left: string; right: string }[] };
+export type MatchingTask = {
+  type: 'matching';
+  prompt: string;
+  pairs: { left: string; right: string }[];
+  allowDuplicateRightMatches?: boolean;
+};
 export type SentenceTask = { type: 'sentence'; prompt: string; words: string[]; correct: string };
 export type Task = ChoiceTask | MatchingTask | SentenceTask;
 
@@ -24,18 +29,32 @@ const buildMatchCards = (pairs: { left: string; right: string }[]) => {
   return { left: shuffle(left), right };
 };
 
-const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+const normalize = (s: string) =>
+  s
+    .trim()
+    .toLowerCase()
+    .replace(/[.,!?;:]/g, '')
+    .replace(/\s+/g, ' ');
 const checkSentence = (built: string, correct: string) => {
   const b = normalize(built);
   const c = normalize(correct);
-  if (b === c) return true;
-  if (correct.endsWith('?') && b === normalize(correct.slice(0, -1))) return true;
-  return false;
+  return b === c;
 };
+const renderPrompt = (text: string) =>
+  text.split(/(【[^】]+】)/g).map((part, idx) => {
+    if (part.startsWith('【') && part.endsWith('】')) {
+      return <strong key={`${part}-${idx}`}>{part.slice(1, -1)}</strong>;
+    }
+    return <span key={`${part}-${idx}`}>{part}</span>;
+  });
 
-type Props = { tasks: Task[]; backPath?: string };
+type Props = { tasks: Task[]; backPath?: string; sentenceInstruction?: string };
 
-export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/lesson-14' }: Props) {
+export default function LessonFourteenTaskRunner({
+  tasks: TASKS,
+  backPath = '/lesson-14',
+  sentenceInstruction = 'Gapni rus tiliga tarjima qiling.',
+}: Props) {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
@@ -47,7 +66,8 @@ export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/le
   const [matchRight, setMatchRight] = useState<MatchCard[]>([]);
   const [matchSelected, setMatchSelected] = useState<MatchCard | null>(null);
   const [matchWrongIds, setMatchWrongIds] = useState<string[]>([]);
-  const [matchedPairIds, setMatchedPairIds] = useState<number[]>([]);
+  const [matchedCardIds, setMatchedCardIds] = useState<string[]>([]);
+  const [matchedPairsCount, setMatchedPairsCount] = useState(0);
   const [matchLocked, setMatchLocked] = useState(false);
   const [sentencePool, setSentencePool] = useState<SentencePoolItem[]>([]);
   const [sentenceAnswer, setSentenceAnswer] = useState<string[]>([]);
@@ -69,7 +89,8 @@ export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/le
       setMatchRight(cards.right);
       setMatchSelected(null);
       setMatchWrongIds([]);
-      setMatchedPairIds([]);
+      setMatchedCardIds([]);
+      setMatchedPairsCount(0);
       setMatchLocked(false);
     }
     if (task.type === 'sentence') {
@@ -86,7 +107,7 @@ export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/le
   const handleMatchingClick = (card: MatchCard) => {
     if (currentTask.type !== 'matching') return;
     if (matchLocked || status === 'correct') return;
-    if (matchedPairIds.includes(card.pairId)) return;
+    if (matchedCardIds.includes(card.id)) return;
     if (matchSelected?.id === card.id) return;
     if (!matchSelected) {
       setMatchSelected(card);
@@ -96,12 +117,19 @@ export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/le
       setMatchSelected(card);
       return;
     }
-    if (matchSelected.pairId === card.pairId) {
-      const nextMatched = [...matchedPairIds, card.pairId];
-      setMatchedPairIds(nextMatched);
+    const leftCard = matchSelected.side === 'left' ? matchSelected : card;
+    const rightCard = matchSelected.side === 'right' ? matchSelected : card;
+    const samePair = matchSelected.pairId === card.pairId;
+    const duplicateRightAllowed =
+      currentTask.allowDuplicateRightMatches && rightCard.text === currentTask.pairs[leftCard.pairId]?.right;
+
+    if (samePair || duplicateRightAllowed) {
+      const nextCount = matchedPairsCount + 1;
+      setMatchedCardIds((prev) => [...prev, matchSelected.id, card.id]);
+      setMatchedPairsCount(nextCount);
       setMatchSelected(null);
       setMessage('To‘g‘ri!');
-      if (nextMatched.length === matchLeft.length) setStatus('correct');
+      if (nextCount === matchLeft.length) setStatus('correct');
       return;
     }
     setMessage('Xato. Yana urinib ko‘ring.');
@@ -150,9 +178,9 @@ export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/le
         {!finished && (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <p className="text-sm font-semibold text-slate-600 text-center">
-              {currentTask.type === 'choice' ? 'To‘g‘ri variantni tanlang.' : currentTask.type === 'matching' ? 'Juftini toping.' : 'Gapni rus tiliga tarjima qiling.'}
+              {currentTask.type === 'choice' ? 'To‘g‘ri variantni tanlang.' : currentTask.type === 'matching' ? 'Juftini toping.' : sentenceInstruction}
             </p>
-            <p className="mt-1 text-base font-semibold text-slate-900 text-center">{currentTask.prompt}</p>
+            <p className="mt-1 text-base font-semibold text-slate-900 text-center">{renderPrompt(currentTask.prompt)}</p>
             {currentTask.type === 'choice' && (
               <div className="mt-4 space-y-2">
                 {choiceOptions.map((option) => {
@@ -183,7 +211,7 @@ export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/le
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="space-y-3">
                   {matchLeft.map((card) => {
-                    const isMatched = matchedPairIds.includes(card.pairId);
+                    const isMatched = matchedCardIds.includes(card.id);
                     const isWrong = matchWrongIds.includes(card.id);
                     const isSelected = matchSelected?.id === card.id;
                     const stateClass = isMatched ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : isWrong ? 'border-red-500 bg-red-50 text-red-700' : isSelected ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-300 bg-slate-50 text-slate-900 hover:border-indigo-300';
@@ -196,7 +224,7 @@ export default function LessonFourteenTaskRunner({ tasks: TASKS, backPath = '/le
                 </div>
                 <div className="space-y-3">
                   {matchRight.map((card) => {
-                    const isMatched = matchedPairIds.includes(card.pairId);
+                    const isMatched = matchedCardIds.includes(card.id);
                     const isWrong = matchWrongIds.includes(card.id);
                     const isSelected = matchSelected?.id === card.id;
                     const stateClass = isMatched ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : isWrong ? 'border-red-500 bg-red-50 text-red-700' : isSelected ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-300 bg-slate-50 text-slate-900 hover:border-indigo-300';

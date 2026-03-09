@@ -1,64 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 
-type VerbTask = {
-  infinitive: string;
-  translation: string;
-};
-
-const VERBS: VerbTask[] = [
-  { infinitive: 'Называть', translation: 'номламоқ' },
-  { infinitive: 'Гулять', translation: 'сайир қилмоқ' },
-  { infinitive: 'Начинать', translation: 'бошламоқ' },
-  { infinitive: 'Разговаривать', translation: 'гаплашмоқ' },
-  { infinitive: 'Слушать', translation: 'тингламоқ' },
-  { infinitive: 'Слышать', translation: 'эшитмоқ' },
-  { infinitive: 'Завтракать', translation: 'нонушта қилмоқ' },
-  { infinitive: 'Ужинать', translation: 'кечки овқат емоқ' },
-  { infinitive: 'Изучать', translation: 'ўрганмоқ' },
-  { infinitive: 'Спрашивать', translation: 'сўрамоқ' },
-  { infinitive: 'Сравнивать', translation: 'солиштирмоқ' },
-  { infinitive: 'Смотреть', translation: 'томоша қилмоқ' },
-  { infinitive: 'Получать', translation: 'олмоқ' },
-  { infinitive: 'Продолжать', translation: 'давом эттирмоқ' },
-  { infinitive: 'Повторять', translation: 'такрорламоқ' },
-  { infinitive: 'Отвечать', translation: 'жавоб бермоқ' },
-  { infinitive: 'Работать', translation: 'ишламоқ' },
-  { infinitive: 'Печатать', translation: 'чоп этмоқ' },
-  { infinitive: 'Знать', translation: 'билмоқ' },
-  { infinitive: 'Увеличивать', translation: 'катталаштирмоқ' },
-  { infinitive: 'Уменьшать', translation: 'кичиклаштирмоқ' },
-  { infinitive: 'Играть', translation: 'ўйнамоқ' },
-  { infinitive: 'Объяснять', translation: 'тушунтирмоқ' },
-  { infinitive: 'Скучать', translation: 'соғинмоқ, зерикмоқ' },
-  { infinitive: 'Обещать', translation: 'ваъда бермоқ' },
-  { infinitive: 'Обедать', translation: 'тушлик қилмоқ' },
-  { infinitive: 'Спешить', translation: 'шошмоқ' },
-  { infinitive: 'Решать', translation: 'ечмоқ (масала)' },
-  { infinitive: 'Иметь', translation: 'эга бўлмоқ' },
-  { infinitive: 'Мечтать', translation: 'орзу қилмоқ' },
-  { infinitive: 'Помогать', translation: 'ёрдам бермоқ' },
-  { infinitive: 'Обеспечивать', translation: 'таъминламоқ' },
-  { infinitive: 'Звонить', translation: 'қўнғироқ қилмоқ' },
-  { infinitive: 'Заставлять', translation: 'мажбурламоқ' },
-  { infinitive: 'Уговаривать', translation: 'кўндирмоқ' },
-  { infinitive: 'Зарабатывать', translation: 'ишлаб топмоқ (пул)' },
-  { infinitive: 'Потерять', translation: 'йўқотмоқ' },
-  { infinitive: 'Соединять', translation: 'бирлаштирмоқ' },
-  { infinitive: 'Считать', translation: 'ҳисобламоқ' },
-  { infinitive: 'Опоздать', translation: 'кечикмоқ' },
-  { infinitive: 'Задержать', translation: 'ушлаб қолмоқ' },
-  { infinitive: 'Стареть', translation: 'кексаймоқ' },
-];
-
-const FORMS = [
-  'Я ______________________________',
-  'Ты _____________________________',
-  'Он/она _________________________',
-  'Мы _____________________________',
-  'Вы _____________________________',
-  'Они ____________________________',
-];
-
 export default function LessonFifteenPage() {
   const navigate = useNavigate();
 
@@ -74,7 +15,7 @@ export default function LessonFifteenPage() {
             Orqaga
           </button>
 
-          <h1 className="mb-1 text-xl font-bold text-slate-900">15-дaрс — Ўтган замон</h1>
+          <h1 className="mb-1 text-xl font-bold text-slate-900">15-dars — O‘tgan zamon</h1>
           <p className="mb-4 text-sm text-slate-500">Прошедшее время</p>
 
           <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-800">
@@ -102,29 +43,62 @@ export default function LessonFifteenPage() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
-            <h2 className="text-base font-bold text-slate-900">Топшириқ 1</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Берилган феълларни ўтган замонда шахсларга нисбатан тўғри қўшимчалар билан ёзинг.
-            </p>
-          </div>
-
-          <div className="mt-4 space-y-4">
-            {VERBS.map((verb) => (
-              <div key={verb.infinitive} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="mb-2 font-semibold text-slate-900">
-                  {verb.infinitive} — {verb.translation}
-                </p>
-                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-                  {FORMS.map((line) => (
-                    <p key={`${verb.infinitive}-${line}`} className="font-mono text-xs text-slate-700">
-                      {line}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/lesson-15/mustahkamlash')}
+            className="mt-5 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-indigo-700 active:scale-[0.99]"
+          >
+            Mustahkamlash
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/lesson-15/topshiriq-1')}
+            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+          >
+            Topshiriq 1
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/lesson-15/topshiriq-2')}
+            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+          >
+            Topshiriq 2
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/lesson-15/topshiriq-3')}
+            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+          >
+            Topshiriq 3
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/lesson-15/topshiriq-4')}
+            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+          >
+            Topshiriq 4
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/lesson-15/topshiriq-5')}
+            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+          >
+            Topshiriq 5
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/lesson-15/topshiriq-6')}
+            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+          >
+            Topshiriq 6
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/lesson-15/topshiriq-7')}
+            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+          >
+            Topshiriq 7
+          </button>
         </div>
       </main>
     </div>
