@@ -78,6 +78,29 @@ import LessonTwentyTaskFourPage from './pages/LessonTwentyTaskFourPage';
 import LessonTwentyTaskFivePage from './pages/LessonTwentyTaskFivePage';
 import LessonTwentyTaskSixPage from './pages/LessonTwentyTaskSixPage';
 import LessonTwentyTaskSevenPage from './pages/LessonTwentyTaskSevenPage';
+import LessonTwentyOnePage from './pages/LessonTwentyOnePage';
+import LessonTwentyOneTaskOnePage from './pages/LessonTwentyOneTaskOnePage';
+import LessonTwentyTwoPage from './pages/LessonTwentyTwoPage';
+import LessonTwentyTwoTaskOnePage from './pages/LessonTwentyTwoTaskOnePage';
+import LessonTwentyTwoTaskTwoPage from './pages/LessonTwentyTwoTaskTwoPage';
+import LessonTwentyTwoTaskThreePage from './pages/LessonTwentyTwoTaskThreePage';
+import LessonTwentyTwoTaskFourPage from './pages/LessonTwentyTwoTaskFourPage';
+import LessonTwentyTwoTaskFivePage from './pages/LessonTwentyTwoTaskFivePage';
+import LessonTwentyTwoTaskSixPage from './pages/LessonTwentyTwoTaskSixPage';
+import LessonTwentyTwoTaskSevenPage from './pages/LessonTwentyTwoTaskSevenPage';
+import LessonTwentyTwoTaskEightPage from './pages/LessonTwentyTwoTaskEightPage';
+import LessonTwentyTwoTaskNinePage from './pages/LessonTwentyTwoTaskNinePage';
+import LessonTwentyTwoTaskTenPage from './pages/LessonTwentyTwoTaskTenPage';
+import LessonTwentyTwoTaskElevenPage from './pages/LessonTwentyTwoTaskElevenPage';
+import LessonTwentyTwoTaskTwelvePage from './pages/LessonTwentyTwoTaskTwelvePage';
+import LessonTwentyThreePage from './pages/LessonTwentyThreePage';
+import LessonTwentyThreeTaskOnePage from './pages/LessonTwentyThreeTaskOnePage';
+import LessonTwentyThreeTaskTwoPage from './pages/LessonTwentyThreeTaskTwoPage';
+import LessonTwentyFourPage from './pages/LessonTwentyFourPage';
+import LessonTwentyFourTaskOnePage from './pages/LessonTwentyFourTaskOnePage';
+import LessonTwentyFourTaskTwoPage from './pages/LessonTwentyFourTaskTwoPage';
+import LessonTwentyFourTaskThreePage from './pages/LessonTwentyFourTaskThreePage';
+import LessonTwentyFourTaskFourPage from './pages/LessonTwentyFourTaskFourPage';
 import GreetingTestPage from './pages/GreetingTestPage';
 import GreetingQuizPage from './pages/GreetingQuizPage';
 import MatchingPairsPage from './pages/MatchingPairsPage';
@@ -127,6 +150,9 @@ import LessonFourteenTaskFourteenPage from './pages/LessonFourteenTaskFourteenPa
 import LessonFourteenTaskFifteenPage from './pages/LessonFourteenTaskFifteenPage';
 import LessonFourteenTaskSixteenPage from './pages/LessonFourteenTaskSixteenPage';
 import VocabularyPage from './pages/VocabularyPage';
+import VocabularyTopicPage from './pages/VocabularyTopicPage';
+import VocabularySubtopicPage from './pages/VocabularySubtopicPage';
+import VocabularyPartPage from './pages/VocabularyPartPage';
 import ProfilePage from './pages/ProfilePage';
 import CourseMapPage from './pages/CourseMapPage';
 
@@ -236,6 +262,29 @@ function AppRoutes() {
       <Route path="/lesson-20/topshiriq-5" element={<LessonTwentyTaskFivePage />} />
       <Route path="/lesson-20/topshiriq-6" element={<LessonTwentyTaskSixPage />} />
       <Route path="/lesson-20/topshiriq-7" element={<LessonTwentyTaskSevenPage />} />
+      <Route path="/lesson-21" element={<LessonTwentyOnePage />} />
+      <Route path="/lesson-21/topshiriq-1" element={<LessonTwentyOneTaskOnePage />} />
+      <Route path="/lesson-22" element={<LessonTwentyTwoPage />} />
+      <Route path="/lesson-22/topshiriq-1" element={<LessonTwentyTwoTaskOnePage />} />
+      <Route path="/lesson-22/topshiriq-2" element={<LessonTwentyTwoTaskTwoPage />} />
+      <Route path="/lesson-22/topshiriq-3" element={<LessonTwentyTwoTaskThreePage />} />
+      <Route path="/lesson-22/topshiriq-4" element={<LessonTwentyTwoTaskFourPage />} />
+      <Route path="/lesson-22/topshiriq-5" element={<LessonTwentyTwoTaskFivePage />} />
+      <Route path="/lesson-22/topshiriq-6" element={<LessonTwentyTwoTaskSixPage />} />
+      <Route path="/lesson-22/topshiriq-7" element={<LessonTwentyTwoTaskSevenPage />} />
+      <Route path="/lesson-22/topshiriq-8" element={<LessonTwentyTwoTaskEightPage />} />
+      <Route path="/lesson-22/topshiriq-9" element={<LessonTwentyTwoTaskNinePage />} />
+      <Route path="/lesson-22/topshiriq-10" element={<LessonTwentyTwoTaskTenPage />} />
+      <Route path="/lesson-22/topshiriq-11" element={<LessonTwentyTwoTaskElevenPage />} />
+      <Route path="/lesson-22/topshiriq-12" element={<LessonTwentyTwoTaskTwelvePage />} />
+      <Route path="/lesson-23" element={<LessonTwentyThreePage />} />
+      <Route path="/lesson-23/topshiriq-1" element={<LessonTwentyThreeTaskOnePage />} />
+      <Route path="/lesson-23/topshiriq-2" element={<LessonTwentyThreeTaskTwoPage />} />
+      <Route path="/lesson-24" element={<LessonTwentyFourPage />} />
+      <Route path="/lesson-24/topshiriq-1" element={<LessonTwentyFourTaskOnePage />} />
+      <Route path="/lesson-24/topshiriq-2" element={<LessonTwentyFourTaskTwoPage />} />
+      <Route path="/lesson-24/topshiriq-3" element={<LessonTwentyFourTaskThreePage />} />
+      <Route path="/lesson-24/topshiriq-4" element={<LessonTwentyFourTaskFourPage />} />
       <Route path="/lesson-1/salomlashish-test" element={<GreetingTestPage />} />
       <Route path="/lesson-1/salomlashish-test/quiz" element={<GreetingQuizPage />} />
       <Route path="/lesson-1/juftini-toping" element={<MatchingPairsPage />} />
@@ -286,6 +335,9 @@ function AppRoutes() {
       <Route path="/lesson-14/topshiriq-16" element={<LessonFourteenTaskSixteenPage />} />
       <Route path="/lesson/:id" element={<LessonPage />} />
       <Route path="/vocabulary" element={<VocabularyPage />} />
+      <Route path="/vocabulary/:topicId" element={<VocabularyTopicPage />} />
+      <Route path="/vocabulary/:topicId/:subtopicId" element={<VocabularySubtopicPage />} />
+      <Route path="/vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/course-map" element={<CourseMapPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />

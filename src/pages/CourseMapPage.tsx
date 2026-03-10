@@ -3,7 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { courseData } from '../data/courseData';
 import { motion } from 'motion/react';
 import { 
-  ChevronLeft, 
+  House,
+  BookMarked,
+  BarChart3,
+  User,
   Lock, 
   CheckCircle2, 
   BookOpen,
@@ -27,11 +30,41 @@ export default function CourseMapPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-10">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
-        <button onClick={() => navigate('/')} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-          <ChevronLeft className="w-6 h-6 text-slate-600" />
-        </button>
-        <h1 className="font-bold text-xl text-slate-900 flex-1">Kurs xaritasi</h1>
+      <header className="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-10">
+        <div className="w-full flex items-center justify-center gap-2">
+          <button
+            type="button"
+            aria-label="Главная"
+            onClick={() => navigate('/')}
+            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
+          >
+            <House className="w-5 h-5 text-slate-600" />
+          </button>
+          <button
+            type="button"
+            aria-label="Словарь"
+            onClick={() => navigate('/vocabulary')}
+            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
+          >
+            <BookMarked className="w-5 h-5 text-slate-600" />
+          </button>
+          <button
+            type="button"
+            aria-label="Статистика"
+            onClick={() => navigate('/course-map')}
+            className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center"
+          >
+            <BarChart3 className="w-5 h-5 text-white" />
+          </button>
+          <button
+            type="button"
+            aria-label="Профиль"
+            onClick={() => navigate('/profile')}
+            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
+          >
+            <User className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
       </header>
 
       <main className="max-w-3xl mx-auto p-6 space-y-12">

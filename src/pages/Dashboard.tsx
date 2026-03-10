@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { 
-  BookOpen, 
+  House,
+  BookMarked,
+  BarChart3,
   User
 } from 'lucide-react';
 
 export default function Dashboard() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const openLessonOneBlocks = () => navigate('/lesson-1');
   const openLessonTwoBlocks = () => navigate('/lesson-2');
@@ -28,25 +28,45 @@ export default function Dashboard() {
   const openLessonEighteenBlocks = () => navigate('/lesson-18');
   const openLessonNineteenBlocks = () => navigate('/lesson-19');
   const openLessonTwentyBlocks = () => navigate('/lesson-20');
+  const openLessonTwentyOneBlocks = () => navigate('/lesson-21');
+  const openLessonTwentyTwoBlocks = () => navigate('/lesson-22');
+  const openLessonTwentyThreeBlocks = () => navigate('/lesson-23');
+  const openLessonTwentyFourBlocks = () => navigate('/lesson-24');
 
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <div className="bg-indigo-600 p-2 rounded-lg">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-xl text-slate-900">FalaRus.uz</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-slate-900">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs text-slate-500">{user?.level} daraja</p>
-          </div>
-          <button 
+        <div className="w-full flex items-center justify-center gap-2">
+          <button
+            type="button"
+            aria-label="Главная"
+            onClick={() => navigate('/')}
+            className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center"
+          >
+            <House className="w-5 h-5 text-white" />
+          </button>
+          <button
+            type="button"
+            aria-label="Словарь"
+            onClick={() => navigate('/vocabulary')}
+            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
+          >
+            <BookMarked className="w-5 h-5 text-slate-600" />
+          </button>
+          <button
+            type="button"
+            aria-label="Статистика"
+            onClick={() => navigate('/course-map')}
+            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
+          >
+            <BarChart3 className="w-5 h-5 text-slate-600" />
+          </button>
+          <button
+            type="button"
+            aria-label="Профиль"
             onClick={() => navigate('/profile')}
-            className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors"
+            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
           >
             <User className="w-5 h-5 text-slate-600" />
           </button>
@@ -197,6 +217,34 @@ export default function Dashboard() {
                 className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
               >
                 <h3 className="text-lg font-bold text-slate-900">20-dars — Takrorlash</h3>
+              </button>
+              <button
+                type="button"
+                onClick={openLessonTwentyOneBlocks}
+                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
+              >
+                <h3 className="text-lg font-bold text-slate-900">21-dars — Kelishiklar</h3>
+              </button>
+              <button
+                type="button"
+                onClick={openLessonTwentyTwoBlocks}
+                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
+              >
+                <h3 className="text-lg font-bold text-slate-900">22-dars — Predlojniy padej</h3>
+              </button>
+              <button
+                type="button"
+                onClick={openLessonTwentyThreeBlocks}
+                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
+              >
+                <h3 className="text-lg font-bold text-slate-900">23-dars — Predloglar В va НА + Predlojniy padej</h3>
+              </button>
+              <button
+                type="button"
+                onClick={openLessonTwentyFourBlocks}
+                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
+              >
+                <h3 className="text-lg font-bold text-slate-900">24-dars — Sifatlar va tartib sonlar predlojniy padejda</h3>
               </button>
             </div>
           </div>
