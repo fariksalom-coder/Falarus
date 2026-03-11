@@ -52,6 +52,16 @@ export default function LessonPage() {
         const data = await res.json();
         updateUser({ progress: data.progress });
         setFinished(true);
+        try {
+          const lessonNum = parseInt(String(id), 10);
+          if (!Number.isNaN(lessonNum)) {
+            const raw = localStorage.getItem('lessons-completed-count');
+            const current = raw ? Math.min(parseInt(raw, 10) || 0, 24) : 0;
+            localStorage.setItem('lessons-completed-count', String(Math.max(current, lessonNum)));
+          }
+        } catch {
+          // ignore
+        }
       }
     }
   };

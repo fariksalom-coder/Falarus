@@ -1,4 +1,13 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import {
+  fetchLessonTaskResults,
+  lessonTaskResultsToMap,
+} from '../api/lessonTaskResults';
+import { getLessonTaskResults, isTaskResultGood } from '../utils/lessonTaskResults';
+
+type TaskResult = { correct: number; total: number };
 
 type VerbRow = {
   infinitive: string;
@@ -33,6 +42,29 @@ const VERBS: VerbRow[] = [
 
 export default function LessonFourteenPage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const localResults = getLessonTaskResults('/lesson-14');
+  const [serverResults, setServerResults] = useState<Record<number, TaskResult>>({});
+
+  useEffect(() => {
+    if (!token) return;
+    fetchLessonTaskResults(token, '/lesson-14').then((items) => {
+      setServerResults(lessonTaskResultsToMap(items, '/lesson-14'));
+    });
+  }, [token]);
+
+  const taskResults: Record<number, TaskResult> = { ...localResults };
+  for (const [n, r] of Object.entries(serverResults)) {
+    taskResults[Number(n)] = r;
+  }
+
+  const getTaskButtonClass = (taskN: number, isFirst = false) => {
+    const margin = isFirst ? 'mt-4' : 'mt-2';
+    const result = taskResults[taskN];
+    if (!result) return `${margin} w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]`;
+    if (isTaskResultGood(result)) return `${margin} w-full rounded-xl border border-emerald-300 bg-emerald-500 px-4 py-3 font-semibold text-white hover:bg-emerald-600 transition-colors active:scale-[0.99]`;
+    return `${margin} w-full rounded-xl border border-orange-300 bg-orange-500 px-4 py-3 font-semibold text-white hover:bg-orange-600 transition-colors active:scale-[0.99]`;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -97,28 +129,28 @@ export default function LessonFourteenPage() {
           <button
             type="button"
             onClick={() => navigate('/lesson-14/topshiriq-1')}
-            className="mt-4 w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:bg-indigo-700 transition-colors active:scale-[0.99]"
+            className={getTaskButtonClass(1, true)}
           >
             Topshiriq 1 — хотеть
           </button>
           <button
             type="button"
             onClick={() => navigate('/lesson-14/topshiriq-2')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
+            className={getTaskButtonClass(2)}
           >
             Topshiriq 2 — мочь
           </button>
           <button
             type="button"
             onClick={() => navigate('/lesson-14/topshiriq-3')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
+            className={getTaskButtonClass(3)}
           >
             Topshiriq 3 — брать
           </button>
           <button
             type="button"
             onClick={() => navigate('/lesson-14/topshiriq-4')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
+            className={getTaskButtonClass(4)}
           >
             Topshiriq 4 — дать
           </button>
@@ -140,7 +172,7 @@ export default function LessonFourteenPage() {
               key={n}
               type="button"
               onClick={() => navigate(`/lesson-14/topshiriq-${n}`)}
-              className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
+              className={getTaskButtonClass(n)}
             >
               Topshiriq {n} — {v}
             </button>

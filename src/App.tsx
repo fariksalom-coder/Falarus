@@ -154,7 +154,8 @@ import VocabularyTopicPage from './pages/VocabularyTopicPage';
 import VocabularySubtopicPage from './pages/VocabularySubtopicPage';
 import VocabularyPartPage from './pages/VocabularyPartPage';
 import ProfilePage from './pages/ProfilePage';
-import CourseMapPage from './pages/CourseMapPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import MainLayout from './components/MainLayout';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -187,7 +188,16 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/" element={<Dashboard />} />
+      <Route path="/" element={<MainLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="vocabulary" element={<VocabularyPage />} />
+        <Route path="vocabulary/:topicId" element={<VocabularyTopicPage />} />
+        <Route path="vocabulary/:topicId/:subtopicId" element={<VocabularySubtopicPage />} />
+        <Route path="vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartPage />} />
+        <Route path="vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="reyting" element={<LeaderboardPage />} />
+      </Route>
       <Route path="/lesson-1" element={<LessonOnePage />} />
       <Route path="/lesson-2" element={<LessonTwoPage />} />
       <Route path="/lesson-3" element={<LessonThreePage />} />
@@ -334,13 +344,6 @@ function AppRoutes() {
       <Route path="/lesson-14/topshiriq-15" element={<LessonFourteenTaskFifteenPage />} />
       <Route path="/lesson-14/topshiriq-16" element={<LessonFourteenTaskSixteenPage />} />
       <Route path="/lesson/:id" element={<LessonPage />} />
-      <Route path="/vocabulary" element={<VocabularyPage />} />
-      <Route path="/vocabulary/:topicId" element={<VocabularyTopicPage />} />
-      <Route path="/vocabulary/:topicId/:subtopicId" element={<VocabularySubtopicPage />} />
-      <Route path="/vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartPage />} />
-      <Route path="/vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartPage />} />
-      <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/course-map" element={<CourseMapPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

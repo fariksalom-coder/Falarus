@@ -22,6 +22,24 @@
 
 При первом запуске бэкенда уроки и упражнения подтянутся в Supabase из кода (seed), если таблица `lessons` пуста.
 
+### Применение миграций через Supabase CLI
+
+Для миграций после `001_initial.sql` (например `002_vocabulary_progress.sql`) можно использовать CLI:
+
+1. Установите Supabase CLI (если ещё нет): `npm install -g supabase` или используйте `npx supabase`.
+2. **Один раз** привяжите проект (нужны **Project ref** из URL дашборда и **пароль БД** из Settings → Database):
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref ВАШ_PROJECT_REF -p ВАШ_ПАРОЛЬ_БД
+   ```
+3. Применить миграции:
+   ```bash
+   npm run db:push
+   ```
+   или `npx supabase db push`.
+
+Либо выполните SQL из `supabase/migrations/002_vocabulary_progress.sql` вручную в **SQL Editor** в дашборде Supabase.
+
 ---
 
 ## 1. Запуск сайта на Vercel (фронтенд + API)

@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setLessonTaskResult } from '../utils/lessonTaskResults';
+import { saveLessonTaskResult } from '../api/lessonTaskResults';
+import { addUserPoints } from '../api/leaderboard';
 
 export type ChoiceTask = { type: 'choice'; prompt: string; options: string[]; correct: string };
 export type MatchingTask = {
@@ -48,12 +51,22 @@ const renderPrompt = (text: string) =>
     return <span key={`${part}-${idx}`}>{part}</span>;
   });
 
-type Props = { tasks: Task[]; backPath?: string; sentenceInstruction?: string };
+type Props = {
+  tasks: Task[];
+  backPath?: string;
+  sentenceInstruction?: string;
+  lessonPath?: string;
+  taskNumber?: number;
+  token?: string | null;
+};
 
 export default function LessonFourteenTaskRunner({
   tasks: TASKS,
   backPath = '/lesson-14',
   sentenceInstruction = 'Gapni rus tiliga tarjima qiling.',
+  lessonPath,
+  taskNumber,
+  token,
 }: Props) {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -71,6 +84,7 @@ export default function LessonFourteenTaskRunner({
   const [matchLocked, setMatchLocked] = useState(false);
   const [sentencePool, setSentencePool] = useState<SentencePoolItem[]>([]);
   const [sentenceAnswer, setSentenceAnswer] = useState<string[]>([]);
+  const [correctCount, setCorrectCount] = useState(0);
 
   const currentTask = TASKS[currentIndex];
   const progress = useMemo(() => ((currentIndex + (finished ? 1 : 0)) / TASKS.length) * 100, [currentIndex, finished, TASKS.length]);
@@ -100,6 +114,7 @@ export default function LessonFourteenTaskRunner({
   }, [currentIndex, TASKS]);
 
   const handleNext = () => {
+    if (status === 'correct') setCorrectCount((c) => c + 1);
     if (currentIndex < TASKS.length - 1) setCurrentIndex((prev) => prev + 1);
     else setFinished(true);
   };
@@ -286,8 +301,34 @@ export default function LessonFourteenTaskRunner({
           </div>
         )}
         {finished && (
-          <div className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-5">
-            <p className="text-lg font-bold text-emerald-700">Mashq tugadi! Barakalla!</p>
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm">
+            <p className="text-lg font-bold text-slate-900">Natija</p>
+            <p className="mt-2 text-2xl font-bold text-slate-800">
+              To‘g‘ri javoblar: {correctCount} / {TASKS.length}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              {TASKS.length > 0 ? Math.round((correctCount / TASKS.length) * 100) : 0}%
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (lessonPath != null && taskNumber != null && TASKS.length > 0) {
+                  setLessonTaskResult(lessonPath, taskNumber, correctCount, TASKS.length);
+                  if (token) {
+                    saveLessonTaskResult(token, lessonPath, taskNumber, correctCount, TASKS.length);
+                    addUserPoints(token, 5);
+                  }
+                }
+                navigate(backPath);
+              }}
+              className={`mt-6 w-full rounded-xl px-5 py-3.5 text-base font-semibold text-white transition-colors ${
+                TASKS.length > 0 && correctCount / TASKS.length >= 0.8
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-orange-500 hover:bg-orange-600'
+              }`}
+            >
+              Tugatish
+            </button>
           </div>
         )}
       </main>

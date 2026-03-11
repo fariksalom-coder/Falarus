@@ -1,4 +1,5 @@
 import LessonFourteenTaskRunner, { type Task } from './LessonFourteenTaskRunner';
+import { useAuth } from '../context/AuthContext';
 
 const TASKS: Task[] = [
   { type: 'choice', prompt: 'Я часто ______ эту песню дома.', options: ['поёшь', 'пою', 'поёт', 'поют'], correct: 'пою' },
@@ -25,5 +26,6 @@ const TASKS: Task[] = [
 ];
 
 export default function LessonFourteenTaskNinePage() {
-  return <LessonFourteenTaskRunner tasks={TASKS} />;
+  const { token } = useAuth();
+  return <LessonFourteenTaskRunner tasks={TASKS} backPath="/lesson-14" lessonPath="/lesson-14" taskNumber={9} token={token} />;
 }

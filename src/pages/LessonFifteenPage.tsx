@@ -48,7 +48,7 @@ export default function LessonFifteenPage() {
             onClick={() => navigate('/lesson-15/mustahkamlash')}
             className="mt-5 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-indigo-700 active:scale-[0.99]"
           >
-            Mustahkamlash
+            Topshiriq
           </button>
           <button
             type="button"

@@ -80,6 +80,7 @@ export default function UnifiedLessonFourPracticePage() {
   const [matchWrongIds, setMatchWrongIds] = useState<string[]>([]);
   const [matchedPairIds, setMatchedPairIds] = useState<number[]>([]);
   const [matchLocked, setMatchLocked] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
 
   const currentTask = TASKS[currentIndex];
   const progress = useMemo(() => ((currentIndex + (finished ? 1 : 0)) / TASKS.length) * 100, [currentIndex, finished]);
@@ -104,6 +105,7 @@ export default function UnifiedLessonFourPracticePage() {
   }, [currentIndex]);
 
   const handleNext = () => {
+    if (status === 'correct') setCorrectCount((c) => c + 1);
     if (currentIndex < TASKS.length - 1) setCurrentIndex((prev) => prev + 1);
     else setFinished(true);
   };
@@ -262,9 +264,25 @@ export default function UnifiedLessonFourPracticePage() {
         )}
 
         {finished && (
-          <div className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-5">
-            <p className="text-lg font-bold text-emerald-700">Mashq tugadi! Barakalla!</p>
-            <p className="mt-2 text-emerald-700">Tabriklaymiz! Siz barcha topshiriqlarni bajardingiz.</p>
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm">
+            <p className="text-lg font-bold text-slate-900">Natija</p>
+            <p className="mt-2 text-2xl font-bold text-slate-800">
+              To‘g‘ri javoblar: {correctCount} / {TASKS.length}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              {TASKS.length > 0 ? Math.round((correctCount / TASKS.length) * 100) : 0}%
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/lesson-4')}
+              className={`mt-6 w-full rounded-xl px-5 py-3.5 text-base font-semibold text-white transition-colors ${
+                TASKS.length > 0 && correctCount / TASKS.length >= 0.8
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-orange-500 hover:bg-orange-600'
+              }`}
+            >
+              Tugatish
+            </button>
           </div>
         )}
       </main>

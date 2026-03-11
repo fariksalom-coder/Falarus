@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { BarChart3, BookMarked, House, User, ChevronRight, Layers, ClipboardList, Puzzle, Check, Play, Lock } from 'lucide-react';
+import { BarChart3, ChevronRight, Layers, ClipboardList, Puzzle, Check, Play, Lock } from 'lucide-react';
 import { getSubtopicContent, VocabularyEntry } from '../data/vocabularyContent';
 import {
   addLearned,
@@ -239,29 +239,6 @@ export default function VocabularyPartPage() {
         backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
       }}
     >
-      <header
-        className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur-sm"
-        style={{ borderColor: '#E2E8F0' }}
-      >
-        <div className="mx-auto flex h-14 max-w-[720px] items-center justify-between px-4">
-          <button type="button" aria-label="Bosh sahifa" onClick={() => navigate('/')} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700">
-            <House className="h-5 w-5" />
-          </button>
-          <h1 className="text-base font-semibold tracking-tight text-slate-800">So&apos;zlar</h1>
-          <div className="flex items-center gap-1">
-            <button type="button" aria-label="Lug'at" onClick={() => navigate('/vocabulary')} className="flex h-9 w-9 items-center justify-center rounded-lg text-white" style={{ backgroundColor: '#6366F1' }}>
-              <BookMarked className="h-5 w-5" />
-            </button>
-            <button type="button" aria-label="Statistika" onClick={() => navigate('/course-map')} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700">
-              <BarChart3 className="h-5 w-5" />
-            </button>
-            <button type="button" aria-label="Profil" onClick={() => navigate('/profile')} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700">
-              <User className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-[720px] px-4 py-8">
         <button
           type="button"

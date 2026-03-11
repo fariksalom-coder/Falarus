@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { setLessonTaskResult } from '../utils/lessonTaskResults';
+import { saveLessonTaskResult } from '../api/lessonTaskResults';
+import { addUserPoints } from '../api/leaderboard';
 
 type ChoiceTask = { type: 'choice'; prompt: string; options: string[]; correct: string };
 type MatchingTask = { type: 'matching'; prompt: string; pairs: { left: string; right: string }[] };
@@ -75,6 +79,7 @@ const buildMatchCards = (pairs: { left: string; right: string }[]) => {
 
 export default function LessonFourteenTaskThreePage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [message, setMessage] = useState('');
@@ -92,6 +97,7 @@ export default function LessonFourteenTaskThreePage() {
 
   const [sentencePool, setSentencePool] = useState<SentencePoolItem[]>([]);
   const [sentenceAnswer, setSentenceAnswer] = useState<string[]>([]);
+  const [correctCount, setCorrectCount] = useState(0);
 
   const currentTask = TASKS[currentIndex];
   const progress = useMemo(() => ((currentIndex + (finished ? 1 : 0)) / TASKS.length) * 100, [currentIndex, finished]);
@@ -123,6 +129,7 @@ export default function LessonFourteenTaskThreePage() {
   }, [currentIndex]);
 
   const handleNext = () => {
+    if (status === 'correct') setCorrectCount((c) => c + 1);
     if (currentIndex < TASKS.length - 1) setCurrentIndex((prev) => prev + 1);
     else setFinished(true);
   };
@@ -380,8 +387,32 @@ export default function LessonFourteenTaskThreePage() {
         )}
 
         {finished && (
-          <div className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-5">
-            <p className="text-lg font-bold text-emerald-700">Mashq tugadi! Barakalla!</p>
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm">
+            <p className="text-lg font-bold text-slate-900">Natija</p>
+            <p className="mt-2 text-2xl font-bold text-slate-800">
+              To‘g‘ri javoblar: {correctCount} / {TASKS.length}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              {TASKS.length > 0 ? Math.round((correctCount / TASKS.length) * 100) : 0}%
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (TASKS.length > 0) setLessonTaskResult('/lesson-14', 3, correctCount, TASKS.length);
+                if (token) {
+                  saveLessonTaskResult(token, '/lesson-14', 3, correctCount, TASKS.length);
+                  addUserPoints(token, 5);
+                }
+                navigate('/lesson-14');
+              }}
+              className={`mt-6 w-full rounded-xl px-5 py-3.5 text-base font-semibold text-white transition-colors ${
+                TASKS.length > 0 && correctCount / TASKS.length >= 0.8
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-orange-500 hover:bg-orange-600'
+              }`}
+            >
+              Tugatish
+            </button>
           </div>
         )}
       </main>

@@ -1,256 +1,129 @@
 import { useNavigate } from 'react-router-dom';
-import { 
-  House,
-  BookMarked,
-  BarChart3,
-  User
+import { motion } from 'motion/react';
+import {
+  ChevronRight,
 } from 'lucide-react';
+import {
+  LESSONS,
+  TOTAL_LESSONS,
+  getLessonStatus,
+  getLessonExercisesDone,
+  type LessonStatus,
+} from '../data/lessonsList';
+
+const BG = '#F8FAFC';
+const CARD_BG = '#FFFFFF';
+const PRIMARY = '#6366F1';
+const BORDER = '#E2E8F0';
+const TEXT = '#0F172A';
+const TEXT_SECONDARY = '#64748B';
+
+const STATUS_LABEL: Record<LessonStatus, string> = {
+  completed: 'Tugallangan',
+  in_progress: 'Jarayonda',
+  locked: 'Boshlanmagan',
+};
+
+/** Completed lessons count: from localStorage for now; can be replaced with API. */
+function useCompletedCount(): number {
+  try {
+    const raw = localStorage.getItem('lessons-completed-count');
+    if (raw != null) {
+      const n = parseInt(raw, 10);
+      if (!Number.isNaN(n) && n >= 0) return Math.min(n, TOTAL_LESSONS);
+    }
+  } catch {
+    // ignore
+  }
+  return 0;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const openLessonOneBlocks = () => navigate('/lesson-1');
-  const openLessonTwoBlocks = () => navigate('/lesson-2');
-  const openLessonThreeBlocks = () => navigate('/lesson-3');
-  const openLessonFourBlocks = () => navigate('/lesson-4');
-  const openLessonFiveBlocks = () => navigate('/lesson-5');
-  const openLessonSixBlocks = () => navigate('/lesson-6');
-  const openLessonSevenBlocks = () => navigate('/lesson-7');
-  const openLessonEightBlocks = () => navigate('/lesson-8');
-  const openLessonNineBlocks = () => navigate('/lesson-9');
-  const openLessonTenBlocks = () => navigate('/lesson-10');
-  const openLessonElevenBlocks = () => navigate('/lesson-11');
-  const openLessonTwelveBlocks = () => navigate('/lesson-12');
-  const openLessonThirteenBlocks = () => navigate('/lesson-13');
-  const openLessonFourteenBlocks = () => navigate('/lesson-14');
-  const openLessonFifteenBlocks = () => navigate('/lesson-15');
-  const openLessonSixteenBlocks = () => navigate('/lesson-16');
-  const openLessonSeventeenBlocks = () => navigate('/lesson-17');
-  const openLessonEighteenBlocks = () => navigate('/lesson-18');
-  const openLessonNineteenBlocks = () => navigate('/lesson-19');
-  const openLessonTwentyBlocks = () => navigate('/lesson-20');
-  const openLessonTwentyOneBlocks = () => navigate('/lesson-21');
-  const openLessonTwentyTwoBlocks = () => navigate('/lesson-22');
-  const openLessonTwentyThreeBlocks = () => navigate('/lesson-23');
-  const openLessonTwentyFourBlocks = () => navigate('/lesson-24');
+  const completedCount = useCompletedCount();
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-        <div className="w-full flex items-center justify-center gap-2">
-          <button
-            type="button"
-            aria-label="Главная"
-            onClick={() => navigate('/')}
-            className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center"
-          >
-            <House className="w-5 h-5 text-white" />
-          </button>
-          <button
-            type="button"
-            aria-label="Словарь"
-            onClick={() => navigate('/vocabulary')}
-            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
-          >
-            <BookMarked className="w-5 h-5 text-slate-600" />
-          </button>
-          <button
-            type="button"
-            aria-label="Статистика"
-            onClick={() => navigate('/course-map')}
-            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
-          >
-            <BarChart3 className="w-5 h-5 text-slate-600" />
-          </button>
-          <button
-            type="button"
-            aria-label="Профиль"
-            onClick={() => navigate('/profile')}
-            className="w-10 h-10 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center"
-          >
-            <User className="w-5 h-5 text-slate-600" />
-          </button>
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: BG,
+        backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
+      }}
+    >
+      <main className="mx-auto max-w-[720px] px-4 py-8">
+        {/* Page title */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: TEXT }}>
+            Rus tili kursi
+          </h1>
         </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto p-6 space-y-8">
-        {/* Kurs xaritasi - Modullar */}
-        <section>
-          <div className="relative">
-            <div className="space-y-6">
-              <button
+        {/* Learning path — lesson cards */}
+        <div className="space-y-3">
+          {LESSONS.map((lesson, index) => {
+            const status = getLessonStatus(index, completedCount);
+            const exercisesDone = getLessonExercisesDone(status, lesson.exercisesTotal);
+            const isLocked = false;
+
+            return (
+              <motion.button
+                key={lesson.id}
                 type="button"
-                onClick={openLessonOneBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
+                disabled={isLocked}
+                onClick={() => !isLocked && navigate(lesson.path)}
+                className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                style={{
+                  borderColor: BORDER,
+                  backgroundColor: CARD_BG,
+                }}
+                whileHover={!isLocked ? { scale: 1.01 } : undefined}
+                whileTap={!isLocked ? { scale: 0.99 } : undefined}
               >
-                <h3 className="text-lg font-bold text-slate-900">1-dars — Tanishuv</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonTwoBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">2-dars — Kishilik olmoshi</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonThreeBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">3-dars — So‘z turkumlari</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonFourBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">4-dars — OTlarning rodi</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonFiveBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">5-dars — -ь bilan tugaydigan so‘zlar</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonSixBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">6-dars — Чей? Чья? Чьё?</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonNineBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">7-dars — Sifat so‘z turkumi</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonSevenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">8-dars — Ko‘plik shakli</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonEightBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">9-dars — Takrorlash</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonTenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">10-dars — Infinitiv</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonElevenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">11-dars — Hozirgi zamon</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonTwelveBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">12-dars — -ова-, -ева- fe’llari</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonThirteenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">13-dars — -ться fe’llari</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonFourteenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">14-dars — Noto‘g‘ri fe’llar</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonFifteenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">15-dars — O‘tgan zamon</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonSixteenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">16-dars — Kelasi zamon</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonSeventeenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">17-dars — Fe'lning tugallangan va tugallanmagan shakli</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonEighteenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">18-dars — Fe'llarning buyruq shakli</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonNineteenBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">19-dars — Fe'llar harakati</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonTwentyBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">20-dars — Takrorlash</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonTwentyOneBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">21-dars — Kelishiklar</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonTwentyTwoBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">22-dars — Predlojniy padej</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonTwentyThreeBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">23-dars — Predloglar В va НА + Predlojniy padej</h3>
-              </button>
-              <button
-                type="button"
-                onClick={openLessonTwentyFourBlocks}
-                className="w-full text-left flex-1 bg-white rounded-2xl p-5 border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
-              >
-                <h3 className="text-lg font-bold text-slate-900">24-dars — Sifatlar va tartib sonlar predlojniy padejda</h3>
-              </button>
-            </div>
-          </div>
-        </section>
+                {/* Номер урока в кружке */}
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white"
+                  style={{
+                    backgroundColor:
+                      status === 'completed' ? '#22C55E' : status === 'in_progress' ? PRIMARY : '#94A3B8',
+                  }}
+                >
+                  {lesson.num}
+                </div>
+
+                {/* Иконка темы + название урока (без "X-dars") */}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold" style={{ color: TEXT }}>
+                    {lesson.title}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2 text-sm" style={{ color: TEXT_SECONDARY }}>
+                    <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: '#F1F5F9', color: TEXT_SECONDARY }}>
+                      {STATUS_LABEL[status]}
+                    </span>
+                    <span>
+                      {exercisesDone} / {lesson.exercisesTotal} mashq bajarildi
+                    </span>
+                  </div>
+                </div>
+
+                {/* Arrow */}
+                {!isLocked && (
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors group-hover:bg-indigo-50"
+                    style={{ color: '#94A3B8' }}
+                  >
+                    <ChevronRight className="h-5 w-5 group-hover:opacity-100" style={{ color: PRIMARY }} strokeWidth={2} />
+                  </div>
+                )}
+                {isLocked && (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300">
+                    <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
       </main>
-
     </div>
   );
 }

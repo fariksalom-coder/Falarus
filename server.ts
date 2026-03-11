@@ -170,6 +170,75 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // Leaderboard (reyting)
+  app.get('/api/leaderboard', authenticate, async (req: any, res) => {
+    const period = (req.query.period as string) || 'weekly';
+    const col = period === 'monthly' ? 'monthly_points' : period === 'all' ? 'points' : 'weekly_points';
+    const { data: top, error: topErr } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, avatar_url, points, weekly_points, monthly_points')
+      .order(col, { ascending: false })
+      .limit(10);
+    if (topErr) {
+      console.error('[api/leaderboard] top error:', topErr.message);
+      return res.status(500).json({ error: topErr.message });
+    }
+    const { data: me, error: meErr } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, avatar_url, points, weekly_points, monthly_points')
+      .eq('id', req.userId)
+      .single();
+    if (meErr || !me) {
+      return res.json({ top: top ?? [], myRank: null });
+    }
+    const myPoints = period === 'monthly' ? (me.monthly_points ?? 0) : period === 'all' ? (me.points ?? 0) : (me.weekly_points ?? 0);
+    const { count, error: countErr } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .gt(col, myPoints);
+    const rank = countErr ? null : (count ?? 0) + 1;
+    res.json({
+      top: (top ?? []).map((u: any) => ({
+        id: u.id,
+        firstName: u.first_name,
+        lastName: u.last_name,
+        avatarUrl: u.avatar_url,
+        points: period === 'monthly' ? (u.monthly_points ?? 0) : period === 'all' ? (u.points ?? 0) : (u.weekly_points ?? 0),
+      })),
+      myRank: rank == null ? null : {
+        rank,
+        id: me.id,
+        firstName: me.first_name,
+        lastName: me.last_name,
+        avatarUrl: me.avatar_url,
+        points: myPoints,
+      },
+    });
+  });
+
+  app.post('/api/user/points', authenticate, async (req: any, res) => {
+    const amount = Math.max(0, Number(req.body?.amount) || 0);
+    if (amount === 0) return res.status(400).json({ error: 'amount kerak' });
+    const { data: user, error: fetchErr } = await supabase
+      .from('users')
+      .select('points, weekly_points, monthly_points')
+      .eq('id', req.userId)
+      .single();
+    if (fetchErr || !user) return res.status(404).json({ error: 'User topilmadi' });
+    const points = (user.points ?? 0) + amount;
+    const weekly_points = (user.weekly_points ?? 0) + amount;
+    const monthly_points = (user.monthly_points ?? 0) + amount;
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({ points, weekly_points, monthly_points })
+      .eq('id', req.userId);
+    if (updateErr) {
+      console.error('[api/user/points]', updateErr.message);
+      return res.status(500).json({ error: updateErr.message });
+    }
+    res.json({ success: true, points, weekly_points, monthly_points });
+  });
+
   // Lessons
   app.get('/api/lessons', authenticate, async (req: any, res) => {
     const { data: user } = await supabase.from('users').select('level').eq('id', req.userId).single();
@@ -231,6 +300,45 @@ async function startServer() {
       example_ru,
     });
     if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  });
+
+  // Lesson task results (e.g. /lesson-14 topshiriq 1–16)
+  app.get('/api/lesson-task-results', authenticate, async (req: any, res) => {
+    const lessonPath = req.query.lesson_path as string | undefined;
+    let q = supabase
+      .from('lesson_task_results')
+      .select('lesson_path, task_number, correct, total')
+      .eq('user_id', req.userId);
+    if (lessonPath) q = q.eq('lesson_path', lessonPath);
+    const { data: rows, error } = await q;
+    if (error) {
+      console.error('[api/lesson-task-results] GET error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+    res.json(rows ?? []);
+  });
+
+  app.post('/api/lesson-task-results', authenticate, async (req: any, res) => {
+    const { lesson_path, task_number, correct, total } = req.body;
+    if (!lesson_path || task_number == null) {
+      return res.status(400).json({ error: 'lesson_path va task_number kerak' });
+    }
+    const row = {
+      user_id: req.userId,
+      lesson_path: String(lesson_path),
+      task_number: Number(task_number),
+      correct: Number(correct) || 0,
+      total: Number(total) || 0,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('lesson_task_results').upsert(row, {
+      onConflict: 'user_id,lesson_path,task_number',
+    });
+    if (error) {
+      console.error('[api/lesson-task-results] POST error:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
     res.json({ success: true });
   });
 

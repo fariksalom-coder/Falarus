@@ -3,10 +3,6 @@ import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getSubtopicContent } from '../data/vocabularyContent';
 import { getPartLearnedCount, setLastPartId } from '../utils/vocabProgress';
 import {
-  House,
-  BookMarked,
-  BarChart3,
-  User,
   ChevronRight,
   Package,
   Palette,
@@ -65,51 +61,6 @@ export default function VocabularySubtopicPage() {
         backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
       }}
     >
-      <header
-        className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur-sm"
-        style={{ borderColor: '#E2E8F0' }}
-      >
-        <div className="mx-auto flex h-14 max-w-[720px] items-center justify-between px-4">
-          <button
-            type="button"
-            aria-label="Главная"
-            onClick={() => navigate('/')}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-          >
-            <House className="h-5 w-5" />
-          </button>
-          <h1 className="text-base font-semibold tracking-tight text-slate-800">
-            Lug'at
-          </h1>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="Словарь"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-white"
-              style={{ backgroundColor: '#6366F1' }}
-            >
-              <BookMarked className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              aria-label="Статистика"
-              onClick={() => navigate('/course-map')}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-            >
-              <BarChart3 className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              aria-label="Профиль"
-              onClick={() => navigate('/profile')}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-            >
-              <User className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-[720px] px-4 py-8">
         {/* Back */}
         <button

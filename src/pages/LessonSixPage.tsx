@@ -78,7 +78,7 @@ export default function LessonSixPage() {
             onClick={() => navigate('/lesson-6/mustahkamlash')}
             className="mt-4 w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:bg-indigo-700 transition-colors active:scale-[0.99]"
           >
-            Mustahkamlash
+            Topshiriq
           </button>
         </div>
       </main>
