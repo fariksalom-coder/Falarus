@@ -65,3 +65,19 @@ export function isTaskResultGood(result: TaskResult): boolean {
   if (result.total <= 0) return false;
   return result.correct / result.total >= 0.8;
 }
+
+/** Aggregate all lesson task results (for accuracy stats). */
+export function getTotalLessonTaskStats(): { correct: number; total: number } {
+  const data = load();
+  let correct = 0;
+  let total = 0;
+  for (const lesson of Object.values(data)) {
+    for (const r of Object.values(lesson)) {
+      if (r && typeof r.correct === 'number' && typeof r.total === 'number') {
+        correct += r.correct;
+        total += r.total;
+      }
+    }
+  }
+  return { correct, total };
+}

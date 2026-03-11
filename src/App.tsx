@@ -155,6 +155,8 @@ import VocabularySubtopicPage from './pages/VocabularySubtopicPage';
 import VocabularyPartPage from './pages/VocabularyPartPage';
 import ProfilePage from './pages/ProfilePage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import StatistikaPage from './pages/StatistikaPage';
+import PricingPage from './pages/PricingPage';
 import MainLayout from './components/MainLayout';
 
 function AppRoutes() {
@@ -196,6 +198,8 @@ function AppRoutes() {
         <Route path="vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartPage />} />
         <Route path="vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="statistika" element={<StatistikaPage />} />
+        <Route path="tariflar" element={<PricingPage />} />
         <Route path="reyting" element={<LeaderboardPage />} />
       </Route>
       <Route path="/lesson-1" element={<LessonOnePage />} />

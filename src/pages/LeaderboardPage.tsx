@@ -114,7 +114,12 @@ export default function LeaderboardPage() {
               </div>
             )}
 
-            {data?.top?.length === 0 && !data?.myRank && (
+            {data?.error != null && (
+              <p className="py-6 text-center text-sm" style={{ color: '#b91c1c' }}>
+                Xatolik: {data.error.status ? `${data.error.status}` : ''} {data.error.message || ''}
+              </p>
+            )}
+            {data?.top?.length === 0 && !data?.myRank && !data?.error && (
               <p className="py-8 text-center" style={{ color: TEXT_SECONDARY }}>
                 Hali reyting bo‘sh
               </p>

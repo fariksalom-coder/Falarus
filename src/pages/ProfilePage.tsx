@@ -8,7 +8,8 @@ import {
   Mail, 
   Award, 
   TrendingUp,
-  Settings
+  Settings,
+  CreditCard
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -53,6 +54,14 @@ export default function ProfilePage() {
 
         {/* Settings List */}
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
+          <button
+            onClick={() => navigate('/tariflar')}
+            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+          >
+            <CreditCard className="w-5 h-5 text-slate-400" />
+            <span className="font-medium text-slate-700 flex-1 text-left">Tariflar</span>
+            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
+          </button>
           <button className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100">
             <Settings className="w-5 h-5 text-slate-400" />
             <span className="font-medium text-slate-700 flex-1 text-left">Sozlamalar</span>

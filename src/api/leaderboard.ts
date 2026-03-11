@@ -18,6 +18,8 @@ export type LeaderboardResponse = {
     avatarUrl: string | null;
     points: number;
   } | null;
+  /** Set when API returned non-OK (e.g. 401, 500) for diagnostics */
+  error?: { status: number; message?: string };
 };
 
 export type LeaderboardPeriod = 'weekly' | 'monthly' | 'all';
@@ -32,11 +34,18 @@ export async function fetchLeaderboard(
       apiUrl(`/api/leaderboard?period=${period === 'all' ? 'all' : period === 'monthly' ? 'monthly' : 'weekly'}`),
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    if (!res.ok) return { top: [], myRank: null };
-    const data = (await res.json()) as LeaderboardResponse;
-    return data;
-  } catch {
-    return { top: [], myRank: null };
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        top: [],
+        myRank: null,
+        error: { status: res.status, message: (body as { error?: string }).error || res.statusText },
+      };
+    }
+    return body as LeaderboardResponse;
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Tarmoq xatosi';
+    return { top: [], myRank: null, error: { status: 0, message } };
   }
 }
 

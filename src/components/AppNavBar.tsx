@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { House, BookMarked, Trophy, User } from 'lucide-react';
+import { House, BookMarked, BarChart3, Trophy, User } from 'lucide-react';
 
 const BORDER = '#E2E8F0';
 const TEXT_SECONDARY = '#64748B';
@@ -39,6 +39,7 @@ export default function AppNavBar() {
       <div className="mx-auto flex h-14 max-w-[720px] items-center justify-between px-4">
         {btn('/', ['/'], "Bosh sahifa", House)}
         {btn('/vocabulary', ['/vocabulary'], "Lug'at", BookMarked)}
+        {btn('/statistika', ['/statistika'], 'Statistika', BarChart3)}
         {btn('/reyting', ['/reyting'], 'Reyting', Trophy)}
         {btn('/profile', ['/profile'], 'Profil', User)}
       </div>
