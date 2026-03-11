@@ -337,6 +337,7 @@ function AppRoutes() {
       <Route path="/vocabulary" element={<VocabularyPage />} />
       <Route path="/vocabulary/:topicId" element={<VocabularyTopicPage />} />
       <Route path="/vocabulary/:topicId/:subtopicId" element={<VocabularySubtopicPage />} />
+      <Route path="/vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartPage />} />
       <Route path="/vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/course-map" element={<CourseMapPage />} />

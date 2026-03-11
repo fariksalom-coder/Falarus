@@ -109,7 +109,7 @@ const FIRST_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'ha', russian: 'Да' },
         { uzbek: "yo'q", russian: 'Нет' },
@@ -250,7 +250,7 @@ const SECOND_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'birga', russian: 'Вместе' },
         { uzbek: 'hamisha', russian: 'Всегда' },
@@ -381,7 +381,7 @@ const THIRD_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'uyda', russian: 'Дома' },
         { uzbek: 'oshxonada', russian: 'На кухне' },
@@ -512,7 +512,7 @@ const FOURTH_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'mazali', russian: 'Вкусно' },
         { uzbek: "to'qlik bilan", russian: 'Сытно' },
@@ -909,7 +909,7 @@ const EIGHTH_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'shaxsan', russian: 'Лично' },
         { uzbek: 'rasmiy', russian: 'Официально' },
@@ -1035,7 +1035,7 @@ const NINTH_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'shaharda', russian: 'В городе' },
         { uzbek: 'markazda', russian: 'В центре' },
@@ -1186,7 +1186,7 @@ const TENTH_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'tez', russian: 'Быстро' },
         { uzbek: 'sekin', russian: 'Медленно' },
@@ -1517,7 +1517,7 @@ const THIRTEENTH_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'ishda', russian: 'На работе' },
         { uzbek: 'ofisda', russian: 'В офисе' },
@@ -1643,7 +1643,7 @@ const FOURTEENTH_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
     },
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'bugun sovuq', russian: 'Сегодня холодно' },
         { uzbek: 'ertaga iliq', russian: 'Завтра тепло' },
@@ -3272,7 +3272,7 @@ const THIRTY_THIRD_SUBTOPIC_CONTENT: VocabularySubtopicContent = {
   parts: [
     {
       id: 'ravish-boshqa',
-      title: 'Ravish yoki boshqa',
+      title: 'Ravish',
       entries: [
         { uzbek: 'tez', russian: 'Быстро' },
         { uzbek: 'sekin', russian: 'Медленно' },
@@ -3517,4 +3517,16 @@ export const VOCABULARY_CONTENT: VocabularySubtopicContent[] = [
 
 export function getSubtopicContent(topicId?: string, subtopicId?: string) {
   return VOCABULARY_CONTENT.find((item) => item.topicId === topicId && item.subtopicId === subtopicId);
+}
+
+export function getTopicWordCount(topicId: string): number {
+  return VOCABULARY_CONTENT
+    .filter((item) => item.topicId === topicId)
+    .reduce((sum, item) => sum + item.parts.reduce((pSum, part) => pSum + part.entries.length, 0), 0);
+}
+
+export function getSubtopicWordCount(topicId: string, subtopicId: string): number {
+  const content = getSubtopicContent(topicId, subtopicId);
+  if (!content) return 0;
+  return content.parts.reduce((sum, part) => sum + part.entries.length, 0);
 }
