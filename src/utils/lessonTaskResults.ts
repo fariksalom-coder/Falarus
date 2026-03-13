@@ -47,6 +47,8 @@ export function getLessonTaskResults(lessonPath: string): Record<number, TaskRes
   return out;
 }
 
+export type LessonCompletionStatus = 'not_started' | 'in_progress' | 'completed';
+
 /** Save result when user completes a task. */
 export function setLessonTaskResult(
   lessonPath: string,
@@ -64,6 +66,26 @@ export function setLessonTaskResult(
 export function isTaskResultGood(result: TaskResult): boolean {
   if (result.total <= 0) return false;
   return result.correct / result.total >= 0.8;
+}
+
+/** For one lesson: how many tasks passed (≥80%) and overall status. */
+export function getLessonCompletionSummary(
+  lessonPath: string,
+  totalTasks: number
+): { passedTasks: number; totalTasks: number; status: LessonCompletionStatus } {
+  const allResults = getLessonTaskResults(lessonPath);
+  let attempted = 0;
+  let passed = 0;
+  for (let i = 1; i <= totalTasks; i += 1) {
+    const r = allResults[i];
+    if (!r) continue;
+    attempted += 1;
+    if (isTaskResultGood(r)) passed += 1;
+  }
+  let status: LessonCompletionStatus = 'not_started';
+  if (attempted > 0) status = 'in_progress';
+  if (totalTasks > 0 && passed === totalTasks) status = 'completed';
+  return { passedTasks: passed, totalTasks, status };
 }
 
 /** Aggregate all lesson task results (for accuracy stats). */

@@ -7,9 +7,9 @@ import {
   LESSONS,
   TOTAL_LESSONS,
   getLessonStatus,
-  getLessonExercisesDone,
   type LessonStatus,
 } from '../data/lessonsList';
+import { getLessonCompletionSummary } from '../utils/lessonTaskResults';
 
 const BG = '#F8FAFC';
 const CARD_BG = '#FFFFFF';
@@ -61,8 +61,14 @@ export default function Dashboard() {
         {/* Learning path — lesson cards */}
         <div className="space-y-3">
           {LESSONS.map((lesson, index) => {
-            const status = getLessonStatus(index, completedCount);
-            const exercisesDone = getLessonExercisesDone(status, lesson.exercisesTotal);
+            const baseStatus = getLessonStatus(index, completedCount);
+            const summary = getLessonCompletionSummary(lesson.path, lesson.exercisesTotal);
+            const status: LessonStatus =
+              summary.status === 'completed'
+                ? 'completed'
+                : summary.status === 'in_progress' && baseStatus === 'locked'
+                  ? 'in_progress'
+                  : baseStatus;
             const isLocked = false;
 
             return (
@@ -83,8 +89,7 @@ export default function Dashboard() {
                 <div
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white"
                   style={{
-                    backgroundColor:
-                      status === 'completed' ? '#22C55E' : status === 'in_progress' ? PRIMARY : '#94A3B8',
+                    backgroundColor: PRIMARY,
                   }}
                 >
                   {lesson.num}
@@ -96,11 +101,24 @@ export default function Dashboard() {
                     {lesson.title}
                   </p>
                   <div className="mt-2 flex items-center gap-2 text-sm" style={{ color: TEXT_SECONDARY }}>
-                    <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: '#F1F5F9', color: TEXT_SECONDARY }}>
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-medium"
+                      style={{
+                        backgroundColor:
+                          status === 'completed'
+                            ? '#DCFCE7' // green-100
+                            : status === 'in_progress'
+                              ? '#FFEDD5' // orange-100
+                              : '#F1F5F9', // slate-100
+                        color:
+                          status === 'completed'
+                            ? '#15803D' // green-700
+                            : status === 'in_progress'
+                              ? '#C05621' // orange-600
+                              : TEXT_SECONDARY,
+                      }}
+                    >
                       {STATUS_LABEL[status]}
-                    </span>
-                    <span>
-                      {exercisesDone} / {lesson.exercisesTotal} mashq bajarildi
                     </span>
                   </div>
                 </div>
