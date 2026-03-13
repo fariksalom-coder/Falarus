@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setLessonTaskResult } from '../utils/lessonTaskResults';
 
 type MatchingTask = { prompt: string; pairs: { left: string; right: string }[] };
 type MatchCard = { id: string; text: string; pairId: number; side: 'left' | 'right' };
@@ -263,7 +264,10 @@ export default function LessonThirteenTaskOnePage() {
 
   const handleNext = () => {
     if (currentIndex < TASKS.length - 1) setCurrentIndex((prev) => prev + 1);
-    else setFinished(true);
+    else {
+      if (TASKS.length > 0) setLessonTaskResult('/lesson-13', 1, TASKS.length, TASKS.length);
+      setFinished(true);
+    }
   };
 
   const handleMatchingClick = (card: MatchCard) => {

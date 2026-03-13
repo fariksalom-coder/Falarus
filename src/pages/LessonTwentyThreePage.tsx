@@ -1,4 +1,7 @@
 import { useNavigate } from 'react-router-dom';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+
+const LESSON_PATH = '/lesson-23';
 
 export default function LessonTwentyThreePage() {
   const navigate = useNavigate();
@@ -76,14 +79,14 @@ export default function LessonTwentyThreePage() {
           <button
             type="button"
             onClick={() => navigate('/lesson-23/topshiriq-1')}
-            className="mt-5 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+            className={getTaskButtonClassName(LESSON_PATH, 1, true)}
           >
             Topshiriq 1 — В / НА + предложный падеж
           </button>
           <button
             type="button"
             onClick={() => navigate('/lesson-23/topshiriq-2')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+            className={getTaskButtonClassName(LESSON_PATH, 2, false)}
           >
             Topshiriq 2 — Комната (составьте предложения)
           </button>

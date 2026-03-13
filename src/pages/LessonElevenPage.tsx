@@ -1,4 +1,16 @@
 import { useNavigate } from 'react-router-dom';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+
+const LESSON_PATH = '/lesson-11';
+const TASK_BUTTONS: { path: string; label: string; taskNum: number }[] = [
+  { path: '/lesson-11/mustahkamlash', label: 'Topshiriq', taskNum: 1 },
+  { path: '/lesson-11/zadanie-1', label: 'Topshiriq 1', taskNum: 2 },
+  ...Array.from({ length: 14 }, (_, i) => ({
+    path: `/lesson-11/topshiriq-${i + 2}`,
+    label: `Topshiriq ${i + 2}`,
+    taskNum: i + 3,
+  })),
+];
 
 export default function LessonElevenPage() {
   const navigate = useNavigate();
@@ -60,118 +72,16 @@ export default function LessonElevenPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/mustahkamlash')}
-            className="mt-4 w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:bg-indigo-700 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/zadanie-1')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 1
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-2')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 2
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-3')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 3
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-4')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 4
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-5')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 5
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-6')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 6
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-7')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 7
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-8')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 8
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-9')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 9
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-10')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 10
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-11')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 11
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-12')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 12
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-13')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 13
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-14')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 14
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-11/topshiriq-15')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]"
-          >
-            Topshiriq 15
-          </button>
+          {TASK_BUTTONS.map(({ path, label, taskNum }) => (
+            <button
+              key={path}
+              type="button"
+              onClick={() => navigate(path)}
+              className={getTaskButtonClassName(LESSON_PATH, taskNum, taskNum === 1)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </main>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setLessonTaskResult } from '../utils/lessonTaskResults';
 
 type ChoiceTask = { prompt: string; options: string[]; correct: string };
 
@@ -65,7 +66,10 @@ export default function LessonElevenTaskThreePage() {
 
   const handleNext = () => {
     if (currentIndex < TASKS.length - 1) setCurrentIndex((p) => p + 1);
-    else setFinished(true);
+    else {
+      if (TASKS.length > 0) setLessonTaskResult('/lesson-11', 4, TASKS.length, TASKS.length);
+      setFinished(true);
+    }
   };
 
   return (

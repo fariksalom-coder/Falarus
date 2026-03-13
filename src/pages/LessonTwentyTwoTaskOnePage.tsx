@@ -86,6 +86,8 @@ export default function LessonTwentyTwoTaskOnePage() {
     <LessonFourteenTaskRunner
       tasks={TASKS}
       backPath="/lesson-22"
+      lessonPath="/lesson-22"
+      taskNumber={1}
       sentenceInstruction="Ajratib ko'rsatilgan birikmaga savol bering."
     />
   );

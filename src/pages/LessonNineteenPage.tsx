@@ -1,4 +1,25 @@
 import { useNavigate } from 'react-router-dom';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+
+const LESSON_PATH = '/lesson-19';
+const TASK_LABELS = [
+  'Topshiriq 1 — идти / ходить',
+  'Topshiriq 2 — ехать / ездить',
+  'Topshiriq 3 — лететь / летать',
+  'Topshiriq 4 — нести / носить',
+  'Topshiriq 5 — вести / водить',
+  'Topshiriq 6 — идти/ходить, ехать/ездить',
+  'Topshiriq 7 — выбрать правильный вариант',
+  'Topshiriq 8 — составьте предложение',
+  'Topshiriq 9 — ходить/ездить (прошедшее)',
+  'Topshiriq 10 — составьте предложение (ходить/ездить)',
+  'Topshiriq 11 — последовательность диалога',
+  'Topshiriq 12 — пойти / поехать',
+  'Topshiriq 13 — будущее время (пойти/поехать)',
+  'Topshiriq 14 — итоговый тест (вариант 1)',
+  'Topshiriq 15 — итоговый тест (вариант 2)',
+  'Topshiriq 16 — итоговый тест (вариант 3)',
+];
 
 export default function LessonNineteenPage() {
   const navigate = useNavigate();
@@ -43,118 +64,19 @@ export default function LessonNineteenPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-1')}
-            className="mt-5 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 1 — идти / ходить
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-2')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 2 — ехать / ездить
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-3')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 3 — лететь / летать
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-4')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 4 — нести / носить
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-5')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 5 — вести / водить
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-6')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 6 — идти/ходить, ехать/ездить
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-7')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 7 — выбрать правильный вариант
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-8')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 8 — составьте предложение
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-9')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 9 — ходить/ездить (прошедшее)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-10')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 10 — составьте предложение (ходить/ездить)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-11')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 11 — последовательность диалога
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-12')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 12 — пойти / поехать
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-13')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 13 — будущее время (пойти/поехать)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-14')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 14 — итоговый тест (вариант 1)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-15')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 15 — итоговый тест (вариант 2)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-19/topshiriq-16')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 16 — итоговый тест (вариант 3)
-          </button>
+          {TASK_LABELS.map((label, i) => {
+            const taskNum = i + 1;
+            return (
+              <button
+                key={taskNum}
+                type="button"
+                onClick={() => navigate(`/lesson-19/topshiriq-${taskNum}`)}
+                className={getTaskButtonClassName(LESSON_PATH, taskNum, taskNum === 1)}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </main>
     </div>

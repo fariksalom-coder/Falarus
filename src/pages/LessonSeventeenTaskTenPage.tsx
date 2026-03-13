@@ -49,7 +49,7 @@ export default function LessonSeventeenTaskTenPage() {
   return (
     <LessonFourteenTaskRunner
       tasks={TASKS}
-      backPath="/lesson-17"
+      backPath="/lesson-17" lessonPath="/lesson-17" taskNumber={10}
       sentenceInstruction="Составьте ответ на приглашение или просьбу."
     />
   );

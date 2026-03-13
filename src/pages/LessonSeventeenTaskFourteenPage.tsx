@@ -50,6 +50,8 @@ export default function LessonSeventeenTaskFourteenPage() {
     <LessonFourteenTaskRunner
       tasks={TASKS}
       backPath="/lesson-17"
+      lessonPath="/lesson-17"
+      taskNumber={14}
       sentenceInstruction="Составьте ответ."
     />
   );

@@ -20,5 +20,5 @@ const TASKS: Task[] = [
 ];
 
 export default function LessonTwentyTwoTaskTwoPage() {
-  return <LessonFourteenTaskRunner tasks={TASKS} backPath="/lesson-22" />;
+  return <LessonFourteenTaskRunner tasks={TASKS} backPath="/lesson-22" lessonPath="/lesson-22" taskNumber={2} />;
 }

@@ -68,6 +68,26 @@ export function isTaskResultGood(result: TaskResult): boolean {
   return result.correct / result.total >= 0.8;
 }
 
+/** Shared task button className: not started = white, in progress = orange, passed = green. */
+export function getTaskButtonClassName(
+  lessonPath: string,
+  taskNumber: number,
+  isFirst?: boolean,
+  resultsOverride?: Record<number, TaskResult>
+): string {
+  const margin = isFirst ? 'mt-4' : 'mt-2';
+  const base = `${margin} w-full rounded-xl border px-4 py-3 font-semibold transition-colors active:scale-[0.99]`;
+  const results = resultsOverride ?? getLessonTaskResults(lessonPath);
+  const result = results[taskNumber];
+  if (!result) {
+    return `${base} border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50`;
+  }
+  if (isTaskResultGood(result)) {
+    return `${base} border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100`;
+  }
+  return `${base} border-orange-200 bg-orange-100 text-orange-800 hover:bg-orange-200`;
+}
+
 /** For one lesson: how many tasks passed (≥80%) and overall status. */
 export function getLessonCompletionSummary(
   lessonPath: string,

@@ -1,4 +1,13 @@
 import { useNavigate } from 'react-router-dom';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+
+const LESSON_PATH = '/lesson-24';
+const TASK_LABELS = [
+  'Topshiriq 1 — Выберите правильную форму',
+  'Topshiriq 2 — Составьте предложение',
+  'Topshiriq 3 — Выберите правильный вопрос',
+  'Topshiriq 4 — Составьте предложение',
+];
 
 export default function LessonTwentyFourPage() {
   const navigate = useNavigate();
@@ -86,34 +95,19 @@ export default function LessonTwentyFourPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-24/topshiriq-1')}
-            className="mt-5 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 1 — Выберите правильную форму
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-24/topshiriq-2')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 2 — Составьте предложение
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-24/topshiriq-3')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 3 — Выберите правильный вопрос
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-24/topshiriq-4')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 4 — Составьте предложение
-          </button>
+          {TASK_LABELS.map((label, i) => {
+            const taskNum = i + 1;
+            return (
+              <button
+                key={taskNum}
+                type="button"
+                onClick={() => navigate(`/lesson-24/topshiriq-${taskNum}`)}
+                className={getTaskButtonClassName(LESSON_PATH, taskNum, taskNum === 1)}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </main>
     </div>

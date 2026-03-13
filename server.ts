@@ -145,6 +145,10 @@ async function startServer() {
     }
   };
 
+  // Progress tracking (lesson/task status)
+  const { createProgressRoutes } = await import('./server/routes/progressRoutes');
+  app.use('/api', createProgressRoutes(supabase, authenticate));
+
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
     const { data: user, error } = await supabase

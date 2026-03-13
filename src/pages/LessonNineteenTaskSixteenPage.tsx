@@ -23,5 +23,5 @@ const TASKS: Task[] = [
 ];
 
 export default function LessonNineteenTaskSixteenPage() {
-  return <LessonFourteenTaskRunner tasks={TASKS} backPath="/lesson-19" />;
+  return <LessonFourteenTaskRunner tasks={TASKS} backPath="/lesson-19" lessonPath="/lesson-19" taskNumber={16} />;
 }

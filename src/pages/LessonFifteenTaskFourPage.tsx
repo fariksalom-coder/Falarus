@@ -97,7 +97,7 @@ export default function LessonFifteenTaskFourPage() {
   return (
     <LessonFourteenTaskRunner
       tasks={TASKS}
-      backPath="/lesson-15"
+      backPath="/lesson-15" lessonPath="/lesson-15" taskNumber={5}
       sentenceInstruction="Ajratib ko'rsatilgan so'zga savol bering."
     />
   );

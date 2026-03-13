@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setLessonTaskResult } from '../utils/lessonTaskResults';
 
 type SentenceTask = { prompt: string; words: string[]; correct: string };
 type SentencePoolItem = { id: string; word: string; used: boolean };
@@ -73,7 +74,10 @@ export default function LessonElevenTaskTwelvePage() {
 
   const handleNext = () => {
     if (currentIndex < TASKS.length - 1) setCurrentIndex((prev) => prev + 1);
-    else setFinished(true);
+    else {
+      if (TASKS.length > 0) setLessonTaskResult('/lesson-11', 13, TASKS.length, TASKS.length);
+      setFinished(true);
+    }
   };
 
   const moveWordToAnswer = (item: SentencePoolItem, idx: number) => {

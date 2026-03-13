@@ -1,19 +1,15 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchVocabularyProgress } from '../api/vocabularyProgress';
-import { fetchLeaderboard, type LeaderboardResponse } from '../api/leaderboard';
 import { getVocabularyStats } from '../utils/statsHelpers';
 import { getTotalLessonTaskStats } from '../utils/lessonTaskResults';
 import {
-  BookOpen,
   Flame,
   MessageCircle,
   Target,
   RefreshCw,
-  Trophy,
   Award,
 } from 'lucide-react';
-import UserRankCard from '../components/leaderboard/UserRankCard';
 
 const BG = '#F8FAFC';
 const BORDER = '#E2E8F0';
@@ -24,16 +20,10 @@ const TEXT_SECONDARY = '#64748B';
 const DAY_LABELS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
 
 export default function StatistikaPage() {
-  const { user, token } = useAuth();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
+  const { token } = useAuth();
 
   useEffect(() => {
     fetchVocabularyProgress(token);
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) return;
-    fetchLeaderboard(token, 'all').then(setLeaderboard);
   }, [token]);
 
   const vocabStats = useMemo(() => getVocabularyStats(), []);
@@ -46,8 +36,6 @@ export default function StatistikaPage() {
   const streakDays = 0;
   const todayWords = 0;
   const weekWords = 0;
-  const dailyGoal = 10;
-  const dailyDone = todayWords;
 
   const achievements = [
     { done: lessonStats.total > 0, text: "Birinchi dars tugatildi" },
@@ -63,36 +51,6 @@ export default function StatistikaPage() {
         </h1>
 
         <div className="space-y-4">
-          {/* Umumiy progress */}
-          <div
-            className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            style={{ borderColor: BORDER }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
-                <BookOpen className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold" style={{ color: TEXT }}>Umumiy progress</h2>
-                <p className="text-sm" style={{ color: TEXT_SECONDARY }}>
-                  {vocabStats.totalLearned} / {vocabStats.totalWords} so'z o'rganildi
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${vocabStats.totalWords > 0 ? Math.min(100, (vocabStats.totalLearned / vocabStats.totalWords) * 100) : 0}%`,
-                  backgroundColor: PRIMARY,
-                }}
-              />
-            </div>
-            <p className="mt-2 text-xs" style={{ color: TEXT_SECONDARY }}>
-              Bugun o'rganildi {todayWords} so'z
-            </p>
-          </div>
-
           {/* Ketma-ket kunlar */}
           <div
             className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
@@ -224,45 +182,6 @@ export default function StatistikaPage() {
             </div>
           </div>
 
-          {/* Reyting */}
-          <div
-            className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            style={{ borderColor: BORDER }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                <Trophy className="h-5 w-5" />
-              </div>
-              <h2 className="font-semibold" style={{ color: TEXT }}>Reyting</h2>
-            </div>
-            <div className="mt-4 space-y-3">
-              {(leaderboard?.top ?? []).slice(0, 5).map((u, i) => (
-                <UserRankCard
-                  key={u.id}
-                  rank={i + 1}
-                  user={u}
-                  isCurrentUser={user?.id === u.id}
-                />
-              ))}
-            </div>
-            {leaderboard?.myRank != null && (leaderboard.myRank.rank > 5) && (
-              <div className="mt-4">
-                <p className="mb-2 text-xs font-medium" style={{ color: TEXT_SECONDARY }}>Sizning o'rningiz</p>
-                <UserRankCard
-                  rank={leaderboard.myRank.rank}
-                  user={{
-                    id: leaderboard.myRank.id,
-                    firstName: leaderboard.myRank.firstName,
-                    lastName: leaderboard.myRank.lastName,
-                    avatarUrl: leaderboard.myRank.avatarUrl,
-                    points: leaderboard.myRank.points,
-                  }}
-                  isCurrentUser
-                />
-              </div>
-            )}
-          </div>
-
           {/* Yutuqlar */}
           <div
             className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
@@ -288,32 +207,6 @@ export default function StatistikaPage() {
                 </li>
               )}
             </ul>
-          </div>
-
-          {/* Kunlik maqsad */}
-          <div
-            className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            style={{ borderColor: BORDER }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
-                <Target className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold" style={{ color: TEXT }}>Kunlik maqsad</h2>
-                <p className="text-sm" style={{ color: TEXT_SECONDARY }}>{dailyGoal} so'z</p>
-              </div>
-            </div>
-            <p className="mt-3 text-sm" style={{ color: TEXT }}>Bugun: {dailyDone} / {dailyGoal}</p>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${Math.min(100, (dailyDone / dailyGoal) * 100)}%`,
-                  backgroundColor: PRIMARY,
-                }}
-              />
-            </div>
           </div>
         </div>
       </main>

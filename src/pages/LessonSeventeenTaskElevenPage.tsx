@@ -67,7 +67,7 @@ export default function LessonSeventeenTaskElevenPage() {
   return (
     <LessonFourteenTaskRunner
       tasks={TASKS}
-      backPath="/lesson-17"
+      backPath="/lesson-17" lessonPath="/lesson-17" taskNumber={11}
       sentenceInstruction="Составьте ответ."
     />
   );

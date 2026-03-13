@@ -5,7 +5,7 @@ import {
   fetchLessonTaskResults,
   lessonTaskResultsToMap,
 } from '../api/lessonTaskResults';
-import { getLessonTaskResults, isTaskResultGood } from '../utils/lessonTaskResults';
+import { getLessonTaskResults, getTaskButtonClassName } from '../utils/lessonTaskResults';
 
 type TaskResult = { correct: number; total: number };
 
@@ -58,13 +58,8 @@ export default function LessonFourteenPage() {
     taskResults[Number(n)] = r;
   }
 
-  const getTaskButtonClass = (taskN: number, isFirst = false) => {
-    const margin = isFirst ? 'mt-4' : 'mt-2';
-    const result = taskResults[taskN];
-    if (!result) return `${margin} w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors active:scale-[0.99]`;
-    if (isTaskResultGood(result)) return `${margin} w-full rounded-xl border border-emerald-300 bg-emerald-500 px-4 py-3 font-semibold text-white hover:bg-emerald-600 transition-colors active:scale-[0.99]`;
-    return `${margin} w-full rounded-xl border border-orange-300 bg-orange-500 px-4 py-3 font-semibold text-white hover:bg-orange-600 transition-colors active:scale-[0.99]`;
-  };
+  const getTaskButtonClass = (taskN: number, isFirst = false) =>
+    getTaskButtonClassName('/lesson-14', taskN, isFirst, taskResults);
 
   return (
     <div className="min-h-screen bg-slate-50">

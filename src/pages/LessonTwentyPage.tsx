@@ -1,4 +1,8 @@
 import { useNavigate } from 'react-router-dom';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+
+const LESSON_PATH = '/lesson-20';
+const TASK_LABELS = Array.from({ length: 7 }, (_, i) => `Topshiriq ${i + 1} — Повторение (${i + 1}-qism)`);
 
 export default function LessonTwentyPage() {
   const navigate = useNavigate();
@@ -23,56 +27,19 @@ export default function LessonTwentyPage() {
             <p>Testlar qulay bo'lishi uchun bir nechta bo'limlarga bo'lingan (har birida 20 ta).</p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-20/topshiriq-1')}
-            className="mt-5 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 1 — Повторение (1-qism)
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-20/topshiriq-2')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 2 — Повторение (2-qism)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-20/topshiriq-3')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 3 — Повторение (3-qism)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-20/topshiriq-4')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 4 — Повторение (4-qism)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-20/topshiriq-5')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 5 — Повторение (5-qism)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-20/topshiriq-6')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 6 — Повторение (6-qism)
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-20/topshiriq-7')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 7 — Повторение (7-qism)
-          </button>
+          {TASK_LABELS.map((label, i) => {
+            const taskNum = i + 1;
+            return (
+              <button
+                key={taskNum}
+                type="button"
+                onClick={() => navigate(`/lesson-20/topshiriq-${taskNum}`)}
+                className={getTaskButtonClassName(LESSON_PATH, taskNum, taskNum === 1)}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </main>
     </div>

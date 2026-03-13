@@ -1,4 +1,7 @@
 import { useNavigate } from 'react-router-dom';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+
+const LESSON_PATH = '/lesson-15';
 
 export default function LessonFifteenPage() {
   const navigate = useNavigate();
@@ -43,62 +46,23 @@ export default function LessonFifteenPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-15/mustahkamlash')}
-            className="mt-5 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-indigo-700 active:scale-[0.99]"
-          >
-            Topshiriq
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-15/topshiriq-1')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 1
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-15/topshiriq-2')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 2
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-15/topshiriq-3')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 3
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-15/topshiriq-4')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 4
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-15/topshiriq-5')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 5
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-15/topshiriq-6')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 6
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-15/topshiriq-7')}
-            className="mt-2 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
-          >
-            Topshiriq 7
-          </button>
+          {[
+            { path: '/lesson-15/mustahkamlash', label: 'Topshiriq', taskNum: 1 },
+            ...Array.from({ length: 7 }, (_, i) => ({
+              path: `/lesson-15/topshiriq-${i + 1}`,
+              label: `Topshiriq ${i + 1}`,
+              taskNum: i + 2,
+            })),
+          ].map(({ path, label, taskNum }) => (
+            <button
+              key={path}
+              type="button"
+              onClick={() => navigate(path)}
+              className={getTaskButtonClassName(LESSON_PATH, taskNum, taskNum === 1)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </main>
     </div>

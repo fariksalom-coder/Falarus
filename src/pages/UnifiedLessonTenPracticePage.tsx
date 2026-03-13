@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setLessonTaskResult } from '../utils/lessonTaskResults';
 
 type ChoiceTask = { type: 'choice'; prompt: string; options: string[]; correct: string };
 type SentenceTask = { type: 'sentence'; prompt: string; words: string[]; correct: string };
@@ -319,7 +320,10 @@ export default function UnifiedLessonTenPracticePage() {
             </p>
             <button
               type="button"
-              onClick={() => navigate('/lesson-10')}
+              onClick={() => {
+                if (TASKS.length > 0) setLessonTaskResult('/lesson-10', 1, correctCount, TASKS.length);
+                navigate('/lesson-10');
+              }}
               className={`mt-6 w-full rounded-xl px-5 py-3.5 text-base font-semibold text-white transition-colors ${
                 TASKS.length > 0 && correctCount / TASKS.length >= 0.8
                   ? 'bg-emerald-600 hover:bg-emerald-700'

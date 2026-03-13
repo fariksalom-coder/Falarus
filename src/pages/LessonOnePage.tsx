@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
 
 export default function LessonOnePage() {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ export default function LessonOnePage() {
             <button
               type="button"
               onClick={openGreetingTest}
-              className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:bg-indigo-700 transition-colors active:scale-[0.99]"
+              className={getTaskButtonClassName('/lesson-1', 1, true)}
             >
               Topshiriq
             </button>

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
 
 export default function LessonSixteenPage() {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export default function LessonSixteenPage() {
           <button
             type="button"
             onClick={() => navigate('/lesson-16/topshiriq-1')}
-            className="mt-5 w-full rounded-xl border border-indigo-200 bg-white px-4 py-3 font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 active:scale-[0.99]"
+            className={getTaskButtonClassName('/lesson-16', 1, true)}
           >
             Topshiriq
           </button>
