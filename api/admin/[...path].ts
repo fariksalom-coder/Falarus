@@ -12,14 +12,21 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'su
 
 function getPathParts(req: VercelRequest): string[] {
   const path = req.query.path;
-  if (Array.isArray(path)) return path.filter((p): p is string => typeof p === 'string');
-  if (typeof path === 'string') return path ? path.split('/').filter(Boolean) : [];
-  const url = req.url || (req as any).originalUrl || '';
-  const pathname = typeof url === 'string' ? url.split('?')[0] : '';
-  const parts = pathname.split('/').filter(Boolean);
-  const adminIndex = parts.indexOf('admin');
-  if (adminIndex >= 0 && adminIndex < parts.length - 1) return parts.slice(adminIndex + 1);
-  return [];
+  let pathStr: string;
+  if (Array.isArray(path)) {
+    const segments = path.filter((p): p is string => typeof p === 'string');
+    pathStr = segments.join('/');
+  } else if (typeof path === 'string') {
+    pathStr = path;
+  } else {
+    const url = req.url || (req as any).originalUrl || '';
+    const pathname = typeof url === 'string' ? url.split('?')[0] : '';
+    const parts = pathname.split('/').filter(Boolean);
+    const adminIndex = parts.indexOf('admin');
+    if (adminIndex >= 0 && adminIndex < parts.length - 1) return parts.slice(adminIndex + 1);
+    return [];
+  }
+  return pathStr ? pathStr.split('/').filter(Boolean) : [];
 }
 
 function parseBody(body: unknown): Record<string, unknown> {
