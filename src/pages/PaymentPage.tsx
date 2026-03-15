@@ -3,11 +3,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { submitPayment, type TariffType, type Currency } from '../api/payment';
 import { getPaymentMethodByCurrency, getTariffPricesByCurrency } from '../api/publicPricing';
-import { Copy, Upload, FileImage, X } from 'lucide-react';
+import { Copy, Upload, FileImage, X, ArrowLeft } from 'lucide-react';
 
 const FALLBACK_CARD = 'XXXX XXXX XXXX XXXX';
 const FALLBACK_PHONE = '+7 XXX XXX XX XX';
 const FALLBACK_HOLDER = 'Ibragimova Aziza Azamatovna';
+
+/** Формат номера карты: по 4 цифры через пробел (как на карте). */
+function formatCardDisplay(card: string): string {
+  const digits = card.replace(/\D/g, '');
+  if (!digits.length) return card;
+  return digits.replace(/(.{4})/g, '$1 ').trim();
+}
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -47,25 +54,27 @@ export default function PaymentPage() {
     card_number: string;
     phone_number: string | null;
     card_holder_name: string;
-  }>({ card_number: FALLBACK_CARD, phone_number: FALLBACK_PHONE, card_holder_name: FALLBACK_HOLDER });
+  } | null>(null);
   const [price, setPrice] = useState<number | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(true);
 
   const tariffType = state?.tariffType ?? 'month';
   const currency = state?.currency ?? 'UZS';
   const tariffLabel = state?.tariffLabel ?? '1 OY';
 
   useEffect(() => {
-    getPaymentMethodByCurrency(currency).then((m) => {
-      if (m) setPaymentMethod(m);
-      else setPaymentMethod({ card_number: FALLBACK_CARD, phone_number: FALLBACK_PHONE, card_holder_name: FALLBACK_HOLDER });
-    });
-  }, [currency]);
-
-  useEffect(() => {
-    getTariffPricesByCurrency(currency).then((prices) => {
+    setDetailsLoading(true);
+    Promise.all([
+      getPaymentMethodByCurrency(currency),
+      getTariffPricesByCurrency(currency),
+    ]).then(([m, prices]) => {
+      setPaymentMethod(m ? m : { card_number: FALLBACK_CARD, phone_number: FALLBACK_PHONE, card_holder_name: FALLBACK_HOLDER });
       const key = tariffType === 'year' ? 'year' : tariffType === '3months' ? 'three_months' : 'month';
       setPrice((prices as Record<string, number>)[key] ?? null);
-    }).catch(() => setPrice(null));
+    }).catch(() => {
+      setPaymentMethod({ card_number: FALLBACK_CARD, phone_number: FALLBACK_PHONE, card_holder_name: FALLBACK_HOLDER });
+      setPrice(null);
+    }).finally(() => setDetailsLoading(false));
   }, [currency, tariffType]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -144,18 +153,35 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <div className="mx-auto max-w-xl px-4 pt-8">
+        <button
+          type="button"
+          onClick={() => navigate('/tariflar')}
+          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-6"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Orqaga
+        </button>
+
         <h1 className="text-2xl font-bold text-slate-900 mb-8 text-center">
           Siz {tariffLabel} tarifini sotib olmoqdasiz
         </h1>
 
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">To'lov ma'lumotlari</h2>
-          <div className="space-y-4">
+          {detailsLoading ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-10 bg-slate-200 rounded" />
+              <div className="h-10 bg-slate-200 rounded" />
+              <div className="h-10 bg-slate-200 rounded" />
+              <div className="h-6 bg-slate-200 rounded w-24" />
+            </div>
+          ) : paymentMethod && (
+            <div className="space-y-4">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Karta raqami</p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-slate-800">{paymentMethod.card_number}</span>
-                  <CopyButton text={paymentMethod.card_number} label="Karta" />
+                  <span className="font-mono text-slate-800">{formatCardDisplay(paymentMethod.card_number)}</span>
+                  <CopyButton text={paymentMethod.card_number.replace(/\s/g, '')} label="Karta" />
                 </div>
               </div>
               <div>
@@ -180,6 +206,7 @@ export default function PaymentPage() {
                 </p>
               )}
             </div>
+          )}
         </section>
 
         <p className="text-slate-600 mb-6 text-center">
