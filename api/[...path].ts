@@ -82,6 +82,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
       if (!file || !file.buffer.length)
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
+      // amount required by payments table (e.g. from 009_referral) — get from tariff_prices
+      const priceKey = tariff_type === 'year' ? 'year' : tariff_type === '3months' ? 'three_months' : 'month';
+      const { data: priceRow } = await supabase.from('tariff_prices').select('price').eq('currency', currency).eq('tariff_type', priceKey).maybeSingle();
+      const amount = priceRow != null ? Number((priceRow as { price: number }).price) : 0;
       const ext = file.mimetype === 'application/pdf' ? 'pdf' : file.mimetype.split('/')[1] || 'jpg';
       const pathStr = `${userId}/${Date.now()}_proof.${ext}`;
       const { data: bucketList } = await supabase.storage.listBuckets();
@@ -98,6 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         user_id: userId,
         tariff_type,
         currency,
+        amount,
         payment_proof_url: paymentProofUrl,
         payment_time: (fields.payment_time && new Date(fields.payment_time).toISOString()) || new Date().toISOString(),
         status: 'pending',
