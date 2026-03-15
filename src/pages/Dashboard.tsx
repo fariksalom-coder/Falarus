@@ -1,8 +1,7 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import {
-  ChevronRight,
-} from 'lucide-react';
+import { ChevronRight, Lock } from 'lucide-react';
 import {
   LESSONS,
   TOTAL_LESSONS,
@@ -10,6 +9,9 @@ import {
   type LessonStatus,
 } from '../data/lessonsList';
 import { getLessonCompletionSummary } from '../utils/lessonTaskResults';
+import { useAuth } from '../context/AuthContext';
+import * as accessApi from '../api/access';
+import PaywallModal from '../components/PaywallModal';
 
 const BG = '#F8FAFC';
 const CARD_BG = '#FFFFFF';
@@ -40,7 +42,43 @@ function useCompletedCount(): number {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const completedCount = useCompletedCount();
+  const [lessonsLockMap, setLessonsLockMap] = useState<Record<number, boolean>>({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedLockedLessonId, setSelectedLockedLessonId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    accessApi.getLessons(token).then((list) => {
+      const map: Record<number, boolean> = {};
+      list.forEach((l) => { map[l.id] = l.locked; });
+      setLessonsLockMap(map);
+    }).catch(() => {});
+  }, [token]);
+
+  const isLessonLocked = (lessonId: number) => {
+    if (lessonsLockMap[lessonId] !== undefined) return lessonsLockMap[lessonId];
+    return lessonId > 3;
+  };
+
+  const handleLessonClick = (lesson: (typeof LESSONS)[number]) => {
+    const locked = isLessonLocked(lesson.id);
+    if (locked) {
+      setSelectedLockedLessonId(lesson.id);
+      setModalOpen(true);
+    } else {
+      navigate(lesson.path);
+    }
+  };
+
+  const handleOpenPreview = () => {
+    if (selectedLockedLessonId) {
+      setModalOpen(false);
+      navigate(`/preview/lesson/${selectedLockedLessonId}`);
+      setSelectedLockedLessonId(null);
+    }
+  };
 
   return (
     <div
@@ -69,30 +107,33 @@ export default function Dashboard() {
                 : summary.status === 'in_progress' && baseStatus === 'locked'
                   ? 'in_progress'
                   : baseStatus;
-            const isLocked = false;
+            const isLocked = isLessonLocked(lesson.id);
 
             return (
               <motion.button
                 key={lesson.id}
                 type="button"
-                disabled={isLocked}
-                onClick={() => !isLocked && navigate(lesson.path)}
-                className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                onClick={() => handleLessonClick(lesson)}
+                className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                 style={{
                   borderColor: BORDER,
                   backgroundColor: CARD_BG,
+                  opacity: isLocked ? 0.9 : 1,
                 }}
-                whileHover={!isLocked ? { scale: 1.01 } : undefined}
-                whileTap={!isLocked ? { scale: 0.99 } : undefined}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
               >
                 {/* Номер урока в кружке */}
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white relative"
                   style={{
-                    backgroundColor: PRIMARY,
+                    backgroundColor: isLocked ? '#94A3B8' : PRIMARY,
                   }}
                 >
                   {lesson.num}
+                  {isLocked && (
+                    <Lock className="absolute -top-0.5 -right-0.5 w-4 h-4 text-amber-500" strokeWidth={2.5} />
+                  )}
                 </div>
 
                 {/* Иконка темы + название урока (без "X-dars") */}
@@ -124,24 +165,28 @@ export default function Dashboard() {
                 </div>
 
                 {/* Arrow */}
-                {!isLocked && (
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors group-hover:bg-indigo-50"
-                    style={{ color: '#94A3B8' }}
-                  >
-                    <ChevronRight className="h-5 w-5 group-hover:opacity-100" style={{ color: PRIMARY }} strokeWidth={2} />
-                  </div>
-                )}
-                {isLocked && (
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300">
-                    <ChevronRight className="h-5 w-5" strokeWidth={2} />
-                  </div>
-                )}
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                  style={{ color: isLocked ? '#94A3B8' : PRIMARY }}
+                >
+                  <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                </div>
               </motion.button>
             );
           })}
         </div>
       </main>
+
+      {modalOpen && (
+        <PaywallModal
+          onClose={() => { setModalOpen(false); setSelectedLockedLessonId(null); }}
+          title="🔒 Bu dars faqat obuna bo'lganlar uchun"
+          description="Barcha darslar, so'zlar va mashqlarga kirish uchun tarifni sotib oling. Rus tilini cheklovsiz o'rganing."
+          buttonText="🚀 Barcha darslarni ochish"
+          previewLabel={selectedLockedLessonId ? "Darsni ko'rish (preview)" : undefined}
+          onPreview={selectedLockedLessonId ? () => { setModalOpen(false); navigate(`/preview/lesson/${selectedLockedLessonId}`); setSelectedLockedLessonId(null); } : undefined}
+        />
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
 import {
   ChevronRight,
   ArrowLeft,
+  Lock,
   MessageCircle,
   Users,
   Home,
@@ -173,6 +174,7 @@ export default function VocabularyTopicPage() {
           {topic.subtopics.map((subtopic, index) => {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
             const fromApi = subtopicsProgress.find((s) => s.id === subtopic.id);
+            const locked = fromApi?.locked ?? false;
             const wordCount = getSubtopicWordCount(topic.id, subtopic.id);
             const learned = fromApi?.learned_words ?? getLearnedCount(topic.id, subtopic.id);
             const percent = wordCount > 0 ? Math.round((learned / wordCount) * 100) : 0;
@@ -184,6 +186,10 @@ export default function VocabularyTopicPage() {
                 key={subtopic.id}
                 type="button"
                 onClick={() => {
+                  if (locked) {
+                    navigate(`/preview/vocabulary/${subtopic.id}`);
+                    return;
+                  }
                   setLastSubtopicId(topic.id, subtopic.id);
                   navigate(`/vocabulary/${topic.id}/${subtopic.id}`);
                 }}
@@ -212,7 +218,10 @@ export default function VocabularyTopicPage() {
                     />
                   </div>
                 </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600 relative">
+                  {locked && (
+                    <Lock className="absolute -top-0.5 -right-0.5 h-4 w-4 text-amber-500" strokeWidth={2.5} />
+                  )}
                   <ChevronRight className="h-5 w-5" strokeWidth={2} />
                 </div>
               </button>

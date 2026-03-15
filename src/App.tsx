@@ -152,6 +152,8 @@ import VocabularyPage from './pages/VocabularyPage';
 import VocabularyTopicPage from './pages/VocabularyTopicPage';
 import VocabularySubtopicPage from './pages/VocabularySubtopicPage';
 import VocabularyPartPage from './pages/VocabularyPartPage';
+import LessonPreviewPage from './pages/LessonPreviewPage';
+import VocabularySubtopicPreviewPage from './pages/VocabularySubtopicPreviewPage';
 import ProfilePage from './pages/ProfilePage';
 import ReferralPage from './pages/ReferralPage';
 import LeaderboardPage from './pages/LeaderboardPage';
@@ -198,7 +200,10 @@ function AppRoutes() {
         <Route path="invite" element={<ReferralPage />} />
         <Route path="statistika" element={<StatistikaPage />} />
         <Route path="tariflar" element={<PricingPage />} />
+        <Route path="pricing" element={<PricingPage />} />
         <Route path="reyting" element={<LeaderboardPage />} />
+        <Route path="preview/lesson/:id" element={<LessonPreviewPage />} />
+        <Route path="preview/vocabulary/:subtopicId" element={<VocabularySubtopicPreviewPage />} />
       </Route>
       <Route path="/lesson-1" element={<LessonOnePage />} />
       <Route path="/lesson-2" element={<LessonTwoPage />} />

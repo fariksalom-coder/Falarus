@@ -6,6 +6,8 @@ import * as vocabularyTestService from '../services/vocabularyTest.service';
 import * as matchPairsService from '../services/matchPairs.service';
 import * as vocabularyProgressService from '../services/vocabularyProgress.service';
 import * as streakService from '../services/streakService';
+import * as accessControlService from '../services/accessControl.service';
+import * as subscriptionService from '../services/subscription.service';
 import * as redis from '../lib/redis';
 
 export function getTopics(supabase: Supabase) {
@@ -46,31 +48,51 @@ export function getSubtopics(supabase: Supabase) {
     try {
       const userId = (req as any).userId as number;
       const topicId = req.params.topicId as string;
+      const access = await subscriptionService.getAccessInfo(supabase, userId);
       const cached = await redis.getCached<any[]>(redis.cacheKeySubtopics(userId, topicId));
-      if (cached != null) return res.json(cached);
-      const subtopics = await repo.getSubtopicsByTopic(supabase, topicId);
-      const progressRows = await repo.getUserSubtopicProgress(supabase, userId, topicId);
-      const progressBySubtopic = Object.fromEntries(
-        progressRows.map((p) => [p.subtopic_id, { learned_words: p.learned_words, total_words: p.total_words, progress_percent: p.progress_percent }])
-      );
-      const list = await Promise.all(
-        subtopics.map(async (s) => {
-          const prog = progressBySubtopic[s.id];
-          const total_words = prog?.total_words ?? (await repo.getSubtopicTotalWords(supabase, s.id));
-          return {
-            id: s.id,
-            topic_id: s.topic_id,
-            title: s.title,
-            learned_words: prog?.learned_words ?? 0,
-            total_words,
-            progress_percent: prog?.progress_percent ?? (total_words ? 0 : 0),
-          };
-        })
-      );
-      await redis.setCached(redis.cacheKeySubtopics(userId, topicId), list);
-      res.json(list);
+      let list: any[];
+      if (cached != null) {
+        list = cached;
+      } else {
+        const subtopics = await repo.getSubtopicsByTopic(supabase, topicId);
+        const progressRows = await repo.getUserSubtopicProgress(supabase, userId, topicId);
+        const progressBySubtopic = Object.fromEntries(
+          progressRows.map((p) => [p.subtopic_id, { learned_words: p.learned_words, total_words: p.total_words, progress_percent: p.progress_percent }])
+        );
+        list = await Promise.all(
+          subtopics.map(async (s) => {
+            const prog = progressBySubtopic[s.id];
+            const total_words = prog?.total_words ?? (await repo.getSubtopicTotalWords(supabase, s.id));
+            return {
+              id: s.id,
+              topic_id: s.topic_id,
+              title: s.title,
+              learned_words: prog?.learned_words ?? 0,
+              total_words,
+              progress_percent: prog?.progress_percent ?? (total_words ? 0 : 0),
+            };
+          })
+        );
+        await redis.setCached(redis.cacheKeySubtopics(userId, topicId), list);
+      }
+      const withLock = accessControlService.applySubtopicsLock(list, topicId, access);
+      res.json(withLock);
     } catch (e) {
       console.error('[vocabulary/getSubtopics]', e);
+      res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  };
+}
+
+export function getSubtopicPreview(supabase: Supabase) {
+  return async (req: Request, res: Response) => {
+    try {
+      const subtopicId = req.params.subtopicId as string;
+      const preview = await accessControlService.getSubtopicPreview(supabase, subtopicId);
+      if (!preview) return res.status(404).json({ error: 'Subtopic topilmadi' });
+      res.json(preview);
+    } catch (e) {
+      console.error('[vocabulary/getSubtopicPreview]', e);
       res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
   };
@@ -81,6 +103,12 @@ export function getWordGroups(supabase: Supabase) {
     try {
       const userId = (req as any).userId as number;
       const subtopicId = req.params.subtopicId as string;
+      const access = await subscriptionService.getAccessInfo(supabase, userId);
+      const { data: subtopic } = await supabase.from('vocabulary_subtopics').select('topic_id').eq('id', subtopicId).single();
+      const topicId = subtopic?.topic_id ?? '';
+      if (!accessControlService.canAccessSubtopic(topicId, subtopicId, access)) {
+        return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
+      }
       const cached = await redis.getCached<any[]>(redis.cacheKeyWordGroups(userId, subtopicId));
       if (cached != null) return res.json(cached);
       const { groups, progressByGroup } = await repo.getUserWordGroupProgress(supabase, userId, subtopicId);

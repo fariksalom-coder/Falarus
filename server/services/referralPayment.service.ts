@@ -86,6 +86,14 @@ export async function recordPayment(
         plan_expires_at: planExpiresAt.toISOString(),
       })
       .eq('id', userId);
+    const planType =
+      input.planDurationMonths >= 12
+        ? ('yearly' as const)
+        : input.planDurationMonths >= 3
+          ? ('three_months' as const)
+          : ('monthly' as const);
+    const { createOrExtendSubscription } = await import('./subscription.service');
+    await createOrExtendSubscription(supabase, userId, planType, planExpiresAt);
   }
 
   return {

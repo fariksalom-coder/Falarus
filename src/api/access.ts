@@ -1,0 +1,71 @@
+import { apiUrl } from '../api';
+
+export type AccessInfo = {
+  lessons_free_limit: number;
+  vocabulary_free_topic: number;
+  vocabulary_free_subtopic: number;
+  subscription_active: boolean;
+  vocabulary_free_topic_id?: string | null;
+  vocabulary_free_subtopic_id?: string | null;
+};
+
+function authHeaders(token: string | null): HeadersInit {
+  const h: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
+
+export async function getAccess(token: string | null): Promise<AccessInfo> {
+  const res = await fetch(apiUrl('/api/user/access'), { headers: authHeaders(token) });
+  if (!res.ok) throw new Error('Access yuklanmadi');
+  return res.json();
+}
+
+export type LessonWithLock = {
+  id: number;
+  level?: string;
+  module_name?: string;
+  title?: string;
+  locked: boolean;
+  tasks_count?: number;
+};
+
+export async function getLessons(token: string | null): Promise<LessonWithLock[]> {
+  const res = await fetch(apiUrl('/api/lessons'), { headers: authHeaders(token) });
+  if (!res.ok) throw new Error('Darslar yuklanmadi');
+  return res.json();
+}
+
+export type LessonPreview = {
+  title: string;
+  description: string;
+  preview_words: Array<{ word: string; translation: string }>;
+  tasks_preview: number;
+};
+
+export async function getLessonPreview(
+  token: string | null,
+  lessonId: number
+): Promise<LessonPreview> {
+  const res = await fetch(apiUrl(`/api/lessons/${lessonId}/preview`), {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error('Preview yuklanmadi');
+  return res.json();
+}
+
+export type SubtopicPreview = {
+  title: string;
+  preview_words: Array<{ word: string; translation: string }>;
+};
+
+export async function getSubtopicPreview(
+  token: string | null,
+  subtopicId: string
+): Promise<SubtopicPreview> {
+  const res = await fetch(apiUrl(`/api/vocabulary/subtopic/${subtopicId}/preview`), {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error('Preview yuklanmadi');
+  return res.json();
+}

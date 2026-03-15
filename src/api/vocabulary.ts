@@ -15,6 +15,7 @@ export type VocabularySubtopic = {
   learned_words: number;
   total_words: number;
   progress_percent: number;
+  locked?: boolean;
 };
 
 export type VocabularyWordGroup = {

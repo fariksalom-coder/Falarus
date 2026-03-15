@@ -175,6 +175,10 @@ async function startServer() {
   const { createReferralRoutes } = await import('./server/routes/referralRoutes');
   app.use('/api', createReferralRoutes(supabase, authenticate));
 
+  // Access (freemium: GET /user/access)
+  const { createAccessRoutes } = await import('./server/routes/accessRoutes');
+  app.use('/api', createAccessRoutes(supabase, authenticate));
+
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
     const { data: user, error } = await supabase
@@ -273,23 +277,55 @@ async function startServer() {
     res.json({ success: true, points, weekly_points, monthly_points, total_points });
   });
 
-  // Lessons
+  // Lessons (freemium: locked flag, preview, protect full content)
+  const { getAccessForRequest } = await import('./server/routes/accessRoutes');
+  const accessControlService = await import('./server/services/accessControl.service');
+
   app.get('/api/lessons', authenticate, async (req: any, res) => {
     const { data: user } = await supabase.from('users').select('level').eq('id', req.userId).single();
     if (!user?.level) return res.status(404).json({ error: 'User topilmadi' });
-    const { data: lessons, error } = await supabase.from('lessons').select('*').eq('level', user.level);
+    const { data: lessons, error } = await supabase.from('lessons').select('*').eq('level', user.level).order('id');
     if (error) return res.status(500).json({ error: error.message });
-    res.json(lessons ?? []);
+    const access = await getAccessForRequest(supabase, req.userId);
+    const withLock = accessControlService.applyLessonsLock(lessons ?? [], access);
+    const lessonIds = (lessons ?? []).map((l: any) => l.id);
+    const { data: exCounts } = await supabase.from('exercises').select('lesson_id').in('lesson_id', lessonIds);
+    const countByLesson: Record<number, number> = {};
+    (exCounts ?? []).forEach((r: any) => { countByLesson[r.lesson_id] = (countByLesson[r.lesson_id] || 0) + 1; });
+    const list = withLock.map((l: any) => ({
+      id: l.id,
+      level: l.level,
+      module_name: l.module_name,
+      title: l.title,
+      content_uz: l.content_uz,
+      content_ru: l.content_ru,
+      locked: l.locked,
+      tasks_count: countByLesson[l.id] ?? 0,
+    }));
+    res.json(list);
+  });
+
+  app.get('/api/lessons/:id/preview', authenticate, async (req: any, res) => {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid lesson id' });
+    const preview = await accessControlService.getLessonPreview(supabase, id);
+    if (!preview) return res.status(404).json({ error: 'Dars topilmadi' });
+    res.json(preview);
   });
 
   app.get('/api/lessons/:id', authenticate, async (req: any, res) => {
+    const id = Number(req.params.id);
+    const access = await getAccessForRequest(supabase, req.userId);
+    if (!accessControlService.canAccessLesson(id, access)) {
+      return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
+    }
     const { data: lesson, error: lessonErr } = await supabase
       .from('lessons')
       .select('*')
-      .eq('id', req.params.id)
+      .eq('id', id)
       .single();
     if (lessonErr || !lesson) return res.status(404).json({ error: 'Dars topilmadi' });
-    const { data: exercises } = await supabase.from('exercises').select('*').eq('lesson_id', req.params.id);
+    const { data: exercises } = await supabase.from('exercises').select('*').eq('lesson_id', id);
     const exercisesParsed = (exercises ?? []).map((e: any) => ({
       ...e,
       options: typeof e.options === 'string' ? JSON.parse(e.options) : e.options,
