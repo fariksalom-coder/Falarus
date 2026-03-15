@@ -179,11 +179,16 @@ export async function addReferralRewardToUser(
 export async function createWithdrawal(
   supabase: Supabase,
   userId: number,
-  amount: number
+  amount: number,
+  details?: { card_number?: string; phone?: string; full_name?: string }
 ) {
+  const row: Record<string, unknown> = { user_id: userId, amount, status: 'pending' };
+  if (details?.card_number != null) row.card_number = String(details.card_number).trim();
+  if (details?.phone != null) row.phone = String(details.phone).trim();
+  if (details?.full_name != null) row.full_name = String(details.full_name).trim();
   const { data, error } = await supabase
     .from('referral_withdrawals')
-    .insert({ user_id: userId, amount, status: 'pending' })
+    .insert(row)
     .select('id')
     .single();
   if (error) throw error;

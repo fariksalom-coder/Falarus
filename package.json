@@ -11,7 +11,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "db:push": "node scripts/db-push.mjs",
-    "seed:vocabulary": "tsx server/scripts/seedVocabulary.ts"
+    "seed:vocabulary": "tsx server/scripts/seedVocabulary.ts",
+    "seed:admin": "tsx server/scripts/seedAdmin.ts"
   },
   "dependencies": {
     "ioredis": "^5.4.1",

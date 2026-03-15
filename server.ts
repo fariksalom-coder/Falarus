@@ -76,6 +76,15 @@ async function startServer() {
     next();
   });
 
+  // Admin panel first so /api/admin/* is never swallowed by other /api routes
+  try {
+    const { createAdminRoutes } = await import('./server/routes/adminRoutes');
+    app.use('/api/admin', createAdminRoutes(supabase));
+    console.log('Admin API: /api/admin (login, dashboard, users, payments, etc.)');
+  } catch (err) {
+    console.error('Admin routes failed to load:', err);
+  }
+
   // Auth
   const { attachReferralOnRegister, resolveReferrerFromCode } = await import(
     './server/services/referral.service'
@@ -205,6 +214,50 @@ async function startServer() {
   app.post('/api/user/onboard', authenticate, async (req: any, res) => {
     const { level } = req.body;
     await supabase.from('users').update({ level, onboarded: 1 }).eq('id', req.userId);
+    res.json({ success: true });
+  });
+
+  // User: request subscription payment (by card) — admin confirms later
+  app.post('/api/payment-request', authenticate, async (req: any, res) => {
+    const { plan_type, amount } = req.body || {};
+    if (!plan_type || !['monthly', 'three_months', 'yearly'].includes(plan_type)) {
+      return res.status(400).json({ error: 'plan_type kerak: monthly, three_months, yearly' });
+    }
+    const amt = Number(amount);
+    if (!(amt > 0)) return res.status(400).json({ error: 'amount kerak' });
+    const { data: row, error } = await supabase
+      .from('subscription_payment_requests')
+      .insert({
+        user_id: req.userId,
+        plan_type,
+        amount: amt,
+        payment_method: 'card',
+        status: 'pending',
+      })
+      .select('id')
+      .single();
+    if (error) {
+      console.error('[POST /api/payment-request]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    res.json({ success: true, id: (row as any).id });
+  });
+
+  // User: send support message
+  app.post('/api/support', authenticate, async (req: any, res) => {
+    const message = req.body?.message;
+    if (!message || String(message).trim() === '') {
+      return res.status(400).json({ error: 'message kerak' });
+    }
+    const { error } = await supabase.from('support_messages').insert({
+      user_id: req.userId,
+      message: String(message).trim(),
+      status: 'new',
+    });
+    if (error) {
+      console.error('[POST /api/support]', error);
+      return res.status(500).json({ error: error.message });
+    }
     res.json({ success: true });
   });
 

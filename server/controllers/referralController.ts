@@ -104,8 +104,15 @@ export function postWithdraw(supabase: Supabase) {
       if (amount > balance) {
         return res.status(400).json({ error: 'Balans yetarli emas' });
       }
+      const card_number = req.body?.card_number;
+      const phone = req.body?.phone;
+      const full_name = req.body?.full_name;
       await repo.deductReferralBalance(supabase, userId, amount);
-      const id = await repo.createWithdrawal(supabase, userId, amount);
+      const id = await repo.createWithdrawal(supabase, userId, amount, {
+        card_number: card_number != null ? String(card_number) : undefined,
+        phone: phone != null ? String(phone) : undefined,
+        full_name: full_name != null ? String(full_name) : undefined,
+      });
       res.json({ success: true, id, amount });
     } catch (e) {
       console.error('[POST /referral/withdraw]', e);

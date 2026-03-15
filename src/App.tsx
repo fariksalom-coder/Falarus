@@ -1,6 +1,18 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AdminAuthProvider } from './context/AdminAuthContext';
 import AuthPage from './pages/AuthPage';
+import AdminLoginPage from './pages/admin/AdminLoginPage';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminGuard from './pages/admin/AdminGuard';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminUserProfilePage from './pages/admin/AdminUserProfilePage';
+import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
+import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
+import AdminReferralsPage from './pages/admin/AdminReferralsPage';
+import AdminSupportPage from './pages/admin/AdminSupportPage';
+import AdminPricingPage from './pages/admin/AdminPricingPage';
 import Dashboard from './pages/Dashboard';
 import LessonPage from './pages/LessonPage';
 import LessonOnePage from './pages/LessonOnePage';
@@ -177,18 +189,33 @@ function AppRoutes() {
     );
   }
 
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/register" element={<AuthPage />} />
-        <Route path="*" element={<Navigate to="/auth" replace />} />
-      </Routes>
-    );
-  }
-
   return (
     <Routes>
+      <Route path="/admin" element={<AdminAuthProvider><Outlet /></AdminAuthProvider>}>
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="login" element={<AdminLoginPage />} />
+        <Route element={<AdminGuard />}>
+          <Route element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="users/:id" element={<AdminUserProfilePage />} />
+            <Route path="payments" element={<AdminPaymentsPage />} />
+            <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+            <Route path="referrals" element={<AdminReferralsPage />} />
+            <Route path="support" element={<AdminSupportPage />} />
+            <Route path="pricing" element={<AdminPricingPage />} />
+          </Route>
+        </Route>
+      </Route>
+
+      {!user ? (
+        <>
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/register" element={<AuthPage />} />
+          <Route path="*" element={<Navigate to="/auth" replace />} />
+        </>
+      ) : (
+        <>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="vocabulary" element={<VocabularyPage />} />
@@ -352,6 +379,8 @@ function AppRoutes() {
       <Route path="/lesson-14/topshiriq-16" element={<LessonFourteenTaskSixteenPage />} />
       <Route path="/lesson/:id" element={<LessonPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
+        </>
+      )}
     </Routes>
   );
 }
