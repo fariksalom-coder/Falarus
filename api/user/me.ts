@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, first_name, last_name, email, level, onboarded, progress')
+      .select('id, first_name, last_name, email, level, onboarded, progress, plan_name, plan_expires_at')
       .eq('id', userId)
       .maybeSingle();
 
@@ -36,6 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       level: user.level,
       onboarded: user.onboarded,
       progress: user.progress,
+      planName: user.plan_name ?? null,
+      planExpiresAt: user.plan_expires_at ?? null,
     });
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));

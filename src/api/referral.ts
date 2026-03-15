@@ -6,6 +6,24 @@ function authHeaders(token: string | null): HeadersInit {
   return h;
 }
 
+async function parseJsonOrThrow<T>(res: Response, fallbackError: string): Promise<T> {
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text();
+  if (!contentType.includes('application/json') || text.trim().startsWith('<')) {
+    throw new Error(
+      fallbackError +
+        (text.trim().startsWith('<')
+          ? ' (server javob bermadi – backend ishlab turganini tekshiring)'
+          : '')
+    );
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(fallbackError);
+  }
+}
+
 export type ReferralStats = {
   invited_users: number;
   registered_users: number;
@@ -18,23 +36,33 @@ export type ReferralListItem = { name: string; status: string };
 
 export async function getReferralLink(token: string | null): Promise<{ referral_link: string }> {
   const res = await fetch(apiUrl('/api/referral/link'), { headers: authHeaders(token) });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error((data as { error?: string }).error || 'Failed to load referral link');
-  }
-  return res.json();
+  const data = await parseJsonOrThrow<{ referral_link?: string; error?: string }>(
+    res,
+    'Taklif havolasi yuklanmadi'
+  );
+  if (!res.ok) throw new Error(data.error || 'Taklif havolasi yuklanmadi');
+  if (!data.referral_link) throw new Error('Taklif havolasi yuklanmadi');
+  return { referral_link: data.referral_link };
 }
 
 export async function getReferralStats(token: string | null): Promise<ReferralStats> {
   const res = await fetch(apiUrl('/api/referral/stats'), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Failed to load referral stats');
-  return res.json();
+  const data = await parseJsonOrThrow<ReferralStats & { error?: string }>(
+    res,
+    'Statistika yuklanmadi'
+  );
+  if (!res.ok) throw new Error((data as { error?: string }).error || 'Statistika yuklanmadi');
+  return data as ReferralStats;
 }
 
 export async function getReferralList(token: string | null): Promise<ReferralListItem[]> {
   const res = await fetch(apiUrl('/api/referral/list'), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Failed to load referral list');
-  return res.json();
+  const data = await parseJsonOrThrow<ReferralListItem[] & { error?: string }>(
+    res,
+    'Ro\'yxat yuklanmadi'
+  );
+  if (!res.ok) throw new Error((data as { error?: string }).error || "Ro'yxat yuklanmadi");
+  return Array.isArray(data) ? data : [];
 }
 
 export async function withdrawReferral(
@@ -46,7 +74,10 @@ export async function withdrawReferral(
     headers: authHeaders(token),
     body: JSON.stringify({ amount }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Withdraw failed');
-  return data;
+  const data = await parseJsonOrThrow<{ success?: boolean; id?: number; amount?: number; error?: string }>(
+    res,
+    'Yechib olish amalga oshmadi'
+  );
+  if (!res.ok) throw new Error(data.error || 'Yechib olish amalga oshmadi');
+  return data as { success: boolean; id: number; amount: number };
 }
