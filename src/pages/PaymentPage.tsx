@@ -186,7 +186,8 @@ export default function PaymentPage() {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="w-full rounded-xl py-4 text-lg font-semibold text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/25 transition-colors"
+            className="w-full rounded-xl py-4 text-lg font-semibold border-2 transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
             Bosh sahifaga
           </button>
@@ -215,8 +216,11 @@ export default function PaymentPage() {
           Orqaga
         </button>
 
-        {/* Payment amount — light yellow block, amount on the right */}
-        <section className="bg-amber-50 border border-amber-200/80 rounded-2xl shadow-sm p-6 mb-6">
+        {/* Payment amount — light blue block */}
+        <section
+          className="rounded-2xl border-2 shadow-sm p-6 mb-6"
+          style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF' }}
+        >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900 mb-1">To'lov summasi</h2>
@@ -225,7 +229,10 @@ export default function PaymentPage() {
             </div>
             <div className="sm:text-right">
               {detailsLoading ? (
-                <div className="h-12 w-28 bg-amber-200/50 rounded-lg animate-pulse" />
+                <div
+                  className="h-12 w-28 rounded-lg animate-pulse"
+                  style={{ backgroundColor: 'rgba(76, 111, 255, 0.2)' }}
+                />
               ) : price != null ? (
                 <p className="text-2xl sm:text-3xl font-bold text-slate-900">
                   {formatAmount(price, currency)}
@@ -313,10 +320,9 @@ export default function PaymentPage() {
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
             className={`rounded-xl border-2 border-dashed p-8 text-center transition-all ${
-              dragOver
-                ? 'border-amber-400 bg-amber-50/50'
-                : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
+              dragOver ? 'bg-[#EEF4FF]/50' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
             }`}
+            style={dragOver ? { borderColor: '#4C6FFF' } : undefined}
           >
             <input
               type="file"
@@ -361,12 +367,13 @@ export default function PaymentPage() {
           )}
         </section>
 
-        {/* 6. Submit button — orange */}
+        {/* Submit button — light blue bg, blue border */}
         <button
           type="button"
           onClick={handleSubmit}
           disabled={!file || submitting}
-          className="w-full rounded-xl py-4 text-lg font-semibold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/25 transition-all active:scale-[0.99]"
+          className="w-full rounded-xl py-4 text-lg font-semibold border-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.99] hover:opacity-90"
+          style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
         >
           {submitting ? 'Yuborilmoqda...' : "To'lovni yuborish"}
         </button>
