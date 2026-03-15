@@ -99,22 +99,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', weekStart.toISOString()),
         supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
         supabase.from('users').select('id', { count: 'exact', head: true }).gt('plan_expires_at', now.toISOString()),
-        supabase.from('subscription_payment_requests').select('amount').eq('status', 'confirmed').gte('confirmed_at', todayStart),
-        supabase.from('subscription_payment_requests').select('amount').eq('status', 'confirmed').gte('confirmed_at', monthStart),
-        supabase.from('subscription_payment_requests').select('amount').eq('status', 'confirmed'),
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'approved').gte('approved_at', todayStart),
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'approved').gte('approved_at', monthStart),
+        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
         supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active').gt('expires_at', now.toISOString()),
         supabase.from('referral_withdrawals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
-      const sum = (arr: { amount?: number }[] | null) => (arr ?? []).reduce((a, r) => a + Number(r.amount ?? 0), 0);
       return res.status(200).json({
         users_today: (uToday as any).count ?? 0,
         users_this_week: (uWeek as any).count ?? 0,
         users_this_month: (uMonth as any).count ?? 0,
         active_users: (uActive as any).count ?? 0,
-        payments_today: sum((pToday as any).data ?? []),
-        payments_this_month: sum((pMonth as any).data ?? []),
-        total_revenue: sum((pAll as any).data ?? []),
+        payments_today: (pToday as any).count ?? 0,
+        payments_this_month: (pMonth as any).count ?? 0,
+        total_revenue: (pAll as any).count ?? 0,
         active_subscriptions: (subs as any).count ?? 0,
         referral_payouts_pending: (wdraw as any).count ?? 0,
       });
@@ -202,53 +201,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // GET /api/admin/payments
+    // GET /api/admin/payments — from payments table (user uploads proof, admin confirms)
     if (path[0] === 'payments' && path.length === 1 && req.method === 'GET') {
       const { data: rows, error } = await supabase
-        .from('subscription_payment_requests')
-        .select('id, user_id, plan_type, amount, payment_method, status, created_at, confirmed_at')
+        .from('payments')
+        .select('id, user_id, tariff_type, currency, payment_proof_url, payment_time, status, created_at, approved_at')
         .order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
       const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id))];
       const { data: users } = await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds);
       const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
-      const list = (rows ?? []).map((r: any) => ({
-        id: r.id,
-        user_id: r.user_id,
-        user: userMap.get(r.user_id) ? [userMap.get(r.user_id)!.first_name, userMap.get(r.user_id)!.last_name].filter(Boolean).join(' ') || (userMap.get(r.user_id) as any).email : '—',
-        plan: r.plan_type,
-        amount: r.amount,
-        date: r.created_at,
-        status: r.status,
-        confirmed_at: r.confirmed_at,
-      }));
+      const planLabel: Record<string, string> = { month: '1 OY', '3months': '3 OY', year: '1 YIL' };
+      const list = (rows ?? []).map((r: any) => {
+        const u = userMap.get(r.user_id);
+        return {
+          id: r.id,
+          user_id: r.user_id,
+          user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : '—',
+          user_email: u?.email ?? '—',
+          plan: planLabel[r.tariff_type] ?? r.tariff_type,
+          tariff_type: r.tariff_type,
+          currency: r.currency,
+          payment_proof_url: r.payment_proof_url ?? null,
+          payment_time: r.payment_time ?? r.created_at ?? '',
+          date: r.created_at ?? '',
+          status: r.status,
+          approved_at: r.approved_at ?? null,
+        };
+      });
       return res.status(200).json(list);
     }
 
-    // POST /api/admin/payments/:id/confirm and .../reject
+    // POST /api/admin/payments/:id/confirm and .../reject — payments table
     if (path[0] === 'payments' && path.length >= 3 && req.method === 'POST') {
       const payId = Number(path[1]);
       const action = path[2];
       if (!payId) return res.status(400).json({ error: 'Invalid id' });
       if (action === 'confirm') {
-        const { data: row, error: fe } = await supabase.from('subscription_payment_requests').select('user_id, plan_type').eq('id', payId).eq('status', 'pending').single();
+        const { data: row, error: fe } = await supabase.from('payments').select('user_id, tariff_type').eq('id', payId).eq('status', 'pending').single();
         if (fe || !row) return res.status(404).json({ error: 'To\'lov topilmadi' });
         const userId = (row as any).user_id;
-        const planType = (row as any).plan_type;
+        const tariffType = (row as any).tariff_type; // month | 3months | year
+        const planType = tariffType === 'month' ? 'monthly' : tariffType === '3months' ? 'three_months' : 'yearly';
         const now = new Date();
-        let expiresAt = new Date(now);
-        if (planType === 'monthly') expiresAt.setMonth(expiresAt.getMonth() + 1);
-        else if (planType === 'three_months') expiresAt.setMonth(expiresAt.getMonth() + 3);
-        else if (planType === 'yearly') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-        else return res.status(400).json({ error: 'Invalid plan_type' });
-        const planName = planType === 'yearly' ? '1 YIL' : planType === 'three_months' ? '3 OY' : '1 OY';
-        await supabase.from('subscription_payment_requests').update({ status: 'confirmed', confirmed_at: now.toISOString() }).eq('id', payId);
+        const planName = tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+        await supabase.from('payments').update({ status: 'approved', approved_at: now.toISOString(), admin_id: adminId }).eq('id', payId);
         const { data: current } = await supabase.from('users').select('plan_expires_at').eq('id', userId).single();
         const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
         const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
         const ext = new Date(startFrom);
-        if (planType === 'monthly') ext.setMonth(ext.getMonth() + 1);
-        else if (planType === 'three_months') ext.setMonth(ext.getMonth() + 3);
+        if (tariffType === 'month') ext.setMonth(ext.getMonth() + 1);
+        else if (tariffType === '3months') ext.setMonth(ext.getMonth() + 3);
         else ext.setFullYear(ext.getFullYear() + 1);
         await supabase.from('users').update({ plan_name: planName, plan_expires_at: ext.toISOString() }).eq('id', userId);
         await supabase.from('subscriptions').insert({
@@ -261,7 +264,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true });
       }
       if (action === 'reject') {
-        await supabase.from('subscription_payment_requests').update({ status: 'rejected' }).eq('id', payId).eq('status', 'pending');
+        await supabase.from('payments').update({ status: 'rejected' }).eq('id', payId).eq('status', 'pending');
         return res.status(200).json({ success: true });
       }
     }
