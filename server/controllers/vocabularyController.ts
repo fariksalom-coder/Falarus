@@ -144,7 +144,8 @@ export function getTasks(supabase: Supabase) {
       if (Number.isNaN(wordGroupId)) {
         return res.status(400).json({ error: 'wordGroupId required' });
       }
-      const status = await vocabularyProgressService.getTasksStatus(supabase, userId, wordGroupId);
+      const access = await subscriptionService.getAccessInfo(supabase, userId);
+      const status = await vocabularyProgressService.getTasksStatus(supabase, userId, wordGroupId, access);
       if (!status) return res.status(404).json({ error: 'Word group not found' });
       res.json({
         flashcards_status: status.flashcards_status,

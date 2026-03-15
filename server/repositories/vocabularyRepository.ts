@@ -64,6 +64,16 @@ export async function getWordGroupById(supabase: Supabase, wordGroupId: number) 
   return data as { id: number; subtopic_id: string; part_id: string; title: string; total_words: number };
 }
 
+export async function getTopicIdBySubtopicId(supabase: Supabase, subtopicId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('vocabulary_subtopics')
+    .select('topic_id')
+    .eq('id', subtopicId)
+    .single();
+  if (error || !data) return null;
+  return (data as { topic_id: string }).topic_id;
+}
+
 // ---- User progress (read from cache tables) ----
 
 export async function getUserTopicProgress(supabase: Supabase, userId: number) {
