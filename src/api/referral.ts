@@ -1,5 +1,6 @@
 import { apiUrl } from '../api';
 
+// Referral API: single endpoint /api/referral with ?action=link|stats|list, POST for withdraw
 function authHeaders(token: string | null): HeadersInit {
   const h: HeadersInit = { 'Content-Type': 'application/json' };
   if (token) h['Authorization'] = `Bearer ${token}`;
