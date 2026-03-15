@@ -106,12 +106,25 @@ async function handleAccess(userId: number, res: VercelResponse) {
   });
 }
 
+function getPathSegment(req: VercelRequest): string | undefined {
+  const path = req.query.path;
+  if (path !== undefined) {
+    const seg = Array.isArray(path) ? path[0] : path;
+    if (typeof seg === 'string') return seg;
+  }
+  const url = req.url || (req as any).originalUrl || '';
+  const pathname = typeof url === 'string' ? url.split('?')[0] : '';
+  const parts = pathname.split('/').filter(Boolean);
+  const userIndex = parts.indexOf('user');
+  if (userIndex >= 0 && userIndex < parts.length - 1) return parts[userIndex + 1];
+  return undefined;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
 
-  const path = req.query.path;
-  const segment = Array.isArray(path) ? path[0] : path;
+  const segment = getPathSegment(req);
 
   const userId = requireAuth(req, res);
   if (userId == null) return;

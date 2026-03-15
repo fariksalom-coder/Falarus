@@ -11,10 +11,16 @@ export function createReferralRoutes(
 
   router.get('/referral', authenticate, (req: any, res, next) => {
     const action = typeof req.query.action === 'string' ? req.query.action : '';
-    if (action === 'page') return referralController.getPage(supabase)(req, res);
-    if (action === 'link') return referralController.getLink(supabase)(req, res);
-    if (action === 'stats') return referralController.getStats(supabase)(req, res);
-    if (action === 'list') return referralController.getList(supabase)(req, res);
+    const handler =
+      action === 'page' ? referralController.getPage(supabase) :
+      action === 'link' ? referralController.getLink(supabase) :
+      action === 'stats' ? referralController.getStats(supabase) :
+      action === 'list' ? referralController.getList(supabase) :
+      null;
+    if (handler) {
+      const p = handler(req, res);
+      return typeof p?.then === 'function' ? p.catch(next) : p;
+    }
     next();
   });
   router.get('/referral/link', authenticate, referralController.getLink(supabase));

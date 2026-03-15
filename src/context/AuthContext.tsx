@@ -35,14 +35,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => {
-          if (res.ok) return res.json();
-          throw new Error('Unauthorized');
+          if (res.ok) return res.json().then((data) => setUser(data));
+          if (res.status === 401) {
+            localStorage.removeItem('token');
+            setToken(null);
+            return;
+          }
+          setUser(null);
         })
-        .then((data) => setUser(data))
-        .catch(() => {
-          localStorage.removeItem('token');
-          setToken(null);
-        })
+        .catch(() => setUser(null))
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
