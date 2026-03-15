@@ -3,13 +3,24 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { submitPayment, type TariffType, type Currency } from '../api/payment';
 import { getPaymentMethodByCurrency, getTariffPricesByCurrency } from '../api/publicPricing';
-import { Copy, Upload, FileImage, X, ArrowLeft } from 'lucide-react';
+import {
+  Copy,
+  Upload,
+  FileImage,
+  X,
+  ArrowLeft,
+  CreditCard,
+  Smartphone,
+  User,
+  Paperclip,
+  CheckCircle,
+  ChevronRight,
+} from 'lucide-react';
 
 const FALLBACK_CARD = 'XXXX XXXX XXXX XXXX';
 const FALLBACK_PHONE = '+7 XXX XXX XX XX';
 const FALLBACK_HOLDER = 'Ibragimova Aziza Azamatovna';
 
-/** Формат номера карты: по 4 цифры через пробел (как на карте). */
 function formatCardDisplay(card: string): string {
   const digits = card.replace(/\D/g, '');
   if (!digits.length) return card;
@@ -28,16 +39,34 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       type="button"
       onClick={copy}
       aria-label={label}
-      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
     >
-      <Copy className="h-4 w-4" />
-      {copied ? "Nusxalandi" : "Nusxalash"}
+      <Copy className="h-4 w-4 shrink-0" />
+      {copied ? 'Nusxalandi' : 'Nusxalash'}
     </button>
   );
 }
 
 const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,application/pdf';
 const MAX_SIZE = 10 * 1024 * 1024;
+
+const PAYMENT_STEPS = [
+  { num: 1, text: "To'lovni amalga oshiring" },
+  { num: 2, text: "Chek yoki skrinshotni yuklang" },
+  { num: 3, text: "Administrator tasdiqlashini kuting" },
+];
+
+const INSTRUCTION_STEPS = [
+  "Kartaga yoki telefon raqamiga pul o'tkazing",
+  "To'lov chekini yoki skrinshotni saqlang",
+  "Chekni quyida yuklang",
+];
+
+function formatAmount(price: number, currency: Currency): string {
+  if (currency === 'UZS') return `${Number(price).toLocaleString('uz-UZ')} so'm`;
+  if (currency === 'RUB') return `${price} ₽`;
+  return `$${price}`;
+}
 
 export default function PaymentPage() {
   const navigate = useNavigate();
@@ -67,21 +96,42 @@ export default function PaymentPage() {
     Promise.all([
       getPaymentMethodByCurrency(currency),
       getTariffPricesByCurrency(currency),
-    ]).then(([m, prices]) => {
-      setPaymentMethod(m ? m : { card_number: FALLBACK_CARD, phone_number: FALLBACK_PHONE, card_holder_name: FALLBACK_HOLDER });
-      const key = tariffType === 'year' ? 'year' : tariffType === '3months' ? 'three_months' : 'month';
-      setPrice((prices as Record<string, number>)[key] ?? null);
-    }).catch(() => {
-      setPaymentMethod({ card_number: FALLBACK_CARD, phone_number: FALLBACK_PHONE, card_holder_name: FALLBACK_HOLDER });
-      setPrice(null);
-    }).finally(() => setDetailsLoading(false));
+    ])
+      .then(([m, prices]) => {
+        setPaymentMethod(
+          m
+            ? m
+            : {
+                card_number: FALLBACK_CARD,
+                phone_number: FALLBACK_PHONE,
+                card_holder_name: FALLBACK_HOLDER,
+              }
+        );
+        const key =
+          tariffType === 'year' ? 'year' : tariffType === '3months' ? 'three_months' : 'month';
+        setPrice((prices as Record<string, number>)[key] ?? null);
+      })
+      .catch(() => {
+        setPaymentMethod({
+          card_number: FALLBACK_CARD,
+          phone_number: FALLBACK_PHONE,
+          card_holder_name: FALLBACK_HOLDER,
+        });
+        setPrice(null);
+      })
+      .finally(() => setDetailsLoading(false));
   }, [currency, tariffType]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f && (ACCEPT.split(',').some(m => f.type === m.trim()) || f.name.match(/\.(jpg|jpeg|png|webp|pdf)$/i)) && f.size <= MAX_SIZE) {
+    if (
+      f &&
+      (ACCEPT.split(',').some((m) => f.type === m.trim()) ||
+        f.name.match(/\.(jpg|jpeg|png|webp|pdf)$/i)) &&
+      f.size <= MAX_SIZE
+    ) {
       setFile(f);
       setError('');
     } else {
@@ -93,7 +143,7 @@ export default function PaymentPage() {
     const f = e.target.files?.[0];
     if (f) {
       if (f.size > MAX_SIZE) {
-        setError('Fayl 10 MB dan oshmasin');
+        setError("Fayl 10 MB dan oshmasin");
         return;
       }
       setFile(f);
@@ -108,7 +158,7 @@ export default function PaymentPage() {
 
   const handleSubmit = async () => {
     if (!file || !token) {
-      setError(file ? 'Tizimga kirish kerak' : 'Chek yoki skrinshotni yuklang');
+      setError(file ? 'Tizimga kirish kerak' : "Chek yoki skrinshotni yuklang");
       return;
     }
     setSubmitting(true);
@@ -128,101 +178,184 @@ export default function PaymentPage() {
     return null;
   }
 
+  // ——— Success screen ———
   if (success) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6 text-green-600 text-3xl">✓</div>
-          <h1 className="text-xl font-bold text-slate-900 mb-4">To'lovingiz qabul qilindi.</h1>
-          <p className="text-slate-600 whitespace-pre-line mb-8">
-            Administrator tez orada to'lovni tekshiradi.{'\n'}
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 text-center">
+          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="h-10 w-10 text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">To'lov qabul qilindi</h1>
+          <p className="text-slate-600 mb-4">
+            Administrator tez orada to'lovni tekshiradi.
+            <br />
             Tasdiqlangandan so'ng sizga kursga kirish ochiladi.
           </p>
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 text-amber-800 px-4 py-2 text-sm font-medium mb-8">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            Holat: Tekshiruvda
+          </div>
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="w-full rounded-xl py-3.5 bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+            className="w-full rounded-xl py-4 text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/25 transition-colors"
           >
             Bosh sahifaga
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/profile')}
+            className="w-full mt-3 rounded-xl py-3 text-slate-600 hover:text-slate-900 font-medium"
+          >
+            Profilga qaytish
           </button>
         </div>
       </div>
     );
   }
 
+  // ——— Main payment form ———
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <div className="mx-auto max-w-xl px-4 pt-8">
+    <div className="min-h-screen bg-slate-50 pb-24">
+      <div className="mx-auto max-w-xl px-4 pt-6 sm:pt-8">
         <button
           type="button"
           onClick={() => navigate('/tariflar')}
-          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-6"
+          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-8"
         >
           <ArrowLeft className="h-5 w-5" />
           Orqaga
         </button>
 
-        <h1 className="text-2xl font-bold text-slate-900 mb-8 text-center">
-          Siz {tariffLabel} tarifini sotib olmoqdasiz
-        </h1>
-
+        {/* 1. Payment process steps */}
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">To'lov ma'lumotlari</h2>
+          <h2 className="text-base font-semibold text-slate-800 mb-4">To'lov jarayoni</h2>
+          <div className="space-y-4">
+            {PAYMENT_STEPS.map((step, i) => (
+              <div key={step.num} className="flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">
+                  {step.num}
+                </span>
+                <span className="text-slate-700 pt-0.5">{step.text}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 2. Payment amount — prominent block */}
+        <section className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl shadow-lg shadow-indigo-500/20 p-6 mb-6 text-white">
+          <p className="text-indigo-100 text-sm font-medium mb-1">Tarif: {tariffLabel}</p>
+          <p className="text-lg font-semibold text-indigo-100 mb-2">To'lov summasi</p>
           {detailsLoading ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="h-10 bg-slate-200 rounded" />
-              <div className="h-10 bg-slate-200 rounded" />
-              <div className="h-10 bg-slate-200 rounded" />
-              <div className="h-6 bg-slate-200 rounded w-24" />
+            <div className="h-12 w-32 bg-white/20 rounded-lg animate-pulse" />
+          ) : price != null ? (
+            <p className="text-3xl sm:text-4xl font-bold tracking-tight">{formatAmount(price, currency)}</p>
+          ) : (
+            <p className="text-2xl font-bold">—</p>
+          )}
+          <p className="text-indigo-100 text-sm mt-3">Iltimos aynan shu summani o'tkazing</p>
+        </section>
+
+        {/* 3. Payment details card with icons */}
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-slate-800 mb-5">To'lov ma'lumotlari</h2>
+          {detailsLoading ? (
+            <div className="space-y-5 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <div className="h-4 bg-slate-200 rounded w-28 mb-2" />
+                  <div className="h-10 bg-slate-100 rounded-xl" />
+                </div>
+              ))}
             </div>
-          ) : paymentMethod && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Karta raqami</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-slate-800">{formatCardDisplay(paymentMethod.card_number)}</span>
-                  <CopyButton text={paymentMethod.card_number.replace(/\s/g, '')} label="Karta" />
+          ) : (
+            paymentMethod && (
+              <div className="space-y-5">
+                <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
+                  <div className="flex items-center gap-2 text-slate-600 mb-2">
+                    <CreditCard className="h-4 w-4" />
+                    <span className="text-sm font-medium">Karta raqami</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-slate-900 text-lg">
+                      {formatCardDisplay(paymentMethod.card_number)}
+                    </span>
+                    <CopyButton
+                      text={paymentMethod.card_number.replace(/\s/g, '')}
+                      label="Karta"
+                    />
+                  </div>
+                </div>
+                <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
+                  <div className="flex items-center gap-2 text-slate-600 mb-2">
+                    <Smartphone className="h-4 w-4" />
+                    <span className="text-sm font-medium">Telefon raqami</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-slate-900">
+                      {paymentMethod.phone_number || '—'}
+                    </span>
+                    {paymentMethod.phone_number && (
+                      <CopyButton text={paymentMethod.phone_number} label="Telefon" />
+                    )}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
+                  <div className="flex items-center gap-2 text-slate-600 mb-2">
+                    <User className="h-4 w-4" />
+                    <span className="text-sm font-medium">Karta egasi</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-slate-900">{paymentMethod.card_holder_name}</span>
+                    <CopyButton text={paymentMethod.card_holder_name} label="Ism" />
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Telefon raqami</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-slate-800">{paymentMethod.phone_number || '—'}</span>
-                  {paymentMethod.phone_number && (
-                    <CopyButton text={paymentMethod.phone_number} label="Telefon" />
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Karta egasi</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-slate-800">{paymentMethod.card_holder_name}</span>
-                  <CopyButton text={paymentMethod.card_holder_name} label="Ism" />
-                </div>
-              </div>
-              {price != null && (
-                <p className="text-sm font-semibold text-slate-700 pt-2">
-                  Summa: {currency === 'UZS' ? `${Number(price).toLocaleString()} so'm` : currency === 'RUB' ? `${price} ₽` : `$${price}`}
-                </p>
-              )}
-            </div>
+            )
           )}
         </section>
 
-        <p className="text-slate-600 mb-6 text-center">
-          To'lovni yuqoridagi karta yoki telefon raqamiga o'tkazing.{' '}
-          To'lovdan so'ng chek yoki skrinshotni yuklang.
-        </p>
+        {/* 4. Instruction box */}
+        <section className="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-6 mb-6">
+          <h2 className="text-base font-semibold text-indigo-900 mb-4">
+            To'lovni amalga oshirish tartibi
+          </h2>
+          <ol className="space-y-3">
+            {INSTRUCTION_STEPS.map((step, i) => (
+              <li key={i} className="flex items-start gap-3 text-indigo-800/90 text-sm">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-200 text-indigo-800 text-xs font-bold">
+                  {i + 1}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </section>
 
+        {/* 5. File upload */}
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-2">Chek yoki skrinshotni yuklang</h2>
-          <p className="text-sm text-slate-500 mb-4">JPG, PNG, WEBP yoki PDF (max 10 MB)</p>
+          <div className="flex items-center gap-2 text-slate-800 mb-1">
+            <Paperclip className="h-5 w-5 text-slate-500" />
+            <h2 className="text-lg font-semibold">Chek yoki to'lov skrinshotini yuklang</h2>
+          </div>
+          <p className="text-sm text-slate-500 mb-4">
+            Formatlar: <span className="font-medium text-slate-600">JPG</span>,{' '}
+            <span className="font-medium text-slate-600">PNG</span>,{' '}
+            <span className="font-medium text-slate-600">WEBP</span>,{' '}
+            <span className="font-medium text-slate-600">PDF</span> — max 10 MB
+          </p>
           <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
-            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-              dragOver ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-200 bg-slate-50/50'
+            className={`rounded-xl border-2 border-dashed p-8 text-center transition-all ${
+              dragOver
+                ? 'border-indigo-400 bg-indigo-50/50'
+                : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
             }`}
           >
             <input
@@ -233,28 +366,45 @@ export default function PaymentPage() {
               id="payment-file"
             />
             {file ? (
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <FileImage className="h-10 w-10 text-slate-400" />
-                <span className="font-medium text-slate-700 truncate max-w-[200px]">{file.name}</span>
-                <button type="button" onClick={removeFile} className="p-1 rounded hover:bg-slate-200 text-slate-500">
-                  <X className="h-5 w-5" />
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <div className="flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+                  <CheckCircle className="h-8 w-8 text-emerald-600 shrink-0" />
+                  <div className="text-left">
+                    <p className="font-medium text-emerald-800">
+                      <span className="text-emerald-600">✓</span> {file.name} yuklandi
+                    </p>
+                    <p className="text-xs text-emerald-600">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeFile}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  <X className="h-4 w-4" />
+                  Boshqa fayl tanlash
                 </button>
               </div>
             ) : (
               <label htmlFor="payment-file" className="cursor-pointer block">
-                <Upload className="h-12 w-12 text-slate-400 mx-auto mb-2" />
-                <span className="text-slate-600 font-medium">Faylni tanlang yoki shu yerga tashlang</span>
+                <Upload className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                <p className="text-slate-600 font-medium">Faylni tanlang yoki shu yerga tashlang</p>
               </label>
             )}
           </div>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {error && (
+            <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
         </section>
 
+        {/* 6. Submit button */}
         <button
           type="button"
           onClick={handleSubmit}
           disabled={!file || submitting}
-          className="w-full rounded-xl py-4 text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-xl py-4 text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.99]"
         >
           {submitting ? 'Yuborilmoqda...' : "To'lovni yuborish"}
         </button>
@@ -262,9 +412,10 @@ export default function PaymentPage() {
         <button
           type="button"
           onClick={() => navigate('/tariflar')}
-          className="w-full mt-3 text-slate-600 hover:text-slate-800"
+          className="w-full mt-4 text-slate-500 hover:text-slate-700 text-sm font-medium flex items-center justify-center gap-1"
         >
-          ← Tariflar sahifasiga
+          <ChevronRight className="h-4 w-4 rotate-180" />
+          Tariflar sahifasiga
         </button>
       </div>
     </div>
