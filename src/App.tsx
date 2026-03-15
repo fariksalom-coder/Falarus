@@ -174,6 +174,7 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import StatistikaPage from './pages/StatistikaPage';
 import PricingPage from './pages/PricingPage';
 import PaymentPage from './pages/PaymentPage';
+import PaymentHistoryPage from './pages/PaymentHistoryPage';
 import MainLayout from './components/MainLayout';
 
 function VocabularyPartRoute() {
@@ -234,6 +235,7 @@ function AppRoutes() {
         <Route path="tariflar" element={<PricingPage />} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="payment" element={<PaymentPage />} />
+        <Route path="payment-history" element={<PaymentHistoryPage />} />
         <Route path="reyting" element={<LeaderboardPage />} />
         <Route path="preview/lesson/:id" element={<LessonPreviewPage />} />
         <Route path="preview/vocabulary/:subtopicId" element={<VocabularySubtopicPreviewPage />} />

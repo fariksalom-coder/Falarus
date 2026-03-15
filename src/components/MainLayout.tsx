@@ -5,6 +5,7 @@ import AppNavBar from './AppNavBar';
 function hideNavBar(path: string): boolean {
   if (path === '/payment' || path.startsWith('/payment')) return true;
   if (path === '/tariflar') return true;
+  if (path === '/payment-history') return true;
   if (path.startsWith('/vocabulary/')) return true;
   return false;
 }

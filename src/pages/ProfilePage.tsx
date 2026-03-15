@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getMyPayments, type MyPaymentRow, type PaymentStatus } from '../api/payment';
-import { adminContact } from '../config/adminContact';
+import { getMyPayments, type MyPaymentRow } from '../api/payment';
 import { motion } from 'motion/react';
 import {
   ChevronLeft,
@@ -14,9 +13,14 @@ import {
   UserPlus,
   Calendar,
   Package,
-  MessageCircle,
   History,
 } from 'lucide-react';
+
+const TARIFF_LABELS: Record<string, string> = {
+  month: '1 OY',
+  '3months': '3 OY',
+  year: '1 YIL',
+};
 
 function formatPlanTimeLeft(planExpiresAt: string | null | undefined): string {
   if (!planExpiresAt) return '—';
@@ -31,36 +35,9 @@ function formatPlanTimeLeft(planExpiresAt: string | null | undefined): string {
   return `${days} kun`;
 }
 
-const TARIFF_LABELS: Record<string, string> = {
-  month: '1 OY',
-  '3months': '3 OY',
-  year: '1 YIL',
-};
-
-function formatPaymentAmount(amount: number, currency: string): string {
-  if (currency === 'UZS') return `${Number(amount).toLocaleString('uz-UZ')} so'm`;
-  if (currency === 'RUB') return `${amount} ₽`;
-  return `$${amount}`;
-}
-
-function formatPaymentDate(createdAt: string): string {
+function formatPaymentDateTime(createdAt: string): string {
   const d = new Date(createdAt);
   return d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) + ' — ' + d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-}
-
-const STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }> = {
-  pending: { label: 'Tekshirilmoqda', className: 'bg-amber-100 text-amber-800' },
-  approved: { label: 'Tasdiqlandi', className: 'bg-emerald-100 text-emerald-800' },
-  rejected: { label: 'Rad etildi', className: 'bg-red-100 text-red-800' },
-};
-
-function StatusBadge({ status }: { status: PaymentStatus }) {
-  const { label, className } = STATUS_CONFIG[status] ?? { label: status, className: 'bg-slate-100 text-slate-700' };
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}>
-      {label}
-    </span>
-  );
 }
 
 export default function ProfilePage() {
@@ -69,7 +46,8 @@ export default function ProfilePage() {
   const [payments, setPayments] = useState<MyPaymentRow[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
 
-  const hasPendingPayment = payments.some((p) => p.status === 'pending');
+  const pendingPayment = payments.find((p) => p.status === 'pending') ?? null;
+  const hasPendingPayment = !!pendingPayment;
   const hasActivePlan = user?.planExpiresAt && new Date(user.planExpiresAt) > new Date();
 
   useEffect(() => {
@@ -117,97 +95,20 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Faol to'lov */}
+          {/* To'lov holati */}
           <div className="mt-6 pt-6 border-t border-slate-100">
-            <p className="text-xs text-slate-500 uppercase font-bold mb-2">Faol to'lov</p>
-            {hasPendingPayment ? (
-              <p className="text-amber-700 font-medium">To'lov tekshirilmoqda</p>
+            <p className="text-xs text-slate-500 uppercase font-bold mb-2">To'lov holati</p>
+            {hasPendingPayment && pendingPayment ? (
+              <div className="text-left space-y-1">
+                <p className="text-amber-700 font-medium">Tekshirilmoqda</p>
+                <p className="text-slate-700 text-sm">Tarif: {TARIFF_LABELS[pendingPayment.tariff_type] ?? pendingPayment.tariff_type}</p>
+                <p className="text-slate-600 text-sm">To'lov vaqti: {formatPaymentDateTime(pendingPayment.created_at)}</p>
+              </div>
             ) : hasActivePlan && user?.planName ? (
               <p className="text-slate-900 font-medium">{user.planName} — {formatPlanTimeLeft(user?.planExpiresAt)} qoldi</p>
             ) : (
               <p className="text-slate-500">Tarif yo'q</p>
             )}
-          </div>
-        </motion.div>
-
-        {/* To'lovlar tarixi */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200"
-        >
-          <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
-            <History className="w-5 h-5 text-indigo-600" />
-            To'lovlar tarixi
-          </h3>
-          {paymentsLoading ? (
-            <p className="text-slate-500 text-sm">Yuklanmoqda...</p>
-          ) : payments.length === 0 ? (
-            <p className="text-slate-500 text-sm">To'lovlar yo'q.</p>
-          ) : (
-            <div className="space-y-4">
-              {payments.map((p) => (
-                <div
-                  key={p.id}
-                  className="rounded-2xl border border-slate-200 p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex justify-between items-start gap-2 mb-2">
-                    <span className="font-semibold text-slate-900">{TARIFF_LABELS[p.tariff_type] ?? p.tariff_type}</span>
-                    <StatusBadge status={p.status} />
-                  </div>
-                  <p className="text-slate-700 text-sm">
-                    Summa: {formatPaymentAmount(p.amount, p.currency)}
-                  </p>
-                  <p className="text-slate-500 text-sm mt-1">
-                    Sana: {formatPaymentDate(p.created_at)}
-                  </p>
-                  <a
-                    href={adminContact.telegram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Administrator bilan bog'lanish
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Administrator bilan bog'lanish — links */}
-          <div className="mt-6 pt-4 border-t border-slate-100">
-            <p className="text-xs text-slate-500 uppercase font-bold mb-3">Administrator bilan bog'lanish</p>
-            <div className="flex flex-wrap gap-2">
-              {adminContact.telegram && (
-                <a
-                  href={adminContact.telegram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200"
-                >
-                  Telegram
-                </a>
-              )}
-              {adminContact.whatsapp && (
-                <a
-                  href={adminContact.whatsapp}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200"
-                >
-                  WhatsApp
-                </a>
-              )}
-              {adminContact.email && (
-                <a
-                  href={`mailto:${adminContact.email}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200"
-                >
-                  Email
-                </a>
-              )}
-            </div>
           </div>
         </motion.div>
 
@@ -227,6 +128,14 @@ export default function ProfilePage() {
           >
             <CreditCard className="w-5 h-5 text-slate-400" />
             <span className="font-medium text-slate-700 flex-1 text-left">Tariflar</span>
+            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
+          </button>
+          <button
+            onClick={() => navigate('/payment-history')}
+            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+          >
+            <History className="w-5 h-5 text-slate-400" />
+            <span className="font-medium text-slate-700 flex-1 text-left">To'lovlar tarixi</span>
             <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
           </button>
           <button className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100">

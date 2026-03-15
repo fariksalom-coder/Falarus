@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Lock, BookOpen } from 'lucide-react';
 import * as accessApi from '../api/access';
 import PaywallModal from '../components/PaywallModal';
+import PendingPaymentModal from '../components/PendingPaymentModal';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 
 export default function VocabularySubtopicPreviewPage() {
   const { subtopicId } = useParams<{ subtopicId: string }>();
@@ -12,6 +14,7 @@ export default function VocabularySubtopicPreviewPage() {
   const [preview, setPreview] = useState<accessApi.SubtopicPreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const { hasPendingPayment } = usePaymentStatus();
 
   useEffect(() => {
     if (!token || !subtopicId) {
@@ -92,7 +95,10 @@ export default function VocabularySubtopicPreviewPage() {
         </button>
       </main>
 
-      {modalOpen && (
+      {modalOpen && hasPendingPayment && (
+        <PendingPaymentModal onClose={() => setModalOpen(false)} />
+      )}
+      {modalOpen && !hasPendingPayment && (
         <PaywallModal onClose={() => setModalOpen(false)} />
       )}
     </div>

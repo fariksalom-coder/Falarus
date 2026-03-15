@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
 import CurrencyModal from '../components/pricing/CurrencyModal';
 import { getTariffPricesByCurrency } from '../api/publicPricing';
 import type { Currency } from '../components/pricing/CurrencyModal';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { useAuth } from '../context/AuthContext';
 
 const BG = '#F8FAFC';
 const TEXT = '#0F172A';
@@ -122,6 +124,8 @@ function durationToTariffType(duration: string): 'month' | '3months' | 'year' {
 
 export default function PricingPage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const { hasPendingPayment } = usePaymentStatus();
   const [plans, setPlans] = useState<PlanCard[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | '3months' | 'year'; tariffLabel: string } | null>(null);
@@ -181,6 +185,14 @@ export default function PricingPage() {
 
         {/* 2. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
         <section id="tariflar" className="mb-20">
+          {token && hasPendingPayment && (
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+              <Info className="h-5 w-5 shrink-0" />
+              <p className="text-sm font-medium">
+                Sizning to'lovingiz tekshirilmoqda. Administrator tasdiqlashini kuting.
+              </p>
+            </div>
+          )}
           <p className="mb-6 text-center text-sm text-slate-500">
             Oddiy narx: <span className="font-semibold text-slate-600">250 000 so'm</span> / oy — hozir chegirmada
           </p>
@@ -221,7 +233,8 @@ export default function PricingPage() {
                     originalPerMonth={plan.originalPerMonth}
                     periodLabel={plan.periodLabel}
                     totalOriginal={plan.totalOriginal}
-                    onSelect={() => handleSelectPlan(plan)}
+                    onSelect={hasPendingPayment ? undefined : () => handleSelectPlan(plan)}
+                    purchaseDisabled={!!token && hasPendingPayment}
                   />
                 </div>
               ))}

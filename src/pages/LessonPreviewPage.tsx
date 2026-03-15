@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Lock, BookOpen, ListTodo } from 'lucide-react';
 import * as accessApi from '../api/access';
 import PaywallModal from '../components/PaywallModal';
+import PendingPaymentModal from '../components/PendingPaymentModal';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 
 export default function LessonPreviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +14,7 @@ export default function LessonPreviewPage() {
   const [preview, setPreview] = useState<accessApi.LessonPreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const { hasPendingPayment } = usePaymentStatus();
 
   useEffect(() => {
     const lessonId = id ? parseInt(id, 10) : NaN;
@@ -99,7 +102,10 @@ export default function LessonPreviewPage() {
         </button>
       </main>
 
-      {modalOpen && (
+      {modalOpen && hasPendingPayment && (
+        <PendingPaymentModal onClose={() => setModalOpen(false)} />
+      )}
+      {modalOpen && !hasPendingPayment && (
         <PaywallModal onClose={() => setModalOpen(false)} />
       )}
     </div>

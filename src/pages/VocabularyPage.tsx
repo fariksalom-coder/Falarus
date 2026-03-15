@@ -11,6 +11,8 @@ import {
 } from '../api/vocabulary';
 import { getAccess } from '../api/access';
 import PaywallModal from '../components/PaywallModal';
+import PendingPaymentModal from '../components/PendingPaymentModal';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import {
   ChevronRight,
   Lock,
@@ -73,6 +75,7 @@ export default function VocabularyPage() {
   );
   const [access, setAccess] = useState<Awaited<ReturnType<typeof getAccess>> | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const { hasPendingPayment } = usePaymentStatus();
 
   useEffect(() => {
     if (!token) {
@@ -174,7 +177,10 @@ export default function VocabularyPage() {
         </div>
       </main>
 
-      {showPaywall && (
+      {showPaywall && hasPendingPayment && (
+        <PendingPaymentModal onClose={() => setShowPaywall(false)} />
+      )}
+      {showPaywall && !hasPendingPayment && (
         <PaywallModal onClose={() => setShowPaywall(false)} />
       )}
     </div>

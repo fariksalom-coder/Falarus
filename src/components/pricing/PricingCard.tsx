@@ -24,6 +24,8 @@ export type PricingCardProps = {
   /** Итоговая старая сумма за период, зачёркнутая (напр. "3 000 000 so'm") */
   totalOriginal?: string;
   onSelect?: () => void;
+  /** When true, hide purchase button and show "To'lov tekshirilmoqda" (pending) */
+  purchaseDisabled?: boolean;
 };
 
 export default function PricingCard({
@@ -40,6 +42,7 @@ export default function PricingCard({
   periodLabel,
   totalOriginal,
   onSelect,
+  purchaseDisabled = false,
 }: PricingCardProps) {
   const useNewStructure = pricePerMonth != null;
 
@@ -133,18 +136,25 @@ export default function PricingCard({
 
       <button
         type="button"
-        onClick={onSelect}
-        className={`w-full rounded-xl py-3.5 text-base font-semibold text-white transition-all duration-200 active:scale-[0.98] ${
-          highlighted
-            ? 'py-4 text-lg font-bold shadow-lg ring-2 ring-white/30 hover:shadow-xl hover:scale-[1.02]'
-            : 'hover:opacity-90'
+        onClick={purchaseDisabled ? undefined : onSelect}
+        disabled={purchaseDisabled}
+        className={`w-full rounded-xl py-3.5 text-base font-semibold transition-all duration-200 ${
+          purchaseDisabled
+            ? 'cursor-not-allowed bg-slate-300 text-slate-600'
+            : highlighted
+              ? 'text-white py-4 text-lg font-bold shadow-lg ring-2 ring-white/30 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]'
+              : 'text-white hover:opacity-90 active:scale-[0.98]'
         }`}
-        style={{
-          backgroundColor: highlighted ? '#f59e0b' : PRIMARY,
-          ...(highlighted && { boxShadow: '0 10px 25px -5px rgba(245, 158, 11, 0.4)' }),
-        }}
+        style={
+          purchaseDisabled
+            ? {}
+            : {
+                backgroundColor: highlighted ? '#f59e0b' : PRIMARY,
+                ...(highlighted && { boxShadow: '0 10px 25px -5px rgba(245, 158, 11, 0.4)' }),
+              }
+        }
       >
-        {buttonLabel}
+        {purchaseDisabled ? "To'lov tekshirilmoqda" : buttonLabel}
       </button>
     </div>
   );

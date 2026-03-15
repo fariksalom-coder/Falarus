@@ -11,6 +11,8 @@ import {
   type VocabularySubtopic,
 } from '../api/vocabulary';
 import PaywallModal from '../components/PaywallModal';
+import PendingPaymentModal from '../components/PendingPaymentModal';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import {
   ChevronRight,
   ArrowLeft,
@@ -118,6 +120,7 @@ export default function VocabularyTopicPage() {
     topicId ? (getCachedSubtopicsProgress(topicId) ?? []) : []
   );
   const [showPaywall, setShowPaywall] = useState(false);
+  const { hasPendingPayment } = usePaymentStatus();
 
   useEffect(() => {
     if (!topicId) {
@@ -235,7 +238,10 @@ export default function VocabularyTopicPage() {
         </div>
       </main>
 
-      {showPaywall && (
+      {showPaywall && hasPendingPayment && (
+        <PendingPaymentModal onClose={() => setShowPaywall(false)} />
+      )}
+      {showPaywall && !hasPendingPayment && (
         <PaywallModal
           onClose={() => setShowPaywall(false)}
           title="Bu mavzu faqat obuna bo'lganlar uchun"

@@ -12,6 +12,8 @@ import { getLessonCompletionSummary } from '../utils/lessonTaskResults';
 import { useAuth } from '../context/AuthContext';
 import * as accessApi from '../api/access';
 import PaywallModal from '../components/PaywallModal';
+import PendingPaymentModal from '../components/PendingPaymentModal';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 
 const BG = '#F8FAFC';
 const CARD_BG = '#FFFFFF';
@@ -47,6 +49,7 @@ export default function Dashboard() {
   const [lessonsLockMap, setLessonsLockMap] = useState<Record<number, boolean>>({});
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLockedLessonId, setSelectedLockedLessonId] = useState<number | null>(null);
+  const { hasPendingPayment } = usePaymentStatus();
 
   useEffect(() => {
     if (!token) return;
@@ -183,7 +186,12 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {modalOpen && (
+      {modalOpen && hasPendingPayment && (
+        <PendingPaymentModal
+          onClose={() => { setModalOpen(false); setSelectedLockedLessonId(null); }}
+        />
+      )}
+      {modalOpen && !hasPendingPayment && (
         <PaywallModal
           onClose={() => { setModalOpen(false); setSelectedLockedLessonId(null); }}
         />
