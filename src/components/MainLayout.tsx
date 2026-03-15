@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import AppNavBar from './AppNavBar';
+import PWAInstallPrompt from './PWAInstallPrompt';
 
 /** Routes where we hide the top nav bar (payment = fullscreen, vocabulary nested = back only, invite = has back button). */
 function hideNavBar(path: string): boolean {
@@ -22,6 +23,7 @@ export default function MainLayout() {
       <div className={showNavBar ? 'min-h-screen pt-14' : 'min-h-screen'}>
         <Outlet />
       </div>
+      {showNavBar && <PWAInstallPrompt />}
     </>
   );
 }
