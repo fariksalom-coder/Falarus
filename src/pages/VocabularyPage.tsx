@@ -9,8 +9,11 @@ import {
   setCachedTopicsProgress,
   type VocabularyTopic,
 } from '../api/vocabulary';
+import { getAccess } from '../api/access';
+import PaywallModal from '../components/PaywallModal';
 import {
   ChevronRight,
+  Lock,
   Sun,
   Users,
   Building2,
@@ -68,16 +71,22 @@ export default function VocabularyPage() {
   const [topicsProgress, setTopicsProgress] = useState<VocabularyTopic[]>(() =>
     getCachedTopicsProgress() ?? []
   );
+  const [access, setAccess] = useState<Awaited<ReturnType<typeof getAccess>> | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (!token) {
       setTopicsProgress([]);
+      setAccess(null);
       return;
     }
-    fetchVocabularyTopics(token).then((data) => {
-      setTopicsProgress(data);
-      setCachedTopicsProgress(data);
-    });
+    Promise.all([
+      fetchVocabularyTopics(token).then((data) => {
+        setTopicsProgress(data);
+        setCachedTopicsProgress(data);
+      }),
+      getAccess(token).then(setAccess).catch(() => setAccess(null)),
+    ]);
   }, [token]);
 
   return (
@@ -96,12 +105,23 @@ export default function VocabularyPage() {
             const progressPercent = wordCount > 0 ? Math.round((learnedWords / wordCount) * 100) : 0;
             const accentBg = ACCENT_BG[index % ACCENT_BG.length];
             const accentIcon = ACCENT_ICON[index % ACCENT_ICON.length];
+            const locked =
+              access != null &&
+              !access.subscription_active &&
+              access.vocabulary_free_topic_id != null &&
+              topic.id !== access.vocabulary_free_topic_id;
 
             return (
               <button
                 key={topic.id}
                 type="button"
-                onClick={() => navigate(`/vocabulary/${topic.id}`)}
+                onClick={() => {
+                  if (locked) {
+                    setShowPaywall(true);
+                  } else {
+                    navigate(`/vocabulary/${topic.id}`);
+                  }
+                }}
                 className="group relative w-full rounded-2xl border border-slate-200/80 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200/80 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <div className="flex items-start gap-4">
@@ -138,7 +158,11 @@ export default function VocabularyPage() {
                     </div>
                   </div>
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600">
-                    <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                    {locked ? (
+                      <Lock className="h-5 w-5 text-amber-500" strokeWidth={2} />
+                    ) : (
+                      <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                    )}
                   </div>
                 </div>
               </button>
@@ -146,6 +170,15 @@ export default function VocabularyPage() {
           })}
         </div>
       </main>
+
+      {showPaywall && (
+        <PaywallModal
+          onClose={() => setShowPaywall(false)}
+          title="Bu bo'lim faqat obuna bo'lganlar uchun"
+          description="Barcha so'zlar va bo'limlarga kirish uchun tarifni sotib oling."
+          buttonText="Barcha bo'limlarni ochish"
+        />
+      )}
     </div>
   );
 }
