@@ -1,0 +1,120 @@
+/**
+ * Single handler for /api/leaderboard and /api/activity/streak to stay under 12 serverless functions.
+ */
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { supabase } from './_lib/supabase.js';
+import { setCors, handleOptions } from './_lib/cors.js';
+import { requireAuth } from './_lib/auth.js';
+
+function getPathParts(req: VercelRequest): string[] {
+  const path = req.query.path;
+  if (Array.isArray(path)) return path.filter((p): p is string => typeof p === 'string');
+  if (typeof path === 'string') return path ? path.split('/').filter(Boolean) : [];
+  const url = req.url || (req as any).originalUrl || '';
+  const pathname = typeof url === 'string' ? url.split('?')[0] : '';
+  const parts = pathname.split('/').filter(Boolean);
+  const apiIndex = parts.indexOf('api');
+  if (apiIndex >= 0 && apiIndex < parts.length - 1) return parts.slice(apiIndex + 1);
+  return [];
+}
+
+function todayDateString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setCors(res);
+  if (req.method === 'OPTIONS') return handleOptions(res);
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const path = getPathParts(req);
+
+  // /api/leaderboard
+  if (path[0] === 'leaderboard') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    const period = (typeof req.query.period === 'string' ? req.query.period : 'weekly') || 'weekly';
+    const useTotalPoints = period === 'all';
+    try {
+      if (useTotalPoints) {
+        const { data: lbRows, error: lbErr } = await supabase
+          .from('leaderboard')
+          .select('user_id, total_points, rank')
+          .order('rank', { ascending: true })
+          .limit(100);
+        if (lbErr) throw lbErr;
+        const rows = lbRows ?? [];
+        if (rows.length === 0) return res.status(200).json({ top: [], myRank: null });
+        const userIds = [...new Set(rows.map((r: { user_id: number }) => r.user_id))];
+        const { data: users, error: uErr } = await supabase.from('users').select('id, first_name, last_name, avatar_url').in('id', userIds);
+        if (uErr) throw uErr;
+        const byId = (users ?? []).reduce((acc: Record<number, any>, u: any) => { acc[u.id] = u; return acc; }, {});
+        const top = rows.map((r: any) => {
+          const u = byId[r.user_id];
+          return { id: u?.id ?? r.user_id, firstName: u?.first_name ?? '', lastName: u?.last_name ?? '', avatarUrl: u?.avatar_url ?? null, points: Number(r.total_points), rank: Number(r.rank) };
+        });
+        const { data: myRow } = await supabase.from('leaderboard').select('rank, total_points').eq('user_id', userId).maybeSingle();
+        const { data: me } = await supabase.from('users').select('id, first_name, last_name, avatar_url').eq('id', userId).single();
+        return res.status(200).json({
+          top,
+          myRank: myRow && me ? { rank: Number(myRow.rank), id: me.id, firstName: me.first_name, lastName: me.last_name, avatarUrl: me.avatar_url, points: Number(myRow.total_points) } : null,
+        });
+      }
+      const col = period === 'monthly' ? 'monthly_points' : 'weekly_points';
+      const { data: top, error: topErr } = await supabase.from('users').select('id, first_name, last_name, avatar_url, weekly_points, monthly_points').order(col, { ascending: false }).limit(100);
+      if (topErr) throw topErr;
+      const { data: me, error: meErr } = await supabase.from('users').select('id, first_name, last_name, avatar_url, weekly_points, monthly_points').eq('id', userId).single();
+      if (meErr || !me) return res.status(200).json({ top: top ?? [], myRank: null });
+      const myPoints = period === 'monthly' ? (me.monthly_points ?? 0) : (me.weekly_points ?? 0);
+      const { count, error: countErr } = await supabase.from('users').select('*', { count: 'exact', head: true }).gt(col, myPoints);
+      const rank = countErr ? null : (count ?? 0) + 1;
+      return res.status(200).json({
+        top: (top ?? []).map((u: any) => ({ id: u.id, firstName: u.first_name, lastName: u.last_name, avatarUrl: u.avatar_url, points: period === 'monthly' ? (u.monthly_points ?? 0) : (u.weekly_points ?? 0) })),
+        myRank: rank == null ? null : { rank, id: me.id, firstName: me.first_name, lastName: me.last_name, avatarUrl: me.avatar_url, points: myPoints },
+      });
+    } catch (e) {
+      console.error('[api/leaderboard]', e instanceof Error ? e.message : e);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  }
+
+  // /api/activity/streak
+  if (path[0] === 'activity' && path[1] === 'streak') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    try {
+      const { data: rows, error } = await supabase
+        .from('user_activity_dates')
+        .select('activity_date')
+        .eq('user_id', userId)
+        .order('activity_date', { ascending: false })
+        .limit(365);
+      if (error) {
+        console.error('[api/activity/streak]', error.message);
+        return res.status(200).json({ streak_days: 0, last_7_days: [false, false, false, false, false, false, false] });
+      }
+      const dates = new Set((rows ?? []).map((r: { activity_date: string }) => r.activity_date));
+      const today = todayDateString();
+      let streak = 0;
+      const d = new Date();
+      for (let i = 0; i < 365; i++) {
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (dates.has(key)) { streak++; d.setDate(d.getDate() - 1); } else break;
+      }
+      const last7: boolean[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const day = new Date();
+        day.setDate(day.getDate() - i);
+        const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+        last7.push(dates.has(key));
+      }
+      return res.status(200).json({ streak_days: streak, last_7_days: last7 });
+    } catch (e) {
+      console.error('[api/activity/streak]', e instanceof Error ? e.message : e);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  }
+
+  return res.status(404).json({ error: 'Not found' });
+}
