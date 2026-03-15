@@ -1,8 +1,9 @@
 /**
- * Admin API (Vercel): dashboard, users, payments, subscriptions, referrals, support, pricing.
- * POST /api/admin/login is in api/admin/login.ts
+ * Admin API (Vercel): login + dashboard, users, payments, subscriptions, referrals, support, pricing.
+ * Single serverless function to stay under 12-function limit.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
@@ -51,7 +52,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return handleOptions(res);
 
   const path = getPathParts(req);
-  if (path[0] === 'login') return res.status(404).json({ error: 'Use POST /api/admin/login' });
+
+  // POST /api/admin/login (no auth)
+  if (path[0] === 'login' && req.method === 'POST') {
+    try {
+      const body = parseBody(req.body);
+      const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+      const password = typeof body.password === 'string' ? body.password : '';
+      if (!email || !password) return res.status(400).json({ error: 'Email va parol kerak' });
+      const { data: admin, error } = await supabase.from('admins').select('id, email, password_hash').eq('email', email).single();
+      if (error || !admin) return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
+      const valid = await bcrypt.compare(password, (admin as { password_hash: string }).password_hash);
+      if (!valid) return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
+      const token = jwt.sign(
+        { adminId: (admin as { id: number }).id, email: (admin as { email: string }).email },
+        JWT_SECRET
+      );
+      return res.status(200).json({ token, admin: { id: (admin as { id: number }).id, email: (admin as { email: string }).email } });
+    } catch (e) {
+      console.error('[api/admin/login]', e);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  }
 
   const adminId = getAdminId(req);
   if (adminId == null) return res.status(401).json({ error: 'Token kerak' });
