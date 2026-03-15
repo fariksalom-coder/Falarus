@@ -27,7 +27,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'User topilmadi' });
     }
 
-    const { data: lessons, error } = await supabase.from('lessons').select('*').eq('level', user.level);
+    const { data: lessons, error } = await supabase
+      .from('lessons')
+      .select('id, level, module_name, title, content_uz, content_ru')
+      .eq('level', user.level)
+      .order('id');
     if (error) {
       console.error('[api/lessons] Lessons fetch error:', error.message);
       return res.status(500).json({ error: error.message });

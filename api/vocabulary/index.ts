@@ -24,7 +24,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (req.method === 'GET') {
-      const { data: words, error } = await supabase.from('vocabulary').select('*').eq('user_id', userId);
+      const { data: words, error } = await supabase
+        .from('vocabulary')
+        .select('id, user_id, word_ru, translation_uz, example_ru, learned, repetition_stage, next_review, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
       if (error) {
         console.error('[api/vocabulary] GET error:', error.message);
         return res.status(500).json({ error: error.message });

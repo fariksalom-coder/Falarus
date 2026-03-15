@@ -39,11 +39,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { count: total } = await supabase
       .from('lessons')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('level', user.level);
     const { count: completed } = await supabase
       .from('user_progress')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('completed', 1);
 

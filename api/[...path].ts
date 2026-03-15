@@ -197,22 +197,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const useTotalPoints = period === 'all';
     try {
       if (useTotalPoints) {
-        const { data: lbRows, error: lbErr } = await supabase
-          .from('leaderboard')
-          .select('user_id, total_points, rank')
-          .order('rank', { ascending: true })
-          .limit(100);
-        if (lbErr) throw lbErr;
-        const rows = lbRows ?? [];
-        if (rows.length === 0) return res.status(200).json({ top: [], myRank: null });
-        const userIds = [...new Set(rows.map((r: { user_id: number }) => r.user_id))];
-        const { data: users, error: uErr } = await supabase.from('users').select('id, first_name, last_name, avatar_url').in('id', userIds);
-        if (uErr) throw uErr;
-        const byId = (users ?? []).reduce((acc: Record<number, any>, u: any) => { acc[u.id] = u; return acc; }, {});
-        const top = rows.map((r: any) => {
-          const u = byId[r.user_id];
-          return { id: u?.id ?? r.user_id, firstName: u?.first_name ?? '', lastName: u?.last_name ?? '', avatarUrl: u?.avatar_url ?? null, points: Number(r.total_points), rank: Number(r.rank) };
-        });
+        const { data: topRows, error: rpcErr } = await supabase.rpc('get_leaderboard', { lim: 100 });
+        if (rpcErr) throw rpcErr;
+        const top = (topRows ?? []).map((r: { user_id: number; first_name: string | null; last_name: string | null; avatar_url: string | null; total_points: number; rank: number }) => ({
+          id: r.user_id,
+          firstName: r.first_name ?? '',
+          lastName: r.last_name ?? '',
+          avatarUrl: r.avatar_url ?? null,
+          points: Number(r.total_points),
+          rank: Number(r.rank),
+        }));
         const { data: myRow } = await supabase.from('leaderboard').select('rank, total_points').eq('user_id', userId).maybeSingle();
         const { data: me } = await supabase.from('users').select('id, first_name, last_name, avatar_url').eq('id', userId).single();
         return res.status(200).json({
@@ -226,7 +220,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: me, error: meErr } = await supabase.from('users').select('id, first_name, last_name, avatar_url, weekly_points, monthly_points').eq('id', userId).single();
       if (meErr || !me) return res.status(200).json({ top: top ?? [], myRank: null });
       const myPoints = period === 'monthly' ? (me.monthly_points ?? 0) : (me.weekly_points ?? 0);
-      const { count, error: countErr } = await supabase.from('users').select('*', { count: 'exact', head: true }).gt(col, myPoints);
+      const { count, error: countErr } = await supabase.from('users').select('id', { count: 'exact', head: true }).gt(col, myPoints);
       const rank = countErr ? null : (count ?? 0) + 1;
       return res.status(200).json({
         top: (top ?? []).map((u: any) => ({ id: u.id, firstName: u.first_name, lastName: u.last_name, avatarUrl: u.avatar_url, points: period === 'monthly' ? (u.monthly_points ?? 0) : (u.weekly_points ?? 0) })),

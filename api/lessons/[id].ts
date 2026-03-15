@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { data: lesson, error: lessonErr } = await supabase
       .from('lessons')
-      .select('*')
+      .select('id, level, module_name, title, content_uz, content_ru')
       .eq('id', id)
       .maybeSingle();
 
@@ -33,7 +33,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Dars topilmadi' });
     }
 
-    const { data: exercises } = await supabase.from('exercises').select('*').eq('lesson_id', id);
+    const { data: exercises } = await supabase
+      .from('exercises')
+      .select('id, lesson_id, type, question_uz, options, correct_answer')
+      .eq('lesson_id', id)
+      .order('id');
     const exercisesParsed = (exercises ?? []).map((e: { options?: unknown; [k: string]: unknown }) => ({
       ...e,
       options:

@@ -1,9 +1,17 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-let _client: SupabaseClient | null = null;
+/**
+ * Singleton Supabase client for serverless (Vercel).
+ * Uses globalThis so the same instance is reused across warm invocations
+ * and we avoid creating a new client per request.
+ */
+declare global {
+  // eslint-disable-next-line no-var
+  var __supabaseClient: SupabaseClient | undefined;
+}
 
 function getSupabaseClient(): SupabaseClient {
-  if (_client) return _client;
+  if (globalThis.__supabaseClient) return globalThis.__supabaseClient;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
@@ -11,10 +19,11 @@ function getSupabaseClient(): SupabaseClient {
     console.error('[Supabase]', msg);
     throw new Error(msg);
   }
-  _client = createClient(url, key, {
+  const client = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
-  return _client;
+  globalThis.__supabaseClient = client;
+  return client;
 }
 
 export const supabase = new Proxy({} as SupabaseClient, {

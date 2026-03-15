@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { count, error: countError } = await supabase
       .from('lessons')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
     if (countError) {
       console.error('[api/seed] Count error:', countError.message);
       return res.status(500).json({ ok: false, error: countError.message });

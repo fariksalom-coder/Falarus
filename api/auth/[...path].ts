@@ -50,7 +50,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!email || !password) {
         return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
       }
-      const { data: user, error } = await supabase.from('users').select('*').eq('email', email).maybeSingle();
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, email, password, level, onboarded')
+        .eq('email', email)
+        .maybeSingle();
       if (error) {
         console.error('[api/auth/login]', error.message);
         return res.status(500).json({ error: 'Xatolik yuz berdi' });

@@ -177,8 +177,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
       if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
       const now = new Date().toISOString();
-      const { count: lessonsCompleted } = await supabase.from('user_progress').select('*', { count: 'exact', head: true }).eq('user_id', id).eq('completed', 1);
-      const { count: wordsLearned } = await supabase.from('vocabulary').select('*', { count: 'exact', head: true }).eq('user_id', id);
+      const { count: lessonsCompleted } = await supabase.from('user_progress').select('id', { count: 'exact', head: true }).eq('user_id', id).eq('completed', 1);
+      const { count: wordsLearned } = await supabase.from('vocabulary').select('id', { count: 'exact', head: true }).eq('user_id', id);
       const { data: refs } = await supabase.from('referrals').select('id').eq('referrer_id', id);
       return res.status(200).json({
         id: (user as any).id,
@@ -368,7 +368,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // GET /api/admin/pricing
     if (path[0] === 'pricing' && path.length === 1 && req.method === 'GET') {
-      const { data: rows, error } = await supabase.from('pricing_plans').select('*').order('id');
+      const { data: rows, error } = await supabase
+        .from('pricing_plans')
+        .select('id, plan_name, duration_days, price, discount_percent, active')
+        .order('id');
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json(rows ?? []);
     }
