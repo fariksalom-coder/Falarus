@@ -299,8 +299,8 @@ export function createAdminController(supabase: SupabaseClient) {
         console.error('[admin/rejectPayment]', error);
         return res.status(500).json({ error: error.message });
       }
-      if (!updated?.length) return res.status(404).json({ error: 'To\'lov topilmadi yoki allaqachon qayta ishlangan' });
-      return res.json({ success: true });
+      // 200 either way: if already processed, client will refetch and see current status
+      return res.json({ success: true, updated: (updated?.length ?? 0) > 0 });
     } catch (e: any) {
       console.error('[admin/rejectPayment]', e);
       return res.status(500).json({ error: e?.message || 'Server xatosi' });
