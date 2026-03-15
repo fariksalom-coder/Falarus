@@ -13,21 +13,21 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'su
 
 function getPathParts(req: VercelRequest): string[] {
   const path = req.query.path;
-  let pathStr: string;
   if (Array.isArray(path)) {
     const segments = path.filter((p): p is string => typeof p === 'string');
-    pathStr = segments.join('/');
-  } else if (typeof path === 'string') {
-    pathStr = path;
-  } else {
-    const url = req.url || (req as any).originalUrl || '';
-    const pathname = typeof url === 'string' ? url.split('?')[0] : '';
-    const parts = pathname.split('/').filter(Boolean);
-    const adminIndex = parts.indexOf('admin');
-    if (adminIndex >= 0 && adminIndex < parts.length - 1) return parts.slice(adminIndex + 1);
-    return [];
+    const pathStr = segments.join('/');
+    return pathStr ? pathStr.split('/').filter(Boolean) : [];
   }
-  return pathStr ? pathStr.split('/').filter(Boolean) : [];
+  if (typeof path === 'string') {
+    return path ? path.split('/').filter(Boolean) : [];
+  }
+  // Fallback: parse from request URL (Vercel may not set req.query.path for all runtimes)
+  const url = req.url || (req as any).originalUrl || (req as any).path || '';
+  const pathname = typeof url === 'string' ? url.replace(/^https?:\/\/[^/]+/, '').split('?')[0] : '';
+  const parts = pathname.split('/').filter(Boolean);
+  const adminIndex = parts.indexOf('admin');
+  if (adminIndex >= 0 && adminIndex < parts.length - 1) return parts.slice(adminIndex + 1);
+  return [];
 }
 
 function parseBody(body: unknown): Record<string, unknown> {
