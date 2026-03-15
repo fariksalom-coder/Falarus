@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { submitPayment, type TariffType, type Currency } from '../api/payment';
+import { submitPayment, getMyPayments, type TariffType, type Currency } from '../api/payment';
 import { getPaymentMethodByCurrency, getTariffPricesByCurrency } from '../api/publicPricing';
 import {
   Copy,
@@ -73,10 +73,20 @@ export default function PaymentPage() {
   } | null>(null);
   const [price, setPrice] = useState<number | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(true);
+  const [hasPendingPayment, setHasPendingPayment] = useState(false);
+  const [pendingCheckDone, setPendingCheckDone] = useState(false);
 
   const tariffType = state?.tariffType ?? 'month';
   const currency = state?.currency ?? 'UZS';
   const tariffLabel = state?.tariffLabel ?? '1 OY';
+
+  useEffect(() => {
+    if (!token) return;
+    getMyPayments(token).then((list) => {
+      setHasPendingPayment(list.some((p) => p.status === 'pending'));
+      setPendingCheckDone(true);
+    }).catch(() => setPendingCheckDone(true));
+  }, [token]);
 
   useEffect(() => {
     setDetailsLoading(true);
@@ -153,19 +163,51 @@ export default function PaymentPage() {
     try {
       await submitPayment(token, tariffType, currency, file);
       setSuccess(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Xatolik yuz berdi');
+    } catch (e: unknown) {
+      const err = e as Error & { code?: string };
+      if (err.code === 'PENDING_PAYMENT') setHasPendingPayment(true);
+      else setError(err.message || 'Xatolik yuz berdi');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (!state?.tariffType) {
+  if (!state?.tariffType && !hasPendingPayment && pendingCheckDone) {
     navigate('/tariflar', { replace: true });
     return null;
   }
+  if (!state?.tariffType && !hasPendingPayment && !pendingCheckDone) {
+    return null;
+  }
 
-  // ——— Success screen ———
+  // ——— Pending payment: block duplicate ———
+  if (pendingCheckDone && hasPendingPayment && !success) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 text-center">
+          <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="h-10 w-10 text-amber-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">To'lovingiz tekshirilmoqda</h1>
+          <p className="text-slate-600 mb-8">
+            Administrator tez orada to'lovni tasdiqlaydi.
+            <br />
+            Tasdiqlangandan so'ng sizga kursga kirish ochiladi.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/profile')}
+            className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
+          >
+            Profilga o'tish
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ——— Success screen after submit ———
   if (success) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -174,29 +216,18 @@ export default function PaymentPage() {
             <CheckCircle className="h-10 w-10 text-emerald-600" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">To'lov qabul qilindi</h1>
-          <p className="text-slate-600 mb-4">
-            Administrator tez orada to'lovni tekshiradi.
+          <p className="text-slate-600 mb-8">
+            Sizning to'lovingiz qabul qilindi va tekshiruvga yuborildi.
             <br />
-            Tasdiqlangandan so'ng sizga kursga kirish ochiladi.
+            Administrator tez orada to'lovni tasdiqlaydi.
           </p>
-          <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 text-amber-800 px-4 py-2 text-sm font-medium mb-8">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            Holat: Tekshiruvda
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="w-full rounded-xl py-4 text-lg font-semibold border-2 transition-colors hover:opacity-90"
-            style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
-          >
-            Bosh sahifaga
-          </button>
           <button
             type="button"
             onClick={() => navigate('/profile')}
-            className="w-full mt-3 rounded-xl py-3 text-slate-600 hover:text-slate-900 font-medium"
+            className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            Profilga qaytish
+            Profilga o'tish
           </button>
         </div>
       </div>

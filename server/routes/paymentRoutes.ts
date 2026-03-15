@@ -50,6 +50,17 @@ export function createPaymentRoutes(
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
       }
 
+      const { data: pending } = await supabase.from('payments').select('id').eq('user_id', userId).eq('status', 'pending').limit(1).maybeSingle();
+      if (pending) {
+        return res.status(400).json({
+          error: 'PENDING_PAYMENT',
+          message: "To'lovingiz tekshirilmoqda. Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi.",
+        });
+      }
+
+      const { data: priceRow } = await supabase.from('tariff_prices').select('price').eq('currency', currency).eq('tariff_type', tariff_type === 'year' ? 'year' : tariff_type === '3months' ? 'three_months' : 'month').maybeSingle();
+      const amount = priceRow != null ? Number((priceRow as { price: number }).price) : 0;
+
       try {
         const ext = file.mimetype === 'application/pdf' ? 'pdf' : file.mimetype.split('/')[1] || 'jpg';
         const path = `${userId}/${Date.now()}_proof.${ext}`;
@@ -82,6 +93,7 @@ export function createPaymentRoutes(
             user_id: userId,
             tariff_type,
             currency,
+            amount,
             payment_proof_url: paymentProofUrl,
             payment_time: new Date().toISOString(),
             status: 'pending',

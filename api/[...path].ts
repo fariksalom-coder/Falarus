@@ -73,6 +73,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const userId = requireAuth(req, res);
     if (userId == null) return;
     try {
+      const { data: pending } = await supabase.from('payments').select('id').eq('user_id', userId).eq('status', 'pending').limit(1).maybeSingle();
+      if (pending) {
+        return res.status(400).json({
+          error: 'PENDING_PAYMENT',
+          message: "To'lovingiz tekshirilmoqda. Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi.",
+        });
+      }
       const { fields, file } = await parseMultipartPayments(req);
       const tariff_type = (fields.tariff_type || '').trim();
       const currency = (fields.currency || '').toUpperCase();

@@ -75,6 +75,19 @@ async function handleOnboard(userId: number, req: VercelRequest, res: VercelResp
   return res.status(200).json({ success: true });
 }
 
+async function handlePayments(userId: number, res: VercelResponse) {
+  const { data: rows, error } = await supabase
+    .from('payments')
+    .select('id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('[api/user/payments]', error.message);
+    return res.status(500).json({ error: 'Xatolik yuz berdi' });
+  }
+  return res.status(200).json(rows ?? []);
+}
+
 async function handleAccess(userId: number, res: VercelResponse) {
   const subscriptionActive = await hasActiveAccess(userId);
   let vocabulary_free_topic_id: string | null = null;
@@ -138,6 +151,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (segment === 'access' && req.method === 'GET') {
       return await handleAccess(userId, res);
+    }
+    if (segment === 'payments' && req.method === 'GET') {
+      return await handlePayments(userId, res);
     }
     return res.status(404).json({ error: 'Not found' });
   } catch (e) {

@@ -286,6 +286,16 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  app.get('/api/user/payments', authenticate, async (req: any, res) => {
+    const { data: rows, error } = await supabase
+      .from('payments')
+      .select('id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at')
+      .eq('user_id', req.userId)
+      .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(rows ?? []);
+  });
+
   // User: request subscription payment (by card) — admin confirms later
   app.post('/api/payment-request', authenticate, async (req: any, res) => {
     const { plan_type, amount } = req.body || {};
