@@ -10,6 +10,7 @@ import {
   setCachedSubtopicsProgress,
   type VocabularySubtopic,
 } from '../api/vocabulary';
+import PaywallModal from '../components/PaywallModal';
 import {
   ChevronRight,
   ArrowLeft,
@@ -116,6 +117,7 @@ export default function VocabularyTopicPage() {
   const [subtopicsProgress, setSubtopicsProgress] = useState<VocabularySubtopic[]>(() =>
     topicId ? (getCachedSubtopicsProgress(topicId) ?? []) : []
   );
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (!topicId) {
@@ -174,7 +176,9 @@ export default function VocabularyTopicPage() {
           {topic.subtopics.map((subtopic, index) => {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
             const fromApi = subtopicsProgress.find((s) => s.id === subtopic.id);
-            const locked = fromApi?.locked ?? false;
+            const firstSubtopicId = topic.subtopics[0]?.id;
+            const isFirstSubtopic = firstSubtopicId != null && subtopic.id === firstSubtopicId;
+            const locked = isFirstSubtopic ? false : (fromApi !== undefined ? (fromApi.locked ?? true) : true);
             const wordCount = getSubtopicWordCount(topic.id, subtopic.id);
             const learned = fromApi?.learned_words ?? getLearnedCount(topic.id, subtopic.id);
             const percent = wordCount > 0 ? Math.round((learned / wordCount) * 100) : 0;
@@ -187,7 +191,7 @@ export default function VocabularyTopicPage() {
                 type="button"
                 onClick={() => {
                   if (locked) {
-                    navigate(`/preview/vocabulary/${subtopic.id}`);
+                    setShowPaywall(true);
                     return;
                   }
                   setLastSubtopicId(topic.id, subtopic.id);
@@ -219,16 +223,26 @@ export default function VocabularyTopicPage() {
                   </div>
                 </div>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600 relative">
-                  {locked && (
-                    <Lock className="absolute -top-0.5 -right-0.5 h-4 w-4 text-amber-500" strokeWidth={2.5} />
+                  {locked ? (
+                    <Lock className="h-5 w-5 text-amber-500" strokeWidth={2} />
+                  ) : (
+                    <ChevronRight className="h-5 w-5" strokeWidth={2} />
                   )}
-                  <ChevronRight className="h-5 w-5" strokeWidth={2} />
                 </div>
               </button>
             );
           })}
         </div>
       </main>
+
+      {showPaywall && (
+        <PaywallModal
+          onClose={() => setShowPaywall(false)}
+          title="Bu mavzu faqat obuna bo'lganlar uchun"
+          description="Barcha so'zlar va mavzularga kirish uchun tarifni sotib oling."
+          buttonText="Barcha mavzularni ochish"
+        />
+      )}
     </div>
   );
 }

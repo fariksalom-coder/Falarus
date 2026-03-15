@@ -80,14 +80,21 @@ export default function VocabularyPage() {
       setAccess(null);
       return;
     }
-    Promise.all([
-      fetchVocabularyTopics(token).then((data) => {
-        setTopicsProgress(data);
-        setCachedTopicsProgress(data);
-      }),
-      getAccess(token).then(setAccess).catch(() => setAccess(null)),
-    ]);
+    fetchVocabularyTopics(token).then((data) => {
+      setTopicsProgress(data);
+      setCachedTopicsProgress(data);
+    }).catch(() => {});
+    getAccess(token).then(setAccess).catch(() => setAccess(null));
   }, [token]);
+
+  const firstTopicId = VOCABULARY_TOPICS[0]?.id;
+  const lockedByTopic = (topicId: string): boolean => {
+    if (firstTopicId != null && topicId === firstTopicId) return false;
+    if (access == null) return true;
+    if (access.subscription_active) return false;
+    const freeId = access.vocabulary_free_topic_id;
+    return freeId == null || topicId !== freeId;
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
@@ -105,11 +112,7 @@ export default function VocabularyPage() {
             const progressPercent = wordCount > 0 ? Math.round((learnedWords / wordCount) * 100) : 0;
             const accentBg = ACCENT_BG[index % ACCENT_BG.length];
             const accentIcon = ACCENT_ICON[index % ACCENT_ICON.length];
-            const locked =
-              access != null &&
-              !access.subscription_active &&
-              access.vocabulary_free_topic_id != null &&
-              topic.id !== access.vocabulary_free_topic_id;
+            const locked = lockedByTopic(topic.id);
 
             return (
               <button

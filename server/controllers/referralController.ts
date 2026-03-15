@@ -58,6 +58,37 @@ export function getList(supabase: Supabase) {
   };
 }
 
+/** Single response: link + stats + list (for fast invite page load). */
+export function getPage(supabase: Supabase) {
+  return async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId as number;
+      const [linkRes, stats, listRows] = await Promise.all([
+        referralService.getReferralLink(supabase, userId),
+        referralStatsService.getReferralStats(supabase, userId),
+        repo.getReferralsByReferrer(supabase, userId),
+      ]);
+      const list = listRows.map((r) => ({ name: r.name, status: r.status }));
+      res.json({
+        referral_link: linkRes.referral_link,
+        ...stats,
+        list,
+      });
+    } catch (e: any) {
+      console.error('[GET /referral?action=page]', e);
+      const msg = e?.message || '';
+      const isSchemaError =
+        /referral_code|referrals|relation.*does not exist|column.*does not exist/i.test(msg) ||
+        (e?.code && ['42P01', '42703'].includes(e.code));
+      res.status(500).json({
+        error: isSchemaError
+          ? "Referral tizimi sozlanmagan. Ma'lumotlar bazasiga 009_referral_system.sql migratsiyasini qo'llang."
+          : 'Xatolik yuz berdi',
+      });
+    }
+  };
+}
+
 export function postWithdraw(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {

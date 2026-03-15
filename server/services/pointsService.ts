@@ -1,4 +1,6 @@
 import type { Supabase } from '../types/progress';
+import * as leaderboardService from './leaderboard.service';
+import * as leaderboardCache from './leaderboardCache.service';
 
 const USERS = 'users';
 
@@ -10,7 +12,7 @@ export function calculatePoints(correctAnswers: number): number {
 }
 
 /**
- * Add points to user's total_points (e.g. after finishing a task).
+ * Add points to user's total_points and sync leaderboard table + invalidate cache.
  */
 export async function updateUserTotalPoints(
   supabase: Supabase,
@@ -30,4 +32,7 @@ export async function updateUserTotalPoints(
     .update({ total_points: newTotal })
     .eq('id', userId);
   if (updateErr) throw updateErr;
+  await leaderboardService.ensureUserInLeaderboard(supabase, userId);
+  await leaderboardService.updateUserPoints(supabase, userId, newTotal);
+  await leaderboardCache.invalidateLeaderboardCache();
 }

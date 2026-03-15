@@ -33,6 +33,9 @@ export function cacheKeyWordGroups(userId: number, subtopicId: string): string {
   return `user_wordgroups_progress:${userId}:${subtopicId}`;
 }
 
+export const LEADERBOARD_CACHE_KEY = 'leaderboard_top_100';
+export const LEADERBOARD_CACHE_TTL_SEC = 60;
+
 export async function getCached<T>(key: string): Promise<T | null> {
   const redis = await getRedis();
   if (!redis) return null;

@@ -63,15 +63,21 @@ export async function finishTest(
       .eq('id', userId)
       .single();
     if (user) {
+      const newTotal = (user.total_points ?? 0) + pointsAwarded;
       await supabase
         .from('users')
         .update({
           points: (user.points ?? 0) + pointsAwarded,
           weekly_points: (user.weekly_points ?? 0) + pointsAwarded,
           monthly_points: (user.monthly_points ?? 0) + pointsAwarded,
-          total_points: (user.total_points ?? 0) + pointsAwarded,
+          total_points: newTotal,
         })
         .eq('id', userId);
+      const leaderboardService = await import('./leaderboard.service');
+      const leaderboardCache = await import('./leaderboardCache.service');
+      await leaderboardService.ensureUserInLeaderboard(supabase, userId);
+      await leaderboardService.updateUserPoints(supabase, userId, newTotal);
+      await leaderboardCache.invalidateLeaderboardCache();
     }
   }
 

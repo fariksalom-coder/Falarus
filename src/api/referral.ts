@@ -35,6 +35,27 @@ export type ReferralStats = {
 
 export type ReferralListItem = { name: string; status: string };
 
+/** All invite page data in one request (faster load). */
+export type ReferralPageData = ReferralStats & {
+  referral_link: string;
+  list: ReferralListItem[];
+};
+
+export async function getReferralPageData(
+  token: string | null
+): Promise<ReferralPageData> {
+  const res = await fetch(apiUrl('/api/referral?action=page'), {
+    headers: authHeaders(token),
+  });
+  const data = await parseJsonOrThrow<ReferralPageData & { error?: string }>(
+    res,
+    "Ma'lumotlar yuklanmadi"
+  );
+  if (!res.ok) throw new Error(data.error || "Ma'lumotlar yuklanmadi");
+  if (!data.referral_link) throw new Error("Ma'lumotlar yuklanmadi");
+  return data as ReferralPageData;
+}
+
 export async function getReferralLink(token: string | null): Promise<{ referral_link: string }> {
   const res = await fetch(apiUrl('/api/referral?action=link'), { headers: authHeaders(token) });
   const data = await parseJsonOrThrow<{ referral_link?: string; error?: string }>(

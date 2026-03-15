@@ -23,8 +23,7 @@ export default function ReferralPage() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawError, setWithdrawError] = useState('');
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
-  const [linkLoading, setLinkLoading] = useState(true);
-  const [statsLoading, setStatsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [linkError, setLinkError] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -32,21 +31,20 @@ export default function ReferralPage() {
     if (!token) return;
     setLinkError('');
     referralApi
-      .getReferralLink(token)
-      .then((res) => setReferralLink(res.referral_link))
-      .catch((e) => setLinkError(e instanceof Error ? e.message : 'Link yuklanmadi'))
-      .finally(() => setLinkLoading(false));
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) return;
-    Promise.all([referralApi.getReferralStats(token), referralApi.getReferralList(token)])
-      .then(([stats, list]) => {
-        setReferralStats(stats);
-        setReferralList(list);
+      .getReferralPageData(token)
+      .then((data) => {
+        setReferralLink(data.referral_link);
+        setReferralStats({
+          invited_users: data.invited_users,
+          registered_users: data.registered_users,
+          paid_users: data.paid_users,
+          total_earned: data.total_earned,
+          balance: data.balance,
+        });
+        setReferralList(data.list ?? []);
       })
-      .catch(() => {})
-      .finally(() => setStatsLoading(false));
+      .catch((e) => setLinkError(e instanceof Error ? e.message : "Ma'lumotlar yuklanmadi"))
+      .finally(() => setLoading(false));
   }, [token]);
 
   const handleCopyLink = () => {
@@ -70,8 +68,14 @@ export default function ReferralPage() {
       await referralApi.withdrawReferral(token, amount);
       setWithdrawSuccess(true);
       setWithdrawAmount('');
-      const stats = await referralApi.getReferralStats(token);
-      setReferralStats(stats);
+      const data = await referralApi.getReferralPageData(token);
+      setReferralStats({
+        invited_users: data.invited_users,
+        registered_users: data.registered_users,
+        paid_users: data.paid_users,
+        total_earned: data.total_earned,
+        balance: data.balance,
+      });
     } catch (e) {
       setWithdrawError(e instanceof Error ? e.message : 'Xatolik');
     }
@@ -101,7 +105,7 @@ export default function ReferralPage() {
           {/* Referral link */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">Taklif havolasi</label>
-            {linkLoading ? (
+            {loading ? (
               <div className="h-12 bg-slate-100 rounded-xl animate-pulse" />
             ) : linkError ? (
               <p className="text-red-600 text-sm">{linkError}</p>
@@ -158,7 +162,7 @@ export default function ReferralPage() {
               </div>
             </div>
           )}
-          {statsLoading && !referralStats && (
+          {loading && !referralStats && (
             <div className="h-24 bg-slate-100 rounded-xl animate-pulse mb-6" />
           )}
 

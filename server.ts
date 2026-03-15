@@ -105,6 +105,8 @@ async function startServer() {
           await attachReferralOnRegister(supabase, referrerId, user.id);
         }
       }
+      const { ensureUserInLeaderboard } = await import('./server/services/leaderboard.service');
+      await ensureUserInLeaderboard(supabase, user.id).catch(() => {});
       const token = jwt.sign({ id: user.id }, JWT_SECRET);
       res.json({
         token,
@@ -206,16 +208,51 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Leaderboard (reyting): weekly/monthly from old fields, "Umumiy" (all) from total_points
+  // Leaderboard: "all" = cached top 100 from leaderboard table + Redis; weekly/monthly = from users
+  const leaderboardCacheService = await import('./server/services/leaderboardCache.service');
+  const leaderboardService = await import('./server/services/leaderboard.service');
   app.get('/api/leaderboard', authenticate, async (req: any, res) => {
     const period = (req.query.period as string) || 'weekly';
     const useTotalPoints = period === 'all';
-    const col = useTotalPoints ? 'total_points' : period === 'monthly' ? 'monthly_points' : 'weekly_points';
+    if (useTotalPoints) {
+      try {
+        const top = await leaderboardCacheService.getTop100Cached(supabase);
+        const myPosition = await leaderboardService.getMyPosition(supabase, req.userId);
+        const { data: me } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('id', req.userId)
+          .single();
+        res.json({
+          top: top.map((u) => ({
+            id: u.id,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            avatarUrl: u.avatarUrl,
+            points: u.total_points,
+            rank: u.rank,
+          })),
+          myRank: myPosition && me ? {
+            rank: myPosition.rank,
+            id: me.id,
+            firstName: me.first_name,
+            lastName: me.last_name,
+            avatarUrl: me.avatar_url,
+            points: myPosition.points,
+          } : null,
+        });
+      } catch (e) {
+        console.error('[api/leaderboard]', e);
+        res.status(500).json({ error: 'Xatolik yuz berdi' });
+      }
+      return;
+    }
+    const col = period === 'monthly' ? 'monthly_points' : 'weekly_points';
     const { data: top, error: topErr } = await supabase
       .from('users')
       .select('id, first_name, last_name, avatar_url, total_points, points, weekly_points, monthly_points')
       .order(col, { ascending: false })
-      .limit(10);
+      .limit(100);
     if (topErr) {
       console.error('[api/leaderboard] top error:', topErr.message);
       return res.status(500).json({ error: topErr.message });
@@ -228,7 +265,7 @@ async function startServer() {
     if (meErr || !me) {
       return res.json({ top: top ?? [], myRank: null });
     }
-    const myPoints = useTotalPoints ? (me.total_points ?? 0) : period === 'monthly' ? (me.monthly_points ?? 0) : (me.weekly_points ?? 0);
+    const myPoints = period === 'monthly' ? (me.monthly_points ?? 0) : (me.weekly_points ?? 0);
     const { count, error: countErr } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
@@ -240,7 +277,7 @@ async function startServer() {
         firstName: u.first_name,
         lastName: u.last_name,
         avatarUrl: u.avatar_url,
-        points: useTotalPoints ? (u.total_points ?? 0) : period === 'monthly' ? (u.monthly_points ?? 0) : (u.weekly_points ?? 0),
+        points: period === 'monthly' ? (u.monthly_points ?? 0) : (u.weekly_points ?? 0),
       })),
       myRank: rank == null ? null : {
         rank,
@@ -251,6 +288,17 @@ async function startServer() {
         points: myPoints,
       },
     });
+  });
+
+  app.get('/api/leaderboard/me', authenticate, async (req: any, res) => {
+    try {
+      const pos = await leaderboardService.getMyPosition(supabase, req.userId);
+      if (!pos) return res.status(404).json({ error: 'Reytingda topilmadi' });
+      res.json({ rank: pos.rank, points: pos.points });
+    } catch (e) {
+      console.error('[api/leaderboard/me]', e);
+      res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
   });
 
   app.post('/api/user/points', authenticate, async (req: any, res) => {
@@ -274,6 +322,11 @@ async function startServer() {
       console.error('[api/user/points]', updateErr.message);
       return res.status(500).json({ error: updateErr.message });
     }
+    const leaderboardSvc = await import('./server/services/leaderboard.service');
+    const leaderboardCacheSvc = await import('./server/services/leaderboardCache.service');
+    await leaderboardSvc.ensureUserInLeaderboard(supabase, req.userId);
+    await leaderboardSvc.updateUserPoints(supabase, req.userId, total_points);
+    await leaderboardCacheSvc.invalidateLeaderboardCache();
     res.json({ success: true, points, weekly_points, monthly_points, total_points });
   });
 
@@ -425,6 +478,9 @@ async function startServer() {
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });
   }
+
+  const { startLeaderboardCron } = await import('./server/services/leaderboardCron.service');
+  startLeaderboardCron(supabase);
 
   const port = Number(process.env.PORT) || 3000;
   app.listen(port, '0.0.0.0', () => {

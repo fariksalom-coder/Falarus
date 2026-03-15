@@ -9,10 +9,21 @@ export function createReferralRoutes(
 ): Router {
   const router = Router();
 
+  router.get('/referral', authenticate, (req: any, res, next) => {
+    const action = typeof req.query.action === 'string' ? req.query.action : '';
+    if (action === 'page') return referralController.getPage(supabase)(req, res);
+    if (action === 'link') return referralController.getLink(supabase)(req, res);
+    if (action === 'stats') return referralController.getStats(supabase)(req, res);
+    if (action === 'list') return referralController.getList(supabase)(req, res);
+    next();
+  });
   router.get('/referral/link', authenticate, referralController.getLink(supabase));
   router.get('/referral/stats', authenticate, referralController.getStats(supabase));
   router.get('/referral/list', authenticate, referralController.getList(supabase));
   router.post('/referral/withdraw', authenticate, referralController.postWithdraw(supabase));
+  router.post('/referral', authenticate, (req: any, res, next) => {
+    return referralController.postWithdraw(supabase)(req, res);
+  });
   router.get(
     '/referral/discount-eligible',
     authenticate,

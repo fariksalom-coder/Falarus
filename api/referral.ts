@@ -6,6 +6,7 @@ import {
   getReferralLink,
   getReferralStats,
   getReferralList,
+  getReferralPageData,
   createWithdrawal,
 } from './_lib/referral.js';
 
@@ -31,6 +32,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = typeof req.query.action === 'string' ? req.query.action : '';
 
   try {
+    if (action === 'page' && req.method === 'GET') {
+      const data = await getReferralPageData(supabase, userId);
+      return res.status(200).json(data);
+    }
     if (action === 'link' && req.method === 'GET') {
       const result = await getReferralLink(supabase, userId);
       return res.status(200).json(result);

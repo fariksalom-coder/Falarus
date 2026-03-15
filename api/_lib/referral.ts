@@ -75,6 +75,16 @@ export async function getReferralList(sb: SupabaseClient, userId: number): Promi
   return rows.map((r) => ({ name: nameMap.get(r.referred_user_id) ?? 'User', status: r.status }));
 }
 
+/** All data for invite page in one round-trip (link + stats + list). */
+export async function getReferralPageData(sb: SupabaseClient, userId: number) {
+  const [linkRes, stats, list] = await Promise.all([
+    getReferralLink(sb, userId),
+    getReferralStats(sb, userId),
+    getReferralList(sb, userId),
+  ]);
+  return { referral_link: linkRes.referral_link, ...stats, list };
+}
+
 export async function createWithdrawal(sb: SupabaseClient, userId: number, amount: number) {
   const balanceRow = await sb.from('users').select('referral_balance').eq('id', userId).single();
   const balance = balanceRow.data ? Number(balanceRow.data.referral_balance ?? 0) : 0;
