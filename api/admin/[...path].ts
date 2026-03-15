@@ -13,7 +13,7 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'su
 function getPathParts(req: VercelRequest): string[] {
   const path = req.query.path;
   if (Array.isArray(path)) return path.filter((p): p is string => typeof p === 'string');
-  if (typeof path === 'string') return path ? [path] : [];
+  if (typeof path === 'string') return path ? path.split('/').filter(Boolean) : [];
   const url = req.url || (req as any).originalUrl || '';
   const pathname = typeof url === 'string' ? url.split('?')[0] : '';
   const parts = pathname.split('/').filter(Boolean);
