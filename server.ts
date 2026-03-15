@@ -1,4 +1,13 @@
 import 'dotenv/config';
+
+// Suppress DEP0169 url.parse() deprecation from dependencies (e.g. multer/busboy)
+const origEmitWarning = process.emitWarning;
+process.emitWarning = function (msg: string | Error, type?: string, ...args: unknown[]) {
+  const m = typeof msg === 'string' ? msg : msg?.message ?? '';
+  if (m.includes('url.parse') || m.includes('DEP0169')) return;
+  return origEmitWarning.apply(process, [msg, type, ...args]);
+};
+
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';

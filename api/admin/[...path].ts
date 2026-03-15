@@ -2,6 +2,7 @@
  * Admin API (Vercel): login + dashboard, users, payments, subscriptions, referrals, support, pricing.
  * Single serverless function to stay under 12-function limit.
  */
+import '../_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';

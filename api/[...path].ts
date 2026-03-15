@@ -2,6 +2,7 @@
  * Single handler for /api/pricing, tariff-prices, payment-methods, payments (POST), leaderboard, activity/streak.
  * Keeps serverless function count under Vercel Hobby limit (12).
  */
+import './_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Busboy from 'busboy';
 import { supabase } from './_lib/supabase.js';
