@@ -49,18 +49,6 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,application/pdf';
 const MAX_SIZE = 10 * 1024 * 1024;
 
-const PAYMENT_STEPS = [
-  { num: 1, text: "To'lov qilish", active: true },
-  { num: 2, text: "Chekni yuklang", active: false },
-  { num: 3, text: "Tasdiqlanishini kuting", active: false },
-];
-
-const INSTRUCTION_STEPS = [
-  "Kartaga yoki telefon raqamiga pul o'tkazing",
-  "To'lov chekini yoki skrinshotini saqlang",
-  "Chekni quyida yuklang",
-];
-
 function formatAmount(price: number, currency: Currency): string {
   if (currency === 'UZS') return `${Number(price).toLocaleString('uz-UZ')} so'm`;
   if (currency === 'RUB') return `${price} ₽`;
@@ -227,33 +215,7 @@ export default function PaymentPage() {
           Orqaga
         </button>
 
-        {/* 1. Payment process steps — horizontal */}
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-4">To'lov jarayoni</h2>
-          <div className="flex flex-wrap gap-2">
-            {PAYMENT_STEPS.map((step) => (
-              <div
-                key={step.num}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium ${
-                  step.active
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {step.active ? (
-                  <CheckCircle className="h-4 w-4 shrink-0" />
-                ) : (
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-300 text-slate-600 text-xs font-bold">
-                    {step.num}
-                  </span>
-                )}
-                {step.text}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 2. Payment amount — light yellow block, amount on the right */}
+        {/* Payment amount — light yellow block, amount on the right */}
         <section className="bg-amber-50 border border-amber-200/80 rounded-2xl shadow-sm p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -334,29 +296,7 @@ export default function PaymentPage() {
           )}
         </section>
 
-        {/* 4. Instruction box — white card */}
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 text-sm font-bold">
-              i
-            </span>
-            <h2 className="text-base font-semibold text-slate-800">
-              To'lovni amalga oshirish tartibi
-            </h2>
-          </div>
-          <ol className="space-y-3">
-            {INSTRUCTION_STEPS.map((step, i) => (
-              <li key={i} className="flex items-start gap-3 text-slate-700 text-sm">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-700 text-xs font-bold">
-                  {i + 1}
-                </span>
-                {step}
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {/* 5. File upload */}
+        {/* File upload */}
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-2 text-slate-800 mb-1">
             <Paperclip className="h-5 w-5 text-slate-500" />
