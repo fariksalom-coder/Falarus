@@ -30,6 +30,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const path = getPathParts(req);
 
+  // /api/pricing — public active plans (no auth)
+  if (path[0] === 'pricing' && path.length === 1) {
+    try {
+      const { data, error } = await supabase
+        .from('pricing_plans')
+        .select('id, plan_name, duration_days, price, discount_percent, active')
+        .eq('active', true)
+        .order('duration_days', { ascending: true });
+      if (error) throw error;
+      return res.status(200).json(data ?? []);
+    } catch (e) {
+      console.error('[api/pricing]', e instanceof Error ? e.message : e);
+      return res.status(500).json({ error: 'Xatolik' });
+    }
+  }
+
+  // /api/tariff-prices?currency=UZS — public (no auth)
+  if (path[0] === 'tariff-prices' && path.length === 1) {
+    const currency = (typeof req.query.currency === 'string' ? req.query.currency : '').toUpperCase();
+    if (!['UZS', 'RUB', 'USD'].includes(currency)) {
+      return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
+    }
+    try {
+      const { data, error } = await supabase
+        .from('tariff_prices')
+        .select('tariff_type, price')
+        .eq('currency', currency);
+      if (error) throw error;
+      const rows = (data ?? []) as { tariff_type: string; price: number }[];
+      const out: Record<string, number> = {};
+      rows.forEach((r) => { out[r.tariff_type] = Number(r.price); });
+      return res.status(200).json({ month: out.month, three_months: out.three_months, year: out.year });
+    } catch (e) {
+      console.error('[api/tariff-prices]', e instanceof Error ? e.message : e);
+      return res.status(500).json({ error: 'Xatolik' });
+    }
+  }
+
+  // /api/payment-methods?currency=RUB — public (no auth)
+  if (path[0] === 'payment-methods' && path.length === 1) {
+    const currency = (typeof req.query.currency === 'string' ? req.query.currency : '').toUpperCase();
+    if (!['UZS', 'RUB', 'USD'].includes(currency)) {
+      return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
+    }
+    try {
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('card_number, phone_number, card_holder_name')
+        .eq('currency', currency)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return res.status(200).json(data ?? null);
+    } catch (e) {
+      console.error('[api/payment-methods]', e instanceof Error ? e.message : e);
+      return res.status(500).json({ error: 'Xatolik' });
+    }
+  }
+
   // /api/leaderboard
   if (path[0] === 'leaderboard') {
     const userId = requireAuth(req, res);

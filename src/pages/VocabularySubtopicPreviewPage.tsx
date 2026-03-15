@@ -93,12 +93,7 @@ export default function VocabularySubtopicPreviewPage() {
       </main>
 
       {modalOpen && (
-        <PaywallModal
-          onClose={() => setModalOpen(false)}
-          title="🔒 Bu mavzu faqat obuna bo'lganlar uchun"
-          description="Barcha so'zlar va darslarga kirish uchun tarifni sotib oling."
-          buttonText="🚀 Barcha darslarni ochish"
-        />
+        <PaywallModal onClose={() => setModalOpen(false)} />
       )}
     </div>
   );

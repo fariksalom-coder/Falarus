@@ -6,17 +6,16 @@ type PaywallModalProps = {
   title?: string;
   description?: string;
   buttonText?: string;
-  previewLabel?: string;
-  onPreview?: () => void;
 };
 
 export default function PaywallModal({
   onClose,
-  title = "🔒 Bu dars faqat obuna bo'lganlar uchun",
-  description = "Barcha darslar, so'zlar va mashqlarga kirish uchun tarifni sotib oling. Rus tilini cheklovsiz o'rganing.",
-  buttonText = '🚀 Barcha darslarni ochish',
-  previewLabel,
-  onPreview,
+  title = "🔒 Bu dars yopiq",
+  description = `Kursni xarid qiling va quyidagi imkoniyatlarga ega bo'ling:
+📚 100+ rus tili grammatika darslari
+🧠 2600+ eng kerakli so'zlar
+🎮 O'yin va mashqlar orqali oson o'rganish`,
+  buttonText = "🚀 Kursni sotib olish",
 }: PaywallModalProps) {
   const navigate = useNavigate();
 
@@ -45,25 +44,19 @@ export default function PaywallModal({
           </div>
           <h2 className="text-xl font-bold text-slate-900">{title}</h2>
         </div>
-        <p className="text-slate-600 mb-6">{description}</p>
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={handleOpenPricing}
-            className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
-          >
-            {buttonText}
-          </button>
-          {onPreview && previewLabel && (
-            <button
-              type="button"
-              onClick={() => { onPreview(); }}
-              className="w-full py-2 px-4 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50"
-            >
-              {previewLabel}
-            </button>
-          )}
-        </div>
+        <p className="text-slate-600 mb-6 whitespace-pre-line">
+          <strong className="font-bold text-slate-800">
+            {description.split('\n')[0]}
+          </strong>
+          {'\n' + description.split('\n').slice(1).join('\n')}
+        </p>
+        <button
+          type="button"
+          onClick={handleOpenPricing}
+          className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+        >
+          {buttonText}
+        </button>
       </div>
     </div>
   );

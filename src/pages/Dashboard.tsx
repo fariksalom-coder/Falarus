@@ -125,15 +125,12 @@ export default function Dashboard() {
               >
                 {/* Номер урока в кружке */}
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white relative"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white"
                   style={{
                     backgroundColor: isLocked ? '#94A3B8' : PRIMARY,
                   }}
                 >
                   {lesson.num}
-                  {isLocked && (
-                    <Lock className="absolute -top-0.5 -right-0.5 w-4 h-4 text-amber-500" strokeWidth={2.5} />
-                  )}
                 </div>
 
                 {/* Иконка темы + название урока (без "X-dars") */}
@@ -164,12 +161,21 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Arrow */}
+                {/* Стрелка или замок справа */}
                 <div
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
                   style={{ color: isLocked ? '#94A3B8' : PRIMARY }}
                 >
-                  <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                  {isLocked ? (
+                    <span
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 ring-2 ring-amber-200"
+                      title="Qulflangan"
+                    >
+                      <Lock className="h-5 w-5 text-amber-600" strokeWidth={2.5} />
+                    </span>
+                  ) : (
+                    <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                  )}
                 </div>
               </motion.button>
             );
@@ -180,11 +186,6 @@ export default function Dashboard() {
       {modalOpen && (
         <PaywallModal
           onClose={() => { setModalOpen(false); setSelectedLockedLessonId(null); }}
-          title="🔒 Bu dars faqat obuna bo'lganlar uchun"
-          description="Barcha darslar, so'zlar va mashqlarga kirish uchun tarifni sotib oling. Rus tilini cheklovsiz o'rganing."
-          buttonText="🚀 Barcha darslarni ochish"
-          previewLabel={selectedLockedLessonId ? "Darsni ko'rish (preview)" : undefined}
-          onPreview={selectedLockedLessonId ? () => { setModalOpen(false); navigate(`/preview/lesson/${selectedLockedLessonId}`); setSelectedLockedLessonId(null); } : undefined}
         />
       )}
     </div>

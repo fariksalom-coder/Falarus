@@ -175,12 +175,7 @@ export default function VocabularyPage() {
       </main>
 
       {showPaywall && (
-        <PaywallModal
-          onClose={() => setShowPaywall(false)}
-          title="Bu bo'lim faqat obuna bo'lganlar uchun"
-          description="Barcha so'zlar va bo'limlarga kirish uchun tarifni sotib oling."
-          buttonText="Barcha bo'limlarni ochish"
-        />
+        <PaywallModal onClose={() => setShowPaywall(false)} />
       )}
     </div>
   );

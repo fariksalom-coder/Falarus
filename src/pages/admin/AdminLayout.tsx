@@ -8,6 +8,8 @@ import {
   Wallet,
   MessageSquare,
   Settings,
+  Banknote,
+  DollarSign,
   LogOut,
 } from 'lucide-react';
 
@@ -18,6 +20,8 @@ const nav = [
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: Repeat },
   { to: '/admin/referrals', label: 'Referrals', icon: Wallet },
   { to: '/admin/support', label: 'Support', icon: MessageSquare },
+  { to: '/admin/payment-methods', label: 'Payment Methods', icon: Banknote },
+  { to: '/admin/tariff-pricing', label: 'Tariff Pricing', icon: DollarSign },
   { to: '/admin/pricing', label: 'Pricing', icon: Settings },
 ];
 

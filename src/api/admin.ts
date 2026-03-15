@@ -72,11 +72,15 @@ export type AdminPaymentRow = {
   id: number;
   user_id: number;
   user: string;
+  user_email: string;
   plan: string;
-  amount: number;
+  tariff_type: string;
+  currency: string;
+  payment_proof_url: string | null;
+  payment_time: string;
   date: string;
   status: string;
-  confirmed_at: string | null;
+  approved_at: string | null;
 };
 
 export type AdminSubscriptionRow = {
@@ -232,6 +236,93 @@ export async function updatePricing(plans: Partial<PricingPlan>[]): Promise<void
     method: 'PUT',
     headers: adminHeaders(),
     body: JSON.stringify(plans),
+  });
+  await parseJson(res);
+}
+
+// Payment methods
+export type PaymentMethodRow = {
+  id: number;
+  currency: string;
+  bank_name: string;
+  card_number: string;
+  phone_number: string | null;
+  card_holder_name: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getPaymentMethods(): Promise<PaymentMethodRow[]> {
+  const res = await fetch(apiUrl('/api/admin/payment-methods'), { headers: adminHeaders() });
+  return parseJson<PaymentMethodRow[]>(res);
+}
+
+export async function createPaymentMethod(data: {
+  currency: string;
+  bank_name: string;
+  card_number: string;
+  phone_number?: string;
+  card_holder_name: string;
+}): Promise<{ id: number }> {
+  const res = await fetch(apiUrl('/api/admin/payment-methods'), {
+    method: 'POST',
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  });
+  return parseJson<{ id: number }>(res);
+}
+
+export async function updatePaymentMethod(id: number, data: Partial<PaymentMethodRow>): Promise<void> {
+  const res = await fetch(apiUrl(`/api/admin/payment-methods/${id}`), {
+    method: 'PUT',
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
+  });
+  await parseJson(res);
+}
+
+export async function togglePaymentMethod(id: number): Promise<{ status: string }> {
+  const res = await fetch(apiUrl(`/api/admin/payment-methods/${id}/toggle`), {
+    method: 'POST',
+    headers: adminHeaders(),
+    body: JSON.stringify({}),
+  });
+  return parseJson<{ status: string }>(res);
+}
+
+export async function deletePaymentMethod(id: number): Promise<void> {
+  const res = await fetch(apiUrl(`/api/admin/payment-methods/${id}`), {
+    method: 'DELETE',
+    headers: adminHeaders(),
+  });
+  await parseJson(res);
+}
+
+// Tariff prices (multi-currency)
+export type TariffPriceRow = {
+  id: number;
+  tariff_type: string;
+  currency: string;
+  price: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getTariffPrices(): Promise<TariffPriceRow[]> {
+  const res = await fetch(apiUrl('/api/admin/tariff-prices'), { headers: adminHeaders() });
+  return parseJson<TariffPriceRow[]>(res);
+}
+
+export async function updateTariffPrice(data: {
+  tariff_type: string;
+  currency: string;
+  price: number;
+}): Promise<void> {
+  const res = await fetch(apiUrl('/api/admin/tariff-prices'), {
+    method: 'PUT',
+    headers: adminHeaders(),
+    body: JSON.stringify(data),
   });
   await parseJson(res);
 }

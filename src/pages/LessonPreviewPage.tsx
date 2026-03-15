@@ -100,12 +100,7 @@ export default function LessonPreviewPage() {
       </main>
 
       {modalOpen && (
-        <PaywallModal
-          onClose={() => setModalOpen(false)}
-          title="🔒 Bu dars faqat obuna bo'lganlar uchun"
-          description="Barcha darslar, so'zlar va mashqlarga kirish uchun tarifni sotib oling. Rus tilini cheklovsiz o'rganing."
-          buttonText="🚀 Barcha darslarni ochish"
-        />
+        <PaywallModal onClose={() => setModalOpen(false)} />
       )}
     </div>
   );

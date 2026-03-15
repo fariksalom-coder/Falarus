@@ -70,7 +70,7 @@ async function startServer() {
   app.use(express.json());
   app.use((_req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (_req.method === 'OPTIONS') return res.sendStatus(204);
     next();
@@ -84,6 +84,66 @@ async function startServer() {
   } catch (err) {
     console.error('Admin routes failed to load:', err);
   }
+
+  // Public pricing (no auth) — for tariff page
+  app.get('/api/pricing', async (_req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('pricing_plans')
+        .select('id, plan_name, duration_days, price, discount_percent, active')
+        .eq('active', true)
+        .order('duration_days', { ascending: true });
+      if (error) throw error;
+      res.json(data ?? []);
+    } catch (e) {
+      console.error('[GET /api/pricing]', e);
+      res.status(500).json({ error: 'Xatolik' });
+    }
+  });
+
+  // Public tariff prices by currency (no auth) — month, three_months, year
+  app.get('/api/tariff-prices', async (req, res) => {
+    const currency = (req.query.currency as string)?.toUpperCase();
+    if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
+      return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
+    }
+    try {
+      const { data, error } = await supabase
+        .from('tariff_prices')
+        .select('tariff_type, price')
+        .eq('currency', currency);
+      if (error) throw error;
+      const rows = (data ?? []) as { tariff_type: string; price: number }[];
+      const out: Record<string, number> = {};
+      rows.forEach((r) => { out[r.tariff_type] = Number(r.price); });
+      res.json({ month: out.month, three_months: out.three_months, year: out.year });
+    } catch (e) {
+      console.error('[GET /api/tariff-prices]', e);
+      res.status(500).json({ error: 'Xatolik' });
+    }
+  });
+
+  // Public active payment method by currency (no auth)
+  app.get('/api/payment-methods', async (req, res) => {
+    const currency = (req.query.currency as string)?.toUpperCase();
+    if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
+      return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
+    }
+    try {
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('card_number, phone_number, card_holder_name')
+        .eq('currency', currency)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      res.json(data ?? null);
+    } catch (e) {
+      console.error('[GET /api/payment-methods]', e);
+      res.status(500).json({ error: 'Xatolik' });
+    }
+  });
 
   // Auth
   const { attachReferralOnRegister, resolveReferrerFromCode } = await import(
@@ -169,6 +229,15 @@ async function startServer() {
       res.status(401).json({ error: 'Yaroqsiz token' });
     }
   };
+
+  // Payment submission (tariff + currency + proof file)
+  try {
+    const { createPaymentRoutes } = await import('./server/routes/paymentRoutes');
+    app.use('/api/payments', createPaymentRoutes(supabase, authenticate));
+    console.log('Payments API: POST /api/payments (auth + file upload)');
+  } catch (err) {
+    console.error('Payment routes failed:', err);
+  }
 
   // Progress tracking (lesson/task status)
   const { createProgressRoutes } = await import('./server/routes/progressRoutes');

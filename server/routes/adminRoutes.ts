@@ -25,6 +25,14 @@ export function createAdminRoutes(supabase: SupabaseClient): Router {
   router.post('/support/:id/reply', (req, res, next) => ctrl.replySupport(req, res).catch(next));
   router.get('/pricing', (req, res, next) => ctrl.getPricing(req, res).catch(next));
   router.put('/pricing/update', (req, res, next) => ctrl.updatePricing(req, res).catch(next));
+  router.get('/payment-methods', (req, res, next) => ctrl.getPaymentMethods(req, res).catch(next));
+  router.post('/payment-methods', (req, res, next) => ctrl.createPaymentMethod(req, res).catch(next));
+  router.put('/payment-methods/:id', (req, res, next) => ctrl.updatePaymentMethod(req, res).catch(next));
+  router.post('/payment-methods/:id/toggle', (req, res, next) => ctrl.togglePaymentMethod(req, res).catch(next));
+  router.delete('/payment-methods/:id', (req, res, next) => ctrl.deletePaymentMethod(req, res).catch(next));
+  router.get('/tariff-prices', (req, res, next) => ctrl.getTariffPrices(req, res).catch(next));
+  router.put('/tariff-prices', (req, res, next) => ctrl.updateTariffPrice(req, res).catch(next));
+  router.put('/tariff-prices/bulk', (req, res, next) => ctrl.bulkUpdateTariffPrices(req, res).catch(next));
 
   return router;
 }

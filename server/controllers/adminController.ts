@@ -199,17 +199,8 @@ export function createAdminController(supabase: SupabaseClient) {
   // --- Payments (subscription_payment_requests)
   async function getPayments(_req: Request, res: Response) {
     const { data: rows, error } = await supabase
-      .from('subscription_payment_requests')
-      .select(`
-        id,
-        user_id,
-        plan_type,
-        amount,
-        payment_method,
-        status,
-        created_at,
-        confirmed_at
-      `)
+      .from('payments')
+      .select('id, user_id, tariff_type, currency, payment_proof_url, payment_time, status, approved_at, created_at')
       .order('created_at', { ascending: false });
     if (error) {
       console.error('[admin/payments]', error);
@@ -221,15 +212,20 @@ export function createAdminController(supabase: SupabaseClient) {
 
     const list = (rows ?? []).map((r: any) => {
       const u = userMap.get(r.user_id);
+      const planLabel = r.tariff_type === 'year' ? '1 yil' : r.tariff_type === '3months' ? '3 oy' : '1 oy';
       return {
         id: r.id,
         user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : '—',
+        user_email: u?.email ?? '—',
         user_id: r.user_id,
-        plan: r.plan_type,
-        amount: r.amount,
+        plan: planLabel,
+        tariff_type: r.tariff_type,
+        currency: r.currency,
+        payment_proof_url: r.payment_proof_url,
+        payment_time: r.payment_time,
         date: r.created_at,
         status: r.status,
-        confirmed_at: r.confirmed_at,
+        approved_at: r.approved_at,
       };
     });
     return res.json(list);
@@ -237,39 +233,34 @@ export function createAdminController(supabase: SupabaseClient) {
 
   async function confirmPayment(req: Request, res: Response) {
     const id = Number(req.params.id);
+    const adminId = (req as any).adminId;
     if (!id) return res.status(400).json({ error: 'Invalid payment id' });
 
     const { data: row, error: fetchErr } = await supabase
-      .from('subscription_payment_requests')
-      .select('user_id, plan_type, amount')
+      .from('payments')
+      .select('user_id, tariff_type')
       .eq('id', id)
       .eq('status', 'pending')
       .single();
     if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi yoki tasdiqlangan' });
 
     const userId = (row as any).user_id;
-    const planType = (row as any).plan_type;
+    const tariffType = (row as any).tariff_type;
+    const planType = tariffType === 'year' ? 'yearly' : tariffType === '3months' ? 'three_months' : 'monthly';
+    const daysToAdd = tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
+    const planName = tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
     const now = new Date();
-    let expiresAt = new Date(now);
-    if (planType === 'monthly') expiresAt.setMonth(expiresAt.getMonth() + 1);
-    else if (planType === 'three_months') expiresAt.setMonth(expiresAt.getMonth() + 3);
-    else if (planType === 'yearly') expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-    else return res.status(400).json({ error: 'Invalid plan_type' });
-
-    const planName = planType === 'yearly' ? '1 YIL' : planType === 'three_months' ? '3 OY' : '1 OY';
 
     await supabase
-      .from('subscription_payment_requests')
-      .update({ status: 'confirmed', confirmed_at: now.toISOString() })
+      .from('payments')
+      .update({ status: 'approved', admin_id: adminId ?? null, approved_at: now.toISOString() })
       .eq('id', id);
 
     const { data: current } = await supabase.from('users').select('plan_expires_at').eq('id', userId).single();
     const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
     const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
     const ext = new Date(startFrom);
-    if (planType === 'monthly') ext.setMonth(ext.getMonth() + 1);
-    else if (planType === 'three_months') ext.setMonth(ext.getMonth() + 3);
-    else ext.setFullYear(ext.getFullYear() + 1);
+    ext.setDate(ext.getDate() + daysToAdd);
 
     await supabase
       .from('users')
@@ -286,7 +277,7 @@ export function createAdminController(supabase: SupabaseClient) {
     if (!id) return res.status(400).json({ error: 'Invalid payment id' });
 
     const { error } = await supabase
-      .from('subscription_payment_requests')
+      .from('payments')
       .update({ status: 'rejected' })
       .eq('id', id)
       .eq('status', 'pending');
@@ -482,6 +473,151 @@ export function createAdminController(supabase: SupabaseClient) {
     return res.json({ success: true });
   }
 
+  // --- Payment methods (CRUD)
+  async function getPaymentMethods(_req: Request, res: Response) {
+    const { data, error } = await supabase
+      .from('payment_methods')
+      .select('id, currency, bank_name, card_number, phone_number, card_holder_name, status, created_at, updated_at')
+      .order('currency')
+      .order('id');
+    if (error) {
+      console.error('[admin/payment-methods]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.json(data ?? []);
+  }
+
+  async function createPaymentMethod(req: Request, res: Response) {
+    const body = req.body || {};
+    const { currency, bank_name, card_number, phone_number, card_holder_name } = body;
+    if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
+      return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
+    }
+    if (!bank_name || !String(bank_name).trim()) return res.status(400).json({ error: 'bank_name kerak' });
+    if (!card_number || !String(card_number).trim()) return res.status(400).json({ error: 'card_number kerak' });
+    if (!card_holder_name || !String(card_holder_name).trim()) return res.status(400).json({ error: 'card_holder_name kerak' });
+    const now = new Date().toISOString();
+    const { data: row, error } = await supabase
+      .from('payment_methods')
+      .insert({
+        currency,
+        bank_name: String(bank_name).trim(),
+        card_number: String(card_number).trim(),
+        phone_number: phone_number != null ? String(phone_number).trim() : null,
+        card_holder_name: String(card_holder_name).trim(),
+        status: 'active',
+        updated_at: now,
+      })
+      .select('id')
+      .single();
+    if (error) {
+      console.error('[admin/payment-methods create]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.status(201).json({ id: (row as any).id });
+  }
+
+  async function updatePaymentMethod(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid id' });
+    const body = req.body || {};
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (body.currency != null && ['UZS', 'RUB', 'USD'].includes(body.currency)) updates.currency = body.currency;
+    if (body.bank_name != null) updates.bank_name = String(body.bank_name).trim();
+    if (body.card_number != null) updates.card_number = String(body.card_number).trim();
+    if (body.phone_number != null) updates.phone_number = String(body.phone_number).trim();
+    if (body.card_holder_name != null) updates.card_holder_name = String(body.card_holder_name).trim();
+    if (body.status != null && ['active', 'disabled'].includes(body.status)) updates.status = body.status;
+    if (Object.keys(updates).length <= 1) return res.status(400).json({ error: 'Hech narsa yangilanmadi' });
+    const { error } = await supabase.from('payment_methods').update(updates).eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true });
+  }
+
+  async function togglePaymentMethod(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid id' });
+    const { data: row, error: fetchErr } = await supabase
+      .from('payment_methods')
+      .select('status')
+      .eq('id', id)
+      .single();
+    if (fetchErr || !row) return res.status(404).json({ error: 'Topilmadi' });
+    const newStatus = (row as any).status === 'active' ? 'disabled' : 'active';
+    const { error } = await supabase
+      .from('payment_methods')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true, status: newStatus });
+  }
+
+  async function deletePaymentMethod(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid id' });
+    const { error } = await supabase.from('payment_methods').delete().eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true });
+  }
+
+  // --- Tariff pricing (multi-currency)
+  async function getTariffPrices(_req: Request, res: Response) {
+    const { data, error } = await supabase
+      .from('tariff_prices')
+      .select('id, tariff_type, currency, price, created_at, updated_at')
+      .order('tariff_type')
+      .order('currency');
+    if (error) {
+      console.error('[admin/tariff-prices]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.json(data ?? []);
+  }
+
+  async function updateTariffPrice(req: Request, res: Response) {
+    const body = req.body || {};
+    const { tariff_type, currency, price } = body;
+    if (!tariff_type || !['month', 'three_months', 'year'].includes(tariff_type)) {
+      return res.status(400).json({ error: 'tariff_type kerak: month, three_months, year' });
+    }
+    if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
+      return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
+    }
+    const priceNum = Number(price);
+    if (Number.isNaN(priceNum) || priceNum < 0) return res.status(400).json({ error: 'price son bo\'lishi kerak' });
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('tariff_prices')
+      .upsert(
+        { tariff_type, currency, price: priceNum, updated_at: now },
+        { onConflict: 'tariff_type,currency' }
+      );
+    if (error) {
+      console.error('[admin/tariff-prices update]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.json({ success: true });
+  }
+
+  async function bulkUpdateTariffPrices(req: Request, res: Response) {
+    const body = req.body;
+    if (!Array.isArray(body)) return res.status(400).json({ error: 'Array kerak' });
+    const now = new Date().toISOString();
+    for (const row of body) {
+      const { tariff_type, currency, price } = row;
+      if (!tariff_type || !currency || price == null) continue;
+      const priceNum = Number(price);
+      if (Number.isNaN(priceNum) || priceNum < 0) continue;
+      await supabase
+        .from('tariff_prices')
+        .upsert(
+          { tariff_type, currency, price: priceNum, updated_at: now },
+          { onConflict: 'tariff_type,currency' }
+        );
+    }
+    return res.json({ success: true });
+  }
+
   return {
     login,
     getDashboard,
@@ -498,5 +634,13 @@ export function createAdminController(supabase: SupabaseClient) {
     replySupport,
     getPricing,
     updatePricing,
+    getPaymentMethods,
+    createPaymentMethod,
+    updatePaymentMethod,
+    togglePaymentMethod,
+    deletePaymentMethod,
+    getTariffPrices,
+    updateTariffPrice,
+    bulkUpdateTariffPrices,
   };
 }

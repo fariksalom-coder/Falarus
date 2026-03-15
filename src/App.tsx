@@ -12,6 +12,8 @@ import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
 import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
 import AdminReferralsPage from './pages/admin/AdminReferralsPage';
 import AdminSupportPage from './pages/admin/AdminSupportPage';
+import AdminPaymentMethodsPage from './pages/admin/AdminPaymentMethodsPage';
+import AdminTariffPricingPage from './pages/admin/AdminTariffPricingPage';
 import AdminPricingPage from './pages/admin/AdminPricingPage';
 import Dashboard from './pages/Dashboard';
 import LessonPage from './pages/LessonPage';
@@ -171,6 +173,7 @@ import ReferralPage from './pages/ReferralPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import StatistikaPage from './pages/StatistikaPage';
 import PricingPage from './pages/PricingPage';
+import PaymentPage from './pages/PaymentPage';
 import MainLayout from './components/MainLayout';
 
 function VocabularyPartRoute() {
@@ -203,6 +206,8 @@ function AppRoutes() {
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
             <Route path="referrals" element={<AdminReferralsPage />} />
             <Route path="support" element={<AdminSupportPage />} />
+            <Route path="payment-methods" element={<AdminPaymentMethodsPage />} />
+            <Route path="tariff-pricing" element={<AdminTariffPricingPage />} />
             <Route path="pricing" element={<AdminPricingPage />} />
           </Route>
         </Route>
@@ -228,6 +233,7 @@ function AppRoutes() {
         <Route path="statistika" element={<StatistikaPage />} />
         <Route path="tariflar" element={<PricingPage />} />
         <Route path="pricing" element={<PricingPage />} />
+        <Route path="payment" element={<PaymentPage />} />
         <Route path="reyting" element={<LeaderboardPage />} />
         <Route path="preview/lesson/:id" element={<LessonPreviewPage />} />
         <Route path="preview/vocabulary/:subtopicId" element={<VocabularySubtopicPreviewPage />} />
