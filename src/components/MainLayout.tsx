@@ -4,6 +4,7 @@ import AppNavBar from './AppNavBar';
 /** Routes where we hide the top nav bar (payment = fullscreen, vocabulary nested = back only). */
 function hideNavBar(path: string): boolean {
   if (path === '/payment' || path.startsWith('/payment')) return true;
+  if (path === '/tariflar') return true;
   if (path.startsWith('/vocabulary/')) return true;
   return false;
 }

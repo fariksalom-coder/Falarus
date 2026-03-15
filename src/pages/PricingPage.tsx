@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
 import CurrencyModal from '../components/pricing/CurrencyModal';
@@ -160,6 +161,14 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen pb-20" style={{ backgroundColor: BG }}>
       <div className="mx-auto max-w-6xl px-4 pt-10 md:pt-14">
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-6"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Orqaga
+        </button>
         {/* 1. Hero */}
         <section className="mb-16 text-center">
           <h1
