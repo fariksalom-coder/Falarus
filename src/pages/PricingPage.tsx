@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
 import CurrencyModal from '../components/pricing/CurrencyModal';
-import { getPublicPricing, type PublicPricingPlan } from '../api/pricing';
+import { getTariffPricesByCurrency } from '../api/publicPricing';
 import type { Currency } from '../components/pricing/CurrencyModal';
 
 const BG = '#F8FAFC';
@@ -36,79 +36,52 @@ type PlanCard = {
   badge?: string;
 };
 
-const DEFAULT_PLANS: PlanCard[] = [
-  {
-    duration: '1 OY',
-    price: '99 000 so\'m',
-    pricePerMonth: "99 000",
-    pricePerMonthUnit: "so'm/oy",
-    originalPerMonth: ORIGINAL_PER_MONTH,
-    periodLabel: undefined,
-    totalOriginal: "250 000 so'm",
-    features: BENEFITS,
-    buttonLabel: "1 oyga sotib olish",
-    highlighted: false,
-    badge: undefined,
-  },
-  {
-    duration: '3 OY',
-    price: '199 000 so\'m',
-    pricePerMonth: "66 000",
-    pricePerMonthUnit: "so'm/oy",
-    originalPerMonth: ORIGINAL_PER_MONTH,
-    periodLabel: undefined,
-    totalOriginal: "750 000 so'm",
-    features: BENEFITS,
-    buttonLabel: "3 oyga sotib olish",
-    highlighted: false,
-    badge: undefined,
-  },
-  {
-    duration: '1 YIL',
-    price: '299 000 so\'m',
-    pricePerMonth: "25 000",
-    pricePerMonthUnit: "so'm/oy",
-    originalPerMonth: ORIGINAL_PER_MONTH,
-    periodLabel: undefined,
-    totalOriginal: "3 000 000 so'm",
-    features: BENEFITS,
-    buttonLabel: "Bir yilga sotib olish",
-    highlighted: true,
-    badge: 'Eng mashhur ⭐',
-  },
-];
-
 function formatPrice(n: number): string {
-  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-function mapApiPlanToCard(p: PublicPricingPlan): PlanCard {
-  const days = p.duration_days;
-  const priceNum = Number(p.price);
-  const pricePerMonthNum = Math.round((priceNum / days) * 30);
-  const duration =
-    days <= 31 ? '1 OY' : days <= 95 ? '3 OY' : '1 YIL';
-  const totalOriginalNum = 250_000 * (days / 30);
-  const buttonLabel =
-    days <= 31
-      ? "1 oyga sotib olish"
-      : days <= 95
-        ? "3 oyga sotib olish"
-        : "Bir yilga sotib olish";
-  const highlighted = days > 95;
-  return {
-    duration,
-    price: `${formatPrice(priceNum)} so'm`,
-    pricePerMonth: formatPrice(pricePerMonthNum),
-    pricePerMonthUnit: "so'm/oy",
-    originalPerMonth: ORIGINAL_PER_MONTH,
-    periodLabel: undefined,
-    totalOriginal: `${formatPrice(Math.round(totalOriginalNum))} so'm`,
-    features: BENEFITS,
-    buttonLabel,
-    highlighted,
-    badge: highlighted ? 'Eng mashhur ⭐' : undefined,
-  };
+/** Строит три карточки из tariff_prices (UZS) — один источник правды с админкой Tariff Pricing */
+function buildPlansFromTariffPrices(prices: { month: number; three_months: number; year: number }): PlanCard[] {
+  const { month, three_months, year } = prices;
+  const totalOriginalMonth = 250_000;
+  const totalOriginal3 = 750_000;
+  const totalOriginalYear = 3_000_000;
+  return [
+    {
+      duration: '1 OY',
+      price: `${formatPrice(month)} so'm`,
+      pricePerMonth: formatPrice(month),
+      pricePerMonthUnit: "so'm/oy",
+      originalPerMonth: ORIGINAL_PER_MONTH,
+      totalOriginal: `${formatPrice(totalOriginalMonth)} so'm`,
+      features: BENEFITS,
+      buttonLabel: "1 oyga sotib olish",
+      highlighted: false,
+    },
+    {
+      duration: '3 OY',
+      price: `${formatPrice(three_months)} so'm`,
+      pricePerMonth: formatPrice(three_months / 3),
+      pricePerMonthUnit: "so'm/oy",
+      originalPerMonth: ORIGINAL_PER_MONTH,
+      totalOriginal: `${formatPrice(totalOriginal3)} so'm`,
+      features: BENEFITS,
+      buttonLabel: "3 oyga sotib olish",
+      highlighted: false,
+    },
+    {
+      duration: '1 YIL',
+      price: `${formatPrice(year)} so'm`,
+      pricePerMonth: formatPrice(year / 12),
+      pricePerMonthUnit: "so'm/oy",
+      originalPerMonth: ORIGINAL_PER_MONTH,
+      totalOriginal: `${formatPrice(totalOriginalYear)} so'm`,
+      features: BENEFITS,
+      buttonLabel: "Bir yilga sotib olish",
+      highlighted: true,
+      badge: 'Eng mashhur ⭐',
+    },
+  ];
 }
 
 const WHY_COURSE = [
@@ -148,13 +121,16 @@ function durationToTariffType(duration: string): 'month' | '3months' | 'year' {
 
 export default function PricingPage() {
   const navigate = useNavigate();
-  const [plans, setPlans] = useState<PlanCard[]>(DEFAULT_PLANS);
+  const [plans, setPlans] = useState<PlanCard[] | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | '3months' | 'year'; tariffLabel: string } | null>(null);
 
   useEffect(() => {
-    getPublicPricing()
-      .then((rows) => setPlans(rows.map(mapApiPlanToCard)))
-      .catch(() => setPlans(DEFAULT_PLANS));
+    setLoading(true);
+    getTariffPricesByCurrency('UZS')
+      .then((prices) => setPlans(buildPlansFromTariffPrices(prices)))
+      .catch(() => setPlans([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSelectPlan = (plan: PlanCard) => {
@@ -194,36 +170,56 @@ export default function PricingPage() {
           </h1>
         </section>
 
-        {/* 2. Pricing cards */}
+        {/* 2. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
         <section id="tariflar" className="mb-20">
           <p className="mb-6 text-center text-sm text-slate-500">
             Oddiy narx: <span className="font-semibold text-slate-600">250 000 so'm</span> / oy — hozir chegirmada
           </p>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-            {plans.map((plan, index) => (
-              <div
-                key={plan.duration}
-                className={
-                  index === 0 ? 'order-3 md:order-1' : index === 1 ? 'order-2 md:order-2' : 'order-1 md:order-3'
-                }
-              >
-                <PricingCard
-                  duration={plan.duration}
-                  price={plan.price}
-                  features={plan.features}
-                  buttonLabel={plan.buttonLabel}
-                  highlighted={plan.highlighted}
-                  badge={plan.badge}
-                  pricePerMonth={plan.pricePerMonth}
-                  pricePerMonthUnit={plan.pricePerMonthUnit}
-                  originalPerMonth={plan.originalPerMonth}
-                  periodLabel={plan.periodLabel}
-                  totalOriginal={plan.totalOriginal}
-                  onSelect={() => handleSelectPlan(plan)}
-                />
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-2xl border border-slate-200 bg-white p-6 animate-pulse">
+                  <div className="h-6 bg-slate-200 rounded w-16 mb-4" />
+                  <div className="h-8 bg-slate-200 rounded w-24 mb-2" />
+                  <div className="h-6 bg-slate-100 rounded w-32 mb-6" />
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4].map((j) => (
+                      <div key={j} className="h-4 bg-slate-100 rounded w-full" />
+                    ))}
+                  </div>
+                  <div className="mt-6 h-12 bg-slate-200 rounded-xl" />
+                </div>
+              ))}
+            </div>
+          ) : plans && plans.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+              {plans.map((plan, index) => (
+                <div
+                  key={plan.duration}
+                  className={
+                    index === 0 ? 'order-3 md:order-1' : index === 1 ? 'order-2 md:order-2' : 'order-1 md:order-3'
+                  }
+                >
+                  <PricingCard
+                    duration={plan.duration}
+                    price={plan.price}
+                    features={plan.features}
+                    buttonLabel={plan.buttonLabel}
+                    highlighted={plan.highlighted}
+                    badge={plan.badge}
+                    pricePerMonth={plan.pricePerMonth}
+                    pricePerMonthUnit={plan.pricePerMonthUnit}
+                    originalPerMonth={plan.originalPerMonth}
+                    periodLabel={plan.periodLabel}
+                    totalOriginal={plan.totalOriginal}
+                    onSelect={() => handleSelectPlan(plan)}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-slate-500 py-8">Narxlar yuklanmadi. Sahifani yangilab ko‘ring.</p>
+          )}
         </section>
 
         {/* 3. Why this course */}
