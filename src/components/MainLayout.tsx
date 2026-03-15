@@ -1,11 +1,12 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import AppNavBar from './AppNavBar';
 
-/** Routes where we hide the top nav bar (payment = fullscreen, vocabulary nested = back only). */
+/** Routes where we hide the top nav bar (payment = fullscreen, vocabulary nested = back only, invite = has back button). */
 function hideNavBar(path: string): boolean {
   if (path === '/payment' || path.startsWith('/payment')) return true;
   if (path === '/tariflar') return true;
   if (path === '/payment-history') return true;
+  if (path === '/invite') return true;
   if (path.startsWith('/vocabulary/')) return true;
   return false;
 }

@@ -27,24 +27,26 @@ export default function AdminPaymentsPage() {
   }, []);
 
   async function handleConfirm(id: number) {
+    setError('');
     setActioning(id);
     try {
       await confirmPayment(id);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed');
+      setError(e instanceof Error ? e.message : 'Tasdiqlash amalga oshmadi');
     } finally {
       setActioning(null);
     }
   }
 
   async function handleReject(id: number) {
+    setError('');
     setActioning(id);
     try {
       await rejectPayment(id);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed');
+      setError(e instanceof Error ? e.message : 'Rad etish amalga oshmadi');
     } finally {
       setActioning(null);
     }
@@ -120,18 +122,20 @@ export default function AdminPaymentsPage() {
                       {p.status === 'pending' && (
                         <span className="flex items-center justify-end gap-2">
                           <button
+                            type="button"
                             onClick={() => handleConfirm(p.id)}
                             disabled={actioning !== null}
                             className="rounded-lg bg-green-600 px-3 py-1.5 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-50"
                           >
-                            Tasdiqlash
+                            {actioning === p.id ? '...' : 'Tasdiqlash'}
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleReject(p.id)}
                             disabled={actioning !== null}
                             className="rounded-lg bg-red-600 px-3 py-1.5 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
                           >
-                            Rad etish
+                            {actioning === p.id ? '...' : 'Rad etish'}
                           </button>
                         </span>
                       )}

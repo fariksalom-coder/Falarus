@@ -232,57 +232,79 @@ export function createAdminController(supabase: SupabaseClient) {
   }
 
   async function confirmPayment(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const adminId = (req as any).adminId;
-    if (!id) return res.status(400).json({ error: 'Invalid payment id' });
+    try {
+      const id = Number(req.params.id);
+      const adminId = (req as any).adminId;
+      if (!id) return res.status(400).json({ error: 'Invalid payment id' });
 
-    const { data: row, error: fetchErr } = await supabase
-      .from('payments')
-      .select('user_id, tariff_type')
-      .eq('id', id)
-      .eq('status', 'pending')
-      .single();
-    if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi yoki tasdiqlangan' });
+      const { data: row, error: fetchErr } = await supabase
+        .from('payments')
+        .select('user_id, tariff_type')
+        .eq('id', id)
+        .eq('status', 'pending')
+        .single();
+      if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi yoki tasdiqlangan' });
 
-    const userId = (row as any).user_id;
-    const tariffType = (row as any).tariff_type;
-    const planType = tariffType === 'year' ? 'yearly' : tariffType === '3months' ? 'three_months' : 'monthly';
-    const daysToAdd = tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
-    const planName = tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
-    const now = new Date();
+      const userId = (row as any).user_id;
+      const tariffType = (row as any).tariff_type;
+      const planType = tariffType === 'year' ? 'yearly' : tariffType === '3months' ? 'three_months' : 'monthly';
+      const daysToAdd = tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
+      const planName = tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+      const now = new Date();
 
-    await supabase
-      .from('payments')
-      .update({ status: 'approved', admin_id: adminId ?? null, approved_at: now.toISOString() })
-      .eq('id', id);
+      const { error: updatePayErr } = await supabase
+        .from('payments')
+        .update({ status: 'approved', admin_id: adminId ?? null, approved_at: now.toISOString() })
+        .eq('id', id);
+      if (updatePayErr) {
+        console.error('[admin/confirmPayment] payments update', updatePayErr);
+        return res.status(500).json({ error: updatePayErr.message });
+      }
 
-    const { data: current } = await supabase.from('users').select('plan_expires_at').eq('id', userId).single();
-    const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
-    const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
-    const ext = new Date(startFrom);
-    ext.setDate(ext.getDate() + daysToAdd);
+      const { data: current } = await supabase.from('users').select('plan_expires_at').eq('id', userId).single();
+      const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
+      const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
+      const ext = new Date(startFrom);
+      ext.setDate(ext.getDate() + daysToAdd);
 
-    await supabase
-      .from('users')
-      .update({ plan_name: planName, plan_expires_at: ext.toISOString() })
-      .eq('id', userId);
+      const { error: updateUserErr } = await supabase
+        .from('users')
+        .update({ plan_name: planName, plan_expires_at: ext.toISOString() })
+        .eq('id', userId);
+      if (updateUserErr) {
+        console.error('[admin/confirmPayment] users update', updateUserErr);
+        return res.status(500).json({ error: updateUserErr.message });
+      }
 
-    await subscriptionService.createOrExtendSubscription(supabase as any, userId, planType as any, ext);
-
-    return res.json({ success: true });
+      await subscriptionService.createOrExtendSubscription(supabase as any, userId, planType as any, ext);
+      return res.json({ success: true });
+    } catch (e: any) {
+      console.error('[admin/confirmPayment]', e);
+      return res.status(500).json({ error: e?.message || 'Server xatosi' });
+    }
   }
 
   async function rejectPayment(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid payment id' });
+    try {
+      const id = Number(req.params.id);
+      if (!id) return res.status(400).json({ error: 'Invalid payment id' });
 
-    const { error } = await supabase
-      .from('payments')
-      .update({ status: 'rejected' })
-      .eq('id', id)
-      .eq('status', 'pending');
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ success: true });
+      const { data: updated, error } = await supabase
+        .from('payments')
+        .update({ status: 'rejected' })
+        .eq('id', id)
+        .eq('status', 'pending')
+        .select('id');
+      if (error) {
+        console.error('[admin/rejectPayment]', error);
+        return res.status(500).json({ error: error.message });
+      }
+      if (!updated?.length) return res.status(404).json({ error: 'To\'lov topilmadi yoki allaqachon qayta ishlangan' });
+      return res.json({ success: true });
+    } catch (e: any) {
+      console.error('[admin/rejectPayment]', e);
+      return res.status(500).json({ error: e?.message || 'Server xatosi' });
+    }
   }
 
   // --- Subscriptions list
