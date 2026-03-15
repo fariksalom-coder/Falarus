@@ -26,9 +26,15 @@ function todayDateString(): string {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const path = getPathParts(req);
+  // POST /api/payments — delegate to payments handler (catch-all would otherwise return 405)
+  if (path[0] === 'payments' && path.length === 1 && req.method === 'POST') {
+    const paymentsHandler = (await import('./payments/index.js')).default;
+    return paymentsHandler(req, res);
+  }
+
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   // /api/pricing — public active plans (no auth)
   if (path[0] === 'pricing' && path.length === 1) {
