@@ -1,9 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getTopicWordCount } from '../data/vocabularyContent';
 import { useAuth } from '../context/AuthContext';
-import { fetchVocabularyProgress } from '../api/vocabularyProgress';
+import {
+  fetchVocabularyTopics,
+  getCachedTopicsProgress,
+  setCachedTopicsProgress,
+  type VocabularyTopic,
+} from '../api/vocabulary';
 import {
   ChevronRight,
   Sun,
@@ -60,9 +65,19 @@ const ACCENT_ICON = [
 export default function VocabularyPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const [topicsProgress, setTopicsProgress] = useState<VocabularyTopic[]>(() =>
+    getCachedTopicsProgress() ?? []
+  );
 
   useEffect(() => {
-    fetchVocabularyProgress(token);
+    if (!token) {
+      setTopicsProgress([]);
+      return;
+    }
+    fetchVocabularyTopics(token).then((data) => {
+      setTopicsProgress(data);
+      setCachedTopicsProgress(data);
+    });
   }, [token]);
 
   return (
@@ -74,9 +89,11 @@ export default function VocabularyPage() {
 
         <div className="space-y-4">
           {VOCABULARY_TOPICS.map((topic, index) => {
-            const Icon = TOPIC_ICONS[topic.id] ?? BookMarked;
+            const Icon = TOPIC_ICONS[topic.id] ?? Sparkles;
+            const fromApi = topicsProgress.find((t) => t.id === topic.id);
             const wordCount = getTopicWordCount(topic.id);
-            const progressPercent = 0; // placeholder: can be wired to real progress later
+            const learnedWords = fromApi?.learned_words ?? 0;
+            const progressPercent = wordCount > 0 ? Math.round((learnedWords / wordCount) * 100) : 0;
             const accentBg = ACCENT_BG[index % ACCENT_BG.length];
             const accentIcon = ACCENT_ICON[index % ACCENT_ICON.length];
 
@@ -102,10 +119,9 @@ export default function VocabularyPage() {
                       <span
                         className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
                       >
-                        {wordCount.toLocaleString()} so'z
+                        {learnedWords} / {wordCount.toLocaleString()} so'z
                       </span>
                     </div>
-                    {/* Progress bar */}
                     <div className="mt-3">
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                         <div
@@ -117,7 +133,7 @@ export default function VocabularyPage() {
                         />
                       </div>
                       <p className="mt-1 text-xs text-slate-400">
-                        {progressPercent}% o'rganildi
+                        {progressPercent}% o&apos;rganildi
                       </p>
                     </div>
                   </div>

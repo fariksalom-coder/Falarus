@@ -33,11 +33,6 @@ export function createProgressRoutes(
     authenticate,
     progressController.getUserStatisticsHandler(supabase)
   );
-  router.get(
-    '/leaderboard',
-    authenticate,
-    progressController.getLeaderboardHandler(supabase)
-  );
 
   return router;
 }

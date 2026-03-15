@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
+import { addUserPoints } from '../api/leaderboard';
 
 type SentenceTask = { prompt: string; words: string[]; correct: string };
 type SentencePoolItem = { id: string; word: string; used: boolean };
@@ -59,6 +61,7 @@ const shuffle = <T,>(items: T[]): T[] => {
 
 export default function LessonElevenTaskFivePage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [message, setMessage] = useState('');
@@ -80,7 +83,10 @@ export default function LessonElevenTaskFivePage() {
   const handleNext = () => {
     if (currentIndex < TASKS.length - 1) setCurrentIndex((prev) => prev + 1);
     else {
-      if (TASKS.length > 0) setLessonTaskResult('/lesson-11', 6, TASKS.length, TASKS.length);
+      if (TASKS.length > 0) {
+        setLessonTaskResult('/lesson-11', 6, TASKS.length, TASKS.length);
+        if (token) addUserPoints(token, TASKS.length);
+      }
       setFinished(true);
     }
   };

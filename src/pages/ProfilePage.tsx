@@ -6,11 +6,25 @@ import {
   LogOut, 
   User, 
   Mail, 
-  Award, 
-  TrendingUp,
   Settings,
-  CreditCard
+  CreditCard,
+  UserPlus,
+  Calendar,
+  Package
 } from 'lucide-react';
+
+function formatPlanTimeLeft(planExpiresAt: string | null | undefined): string {
+  if (!planExpiresAt) return '—';
+  const end = new Date(planExpiresAt);
+  const now = new Date();
+  if (end <= now) return "Muddati tugagan";
+  const days = Math.ceil((end.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+  if (days >= 30) {
+    const months = Math.floor(days / 30);
+    return `${months} oy`;
+  }
+  return `${days} kun`;
+}
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
@@ -40,20 +54,30 @@ export default function ProfilePage() {
           
           <div className="mt-8 grid grid-cols-2 gap-4">
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <Award className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
-              <p className="text-xs text-slate-500 uppercase font-bold">Daraja</p>
-              <p className="text-lg font-bold text-slate-900">{user?.level}</p>
+              <Package className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
+              <p className="text-xs text-slate-500 uppercase font-bold">Tarif</p>
+              <p className="text-lg font-bold text-slate-900">{user?.planName || "Tarif yo'q"}</p>
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <TrendingUp className="w-6 h-6 text-green-600 mx-auto mb-2" />
-              <p className="text-xs text-slate-500 uppercase font-bold">Progress</p>
-              <p className="text-lg font-bold text-slate-900">{Math.round(user?.progress || 0)}%</p>
+              <Calendar className="w-6 h-6 text-green-600 mx-auto mb-2" />
+              <p className="text-xs text-slate-500 uppercase font-bold">Qolgan muddat</p>
+              <p className={`text-lg font-bold ${user?.planExpiresAt && new Date(user.planExpiresAt) <= new Date() ? 'text-red-600' : 'text-slate-900'}`}>
+                {formatPlanTimeLeft(user?.planExpiresAt)}
+              </p>
             </div>
           </div>
         </motion.div>
 
         {/* Settings List */}
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
+          <button
+            onClick={() => navigate('/invite')}
+            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+          >
+            <UserPlus className="w-5 h-5 text-slate-400" />
+            <span className="font-medium text-slate-700 flex-1 text-left">Do‘stlarni taklif qiling</span>
+            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
+          </button>
           <button
             onClick={() => navigate('/tariflar')}
             className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"

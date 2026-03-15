@@ -316,7 +316,7 @@ export default function LessonFourteenTaskRunner({
                   setLessonTaskResult(lessonPath, taskNumber, correctCount, TASKS.length);
                   if (token) {
                     saveLessonTaskResult(token, lessonPath, taskNumber, correctCount, TASKS.length);
-                    addUserPoints(token, 5);
+                    addUserPoints(token, correctCount);
                   }
                 }
                 navigate(backPath);

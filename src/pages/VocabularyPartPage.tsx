@@ -3,8 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { BarChart3, ChevronRight, Layers, ClipboardList, Puzzle, Check, Play, Lock } from 'lucide-react';
 import { getSubtopicContent, VocabularyEntry } from '../data/vocabularyContent';
 import {
-  addLearned,
-  addPartLearned,
   setLastPartId,
   getPartResultCount,
   setPartResultCount,
@@ -13,7 +11,17 @@ import {
   type StageStatus,
 } from '../utils/vocabProgress';
 import { useAuth } from '../context/AuthContext';
-import { saveVocabularyPartProgress, fetchVocabularyProgress } from '../api/vocabularyProgress';
+import {
+  fetchVocabularyWordGroups,
+  fetchVocabularyTasksStatus,
+  getCachedWordGroupsProgress,
+  getCachedTasksStatus,
+  setCachedTasksStatus,
+  postFlashcardsComplete,
+  postVocabularyTestFinish,
+  postVocabularyMatchFinish,
+  type VocabularyTasksStatus,
+} from '../api/vocabulary';
 
 type Mode = 'cards' | 'test' | 'pairs';
 
@@ -63,6 +71,30 @@ export default function VocabularyPartPage() {
   const isExerciseScreen = mode !== null;
   const partUrl = `/vocabulary/${content?.topicId}/${content?.subtopicId}/${partId}`;
 
+  const [wordGroupId, setWordGroupId] = useState<number | null>(() => {
+    if (!content?.subtopicId || !part?.id) return null;
+    const cached = getCachedWordGroupsProgress(content.subtopicId);
+    const group = cached?.find((g) => g.part_id === part.id);
+    return group?.id ?? null;
+  });
+  const [tasksStatus, setTasksStatus] = useState<VocabularyTasksStatus | null>(() => {
+    if (!content?.subtopicId || !part?.id) return null;
+    const cached = getCachedWordGroupsProgress(content.subtopicId);
+    const group = cached?.find((g) => g.part_id === part.id);
+    if (group?.id == null) return null;
+    return getCachedTasksStatus(group.id);
+  });
+  const [pointsEarnedMessage, setPointsEarnedMessage] = useState<number | null>(null);
+
+  const refetchTasks = async () => {
+    if (!token || wordGroupId == null) return;
+    const status = await fetchVocabularyTasksStatus(token, wordGroupId);
+    if (status) {
+      setTasksStatus(status);
+      setCachedTasksStatus(wordGroupId, status);
+    }
+  };
+
   useEffect(() => {
     if (content?.topicId && content?.subtopicId && part?.id) {
       setLastPartId(content.topicId, content.subtopicId, part.id);
@@ -70,8 +102,37 @@ export default function VocabularyPartPage() {
   }, [content?.topicId, content?.subtopicId, part?.id]);
 
   useEffect(() => {
-    fetchVocabularyProgress(token);
-  }, [token]);
+    if (!token || !content?.subtopicId || !part?.id) return;
+    setWordGroupId((prev) => {
+      const cached = getCachedWordGroupsProgress(content.subtopicId);
+      const group = cached?.find((g) => g.part_id === part.id);
+      return group?.id ?? prev ?? null;
+    });
+    setTasksStatus((prev) => {
+      const cached = getCachedWordGroupsProgress(content.subtopicId);
+      const group = cached?.find((g) => g.part_id === part.id);
+      if (group?.id != null) {
+        const cachedStatus = getCachedTasksStatus(group.id);
+        if (cachedStatus) return cachedStatus;
+      }
+      return prev;
+    });
+    let cancelled = false;
+    (async () => {
+      const groups = await fetchVocabularyWordGroups(token, content.subtopicId);
+      if (cancelled) return;
+      const group = groups.find((g) => g.part_id === part.id);
+      if (group) {
+        setWordGroupId(group.id);
+        const status = await fetchVocabularyTasksStatus(token, group.id);
+        if (!cancelled && status) {
+          setTasksStatus(status);
+          setCachedTasksStatus(group.id, status);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token, content?.subtopicId, part?.id]);
 
   useEffect(() => {
     if (content?.topicId && content?.subtopicId && part?.id && mode) {
@@ -88,11 +149,11 @@ export default function VocabularyPartPage() {
     if (!content?.topicId || !content?.subtopicId || !part?.id) return;
     if (mode === 'cards' && cardIndex >= (part.entries?.length ?? 0) && (part.entries?.length ?? 0) > 0) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'cards', 'completed');
-      saveVocabularyPartProgress(token, content.topicId, content.subtopicId, part.id, {
-        stage_cards: 'completed',
-      });
+      if (token && wordGroupId != null) {
+        postFlashcardsComplete(token, wordGroupId).then(() => refetchTasks());
+      }
     }
-  }, [content?.topicId, content?.subtopicId, part?.id, mode, cardIndex, part?.entries?.length, token]);
+  }, [content?.topicId, content?.subtopicId, part?.id, mode, cardIndex, part?.entries?.length, token, wordGroupId]);
 
   const testQuestions = useMemo(() => {
     if (!part) return [];
@@ -128,25 +189,36 @@ export default function VocabularyPartPage() {
     if (!content?.topicId || !content?.subtopicId || !part?.id) return;
     if (mode === 'test' && testIndex >= testQuestions.length && testQuestions.length > 0) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'test', 'completed');
-      setPartResultCount(content.topicId, content.subtopicId, part.id, part.entries.length, part.entries.length);
-      saveVocabularyPartProgress(token, content.topicId, content.subtopicId, part.id, {
-        result_count: part.entries.length,
-        stage_test: 'completed',
-      });
+      setPointsEarnedMessage(testCorrect);
+      if (token && wordGroupId != null) {
+        postVocabularyTestFinish(token, wordGroupId, testCorrect, testQuestions.length).then((result) => {
+          if (result) {
+            setPointsEarnedMessage(result.points_awarded);
+            refetchTasks();
+          }
+        });
+      } else {
+        setPartResultCount(content.topicId, content.subtopicId, part.id, testCorrect, part.entries.length);
+      }
     }
-  }, [content?.topicId, content?.subtopicId, part?.id, mode, testIndex, testQuestions.length, part?.entries.length, token]);
+  }, [content?.topicId, content?.subtopicId, part?.id, mode, testIndex, testQuestions.length, token, wordGroupId, testCorrect]);
 
   useEffect(() => {
     if (!content?.topicId || !content?.subtopicId || !part?.id) return;
     if (mode === 'pairs' && pairGroupIndex >= pairGroups.length && pairGroups.length > 0) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'pairs', 'completed');
-      setPartResultCount(content.topicId, content.subtopicId, part.id, part.entries.length, part.entries.length);
-      saveVocabularyPartProgress(token, content.topicId, content.subtopicId, part.id, {
-        result_count: part.entries.length,
-        stage_pairs: 'completed',
-      });
+      const points = part.entries?.length ?? 0;
+      setPointsEarnedMessage(points);
+      if (token && wordGroupId != null && points > 0) {
+        postVocabularyMatchFinish(token, wordGroupId, points).then((result) => {
+          if (result) {
+            setPointsEarnedMessage(result.points_awarded);
+            refetchTasks();
+          }
+        });
+      }
     }
-  }, [content?.topicId, content?.subtopicId, part?.id, mode, pairGroupIndex, pairGroups.length, part?.entries.length, token]);
+  }, [content?.topicId, content?.subtopicId, part?.id, mode, pairGroupIndex, pairGroups.length, part?.entries?.length, token, wordGroupId]);
 
   if (!content || !part) {
     return (
@@ -169,20 +241,9 @@ export default function VocabularyPartPage() {
   const currentTest = testQuestions[testIndex];
   const currentGroup = pairGroups[pairGroupIndex];
 
-  const onCardAction = (known: boolean) => {
-    if (known) {
-      setKnownCount((v) => v + 1);
-      if (content?.topicId && content?.subtopicId && part) {
-        addLearned(content.topicId, content.subtopicId, 1);
-        addPartLearned(
-          content.topicId,
-          content.subtopicId,
-          part.id,
-          1,
-          part.entries.length
-        );
-      }
-    } else setUnknownCount((v) => v + 1);
+  const onCardAction = (_known: boolean) => {
+    if (_known) setKnownCount((v) => v + 1);
+    else setUnknownCount((v) => v + 1);
     setCardFlipped(false);
     setCardIndex((i) => i + 1);
   };
@@ -249,55 +310,106 @@ export default function VocabularyPartPage() {
           ← Orqaga
         </button>
 
+        {pointsEarnedMessage != null && (
+          <div
+            className="mb-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-center"
+            role="alert"
+          >
+            <p className="font-semibold text-emerald-800">
+              Siz {pointsEarnedMessage} ball oldingiz! Molodets!
+            </p>
+            <button
+              type="button"
+              onClick={() => setPointsEarnedMessage(null)}
+              className="mt-1 text-sm font-medium text-emerald-600 underline hover:no-underline"
+            >
+              Yopish
+            </button>
+          </div>
+        )}
+
         {!isExerciseScreen && (() => {
           if (!content || !part) return null;
           const total = part.entries?.length ?? 0;
-          const resultCount = getPartResultCount(content.topicId, content.subtopicId, part.id);
+          const learnedWords = tasksStatus?.learned_words ?? getPartResultCount(content.topicId, content.subtopicId, part.id);
+          const totalWords = tasksStatus?.total_words ?? total;
           const stages: { mode: Mode; title: string; icon: typeof Layers }[] = [
             { mode: 'cards', title: "Tanishish (kartochkalar)", icon: Layers },
             { mode: 'test', title: 'Test', icon: ClipboardList },
             { mode: 'pairs', title: "Juftini topish", icon: Puzzle },
           ];
           const stageStatus = (m: Mode): StageStatus => {
+            if (tasksStatus) {
+              if (m === 'cards') return tasksStatus.flashcards_status === 'completed' ? 'completed' : getStageStatus(content.topicId, content.subtopicId, part.id, 'cards') || 'not_started';
+              if (m === 'test') {
+                if (tasksStatus.test_status === 'locked') return 'not_started';
+                return tasksStatus.test_status === 'completed' ? 'completed' : 'in_progress';
+              }
+              if (m === 'pairs') {
+                if (tasksStatus.match_status === 'locked') return 'not_started';
+                return tasksStatus.match_status === 'completed' ? 'completed' : 'in_progress';
+              }
+            }
             if (m === 'cards') return getStageStatus(content.topicId, content.subtopicId, part.id, 'cards');
             return getStageStatus(content.topicId, content.subtopicId, part.id, m);
+          };
+          const isLocked = (m: Mode): boolean => {
+            if (m === 'cards') return false;
+            if (!tasksStatus) return true;
+            if (m === 'test') return tasksStatus.flashcards_status !== 'completed';
+            if (m === 'pairs') return !tasksStatus.match_unlocked;
+            return false;
           };
           const statusLabel = (s: StageStatus) => (s === 'completed' ? "Tugallangan" : s === 'in_progress' ? "Jarayonda" : "Boshlanmagan");
 
           return (
             <>
               <p className="mb-4 text-sm text-slate-600">
-                Natija: <span className="font-semibold text-slate-900">{resultCount} / {total}</span> so&apos;z
+                Natija: <span className="font-semibold text-slate-900">{learnedWords} / {totalWords}</span> so&apos;z
               </p>
-              <div className="space-y-4">
-                {stages.map((stage, idx) => {
-                  const status = stageStatus(stage.mode);
-                  const Icon = stage.icon;
-                  return (
-                    <button
-                      key={stage.mode}
-                      type="button"
-                      onClick={() => navigate(`${partUrl}/${stage.mode}`)}
-                      className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-indigo-200/80 hover:shadow-md"
-                      style={{ borderColor: '#E2E8F0' }}
-                    >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 transition-transform group-hover:scale-105">
-                        <Icon className="h-6 w-6" strokeWidth={1.8} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium" style={{ color: '#64748B' }}>{idx + 1}-bosqich</p>
-                        <p className="mt-0.5 font-semibold" style={{ color: '#0F172A' }}>{stage.title}</p>
-                        <div className="mt-2 flex items-center gap-2 text-sm" style={{ color: '#64748B' }}>
-                          <StageStatusIcon status={status} />
-                          <span>{statusLabel(status)}</span>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm">
+                <p className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Bosqichlar
+                </p>
+                <div className="space-y-3">
+                  {stages.map((stage, idx) => {
+                    const status = stageStatus(stage.mode);
+                    const locked = isLocked(stage.mode);
+                    const Icon = stage.icon;
+                    return (
+                      <button
+                        key={stage.mode}
+                        type="button"
+                        disabled={locked}
+                        onClick={() => !locked && navigate(`${partUrl}/${stage.mode}`)}
+                        className={`group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all duration-200 ${
+                          locked
+                            ? 'cursor-not-allowed border-slate-200 bg-slate-200/60 shadow-none'
+                            : 'border-slate-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-indigo-200/80 hover:shadow-md'
+                        }`}
+                      >
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform ${
+                          locked ? 'bg-slate-300/70 text-slate-500' : 'bg-indigo-50 text-indigo-600 group-hover:scale-105'
+                        }`}>
+                          <Icon className="h-5 w-5" strokeWidth={1.8} />
                         </div>
-                      </div>
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600">
-                        <ChevronRight className="h-5 w-5" strokeWidth={2} />
-                      </div>
-                    </button>
-                  );
-                })}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium" style={{ color: locked ? '#94A3B8' : '#64748B' }}>{idx + 1}-bosqich</p>
+                          <p className="mt-0.5 font-semibold" style={{ color: locked ? '#94A3B8' : '#0F172A' }}>{stage.title}</p>
+                          <div className="mt-1.5 flex items-center gap-2 text-sm" style={{ color: locked ? '#94A3B8' : '#64748B' }}>
+                            <StageStatusIcon status={locked ? 'not_started' : status} />
+                            <span>{locked ? "Qulflangan" : statusLabel(status)}</span>
+                          </div>
+                        </div>
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                          locked ? 'text-slate-400' : 'text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+                        }`}>
+                          <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </>
           );
@@ -407,6 +519,13 @@ export default function VocabularyPartPage() {
                 <p className="mt-2 text-sm" style={{ color: '#64748B' }}>
                   Bilaman: {knownCount} | Bilmayman: {unknownCount}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => navigate(partUrl)}
+                  className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
+                >
+                  Tugatish
+                </button>
               </div>
             )}
           </div>
@@ -490,6 +609,18 @@ export default function VocabularyPartPage() {
                 <p className="mt-2 text-sm" style={{ color: '#64748B' }}>
                   To&apos;g&apos;ri: {testCorrect} / {testQuestions.length}
                 </p>
+                {token && (
+                  <p className="mt-3 text-base font-semibold text-emerald-600">
+                    Siz {testCorrect} ball oldingiz! Molodets!
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => navigate(partUrl)}
+                  className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
+                >
+                  Tugatish
+                </button>
               </div>
             )}
           </div>
@@ -592,6 +723,11 @@ export default function VocabularyPartPage() {
                 <p className="text-xl font-semibold" style={{ color: '#0F172A' }}>
                   Juftliklar tugadi
                 </p>
+                {token && (part?.entries?.length ?? 0) > 0 && (
+                  <p className="mt-3 text-base font-semibold text-emerald-600">
+                    Siz {part.entries.length} ball oldingiz! Molodets!
+                  </p>
+                )}
               </div>
             )}
           </div>

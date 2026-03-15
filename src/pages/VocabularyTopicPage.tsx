@@ -1,7 +1,15 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getSubtopicWordCount } from '../data/vocabularyContent';
 import { getLearnedCount, setLastSubtopicId } from '../utils/vocabProgress';
+import { useAuth } from '../context/AuthContext';
+import {
+  fetchVocabularySubtopics,
+  getCachedSubtopicsProgress,
+  setCachedSubtopicsProgress,
+  type VocabularySubtopic,
+} from '../api/vocabulary';
 import {
   ChevronRight,
   ArrowLeft,
@@ -102,7 +110,27 @@ const ACCENT_ICON = [
 export default function VocabularyTopicPage() {
   const navigate = useNavigate();
   const { topicId } = useParams();
+  const { token } = useAuth();
   const topic = VOCABULARY_TOPICS.find((item) => item.id === topicId);
+  const [subtopicsProgress, setSubtopicsProgress] = useState<VocabularySubtopic[]>(() =>
+    topicId ? (getCachedSubtopicsProgress(topicId) ?? []) : []
+  );
+
+  useEffect(() => {
+    if (!topicId) {
+      setSubtopicsProgress([]);
+      return;
+    }
+    if (!token) {
+      setSubtopicsProgress([]);
+      return;
+    }
+    setSubtopicsProgress(getCachedSubtopicsProgress(topicId) ?? []);
+    fetchVocabularySubtopics(token, topicId).then((data) => {
+      setSubtopicsProgress(data);
+      setCachedSubtopicsProgress(topicId, data);
+    });
+  }, [token, topicId]);
 
   if (!topic) {
     return (
@@ -144,8 +172,9 @@ export default function VocabularyTopicPage() {
         <div className="space-y-4">
           {topic.subtopics.map((subtopic, index) => {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
+            const fromApi = subtopicsProgress.find((s) => s.id === subtopic.id);
             const wordCount = getSubtopicWordCount(topic.id, subtopic.id);
-            const learned = getLearnedCount(topic.id, subtopic.id);
+            const learned = fromApi?.learned_words ?? getLearnedCount(topic.id, subtopic.id);
             const percent = wordCount > 0 ? Math.round((learned / wordCount) * 100) : 0;
             const accentBg = ACCENT_BG[index % ACCENT_BG.length];
             const accentIcon = ACCENT_ICON[index % ACCENT_ICON.length];

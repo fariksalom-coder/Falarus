@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
 import { motion } from 'motion/react';
 import { BookOpen, UserPlus, LogIn } from 'lucide-react';
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const refFromUrl = searchParams.get('ref') ?? '';
+  const [isLogin, setIsLogin] = useState(!refFromUrl);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -27,11 +29,14 @@ export default function AuthPage() {
       return;
     }
 
+    const payload = isLogin
+      ? { email: formData.email, password: formData.password }
+      : { ...formData, ref: refFromUrl || undefined };
     const endpoint = apiUrl(isLogin ? '/api/auth/login' : '/api/auth/register');
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     });
 
     let data: { token?: string; user?: any; error?: string } = {};

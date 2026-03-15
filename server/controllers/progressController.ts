@@ -5,6 +5,7 @@ import * as progressRepository from '../repositories/progressRepository';
 import * as pointsService from '../services/pointsService';
 import * as statisticsService from '../services/statisticsService';
 import * as leaderboardService from '../services/leaderboardService';
+import * as streakService from '../services/streakService';
 
 export function getLessonProgress(supabase: Supabase) {
   return async (req: Request, res: Response) => {
@@ -108,6 +109,8 @@ export function postTaskFinish(supabase: Supabase) {
           lessonId
         );
       }
+
+      await streakService.recordActivity(supabase, Number(uid));
 
       res.json({
         success: true,

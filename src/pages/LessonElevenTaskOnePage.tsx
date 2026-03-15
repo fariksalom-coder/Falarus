@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
+import { addUserPoints } from '../api/leaderboard';
 
 type MatchingTask = { prompt: string; pairs: { left: string; right: string }[] };
 type MatchCard = { id: string; text: string; pairId: number; side: 'left' | 'right' };
@@ -87,6 +89,7 @@ const buildMatchCards = (pairs: MatchingTask['pairs']) => {
 
 export default function LessonElevenTaskOnePage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [status, setStatus] = useState<'idle' | 'correct'>('idle');
   const [message, setMessage] = useState('');
@@ -116,7 +119,10 @@ export default function LessonElevenTaskOnePage() {
   const handleNext = () => {
     if (currentIndex < TASKS.length - 1) setCurrentIndex((prev) => prev + 1);
     else {
-      if (TASKS.length > 0) setLessonTaskResult('/lesson-11', 2, TASKS.length, TASKS.length);
+      if (TASKS.length > 0) {
+        setLessonTaskResult('/lesson-11', 2, TASKS.length, TASKS.length);
+        if (token) addUserPoints(token, TASKS.length);
+      }
       setFinished(true);
     }
   };

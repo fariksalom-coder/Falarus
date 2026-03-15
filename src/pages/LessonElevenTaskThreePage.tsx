@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
+import { addUserPoints } from '../api/leaderboard';
 
 type ChoiceTask = { prompt: string; options: string[]; correct: string };
 
@@ -47,6 +49,7 @@ const shuffle = <T,>(items: T[]): T[] => {
 
 export default function LessonElevenTaskThreePage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [message, setMessage] = useState('');
@@ -67,7 +70,10 @@ export default function LessonElevenTaskThreePage() {
   const handleNext = () => {
     if (currentIndex < TASKS.length - 1) setCurrentIndex((p) => p + 1);
     else {
-      if (TASKS.length > 0) setLessonTaskResult('/lesson-11', 4, TASKS.length, TASKS.length);
+      if (TASKS.length > 0) {
+        setLessonTaskResult('/lesson-11', 4, TASKS.length, TASKS.length);
+        if (token) addUserPoints(token, TASKS.length);
+      }
       setFinished(true);
     }
   };

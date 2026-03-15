@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
+import { addUserPoints } from '../api/leaderboard';
 
 type ChoiceTask = {
   type: 'choice';
@@ -575,6 +577,7 @@ export default function UnifiedLessonPracticePage() {
               onClick={() => {
                 if (TASKS.length > 0) {
                   setLessonTaskResult('/lesson-1', 1, correctCount, TASKS.length);
+                  if (token) addUserPoints(token, correctCount);
                 }
                 navigate('/lesson-1');
               }}

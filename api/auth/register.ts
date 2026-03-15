@@ -63,6 +63,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return sendJson(res, 500, { error: 'Xatolik yuz berdi' });
     }
 
+    const refCode = typeof body.ref === 'string' ? body.ref.trim() : '';
+    if (refCode) {
+      const { data: referrer } = await supabase
+        .from('users')
+        .select('id')
+        .eq('referral_code', refCode)
+        .single();
+      if (referrer && referrer.id !== user.id) {
+        await supabase.from('users').update({ referred_by: referrer.id }).eq('id', user.id);
+        await supabase.from('referrals').insert({
+          referrer_id: referrer.id,
+          referred_user_id: user.id,
+          status: 'registered',
+          discount_used: false,
+        });
+      }
+    }
+
     const token = jwt.sign({ id: user.id }, JWT_SECRET);
     return sendJson(res, 200, {
       token,

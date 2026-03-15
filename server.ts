@@ -77,8 +77,11 @@ async function startServer() {
   });
 
   // Auth
+  const { attachReferralOnRegister, resolveReferrerFromCode } = await import(
+    './server/services/referral.service'
+  );
   app.post('/api/auth/register', async (req, res) => {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, ref: refCode } = req.body;
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const { data: user, error } = await supabase
@@ -88,12 +91,19 @@ async function startServer() {
           last_name: lastName,
           email,
           password: hashedPassword,
+          onboarded: 1,
         })
         .select('id, first_name, last_name, email, level, onboarded')
         .single();
       if (error) {
         if (error.code === '23505') return res.status(400).json({ error: 'Email allaqachon mavjud' });
         throw error;
+      }
+      if (refCode && typeof refCode === 'string') {
+        const referrerId = await resolveReferrerFromCode(supabase, refCode, user.id);
+        if (referrerId != null && referrerId !== user.id) {
+          await attachReferralOnRegister(supabase, referrerId, user.id);
+        }
       }
       const token = jwt.sign({ id: user.id }, JWT_SECRET);
       res.json({
@@ -104,7 +114,9 @@ async function startServer() {
           lastName: user.last_name,
           email: user.email,
           level: user.level ?? 'A0',
-          onboarded: user.onboarded ?? 0,
+          onboarded: 1,
+          planName: null,
+          planExpiresAt: null,
         },
       });
     } catch (e) {
@@ -129,6 +141,8 @@ async function startServer() {
         email: user.email,
         level: user.level,
         onboarded: user.onboarded,
+        planName: user.plan_name ?? null,
+        planExpiresAt: user.plan_expires_at ?? null,
       },
     });
   });
@@ -149,11 +163,23 @@ async function startServer() {
   const { createProgressRoutes } = await import('./server/routes/progressRoutes');
   app.use('/api', createProgressRoutes(supabase, authenticate));
 
+  // Vocabulary (So'zlar): topics, subtopics, word groups, tasks, flashcards/test/match
+  const { createVocabularyRoutes } = await import('./server/routes/vocabularyRoutes');
+  app.use('/api', createVocabularyRoutes(supabase, authenticate));
+
+  // Activity / streak (Ketma-ket kunlar)
+  const { createActivityRoutes } = await import('./server/routes/activityRoutes');
+  app.use('/api', createActivityRoutes(supabase, authenticate));
+
+  // Referral (referral link, stats, list, withdraw, discount, payments)
+  const { createReferralRoutes } = await import('./server/routes/referralRoutes');
+  app.use('/api', createReferralRoutes(supabase, authenticate));
+
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, first_name, last_name, email, level, onboarded, progress')
+      .select('id, first_name, last_name, email, level, onboarded, progress, plan_name, plan_expires_at')
       .eq('id', req.userId)
       .single();
     if (error || !user) return res.status(404).json({ error: 'User topilmadi' });
@@ -165,6 +191,8 @@ async function startServer() {
       level: user.level,
       onboarded: user.onboarded,
       progress: user.progress,
+      planName: user.plan_name ?? null,
+      planExpiresAt: user.plan_expires_at ?? null,
     });
   });
 
@@ -174,13 +202,14 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Leaderboard (reyting)
+  // Leaderboard (reyting): weekly/monthly from old fields, "Umumiy" (all) from total_points
   app.get('/api/leaderboard', authenticate, async (req: any, res) => {
     const period = (req.query.period as string) || 'weekly';
-    const col = period === 'monthly' ? 'monthly_points' : period === 'all' ? 'points' : 'weekly_points';
+    const useTotalPoints = period === 'all';
+    const col = useTotalPoints ? 'total_points' : period === 'monthly' ? 'monthly_points' : 'weekly_points';
     const { data: top, error: topErr } = await supabase
       .from('users')
-      .select('id, first_name, last_name, avatar_url, points, weekly_points, monthly_points')
+      .select('id, first_name, last_name, avatar_url, total_points, points, weekly_points, monthly_points')
       .order(col, { ascending: false })
       .limit(10);
     if (topErr) {
@@ -189,13 +218,13 @@ async function startServer() {
     }
     const { data: me, error: meErr } = await supabase
       .from('users')
-      .select('id, first_name, last_name, avatar_url, points, weekly_points, monthly_points')
+      .select('id, first_name, last_name, avatar_url, total_points, points, weekly_points, monthly_points')
       .eq('id', req.userId)
       .single();
     if (meErr || !me) {
       return res.json({ top: top ?? [], myRank: null });
     }
-    const myPoints = period === 'monthly' ? (me.monthly_points ?? 0) : period === 'all' ? (me.points ?? 0) : (me.weekly_points ?? 0);
+    const myPoints = useTotalPoints ? (me.total_points ?? 0) : period === 'monthly' ? (me.monthly_points ?? 0) : (me.weekly_points ?? 0);
     const { count, error: countErr } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
@@ -207,7 +236,7 @@ async function startServer() {
         firstName: u.first_name,
         lastName: u.last_name,
         avatarUrl: u.avatar_url,
-        points: period === 'monthly' ? (u.monthly_points ?? 0) : period === 'all' ? (u.points ?? 0) : (u.weekly_points ?? 0),
+        points: useTotalPoints ? (u.total_points ?? 0) : period === 'monthly' ? (u.monthly_points ?? 0) : (u.weekly_points ?? 0),
       })),
       myRank: rank == null ? null : {
         rank,
@@ -225,22 +254,23 @@ async function startServer() {
     if (amount === 0) return res.status(400).json({ error: 'amount kerak' });
     const { data: user, error: fetchErr } = await supabase
       .from('users')
-      .select('points, weekly_points, monthly_points')
+      .select('points, weekly_points, monthly_points, total_points')
       .eq('id', req.userId)
       .single();
     if (fetchErr || !user) return res.status(404).json({ error: 'User topilmadi' });
     const points = (user.points ?? 0) + amount;
     const weekly_points = (user.weekly_points ?? 0) + amount;
     const monthly_points = (user.monthly_points ?? 0) + amount;
+    const total_points = (user.total_points ?? 0) + amount;
     const { error: updateErr } = await supabase
       .from('users')
-      .update({ points, weekly_points, monthly_points })
+      .update({ points, weekly_points, monthly_points, total_points })
       .eq('id', req.userId);
     if (updateErr) {
       console.error('[api/user/points]', updateErr.message);
       return res.status(500).json({ error: updateErr.message });
     }
-    res.json({ success: true, points, weekly_points, monthly_points });
+    res.json({ success: true, points, weekly_points, monthly_points, total_points });
   });
 
   // Lessons

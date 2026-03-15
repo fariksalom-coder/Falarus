@@ -9,6 +9,8 @@ interface User {
   level: string;
   onboarded: number;
   progress: number;
+  planName?: string | null;
+  planExpiresAt?: string | null;
 }
 
 interface AuthContextType {

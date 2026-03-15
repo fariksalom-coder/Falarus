@@ -1,7 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
-import OnboardingPage from './pages/OnboardingPage';
 import Dashboard from './pages/Dashboard';
 import LessonPage from './pages/LessonPage';
 import LessonOnePage from './pages/LessonOnePage';
@@ -154,10 +153,16 @@ import VocabularyTopicPage from './pages/VocabularyTopicPage';
 import VocabularySubtopicPage from './pages/VocabularySubtopicPage';
 import VocabularyPartPage from './pages/VocabularyPartPage';
 import ProfilePage from './pages/ProfilePage';
+import ReferralPage from './pages/ReferralPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import StatistikaPage from './pages/StatistikaPage';
 import PricingPage from './pages/PricingPage';
 import MainLayout from './components/MainLayout';
+
+function VocabularyPartRoute() {
+  const { topicId, subtopicId, partId } = useParams();
+  return <VocabularyPartPage key={`${topicId}-${subtopicId}-${partId}`} />;
+}
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -174,16 +179,8 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/register" element={<AuthPage />} />
         <Route path="*" element={<Navigate to="/auth" replace />} />
-      </Routes>
-    );
-  }
-
-  if (!user.onboarded) {
-    return (
-      <Routes>
-        <Route path="/onboarding" element={<OnboardingPage />} />
-        <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
   }
@@ -195,9 +192,10 @@ function AppRoutes() {
         <Route path="vocabulary" element={<VocabularyPage />} />
         <Route path="vocabulary/:topicId" element={<VocabularyTopicPage />} />
         <Route path="vocabulary/:topicId/:subtopicId" element={<VocabularySubtopicPage />} />
-        <Route path="vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartPage />} />
-        <Route path="vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartPage />} />
+        <Route path="vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartRoute />} />
+        <Route path="vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartRoute />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="invite" element={<ReferralPage />} />
         <Route path="statistika" element={<StatistikaPage />} />
         <Route path="tariflar" element={<PricingPage />} />
         <Route path="reyting" element={<LeaderboardPage />} />

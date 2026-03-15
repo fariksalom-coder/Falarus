@@ -1,7 +1,15 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getSubtopicContent } from '../data/vocabularyContent';
 import { getPartLearnedCount, setLastPartId } from '../utils/vocabProgress';
+import { useAuth } from '../context/AuthContext';
+import {
+  fetchVocabularyWordGroups,
+  getCachedWordGroupsProgress,
+  setCachedWordGroupsProgress,
+  type VocabularyWordGroup,
+} from '../api/vocabulary';
 import {
   ChevronRight,
   Package,
@@ -29,9 +37,29 @@ const PART_ACCENT = [
 export default function VocabularySubtopicPage() {
   const navigate = useNavigate();
   const { topicId, subtopicId } = useParams();
+  const { token } = useAuth();
   const topic = VOCABULARY_TOPICS.find((item) => item.id === topicId);
   const subtopic = topic?.subtopics.find((item) => item.id === subtopicId);
   const content = getSubtopicContent(topicId, subtopicId);
+  const [wordGroupsProgress, setWordGroupsProgress] = useState<VocabularyWordGroup[]>(() =>
+    subtopicId ? (getCachedWordGroupsProgress(subtopicId) ?? []) : []
+  );
+
+  useEffect(() => {
+    if (!subtopicId) {
+      setWordGroupsProgress([]);
+      return;
+    }
+    if (!token) {
+      setWordGroupsProgress([]);
+      return;
+    }
+    setWordGroupsProgress(getCachedWordGroupsProgress(subtopicId) ?? []);
+    fetchVocabularyWordGroups(token, subtopicId).then((data) => {
+      setWordGroupsProgress(data);
+      setCachedWordGroupsProgress(subtopicId, data);
+    });
+  }, [token, subtopicId]);
 
   if (!topic || !subtopic) {
     return (
@@ -72,12 +100,17 @@ export default function VocabularySubtopicPage() {
           ← Orqaga
         </button>
 
+        <h1 className="mb-4 text-xl font-bold text-slate-900">
+          {subtopic.title.charAt(0).toUpperCase() + subtopic.title.slice(1)}
+        </h1>
+
         {content ? (
           <div className="space-y-4">
               {content.parts.map((part, index) => {
                 const Icon = PART_ICONS[part.id] ?? BookOpen;
                 const total = part.entries.length;
-                const learned = getPartLearnedCount(
+                const fromApi = wordGroupsProgress.find((g) => g.part_id === part.id);
+                const learned = fromApi?.learned_words ?? getPartLearnedCount(
                   topic.id,
                   subtopic.id,
                   part.id

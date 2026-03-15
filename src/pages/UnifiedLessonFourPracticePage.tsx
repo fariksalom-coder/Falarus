@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
+import { addUserPoints } from '../api/leaderboard';
 
 type ChoiceTask = { type: 'choice'; prompt: string; options: string[]; correct: string };
 type MatchingTask = { type: 'matching'; prompt: string; pairs: { left: string; right: string }[] };
@@ -69,6 +71,7 @@ const buildMatchCards = (pairs: MatchingTask['pairs']) => {
 
 export default function UnifiedLessonFourPracticePage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [message, setMessage] = useState('');
@@ -276,7 +279,10 @@ export default function UnifiedLessonFourPracticePage() {
             <button
               type="button"
               onClick={() => {
-                if (TASKS.length > 0) setLessonTaskResult('/lesson-4', 1, correctCount, TASKS.length);
+                if (TASKS.length > 0) {
+                  setLessonTaskResult('/lesson-4', 1, correctCount, TASKS.length);
+                  if (token) addUserPoints(token, correctCount);
+                }
                 navigate('/lesson-4');
               }}
               className={`mt-6 w-full rounded-xl px-5 py-3.5 text-base font-semibold text-white transition-colors ${

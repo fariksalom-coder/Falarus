@@ -1,8 +1,18 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchVocabularyProgress } from '../api/vocabularyProgress';
+import {
+  fetchVocabularyTopics,
+  getCachedTopicsProgress,
+  setCachedTopicsProgress,
+  type VocabularyTopic,
+} from '../api/vocabulary';
+import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
+import { getTopicWordCount } from '../data/vocabularyContent';
 import { getVocabularyStats } from '../utils/statsHelpers';
+import { getVocabDailyStats } from '../utils/vocabDailyStats';
 import { getTotalLessonTaskStats } from '../utils/lessonTaskResults';
+import { fetchStreak } from '../api/activity';
 import {
   Flame,
   MessageCircle,
@@ -21,26 +31,61 @@ const DAY_LABELS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
 
 export default function StatistikaPage() {
   const { token } = useAuth();
+  const [topicsProgress, setTopicsProgress] = useState<VocabularyTopic[]>(() =>
+    getCachedTopicsProgress() ?? []
+  );
 
   useEffect(() => {
     fetchVocabularyProgress(token);
   }, [token]);
 
+  useEffect(() => {
+    if (!token) {
+      setTopicsProgress([]);
+      return;
+    }
+    fetchVocabularyTopics(token).then((data) => {
+      setTopicsProgress(data);
+      setCachedTopicsProgress(data);
+    });
+  }, [token]);
+
+  const [streak, setStreak] = useState<{ streak_days: number; last_7_days: boolean[] }>({
+    streak_days: 0,
+    last_7_days: [false, false, false, false, false, false, false],
+  });
+  useEffect(() => {
+    if (!token) return;
+    fetchStreak(token).then((data) => {
+      if (data) setStreak({ streak_days: data.streak_days, last_7_days: data.last_7_days });
+    });
+  }, [token]);
+
   const vocabStats = useMemo(() => getVocabularyStats(), []);
+  const totalLearnedFromApi = useMemo(
+    () => topicsProgress.reduce((s, t) => s + t.learned_words, 0),
+    [topicsProgress]
+  );
+
+  const [dailyStats, setDailyStats] = useState(() =>
+    getVocabDailyStats(totalLearnedFromApi)
+  );
+  useEffect(() => {
+    setDailyStats(getVocabDailyStats(totalLearnedFromApi));
+  }, [totalLearnedFromApi]);
+
   const lessonStats = useMemo(() => getTotalLessonTaskStats(), []);
   const accuracyPercent = lessonStats.total > 0
     ? Math.round((lessonStats.correct / lessonStats.total) * 100)
     : 0;
   const wrongCount = lessonStats.total - lessonStats.correct;
 
-  const streakDays = 0;
-  const todayWords = 0;
-  const weekWords = 0;
+  const { todayWords, weekWords } = dailyStats;
 
   const achievements = [
     { done: lessonStats.total > 0, text: "Birinchi dars tugatildi" },
-    { done: streakDays >= 7, text: '7 kun ketma-ket' },
-    { done: vocabStats.totalLearned >= 100, text: "100 ta so'z o'rganildi" },
+    { done: streak.streak_days >= 7, text: '7 kun ketma-ket' },
+    { done: totalLearnedFromApi >= 100, text: "100 ta so'z o'rganildi" },
   ].filter((a) => a.done);
 
   return (
@@ -62,18 +107,21 @@ export default function StatistikaPage() {
               </div>
               <div>
                 <h2 className="font-semibold" style={{ color: TEXT }}>Ketma-ket kunlar</h2>
-                <p className="text-2xl font-bold" style={{ color: PRIMARY }}>{streakDays} kun</p>
+                <p className="text-2xl font-bold" style={{ color: PRIMARY }}>{streak.streak_days} kun</p>
               </div>
             </div>
             <div className="mt-4 flex justify-between gap-1">
-              {DAY_LABELS.map((d, i) => (
-                <div
-                  key={d}
-                  className="h-8 flex-1 rounded-lg bg-slate-100"
-                  title={d}
-                  style={{ backgroundColor: i < streakDays ? '#22c55e' : undefined, opacity: i < streakDays ? 0.9 : 0.4 }}
-                />
-              ))}
+              {DAY_LABELS.map((d, i) => {
+                const active = streak.last_7_days[i] === true;
+                return (
+                  <div
+                    key={d}
+                    className="h-8 flex-1 rounded-lg bg-slate-100"
+                    title={d}
+                    style={{ backgroundColor: active ? '#22c55e' : undefined, opacity: active ? 0.9 : 0.4 }}
+                  />
+                );
+              })}
             </div>
             <p className="mt-2 text-xs" style={{ color: TEXT_SECONDARY }}>
               Oxirgi 7 kun faoliyat
@@ -101,7 +149,7 @@ export default function StatistikaPage() {
                 <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Bu hafta</p>
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>{vocabStats.totalLearned}</p>
+                <p className="text-2xl font-bold" style={{ color: TEXT }}>{dailyStats.totalWords}</p>
                 <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Jami</p>
               </div>
             </div>
@@ -147,7 +195,7 @@ export default function StatistikaPage() {
             </div>
           </div>
 
-          {/* Bo'limlar progressi */}
+          {/* Bo'limlar progressi — те же данные, что и на странице Lug'at */}
           <div
             className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
             style={{ borderColor: BORDER }}
@@ -159,14 +207,23 @@ export default function StatistikaPage() {
               <h2 className="font-semibold" style={{ color: TEXT }}>Bo'limlar progressi</h2>
             </div>
             <div className="mt-4 space-y-3">
-              {vocabStats.byTopic.slice(0, 5).map((t) => {
-                const pct = t.total > 0 ? Math.round((t.learned / t.total) * 100) : 0;
+              {VOCABULARY_TOPICS.map((topic, index) => {
+                const fromApi = topicsProgress.find((t) => t.id === topic.id);
+                const total = getTopicWordCount(topic.id);
+                const learned = fromApi?.learned_words ?? 0;
+                const pct = total > 0 ? Math.round((learned / total) * 100) : 0;
                 return (
-                  <div key={t.topicId}>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: TEXT }}>{t.title}</span>
-                      <span style={{ color: TEXT_SECONDARY }}>{t.learned} / {t.total}</span>
+                  <div key={topic.id}>
+                    <p className="text-xs font-medium uppercase tracking-wider" style={{ color: TEXT_SECONDARY }}>
+                      {index + 1}-bo&apos;lim
+                    </p>
+                    <div className="flex justify-between text-sm mt-0.5">
+                      <span className="font-semibold" style={{ color: TEXT }}>{topic.title}</span>
+                      <span style={{ color: TEXT_SECONDARY }}>{learned} / {total} so&apos;z</span>
                     </div>
+                    <p className="mt-0.5 text-xs" style={{ color: TEXT_SECONDARY }}>
+                      {pct}% o&apos;rganildi
+                    </p>
                     <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                       <div
                         className="h-full rounded-full transition-all"

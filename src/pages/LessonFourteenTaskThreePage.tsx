@@ -401,7 +401,7 @@ export default function LessonFourteenTaskThreePage() {
                 if (TASKS.length > 0) setLessonTaskResult('/lesson-14', 3, correctCount, TASKS.length);
                 if (token) {
                   saveLessonTaskResult(token, '/lesson-14', 3, correctCount, TASKS.length);
-                  addUserPoints(token, 5);
+                  addUserPoints(token, correctCount);
                 }
                 navigate('/lesson-14');
               }}
