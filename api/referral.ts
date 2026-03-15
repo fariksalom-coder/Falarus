@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase } from '../_lib/supabase.js';
-import { setCors, handleOptions } from '../_lib/cors.js';
-import { requireAuth } from '../_lib/auth.js';
+import { supabase } from './_lib/supabase.js';
+import { setCors, handleOptions } from './_lib/cors.js';
+import { requireAuth } from './_lib/auth.js';
 import {
   getReferralLink,
   getReferralStats,
   getReferralList,
   createWithdrawal,
-} from '../_lib/referral.js';
+} from './_lib/referral.js';
 
 function parseBody(body: unknown): Record<string, unknown> {
   if (body == null) return {};
@@ -28,23 +28,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = requireAuth(req, res);
   if (userId == null) return;
 
-  const path = (req.query.path as string[]) || [];
-  const segment = path[0] || '';
+  const action = typeof req.query.action === 'string' ? req.query.action : '';
 
   try {
-    if (segment === 'link' && req.method === 'GET') {
+    if (action === 'link' && req.method === 'GET') {
       const result = await getReferralLink(supabase, userId);
       return res.status(200).json(result);
     }
-    if (segment === 'stats' && req.method === 'GET') {
+    if (action === 'stats' && req.method === 'GET') {
       const stats = await getReferralStats(supabase, userId);
       return res.status(200).json(stats);
     }
-    if (segment === 'list' && req.method === 'GET') {
+    if (action === 'list' && req.method === 'GET') {
       const list = await getReferralList(supabase, userId);
       return res.status(200).json(list);
     }
-    if (segment === 'withdraw' && req.method === 'POST') {
+    if (req.method === 'POST') {
       const body = parseBody(req.body);
       const amount = Math.round(Number(body.amount) || 0);
       const result = await createWithdrawal(supabase, userId, amount);
@@ -52,8 +51,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
-    console.error('[api/referral]', segment, err.message);
-    if (segment === 'link') {
+    console.error('[api/referral]', action, err.message);
+    if (action === 'link') {
       const isSchema = /referral_code|referrals|relation|column/i.test(err.message);
       return res.status(500).json({
         error: isSchema
@@ -61,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : 'Xatolik yuz berdi',
       });
     }
-    if (segment === 'withdraw') {
+    if (req.method === 'POST') {
       return res.status(400).json({ error: err.message });
     }
     return res.status(500).json({ error: 'Xatolik yuz berdi' });

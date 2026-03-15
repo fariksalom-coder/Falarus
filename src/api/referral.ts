@@ -35,7 +35,7 @@ export type ReferralStats = {
 export type ReferralListItem = { name: string; status: string };
 
 export async function getReferralLink(token: string | null): Promise<{ referral_link: string }> {
-  const res = await fetch(apiUrl('/api/referral/link'), { headers: authHeaders(token) });
+  const res = await fetch(apiUrl('/api/referral?action=link'), { headers: authHeaders(token) });
   const data = await parseJsonOrThrow<{ referral_link?: string; error?: string }>(
     res,
     'Taklif havolasi yuklanmadi'
@@ -46,7 +46,7 @@ export async function getReferralLink(token: string | null): Promise<{ referral_
 }
 
 export async function getReferralStats(token: string | null): Promise<ReferralStats> {
-  const res = await fetch(apiUrl('/api/referral/stats'), { headers: authHeaders(token) });
+  const res = await fetch(apiUrl('/api/referral?action=stats'), { headers: authHeaders(token) });
   const data = await parseJsonOrThrow<ReferralStats & { error?: string }>(
     res,
     'Statistika yuklanmadi'
@@ -56,7 +56,7 @@ export async function getReferralStats(token: string | null): Promise<ReferralSt
 }
 
 export async function getReferralList(token: string | null): Promise<ReferralListItem[]> {
-  const res = await fetch(apiUrl('/api/referral/list'), { headers: authHeaders(token) });
+  const res = await fetch(apiUrl('/api/referral?action=list'), { headers: authHeaders(token) });
   const data = await parseJsonOrThrow<ReferralListItem[] & { error?: string }>(
     res,
     'Ro\'yxat yuklanmadi'
@@ -69,7 +69,7 @@ export async function withdrawReferral(
   token: string | null,
   amount: number
 ): Promise<{ success: boolean; id: number; amount: number }> {
-  const res = await fetch(apiUrl('/api/referral/withdraw'), {
+  const res = await fetch(apiUrl('/api/referral'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ amount }),
