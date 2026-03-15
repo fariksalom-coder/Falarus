@@ -380,6 +380,116 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true });
     }
 
+    // --- Payment methods
+    if (path[0] === 'payment-methods') {
+      if (path.length === 1 && req.method === 'GET') {
+        const { data, error } = await supabase
+          .from('payment_methods')
+          .select('id, currency, bank_name, card_number, phone_number, card_holder_name, status, created_at, updated_at')
+          .order('currency').order('id');
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json(data ?? []);
+      }
+      if (path.length === 1 && req.method === 'POST') {
+        const body = parseBody(req.body);
+        const currency = typeof body.currency === 'string' ? body.currency : '';
+        const bank_name = typeof body.bank_name === 'string' ? body.bank_name.trim() : '';
+        const card_number = typeof body.card_number === 'string' ? body.card_number.trim() : '';
+        const card_holder_name = typeof body.card_holder_name === 'string' ? body.card_holder_name.trim() : '';
+        const phone_number = body.phone_number != null ? String(body.phone_number).trim() : null;
+        if (!['UZS', 'RUB', 'USD'].includes(currency) || !bank_name || !card_number || !card_holder_name) {
+          return res.status(400).json({ error: 'currency, bank_name, card_number, card_holder_name kerak' });
+        }
+        const now = new Date().toISOString();
+        const { data: row, error } = await supabase.from('payment_methods').insert({
+          currency,
+          bank_name,
+          card_number,
+          phone_number,
+          card_holder_name,
+          status: 'active',
+          updated_at: now,
+        }).select('id').single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(201).json({ id: (row as any).id });
+      }
+      const id = parseInt(path[1], 10);
+      if (path.length === 2 && !Number.isNaN(id)) {
+        if (req.method === 'PUT') {
+          const body = parseBody(req.body);
+          const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+          if (body.currency && ['UZS', 'RUB', 'USD'].includes(body.currency as string)) updates.currency = body.currency;
+          if (body.bank_name != null) updates.bank_name = String(body.bank_name).trim();
+          if (body.card_number != null) updates.card_number = String(body.card_number).trim();
+          if (body.phone_number != null) updates.phone_number = String(body.phone_number).trim();
+          if (body.card_holder_name != null) updates.card_holder_name = String(body.card_holder_name).trim();
+          if (body.status && ['active', 'disabled'].includes(body.status as string)) updates.status = body.status;
+          if (Object.keys(updates).length <= 1) return res.status(400).json({ error: 'Hech narsa yangilanmadi' });
+          const { error } = await supabase.from('payment_methods').update(updates).eq('id', id);
+          if (error) return res.status(500).json({ error: error.message });
+          return res.status(200).json({ success: true });
+        }
+        if (req.method === 'DELETE') {
+          const { error } = await supabase.from('payment_methods').delete().eq('id', id);
+          if (error) return res.status(500).json({ error: error.message });
+          return res.status(200).json({ success: true });
+        }
+      }
+      if (path.length === 3 && path[2] === 'toggle' && req.method === 'POST' && !Number.isNaN(parseInt(path[1], 10))) {
+        const payId = parseInt(path[1], 10);
+        const { data: row, error: fe } = await supabase.from('payment_methods').select('status').eq('id', payId).single();
+        if (fe || !row) return res.status(404).json({ error: 'Topilmadi' });
+        const newStatus = (row as any).status === 'active' ? 'disabled' : 'active';
+        const { error } = await supabase.from('payment_methods').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', payId);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ success: true, status: newStatus });
+      }
+    }
+
+    // --- Tariff prices (multi-currency)
+    if (path[0] === 'tariff-prices') {
+      if (path.length === 1 && req.method === 'GET') {
+        const { data, error } = await supabase
+          .from('tariff_prices')
+          .select('id, tariff_type, currency, price, created_at, updated_at')
+          .order('tariff_type').order('currency');
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json(data ?? []);
+      }
+      if (path.length === 1 && (req.method === 'PUT' || req.method === 'PATCH')) {
+        const body = parseBody(req.body);
+        const tariff_type = typeof body.tariff_type === 'string' ? body.tariff_type : '';
+        const currency = typeof body.currency === 'string' ? body.currency : '';
+        const price = Number(body.price);
+        if (!['month', 'three_months', 'year'].includes(tariff_type) || !['UZS', 'RUB', 'USD'].includes(currency) || Number.isNaN(price) || price < 0) {
+          return res.status(400).json({ error: 'tariff_type, currency, price kerak' });
+        }
+        const now = new Date().toISOString();
+        const { error } = await supabase.from('tariff_prices').upsert(
+          { tariff_type, currency, price, updated_at: now },
+          { onConflict: 'tariff_type,currency' }
+        );
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ success: true });
+      }
+      if (path[1] === 'bulk' && (req.method === 'PUT' || req.method === 'PATCH')) {
+        const body = req.body;
+        const rows = Array.isArray(body) ? body : [];
+        const now = new Date().toISOString();
+        for (const row of rows) {
+          const tariff_type = row?.tariff_type;
+          const currency = row?.currency;
+          const price = Number(row?.price);
+          if (!tariff_type || !currency || Number.isNaN(price) || price < 0) continue;
+          await supabase.from('tariff_prices').upsert(
+            { tariff_type, currency, price, updated_at: now },
+            { onConflict: 'tariff_type,currency' }
+          );
+        }
+        return res.status(200).json({ success: true });
+      }
+    }
+
     return res.status(404).json({ error: 'Not found' });
   } catch (e) {
     console.error('[api/admin]', e);

@@ -13,7 +13,11 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
-CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'payments' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_payments_created ON payments(created_at DESC);
 
 -- Supabase Storage: create bucket "payment-proofs" via dashboard or API if needed.
