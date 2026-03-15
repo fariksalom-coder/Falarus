@@ -188,12 +188,58 @@ async function handleSubtopics(userId: number, topicId: string, res: VercelRespo
   return res.status(200).json(withLock);
 }
 
+function parseBody(body: unknown): Record<string, unknown> {
+  if (body == null) return {};
+  if (typeof body === 'string') {
+    try {
+      return JSON.parse(body) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
+}
+
+async function handleProgress(userId: number, req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'GET') {
+    const { data: rows, error } = await supabase
+      .from('vocabulary_progress')
+      .select('topic_id, subtopic_id, part_id, result_count, stage_cards, stage_test, stage_pairs')
+      .eq('user_id', userId);
+    if (error) throw error;
+    return res.status(200).json(rows ?? []);
+  }
+  if (req.method === 'POST') {
+    const body = parseBody(req.body);
+    const topicId = body.topic_id as string | undefined;
+    const subtopicId = body.subtopic_id as string | undefined;
+    const partId = body.part_id as string | undefined;
+    if (!topicId || !subtopicId || !partId) {
+      return res.status(400).json({ error: 'topic_id, subtopic_id, part_id kerak' });
+    }
+    const row: Record<string, unknown> = {
+      user_id: userId,
+      topic_id: topicId,
+      subtopic_id: subtopicId,
+      part_id: partId,
+      result_count: typeof body.result_count === 'number' ? body.result_count : 0,
+      updated_at: new Date().toISOString(),
+    };
+    if (body.stage_cards !== undefined) row.stage_cards = body.stage_cards;
+    if (body.stage_test !== undefined) row.stage_test = body.stage_test;
+    if (body.stage_pairs !== undefined) row.stage_pairs = body.stage_pairs;
+    const { error } = await supabase.from('vocabulary_progress').upsert(row, {
+      onConflict: 'user_id,topic_id,subtopic_id,part_id',
+    });
+    if (error) throw error;
+    return res.status(200).json({ success: true });
+  }
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
 
   const userId = requireAuth(req, res);
   if (userId == null) return;
@@ -202,11 +248,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const segments = Array.isArray(path) ? path : path ? [path] : [];
 
   try {
-    if (segments.length === 1 && segments[0] === 'topics') {
+    if (segments.length === 1 && segments[0] === 'topics' && req.method === 'GET') {
       return await handleTopics(userId, res);
     }
-    if (segments.length === 2 && segments[0] === 'subtopics') {
+    if (segments.length === 2 && segments[0] === 'subtopics' && req.method === 'GET') {
       return await handleSubtopics(userId, segments[1], res);
+    }
+    if (segments.length === 1 && segments[0] === 'progress') {
+      return await handleProgress(userId, req, res);
     }
     return res.status(404).json({ error: 'Not found' });
   } catch (e) {
