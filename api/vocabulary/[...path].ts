@@ -2,6 +2,7 @@
  * Single handler for GET /api/vocabulary/topics and GET /api/vocabulary/subtopics/:topicId
  * to stay under Vercel Hobby 12-function limit.
  */
+import '../_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';

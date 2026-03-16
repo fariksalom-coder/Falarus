@@ -2,6 +2,7 @@
  * Single handler for GET /api/user/me, POST /api/user/onboard, GET /api/user/access
  * to stay under Vercel Hobby 12-function limit.
  */
+import '../_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';

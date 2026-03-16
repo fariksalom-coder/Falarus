@@ -1,6 +1,7 @@
 /**
  * Single handler for POST /api/auth/register and POST /api/auth/login (Vercel 12-function limit).
  */
+import '../_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
