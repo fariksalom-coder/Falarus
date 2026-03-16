@@ -1,8 +1,8 @@
-import '../../_lib/suppress-dep0169.js';
+import '../../../_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import jwt from 'jsonwebtoken';
-import { supabase } from '../../_lib/supabase.js';
-import { setCors, handleOptions } from '../../_lib/cors.js';
+import { supabase } from '../../../_lib/supabase.js';
+import { setCors, handleOptions } from '../../../_lib/cors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
 

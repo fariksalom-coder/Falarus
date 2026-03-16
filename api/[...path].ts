@@ -88,6 +88,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return handleOptions(res);
 
   const path = getPathParts(req);
+
+  // /api/referral?action=... — moved from dedicated function to keep under Vercel limit
+  if (path[0] === 'referral') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    const action = typeof req.query.action === 'string' ? req.query.action : '';
+    try {
+      if (action === 'page' && req.method === 'GET') {
+        const data = await getReferralPageData(supabase, userId);
+        return res.status(200).json(data);
+      }
+      if (action === 'link' && req.method === 'GET') {
+        const result = await getReferralLink(supabase, userId);
+        return res.status(200).json(result);
+      }
+      if (action === 'stats' && req.method === 'GET') {
+        const stats = await getReferralStats(supabase, userId);
+        return res.status(200).json(stats);
+      }
+      if (action === 'list' && req.method === 'GET') {
+        const list = await getReferralList(supabase, userId);
+        return res.status(200).json(list);
+      }
+      if (req.method === 'POST') {
+        const body = parseBody(req.body);
+        const amount = Math.round(Number(body.amount) || 0);
+        const result = await createWithdrawal(supabase, userId, amount);
+        return res.status(200).json({ success: true, id: result.id, amount: result.amount });
+      }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      console.error('[api/referral]', action, err.message);
+      if (action === 'link') {
+        const isSchema = /referral_code|referrals|relation|column/i.test(err.message);
+        return res.status(500).json({
+          error: isSchema
+            ? "Referral tizimi sozlanmagan. Ma'lumotlar bazasiga 009_referral_system.sql migratsiyasini qo'llang."
+            : 'Xatolik yuz berdi',
+        });
+      }
+      if (req.method === 'POST') {
+        return res.status(400).json({ error: err.message });
+      }
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  }
+
   // POST /api/payments — inline to avoid extra serverless function (Vercel 12 limit)
   if (path[0] === 'payments' && path.length === 1 && req.method === 'POST') {
     const userId = requireAuth(req, res);
@@ -251,47 +298,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // /api/referral?action=... — moved from dedicated function to keep under Vercel limit
-  if (path[0] === 'referral') {
+  // /api/lesson-task-results — merged from dedicated function to reduce serverless count
+  if (path[0] === 'lesson-task-results') {
     const userId = requireAuth(req, res);
     if (userId == null) return;
-    const action = typeof req.query.action === 'string' ? req.query.action : '';
     try {
-      if (action === 'page' && req.method === 'GET') {
-        const data = await getReferralPageData(supabase, userId);
-        return res.status(200).json(data);
+      if (req.method === 'GET') {
+        const lessonPath = req.query.lesson_path as string | undefined;
+        let q = supabase
+          .from('lesson_task_results')
+          .select('lesson_path, task_number, correct, total')
+          .eq('user_id', userId);
+        if (lessonPath) q = q.eq('lesson_path', lessonPath);
+        const { data: rows, error } = await q;
+        if (error) {
+          console.error('[api/lesson-task-results] GET error:', error.message);
+          return res.status(500).json({ error: error.message });
+        }
+        return res.status(200).json(rows ?? []);
       }
-      if (action === 'link' && req.method === 'GET') {
-        const result = await getReferralLink(supabase, userId);
-        return res.status(200).json(result);
-      }
-      if (action === 'stats' && req.method === 'GET') {
-        const stats = await getReferralStats(supabase, userId);
-        return res.status(200).json(stats);
-      }
-      if (action === 'list' && req.method === 'GET') {
-        const list = await getReferralList(supabase, userId);
-        return res.status(200).json(list);
-      }
+
       if (req.method === 'POST') {
         const body = parseBody(req.body);
-        const amount = Math.round(Number(body.amount) || 0);
-        const result = await createWithdrawal(supabase, userId, amount);
-        return res.status(200).json({ success: true, id: result.id, amount: result.amount });
+        const lessonPath = body.lesson_path as string | undefined;
+        const taskNumber = (body as any).task_number;
+        const correct = Number((body as any).correct) || 0;
+        const total = Number((body as any).total) || 0;
+
+        if (!lessonPath || taskNumber == null) {
+          return res.status(400).json({ error: 'lesson_path va task_number kerak' });
+        }
+
+        const row = {
+          user_id: userId,
+          lesson_path: String(lessonPath),
+          task_number: Number(taskNumber),
+          correct,
+          total,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase.from('lesson_task_results').upsert(row, {
+          onConflict: 'user_id,lesson_path,task_number',
+        });
+        if (error) {
+          console.error('[api/lesson-task-results] POST error:', error.message);
+          return res.status(500).json({ error: error.message });
+        }
+        return res.status(200).json({ success: true });
       }
+
+      return res.status(405).json({ error: 'Method not allowed' });
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
-      console.error('[api/referral]', action, err.message);
-      if (action === 'link') {
-        const isSchema = /referral_code|referrals|relation|column/i.test(err.message);
-        return res.status(500).json({
-          error: isSchema
-            ? "Referral tizimi sozlanmagan. Ma'lumotlar bazasiga 009_referral_system.sql migratsiyasini qo'llang."
-            : 'Xatolik yuz berdi',
-        });
-      }
-      if (req.method === 'POST') {
-        return res.status(400).json({ error: err.message });
+      console.error('[api/lesson-task-results]', err.message, err.stack);
+      if (err.message.includes('SUPABASE')) {
+        return res.status(503).json({ error: 'Server configuration error' });
       }
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
