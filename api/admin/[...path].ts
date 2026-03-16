@@ -16,16 +16,34 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'su
  * Examples:
  *  /api/admin/payments/2/confirm  -> ['payments', '2', 'confirm']
  *  /admin/payments/2/reject       -> ['payments', '2', 'reject']
+ *
+ * Vercel sets req.query.path for [...path] routes; prefer that,
+ * and fall back to parsing req.url for extra safety.
  */
 function getPathParts(req: VercelRequest): string[] {
-  const raw = (req.url || (req as any).originalUrl || (req as any).path || '') as string;
+  const anyReq = req as any;
+  const pathParam = anyReq.query?.path;
+
+  if (Array.isArray(pathParam)) {
+    return pathParam.map(String).filter(Boolean);
+  }
+  if (typeof pathParam === 'string') {
+    return pathParam.split('/').filter(Boolean);
+  }
+
+  const raw = (req.url || anyReq.originalUrl || anyReq.path || '') as string;
   const url = raw.split('?')[0].replace(/^https?:\/\/[^/]+/, '');
-  // Remove leading "api" and "admin" segments
-  const segments = url
-    .split('/')
-    .filter(Boolean)
-    .filter((seg, idx, arr) => !(idx === 0 && seg === 'api') && !(idx <= 1 && arr[idx - 1] === 'api' && seg === 'admin') && seg !== 'admin');
-  return segments;
+  const segments = url.split('/').filter(Boolean);
+
+  // Remove leading \"api\" and \"admin\" segments
+  const cleaned: string[] = [];
+  for (let i = 0; i < segments.length; i += 1) {
+    const seg = segments[i];
+    if (i === 0 && seg === 'api') continue;
+    if ((i === 0 || (i === 1 && segments[0] === 'api')) && seg === 'admin') continue;
+    cleaned.push(seg);
+  }
+  return cleaned;
 }
 
 function parseBody(body: unknown): Record<string, unknown> {
