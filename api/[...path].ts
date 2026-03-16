@@ -8,6 +8,13 @@ import Busboy from 'busboy';
 import { supabase } from './_lib/supabase.js';
 import { setCors, handleOptions } from './_lib/cors.js';
 import { requireAuth } from './_lib/auth.js';
+import {
+  getReferralLink,
+  getReferralStats,
+  getReferralList,
+  getReferralPageData,
+  createWithdrawal,
+} from './_lib/referral.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -57,6 +64,18 @@ function getPathParts(req: VercelRequest): string[] {
   const apiIndex = parts.indexOf('api');
   if (apiIndex >= 0 && apiIndex < parts.length - 1) return parts.slice(apiIndex + 1);
   return [];
+}
+
+function parseBody(body: unknown): Record<string, unknown> {
+  if (body == null) return {};
+  if (typeof body === 'string') {
+    try {
+      return JSON.parse(body) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+  return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
 }
 
 function todayDateString(): string {
@@ -228,6 +247,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     } catch (e) {
       console.error('[api/leaderboard]', e instanceof Error ? e.message : e);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  }
+
+  // /api/referral?action=... — moved from dedicated function to keep under Vercel limit
+  if (path[0] === 'referral') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    const action = typeof req.query.action === 'string' ? req.query.action : '';
+    try {
+      if (action === 'page' && req.method === 'GET') {
+        const data = await getReferralPageData(supabase, userId);
+        return res.status(200).json(data);
+      }
+      if (action === 'link' && req.method === 'GET') {
+        const result = await getReferralLink(supabase, userId);
+        return res.status(200).json(result);
+      }
+      if (action === 'stats' && req.method === 'GET') {
+        const stats = await getReferralStats(supabase, userId);
+        return res.status(200).json(stats);
+      }
+      if (action === 'list' && req.method === 'GET') {
+        const list = await getReferralList(supabase, userId);
+        return res.status(200).json(list);
+      }
+      if (req.method === 'POST') {
+        const body = parseBody(req.body);
+        const amount = Math.round(Number(body.amount) || 0);
+        const result = await createWithdrawal(supabase, userId, amount);
+        return res.status(200).json({ success: true, id: result.id, amount: result.amount });
+      }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      console.error('[api/referral]', action, err.message);
+      if (action === 'link') {
+        const isSchema = /referral_code|referrals|relation|column/i.test(err.message);
+        return res.status(500).json({
+          error: isSchema
+            ? "Referral tizimi sozlanmagan. Ma'lumotlar bazasiga 009_referral_system.sql migratsiyasini qo'llang."
+            : 'Xatolik yuz berdi',
+        });
+      }
+      if (req.method === 'POST') {
+        return res.status(400).json({ error: err.message });
+      }
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
   }
