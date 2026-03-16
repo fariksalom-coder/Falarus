@@ -25,13 +25,22 @@ function normalizeAdminPathSegments(input: string[]): string[] {
   // ['payments','4','reject'] OR ['admin','payments','4','reject']
   // OR even ['api/admin/payments/4/reject'] (single item with slashes).
   const segs = input
-    .flatMap((item) => String(item).split('/'))
+    .flatMap((item) => String(item).replace(/^https?:\/\/[^/]+/i, '').split('/'))
     .map((s) => s.trim())
+    .map((s) => s.split('?')[0].split('#')[0])
+    .map((s) => decodeURIComponent(s))
     .filter(Boolean);
+
   if (segs.length === 0) return [];
-  if (segs[0] === 'api' && segs[1] === 'admin') return segs.slice(2);
-  if (segs[0] === 'admin') return segs.slice(1);
-  return segs;
+
+  // If "admin" appears later, cut everything before it.
+  const adminIdx = segs.indexOf('admin');
+  const cut = adminIdx >= 0 ? segs.slice(adminIdx) : segs;
+
+  if (cut[0] === 'api' && cut[1] === 'admin') return cut.slice(2);
+  if (cut[0] === 'admin') return cut.slice(1);
+  if (cut[0] === 'api' && cut[1]) return cut.slice(1);
+  return cut;
 }
 
 function getPathParts(req: VercelRequest): string[] {
