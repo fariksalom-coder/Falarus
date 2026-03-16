@@ -536,7 +536,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(404).json({
+      error: 'Not found',
+      debug: {
+        method: req.method,
+        rawUrl: req.url ?? null,
+        originalUrl: (req as any).originalUrl ?? null,
+        queryPath: (req as any).query?.path ?? null,
+        normalizedPath: path,
+      },
+    });
   } catch (e) {
     console.error('[api/admin]', e);
     return res.status(500).json({ error: 'Xatolik yuz berdi' });
