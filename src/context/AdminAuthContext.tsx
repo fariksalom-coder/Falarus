@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getAdminToken, setAdminToken, clearAdminToken } from '../api/admin';
-import { apiUrl } from '../api';
+import { adminApi, getAdminToken, setAdminToken, clearAdminToken } from '../lib/adminApi';
 
 interface AdminAuthContextType {
   isAdmin: boolean;
@@ -21,15 +20,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    fetch(apiUrl('/api/admin/dashboard'), {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (res.ok) setIsAdmin(true);
-        else {
-          clearAdminToken();
-          setIsAdmin(false);
-        }
+    adminApi('/dashboard', { skipAuthRedirect: true })
+      .then(() => {
+        setIsAdmin(true);
       })
       .catch(() => {
         clearAdminToken();
