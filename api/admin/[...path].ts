@@ -11,23 +11,21 @@ import { setCors, handleOptions } from '../_lib/cors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
 
+/**
+ * Normalize admin API path.
+ * Examples:
+ *  /api/admin/payments/2/confirm  -> ['payments', '2', 'confirm']
+ *  /admin/payments/2/reject       -> ['payments', '2', 'reject']
+ */
 function getPathParts(req: VercelRequest): string[] {
-  const path = req.query.path;
-  if (Array.isArray(path)) {
-    const segments = path.filter((p): p is string => typeof p === 'string');
-    const pathStr = segments.join('/');
-    return pathStr ? pathStr.split('/').filter(Boolean) : [];
-  }
-  if (typeof path === 'string') {
-    return path ? path.split('/').filter(Boolean) : [];
-  }
-  // Fallback: parse from request URL (Vercel may not set req.query.path for all runtimes)
-  const url = req.url || (req as any).originalUrl || (req as any).path || '';
-  const pathname = typeof url === 'string' ? url.replace(/^https?:\/\/[^/]+/, '').split('?')[0] : '';
-  const parts = pathname.split('/').filter(Boolean);
-  const adminIndex = parts.indexOf('admin');
-  if (adminIndex >= 0 && adminIndex < parts.length - 1) return parts.slice(adminIndex + 1);
-  return [];
+  const raw = (req.url || (req as any).originalUrl || (req as any).path || '') as string;
+  const url = raw.split('?')[0].replace(/^https?:\/\/[^/]+/, '');
+  // Remove leading "api" and "admin" segments
+  const segments = url
+    .split('/')
+    .filter(Boolean)
+    .filter((seg, idx, arr) => !(idx === 0 && seg === 'api') && !(idx <= 1 && arr[idx - 1] === 'api' && seg === 'admin') && seg !== 'admin');
+  return segments;
 }
 
 function parseBody(body: unknown): Record<string, unknown> {
