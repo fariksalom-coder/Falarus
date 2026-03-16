@@ -21,7 +21,13 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'su
  * and fall back to parsing req.url for extra safety.
  */
 function normalizeAdminPathSegments(input: string[]): string[] {
-  const segs = input.filter(Boolean);
+  // Vercel can provide path as:
+  // ['payments','4','reject'] OR ['admin','payments','4','reject']
+  // OR even ['api/admin/payments/4/reject'] (single item with slashes).
+  const segs = input
+    .flatMap((item) => String(item).split('/'))
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (segs.length === 0) return [];
   if (segs[0] === 'api' && segs[1] === 'admin') return segs.slice(2);
   if (segs[0] === 'admin') return segs.slice(1);
