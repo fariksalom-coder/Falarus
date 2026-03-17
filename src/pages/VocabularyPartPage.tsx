@@ -353,10 +353,11 @@ export default function VocabularyPartPage() {
             if (m === 'cards') return getStageStatus(content.topicId, content.subtopicId, part.id, 'cards');
             return getStageStatus(content.topicId, content.subtopicId, part.id, m);
           };
+          // Этап 2 открывается после прохождения этапа 1; этап 3 — после этапа 2 с результатом ≥80%.
           const isLocked = (m: Mode): boolean => {
             if (m === 'cards') return false;
             if (!tasksStatus) return true;
-            if (m === 'test') return tasksStatus.flashcards_status !== 'completed';
+            if (m === 'test') return tasksStatus.test_status === 'locked';
             if (m === 'pairs') return !tasksStatus.match_unlocked;
             return false;
           };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 import { getMyPayments, type MyPaymentRow, type PaymentStatus } from '../api/payment';
 import { adminContact } from '../config/adminContact';
 import { ArrowLeft, History, MessageCircle } from 'lucide-react';
@@ -39,9 +40,15 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
 
 export default function PaymentHistoryPage() {
   const { token } = useAuth();
+  const { refreshAccess } = useAccess();
   const navigate = useNavigate();
   const [payments, setPayments] = useState<MyPaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+    refreshAccess();
+  }, [token, refreshAccess]);
 
   useEffect(() => {
     if (!token) return;

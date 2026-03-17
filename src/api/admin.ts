@@ -1,13 +1,15 @@
 import { adminApi } from '../lib/adminApi';
 
+export type RevenueByCurrency = { UZS: number; USD: number; RUB: number };
+
 export type DashboardStats = {
   users_today: number;
   users_this_week: number;
   users_this_month: number;
   active_users: number;
-  payments_today: number;
-  payments_this_month: number;
-  total_revenue: number;
+  payments_today: RevenueByCurrency;
+  payments_this_month: RevenueByCurrency;
+  total_revenue: RevenueByCurrency;
   active_subscriptions: number;
   referral_payouts_pending: number;
 };

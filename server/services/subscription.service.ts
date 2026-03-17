@@ -25,54 +25,115 @@ const LESSONS_FREE_LIMIT = 3;
 const VOCABULARY_FREE_TOPIC = 1;
 const VOCABULARY_FREE_SUBTOPIC = 1;
 
+/** In-memory cache for access info to avoid repeated DB hits on every request. TTL seconds. */
+const ACCESS_CACHE_TTL_MS = 90 * 1000;
+const accessCache = new Map<number, { access: AccessInfo; until: number }>();
+
+export function invalidateAccessCache(userId: number): void {
+  const uid = Number(userId);
+  if (Number.isFinite(uid)) accessCache.delete(uid);
+}
+
+function getCachedAccess(userId: number): AccessInfo | null {
+  const entry = accessCache.get(Number(userId));
+  if (!entry || Date.now() > entry.until) return null;
+  return entry.access;
+}
+
+function setCachedAccess(userId: number, access: AccessInfo): void {
+  accessCache.set(Number(userId), { access, until: Date.now() + ACCESS_CACHE_TTL_MS });
+}
+
 /**
  * Get active subscription for user (status=active and expires_at > now).
+ * Accepts status in any case (active, Active, ACTIVE).
  */
 export async function getActiveSubscription(
   supabase: SupabaseClient,
   userId: number
 ): Promise<SubscriptionRow | null> {
   const now = new Date().toISOString();
+  const uid = Number(userId);
+  if (!Number.isFinite(uid)) return null;
   const { data, error } = await supabase
     .from('subscriptions')
     .select('id, user_id, plan_type, started_at, expires_at, status')
-    .eq('user_id', userId)
-    .eq('status', 'active')
+    .eq('user_id', uid)
     .gt('expires_at', now)
     .order('expires_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(5);
   if (error) throw error;
-  return data as SubscriptionRow | null;
+  const row = (data as SubscriptionRow[] | null)?.find(
+    (r) => r && String(r.status).toLowerCase() === 'active'
+  ) ?? null;
+  return row;
 }
 
 /**
  * Also consider users.plan_expires_at as fallback (from payments).
+ * Last resort: if user has any approved payment, grant access (in case plan_expires_at update failed).
  */
 export async function hasActiveAccess(
   supabase: SupabaseClient,
   userId: number
 ): Promise<boolean> {
-  const sub = await getActiveSubscription(supabase, userId);
+  const uid = Number(userId);
+  if (!Number.isFinite(uid)) return false;
+  const sub = await getActiveSubscription(supabase, uid);
   if (sub) return true;
-  const { data: user } = await supabase
+  const { data: user, error } = await supabase
     .from('users')
     .select('plan_expires_at')
-    .eq('id', userId)
+    .eq('id', uid)
     .single();
-  const expiresAt = user?.plan_expires_at;
-  if (!expiresAt) return false;
-  return new Date(expiresAt) > new Date();
+  if (!error && user?.plan_expires_at != null && user.plan_expires_at !== '') {
+    const expiry = new Date(user.plan_expires_at as string);
+    if (Number.isFinite(expiry.getTime()) && expiry > new Date()) return true;
+  }
+  const { data: approvedPayment } = await supabase
+    .from('payments')
+    .select('id')
+    .eq('user_id', uid)
+    .eq('status', 'approved')
+    .order('approved_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return !!approvedPayment;
 }
 
 /**
  * Get full access info for user (for GET /user/access).
+ * Uses in-memory cache (90s TTL) to avoid repeated DB queries on every page/request.
  */
 export async function getAccessInfo(
   supabase: SupabaseClient,
   userId: number
 ): Promise<AccessInfo> {
-  const subscriptionActive = await hasActiveAccess(supabase, userId);
+  const uid = Number(userId);
+  if (!Number.isFinite(uid)) {
+    return {
+      lessons_free_limit: LESSONS_FREE_LIMIT,
+      vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
+      vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
+      subscription_active: false,
+    };
+  }
+  const cached = getCachedAccess(uid);
+  if (cached) return cached;
+
+  let subscriptionActive = await hasActiveAccess(supabase, uid);
+  if (!subscriptionActive) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('plan_expires_at')
+      .eq('id', uid)
+      .maybeSingle();
+    const expiresAt = user?.plan_expires_at;
+    if (expiresAt != null && expiresAt !== '') {
+      const expiry = new Date(expiresAt as string);
+      if (Number.isFinite(expiry.getTime()) && expiry > new Date()) subscriptionActive = true;
+    }
+  }
 
   let vocabulary_free_topic_id: string | null = null;
   let vocabulary_free_subtopic_id: string | null = null;
@@ -83,18 +144,18 @@ export async function getAccessInfo(
     .limit(1)
     .maybeSingle();
   if (firstTopic?.id) {
-    vocabulary_free_topic_id = firstTopic.id;
+    vocabulary_free_topic_id = String(firstTopic.id);
     const { data: firstSub } = await supabase
       .from('vocabulary_subtopics')
       .select('id')
-      .eq('topic_id', firstTopic.id)
+      .eq('topic_id', vocabulary_free_topic_id)
       .order('id')
       .limit(1)
       .maybeSingle();
-    if (firstSub?.id) vocabulary_free_subtopic_id = firstSub.id;
+    if (firstSub?.id) vocabulary_free_subtopic_id = String(firstSub.id);
   }
 
-  return {
+  const access: AccessInfo = {
     lessons_free_limit: LESSONS_FREE_LIMIT,
     vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
     vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
@@ -102,6 +163,8 @@ export async function getAccessInfo(
     vocabulary_free_topic_id: vocabulary_free_topic_id ?? undefined,
     vocabulary_free_subtopic_id: vocabulary_free_subtopic_id ?? undefined,
   };
+  setCachedAccess(uid, access);
+  return access;
 }
 
 export async function createOrExtendSubscription(

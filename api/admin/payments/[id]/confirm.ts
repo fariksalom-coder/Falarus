@@ -43,7 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: "To'lov topilmadi" });
     }
 
-    const userId = (row as any).user_id as number;
+    const userId = Number((row as any).user_id);
+    if (!Number.isFinite(userId)) return res.status(400).json({ error: "To'lovda user_id xato" });
     const tariffType = (row as any).tariff_type as string; // month | 3months | year
     const planType = tariffType === 'month' ? 'monthly' : tariffType === '3months' ? 'three_months' : 'yearly';
     const now = new Date();

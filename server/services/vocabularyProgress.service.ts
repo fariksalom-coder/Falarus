@@ -7,7 +7,8 @@ const MATCH_UNLOCK_PERCENT = 80;
 
 /**
  * Get tasks status for a word group: flashcards completed, test/match locked or not.
- * For free-tier subtopic: test and "find pair" unlock right after completing cards.
+ * Rule: Stage 2 (Test) opens after completing Stage 1 (Cards).
+ *       Stage 3 (Find pair) opens after Stage 2 with ≥80% correct.
  */
 export async function getTasksStatus(
   supabase: Supabase,
@@ -25,31 +26,28 @@ export async function getTasksStatus(
   const test_best_correct = progress?.test_best_correct ?? 0;
   const match_completed = progress?.match_completed ?? false;
 
-  const topicId = await repo.getTopicIdBySubtopicId(supabase, group.subtopic_id);
-  const isFreeSubtopic =
-    !access.subscription_active &&
-    topicId != null &&
-    access.vocabulary_free_topic_id === topicId &&
-    access.vocabulary_free_subtopic_id === group.subtopic_id;
+  // Stage 2 opens after Stage 1 (cards) completed.
+  const test_status: 'locked' | 'not_started' | 'completed' = !flashcards_completed
+    ? 'locked'
+    : test_best_correct > 0
+      ? 'completed'
+      : 'not_started';
 
-  const match_unlocked = isFreeSubtopic
-    ? flashcards_completed
-    : total_words > 0 && (test_best_correct / total_words) * 100 >= MATCH_UNLOCK_PERCENT;
+  // Stage 3 opens after Stage 2 with ≥80% correct.
+  const match_unlocked =
+    total_words > 0 && (test_best_correct / total_words) * 100 >= MATCH_UNLOCK_PERCENT;
+  const match_status: 'locked' | 'not_started' | 'completed' = !flashcards_completed
+    ? 'locked'
+    : !match_unlocked
+      ? 'locked'
+      : match_completed
+        ? 'completed'
+        : 'not_started';
 
   return {
     flashcards_status: flashcards_completed ? 'completed' : 'not_started',
-    test_status: flashcards_completed
-      ? test_best_correct > 0
-        ? 'completed'
-        : 'not_started'
-      : 'locked',
-    match_status: !flashcards_completed
-      ? 'locked'
-      : !match_unlocked
-        ? 'locked'
-        : match_completed
-          ? 'completed'
-          : 'not_started',
+    test_status,
+    match_status,
     learned_words,
     total_words,
     test_best_correct,

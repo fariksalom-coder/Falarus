@@ -116,26 +116,40 @@ export default function VocabularyTopicPage() {
   const { topicId } = useParams();
   const { token } = useAuth();
   const topic = VOCABULARY_TOPICS.find((item) => item.id === topicId);
+  const cachedSubtopics = topicId ? getCachedSubtopicsProgress(topicId) : null;
   const [subtopicsProgress, setSubtopicsProgress] = useState<VocabularySubtopic[]>(() =>
-    topicId ? (getCachedSubtopicsProgress(topicId) ?? []) : []
+    cachedSubtopics ?? []
   );
+  const [subtopicsLoaded, setSubtopicsLoaded] = useState(!!cachedSubtopics?.length);
   const [showPaywall, setShowPaywall] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
 
   useEffect(() => {
     if (!topicId) {
       setSubtopicsProgress([]);
+      setSubtopicsLoaded(true);
       return;
     }
-    if (!token) {
-      setSubtopicsProgress([]);
+    const cached = getCachedSubtopicsProgress(topicId);
+    setSubtopicsProgress(cached ?? []);
+    setSubtopicsLoaded(!!cached?.length);
+  }, [topicId]);
+
+  useEffect(() => {
+    if (!topicId || !token) {
+      if (!topicId) {
+        setSubtopicsProgress([]);
+        setSubtopicsLoaded(true);
+      } else if (!token) {
+        setSubtopicsProgress([]);
+        setSubtopicsLoaded(true);
+      }
       return;
     }
-    setSubtopicsProgress(getCachedSubtopicsProgress(topicId) ?? []);
     fetchVocabularySubtopics(token, topicId).then((data) => {
       setSubtopicsProgress(data);
       setCachedSubtopicsProgress(topicId, data);
-    });
+    }).catch(() => {}).finally(() => setSubtopicsLoaded(true));
   }, [token, topicId]);
 
   if (!topic) {
@@ -175,6 +189,12 @@ export default function VocabularyTopicPage() {
           Orqaga
         </button>
 
+        {token && !subtopicsLoaded && (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" aria-hidden />
+          </div>
+        )}
+        {(!token || subtopicsLoaded) && (
         <div className="space-y-4">
           {topic.subtopics.map((subtopic, index) => {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
@@ -236,6 +256,7 @@ export default function VocabularyTopicPage() {
             );
           })}
         </div>
+        )}
       </main>
 
       {showPaywall && hasPendingPayment && (

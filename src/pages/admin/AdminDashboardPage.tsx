@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getDashboard, type DashboardStats } from '../../api/admin';
+import { getDashboard, type DashboardStats, type RevenueByCurrency } from '../../api/admin';
 import { Users, CreditCard, TrendingUp, Wallet, Repeat, AlertCircle } from 'lucide-react';
 
 const cards: { key: keyof DashboardStats; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -13,6 +13,20 @@ const cards: { key: keyof DashboardStats; label: string; icon: React.ComponentTy
   { key: 'active_subscriptions', label: 'Active subscriptions', icon: Repeat },
   { key: 'referral_payouts_pending', label: 'Referral payouts pending', icon: Wallet },
 ];
+
+function formatRevenue(rev: RevenueByCurrency | number): React.ReactNode {
+  if (typeof rev === 'number') return `${rev.toLocaleString('uz-UZ')} so'm`;
+  const uzs = Number(rev.UZS ?? 0).toLocaleString('uz-UZ');
+  const usd = Number(rev.USD ?? 0).toLocaleString();
+  const rub = Number(rev.RUB ?? 0).toLocaleString();
+  return (
+    <span className="block space-y-0.5 text-lg">
+      <span className="block">{uzs} so'm</span>
+      <span className="block text-slate-600">${usd}</span>
+      <span className="block text-slate-600">{rub} ₽</span>
+    </span>
+  );
+}
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -47,24 +61,28 @@ export default function AdminDashboardPage() {
     <div>
       <h1 className="text-2xl font-semibold text-slate-800 mb-6">Dashboard</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cards.map(({ key, label, icon: Icon }) => (
-          <div
-            key={key}
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="rounded-lg bg-indigo-100 p-2">
-                <Icon className="h-5 w-5 text-indigo-600" />
+        {cards.map(({ key, label, icon: Icon }) => {
+          const val = stats?.[key];
+          const isRevenue = key === 'payments_today' || key === 'payments_this_month' || key === 'total_revenue';
+          return (
+            <div
+              key={key}
+              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="rounded-lg bg-indigo-100 p-2">
+                  <Icon className="h-5 w-5 text-indigo-600" />
+                </div>
+                <span className="text-sm font-medium text-slate-500">{label}</span>
               </div>
-              <span className="text-sm font-medium text-slate-500">{label}</span>
+              <p className="text-2xl font-semibold text-slate-800">
+                {isRevenue && val !== undefined
+                  ? formatRevenue(typeof val === 'object' && val !== null && 'UZS' in val ? (val as RevenueByCurrency) : Number(val))
+                  : (val ?? 0)}
+              </p>
             </div>
-            <p className="text-2xl font-semibold text-slate-800">
-              {key.includes('revenue') || key.includes('payment')
-                ? Number(stats?.[key] ?? 0).toLocaleString('uz-UZ') + ' so\'m'
-                : stats?.[key] ?? 0}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -37,16 +37,19 @@ export function applyLessonsLock(
 }
 
 /**
- * Mark subtopics with locked. Free = topic 1, subtopic 1 only.
+ * Mark subtopics with locked. Subscription = all unlocked. Free = topic 1, subtopic 1 only.
  */
 export function applySubtopicsLock(
   subtopics: Array<{ id: string; topic_id?: string; [k: string]: unknown }>,
   topicId: string,
   access: AccessInfo
 ): SubtopicWithLock[] {
+  if (access.subscription_active) {
+    return subtopics.map((s) => ({ ...s, locked: false }));
+  }
   const freeTopicId = access.vocabulary_free_topic_id;
   const freeSubtopicId = access.vocabulary_free_subtopic_id;
-  const isFreeTopic = access.subscription_active || freeTopicId === topicId;
+  const isFreeTopic = freeTopicId === topicId;
   return subtopics.map((s) => {
     const locked = isFreeTopic ? !(freeSubtopicId === s.id) : true;
     return { ...s, locked };
@@ -63,6 +66,8 @@ export function canAccessLesson(lessonId: number, access: AccessInfo): boolean {
 
 /**
  * Check if user can access full subtopic content.
+ * Free tier: only the first topic's first subtopic (by id) is allowed.
+ * Uses String() so DB number/string id types do not break the check.
  */
 export function canAccessSubtopic(
   topicId: string,
@@ -70,9 +75,12 @@ export function canAccessSubtopic(
   access: AccessInfo
 ): boolean {
   if (access.subscription_active) return true;
+  const freeTopicId = access.vocabulary_free_topic_id;
+  const freeSubtopicId = access.vocabulary_free_subtopic_id;
+  if (freeTopicId == null || freeSubtopicId == null) return false;
   return (
-    access.vocabulary_free_topic_id === topicId &&
-    access.vocabulary_free_subtopic_id === subtopicId
+    String(freeTopicId) === String(topicId) &&
+    String(freeSubtopicId) === String(subtopicId)
   );
 }
 

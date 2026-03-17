@@ -15,6 +15,27 @@ function authHeaders(token: string | null): HeadersInit {
   return h;
 }
 
+const CACHE_ACCESS = 'vocab_access';
+
+export function getCachedAccess(): AccessInfo | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_ACCESS);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as AccessInfo;
+    return data && typeof data.subscription_active === 'boolean' ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedAccess(data: AccessInfo): void {
+  try {
+    sessionStorage.setItem(CACHE_ACCESS, JSON.stringify(data));
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function getAccess(token: string | null): Promise<AccessInfo> {
   const res = await fetch(apiUrl('/api/user/access'), { headers: authHeaders(token) });
   if (!res.ok) throw new Error('Access yuklanmadi');
@@ -29,6 +50,27 @@ export type LessonWithLock = {
   locked: boolean;
   tasks_count?: number;
 };
+
+const CACHE_LESSONS = 'lessons_list';
+
+export function getCachedLessons(): LessonWithLock[] | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_LESSONS);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as LessonWithLock[];
+    return Array.isArray(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedLessons(list: LessonWithLock[]): void {
+  try {
+    sessionStorage.setItem(CACHE_LESSONS, JSON.stringify(list));
+  } catch {
+    /* ignore */
+  }
+}
 
 export async function getLessons(token: string | null): Promise<LessonWithLock[]> {
   const res = await fetch(apiUrl('/api/lessons'), { headers: authHeaders(token) });

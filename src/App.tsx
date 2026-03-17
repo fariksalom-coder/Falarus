@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AccessProvider } from './context/AccessContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 import AuthPage from './pages/AuthPage';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
@@ -397,7 +398,9 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <AppRoutes />
+        <AccessProvider>
+          <AppRoutes />
+        </AccessProvider>
       </Router>
     </AuthProvider>
   );

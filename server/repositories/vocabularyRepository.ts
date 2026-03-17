@@ -24,6 +24,26 @@ export async function getSubtopicTotalWords(supabase: Supabase, subtopicId: stri
   return groups.reduce((sum, g) => sum + g.total_words, 0);
 }
 
+/** Get total_words per subtopic in one query (avoids N+1). */
+export async function getTotalWordsBySubtopicIds(
+  supabase: Supabase,
+  subtopicIds: string[]
+): Promise<Record<string, number>> {
+  if (subtopicIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('vocabulary_word_groups')
+    .select('subtopic_id, total_words')
+    .in('subtopic_id', subtopicIds);
+  if (error) throw error;
+  const out: Record<string, number> = {};
+  for (const id of subtopicIds) out[id] = 0;
+  for (const row of data ?? []) {
+    const id = (row as { subtopic_id: string; total_words: number }).subtopic_id;
+    out[id] = (out[id] ?? 0) + (row as { total_words: number }).total_words;
+  }
+  return out;
+}
+
 export async function getSubtopicsByTopic(supabase: Supabase, topicId: string) {
   const { data, error } = await supabase
     .from('vocabulary_subtopics')

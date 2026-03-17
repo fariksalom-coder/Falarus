@@ -245,7 +245,8 @@ export function createAdminController(supabase: SupabaseClient) {
         .single();
       if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi yoki tasdiqlangan' });
 
-      const userId = (row as any).user_id;
+      const userId = Number((row as any).user_id);
+      if (!Number.isFinite(userId)) return res.status(400).json({ error: 'To\'lovda user_id xato' });
       const tariffType = (row as any).tariff_type;
       const planType = tariffType === 'year' ? 'yearly' : tariffType === '3months' ? 'three_months' : 'monthly';
       const daysToAdd = tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
@@ -277,6 +278,11 @@ export function createAdminController(supabase: SupabaseClient) {
       }
 
       await subscriptionService.createOrExtendSubscription(supabase as any, userId, planType as any, ext);
+      subscriptionService.invalidateAccessCache(userId);
+      try {
+        const { invalidateLessonsCache } = await import('../cache/lessonsCache');
+        invalidateLessonsCache(userId);
+      } catch {}
       return res.json({ success: true });
     } catch (e: any) {
       console.error('[admin/confirmPayment]', e);

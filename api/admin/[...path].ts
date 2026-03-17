@@ -119,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (adminId == null) return res.status(401).json({ error: 'Token kerak' });
 
   try {
-    // GET /api/admin/dashboard
+    // GET /api/admin/dashboard — revenue by currency (UZS, USD, RUB)
     if (path[0] === 'dashboard' && req.method === 'GET') {
       const now = new Date();
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -127,26 +127,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       weekStart.setDate(weekStart.getDate() - 7);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-      const [uToday, uWeek, uMonth, uActive, pToday, pMonth, pAll, subs, wdraw] = await Promise.all([
+      const [uToday, uWeek, uMonth, uActive, pTodayRows, pMonthRows, pAllRows, subs, wdraw] = await Promise.all([
         supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
         supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', weekStart.toISOString()),
         supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
         supabase.from('users').select('id', { count: 'exact', head: true }).gt('plan_expires_at', now.toISOString()),
-        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'approved').gte('approved_at', todayStart),
-        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'approved').gte('approved_at', monthStart),
-        supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+        supabase.from('payments').select('amount, currency').eq('status', 'approved').gte('approved_at', todayStart),
+        supabase.from('payments').select('amount, currency').eq('status', 'approved').gte('approved_at', monthStart),
+        supabase.from('payments').select('amount, currency').eq('status', 'approved'),
         supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active').gt('expires_at', now.toISOString()),
         supabase.from('referral_withdrawals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
+
+      function sumByCurrency(rows: { amount?: number; currency?: string }[] | null): { UZS: number; USD: number; RUB: number } {
+        const out = { UZS: 0, USD: 0, RUB: 0 };
+        (rows ?? []).forEach((r: any) => {
+          const c = (r.currency || 'UZS').toUpperCase();
+          const key = c === 'UZS' ? 'UZS' : c === 'USD' ? 'USD' : c === 'RUB' ? 'RUB' : 'UZS';
+          out[key as keyof typeof out] += Number(r.amount ?? 0);
+        });
+        return out;
+      }
 
       return res.status(200).json({
         users_today: (uToday as any).count ?? 0,
         users_this_week: (uWeek as any).count ?? 0,
         users_this_month: (uMonth as any).count ?? 0,
         active_users: (uActive as any).count ?? 0,
-        payments_today: (pToday as any).count ?? 0,
-        payments_this_month: (pMonth as any).count ?? 0,
-        total_revenue: (pAll as any).count ?? 0,
+        payments_today: sumByCurrency((pTodayRows as any).data ?? []),
+        payments_this_month: sumByCurrency((pMonthRows as any).data ?? []),
+        total_revenue: sumByCurrency((pAllRows as any).data ?? []),
         active_subscriptions: (subs as any).count ?? 0,
         referral_payouts_pending: (wdraw as any).count ?? 0,
       });

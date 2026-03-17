@@ -10,6 +10,7 @@ import {
 } from '../data/lessonsList';
 import { getLessonCompletionSummary } from '../utils/lessonTaskResults';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 import * as accessApi from '../api/access';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
@@ -42,25 +43,57 @@ function useCompletedCount(): number {
   return 0;
 }
 
+function buildLockMapFromLessons(list: { id: number; locked: boolean }[]): Record<number, boolean> {
+  const map: Record<number, boolean> = {};
+  list.forEach((l) => { map[l.id] = l.locked; });
+  return map;
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { access } = useAccess();
   const completedCount = useCompletedCount();
-  const [lessonsLockMap, setLessonsLockMap] = useState<Record<number, boolean>>({});
+  const cachedLessons = accessApi.getCachedLessons();
+  const [lessonsLockMap, setLessonsLockMap] = useState<Record<number, boolean>>(() =>
+    cachedLessons ? buildLockMapFromLessons(cachedLessons) : {}
+  );
+  const [lessonsAccessLoaded, setLessonsAccessLoaded] = useState(!!cachedLessons?.length);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLockedLessonId, setSelectedLockedLessonId] = useState<number | null>(null);
   const { hasPendingPayment } = usePaymentStatus();
 
   useEffect(() => {
-    if (!token) return;
-    accessApi.getLessons(token).then((list) => {
-      const map: Record<number, boolean> = {};
-      list.forEach((l) => { map[l.id] = l.locked; });
-      setLessonsLockMap(map);
-    }).catch(() => {});
-  }, [token]);
+    if (!token) {
+      setLessonsLockMap({});
+      setLessonsAccessLoaded(true);
+      return;
+    }
+    const cached = accessApi.getCachedLessons();
+    if (cached?.length) {
+      setLessonsLockMap(buildLockMapFromLessons(cached));
+      setLessonsAccessLoaded(true);
+    } else {
+      setLessonsAccessLoaded(false);
+    }
+    accessApi
+      .getLessons(token)
+      .then((list) => {
+        setLessonsLockMap(buildLockMapFromLessons(list));
+        accessApi.setCachedLessons(list);
+      })
+      .catch(() => {
+        if (access?.subscription_active) {
+          const map: Record<number, boolean> = {};
+          LESSONS.forEach((l) => { map[l.id] = false; });
+          setLessonsLockMap(map);
+        }
+      })
+      .finally(() => setLessonsAccessLoaded(true));
+  }, [token, access?.subscription_active]);
 
   const isLessonLocked = (lessonId: number) => {
+    if (access?.subscription_active) return false;
     if (lessonsLockMap[lessonId] !== undefined) return lessonsLockMap[lessonId];
     return lessonId > 3;
   };
@@ -99,7 +132,13 @@ export default function Dashboard() {
           </h1>
         </div>
 
-        {/* Learning path — lesson cards */}
+        {/* Learning path — lesson cards (render only after access data loaded to avoid locked→unlocked flash) */}
+        {token && !lessonsAccessLoaded && (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" aria-hidden />
+          </div>
+        )}
+        {( !token || lessonsAccessLoaded ) && (
         <div className="space-y-3">
           {LESSONS.map((lesson, index) => {
             const baseStatus = getLessonStatus(index, completedCount);
@@ -184,6 +223,7 @@ export default function Dashboard() {
             );
           })}
         </div>
+        )}
       </main>
 
       {modalOpen && hasPendingPayment && (

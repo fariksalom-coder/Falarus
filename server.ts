@@ -232,7 +232,10 @@ async function startServer() {
     if (!token) return res.status(401).json({ error: 'Ruxsat berilmagan' });
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      req.userId = decoded.id;
+      const rawId = decoded.id ?? decoded.sub;
+      const userId = Number(rawId);
+      if (!Number.isFinite(userId) || userId < 1) return res.status(401).json({ error: 'Yaroqsiz token' });
+      req.userId = userId;
       next();
     } catch (e) {
       res.status(401).json({ error: 'Yaroqsiz token' });
@@ -474,13 +477,18 @@ async function startServer() {
   // Lessons (freemium: locked flag, preview, protect full content)
   const { getAccessForRequest } = await import('./server/routes/accessRoutes');
   const accessControlService = await import('./server/services/accessControl.service');
+  const lessonsCache = await import('./server/cache/lessonsCache');
 
   app.get('/api/lessons', authenticate, async (req: any, res) => {
-    const { data: user } = await supabase.from('users').select('level').eq('id', req.userId).single();
+    const userId = Number(req.userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+    const cached = lessonsCache.getCachedLessonsList(userId);
+    if (cached != null) return res.json(cached);
+    const { data: user } = await supabase.from('users').select('level').eq('id', userId).single();
     if (!user?.level) return res.status(404).json({ error: 'User topilmadi' });
     const { data: lessons, error } = await supabase.from('lessons').select('*').eq('level', user.level).order('id');
     if (error) return res.status(500).json({ error: error.message });
-    const access = await getAccessForRequest(supabase, req.userId);
+    const access = await getAccessForRequest(supabase, userId);
     const withLock = accessControlService.applyLessonsLock(lessons ?? [], access);
     const lessonIds = (lessons ?? []).map((l: any) => l.id);
     const { data: exCounts } = await supabase.from('exercises').select('lesson_id').in('lesson_id', lessonIds);
@@ -496,6 +504,7 @@ async function startServer() {
       locked: l.locked,
       tasks_count: countByLesson[l.id] ?? 0,
     }));
+    lessonsCache.setCachedLessonsList(userId, list);
     res.json(list);
   });
 
@@ -509,7 +518,9 @@ async function startServer() {
 
   app.get('/api/lessons/:id', authenticate, async (req: any, res) => {
     const id = Number(req.params.id);
-    const access = await getAccessForRequest(supabase, req.userId);
+    const userId = Number(req.userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+    const access = await getAccessForRequest(supabase, userId);
     if (!accessControlService.canAccessLesson(id, access)) {
       return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
     }

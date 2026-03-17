@@ -11,7 +11,8 @@ export function createAccessRoutes(
 
   router.get('/user/access', authenticate, async (req: any, res) => {
     try {
-      const access = await subscriptionService.getAccessInfo(supabase, req.userId);
+      const userId = Number(req.userId);
+      const access = await subscriptionService.getAccessInfo(supabase, Number.isFinite(userId) ? userId : 0);
       res.json({
         lessons_free_limit: access.lessons_free_limit,
         vocabulary_free_topic: access.vocabulary_free_topic,

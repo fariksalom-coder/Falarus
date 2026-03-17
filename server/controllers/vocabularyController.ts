@@ -10,10 +10,17 @@ import * as accessControlService from '../services/accessControl.service';
 import * as subscriptionService from '../services/subscription.service';
 import * as redis from '../lib/redis';
 
+function getUserId(req: Request): number | null {
+  const raw = (req as any).userId;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 1 ? n : null;
+}
+
 export function getTopics(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).userId as number;
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
       const cached = await redis.getCached<any[]>(redis.cacheKeyTopics(userId));
       if (cached != null) return res.json(cached);
       const topics = await repo.getTopics(supabase);
@@ -46,33 +53,37 @@ export function getTopics(supabase: Supabase) {
 export function getSubtopics(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).userId as number;
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
       const topicId = req.params.topicId as string;
-      const access = await subscriptionService.getAccessInfo(supabase, userId);
-      const cached = await redis.getCached<any[]>(redis.cacheKeySubtopics(userId, topicId));
+      const [access, cached] = await Promise.all([
+        subscriptionService.getAccessInfo(supabase, userId),
+        redis.getCached<any[]>(redis.cacheKeySubtopics(userId, topicId)),
+      ]);
       let list: any[];
       if (cached != null) {
         list = cached;
       } else {
         const subtopics = await repo.getSubtopicsByTopic(supabase, topicId);
-        const progressRows = await repo.getUserSubtopicProgress(supabase, userId, topicId);
+        const [progressRows, totalWordsBySubtopic] = await Promise.all([
+          repo.getUserSubtopicProgress(supabase, userId, topicId),
+          repo.getTotalWordsBySubtopicIds(supabase, subtopics.map((s) => s.id)),
+        ]);
         const progressBySubtopic = Object.fromEntries(
           progressRows.map((p) => [p.subtopic_id, { learned_words: p.learned_words, total_words: p.total_words, progress_percent: p.progress_percent }])
         );
-        list = await Promise.all(
-          subtopics.map(async (s) => {
-            const prog = progressBySubtopic[s.id];
-            const total_words = prog?.total_words ?? (await repo.getSubtopicTotalWords(supabase, s.id));
-            return {
-              id: s.id,
-              topic_id: s.topic_id,
-              title: s.title,
-              learned_words: prog?.learned_words ?? 0,
-              total_words,
-              progress_percent: prog?.progress_percent ?? (total_words ? 0 : 0),
-            };
-          })
-        );
+        list = subtopics.map((s) => {
+          const prog = progressBySubtopic[s.id];
+          const total_words = prog?.total_words ?? totalWordsBySubtopic[s.id] ?? 0;
+          return {
+            id: s.id,
+            topic_id: s.topic_id,
+            title: s.title,
+            learned_words: prog?.learned_words ?? 0,
+            total_words,
+            progress_percent: prog?.progress_percent ?? (total_words ? 0 : 0),
+          };
+        });
         await redis.setCached(redis.cacheKeySubtopics(userId, topicId), list);
       }
       const withLock = accessControlService.applySubtopicsLock(list, topicId, access);
@@ -101,12 +112,20 @@ export function getSubtopicPreview(supabase: Supabase) {
 export function getWordGroups(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).userId as number;
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
       const subtopicId = req.params.subtopicId as string;
       const access = await subscriptionService.getAccessInfo(supabase, userId);
-      const { data: subtopic } = await supabase.from('vocabulary_subtopics').select('topic_id').eq('id', subtopicId).single();
+      const { data: subtopic, error: subErr } = await supabase.from('vocabulary_subtopics').select('topic_id').eq('id', subtopicId).maybeSingle();
+      if (subErr) {
+        console.error('[vocabulary/getWordGroups] subtopic fetch', subErr.message);
+        return res.status(500).json({ error: 'Xatolik yuz berdi' });
+      }
       const topicId = subtopic?.topic_id ?? '';
-      if (!accessControlService.canAccessSubtopic(topicId, subtopicId, access)) {
+      const allowed =
+        accessControlService.canAccessSubtopic(topicId, subtopicId, access) ||
+        (!access.subscription_active && String(subtopicId) === 'salomlashish-xayrlashish-odob');
+      if (!allowed) {
         return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
       }
       const cached = await redis.getCached<any[]>(redis.cacheKeyWordGroups(userId, subtopicId));
@@ -139,7 +158,8 @@ export function getWordGroups(supabase: Supabase) {
 export function getTasks(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).userId as number;
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
       const wordGroupId = Number(req.params.wordGroupId);
       if (Number.isNaN(wordGroupId)) {
         return res.status(400).json({ error: 'wordGroupId required' });
@@ -182,7 +202,8 @@ export function getWords(supabase: Supabase) {
 export function postFlashcardsComplete(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).userId as number;
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
       const wordGroupId = Number(req.body?.word_group_id ?? req.body?.wordGroupId);
       if (Number.isNaN(wordGroupId)) {
         return res.status(400).json({ error: 'word_group_id required' });
@@ -201,7 +222,8 @@ export function postFlashcardsComplete(supabase: Supabase) {
 export function postTestFinish(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).userId as number;
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
       const wordGroupId = Number(req.body?.word_group_id ?? req.body?.wordGroupId);
       const correctAnswers = Number(req.body?.correct_answers ?? req.body?.correctAnswers ?? 0);
       const totalQuestions = Number(req.body?.total_questions ?? req.body?.totalQuestions ?? 0);
@@ -228,7 +250,8 @@ export function postTestFinish(supabase: Supabase) {
 export function postMatchFinish(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).userId as number;
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
       const wordGroupId = Number(req.body?.word_group_id ?? req.body?.wordGroupId);
       const pointsAwarded = Math.max(0, Number(req.body?.points ?? req.body?.points_awarded ?? 0));
       if (Number.isNaN(wordGroupId)) {

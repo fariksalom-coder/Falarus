@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getTopicWordCount } from '../data/vocabularyContent';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 import {
   fetchVocabularyTopics,
   getCachedTopicsProgress,
   setCachedTopicsProgress,
   type VocabularyTopic,
 } from '../api/vocabulary';
-import { getAccess } from '../api/access';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -70,30 +70,30 @@ const ACCENT_ICON = [
 export default function VocabularyPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { access, accessLoaded } = useAccess();
   const [topicsProgress, setTopicsProgress] = useState<VocabularyTopic[]>(() =>
     getCachedTopicsProgress() ?? []
   );
-  const [access, setAccess] = useState<Awaited<ReturnType<typeof getAccess>> | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
 
   useEffect(() => {
     if (!token) {
       setTopicsProgress([]);
-      setAccess(null);
       return;
     }
-    fetchVocabularyTopics(token).then((data) => {
-      setTopicsProgress(data);
-      setCachedTopicsProgress(data);
-    }).catch(() => {});
-    getAccess(token).then(setAccess).catch(() => setAccess(null));
+    fetchVocabularyTopics(token)
+      .then((topics) => {
+        setTopicsProgress(Array.isArray(topics) ? topics : []);
+        if (Array.isArray(topics) && topics.length) setCachedTopicsProgress(topics);
+      })
+      .catch(() => {});
   }, [token]);
 
   const firstTopicId = VOCABULARY_TOPICS[0]?.id;
   const lockedByTopic = (topicId: string): boolean => {
     if (firstTopicId != null && topicId === firstTopicId) return false;
-    if (access == null) return true;
+    if (!access) return true;
     if (access.subscription_active) return false;
     const freeId = access.vocabulary_free_topic_id;
     return freeId == null || topicId !== freeId;
@@ -106,6 +106,12 @@ export default function VocabularyPage() {
           Bo'limlarni tanlang va so'zlarni o'rganing
         </p>
 
+        {token && !accessLoaded && (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" aria-hidden />
+          </div>
+        )}
+        {accessLoaded && (
         <div className="space-y-4">
           {VOCABULARY_TOPICS.map((topic, index) => {
             const Icon = TOPIC_ICONS[topic.id] ?? Sparkles;
@@ -175,6 +181,7 @@ export default function VocabularyPage() {
             );
           })}
         </div>
+        )}
       </main>
 
       {showPaywall && hasPendingPayment && (
