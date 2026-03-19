@@ -13,6 +13,7 @@ import {
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { isVocabularyTopicLockedForUser } from '../utils/vocabularyAccess';
 import {
   ChevronRight,
   Lock,
@@ -90,14 +91,8 @@ export default function VocabularyPage() {
       .catch(() => {});
   }, [token]);
 
-  const firstTopicId = VOCABULARY_TOPICS[0]?.id;
-  const lockedByTopic = (topicId: string): boolean => {
-    if (firstTopicId != null && topicId === firstTopicId) return false;
-    if (!access) return true;
-    if (access.subscription_active) return false;
-    const freeId = access.vocabulary_free_topic_id;
-    return freeId == null || topicId !== freeId;
-  };
+  /** One source of truth: /api/user/access (no extra “always unlock first list item” — that doubled with wrong server free_topic_id). */
+  const lockedByTopic = (topicId: string) => isVocabularyTopicLockedForUser(access, topicId);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>

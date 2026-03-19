@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { fetchVocabularyProgress } from '../api/vocabularyProgress';
+import { fetchVocabularyDailyWordStats, fetchVocabularyProgress } from '../api/vocabularyProgress';
 import {
   fetchVocabularyTopics,
   getCachedTopicsProgress,
@@ -10,7 +10,6 @@ import {
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getTopicWordCount } from '../data/vocabularyContent';
 import { getVocabularyStats } from '../utils/statsHelpers';
-import { getVocabDailyStats } from '../utils/vocabDailyStats';
 import { getTotalLessonTaskStats } from '../utils/lessonTaskResults';
 import { fetchStreak } from '../api/activity';
 import {
@@ -27,7 +26,16 @@ const PRIMARY = '#6366F1';
 const TEXT = '#0F172A';
 const TEXT_SECONDARY = '#64748B';
 
-const DAY_LABELS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
+// JS Date.getDay(): 0=Sunday .. 6=Saturday
+const DAY_LABEL_BY_WEEKDAY: Record<number, string> = {
+  0: 'Ya', // Sunday
+  1: 'Du', // Monday
+  2: 'Se', // Tuesday
+  3: 'Ch', // Wednesday
+  4: 'Pa', // Thursday
+  5: 'Ju', // Friday
+  6: 'Sh', // Saturday
+};
 
 export default function StatistikaPage() {
   const { token } = useAuth();
@@ -67,12 +75,16 @@ export default function StatistikaPage() {
     [topicsProgress]
   );
 
-  const [dailyStats, setDailyStats] = useState(() =>
-    getVocabDailyStats(totalLearnedFromApi)
-  );
+  const [dailyStats, setDailyStats] = useState<{ todayWords: number; weekWords: number }>({
+    todayWords: 0,
+    weekWords: 0,
+  });
   useEffect(() => {
-    setDailyStats(getVocabDailyStats(totalLearnedFromApi));
-  }, [totalLearnedFromApi]);
+    if (!token) return;
+    fetchVocabularyDailyWordStats(token).then((data) => {
+      if (data) setDailyStats({ todayWords: data.todayWords, weekWords: data.weekWords });
+    });
+  }, [token]);
 
   const lessonStats = useMemo(() => getTotalLessonTaskStats(), []);
   const accuracyPercent = lessonStats.total > 0
@@ -87,6 +99,29 @@ export default function StatistikaPage() {
     { done: streak.streak_days >= 7, text: '7 kun ketma-ket' },
     { done: totalLearnedFromApi >= 100, text: "100 ta so'z o'rganildi" },
   ].filter((a) => a.done);
+
+  // `streak.last_7_days` is ordered as: [day-6, day-5, ..., today]
+  // But UI requirement: Monday (`Du`) must always be the leftmost column.
+  // So we rotate the 7-day window so that the date that is Monday becomes index 0.
+  const last7Rotated = useMemo(() => {
+    const today = new Date();
+    const dates = Array.from({ length: 7 }, (_, idx) => {
+      const dayOffsetFromToday = 6 - idx; // idx=0 => day-6, idx=6 => today
+      const d = new Date(today);
+      d.setDate(today.getDate() - dayOffsetFromToday);
+      return d;
+    });
+    const mondayPos = dates.findIndex((d) => d.getDay() === 1); // 1 = Monday
+    const shift = mondayPos >= 0 ? mondayPos : 0;
+
+    // Build [rotatedIndex -> oldIndex] mapping
+    return Array.from({ length: 7 }, (_, newIdx) => {
+      const oldIdx = (shift + newIdx) % 7; // old day that corresponds to column newIdx
+      const label = DAY_LABEL_BY_WEEKDAY[dates[oldIdx].getDay()] ?? '';
+      const active = streak.last_7_days[oldIdx] === true;
+      return { label, active };
+    });
+  }, [streak.last_7_days]);
 
   return (
     <div className="min-h-screen pb-12" style={{ backgroundColor: BG }}>
@@ -111,15 +146,29 @@ export default function StatistikaPage() {
               </div>
             </div>
             <div className="mt-4 flex justify-between gap-1">
-              {DAY_LABELS.map((d, i) => {
-                const active = streak.last_7_days[i] === true;
+              {last7Rotated.map(({ label: d, active }, i) => {
                 return (
-                  <div
-                    key={d}
-                    className="h-8 flex-1 rounded-lg bg-slate-100"
-                    title={d}
-                    style={{ backgroundColor: active ? '#22c55e' : undefined, opacity: active ? 0.9 : 0.4 }}
-                  />
+                  <div key={d} className="flex-1 flex flex-col items-center">
+                    <div
+                      className="flex h-10 w-full items-center justify-center rounded-lg bg-slate-100/70"
+                      title={d}
+                      style={{
+                        backgroundColor: active ? '#fff7ed' : '#f1f5f9',
+                        opacity: active ? 1 : 0.45,
+                      }}
+                    >
+                      <Flame
+                        className="h-6 w-6"
+                        style={{ color: active ? '#f97316' : '#cbd5e1' }}
+                      />
+                    </div>
+                    <div
+                      className="mt-1 text-[10px] font-semibold"
+                      style={{ color: TEXT_SECONDARY, opacity: active ? 1 : 0.55 }}
+                    >
+                      {d}
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -149,7 +198,7 @@ export default function StatistikaPage() {
                 <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Bu hafta</p>
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>{dailyStats.totalWords}</p>
+                <p className="text-2xl font-bold" style={{ color: TEXT }}>{totalLearnedFromApi}</p>
                 <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Jami</p>
               </div>
             </div>

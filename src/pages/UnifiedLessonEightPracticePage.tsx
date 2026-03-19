@@ -460,6 +460,9 @@ export default function UnifiedLessonEightPracticePage() {
             <p className="mt-1 text-sm text-slate-500">
               {TASKS.length > 0 ? Math.round((correctCount / TASKS.length) * 100) : 0}%
             </p>
+            <p className="mt-3 text-sm font-semibold" style={{ color: '#0F172A' }}>
+              Siz {correctCount} ball oldingiz!
+            </p>
             <button
               type="button"
               onClick={() => {

@@ -15,6 +15,24 @@ export async function fetchVocabularyProgress(token: string | null): Promise<voi
   }
 }
 
+export async function fetchVocabularyDailyWordStats(
+  token: string | null
+): Promise<{ todayWords: number; weekWords: number } | null> {
+  if (!token) return null;
+  try {
+    const res = await fetch(apiUrl('/api/vocabulary/daily-word-stats'), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { todayWords?: unknown; weekWords?: unknown };
+    const todayWords = typeof data.todayWords === 'number' ? data.todayWords : 0;
+    const weekWords = typeof data.weekWords === 'number' ? data.weekWords : 0;
+    return { todayWords, weekWords };
+  } catch {
+    return null;
+  }
+}
+
 export async function saveVocabularyPartProgress(
   token: string | null,
   topicId: string,

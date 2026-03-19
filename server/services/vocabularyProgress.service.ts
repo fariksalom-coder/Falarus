@@ -2,6 +2,7 @@ import type { Supabase } from '../types/vocabulary';
 import type { VocabularyTasksStatus } from '../types/vocabulary';
 import type { AccessInfo } from './subscription.service';
 import * as repo from '../repositories/vocabularyRepository';
+import * as progressCache from './progressCache.service';
 
 const MATCH_UNLOCK_PERCENT = 80;
 
@@ -53,4 +54,213 @@ export async function getTasksStatus(
     test_best_correct,
     match_unlocked,
   };
+}
+
+export type WordGroupStepsState = {
+  step1: {
+    completed: boolean;
+    known: number;
+    unknown: number;
+  };
+  step2: {
+    completed: boolean;
+    correct: number;
+    incorrect: number;
+    percentage: number;
+    passed: boolean;
+  };
+  step3: {
+    unlocked: boolean;
+  };
+};
+
+function mapProgressRowToStepsState(row: any | null, total_words: number): WordGroupStepsState {
+  const flashcards_completed: boolean = row?.flashcards_completed ?? false;
+  const flashcards_known: number = row?.flashcards_known ?? 0;
+  const flashcards_unknown: number = row?.flashcards_unknown ?? 0;
+
+  const test_last_correct: number = row?.test_last_correct ?? 0;
+  const test_last_incorrect: number = row?.test_last_incorrect ?? 0;
+  const storedPercentage: number = row?.test_last_percentage ?? 0;
+  const storedPassed: boolean = row?.test_passed ?? false;
+
+  const attemptsTotal = test_last_correct + test_last_incorrect;
+  const recomputedPercentage =
+    attemptsTotal > 0 ? (test_last_correct / attemptsTotal) * 100 : 0;
+  const percentage = attemptsTotal > 0 ? recomputedPercentage : storedPercentage;
+  const passed = attemptsTotal > 0 ? percentage >= 80 : storedPassed;
+
+  return {
+    step1: {
+      // Step 1 is considered completed only when user actually marked at least one word.
+      // This prevents a "fake completion" scenario when `flashcards_completed=true` is set but
+      // known+unknown is still 0 (which would incorrectly unlock Step 2).
+      completed: flashcards_completed && flashcards_known + flashcards_unknown > 0,
+      known: flashcards_known,
+      unknown: flashcards_unknown,
+    },
+    step2: {
+      completed: attemptsTotal > 0,
+      correct: test_last_correct,
+      incorrect: test_last_incorrect,
+      percentage,
+      passed,
+    },
+    step3: {
+      unlocked: passed,
+    },
+  };
+}
+
+export async function getWordGroupStepsState(
+  supabase: Supabase,
+  userId: number,
+  wordGroupId: number
+): Promise<WordGroupStepsState> {
+  const group = await repo.getWordGroupById(supabase, wordGroupId);
+  if (!group) {
+    throw new Error('Word group not found');
+  }
+  const total_words = group.total_words;
+  const row = await repo.getProgressRowForWordGroup(supabase, userId, wordGroupId);
+  return mapProgressRowToStepsState(row, total_words);
+}
+
+export async function saveStep1Result(
+  supabase: Supabase,
+  userId: number,
+  wordGroupId: number,
+  input: { known: number; unknown: number }
+): Promise<WordGroupStepsState> {
+  const group = await repo.getWordGroupById(supabase, wordGroupId);
+  if (!group) {
+    throw new Error('Word group not found');
+  }
+  const total_words = group.total_words;
+  const known = Math.max(0, Math.min(input.known, total_words));
+  const unknown = Math.max(0, Math.min(input.unknown, total_words - known));
+
+  await repo.getOrCreateUserWordGroupProgress(supabase, userId, wordGroupId, total_words);
+  await repo.upsertUserWordGroupProgress(supabase, userId, wordGroupId, {
+    flashcards_known: known,
+    flashcards_unknown: unknown,
+    flashcards_completed: true,
+  });
+
+  const row = await repo.getProgressRowForWordGroup(supabase, userId, wordGroupId);
+  return mapProgressRowToStepsState(row, total_words);
+}
+
+export async function saveStep2Result(
+  supabase: Supabase,
+  userId: number,
+  wordGroupId: number,
+  input: { correct: number; incorrect: number; totalQuestions?: number }
+): Promise<WordGroupStepsState> {
+  const group = await repo.getWordGroupById(supabase, wordGroupId);
+  if (!group) {
+    throw new Error('Word group not found');
+  }
+  const correct = Math.max(0, input.correct);
+  const incorrect = Math.max(0, input.incorrect);
+  let attemptsTotal = correct + incorrect;
+  if (input.totalQuestions != null && input.totalQuestions > 0) {
+    attemptsTotal = Math.min(input.totalQuestions, attemptsTotal);
+  }
+  if (attemptsTotal <= 0) {
+    throw new Error('Total answers must be > 0');
+  }
+
+  // Safety: in case vocabulary_word_groups.total_words is missing/0 for some reason,
+  // use the actual test attempt total so "learned_words" updates won't clamp to 0.
+  const total_words = group.total_words;
+  const totalWordsForProgress = total_words > 0 ? total_words : attemptsTotal;
+  const percentage = (correct / attemptsTotal) * 100;
+  const passed = percentage >= 80;
+
+  await repo.getOrCreateUserWordGroupProgress(supabase, userId, wordGroupId, totalWordsForProgress);
+  await repo.upsertUserWordGroupProgress(supabase, userId, wordGroupId, {
+    test_last_correct: correct,
+    test_last_incorrect: attemptsTotal - correct,
+    test_last_percentage: percentage,
+    test_passed: passed,
+    test_best_correct: Math.max(correct, 0),
+  });
+
+  // Award points for Step 2:
+  // 1 point per 1 correct answer (per completion attempt).
+  const pointsAwarded = Math.floor(Math.max(0, correct));
+  if (pointsAwarded > 0) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('points, weekly_points, monthly_points, total_points')
+      .eq('id', userId)
+      .single();
+    if (user) {
+      const newTotal = (user.total_points ?? 0) + pointsAwarded;
+      await supabase
+        .from('users')
+        .update({
+          points: (user.points ?? 0) + pointsAwarded,
+          weekly_points: (user.weekly_points ?? 0) + pointsAwarded,
+          monthly_points: (user.monthly_points ?? 0) + pointsAwarded,
+          total_points: newTotal,
+        })
+        .eq('id', userId);
+
+      const leaderboardService = await import('./leaderboard.service');
+      const leaderboardCache = await import('./leaderboardCache.service');
+      await leaderboardService.ensureUserInLeaderboard(supabase, userId);
+      await leaderboardService.updateUserPoints(supabase, userId, newTotal);
+      await leaderboardCache.invalidateLeaderboardCache();
+    }
+  }
+
+  // Log Step 2 attempt for exact date-based statistics (Bugun / Bu hafta).
+  // We store the completion by calendar date and later aggregate via MAX per (day, word_group).
+  const d = new Date();
+  const activityDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  try {
+    await repo.insertUserVocabularyStep2Attempt(
+      supabase,
+      userId,
+      wordGroupId,
+      activityDate,
+      correct,
+      attemptsTotal - correct,
+      attemptsTotal,
+      percentage
+    );
+  } catch (e) {
+    // If the migration wasn't applied yet, don't block vocabulary progression flow.
+    console.error('[saveStep2Result] step2 attempt log failed', e);
+  }
+
+  // "so'z o'rganildi" (learned_words) should reflect Step 2 correct answers.
+  // Keep monotonic growth to match existing vocabulary progress semantics.
+  const rowAfter = await repo.getProgressRowForWordGroup(supabase, userId, wordGroupId);
+  const existingLearned = rowAfter?.learned_words ?? 0;
+  const learnedWords = Math.max(existingLearned, Math.min(correct, totalWordsForProgress));
+
+  const learnedProgressPercent = totalWordsForProgress > 0 ? (learnedWords / totalWordsForProgress) * 100 : 0;
+
+  // Ensure learned_words is updated in the same place Step 2 is evaluated.
+  // Vocabulary list pages rely on `user_word_group_progress.learned_words`.
+  await repo.upsertUserWordGroupProgress(supabase, userId, wordGroupId, {
+    learned_words: learnedWords,
+    total_words: totalWordsForProgress,
+    progress_percent: learnedProgressPercent,
+  });
+
+  // Update progress_percent + aggregated subtopic/topic progress.
+  await progressCache.updateWordGroupProgress(
+    supabase,
+    userId,
+    wordGroupId,
+    learnedWords,
+    totalWordsForProgress
+  );
+
+  const rowFinal = await repo.getProgressRowForWordGroup(supabase, userId, wordGroupId);
+  return mapProgressRowToStepsState(rowFinal, totalWordsForProgress);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { BarChart3, ChevronRight, Layers, ClipboardList, Puzzle, Check, Play, Lock } from 'lucide-react';
+import { BarChart3, ChevronRight, Layers, ClipboardList, Puzzle, Check, Play, Lock, X } from 'lucide-react';
 import { getSubtopicContent, VocabularyEntry } from '../data/vocabularyContent';
 import {
   setLastPartId,
@@ -11,17 +11,23 @@ import {
   type StageStatus,
 } from '../utils/vocabProgress';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
+import PaywallModal from '../components/PaywallModal';
+import PendingPaymentModal from '../components/PendingPaymentModal';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { canAccessVocabularySubtopicRoute } from '../utils/vocabularyAccess';
 import {
   fetchVocabularyWordGroups,
   fetchVocabularyTasksStatus,
   getCachedWordGroupsProgress,
   getCachedTasksStatus,
   setCachedTasksStatus,
-  postFlashcardsComplete,
-  postVocabularyTestFinish,
   postVocabularyMatchFinish,
   type VocabularyTasksStatus,
 } from '../api/vocabulary';
+import { useVocabularyStepsStore } from '../state/vocabularyStepsStore';
+import { StepCard } from '../components/vocabulary/ThreeStepLearning/StepCard';
+import type { WordGroupStepsState } from '../api/vocabulary';
 
 type Mode = 'cards' | 'test' | 'pairs';
 
@@ -63,6 +69,9 @@ export default function VocabularyPartPage() {
   const navigate = useNavigate();
   const { topicId, subtopicId, partId, mode: modeParam } = useParams();
   const { token } = useAuth();
+  const { access, accessLoaded } = useAccess();
+  const { hasPendingPayment } = usePaymentStatus();
+  const [showVocabPaywall, setShowVocabPaywall] = useState(false);
   const content = getSubtopicContent(topicId, subtopicId);
   const part = content?.parts.find((item) => item.id === partId);
 
@@ -85,6 +94,28 @@ export default function VocabularyPartPage() {
     return getCachedTasksStatus(group.id);
   });
   const [pointsEarnedMessage, setPointsEarnedMessage] = useState<number | null>(null);
+
+  const stepsStore = useVocabularyStepsStore();
+  const stepsState = wordGroupId != null ? stepsStore.byGroup[wordGroupId] : undefined;
+  const [cachedStepsState, setCachedStepsState] = useState<WordGroupStepsState | undefined>(undefined);
+
+  useEffect(() => {
+    if (wordGroupId == null) return;
+    if (typeof window === 'undefined' || !('sessionStorage' in window)) return;
+    try {
+      const raw = sessionStorage.getItem(`vocab_steps_${wordGroupId}`);
+      if (!raw) {
+        setCachedStepsState(undefined);
+        return;
+      }
+      const parsed = JSON.parse(raw) as WordGroupStepsState;
+      setCachedStepsState(parsed);
+    } catch {
+      setCachedStepsState(undefined);
+    }
+  }, [wordGroupId]);
+
+  const effectiveStepsState = stepsState ?? cachedStepsState;
 
   const refetchTasks = async () => {
     if (!token || wordGroupId == null) return;
@@ -129,10 +160,13 @@ export default function VocabularyPartPage() {
           setTasksStatus(status);
           setCachedTasksStatus(group.id, status);
         }
+        if (!cancelled && token) {
+          await stepsStore.fetchSteps(token, group.id);
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, [token, content?.subtopicId, part?.id]);
+  }, [token, content?.subtopicId, part?.id, stepsStore]);
 
   useEffect(() => {
     if (content?.topicId && content?.subtopicId && part?.id && mode) {
@@ -144,16 +178,54 @@ export default function VocabularyPartPage() {
   const [cardFlipped, setCardFlipped] = useState(false);
   const [knownCount, setKnownCount] = useState(0);
   const [unknownCount, setUnknownCount] = useState(0);
+  const [step1Submitted, setStep1Submitted] = useState(false);
+
+  useEffect(() => {
+    if (mode === 'cards') setStep1Submitted(false);
+    if (mode === 'test') setStep2Submitted(false);
+    if (mode === 'pairs') setStep3Submitted(false);
+    setPointsEarnedMessage(null);
+  }, [mode]);
 
   useEffect(() => {
     if (!content?.topicId || !content?.subtopicId || !part?.id) return;
-    if (mode === 'cards' && cardIndex >= (part.entries?.length ?? 0) && (part.entries?.length ?? 0) > 0) {
+    if (
+      mode === 'cards' &&
+      !step1Submitted &&
+      cardIndex >= (part.entries?.length ?? 0) &&
+      (part.entries?.length ?? 0) > 0
+    ) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'cards', 'completed');
       if (token && wordGroupId != null) {
-        postFlashcardsComplete(token, wordGroupId).then(() => refetchTasks());
+        stepsStore
+          .submitStep1(token, wordGroupId, knownCount, unknownCount)
+          .then(() => {
+            refetchTasks();
+            if (content?.subtopicId) {
+              try {
+                sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
+              } catch {
+                // ignore
+              }
+            }
+          });
       }
+      setStep1Submitted(true);
     }
-  }, [content?.topicId, content?.subtopicId, part?.id, mode, cardIndex, part?.entries?.length, token, wordGroupId]);
+  }, [
+    content?.topicId,
+    content?.subtopicId,
+    part?.id,
+    mode,
+    cardIndex,
+    part?.entries?.length,
+    token,
+    wordGroupId,
+    knownCount,
+    unknownCount,
+    step1Submitted,
+    stepsStore,
+  ]);
 
   const testQuestions = useMemo(() => {
     if (!part) return [];
@@ -168,6 +240,7 @@ export default function VocabularyPartPage() {
   const [testIndex, setTestIndex] = useState(0);
   const [testSelected, setTestSelected] = useState<string | null>(null);
   const [testCorrect, setTestCorrect] = useState(0);
+  const [step2Submitted, setStep2Submitted] = useState(false);
 
   const pairGroups = useMemo(() => {
     if (!part) return [];
@@ -184,41 +257,97 @@ export default function VocabularyPartPage() {
   const [matched, setMatched] = useState<string[]>([]);
   const [pairMessage, setPairMessage] = useState('');
   const [wrongPairIds, setWrongPairIds] = useState<string[] | null>(null);
+  const [step3Submitted, setStep3Submitted] = useState(false);
 
   useEffect(() => {
     if (!content?.topicId || !content?.subtopicId || !part?.id) return;
-    if (mode === 'test' && testIndex >= testQuestions.length && testQuestions.length > 0) {
+    if (
+      mode === 'test' &&
+      !step2Submitted &&
+      testIndex >= testQuestions.length &&
+      testQuestions.length > 0
+    ) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'test', 'completed');
-      setPointsEarnedMessage(testCorrect);
       if (token && wordGroupId != null) {
-        postVocabularyTestFinish(token, wordGroupId, testCorrect, testQuestions.length).then((result) => {
-          if (result) {
-            setPointsEarnedMessage(result.points_awarded);
+        // Optimistic UI: show awarded points immediately (1 ball per 1 correct).
+        // Backend call may take time, but user should see the result without delay.
+        setPointsEarnedMessage(testCorrect);
+        stepsStore
+          .submitStep2(
+            token,
+            wordGroupId,
+            testCorrect,
+            testQuestions.length - testCorrect,
+            testQuestions.length
+          )
+          .then(() => {
             refetchTasks();
-          }
-        });
+            if (content?.subtopicId) {
+              try {
+                sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
+              } catch {
+                // ignore
+              }
+            }
+          });
       } else {
-        setPartResultCount(content.topicId, content.subtopicId, part.id, testCorrect, part.entries.length);
+        setPartResultCount(
+          content.topicId,
+          content.subtopicId,
+          part.id,
+          testCorrect,
+          part.entries.length
+        );
       }
+      setStep2Submitted(true);
     }
-  }, [content?.topicId, content?.subtopicId, part?.id, mode, testIndex, testQuestions.length, token, wordGroupId, testCorrect]);
+  }, [
+    content?.topicId,
+    content?.subtopicId,
+    part?.id,
+    mode,
+    testIndex,
+    testQuestions.length,
+    token,
+    wordGroupId,
+    testCorrect,
+    step2Submitted,
+    stepsStore,
+  ]);
 
   useEffect(() => {
     if (!content?.topicId || !content?.subtopicId || !part?.id) return;
-    if (mode === 'pairs' && pairGroupIndex >= pairGroups.length && pairGroups.length > 0) {
+    if (
+      mode === 'pairs' &&
+      !step3Submitted &&
+      pairGroupIndex >= pairGroups.length &&
+      pairGroups.length > 0
+    ) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'pairs', 'completed');
-      const points = part.entries?.length ?? 0;
-      setPointsEarnedMessage(points);
-      if (token && wordGroupId != null && points > 0) {
-        postVocabularyMatchFinish(token, wordGroupId, points).then((result) => {
+      const correctPairs = pairGroups.reduce((sum, g) => sum + g.pairs.length, 0);
+      setPointsEarnedMessage(correctPairs);
+      if (token && wordGroupId != null && correctPairs > 0) {
+        postVocabularyMatchFinish(token, wordGroupId, correctPairs).then((result) => {
           if (result) {
             setPointsEarnedMessage(result.points_awarded);
             refetchTasks();
           }
         });
       }
+      setStep3Submitted(true);
     }
-  }, [content?.topicId, content?.subtopicId, part?.id, mode, pairGroupIndex, pairGroups.length, part?.entries?.length, token, wordGroupId]);
+  }, [
+    content?.topicId,
+    content?.subtopicId,
+    part?.id,
+    mode,
+    pairGroupIndex,
+    pairGroups.length,
+    part?.entries?.length,
+    token,
+    wordGroupId,
+    step3Submitted,
+  ]);
 
   if (!content || !part) {
     return (
@@ -233,6 +362,105 @@ export default function VocabularyPartPage() {
             Orqaga
           </button>
         </div>
+      </div>
+    );
+  }
+
+  const vocabAccessDenied =
+    Boolean(token) &&
+    accessLoaded &&
+    access != null &&
+    !canAccessVocabularySubtopicRoute(access, content.topicId, content.subtopicId);
+
+  if (vocabAccessDenied) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
+            <Lock className="h-7 w-7 text-amber-600" />
+          </div>
+          <p className="font-semibold text-slate-900">Bu mavzu sizning tarifingizda ochilmagan</p>
+          <p className="mt-2 text-sm text-slate-600">
+            Barcha bo&apos;limlarni ochish uchun tarifni tanlang.
+          </p>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => navigate('/vocabulary')}
+              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Lug&apos;atga qaytish
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowVocabPaywall(true)}
+              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            >
+              Tarifni ochish
+            </button>
+          </div>
+        </div>
+        {showVocabPaywall && hasPendingPayment && (
+          <PendingPaymentModal onClose={() => setShowVocabPaywall(false)} />
+        )}
+        {showVocabPaywall && !hasPendingPayment && (
+          <PaywallModal
+            onClose={() => setShowVocabPaywall(false)}
+            title="Bu mavzu faqat obuna bo'lganlar uchun"
+            description="Barcha so'zlar va mavzularga kirish uchun tarifni sotib oling."
+            buttonText="Barcha mavzularni ochish"
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Hard guard: prevent direct navigation to Test/Match without completing required steps.
+  const safeStep1Completed =
+    (effectiveStepsState?.step1.known ?? 0) + (effectiveStepsState?.step1.unknown ?? 0) > 0;
+
+  if (mode === 'test' && (!effectiveStepsState || !safeStep1Completed)) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <main className="mx-auto max-w-[720px] px-4 py-8">
+          <div className="rounded-[20px] border bg-white p-12 text-center shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl" style={{ backgroundColor: '#F1F5F9' }}>
+              <Lock className="h-7 w-7" style={{ color: '#94A3B8' }} />
+            </div>
+            <p className="mt-4 text-xl font-semibold" style={{ color: '#0F172A' }}>2-bosqich (Test) qulflangan</p>
+            <p className="mt-2 text-sm" style={{ color: '#64748B' }}>Testni boshlash uchun avval 1-bosqichni tugatishingiz kerak.</p>
+            <button
+              type="button"
+              onClick={() => navigate(`${partUrl}/cards`)}
+              className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
+            >
+              Boshlash
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (mode === 'pairs' && (!effectiveStepsState || !effectiveStepsState.step3.unlocked)) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <main className="mx-auto max-w-[720px] px-4 py-8">
+          <div className="rounded-[20px] border bg-white p-12 text-center shadow-sm" style={{ borderColor: '#E2E8F0' }}>
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl" style={{ backgroundColor: '#FEF2F2' }}>
+              <Lock className="h-7 w-7" style={{ color: '#EF4444' }} />
+            </div>
+            <p className="mt-4 text-xl font-semibold" style={{ color: '#0F172A' }}>3-bosqich (Juftini topish) qulflangan</p>
+            <p className="mt-2 text-sm" style={{ color: '#64748B' }}>Keyingi bosqich ochilishi uchun kamida 80% to‘g‘ri javob kerak.</p>
+            <button
+              type="button"
+              onClick={() => navigate(`${partUrl}/test`)}
+              className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
+            >
+              Qayta urinish
+            </button>
+          </div>
+        </main>
       </div>
     );
   }
@@ -310,106 +538,137 @@ export default function VocabularyPartPage() {
           ← Orqaga
         </button>
 
-        {pointsEarnedMessage != null && (
-          <div
-            className="mb-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-center"
-            role="alert"
-          >
-            <p className="font-semibold text-emerald-800">
-              Siz {pointsEarnedMessage} ball oldingiz! Molodets!
-            </p>
-            <button
-              type="button"
-              onClick={() => setPointsEarnedMessage(null)}
-              className="mt-1 text-sm font-medium text-emerald-600 underline hover:no-underline"
-            >
-              Yopish
-            </button>
-          </div>
-        )}
-
         {!isExerciseScreen && (() => {
           if (!content || !part) return null;
           const total = part.entries?.length ?? 0;
           const learnedWords = tasksStatus?.learned_words ?? getPartResultCount(content.topicId, content.subtopicId, part.id);
           const totalWords = tasksStatus?.total_words ?? total;
-          const stages: { mode: Mode; title: string; icon: typeof Layers }[] = [
-            { mode: 'cards', title: "Tanishish (kartochkalar)", icon: Layers },
-            { mode: 'test', title: 'Test', icon: ClipboardList },
-            { mode: 'pairs', title: "Juftini topish", icon: Puzzle },
-          ];
-          const stageStatus = (m: Mode): StageStatus => {
-            if (tasksStatus) {
-              if (m === 'cards') return tasksStatus.flashcards_status === 'completed' ? 'completed' : getStageStatus(content.topicId, content.subtopicId, part.id, 'cards') || 'not_started';
-              if (m === 'test') {
-                if (tasksStatus.test_status === 'locked') return 'not_started';
-                return tasksStatus.test_status === 'completed' ? 'completed' : 'in_progress';
-              }
-              if (m === 'pairs') {
-                if (tasksStatus.match_status === 'locked') return 'not_started';
-                return tasksStatus.match_status === 'completed' ? 'completed' : 'in_progress';
-              }
-            }
-            if (m === 'cards') return getStageStatus(content.topicId, content.subtopicId, part.id, 'cards');
-            return getStageStatus(content.topicId, content.subtopicId, part.id, m);
-          };
-          // Этап 2 открывается после прохождения этапа 1; этап 3 — после этапа 2 с результатом ≥80%.
-          const isLocked = (m: Mode): boolean => {
-            if (m === 'cards') return false;
-            if (!tasksStatus) return true;
-            if (m === 'test') return tasksStatus.test_status === 'locked';
-            if (m === 'pairs') return !tasksStatus.match_unlocked;
-            return false;
-          };
-          const statusLabel = (s: StageStatus) => (s === 'completed' ? "Tugallangan" : s === 'in_progress' ? "Jarayonda" : "Boshlanmagan");
+          const step1Completed = safeStep1Completed;
+          const step2Completed = effectiveStepsState?.step2.completed ?? false;
+          const step2Passed = effectiveStepsState?.step2.passed ?? false;
+          const step3Unlocked = effectiveStepsState?.step3.unlocked ?? false;
+
+          const step3Completed = tasksStatus?.match_status === 'completed';
+
+          const hint80 = 'Keyingi bosqich ochilishi uchun kamida 80% to‘g‘ri javob kerak';
+          const step2Correct = effectiveStepsState?.step2.correct ?? 0;
+          const step2Incorrect = effectiveStepsState?.step2.incorrect ?? 0;
+          const step2Total = step2Correct + step2Incorrect;
+          const natijaCorrect = step2Completed ? step2Correct : 0;
+          const natijaTotal = step2Total > 0 ? step2Total : totalWords;
 
           return (
             <>
               <p className="mb-4 text-sm text-slate-600">
-                Natija: <span className="font-semibold text-slate-900">{learnedWords} / {totalWords}</span> so&apos;z
+                Natija: <span className="font-semibold text-slate-900">{natijaCorrect} / {natijaTotal}</span> so&apos;z
               </p>
               <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm">
                 <p className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">
                   Bosqichlar
                 </p>
                 <div className="space-y-3">
-                  {stages.map((stage, idx) => {
-                    const status = stageStatus(stage.mode);
-                    const locked = isLocked(stage.mode);
-                    const Icon = stage.icon;
-                    return (
-                      <button
-                        key={stage.mode}
-                        type="button"
-                        disabled={locked}
-                        onClick={() => !locked && navigate(`${partUrl}/${stage.mode}`)}
-                        className={`group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-all duration-200 ${
-                          locked
-                            ? 'cursor-not-allowed border-slate-200 bg-slate-200/60 shadow-none'
-                            : 'border-slate-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-indigo-200/80 hover:shadow-md'
-                        }`}
-                      >
-                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform ${
-                          locked ? 'bg-slate-300/70 text-slate-500' : 'bg-indigo-50 text-indigo-600 group-hover:scale-105'
-                        }`}>
-                          <Icon className="h-5 w-5" strokeWidth={1.8} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium" style={{ color: locked ? '#94A3B8' : '#64748B' }}>{idx + 1}-bosqich</p>
-                          <p className="mt-0.5 font-semibold" style={{ color: locked ? '#94A3B8' : '#0F172A' }}>{stage.title}</p>
-                          <div className="mt-1.5 flex items-center gap-2 text-sm" style={{ color: locked ? '#94A3B8' : '#64748B' }}>
-                            <StageStatusIcon status={locked ? 'not_started' : status} />
-                            <span>{locked ? "Qulflangan" : statusLabel(status)}</span>
+                  {/* 1-bosqich */}
+                  <StepCard
+                    title="1-bosqich: Tanishish (kartochkalar)"
+                    status={step1Completed ? 'completed' : 'available'}
+                    icon={<Layers className="h-5 w-5" strokeWidth={1.8} />}
+                    disabled={false}
+                    actionLabel={step1Completed ? 'Davom etish' : 'Boshlash'}
+                    onClick={() => navigate(`${partUrl}/cards`)}
+                    result={
+                      step1Completed ? (
+                        <div className="mt-2 flex flex-col gap-2">
+                          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold" style={{ color: '#166534' }}>
+                            <span>🟢</span>
+                            Biladi: {effectiveStepsState?.step1.known ?? 0}
+                          </div>
+                          <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-semibold" style={{ color: '#B91C1C' }}>
+                            <span>🔴</span>
+                            Bilmaydi: {effectiveStepsState?.step1.unknown ?? 0}
                           </div>
                         </div>
-                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                          locked ? 'text-slate-400' : 'text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600'
-                        }`}>
-                          <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                      ) : null
+                    }
+                  />
+
+                  {/* 2-bosqich */}
+                  <StepCard
+                    title="2-bosqich: Test"
+                    status={!step1Completed ? 'locked' : step2Completed ? (step2Passed ? 'completed' : 'failed') : 'available'}
+                    icon={<ClipboardList className="h-5 w-5" strokeWidth={1.8} />}
+                    disabled={!step1Completed}
+                    actionLabel={
+                      !step1Completed
+                        ? 'Qulflangan'
+                        : step2Completed
+                          ? step2Passed
+                            ? 'Davom etish'
+                            : 'Qayta urinish'
+                          : 'Boshlash'
+                    }
+                    onClick={() => {
+                      if (!step1Completed) return;
+                      // Requirement: pressing "Davom etish" in Step 2 must open Step 2 screen.
+                      navigate(`${partUrl}/test`);
+                    }}
+                    hint={(!step1Completed || (step2Completed && !step2Passed)) ? hint80 : undefined}
+                    result={
+                      step2Completed ? (
+                        <div className="mt-2 flex flex-col gap-2">
+                          <div
+                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold"
+                            style={{
+                              borderColor: '#BBF7D0',
+                              backgroundColor: '#F0FDF4',
+                              color: '#166534',
+                            }}
+                          >
+                            <span>🟢</span>
+                            To‘g‘ri: {effectiveStepsState?.step2.correct ?? 0}
+                          </div>
+                          <div
+                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold"
+                            style={{
+                              borderColor: '#FECACA',
+                              backgroundColor: '#FEF2F2',
+                              color: '#B91C1C',
+                            }}
+                          >
+                            <span>🔴</span>
+                            Noto‘g‘ri: {effectiveStepsState?.step2.incorrect ?? 0}
+                          </div>
+                          <div
+                            className="rounded-full border px-3 py-1 text-sm font-semibold"
+                            style={{
+                              borderColor: step2Passed ? '#BBF7D0' : '#FECACA',
+                              backgroundColor: step2Passed ? '#F0FDF4' : '#FEF2F2',
+                              color: step2Passed ? '#166534' : '#B91C1C',
+                            }}
+                          >
+                            Foiz: {Math.round(effectiveStepsState?.step2.percentage ?? 0)}%
+                          </div>
                         </div>
-                      </button>
-                    );
-                  })}
+                      ) : null
+                    }
+                  />
+
+                  {/* 3-bosqich */}
+                  <StepCard
+                    title="3-bosqich: Juftini topish"
+                    status={!step3Unlocked ? 'locked' : step3Completed ? 'completed' : 'available'}
+                    icon={<Puzzle className="h-5 w-5" strokeWidth={1.8} />}
+                    disabled={!step3Unlocked}
+                    actionLabel={
+                      !step3Unlocked ? 'Qulflangan' : step3Completed ? 'Davom etish' : 'Boshlash'
+                    }
+                    hint={!step3Unlocked ? hint80 : undefined}
+                    onClick={() => {
+                      if (!step3Unlocked) return;
+                      // Always open match screen for Step 3.
+                      navigate(`${partUrl}/pairs`);
+                    }}
+                    result={step3Completed ? <div className="mt-2 text-sm font-semibold" style={{ color: '#0F172A' }}>Tugallangan</div> : null}
+                  />
                 </div>
               </div>
             </>
@@ -515,17 +774,30 @@ export default function VocabularyPartPage() {
             ) : (
               <div className="rounded-[20px] border bg-white p-12 text-center shadow-sm" style={{ borderColor: '#E2E8F0' }}>
                 <p className="text-xl font-semibold" style={{ color: '#0F172A' }}>
-                  Kartochkalar tugadi
+                  Kartochkalar tugallandi
                 </p>
-                <p className="mt-2 text-sm" style={{ color: '#64748B' }}>
-                  Bilaman: {knownCount} | Bilmayman: {unknownCount}
-                </p>
+                <div className="mt-4 flex flex-col gap-3 items-center">
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
+                    style={{ borderColor: '#BBF7D0', backgroundColor: '#F0FDF4', color: '#166534' }}
+                  >
+                    <span>🟢</span>
+                    Biladi: {stepsState?.step1.known ?? knownCount}
+                  </div>
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
+                    style={{ borderColor: '#FECACA', backgroundColor: '#FEF2F2', color: '#B91C1C' }}
+                  >
+                    <span>🔴</span>
+                    Bilmaydi: {stepsState?.step1.unknown ?? unknownCount}
+                  </div>
+                </div>
                 <button
                   type="button"
-                  onClick={() => navigate(partUrl)}
+                  onClick={() => navigate(`${partUrl}/test`)}
                   className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
                 >
-                  Tugatish
+                  Davom etish
                 </button>
               </div>
             )}
@@ -604,24 +876,107 @@ export default function VocabularyPartPage() {
                 className="rounded-[20px] border bg-white p-12 text-center shadow-sm"
                 style={{ borderColor: '#E2E8F0' }}
               >
-                <p className="text-xl font-semibold" style={{ color: '#0F172A' }}>
-                  Test tugadi
-                </p>
-                <p className="mt-2 text-sm" style={{ color: '#64748B' }}>
-                  To&apos;g&apos;ri: {testCorrect} / {testQuestions.length}
-                </p>
-                {token && (
-                  <p className="mt-3 text-base font-semibold text-emerald-600">
-                    Siz {testCorrect} ball oldingiz! Molodets!
-                  </p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => navigate(partUrl)}
-                  className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
-                >
-                  Tugatish
-                </button>
+                {(() => {
+                  // Important: while the backend result is still loading,
+                  // `effectiveStepsState` may already exist but contain stale/zero values.
+                  // In that case prefer local counters (they are final once the test is finished).
+                  const savedStep2Completed = effectiveStepsState?.step2.completed ?? false;
+                  const savedCorrect = savedStep2Completed ? effectiveStepsState?.step2.correct : undefined;
+                  const savedIncorrect = savedStep2Completed ? effectiveStepsState?.step2.incorrect : undefined;
+                  const savedPercentage = savedStep2Completed ? effectiveStepsState?.step2.percentage : undefined;
+                  const savedPassed = savedStep2Completed ? effectiveStepsState?.step2.passed : undefined;
+
+                  const localCorrect = testCorrect;
+                  const localIncorrect = Math.max(0, testQuestions.length - testCorrect);
+                  const correct = savedCorrect ?? localCorrect;
+                  const incorrect = savedIncorrect ?? localIncorrect;
+                  const total = correct + incorrect;
+
+                  const percentage =
+                    savedPercentage ??
+                    (total > 0 ? Math.round((correct / total) * 100) : 0);
+                  const passed = savedPassed ?? percentage >= 80;
+
+                  return (
+                    <>
+                      <p className="text-xl font-semibold" style={{ color: '#0F172A' }}>
+                        Test tugallandi
+                      </p>
+
+                      <div
+                        className="mt-4 flex flex-col gap-3 items-center"
+                        style={{ width: '100%' }}
+                      >
+                        <div
+                          className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
+                          style={{
+                            borderColor: '#BBF7D0',
+                            backgroundColor: '#F0FDF4',
+                            color: '#166534',
+                          }}
+                        >
+                          <span>🟢</span>
+                          To‘g‘ri: {correct}
+                        </div>
+
+                        <div
+                          className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
+                          style={{
+                            borderColor: '#FECACA',
+                            backgroundColor: '#FEF2F2',
+                            color: '#B91C1C',
+                          }}
+                        >
+                          <span>🔴</span>
+                          Noto‘g‘ri: {incorrect}
+                        </div>
+
+                        <div
+                          className="rounded-xl border px-4 py-2 text-sm font-semibold"
+                          style={{
+                            borderColor: passed ? '#BBF7D0' : '#FECACA',
+                            backgroundColor: passed ? '#F0FDF4' : '#FEF2F2',
+                            color: passed ? '#166534' : '#B91C1C',
+                          }}
+                        >
+                          Natija: {percentage}% {passed ? '— O‘tdi' : '— O‘tmadi'}
+                        </div>
+
+                      {pointsEarnedMessage != null && (
+                        <p className="mt-2 text-base font-semibold" style={{ color: '#0F172A' }}>
+                          Siz {pointsEarnedMessage} ball oldingiz! Barakalla!
+                        </p>
+                      )}
+
+                        {!passed && (
+                          <div className="text-xs font-medium" style={{ color: '#64748B' }}>
+                            Keyingi bosqich ochilishi uchun kamida 80% to‘g‘ri javob kerak
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (passed) {
+                            navigate(`${partUrl}/pairs`);
+                            return;
+                          }
+
+                          // Retry: reset local test state
+                          setStep2Submitted(false);
+                          setTestIndex(0);
+                          setTestSelected(null);
+                          setTestCorrect(0);
+                        }}
+                        className="mt-6 w-full rounded-xl px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
+                        style={{ backgroundColor: passed ? '#6366F1' : '#EF4444' }}
+                      >
+                        {passed ? 'Davom etish' : 'Qayta urinish'}
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -703,7 +1058,7 @@ export default function VocabularyPartPage() {
                 {isGroupDone && (
                   <div className="mt-8">
                     <p className="text-center text-xl font-semibold" style={{ color: '#0F172A' }}>
-                      Ajoyib! 🎉
+                      Ajoyib!
                     </p>
                     <button
                       type="button"
@@ -722,13 +1077,20 @@ export default function VocabularyPartPage() {
                 style={{ borderColor: '#E2E8F0' }}
               >
                 <p className="text-xl font-semibold" style={{ color: '#0F172A' }}>
-                  Juftliklar tugadi
+                  Juftliklar tugallandi
                 </p>
-                {token && (part?.entries?.length ?? 0) > 0 && (
+                {pointsEarnedMessage != null && (
                   <p className="mt-3 text-base font-semibold text-emerald-600">
-                    Siz {part.entries.length} ball oldingiz! Molodets!
+                    Siz {pointsEarnedMessage} ball oldingiz! Barakalla!
                   </p>
                 )}
+                <button
+                  type="button"
+                  onClick={() => navigate(partUrl)}
+                  className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
+                >
+                  Davom etish
+                </button>
               </div>
             )}
           </div>

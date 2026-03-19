@@ -4,6 +4,11 @@ import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getSubtopicContent } from '../data/vocabularyContent';
 import { getPartLearnedCount, setLastPartId } from '../utils/vocabProgress';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
+import PaywallModal from '../components/PaywallModal';
+import PendingPaymentModal from '../components/PendingPaymentModal';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { canAccessVocabularySubtopicRoute } from '../utils/vocabularyAccess';
 import {
   fetchVocabularyWordGroups,
   getCachedWordGroupsProgress,
@@ -17,6 +22,7 @@ import {
   Zap,
   Compass,
   BookOpen,
+  Lock,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -38,6 +44,9 @@ export default function VocabularySubtopicPage() {
   const navigate = useNavigate();
   const { topicId, subtopicId } = useParams();
   const { token } = useAuth();
+  const { access, accessLoaded } = useAccess();
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { hasPendingPayment } = usePaymentStatus();
   const topic = VOCABULARY_TOPICS.find((item) => item.id === topicId);
   const subtopic = topic?.subtopics.find((item) => item.id === subtopicId);
   const content = getSubtopicContent(topicId, subtopicId);
@@ -77,6 +86,55 @@ export default function VocabularySubtopicPage() {
             Orqaga
           </button>
         </div>
+      </div>
+    );
+  }
+
+  const accessDenied =
+    Boolean(token) &&
+    accessLoaded &&
+    access != null &&
+    !canAccessVocabularySubtopicRoute(access, topicId, subtopicId);
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen p-6" style={{ backgroundColor: '#F8FAFC' }}>
+        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
+            <Lock className="h-7 w-7 text-amber-600" />
+          </div>
+          <p className="font-semibold text-slate-900">Bu mavzu sizning tarifingizda ochilmagan</p>
+          <p className="mt-2 text-sm text-slate-600">
+            Barcha bo&apos;limlarni ochish uchun tarifni tanlang.
+          </p>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => navigate('/vocabulary')}
+              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Lug&apos;atga qaytish
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowPaywall(true)}
+              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            >
+              Tarifni ochish
+            </button>
+          </div>
+        </div>
+        {showPaywall && hasPendingPayment && (
+          <PendingPaymentModal onClose={() => setShowPaywall(false)} />
+        )}
+        {showPaywall && !hasPendingPayment && (
+          <PaywallModal
+            onClose={() => setShowPaywall(false)}
+            title="Bu mavzu faqat obuna bo'lganlar uchun"
+            description="Barcha so'zlar va mavzularga kirish uchun tarifni sotib oling."
+            buttonText="Barcha mavzularni ochish"
+          />
+        )}
       </div>
     );
   }

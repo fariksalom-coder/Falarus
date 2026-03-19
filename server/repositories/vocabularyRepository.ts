@@ -192,7 +192,13 @@ export async function getOrCreateUserWordGroupProgress(
       learned_words: 0,
       total_words: totalWords,
       flashcards_completed: false,
+      flashcards_known: 0,
+      flashcards_unknown: 0,
       test_best_correct: 0,
+      test_last_correct: 0,
+      test_last_incorrect: 0,
+      test_last_percentage: 0,
+      test_passed: false,
       match_completed: false,
       progress_percent: progressPercent,
     })
@@ -210,7 +216,13 @@ export async function upsertUserWordGroupProgress(
     learned_words?: number;
     total_words?: number;
     flashcards_completed?: boolean;
+    flashcards_known?: number;
+    flashcards_unknown?: number;
     test_best_correct?: number;
+    test_last_correct?: number;
+    test_last_incorrect?: number;
+    test_last_percentage?: number;
+    test_passed?: boolean;
     match_completed?: boolean;
     progress_percent?: number;
   }
@@ -311,4 +323,85 @@ export async function upsertUserTopicProgress(
     { onConflict: 'user_id,topic_id' }
   );
   if (error) throw error;
+}
+
+function toDateStringLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export async function insertUserVocabularyStep2Attempt(
+  supabase: Supabase,
+  userId: number,
+  wordGroupId: number,
+  activityDate: string,
+  correctAnswers: number,
+  incorrectAnswers: number,
+  totalQuestions: number,
+  percentage: number
+): Promise<void> {
+  const { error } = await supabase.from('user_vocabulary_step2_attempts').insert({
+    user_id: userId,
+    word_group_id: wordGroupId,
+    activity_date: activityDate,
+    correct_answers: correctAnswers,
+    incorrect_answers: incorrectAnswers,
+    total_questions: totalQuestions,
+    percentage,
+  });
+  if (error) throw error;
+}
+
+export async function getUserVocabularyStep2DailyStats(
+  supabase: Supabase,
+  userId: number
+): Promise<{ todayWords: number; weekWords: number }> {
+  const today = new Date();
+  const todayStr = toDateStringLocal(today);
+  const start = new Date(today);
+  start.setDate(start.getDate() - 6);
+  const startStr = toDateStringLocal(start);
+
+  const { data, error } = await supabase
+    .from('user_vocabulary_step2_attempts')
+    .select('activity_date, word_group_id, correct_answers')
+    .eq('user_id', userId)
+    .gte('activity_date', startStr)
+    .lte('activity_date', todayStr);
+
+  if (error) throw error;
+
+  // For exact per-day results we treat "retries today" as MAX per (day, word_group).
+  const maxByDayAndWordGroup = new Map<string, number>();
+  for (const row of data ?? []) {
+    const day = (row as any).activity_date as string;
+    const wg = String((row as any).word_group_id);
+    const correct = Number((row as any).correct_answers ?? 0);
+    const key = `${day}:${wg}`;
+    const prev = maxByDayAndWordGroup.get(key) ?? 0;
+    maxByDayAndWordGroup.set(key, Math.max(prev, correct));
+  }
+
+  // Sum the daily per-word-group max correct.
+  const sumByDay = new Map<string, number>();
+  for (const [key, correct] of maxByDayAndWordGroup.entries()) {
+    const day = key.split(':')[0] ?? '';
+    if (!day) continue;
+    sumByDay.set(day, (sumByDay.get(day) ?? 0) + correct);
+  }
+
+  let weekWords = 0;
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const k = toDateStringLocal(d);
+    weekWords += sumByDay.get(k) ?? 0;
+  }
+
+  return {
+    todayWords: sumByDay.get(todayStr) ?? 0,
+    weekWords,
+  };
 }

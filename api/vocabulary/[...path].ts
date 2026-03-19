@@ -7,6 +7,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
 import { requireAuth } from '../_lib/auth.js';
+import { resolveFreeVocabularyIds } from '../../server/lib/freeVocabularyIds.js';
 
 // --- shared helpers ---
 async function getTopicsList() {
@@ -96,25 +97,8 @@ async function hasActiveAccess(userId: number): Promise<boolean> {
 
 async function getAccessInfo(userId: number) {
   const subscription_active = await hasActiveAccess(userId);
-  let vocabulary_free_topic_id: string | null = null;
-  let vocabulary_free_subtopic_id: string | null = null;
-  const { data: firstTopic } = await supabase
-    .from('vocabulary_topics')
-    .select('id')
-    .order('id')
-    .limit(1)
-    .maybeSingle();
-  if (firstTopic?.id) {
-    vocabulary_free_topic_id = firstTopic.id;
-    const { data: firstSub } = await supabase
-      .from('vocabulary_subtopics')
-      .select('id')
-      .eq('topic_id', firstTopic.id)
-      .order('id')
-      .limit(1)
-      .maybeSingle();
-    if (firstSub?.id) vocabulary_free_subtopic_id = firstSub.id;
-  }
+  const { vocabulary_free_topic_id, vocabulary_free_subtopic_id } =
+    await resolveFreeVocabularyIds(supabase);
   return { subscription_active, vocabulary_free_topic_id, vocabulary_free_subtopic_id };
 }
 

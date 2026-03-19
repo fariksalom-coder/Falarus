@@ -41,6 +41,24 @@ export type VocabularyTasksStatus = {
   match_unlocked: boolean;
 };
 
+export type WordGroupStepsState = {
+  step1: {
+    completed: boolean;
+    known: number;
+    unknown: number;
+  };
+  step2: {
+    completed: boolean;
+    correct: number;
+    incorrect: number;
+    percentage: number;
+    passed: boolean;
+  };
+  step3: {
+    unlocked: boolean;
+  };
+};
+
 export type TestFinishResult = {
   learned_words: number;
   percentage: number;
@@ -100,6 +118,18 @@ export async function fetchVocabularyTasksStatus(
   return res.json();
 }
 
+export async function fetchWordGroupStepsState(
+  token: string | null,
+  wordGroupId: number
+): Promise<WordGroupStepsState | null> {
+  if (!token) return null;
+  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${wordGroupId}/steps`), {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export async function postFlashcardsComplete(
   token: string | null,
   wordGroupId: number
@@ -136,13 +166,46 @@ export async function postVocabularyTestFinish(
 export async function postVocabularyMatchFinish(
   token: string | null,
   wordGroupId: number,
-  points: number
+  correctPairs: number
 ): Promise<{ success: boolean; points_awarded: number } | null> {
   if (!token) return null;
   const res = await fetch(apiUrl('/api/vocabulary/match/finish'), {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ word_group_id: wordGroupId, points }),
+    body: JSON.stringify({ word_group_id: wordGroupId, correct_pairs: correctPairs }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function postStep1Result(
+  token: string | null,
+  wordGroupId: number,
+  known: number,
+  unknown: number
+): Promise<WordGroupStepsState | null> {
+  if (!token) return null;
+  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${wordGroupId}/steps/1`), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ known, unknown }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function postStep2Result(
+  token: string | null,
+  wordGroupId: number,
+  correct: number,
+  incorrect: number,
+  totalQuestions?: number
+): Promise<WordGroupStepsState | null> {
+  if (!token) return null;
+  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${wordGroupId}/steps/2`), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ correct, incorrect, totalQuestions }),
   });
   if (!res.ok) return null;
   return res.json();

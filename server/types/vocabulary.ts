@@ -35,7 +35,13 @@ export type UserWordGroupProgressRow = {
   learned_words: number;
   total_words: number;
   flashcards_completed: boolean;
+  flashcards_known: number;
+  flashcards_unknown: number;
   test_best_correct: number;
+  test_last_correct: number;
+  test_last_incorrect: number;
+  test_last_percentage: number;
+  test_passed: boolean;
   match_completed: boolean;
   progress_percent: number;
   updated_at: string;

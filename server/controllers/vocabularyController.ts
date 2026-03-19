@@ -253,17 +253,115 @@ export function postMatchFinish(supabase: Supabase) {
       const userId = getUserId(req);
       if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
       const wordGroupId = Number(req.body?.word_group_id ?? req.body?.wordGroupId);
-      const pointsAwarded = Math.max(0, Number(req.body?.points ?? req.body?.points_awarded ?? 0));
+      const correctPairs = Math.max(0, Math.floor(Number(req.body?.correct_pairs ?? req.body?.correctPairs ?? 0)));
       if (Number.isNaN(wordGroupId)) {
         return res.status(400).json({ error: 'word_group_id required' });
       }
-      const result = await matchPairsService.finishMatch(supabase, userId, wordGroupId, pointsAwarded);
+      const result = await matchPairsService.finishMatch(supabase, userId, wordGroupId, correctPairs);
       await redis.invalidateUserVocabularyCache(userId);
       await streakService.recordActivity(supabase, userId);
       res.json(result);
     } catch (e) {
       console.error('[vocabulary/match/finish]', e);
       res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik yuz berdi' });
+    }
+  };
+}
+
+export function getWordGroupStepsState(supabase: Supabase) {
+  return async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+      const wordGroupId = Number(req.params.wordGroupId);
+      if (Number.isNaN(wordGroupId)) {
+        return res.status(400).json({ error: 'wordGroupId required' });
+      }
+      const state = await vocabularyProgressService.getWordGroupStepsState(
+        supabase,
+        userId,
+        wordGroupId
+      );
+      res.json(state);
+    } catch (e) {
+      console.error('[vocabulary/steps/state]', e);
+      res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik yuz berdi' });
+    }
+  };
+}
+
+export function postStep1Result(supabase: Supabase) {
+  return async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+      const wordGroupId = Number(req.params.wordGroupId);
+      const known = Number(req.body?.known ?? 0);
+      const unknown = Number(req.body?.unknown ?? 0);
+      if (Number.isNaN(wordGroupId)) {
+        return res.status(400).json({ error: 'wordGroupId required' });
+      }
+      if (known < 0 || unknown < 0) {
+        return res.status(400).json({ error: 'known and unknown must be >= 0' });
+      }
+      const state = await vocabularyProgressService.saveStep1Result(
+        supabase,
+        userId,
+        wordGroupId,
+        { known, unknown }
+      );
+      await redis.invalidateUserVocabularyCache(userId);
+      await streakService.recordActivity(supabase, userId);
+      res.json(state);
+    } catch (e) {
+      console.error('[vocabulary/steps/1]', e);
+      res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik yuz berdi' });
+    }
+  };
+}
+
+export function postStep2Result(supabase: Supabase) {
+  return async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+      const wordGroupId = Number(req.params.wordGroupId);
+      const correct = Number(req.body?.correct ?? 0);
+      const incorrect = Number(req.body?.incorrect ?? 0);
+      const totalQuestions = req.body?.totalQuestions != null ? Number(req.body.totalQuestions) : undefined;
+      if (Number.isNaN(wordGroupId)) {
+        return res.status(400).json({ error: 'wordGroupId required' });
+      }
+      if (correct < 0 || incorrect < 0) {
+        return res.status(400).json({ error: 'correct and incorrect must be >= 0' });
+      }
+      const state = await vocabularyProgressService.saveStep2Result(
+        supabase,
+        userId,
+        wordGroupId,
+        { correct, incorrect, totalQuestions }
+      );
+      await redis.invalidateUserVocabularyCache(userId);
+      await streakService.recordActivity(supabase, userId);
+      res.json(state);
+    } catch (e) {
+      console.error('[vocabulary/steps/2]', e);
+      res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik yuz berdi' });
+    }
+  };
+}
+
+export function getVocabularyDailyWordStats(supabase: Supabase) {
+  return async (req: Request, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+
+      const stats = await repo.getUserVocabularyStep2DailyStats(supabase, userId);
+      res.json(stats);
+    } catch (e) {
+      console.error('[vocabulary/daily-word-stats]', e);
+      res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
   };
 }

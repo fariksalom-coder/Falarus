@@ -9,10 +9,13 @@ export async function finishMatch(
   supabase: Supabase,
   userId: number,
   wordGroupId: number,
-  pointsAwarded: number
+  correctPairs: number
 ): Promise<{ success: boolean; points_awarded: number }> {
   const group = await repo.getWordGroupById(supabase, wordGroupId);
   if (!group) throw new Error('Word group not found');
+
+  // Security cap: don't allow awarding more points than total pairs/words in the group.
+  const pointsAwarded = Math.min(Math.max(0, Math.floor(correctPairs)), group.total_words);
 
   await repo.getOrCreateUserWordGroupProgress(supabase, userId, wordGroupId, group.total_words);
   await repo.upsertUserWordGroupProgress(supabase, userId, wordGroupId, {

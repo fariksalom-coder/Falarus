@@ -4,6 +4,7 @@ import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getSubtopicWordCount } from '../data/vocabularyContent';
 import { getLearnedCount, setLastSubtopicId } from '../utils/vocabProgress';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 import {
   fetchVocabularySubtopics,
   getCachedSubtopicsProgress,
@@ -13,6 +14,7 @@ import {
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { isVocabularyTopicLockedForUser } from '../utils/vocabularyAccess';
 import {
   ChevronRight,
   ArrowLeft,
@@ -115,6 +117,7 @@ export default function VocabularyTopicPage() {
   const navigate = useNavigate();
   const { topicId } = useParams();
   const { token } = useAuth();
+  const { access, accessLoaded } = useAccess();
   const topic = VOCABULARY_TOPICS.find((item) => item.id === topicId);
   const cachedSubtopics = topicId ? getCachedSubtopicsProgress(topicId) : null;
   const [subtopicsProgress, setSubtopicsProgress] = useState<VocabularySubtopic[]>(() =>
@@ -199,9 +202,15 @@ export default function VocabularyTopicPage() {
           {topic.subtopics.map((subtopic, index) => {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
             const fromApi = subtopicsProgress.find((s) => s.id === subtopic.id);
-            const firstSubtopicId = topic.subtopics[0]?.id;
-            const isFirstSubtopic = firstSubtopicId != null && subtopic.id === firstSubtopicId;
-            const locked = isFirstSubtopic ? false : (fromApi !== undefined ? (fromApi.locked ?? true) : true);
+            const topicBlocked =
+              Boolean(token) &&
+              accessLoaded &&
+              access != null &&
+              isVocabularyTopicLockedForUser(access, topic.id);
+            const locked =
+              !token ||
+              topicBlocked ||
+              (subtopicsProgress.length > 0 ? (fromApi?.locked ?? true) : true);
             const wordCount = getSubtopicWordCount(topic.id, subtopic.id);
             const learned = fromApi?.learned_words ?? getLearnedCount(topic.id, subtopic.id);
             const percent = wordCount > 0 ? Math.round((learned / wordCount) * 100) : 0;

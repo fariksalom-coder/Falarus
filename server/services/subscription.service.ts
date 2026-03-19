@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveFreeVocabularyIds } from '../lib/freeVocabularyIds';
 
 const PLAN_TYPES = ['monthly', 'three_months', 'yearly'] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
@@ -135,25 +136,8 @@ export async function getAccessInfo(
     }
   }
 
-  let vocabulary_free_topic_id: string | null = null;
-  let vocabulary_free_subtopic_id: string | null = null;
-  const { data: firstTopic } = await supabase
-    .from('vocabulary_topics')
-    .select('id')
-    .order('id')
-    .limit(1)
-    .maybeSingle();
-  if (firstTopic?.id) {
-    vocabulary_free_topic_id = String(firstTopic.id);
-    const { data: firstSub } = await supabase
-      .from('vocabulary_subtopics')
-      .select('id')
-      .eq('topic_id', vocabulary_free_topic_id)
-      .order('id')
-      .limit(1)
-      .maybeSingle();
-    if (firstSub?.id) vocabulary_free_subtopic_id = String(firstSub.id);
-  }
+  const { vocabulary_free_topic_id, vocabulary_free_subtopic_id } =
+    await resolveFreeVocabularyIds(supabase);
 
   const access: AccessInfo = {
     lessons_free_limit: LESSONS_FREE_LIMIT,

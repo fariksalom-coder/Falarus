@@ -28,10 +28,6 @@ function formatPlanTimeLeft(planExpiresAt: string | null | undefined): string {
   const now = new Date();
   if (end <= now) return "Muddati tugagan";
   const days = Math.ceil((end.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-  if (days >= 30) {
-    const months = Math.floor(days / 30);
-    return `${months} oy`;
-  }
   return `${days} kun`;
 }
 
