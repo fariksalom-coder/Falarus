@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--disable-warning=DEP0169 tsx server.ts",
+    "dev:prod": "cross-env VITE_API_URL=https://falarus.uz NODE_OPTIONS=--disable-warning=DEP0169 tsx server.ts",
     "build": "vite build",
     "start": "cross-env NODE_OPTIONS=--disable-warning=DEP0169 tsx server.ts",
     "preview": "vite preview",

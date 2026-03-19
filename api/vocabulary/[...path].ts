@@ -240,8 +240,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = requireAuth(req, res);
   if (userId == null) return;
 
-  const path = req.query.path;
-  const segments = Array.isArray(path) ? path : path ? [path] : [];
+  const raw = req.query.path;
+  const segments = Array.isArray(raw)
+    ? raw
+    : typeof raw === 'string'
+      ? raw.split('/').filter(Boolean)
+      : [];
 
   try {
     if (segments.length === 1 && segments[0] === 'topics' && req.method === 'GET') {

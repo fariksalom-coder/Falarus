@@ -12,9 +12,9 @@ View your app in AI Studio: https://ai.studio/apps/949bd97b-2cb7-4a22-88ac-fe7c9
 
 **Prerequisites:**  Node.js
 
-
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Copy [.env.example](.env.example) to `.env` and set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `GEMINI_API_KEY`.
 3. Run the app:
-   `npm run dev`
+   - `npm run dev` — local backend and DB (your test data).
+   - `npm run dev:prod` — local UI, but API = **falarus.uz** (same data as online for the same account).
