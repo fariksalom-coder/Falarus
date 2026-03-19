@@ -13,6 +13,27 @@ import {
   resolveFreeVocabularyIds,
 } from '../../server/lib/freeVocabularyIds.js';
 
+/**
+ * Vercel may pass catch-all as query.path string, string[], or omit it — parse URL as fallback.
+ */
+function getVocabularyPathSegments(req: VercelRequest): string[] {
+  const raw = req.query.path;
+  if (Array.isArray(raw)) {
+    return raw.filter((p): p is string => typeof p === 'string' && p.length > 0);
+  }
+  if (typeof raw === 'string' && raw.length > 0) {
+    return raw.split('/').filter(Boolean);
+  }
+  const url = req.url || (req as { originalUrl?: string }).originalUrl || '';
+  const pathname = typeof url === 'string' ? url.split('?')[0] : '';
+  const parts = pathname.split('/').filter(Boolean);
+  const vIdx = parts.indexOf('vocabulary');
+  if (vIdx >= 0 && vIdx < parts.length - 1) {
+    return parts.slice(vIdx + 1);
+  }
+  return [];
+}
+
 // --- shared helpers ---
 async function getTopicsList() {
   const { data, error } = await supabase
@@ -240,12 +261,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = requireAuth(req, res);
   if (userId == null) return;
 
-  const raw = req.query.path;
-  const segments = Array.isArray(raw)
-    ? raw
-    : typeof raw === 'string'
-      ? raw.split('/').filter(Boolean)
-      : [];
+  const segments = getVocabularyPathSegments(req);
 
   try {
     if (segments.length === 1 && segments[0] === 'topics' && req.method === 'GET') {
