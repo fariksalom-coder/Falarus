@@ -57,3 +57,26 @@ export function canAccessVocabularySubtopicRoute(
   if (access.subscription_active) return true;
   return canFreeUserOpenVocabularySubtopic(access, topicId, subtopicId);
 }
+
+/**
+ * Явная проверка доступа по индексам (первая тема = 0, первая подтема = 0).
+ * Используется для UI: бесплатный пользователь — только topicIndex 0 и subtopicIndex 0 открыты.
+ */
+export function isVocabularyTopicUnlocked(
+  access: AccessInfo | null,
+  topicIndex: number
+): boolean {
+  if (!access) return false;
+  if (access.subscription_active) return true;
+  return topicIndex === 0;
+}
+
+export function isVocabularySubtopicUnlocked(
+  access: AccessInfo | null,
+  topicIndex: number,
+  subtopicIndex: number
+): boolean {
+  if (!access) return false;
+  if (access.subscription_active) return true;
+  return topicIndex === 0 && subtopicIndex === 0;
+}

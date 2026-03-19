@@ -14,7 +14,7 @@ import {
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
-import { isVocabularyTopicLockedForUser } from '../utils/vocabularyAccess';
+import { isVocabularySubtopicUnlocked } from '../utils/vocabularyAccess';
 import {
   ChevronRight,
   ArrowLeft,
@@ -124,24 +124,30 @@ export default function VocabularyTopicPage() {
     cachedSubtopics ?? []
   );
   const [subtopicsLoaded, setSubtopicsLoaded] = useState(!!cachedSubtopics?.length);
+  const [fetchError, setFetchError] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
+
+  const topicIndex = topic != null ? VOCABULARY_TOPICS.findIndex((t) => t.id === topic.id) : -1;
+  const isTopicUnlocked =
+    access != null && (access.subscription_active || topicIndex === 0);
 
   useEffect(() => {
     if (!topicId) {
       setSubtopicsProgress([]);
       setSubtopicsLoaded(true);
+      setFetchError(false);
       return;
     }
     const cached = getCachedSubtopicsProgress(topicId);
     setSubtopicsProgress(cached ?? []);
     setSubtopicsLoaded(!!cached?.length);
+    setFetchError(false);
   }, [topicId]);
 
   useEffect(() => {
-    if (!topicId || !token) {
-      if (!topicId) {
-        setSubtopicsProgress([]);
+    if (!topicId || !token || topicIndex < 0) {
+      if (!topicId || topicIndex < 0) {
         setSubtopicsLoaded(true);
       } else if (!token) {
         setSubtopicsProgress([]);
@@ -149,11 +155,21 @@ export default function VocabularyTopicPage() {
       }
       return;
     }
-    fetchVocabularySubtopics(token, topicId).then((data) => {
-      setSubtopicsProgress(data);
-      setCachedSubtopicsProgress(topicId, data);
-    }).catch(() => {}).finally(() => setSubtopicsLoaded(true));
-  }, [token, topicId]);
+    if (!isTopicUnlocked) {
+      setSubtopicsLoaded(true);
+      setSubtopicsProgress([]);
+      setFetchError(false);
+      return;
+    }
+    setFetchError(false);
+    fetchVocabularySubtopics(token, topicId)
+      .then((data) => {
+        setSubtopicsProgress(data ?? []);
+        if (topicId && Array.isArray(data)) setCachedSubtopicsProgress(topicId, data);
+      })
+      .catch(() => setFetchError(true))
+      .finally(() => setSubtopicsLoaded(true));
+  }, [token, topicId, topicIndex, isTopicUnlocked]);
 
   if (!topic) {
     return (
@@ -166,6 +182,25 @@ export default function VocabularyTopicPage() {
             className="mt-4 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
           >
             Orqaga
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessLoaded && access != null && !isTopicUnlocked) {
+    return (
+      <div className="min-h-screen p-6" style={{ backgroundColor: '#F8FAFC' }}>
+        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <Lock className="mx-auto h-12 w-12 text-amber-500" strokeWidth={2} />
+          <p className="mt-4 font-semibold text-slate-900">Bu bo&apos;lim sizning tarifingizda ochilmagan</p>
+          <p className="mt-2 text-sm text-slate-600">Barcha bo&apos;limlarni ochish uchun tarifni tanlang.</p>
+          <button
+            type="button"
+            onClick={() => navigate('/vocabulary')}
+            className="mt-6 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+          >
+            Lug&apos;atga qaytish
           </button>
         </div>
       </div>
@@ -197,25 +232,36 @@ export default function VocabularyTopicPage() {
             <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" aria-hidden />
           </div>
         )}
-        {(!token || subtopicsLoaded) && (
+        {fetchError && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+            <p className="font-medium text-slate-700">Kontent vaqtincha mavjud emas</p>
+            <p className="mt-2 text-sm text-slate-500">Keyinroq urunib ko&apos;ring yoki lug&apos;atga qayting.</p>
+            <button
+              type="button"
+              onClick={() => navigate('/vocabulary')}
+              className="mt-4 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Lug&apos;atga qaytish
+            </button>
+          </div>
+        )}
+        {!fetchError && (!token || subtopicsLoaded) && (
         <div className="space-y-4">
-          {topic.subtopics.map((subtopic, index) => {
+          {topic.subtopics.map((subtopic, subtopicIndex) => {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
             const fromApi = subtopicsProgress.find((s) => s.id === subtopic.id);
-            const topicBlocked =
-              Boolean(token) &&
-              accessLoaded &&
+            const isFreeUser = access != null && !access.subscription_active;
+            const isFirstTopic = topicIndex === 0;
+            const isFirstSubtopic = subtopicIndex === 0;
+            const isUnlocked =
               access != null &&
-              isVocabularyTopicLockedForUser(access, topic.id);
-            const locked =
-              !token ||
-              topicBlocked ||
-              (subtopicsProgress.length > 0 ? (fromApi?.locked ?? true) : true);
+              (access.subscription_active || isVocabularySubtopicUnlocked(access, topicIndex, subtopicIndex));
+            const locked = !isUnlocked;
             const wordCount = getSubtopicWordCount(topic.id, subtopic.id);
             const learned = fromApi?.learned_words ?? getLearnedCount(topic.id, subtopic.id);
             const percent = wordCount > 0 ? Math.round((learned / wordCount) * 100) : 0;
-            const accentBg = ACCENT_BG[index % ACCENT_BG.length];
-            const accentIcon = ACCENT_ICON[index % ACCENT_ICON.length];
+            const accentBg = ACCENT_BG[subtopicIndex % ACCENT_BG.length];
+            const accentIcon = ACCENT_ICON[subtopicIndex % ACCENT_ICON.length];
 
             return (
               <button

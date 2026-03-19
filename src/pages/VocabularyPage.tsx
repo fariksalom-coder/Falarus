@@ -13,7 +13,6 @@ import {
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
-import { isVocabularyTopicLockedForUser } from '../utils/vocabularyAccess';
 import {
   ChevronRight,
   Lock,
@@ -92,8 +91,6 @@ export default function VocabularyPage() {
   }, [token]);
 
   /** One source of truth: /api/user/access (no extra “always unlock first list item” — that doubled with wrong server free_topic_id). */
-  const lockedByTopic = (topicId: string) => isVocabularyTopicLockedForUser(access, topicId);
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
       <main className="mx-auto max-w-2xl px-4 py-8">
@@ -108,15 +105,18 @@ export default function VocabularyPage() {
         )}
         {accessLoaded && (
         <div className="space-y-4">
-          {VOCABULARY_TOPICS.map((topic, index) => {
+          {VOCABULARY_TOPICS.map((topic, topicIndex) => {
             const Icon = TOPIC_ICONS[topic.id] ?? Sparkles;
             const fromApi = topicsProgress.find((t) => t.id === topic.id);
             const wordCount = getTopicWordCount(topic.id);
             const learnedWords = fromApi?.learned_words ?? 0;
             const progressPercent = wordCount > 0 ? Math.round((learnedWords / wordCount) * 100) : 0;
-            const accentBg = ACCENT_BG[index % ACCENT_BG.length];
-            const accentIcon = ACCENT_ICON[index % ACCENT_ICON.length];
-            const locked = lockedByTopic(topic.id);
+            const accentBg = ACCENT_BG[topicIndex % ACCENT_BG.length];
+            const accentIcon = ACCENT_ICON[topicIndex % ACCENT_ICON.length];
+            const isFreeUser = access != null && !access.subscription_active;
+            const isFirstTopic = topicIndex === 0;
+            const isUnlocked = access != null && (access.subscription_active || (isFreeUser && isFirstTopic));
+            const locked = !isUnlocked;
 
             return (
               <button
@@ -139,7 +139,7 @@ export default function VocabularyPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                      {index + 1}-bo'lim
+                      {topicIndex + 1}-bo'lim
                     </p>
                     <p className="mt-1 font-semibold text-slate-900">{topic.title}</p>
                     <div className="mt-2 flex items-center gap-2">
