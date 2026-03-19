@@ -1,7 +1,8 @@
 import type { AccessInfo } from '../api/access';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 
-/** Mirrors server exception in vocabularyController getWordGroups */
+/** Must match `server/lib/freeVocabularyIds.ts` */
+const FREE_VOCAB_TOPIC_ID = 'kundalik-hayot';
 const SALOMLASHISH_SUBTOPIC_ID = 'salomlashish-xayrlashish-odob';
 
 export function defaultFreeVocabularyTopicId(): string | null {
@@ -41,8 +42,9 @@ export function canFreeUserOpenVocabularySubtopic(
   const freeT = access.vocabulary_free_topic_id ?? defaultFreeVocabularyTopicId() ?? '';
   const freeS = access.vocabulary_free_subtopic_id ?? defaultFreeVocabularySubtopicId() ?? '';
   const defaultPair = topicId === freeT && subtopicId === freeS;
-  const salomExtra = subtopicId === SALOMLASHISH_SUBTOPIC_ID;
-  return defaultPair || salomExtra;
+  const salomOnKundalik =
+    topicId === FREE_VOCAB_TOPIC_ID && subtopicId === SALOMLASHISH_SUBTOPIC_ID;
+  return defaultPair || salomOnKundalik;
 }
 
 export function canAccessVocabularySubtopicRoute(

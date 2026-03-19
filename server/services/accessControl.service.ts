@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AccessInfo } from './subscription.service';
-import * as subscriptionService from './subscription.service';
 import * as vocabRepo from '../repositories/vocabularyRepository';
+import { FREE_VOCAB_SUBTOPIC_ID, FREE_VOCAB_TOPIC_ID } from '../lib/freeVocabularyIds';
 
 export type LessonWithLock = {
   id: number;
@@ -37,7 +37,8 @@ export function applyLessonsLock(
 }
 
 /**
- * Mark subtopics with locked. Subscription = all unlocked. Free = topic 1, subtopic 1 only.
+ * Mark subtopics with locked. Subscription = all unlocked.
+ * Free: `/api/user/access` pair + always "Salomlashish, xayrlashish, odob iboralari" under Kundalik hayot.
  */
 export function applySubtopicsLock(
   subtopics: Array<{ id: string; topic_id?: string; [k: string]: unknown }>,
@@ -51,7 +52,14 @@ export function applySubtopicsLock(
   const freeSubtopicId = access.vocabulary_free_subtopic_id;
   const isFreeTopic = freeTopicId === topicId;
   return subtopics.map((s) => {
-    const locked = isFreeTopic ? !(freeSubtopicId === s.id) : true;
+    if (!isFreeTopic) {
+      return { ...s, locked: true };
+    }
+    const salomAlwaysFree =
+      String(topicId) === FREE_VOCAB_TOPIC_ID && String(s.id) === FREE_VOCAB_SUBTOPIC_ID;
+    const matchesAccessPair =
+      freeSubtopicId != null && String(freeSubtopicId) === String(s.id);
+    const locked = !(salomAlwaysFree || matchesAccessPair);
     return { ...s, locked };
   });
 }
@@ -66,8 +74,7 @@ export function canAccessLesson(lessonId: number, access: AccessInfo): boolean {
 
 /**
  * Check if user can access full subtopic content.
- * Free tier: only the first topic's first subtopic (by id) is allowed.
- * Uses String() so DB number/string id types do not break the check.
+ * Free tier: pair from access + always salomlashish subtopic under kundalik-hayot (product default).
  */
 export function canAccessSubtopic(
   topicId: string,
@@ -75,6 +82,12 @@ export function canAccessSubtopic(
   access: AccessInfo
 ): boolean {
   if (access.subscription_active) return true;
+  if (
+    String(topicId) === FREE_VOCAB_TOPIC_ID &&
+    String(subtopicId) === FREE_VOCAB_SUBTOPIC_ID
+  ) {
+    return true;
+  }
   const freeTopicId = access.vocabulary_free_topic_id;
   const freeSubtopicId = access.vocabulary_free_subtopic_id;
   if (freeTopicId == null || freeSubtopicId == null) return false;

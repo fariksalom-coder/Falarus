@@ -7,7 +7,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
 import { requireAuth } from '../_lib/auth.js';
-import { resolveFreeVocabularyIds } from '../../server/lib/freeVocabularyIds.js';
+import {
+  FREE_VOCAB_SUBTOPIC_ID,
+  FREE_VOCAB_TOPIC_ID,
+  resolveFreeVocabularyIds,
+} from '../../server/lib/freeVocabularyIds.js';
 
 // --- shared helpers ---
 async function getTopicsList() {
@@ -107,12 +111,19 @@ function applySubtopicsLock(
   topicId: string,
   access: { subscription_active: boolean; vocabulary_free_topic_id: string | null; vocabulary_free_subtopic_id: string | null }
 ) {
+  if (access.subscription_active) {
+    return list.map((s) => ({ ...s, locked: false }));
+  }
   const { vocabulary_free_topic_id, vocabulary_free_subtopic_id } = access;
-  const isFreeTopic = access.subscription_active || vocabulary_free_topic_id === topicId;
-  return list.map((s) => ({
-    ...s,
-    locked: isFreeTopic ? s.id !== vocabulary_free_subtopic_id : true,
-  }));
+  const isFreeTopic = vocabulary_free_topic_id === topicId;
+  return list.map((s) => {
+    if (!isFreeTopic) return { ...s, locked: true };
+    const salomAlwaysFree =
+      topicId === FREE_VOCAB_TOPIC_ID && s.id === FREE_VOCAB_SUBTOPIC_ID;
+    const matchesAccessPair =
+      vocabulary_free_subtopic_id != null && s.id === vocabulary_free_subtopic_id;
+    return { ...s, locked: !(salomAlwaysFree || matchesAccessPair) };
+  });
 }
 
 // --- handlers ---
