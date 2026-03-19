@@ -66,11 +66,112 @@ async function getSubtopicsByTopic(topicId: string) {
 async function getWordGroupsBySubtopic(subtopicId: string) {
   const { data, error } = await supabase
     .from('vocabulary_word_groups')
-    .select('id, total_words')
+    .select('id, subtopic_id, part_id, title, total_words')
     .eq('subtopic_id', subtopicId)
     .order('id');
   if (error) throw error;
-  return (data ?? []) as { id: number; total_words: number }[];
+  return (data ?? []) as { id: number; subtopic_id: string; part_id: string | null; title: string; total_words: number }[];
+}
+
+async function getWordGroupById(wordGroupId: number) {
+  const { data, error } = await supabase
+    .from('vocabulary_word_groups')
+    .select('id, total_words')
+    .eq('id', wordGroupId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as { id: number; total_words: number };
+}
+
+async function getProgressRowForWordGroup(userId: number, wordGroupId: number) {
+  const { data, error } = await supabase
+    .from('user_word_group_progress')
+    .select('flashcards_completed, flashcards_known, flashcards_unknown, test_last_correct, test_last_incorrect, test_last_percentage, test_passed, test_best_correct, match_completed, learned_words, total_words')
+    .eq('user_id', userId)
+    .eq('word_group_id', wordGroupId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+const MATCH_UNLOCK_PERCENT = 80;
+
+function mapProgressRowToStepsState(row: any, total_words: number) {
+  const flashcards_completed = row?.flashcards_completed ?? false;
+  const flashcards_known = row?.flashcards_known ?? 0;
+  const flashcards_unknown = row?.flashcards_unknown ?? 0;
+  const test_last_correct = row?.test_last_correct ?? 0;
+  const test_last_incorrect = row?.test_last_incorrect ?? 0;
+  const storedPercentage = row?.test_last_percentage ?? 0;
+  const storedPassed = row?.test_passed ?? false;
+  const attemptsTotal = test_last_correct + test_last_incorrect;
+  const percentage = attemptsTotal > 0 ? (test_last_correct / attemptsTotal) * 100 : storedPercentage;
+  const passed = attemptsTotal > 0 ? percentage >= 80 : storedPassed;
+  return {
+    step1: {
+      completed: flashcards_completed && flashcards_known + flashcards_unknown > 0,
+      known: flashcards_known,
+      unknown: flashcards_unknown,
+    },
+    step2: {
+      completed: attemptsTotal > 0,
+      correct: test_last_correct,
+      incorrect: test_last_incorrect,
+      percentage,
+      passed,
+    },
+    step3: { unlocked: passed },
+  };
+}
+
+async function getOrCreateUserWordGroupProgress(userId: number, wordGroupId: number, totalWords: number) {
+  const { data: existing, error: fetchErr } = await supabase
+    .from('user_word_group_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('word_group_id', wordGroupId)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+  if (existing) return existing as any;
+  const { data: inserted, error: insertErr } = await supabase
+    .from('user_word_group_progress')
+    .insert({
+      user_id: userId,
+      word_group_id: wordGroupId,
+      learned_words: 0,
+      total_words: totalWords,
+      flashcards_completed: false,
+      flashcards_known: 0,
+      flashcards_unknown: 0,
+      test_best_correct: 0,
+      test_last_correct: 0,
+      test_last_incorrect: 0,
+      test_last_percentage: 0,
+      test_passed: false,
+      match_completed: false,
+      progress_percent: 0,
+    })
+    .select()
+    .single();
+  if (insertErr) throw insertErr;
+  return inserted as any;
+}
+
+async function upsertUserWordGroupProgress(
+  userId: number,
+  wordGroupId: number,
+  patch: Record<string, unknown>
+) {
+  const { error } = await supabase.from('user_word_group_progress').upsert(
+    {
+      user_id: userId,
+      word_group_id: wordGroupId,
+      updated_at: new Date().toISOString(),
+      ...patch,
+    },
+    { onConflict: 'user_id,word_group_id' }
+  );
+  if (error) throw error;
 }
 
 async function getTopicTotalWords(topicId: string): Promise<number> {
@@ -205,6 +306,147 @@ async function handleSubtopics(userId: number, topicId: string, res: VercelRespo
   return res.status(200).json(withLock);
 }
 
+async function handleWordGroups(userId: number, subtopicId: string, res: VercelResponse) {
+  const { data: subtopic, error: subErr } = await supabase
+    .from('vocabulary_subtopics')
+    .select('topic_id')
+    .eq('id', subtopicId)
+    .maybeSingle();
+  if (subErr) {
+    console.error('[api/vocabulary/word-groups] subtopic', subErr.message);
+    return res.status(500).json({ error: 'Xatolik yuz berdi' });
+  }
+  const topicId = (subtopic as { topic_id?: string } | null)?.topic_id ?? '';
+  const access = await getAccessInfo(userId);
+  const allowed =
+    access.subscription_active ||
+    (topicId === FREE_VOCAB_TOPIC_ID && subtopicId === FREE_VOCAB_SUBTOPIC_ID) ||
+    (access.vocabulary_free_topic_id === topicId && access.vocabulary_free_subtopic_id === subtopicId);
+  if (!allowed) {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
+  }
+  const groups = await getWordGroupsBySubtopic(subtopicId);
+  if (groups.length === 0) {
+    return res.status(200).json([]);
+  }
+  const groupIds = groups.map((g) => g.id);
+  const { data: progressRows, error: progErr } = await supabase
+    .from('user_word_group_progress')
+    .select('word_group_id, learned_words, total_words, flashcards_completed, test_best_correct, match_completed, progress_percent')
+    .eq('user_id', userId)
+    .in('word_group_id', groupIds);
+  if (progErr) {
+    console.error('[api/vocabulary/word-groups] progress', progErr.message);
+    return res.status(500).json({ error: 'Xatolik yuz berdi' });
+  }
+  const progressByGroup = (progressRows ?? []).reduce(
+    (acc: Record<number, { learned_words: number; total_words: number; progress_percent: number; flashcards_completed: boolean; test_best_correct: number; match_completed: boolean }>, row: any) => {
+      acc[row.word_group_id] = row;
+      return acc;
+    },
+    {}
+  );
+  const list = groups.map((g) => {
+    const p = progressByGroup[g.id];
+    return {
+      id: g.id,
+      subtopic_id: g.subtopic_id,
+      part_id: g.part_id,
+      title: g.title,
+      total_words: g.total_words,
+      learned_words: p?.learned_words ?? 0,
+      progress_percent: p?.progress_percent ?? 0,
+      flashcards_completed: p?.flashcards_completed ?? false,
+      test_best_correct: p?.test_best_correct ?? 0,
+      match_completed: p?.match_completed ?? false,
+    };
+  });
+  return res.status(200).json(list);
+}
+
+async function handleWordGroupSteps(userId: number, wordGroupId: number, res: VercelResponse) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) return res.status(404).json({ error: 'Not found' });
+  const row = await getProgressRowForWordGroup(userId, wordGroupId);
+  const state = mapProgressRowToStepsState(row, group.total_words);
+  return res.status(200).json(state);
+}
+
+async function handleTasks(userId: number, wordGroupId: number, res: VercelResponse) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) return res.status(404).json({ error: 'Not found' });
+  const row = await getProgressRowForWordGroup(userId, wordGroupId);
+  const total_words = group.total_words;
+  const learned_words = row?.learned_words ?? 0;
+  const flashcards_completed = row?.flashcards_completed ?? false;
+  const test_best_correct = row?.test_best_correct ?? 0;
+  const match_completed = row?.match_completed ?? false;
+  const test_status: 'locked' | 'not_started' | 'completed' = !flashcards_completed
+    ? 'locked'
+    : test_best_correct > 0
+      ? 'completed'
+      : 'not_started';
+  const match_unlocked = total_words > 0 && (test_best_correct / total_words) * 100 >= MATCH_UNLOCK_PERCENT;
+  const match_status: 'locked' | 'not_started' | 'completed' = !flashcards_completed
+    ? 'locked'
+    : !match_unlocked
+      ? 'locked'
+      : match_completed
+        ? 'completed'
+        : 'not_started';
+  return res.status(200).json({
+    flashcards_status: flashcards_completed ? 'completed' : 'not_started',
+    test_status,
+    match_status,
+    learned_words,
+    total_words,
+    test_best_correct,
+    match_unlocked,
+  });
+}
+
+async function handlePostStep1(userId: number, wordGroupId: number, body: Record<string, unknown>, res: VercelResponse) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) return res.status(404).json({ error: 'Not found' });
+  const total_words = group.total_words;
+  const known = Math.max(0, Math.min(Number(body.known ?? 0), total_words));
+  const unknown = Math.max(0, Math.min(Number(body.unknown ?? 0), total_words - known));
+  await getOrCreateUserWordGroupProgress(userId, wordGroupId, total_words);
+  await upsertUserWordGroupProgress(userId, wordGroupId, {
+    flashcards_known: known,
+    flashcards_unknown: unknown,
+    flashcards_completed: true,
+  });
+  const row = await getProgressRowForWordGroup(userId, wordGroupId);
+  const state = mapProgressRowToStepsState(row, total_words);
+  return res.status(200).json(state);
+}
+
+async function handlePostStep2(userId: number, wordGroupId: number, body: Record<string, unknown>, res: VercelResponse) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) return res.status(404).json({ error: 'Not found' });
+  const correct = Math.max(0, Number(body.correct ?? 0));
+  const incorrect = Math.max(0, Number(body.incorrect ?? 0));
+  const totalQuestions = body.totalQuestions != null ? Number(body.totalQuestions) : undefined;
+  let attemptsTotal = correct + incorrect;
+  if (totalQuestions != null && totalQuestions > 0) attemptsTotal = Math.min(totalQuestions, attemptsTotal);
+  if (attemptsTotal <= 0) return res.status(400).json({ error: 'correct+incorrect or totalQuestions required' });
+  const total_words = group.total_words || attemptsTotal;
+  const percentage = (correct / attemptsTotal) * 100;
+  const passed = percentage >= 80;
+  await getOrCreateUserWordGroupProgress(userId, wordGroupId, total_words);
+  await upsertUserWordGroupProgress(userId, wordGroupId, {
+    test_last_correct: correct,
+    test_last_incorrect: attemptsTotal - correct,
+    test_last_percentage: percentage,
+    test_passed: passed,
+    test_best_correct: Math.max(correct, 0),
+  });
+  const row = await getProgressRowForWordGroup(userId, wordGroupId);
+  const state = mapProgressRowToStepsState(row, group.total_words);
+  return res.status(200).json(state);
+}
+
 function parseBody(body: unknown): Record<string, unknown> {
   if (body == null) return {};
   if (typeof body === 'string') {
@@ -269,6 +511,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (segments.length === 2 && segments[0] === 'subtopics' && req.method === 'GET') {
       return await handleSubtopics(userId, segments[1], res);
+    }
+    if (segments.length === 2 && segments[0] === 'word-groups' && req.method === 'GET') {
+      return await handleWordGroups(userId, segments[1], res);
+    }
+    if (segments.length === 3 && segments[0] === 'word-groups' && segments[2] === 'steps' && req.method === 'GET') {
+      const wordGroupId = Number(segments[1]);
+      if (!Number.isFinite(wordGroupId)) return res.status(400).json({ error: 'Invalid wordGroupId' });
+      return await handleWordGroupSteps(userId, wordGroupId, res);
+    }
+    if (segments.length === 4 && segments[0] === 'word-groups' && segments[2] === 'steps' && req.method === 'POST') {
+      const wordGroupId = Number(segments[1]);
+      const step = segments[3];
+      if (!Number.isFinite(wordGroupId)) return res.status(400).json({ error: 'Invalid wordGroupId' });
+      const body = parseBody(req.body);
+      if (step === '1') return await handlePostStep1(userId, wordGroupId, body, res);
+      if (step === '2') return await handlePostStep2(userId, wordGroupId, body, res);
+      return res.status(404).json({ error: 'Not found' });
+    }
+    if (segments.length === 2 && segments[0] === 'tasks' && req.method === 'GET') {
+      const wordGroupId = Number(segments[1]);
+      if (!Number.isFinite(wordGroupId)) return res.status(400).json({ error: 'Invalid wordGroupId' });
+      return await handleTasks(userId, wordGroupId, res);
     }
     if (segments.length === 1 && segments[0] === 'progress') {
       return await handleProgress(userId, req, res);
