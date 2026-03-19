@@ -369,7 +369,6 @@ export default function VocabularyPartPage() {
   const vocabAccessDenied =
     Boolean(token) &&
     accessLoaded &&
-    access != null &&
     !canAccessVocabularySubtopicRoute(access, content.topicId, content.subtopicId);
 
   if (vocabAccessDenied) {

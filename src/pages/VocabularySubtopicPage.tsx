@@ -93,7 +93,6 @@ export default function VocabularySubtopicPage() {
   const accessDenied =
     Boolean(token) &&
     accessLoaded &&
-    access != null &&
     !canAccessVocabularySubtopicRoute(access, topicId, subtopicId);
 
   if (accessDenied) {

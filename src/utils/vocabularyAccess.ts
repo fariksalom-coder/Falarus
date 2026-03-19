@@ -14,6 +14,20 @@ export function defaultFreeVocabularySubtopicId(): string | null {
 }
 
 /**
+ * Первая подтема первой темы (по порядку в VOCABULARY_TOPICS) — внутри неё полный UX как у подписчика: без paywall по тарифу.
+ */
+export function isVocabularyFreeTierFullSubtopic(
+  topicId: string | undefined,
+  subtopicId: string | undefined
+): boolean {
+  if (!topicId || !subtopicId) return false;
+  const firstTopic = VOCABULARY_TOPICS[0];
+  if (!firstTopic || firstTopic.id !== topicId) return false;
+  const firstSub = firstTopic.subtopics[0];
+  return firstSub?.id === subtopicId;
+}
+
+/**
  * For non-subscribers: which topic id is allowed (matches /api/user/access).
  */
 export function resolvedFreeVocabularyTopicId(access: AccessInfo | null): string | null {
@@ -39,6 +53,7 @@ export function canFreeUserOpenVocabularySubtopic(
   topicId: string,
   subtopicId: string
 ): boolean {
+  if (isVocabularyFreeTierFullSubtopic(topicId, subtopicId)) return true;
   const freeT = access.vocabulary_free_topic_id ?? defaultFreeVocabularyTopicId() ?? '';
   const freeS = access.vocabulary_free_subtopic_id ?? defaultFreeVocabularySubtopicId() ?? '';
   const defaultPair = topicId === freeT && subtopicId === freeS;
@@ -53,6 +68,7 @@ export function canAccessVocabularySubtopicRoute(
   subtopicId: string | undefined
 ): boolean {
   if (!topicId || !subtopicId) return false;
+  if (isVocabularyFreeTierFullSubtopic(topicId, subtopicId)) return true;
   if (!access) return false;
   if (access.subscription_active) return true;
   return canFreeUserOpenVocabularySubtopic(access, topicId, subtopicId);
