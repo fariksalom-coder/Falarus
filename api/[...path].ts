@@ -1,5 +1,5 @@
 /**
- * Single handler for /api/pricing, tariff-prices, payment-methods, payments (POST), leaderboard, activity/streak (fallback).
+ * Single catch-all handler for the public and authenticated Vercel API.
  * Keeps serverless function count under Vercel Hobby limit (12).
  */
 import './_lib/suppress-dep0169.js';
@@ -8,6 +8,14 @@ import Busboy from 'busboy';
 import { supabase } from './_lib/supabase.js';
 import { setCors, handleOptions } from './_lib/cors.js';
 import { requireAuth } from './_lib/auth.js';
+import {
+  getRequestPathname,
+  normalizeQueryPathSegments,
+  parseBody,
+} from './_lib/request.js';
+import { routeLessonsRequest } from './_lib/lessons.js';
+import { routeUserRequest } from './_lib/user.js';
+import { routeVocabularyRequest } from './_lib/vocabulary.js';
 import {
   getReferralLink,
   getReferralStats,
@@ -65,44 +73,13 @@ const ROOT_API_PREFIXES = new Set([
   'pricing',
   'tariff-prices',
   'payment-methods',
+  'lessons',
   'leaderboard',
   'lesson-task-results',
   'activity',
+  'user',
+  'vocabulary',
 ]);
-
-function normalizeQueryPathSegments(raw: string | string[] | undefined): string[] {
-  if (raw == null) return [];
-  if (Array.isArray(raw)) {
-    const out: string[] = [];
-    for (const p of raw) {
-      if (typeof p === 'string' && p.length > 0) {
-        p.split('/')
-          .filter(Boolean)
-          .forEach((s) => out.push(s));
-      }
-    }
-    return out;
-  }
-  if (typeof raw === 'string' && raw.length > 0) {
-    return raw.split('/').filter(Boolean);
-  }
-  return [];
-}
-
-function getRequestPathname(req: VercelRequest): string {
-  const url = req.url || (req as any).originalUrl || '';
-  if (!url || typeof url !== 'string') return '';
-  const withoutQuery = url.split('?')[0];
-  // Vercel sometimes passes absolute URL: https://host/api/...
-  if (withoutQuery.includes('://')) {
-    try {
-      return new URL(withoutQuery).pathname;
-    } catch {
-      return withoutQuery;
-    }
-  }
-  return withoutQuery;
-}
 
 function getPathParts(req: VercelRequest): string[] {
   const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
@@ -116,18 +93,6 @@ function getPathParts(req: VercelRequest): string[] {
     return parts;
   }
   return [];
-}
-
-function parseBody(body: unknown): Record<string, unknown> {
-  if (body == null) return {};
-  if (typeof body === 'string') {
-    try {
-      return JSON.parse(body) as Record<string, unknown>;
-    } catch {
-      return {};
-    }
-  }
-  return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -240,6 +205,103 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  if (path[0] === 'lessons') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    return routeLessonsRequest(req, res, userId, path.slice(1));
+  }
+
+  if (path[0] === 'user') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    return routeUserRequest(req, res, userId, path.slice(1));
+  }
+
+  if (path[0] === 'vocabulary') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    return routeVocabularyRequest(req, res, userId, path.slice(1));
+  }
+
+  // /api/lesson-task-results — merged from dedicated function to reduce serverless count
+  if (path[0] === 'lesson-task-results') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    try {
+      if (req.method === 'GET') {
+        const lessonPath = req.query.lesson_path as string | undefined;
+        let q = supabase
+          .from('lesson_task_results')
+          .select('lesson_path, task_number, correct, total')
+          .eq('user_id', userId);
+        if (lessonPath) q = q.eq('lesson_path', lessonPath);
+        const { data: rows, error } = await q;
+        if (error) {
+          console.error('[api/lesson-task-results] GET error:', error.message);
+          return res.status(500).json({ error: error.message });
+        }
+        return res.status(200).json(rows ?? []);
+      }
+
+      if (req.method === 'POST') {
+        const body = parseBody(req.body);
+        const lessonPath = body.lesson_path as string | undefined;
+        const taskNumber = (body as any).task_number;
+        const correct = Number((body as any).correct) || 0;
+        const total = Number((body as any).total) || 0;
+
+        if (!lessonPath || taskNumber == null) {
+          return res.status(400).json({ error: 'lesson_path va task_number kerak' });
+        }
+
+        const tn = Number(taskNumber);
+        const { data: prevRow } = await supabase
+          .from('lesson_task_results')
+          .select('correct')
+          .eq('user_id', userId)
+          .eq('lesson_path', String(lessonPath))
+          .eq('task_number', tn)
+          .maybeSingle();
+
+        const prevCorrect = Number(prevRow?.correct ?? 0);
+        const delta = calculateImprovementDelta(prevCorrect, correct);
+        await awardUserPoints(userId, delta);
+
+        const row = {
+          user_id: userId,
+          lesson_path: String(lessonPath),
+          task_number: tn,
+          correct,
+          total,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase.from('lesson_task_results').upsert(row, {
+          onConflict: 'user_id,lesson_path,task_number',
+        });
+        if (error) {
+          console.error('[api/lesson-task-results] POST error:', error.message);
+          return res.status(500).json({ error: error.message });
+        }
+        const progress = await syncUserLessonProgressPercent(supabase, userId);
+        return res.status(200).json({ success: true, progress });
+      }
+
+      return res.status(405).json({ error: 'Method not allowed' });
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      logError(
+        'api.lesson_task_results.failed',
+        err,
+        buildRequestLogContext('vercel', req, { path: 'lesson-task-results', userId })
+      );
+      if (err.message.includes('SUPABASE')) {
+        return res.status(503).json({ error: 'Server configuration error' });
+      }
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  }
+
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   // /api/pricing — public active plans (no auth)
@@ -341,85 +403,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     } catch (e) {
       console.error('[api/leaderboard]', e instanceof Error ? e.message : e);
-      return res.status(500).json({ error: 'Xatolik yuz berdi' });
-    }
-  }
-
-  // /api/lesson-task-results — merged from dedicated function to reduce serverless count
-  if (path[0] === 'lesson-task-results') {
-    const userId = requireAuth(req, res);
-    if (userId == null) return;
-    try {
-      if (req.method === 'GET') {
-        const lessonPath = req.query.lesson_path as string | undefined;
-        let q = supabase
-          .from('lesson_task_results')
-          .select('lesson_path, task_number, correct, total')
-          .eq('user_id', userId);
-        if (lessonPath) q = q.eq('lesson_path', lessonPath);
-        const { data: rows, error } = await q;
-        if (error) {
-          console.error('[api/lesson-task-results] GET error:', error.message);
-          return res.status(500).json({ error: error.message });
-        }
-        return res.status(200).json(rows ?? []);
-      }
-
-      if (req.method === 'POST') {
-        const body = parseBody(req.body);
-        const lessonPath = body.lesson_path as string | undefined;
-        const taskNumber = (body as any).task_number;
-        const correct = Number((body as any).correct) || 0;
-        const total = Number((body as any).total) || 0;
-
-        if (!lessonPath || taskNumber == null) {
-          return res.status(400).json({ error: 'lesson_path va task_number kerak' });
-        }
-
-        const tn = Number(taskNumber);
-        const { data: prevRow } = await supabase
-          .from('lesson_task_results')
-          .select('correct')
-          .eq('user_id', userId)
-          .eq('lesson_path', String(lessonPath))
-          .eq('task_number', tn)
-          .maybeSingle();
-
-        const prevCorrect = Number(prevRow?.correct ?? 0);
-        const delta = calculateImprovementDelta(prevCorrect, correct);
-        await awardUserPoints(userId, delta);
-
-        const row = {
-          user_id: userId,
-          lesson_path: String(lessonPath),
-          task_number: tn,
-          correct,
-          total,
-          updated_at: new Date().toISOString(),
-        };
-
-        const { error } = await supabase.from('lesson_task_results').upsert(row, {
-          onConflict: 'user_id,lesson_path,task_number',
-        });
-        if (error) {
-          console.error('[api/lesson-task-results] POST error:', error.message);
-          return res.status(500).json({ error: error.message });
-        }
-        const progress = await syncUserLessonProgressPercent(supabase, userId);
-        return res.status(200).json({ success: true, progress });
-      }
-
-      return res.status(405).json({ error: 'Method not allowed' });
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      logError(
-        'api.lesson_task_results.failed',
-        err,
-        buildRequestLogContext('vercel', req, { path: 'lesson-task-results', userId })
-      );
-      if (err.message.includes('SUPABASE')) {
-        return res.status(503).json({ error: 'Server configuration error' });
-      }
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
   }
