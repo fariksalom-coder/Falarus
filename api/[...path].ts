@@ -15,6 +15,7 @@ import {
   getReferralPageData,
   createWithdrawal,
 } from './_lib/referral.js';
+import { getActivityStreakPayload } from './_lib/activityStreak.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -65,10 +66,28 @@ const ROOT_API_PREFIXES = new Set([
   'activity',
 ]);
 
+function normalizeQueryPathSegments(raw: string | string[] | undefined): string[] {
+  if (raw == null) return [];
+  if (Array.isArray(raw)) {
+    const out: string[] = [];
+    for (const p of raw) {
+      if (typeof p === 'string' && p.length > 0) {
+        p.split('/')
+          .filter(Boolean)
+          .forEach((s) => out.push(s));
+      }
+    }
+    return out;
+  }
+  if (typeof raw === 'string' && raw.length > 0) {
+    return raw.split('/').filter(Boolean);
+  }
+  return [];
+}
+
 function getPathParts(req: VercelRequest): string[] {
-  const path = req.query.path;
-  if (Array.isArray(path)) return path.filter((p): p is string => typeof p === 'string');
-  if (typeof path === 'string') return path ? path.split('/').filter(Boolean) : [];
+  const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
+  if (fromQuery.length > 0) return fromQuery;
   const url = req.url || (req as any).originalUrl || '';
   const pathname = typeof url === 'string' ? url.split('?')[0] : '';
   const parts = pathname.split('/').filter(Boolean);
@@ -91,11 +110,6 @@ function parseBody(body: unknown): Record<string, unknown> {
     }
   }
   return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
-}
-
-function todayDateString(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -374,37 +388,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // /api/activity/streak
+  // /api/activity/streak (also served by api/activity/streak.ts)
   if (path[0] === 'activity' && path[1] === 'streak') {
     const userId = requireAuth(req, res);
     if (userId == null) return;
     try {
-      const { data: rows, error } = await supabase
-        .from('user_activity_dates')
-        .select('activity_date')
-        .eq('user_id', userId)
-        .order('activity_date', { ascending: false })
-        .limit(365);
-      if (error) {
-        console.error('[api/activity/streak]', error.message);
-        return res.status(200).json({ streak_days: 0, last_7_days: [false, false, false, false, false, false, false] });
-      }
-      const dates = new Set((rows ?? []).map((r: { activity_date: string }) => r.activity_date));
-      const today = todayDateString();
-      let streak = 0;
-      const d = new Date();
-      for (let i = 0; i < 365; i++) {
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        if (dates.has(key)) { streak++; d.setDate(d.getDate() - 1); } else break;
-      }
-      const last7: boolean[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const day = new Date();
-        day.setDate(day.getDate() - i);
-        const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-        last7.push(dates.has(key));
-      }
-      return res.status(200).json({ streak_days: streak, last_7_days: last7 });
+      const payload = await getActivityStreakPayload(supabase, userId);
+      return res.status(200).json(payload);
     } catch (e) {
       console.error('[api/activity/streak]', e instanceof Error ? e.message : e);
       return res.status(500).json({ error: 'Xatolik yuz berdi' });

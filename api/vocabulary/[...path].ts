@@ -20,14 +20,28 @@ const VOCAB_API_PREFIXES = new Set(['topics', 'subtopics', 'word-groups', 'progr
  * On Vercel, req.url for api/vocabulary/[...path] is often only the tail (e.g. /subtopics/kundalik-hayot)
  * without /api/vocabulary, so we must not require the word "vocabulary" in pathname.
  */
-function getVocabularyPathSegments(req: VercelRequest): string[] {
-  const raw = req.query.path;
+function normalizeQueryPathSegments(raw: string | string[] | undefined): string[] {
+  if (raw == null) return [];
   if (Array.isArray(raw)) {
-    return raw.filter((p): p is string => typeof p === 'string' && p.length > 0);
+    const out: string[] = [];
+    for (const p of raw) {
+      if (typeof p === 'string' && p.length > 0) {
+        p.split('/')
+          .filter(Boolean)
+          .forEach((s) => out.push(s));
+      }
+    }
+    return out;
   }
   if (typeof raw === 'string' && raw.length > 0) {
     return raw.split('/').filter(Boolean);
   }
+  return [];
+}
+
+function getVocabularyPathSegments(req: VercelRequest): string[] {
+  const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
+  if (fromQuery.length > 0) return fromQuery;
   const url = req.url || (req as { originalUrl?: string }).originalUrl || '';
   const pathname = typeof url === 'string' ? url.split('?')[0] : '';
   const parts = pathname.split('/').filter(Boolean);
