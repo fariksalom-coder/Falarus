@@ -80,14 +80,18 @@ try {
 
   if (Array.isArray(lessons) && lessons.length > 0) {
     const firstLesson = lessons[0];
+    const firstId = Number(firstLesson.id);
+    if (!Number.isFinite(firstId)) {
+      throw new Error('GET /api/lessons returned invalid id');
+    }
     await requireOk(
-      `/api/lessons/${firstLesson.id}/preview`,
+      `/api/lessons/${firstId}/preview`,
       { headers: authHeaders },
       'GET /api/lessons/:id/preview'
     );
     if (!firstLesson.locked) {
       await requireOk(
-        `/api/lessons/${firstLesson.id}`,
+        `/api/lessons/${firstId}`,
         { headers: authHeaders },
         'GET /api/lessons/:id'
       );
@@ -95,11 +99,14 @@ try {
 
     const lockedLesson = lessons.find((lesson) => lesson.locked);
     if (lockedLesson) {
-      await requireOk(
-        `/api/lessons/${lockedLesson.id}/preview`,
-        { headers: authHeaders },
-        'GET locked lesson preview'
-      );
+      const lid = Number(lockedLesson.id);
+      if (Number.isFinite(lid)) {
+        await requireOk(
+          `/api/lessons/${lid}/preview`,
+          { headers: authHeaders },
+          'GET locked lesson preview'
+        );
+      }
     }
   }
 
