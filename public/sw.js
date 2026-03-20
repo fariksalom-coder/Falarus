@@ -1,5 +1,9 @@
-/* Falarus PWA Service Worker - cache-first for assets, network-first for API */
-const CACHE_NAME = 'falarus-pwa-v1';
+/* Falarus PWA Service Worker
+   - network-first for HTML navigations
+   - network-first for JS/CSS so new deployments reflect immediately
+   - fallback to cache if network fails
+*/
+const CACHE_NAME = 'falarus-pwa-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -31,6 +35,34 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+
+  // Always prefer the newest JS/CSS from the network.
+  // Otherwise users may keep seeing old UI logic after a deployment.
+  const isScriptOrStyle =
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css');
+
+  if (isScriptOrStyle) {
+    event.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res && res.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+          }
+          return res;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => {
+            if (cached) return cached;
+            // Last resort: try app shell
+            return caches.match('/index.html');
+          })
+        )
+    );
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(
