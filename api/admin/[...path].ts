@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
-import { getUserCompletedLessonsCount } from '../../server/services/lessonProgressSnapshot.service.js';
+import { getUserCompletedLessonsCount } from '../_lib/lessonProgress.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
 

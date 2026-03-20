@@ -1,4 +1,8 @@
 import { supabase } from './supabase.js';
+import {
+  ensureUserInLeaderboard,
+  updateUserPoints as updateLeaderboardUserPoints,
+} from './leaderboard.js';
 
 /**
  * Add points to users (points, weekly, monthly, total) and sync leaderboard.
@@ -30,11 +34,8 @@ export async function awardUserPoints(userId: number, delta: number): Promise<vo
     return;
   }
   try {
-    const leaderboardService = await import('../../server/services/leaderboard.service.js');
-    const leaderboardCache = await import('../../server/services/leaderboardCache.service.js');
-    await leaderboardService.ensureUserInLeaderboard(supabase, userId);
-    await leaderboardService.updateUserPoints(supabase, userId, newTotal);
-    await leaderboardCache.invalidateLeaderboardCache();
+    await ensureUserInLeaderboard(supabase, userId);
+    await updateLeaderboardUserPoints(supabase, userId, newTotal);
   } catch (e) {
     console.error('[awardUserPoints] leaderboard', e);
   }

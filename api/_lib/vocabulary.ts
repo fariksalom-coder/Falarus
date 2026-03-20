@@ -1,18 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from './supabase.js';
 import { parseBody } from './request.js';
-import * as vocabularyProgressService from '../../server/services/vocabularyProgress.service.js';
-import * as matchPairsService from '../../server/services/matchPairs.service.js';
-import * as flashcardsService from '../../server/services/flashcards.service.js';
-import * as vocabularyTestService from '../../server/services/vocabularyTest.service.js';
 import {
   applySubtopicsLock,
   canAccessSubtopic,
   getSubtopicPreview,
-} from '../../server/services/accessControl.service.js';
-import { getAccessInfo } from '../../server/services/subscription.service.js';
-import { getUserVocabularyStep2DailyStats } from '../../server/repositories/vocabularyRepository.js';
-import { buildRequestLogContext, logError } from '../../server/lib/logger.js';
+} from './accessControl.js';
+import { formatDateInAppTimezone, getRecentAppDateStrings } from './appDate.js';
+import { awardUserPoints } from './awardUserPoints.js';
+import { buildRequestLogContext, logError } from './logger.js';
+import { calculateCappedMatchPoints, calculateImprovementDelta } from './scoring.js';
+import { getAccessInfo } from './subscription.js';
 
 async function handleVocabularyRootGet(userId: number, res: VercelResponse) {
   const { data: words, error } = await supabase
@@ -101,11 +99,17 @@ async function getWordGroupsBySubtopic(subtopicId: string) {
 async function getWordGroupById(wordGroupId: number) {
   const { data, error } = await supabase
     .from('vocabulary_word_groups')
-    .select('id, total_words')
+    .select('id, subtopic_id, part_id, title, total_words')
     .eq('id', wordGroupId)
     .maybeSingle();
   if (error || !data) return null;
-  return data as { id: number; total_words: number };
+  return data as {
+    id: number;
+    subtopic_id: string;
+    part_id: string | null;
+    title: string;
+    total_words: number;
+  };
 }
 
 async function getProgressRowForWordGroup(userId: number, wordGroupId: number) {
@@ -223,6 +227,391 @@ async function ensureWordGroupAccess(userId: number, wordGroupId: number) {
     return { status: 'locked' as const };
   }
   return { status: 'ok' as const, context };
+}
+
+async function getOrCreateUserWordGroupProgress(
+  userId: number,
+  wordGroupId: number,
+  totalWords: number
+) {
+  const existing = await getProgressRowForWordGroup(userId, wordGroupId);
+  if (existing) return existing;
+
+  const { data: inserted, error } = await supabase
+    .from('user_word_group_progress')
+    .insert({
+      user_id: userId,
+      word_group_id: wordGroupId,
+      learned_words: 0,
+      total_words: totalWords,
+      flashcards_completed: false,
+      flashcards_known: 0,
+      flashcards_unknown: 0,
+      test_best_correct: 0,
+      test_last_correct: 0,
+      test_last_incorrect: 0,
+      test_last_percentage: 0,
+      test_passed: false,
+      match_completed: false,
+      progress_percent: 0,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return inserted;
+}
+
+async function upsertUserWordGroupProgress(
+  userId: number,
+  wordGroupId: number,
+  patch: Record<string, unknown>
+) {
+  const { error } = await supabase.from('user_word_group_progress').upsert(
+    {
+      user_id: userId,
+      word_group_id: wordGroupId,
+      updated_at: new Date().toISOString(),
+      ...patch,
+    },
+    { onConflict: 'user_id,word_group_id' }
+  );
+  if (error) throw error;
+}
+
+async function updateSubtopicProgress(userId: number, subtopicId: string) {
+  const groups = await getWordGroupsBySubtopic(subtopicId);
+  const groupIds = groups.map((group) => group.id);
+  const { data: rows, error } =
+    groupIds.length > 0
+      ? await supabase
+          .from('user_word_group_progress')
+          .select('word_group_id, learned_words, total_words')
+          .eq('user_id', userId)
+          .in('word_group_id', groupIds)
+      : { data: [], error: null };
+  if (error) throw error;
+
+  const rowsByGroup = new Map<number, { learned_words?: number; total_words?: number }>();
+  for (const row of rows ?? []) {
+    rowsByGroup.set(Number(row.word_group_id), row);
+  }
+
+  let learnedWords = 0;
+  let totalWords = 0;
+  for (const group of groups) {
+    const row = rowsByGroup.get(group.id);
+    learnedWords += Number(row?.learned_words ?? 0);
+    totalWords += Math.max(Number(row?.total_words ?? 0), Number(group.total_words ?? 0));
+  }
+
+  const progressPercent = totalWords > 0 ? (learnedWords / totalWords) * 100 : 0;
+  const { error: upsertError } = await supabase.from('user_subtopic_progress').upsert(
+    {
+      user_id: userId,
+      subtopic_id: subtopicId,
+      learned_words: learnedWords,
+      total_words: totalWords,
+      progress_percent: progressPercent,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id,subtopic_id' }
+  );
+  if (upsertError) throw upsertError;
+}
+
+async function updateTopicProgress(userId: number, topicId: string) {
+  const subtopics = await getSubtopicsByTopic(topicId);
+  let learnedWords = 0;
+  let totalWords = 0;
+
+  for (const subtopic of subtopics) {
+    const groups = await getWordGroupsBySubtopic(subtopic.id);
+    const groupIds = groups.map((group) => group.id);
+    const { data: rows, error } =
+      groupIds.length > 0
+        ? await supabase
+            .from('user_word_group_progress')
+            .select('word_group_id, learned_words, total_words')
+            .eq('user_id', userId)
+            .in('word_group_id', groupIds)
+        : { data: [], error: null };
+    if (error) throw error;
+
+    const rowsByGroup = new Map<number, { learned_words?: number; total_words?: number }>();
+    for (const row of rows ?? []) {
+      rowsByGroup.set(Number(row.word_group_id), row);
+    }
+
+    for (const group of groups) {
+      const row = rowsByGroup.get(group.id);
+      learnedWords += Number(row?.learned_words ?? 0);
+      totalWords += Math.max(Number(row?.total_words ?? 0), Number(group.total_words ?? 0));
+    }
+  }
+
+  const progressPercent = totalWords > 0 ? (learnedWords / totalWords) * 100 : 0;
+  const { error: upsertError } = await supabase.from('user_topic_progress').upsert(
+    {
+      user_id: userId,
+      topic_id: topicId,
+      learned_words: learnedWords,
+      total_words: totalWords,
+      progress_percent: progressPercent,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id,topic_id' }
+  );
+  if (upsertError) throw upsertError;
+}
+
+async function updateTopicProgressForWordGroup(userId: number, wordGroupId: number) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) return;
+  await updateSubtopicProgress(userId, group.subtopic_id);
+  const { data: subtopic, error } = await supabase
+    .from('vocabulary_subtopics')
+    .select('topic_id')
+    .eq('id', group.subtopic_id)
+    .maybeSingle();
+  if (error) throw error;
+  if (subtopic?.topic_id) {
+    await updateTopicProgress(userId, String(subtopic.topic_id));
+  }
+}
+
+async function insertUserVocabularyStep2Attempt(
+  userId: number,
+  wordGroupId: number,
+  activityDate: string,
+  correctAnswers: number,
+  incorrectAnswers: number,
+  totalQuestions: number,
+  percentage: number
+) {
+  const { error } = await supabase.from('user_vocabulary_step2_attempts').insert({
+    user_id: userId,
+    word_group_id: wordGroupId,
+    activity_date: activityDate,
+    correct_answers: correctAnswers,
+    incorrect_answers: incorrectAnswers,
+    total_questions: totalQuestions,
+    percentage,
+  });
+  if (error) throw error;
+}
+
+function aggregateVocabularyStep2Stats(
+  rows: Array<{ activity_date: string; word_group_id: number | string; correct_answers: number }>,
+  recentDates: string[],
+  todayStr: string
+) {
+  const maxByDayAndWordGroup = new Map<string, number>();
+  for (const row of rows) {
+    const key = `${row.activity_date}:${String(row.word_group_id)}`;
+    const prev = maxByDayAndWordGroup.get(key) ?? 0;
+    maxByDayAndWordGroup.set(key, Math.max(prev, Number(row.correct_answers ?? 0)));
+  }
+
+  const sumByDay = new Map<string, number>();
+  for (const [key, correct] of maxByDayAndWordGroup.entries()) {
+    const day = key.split(':')[0] ?? '';
+    if (!day) continue;
+    sumByDay.set(day, (sumByDay.get(day) ?? 0) + correct);
+  }
+
+  return {
+    todayWords: sumByDay.get(todayStr) ?? 0,
+    weekWords: recentDates.reduce(
+      (sum, dateKey) => sum + (sumByDay.get(dateKey) ?? 0),
+      0
+    ),
+  };
+}
+
+async function getVocabularyStep2DailyStats(userId: number) {
+  const recentDates = getRecentAppDateStrings(7);
+  const startStr = recentDates[0] ?? formatDateInAppTimezone(new Date());
+  const todayStr =
+    recentDates[recentDates.length - 1] ?? formatDateInAppTimezone(new Date());
+  const { data, error } = await supabase
+    .from('user_vocabulary_step2_attempts')
+    .select('activity_date, word_group_id, correct_answers')
+    .eq('user_id', userId)
+    .gte('activity_date', startStr)
+    .lte('activity_date', todayStr);
+  if (error) throw error;
+  return aggregateVocabularyStep2Stats(
+    (data ?? []) as Array<{
+      activity_date: string;
+      word_group_id: number | string;
+      correct_answers: number;
+    }>,
+    recentDates,
+    todayStr
+  );
+}
+
+async function saveStep1Result(
+  userId: number,
+  wordGroupId: number,
+  input: { known: number; unknown: number }
+) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) throw new Error('Word group not found');
+
+  const totalWords = group.total_words;
+  const known = Math.max(0, Math.min(input.known, totalWords));
+  const unknown = Math.max(0, Math.min(input.unknown, totalWords - known));
+  await getOrCreateUserWordGroupProgress(userId, wordGroupId, totalWords);
+  await upsertUserWordGroupProgress(userId, wordGroupId, {
+    flashcards_known: known,
+    flashcards_unknown: unknown,
+    flashcards_completed: true,
+  });
+  const row = await getProgressRowForWordGroup(userId, wordGroupId);
+  return mapProgressRowToStepsState(row, totalWords);
+}
+
+async function applyStep2Progress(
+  userId: number,
+  wordGroupId: number,
+  input: { correct: number; incorrect?: number; totalQuestions?: number }
+) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) throw new Error('Word group not found');
+
+  const correct = Math.max(0, Number(input.correct ?? 0));
+  const incorrect = Math.max(0, Number(input.incorrect ?? 0));
+  let attemptsTotal = correct + incorrect;
+  if (input.totalQuestions != null && input.totalQuestions > 0) {
+    attemptsTotal = Math.min(Number(input.totalQuestions), attemptsTotal);
+  }
+  if (attemptsTotal <= 0) {
+    throw new Error('Total answers must be > 0');
+  }
+
+  const totalWordsForProgress = group.total_words > 0 ? group.total_words : attemptsTotal;
+  const percentage = (correct / attemptsTotal) * 100;
+  const existingRow = await getOrCreateUserWordGroupProgress(
+    userId,
+    wordGroupId,
+    totalWordsForProgress
+  );
+
+  const previousBestCorrect = Number(existingRow?.test_best_correct ?? 0);
+  const previousPassed = existingRow?.test_passed ?? false;
+  const previousLearned = Number(existingRow?.learned_words ?? 0);
+  const nextBestCorrect = Math.max(previousBestCorrect, correct);
+  const nextPassed = previousPassed || percentage >= MATCH_UNLOCK_PERCENT;
+  const learnedWords = Math.max(
+    previousLearned,
+    Math.min(nextBestCorrect, totalWordsForProgress)
+  );
+  const progressPercent =
+    totalWordsForProgress > 0 ? (learnedWords / totalWordsForProgress) * 100 : 0;
+
+  await upsertUserWordGroupProgress(userId, wordGroupId, {
+    test_last_correct: correct,
+    test_last_incorrect: attemptsTotal - correct,
+    test_last_percentage: percentage,
+    test_passed: nextPassed,
+    test_best_correct: nextBestCorrect,
+    learned_words: learnedWords,
+    total_words: totalWordsForProgress,
+    progress_percent: progressPercent,
+  });
+
+  const pointsAwarded = calculateImprovementDelta(previousBestCorrect, nextBestCorrect);
+  await awardUserPoints(userId, pointsAwarded);
+
+  try {
+    await insertUserVocabularyStep2Attempt(
+      userId,
+      wordGroupId,
+      formatDateInAppTimezone(new Date()),
+      correct,
+      attemptsTotal - correct,
+      attemptsTotal,
+      percentage
+    );
+  } catch (error) {
+    console.error('[applyStep2Progress] step2 attempt log failed', error);
+  }
+
+  await updateTopicProgressForWordGroup(userId, wordGroupId);
+  const rowFinal = await getProgressRowForWordGroup(userId, wordGroupId);
+  return {
+    rowFinal,
+    totalWordsForProgress,
+    learnedWords,
+    percentage,
+    pointsAwarded,
+    matchUnlocked:
+      totalWordsForProgress > 0 &&
+      (nextBestCorrect / totalWordsForProgress) * 100 >= MATCH_UNLOCK_PERCENT,
+  };
+}
+
+async function saveStep2Result(
+  userId: number,
+  wordGroupId: number,
+  input: { correct: number; incorrect: number; totalQuestions?: number }
+) {
+  const result = await applyStep2Progress(userId, wordGroupId, input);
+  return mapProgressRowToStepsState(result.rowFinal, result.totalWordsForProgress);
+}
+
+async function completeFlashcards(userId: number, wordGroupId: number) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) throw new Error('Word group not found');
+  await getOrCreateUserWordGroupProgress(userId, wordGroupId, group.total_words);
+  await upsertUserWordGroupProgress(userId, wordGroupId, {
+    flashcards_completed: true,
+  });
+  return { success: true };
+}
+
+async function finishMatch(
+  userId: number,
+  wordGroupId: number,
+  correctPairs: number
+) {
+  const group = await getWordGroupById(wordGroupId);
+  if (!group) throw new Error('Word group not found');
+  const existing = await getOrCreateUserWordGroupProgress(
+    userId,
+    wordGroupId,
+    group.total_words
+  );
+  const pointsAwarded = calculateCappedMatchPoints(
+    existing?.match_completed === true,
+    correctPairs,
+    group.total_words
+  );
+  await upsertUserWordGroupProgress(userId, wordGroupId, {
+    match_completed: true,
+  });
+  await awardUserPoints(userId, pointsAwarded);
+  return { success: true, points_awarded: pointsAwarded };
+}
+
+async function finishTest(
+  userId: number,
+  wordGroupId: number,
+  correctAnswers: number,
+  totalQuestions: number
+) {
+  const result = await applyStep2Progress(userId, wordGroupId, {
+    correct: correctAnswers,
+    incorrect: Math.max(0, totalQuestions - correctAnswers),
+    totalQuestions,
+  });
+  return {
+    learned_words: result.learnedWords,
+    percentage: result.percentage,
+    points_awarded: result.pointsAwarded,
+    match_unlocked: result.matchUnlocked,
+  };
 }
 
 async function handleTopics(userId: number, res: VercelResponse) {
@@ -476,15 +865,10 @@ async function handlePostStep1(
   }
 
   try {
-    const state = await vocabularyProgressService.saveStep1Result(
-      supabase,
-      userId,
-      wordGroupId,
-      {
-        known: Number(body.known ?? 0),
-        unknown: Number(body.unknown ?? 0),
-      }
-    );
+    const state = await saveStep1Result(userId, wordGroupId, {
+      known: Number(body.known ?? 0),
+      unknown: Number(body.unknown ?? 0),
+    });
     return res.status(200).json(state);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -512,17 +896,12 @@ async function handlePostStep2(
   }
 
   try {
-    const state = await vocabularyProgressService.saveStep2Result(
-      supabase,
-      userId,
-      wordGroupId,
-      {
-        correct: Math.max(0, Number(body.correct ?? 0)),
-        incorrect: Math.max(0, Number(body.incorrect ?? 0)),
-        totalQuestions:
-          body.totalQuestions != null ? Number(body.totalQuestions) : undefined,
-      }
-    );
+    const state = await saveStep2Result(userId, wordGroupId, {
+      correct: Math.max(0, Number(body.correct ?? 0)),
+      incorrect: Math.max(0, Number(body.incorrect ?? 0)),
+      totalQuestions:
+        body.totalQuestions != null ? Number(body.totalQuestions) : undefined,
+    });
     return res.status(200).json(state);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -559,12 +938,7 @@ async function handlePostMatchFinish(
   }
 
   try {
-    const result = await matchPairsService.finishMatch(
-      supabase,
-      userId,
-      wordGroupId,
-      correctPairs
-    );
+    const result = await finishMatch(userId, wordGroupId, correctPairs);
     return res.status(200).json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -598,11 +972,7 @@ async function handlePostFlashcardsComplete(
   }
 
   try {
-    const result = await flashcardsService.completeFlashcards(
-      supabase,
-      userId,
-      wordGroupId
-    );
+    const result = await completeFlashcards(userId, wordGroupId);
     return res.status(200).json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -642,8 +1012,7 @@ async function handlePostTestFinish(
   }
 
   try {
-    const result = await vocabularyTestService.finishTest(
-      supabase,
+    const result = await finishTest(
       userId,
       wordGroupId,
       correctAnswers,
@@ -660,7 +1029,7 @@ async function handlePostTestFinish(
 }
 
 async function handleDailyWordStats(userId: number, res: VercelResponse) {
-  const stats = await getUserVocabularyStep2DailyStats(supabase, userId);
+  const stats = await getVocabularyStep2DailyStats(userId);
   return res.status(200).json(stats);
 }
 

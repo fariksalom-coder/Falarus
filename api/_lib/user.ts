@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from './supabase.js';
 import { parseBody } from './request.js';
-import { getAccessInfo } from '../../server/services/subscription.service.js';
-import { buildRequestLogContext, logError } from '../../server/lib/logger.js';
+import { getAccessInfo } from './subscription.js';
+import { buildRequestLogContext, logError } from './logger.js';
 
 async function handleMe(userId: number, res: VercelResponse) {
   const { data: user, error } = await supabase

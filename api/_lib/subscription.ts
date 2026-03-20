@@ -1,0 +1,150 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveFreeVocabularyIds } from './freeVocabularyIds.js';
+
+export type SubscriptionRow = {
+  id: number;
+  user_id: number;
+  plan_type: string;
+  started_at: string;
+  expires_at: string;
+  status: string;
+};
+
+export type AccessInfo = {
+  lessons_free_limit: number;
+  vocabulary_free_topic: number;
+  vocabulary_free_subtopic: number;
+  subscription_active: boolean;
+  vocabulary_free_topic_id?: string | null;
+  vocabulary_free_subtopic_id?: string | null;
+};
+
+const LESSONS_FREE_LIMIT = 3;
+const VOCABULARY_FREE_TOPIC = 1;
+const VOCABULARY_FREE_SUBTOPIC = 1;
+const ACCESS_CACHE_TTL_MS = 90 * 1000;
+const accessCache = new Map<number, { access: AccessInfo; until: number }>();
+
+export function invalidateAccessCache(userId: number): void {
+  const uid = Number(userId);
+  if (Number.isFinite(uid)) accessCache.delete(uid);
+}
+
+function getCachedAccess(userId: number): AccessInfo | null {
+  const entry = accessCache.get(Number(userId));
+  if (!entry || Date.now() > entry.until) return null;
+  return entry.access;
+}
+
+function setCachedAccess(userId: number, access: AccessInfo): void {
+  accessCache.set(Number(userId), {
+    access,
+    until: Date.now() + ACCESS_CACHE_TTL_MS,
+  });
+}
+
+export async function getActiveSubscription(
+  supabase: SupabaseClient,
+  userId: number
+): Promise<SubscriptionRow | null> {
+  const now = new Date().toISOString();
+  const uid = Number(userId);
+  if (!Number.isFinite(uid)) return null;
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('id, user_id, plan_type, started_at, expires_at, status')
+    .eq('user_id', uid)
+    .gt('expires_at', now)
+    .order('expires_at', { ascending: false })
+    .limit(5);
+  if (error) throw error;
+  return (
+    (data as SubscriptionRow[] | null)?.find(
+      (row) => row && String(row.status).toLowerCase() === 'active'
+    ) ?? null
+  );
+}
+
+export async function hasActiveAccess(
+  supabase: SupabaseClient,
+  userId: number
+): Promise<boolean> {
+  const uid = Number(userId);
+  if (!Number.isFinite(uid)) return false;
+  const sub = await getActiveSubscription(supabase, uid);
+  if (sub) return true;
+
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('plan_expires_at')
+    .eq('id', uid)
+    .single();
+  if (!error && user?.plan_expires_at != null && user.plan_expires_at !== '') {
+    const expiry = new Date(user.plan_expires_at as string);
+    if (Number.isFinite(expiry.getTime()) && expiry > new Date()) return true;
+  }
+
+  const { data: approvedPayment } = await supabase
+    .from('payments')
+    .select('id')
+    .eq('user_id', uid)
+    .eq('status', 'approved')
+    .order('approved_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return !!approvedPayment;
+}
+
+export async function getAccessInfo(
+  supabase: SupabaseClient,
+  userId: number
+): Promise<AccessInfo> {
+  const uid = Number(userId);
+  if (!Number.isFinite(uid)) {
+    return {
+      lessons_free_limit: LESSONS_FREE_LIMIT,
+      vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
+      vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
+      subscription_active: false,
+    };
+  }
+
+  const cached = getCachedAccess(uid);
+  if (cached) return cached;
+
+  let subscriptionActive = await hasActiveAccess(supabase, uid);
+  if (!subscriptionActive) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('plan_expires_at')
+      .eq('id', uid)
+      .maybeSingle();
+    const expiresAt = user?.plan_expires_at;
+    if (expiresAt != null && expiresAt !== '') {
+      const expiry = new Date(expiresAt as string);
+      if (Number.isFinite(expiry.getTime()) && expiry > new Date()) {
+        subscriptionActive = true;
+      }
+    }
+  }
+
+  const { vocabulary_free_topic_id, vocabulary_free_subtopic_id } =
+    await resolveFreeVocabularyIds(supabase);
+
+  const access: AccessInfo = {
+    lessons_free_limit: LESSONS_FREE_LIMIT,
+    vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
+    vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
+    subscription_active: subscriptionActive,
+    vocabulary_free_topic_id: vocabulary_free_topic_id ?? undefined,
+    vocabulary_free_subtopic_id: vocabulary_free_subtopic_id ?? undefined,
+  };
+  setCachedAccess(uid, access);
+  return access;
+}
+
+export {
+  LESSONS_FREE_LIMIT,
+  VOCABULARY_FREE_TOPIC,
+  VOCABULARY_FREE_SUBTOPIC,
+};

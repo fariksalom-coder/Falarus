@@ -25,9 +25,9 @@ import {
 } from './_lib/referral.js';
 import { getActivityStreakPayload } from './_lib/activityStreak.js';
 import { awardUserPoints } from './_lib/awardUserPoints.js';
-import { syncUserLessonProgressPercent } from '../server/services/lessonProgressSnapshot.service.js';
-import { buildRequestLogContext, logError } from '../server/lib/logger.js';
-import { calculateImprovementDelta } from '../server/services/scoringRules.service.js';
+import { syncUserLessonProgressPercent } from './_lib/lessonProgress.js';
+import { buildRequestLogContext, logError } from './_lib/logger.js';
+import { calculateImprovementDelta } from './_lib/scoring.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];

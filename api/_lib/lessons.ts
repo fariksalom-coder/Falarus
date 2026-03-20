@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from './supabase.js';
-import { getAccessInfo } from '../../server/services/subscription.service.js';
+import { getAccessInfo } from './subscription.js';
 import {
   applyLessonsLock,
   canAccessLesson,
   getLessonPreview,
-} from '../../server/services/accessControl.service.js';
-import { syncUserLessonProgressPercent } from '../../server/services/lessonProgressSnapshot.service.js';
-import { buildRequestLogContext, logError } from '../../server/lib/logger.js';
+} from './accessControl.js';
+import { syncUserLessonProgressPercent } from './lessonProgress.js';
+import { buildRequestLogContext, logError } from './logger.js';
 
 async function handleLessonsList(userId: number, res: VercelResponse) {
   const { data: user, error: userError } = await supabase

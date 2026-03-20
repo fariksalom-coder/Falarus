@@ -157,6 +157,7 @@ async function main() {
   const access = await requestApi('GET', '/api/user/access', token);
   await requestApi('GET', '/api/user/payments', token);
   await requestApi('GET', '/api/leaderboard', token, { period: 'all' });
+  await requestApi('GET', '/api/lesson-task-results', token);
 
   const lessons = await requestApi('GET', '/api/lessons', token);
   if (!Array.isArray(lessons) || lessons.length === 0) {
