@@ -415,10 +415,17 @@ export default function VocabularyPartPage() {
   }
 
   // Hard guard: prevent direct navigation to Test/Match without completing required steps.
+  // Prefer server state; if API failed (404) but user finished cards locally, still allow test.
+  const localCardsCompleted =
+    !!content?.topicId &&
+    !!content?.subtopicId &&
+    !!part?.id &&
+    getStageStatus(content.topicId, content.subtopicId, part.id, 'cards') === 'completed';
   const safeStep1Completed =
+    localCardsCompleted ||
     (effectiveStepsState?.step1.known ?? 0) + (effectiveStepsState?.step1.unknown ?? 0) > 0;
 
-  if (mode === 'test' && (!effectiveStepsState || !safeStep1Completed)) {
+  if (mode === 'test' && !safeStep1Completed) {
     return (
       <div className="min-h-screen bg-slate-50">
         <main className="mx-auto max-w-[720px] px-4 py-8">

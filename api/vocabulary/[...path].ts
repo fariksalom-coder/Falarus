@@ -13,8 +13,12 @@ import {
   resolveFreeVocabularyIds,
 } from '../../server/lib/freeVocabularyIds.js';
 
+const VOCAB_API_PREFIXES = new Set(['topics', 'subtopics', 'word-groups', 'progress', 'tasks', 'daily-word-stats']);
+
 /**
  * Vercel may pass catch-all as query.path string, string[], or omit it — parse URL as fallback.
+ * On Vercel, req.url for api/vocabulary/[...path] is often only the tail (e.g. /subtopics/kundalik-hayot)
+ * without /api/vocabulary, so we must not require the word "vocabulary" in pathname.
  */
 function getVocabularyPathSegments(req: VercelRequest): string[] {
   const raw = req.query.path;
@@ -27,9 +31,19 @@ function getVocabularyPathSegments(req: VercelRequest): string[] {
   const url = req.url || (req as { originalUrl?: string }).originalUrl || '';
   const pathname = typeof url === 'string' ? url.split('?')[0] : '';
   const parts = pathname.split('/').filter(Boolean);
+  // /api/vocabulary/subtopics/...
+  const apiIdx = parts.indexOf('api');
+  if (apiIdx >= 0 && parts[apiIdx + 1] === 'vocabulary' && parts.length > apiIdx + 2) {
+    return parts.slice(apiIdx + 2);
+  }
+  // /vocabulary/subtopics/... (no leading api)
   const vIdx = parts.indexOf('vocabulary');
   if (vIdx >= 0 && vIdx < parts.length - 1) {
     return parts.slice(vIdx + 1);
+  }
+  // Tail only: /subtopics/kundalik-hayot — common on Vercel for this handler
+  if (parts.length > 0 && VOCAB_API_PREFIXES.has(parts[0])) {
+    return parts;
   }
   return [];
 }
