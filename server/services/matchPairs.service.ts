@@ -1,5 +1,6 @@
 import type { Supabase } from '../types/vocabulary';
 import * as repo from '../repositories/vocabularyRepository.js';
+import { calculateCappedMatchPoints } from './scoringRules.service.js';
 
 /**
  * Finish match pairs: award points, mark match_completed.
@@ -15,9 +16,19 @@ export async function finishMatch(
   if (!group) throw new Error('Word group not found');
 
   // Security cap: don't allow awarding more points than total pairs/words in the group.
-  const pointsAwarded = Math.min(Math.max(0, Math.floor(correctPairs)), group.total_words);
+  const existing = await repo.getOrCreateUserWordGroupProgress(
+    supabase,
+    userId,
+    wordGroupId,
+    group.total_words
+  );
+  const alreadyCompleted = existing?.match_completed === true;
+  const pointsAwarded = calculateCappedMatchPoints(
+    alreadyCompleted,
+    correctPairs,
+    group.total_words
+  );
 
-  await repo.getOrCreateUserWordGroupProgress(supabase, userId, wordGroupId, group.total_words);
   await repo.upsertUserWordGroupProgress(supabase, userId, wordGroupId, {
     match_completed: true,
   });

@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../middleware/adminAuth';
 import * as subscriptionService from '../services/subscription.service';
+import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
 
 export function createAdminController(supabase: SupabaseClient) {
   // --- Login (no auth)
@@ -159,11 +160,7 @@ export function createAdminController(supabase: SupabaseClient) {
     if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
 
     const now = new Date().toISOString();
-    const { count: lessonsCompleted } = await supabase
-      .from('user_progress')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', id)
-      .eq('completed', 1);
+    const lessonsCompleted = await getUserCompletedLessonsCount(supabase, id);
     const { count: wordsLearned } = await supabase
       .from('vocabulary')
       .select('*', { count: 'exact', head: true })
@@ -186,7 +183,7 @@ export function createAdminController(supabase: SupabaseClient) {
       },
       statistics: {
         total_points: (user as any).total_points ?? 0,
-        lessons_completed: lessonsCompleted ?? 0,
+        lessons_completed: lessonsCompleted,
         words_learned: wordsLearned ?? 0,
       },
       referral: {

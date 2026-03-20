@@ -53,20 +53,9 @@ export async function addUserPoints(
   token: string | null,
   amount: number
 ): Promise<{ points: number; weekly_points: number; monthly_points: number } | null> {
-  if (!token || amount <= 0) return null;
-  try {
-    const res = await fetch(apiUrl('/api/user/points'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ amount }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { points: number; weekly_points: number; monthly_points: number };
-    return data;
-  } catch {
-    return null;
-  }
+  // Deprecated: points are now awarded through server-side lesson/vocabulary progress endpoints
+  // to keep scoring idempotent and avoid double-counting on retries.
+  void token;
+  void amount;
+  return null;
 }

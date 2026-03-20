@@ -10,6 +10,7 @@ import {
   setCachedTopicsProgress,
   type VocabularyTopic,
 } from '../api/vocabulary';
+import { isVocabularyTopicLockedForUser } from '../utils/vocabularyAccess';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -113,10 +114,7 @@ export default function VocabularyPage() {
             const progressPercent = wordCount > 0 ? Math.round((learnedWords / wordCount) * 100) : 0;
             const accentBg = ACCENT_BG[topicIndex % ACCENT_BG.length];
             const accentIcon = ACCENT_ICON[topicIndex % ACCENT_ICON.length];
-            const isFreeUser = access != null && !access.subscription_active;
-            const isFirstTopic = topicIndex === 0;
-            const isUnlocked = access != null && (access.subscription_active || (isFreeUser && isFirstTopic));
-            const locked = !isUnlocked;
+            const locked = isVocabularyTopicLockedForUser(access, topic.id);
 
             return (
               <button

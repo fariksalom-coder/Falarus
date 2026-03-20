@@ -102,6 +102,7 @@ const shuffle = <T,>(items: T[]): T[] => {
 
 export default function LessonElevenTaskSevenPage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [message, setMessage] = useState('');

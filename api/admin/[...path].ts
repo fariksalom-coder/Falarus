@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
+import { getUserCompletedLessonsCount } from '../../server/services/lessonProgressSnapshot.service.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
 
@@ -219,7 +220,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .single();
       if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
       const now = new Date().toISOString();
-      const { count: lessonsCompleted } = await supabase.from('user_progress').select('id', { count: 'exact', head: true }).eq('user_id', id).eq('completed', 1);
+      const lessonsCompleted = await getUserCompletedLessonsCount(supabase, id);
       const { count: wordsLearned } = await supabase.from('vocabulary').select('id', { count: 'exact', head: true }).eq('user_id', id);
       const { data: refs } = await supabase.from('referrals').select('id').eq('referrer_id', id);
       return res.status(200).json({
@@ -234,7 +235,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         statistics: {
           total_points: (user as any).total_points ?? 0,
-          lessons_completed: lessonsCompleted ?? 0,
+          lessons_completed: lessonsCompleted,
           words_learned: wordsLearned ?? 0,
         },
         referral: {

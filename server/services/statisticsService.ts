@@ -1,4 +1,5 @@
 import type { Supabase } from '../types/progress';
+import { getUserCompletedLessonsCount } from './lessonProgressSnapshot.service.js';
 
 const USERS = 'users';
 const USER_TASKS = 'user_tasks';
@@ -39,12 +40,7 @@ export async function getUserStatistics(
     .eq('status', 'PASSED');
   if (tasksErr) throw tasksErr;
 
-  const { count: lessonsCompleted, error: lessonsErr } = await supabase
-    .from(USER_LESSONS)
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'COMPLETED');
-  if (lessonsErr) throw lessonsErr;
+  const lessonsCompleted = await getUserCompletedLessonsCount(supabase as any, userId);
 
   const { data: taskRows, error: taskRowsErr } = await supabase
     .from(USER_TASKS)
@@ -62,7 +58,7 @@ export async function getUserStatistics(
   return {
     total_points: user.total_points ?? 0,
     tasks_completed: tasksCompleted ?? 0,
-    lessons_completed: lessonsCompleted ?? 0,
+    lessons_completed: lessonsCompleted,
     average_accuracy: averageAccuracy,
   };
 }

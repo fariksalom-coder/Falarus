@@ -17,6 +17,9 @@ import {
 } from './_lib/referral.js';
 import { getActivityStreakPayload } from './_lib/activityStreak.js';
 import { awardUserPoints } from './_lib/awardUserPoints.js';
+import { syncUserLessonProgressPercent } from '../server/services/lessonProgressSnapshot.service.js';
+import { buildRequestLogContext, logError } from '../server/lib/logger.js';
+import { calculateImprovementDelta } from '../server/services/scoringRules.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -383,7 +386,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .maybeSingle();
 
         const prevCorrect = Number(prevRow?.correct ?? 0);
-        const delta = Math.max(0, correct - prevCorrect);
+        const delta = calculateImprovementDelta(prevCorrect, correct);
         await awardUserPoints(userId, delta);
 
         const row = {
@@ -402,13 +405,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.error('[api/lesson-task-results] POST error:', error.message);
           return res.status(500).json({ error: error.message });
         }
-        return res.status(200).json({ success: true });
+        const progress = await syncUserLessonProgressPercent(supabase, userId);
+        return res.status(200).json({ success: true, progress });
       }
 
       return res.status(405).json({ error: 'Method not allowed' });
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
-      console.error('[api/lesson-task-results]', err.message, err.stack);
+      logError(
+        'api.lesson_task_results.failed',
+        err,
+        buildRequestLogContext('vercel', req, { path: 'lesson-task-results', userId })
+      );
       if (err.message.includes('SUPABASE')) {
         return res.status(503).json({ error: 'Server configuration error' });
       }

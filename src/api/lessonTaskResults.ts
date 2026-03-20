@@ -1,4 +1,5 @@
 import { apiUrl } from '../api';
+import type { LessonTaskSavedEventDetail } from '../utils/lessonTaskResults';
 
 export type LessonTaskResultItem = {
   lesson_path: string;
@@ -52,7 +53,17 @@ export async function saveLessonTaskResult(
       }),
     });
     if (res.ok && typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('lesson-task-saved'));
+      window.dispatchEvent(
+        new CustomEvent<LessonTaskSavedEventDetail>('lesson-task-saved', {
+          detail: {
+            source: 'server',
+            lessonPath,
+            taskNumber,
+            correct,
+            total,
+          },
+        })
+      );
     }
   } catch {
     // ignore

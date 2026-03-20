@@ -14,7 +14,10 @@ import {
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
-import { isVocabularySubtopicUnlocked } from '../utils/vocabularyAccess';
+import {
+  canAccessVocabularySubtopicRoute,
+  isVocabularyTopicLockedForUser,
+} from '../utils/vocabularyAccess';
 import {
   ChevronRight,
   ArrowLeft,
@@ -129,8 +132,7 @@ export default function VocabularyTopicPage() {
   const { hasPendingPayment } = usePaymentStatus();
 
   const topicIndex = topic != null ? VOCABULARY_TOPICS.findIndex((t) => t.id === topic.id) : -1;
-  const isTopicUnlocked =
-    access != null && (access.subscription_active || topicIndex === 0);
+  const isTopicUnlocked = topic != null ? !isVocabularyTopicLockedForUser(access, topic.id) : false;
 
   useEffect(() => {
     if (!topicId) {
@@ -250,13 +252,7 @@ export default function VocabularyTopicPage() {
           {topic.subtopics.map((subtopic, subtopicIndex) => {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
             const fromApi = subtopicsProgress.find((s) => s.id === subtopic.id);
-            const isFreeUser = access != null && !access.subscription_active;
-            const isFirstTopic = topicIndex === 0;
-            const isFirstSubtopic = subtopicIndex === 0;
-            const isUnlocked =
-              access != null &&
-              (access.subscription_active || isVocabularySubtopicUnlocked(access, topicIndex, subtopicIndex));
-            const locked = !isUnlocked;
+            const locked = !canAccessVocabularySubtopicRoute(access, topic.id, subtopic.id);
             const wordCount = getSubtopicWordCount(topic.id, subtopic.id);
             const learned = fromApi?.learned_words ?? getLearnedCount(topic.id, subtopic.id);
             const percent = wordCount > 0 ? Math.round((learned / wordCount) * 100) : 0;

@@ -3,6 +3,8 @@ import type { VocabularyTasksStatus } from '../types/vocabulary';
 import type { AccessInfo } from './subscription.service';
 import * as repo from '../repositories/vocabularyRepository.js';
 import * as progressCache from './progressCache.service.js';
+import { formatDateInAppTimezone } from '../lib/appDate.js';
+import { calculateImprovementDelta } from './scoringRules.service.js';
 
 const MATCH_UNLOCK_PERCENT = 80;
 
@@ -83,12 +85,16 @@ function mapProgressRowToStepsState(row: any | null, total_words: number): WordG
   const test_last_incorrect: number = row?.test_last_incorrect ?? 0;
   const storedPercentage: number = row?.test_last_percentage ?? 0;
   const storedPassed: boolean = row?.test_passed ?? false;
+  const testBestCorrect: number = row?.test_best_correct ?? 0;
 
   const attemptsTotal = test_last_correct + test_last_incorrect;
   const recomputedPercentage =
     attemptsTotal > 0 ? (test_last_correct / attemptsTotal) * 100 : 0;
   const percentage = attemptsTotal > 0 ? recomputedPercentage : storedPercentage;
-  const passed = attemptsTotal > 0 ? percentage >= 80 : storedPassed;
+  const currentAttemptPassed = attemptsTotal > 0 ? percentage >= 80 : false;
+  const bestPassed =
+    storedPassed ||
+    (total_words > 0 && (Math.max(testBestCorrect, test_last_correct) / total_words) * 100 >= 80);
 
   return {
     step1: {
@@ -104,10 +110,10 @@ function mapProgressRowToStepsState(row: any | null, total_words: number): WordG
       correct: test_last_correct,
       incorrect: test_last_incorrect,
       percentage,
-      passed,
+      passed: currentAttemptPassed,
     },
     step3: {
-      unlocked: passed,
+      unlocked: bestPassed,
     },
   };
 }
@@ -178,18 +184,28 @@ export async function saveStep2Result(
   const percentage = (correct / attemptsTotal) * 100;
   const passed = percentage >= 80;
 
-  await repo.getOrCreateUserWordGroupProgress(supabase, userId, wordGroupId, totalWordsForProgress);
+  const existingRow = await repo.getOrCreateUserWordGroupProgress(
+    supabase,
+    userId,
+    wordGroupId,
+    totalWordsForProgress
+  );
+  const previousBestCorrect = existingRow?.test_best_correct ?? 0;
+  const previousPassed = existingRow?.test_passed ?? false;
+  const nextBestCorrect = Math.max(previousBestCorrect, correct);
+  const nextPassed = previousPassed || passed;
+
   await repo.upsertUserWordGroupProgress(supabase, userId, wordGroupId, {
     test_last_correct: correct,
     test_last_incorrect: attemptsTotal - correct,
     test_last_percentage: percentage,
-    test_passed: passed,
-    test_best_correct: Math.max(correct, 0),
+    test_passed: nextPassed,
+    test_best_correct: nextBestCorrect,
   });
 
   // Award points for Step 2:
-  // 1 point per 1 correct answer (per completion attempt).
-  const pointsAwarded = Math.floor(Math.max(0, correct));
+  // 1 point per newly improved correct answer, so retries cannot farm points.
+  const pointsAwarded = calculateImprovementDelta(previousBestCorrect, nextBestCorrect);
   if (pointsAwarded > 0) {
     const { data: user } = await supabase
       .from('users')
@@ -218,8 +234,7 @@ export async function saveStep2Result(
 
   // Log Step 2 attempt for exact date-based statistics (Bugun / Bu hafta).
   // We store the completion by calendar date and later aggregate via MAX per (day, word_group).
-  const d = new Date();
-  const activityDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const activityDate = formatDateInAppTimezone(new Date());
   try {
     await repo.insertUserVocabularyStep2Attempt(
       supabase,
@@ -240,7 +255,7 @@ export async function saveStep2Result(
   // Keep monotonic growth to match existing vocabulary progress semantics.
   const rowAfter = await repo.getProgressRowForWordGroup(supabase, userId, wordGroupId);
   const existingLearned = rowAfter?.learned_words ?? 0;
-  const learnedWords = Math.max(existingLearned, Math.min(correct, totalWordsForProgress));
+  const learnedWords = Math.max(existingLearned, Math.min(nextBestCorrect, totalWordsForProgress));
 
   const learnedProgressPercent = totalWordsForProgress > 0 ? (learnedWords / totalWordsForProgress) * 100 : 0;
 

@@ -7,15 +7,17 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
 import { requireAuth } from '../_lib/auth.js';
-import {
-  FREE_VOCAB_SUBTOPIC_ID,
-  FREE_VOCAB_TOPIC_ID,
-  resolveFreeVocabularyIds,
-} from '../../server/lib/freeVocabularyIds.js';
 import * as vocabularyProgressService from '../../server/services/vocabularyProgress.service.js';
 import * as matchPairsService from '../../server/services/matchPairs.service.js';
 import * as flashcardsService from '../../server/services/flashcards.service.js';
 import * as vocabularyTestService from '../../server/services/vocabularyTest.service.js';
+import {
+  applySubtopicsLock as applyServerSubtopicsLock,
+  canAccessSubtopic,
+} from '../../server/services/accessControl.service.js';
+import { getAccessInfo as getServerAccessInfo } from '../../server/services/subscription.service.js';
+import { getUserVocabularyStep2DailyStats } from '../../server/repositories/vocabularyRepository.js';
+import { buildRequestLogContext, logError } from '../../server/lib/logger.js';
 
 const VOCAB_API_PREFIXES = new Set([
   'topics',
@@ -159,9 +161,13 @@ function mapProgressRowToStepsState(row: any, total_words: number) {
   const test_last_incorrect = row?.test_last_incorrect ?? 0;
   const storedPercentage = row?.test_last_percentage ?? 0;
   const storedPassed = row?.test_passed ?? false;
+  const test_best_correct = row?.test_best_correct ?? 0;
   const attemptsTotal = test_last_correct + test_last_incorrect;
   const percentage = attemptsTotal > 0 ? (test_last_correct / attemptsTotal) * 100 : storedPercentage;
-  const passed = attemptsTotal > 0 ? percentage >= 80 : storedPassed;
+  const currentAttemptPassed = attemptsTotal > 0 ? percentage >= 80 : false;
+  const bestPassed =
+    storedPassed ||
+    (total_words > 0 && (Math.max(test_best_correct, test_last_correct) / total_words) * 100 >= 80);
   return {
     step1: {
       completed: flashcards_completed && flashcards_known + flashcards_unknown > 0,
@@ -173,9 +179,9 @@ function mapProgressRowToStepsState(row: any, total_words: number) {
       correct: test_last_correct,
       incorrect: test_last_incorrect,
       percentage,
-      passed,
+      passed: currentAttemptPassed,
     },
-    step3: { unlocked: passed },
+    step3: { unlocked: bestPassed },
   };
 }
 
@@ -257,50 +263,41 @@ async function getUserSubtopicProgress(userId: number, topicId: string) {
   return (data ?? []) as { subtopic_id: string; learned_words: number; total_words: number; progress_percent: number }[];
 }
 
-async function hasActiveAccess(userId: number): Promise<boolean> {
-  const now = new Date().toISOString();
-  const { data: sub } = await supabase
-    .from('subscriptions')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .gt('expires_at', now)
-    .limit(1)
-    .maybeSingle();
-  if (sub) return true;
-  const { data: user } = await supabase
-    .from('users')
-    .select('plan_expires_at')
-    .eq('id', userId)
-    .single();
-  return user?.plan_expires_at != null && new Date(user.plan_expires_at) > new Date();
-}
-
 async function getAccessInfo(userId: number) {
-  const subscription_active = await hasActiveAccess(userId);
-  const { vocabulary_free_topic_id, vocabulary_free_subtopic_id } =
-    await resolveFreeVocabularyIds(supabase);
-  return { subscription_active, vocabulary_free_topic_id, vocabulary_free_subtopic_id };
+  return getServerAccessInfo(supabase, userId);
 }
 
-function applySubtopicsLock(
-  list: Array<{ id: string; topic_id?: string; [k: string]: unknown }>,
-  topicId: string,
-  access: { subscription_active: boolean; vocabulary_free_topic_id: string | null; vocabulary_free_subtopic_id: string | null }
-) {
-  if (access.subscription_active) {
-    return list.map((s) => ({ ...s, locked: false }));
+async function getWordGroupAccessContext(wordGroupId: number) {
+  const { data: group, error: groupError } = await supabase
+    .from('vocabulary_word_groups')
+    .select('id, subtopic_id')
+    .eq('id', wordGroupId)
+    .maybeSingle();
+  if (groupError) throw groupError;
+  if (!group) return null;
+  const { data: subtopic, error: subtopicError } = await supabase
+    .from('vocabulary_subtopics')
+    .select('topic_id')
+    .eq('id', (group as { subtopic_id: string }).subtopic_id)
+    .maybeSingle();
+  if (subtopicError) throw subtopicError;
+  return {
+    wordGroupId: (group as { id: number }).id,
+    subtopicId: (group as { subtopic_id: string }).subtopic_id,
+    topicId: (subtopic as { topic_id?: string } | null)?.topic_id ?? null,
+  };
+}
+
+async function ensureWordGroupAccess(userId: number, wordGroupId: number) {
+  const context = await getWordGroupAccessContext(wordGroupId);
+  if (!context?.topicId) {
+    return { status: 'not_found' as const };
   }
-  const { vocabulary_free_topic_id, vocabulary_free_subtopic_id } = access;
-  const isFreeTopic = vocabulary_free_topic_id === topicId;
-  return list.map((s) => {
-    if (!isFreeTopic) return { ...s, locked: true };
-    const salomAlwaysFree =
-      topicId === FREE_VOCAB_TOPIC_ID && s.id === FREE_VOCAB_SUBTOPIC_ID;
-    const matchesAccessPair =
-      vocabulary_free_subtopic_id != null && s.id === vocabulary_free_subtopic_id;
-    return { ...s, locked: !(salomAlwaysFree || matchesAccessPair) };
-  });
+  const access = await getAccessInfo(userId);
+  if (!canAccessSubtopic(context.topicId, context.subtopicId, access)) {
+    return { status: 'locked' as const };
+  }
+  return { status: 'ok' as const, context };
 }
 
 // --- handlers ---
@@ -357,7 +354,7 @@ async function handleSubtopics(userId: number, topicId: string, res: VercelRespo
       };
     })
   );
-  const withLock = applySubtopicsLock(list, topicId, access);
+  const withLock = applyServerSubtopicsLock(list, topicId, access);
   return res.status(200).json(withLock);
 }
 
@@ -373,11 +370,7 @@ async function handleWordGroups(userId: number, subtopicId: string, res: VercelR
   }
   const topicId = (subtopic as { topic_id?: string } | null)?.topic_id ?? '';
   const access = await getAccessInfo(userId);
-  const allowed =
-    access.subscription_active ||
-    (topicId === FREE_VOCAB_TOPIC_ID && subtopicId === FREE_VOCAB_SUBTOPIC_ID) ||
-    (access.vocabulary_free_topic_id === topicId && access.vocabulary_free_subtopic_id === subtopicId);
-  if (!allowed) {
+  if (!canAccessSubtopic(topicId, subtopicId, access)) {
     return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
   }
   const groups = await getWordGroupsBySubtopic(subtopicId);
@@ -420,6 +413,11 @@ async function handleWordGroups(userId: number, subtopicId: string, res: VercelR
 }
 
 async function handleWordGroupSteps(userId: number, wordGroupId: number, res: VercelResponse) {
+  const accessCheck = await ensureWordGroupAccess(userId, wordGroupId);
+  if (accessCheck.status === 'not_found') return res.status(404).json({ error: 'Not found' });
+  if (accessCheck.status === 'locked') {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
+  }
   const group = await getWordGroupById(wordGroupId);
   if (!group) return res.status(404).json({ error: 'Not found' });
   const row = await getProgressRowForWordGroup(userId, wordGroupId);
@@ -428,6 +426,11 @@ async function handleWordGroupSteps(userId: number, wordGroupId: number, res: Ve
 }
 
 async function handleTasks(userId: number, wordGroupId: number, res: VercelResponse) {
+  const accessCheck = await ensureWordGroupAccess(userId, wordGroupId);
+  if (accessCheck.status === 'not_found') return res.status(404).json({ error: 'Not found' });
+  if (accessCheck.status === 'locked') {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
+  }
   const group = await getWordGroupById(wordGroupId);
   if (!group) return res.status(404).json({ error: 'Not found' });
   const row = await getProgressRowForWordGroup(userId, wordGroupId);
@@ -461,6 +464,11 @@ async function handleTasks(userId: number, wordGroupId: number, res: VercelRespo
 }
 
 async function handlePostStep1(userId: number, wordGroupId: number, body: Record<string, unknown>, res: VercelResponse) {
+  const accessCheck = await ensureWordGroupAccess(userId, wordGroupId);
+  if (accessCheck.status === 'not_found') return res.status(404).json({ error: 'Not found' });
+  if (accessCheck.status === 'locked') {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
+  }
   try {
     const state = await vocabularyProgressService.saveStep1Result(supabase, userId, wordGroupId, {
       known: Number(body.known ?? 0),
@@ -475,6 +483,11 @@ async function handlePostStep1(userId: number, wordGroupId: number, body: Record
 }
 
 async function handlePostStep2(userId: number, wordGroupId: number, body: Record<string, unknown>, res: VercelResponse) {
+  const accessCheck = await ensureWordGroupAccess(userId, wordGroupId);
+  if (accessCheck.status === 'not_found') return res.status(404).json({ error: 'Not found' });
+  if (accessCheck.status === 'locked') {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
+  }
   try {
     const state = await vocabularyProgressService.saveStep2Result(supabase, userId, wordGroupId, {
       correct: Math.max(0, Number(body.correct ?? 0)),
@@ -496,6 +509,11 @@ async function handlePostMatchFinish(userId: number, body: Record<string, unknow
   if (!Number.isFinite(wordGroupId)) {
     return res.status(400).json({ error: 'word_group_id kerak' });
   }
+  const accessCheck = await ensureWordGroupAccess(userId, wordGroupId);
+  if (accessCheck.status === 'not_found') return res.status(404).json({ error: 'Not found' });
+  if (accessCheck.status === 'locked') {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
+  }
   try {
     const result = await matchPairsService.finishMatch(supabase, userId, wordGroupId, correctPairs);
     return res.status(200).json(result);
@@ -510,6 +528,11 @@ async function handlePostFlashcardsComplete(userId: number, body: Record<string,
   const wordGroupId = Number(body.word_group_id ?? (body as { wordGroupId?: number }).wordGroupId);
   if (!Number.isFinite(wordGroupId)) {
     return res.status(400).json({ error: 'word_group_id kerak' });
+  }
+  const accessCheck = await ensureWordGroupAccess(userId, wordGroupId);
+  if (accessCheck.status === 'not_found') return res.status(404).json({ error: 'Not found' });
+  if (accessCheck.status === 'locked') {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
   }
   try {
     const result = await flashcardsService.completeFlashcards(supabase, userId, wordGroupId);
@@ -527,6 +550,11 @@ async function handlePostTestFinish(userId: number, body: Record<string, unknown
   const totalQuestions = Number(body.total_questions ?? (body as { totalQuestions?: number }).totalQuestions ?? 0);
   if (!Number.isFinite(wordGroupId)) {
     return res.status(400).json({ error: 'word_group_id kerak' });
+  }
+  const accessCheck = await ensureWordGroupAccess(userId, wordGroupId);
+  if (accessCheck.status === 'not_found') return res.status(404).json({ error: 'Not found' });
+  if (accessCheck.status === 'locked') {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu mavzu uchun tarif kerak' });
   }
   try {
     const result = await vocabularyTestService.finishTest(supabase, userId, wordGroupId, correctAnswers, totalQuestions);
@@ -550,62 +578,16 @@ function parseBody(body: unknown): Record<string, unknown> {
   return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
 }
 
-function toDateStringLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
 /** Mirrors server/repositories/vocabularyRepository.getUserVocabularyStep2DailyStats */
 async function handleDailyWordStats(userId: number, res: VercelResponse) {
-  const today = new Date();
-  const todayStr = toDateStringLocal(today);
-  const start = new Date(today);
-  start.setDate(start.getDate() - 6);
-  const startStr = toDateStringLocal(start);
-
-  const { data, error } = await supabase
-    .from('user_vocabulary_step2_attempts')
-    .select('activity_date, word_group_id, correct_answers')
-    .eq('user_id', userId)
-    .gte('activity_date', startStr)
-    .lte('activity_date', todayStr);
-
-  if (error) {
-    console.error('[api/vocabulary/daily-word-stats]', error.message);
+  try {
+    const stats = await getUserVocabularyStep2DailyStats(supabase, userId);
+    return res.status(200).json(stats);
+  } catch (e) {
+    const err = e instanceof Error ? e : new Error(String(e));
+    console.error('[api/vocabulary/daily-word-stats]', err.message, err.stack);
     return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
-
-  const maxByDayAndWordGroup = new Map<string, number>();
-  for (const row of data ?? []) {
-    const day = (row as { activity_date: string }).activity_date;
-    const wg = String((row as { word_group_id: number }).word_group_id);
-    const correct = Number((row as { correct_answers?: number }).correct_answers ?? 0);
-    const key = `${day}:${wg}`;
-    const prev = maxByDayAndWordGroup.get(key) ?? 0;
-    maxByDayAndWordGroup.set(key, Math.max(prev, correct));
-  }
-
-  const sumByDay = new Map<string, number>();
-  for (const [key, correct] of maxByDayAndWordGroup.entries()) {
-    const day = key.split(':')[0] ?? '';
-    if (!day) continue;
-    sumByDay.set(day, (sumByDay.get(day) ?? 0) + correct);
-  }
-
-  let weekWords = 0;
-  for (let i = 0; i < 7; i += 1) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const k = toDateStringLocal(d);
-    weekWords += sumByDay.get(k) ?? 0;
-  }
-
-  return res.status(200).json({
-    todayWords: sumByDay.get(todayStr) ?? 0,
-    weekWords,
-  });
 }
 
 async function handleProgress(userId: number, req: VercelRequest, res: VercelResponse) {
@@ -701,7 +683,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(404).json({ error: 'Not found' });
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
-    console.error('[api/vocabulary/[...path]]', err.message);
+    logError('api.vocabulary.failed', err, buildRequestLogContext('vercel', req, { segments }));
     return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
 }

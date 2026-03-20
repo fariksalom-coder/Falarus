@@ -19,7 +19,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function insertWithRetry<T>(
-  fn: () => Promise<{ error: any; data?: T }>,
+  fn: () => PromiseLike<{ error: any; data?: T }>,
   retries = 3
 ): Promise<{ error: any; data?: T }> {
   for (let i = 0; i < retries; i++) {

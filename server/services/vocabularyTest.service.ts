@@ -1,6 +1,7 @@
 import type { Supabase } from '../types/vocabulary';
 import * as repo from '../repositories/vocabularyRepository.js';
 import * as progressCache from './progressCache.service.js';
+import { calculateImprovementDelta } from './scoringRules.service.js';
 
 const MATCH_UNLOCK_PERCENT = 80;
 
@@ -33,15 +34,21 @@ export async function finishTest(
     row = await repo.getProgressRowForWordGroup(supabase, userId, wordGroupId);
   }
 
-  const previousLearned = (row?.learned_words ?? 0);
-  const newLearned = Math.max(previousLearned, Math.min(correctAnswers, group.total_words));
-  const testBestCorrect = Math.max(row?.test_best_correct ?? 0, correctAnswers);
+  const previousLearned = row?.learned_words ?? 0;
+  const previousBestCorrect = row?.test_best_correct ?? 0;
+  const previousPassed = row?.test_passed ?? false;
+  const testBestCorrect = Math.max(previousBestCorrect, correctAnswers);
+  const newLearned = Math.max(previousLearned, Math.min(testBestCorrect, group.total_words));
   const matchUnlocked = (testBestCorrect / group.total_words) * 100 >= MATCH_UNLOCK_PERCENT;
 
   await repo.upsertUserWordGroupProgress(supabase, userId, wordGroupId, {
     learned_words: newLearned,
     total_words: group.total_words,
     test_best_correct: testBestCorrect,
+    test_last_correct: Math.max(0, correctAnswers),
+    test_last_incorrect: Math.max(0, total - correctAnswers),
+    test_last_percentage: percentage,
+    test_passed: previousPassed || percentage >= MATCH_UNLOCK_PERCENT,
     progress_percent: group.total_words > 0 ? (newLearned / group.total_words) * 100 : 0,
   });
 
@@ -55,7 +62,7 @@ export async function finishTest(
     await progressCache.updateTopicProgress(supabase, userId, subtopicRow.data.topic_id);
   }
 
-  const pointsAwarded = correctAnswers;
+  const pointsAwarded = calculateImprovementDelta(previousBestCorrect, testBestCorrect);
   if (pointsAwarded > 0) {
     const { data: user } = await supabase
       .from('users')

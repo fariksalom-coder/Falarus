@@ -1,13 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import {
-  fetchLessonTaskResults,
-  lessonTaskResultsToMap,
-} from '../api/lessonTaskResults';
-import { getLessonTaskResults, getTaskButtonClassName } from '../utils/lessonTaskResults';
-
-type TaskResult = { correct: number; total: number };
+import { useSequentialLesson } from '../context/SequentialLessonContext';
+import { getTaskButtonClassName } from '../utils/lessonTaskResults';
 
 type VerbRow = {
   infinitive: string;
@@ -42,21 +36,11 @@ const VERBS: VerbRow[] = [
 
 export default function LessonFourteenPage() {
   const navigate = useNavigate();
-  const { token } = useAuth();
-  const localResults = getLessonTaskResults('/lesson-14');
-  const [serverResults, setServerResults] = useState<Record<number, TaskResult>>({});
-
-  useEffect(() => {
-    if (!token) return;
-    fetchLessonTaskResults(token, '/lesson-14').then((items) => {
-      setServerResults(lessonTaskResultsToMap(items, '/lesson-14'));
-    });
-  }, [token]);
-
-  const taskResults: Record<number, TaskResult> = { ...localResults };
-  for (const [n, r] of Object.entries(serverResults)) {
-    taskResults[Number(n)] = r;
-  }
+  const { results } = useSequentialLesson();
+  const taskResults = useMemo(
+    () => results['/lesson-14'] ?? {},
+    [results]
+  );
 
   const getTaskButtonClass = (taskN: number, isFirst = false) =>
     getTaskButtonClassName('/lesson-14', taskN, isFirst, taskResults);

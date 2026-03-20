@@ -64,6 +64,9 @@ export default function AdminDashboardPage() {
         {cards.map(({ key, label, icon: Icon }) => {
           const val = stats?.[key];
           const isRevenue = key === 'payments_today' || key === 'payments_this_month' || key === 'total_revenue';
+          const displayValue: React.ReactNode = isRevenue
+            ? formatRevenue(typeof val === 'object' && val !== null && 'UZS' in val ? (val as RevenueByCurrency) : Number(val ?? 0))
+            : Number(val ?? 0).toLocaleString('uz-UZ');
           return (
             <div
               key={key}
@@ -75,11 +78,9 @@ export default function AdminDashboardPage() {
                 </div>
                 <span className="text-sm font-medium text-slate-500">{label}</span>
               </div>
-              <p className="text-2xl font-semibold text-slate-800">
-                {isRevenue && val !== undefined
-                  ? formatRevenue(typeof val === 'object' && val !== null && 'UZS' in val ? (val as RevenueByCurrency) : Number(val))
-                  : (val ?? 0)}
-              </p>
+              <div className="text-2xl font-semibold text-slate-800">
+                {displayValue}
+              </div>
             </div>
           );
         })}

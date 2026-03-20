@@ -3,6 +3,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from '../../_lib/supabase.js';
 import { setCors, handleOptions } from '../../_lib/cors.js';
 import { requireAuth } from '../../_lib/auth.js';
+import { getAccessInfo } from '../../../server/services/subscription.service.js';
+import { canAccessLesson } from '../../../server/services/accessControl.service.js';
+import { syncUserLessonProgressPercent } from '../../../server/services/lessonProgressSnapshot.service.js';
+import { buildRequestLogContext, logError } from '../../../server/lib/logger.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
@@ -20,6 +24,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const access = await getAccessInfo(supabase, userId);
+    if (!canAccessLesson(Number(id), access)) {
+      return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
+    }
+
     const { error: upsertError } = await supabase.from('user_progress').upsert(
       { user_id: userId, lesson_id: Number(id), completed: 1 },
       { onConflict: 'user_id,lesson_id' }
@@ -29,31 +38,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
 
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('level')
-      .eq('id', userId)
-      .maybeSingle();
-    if (userError || !user?.level) {
-      return res.status(200).json({ success: true, progress: 0 });
-    }
-
-    const { count: total } = await supabase
-      .from('lessons')
-      .select('id', { count: 'exact', head: true })
-      .eq('level', user.level);
-    const { count: completed } = await supabase
-      .from('user_progress')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('completed', 1);
-
-    const progress = total && total > 0 ? ((completed ?? 0) / total) * 100 : 0;
-    await supabase.from('users').update({ progress }).eq('id', userId);
+    const progress = await syncUserLessonProgressPercent(supabase, userId);
     return res.status(200).json({ success: true, progress });
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
-    console.error('[api/lessons/:id/complete]', err.message, err.stack);
+    logError(
+      'api.lessons.complete.failed',
+      err,
+      buildRequestLogContext('vercel', req, { lessonId: id, userId })
+    );
     if (err.message.includes('SUPABASE')) {
       return res.status(503).json({ error: 'Server configuration error' });
     }

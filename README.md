@@ -18,3 +18,11 @@ View your app in AI Studio: https://ai.studio/apps/949bd97b-2cb7-4a22-88ac-fe7c9
 3. Run the app:
    - `npm run dev` — local backend and DB (your test data).
    - `npm run dev:prod` — local UI, but API = **falarus.uz** (same data as online for the same account).
+
+## Verification
+
+- `npm run check:env` — validate required env vars for production-like runs.
+- `npm run db:verify` — verify that critical Supabase tables and columns exist.
+- `npm run test:smoke` — smoke-check deployed API using login or bearer token.
+- `npm run test` — unit tests for access/progress rules.
+- `npm run verify` — lint + tests + production build.

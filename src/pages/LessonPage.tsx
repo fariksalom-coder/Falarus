@@ -16,6 +16,8 @@ export default function LessonPage() {
   const { id } = useParams();
   const { token, updateUser } = useAuth();
   const [lesson, setLesson] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentExercise, setCurrentExercise] = useState(-1); // -1 for content, 0+ for exercises
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -23,12 +25,38 @@ export default function LessonPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!id || !token) {
+      setLesson(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
     fetch(apiUrl(`/api/lessons/${id}`), {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
-      .then((data) => setLesson(data));
-  }, [id, token]);
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 403) {
+          navigate(`/preview/lesson/${id}`, { replace: true });
+          return null;
+        }
+        if (!res.ok) {
+          throw new Error((body as { error?: string }).error || 'Dars yuklanmadi');
+        }
+        return body;
+      })
+      .then((data) => {
+        if (data) setLesson(data);
+      })
+      .catch((err) => {
+        setLesson(null);
+        setError(err instanceof Error ? err.message : 'Dars yuklanmadi');
+      })
+      .finally(() => setLoading(false));
+  }, [id, navigate, token]);
 
   const handleCheck = () => {
     const exercise = lesson?.exercises?.[currentExercise];
@@ -52,21 +80,19 @@ export default function LessonPage() {
         const data = await res.json();
         updateUser({ progress: data.progress });
         setFinished(true);
-        try {
-          const lessonNum = parseInt(String(id), 10);
-          if (!Number.isNaN(lessonNum)) {
-            const raw = localStorage.getItem('lessons-completed-count');
-            const current = raw ? Math.min(parseInt(raw, 10) || 0, 24) : 0;
-            localStorage.setItem('lessons-completed-count', String(Math.max(current, lessonNum)));
-          }
-        } catch {
-          // ignore
-        }
       }
     }
   };
 
-  if (!lesson) return <div className="flex items-center justify-center h-screen">Yuklanmoqda...</div>;
+  if (loading) return <div className="flex items-center justify-center h-screen">Yuklanmoqda...</div>;
+
+  if (error || !lesson) {
+    return (
+      <div className="flex h-screen items-center justify-center px-4 text-center text-slate-600">
+        {error ?? 'Dars topilmadi'}
+      </div>
+    );
+  }
 
   if (finished) {
     return (

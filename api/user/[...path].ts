@@ -7,7 +7,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
 import { requireAuth } from '../_lib/auth.js';
-import { resolveFreeVocabularyIds } from '../../server/lib/freeVocabularyIds.js';
+import { getAccessInfo } from '../../server/services/subscription.service.js';
+import { buildRequestLogContext, logError } from '../../server/lib/logger.js';
 
 function parseBody(body: unknown): Record<string, unknown> {
   if (body == null) return {};
@@ -19,27 +20,6 @@ function parseBody(body: unknown): Record<string, unknown> {
     }
   }
   return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
-}
-
-async function hasActiveAccess(userId: number): Promise<boolean> {
-  const now = new Date().toISOString();
-  const { data: sub, error: subErr } = await supabase
-    .from('subscriptions')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .gt('expires_at', now)
-    .limit(1)
-    .maybeSingle();
-  if (subErr) throw subErr;
-  if (sub) return true;
-  const { data: user, error: userErr } = await supabase
-    .from('users')
-    .select('plan_expires_at')
-    .eq('id', userId)
-    .single();
-  if (userErr || !user?.plan_expires_at) return false;
-  return new Date(user.plan_expires_at) > new Date();
 }
 
 async function handleMe(userId: number, res: VercelResponse) {
@@ -91,16 +71,14 @@ async function handlePayments(userId: number, res: VercelResponse) {
 }
 
 async function handleAccess(userId: number, res: VercelResponse) {
-  const subscriptionActive = await hasActiveAccess(userId);
-  const { vocabulary_free_topic_id, vocabulary_free_subtopic_id } =
-    await resolveFreeVocabularyIds(supabase);
+  const access = await getAccessInfo(supabase, userId);
   return res.status(200).json({
-    lessons_free_limit: 3,
-    vocabulary_free_topic: 1,
-    vocabulary_free_subtopic: 1,
-    subscription_active: subscriptionActive,
-    vocabulary_free_topic_id: vocabulary_free_topic_id ?? null,
-    vocabulary_free_subtopic_id: vocabulary_free_subtopic_id ?? null,
+    lessons_free_limit: access.lessons_free_limit,
+    vocabulary_free_topic: access.vocabulary_free_topic,
+    vocabulary_free_subtopic: access.vocabulary_free_subtopic,
+    subscription_active: access.subscription_active,
+    vocabulary_free_topic_id: access.vocabulary_free_topic_id ?? null,
+    vocabulary_free_subtopic_id: access.vocabulary_free_subtopic_id ?? null,
   });
 }
 
@@ -143,7 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(404).json({ error: 'Not found' });
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
-    console.error('[api/user/[...path]]', err.message);
+    logError('api.user.failed', err, buildRequestLogContext('vercel', req, { segment }));
     return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
 }

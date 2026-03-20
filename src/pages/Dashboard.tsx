@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ChevronRight, Lock, Check } from 'lucide-react';
 import { LESSONS, type LessonStatus } from '../data/lessonsList';
-import { getLessonCompletionSummary } from '../utils/lessonTaskResults';
+import { getLessonCompletionSummaryFromResults } from '../utils/lessonTaskResults';
 import { useAuth } from '../context/AuthContext';
 import { useSequentialLesson } from '../context/SequentialLessonContext';
 import { useLessonsSubscriptionLock } from '../hooks/useLessonsSubscriptionLock';
@@ -27,7 +27,7 @@ const STATUS_LABEL: Record<LessonStatus, string> = {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { token } = useAuth();
-  const { lessonStates, isReady: seqReady } = useSequentialLesson();
+  const { lessonStates, results, isReady: seqReady } = useSequentialLesson();
   const { isLessonLockedBySubscription, loaded: subLoaded } = useLessonsSubscriptionLock();
   const [modalOpen, setModalOpen] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
@@ -83,7 +83,10 @@ export default function Dashboard() {
               const lockedBySub = isLessonLockedBySubscription(lesson.id);
               const lockedBySeq = seq != null && !seq.isUnlocked;
               const isLocked = lockedBySub || lockedBySeq;
-              const summary = getLessonCompletionSummary(lesson.path, lesson.exercisesTotal);
+              const summary = getLessonCompletionSummaryFromResults(
+                results[lesson.path] ?? {},
+                lesson.exercisesTotal
+              );
 
               let status: LessonStatus = 'locked';
               if (!isLocked && seq) {

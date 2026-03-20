@@ -99,3 +99,16 @@
 | **Railway / Render** (по желанию) | Express (server.ts) | **Supabase**  |
 
 Рекомендуемый вариант: один проект на **Vercel** с переменными `SUPABASE_URL` и `SUPABASE_SERVICE_ROLE_KEY`. После деплоя откройте `/api/seed` один раз для заполнения уроков.
+
+## Production verification
+
+После настройки env и миграций используйте готовые проверки:
+
+```bash
+npm run check:env
+npm run db:verify
+npm run verify
+npm run test:smoke
+```
+
+Подробный порядок: [docs/PRODUCTION_CHECKLIST.md](docs/PRODUCTION_CHECKLIST.md)

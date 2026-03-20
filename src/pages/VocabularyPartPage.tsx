@@ -269,9 +269,6 @@ export default function VocabularyPartPage() {
     ) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'test', 'completed');
       if (token && wordGroupId != null) {
-        // Optimistic UI: show awarded points immediately (1 ball per 1 correct).
-        // Backend call may take time, but user should see the result without delay.
-        setPointsEarnedMessage(testCorrect);
         stepsStore
           .submitStep2(
             token,
@@ -325,11 +322,10 @@ export default function VocabularyPartPage() {
     ) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'pairs', 'completed');
       const correctPairs = pairGroups.reduce((sum, g) => sum + g.pairs.length, 0);
-      setPointsEarnedMessage(correctPairs);
       if (token && wordGroupId != null && correctPairs > 0) {
         postVocabularyMatchFinish(token, wordGroupId, correctPairs).then((result) => {
           if (result) {
-            setPointsEarnedMessage(result.points_awarded);
+            setPointsEarnedMessage(result.points_awarded > 0 ? result.points_awarded : null);
             refetchTasks();
           }
         });
@@ -600,14 +596,14 @@ export default function VocabularyPartPage() {
                   {/* 2-bosqich */}
                   <StepCard
                     title="2-bosqich: Test"
-                    status={!step1Completed ? 'locked' : step2Completed ? (step2Passed ? 'completed' : 'failed') : 'available'}
+                    status={!step1Completed ? 'locked' : step2Completed ? (step3Unlocked ? 'completed' : 'failed') : 'available'}
                     icon={<ClipboardList className="h-5 w-5" strokeWidth={1.8} />}
                     disabled={!step1Completed}
                     actionLabel={
                       !step1Completed
                         ? 'Qulflangan'
                         : step2Completed
-                          ? step2Passed
+                          ? step3Unlocked
                             ? 'Davom etish'
                             : 'Qayta urinish'
                           : 'Boshlash'
@@ -617,7 +613,7 @@ export default function VocabularyPartPage() {
                       // Requirement: pressing "Davom etish" in Step 2 must open Step 2 screen.
                       navigate(`${partUrl}/test`);
                     }}
-                    hint={(!step1Completed || (step2Completed && !step2Passed)) ? hint80 : undefined}
+                    hint={(!step1Completed || (step2Completed && !step3Unlocked)) ? hint80 : undefined}
                     result={
                       step2Completed ? (
                         <div className="mt-2 flex flex-col gap-2">

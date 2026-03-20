@@ -1,4 +1,5 @@
 import type { Supabase } from '../types/vocabulary';
+import { formatDateInAppTimezone, getRecentAppDateStrings } from '../lib/appDate.js';
 
 export async function getTopics(supabase: Supabase) {
   const { data, error } = await supabase
@@ -325,13 +326,6 @@ export async function upsertUserTopicProgress(
   if (error) throw error;
 }
 
-function toDateStringLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
 export async function insertUserVocabularyStep2Attempt(
   supabase: Supabase,
   userId: number,
@@ -354,15 +348,47 @@ export async function insertUserVocabularyStep2Attempt(
   if (error) throw error;
 }
 
+export type VocabularyStep2AttemptAggregateRow = {
+  activity_date: string;
+  word_group_id: number | string;
+  correct_answers: number;
+};
+
+export function aggregateVocabularyStep2Stats(
+  rows: VocabularyStep2AttemptAggregateRow[],
+  recentDates: string[],
+  todayStr: string
+): { todayWords: number; weekWords: number } {
+  const maxByDayAndWordGroup = new Map<string, number>();
+  for (const row of rows) {
+    const day = row.activity_date;
+    const wg = String(row.word_group_id);
+    const correct = Number(row.correct_answers ?? 0);
+    const key = `${day}:${wg}`;
+    const prev = maxByDayAndWordGroup.get(key) ?? 0;
+    maxByDayAndWordGroup.set(key, Math.max(prev, correct));
+  }
+
+  const sumByDay = new Map<string, number>();
+  for (const [key, correct] of maxByDayAndWordGroup.entries()) {
+    const day = key.split(':')[0] ?? '';
+    if (!day) continue;
+    sumByDay.set(day, (sumByDay.get(day) ?? 0) + correct);
+  }
+
+  return {
+    todayWords: sumByDay.get(todayStr) ?? 0,
+    weekWords: recentDates.reduce((sum, dateKey) => sum + (sumByDay.get(dateKey) ?? 0), 0),
+  };
+}
+
 export async function getUserVocabularyStep2DailyStats(
   supabase: Supabase,
   userId: number
 ): Promise<{ todayWords: number; weekWords: number }> {
-  const today = new Date();
-  const todayStr = toDateStringLocal(today);
-  const start = new Date(today);
-  start.setDate(start.getDate() - 6);
-  const startStr = toDateStringLocal(start);
+  const recentDates = getRecentAppDateStrings(7);
+  const startStr = recentDates[0] ?? formatDateInAppTimezone(new Date());
+  const todayStr = recentDates[recentDates.length - 1] ?? formatDateInAppTimezone(new Date());
 
   const { data, error } = await supabase
     .from('user_vocabulary_step2_attempts')
@@ -372,36 +398,9 @@ export async function getUserVocabularyStep2DailyStats(
     .lte('activity_date', todayStr);
 
   if (error) throw error;
-
-  // For exact per-day results we treat "retries today" as MAX per (day, word_group).
-  const maxByDayAndWordGroup = new Map<string, number>();
-  for (const row of data ?? []) {
-    const day = (row as any).activity_date as string;
-    const wg = String((row as any).word_group_id);
-    const correct = Number((row as any).correct_answers ?? 0);
-    const key = `${day}:${wg}`;
-    const prev = maxByDayAndWordGroup.get(key) ?? 0;
-    maxByDayAndWordGroup.set(key, Math.max(prev, correct));
-  }
-
-  // Sum the daily per-word-group max correct.
-  const sumByDay = new Map<string, number>();
-  for (const [key, correct] of maxByDayAndWordGroup.entries()) {
-    const day = key.split(':')[0] ?? '';
-    if (!day) continue;
-    sumByDay.set(day, (sumByDay.get(day) ?? 0) + correct);
-  }
-
-  let weekWords = 0;
-  for (let i = 0; i < 7; i += 1) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const k = toDateStringLocal(d);
-    weekWords += sumByDay.get(k) ?? 0;
-  }
-
-  return {
-    todayWords: sumByDay.get(todayStr) ?? 0,
-    weekWords,
-  };
+  return aggregateVocabularyStep2Stats(
+    (data ?? []) as VocabularyStep2AttemptAggregateRow[],
+    recentDates,
+    todayStr
+  );
 }

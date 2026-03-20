@@ -2,10 +2,15 @@ import 'dotenv/config';
 
 // Suppress DEP0169 url.parse() deprecation from dependencies (e.g. multer/busboy)
 const origEmitWarning = process.emitWarning;
-process.emitWarning = function (msg: string | Error, type?: string, ...args: unknown[]) {
-  const m = typeof msg === 'string' ? msg : msg?.message ?? '';
+process.emitWarning = function (
+  warning: string | Error,
+  arg1?: string | Function | ErrorConstructor | NodeJS.EmitWarningOptions,
+  arg2?: string | Function | ErrorConstructor,
+  arg3?: string | Function | ErrorConstructor
+) {
+  const m = typeof warning === 'string' ? warning : warning?.message ?? '';
   if (m.includes('url.parse') || m.includes('DEP0169')) return;
-  return origEmitWarning.apply(process, [msg, type, ...args]);
+  return (origEmitWarning as any).call(process, warning, arg1 as any, arg2 as any, arg3 as any);
 };
 
 import express from 'express';
@@ -16,6 +21,7 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { courseData } from './src/data/courseData.ts';
+import { buildRequestLogContext, createRequestId, logError, logInfo } from './server/lib/logger.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -84,6 +90,23 @@ async function startServer() {
     if (_req.method === 'OPTIONS') return res.sendStatus(204);
     next();
   });
+  app.use((req: any, res, next) => {
+    const requestId = req.headers['x-request-id'] || createRequestId();
+    req.requestId = Array.isArray(requestId) ? requestId[0] : requestId;
+    res.setHeader('X-Request-Id', String(req.requestId));
+    const startedAt = Date.now();
+    res.on('finish', () => {
+      if (!String(req.originalUrl || req.url || '').startsWith('/api/')) return;
+      logInfo(
+        'express.api.request',
+        buildRequestLogContext('express', req, {
+          statusCode: res.statusCode,
+          durationMs: Date.now() - startedAt,
+        })
+      );
+    });
+    next();
+  });
 
   // Admin panel first so /api/admin/* is never swallowed by other /api routes
   try {
@@ -91,7 +114,7 @@ async function startServer() {
     app.use('/api/admin', createAdminRoutes(supabase));
     console.log('Admin API: /api/admin (login, dashboard, users, payments, etc.)');
   } catch (err) {
-    console.error('Admin routes failed to load:', err);
+    logError('express.admin.routes_failed_to_load', err);
   }
 
   // Public pricing (no auth) — for tariff page
@@ -478,6 +501,7 @@ async function startServer() {
   const { getAccessForRequest } = await import('./server/routes/accessRoutes');
   const accessControlService = await import('./server/services/accessControl.service');
   const lessonsCache = await import('./server/cache/lessonsCache');
+  const lessonProgressSnapshotService = await import('./server/services/lessonProgressSnapshot.service');
 
   app.get('/api/lessons', authenticate, async (req: any, res) => {
     const userId = Number(req.userId);
@@ -543,19 +567,10 @@ async function startServer() {
       { user_id: req.userId, lesson_id: Number(req.params.id), completed: 1 },
       { onConflict: 'user_id,lesson_id' }
     );
-    const { data: user } = await supabase.from('users').select('level').eq('id', req.userId).single();
-    if (!user?.level) return res.json({ success: true, progress: 0 });
-    const { count: total } = await supabase
-      .from('lessons')
-      .select('*', { count: 'exact', head: true })
-      .eq('level', user.level);
-    const { count: completed } = await supabase
-      .from('user_progress')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', req.userId)
-      .eq('completed', 1);
-    const progress = total && total > 0 ? ((completed ?? 0) / total) * 100 : 0;
-    await supabase.from('users').update({ progress }).eq('id', req.userId);
+    const progress = await lessonProgressSnapshotService.syncUserLessonProgressPercent(
+      supabase,
+      Number(req.userId)
+    );
     res.json({ success: true, progress });
   });
 

@@ -1,6 +1,20 @@
 const STORAGE_KEY = 'lessonTaskResults';
 
+export type LessonTaskSavedEventDetail = {
+  source: 'local' | 'server';
+  lessonPath?: string;
+  taskNumber?: number;
+  correct?: number;
+  total?: number;
+};
+
 export type TaskResult = { correct: number; total: number };
+export type LessonTaskResultSnapshot = {
+  lesson_path: string;
+  task_number: number;
+  correct: number;
+  total: number;
+};
 
 type Stored = Record<string, Record<string, TaskResult>>;
 
@@ -21,6 +35,19 @@ function save(data: Stored) {
   } catch {
     // ignore
   }
+}
+
+export function mergeLessonTaskResultsFromServer(items: LessonTaskResultSnapshot[]): void {
+  const data = load();
+  for (const item of items) {
+    if (!item?.lesson_path || typeof item.task_number !== 'number') continue;
+    if (!data[item.lesson_path]) data[item.lesson_path] = {};
+    data[item.lesson_path][String(item.task_number)] = {
+      correct: Number(item.correct ?? 0),
+      total: Number(item.total ?? 0),
+    };
+  }
+  save(data);
 }
 
 /** Get result for one task. Returns null if not completed. */
@@ -61,7 +88,17 @@ export function setLessonTaskResult(
   data[lessonPath][String(taskNumber)] = { correct, total };
   save(data);
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('lesson-task-saved'));
+    window.dispatchEvent(
+      new CustomEvent<LessonTaskSavedEventDetail>('lesson-task-saved', {
+        detail: {
+          source: 'local',
+          lessonPath,
+          taskNumber,
+          correct,
+          total,
+        },
+      })
+    );
   }
 }
 
@@ -100,6 +137,13 @@ export function getLessonCompletionSummary(
   totalTasks: number
 ): { passedTasks: number; totalTasks: number; status: LessonCompletionStatus } {
   const allResults = getLessonTaskResults(lessonPath);
+  return getLessonCompletionSummaryFromResults(allResults, totalTasks);
+}
+
+export function getLessonCompletionSummaryFromResults(
+  allResults: Record<number, TaskResult>,
+  totalTasks: number
+): { passedTasks: number; totalTasks: number; status: LessonCompletionStatus } {
   let attempted = 0;
   let passed = 0;
   for (let i = 1; i <= totalTasks; i += 1) {
