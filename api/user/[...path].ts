@@ -9,7 +9,7 @@ import { requireAuth } from '../_lib/auth.js';
 import { getRequestPathname, normalizeQueryPathSegments } from '../_lib/request.js';
 import { routeUserRequest } from '../_lib/user.js';
 
-function getUserPathSegments(req: VercelRequest): string[] {
+function segmentsFromPathname(req: VercelRequest): string[] {
   const pathname = getRequestPathname(req);
   const parts = pathname.split('/').filter(Boolean);
   const apiIdx = parts.indexOf('api');
@@ -20,7 +20,13 @@ function getUserPathSegments(req: VercelRequest): string[] {
   if (uIdx >= 0) {
     return parts.slice(uIdx + 1);
   }
-  return normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
+  return [];
+}
+
+function getUserPathSegments(req: VercelRequest): string[] {
+  const fromPath = segmentsFromPathname(req);
+  const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
+  return fromPath.length >= fromQuery.length ? fromPath : fromQuery;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

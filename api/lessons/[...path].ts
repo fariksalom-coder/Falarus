@@ -9,9 +9,7 @@ import { requireAuth } from '../_lib/auth.js';
 import { getRequestPathname, normalizeQueryPathSegments } from '../_lib/request.js';
 import { routeLessonsRequest } from '../_lib/lessons.js';
 
-function getLessonPathSegments(req: VercelRequest): string[] {
-  // Prefer pathname: Vercel's req.query.path for [...path] is often only the FIRST segment,
-  // so /api/lessons/1/preview becomes ["1"] and preview is lost → wrong handler / 404.
+function segmentsFromPathname(req: VercelRequest): string[] {
   const pathname = getRequestPathname(req);
   const parts = pathname.split('/').filter(Boolean);
   const apiIdx = parts.indexOf('api');
@@ -22,7 +20,13 @@ function getLessonPathSegments(req: VercelRequest): string[] {
   if (lIdx >= 0) {
     return parts.slice(lIdx + 1);
   }
-  return normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
+  return [];
+}
+
+function getLessonPathSegments(req: VercelRequest): string[] {
+  const fromPath = segmentsFromPathname(req);
+  const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
+  return fromPath.length >= fromQuery.length ? fromPath : fromQuery;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

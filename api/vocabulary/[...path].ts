@@ -9,7 +9,7 @@ import { requireAuth } from '../_lib/auth.js';
 import { getRequestPathname, normalizeQueryPathSegments } from '../_lib/request.js';
 import { routeVocabularyRequest } from '../_lib/vocabulary.js';
 
-function getVocabularyPathSegments(req: VercelRequest): string[] {
+function segmentsFromPathname(req: VercelRequest): string[] {
   const pathname = getRequestPathname(req);
   const parts = pathname.split('/').filter(Boolean);
   const apiIdx = parts.indexOf('api');
@@ -20,7 +20,14 @@ function getVocabularyPathSegments(req: VercelRequest): string[] {
   if (vIdx >= 0) {
     return parts.slice(vIdx + 1);
   }
-  return normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
+  return [];
+}
+
+/** Vercel sometimes truncates pathname OR query.path — take the longer segment list. */
+function getVocabularyPathSegments(req: VercelRequest): string[] {
+  const fromPath = segmentsFromPathname(req);
+  const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
+  return fromPath.length >= fromQuery.length ? fromPath : fromQuery;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
