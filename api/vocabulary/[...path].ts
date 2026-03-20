@@ -39,11 +39,24 @@ function normalizeQueryPathSegments(raw: string | string[] | undefined): string[
   return [];
 }
 
+function getRequestPathname(req: VercelRequest): string {
+  const url = req.url || (req as { originalUrl?: string }).originalUrl || '';
+  if (!url || typeof url !== 'string') return '';
+  const withoutQuery = url.split('?')[0];
+  if (withoutQuery.includes('://')) {
+    try {
+      return new URL(withoutQuery).pathname;
+    } catch {
+      return withoutQuery;
+    }
+  }
+  return withoutQuery;
+}
+
 function getVocabularyPathSegments(req: VercelRequest): string[] {
   const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
   if (fromQuery.length > 0) return fromQuery;
-  const url = req.url || (req as { originalUrl?: string }).originalUrl || '';
-  const pathname = typeof url === 'string' ? url.split('?')[0] : '';
+  const pathname = getRequestPathname(req);
   const parts = pathname.split('/').filter(Boolean);
   // /api/vocabulary/subtopics/...
   const apiIdx = parts.indexOf('api');

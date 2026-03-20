@@ -1,5 +1,5 @@
 /**
- * Single handler for /api/pricing, tariff-prices, payment-methods, payments (POST), leaderboard, activity/streak.
+ * Single handler for /api/pricing, tariff-prices, payment-methods, payments (POST), leaderboard, activity/streak (fallback).
  * Keeps serverless function count under Vercel Hobby limit (12).
  */
 import './_lib/suppress-dep0169.js';
@@ -85,11 +85,25 @@ function normalizeQueryPathSegments(raw: string | string[] | undefined): string[
   return [];
 }
 
+function getRequestPathname(req: VercelRequest): string {
+  const url = req.url || (req as any).originalUrl || '';
+  if (!url || typeof url !== 'string') return '';
+  const withoutQuery = url.split('?')[0];
+  // Vercel sometimes passes absolute URL: https://host/api/...
+  if (withoutQuery.includes('://')) {
+    try {
+      return new URL(withoutQuery).pathname;
+    } catch {
+      return withoutQuery;
+    }
+  }
+  return withoutQuery;
+}
+
 function getPathParts(req: VercelRequest): string[] {
   const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
   if (fromQuery.length > 0) return fromQuery;
-  const url = req.url || (req as any).originalUrl || '';
-  const pathname = typeof url === 'string' ? url.split('?')[0] : '';
+  const pathname = getRequestPathname(req);
   const parts = pathname.split('/').filter(Boolean);
   const apiIndex = parts.indexOf('api');
   if (apiIndex >= 0 && apiIndex < parts.length - 1) return parts.slice(apiIndex + 1);
@@ -388,7 +402,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // /api/activity/streak (also served by api/activity/streak.ts)
+  // /api/activity/streak (primary: api/streak.ts + vercel rewrite)
   if (path[0] === 'activity' && path[1] === 'streak') {
     const userId = requireAuth(req, res);
     if (userId == null) return;

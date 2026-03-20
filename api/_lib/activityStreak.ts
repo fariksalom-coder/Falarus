@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-/** Shared by api/activity/streak.ts and api/[...path].ts */
+/** Shared by api/streak.ts and api/[...path].ts */
 export async function getActivityStreakPayload(
   supabase: SupabaseClient,
   userId: number

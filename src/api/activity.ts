@@ -14,7 +14,7 @@ function authHeaders(token: string | null): HeadersInit {
 export async function fetchStreak(token: string | null): Promise<StreakResponse | null> {
   if (!token) return null;
   try {
-    const res = await fetch(apiUrl('/api/activity/streak'), { headers: authHeaders(token) });
+    const res = await fetch(apiUrl('/api/streak'), { headers: authHeaders(token) });
     if (!res.ok) return null;
     const data = await res.json();
     return {
