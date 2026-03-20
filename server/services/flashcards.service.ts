@@ -1,6 +1,5 @@
 import type { Supabase } from '../types/vocabulary';
-import * as repo from '../repositories/vocabularyRepository';
-import * as progressCache from './progressCache.service';
+import * as repo from '../repositories/vocabularyRepository.js';
 
 /**
  * Mark flashcards as completed for a word group.

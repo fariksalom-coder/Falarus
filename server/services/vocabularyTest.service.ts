@@ -1,6 +1,6 @@
 import type { Supabase } from '../types/vocabulary';
-import * as repo from '../repositories/vocabularyRepository';
-import * as progressCache from './progressCache.service';
+import * as repo from '../repositories/vocabularyRepository.js';
+import * as progressCache from './progressCache.service.js';
 
 const MATCH_UNLOCK_PERCENT = 80;
 
@@ -73,8 +73,8 @@ export async function finishTest(
           total_points: newTotal,
         })
         .eq('id', userId);
-      const leaderboardService = await import('./leaderboard.service');
-      const leaderboardCache = await import('./leaderboardCache.service');
+      const leaderboardService = await import('./leaderboard.service.js');
+      const leaderboardCache = await import('./leaderboardCache.service.js');
       await leaderboardService.ensureUserInLeaderboard(supabase, userId);
       await leaderboardService.updateUserPoints(supabase, userId, newTotal);
       await leaderboardCache.invalidateLeaderboardCache();

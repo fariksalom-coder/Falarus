@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getCached, setCached, getRedis, LEADERBOARD_CACHE_KEY, LEADERBOARD_CACHE_TTL_SEC } from '../lib/redis';
-import * as leaderboardService from './leaderboard.service';
+import { getCached, setCached, getRedis, LEADERBOARD_CACHE_KEY, LEADERBOARD_CACHE_TTL_SEC } from '../lib/redis.js';
+import * as leaderboardService from './leaderboard.service.js';
 
 /**
  * Get top 100 leaderboard: from Redis if present, else from PostgreSQL and cache 60s.

@@ -1,5 +1,5 @@
 import type { Supabase } from '../types/vocabulary';
-import * as repo from '../repositories/vocabularyRepository';
+import * as repo from '../repositories/vocabularyRepository.js';
 
 /**
  * Finish match pairs: award points, mark match_completed.
@@ -39,8 +39,8 @@ export async function finishMatch(
           total_points: newTotal,
         })
         .eq('id', userId);
-      const leaderboardService = await import('./leaderboard.service');
-      const leaderboardCache = await import('./leaderboardCache.service');
+      const leaderboardService = await import('./leaderboard.service.js');
+      const leaderboardCache = await import('./leaderboardCache.service.js');
       await leaderboardService.ensureUserInLeaderboard(supabase, userId);
       await leaderboardService.updateUserPoints(supabase, userId, newTotal);
       await leaderboardCache.invalidateLeaderboardCache();

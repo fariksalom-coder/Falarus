@@ -1,5 +1,5 @@
 import type { Supabase } from '../types/vocabulary';
-import * as repo from '../repositories/vocabularyRepository';
+import * as repo from '../repositories/vocabularyRepository.js';
 
 /**
  * Recalculate and persist subtopic progress from user_word_group_progress.
