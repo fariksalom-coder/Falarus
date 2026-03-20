@@ -54,6 +54,17 @@ function parseMultipartPayments(req: VercelRequest): Promise<{ fields: Record<st
   });
 }
 
+const ROOT_API_PREFIXES = new Set([
+  'referral',
+  'payments',
+  'pricing',
+  'tariff-prices',
+  'payment-methods',
+  'leaderboard',
+  'lesson-task-results',
+  'activity',
+]);
+
 function getPathParts(req: VercelRequest): string[] {
   const path = req.query.path;
   if (Array.isArray(path)) return path.filter((p): p is string => typeof p === 'string');
@@ -63,6 +74,10 @@ function getPathParts(req: VercelRequest): string[] {
   const parts = pathname.split('/').filter(Boolean);
   const apiIndex = parts.indexOf('api');
   if (apiIndex >= 0 && apiIndex < parts.length - 1) return parts.slice(apiIndex + 1);
+  // Vercel may invoke with only the tail path, e.g. /activity/streak (no /api prefix)
+  if (parts.length > 0 && ROOT_API_PREFIXES.has(parts[0])) {
+    return parts;
+  }
   return [];
 }
 

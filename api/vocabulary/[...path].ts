@@ -473,6 +473,64 @@ function parseBody(body: unknown): Record<string, unknown> {
   return typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
 }
 
+function toDateStringLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Mirrors server/repositories/vocabularyRepository.getUserVocabularyStep2DailyStats */
+async function handleDailyWordStats(userId: number, res: VercelResponse) {
+  const today = new Date();
+  const todayStr = toDateStringLocal(today);
+  const start = new Date(today);
+  start.setDate(start.getDate() - 6);
+  const startStr = toDateStringLocal(start);
+
+  const { data, error } = await supabase
+    .from('user_vocabulary_step2_attempts')
+    .select('activity_date, word_group_id, correct_answers')
+    .eq('user_id', userId)
+    .gte('activity_date', startStr)
+    .lte('activity_date', todayStr);
+
+  if (error) {
+    console.error('[api/vocabulary/daily-word-stats]', error.message);
+    return res.status(500).json({ error: 'Xatolik yuz berdi' });
+  }
+
+  const maxByDayAndWordGroup = new Map<string, number>();
+  for (const row of data ?? []) {
+    const day = (row as { activity_date: string }).activity_date;
+    const wg = String((row as { word_group_id: number }).word_group_id);
+    const correct = Number((row as { correct_answers?: number }).correct_answers ?? 0);
+    const key = `${day}:${wg}`;
+    const prev = maxByDayAndWordGroup.get(key) ?? 0;
+    maxByDayAndWordGroup.set(key, Math.max(prev, correct));
+  }
+
+  const sumByDay = new Map<string, number>();
+  for (const [key, correct] of maxByDayAndWordGroup.entries()) {
+    const day = key.split(':')[0] ?? '';
+    if (!day) continue;
+    sumByDay.set(day, (sumByDay.get(day) ?? 0) + correct);
+  }
+
+  let weekWords = 0;
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const k = toDateStringLocal(d);
+    weekWords += sumByDay.get(k) ?? 0;
+  }
+
+  return res.status(200).json({
+    todayWords: sumByDay.get(todayStr) ?? 0,
+    weekWords,
+  });
+}
+
 async function handleProgress(userId: number, req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     const { data: rows, error } = await supabase
@@ -550,6 +608,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (segments.length === 1 && segments[0] === 'progress') {
       return await handleProgress(userId, req, res);
+    }
+    if (segments.length === 1 && segments[0] === 'daily-word-stats' && req.method === 'GET') {
+      return await handleDailyWordStats(userId, res);
     }
     return res.status(404).json({ error: 'Not found' });
   } catch (e) {
