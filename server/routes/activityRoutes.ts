@@ -18,7 +18,7 @@ export function createActivityRoutes(
     }
   });
 
-  router.get('/activity/streak', authenticate, async (req: any, res: any) => {
+  const getStreakHandler = async (req: any, res: any) => {
     try {
       const result = await streakService.getStreak(supabase, req.userId);
       res.json(result);
@@ -26,7 +26,10 @@ export function createActivityRoutes(
       console.error('[GET /api/activity/streak]', e);
       res.status(500).json({ error: 'Server error' });
     }
-  });
+  };
+  router.get('/activity/streak', authenticate, getStreakHandler);
+  /** Same payload as Vercel `api/streak.ts` (frontend uses /api/streak). */
+  router.get('/streak', authenticate, getStreakHandler);
 
   return router;
 }
