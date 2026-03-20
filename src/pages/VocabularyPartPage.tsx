@@ -553,11 +553,10 @@ export default function VocabularyPartPage() {
           const step3Completed = tasksStatus?.match_status === 'completed';
 
           const hint80 = 'Keyingi bosqich ochilishi uchun kamida 80% to‘g‘ri javob kerak';
-          const step2Correct = effectiveStepsState?.step2.correct ?? 0;
-          const step2Incorrect = effectiveStepsState?.step2.incorrect ?? 0;
-          const step2Total = step2Correct + step2Incorrect;
-          const natijaCorrect = step2Completed ? step2Correct : 0;
-          const natijaTotal = step2Total > 0 ? step2Total : totalWords;
+          // Header result should reflect "learned words" (best progress),
+          // not the last attempt correct/incorrect.
+          const natijaCorrect = learnedWords;
+          const natijaTotal = totalWords;
 
           return (
             <>
@@ -669,7 +668,44 @@ export default function VocabularyPartPage() {
                       // Always open match screen for Step 3.
                       navigate(`${partUrl}/pairs`);
                     }}
-                    result={step3Completed ? <div className="mt-2 text-sm font-semibold" style={{ color: '#0F172A' }}>Tugallangan</div> : null}
+                    result={
+                      step3Completed ? (
+                        <div className="mt-2 flex flex-col gap-2">
+                          <div
+                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold"
+                            style={{
+                              borderColor: '#BBF7D0',
+                              backgroundColor: '#F0FDF4',
+                              color: '#166534',
+                            }}
+                          >
+                            <span>🟢</span>
+                            To‘g‘ri: {learnedWords}
+                          </div>
+                          <div
+                            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold"
+                            style={{
+                              borderColor: '#FECACA',
+                              backgroundColor: '#FEF2F2',
+                              color: '#B91C1C',
+                            }}
+                          >
+                            <span>🔴</span>
+                            Noto‘g‘ri: {Math.max(0, totalWords - learnedWords)}
+                          </div>
+                          <div
+                            className="rounded-full border px-3 py-1 text-sm font-semibold"
+                            style={{
+                              borderColor: '#E2E8F0',
+                              backgroundColor: '#ffffff',
+                              color: '#0F172A',
+                            }}
+                          >
+                            Foiz: {totalWords > 0 ? Math.round((learnedWords / totalWords) * 100) : 0}%
+                          </div>
+                        </div>
+                      ) : null
+                    }
                   />
                 </div>
               </div>
