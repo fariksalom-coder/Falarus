@@ -16,6 +16,7 @@ import {
   createWithdrawal,
 } from './_lib/referral.js';
 import { getActivityStreakPayload } from './_lib/activityStreak.js';
+import { awardUserPoints } from './_lib/awardUserPoints.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -372,10 +373,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(400).json({ error: 'lesson_path va task_number kerak' });
         }
 
+        const tn = Number(taskNumber);
+        const { data: prevRow } = await supabase
+          .from('lesson_task_results')
+          .select('correct')
+          .eq('user_id', userId)
+          .eq('lesson_path', String(lessonPath))
+          .eq('task_number', tn)
+          .maybeSingle();
+
+        const prevCorrect = Number(prevRow?.correct ?? 0);
+        const delta = Math.max(0, correct - prevCorrect);
+        await awardUserPoints(userId, delta);
+
         const row = {
           user_id: userId,
           lesson_path: String(lessonPath),
-          task_number: Number(taskNumber),
+          task_number: tn,
           correct,
           total,
           updated_at: new Date().toISOString(),

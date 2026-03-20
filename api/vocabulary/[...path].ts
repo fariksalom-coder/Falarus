@@ -12,8 +12,22 @@ import {
   FREE_VOCAB_TOPIC_ID,
   resolveFreeVocabularyIds,
 } from '../../server/lib/freeVocabularyIds.js';
+import * as vocabularyProgressService from '../../server/services/vocabularyProgress.service.js';
+import * as matchPairsService from '../../server/services/matchPairs.service.js';
+import * as flashcardsService from '../../server/services/flashcards.service.js';
+import * as vocabularyTestService from '../../server/services/vocabularyTest.service.js';
 
-const VOCAB_API_PREFIXES = new Set(['topics', 'subtopics', 'word-groups', 'progress', 'tasks', 'daily-word-stats']);
+const VOCAB_API_PREFIXES = new Set([
+  'topics',
+  'subtopics',
+  'word-groups',
+  'progress',
+  'tasks',
+  'daily-word-stats',
+  'match',
+  'test',
+  'flashcards',
+]);
 
 /**
  * Vercel may pass catch-all as query.path string, string[], or omit it — parse URL as fallback.
@@ -447,45 +461,81 @@ async function handleTasks(userId: number, wordGroupId: number, res: VercelRespo
 }
 
 async function handlePostStep1(userId: number, wordGroupId: number, body: Record<string, unknown>, res: VercelResponse) {
-  const group = await getWordGroupById(wordGroupId);
-  if (!group) return res.status(404).json({ error: 'Not found' });
-  const total_words = group.total_words;
-  const known = Math.max(0, Math.min(Number(body.known ?? 0), total_words));
-  const unknown = Math.max(0, Math.min(Number(body.unknown ?? 0), total_words - known));
-  await getOrCreateUserWordGroupProgress(userId, wordGroupId, total_words);
-  await upsertUserWordGroupProgress(userId, wordGroupId, {
-    flashcards_known: known,
-    flashcards_unknown: unknown,
-    flashcards_completed: true,
-  });
-  const row = await getProgressRowForWordGroup(userId, wordGroupId);
-  const state = mapProgressRowToStepsState(row, total_words);
-  return res.status(200).json(state);
+  try {
+    const state = await vocabularyProgressService.saveStep1Result(supabase, userId, wordGroupId, {
+      known: Number(body.known ?? 0),
+      unknown: Number(body.unknown ?? 0),
+    });
+    return res.status(200).json(state);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('not found')) return res.status(404).json({ error: 'Not found' });
+    return res.status(400).json({ error: msg });
+  }
 }
 
 async function handlePostStep2(userId: number, wordGroupId: number, body: Record<string, unknown>, res: VercelResponse) {
-  const group = await getWordGroupById(wordGroupId);
-  if (!group) return res.status(404).json({ error: 'Not found' });
-  const correct = Math.max(0, Number(body.correct ?? 0));
-  const incorrect = Math.max(0, Number(body.incorrect ?? 0));
-  const totalQuestions = body.totalQuestions != null ? Number(body.totalQuestions) : undefined;
-  let attemptsTotal = correct + incorrect;
-  if (totalQuestions != null && totalQuestions > 0) attemptsTotal = Math.min(totalQuestions, attemptsTotal);
-  if (attemptsTotal <= 0) return res.status(400).json({ error: 'correct+incorrect or totalQuestions required' });
-  const total_words = group.total_words || attemptsTotal;
-  const percentage = (correct / attemptsTotal) * 100;
-  const passed = percentage >= 80;
-  await getOrCreateUserWordGroupProgress(userId, wordGroupId, total_words);
-  await upsertUserWordGroupProgress(userId, wordGroupId, {
-    test_last_correct: correct,
-    test_last_incorrect: attemptsTotal - correct,
-    test_last_percentage: percentage,
-    test_passed: passed,
-    test_best_correct: Math.max(correct, 0),
-  });
-  const row = await getProgressRowForWordGroup(userId, wordGroupId);
-  const state = mapProgressRowToStepsState(row, group.total_words);
-  return res.status(200).json(state);
+  try {
+    const state = await vocabularyProgressService.saveStep2Result(supabase, userId, wordGroupId, {
+      correct: Math.max(0, Number(body.correct ?? 0)),
+      incorrect: Math.max(0, Number(body.incorrect ?? 0)),
+      totalQuestions: body.totalQuestions != null ? Number(body.totalQuestions) : undefined,
+    });
+    return res.status(200).json(state);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('not found')) return res.status(404).json({ error: 'Not found' });
+    if (msg.includes('Total answers')) return res.status(400).json({ error: msg });
+    return res.status(400).json({ error: msg });
+  }
+}
+
+async function handlePostMatchFinish(userId: number, body: Record<string, unknown>, res: VercelResponse) {
+  const wordGroupId = Number(body.word_group_id ?? (body as { wordGroupId?: number }).wordGroupId);
+  const correctPairs = Number(body.correct_pairs ?? (body as { correctPairs?: number }).correctPairs ?? 0);
+  if (!Number.isFinite(wordGroupId)) {
+    return res.status(400).json({ error: 'word_group_id kerak' });
+  }
+  try {
+    const result = await matchPairsService.finishMatch(supabase, userId, wordGroupId, correctPairs);
+    return res.status(200).json(result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('not found')) return res.status(404).json({ error: 'Not found' });
+    return res.status(400).json({ error: msg });
+  }
+}
+
+async function handlePostFlashcardsComplete(userId: number, body: Record<string, unknown>, res: VercelResponse) {
+  const wordGroupId = Number(body.word_group_id ?? (body as { wordGroupId?: number }).wordGroupId);
+  if (!Number.isFinite(wordGroupId)) {
+    return res.status(400).json({ error: 'word_group_id kerak' });
+  }
+  try {
+    const result = await flashcardsService.completeFlashcards(supabase, userId, wordGroupId);
+    return res.status(200).json(result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('not found')) return res.status(404).json({ error: 'Not found' });
+    return res.status(400).json({ error: msg });
+  }
+}
+
+async function handlePostTestFinish(userId: number, body: Record<string, unknown>, res: VercelResponse) {
+  const wordGroupId = Number(body.word_group_id ?? (body as { wordGroupId?: number }).wordGroupId);
+  const correctAnswers = Number(body.correct_answers ?? (body as { correctAnswers?: number }).correctAnswers ?? 0);
+  const totalQuestions = Number(body.total_questions ?? (body as { totalQuestions?: number }).totalQuestions ?? 0);
+  if (!Number.isFinite(wordGroupId)) {
+    return res.status(400).json({ error: 'word_group_id kerak' });
+  }
+  try {
+    const result = await vocabularyTestService.finishTest(supabase, userId, wordGroupId, correctAnswers, totalQuestions);
+    return res.status(200).json(result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('not found')) return res.status(404).json({ error: 'Not found' });
+    return res.status(400).json({ error: msg });
+  }
 }
 
 function parseBody(body: unknown): Record<string, unknown> {
@@ -638,6 +688,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (segments.length === 1 && segments[0] === 'daily-word-stats' && req.method === 'GET') {
       return await handleDailyWordStats(userId, res);
+    }
+    if (segments.length === 2 && segments[0] === 'match' && segments[1] === 'finish' && req.method === 'POST') {
+      return await handlePostMatchFinish(userId, parseBody(req.body), res);
+    }
+    if (segments.length === 2 && segments[0] === 'flashcards' && segments[1] === 'complete' && req.method === 'POST') {
+      return await handlePostFlashcardsComplete(userId, parseBody(req.body), res);
+    }
+    if (segments.length === 2 && segments[0] === 'test' && segments[1] === 'finish' && req.method === 'POST') {
+      return await handlePostTestFinish(userId, parseBody(req.body), res);
     }
     return res.status(404).json({ error: 'Not found' });
   } catch (e) {
