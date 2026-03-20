@@ -1,4 +1,7 @@
+import { saveLessonTaskResult } from '../api/lessonTaskResults';
+
 const STORAGE_KEY = 'lessonTaskResults';
+const AUTH_TOKEN_STORAGE_KEY = 'token';
 
 export type LessonTaskSavedEventDetail = {
   source: 'local' | 'server';
@@ -17,6 +20,14 @@ export type LessonTaskResultSnapshot = {
 };
 
 type Stored = Record<string, Record<string, TaskResult>>;
+
+function getStoredAuthToken(): string | null {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function load(): Stored {
   try {
@@ -99,6 +110,10 @@ export function setLessonTaskResult(
         },
       })
     );
+  }
+  const token = getStoredAuthToken();
+  if (token) {
+    void saveLessonTaskResult(token, lessonPath, taskNumber, correct, total);
   }
 }
 

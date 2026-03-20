@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from './supabase.js';
 import { getAccessInfo } from './subscription.js';
+import { LESSONS } from '../../src/data/lessonsList.js';
+import { courseData } from '../../src/data/courseData.ts';
 import {
   applyLessonsLock,
   canAccessLesson,
@@ -9,56 +11,52 @@ import {
 import { syncUserLessonProgressPercent } from './lessonProgress.js';
 import { buildRequestLogContext, logError } from './logger.js';
 
-async function handleLessonsList(userId: number, res: VercelResponse) {
-  const { data: user, error: userError } = await supabase
-    .from('users')
-    .select('level')
-    .eq('id', userId)
-    .maybeSingle();
-  if (userError) {
-    return res.status(500).json({ error: 'Xatolik yuz berdi' });
-  }
-  if (!user?.level) {
-    return res.status(404).json({ error: 'User topilmadi' });
-  }
+type CourseLessonExercise = {
+  type: string;
+  question_uz: string;
+  options: string[];
+  correct_answer: string;
+};
 
-  const { data: lessons, error } = await supabase
-    .from('lessons')
-    .select('id, level, module_name, title, content_uz, content_ru')
-    .eq('level', user.level)
-    .order('id');
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
+type CourseLessonDetail = {
+  content_uz: string;
+  content_ru: string;
+  exercises: CourseLessonExercise[];
+};
 
-  const access = await getAccessInfo(supabase, userId);
-  const withLock = applyLessonsLock(
-    (lessons ?? []) as Array<{ id: number; [k: string]: unknown }>,
-    access
-  );
-  const lessonIds = (lessons ?? []).map((lesson) => lesson.id);
-  let countByLesson: Record<number, number> = {};
-
-  if (lessonIds.length > 0) {
-    const { data: exerciseRows, error: exerciseError } = await supabase
-      .from('exercises')
-      .select('lesson_id')
-      .in('lesson_id', lessonIds);
-    if (exerciseError) {
-      return res.status(500).json({ error: 'Xatolik yuz berdi' });
-    }
-    countByLesson = (exerciseRows ?? []).reduce((acc, row) => {
-      acc[row.lesson_id] = (acc[row.lesson_id] ?? 0) + 1;
-      return acc;
-    }, {} as Record<number, number>);
-  }
-
-  return res.status(200).json(
-    withLock.map((lesson) => ({
-      ...lesson,
-      tasks_count: countByLesson[lesson.id] ?? 0,
+const courseLessonsCatalog: CourseLessonDetail[] = courseData.flatMap((level) =>
+  level.modules.flatMap((module) =>
+    module.lessons.map((lesson) => ({
+      content_uz: lesson.content_uz ?? '',
+      content_ru: lesson.content_ru ?? '',
+      exercises: (lesson.exercises ?? []).map((ex) => ({
+        type: String(ex.type ?? ''),
+        question_uz: String(ex.question_uz ?? ''),
+        options: Array.isArray(ex.options) ? (ex.options as string[]) : [],
+        correct_answer: String(ex.correct_answer ?? ''),
+      })),
     }))
-  );
+  )
+);
+
+function getCourseLessonDetail(lessonId: number): CourseLessonDetail | null {
+  const idx = lessonId - 1;
+  if (idx < 0 || idx >= courseLessonsCatalog.length) return null;
+  return courseLessonsCatalog[idx];
+}
+
+async function handleLessonsList(userId: number, res: VercelResponse) {
+  const access = await getAccessInfo(supabase, userId);
+  const listBase = LESSONS.map((l) => ({
+    id: l.id,
+    title: l.title,
+    module_name: undefined,
+    content_uz: null as string | null,
+    content_ru: null as string | null,
+    tasks_count: l.exercisesTotal,
+  }));
+
+  return res.status(200).json(applyLessonsLock(listBase as any, access));
 }
 
 async function handleLessonDetail(
@@ -73,45 +71,19 @@ async function handleLessonDetail(
       .json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
   }
 
-  const { data: lesson, error: lessonErr } = await supabase
-    .from('lessons')
-    .select('id, level, module_name, title, content_uz, content_ru')
-    .eq('id', lessonId)
-    .maybeSingle();
+  const meta = LESSONS.find((l) => l.id === lessonId);
+  if (!meta) return res.status(404).json({ error: 'Dars topilmadi' });
 
-  if (lessonErr) {
-    return res.status(500).json({ error: 'Xatolik yuz berdi' });
-  }
-  if (!lesson) {
-    return res.status(404).json({ error: 'Dars topilmadi' });
-  }
-
-  const { data: exercises, error: exercisesError } = await supabase
-    .from('exercises')
-    .select('id, lesson_id, type, question_uz, options, correct_answer')
-    .eq('lesson_id', lessonId)
-    .order('id');
-  if (exercisesError) {
-    return res.status(500).json({ error: 'Xatolik yuz berdi' });
-  }
-
-  const exercisesParsed = (exercises ?? []).map(
-    (exercise: { options?: unknown; [k: string]: unknown }) => ({
-      ...exercise,
-      options:
-        typeof exercise.options === 'string'
-          ? (() => {
-              try {
-                return JSON.parse(exercise.options);
-              } catch {
-                return exercise.options;
-              }
-            })()
-          : exercise.options,
-    })
-  );
-
-  return res.status(200).json({ ...lesson, exercises: exercisesParsed });
+  const courseLesson = getCourseLessonDetail(lessonId);
+  return res.status(200).json({
+    id: lessonId,
+    level: undefined,
+    module_name: undefined,
+    title: courseLesson ? meta.title : meta.title,
+    content_uz: courseLesson?.content_uz ?? '',
+    content_ru: courseLesson?.content_ru ?? '',
+    exercises: courseLesson?.exercises ?? [],
+  });
 }
 
 async function handleLessonPreview(lessonId: number, res: VercelResponse) {

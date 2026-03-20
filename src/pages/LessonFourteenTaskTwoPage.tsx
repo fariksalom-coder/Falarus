@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
-import { saveLessonTaskResult } from '../api/lessonTaskResults';
 import { addUserPoints } from '../api/leaderboard';
 
 type ChoiceTask = { type: 'choice'; prompt: string; options: string[]; correct: string };
@@ -404,7 +403,6 @@ export default function LessonFourteenTaskTwoPage() {
               onClick={() => {
                 if (TASKS.length > 0) setLessonTaskResult('/lesson-14', 2, correctCount, TASKS.length);
                 if (token) {
-                  saveLessonTaskResult(token, '/lesson-14', 2, correctCount, TASKS.length);
                   addUserPoints(token, correctCount);
                 }
                 navigate('/lesson-14');

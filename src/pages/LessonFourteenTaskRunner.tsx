@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
-import { saveLessonTaskResult } from '../api/lessonTaskResults';
 import { addUserPoints } from '../api/leaderboard';
 
 export type ChoiceTask = { type: 'choice'; prompt: string; options: string[]; correct: string };
@@ -318,7 +317,6 @@ export default function LessonFourteenTaskRunner({
                 if (lessonPath != null && taskNumber != null && TASKS.length > 0) {
                   setLessonTaskResult(lessonPath, taskNumber, correctCount, TASKS.length);
                   if (token) {
-                    saveLessonTaskResult(token, lessonPath, taskNumber, correctCount, TASKS.length);
                     addUserPoints(token, correctCount);
                   }
                 }

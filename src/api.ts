@@ -1,5 +1,6 @@
 /** Base URL for API. Empty = same origin (dev with Express). Set VITE_API_URL on Vercel to your backend URL. */
-const ENV_API_BASE = import.meta.env.VITE_API_URL || '';
+const ENV_API_BASE = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
+  ?.VITE_API_URL || '';
 
 function normalizeHost(hostname: string): string {
   return hostname.replace(/^www\./i, '').toLowerCase();

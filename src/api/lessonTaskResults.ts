@@ -36,11 +36,12 @@ export async function saveLessonTaskResult(
   taskNumber: number,
   correct: number,
   total: number
-): Promise<void> {
-  if (!token) return;
+): Promise<boolean> {
+  if (!token) return false;
   try {
     const res = await fetch(apiUrl('/api/lesson-task-results'), {
       method: 'POST',
+      keepalive: true,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -52,6 +53,16 @@ export async function saveLessonTaskResult(
         total,
       }),
     });
+    if (!res.ok) {
+      let details = '';
+      try {
+        details = await res.text();
+      } catch {
+        details = '';
+      }
+      console.error('[lesson-task-results] save failed', res.status, details);
+      return false;
+    }
     if (res.ok && typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent<LessonTaskSavedEventDetail>('lesson-task-saved', {
@@ -65,8 +76,10 @@ export async function saveLessonTaskResult(
         })
       );
     }
-  } catch {
-    // ignore
+    return true;
+  } catch (error) {
+    console.error('[lesson-task-results] save failed', error);
+    return false;
   }
 }
 

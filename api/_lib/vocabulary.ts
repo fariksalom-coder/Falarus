@@ -13,17 +13,9 @@ import { calculateCappedMatchPoints, calculateImprovementDelta } from './scoring
 import { getAccessInfo } from './subscription.js';
 
 async function handleVocabularyRootGet(userId: number, res: VercelResponse) {
-  const { data: words, error } = await supabase
-    .from('vocabulary')
-    .select(
-      'id, user_id, word_ru, translation_uz, example_ru, learned, repetition_stage, next_review, created_at'
-    )
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
-  return res.status(200).json(words ?? []);
+  // Legacy root vocabulary table (`vocabulary`) might be deleted.
+  // Current app reads vocab from `vocabulary_topics/*_subtopics/*_word_groups` and progress caches.
+  return res.status(200).json([]);
 }
 
 async function handleVocabularyRootPost(
@@ -31,19 +23,9 @@ async function handleVocabularyRootPost(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  const body = parseBody(req.body);
-  const word_ru = body.word_ru as string | undefined;
-  const translation_uz = body.translation_uz as string | undefined;
-  const example_ru = body.example_ru as string | undefined;
-  const { error } = await supabase.from('vocabulary').insert({
-    user_id: userId,
-    word_ru: word_ru ?? '',
-    translation_uz: translation_uz ?? '',
-    example_ru: example_ru ?? '',
-  });
-  if (error) {
-    return res.status(500).json({ error: error.message });
-  }
+  // No-op: avoid writing into deleted `vocabulary` table.
+  // Step-based vocabulary endpoints handle progress updates.
+  parseBody(req.body); // keep request parsing consistent (validate JSON shape, if any)
   return res.status(200).json({ success: true });
 }
 

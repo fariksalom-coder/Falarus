@@ -16,13 +16,11 @@ import {
 } from '../lib/sequentialLessonProgress';
 import {
   fetchLessonTaskResults,
-  saveLessonTaskResult,
   type LessonTaskResultItem,
 } from '../api/lessonTaskResults';
 import {
   getLessonTaskResults,
   mergeLessonTaskResultsFromServer,
-  type LessonTaskSavedEventDetail,
 } from '../utils/lessonTaskResults';
 import { useAuth } from './AuthContext';
 
@@ -90,8 +88,7 @@ export function SequentialLessonProvider({ children }: { children: ReactNode }) 
 
   /** Same-tab updates after setLessonTaskResult (localStorage). */
   useEffect(() => {
-    const onSaved = (event: Event) => {
-      const detail = (event as CustomEvent<LessonTaskSavedEventDetail>).detail;
+    const onSaved = () => {
       const local = buildLocalMap();
       setResults((prev) => {
         const next: TaskResultsMap = { ...prev };
@@ -101,26 +98,10 @@ export function SequentialLessonProvider({ children }: { children: ReactNode }) 
         return next;
       });
 
-      if (
-        detail?.source === 'local' &&
-        token &&
-        detail.lessonPath &&
-        typeof detail.taskNumber === 'number' &&
-        typeof detail.correct === 'number' &&
-        typeof detail.total === 'number'
-      ) {
-        void saveLessonTaskResult(
-          token,
-          detail.lessonPath,
-          detail.taskNumber,
-          detail.correct,
-          detail.total
-        );
-      }
     };
     window.addEventListener('lesson-task-saved', onSaved);
     return () => window.removeEventListener('lesson-task-saved', onSaved);
-  }, [token]);
+  }, []);
 
   const lessonStates = useMemo(() => computeLessonStates(results), [results]);
 

@@ -4,6 +4,8 @@ import {
   FREE_VOCAB_SUBTOPIC_ID,
   FREE_VOCAB_TOPIC_ID,
 } from './freeVocabularyIds.js';
+import { LESSONS } from '../../src/data/lessonsList.js';
+import { courseData } from '../../src/data/courseData.ts';
 
 export type LessonWithLock = {
   id: number;
@@ -93,29 +95,41 @@ export type LessonPreview = {
   tasks_preview: number;
 };
 
+type CourseLesson = {
+  title: string;
+  content_uz: string;
+  content_ru: string;
+};
+
+const courseLessonCatalog: CourseLesson[] = courseData.flatMap((level) =>
+  level.modules.flatMap((module) =>
+    module.lessons.map((lesson) => ({
+      title: lesson.title,
+      content_uz: lesson.content_uz ?? '',
+      content_ru: lesson.content_ru ?? '',
+    }))
+  )
+);
+
 export async function getLessonPreview(
   supabase: SupabaseClient,
   lessonId: number
 ): Promise<LessonPreview | null> {
-  const { data: lesson, error: lessonError } = await supabase
-    .from('lessons')
-    .select('id, title, content_uz, content_ru')
-    .eq('id', lessonId)
-    .single();
-  if (lessonError || !lesson) return null;
+  void supabase; // not used: lesson content is served from static `courseData`
 
+  const meta = LESSONS.find((l) => l.id === lessonId);
+  if (!meta) return null;
+
+  const courseLesson = courseLessonCatalog[lessonId - 1];
   const description =
-    (lesson.content_ru || lesson.content_uz || '').slice(0, 120) || 'Dars mazmuni';
-  const { count } = await supabase
-    .from('exercises')
-    .select('*', { count: 'exact', head: true })
-    .eq('lesson_id', lessonId);
+    (courseLesson?.content_ru || courseLesson?.content_uz || '').slice(0, 120) ||
+    'Dars mazmuni';
 
   return {
-    title: lesson.title || 'Dars',
+    title: courseLesson?.title || meta.title || 'Dars',
     description,
     preview_words: [],
-    tasks_preview: Math.min(1, count ?? 0),
+    tasks_preview: Math.min(1, meta.exercisesTotal ?? 0),
   };
 }
 
