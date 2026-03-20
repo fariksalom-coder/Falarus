@@ -38,7 +38,7 @@ export async function saveLessonTaskResult(
 ): Promise<void> {
   if (!token) return;
   try {
-    await fetch(apiUrl('/api/lesson-task-results'), {
+    const res = await fetch(apiUrl('/api/lesson-task-results'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -51,6 +51,9 @@ export async function saveLessonTaskResult(
         total,
       }),
     });
+    if (res.ok && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('lesson-task-saved'));
+    }
   } catch {
     // ignore
   }

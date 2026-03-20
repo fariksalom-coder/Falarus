@@ -1,17 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ChevronRight, Lock } from 'lucide-react';
-import {
-  LESSONS,
-  TOTAL_LESSONS,
-  getLessonStatus,
-  type LessonStatus,
-} from '../data/lessonsList';
+import { ChevronRight, Lock, Check } from 'lucide-react';
+import { LESSONS, type LessonStatus } from '../data/lessonsList';
 import { getLessonCompletionSummary } from '../utils/lessonTaskResults';
 import { useAuth } from '../context/AuthContext';
-import { useAccess } from '../context/AccessContext';
-import * as accessApi from '../api/access';
+import { useSequentialLesson } from '../context/SequentialLessonContext';
+import { useLessonsSubscriptionLock } from '../hooks/useLessonsSubscriptionLock';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -29,91 +24,29 @@ const STATUS_LABEL: Record<LessonStatus, string> = {
   locked: 'Boshlanmagan',
 };
 
-/** Completed lessons count: from localStorage for now; can be replaced with API. */
-function useCompletedCount(): number {
-  try {
-    const raw = localStorage.getItem('lessons-completed-count');
-    if (raw != null) {
-      const n = parseInt(raw, 10);
-      if (!Number.isNaN(n) && n >= 0) return Math.min(n, TOTAL_LESSONS);
-    }
-  } catch {
-    // ignore
-  }
-  return 0;
-}
-
-function buildLockMapFromLessons(list: { id: number; locked: boolean }[]): Record<number, boolean> {
-  const map: Record<number, boolean> = {};
-  list.forEach((l) => { map[l.id] = l.locked; });
-  return map;
-}
-
 export default function Dashboard() {
   const navigate = useNavigate();
   const { token } = useAuth();
-  const { access } = useAccess();
-  const completedCount = useCompletedCount();
-  const cachedLessons = accessApi.getCachedLessons();
-  const [lessonsLockMap, setLessonsLockMap] = useState<Record<number, boolean>>(() =>
-    cachedLessons ? buildLockMapFromLessons(cachedLessons) : {}
-  );
-  const [lessonsAccessLoaded, setLessonsAccessLoaded] = useState(!!cachedLessons?.length);
+  const { lessonStates, isReady: seqReady } = useSequentialLesson();
+  const { isLessonLockedBySubscription, loaded: subLoaded } = useLessonsSubscriptionLock();
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedLockedLessonId, setSelectedLockedLessonId] = useState<number | null>(null);
   const { hasPendingPayment } = usePaymentStatus();
 
-  useEffect(() => {
-    if (!token) {
-      setLessonsLockMap({});
-      setLessonsAccessLoaded(true);
-      return;
-    }
-    const cached = accessApi.getCachedLessons();
-    if (cached?.length) {
-      setLessonsLockMap(buildLockMapFromLessons(cached));
-      setLessonsAccessLoaded(true);
-    } else {
-      setLessonsAccessLoaded(false);
-    }
-    accessApi
-      .getLessons(token)
-      .then((list) => {
-        setLessonsLockMap(buildLockMapFromLessons(list));
-        accessApi.setCachedLessons(list);
-      })
-      .catch(() => {
-        if (access?.subscription_active) {
-          const map: Record<number, boolean> = {};
-          LESSONS.forEach((l) => { map[l.id] = false; });
-          setLessonsLockMap(map);
-        }
-      })
-      .finally(() => setLessonsAccessLoaded(true));
-  }, [token, access?.subscription_active]);
-
-  const isLessonLocked = (lessonId: number) => {
-    if (access?.subscription_active) return false;
-    if (lessonsLockMap[lessonId] !== undefined) return lessonsLockMap[lessonId];
-    return lessonId > 3;
-  };
+  const dataReady = !token || (seqReady && subLoaded);
 
   const handleLessonClick = (lesson: (typeof LESSONS)[number]) => {
-    const locked = isLessonLocked(lesson.id);
-    if (locked) {
-      setSelectedLockedLessonId(lesson.id);
-      setModalOpen(true);
-    } else {
-      navigate(lesson.path);
-    }
-  };
+    const seq = lessonStates.find((s) => s.lessonPath === lesson.path);
+    const lockedBySub = isLessonLockedBySubscription(lesson.id);
+    const lockedBySeq = seq != null && !seq.isUnlocked;
 
-  const handleOpenPreview = () => {
-    if (selectedLockedLessonId) {
-      setModalOpen(false);
-      navigate(`/preview/lesson/${selectedLockedLessonId}`);
-      setSelectedLockedLessonId(null);
+    if (lockedBySub) {
+      setModalOpen(true);
+      return;
     }
+    if (lockedBySeq) {
+      return;
+    }
+    navigate(lesson.path);
   };
 
   return (
@@ -125,117 +58,121 @@ export default function Dashboard() {
       }}
     >
       <main className="mx-auto max-w-[720px] px-4 py-8">
-        {/* Page title */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: TEXT }}>
             Rus tili kursi
           </h1>
+          <p className="mt-4 text-sm text-slate-600">
+            Darslar ketma-ket ochiladi: har bir topshiriqda kamida 70% to‘g‘ri javob kerak. Keyingi bosqich ochilishi uchun avval
+            joriy darsni tugating.
+          </p>
         </div>
 
-        {/* Learning path — lesson cards (render only after access data loaded to avoid locked→unlocked flash) */}
-        {token && !lessonsAccessLoaded && (
+        {token && !dataReady && (
           <div className="flex items-center justify-center py-16">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" aria-hidden />
+            <div
+              className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"
+              aria-hidden
+            />
           </div>
         )}
-        {( !token || lessonsAccessLoaded ) && (
-        <div className="space-y-3">
-          {LESSONS.map((lesson, index) => {
-            const baseStatus = getLessonStatus(index, completedCount);
-            const summary = getLessonCompletionSummary(lesson.path, lesson.exercisesTotal);
-            const status: LessonStatus =
-              summary.status === 'completed'
-                ? 'completed'
-                : summary.status === 'in_progress' && baseStatus === 'locked'
-                  ? 'in_progress'
-                  : baseStatus;
-            const isLocked = isLessonLocked(lesson.id);
+        {(!token || dataReady) && (
+          <div className="space-y-3">
+            {LESSONS.map((lesson) => {
+              const seq = lessonStates.find((s) => s.lessonPath === lesson.path);
+              const lockedBySub = isLessonLockedBySubscription(lesson.id);
+              const lockedBySeq = seq != null && !seq.isUnlocked;
+              const isLocked = lockedBySub || lockedBySeq;
+              const summary = getLessonCompletionSummary(lesson.path, lesson.exercisesTotal);
 
-            return (
-              <motion.button
-                key={lesson.id}
-                type="button"
-                onClick={() => handleLessonClick(lesson)}
-                className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                style={{
-                  borderColor: BORDER,
-                  backgroundColor: CARD_BG,
-                  opacity: isLocked ? 0.9 : 1,
-                }}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                {/* Номер урока в кружке */}
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white"
+              let status: LessonStatus = 'locked';
+              if (!isLocked && seq) {
+                if (seq.isCompleted) status = 'completed';
+                else if (seq.isUnlocked) {
+                  status = summary.status === 'completed' ? 'completed' : 'in_progress';
+                }
+              }
+
+              return (
+                <motion.button
+                  key={lesson.id}
+                  type="button"
+                  onClick={() => handleLessonClick(lesson)}
+                  disabled={isLocked}
+                  className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-60"
                   style={{
-                    backgroundColor: isLocked ? '#94A3B8' : PRIMARY,
+                    borderColor: BORDER,
+                    backgroundColor: CARD_BG,
                   }}
+                  whileHover={!isLocked ? { scale: 1.01 } : undefined}
+                  whileTap={!isLocked ? { scale: 0.99 } : undefined}
                 >
-                  {lesson.num}
-                </div>
-
-                {/* Иконка темы + название урока (без "X-dars") */}
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold" style={{ color: TEXT }}>
-                    {lesson.title}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2 text-sm" style={{ color: TEXT_SECONDARY }}>
-                    <span
-                      className="rounded-full px-2 py-0.5 text-xs font-medium"
-                      style={{
-                        backgroundColor:
-                          status === 'completed'
-                            ? '#DCFCE7' // green-100
-                            : status === 'in_progress'
-                              ? '#FFEDD5' // orange-100
-                              : '#F1F5F9', // slate-100
-                        color:
-                          status === 'completed'
-                            ? '#15803D' // green-700
-                            : status === 'in_progress'
-                              ? '#C05621' // orange-600
-                              : TEXT_SECONDARY,
-                      }}
-                    >
-                      {STATUS_LABEL[status]}
-                    </span>
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold text-white"
+                    style={{
+                      backgroundColor: isLocked ? '#94A3B8' : status === 'completed' ? '#22C55E' : PRIMARY,
+                    }}
+                  >
+                    {status === 'completed' && !isLocked ? (
+                      <Check className="h-5 w-5 text-white" strokeWidth={2.5} />
+                    ) : (
+                      lesson.num
+                    )}
                   </div>
-                </div>
 
-                {/* Стрелка или замок справа */}
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                  style={{ color: isLocked ? '#94A3B8' : PRIMARY }}
-                >
-                  {isLocked ? (
-                    <span
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 ring-2 ring-amber-200"
-                      title="Qulflangan"
-                    >
-                      <Lock className="h-5 w-5 text-amber-600" strokeWidth={2.5} />
-                    </span>
-                  ) : (
-                    <ChevronRight className="h-5 w-5" strokeWidth={2} />
-                  )}
-                </div>
-              </motion.button>
-            );
-          })}
-        </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold" style={{ color: TEXT }}>
+                      {lesson.title}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-sm" style={{ color: TEXT_SECONDARY }}>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-xs font-medium"
+                        style={{
+                          backgroundColor:
+                            status === 'completed'
+                              ? '#DCFCE7'
+                              : status === 'in_progress'
+                                ? '#FFEDD5'
+                                : '#F1F5F9',
+                          color:
+                            status === 'completed'
+                              ? '#15803D'
+                              : status === 'in_progress'
+                                ? '#C05621'
+                                : TEXT_SECONDARY,
+                        }}
+                      >
+                        {STATUS_LABEL[status]}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                    style={{ color: isLocked ? '#94A3B8' : PRIMARY }}
+                  >
+                    {isLocked ? (
+                      <span
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 ring-2 ring-amber-200"
+                        title="Qulflangan"
+                      >
+                        <Lock className="h-5 w-5 text-amber-600" strokeWidth={2.5} />
+                      </span>
+                    ) : (
+                      <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                    )}
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
         )}
       </main>
 
       {modalOpen && hasPendingPayment && (
-        <PendingPaymentModal
-          onClose={() => { setModalOpen(false); setSelectedLockedLessonId(null); }}
-        />
+        <PendingPaymentModal onClose={() => setModalOpen(false)} />
       )}
-      {modalOpen && !hasPendingPayment && (
-        <PaywallModal
-          onClose={() => { setModalOpen(false); setSelectedLockedLessonId(null); }}
-        />
-      )}
+      {modalOpen && !hasPendingPayment && <PaywallModal onClose={() => setModalOpen(false)} />}
     </div>
   );
 }

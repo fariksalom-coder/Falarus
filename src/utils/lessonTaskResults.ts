@@ -60,12 +60,18 @@ export function setLessonTaskResult(
   if (!data[lessonPath]) data[lessonPath] = {};
   data[lessonPath][String(taskNumber)] = { correct, total };
   save(data);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('lesson-task-saved'));
+  }
 }
 
-/** Whether the result is “good” (≥80% correct). */
+/** Progress threshold: ≥70% unlocks next task / counts toward lesson completion. */
+const PASS_RATIO = 0.7;
+
+/** Whether the result passes the course threshold (≥70%). */
 export function isTaskResultGood(result: TaskResult): boolean {
   if (result.total <= 0) return false;
-  return result.correct / result.total >= 0.8;
+  return result.correct / result.total >= PASS_RATIO;
 }
 
 /** Shared task button className: not started = white, in progress = orange, passed = green. */
