@@ -5,7 +5,7 @@ import {
   FREE_VOCAB_TOPIC_ID,
 } from './freeVocabularyIds.js';
 import { LESSONS } from '../../src/data/lessonsList.js';
-import { courseData } from '../../src/data/courseData.ts';
+import { courseData } from '../../src/data/courseData.js';
 
 export type LessonWithLock = {
   id: number;

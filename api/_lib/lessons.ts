@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from './supabase.js';
 import { getAccessInfo } from './subscription.js';
 import { LESSONS } from '../../src/data/lessonsList.js';
-import { courseData } from '../../src/data/courseData.ts';
+import { courseData } from '../../src/data/courseData.js';
 import {
   applyLessonsLock,
   canAccessLesson,
