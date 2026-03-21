@@ -163,7 +163,9 @@ export default function VocabularyPartPage() {
     });
     let cancelled = false;
     (async () => {
-      const groups = await fetchVocabularyWordGroups(token, subtopicId);
+      // Use canonical subtopic id instead of raw route param so Step 1 save
+      // still works even if production DB is missing the latest slug backfill.
+      const groups = await fetchVocabularyWordGroups(token, resolvedId);
       if (cancelled) return;
       const group = groups.find((g) => g.part_id === part.id);
       if (group) {

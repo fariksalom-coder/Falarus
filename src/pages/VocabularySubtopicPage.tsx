@@ -69,7 +69,9 @@ export default function VocabularySubtopicPage() {
       return;
     }
     setWordGroupsProgress(getCachedWordGroupsProgress(resolvedId) ?? []);
-    fetchVocabularyWordGroups(token, subtopicId).then((data) => {
+    // Always use the canonical subtopic id for backend lookups.
+    // This avoids 404s when the URL uses a slug that is not yet backfilled in production.
+    fetchVocabularyWordGroups(token, resolvedId).then((data) => {
       setWordGroupsProgress(data);
       setCachedWordGroupsProgress(resolvedId, data);
     });
