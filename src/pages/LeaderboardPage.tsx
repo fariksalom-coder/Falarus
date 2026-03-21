@@ -36,8 +36,7 @@ export default function LeaderboardPage() {
   }, [token, period]);
 
   const topThree = data?.top.slice(0, 3) ?? [];
-  const rest = data?.top.slice(3) ?? [];
-  const currentUserVisible = user?.id != null && (data?.top ?? []).some((item) => item.id === user.id);
+  const listItems = data?.top ?? [];
 
   return (
     <div className="min-h-screen pb-10" style={{ backgroundColor: BG }}>
@@ -81,15 +80,15 @@ export default function LeaderboardPage() {
           <>
             {topThree.length > 0 && <LeaderboardPodium items={topThree} />}
 
-            {rest.length > 0 && (
+            {listItems.length > 0 && (
               <LeaderboardList
-                items={rest}
+                items={listItems}
                 currentUserId={user?.id}
-                startRank={4}
+                startRank={1}
               />
             )}
 
-            {data?.myRank != null && !currentUserVisible && (
+            {data?.myRank != null && (
               <div className="mt-6">
                 <p
                   className="mb-3 text-sm font-semibold"
@@ -107,7 +106,7 @@ export default function LeaderboardPage() {
                     points: data.myRank.points,
                   }}
                   isCurrentUser
-                  caption="Sizning natijangiz"
+                  caption="Joriy o‘rningiz"
                 />
               </div>
             )}

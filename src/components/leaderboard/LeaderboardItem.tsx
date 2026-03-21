@@ -10,7 +10,7 @@ type LeaderboardItemProps = {
 export default function LeaderboardItem({ rank, user, isCurrentUser }: LeaderboardItemProps) {
   return (
     <li>
-      <UserRankCard rank={rank} user={user} isCurrentUser={isCurrentUser} />
+      <UserRankCard rank={user.rank ?? rank} user={user} isCurrentUser={isCurrentUser} />
     </li>
   );
 }

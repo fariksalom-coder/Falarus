@@ -36,6 +36,7 @@ const PODIUM_META = {
 function PodiumAvatar({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) {
   const meta = PODIUM_META[rank];
   const name = getLeaderboardDisplayName(user);
+  const badgeRank = user.rank ?? rank;
 
   return (
     <div className="relative">
@@ -53,7 +54,7 @@ function PodiumAvatar({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }
       <div
         className={`absolute left-1/2 top-full flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-xl font-bold shadow-[0_10px_18px_rgba(15,23,42,0.16)] ${meta.badgeClassName}`}
       >
-        {rank}
+        {badgeRank}
       </div>
     </div>
   );

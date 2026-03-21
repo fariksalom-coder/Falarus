@@ -140,11 +140,17 @@ export async function recalculateRanks(supabase: SupabaseClient): Promise<void> 
     .order('total_points', { ascending: false });
   if (fetchErr) throw fetchErr;
   if (!rows?.length) return;
+  let previousPoints: number | null = null;
+  let currentRank = 0;
   for (let i = 0; i < rows.length; i++) {
-    const rank = i + 1;
+    const points = Number(rows[i].total_points ?? 0);
+    if (previousPoints === null || points < previousPoints) {
+      currentRank = i + 1;
+      previousPoints = points;
+    }
     await supabase
       .from(LEADERBOARD)
-      .update({ rank, updated_at: new Date().toISOString() })
+      .update({ rank: currentRank, updated_at: new Date().toISOString() })
       .eq('user_id', rows[i].user_id);
   }
 }

@@ -6,6 +6,7 @@ export type LeaderboardUser = {
   lastName: string | null;
   avatarUrl: string | null;
   points: number;
+  rank?: number;
 };
 
 export type LeaderboardResponse = {

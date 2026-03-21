@@ -4,7 +4,9 @@ import { House, BookMarked, BarChart3, Trophy, User } from 'lucide-react';
 const BORDER = '#E2E8F0';
 const TEXT_SECONDARY = '#64748B';
 const PRIMARY = '#6D35D2';
-const PRIMARY_DARK = '#0EA5E9';
+const ACTIVE_BG = 'linear-gradient(180deg, #7E49EC 0%, #6D35D2 100%)';
+const ACTIVE_BORDER = 'rgba(255,255,255,0.2)';
+const ACTIVE_SHADOW = '0 10px 22px rgba(109,53,210,0.16), inset 0 1px 0 rgba(255,255,255,0.22)';
 
 export default function AppNavBar() {
   const navigate = useNavigate();
@@ -23,9 +25,10 @@ export default function AppNavBar() {
         onClick={() => navigate(to)}
         className="flex min-w-[60px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-200"
         style={{
-          background: active ? 'linear-gradient(135deg,#6E2DE2 0%,#7C3AED 100%)' : 'transparent',
+          background: active ? ACTIVE_BG : 'transparent',
           color: active ? '#fff' : TEXT_SECONDARY,
-          boxShadow: active ? `inset 0 0 0 2px ${PRIMARY_DARK}, 0 10px 22px rgba(109,53,210,0.18)` : 'none',
+          border: active ? `1px solid ${ACTIVE_BORDER}` : '1px solid transparent',
+          boxShadow: active ? ACTIVE_SHADOW : 'none',
         }}
       >
         <Icon className="h-5 w-5 shrink-0" />

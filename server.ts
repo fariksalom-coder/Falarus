@@ -30,6 +30,7 @@ import {
   getWeeklyPoints,
   isMissingLeaderboardColumnError,
 } from './shared/leaderboardPeriods.ts';
+import { assignCompetitionRanks } from './shared/leaderboardRanks.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -384,7 +385,6 @@ async function startServer() {
   });
 
   // Leaderboard: "all" = cached top 100 from leaderboard table + Redis; daily/weekly = period-aware user counters
-  const leaderboardCacheService = await import('./server/services/leaderboardCache.service');
   const leaderboardService = await import('./server/services/leaderboard.service');
   app.get('/api/leaderboard', authenticate, async (req: any, res) => {
     const requestedPeriod = (req.query.period as string) || 'weekly';
@@ -396,29 +396,38 @@ async function startServer() {
     const weekStart = getWeekStartDateString(today);
     if (useTotalPoints) {
       try {
-        const top = await leaderboardCacheService.getTop100Cached(supabase);
-        const myPosition = await leaderboardService.getMyPosition(supabase, req.userId);
+        const { data: topRows, error: topErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, total_points')
+          .order('total_points', { ascending: false })
+          .order('id', { ascending: true })
+          .limit(100);
+        if (topErr) throw topErr;
         const { data: me } = await supabase
           .from('users')
-          .select('id, first_name, last_name, avatar_url')
+          .select('id, first_name, last_name, avatar_url, total_points')
           .eq('id', req.userId)
           .single();
+        const myPoints = Number(me?.total_points ?? 0);
+        const { count, error: countErr } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .gt('total_points', myPoints);
         res.json({
-          top: top.map((u) => ({
+          top: assignCompetitionRanks((topRows ?? []).map((u: any) => ({
             id: u.id,
-            firstName: u.firstName,
-            lastName: u.lastName,
-            avatarUrl: u.avatarUrl,
-            points: u.total_points,
-            rank: u.rank,
-          })),
-          myRank: myPosition && me ? {
-            rank: myPosition.rank,
+            firstName: u.first_name,
+            lastName: u.last_name,
+            avatarUrl: u.avatar_url,
+            points: u.total_points ?? 0,
+          }))),
+          myRank: me && !countErr ? {
+            rank: (count ?? 0) + 1,
             id: me.id,
             firstName: me.first_name,
             lastName: me.last_name,
             avatarUrl: me.avatar_url,
-            points: myPosition.points,
+            points: myPoints,
           } : null,
         });
       } catch (e) {
@@ -453,13 +462,13 @@ async function startServer() {
         .gt('monthly_points', myPoints);
       const rank = countErr ? null : (count ?? 0) + 1;
       return res.json({
-        top: (top ?? []).map((u: any) => ({
+        top: assignCompetitionRanks((top ?? []).map((u: any) => ({
           id: u.id,
           firstName: u.first_name,
           lastName: u.last_name,
           avatarUrl: u.avatar_url,
           points: u.monthly_points ?? 0,
-        })),
+        }))),
         myRank: rank == null ? null : {
           rank,
           id: me.id,
@@ -509,13 +518,13 @@ async function startServer() {
           .gt('points', myPoints);
         const rank = legacyCountErr ? null : (count ?? 0) + 1;
         return res.json({
-          top: (legacyTop ?? []).map((u: any) => ({
+          top: assignCompetitionRanks((legacyTop ?? []).map((u: any) => ({
             id: u.id,
             firstName: u.first_name,
             lastName: u.last_name,
             avatarUrl: u.avatar_url,
             points: u.points ?? 0,
-          })),
+          }))),
           myRank: rank == null ? null : {
             rank,
             id: legacyMe.id,
@@ -542,13 +551,13 @@ async function startServer() {
         .gt('points', myPoints > 0 ? myPoints : 0);
       const rank = countErr ? null : (count ?? 0) + 1;
       return res.json({
-        top: (top ?? []).map((u: any) => ({
+        top: assignCompetitionRanks((top ?? []).map((u: any) => ({
           id: u.id,
           firstName: u.first_name,
           lastName: u.last_name,
           avatarUrl: u.avatar_url,
           points: u.points ?? 0,
-        })),
+        }))),
         myRank: rank == null ? null : {
           rank,
           id: me.id,
@@ -597,13 +606,13 @@ async function startServer() {
         .gt('weekly_points', myPoints);
       const rank = legacyCountErr ? null : (count ?? 0) + 1;
       return res.json({
-        top: (legacyTop ?? []).map((u: any) => ({
+        top: assignCompetitionRanks((legacyTop ?? []).map((u: any) => ({
           id: u.id,
           firstName: u.first_name,
           lastName: u.last_name,
           avatarUrl: u.avatar_url,
           points: u.weekly_points ?? 0,
-        })),
+        }))),
         myRank: rank == null ? null : {
           rank,
           id: legacyMe.id,
@@ -630,13 +639,13 @@ async function startServer() {
       .gt('weekly_points', myPoints > 0 ? myPoints : 0);
     const rank = countErr ? null : (count ?? 0) + 1;
     res.json({
-      top: (top ?? []).map((u: any) => ({
+      top: assignCompetitionRanks((top ?? []).map((u: any) => ({
         id: u.id,
         firstName: u.first_name,
         lastName: u.last_name,
         avatarUrl: u.avatar_url,
         points: u.weekly_points ?? 0,
-      })),
+      }))),
       myRank: rank == null ? null : {
         rank,
         id: me.id,

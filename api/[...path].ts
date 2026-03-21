@@ -37,6 +37,7 @@ import {
   getWeeklyPoints,
   isMissingLeaderboardColumnError,
 } from '../shared/leaderboardPeriods.js';
+import { assignCompetitionRanks } from '../shared/leaderboardRanks.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -386,21 +387,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const weekStart = getWeekStartDateString(today);
     try {
       if (useTotalPoints) {
-        const { data: topRows, error: rpcErr } = await supabase.rpc('get_leaderboard', { lim: 100 });
-        if (rpcErr) throw rpcErr;
-        const top = (topRows ?? []).map((r: { user_id: number; first_name: string | null; last_name: string | null; avatar_url: string | null; total_points: number; rank: number }) => ({
-          id: r.user_id,
+        const { data: topRows, error: topErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, total_points')
+          .order('total_points', { ascending: false })
+          .order('id', { ascending: true })
+          .limit(100);
+        if (topErr) throw topErr;
+        const top = assignCompetitionRanks((topRows ?? []).map((r: any) => ({
+          id: r.id,
           firstName: r.first_name ?? '',
           lastName: r.last_name ?? '',
           avatarUrl: r.avatar_url ?? null,
-          points: Number(r.total_points),
-          rank: Number(r.rank),
-        }));
-        const { data: myRow } = await supabase.from('leaderboard').select('rank, total_points').eq('user_id', userId).maybeSingle();
-        const { data: me } = await supabase.from('users').select('id, first_name, last_name, avatar_url').eq('id', userId).single();
+          points: Number(r.total_points ?? 0),
+        })));
+        const { data: me } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, total_points')
+          .eq('id', userId)
+          .single();
+        if (!me) {
+          return res.status(200).json({ top, myRank: null });
+        }
+        const myPoints = Number(me.total_points ?? 0);
+        const { count, error: countErr } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .gt('total_points', myPoints);
         return res.status(200).json({
           top,
-          myRank: myRow && me ? { rank: Number(myRow.rank), id: me.id, firstName: me.first_name, lastName: me.last_name, avatarUrl: me.avatar_url, points: Number(myRow.total_points) } : null,
+          myRank:
+            countErr || !me
+              ? null
+              : {
+                  rank: (count ?? 0) + 1,
+                  id: me.id,
+                  firstName: me.first_name,
+                  lastName: me.last_name,
+                  avatarUrl: me.avatar_url,
+                  points: myPoints,
+                },
         });
       }
 
@@ -475,13 +501,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .gt('points', myPoints);
           const rank = legacyCountErr ? null : (count ?? 0) + 1;
           return res.status(200).json({
-            top: (legacyTop ?? []).map((u: any) => ({
+            top: assignCompetitionRanks((legacyTop ?? []).map((u: any) => ({
               id: u.id,
               firstName: u.first_name,
               lastName: u.last_name,
               avatarUrl: u.avatar_url,
               points: u.points ?? 0,
-            })),
+            }))),
             myRank:
               rank == null
                 ? null
@@ -509,13 +535,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .gt('points', myPoints > 0 ? myPoints : 0);
         const rank = countErr ? null : (count ?? 0) + 1;
         return res.status(200).json({
-          top: (top ?? []).map((u: any) => ({
+          top: assignCompetitionRanks((top ?? []).map((u: any) => ({
             id: u.id,
             firstName: u.first_name,
             lastName: u.last_name,
             avatarUrl: u.avatar_url,
             points: u.points ?? 0,
-          })),
+          }))),
           myRank:
             rank == null
               ? null
@@ -559,13 +585,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .gt('weekly_points', myPoints);
         const rank = legacyCountErr ? null : (count ?? 0) + 1;
         return res.status(200).json({
-          top: (legacyTop ?? []).map((u: any) => ({
+          top: assignCompetitionRanks((legacyTop ?? []).map((u: any) => ({
             id: u.id,
             firstName: u.first_name,
             lastName: u.last_name,
             avatarUrl: u.avatar_url,
             points: u.weekly_points ?? 0,
-          })),
+          }))),
           myRank:
             rank == null
               ? null
@@ -593,13 +619,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .gt('weekly_points', myPoints > 0 ? myPoints : 0);
       const rank = countErr ? null : (count ?? 0) + 1;
       return res.status(200).json({
-        top: (top ?? []).map((u: any) => ({
+        top: assignCompetitionRanks((top ?? []).map((u: any) => ({
           id: u.id,
           firstName: u.first_name,
           lastName: u.last_name,
           avatarUrl: u.avatar_url,
           points: u.weekly_points ?? 0,
-        })),
+        }))),
         myRank:
           rank == null
             ? null
