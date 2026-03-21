@@ -18,7 +18,7 @@ import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { useResolvedVocabularySubtopicId } from '../hooks/useResolvedVocabularySubtopicId';
 import { canAccessVocabularySubtopicRoute } from '../utils/vocabularyAccess';
-import { postVocabularyMatchFinish } from '../api/vocabulary';
+import { postVocabularyMatchFinish, postVocabularyTestFinish } from '../api/vocabulary';
 import { useVocabularyWordGroup } from '../features/vocabulary/hooks/useVocabularyWordGroup';
 import { buildBlockHubViewModel } from '../features/vocabulary/blockHubModel';
 import { VocabularyTaskList } from '../components/vocabulary/VocabularyTaskList';
@@ -261,14 +261,15 @@ export default function VocabularyPartPage() {
       if (token && wordGroupId != null) {
         void (async () => {
           try {
-            await submitStep2(
+            const result = await postVocabularyTestFinish(
               token,
               wordGroupId,
               testCorrect,
-              testQuestions.length - testCorrect,
               testQuestions.length
             );
+            setPointsEarnedMessage(result?.points_awarded && result.points_awarded > 0 ? result.points_awarded : null);
             await refetchTasks();
+            await fetchSteps(token, wordGroupId);
             if (content?.subtopicId) {
               try {
                 sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
@@ -302,7 +303,7 @@ export default function VocabularyPartPage() {
     wordGroupId,
     testCorrect,
     step2Submitted,
-    submitStep2,
+    fetchSteps,
     refetchTasks,
   ]);
 
@@ -650,6 +651,7 @@ export default function VocabularyPartPage() {
               setTestIndex(0);
               setTestSelected(null);
               setTestCorrect(0);
+              setPointsEarnedMessage(null);
             }}
           />
         ) : null}
