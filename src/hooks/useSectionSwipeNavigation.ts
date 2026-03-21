@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { animate, useMotionValue } from 'motion/react';
-
-const SWIPE_SECTION_PATHS = ['/', '/vocabulary', '/statistika', '/reyting', '/profile'] as const;
+import { MAIN_SECTION_PATHS } from '../constants/mainSectionPaths';
 const MAX_VERTICAL_DRIFT = 84;
 const MIN_SWIPE_DISTANCE = 72;
 const MAX_SWIPE_DURATION_MS = 550;
@@ -56,7 +55,7 @@ function clampDrag(routeIndex: number, delta: number): number {
   const cap = Math.min(w * 0.42, 280);
   let v = Math.max(-cap, Math.min(cap, delta));
   const atStart = routeIndex === 0;
-  const atEnd = routeIndex === SWIPE_SECTION_PATHS.length - 1;
+  const atEnd = routeIndex === MAIN_SECTION_PATHS.length - 1;
   if (atStart && v > 0) v *= 0.32;
   if (atEnd && v < 0) v *= 0.32;
   return v;
@@ -69,7 +68,7 @@ export function useSectionSwipeNavigation(active: boolean) {
   const touchStateRef = useRef<TouchState | null>(null);
   const animatingRef = useRef(false);
   const routeIndex = useMemo(
-    () => SWIPE_SECTION_PATHS.findIndex((path) => path === pathname),
+    () => MAIN_SECTION_PATHS.findIndex((path) => path === pathname),
     [pathname]
   );
   const swipeEnabled = useMobileSwipeEnabled(active && routeIndex >= 0);
@@ -165,7 +164,7 @@ export function useSectionSwipeNavigation(active: boolean) {
       }
 
       const nextIndex = deltaX < 0 ? routeIndex + 1 : routeIndex - 1;
-      if (nextIndex < 0 || nextIndex >= SWIPE_SECTION_PATHS.length) {
+      if (nextIndex < 0 || nextIndex >= MAIN_SECTION_PATHS.length) {
         finishWithSpring(0);
         return;
       }
@@ -178,7 +177,7 @@ export function useSectionSwipeNavigation(active: boolean) {
         duration: EXIT_DURATION_S,
         ease: [0.32, 0.72, 0, 1],
       }).then(() => {
-        navigate(SWIPE_SECTION_PATHS[nextIndex]);
+        navigate(MAIN_SECTION_PATHS[nextIndex]);
         x.set(0);
         animatingRef.current = false;
       });
