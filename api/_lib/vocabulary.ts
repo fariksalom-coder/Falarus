@@ -540,7 +540,11 @@ async function applyStep2Progress(
   });
 
   const pointsAwarded = calculateImprovementDelta(previousBestCorrect, nextBestCorrect);
-  await awardUserPoints(userId, pointsAwarded);
+  await awardUserPoints(userId, pointsAwarded, {
+    source: 'vocabulary_step2',
+    sourceRef: `word_group:${wordGroupId}`,
+    eventKey: `vocabulary_step2:${userId}:${wordGroupId}:best:${nextBestCorrect}`,
+  });
 
   try {
     await insertUserVocabularyStep2Attempt(
@@ -608,7 +612,11 @@ async function finishMatch(
   await upsertUserWordGroupProgress(userId, wordGroupId, {
     match_completed: true,
   });
-  await awardUserPoints(userId, pointsAwarded);
+  await awardUserPoints(userId, pointsAwarded, {
+    source: 'vocabulary_match',
+    sourceRef: `word_group:${wordGroupId}`,
+    eventKey: `vocabulary_match:${userId}:${wordGroupId}:complete`,
+  });
   return { success: true, points_awarded: pointsAwarded };
 }
 

@@ -31,6 +31,8 @@ import {
   isMissingLeaderboardColumnError,
 } from './shared/leaderboardPeriods.ts';
 import { assignCompetitionRanks } from './shared/leaderboardRanks.ts';
+import { fetchPeriodLeaderboardFromEvents } from './shared/periodLeaderboard.ts';
+import { insertPointEvent } from './shared/pointEvents.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -481,6 +483,10 @@ async function startServer() {
     }
 
     if (period === 'daily') {
+      const periodFromEvents = await fetchPeriodLeaderboardFromEvents(supabase, req.userId, 'daily', today);
+      if (periodFromEvents != null) {
+        return res.json(periodFromEvents);
+      }
       const { data: top, error: topErr } = await supabase
         .from('users')
         .select('id, first_name, last_name, avatar_url, points, points_date')
@@ -567,6 +573,11 @@ async function startServer() {
           points: myPoints,
         },
       });
+    }
+
+    const periodFromEvents = await fetchPeriodLeaderboardFromEvents(supabase, req.userId, 'weekly', weekStart);
+    if (periodFromEvents != null) {
+      return res.json(periodFromEvents);
     }
 
     const { data: top, error: topErr } = await supabase
@@ -672,6 +683,22 @@ async function startServer() {
     const amount = Math.max(0, Number(req.body?.amount) || 0);
     if (amount === 0) return res.status(400).json({ error: 'amount kerak' });
     const today = formatDateInAppTimezone(new Date());
+    try {
+      const pointEventStatus = await insertPointEvent(supabase, {
+        userId: req.userId,
+        points: amount,
+        source: 'manual_user_points',
+        sourceRef: 'api/user/points',
+        eventKey: req.body?.event_key ? String(req.body.event_key) : null,
+        eventType: 'award',
+        activityDate: today,
+      });
+      if (pointEventStatus === 'duplicate') {
+        return res.json({ success: true, duplicate: true });
+      }
+    } catch (pointEventError) {
+      console.error('[api/user/points] point event', pointEventError);
+    }
     const { data: user, error: fetchErr } = await supabase
       .from('users')
       .select('points, points_date, weekly_points, weekly_points_week_start, monthly_points, total_points')
@@ -830,12 +857,61 @@ async function startServer() {
     if (!lesson_path || task_number == null) {
       return res.status(400).json({ error: 'lesson_path va task_number kerak' });
     }
+    const lessonPath = String(lesson_path);
+    const taskNumber = Number(task_number);
+    const correctCount = Number(correct) || 0;
+    const totalCount = Number(total) || 0;
+    const { calculateImprovementDelta } = await import('./server/services/scoringRules.service');
+    const { data: prevRow } = await supabase
+      .from('lesson_task_results')
+      .select('correct')
+      .eq('user_id', req.userId)
+      .eq('lesson_path', lessonPath)
+      .eq('task_number', taskNumber)
+      .maybeSingle();
+    const prevCorrect = Number(prevRow?.correct ?? 0);
+    const delta = calculateImprovementDelta(prevCorrect, correctCount);
+    if (delta > 0) {
+      const today = formatDateInAppTimezone(new Date());
+      try {
+        const pointEventStatus = await insertPointEvent(supabase, {
+          userId: req.userId,
+          points: delta,
+          source: 'lesson_task_result',
+          sourceRef: `${lessonPath}#${taskNumber}`,
+          eventKey: `lesson_task_result:${req.userId}:${lessonPath}:${taskNumber}:correct:${correctCount}`,
+          eventType: 'award',
+          activityDate: today,
+        });
+        if (pointEventStatus !== 'duplicate') {
+          const { data: user } = await supabase
+            .from('users')
+            .select('points, points_date, weekly_points, weekly_points_week_start, monthly_points, total_points')
+            .eq('id', req.userId)
+            .single();
+          if (user) {
+            const nextPoints = buildPeriodicPointsUpdate(user, delta, today);
+            await supabase
+              .from('users')
+              .update(nextPoints)
+              .eq('id', req.userId);
+            const leaderboardSvc = await import('./server/services/leaderboard.service');
+            const leaderboardCacheSvc = await import('./server/services/leaderboardCache.service');
+            await leaderboardSvc.ensureUserInLeaderboard(supabase, req.userId);
+            await leaderboardSvc.updateUserPoints(supabase, req.userId, nextPoints.total_points);
+            await leaderboardCacheSvc.invalidateLeaderboardCache();
+          }
+        }
+      } catch (pointEventError) {
+        console.error('[api/lesson-task-results] point event', pointEventError);
+      }
+    }
     const row = {
       user_id: req.userId,
-      lesson_path: String(lesson_path),
-      task_number: Number(task_number),
-      correct: Number(correct) || 0,
-      total: Number(total) || 0,
+      lesson_path: lessonPath,
+      task_number: taskNumber,
+      correct: correctCount,
+      total: totalCount,
       updated_at: new Date().toISOString(),
     };
     const { error } = await supabase.from('lesson_task_results').upsert(row, {

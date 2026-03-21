@@ -5,6 +5,7 @@ import * as repo from '../repositories/vocabularyRepository.js';
 import { formatDateInAppTimezone } from '../lib/appDate.js';
 import { calculateImprovementDelta } from './scoringRules.service.js';
 import { buildPeriodicPointsUpdate } from '../../shared/leaderboardPeriods.js';
+import { insertPointEvent } from '../../shared/pointEvents.js';
 
 const MATCH_UNLOCK_PERCENT = 80;
 
@@ -208,23 +209,34 @@ export async function saveStep2Result(
   const pointsAwarded = calculateImprovementDelta(previousBestCorrect, nextBestCorrect);
   if (pointsAwarded > 0) {
     const today = formatDateInAppTimezone(new Date());
-    const { data: user } = await supabase
-      .from('users')
-      .select('points, points_date, weekly_points, weekly_points_week_start, monthly_points, total_points')
-      .eq('id', userId)
-      .single();
-    if (user) {
-      const nextPoints = buildPeriodicPointsUpdate(user, pointsAwarded, today);
-      await supabase
+    const pointEventStatus = await insertPointEvent(supabase, {
+      userId,
+      points: pointsAwarded,
+      source: 'vocabulary_step2',
+      sourceRef: `word_group:${wordGroupId}`,
+      eventKey: `vocabulary_step2:${userId}:${wordGroupId}:best:${nextBestCorrect}`,
+      eventType: 'award',
+      activityDate: today,
+    });
+    if (pointEventStatus !== 'duplicate') {
+      const { data: user } = await supabase
         .from('users')
-        .update(nextPoints)
-        .eq('id', userId);
+        .select('points, points_date, weekly_points, weekly_points_week_start, monthly_points, total_points')
+        .eq('id', userId)
+        .single();
+      if (user) {
+        const nextPoints = buildPeriodicPointsUpdate(user, pointsAwarded, today);
+        await supabase
+          .from('users')
+          .update(nextPoints)
+          .eq('id', userId);
 
-      const leaderboardService = await import('./leaderboard.service.js');
-      const leaderboardCache = await import('./leaderboardCache.service.js');
-      await leaderboardService.ensureUserInLeaderboard(supabase, userId);
-      await leaderboardService.updateUserPoints(supabase, userId, nextPoints.total_points);
-      await leaderboardCache.invalidateLeaderboardCache();
+        const leaderboardService = await import('./leaderboard.service.js');
+        const leaderboardCache = await import('./leaderboardCache.service.js');
+        await leaderboardService.ensureUserInLeaderboard(supabase, userId);
+        await leaderboardService.updateUserPoints(supabase, userId, nextPoints.total_points);
+        await leaderboardCache.invalidateLeaderboardCache();
+      }
     }
   }
 

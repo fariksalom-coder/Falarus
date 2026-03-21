@@ -10,6 +10,14 @@ const BORDER = '#E2E8F0';
 const PRIMARY = '#6D35D2';
 const TEXT = '#0F172A';
 const TEXT_SECONDARY = '#64748B';
+const TAB_TRACK_BG = 'linear-gradient(180deg, #F0EDF8 0%, #ECEAF4 100%)';
+const TAB_ACTIVE_BG = 'linear-gradient(135deg, #6E2DE2 0%, #7C3AED 52%, #8B5CF6 100%)';
+const TAB_ACTIVE_SHADOW = `
+  0 14px 28px rgba(109,53,210,0.20),
+  0 4px 10px rgba(124,58,237,0.16),
+  inset 0 1px 0 rgba(255,255,255,0.28),
+  inset 0 -10px 18px rgba(91,33,182,0.14)
+`;
 
 const TABS: { key: LeaderboardPeriod; label: string }[] = [
   { key: 'daily', label: 'Kunlik' },
@@ -36,7 +44,7 @@ export default function LeaderboardPage() {
   }, [token, period]);
 
   const topThree = data?.top.slice(0, 3) ?? [];
-  const listItems = data?.top ?? [];
+  const listItems = data?.top.slice(3) ?? [];
 
   return (
     <div className="min-h-screen pb-10" style={{ backgroundColor: BG }}>
@@ -46,24 +54,34 @@ export default function LeaderboardPage() {
         </h1>
 
         <div
-          className="mb-8 flex rounded-[28px] border p-1.5 shadow-[0_10px_26px_rgba(148,163,184,0.10)]"
-          style={{ borderColor: '#E3E2EC', backgroundColor: '#ECEAF2' }}
+          className="mb-8 flex rounded-[28px] border p-1.5 shadow-[0_14px_30px_rgba(148,163,184,0.10)]"
+          style={{
+            borderColor: '#E7E2F3',
+            background: TAB_TRACK_BG,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.72), 0 14px 30px rgba(148,163,184,0.10)',
+          }}
         >
           {TABS.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setPeriod(tab.key)}
-              className="flex-1 rounded-[22px] py-3 text-sm font-semibold transition-all duration-200 sm:text-base"
+              className="relative flex-1 overflow-hidden rounded-[22px] py-3 text-sm font-semibold transition-all duration-200 sm:text-base"
               style={{
-                background: period === tab.key ? 'linear-gradient(135deg,#6E2DE2 0%,#7C3AED 100%)' : 'transparent',
+                background: period === tab.key ? TAB_ACTIVE_BG : 'transparent',
                 color: period === tab.key ? '#fff' : TEXT_SECONDARY,
-                boxShadow:
-                  period === tab.key
-                    ? 'inset 0 0 0 2px #0EA5E9, 0 10px 24px rgba(109,53,210,0.18)'
-                    : 'none',
+                border: period === tab.key ? '1px solid rgba(255,255,255,0.14)' : '1px solid transparent',
+                boxShadow: period === tab.key ? TAB_ACTIVE_SHADOW : 'none',
+                textShadow: period === tab.key ? '0 1px 2px rgba(76,29,149,0.24)' : 'none',
               }}
             >
+              {period === tab.key && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-4 top-1 h-1/2 rounded-full opacity-70"
+                  style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 100%)' }}
+                />
+              )}
               {tab.label}
             </button>
           ))}
@@ -84,7 +102,7 @@ export default function LeaderboardPage() {
               <LeaderboardList
                 items={listItems}
                 currentUserId={user?.id}
-                startRank={1}
+                startRank={4}
               />
             )}
 

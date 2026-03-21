@@ -38,6 +38,7 @@ import {
   isMissingLeaderboardColumnError,
 } from '../shared/leaderboardPeriods.js';
 import { assignCompetitionRanks } from '../shared/leaderboardRanks.js';
+import { fetchPeriodLeaderboardFromEvents } from '../shared/periodLeaderboard.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -275,7 +276,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const prevCorrect = Number(prevRow?.correct ?? 0);
         const delta = calculateImprovementDelta(prevCorrect, correct);
-        await awardUserPoints(userId, delta);
+        await awardUserPoints(userId, delta, {
+          source: 'lesson_task_result',
+          sourceRef: `${String(lessonPath)}#${tn}`,
+          eventKey: `lesson_task_result:${userId}:${String(lessonPath)}:${tn}:correct:${correct}`,
+        });
 
         const row = {
           user_id: userId,
@@ -472,6 +477,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       if (period === 'daily') {
+        const periodFromEvents = await fetchPeriodLeaderboardFromEvents(supabase, userId, 'daily', today);
+        if (periodFromEvents != null) {
+          return res.status(200).json(periodFromEvents);
+        }
         const { data: top, error: topErr } = await supabase
           .from('users')
           .select('id, first_name, last_name, avatar_url, points, points_date')
@@ -554,6 +563,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   points: myPoints,
                 },
         });
+      }
+
+      const periodFromEvents = await fetchPeriodLeaderboardFromEvents(supabase, userId, 'weekly', weekStart);
+      if (periodFromEvents != null) {
+        return res.status(200).json(periodFromEvents);
       }
 
       const { data: top, error: topErr } = await supabase
