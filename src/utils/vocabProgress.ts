@@ -9,6 +9,9 @@ const STORAGE_KEY_LAST_PART = (topicId: string, subtopicId: string) =>
   `vocab-last-part-${topicId}-${subtopicId}`;
 const STORAGE_KEY_STAGE = (topicId: string, subtopicId: string, partId: string, mode: string) =>
   `vocab-stage-${topicId}-${subtopicId}-${partId}-${mode}`;
+/** Last flashcard (step 1) Biladi/Bilmaydi counts — syncs to DB when word_group_id loads. */
+const STORAGE_KEY_FLASHCOUNTS = (topicId: string, subtopicId: string, partId: string) =>
+  `vocab-flashcounts-${topicId}-${subtopicId}-${partId}`;
 const STORAGE_KEY_RESULT = (topicId: string, subtopicId: string, partId: string) =>
   `vocab-result-${topicId}-${subtopicId}-${partId}`;
 
@@ -39,6 +42,44 @@ export function setStageStatus(
   try {
     localStorage.setItem(STORAGE_KEY_STAGE(topicId, subtopicId, partId, mode), status);
   } catch {}
+}
+
+export function setFlashcardStepCounts(
+  topicId: string,
+  subtopicId: string,
+  partId: string,
+  known: number,
+  unknown: number
+): void {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY_FLASHCOUNTS(topicId, subtopicId, partId),
+      JSON.stringify({
+        known: Math.max(0, Math.floor(known)),
+        unknown: Math.max(0, Math.floor(unknown)),
+      })
+    );
+  } catch {
+    // ignore
+  }
+}
+
+export function getFlashcardStepCounts(
+  topicId: string,
+  subtopicId: string,
+  partId: string
+): { known: number; unknown: number } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_FLASHCOUNTS(topicId, subtopicId, partId));
+    if (!raw) return null;
+    const p = JSON.parse(raw) as { known?: unknown; unknown?: unknown };
+    const known = Math.max(0, Math.floor(Number(p.known ?? 0)));
+    const unknown = Math.max(0, Math.floor(Number(p.unknown ?? 0)));
+    if (known === 0 && unknown === 0) return null;
+    return { known, unknown };
+  } catch {
+    return null;
+  }
 }
 
 export function getLearnedCount(topicId: string, subtopicId: string): number {

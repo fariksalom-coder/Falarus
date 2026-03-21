@@ -8,6 +8,8 @@ import {
   setPartResultCount,
   getStageStatus,
   setStageStatus,
+  getFlashcardStepCounts,
+  setFlashcardStepCounts,
   type StageStatus,
 } from '../utils/vocabProgress';
 import { useAuth } from '../context/AuthContext';
@@ -168,6 +170,41 @@ export default function VocabularyPartPage() {
     return () => { cancelled = true; };
   }, [token, content?.subtopicId, part?.id, stepsStore]);
 
+  // If flashcards finished while wordGroupId was still null, or API row still has 0/0, push saved Biladi/Bilmaydi to DB.
+  useEffect(() => {
+    if (!content?.topicId || !content?.subtopicId || !part?.id) return;
+    if (!token || wordGroupId == null) return;
+    if (getStageStatus(content.topicId, content.subtopicId, part.id, 'cards') !== 'completed') {
+      return;
+    }
+    const local = getFlashcardStepCounts(content.topicId, content.subtopicId, part.id);
+    if (!local) return;
+
+    const st = stepsStore.byGroup[wordGroupId];
+    const serverSum = (st?.step1.known ?? 0) + (st?.step1.unknown ?? 0);
+    if (serverSum > 0) return;
+
+    let cancelled = false;
+    void (async () => {
+      await stepsStore.submitStep1(token, wordGroupId, local.known, local.unknown);
+      if (cancelled) return;
+      await refetchTasks();
+      await stepsStore.fetchSteps(token, wordGroupId);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    token,
+    wordGroupId,
+    content?.topicId,
+    content?.subtopicId,
+    part?.id,
+    stepsStore,
+    stepsState?.step1.known,
+    stepsState?.step1.unknown,
+  ]);
+
   useEffect(() => {
     if (content?.topicId && content?.subtopicId && part?.id && mode) {
       setStageStatus(content.topicId, content.subtopicId, part.id, mode, 'in_progress');
@@ -196,11 +233,20 @@ export default function VocabularyPartPage() {
       (part.entries?.length ?? 0) > 0
     ) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'cards', 'completed');
+      // Always persist counts locally (fixes race when wordGroupId loads after finishing cards).
+      setFlashcardStepCounts(
+        content.topicId,
+        content.subtopicId,
+        part.id,
+        knownCount,
+        unknownCount
+      );
       if (token && wordGroupId != null) {
         stepsStore
           .submitStep1(token, wordGroupId, knownCount, unknownCount)
           .then(() => {
             refetchTasks();
+            void stepsStore.fetchSteps(token, wordGroupId);
             if (content?.subtopicId) {
               try {
                 sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
@@ -558,6 +604,19 @@ export default function VocabularyPartPage() {
           const natijaCorrect = learnedWords;
           const natijaTotal = totalWords;
 
+          const flashLocal = getFlashcardStepCounts(
+            content.topicId,
+            content.subtopicId,
+            part.id
+          );
+          const serverKnown1 = effectiveStepsState?.step1.known ?? 0;
+          const serverUnknown1 = effectiveStepsState?.step1.unknown ?? 0;
+          const serverSum1 = serverKnown1 + serverUnknown1;
+          const step1KnownDisplay =
+            serverSum1 > 0 ? serverKnown1 : (flashLocal?.known ?? 0);
+          const step1UnknownDisplay =
+            serverSum1 > 0 ? serverUnknown1 : (flashLocal?.unknown ?? 0);
+
           return (
             <>
               <p className="mb-4 text-sm text-slate-600">
@@ -581,11 +640,11 @@ export default function VocabularyPartPage() {
                         <div className="mt-2 flex flex-col gap-2">
                           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold" style={{ color: '#166534' }}>
                             <span>🟢</span>
-                            Biladi: {effectiveStepsState?.step1.known ?? 0}
+                            Biladi: {step1KnownDisplay}
                           </div>
                           <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-semibold" style={{ color: '#B91C1C' }}>
                             <span>🔴</span>
-                            Bilmaydi: {effectiveStepsState?.step1.unknown ?? 0}
+                            Bilmaydi: {step1UnknownDisplay}
                           </div>
                         </div>
                       ) : null
@@ -814,22 +873,39 @@ export default function VocabularyPartPage() {
                 <p className="text-xl font-semibold" style={{ color: '#0F172A' }}>
                   Kartochkalar tugallandi
                 </p>
-                <div className="mt-4 flex flex-col gap-3 items-center">
-                  <div
-                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
-                    style={{ borderColor: '#BBF7D0', backgroundColor: '#F0FDF4', color: '#166534' }}
-                  >
-                    <span>🟢</span>
-                    Biladi: {stepsState?.step1.known ?? knownCount}
-                  </div>
-                  <div
-                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
-                    style={{ borderColor: '#FECACA', backgroundColor: '#FEF2F2', color: '#B91C1C' }}
-                  >
-                    <span>🔴</span>
-                    Bilmaydi: {stepsState?.step1.unknown ?? unknownCount}
-                  </div>
-                </div>
+                {(() => {
+                  const sk = stepsState?.step1.known ?? 0;
+                  const su = stepsState?.step1.unknown ?? 0;
+                  const sum = sk + su;
+                  const fl =
+                    content && part
+                      ? getFlashcardStepCounts(
+                          content.topicId,
+                          content.subtopicId,
+                          part.id
+                        )
+                      : null;
+                  const biladi = sum > 0 ? sk : (fl?.known ?? knownCount);
+                  const bilmaydi = sum > 0 ? su : (fl?.unknown ?? unknownCount);
+                  return (
+                    <div className="mt-4 flex flex-col gap-3 items-center">
+                      <div
+                        className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
+                        style={{ borderColor: '#BBF7D0', backgroundColor: '#F0FDF4', color: '#166534' }}
+                      >
+                        <span>🟢</span>
+                        Biladi: {biladi}
+                      </div>
+                      <div
+                        className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
+                        style={{ borderColor: '#FECACA', backgroundColor: '#FEF2F2', color: '#B91C1C' }}
+                      >
+                        <span>🔴</span>
+                        Bilmaydi: {bilmaydi}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <button
                   type="button"
                   onClick={() => navigate(`${partUrl}/test`)}
