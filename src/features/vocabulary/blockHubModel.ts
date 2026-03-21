@@ -33,8 +33,10 @@ export function buildBlockHubViewModel(input: {
   steps: WordGroupStepsState | undefined;
   /** step1 completed if local stage or server has card counts */
   safeStep1Completed: boolean;
-  /** Локальный кеш «выучено из теста», пока API не подгрузился */
+  /** Локальный «выучено из теста» — только для гостя (без токена) */
   fallbackLearnedWords?: number;
+  /** Залогинен: не подменяем серверный счётчик устаревшим localStorage */
+  authenticated: boolean;
 }): BlockHubViewModel {
   const {
     topicId,
@@ -45,10 +47,24 @@ export function buildBlockHubViewModel(input: {
     steps,
     safeStep1Completed,
     fallbackLearnedWords = 0,
+    authenticated,
   } = input;
 
   const totalWords = tasksStatus?.total_words ?? partEntryCount;
-  const learnedWords = tasksStatus?.learned_words ?? fallbackLearnedWords;
+
+  /**
+   * «О‘рганилган» в шапке = данные теста с сервера (`tasksStatus`).
+   * Если API недоступен, но пользователь вошёл в аккаунт, не показываем старый
+   * `vocab-result-*` из localStorage — иначе получается 20/20 при «Тест: Бошлаш».
+   */
+  let learnedWords: number;
+  if (tasksStatus != null) {
+    learnedWords = tasksStatus.learned_words;
+  } else if (authenticated) {
+    learnedWords = steps?.step2.completed ? steps.step2.correct : 0;
+  } else {
+    learnedWords = fallbackLearnedWords;
+  }
 
   const serverKnown1 = steps?.step1.known ?? 0;
   const serverUnknown1 = steps?.step1.unknown ?? 0;

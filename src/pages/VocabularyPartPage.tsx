@@ -506,6 +506,7 @@ export default function VocabularyPartPage() {
     steps: effectiveStepsState,
     safeStep1Completed,
     fallbackLearnedWords: getPartResultCount(content.topicId, content.subtopicId, part.id),
+    authenticated: Boolean(token),
   });
 
   const testSummaryFromServer =

@@ -4,6 +4,7 @@ import {
   fetchVocabularyTasksStatus,
   getCachedWordGroupsProgress,
   getCachedTasksStatus,
+  setCachedWordGroupsProgress,
   setCachedTasksStatus,
   type VocabularyTasksStatus,
 } from '../../../api/vocabulary';
@@ -95,12 +96,33 @@ export function useVocabularyWordGroup({
       if (group) {
         setWordGroupId(group.id);
         const status = await fetchVocabularyTasksStatus(token, group.id);
-        if (!cancelled && status) {
+        if (cancelled) return;
+        if (status) {
           setTasksStatus(status);
           setCachedTasksStatus(group.id, status);
+        } else {
+          setTasksStatus(null);
+          try {
+            sessionStorage.removeItem(`vocab_tasks_${group.id}`);
+          } catch {
+            /* ignore */
+          }
         }
-        if (!cancelled && token) {
+        if (token) {
           await stepsStore.fetchSteps(token, group.id);
+        }
+      } else {
+        setWordGroupId(null);
+        setTasksStatus(null);
+        try {
+          setCachedWordGroupsProgress(resolvedSubtopicId, []);
+        } catch {
+          /* ignore */
+        }
+        try {
+          sessionStorage.removeItem(`vocab_word_groups_${resolvedSubtopicId}`);
+        } catch {
+          /* ignore */
         }
       }
     })();
