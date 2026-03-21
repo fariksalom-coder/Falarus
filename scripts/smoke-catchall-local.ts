@@ -224,6 +224,13 @@ async function main() {
     await requestApi('GET', '/api/vocabulary/steps', token, {
       word_group: String(firstGroup.id),
     });
+    await requestApi(
+      'POST',
+      '/api/vocabulary/step1',
+      token,
+      { word_group: String(firstGroup.id) },
+      { known: 1, unknown: 1 }
+    );
     if (firstGroup.part_id) {
       await requestApi('POST', '/api/vocabulary/progress', token, undefined, {
         topic_id: topicId,

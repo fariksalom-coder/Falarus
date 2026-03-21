@@ -41,14 +41,18 @@ export function createVocabularyRoutes(
     vocabularyController.getWordGroupStepsState(supabase)
   );
 
+  router.post('/vocabulary/flashcards-complete', authenticate, vocabularyController.postFlashcardsComplete(supabase));
   router.post('/vocabulary/flashcards/complete', authenticate, vocabularyController.postFlashcardsComplete(supabase));
+  router.post('/vocabulary/test-finish', authenticate, vocabularyController.postTestFinish(supabase));
   router.post('/vocabulary/test/finish', authenticate, vocabularyController.postTestFinish(supabase));
+  router.post('/vocabulary/match-finish', authenticate, vocabularyController.postMatchFinish(supabase));
   router.post('/vocabulary/match/finish', authenticate, vocabularyController.postMatchFinish(supabase));
   router.post(
     '/vocabulary/steps/1',
     authenticate,
     vocabularyController.postStep1Result(supabase)
   );
+  router.post('/vocabulary/step1', authenticate, vocabularyController.postStep1Result(supabase));
   router.post(
     '/vocabulary/word-groups/:wordGroupId/steps/1',
     authenticate,
@@ -59,6 +63,7 @@ export function createVocabularyRoutes(
     authenticate,
     vocabularyController.postStep2Result(supabase)
   );
+  router.post('/vocabulary/step2', authenticate, vocabularyController.postStep2Result(supabase));
   router.post(
     '/vocabulary/word-groups/:wordGroupId/steps/2',
     authenticate,

@@ -132,6 +132,15 @@ try {
       { headers: authHeaders },
       'GET /api/vocabulary/steps?word_group=:wordGroupId'
     );
+    await requireOk(
+      `/api/vocabulary/step1?word_group=${encodeURIComponent(String(group.id))}`,
+      {
+        method: 'POST',
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ known: 1, unknown: 1 }),
+      },
+      'POST /api/vocabulary/step1?word_group=:wordGroupId'
+    );
   }
 
   await requireOk('/api/vocabulary/progress', { headers: authHeaders }, 'GET /api/vocabulary/progress');

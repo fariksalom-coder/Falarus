@@ -162,7 +162,7 @@ export async function postFlashcardsComplete(
   wordGroupId: number
 ): Promise<boolean> {
   if (!token) return false;
-  const res = await fetch(apiUrl('/api/vocabulary/flashcards/complete'), {
+  const res = await fetch(apiUrl('/api/vocabulary/flashcards-complete'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ word_group_id: wordGroupId }),
@@ -177,7 +177,7 @@ export async function postVocabularyTestFinish(
   total_questions: number
 ): Promise<TestFinishResult | null> {
   if (!token) return null;
-  const res = await fetch(apiUrl('/api/vocabulary/test/finish'), {
+  const res = await fetch(apiUrl('/api/vocabulary/test-finish'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({
@@ -196,7 +196,7 @@ export async function postVocabularyMatchFinish(
   correctPairs: number
 ): Promise<{ success: boolean; points_awarded: number } | null> {
   if (!token) return null;
-  const res = await fetch(apiUrl('/api/vocabulary/match/finish'), {
+  const res = await fetch(apiUrl('/api/vocabulary/match-finish'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ word_group_id: wordGroupId, correct_pairs: correctPairs }),
@@ -213,7 +213,7 @@ export async function postStep1Result(
 ): Promise<WordGroupStepsState | null> {
   if (!token) return null;
   const q = encodeURIComponent(String(wordGroupId));
-  const res = await fetch(apiUrl(`/api/vocabulary/steps/1?word_group=${q}`), {
+  const res = await fetch(apiUrl(`/api/vocabulary/step1?word_group=${q}`), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ known, unknown }),
@@ -241,7 +241,7 @@ export async function postStep2Result(
 ): Promise<WordGroupStepsState | null> {
   if (!token) return null;
   const q = encodeURIComponent(String(wordGroupId));
-  const res = await fetch(apiUrl(`/api/vocabulary/steps/2?word_group=${q}`), {
+  const res = await fetch(apiUrl(`/api/vocabulary/step2?word_group=${q}`), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ correct, incorrect, totalQuestions }),

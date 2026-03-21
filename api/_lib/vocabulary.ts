@@ -1302,6 +1302,30 @@ export async function routeVocabularyRequest(
       return res.status(404).json({ error: 'Not found' });
     }
 
+    if (segments.length === 1 && segments[0] === 'step1') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      const wordGroupId = parseWordGroupIdQuery(req);
+      if (wordGroupId == null) {
+        return res.status(400).json({ error: 'word_group query parameter required' });
+      }
+      const body = parseBody(req.body);
+      return await handlePostStep1(userId, wordGroupId, body, res);
+    }
+
+    if (segments.length === 1 && segments[0] === 'step2') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      const wordGroupId = parseWordGroupIdQuery(req);
+      if (wordGroupId == null) {
+        return res.status(400).json({ error: 'word_group query parameter required' });
+      }
+      const body = parseBody(req.body);
+      return await handlePostStep2(userId, wordGroupId, body, res);
+    }
+
     if (req.method === 'GET' && segments.length === 1 && segments[0] === 'tasks') {
       const wordGroupId = parseWordGroupIdQuery(req);
       if (wordGroupId == null) {
@@ -1323,6 +1347,30 @@ export async function routeVocabularyRequest(
 
     if (segments.length === 1 && segments[0] === 'progress') {
       return await handleProgress(userId, req, res);
+    }
+
+    if (segments.length === 1 && segments[0] === 'flashcards-complete') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      const body = parseBody(req.body);
+      return await handlePostFlashcardsComplete(userId, body, res);
+    }
+
+    if (segments.length === 1 && segments[0] === 'test-finish') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      const body = parseBody(req.body);
+      return await handlePostTestFinish(userId, body, res);
+    }
+
+    if (segments.length === 1 && segments[0] === 'match-finish') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      const body = parseBody(req.body);
+      return await handlePostMatchFinish(userId, body, res);
     }
 
     if (segments.length === 1 && segments[0] === 'daily-word-stats') {

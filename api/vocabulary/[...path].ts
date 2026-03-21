@@ -30,6 +30,11 @@ function segmentsFromPathname(req: VercelRequest): string[] {
     'word-groups',
     'tasks',
     'steps',
+    'step1',
+    'step2',
+    'flashcards-complete',
+    'test-finish',
+    'match-finish',
     'progress',
     'daily-word-stats',
   ];
