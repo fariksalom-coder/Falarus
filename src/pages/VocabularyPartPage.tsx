@@ -100,6 +100,8 @@ export default function VocabularyPartPage() {
   const stepsStore = useVocabularyStepsStore();
   const stepsState = wordGroupId != null ? stepsStore.byGroup[wordGroupId] : undefined;
   const [cachedStepsState, setCachedStepsState] = useState<WordGroupStepsState | undefined>(undefined);
+  /** Avoid infinite POST retries when step1 backfill keeps failing (e.g. 404). */
+  const step1BackfillFailedGroupIdsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     if (wordGroupId == null) return;
@@ -183,6 +185,7 @@ export default function VocabularyPartPage() {
     const st = stepsStore.byGroup[wordGroupId];
     const serverSum = (st?.step1.known ?? 0) + (st?.step1.unknown ?? 0);
     if (serverSum > 0) return;
+    if (step1BackfillFailedGroupIdsRef.current.has(wordGroupId)) return;
 
     let cancelled = false;
     void (async () => {
@@ -192,6 +195,7 @@ export default function VocabularyPartPage() {
         await refetchTasks();
         await stepsStore.fetchSteps(token, wordGroupId);
       } catch (e) {
+        step1BackfillFailedGroupIdsRef.current.add(wordGroupId);
         console.error('[vocabulary] backfill step1 failed', e);
       }
     })();
