@@ -4,6 +4,7 @@ type VocabularyProgressBarProps = {
   className?: string;
   barClassName?: string;
   trackClassName?: string;
+  barColor?: string;
 };
 
 export function VocabularyProgressBar({
@@ -12,6 +13,7 @@ export function VocabularyProgressBar({
   className = '',
   barClassName = '',
   trackClassName = 'bg-slate-100',
+  barColor = '#6366F1',
 }: VocabularyProgressBarProps) {
   const safeTotal = Math.max(0, total);
   const safeLearned =
@@ -26,7 +28,7 @@ export function VocabularyProgressBar({
           className={`h-full rounded-full transition-all duration-500 ${barClassName}`}
           style={{
             width: `${widthPct}%`,
-            backgroundColor: '#6366F1',
+            backgroundColor: barColor,
           }}
         />
       </div>

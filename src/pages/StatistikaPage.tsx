@@ -160,173 +160,284 @@ export default function StatistikaPage() {
     });
   }, [streak.last_7_days]);
 
+  const summaryCards = [
+    {
+      title: 'Bugun',
+      value: dailyStatsLoaded ? String(todayWords) : '—',
+      subtitle: 'Bugun o‘rganildi',
+    },
+    {
+      title: 'Bu hafta',
+      value: dailyStatsLoaded ? String(weekWords) : '—',
+      subtitle: 'Haftalik natija',
+    },
+    {
+      title: 'Jami',
+      value: topicsLoaded ? String(totalLearnedFromApi ?? 0) : '—',
+      subtitle: 'Barcha vaqt',
+    },
+  ];
+
   return (
     <div className="min-h-screen pb-12" style={{ backgroundColor: BG }}>
-      <main className="mx-auto max-w-2xl px-4 pt-6">
-        <h1 className="mb-6 text-2xl font-bold" style={{ color: TEXT }}>
+      <main className="mx-auto max-w-6xl px-4 pt-6 md:px-6">
+        <h1 className="mb-6 text-2xl font-bold md:text-3xl" style={{ color: TEXT }}>
           Statistika
         </h1>
 
-        <div className="space-y-4">
-          {/* Ketma-ket kunlar */}
+        <div className="space-y-6">
           <div
-            className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            style={{ borderColor: BORDER }}
+            className="overflow-hidden rounded-[32px] px-6 py-7 text-white shadow-[0_30px_80px_rgba(255,98,54,0.28)] md:px-8 md:py-8"
+            style={{
+              background:
+                'linear-gradient(135deg, #FF8A1E 0%, #FF6A1A 36%, #FF5538 72%, #FF2E52 100%)',
+            }}
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
-                <Flame className="h-5 w-5" />
-              </div>
+            <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
               <div>
-                <h2 className="font-semibold" style={{ color: TEXT }}>Ketma-ket kunlar</h2>
-                <p className="text-2xl font-bold" style={{ color: PRIMARY }}>
-                  {streakLoaded ? `${streak.streak_days} kun` : 'Yuklanmoqda...'}
+                <p className="text-lg font-semibold tracking-tight text-white/95 md:text-[22px]">
+                  Ketma-ket kunlar
+                </p>
+                <div className="mt-4 flex items-end gap-3">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm md:h-20 md:w-20">
+                    <Flame className="h-9 w-9 text-white md:h-11 md:w-11" />
+                  </div>
+                  <div className="leading-none">
+                    <div className="text-[56px] font-black tracking-tight md:text-[76px]">
+                      {streakLoaded ? streak.streak_days : '—'}
+                    </div>
+                    <div className="mt-1 text-lg font-medium text-white/80 md:text-xl">
+                      kun ketma-ket
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="md:pt-3 md:text-right">
+                <p className="text-sm font-medium uppercase tracking-[0.28em] text-white/60">
+                  Oxirgi hafta
+                </p>
+                <p className="mt-2 text-base font-medium text-white/90 md:text-[22px]">
+                  Oxirgi 7 kun faoliyati
                 </p>
               </div>
             </div>
-            <div className="mt-4 flex justify-between gap-1">
+
+            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
               {last7Rotated.map(({ label: d, active }, i) => {
                 return (
-                  <div key={d} className="flex-1 flex flex-col items-center">
+                  <div key={`${d}-${i}`} className="flex flex-col items-center gap-3">
                     <div
-                      className="flex h-10 w-full items-center justify-center rounded-lg bg-slate-100/70"
+                      className="flex h-24 w-full items-center justify-center rounded-[24px] backdrop-blur-sm transition-all duration-300 md:h-28"
                       title={d}
                       style={{
-                        backgroundColor: active ? '#fff7ed' : '#f1f5f9',
-                        opacity: active ? 1 : 0.45,
+                        backgroundColor: active
+                          ? 'rgba(255,255,255,0.24)'
+                          : 'rgba(255,255,255,0.12)',
+                        boxShadow: active
+                          ? 'inset 0 1px 0 rgba(255,255,255,0.15)'
+                          : 'inset 0 1px 0 rgba(255,255,255,0.05)',
                       }}
                     >
-                      <Flame
-                        className="h-6 w-6"
-                        style={{ color: active ? '#f97316' : '#cbd5e1' }}
-                      />
+                      {active ? (
+                        <Flame className="h-8 w-8 text-white md:h-9 md:w-9" />
+                      ) : (
+                        <span className="h-3 w-3 rounded-full bg-white/35" />
+                      )}
                     </div>
-                    <div
-                      className="mt-1 text-[10px] font-semibold"
-                      style={{ color: TEXT_SECONDARY, opacity: active ? 1 : 0.55 }}
-                    >
+                    <div className="text-lg font-medium text-white/92 md:text-xl">
                       {d}
                     </div>
                   </div>
                 );
               })}
             </div>
-            <p className="mt-2 text-xs" style={{ color: TEXT_SECONDARY }}>
-              Oxirgi 7 kun faoliyat
-            </p>
           </div>
 
-          {/* O'rganilgan so'zlar */}
+          <div className="grid gap-4 md:grid-cols-3">
+            {summaryCards.map((card, index) => (
+              <div
+                key={card.title}
+                className="rounded-[28px] border bg-white px-6 py-8 text-center shadow-[0_20px_45px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
+                style={{ borderColor: BORDER }}
+              >
+                <div
+                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl"
+                  style={{
+                    backgroundColor:
+                      index === 0 ? '#ECFDF5' : index === 1 ? '#EEF2FF' : '#FFF7ED',
+                    color: index === 0 ? '#059669' : index === 1 ? '#4F46E5' : '#EA580C',
+                  }}
+                >
+                  {index === 0 ? (
+                    <MessageCircle className="h-5 w-5" />
+                  ) : index === 1 ? (
+                    <RefreshCw className="h-5 w-5" />
+                  ) : (
+                    <Award className="h-5 w-5" />
+                  )}
+                </div>
+                <p className="mt-5 text-[15px] font-medium" style={{ color: TEXT_SECONDARY }}>
+                  {card.title}
+                </p>
+                <p className="mt-3 text-5xl font-black tracking-tight" style={{ color: TEXT }}>
+                  {card.value}
+                </p>
+                <p className="mt-3 text-base" style={{ color: '#7C879B' }}>
+                  {card.subtitle}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+            <div
+              className="rounded-[28px] border bg-white p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]"
+              style={{ borderColor: BORDER }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-600">
+                  <Target className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-semibold" style={{ color: TEXT }}>Javoblar aniqligi</h2>
+                  <p className="text-sm" style={{ color: TEXT_SECONDARY }}>
+                    Dars vazifalari bo‘yicha umumiy natija
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
+                <div className="relative h-28 w-28 shrink-0">
+                  <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      fill="none"
+                      stroke="#E2E8F0"
+                      strokeWidth="3"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path
+                      fill="none"
+                      stroke="#14b8a6"
+                      strokeWidth="3"
+                      strokeDasharray={`${accuracyPercent}, 100`}
+                      strokeLinecap="round"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span
+                    className="absolute inset-0 flex items-center justify-center text-2xl font-black"
+                    style={{ color: TEXT }}
+                  >
+                    {accuracyPercent}%
+                  </span>
+                </div>
+                <div className="grid flex-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                    <p className="text-xs uppercase tracking-[0.2em]" style={{ color: TEXT_SECONDARY }}>
+                      To‘g‘ri
+                    </p>
+                    <p className="mt-2 text-3xl font-black" style={{ color: TEXT }}>
+                      {lessonStats.correct}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 px-4 py-4">
+                    <p className="text-xs uppercase tracking-[0.2em]" style={{ color: TEXT_SECONDARY }}>
+                      Noto‘g‘ri
+                    </p>
+                    <p className="mt-2 text-3xl font-black" style={{ color: TEXT }}>
+                      {wrongCount}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="rounded-[28px] border bg-white p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]"
+              style={{ borderColor: BORDER }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
+                  <Award className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-semibold" style={{ color: TEXT }}>Yutuqlar</h2>
+                  <p className="text-sm" style={{ color: TEXT_SECONDARY }}>
+                    Siz erishgan milestone-lar
+                  </p>
+                </div>
+              </div>
+              <ul className="mt-6 space-y-3">
+                {achievements.length > 0 ? (
+                  achievements.map((a, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm"
+                      style={{ color: TEXT }}
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
+                      {a.text}
+                    </li>
+                  ))
+                ) : (
+                  <li className="rounded-2xl bg-slate-50 px-4 py-4 text-sm" style={{ color: TEXT_SECONDARY }}>
+                    Hali yutuqlar yo&apos;q
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+
           <div
-            className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-[28px] border bg-white p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]"
             style={{ borderColor: BORDER }}
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
-                <MessageCircle className="h-5 w-5" />
-              </div>
-              <h2 className="font-semibold" style={{ color: TEXT }}>O'rganilgan so'zlar</h2>
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>
-                  {dailyStatsLoaded ? todayWords : '—'}
-                </p>
-                <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Bugun</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>
-                  {dailyStatsLoaded ? weekWords : '—'}
-                </p>
-                <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Bu hafta</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>
-                  {topicsLoaded ? totalLearnedFromApi ?? 0 : '—'}
-                </p>
-                <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Jami</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Javoblar aniqligi */}
-          <div
-            className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            style={{ borderColor: BORDER }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 text-teal-600">
-                <Target className="h-5 w-5" />
-              </div>
-              <h2 className="font-semibold" style={{ color: TEXT }}>Javoblar aniqligi</h2>
-            </div>
-            <div className="mt-4 flex items-center gap-6">
-              <div className="relative h-20 w-20">
-                <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    fill="none"
-                    stroke="#E2E8F0"
-                    strokeWidth="3"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <path
-                    fill="none"
-                    stroke="#14b8a6"
-                    strokeWidth="3"
-                    strokeDasharray={`${accuracyPercent}, 100`}
-                    strokeLinecap="round"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-lg font-bold" style={{ color: TEXT }}>
-                  {accuracyPercent}%
-                </span>
-              </div>
-              <div className="text-sm" style={{ color: TEXT_SECONDARY }}>
-                <p>{lessonStats.correct} ta to'g'ri</p>
-                <p>{wrongCount} ta noto'g'ri</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Bo'limlar progressi — те же данные, что и на странице Lug'at */}
-          <div
-            className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            style={{ borderColor: BORDER }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
                 <RefreshCw className="h-5 w-5" />
               </div>
-              <h2 className="font-semibold" style={{ color: TEXT }}>Bo'limlar progressi</h2>
+              <div>
+                <h2 className="font-semibold" style={{ color: TEXT }}>Bo&apos;limlar progressi</h2>
+                <p className="text-sm" style={{ color: TEXT_SECONDARY }}>
+                  Lug&apos;at bo&apos;yicha DB dagi real progress
+                </p>
+              </div>
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
               {VOCABULARY_TOPICS.map((topic, index) => {
                 const fromApi = topicsProgress.find((t) => t.id === topic.id);
                 const total = getTopicWordCount(topic.id);
                 const learned = fromApi?.learned_words ?? 0;
                 const pct = total > 0 ? Math.round((learned / total) * 100) : 0;
                 return (
-                  <div key={topic.id}>
-                    <p className="text-xs font-medium uppercase tracking-wider" style={{ color: TEXT_SECONDARY }}>
+                  <div
+                    key={topic.id}
+                    className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5"
+                  >
+                    <p
+                      className="text-xs font-medium uppercase tracking-[0.24em]"
+                      style={{ color: TEXT_SECONDARY }}
+                    >
                       {index + 1}-bo&apos;lim
                     </p>
-                    <div className="flex justify-between text-sm mt-0.5">
-                      <span className="font-semibold" style={{ color: TEXT }}>{topic.title}</span>
-                      <span style={{ color: TEXT_SECONDARY }}>
-                        {topicsLoaded ? `${learned} / ${total} so'z` : 'Yuklanmoqda...'}
+                    <div className="mt-2 flex items-start justify-between gap-4">
+                      <span className="text-base font-semibold" style={{ color: TEXT }}>
+                        {topic.title}
+                      </span>
+                      <span className="shrink-0 text-sm" style={{ color: TEXT_SECONDARY }}>
+                        {topicsLoaded ? `${learned} / ${total}` : 'Yuklanmoqda...'}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-xs" style={{ color: TEXT_SECONDARY }}>
+                    <p className="mt-3 text-sm" style={{ color: TEXT_SECONDARY }}>
                       {topicsLoaded ? `${pct}% o'rganildi` : 'Server ma’lumotlari yuklanmoqda'}
                     </p>
-                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white">
                       <div
-                        className="h-full rounded-full transition-all"
+                        className="h-full rounded-full transition-all duration-500"
                         style={{
-                          width: topicsLoaded ? `${Math.max(pct, 2)}%` : '24%',
-                          backgroundColor: pct >= 50 ? '#14b8a6' : pct >= 20 ? '#f59e0b' : '#94a3b8',
-                          opacity: topicsLoaded ? 1 : 0.35,
+                          width: topicsLoaded ? `${Math.max(pct, 2)}%` : '22%',
+                          background:
+                            'linear-gradient(90deg, #6366F1 0%, #8B5CF6 55%, #22C55E 100%)',
+                          opacity: topicsLoaded ? 1 : 0.3,
                         }}
                       />
                     </div>
@@ -334,33 +445,6 @@ export default function StatistikaPage() {
                 );
               })}
             </div>
-          </div>
-
-          {/* Yutuqlar */}
-          <div
-            className="rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-            style={{ borderColor: BORDER }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
-                <Award className="h-5 w-5" />
-              </div>
-              <h2 className="font-semibold" style={{ color: TEXT }}>Yutuqlar</h2>
-            </div>
-            <ul className="mt-4 space-y-2">
-              {achievements.length > 0 ? (
-                achievements.map((a, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm" style={{ color: TEXT }}>
-                    <span className="h-2 w-2 rounded-full bg-indigo-500" />
-                    {a.text}
-                  </li>
-                ))
-              ) : (
-                <li className="text-sm" style={{ color: TEXT_SECONDARY }}>
-                  Hali yutuqlar yo'q
-                </li>
-              )}
-            </ul>
           </div>
         </div>
       </main>
