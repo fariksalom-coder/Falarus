@@ -180,54 +180,54 @@ export default function StatistikaPage() {
 
   return (
     <div className="min-h-screen pb-12" style={{ backgroundColor: BG }}>
-      <main className="mx-auto max-w-5xl px-4 pt-5 md:px-6 md:pt-6">
-        <h1 className="mb-5 text-2xl font-bold md:text-[30px]" style={{ color: TEXT }}>
+      <main className="mx-auto max-w-4xl px-3 py-4 md:px-5 md:py-5">
+        <h1 className="mb-4 text-[22px] font-bold md:text-[26px]" style={{ color: TEXT }}>
           Statistika
         </h1>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div
-            className="overflow-hidden rounded-[26px] px-5 py-5 text-white shadow-[0_22px_56px_rgba(255,98,54,0.24)] md:rounded-[30px] md:px-7 md:py-6"
+            className="overflow-hidden rounded-[22px] px-3.5 py-3.5 text-white shadow-[0_16px_34px_rgba(255,98,54,0.2)] md:rounded-[24px] md:px-4.5 md:py-4.5"
             style={{
               background:
                 'linear-gradient(135deg, #FF8A1E 0%, #FF6A1A 36%, #FF5538 72%, #FF2E52 100%)',
             }}
           >
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-base font-semibold tracking-tight text-white/95 md:text-[20px]">
+                <p className="text-[13px] font-semibold tracking-tight text-white/95 md:text-[15px]">
                   Ketma-ket kunlar
                 </p>
-                <div className="mt-3 flex items-end gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm md:h-[68px] md:w-[68px]">
-                    <Flame className="h-8 w-8 text-white md:h-9 md:w-9" />
+                <div className="mt-2 flex items-end gap-2.5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm md:h-11 md:w-11">
+                    <Flame className="h-5 w-5 text-white md:h-6 md:w-6" />
                   </div>
                   <div className="leading-none">
-                    <div className="text-[42px] font-black tracking-tight md:text-[60px]">
+                    <div className="text-[28px] font-black tracking-tight md:text-[36px]">
                       {streakLoaded ? streak.streak_days : '—'}
                     </div>
-                    <div className="mt-1 text-sm font-medium text-white/80 md:text-lg">
+                    <div className="mt-0.5 text-[10px] font-medium text-white/80 md:text-xs">
                       kun ketma-ket
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="md:pt-2 md:text-right">
-                <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-white/60 md:text-xs">
+              <div className="pt-0.5 text-right">
+                <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-white/60 md:text-[10px]">
                   Oxirgi hafta
                 </p>
-                <p className="mt-1.5 text-sm font-medium text-white/90 md:text-[18px]">
+                <p className="mt-1 text-[10px] font-medium text-white/90 md:text-[12px]">
                   Oxirgi 7 kun faoliyati
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
+            <div className="mt-4 grid grid-cols-7 gap-1.5 md:mt-5 md:gap-2">
               {last7Rotated.map(({ label: d, active }, i) => {
                 return (
-                  <div key={`${d}-${i}`} className="flex flex-col items-center gap-2">
+                  <div key={`${d}-${i}`} className="flex min-w-0 flex-col items-center gap-1.5">
                     <div
-                      className="flex h-20 w-full items-center justify-center rounded-[20px] backdrop-blur-sm transition-all duration-300 md:h-24 md:rounded-[22px]"
+                      className="flex h-12 w-full items-center justify-center rounded-[14px] backdrop-blur-sm transition-all duration-300 md:h-14 md:rounded-[16px]"
                       title={d}
                       style={{
                         backgroundColor: active
@@ -239,12 +239,12 @@ export default function StatistikaPage() {
                       }}
                     >
                       {active ? (
-                        <Flame className="h-7 w-7 text-white md:h-8 md:w-8" />
+                        <Flame className="h-4 w-4 text-white md:h-5 md:w-5" />
                       ) : (
-                        <span className="h-2.5 w-2.5 rounded-full bg-white/35" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-white/35 md:h-2 md:w-2" />
                       )}
                     </div>
-                    <div className="text-base font-medium text-white/92 md:text-lg">
+                    <div className="truncate text-[11px] font-medium text-white/92 md:text-[12px]">
                       {d}
                     </div>
                   </div>
@@ -253,15 +253,15 @@ export default function StatistikaPage() {
             </div>
           </div>
 
-          <div className="grid gap-3.5 md:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 md:gap-3">
             {summaryCards.map((card, index) => (
               <div
                 key={card.title}
-                className="rounded-[24px] border bg-white px-5 py-6 text-center shadow-[0_16px_34px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5 md:rounded-[26px] md:px-6 md:py-7"
+                className="rounded-[18px] border bg-white px-2.5 py-3 text-center shadow-[0_12px_24px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5 md:rounded-[20px] md:px-4 md:py-4"
                 style={{ borderColor: BORDER }}
               >
                 <div
-                  className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl"
+                  className="mx-auto flex h-8 w-8 items-center justify-center rounded-xl md:h-9 md:w-9"
                   style={{
                     backgroundColor:
                       index === 0 ? '#ECFDF5' : index === 1 ? '#EEF2FF' : '#FFF7ED',
@@ -276,37 +276,37 @@ export default function StatistikaPage() {
                     <Award className="h-5 w-5" />
                   )}
                 </div>
-                <p className="mt-4 text-sm font-medium" style={{ color: TEXT_SECONDARY }}>
+                <p className="mt-2.5 text-[11px] font-medium md:text-xs" style={{ color: TEXT_SECONDARY }}>
                   {card.title}
                 </p>
-                <p className="mt-2.5 text-[42px] font-black tracking-tight md:text-[46px]" style={{ color: TEXT }}>
+                <p className="mt-1.5 text-[28px] font-black tracking-tight md:text-[34px]" style={{ color: TEXT }}>
                   {card.value}
                 </p>
-                <p className="mt-2.5 text-sm md:text-[15px]" style={{ color: '#7C879B' }}>
+                <p className="mt-1.5 text-[10px] leading-tight md:text-[12px]" style={{ color: '#7C879B' }}>
                   {card.subtitle}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-[1.1fr,0.9fr]">
+          <div className="grid gap-4 lg:grid-cols-[1.08fr,0.92fr]">
             <div
-              className="rounded-[24px] border bg-white p-5 shadow-[0_16px_34px_rgba(15,23,42,0.06)] md:rounded-[26px] md:p-6"
+              className="rounded-[20px] border bg-white p-4 shadow-[0_12px_26px_rgba(15,23,42,0.06)] md:rounded-[22px] md:p-5"
               style={{ borderColor: BORDER }}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-100 text-teal-600">
-                  <Target className="h-5 w-5" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-100 text-teal-600 md:h-9 md:w-9">
+                  <Target className="h-4 w-4 md:h-[18px] md:w-[18px]" />
                 </div>
                 <div>
-                  <h2 className="font-semibold" style={{ color: TEXT }}>Javoblar aniqligi</h2>
-                  <p className="text-sm" style={{ color: TEXT_SECONDARY }}>
+                  <h2 className="text-sm font-semibold md:text-[15px]" style={{ color: TEXT }}>Javoblar aniqligi</h2>
+                  <p className="text-[11px] md:text-xs" style={{ color: TEXT_SECONDARY }}>
                     Dars vazifalari bo‘yicha umumiy natija
                   </p>
                 </div>
               </div>
-              <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
-                <div className="relative h-24 w-24 shrink-0 md:h-28 md:w-28">
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="relative h-20 w-20 shrink-0 md:h-24 md:w-24">
                   <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
                     <path
                       fill="none"
@@ -324,26 +324,26 @@ export default function StatistikaPage() {
                     />
                   </svg>
                   <span
-                    className="absolute inset-0 flex items-center justify-center text-xl font-black md:text-2xl"
+                    className="absolute inset-0 flex items-center justify-center text-base font-black md:text-xl"
                     style={{ color: TEXT }}
                   >
                     {accuracyPercent}%
                   </span>
                 </div>
-                <div className="grid flex-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3.5">
-                    <p className="text-[11px] uppercase tracking-[0.18em]" style={{ color: TEXT_SECONDARY }}>
+                <div className="grid flex-1 gap-2.5 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                    <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color: TEXT_SECONDARY }}>
                       To‘g‘ri
                     </p>
-                    <p className="mt-1.5 text-[28px] font-black md:text-3xl" style={{ color: TEXT }}>
+                    <p className="mt-1 text-[22px] font-black md:text-[26px]" style={{ color: TEXT }}>
                       {lessonStats.correct}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3.5">
-                    <p className="text-[11px] uppercase tracking-[0.18em]" style={{ color: TEXT_SECONDARY }}>
+                  <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                    <p className="text-[10px] uppercase tracking-[0.14em]" style={{ color: TEXT_SECONDARY }}>
                       Noto‘g‘ri
                     </p>
-                    <p className="mt-1.5 text-[28px] font-black md:text-3xl" style={{ color: TEXT }}>
+                    <p className="mt-1 text-[22px] font-black md:text-[26px]" style={{ color: TEXT }}>
                       {wrongCount}
                     </p>
                   </div>
@@ -352,34 +352,34 @@ export default function StatistikaPage() {
             </div>
 
             <div
-              className="rounded-[24px] border bg-white p-5 shadow-[0_16px_34px_rgba(15,23,42,0.06)] md:rounded-[26px] md:p-6"
+              className="rounded-[20px] border bg-white p-4 shadow-[0_12px_26px_rgba(15,23,42,0.06)] md:rounded-[22px] md:p-5"
               style={{ borderColor: BORDER }}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
-                  <Award className="h-5 w-5" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-100 text-sky-600 md:h-9 md:w-9">
+                  <Award className="h-4 w-4 md:h-[18px] md:w-[18px]" />
                 </div>
                 <div>
-                  <h2 className="font-semibold" style={{ color: TEXT }}>Yutuqlar</h2>
-                  <p className="text-sm" style={{ color: TEXT_SECONDARY }}>
+                  <h2 className="text-sm font-semibold md:text-[15px]" style={{ color: TEXT }}>Yutuqlar</h2>
+                  <p className="text-[11px] md:text-xs" style={{ color: TEXT_SECONDARY }}>
                     Siz erishgan milestone-lar
                   </p>
                 </div>
               </div>
-              <ul className="mt-5 space-y-2.5">
+              <ul className="mt-4 space-y-2">
                 {achievements.length > 0 ? (
                   achievements.map((a, i) => (
                     <li
                       key={i}
-                      className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm"
+                      className="flex items-center gap-2.5 rounded-2xl bg-slate-50 px-3 py-2.5 text-[13px] md:text-sm"
                       style={{ color: TEXT }}
                     >
-                      <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500" />
                       {a.text}
                     </li>
                   ))
                 ) : (
-                  <li className="rounded-2xl bg-slate-50 px-4 py-4 text-sm" style={{ color: TEXT_SECONDARY }}>
+                  <li className="rounded-2xl bg-slate-50 px-3 py-3 text-[13px] md:text-sm" style={{ color: TEXT_SECONDARY }}>
                     Hali yutuqlar yo&apos;q
                   </li>
                 )}
@@ -388,21 +388,21 @@ export default function StatistikaPage() {
           </div>
 
           <div
-            className="rounded-[24px] border bg-white p-5 shadow-[0_16px_34px_rgba(15,23,42,0.06)] md:rounded-[26px] md:p-6"
+            className="rounded-[20px] border bg-white p-4 shadow-[0_12px_26px_rgba(15,23,42,0.06)] md:rounded-[22px] md:p-5"
             style={{ borderColor: BORDER }}
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
-                <RefreshCw className="h-5 w-5" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600 md:h-9 md:w-9">
+                <RefreshCw className="h-4 w-4 md:h-[18px] md:w-[18px]" />
               </div>
               <div>
-                <h2 className="font-semibold" style={{ color: TEXT }}>Bo&apos;limlar progressi</h2>
-                <p className="text-sm" style={{ color: TEXT_SECONDARY }}>
+                <h2 className="text-sm font-semibold md:text-[15px]" style={{ color: TEXT }}>Bo&apos;limlar progressi</h2>
+                <p className="text-[11px] md:text-xs" style={{ color: TEXT_SECONDARY }}>
                   Lug&apos;at bo&apos;yicha DB dagi real progress
                 </p>
               </div>
             </div>
-            <div className="mt-5 grid gap-3.5 md:grid-cols-2">
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
               {VOCABULARY_TOPICS.map((topic, index) => {
                 const fromApi = topicsProgress.find((t) => t.id === topic.id);
                 const total = getTopicWordCount(topic.id);
@@ -411,26 +411,26 @@ export default function StatistikaPage() {
                 return (
                   <div
                     key={topic.id}
-                    className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4 md:rounded-3xl md:p-5"
+                    className="rounded-[18px] border border-slate-200 bg-slate-50/70 p-3.5 md:rounded-[20px] md:p-4"
                   >
                     <p
-                      className="text-[11px] font-medium uppercase tracking-[0.2em]"
+                      className="text-[9px] font-medium uppercase tracking-[0.16em] md:text-[10px]"
                       style={{ color: TEXT_SECONDARY }}
                     >
                       {index + 1}-bo&apos;lim
                     </p>
                     <div className="mt-2 flex items-start justify-between gap-3">
-                      <span className="text-[15px] font-semibold md:text-base" style={{ color: TEXT }}>
+                      <span className="text-[13px] font-semibold md:text-[14px]" style={{ color: TEXT }}>
                         {topic.title}
                       </span>
-                      <span className="shrink-0 text-[13px] md:text-sm" style={{ color: TEXT_SECONDARY }}>
+                      <span className="shrink-0 text-[11px] md:text-[12px]" style={{ color: TEXT_SECONDARY }}>
                         {topicsLoaded ? `${learned} / ${total}` : 'Yuklanmoqda...'}
                       </span>
                     </div>
-                    <p className="mt-2.5 text-[13px] md:text-sm" style={{ color: TEXT_SECONDARY }}>
+                    <p className="mt-2 text-[11px] md:text-[12px]" style={{ color: TEXT_SECONDARY }}>
                       {topicsLoaded ? `${pct}% o'rganildi` : 'Server ma’lumotlari yuklanmoqda'}
                     </p>
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white md:h-2.5">
+                    <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white md:h-2">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
