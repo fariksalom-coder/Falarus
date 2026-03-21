@@ -96,10 +96,18 @@ export function useVocabularyWordGroup({
     (async () => {
       const groups = await fetchVocabularyWordGroups(token, resolvedSubtopicId);
       if (cancelled) return;
+      setCachedWordGroupsProgress(resolvedSubtopicId, groups);
       const group = groups.find((g) => g.part_id === partId);
       if (group) {
         setWordGroupId(group.id);
-        const status = await fetchVocabularyTasksStatus(token, group.id);
+        const cachedStatus = getCachedTasksStatus(group.id);
+        if (cachedStatus) {
+          setTasksStatus(cachedStatus);
+        }
+        const [status] = await Promise.all([
+          fetchVocabularyTasksStatus(token, group.id),
+          token ? fetchSteps(token, group.id) : Promise.resolve(),
+        ]);
         if (cancelled) return;
         if (status) {
           setTasksStatus(status);
@@ -111,9 +119,6 @@ export function useVocabularyWordGroup({
           } catch {
             /* ignore */
           }
-        }
-        if (token) {
-          await fetchSteps(token, group.id);
         }
       } else {
         setWordGroupId(null);

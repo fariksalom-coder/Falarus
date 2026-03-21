@@ -216,13 +216,6 @@ export default function VocabularyPartPage() {
             await submitStep1(token, wordGroupId, knownCount, unknownCount);
             await refetchTasks();
             await fetchSteps(token, wordGroupId);
-            if (content?.subtopicId) {
-              try {
-                sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
-              } catch {
-                /* ignore */
-              }
-            }
           } catch (e) {
             const msg = e instanceof Error ? e.message : 'Saqlashda xatolik';
             setStep1SaveError(msg);
@@ -270,13 +263,6 @@ export default function VocabularyPartPage() {
             setPointsEarnedMessage(result?.points_awarded && result.points_awarded > 0 ? result.points_awarded : null);
             await refetchTasks();
             await fetchSteps(token, wordGroupId);
-            if (content?.subtopicId) {
-              try {
-                sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
-              } catch {
-                /* ignore */
-              }
-            }
           } catch (e) {
             console.error('[vocabulary] step2 save failed', e);
           }
