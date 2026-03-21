@@ -39,7 +39,7 @@ type Mode = 'cards' | 'test' | 'pairs';
 export default function VocabularyPartPage() {
   const navigate = useNavigate();
   const { topicId, subtopicId, partId, mode: modeParam } = useParams();
-  const { token } = useAuth();
+  const { token, awardPoints } = useAuth();
   const { access, accessLoaded } = useAccess();
   const { hasPendingPayment } = usePaymentStatus();
   const [showVocabPaywall, setShowVocabPaywall] = useState(false);
@@ -261,6 +261,7 @@ export default function VocabularyPartPage() {
               testQuestions.length
             );
             setPointsEarnedMessage(result?.points_awarded && result.points_awarded > 0 ? result.points_awarded : null);
+            awardPoints(result?.points_awarded ?? 0);
             await refetchTasks();
             await fetchSteps(token, wordGroupId);
           } catch (e) {
@@ -289,6 +290,7 @@ export default function VocabularyPartPage() {
     wordGroupId,
     testCorrect,
     step2Submitted,
+    awardPoints,
     fetchSteps,
     refetchTasks,
   ]);
@@ -307,6 +309,7 @@ export default function VocabularyPartPage() {
         void postVocabularyMatchFinish(token, wordGroupId, correctPairs).then((result) => {
           if (result) {
             setPointsEarnedMessage(result.points_awarded > 0 ? result.points_awarded : null);
+            awardPoints(result.points_awarded ?? 0);
             void refetchTasks();
           }
         });
@@ -323,6 +326,7 @@ export default function VocabularyPartPage() {
     token,
     wordGroupId,
     step3Submitted,
+    awardPoints,
   ]);
 
   if (resolvingSubtopic) {

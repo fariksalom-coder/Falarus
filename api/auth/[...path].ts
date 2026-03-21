@@ -53,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, first_name, last_name, email, password, level, onboarded')
+        .select('id, first_name, last_name, email, password, level, onboarded, total_points')
         .eq('email', email)
         .maybeSingle();
       if (error) {
@@ -75,6 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           email: user.email,
           level: user.level,
           onboarded: user.onboarded,
+          totalPoints: user.total_points ?? 0,
         },
       });
     }
@@ -97,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           email,
           password: hashedPassword,
         })
-        .select('id, first_name, last_name, email, level, onboarded')
+        .select('id, first_name, last_name, email, level, onboarded, total_points')
         .single();
       if (error) {
         if (error.code === '23505') return res.status(400).json({ error: 'Email allaqachon mavjud' });
@@ -128,6 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           email: user.email,
           level: user.level ?? 'A0',
           onboarded: user.onboarded ?? 0,
+          totalPoints: user.total_points ?? 0,
         },
       });
     }

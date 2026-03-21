@@ -8,7 +8,7 @@ async function handleMe(userId: number, res: VercelResponse) {
   const { data: user, error } = await supabase
     .from('users')
     .select(
-      'id, first_name, last_name, email, level, onboarded, progress, plan_name, plan_expires_at'
+      'id, first_name, last_name, email, level, onboarded, progress, total_points, plan_name, plan_expires_at'
     )
     .eq('id', userId)
     .maybeSingle();
@@ -24,6 +24,7 @@ async function handleMe(userId: number, res: VercelResponse) {
     level: user.level,
     onboarded: user.onboarded,
     progress: user.progress,
+    totalPoints: user.total_points ?? 0,
     planName: user.plan_name ?? null,
     planExpiresAt: user.plan_expires_at ?? null,
   });

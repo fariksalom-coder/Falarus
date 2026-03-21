@@ -10,6 +10,7 @@ interface User {
   level: string;
   onboarded: number;
   progress: number;
+  totalPoints?: number;
   planName?: string | null;
   planExpiresAt?: string | null;
 }
@@ -20,6 +21,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
+  awardPoints: (delta: number) => void;
   loading: boolean;
 }
 
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearUserProgressCaches();
     localStorage.setItem('token', newToken);
     setToken(newToken);
-    setUser(newUser);
+    setUser({ ...newUser, totalPoints: newUser.totalPoints ?? 0 });
   };
 
   const logout = () => {
@@ -67,11 +69,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUser = (updates: Partial<User>) => {
-    if (user) setUser({ ...user, ...updates });
+    setUser((prev) => (prev ? { ...prev, ...updates } : prev));
+  };
+
+  const awardPoints = (delta: number) => {
+    if (!Number.isFinite(delta) || delta <= 0) return;
+    setUser((prev) =>
+      prev
+        ? {
+            ...prev,
+            totalPoints: Math.max(0, Number(prev.totalPoints ?? 0) + Math.floor(delta)),
+          }
+        : prev
+    );
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, awardPoints, loading }}>
       {children}
     </AuthContext.Provider>
   );
