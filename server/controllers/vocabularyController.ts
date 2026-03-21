@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { Supabase } from '../types/vocabulary';
 import * as repo from '../repositories/vocabularyRepository';
+import { clampVocabDailyDisplayToTotals } from '../../shared/vocabDailyStatsClamp.js';
 import * as flashcardsService from '../services/flashcards.service';
 import * as vocabularyTestService from '../services/vocabularyTest.service';
 import * as matchPairsService from '../services/matchPairs.service';
@@ -405,8 +406,13 @@ export function getVocabularyDailyWordStats(supabase: Supabase) {
       const userId = getUserId(req);
       if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
 
-      const stats = await repo.getUserVocabularyStep2DailyStats(supabase, userId);
-      res.json(stats);
+      const [stats, totalLearned] = await Promise.all([
+        repo.getUserVocabularyStep2DailyStats(supabase, userId),
+        repo.getTotalLearnedWordsSum(supabase, userId),
+      ]);
+      res.json(
+        clampVocabDailyDisplayToTotals(totalLearned, stats.todayWords, stats.weekWords)
+      );
     } catch (e) {
       console.error('[vocabulary/daily-word-stats]', e);
       res.status(500).json({ error: 'Xatolik yuz berdi' });

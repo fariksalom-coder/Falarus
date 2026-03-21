@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import { motion } from 'motion/react';
 import AppNavBar from './AppNavBar';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { useSectionSwipeNavigation } from '../hooks/useSectionSwipeNavigation';
@@ -17,19 +18,29 @@ function hideNavBar(path: string): boolean {
 export default function MainLayout() {
   const { pathname } = useLocation();
   const showNavBar = !hideNavBar(pathname);
-  const swipeNavigation = useSectionSwipeNavigation(showNavBar);
+  const swipe = useSectionSwipeNavigation(showNavBar);
 
   return (
     <>
       {showNavBar && <AppNavBar />}
-      <div
-        className={showNavBar ? 'min-h-screen pt-[78px]' : 'min-h-screen'}
-        style={swipeNavigation.canSwipe ? { touchAction: 'pan-y pinch-zoom' } : undefined}
-        onTouchStart={swipeNavigation.onTouchStart}
-        onTouchEnd={swipeNavigation.onTouchEnd}
+      <motion.div
+        className={
+          showNavBar
+            ? `min-h-screen pt-[78px]${swipe.canSwipe ? ' will-change-transform' : ''}`
+            : 'min-h-screen'
+        }
+        style={
+          swipe.canSwipe
+            ? { x: swipe.x, touchAction: 'pan-y pinch-zoom' }
+            : undefined
+        }
+        onTouchStart={swipe.onTouchStart}
+        onTouchMove={swipe.onTouchMove}
+        onTouchEnd={swipe.onTouchEnd}
+        onTouchCancel={swipe.onTouchCancel}
       >
         <Outlet />
-      </div>
+      </motion.div>
       {showNavBar && <PWAInstallPrompt />}
     </>
   );

@@ -4,6 +4,7 @@ import {
   updateUserPoints as updateLeaderboardUserPoints,
 } from './leaderboard.js';
 import { formatDateInAppTimezone } from './appDate.js';
+import { recordUserActivityDate } from './activityStreak.js';
 import { buildPeriodicPointsUpdate } from '../../shared/leaderboardPeriods.js';
 import { insertPointEvent } from '../../shared/pointEvents.js';
 
@@ -62,4 +63,6 @@ export async function awardUserPoints(
   } catch (e) {
     console.error('[awardUserPoints] leaderboard', e);
   }
+
+  void recordUserActivityDate(userId);
 }

@@ -11,6 +11,7 @@ import { awardUserPoints } from './awardUserPoints.js';
 import { buildRequestLogContext, logError, logInfo } from './logger.js';
 import { calculateCappedMatchPoints, calculateImprovementDelta } from './scoring.js';
 import { getAccessInfo } from './subscription.js';
+import { clampVocabDailyDisplayToTotals } from '../../shared/vocabDailyStatsClamp.js';
 
 export { slugifyVocabularyTitle } from './slugifyVocabularyTitle.js';
 
@@ -444,6 +445,19 @@ function aggregateVocabularyStep2Stats(
       0
     ),
   };
+}
+
+async function getTotalLearnedWordsSum(userId: number): Promise<number> {
+  const { data, error } = await supabase
+    .from('user_word_group_progress')
+    .select('learned_words')
+    .eq('user_id', userId);
+  if (error) throw error;
+  let sum = 0;
+  for (const r of data ?? []) {
+    sum += Number((r as { learned_words: number }).learned_words ?? 0);
+  }
+  return sum;
 }
 
 async function getVocabularyStep2DailyStats(userId: number) {
@@ -1087,8 +1101,16 @@ async function handlePostTestFinish(
 }
 
 async function handleDailyWordStats(userId: number, res: VercelResponse) {
-  const stats = await getVocabularyStep2DailyStats(userId);
-  return res.status(200).json(stats);
+  const [stats, totalLearned] = await Promise.all([
+    getVocabularyStep2DailyStats(userId),
+    getTotalLearnedWordsSum(userId),
+  ]);
+  const clamped = clampVocabDailyDisplayToTotals(
+    totalLearned,
+    stats.todayWords,
+    stats.weekWords
+  );
+  return res.status(200).json(clamped);
 }
 
 async function handleProgress(

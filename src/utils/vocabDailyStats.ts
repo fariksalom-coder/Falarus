@@ -1,6 +1,7 @@
 /**
- * Точный подсчёт выученных слов: Bugun, Bu hafta, Jami.
- * При каждом увеличении total из API сохраняем прирост за сегодня и за последние 7 дней.
+ * Локальный трекер прироста total (o‘rganilgan so‘zlar) — faqat brauzerda.
+ * Statistika sahifasidagi Bugun/Bu hafta API dan keladi; u yerda test javoblari
+ * va jami learned_words mos kelmasa, `clampVocabDailyDisplayToTotals` qo‘llanadi.
  */
 
 const KEY_PREVIOUS_TOTAL = 'vocab_stats_previous_total';

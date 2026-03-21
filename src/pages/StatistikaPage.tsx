@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Award,
 } from 'lucide-react';
+import { clampVocabDailyDisplayToTotals } from '../../shared/vocabDailyStatsClamp';
 
 const BG = '#F8FAFC';
 const BORDER = '#E2E8F0';
@@ -128,13 +129,17 @@ export default function StatistikaPage() {
     : 0;
   const wrongCount = lessonStats.total - lessonStats.correct;
 
-  const todayWords = dailyStats?.todayWords ?? 0;
-  const weekWords = dailyStats?.weekWords ?? 0;
+  const totalLearned = totalLearnedFromApi ?? 0;
+  const rawToday = dailyStats?.todayWords ?? 0;
+  const rawWeek = dailyStats?.weekWords ?? 0;
+  const { todayWords, weekWords } = topicsLoaded
+    ? clampVocabDailyDisplayToTotals(totalLearned, rawToday, rawWeek)
+    : { todayWords: rawToday, weekWords: rawWeek };
 
   const achievements = [
     { done: lessonStats.total > 0, text: "Birinchi dars tugatildi" },
     { done: streak.streak_days >= 7, text: '7 kun ketma-ket' },
-    { done: (totalLearnedFromApi ?? 0) >= 100, text: "100 ta so'z o'rganildi" },
+    { done: totalLearned >= 100, text: "100 ta so'z o'rganildi" },
   ].filter((a) => a.done);
 
   // `streak.last_7_days` is ordered as: [day-6, day-5, ..., today]
@@ -173,7 +178,7 @@ export default function StatistikaPage() {
     },
     {
       title: 'Jami',
-      value: topicsLoaded ? String(totalLearnedFromApi ?? 0) : '—',
+      value: topicsLoaded ? String(totalLearned) : '—',
       subtitle: 'Barcha vaqt',
     },
   ];

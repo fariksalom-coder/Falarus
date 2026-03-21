@@ -464,6 +464,18 @@ export function aggregateVocabularyStep2Stats(
   };
 }
 
+export async function getTotalLearnedWordsSum(supabase: Supabase, userId: number): Promise<number> {
+  const { data, error } = await supabase
+    .from('user_word_group_progress')
+    .select('learned_words')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return (data ?? []).reduce(
+    (s, r) => s + Number((r as { learned_words: number }).learned_words ?? 0),
+    0
+  );
+}
+
 export async function getUserVocabularyStep2DailyStats(
   supabase: Supabase,
   userId: number
