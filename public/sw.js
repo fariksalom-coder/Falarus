@@ -3,7 +3,7 @@
    - network-first for JS/CSS so new deployments reflect immediately
    - fallback to cache if network fails
 */
-const CACHE_NAME = 'falarus-pwa-v2';
+const CACHE_NAME = 'falarus-pwa-v3';
 
 const STATIC_ASSETS = [
   '/',
@@ -48,8 +48,9 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          if (res && res.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+          if (res && res.ok && res.type === 'basic') {
+            const copy = res.clone();
+            void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
           return res;
         })

@@ -44,7 +44,7 @@
 
 ## 1. Запуск сайта на Vercel (фронтенд + API)
 
-В проекте есть папка **`api/`** — это Vercel Serverless Functions. Все маршруты (`/api/auth/register`, `/api/auth/login`, `/api/user/me`, `/api/lessons`, `/api/vocabulary` и т.д.) обрабатываются через **`api/[...path].ts`** (единый catch-all), чтобы на Vercel не было отдельной «висячей» функции только для словаря и платформенного 404 на `/api/vocabulary/...`.
+В проекте есть папка **`api/`** — это Vercel Serverless Functions. Словарь дополнительно вынесен в **`api/vocabulary/[[...slug]].ts`**, чтобы пути вида `/api/vocabulary/word-groups/:subtopicId` гарантированно попадали в функцию (иначе на проде возможен платформенный `404 NOT_FOUND` с `text/plain`). Остальные `/api/*` обрабатывает **`api/[...path].ts`**. В **`vercel.json`** для SPA используется fallback `/(.*) → /index.html`; по правилам Vercel сначала проверяются статика и функции, затем rewrites.
 
 1. [vercel.com](https://vercel.com) → **Add New** → **Project** → репозиторий `fariksalom-coder/Falarus`.
 2. **Build Command:** `npm run build`, **Output Directory:** `dist`.
