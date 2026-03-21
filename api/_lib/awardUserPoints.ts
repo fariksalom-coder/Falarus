@@ -3,6 +3,8 @@ import {
   ensureUserInLeaderboard,
   updateUserPoints as updateLeaderboardUserPoints,
 } from './leaderboard.js';
+import { formatDateInAppTimezone } from './appDate.js';
+import { buildPeriodicPointsUpdate } from '../../shared/leaderboardPeriods.js';
 
 /**
  * Add points to users (points, weekly, monthly, total) and sync leaderboard.
@@ -10,24 +12,20 @@ import {
  */
 export async function awardUserPoints(userId: number, delta: number): Promise<void> {
   if (delta <= 0) return;
+  const today = formatDateInAppTimezone(new Date());
   const { data: user, error } = await supabase
     .from('users')
-    .select('points, weekly_points, monthly_points, total_points')
+    .select('points, points_date, weekly_points, weekly_points_week_start, monthly_points, total_points')
     .eq('id', userId)
     .single();
   if (error || !user) {
     console.error('[awardUserPoints] user fetch', error?.message);
     return;
   }
-  const newTotal = (user.total_points ?? 0) + delta;
+  const nextPoints = buildPeriodicPointsUpdate(user, delta, today);
   const { error: upErr } = await supabase
     .from('users')
-    .update({
-      points: (user.points ?? 0) + delta,
-      weekly_points: (user.weekly_points ?? 0) + delta,
-      monthly_points: (user.monthly_points ?? 0) + delta,
-      total_points: newTotal,
-    })
+    .update(nextPoints)
     .eq('id', userId);
   if (upErr) {
     console.error('[awardUserPoints] update', upErr.message);
@@ -35,7 +33,7 @@ export async function awardUserPoints(userId: number, delta: number): Promise<vo
   }
   try {
     await ensureUserInLeaderboard(supabase, userId);
-    await updateLeaderboardUserPoints(supabase, userId, newTotal);
+    await updateLeaderboardUserPoints(supabase, userId, nextPoints.total_points);
   } catch (e) {
     console.error('[awardUserPoints] leaderboard', e);
   }

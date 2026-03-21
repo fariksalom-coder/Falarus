@@ -30,6 +30,12 @@ import { awardUserPoints } from './_lib/awardUserPoints.js';
 import { syncUserLessonProgressPercent } from './_lib/lessonProgress.js';
 import { buildRequestLogContext, logError } from './_lib/logger.js';
 import { calculateImprovementDelta } from './_lib/scoring.js';
+import { formatDateInAppTimezone } from './_lib/appDate.js';
+import {
+  getDailyPoints,
+  getWeekStartDateString,
+  getWeeklyPoints,
+} from '../shared/leaderboardPeriods.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -370,8 +376,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (path[0] === 'leaderboard') {
     const userId = requireAuth(req, res);
     if (userId == null) return;
-    const period = (typeof req.query.period === 'string' ? req.query.period : 'weekly') || 'weekly';
+    const requestedPeriod = (typeof req.query.period === 'string' ? req.query.period : 'weekly') || 'weekly';
+    const period = ['daily', 'weekly', 'all', 'monthly'].includes(requestedPeriod)
+      ? requestedPeriod
+      : 'weekly';
     const useTotalPoints = period === 'all';
+    const today = formatDateInAppTimezone(new Date());
+    const weekStart = getWeekStartDateString(today);
     try {
       if (useTotalPoints) {
         const { data: topRows, error: rpcErr } = await supabase.rpc('get_leaderboard', { lim: 100 });
@@ -391,17 +402,132 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           myRank: myRow && me ? { rank: Number(myRow.rank), id: me.id, firstName: me.first_name, lastName: me.last_name, avatarUrl: me.avatar_url, points: Number(myRow.total_points) } : null,
         });
       }
-      const col = period === 'monthly' ? 'monthly_points' : 'weekly_points';
-      const { data: top, error: topErr } = await supabase.from('users').select('id, first_name, last_name, avatar_url, weekly_points, monthly_points').order(col, { ascending: false }).limit(100);
+
+      if (period === 'monthly') {
+        const { data: top, error: topErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, monthly_points')
+          .order('monthly_points', { ascending: false })
+          .limit(100);
+        if (topErr) throw topErr;
+        const { data: me, error: meErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, monthly_points')
+          .eq('id', userId)
+          .single();
+        if (meErr || !me) return res.status(200).json({ top: top ?? [], myRank: null });
+        const myPoints = me.monthly_points ?? 0;
+        const { count, error: countErr } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .gt('monthly_points', myPoints);
+        const rank = countErr ? null : (count ?? 0) + 1;
+        return res.status(200).json({
+          top: (top ?? []).map((u: any) => ({
+            id: u.id,
+            firstName: u.first_name,
+            lastName: u.last_name,
+            avatarUrl: u.avatar_url,
+            points: u.monthly_points ?? 0,
+          })),
+          myRank:
+            rank == null
+              ? null
+              : {
+                  rank,
+                  id: me.id,
+                  firstName: me.first_name,
+                  lastName: me.last_name,
+                  avatarUrl: me.avatar_url,
+                  points: myPoints,
+                },
+        });
+      }
+
+      if (period === 'daily') {
+        const { data: top, error: topErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, points, points_date')
+          .eq('points_date', today)
+          .gt('points', 0)
+          .order('points', { ascending: false })
+          .limit(100);
+        if (topErr) throw topErr;
+        const { data: me, error: meErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, points, points_date')
+          .eq('id', userId)
+          .single();
+        if (meErr || !me) return res.status(200).json({ top: top ?? [], myRank: null });
+        const myPoints = getDailyPoints(me, today);
+        const { count, error: countErr } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .eq('points_date', today)
+          .gt('points', myPoints > 0 ? myPoints : 0);
+        const rank = countErr ? null : (count ?? 0) + 1;
+        return res.status(200).json({
+          top: (top ?? []).map((u: any) => ({
+            id: u.id,
+            firstName: u.first_name,
+            lastName: u.last_name,
+            avatarUrl: u.avatar_url,
+            points: u.points ?? 0,
+          })),
+          myRank:
+            rank == null
+              ? null
+              : {
+                  rank,
+                  id: me.id,
+                  firstName: me.first_name,
+                  lastName: me.last_name,
+                  avatarUrl: me.avatar_url,
+                  points: myPoints,
+                },
+        });
+      }
+
+      const { data: top, error: topErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, avatar_url, weekly_points, weekly_points_week_start')
+        .eq('weekly_points_week_start', weekStart)
+        .gt('weekly_points', 0)
+        .order('weekly_points', { ascending: false })
+        .limit(100);
       if (topErr) throw topErr;
-      const { data: me, error: meErr } = await supabase.from('users').select('id, first_name, last_name, avatar_url, weekly_points, monthly_points').eq('id', userId).single();
+      const { data: me, error: meErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, avatar_url, weekly_points, weekly_points_week_start')
+        .eq('id', userId)
+        .single();
       if (meErr || !me) return res.status(200).json({ top: top ?? [], myRank: null });
-      const myPoints = period === 'monthly' ? (me.monthly_points ?? 0) : (me.weekly_points ?? 0);
-      const { count, error: countErr } = await supabase.from('users').select('id', { count: 'exact', head: true }).gt(col, myPoints);
+      const myPoints = getWeeklyPoints(me, today);
+      const { count, error: countErr } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .eq('weekly_points_week_start', weekStart)
+        .gt('weekly_points', myPoints > 0 ? myPoints : 0);
       const rank = countErr ? null : (count ?? 0) + 1;
       return res.status(200).json({
-        top: (top ?? []).map((u: any) => ({ id: u.id, firstName: u.first_name, lastName: u.last_name, avatarUrl: u.avatar_url, points: period === 'monthly' ? (u.monthly_points ?? 0) : (u.weekly_points ?? 0) })),
-        myRank: rank == null ? null : { rank, id: me.id, firstName: me.first_name, lastName: me.last_name, avatarUrl: me.avatar_url, points: myPoints },
+        top: (top ?? []).map((u: any) => ({
+          id: u.id,
+          firstName: u.first_name,
+          lastName: u.last_name,
+          avatarUrl: u.avatar_url,
+          points: u.weekly_points ?? 0,
+        })),
+        myRank:
+          rank == null
+            ? null
+            : {
+                rank,
+                id: me.id,
+                firstName: me.first_name,
+                lastName: me.last_name,
+                avatarUrl: me.avatar_url,
+                points: myPoints,
+              },
       });
     } catch (e) {
       console.error('[api/leaderboard]', e instanceof Error ? e.message : e);

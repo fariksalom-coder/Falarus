@@ -173,6 +173,22 @@ export function getLessonCompletionSummaryFromResults(
   return { passedTasks: passed, totalTasks, status };
 }
 
+export function getLessonAveragePercentFromResults(
+  allResults: Record<number, TaskResult>,
+  totalTasks: number
+): number | null {
+  let sum = 0;
+  let count = 0;
+  for (let i = 1; i <= totalTasks; i += 1) {
+    const result = allResults[i];
+    if (!result || result.total <= 0) continue;
+    sum += (result.correct / result.total) * 100;
+    count += 1;
+  }
+  if (count === 0) return null;
+  return Math.round(sum / count);
+}
+
 /** Aggregate all lesson task results (for accuracy stats). */
 export function getTotalLessonTaskStats(): { correct: number; total: number } {
   const data = load();

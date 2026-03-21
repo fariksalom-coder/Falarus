@@ -22,6 +22,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { courseData } from './src/data/courseData.ts';
 import { buildRequestLogContext, createRequestId, logError, logInfo } from './server/lib/logger.ts';
+import { formatDateInAppTimezone } from './server/lib/appDate.ts';
+import {
+  buildPeriodicPointsUpdate,
+  getDailyPoints,
+  getWeekStartDateString,
+  getWeeklyPoints,
+} from './shared/leaderboardPeriods.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -375,12 +382,17 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Leaderboard: "all" = cached top 100 from leaderboard table + Redis; weekly/monthly = from users
+  // Leaderboard: "all" = cached top 100 from leaderboard table + Redis; daily/weekly = period-aware user counters
   const leaderboardCacheService = await import('./server/services/leaderboardCache.service');
   const leaderboardService = await import('./server/services/leaderboard.service');
   app.get('/api/leaderboard', authenticate, async (req: any, res) => {
-    const period = (req.query.period as string) || 'weekly';
+    const requestedPeriod = (req.query.period as string) || 'weekly';
+    const period = ['daily', 'weekly', 'all', 'monthly'].includes(requestedPeriod)
+      ? requestedPeriod
+      : 'weekly';
     const useTotalPoints = period === 'all';
+    const today = formatDateInAppTimezone(new Date());
+    const weekStart = getWeekStartDateString(today);
     if (useTotalPoints) {
       try {
         const top = await leaderboardCacheService.getTop100Cached(supabase);
@@ -414,11 +426,102 @@ async function startServer() {
       }
       return;
     }
-    const col = period === 'monthly' ? 'monthly_points' : 'weekly_points';
+
+    if (period === 'monthly') {
+      const { data: top, error: topErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, avatar_url, monthly_points')
+        .order('monthly_points', { ascending: false })
+        .limit(100);
+      if (topErr) {
+        console.error('[api/leaderboard] top error:', topErr.message);
+        return res.status(500).json({ error: topErr.message });
+      }
+      const { data: me, error: meErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, avatar_url, monthly_points')
+        .eq('id', req.userId)
+        .single();
+      if (meErr || !me) {
+        return res.json({ top: top ?? [], myRank: null });
+      }
+      const myPoints = me.monthly_points ?? 0;
+      const { count, error: countErr } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .gt('monthly_points', myPoints);
+      const rank = countErr ? null : (count ?? 0) + 1;
+      return res.json({
+        top: (top ?? []).map((u: any) => ({
+          id: u.id,
+          firstName: u.first_name,
+          lastName: u.last_name,
+          avatarUrl: u.avatar_url,
+          points: u.monthly_points ?? 0,
+        })),
+        myRank: rank == null ? null : {
+          rank,
+          id: me.id,
+          firstName: me.first_name,
+          lastName: me.last_name,
+          avatarUrl: me.avatar_url,
+          points: myPoints,
+        },
+      });
+    }
+
+    if (period === 'daily') {
+      const { data: top, error: topErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, avatar_url, points, points_date')
+        .eq('points_date', today)
+        .gt('points', 0)
+        .order('points', { ascending: false })
+        .limit(100);
+      if (topErr) {
+        console.error('[api/leaderboard] top error:', topErr.message);
+        return res.status(500).json({ error: topErr.message });
+      }
+      const { data: me, error: meErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, avatar_url, points, points_date')
+        .eq('id', req.userId)
+        .single();
+      if (meErr || !me) {
+        return res.json({ top: top ?? [], myRank: null });
+      }
+      const myPoints = getDailyPoints(me, today);
+      const { count, error: countErr } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('points_date', today)
+        .gt('points', myPoints > 0 ? myPoints : 0);
+      const rank = countErr ? null : (count ?? 0) + 1;
+      return res.json({
+        top: (top ?? []).map((u: any) => ({
+          id: u.id,
+          firstName: u.first_name,
+          lastName: u.last_name,
+          avatarUrl: u.avatar_url,
+          points: u.points ?? 0,
+        })),
+        myRank: rank == null ? null : {
+          rank,
+          id: me.id,
+          firstName: me.first_name,
+          lastName: me.last_name,
+          avatarUrl: me.avatar_url,
+          points: myPoints,
+        },
+      });
+    }
+
     const { data: top, error: topErr } = await supabase
       .from('users')
-      .select('id, first_name, last_name, avatar_url, total_points, points, weekly_points, monthly_points')
-      .order(col, { ascending: false })
+      .select('id, first_name, last_name, avatar_url, weekly_points, weekly_points_week_start')
+      .eq('weekly_points_week_start', weekStart)
+      .gt('weekly_points', 0)
+      .order('weekly_points', { ascending: false })
       .limit(100);
     if (topErr) {
       console.error('[api/leaderboard] top error:', topErr.message);
@@ -426,17 +529,18 @@ async function startServer() {
     }
     const { data: me, error: meErr } = await supabase
       .from('users')
-      .select('id, first_name, last_name, avatar_url, total_points, points, weekly_points, monthly_points')
+      .select('id, first_name, last_name, avatar_url, weekly_points, weekly_points_week_start')
       .eq('id', req.userId)
       .single();
     if (meErr || !me) {
       return res.json({ top: top ?? [], myRank: null });
     }
-    const myPoints = period === 'monthly' ? (me.monthly_points ?? 0) : (me.weekly_points ?? 0);
+    const myPoints = getWeeklyPoints(me, today);
     const { count, error: countErr } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .gt(col, myPoints);
+      .eq('weekly_points_week_start', weekStart)
+      .gt('weekly_points', myPoints > 0 ? myPoints : 0);
     const rank = countErr ? null : (count ?? 0) + 1;
     res.json({
       top: (top ?? []).map((u: any) => ({
@@ -444,7 +548,7 @@ async function startServer() {
         firstName: u.first_name,
         lastName: u.last_name,
         avatarUrl: u.avatar_url,
-        points: period === 'monthly' ? (u.monthly_points ?? 0) : (u.weekly_points ?? 0),
+        points: u.weekly_points ?? 0,
       })),
       myRank: rank == null ? null : {
         rank,
@@ -471,19 +575,17 @@ async function startServer() {
   app.post('/api/user/points', authenticate, async (req: any, res) => {
     const amount = Math.max(0, Number(req.body?.amount) || 0);
     if (amount === 0) return res.status(400).json({ error: 'amount kerak' });
+    const today = formatDateInAppTimezone(new Date());
     const { data: user, error: fetchErr } = await supabase
       .from('users')
-      .select('points, weekly_points, monthly_points, total_points')
+      .select('points, points_date, weekly_points, weekly_points_week_start, monthly_points, total_points')
       .eq('id', req.userId)
       .single();
     if (fetchErr || !user) return res.status(404).json({ error: 'User topilmadi' });
-    const points = (user.points ?? 0) + amount;
-    const weekly_points = (user.weekly_points ?? 0) + amount;
-    const monthly_points = (user.monthly_points ?? 0) + amount;
-    const total_points = (user.total_points ?? 0) + amount;
+    const nextPoints = buildPeriodicPointsUpdate(user, amount, today);
     const { error: updateErr } = await supabase
       .from('users')
-      .update({ points, weekly_points, monthly_points, total_points })
+      .update(nextPoints)
       .eq('id', req.userId);
     if (updateErr) {
       console.error('[api/user/points]', updateErr.message);
@@ -492,9 +594,9 @@ async function startServer() {
     const leaderboardSvc = await import('./server/services/leaderboard.service');
     const leaderboardCacheSvc = await import('./server/services/leaderboardCache.service');
     await leaderboardSvc.ensureUserInLeaderboard(supabase, req.userId);
-    await leaderboardSvc.updateUserPoints(supabase, req.userId, total_points);
+    await leaderboardSvc.updateUserPoints(supabase, req.userId, nextPoints.total_points);
     await leaderboardCacheSvc.invalidateLeaderboardCache();
-    res.json({ success: true, points, weekly_points, monthly_points, total_points });
+    res.json({ success: true, ...nextPoints });
   });
 
   // Lessons (freemium: locked flag, preview, protect full content)

@@ -2,23 +2,24 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchLeaderboard, type LeaderboardPeriod, type LeaderboardResponse } from '../api/leaderboard';
 import LeaderboardList from '../components/leaderboard/LeaderboardList';
+import LeaderboardPodium from '../components/leaderboard/LeaderboardPodium';
 import UserRankCard from '../components/leaderboard/UserRankCard';
 
 const BG = '#F8FAFC';
 const BORDER = '#E2E8F0';
-const PRIMARY = '#6366F1';
+const PRIMARY = '#6D35D2';
 const TEXT = '#0F172A';
 const TEXT_SECONDARY = '#64748B';
 
 const TABS: { key: LeaderboardPeriod; label: string }[] = [
+  { key: 'daily', label: 'Kunlik' },
   { key: 'weekly', label: 'Haftalik' },
-  { key: 'monthly', label: 'Oylik' },
   { key: 'all', label: 'Umumiy' },
 ];
 
 export default function LeaderboardPage() {
   const { user, token } = useAuth();
-  const [period, setPeriod] = useState<LeaderboardPeriod>('weekly');
+  const [period, setPeriod] = useState<LeaderboardPeriod>('daily');
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -34,28 +35,34 @@ export default function LeaderboardPage() {
     });
   }, [token, period]);
 
-  const inTop10 = data?.myRank && data.myRank.rank <= 10;
+  const topThree = data?.top.slice(0, 3) ?? [];
+  const rest = data?.top.slice(3) ?? [];
+  const currentUserVisible = user?.id != null && (data?.top ?? []).some((item) => item.id === user.id);
 
   return (
     <div className="min-h-screen pb-10" style={{ backgroundColor: BG }}>
-      <main className="mx-auto max-w-2xl px-4 pt-6">
-        <h1 className="mb-6 text-2xl font-bold" style={{ color: TEXT }}>
+      <main className="mx-auto max-w-4xl px-4 pt-6 sm:px-5">
+        <h1 className="mb-6 text-2xl font-bold sm:text-[2rem]" style={{ color: TEXT }}>
           Reyting
         </h1>
 
         <div
-          className="mb-6 flex rounded-2xl border p-1"
-          style={{ borderColor: BORDER, backgroundColor: 'white' }}
+          className="mb-8 flex rounded-[28px] border p-1.5 shadow-[0_10px_26px_rgba(148,163,184,0.10)]"
+          style={{ borderColor: '#E3E2EC', backgroundColor: '#ECEAF2' }}
         >
           {TABS.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setPeriod(tab.key)}
-              className="flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200"
+              className="flex-1 rounded-[22px] py-3 text-sm font-semibold transition-all duration-200 sm:text-base"
               style={{
-                backgroundColor: period === tab.key ? PRIMARY : 'transparent',
+                background: period === tab.key ? 'linear-gradient(135deg,#6E2DE2 0%,#7C3AED 100%)' : 'transparent',
                 color: period === tab.key ? '#fff' : TEXT_SECONDARY,
+                boxShadow:
+                  period === tab.key
+                    ? 'inset 0 0 0 2px #0EA5E9, 0 10px 24px rgba(109,53,210,0.18)'
+                    : 'none',
               }}
             >
               {tab.label}
@@ -72,17 +79,17 @@ export default function LeaderboardPage() {
           </div>
         ) : (
           <>
-            <div
-              className="rounded-2xl border p-4 shadow-sm"
-              style={{ backgroundColor: 'white', borderColor: BORDER }}
-            >
-              <LeaderboardList
-                items={data?.top ?? []}
-                currentUserId={user?.id}
-              />
-            </div>
+            {topThree.length > 0 && <LeaderboardPodium items={topThree} />}
 
-            {data?.myRank != null && (
+            {rest.length > 0 && (
+              <LeaderboardList
+                items={rest}
+                currentUserId={user?.id}
+                startRank={4}
+              />
+            )}
+
+            {data?.myRank != null && !currentUserVisible && (
               <div className="mt-6">
                 <p
                   className="mb-3 text-sm font-semibold"
@@ -90,27 +97,18 @@ export default function LeaderboardPage() {
                 >
                   Sizning o‘rningiz
                 </p>
-                <div
-                  className={`rounded-2xl border p-4 shadow-sm transition-all ${
-                    inTop10 ? 'ring-2 ring-[#6366F1]' : ''
-                  }`}
-                  style={{ backgroundColor: 'white', borderColor: BORDER }}
-                >
-                  <p className="mb-2 text-sm font-medium" style={{ color: TEXT_SECONDARY }}>
-                    {data.myRank.rank}-o‘rin
-                  </p>
-                  <UserRankCard
-                    rank={data.myRank.rank}
-                    user={{
-                      id: data.myRank.id,
-                      firstName: data.myRank.firstName,
-                      lastName: data.myRank.lastName,
-                      avatarUrl: data.myRank.avatarUrl,
-                      points: data.myRank.points,
-                    }}
-                    isCurrentUser
-                  />
-                </div>
+                <UserRankCard
+                  rank={data.myRank.rank}
+                  user={{
+                    id: data.myRank.id,
+                    firstName: data.myRank.firstName,
+                    lastName: data.myRank.lastName,
+                    avatarUrl: data.myRank.avatarUrl,
+                    points: data.myRank.points,
+                  }}
+                  isCurrentUser
+                  caption="Sizning natijangiz"
+                />
               </div>
             )}
 

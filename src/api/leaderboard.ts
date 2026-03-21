@@ -22,7 +22,7 @@ export type LeaderboardResponse = {
   error?: { status: number; message?: string };
 };
 
-export type LeaderboardPeriod = 'weekly' | 'monthly' | 'all';
+export type LeaderboardPeriod = 'daily' | 'weekly' | 'all';
 
 export async function fetchLeaderboard(
   token: string | null,
@@ -31,7 +31,7 @@ export async function fetchLeaderboard(
   if (!token) return { top: [], myRank: null };
   try {
     const res = await fetch(
-      apiUrl(`/api/leaderboard?period=${period === 'all' ? 'all' : period === 'monthly' ? 'monthly' : 'weekly'}`),
+      apiUrl(`/api/leaderboard?period=${period}`),
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const body = await res.json().catch(() => ({}));
@@ -52,7 +52,7 @@ export async function fetchLeaderboard(
 export async function addUserPoints(
   token: string | null,
   amount: number
-): Promise<{ points: number; weekly_points: number; monthly_points: number } | null> {
+): Promise<{ points: number; weekly_points: number; total_points?: number } | null> {
   // Deprecated: points are now awarded through server-side lesson/vocabulary progress endpoints
   // to keep scoring idempotent and avoid double-counting on retries.
   void token;

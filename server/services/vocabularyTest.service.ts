@@ -1,6 +1,8 @@
 import type { Supabase } from '../types/vocabulary';
 import * as repo from '../repositories/vocabularyRepository.js';
 import { calculateImprovementDelta } from './scoringRules.service.js';
+import { formatDateInAppTimezone } from '../lib/appDate.js';
+import { buildPeriodicPointsUpdate } from '../../shared/leaderboardPeriods.js';
 
 const MATCH_UNLOCK_PERCENT = 80;
 
@@ -53,26 +55,22 @@ export async function finishTest(
 
   const pointsAwarded = calculateImprovementDelta(previousBestCorrect, testBestCorrect);
   if (pointsAwarded > 0) {
+    const today = formatDateInAppTimezone(new Date());
     const { data: user } = await supabase
       .from('users')
-      .select('points, weekly_points, monthly_points, total_points')
+      .select('points, points_date, weekly_points, weekly_points_week_start, monthly_points, total_points')
       .eq('id', userId)
       .single();
     if (user) {
-      const newTotal = (user.total_points ?? 0) + pointsAwarded;
+      const nextPoints = buildPeriodicPointsUpdate(user, pointsAwarded, today);
       await supabase
         .from('users')
-        .update({
-          points: (user.points ?? 0) + pointsAwarded,
-          weekly_points: (user.weekly_points ?? 0) + pointsAwarded,
-          monthly_points: (user.monthly_points ?? 0) + pointsAwarded,
-          total_points: newTotal,
-        })
+        .update(nextPoints)
         .eq('id', userId);
       const leaderboardService = await import('./leaderboard.service.js');
       const leaderboardCache = await import('./leaderboardCache.service.js');
       await leaderboardService.ensureUserInLeaderboard(supabase, userId);
-      await leaderboardService.updateUserPoints(supabase, userId, newTotal);
+      await leaderboardService.updateUserPoints(supabase, userId, nextPoints.total_points);
       await leaderboardCache.invalidateLeaderboardCache();
     }
   }
