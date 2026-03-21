@@ -134,6 +134,30 @@ export async function routeLessonsRequest(
       return await handleLessonsList(userId, res);
     }
 
+    /**
+     * Shallow preview URL for Vercel (avoids edge 404 on /api/lessons/:id/preview).
+     * GET /api/lessons/preview?lesson_id=123
+     */
+    if (
+      req.method === 'GET' &&
+      segments.length === 1 &&
+      segments[0] === 'preview'
+    ) {
+      const raw =
+        typeof req.query.lesson_id === 'string'
+          ? req.query.lesson_id
+          : typeof req.query.lessonId === 'string'
+            ? req.query.lessonId
+            : '';
+      const lessonId = Number(raw.trim());
+      if (!Number.isFinite(lessonId) || lessonId <= 0) {
+        return res
+          .status(400)
+          .json({ error: 'lesson_id query parameter required' });
+      }
+      return await handleLessonPreview(lessonId, res);
+    }
+
     const lessonId = Number(segments[0]);
     if (!Number.isFinite(lessonId) || lessonId <= 0) {
       return res.status(400).json({ error: 'Lesson id kerak' });

@@ -85,9 +85,9 @@ try {
       throw new Error('GET /api/lessons returned invalid id');
     }
     await requireOk(
-      `/api/lessons/${firstId}/preview`,
+      `/api/lessons/preview?lesson_id=${encodeURIComponent(String(firstId))}`,
       { headers: authHeaders },
-      'GET /api/lessons/:id/preview'
+      'GET /api/lessons/preview?lesson_id='
     );
     if (!firstLesson.locked) {
       await requireOk(
@@ -102,9 +102,9 @@ try {
       const lid = Number(lockedLesson.id);
       if (Number.isFinite(lid)) {
         await requireOk(
-          `/api/lessons/${lid}/preview`,
+          `/api/lessons/preview?lesson_id=${encodeURIComponent(String(lid))}`,
           { headers: authHeaders },
-          'GET locked lesson preview'
+          'GET locked lesson preview (query)'
         );
       }
     }
@@ -121,9 +121,9 @@ try {
   }
 
   const subtopics = await requireOk(
-    `/api/vocabulary/subtopics/${topicId}`,
+    `/api/vocabulary/subtopics?topic=${encodeURIComponent(topicId)}`,
     { headers: authHeaders },
-    'GET /api/vocabulary/subtopics/:topicId'
+    'GET /api/vocabulary/subtopics?topic='
   );
 
   const openSubtopic =
@@ -140,10 +140,11 @@ try {
     'GET /api/vocabulary/subtopic/:subtopicId/preview'
   );
 
+  const subtopicParam = encodeURIComponent(openSubtopic.slug ?? openSubtopic.id);
   const groups = await requireOk(
-    `/api/vocabulary/word-groups/${openSubtopic.id}`,
+    `/api/vocabulary/word-groups?subtopic=${subtopicParam}`,
     { headers: authHeaders },
-    'GET /api/vocabulary/word-groups/:subtopicId'
+    'GET /api/vocabulary/word-groups?subtopic='
   );
 
   if (Array.isArray(groups) && groups.length > 0) {

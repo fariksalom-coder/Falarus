@@ -95,7 +95,8 @@ export async function fetchVocabularySubtopics(
   topicId: string
 ): Promise<VocabularySubtopic[]> {
   if (!token) return [];
-  const res = await fetch(apiUrl(`/api/vocabulary/subtopics/${topicId}`), {
+  const q = encodeURIComponent(topicId);
+  const res = await fetch(apiUrl(`/api/vocabulary/subtopics?topic=${q}`), {
     headers: authHeaders(token),
   });
   if (!res.ok) return [];
@@ -108,8 +109,8 @@ export async function fetchVocabularyWordGroups(
   subtopicSlug: string
 ): Promise<VocabularyWordGroup[]> {
   if (!token) return [];
-  const encoded = encodeURIComponent(subtopicSlug);
-  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${encoded}`), {
+  const q = encodeURIComponent(subtopicSlug);
+  const res = await fetch(apiUrl(`/api/vocabulary/word-groups?subtopic=${q}`), {
     headers: authHeaders(token),
   });
   const text = await res.text();

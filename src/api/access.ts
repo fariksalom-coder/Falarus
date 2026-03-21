@@ -89,7 +89,8 @@ export async function getLessonPreview(
   token: string | null,
   lessonId: number
 ): Promise<LessonPreview> {
-  const res = await fetch(apiUrl(`/api/lessons/${lessonId}/preview`), {
+  const q = encodeURIComponent(String(lessonId));
+  const res = await fetch(apiUrl(`/api/lessons/preview?lesson_id=${q}`), {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error('Preview yuklanmadi');

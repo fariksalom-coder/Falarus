@@ -164,7 +164,11 @@ async function main() {
     throw new Error('GET /api/lessons returned no lessons');
   }
   const firstLesson = lessons.find((lesson: any) => !lesson.locked) ?? lessons[0];
-  await requestApi('GET', `/api/lessons/${firstLesson.id}/preview`, token);
+  await requestApi(
+    'GET',
+    `/api/lessons/preview?lesson_id=${encodeURIComponent(String(firstLesson.id))}`,
+    token
+  );
   if (!firstLesson.locked) {
     await requestApi('GET', `/api/lessons/${firstLesson.id}`, token);
     await requestApi('POST', `/api/lessons/${firstLesson.id}/complete`, token);
@@ -191,11 +195,11 @@ async function main() {
 
   const subtopics = await requestApi(
     'GET',
-    `/api/vocabulary/subtopics/${topicId}`,
+    `/api/vocabulary/subtopics?topic=${encodeURIComponent(String(topicId))}`,
     token
   );
   if (!Array.isArray(subtopics) || subtopics.length === 0) {
-    throw new Error('GET /api/vocabulary/subtopics/:topicId returned no subtopics');
+    throw new Error('GET /api/vocabulary/subtopics?topic= returned no subtopics');
   }
 
   const openSubtopic =
@@ -205,9 +209,12 @@ async function main() {
     `/api/vocabulary/subtopic/${openSubtopic.id}/preview`,
     token
   );
+  const subtopicKey = encodeURIComponent(
+    String(openSubtopic.slug ?? openSubtopic.id)
+  );
   const wordGroups = await requestApi(
     'GET',
-    `/api/vocabulary/word-groups/${openSubtopic.id}`,
+    `/api/vocabulary/word-groups?subtopic=${subtopicKey}`,
     token
   );
   await requestApi('GET', '/api/vocabulary/progress', token);

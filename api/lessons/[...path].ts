@@ -20,6 +20,9 @@ function segmentsFromPathname(req: VercelRequest): string[] {
   if (lIdx >= 0) {
     return parts.slice(lIdx + 1);
   }
+  if (parts[0] === 'preview' || /^\d+$/.test(parts[0] ?? '')) {
+    return parts;
+  }
   return [];
 }
 
