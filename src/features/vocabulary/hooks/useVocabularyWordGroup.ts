@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   fetchVocabularyWordGroups,
   fetchVocabularyTasksStatus,
@@ -26,7 +26,9 @@ export function useVocabularyWordGroup({
   resolvedSubtopicId,
   partId,
 }: Params) {
-  const stepsStore = useVocabularyStepsStore();
+  const fetchSteps = useVocabularyStepsStore((state) => state.fetchSteps);
+  const submitStep1 = useVocabularyStepsStore((state) => state.submitStep1);
+  const submitStep2 = useVocabularyStepsStore((state) => state.submitStep2);
   const [wordGroupId, setWordGroupId] = useState<number | null>(() => {
     if (!resolvedSubtopicId || !partId) return null;
     const cached = getCachedWordGroupsProgress(resolvedSubtopicId);
@@ -44,7 +46,9 @@ export function useVocabularyWordGroup({
     undefined
   );
 
-  const stepsState = wordGroupId != null ? stepsStore.byGroup[wordGroupId] : undefined;
+  const serverStepsState = useVocabularyStepsStore((state) =>
+    wordGroupId != null ? state.byGroup[wordGroupId] : undefined
+  );
 
   useEffect(() => {
     if (wordGroupId == null) return;
@@ -61,16 +65,16 @@ export function useVocabularyWordGroup({
     }
   }, [wordGroupId]);
 
-  const effectiveStepsState = stepsState ?? cachedStepsState;
+  const effectiveStepsState = serverStepsState ?? cachedStepsState;
 
-  const refetchTasks = async () => {
+  const refetchTasks = useCallback(async () => {
     if (!token || wordGroupId == null) return;
     const status = await fetchVocabularyTasksStatus(token, wordGroupId);
     if (status) {
       setTasksStatus(status);
       setCachedTasksStatus(wordGroupId, status);
     }
-  };
+  }, [token, wordGroupId]);
 
   useEffect(() => {
     if (!token || !resolvedSubtopicId || !partId) return;
@@ -109,7 +113,7 @@ export function useVocabularyWordGroup({
           }
         }
         if (token) {
-          await stepsStore.fetchSteps(token, group.id);
+          await fetchSteps(token, group.id);
         }
       } else {
         setWordGroupId(null);
@@ -129,14 +133,16 @@ export function useVocabularyWordGroup({
     return () => {
       cancelled = true;
     };
-  }, [token, resolvedSubtopicId, partId, stepsStore]);
+  }, [token, resolvedSubtopicId, partId, fetchSteps]);
 
   return {
     wordGroupId,
     tasksStatus,
+    serverStepsState,
     effectiveStepsState,
-    stepsStore,
+    fetchSteps,
+    submitStep1,
+    submitStep2,
     refetchTasks,
-    setCachedStepsState,
   };
 }

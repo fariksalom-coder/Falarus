@@ -55,8 +55,11 @@ export default function VocabularyPartPage() {
   const {
     wordGroupId,
     tasksStatus,
+    serverStepsState,
     effectiveStepsState,
-    stepsStore,
+    fetchSteps,
+    submitStep1,
+    submitStep2,
     refetchTasks,
   } = useVocabularyWordGroup({
     token,
@@ -90,18 +93,18 @@ export default function VocabularyPartPage() {
     const local = getFlashcardStepCounts(content.topicId, content.subtopicId, part.id);
     if (!local) return;
 
-    const st = stepsStore.byGroup[wordGroupId];
-    const serverSum = (st?.step1.known ?? 0) + (st?.step1.unknown ?? 0);
+    const serverSum =
+      (serverStepsState?.step1.known ?? 0) + (serverStepsState?.step1.unknown ?? 0);
     if (serverSum > 0) return;
     if (step1BackfillFailedGroupIdsRef.current.has(wordGroupId)) return;
 
     let cancelled = false;
     void (async () => {
       try {
-        await stepsStore.submitStep1(token, wordGroupId, local.known, local.unknown);
+        await submitStep1(token, wordGroupId, local.known, local.unknown);
         if (cancelled) return;
         await refetchTasks();
-        await stepsStore.fetchSteps(token, wordGroupId);
+        await fetchSteps(token, wordGroupId);
       } catch (e) {
         step1BackfillFailedGroupIdsRef.current.add(wordGroupId);
         console.error('[vocabulary] backfill step1 failed', e);
@@ -116,9 +119,11 @@ export default function VocabularyPartPage() {
     content?.topicId,
     content?.subtopicId,
     part?.id,
-    stepsStore,
-    effectiveStepsState?.step1.known,
-    effectiveStepsState?.step1.unknown,
+    serverStepsState?.step1.known,
+    serverStepsState?.step1.unknown,
+    submitStep1,
+    refetchTasks,
+    fetchSteps,
   ]);
 
   const testQuestions = useMemo(
@@ -208,9 +213,9 @@ export default function VocabularyPartPage() {
         void (async () => {
           try {
             setStep1SaveError(null);
-            await stepsStore.submitStep1(token, wordGroupId, knownCount, unknownCount);
+            await submitStep1(token, wordGroupId, knownCount, unknownCount);
             await refetchTasks();
-            await stepsStore.fetchSteps(token, wordGroupId);
+            await fetchSteps(token, wordGroupId);
             if (content?.subtopicId) {
               try {
                 sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
@@ -239,7 +244,9 @@ export default function VocabularyPartPage() {
     knownCount,
     unknownCount,
     step1Submitted,
-    stepsStore,
+    submitStep1,
+    refetchTasks,
+    fetchSteps,
   ]);
 
   useEffect(() => {
@@ -254,7 +261,7 @@ export default function VocabularyPartPage() {
       if (token && wordGroupId != null) {
         void (async () => {
           try {
-            await stepsStore.submitStep2(
+            await submitStep2(
               token,
               wordGroupId,
               testCorrect,
@@ -295,7 +302,8 @@ export default function VocabularyPartPage() {
     wordGroupId,
     testCorrect,
     step2Submitted,
-    stepsStore,
+    submitStep2,
+    refetchTasks,
   ]);
 
   useEffect(() => {
