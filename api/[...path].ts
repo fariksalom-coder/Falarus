@@ -1,8 +1,8 @@
 /**
  * Single catch-all handler for the public and authenticated Vercel API.
  * Keeps serverless function count under Vercel Hobby limit (12).
- * Vocabulary is also handled by `api/vocabulary/[[...slug]].ts` (explicit route) so production
- * always matches `/api/vocabulary/*`; this catch-all covers the rest of `/api/*`.
+ * Vocabulary is handled under `api/vocabulary/` (`index`, `[...slug]`, `word-groups/[subtopicId]`, …);
+ * this file covers the rest of `/api/*`.
  */
 import './_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';

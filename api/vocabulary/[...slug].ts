@@ -1,6 +1,6 @@
 /**
- * Explicit /api/vocabulary/* handler so Vercel always routes vocabulary here.
- * Root-only api/[...path].ts sometimes does not match in production (NOT_FOUND).
+ * /api/vocabulary/* catch-all (required slug). Use with index.ts for /api/vocabulary root.
+ * Replaces optional [[...slug]] — better Vercel matching on production.
  */
 import '../_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -50,8 +50,7 @@ function getVocabularySegments(req: VercelRequest): string[] {
   const fromSlug = segmentsFromVercelSlug(req);
   const fromQueryPath = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
   const fromPath = segmentsFromPathname(req);
-  const best =
-    fromSlug.length >= fromPath.length ? fromSlug : fromPath;
+  const best = fromSlug.length >= fromPath.length ? fromSlug : fromPath;
   return best.length >= fromQueryPath.length ? best : fromQueryPath;
 }
 
