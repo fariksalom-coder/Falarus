@@ -1,6 +1,8 @@
 /**
  * Single catch-all handler for the public and authenticated Vercel API.
  * Keeps serverless function count under Vercel Hobby limit (12).
+ * Vocabulary lives here only: a nested `api/vocabulary/[...path]` caused Vercel to route
+ * `/api/vocabulary/*` to a separate function; if that bundle is missing, requests return NOT_FOUND.
  */
 import './_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
