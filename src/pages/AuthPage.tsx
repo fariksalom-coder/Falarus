@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
 import { motion } from 'motion/react';
-import { BookOpen, UserPlus, LogIn } from 'lucide-react';
+import { UserPlus, LogIn } from 'lucide-react';
+import { FalaRusLogoMark } from '../components/FalaRusLogoMark';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
@@ -71,9 +72,7 @@ export default function AuthPage() {
         className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8"
       >
         <div className="flex justify-center mb-8">
-          <div className="bg-indigo-600 p-3 rounded-xl">
-            <BookOpen className="w-8 h-8 text-white" />
-          </div>
+          <FalaRusLogoMark size={48} className="shadow-md ring-1 ring-slate-200/80" />
         </div>
         
         <h2 className="text-2xl font-bold text-center text-slate-900 mb-2">

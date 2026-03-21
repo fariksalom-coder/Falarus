@@ -9,7 +9,7 @@
   "rewrites": [
     { "source": "/api/activity/streak", "destination": "/api/streak" },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/)(?!icons/)(?!lesson-19/)(?!assets/)(?!.*\\..*$).*)",
       "destination": "/index.html"
     }
   ]

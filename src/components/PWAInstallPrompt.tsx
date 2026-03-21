@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FalaRusLogoMark } from './FalaRusLogoMark';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -47,6 +48,7 @@ export default function PWAInstallPrompt() {
 
   return (
     <div className="fixed bottom-20 left-4 right-4 z-40 mx-auto max-w-md rounded-2xl bg-slate-800 text-white shadow-lg p-4 flex items-center gap-3">
+      <FalaRusLogoMark size={44} className="ring-2 ring-white/20" />
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm">Falarus ilovasini o‘rnating</p>
         <p className="text-slate-300 text-xs mt-0.5">Uy ekraniga qo‘shing va tezroq oching</p>
