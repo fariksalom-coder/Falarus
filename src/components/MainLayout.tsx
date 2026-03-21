@@ -20,7 +20,7 @@ export default function MainLayout() {
   return (
     <>
       {showNavBar && <AppNavBar />}
-      <div className={showNavBar ? 'min-h-screen pt-14' : 'min-h-screen'}>
+      <div className={showNavBar ? 'min-h-screen pt-[78px]' : 'min-h-screen'}>
         <Outlet />
       </div>
       {showNavBar && <PWAInstallPrompt />}

@@ -35,6 +35,7 @@ import {
   getDailyPoints,
   getWeekStartDateString,
   getWeeklyPoints,
+  isMissingLeaderboardColumnError,
 } from '../shared/leaderboardPeriods.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
@@ -452,7 +453,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .gt('points', 0)
           .order('points', { ascending: false })
           .limit(100);
-        if (topErr) throw topErr;
+        if (topErr && !isMissingLeaderboardColumnError(topErr, 'points_date')) throw topErr;
+        if (topErr && isMissingLeaderboardColumnError(topErr, 'points_date')) {
+          const { data: legacyTop, error: legacyTopErr } = await supabase
+            .from('users')
+            .select('id, first_name, last_name, avatar_url, points')
+            .gt('points', 0)
+            .order('points', { ascending: false })
+            .limit(100);
+          if (legacyTopErr) throw legacyTopErr;
+          const { data: legacyMe, error: legacyMeErr } = await supabase
+            .from('users')
+            .select('id, first_name, last_name, avatar_url, points')
+            .eq('id', userId)
+            .single();
+          if (legacyMeErr || !legacyMe) return res.status(200).json({ top: legacyTop ?? [], myRank: null });
+          const myPoints = legacyMe.points ?? 0;
+          const { count, error: legacyCountErr } = await supabase
+            .from('users')
+            .select('id', { count: 'exact', head: true })
+            .gt('points', myPoints);
+          const rank = legacyCountErr ? null : (count ?? 0) + 1;
+          return res.status(200).json({
+            top: (legacyTop ?? []).map((u: any) => ({
+              id: u.id,
+              firstName: u.first_name,
+              lastName: u.last_name,
+              avatarUrl: u.avatar_url,
+              points: u.points ?? 0,
+            })),
+            myRank:
+              rank == null
+                ? null
+                : {
+                    rank,
+                    id: legacyMe.id,
+                    firstName: legacyMe.first_name,
+                    lastName: legacyMe.last_name,
+                    avatarUrl: legacyMe.avatar_url,
+                    points: myPoints,
+                  },
+          });
+        }
         const { data: me, error: meErr } = await supabase
           .from('users')
           .select('id, first_name, last_name, avatar_url, points, points_date')
@@ -495,7 +537,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .gt('weekly_points', 0)
         .order('weekly_points', { ascending: false })
         .limit(100);
-      if (topErr) throw topErr;
+      if (topErr && !isMissingLeaderboardColumnError(topErr, 'weekly_points_week_start')) throw topErr;
+      if (topErr && isMissingLeaderboardColumnError(topErr, 'weekly_points_week_start')) {
+        const { data: legacyTop, error: legacyTopErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, weekly_points')
+          .gt('weekly_points', 0)
+          .order('weekly_points', { ascending: false })
+          .limit(100);
+        if (legacyTopErr) throw legacyTopErr;
+        const { data: legacyMe, error: legacyMeErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, weekly_points')
+          .eq('id', userId)
+          .single();
+        if (legacyMeErr || !legacyMe) return res.status(200).json({ top: legacyTop ?? [], myRank: null });
+        const myPoints = legacyMe.weekly_points ?? 0;
+        const { count, error: legacyCountErr } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .gt('weekly_points', myPoints);
+        const rank = legacyCountErr ? null : (count ?? 0) + 1;
+        return res.status(200).json({
+          top: (legacyTop ?? []).map((u: any) => ({
+            id: u.id,
+            firstName: u.first_name,
+            lastName: u.last_name,
+            avatarUrl: u.avatar_url,
+            points: u.weekly_points ?? 0,
+          })),
+          myRank:
+            rank == null
+              ? null
+              : {
+                  rank,
+                  id: legacyMe.id,
+                  firstName: legacyMe.first_name,
+                  lastName: legacyMe.last_name,
+                  avatarUrl: legacyMe.avatar_url,
+                  points: myPoints,
+                },
+        });
+      }
       const { data: me, error: meErr } = await supabase
         .from('users')
         .select('id, first_name, last_name, avatar_url, weekly_points, weekly_points_week_start')

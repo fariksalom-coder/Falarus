@@ -94,10 +94,6 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem]" style={{ color: TEXT }}>
             Darslar
           </h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-[15px]">
-            Har bir topshiriqda kamida 70% natija kerak. Darslar ketma-ket ochiladi, o‘ng tomonda esa
-            topshiriqlarning o‘rtacha natijasi ko‘rinadi.
-          </p>
         </div>
 
         {token && !dataReady && (
@@ -132,10 +128,10 @@ export default function Dashboard() {
               const subtitle = lesson.titleRu ?? lesson.title;
               const footerText =
                 state === 'completed'
-                  ? `O‘rtacha natija: ${averagePercent ?? 0}%`
+                  ? ''
                   : state === 'current'
                     ? averagePercent != null
-                      ? `${summary.passedTasks}/${lesson.exercisesTotal} topshiriq • o‘rtacha ${averagePercent}%`
+                      ? `${summary.passedTasks}/${lesson.exercisesTotal} topshiriq bajarildi`
                       : `1-bosqichdan davom eting`
                     : lockedBySub
                       ? 'Tarif orqali ochiladi'
@@ -176,7 +172,9 @@ export default function Dashboard() {
                       {lesson.num}. {title}
                     </p>
                     <p className={`mt-1 truncate text-sm sm:text-base ${styles.subtitleClassName}`}>{subtitle}</p>
-                    <p className={`mt-3 text-xs font-medium sm:text-sm ${styles.metaClassName}`}>{footerText}</p>
+                    {footerText ? (
+                      <p className={`mt-3 text-xs font-medium sm:text-sm ${styles.metaClassName}`}>{footerText}</p>
+                    ) : null}
                   </div>
 
                   {averagePercent != null && state !== 'locked' ? (

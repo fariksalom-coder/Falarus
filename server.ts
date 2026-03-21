@@ -28,6 +28,7 @@ import {
   getDailyPoints,
   getWeekStartDateString,
   getWeeklyPoints,
+  isMissingLeaderboardColumnError,
 } from './shared/leaderboardPeriods.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -478,9 +479,52 @@ async function startServer() {
         .gt('points', 0)
         .order('points', { ascending: false })
         .limit(100);
-      if (topErr) {
+      if (topErr && !isMissingLeaderboardColumnError(topErr, 'points_date')) {
         console.error('[api/leaderboard] top error:', topErr.message);
         return res.status(500).json({ error: topErr.message });
+      }
+      if (topErr && isMissingLeaderboardColumnError(topErr, 'points_date')) {
+        const { data: legacyTop, error: legacyTopErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, points')
+          .gt('points', 0)
+          .order('points', { ascending: false })
+          .limit(100);
+        if (legacyTopErr) {
+          console.error('[api/leaderboard] top error:', legacyTopErr.message);
+          return res.status(500).json({ error: legacyTopErr.message });
+        }
+        const { data: legacyMe, error: legacyMeErr } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, avatar_url, points')
+          .eq('id', req.userId)
+          .single();
+        if (legacyMeErr || !legacyMe) {
+          return res.json({ top: legacyTop ?? [], myRank: null });
+        }
+        const myPoints = legacyMe.points ?? 0;
+        const { count, error: legacyCountErr } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .gt('points', myPoints);
+        const rank = legacyCountErr ? null : (count ?? 0) + 1;
+        return res.json({
+          top: (legacyTop ?? []).map((u: any) => ({
+            id: u.id,
+            firstName: u.first_name,
+            lastName: u.last_name,
+            avatarUrl: u.avatar_url,
+            points: u.points ?? 0,
+          })),
+          myRank: rank == null ? null : {
+            rank,
+            id: legacyMe.id,
+            firstName: legacyMe.first_name,
+            lastName: legacyMe.last_name,
+            avatarUrl: legacyMe.avatar_url,
+            points: myPoints,
+          },
+        });
       }
       const { data: me, error: meErr } = await supabase
         .from('users')
@@ -523,9 +567,52 @@ async function startServer() {
       .gt('weekly_points', 0)
       .order('weekly_points', { ascending: false })
       .limit(100);
-    if (topErr) {
+    if (topErr && !isMissingLeaderboardColumnError(topErr, 'weekly_points_week_start')) {
       console.error('[api/leaderboard] top error:', topErr.message);
       return res.status(500).json({ error: topErr.message });
+    }
+    if (topErr && isMissingLeaderboardColumnError(topErr, 'weekly_points_week_start')) {
+      const { data: legacyTop, error: legacyTopErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, avatar_url, weekly_points')
+        .gt('weekly_points', 0)
+        .order('weekly_points', { ascending: false })
+        .limit(100);
+      if (legacyTopErr) {
+        console.error('[api/leaderboard] top error:', legacyTopErr.message);
+        return res.status(500).json({ error: legacyTopErr.message });
+      }
+      const { data: legacyMe, error: legacyMeErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, avatar_url, weekly_points')
+        .eq('id', req.userId)
+        .single();
+      if (legacyMeErr || !legacyMe) {
+        return res.json({ top: legacyTop ?? [], myRank: null });
+      }
+      const myPoints = legacyMe.weekly_points ?? 0;
+      const { count, error: legacyCountErr } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .gt('weekly_points', myPoints);
+      const rank = legacyCountErr ? null : (count ?? 0) + 1;
+      return res.json({
+        top: (legacyTop ?? []).map((u: any) => ({
+          id: u.id,
+          firstName: u.first_name,
+          lastName: u.last_name,
+          avatarUrl: u.avatar_url,
+          points: u.weekly_points ?? 0,
+        })),
+        myRank: rank == null ? null : {
+          rank,
+          id: legacyMe.id,
+          firstName: legacyMe.first_name,
+          lastName: legacyMe.last_name,
+          avatarUrl: legacyMe.avatar_url,
+          points: myPoints,
+        },
+      });
     }
     const { data: me, error: meErr } = await supabase
       .from('users')

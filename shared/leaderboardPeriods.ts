@@ -61,3 +61,12 @@ export function buildPeriodicPointsUpdate(
     total_points: Number(row.total_points ?? 0) + delta,
   };
 }
+
+export function isMissingLeaderboardColumnError(
+  error: { message?: string | null; details?: string | null; hint?: string | null } | null | undefined,
+  columnName: string
+): boolean {
+  const haystack = `${error?.message ?? ''} ${error?.details ?? ''} ${error?.hint ?? ''}`.toLowerCase();
+  const needle = columnName.toLowerCase();
+  return haystack.includes(needle) && (haystack.includes('column') || haystack.includes('schema cache'));
+}
