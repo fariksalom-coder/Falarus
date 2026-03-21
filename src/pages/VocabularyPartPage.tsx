@@ -61,6 +61,7 @@ export default function VocabularyPartPage() {
     submitStep1,
     submitStep2,
     refetchTasks,
+    isInitialLoading,
   } = useVocabularyWordGroup({
     token,
     resolvedSubtopicId: resolvedId ?? null,
@@ -595,19 +596,41 @@ export default function VocabularyPartPage() {
         </button>
 
         {!isExerciseScreen ? (
-          <VocabularyTaskList
-            partTitle={part.title}
-            learnedWords={blockVm.learnedWords}
-            totalWords={blockVm.totalWords}
-            step1Completed={blockVm.step1Completed}
-            step1KnownDisplay={blockVm.step1Known}
-            step1UnknownDisplay={blockVm.step1Unknown}
-            stepsState={effectiveStepsState}
-            step3Completed={blockVm.step3Completed}
-            onOpenStep1={() => navigate(`${partUrl}/cards`)}
-            onOpenStep2={() => navigate(`${partUrl}/test`)}
-            onOpenStep3={() => navigate(`${partUrl}/pairs`)}
-          />
+          isInitialLoading && !blockVm.hasServerSnapshot ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-7 w-48 rounded-xl bg-slate-200" />
+              <div className="h-5 w-72 rounded-lg bg-slate-200" />
+              <div className="h-2.5 w-full rounded-full bg-slate-200" />
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm">
+                <div className="mb-3 h-4 w-24 rounded bg-slate-200" />
+                <div className="space-y-3">
+                  <div className="h-24 rounded-2xl bg-white" />
+                  <div className="h-28 rounded-2xl bg-white" />
+                  <div className="h-20 rounded-2xl bg-white" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <VocabularyTaskList
+              partTitle={part.title}
+              learnedWords={blockVm.learnedWords}
+              totalWords={blockVm.totalWords}
+              hasServerSnapshot={blockVm.hasServerSnapshot}
+              step1Completed={blockVm.step1Completed}
+              step1KnownDisplay={blockVm.step1Known}
+              step1UnknownDisplay={blockVm.step1Unknown}
+              step2Completed={blockVm.step2Completed}
+              step2Passed={blockVm.step2Passed}
+              step2CorrectDisplay={blockVm.step2Correct}
+              step2IncorrectDisplay={blockVm.step2Incorrect}
+              step2PercentageDisplay={blockVm.step2Percentage}
+              step3Unlocked={blockVm.step3Unlocked}
+              step3Completed={blockVm.step3Completed}
+              onOpenStep1={() => navigate(`${partUrl}/cards`)}
+              onOpenStep2={() => navigate(`${partUrl}/test`)}
+              onOpenStep3={() => navigate(`${partUrl}/pairs`)}
+            />
+          )
         ) : null}
 
         {mode === 'cards' ? (

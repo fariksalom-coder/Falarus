@@ -1,18 +1,22 @@
 import { Layers, ClipboardList, Puzzle } from 'lucide-react';
 import { StepCard, type StepStatus } from './ThreeStepLearning/StepCard';
 import { VocabularyProgressBar } from './VocabularyProgressBar';
-import type { WordGroupStepsState } from '../../api/vocabulary';
-
 const HINT_80 = 'Keyingi bosqich ochilishi uchun kamida 80% to‘g‘ri javob kerak';
 
 export type VocabularyTaskListProps = {
   partTitle: string;
   learnedWords: number;
   totalWords: number;
+  hasServerSnapshot: boolean;
   step1Completed: boolean;
   step1KnownDisplay: number;
   step1UnknownDisplay: number;
-  stepsState: WordGroupStepsState | undefined;
+  step2Completed: boolean;
+  step2Passed: boolean;
+  step2CorrectDisplay: number;
+  step2IncorrectDisplay: number;
+  step2PercentageDisplay: number;
+  step3Unlocked: boolean;
   step3Completed: boolean;
   onOpenStep1: () => void;
   onOpenStep2: () => void;
@@ -23,19 +27,21 @@ export function VocabularyTaskList({
   partTitle,
   learnedWords,
   totalWords,
+  hasServerSnapshot,
   step1Completed,
   step1KnownDisplay,
   step1UnknownDisplay,
-  stepsState,
+  step2Completed,
+  step2Passed,
+  step2CorrectDisplay,
+  step2IncorrectDisplay,
+  step2PercentageDisplay,
+  step3Unlocked,
   step3Completed,
   onOpenStep1,
   onOpenStep2,
   onOpenStep3,
 }: VocabularyTaskListProps) {
-  const step2Completed = stepsState?.step2.completed ?? false;
-  const step2Passed = stepsState?.step2.passed ?? false;
-  const step3Unlocked = stepsState?.step3.unlocked ?? false;
-
   const step2Status: StepStatus = !step1Completed
     ? 'locked'
     : !step2Completed
@@ -56,7 +62,7 @@ export function VocabularyTaskList({
       <p className="mb-2 text-sm text-slate-600">
         O‘rganilgan so‘zlar (2-bosqich — test natijasi):{' '}
         <span className="font-semibold text-slate-900">
-          {learnedWords} / {totalWords}
+          {hasServerSnapshot ? `${learnedWords} / ${totalWords}` : 'Yuklanmoqda...'}
         </span>
       </p>
       <VocabularyProgressBar learned={learnedWords} total={totalWords} className="mb-6" />
@@ -121,7 +127,7 @@ export function VocabularyTaskList({
                     }}
                   >
                     <span>🟢</span>
-                    To‘g‘ri: {stepsState?.step2.correct ?? 0}
+                    To‘g‘ri: {step2CorrectDisplay}
                   </div>
                   <div
                     className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold"
@@ -132,7 +138,7 @@ export function VocabularyTaskList({
                     }}
                   >
                     <span>🔴</span>
-                    Noto‘g‘ri: {stepsState?.step2.incorrect ?? 0}
+                    Noto‘g‘ri: {step2IncorrectDisplay}
                   </div>
                   <div
                     className="rounded-full border px-3 py-1 text-sm font-semibold"
@@ -142,7 +148,7 @@ export function VocabularyTaskList({
                       color: step2Passed ? '#166534' : '#B91C1C',
                     }}
                   >
-                    Foiz: {Math.round(stepsState?.step2.percentage ?? 0)}%
+                    Foiz: {Math.round(step2PercentageDisplay)}%
                   </div>
                 </div>
               ) : null

@@ -6,6 +6,7 @@ import {
   getCachedTasksStatus,
   setCachedWordGroupsProgress,
   setCachedTasksStatus,
+  type VocabularyWordGroup,
   type VocabularyTasksStatus,
 } from '../../../api/vocabulary';
 import { useVocabularyStepsStore } from '../../../state/vocabularyStepsStore';
@@ -17,6 +18,26 @@ type Params = {
   resolvedSubtopicId: string | null;
   partId: string | undefined;
 };
+
+function deriveTasksStatusFromWordGroup(group: VocabularyWordGroup): VocabularyTasksStatus {
+  const flashcardsCompleted =
+    group.flashcards_completed ||
+    group.test_best_correct > 0 ||
+    group.match_completed ||
+    group.learned_words > 0;
+  const testCompleted =
+    group.test_best_correct > 0 || group.match_completed || group.learned_words > 0;
+
+  return {
+    flashcards_status: flashcardsCompleted ? 'completed' : 'not_started',
+    test_status: !flashcardsCompleted ? 'locked' : testCompleted ? 'completed' : 'not_started',
+    match_status: group.match_completed ? 'completed' : 'locked',
+    learned_words: group.learned_words,
+    total_words: group.total_words,
+    test_best_correct: group.test_best_correct,
+    match_unlocked: group.match_completed,
+  };
+}
 
 /**
  * Загрузка word_group_id, статусов заданий и шагов с бэкенда для экрана блока.
@@ -40,11 +61,17 @@ export function useVocabularyWordGroup({
     const cached = getCachedWordGroupsProgress(resolvedSubtopicId);
     const group = cached?.find((g) => g.part_id === partId);
     if (group?.id == null) return null;
-    return getCachedTasksStatus(group.id);
+    return getCachedTasksStatus(group.id) ?? deriveTasksStatusFromWordGroup(group);
   });
   const [cachedStepsState, setCachedStepsState] = useState<WordGroupStepsState | undefined>(
     undefined
   );
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(() => {
+    if (!token || !resolvedSubtopicId || !partId) return false;
+    const cachedGroups = getCachedWordGroupsProgress(resolvedSubtopicId);
+    const group = cachedGroups?.find((item) => item.part_id === partId);
+    return !group;
+  });
 
   const serverStepsState = useVocabularyStepsStore((state) =>
     wordGroupId != null ? state.byGroup[wordGroupId] : undefined
@@ -77,61 +104,69 @@ export function useVocabularyWordGroup({
   }, [token, wordGroupId]);
 
   useEffect(() => {
-    if (!token || !resolvedSubtopicId || !partId) return;
+    if (!token || !resolvedSubtopicId || !partId) {
+      setIsInitialLoading(false);
+      return;
+    }
+    const cachedGroups = getCachedWordGroupsProgress(resolvedSubtopicId);
+    const cachedGroup = cachedGroups?.find((g) => g.part_id === partId);
+    setIsInitialLoading(!cachedGroup);
     setWordGroupId((prev) => {
-      const cached = getCachedWordGroupsProgress(resolvedSubtopicId);
-      const group = cached?.find((g) => g.part_id === partId);
-      return group?.id ?? prev ?? null;
+      return cachedGroup?.id ?? prev ?? null;
     });
     setTasksStatus((prev) => {
-      const cached = getCachedWordGroupsProgress(resolvedSubtopicId);
-      const group = cached?.find((g) => g.part_id === partId);
-      if (group?.id != null) {
-        const cachedStatus = getCachedTasksStatus(group.id);
+      if (cachedGroup?.id != null) {
+        const cachedStatus = getCachedTasksStatus(cachedGroup.id);
         if (cachedStatus) return cachedStatus;
+        return deriveTasksStatusFromWordGroup(cachedGroup);
       }
       return prev;
     });
     let cancelled = false;
     (async () => {
-      const groups = await fetchVocabularyWordGroups(token, resolvedSubtopicId);
-      if (cancelled) return;
-      setCachedWordGroupsProgress(resolvedSubtopicId, groups);
-      const group = groups.find((g) => g.part_id === partId);
-      if (group) {
-        setWordGroupId(group.id);
-        const cachedStatus = getCachedTasksStatus(group.id);
-        if (cachedStatus) {
-          setTasksStatus(cachedStatus);
-        }
-        const [status] = await Promise.all([
-          fetchVocabularyTasksStatus(token, group.id),
-          token ? fetchSteps(token, group.id) : Promise.resolve(),
-        ]);
+      try {
+        const groups = await fetchVocabularyWordGroups(token, resolvedSubtopicId);
         if (cancelled) return;
-        if (status) {
-          setTasksStatus(status);
-          setCachedTasksStatus(group.id, status);
+        setCachedWordGroupsProgress(resolvedSubtopicId, groups);
+        const group = groups.find((g) => g.part_id === partId);
+        if (group) {
+          setWordGroupId(group.id);
+          const cachedStatus = getCachedTasksStatus(group.id);
+          if (cachedStatus) {
+            setTasksStatus(cachedStatus);
+          } else {
+            const derived = deriveTasksStatusFromWordGroup(group);
+            setTasksStatus(derived);
+            setCachedTasksStatus(group.id, derived);
+          }
+          const [status] = await Promise.all([
+            fetchVocabularyTasksStatus(token, group.id),
+            token ? fetchSteps(token, group.id) : Promise.resolve(),
+          ]);
+          if (cancelled) return;
+          if (status) {
+            setTasksStatus(status);
+            setCachedTasksStatus(group.id, status);
+          } else {
+            setTasksStatus(deriveTasksStatusFromWordGroup(group));
+          }
         } else {
+          setWordGroupId(null);
           setTasksStatus(null);
           try {
-            sessionStorage.removeItem(`vocab_tasks_${group.id}`);
+            setCachedWordGroupsProgress(resolvedSubtopicId, []);
+          } catch {
+            /* ignore */
+          }
+          try {
+            sessionStorage.removeItem(`vocab_word_groups_${resolvedSubtopicId}`);
           } catch {
             /* ignore */
           }
         }
-      } else {
-        setWordGroupId(null);
-        setTasksStatus(null);
-        try {
-          setCachedWordGroupsProgress(resolvedSubtopicId, []);
-        } catch {
-          /* ignore */
-        }
-        try {
-          sessionStorage.removeItem(`vocab_word_groups_${resolvedSubtopicId}`);
-        } catch {
-          /* ignore */
+      } finally {
+        if (!cancelled) {
+          setIsInitialLoading(false);
         }
       }
     })();
@@ -149,5 +184,6 @@ export function useVocabularyWordGroup({
     submitStep1,
     submitStep2,
     refetchTasks,
+    isInitialLoading,
   };
 }

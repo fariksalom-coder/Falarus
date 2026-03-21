@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { fetchVocabularyDailyWordStats, fetchVocabularyProgress } from '../api/vocabularyProgress';
+import {
+  fetchVocabularyDailyWordStats,
+  getCachedVocabularyDailyWordStats,
+} from '../api/vocabularyProgress';
 import {
   fetchVocabularyTopics,
   getCachedTopicsProgress,
@@ -9,9 +12,8 @@ import {
 } from '../api/vocabulary';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getTopicWordCount } from '../data/vocabularyContent';
-import { getVocabularyStats } from '../utils/statsHelpers';
 import { getTotalLessonTaskStats } from '../utils/lessonTaskResults';
-import { fetchStreak } from '../api/activity';
+import { fetchStreak, getCachedStreak, type StreakResponse } from '../api/activity';
 import {
   Flame,
   MessageCircle,
@@ -25,6 +27,10 @@ const BORDER = '#E2E8F0';
 const PRIMARY = '#6366F1';
 const TEXT = '#0F172A';
 const TEXT_SECONDARY = '#64748B';
+const EMPTY_STREAK: StreakResponse = {
+  streak_days: 0,
+  last_7_days: [false, false, false, false, false, false, false],
+};
 
 // JS Date.getDay(): 0=Sunday .. 6=Saturday
 const DAY_LABEL_BY_WEEKDAY: Record<number, string> = {
@@ -42,47 +48,77 @@ export default function StatistikaPage() {
   const [topicsProgress, setTopicsProgress] = useState<VocabularyTopic[]>(() =>
     getCachedTopicsProgress() ?? []
   );
-
-  useEffect(() => {
-    fetchVocabularyProgress(token);
-  }, [token]);
+  const [topicsLoaded, setTopicsLoaded] = useState<boolean>(() => getCachedTopicsProgress() != null);
 
   useEffect(() => {
     if (!token) {
       setTopicsProgress([]);
+      setTopicsLoaded(true);
       return;
+    }
+    const cached = getCachedTopicsProgress();
+    if (cached) {
+      setTopicsProgress(cached);
+      setTopicsLoaded(true);
+    } else {
+      setTopicsLoaded(false);
     }
     fetchVocabularyTopics(token).then((data) => {
       setTopicsProgress(data);
       setCachedTopicsProgress(data);
+      setTopicsLoaded(true);
     });
   }, [token]);
 
-  const [streak, setStreak] = useState<{ streak_days: number; last_7_days: boolean[] }>({
-    streak_days: 0,
-    last_7_days: [false, false, false, false, false, false, false],
-  });
+  const [streak, setStreak] = useState<StreakResponse>(() => getCachedStreak() ?? EMPTY_STREAK);
+  const [streakLoaded, setStreakLoaded] = useState<boolean>(() => getCachedStreak() != null);
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setStreak(EMPTY_STREAK);
+      setStreakLoaded(true);
+      return;
+    }
+    const cached = getCachedStreak();
+    if (cached) {
+      setStreak(cached);
+      setStreakLoaded(true);
+    } else {
+      setStreakLoaded(false);
+    }
     fetchStreak(token).then((data) => {
-      if (data) setStreak({ streak_days: data.streak_days, last_7_days: data.last_7_days });
+      if (data) {
+        setStreak({ streak_days: data.streak_days, last_7_days: data.last_7_days });
+      }
+      setStreakLoaded(true);
     });
   }, [token]);
+  const totalLearnedFromApi = useMemo(() => {
+    if (!topicsLoaded) return null;
+    return topicsProgress.reduce((s, t) => s + t.learned_words, 0);
+  }, [topicsLoaded, topicsProgress]);
 
-  const vocabStats = useMemo(() => getVocabularyStats(), []);
-  const totalLearnedFromApi = useMemo(
-    () => topicsProgress.reduce((s, t) => s + t.learned_words, 0),
-    [topicsProgress]
+  const [dailyStats, setDailyStats] = useState<{ todayWords: number; weekWords: number } | null>(
+    () => getCachedVocabularyDailyWordStats()
   );
-
-  const [dailyStats, setDailyStats] = useState<{ todayWords: number; weekWords: number }>({
-    todayWords: 0,
-    weekWords: 0,
-  });
+  const [dailyStatsLoaded, setDailyStatsLoaded] = useState<boolean>(
+    () => getCachedVocabularyDailyWordStats() != null
+  );
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setDailyStats({ todayWords: 0, weekWords: 0 });
+      setDailyStatsLoaded(true);
+      return;
+    }
+    const cached = getCachedVocabularyDailyWordStats();
+    if (cached) {
+      setDailyStats(cached);
+      setDailyStatsLoaded(true);
+    } else {
+      setDailyStatsLoaded(false);
+    }
     fetchVocabularyDailyWordStats(token).then((data) => {
       if (data) setDailyStats({ todayWords: data.todayWords, weekWords: data.weekWords });
+      setDailyStatsLoaded(true);
     });
   }, [token]);
 
@@ -92,12 +128,13 @@ export default function StatistikaPage() {
     : 0;
   const wrongCount = lessonStats.total - lessonStats.correct;
 
-  const { todayWords, weekWords } = dailyStats;
+  const todayWords = dailyStats?.todayWords ?? 0;
+  const weekWords = dailyStats?.weekWords ?? 0;
 
   const achievements = [
     { done: lessonStats.total > 0, text: "Birinchi dars tugatildi" },
     { done: streak.streak_days >= 7, text: '7 kun ketma-ket' },
-    { done: totalLearnedFromApi >= 100, text: "100 ta so'z o'rganildi" },
+    { done: (totalLearnedFromApi ?? 0) >= 100, text: "100 ta so'z o'rganildi" },
   ].filter((a) => a.done);
 
   // `streak.last_7_days` is ordered as: [day-6, day-5, ..., today]
@@ -142,7 +179,9 @@ export default function StatistikaPage() {
               </div>
               <div>
                 <h2 className="font-semibold" style={{ color: TEXT }}>Ketma-ket kunlar</h2>
-                <p className="text-2xl font-bold" style={{ color: PRIMARY }}>{streak.streak_days} kun</p>
+                <p className="text-2xl font-bold" style={{ color: PRIMARY }}>
+                  {streakLoaded ? `${streak.streak_days} kun` : 'Yuklanmoqda...'}
+                </p>
               </div>
             </div>
             <div className="mt-4 flex justify-between gap-1">
@@ -190,15 +229,21 @@ export default function StatistikaPage() {
             </div>
             <div className="mt-4 grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>{todayWords}</p>
+                <p className="text-2xl font-bold" style={{ color: TEXT }}>
+                  {dailyStatsLoaded ? todayWords : '—'}
+                </p>
                 <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Bugun</p>
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>{weekWords}</p>
+                <p className="text-2xl font-bold" style={{ color: TEXT }}>
+                  {dailyStatsLoaded ? weekWords : '—'}
+                </p>
                 <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Bu hafta</p>
               </div>
               <div>
-                <p className="text-2xl font-bold" style={{ color: TEXT }}>{totalLearnedFromApi}</p>
+                <p className="text-2xl font-bold" style={{ color: TEXT }}>
+                  {topicsLoaded ? totalLearnedFromApi ?? 0 : '—'}
+                </p>
                 <p className="text-xs" style={{ color: TEXT_SECONDARY }}>Jami</p>
               </div>
             </div>
@@ -268,17 +313,20 @@ export default function StatistikaPage() {
                     </p>
                     <div className="flex justify-between text-sm mt-0.5">
                       <span className="font-semibold" style={{ color: TEXT }}>{topic.title}</span>
-                      <span style={{ color: TEXT_SECONDARY }}>{learned} / {total} so&apos;z</span>
+                      <span style={{ color: TEXT_SECONDARY }}>
+                        {topicsLoaded ? `${learned} / ${total} so'z` : 'Yuklanmoqda...'}
+                      </span>
                     </div>
                     <p className="mt-0.5 text-xs" style={{ color: TEXT_SECONDARY }}>
-                      {pct}% o&apos;rganildi
+                      {topicsLoaded ? `${pct}% o'rganildi` : 'Server ma’lumotlari yuklanmoqda'}
                     </p>
                     <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
-                          width: `${Math.max(pct, 2)}%`,
+                          width: topicsLoaded ? `${Math.max(pct, 2)}%` : '24%',
                           backgroundColor: pct >= 50 ? '#14b8a6' : pct >= 20 ? '#f59e0b' : '#94a3b8',
+                          opacity: topicsLoaded ? 1 : 0.35,
                         }}
                       />
                     </div>

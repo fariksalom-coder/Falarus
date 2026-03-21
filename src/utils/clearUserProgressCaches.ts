@@ -15,6 +15,8 @@ function clearSessionStorageCaches(): void {
     for (const key of keys) {
       if (
         key === 'vocab_topics_progress' ||
+        key === 'vocab_daily_word_stats' ||
+        key === 'activity_streak' ||
         key === 'vocab_access' ||
         key === 'lessons_list' ||
         key.startsWith('vocab_subtopics_') ||

@@ -1,6 +1,35 @@
 import { apiUrl } from '../api';
 import { applyServerProgress, type ServerProgressItem } from '../utils/vocabProgress';
 
+const CACHE_DAILY_WORD_STATS = 'vocab_daily_word_stats';
+
+export function getCachedVocabularyDailyWordStats():
+  | { todayWords: number; weekWords: number }
+  | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_DAILY_WORD_STATS);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { todayWords?: unknown; weekWords?: unknown };
+    return {
+      todayWords: typeof data.todayWords === 'number' ? data.todayWords : 0,
+      weekWords: typeof data.weekWords === 'number' ? data.weekWords : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function setCachedVocabularyDailyWordStats(data: {
+  todayWords: number;
+  weekWords: number;
+}): void {
+  try {
+    sessionStorage.setItem(CACHE_DAILY_WORD_STATS, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+}
+
 /** Legacy: server no longer stores `vocabulary_progress`; GET returns []. Kept for older builds. */
 export async function fetchVocabularyProgress(token: string | null): Promise<void> {
   if (!token) return;
@@ -28,7 +57,9 @@ export async function fetchVocabularyDailyWordStats(
     const data = (await res.json()) as { todayWords?: unknown; weekWords?: unknown };
     const todayWords = typeof data.todayWords === 'number' ? data.todayWords : 0;
     const weekWords = typeof data.weekWords === 'number' ? data.weekWords : 0;
-    return { todayWords, weekWords };
+    const normalized = { todayWords, weekWords };
+    setCachedVocabularyDailyWordStats(normalized);
+    return normalized;
   } catch {
     return null;
   }

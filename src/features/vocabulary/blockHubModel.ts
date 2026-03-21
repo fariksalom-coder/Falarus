@@ -5,6 +5,7 @@ export type BlockHubViewModel = {
   /** Шапка: выучено слов по результатам теста (API). */
   learnedWords: number;
   totalWords: number;
+  hasServerSnapshot: boolean;
   step1Completed: boolean;
   step1Known: number;
   step1Unknown: number;
@@ -51,6 +52,7 @@ export function buildBlockHubViewModel(input: {
   } = input;
 
   const totalWords = tasksStatus?.total_words ?? partEntryCount;
+  const hasServerSnapshot = tasksStatus != null || steps != null;
 
   /**
    * «О‘рганилган» в шапке = данные теста с сервера (`tasksStatus`).
@@ -90,17 +92,31 @@ export function buildBlockHubViewModel(input: {
         ? serverUnknown1
         : (flashLocal?.unknown ?? 0);
 
-  const step2Completed = steps?.step2.completed ?? false;
-  const step2Passed = steps?.step2.passed ?? false;
-  const step2Correct = steps?.step2.correct ?? 0;
-  const step2Incorrect = steps?.step2.incorrect ?? 0;
-  const step2Percentage = steps?.step2.percentage ?? 0;
-  const step3Unlocked = steps?.step3.unlocked ?? false;
+  const derivedCorrect = tasksStatus?.learned_words ?? 0;
+  const derivedTotal = tasksStatus?.total_words ?? partEntryCount;
+  const derivedIncorrect = Math.max(0, derivedTotal - derivedCorrect);
+  const derivedPercentage =
+    derivedTotal > 0 ? Math.round((derivedCorrect / derivedTotal) * 100) : 0;
+
+  const step2Completed =
+    steps?.step2.completed ?? tasksStatus?.test_status === 'completed';
+  const step2Passed =
+    steps?.step2.passed ??
+    tasksStatus?.match_unlocked ??
+    tasksStatus?.match_status === 'completed';
+  const step2Correct = steps?.step2.correct ?? derivedCorrect;
+  const step2Incorrect = steps?.step2.incorrect ?? derivedIncorrect;
+  const step2Percentage = steps?.step2.percentage ?? derivedPercentage;
+  const step3Unlocked =
+    steps?.step3.unlocked ??
+    tasksStatus?.match_unlocked ??
+    tasksStatus?.match_status === 'completed';
   const step3Completed = tasksStatus?.match_status === 'completed';
 
   return {
     learnedWords,
     totalWords,
+    hasServerSnapshot,
     step1Completed: safeStep1Completed,
     step1Known,
     step1Unknown,
