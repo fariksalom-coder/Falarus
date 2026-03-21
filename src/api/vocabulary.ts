@@ -108,12 +108,26 @@ export async function fetchVocabularyWordGroups(
   subtopicSlug: string
 ): Promise<VocabularyWordGroup[]> {
   if (!token) return [];
-  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${subtopicSlug}`), {
+  const encoded = encodeURIComponent(subtopicSlug);
+  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${encoded}`), {
     headers: authHeaders(token),
   });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
+  const text = await res.text();
+  if (!res.ok) {
+    try {
+      const body = JSON.parse(text) as Record<string, unknown>;
+      console.error('[fetchVocabularyWordGroups]', res.status, body);
+    } catch {
+      console.error('[fetchVocabularyWordGroups]', res.status, text.slice(0, 500));
+    }
+    return [];
+  }
+  try {
+    const data = JSON.parse(text) as unknown;
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchVocabularyTasksStatus(

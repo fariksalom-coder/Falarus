@@ -8,11 +8,20 @@ import {
 } from './accessControl.js';
 import { formatDateInAppTimezone, getRecentAppDateStrings } from './appDate.js';
 import { awardUserPoints } from './awardUserPoints.js';
-import { buildRequestLogContext, logError } from './logger.js';
+import { buildRequestLogContext, logError, logInfo } from './logger.js';
 import { calculateCappedMatchPoints, calculateImprovementDelta } from './scoring.js';
 import { getAccessInfo } from './subscription.js';
 
 export { slugifyVocabularyTitle } from './slugifyVocabularyTitle.js';
+
+function normalizeVocabularySubtopicParam(raw: string): string {
+  if (typeof raw !== 'string') return '';
+  try {
+    return decodeURIComponent(raw).trim();
+  } catch {
+    return raw.trim();
+  }
+}
 
 async function handleVocabularyRootGet(userId: number, res: VercelResponse) {
   // Legacy root vocabulary table (`vocabulary`) might be deleted.
@@ -162,7 +171,10 @@ async function getSubtopicsByTopic(topicId: string) {
 /**
  * Resolve a path segment to a subtopic row. Tries `slug` first, then legacy `id` (same string as before migration).
  */
-async function resolveVocabularySubtopicFromPathParam(subtopicSlug: string) {
+async function resolveVocabularySubtopicFromPathParam(rawParam: string) {
+  const subtopicSlug = normalizeVocabularySubtopicParam(rawParam);
+  if (!subtopicSlug) return null;
+
   const { data: bySlug, error: slugErr } = await supabase
     .from('vocabulary_subtopics')
     .select('id, topic_id')
@@ -710,14 +722,33 @@ async function handleWordGroups(
   subtopicSlug: string,
   res: VercelResponse
 ) {
+  const normalized = normalizeVocabularySubtopicParam(subtopicSlug);
   let subtopic: { id: string; topic_id: string } | null;
   try {
     subtopic = await resolveVocabularySubtopicFromPathParam(subtopicSlug);
-  } catch {
-    return res.status(500).json({ error: 'Xatolik yuz berdi' });
+  } catch (e) {
+    logError('vocabulary.word_groups.resolve_subtopic', e, {
+      rawParam: subtopicSlug,
+      normalized,
+    });
+    return res.status(500).json({
+      error: 'Xatolik yuz berdi',
+      code: 'SUBTOPIC_QUERY_FAILED',
+      hint: 'Check Vercel logs / Supabase: column slug missing or DB error.',
+    });
   }
   if (!subtopic) {
-    return res.status(404).json({ error: 'Subtopic not found' });
+    logInfo('vocabulary.word_groups.subtopic_not_found', {
+      rawParam: subtopicSlug,
+      normalized,
+    });
+    return res.status(404).json({
+      error: 'Subtopic not found',
+      code: 'SUBTOPIC_NOT_FOUND',
+      param: normalized || subtopicSlug,
+      hint:
+        'No vocabulary_subtopics row with this slug or id. Apply migration 025, run npm run seed:vocabulary, and confirm SUPABASE_* env on Vercel matches the project that has data.',
+    });
   }
 
   const subtopicId = subtopic.id;

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { apiUrl } from '../api';
+import { clearUserProgressCaches } from '../utils/clearUserProgressCaches';
 
 interface User {
   id: number;
@@ -37,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .then((res) => {
           if (res.ok) return res.json().then((data) => setUser(data));
           if (res.status === 401) {
+            clearUserProgressCaches();
             localStorage.removeItem('token');
             setToken(null);
             return;
@@ -51,12 +53,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   const login = (newToken: string, newUser: User) => {
+    clearUserProgressCaches();
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setUser(newUser);
   };
 
   const logout = () => {
+    clearUserProgressCaches();
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);

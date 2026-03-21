@@ -55,11 +55,23 @@ export async function getSubtopicsByTopic(supabase: Supabase, topicId: string) {
   return (data ?? []) as { id: string; topic_id: string; title: string; slug: string }[];
 }
 
+export function normalizeVocabularySubtopicParam(raw: string): string {
+  if (typeof raw !== 'string') return '';
+  try {
+    return decodeURIComponent(raw).trim();
+  } catch {
+    return raw.trim();
+  }
+}
+
 /** Path param may be `slug` or legacy subtopic `id`. */
 export async function resolveSubtopicFromPathParam(
   supabase: Supabase,
-  subtopicSlug: string
+  rawParam: string
 ): Promise<{ id: string; topic_id: string } | null> {
+  const subtopicSlug = normalizeVocabularySubtopicParam(rawParam);
+  if (!subtopicSlug) return null;
+
   const { data: bySlug, error: slugErr } = await supabase
     .from('vocabulary_subtopics')
     .select('id, topic_id')

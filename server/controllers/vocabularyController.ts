@@ -122,7 +122,14 @@ export function getWordGroups(supabase: Supabase) {
       try {
         const resolved = await repo.resolveSubtopicFromPathParam(supabase, subtopicSlug);
         if (!resolved) {
-          return res.status(404).json({ error: 'Subtopic not found' });
+          const normalized = repo.normalizeVocabularySubtopicParam(subtopicSlug);
+          return res.status(404).json({
+            error: 'Subtopic not found',
+            code: 'SUBTOPIC_NOT_FOUND',
+            param: normalized || subtopicSlug,
+            hint:
+              'No vocabulary_subtopics row for this slug/id — seed DB or check Supabase project linked to this server.',
+          });
         }
         subtopic = resolved;
       } catch (e) {
