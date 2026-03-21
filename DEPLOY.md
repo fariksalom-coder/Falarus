@@ -47,7 +47,7 @@
 В проекте есть папка **`api/`** — это Vercel Serverless Functions. Словарь на Vercel разбит так, чтобы прод не отдавал `404` на вложенных путях:
 
 - **`api/vocabulary/index.ts`** — `GET/POST /api/vocabulary`
-- **`api/vocabulary/word-groups/[subtopicId].ts`** — `GET /api/vocabulary/word-groups/:subtopicId` (slug подтемы)
+- **`api/vocabulary/word-groups/[...segments].ts`** — всё под `/word-groups/*` (список по подтеме, `…/steps`, `…/steps/1|2` POST)
 - **`api/vocabulary/tasks/[wordGroupId].ts`** — `GET /api/vocabulary/tasks/:id`
 - **`api/vocabulary/[...slug].ts`** — остальной `/api/vocabulary/*` (topics, subtopics, steps, progress, …)
 
