@@ -44,16 +44,9 @@
 
 ## 1. Запуск сайта на Vercel (фронтенд + API)
 
-В проекте есть папка **`api/`** — это Vercel Serverless Functions. Словарь на Vercel разбит так, чтобы прод не отдавал `404` на вложенных путях:
+В проекте есть папка **`api/`** — это Vercel Serverless Functions. На **Vercel Hobby** лимит **12 функций** на деплой: отдельные файлы под `vocabulary/`, `streak`, `admin/payments/...` убраны — всё это обрабатывает **`api/[...path].ts`** (в т.ч. весь **`/api/vocabulary/*`** через `routeVocabularyRequest`). Отдельно остаются только **`api/auth/[...path].ts`**, **`api/admin/[...path].ts`**, **`api/lessons/[...path].ts`**, **`api/user/[...path].ts`** — итого **5** функций, запас под лимит.
 
-- **`api/vocabulary/index.ts`** — `GET/POST /api/vocabulary`
-- **`api/vocabulary/word-groups/[id]/index.ts`** — `GET .../word-groups/:subtopicId`
-- **`api/vocabulary/word-groups/[id]/steps/index.ts`** — `GET .../word-groups/:wordGroupId/steps`
-- **`api/vocabulary/word-groups/[id]/steps/[step].ts`** — `POST .../word-groups/:wordGroupId/steps/1|2`
-- **`api/vocabulary/tasks/[wordGroupId].ts`** — `GET /api/vocabulary/tasks/:id`
-- **`api/vocabulary/[...slug].ts`** — остальной `/api/vocabulary/*` (topics, subtopics, steps, progress, …)
-
-Остальные `/api/*` обрабатывает **`api/[...path].ts`**. В **`vercel.json`** SPA: **`/((?!api/).*) → /index.html`** (без этого POST на `/api/*` уходит в `index.html` → **405**).
+В **`vercel.json`**: редирект **`/api/activity/streak` → `/api/streak`**; в **`[...path].ts`** обрабатываются и **`/api/streak`**, и **`/api/activity/streak`**. SPA: **`/((?!api/).*) → /index.html`** (без исключения `/api/` POST уходит в `index.html` → **405**).
 
 1. [vercel.com](https://vercel.com) → **Add New** → **Project** → репозиторий `fariksalom-coder/Falarus`.
 2. **Build Command:** `npm run build`, **Output Directory:** `dist`.

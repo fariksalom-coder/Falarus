@@ -1,8 +1,8 @@
 /**
  * Single catch-all handler for the public and authenticated Vercel API.
  * Keeps serverless function count under Vercel Hobby limit (12).
- * Vocabulary is handled under `api/vocabulary/` (`index`, `[...slug]`, `word-groups/[subtopicId]`, …);
- * this file covers the rest of `/api/*`.
+ * All `/api/vocabulary/*` is routed here (Hobby 12-function limit — no separate `api/vocabulary/` functions).
+ * This file covers the rest of `/api/*`.
  */
 import './_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -409,16 +409,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // /api/activity/streak (primary: api/streak.ts + vercel rewrite)
-  if (path[0] === 'activity' && path[1] === 'streak') {
-    const userId = requireAuth(req, res);
-    if (userId == null) return;
-    try {
-      const payload = await getActivityStreakPayload(supabase, userId);
-      return res.status(200).json(payload);
-    } catch (e) {
-      console.error('[api/activity/streak]', e instanceof Error ? e.message : e);
-      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+  // /api/streak (vercel.json rewrites /api/activity/streak → here) and /api/activity/streak
+  if (req.method === 'GET') {
+    const isStreak =
+      (path[0] === 'streak' && path.length === 1) ||
+      (path[0] === 'activity' && path[1] === 'streak');
+    if (isStreak) {
+      const userId = requireAuth(req, res);
+      if (userId == null) return;
+      try {
+        const payload = await getActivityStreakPayload(supabase, userId);
+        return res.status(200).json(payload);
+      } catch (e) {
+        console.error('[api/streak]', e instanceof Error ? e.message : e);
+        return res.status(500).json({ error: 'Xatolik yuz berdi' });
+      }
     }
   }
 
