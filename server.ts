@@ -563,10 +563,16 @@ async function startServer() {
   });
 
   app.post('/api/lessons/:id/complete', authenticate, async (req: any, res) => {
-    await supabase.from('user_progress').upsert(
-      { user_id: req.userId, lesson_id: Number(req.params.id), completed: 1 },
-      { onConflict: 'user_id,lesson_id' }
-    );
+    try {
+      await lessonProgressSnapshotService.recordFullLessonPassInTaskResults(
+        supabase,
+        Number(req.userId),
+        Number(req.params.id)
+      );
+    } catch (e) {
+      console.error('[lessons/complete] lesson_task_results', e);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
     const progress = await lessonProgressSnapshotService.syncUserLessonProgressPercent(
       supabase,
       Number(req.userId)

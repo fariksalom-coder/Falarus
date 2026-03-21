@@ -91,46 +91,44 @@ export async function getUserCompletedLessonPaths(
   supabase: SupabaseClient,
   userId: number
 ): Promise<Set<string>> {
-  const [taskRowsResult, legacyRowsResult] = await Promise.allSettled([
-    supabase
-      .from('lesson_task_results')
-      .select('lesson_path, task_number, correct, total')
-      .eq('user_id', userId),
-    supabase
-      .from('user_progress')
-      .select('lesson_id, completed')
-      .eq('user_id', userId),
-  ]);
+  const { data, error } = await supabase
+    .from('lesson_task_results')
+    .select('lesson_path, task_number, correct, total')
+    .eq('user_id', userId);
+  if (error) throw error;
+  const taskRows = (data ?? []) as LessonTaskResultRow[];
+  return getCompletedLessonPathsFromTaskRows(taskRows);
+}
 
-  const taskRows =
-    taskRowsResult.status === 'fulfilled' && !taskRowsResult.value.error
-      ? ((taskRowsResult.value.data ?? []) as LessonTaskResultRow[])
-      : [];
-  const legacyRows =
-    legacyRowsResult.status === 'fulfilled' && !legacyRowsResult.value.error
-      ? ((legacyRowsResult.value.data ?? []) as LegacyLessonProgressRow[])
-      : [];
-
-  if (
-    taskRowsResult.status === 'rejected' &&
-    legacyRowsResult.status === 'rejected'
-  ) {
-    throw taskRowsResult.reason;
+/**
+ * Mark every task in a lesson as passed (1/1) in lesson_task_results.
+ * Used when the client finishes the lesson flow via POST .../lessons/:id/complete
+ * (replaces removed user_progress row).
+ */
+export async function recordFullLessonPassInTaskResults(
+  supabase: SupabaseClient,
+  userId: number,
+  lessonId: number
+): Promise<void> {
+  const meta = LESSONS.find((l) => l.id === lessonId);
+  if (!meta) throw new Error('Lesson not found');
+  const lessonPath = meta.path;
+  const n = Math.max(0, Number(meta.exercisesTotal ?? 0));
+  const now = new Date().toISOString();
+  for (let taskNumber = 1; taskNumber <= n; taskNumber += 1) {
+    const { error } = await supabase.from('lesson_task_results').upsert(
+      {
+        user_id: userId,
+        lesson_path: lessonPath,
+        task_number: taskNumber,
+        correct: 1,
+        total: 1,
+        updated_at: now,
+      },
+      { onConflict: 'user_id,lesson_path,task_number' }
+    );
+    if (error) throw error;
   }
-
-  if (
-    taskRowsResult.status === 'fulfilled' &&
-    taskRowsResult.value.error &&
-    legacyRowsResult.status === 'fulfilled' &&
-    legacyRowsResult.value.error
-  ) {
-    throw taskRowsResult.value.error;
-  }
-
-  return mergeCompletedLessonPathSets(
-    getCompletedLessonPathsFromTaskRows(taskRows),
-    getCompletedLessonPathsFromLegacyRows(legacyRows)
-  );
 }
 
 export async function getUserCompletedLessonsCount(

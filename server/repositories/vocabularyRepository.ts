@@ -95,46 +95,138 @@ export async function getTopicIdBySubtopicId(supabase: Supabase, subtopicId: str
   return (data as { topic_id: string }).topic_id;
 }
 
-// ---- User progress (read from cache tables) ----
+// ---- User progress (aggregated from vocabulary_word_groups + user_word_group_progress) ----
+
+type VocabWordGroupRow = {
+  id: number;
+  subtopic_id: string;
+  total_words: number;
+};
+
+async function loadVocabularyWordGroupProgressIndex(supabase: Supabase, userId: number) {
+  const { data: groups, error: gErr } = await supabase
+    .from('vocabulary_word_groups')
+    .select('id, subtopic_id, total_words');
+  if (gErr) throw gErr;
+  const groupList = (groups ?? []) as VocabWordGroupRow[];
+  if (groupList.length === 0) {
+    return {
+      groups: groupList,
+      progressByWg: new Map<
+        number,
+        { learned_words: number; total_words: number }
+      >(),
+      subtopicToTopic: new Map<string, string>(),
+    };
+  }
+  const subtopicIds = [...new Set(groupList.map((g) => g.subtopic_id))];
+  const { data: subtopics, error: sErr } = await supabase
+    .from('vocabulary_subtopics')
+    .select('id, topic_id')
+    .in('id', subtopicIds);
+  if (sErr) throw sErr;
+  const subtopicToTopic = new Map(
+    (subtopics ?? []).map((s: { id: string; topic_id: string }) => [s.id, s.topic_id])
+  );
+  const wgIds = groupList.map((g) => g.id);
+  const { data: prog, error: pErr } = await supabase
+    .from('user_word_group_progress')
+    .select('word_group_id, learned_words, total_words')
+    .eq('user_id', userId)
+    .in('word_group_id', wgIds);
+  if (pErr) throw pErr;
+  const progressByWg = new Map<
+    number,
+    { learned_words: number; total_words: number }
+  >();
+  for (const r of prog ?? []) {
+    const row = r as {
+      word_group_id: number;
+      learned_words: number;
+      total_words: number;
+    };
+    progressByWg.set(Number(row.word_group_id), {
+      learned_words: Number(row.learned_words ?? 0),
+      total_words: Number(row.total_words ?? 0),
+    });
+  }
+  return { groups: groupList, progressByWg, subtopicToTopic };
+}
+
+function accumulateVocabularyProgress(
+  groups: VocabWordGroupRow[],
+  progressByWg: Map<number, { learned_words: number; total_words: number }>,
+  subtopicToTopic: Map<string, string>
+) {
+  const topicAgg = new Map<string, { lw: number; tw: number }>();
+  const subtopicAgg = new Map<string, { lw: number; tw: number }>();
+  for (const g of groups) {
+    const row = progressByWg.get(g.id);
+    const lw = Number(row?.learned_words ?? 0);
+    const tw = Math.max(
+      Number(row?.total_words ?? 0),
+      Number(g.total_words ?? 0)
+    );
+    const sa = subtopicAgg.get(g.subtopic_id) ?? { lw: 0, tw: 0 };
+    sa.lw += lw;
+    sa.tw += tw;
+    subtopicAgg.set(g.subtopic_id, sa);
+    const topicId = subtopicToTopic.get(g.subtopic_id);
+    if (topicId) {
+      const ta = topicAgg.get(topicId) ?? { lw: 0, tw: 0 };
+      ta.lw += lw;
+      ta.tw += tw;
+      topicAgg.set(topicId, ta);
+    }
+  }
+  return { topicAgg, subtopicAgg };
+}
 
 export async function getUserTopicProgress(supabase: Supabase, userId: number) {
-  const { data, error } = await supabase
-    .from('user_topic_progress')
-    .select('topic_id, learned_words, total_words, progress_percent, updated_at')
-    .eq('user_id', userId);
-  if (error) throw error;
-  return (data ?? []) as { topic_id: string; learned_words: number; total_words: number; progress_percent: number; updated_at: string }[];
-}
-
-export async function getUserSubtopicProgressForTopic(supabase: Supabase, userId: number, topicId: string) {
-  const { data, error } = await supabase
-    .from('user_subtopic_progress')
-    .select('subtopic_id, learned_words, total_words, progress_percent, updated_at')
-    .eq('user_id', userId)
-    .eq('subtopic_id', topicId);
-  const subtopics = await getSubtopicsByTopic(supabase, topicId);
-  const subtopicIds = new Set(subtopics.map((s) => s.id));
-  const bySubtopic = (data ?? []).reduce(
-    (acc, row) => {
-      acc[row.subtopic_id] = row as any;
-      return acc;
-    },
-    {} as Record<string, { subtopic_id: string; learned_words: number; total_words: number; progress_percent: number; updated_at: string }>
+  const { groups, progressByWg, subtopicToTopic } =
+    await loadVocabularyWordGroupProgressIndex(supabase, userId);
+  const { topicAgg } = accumulateVocabularyProgress(
+    groups,
+    progressByWg,
+    subtopicToTopic
   );
-  return subtopicIds;
+  const now = new Date().toISOString();
+  return [...topicAgg.entries()].map(([topic_id, { lw, tw }]) => ({
+    topic_id,
+    learned_words: lw,
+    total_words: tw,
+    progress_percent: tw > 0 ? (lw / tw) * 100 : 0,
+    updated_at: now,
+  }));
 }
 
-export async function getUserSubtopicProgress(supabase: Supabase, userId: number, topicId: string) {
+export async function getUserSubtopicProgress(
+  supabase: Supabase,
+  userId: number,
+  topicId: string
+) {
   const subtopics = await getSubtopicsByTopic(supabase, topicId);
   if (subtopics.length === 0) return [];
-  const ids = subtopics.map((s) => s.id);
-  const { data, error } = await supabase
-    .from('user_subtopic_progress')
-    .select('subtopic_id, learned_words, total_words, progress_percent, updated_at')
-    .eq('user_id', userId)
-    .in('subtopic_id', ids);
-  if (error) throw error;
-  return (data ?? []) as { subtopic_id: string; learned_words: number; total_words: number; progress_percent: number; updated_at: string }[];
+  const { groups, progressByWg, subtopicToTopic } =
+    await loadVocabularyWordGroupProgressIndex(supabase, userId);
+  const { subtopicAgg } = accumulateVocabularyProgress(
+    groups,
+    progressByWg,
+    subtopicToTopic
+  );
+  const now = new Date().toISOString();
+  return subtopics.map((s) => {
+    const a = subtopicAgg.get(s.id) ?? { lw: 0, tw: 0 };
+    const tw = a.tw;
+    const lw = a.lw;
+    return {
+      subtopic_id: s.id,
+      learned_words: lw,
+      total_words: tw,
+      progress_percent: tw > 0 ? (lw / tw) * 100 : 0,
+      updated_at: now,
+    };
+  });
 }
 
 export async function getUserWordGroupProgress(supabase: Supabase, userId: number, subtopicId: string) {
@@ -280,50 +372,6 @@ export async function getTopicProgressRows(
     results.push(...rows);
   }
   return results;
-}
-
-export async function upsertUserSubtopicProgress(
-  supabase: Supabase,
-  userId: number,
-  subtopicId: string,
-  learnedWords: number,
-  totalWords: number,
-  progressPercent: number
-) {
-  const { error } = await supabase.from('user_subtopic_progress').upsert(
-    {
-      user_id: userId,
-      subtopic_id: subtopicId,
-      learned_words: learnedWords,
-      total_words: totalWords,
-      progress_percent: progressPercent,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,subtopic_id' }
-  );
-  if (error) throw error;
-}
-
-export async function upsertUserTopicProgress(
-  supabase: Supabase,
-  userId: number,
-  topicId: string,
-  learnedWords: number,
-  totalWords: number,
-  progressPercent: number
-) {
-  const { error } = await supabase.from('user_topic_progress').upsert(
-    {
-      user_id: userId,
-      topic_id: topicId,
-      learned_words: learnedWords,
-      total_words: totalWords,
-      progress_percent: progressPercent,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,topic_id' }
-  );
-  if (error) throw error;
 }
 
 export async function insertUserVocabularyStep2Attempt(

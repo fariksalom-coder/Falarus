@@ -1,6 +1,7 @@
 import { apiUrl } from '../api';
 import { applyServerProgress, type ServerProgressItem } from '../utils/vocabProgress';
 
+/** Legacy: server no longer stores `vocabulary_progress`; GET returns []. Kept for older builds. */
 export async function fetchVocabularyProgress(token: string | null): Promise<void> {
   if (!token) return;
   try {
@@ -33,6 +34,7 @@ export async function fetchVocabularyDailyWordStats(
   }
 }
 
+/** Legacy no-op on server (table removed). Prefer vocabulary task/step APIs. */
 export async function saveVocabularyPartProgress(
   token: string | null,
   topicId: string,

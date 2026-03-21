@@ -11,7 +11,7 @@
 
 1. Зайдите на [supabase.com](https://supabase.com), создайте аккаунт и **New Project**.
 2. Укажите имя, пароль БД, регион. Дождитесь создания проекта.
-3. В проекте: **SQL Editor** → **New query**. Скопируйте содержимое файла **`supabase/migrations/001_initial.sql`** и выполните запрос (Run). Так создадутся таблицы `users`, `lessons`, `exercises`, `vocabulary`, `user_progress`.
+3. В проекте: **SQL Editor** → **New query**. Скопируйте содержимое файла **`supabase/migrations/001_initial.sql`** и выполните запрос (Run). Далее применяйте миграции по порядку (в т.ч. `024_remove_legacy_progress_tables.sql`): прогресс уроков — в `lesson_task_results`, словарь — в `user_word_group_progress`.
 4. **Settings** → **API**: скопируйте:
    - **Project URL** → это `SUPABASE_URL`
    - **service_role** (ключ под "Project API keys") → это `SUPABASE_SERVICE_ROLE_KEY` (держите в секрете).
@@ -38,7 +38,7 @@
    ```
    или `npx supabase db push`.
 
-Либо выполните SQL из `supabase/migrations/002_vocabulary_progress.sql` вручную в **SQL Editor** в дашборде Supabase.
+Таблица `vocabulary_progress` больше не используется (см. `023_remove_vocabulary_progress.sql`); прогресс словаря — в `user_word_group_progress` и связанных таблицах.
 
 ---
 

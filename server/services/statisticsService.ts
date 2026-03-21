@@ -2,8 +2,6 @@ import type { Supabase } from '../types/progress';
 import { getUserCompletedLessonsCount } from './lessonProgressSnapshot.service.js';
 
 const USERS = 'users';
-const USER_TASKS = 'user_tasks';
-const USER_LESSONS = 'user_lessons';
 
 export type UserStatistics = {
   total_points: number;
@@ -13,7 +11,8 @@ export type UserStatistics = {
 };
 
 /**
- * Get user statistics: total_points, tasks_completed, lessons_completed, average_accuracy.
+ * User statistics. `tasks_completed` / average accuracy use lesson_task_results
+ * (legacy user_tasks / task_plan removed).
  */
 export async function getUserStatistics(
   supabase: Supabase,
@@ -33,31 +32,32 @@ export async function getUserStatistics(
     };
   }
 
-  const { count: tasksCompleted, error: tasksErr } = await supabase
-    .from(USER_TASKS)
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'PASSED');
-  if (tasksErr) throw tasksErr;
-
   const lessonsCompleted = await getUserCompletedLessonsCount(supabase as any, userId);
 
   const { data: taskRows, error: taskRowsErr } = await supabase
-    .from(USER_TASKS)
-    .select('percentage, total_questions')
+    .from('lesson_task_results')
+    .select('correct, total')
     .eq('user_id', userId)
-    .gt('total_questions', 0);
+    .gt('total', 0);
   if (taskRowsErr) throw taskRowsErr;
 
+  const rows = taskRows ?? [];
+  const passedRows = rows.filter(
+    (r) => Number(r.total) > 0 && Number(r.correct) / Number(r.total) >= 0.8
+  );
+
   let averageAccuracy = 0;
-  if (taskRows && taskRows.length > 0) {
-    const sum = taskRows.reduce((acc, r) => acc + (r.percentage ?? 0), 0);
-    averageAccuracy = Math.round((sum / taskRows.length) * 100) / 100;
+  if (rows.length > 0) {
+    const sum = rows.reduce(
+      (acc, r) => acc + (Number(r.correct) / Number(r.total)) * 100,
+      0
+    );
+    averageAccuracy = Math.round((sum / rows.length) * 100) / 100;
   }
 
   return {
     total_points: user.total_points ?? 0,
-    tasks_completed: tasksCompleted ?? 0,
+    tasks_completed: passedRows.length,
     lessons_completed: lessonsCompleted,
     average_accuracy: averageAccuracy,
   };

@@ -36,7 +36,6 @@ const supabase = createClient(url, key, {
 
 const checks = [
   { label: 'users', table: 'users', select: 'id,progress,total_points' },
-  { label: 'user_progress', table: 'user_progress', select: 'user_id,lesson_id,completed' },
   {
     label: 'lesson_task_results',
     table: 'lesson_task_results',
@@ -58,16 +57,6 @@ const checks = [
     table: 'user_word_group_progress',
     select:
       'user_id,word_group_id,learned_words,total_words,flashcards_known,flashcards_unknown,test_last_correct,test_last_incorrect,test_last_percentage,test_passed,test_best_correct,match_completed,progress_percent',
-  },
-  {
-    label: 'user_subtopic_progress',
-    table: 'user_subtopic_progress',
-    select: 'user_id,subtopic_id,learned_words,total_words,progress_percent',
-  },
-  {
-    label: 'user_topic_progress',
-    table: 'user_topic_progress',
-    select: 'user_id,topic_id,learned_words,total_words,progress_percent',
   },
   {
     label: 'user_vocabulary_step2_attempts',

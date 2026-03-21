@@ -1,6 +1,5 @@
 import type { Supabase } from '../types/vocabulary';
 import * as repo from '../repositories/vocabularyRepository.js';
-import * as progressCache from './progressCache.service.js';
 import { calculateImprovementDelta } from './scoringRules.service.js';
 
 const MATCH_UNLOCK_PERCENT = 80;
@@ -51,16 +50,6 @@ export async function finishTest(
     test_passed: previousPassed || percentage >= MATCH_UNLOCK_PERCENT,
     progress_percent: group.total_words > 0 ? (newLearned / group.total_words) * 100 : 0,
   });
-
-  await progressCache.updateSubtopicProgress(supabase, userId, group.subtopic_id);
-  const subtopicRow = await supabase
-    .from('vocabulary_subtopics')
-    .select('topic_id')
-    .eq('id', group.subtopic_id)
-    .single();
-  if (subtopicRow?.data?.topic_id) {
-    await progressCache.updateTopicProgress(supabase, userId, subtopicRow.data.topic_id);
-  }
 
   const pointsAwarded = calculateImprovementDelta(previousBestCorrect, testBestCorrect);
   if (pointsAwarded > 0) {

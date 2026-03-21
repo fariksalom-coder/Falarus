@@ -8,7 +8,10 @@ import {
   canAccessLesson,
   getLessonPreview,
 } from './accessControl.js';
-import { syncUserLessonProgressPercent } from './lessonProgress.js';
+import {
+  recordFullLessonPassInTaskResults,
+  syncUserLessonProgressPercent,
+} from './lessonProgress.js';
 import { buildRequestLogContext, logError } from './logger.js';
 
 type CourseLessonExercise = {
@@ -106,11 +109,10 @@ async function handleCompleteLesson(
       .json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
   }
 
-  const { error: upsertError } = await supabase.from('user_progress').upsert(
-    { user_id: userId, lesson_id: lessonId, completed: 1 },
-    { onConflict: 'user_id,lesson_id' }
-  );
-  if (upsertError) {
+  try {
+    await recordFullLessonPassInTaskResults(supabase, userId, lessonId);
+  } catch (e) {
+    console.error('[lessons/complete] lesson_task_results', e);
     return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
 

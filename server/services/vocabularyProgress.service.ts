@@ -2,7 +2,6 @@ import type { Supabase } from '../types/vocabulary';
 import type { VocabularyTasksStatus } from '../types/vocabulary';
 import type { AccessInfo } from './subscription.service';
 import * as repo from '../repositories/vocabularyRepository.js';
-import * as progressCache from './progressCache.service.js';
 import { formatDateInAppTimezone } from '../lib/appDate.js';
 import { calculateImprovementDelta } from './scoringRules.service.js';
 
@@ -266,15 +265,6 @@ export async function saveStep2Result(
     total_words: totalWordsForProgress,
     progress_percent: learnedProgressPercent,
   });
-
-  // Update progress_percent + aggregated subtopic/topic progress.
-  await progressCache.updateWordGroupProgress(
-    supabase,
-    userId,
-    wordGroupId,
-    learnedWords,
-    totalWordsForProgress
-  );
 
   const rowFinal = await repo.getProgressRowForWordGroup(supabase, userId, wordGroupId);
   return mapProgressRowToStepsState(rowFinal, totalWordsForProgress);
