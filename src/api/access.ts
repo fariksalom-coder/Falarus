@@ -106,7 +106,8 @@ export async function getSubtopicPreview(
   token: string | null,
   subtopicId: string
 ): Promise<SubtopicPreview> {
-  const res = await fetch(apiUrl(`/api/vocabulary/subtopic/${subtopicId}/preview`), {
+  const q = encodeURIComponent(String(subtopicId).trim());
+  const res = await fetch(apiUrl(`/api/vocabulary/subtopic/preview?subtopic=${q}`), {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error('Preview yuklanmadi');

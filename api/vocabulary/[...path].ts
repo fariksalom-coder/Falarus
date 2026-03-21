@@ -22,7 +22,15 @@ function segmentsFromPathname(req: VercelRequest): string[] {
     return parts.slice(vocabIdx + 1);
   }
   // Nested serverless: pathname may be only /subtopics or /word-groups/... (no /api/vocabulary prefix).
-  const tail = ['topics', 'subtopics', 'word-groups', 'tasks', 'progress', 'daily-word-stats'];
+  const tail = [
+    'topics',
+    'subtopics',
+    'subtopic',
+    'word-groups',
+    'tasks',
+    'progress',
+    'daily-word-stats',
+  ];
   if (parts.length >= 1 && tail.includes(parts[0])) {
     return parts;
   }

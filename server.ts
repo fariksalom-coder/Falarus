@@ -532,6 +532,18 @@ async function startServer() {
     res.json(list);
   });
 
+  app.get('/api/lessons/preview', authenticate, async (req: any, res) => {
+    const raw = req.query.lesson_id ?? req.query.lessonId;
+    const s = Array.isArray(raw) ? raw[0] : raw;
+    const id = Number(typeof s === 'string' ? s.trim() : s);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ error: 'lesson_id query parameter required' });
+    }
+    const preview = await accessControlService.getLessonPreview(supabase, id);
+    if (!preview) return res.status(404).json({ error: 'Dars topilmadi' });
+    res.json(preview);
+  });
+
   app.get('/api/lessons/:id/preview', authenticate, async (req: any, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: 'Invalid lesson id' });

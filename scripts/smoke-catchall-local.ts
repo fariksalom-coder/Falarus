@@ -204,17 +204,14 @@ async function main() {
 
   const openSubtopic =
     subtopics.find((subtopic: any) => !subtopic.locked) ?? subtopics[0];
-  await requestApi(
-    'GET',
-    `/api/vocabulary/subtopic/${openSubtopic.id}/preview`,
-    token
-  );
-  const subtopicKey = encodeURIComponent(
-    String(openSubtopic.slug ?? openSubtopic.id)
-  );
+  const subtopicKey = String(openSubtopic.slug ?? openSubtopic.id);
+  await requestApi('GET', '/api/vocabulary/subtopic/preview', token, {
+    subtopic: subtopicKey,
+  });
+  const subtopicKeyEncoded = encodeURIComponent(subtopicKey);
   const wordGroups = await requestApi(
     'GET',
-    `/api/vocabulary/word-groups?subtopic=${subtopicKey}`,
+    `/api/vocabulary/word-groups?subtopic=${subtopicKeyEncoded}`,
     token
   );
   await requestApi('GET', '/api/vocabulary/progress', token);

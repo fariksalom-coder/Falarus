@@ -19,6 +19,7 @@
     "seed:admin": "tsx server/scripts/seedAdmin.ts",
     "test:catchall": "node --import tsx scripts/smoke-catchall-local.ts",
     "test:smoke": "node scripts/smoke-api.mjs",
+    "test:smoke:full": "cross-env SMOKE_INCLUDE_LESSONS=1 node scripts/smoke-api.mjs",
     "verify": "npm run lint && npm run test && npm run build"
   },
   "dependencies": {

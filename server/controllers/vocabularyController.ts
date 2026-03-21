@@ -96,17 +96,42 @@ export function getSubtopics(supabase: Supabase) {
   };
 }
 
+async function sendSubtopicPreviewJson(
+  supabase: Supabase,
+  param: string,
+  res: Response
+) {
+  const resolved = await repo.resolveSubtopicFromPathParam(supabase, param);
+  if (!resolved) return res.status(404).json({ error: 'Subtopic topilmadi' });
+  const preview = await accessControlService.getSubtopicPreview(supabase, resolved.id);
+  if (!preview) return res.status(404).json({ error: 'Subtopic topilmadi' });
+  res.json(preview);
+}
+
 export function getSubtopicPreview(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const param = req.params.subtopicId as string;
-      const resolved = await repo.resolveSubtopicFromPathParam(supabase, param);
-      if (!resolved) return res.status(404).json({ error: 'Subtopic topilmadi' });
-      const preview = await accessControlService.getSubtopicPreview(supabase, resolved.id);
-      if (!preview) return res.status(404).json({ error: 'Subtopic topilmadi' });
-      res.json(preview);
+      await sendSubtopicPreviewJson(supabase, req.params.subtopicId as string, res);
     } catch (e) {
       console.error('[vocabulary/getSubtopicPreview]', e);
+      res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  };
+}
+
+/** Query form avoids `/subtopic/:id/preview` depth issues on some hosts. */
+export function getSubtopicPreviewQuery(supabase: Supabase) {
+  return async (req: Request, res: Response) => {
+    try {
+      const raw = req.query.subtopic ?? req.query.subtopic_id;
+      const s = Array.isArray(raw) ? raw[0] : raw;
+      const param = typeof s === 'string' ? s.trim() : '';
+      if (!param) {
+        return res.status(400).json({ error: 'subtopic query parameter required' });
+      }
+      await sendSubtopicPreviewJson(supabase, param, res);
+    } catch (e) {
+      console.error('[vocabulary/getSubtopicPreviewQuery]', e);
       res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
   };

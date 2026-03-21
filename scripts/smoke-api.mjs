@@ -70,45 +70,17 @@ async function getToken() {
   return body.token;
 }
 
+const includeLessons =
+  env.SMOKE_INCLUDE_LESSONS === '1' || env.SMOKE_INCLUDE_LESSONS === 'true';
+
 try {
   const token = await getToken();
   const authHeaders = { Authorization: `Bearer ${token}` };
 
   const me = await requireOk('/api/user/me', { headers: authHeaders }, 'GET /api/user/me');
   const access = await requireOk('/api/user/access', { headers: authHeaders }, 'GET /api/user/access');
-  const lessons = await requireOk('/api/lessons', { headers: authHeaders }, 'GET /api/lessons');
 
-  if (Array.isArray(lessons) && lessons.length > 0) {
-    const firstLesson = lessons[0];
-    const firstId = Number(firstLesson.id);
-    if (!Number.isFinite(firstId)) {
-      throw new Error('GET /api/lessons returned invalid id');
-    }
-    await requireOk(
-      `/api/lessons/preview?lesson_id=${encodeURIComponent(String(firstId))}`,
-      { headers: authHeaders },
-      'GET /api/lessons/preview?lesson_id='
-    );
-    if (!firstLesson.locked) {
-      await requireOk(
-        `/api/lessons/${firstId}`,
-        { headers: authHeaders },
-        'GET /api/lessons/:id'
-      );
-    }
-
-    const lockedLesson = lessons.find((lesson) => lesson.locked);
-    if (lockedLesson) {
-      const lid = Number(lockedLesson.id);
-      if (Number.isFinite(lid)) {
-        await requireOk(
-          `/api/lessons/preview?lesson_id=${encodeURIComponent(String(lid))}`,
-          { headers: authHeaders },
-          'GET locked lesson preview (query)'
-        );
-      }
-    }
-  }
+  console.log('[smoke] vocabulary');
 
   const topics = await requireOk('/api/vocabulary/topics', { headers: authHeaders }, 'GET /api/vocabulary/topics');
   const topicId =
@@ -123,7 +95,7 @@ try {
   const subtopics = await requireOk(
     `/api/vocabulary/subtopics?topic=${encodeURIComponent(topicId)}`,
     { headers: authHeaders },
-    'GET /api/vocabulary/subtopics?topic='
+    `GET /api/vocabulary/subtopics?topic=${topicId}`
   );
 
   const openSubtopic =
@@ -134,17 +106,18 @@ try {
     throw new Error('No vocabulary subtopic available for smoke test');
   }
 
+  const subtopicKey = openSubtopic.slug ?? openSubtopic.id;
   await requireOk(
-    `/api/vocabulary/subtopic/${openSubtopic.id}/preview`,
+    `/api/vocabulary/subtopic/preview?subtopic=${encodeURIComponent(String(subtopicKey))}`,
     { headers: authHeaders },
-    'GET /api/vocabulary/subtopic/:subtopicId/preview'
+    `GET /api/vocabulary/subtopic/preview?subtopic=${subtopicKey}`
   );
 
-  const subtopicParam = encodeURIComponent(openSubtopic.slug ?? openSubtopic.id);
+  const subtopicParam = encodeURIComponent(subtopicKey);
   const groups = await requireOk(
     `/api/vocabulary/word-groups?subtopic=${subtopicParam}`,
     { headers: authHeaders },
-    'GET /api/vocabulary/word-groups?subtopic='
+    `GET /api/vocabulary/word-groups?subtopic=${openSubtopic.slug ?? openSubtopic.id}`
   );
 
   if (Array.isArray(groups) && groups.length > 0) {
@@ -168,7 +141,46 @@ try {
     'GET /api/vocabulary/daily-word-stats'
   );
 
-  console.log(`Smoke API check passed for user ${me?.email ?? me?.id ?? 'unknown'}.`);
+  if (includeLessons) {
+    console.log('[smoke] lessons (SMOKE_INCLUDE_LESSONS)');
+    const lessons = await requireOk('/api/lessons', { headers: authHeaders }, 'GET /api/lessons');
+
+    if (Array.isArray(lessons) && lessons.length > 0) {
+      const firstLesson = lessons[0];
+      const firstId = Number(firstLesson.id);
+      if (!Number.isFinite(firstId)) {
+        throw new Error('GET /api/lessons returned invalid id');
+      }
+      await requireOk(
+        `/api/lessons/preview?lesson_id=${encodeURIComponent(String(firstId))}`,
+        { headers: authHeaders },
+        `GET /api/lessons/preview?lesson_id=${firstId}`
+      );
+      if (!firstLesson.locked) {
+        await requireOk(
+          `/api/lessons/${firstId}`,
+          { headers: authHeaders },
+          'GET /api/lessons/:id'
+        );
+      }
+
+      const lockedLesson = lessons.find((lesson) => lesson.locked);
+      if (lockedLesson) {
+        const lid = Number(lockedLesson.id);
+        if (Number.isFinite(lid)) {
+          await requireOk(
+            `/api/lessons/preview?lesson_id=${encodeURIComponent(String(lid))}`,
+            { headers: authHeaders },
+            `GET /api/lessons/preview?lesson_id=${lid} (locked)`
+          );
+        }
+      }
+    }
+  }
+
+  console.log(
+    `Smoke API check passed (vocabulary${includeLessons ? ' + lessons' : ''}) for user ${me?.email ?? me?.id ?? 'unknown'}.`
+  );
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(`Smoke API check failed: ${message}`);

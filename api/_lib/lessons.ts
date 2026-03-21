@@ -1,4 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+function parseLessonIdFromQuery(req: VercelRequest): number | null {
+  const pick = (v: unknown): string => {
+    if (typeof v === 'string') return v.trim();
+    if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') return v[0].trim();
+    if (typeof v === 'number' && Number.isFinite(v)) return String(Math.trunc(v));
+    return '';
+  };
+  const raw = pick(req.query.lesson_id) || pick(req.query.lessonId);
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
 import { supabase } from './supabase.js';
 import { getAccessInfo } from './subscription.js';
 import { LESSONS } from '../../src/data/lessonsList.js';
@@ -134,34 +148,23 @@ export async function routeLessonsRequest(
       return await handleLessonsList(userId, res);
     }
 
-    /**
-     * Shallow preview URL for Vercel (avoids edge 404 on /api/lessons/:id/preview).
-     * GET /api/lessons/preview?lesson_id=123
-     */
-    if (
-      req.method === 'GET' &&
-      segments.length === 1 &&
-      segments[0] === 'preview'
-    ) {
-      const raw =
-        typeof req.query.lesson_id === 'string'
-          ? req.query.lesson_id
-          : typeof req.query.lessonId === 'string'
-            ? req.query.lessonId
-            : '';
-      const lessonId = Number(raw.trim());
-      if (!Number.isFinite(lessonId) || lessonId <= 0) {
-        return res
-          .status(400)
-          .json({ error: 'lesson_id query parameter required' });
+    const lessonIdFromPath = Number(segments[0]);
+    if (!Number.isFinite(lessonIdFromPath) || lessonIdFromPath <= 0) {
+      const qId = parseLessonIdFromQuery(req);
+      if (req.method === 'GET' && segments.includes('preview')) {
+        if (qId != null) {
+          return await handleLessonPreview(qId, res);
+        }
+        return res.status(400).json({ error: 'lesson_id query parameter required' });
       }
-      return await handleLessonPreview(lessonId, res);
-    }
-
-    const lessonId = Number(segments[0]);
-    if (!Number.isFinite(lessonId) || lessonId <= 0) {
+      // Some proxies / serverless path shapes omit "preview" in segments; still honor query.
+      if (req.method === 'GET' && qId != null) {
+        return await handleLessonPreview(qId, res);
+      }
       return res.status(400).json({ error: 'Lesson id kerak' });
     }
+
+    const lessonId = lessonIdFromPath;
 
     if (segments.length === 1) {
       if (req.method !== 'GET') {
