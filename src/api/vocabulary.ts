@@ -190,7 +190,17 @@ export async function postStep1Result(
     headers: authHeaders(token),
     body: JSON.stringify({ known, unknown }),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    let detail = res.statusText || `HTTP ${res.status}`;
+    try {
+      const errBody = (await res.json()) as { error?: string; message?: string };
+      if (typeof errBody?.error === 'string') detail = errBody.error;
+      else if (typeof errBody?.message === 'string') detail = errBody.message;
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
   return res.json();
 }
 
@@ -207,7 +217,17 @@ export async function postStep2Result(
     headers: authHeaders(token),
     body: JSON.stringify({ correct, incorrect, totalQuestions }),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    let detail = res.statusText || `HTTP ${res.status}`;
+    try {
+      const errBody = (await res.json()) as { error?: string; message?: string };
+      if (typeof errBody?.error === 'string') detail = errBody.error;
+      else if (typeof errBody?.message === 'string') detail = errBody.message;
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
   return res.json();
 }
 

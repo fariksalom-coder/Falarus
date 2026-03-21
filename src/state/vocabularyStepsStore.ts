@@ -120,6 +120,7 @@ export const useVocabularyStepsStore = create<VocabularyStepsStore>((set, get) =
         statusByGroup: { ...state.statusByGroup, [wordGroupId]: 'error' },
         errorByGroup: { ...state.errorByGroup, [wordGroupId]: msg },
       }));
+      throw e instanceof Error ? e : new Error(msg);
     }
   },
 
@@ -149,6 +150,7 @@ export const useVocabularyStepsStore = create<VocabularyStepsStore>((set, get) =
         statusByGroup: { ...state.statusByGroup, [wordGroupId]: 'error' },
         errorByGroup: { ...state.errorByGroup, [wordGroupId]: msg },
       }));
+      throw e instanceof Error ? e : new Error(msg);
     }
   },
 }));

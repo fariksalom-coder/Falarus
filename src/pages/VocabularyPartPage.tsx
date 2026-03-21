@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BarChart3, ChevronRight, Layers, ClipboardList, Puzzle, Check, Play, Lock, X } from 'lucide-react';
 import { getSubtopicContent, VocabularyEntry } from '../data/vocabularyContent';
@@ -186,10 +186,14 @@ export default function VocabularyPartPage() {
 
     let cancelled = false;
     void (async () => {
-      await stepsStore.submitStep1(token, wordGroupId, local.known, local.unknown);
-      if (cancelled) return;
-      await refetchTasks();
-      await stepsStore.fetchSteps(token, wordGroupId);
+      try {
+        await stepsStore.submitStep1(token, wordGroupId, local.known, local.unknown);
+        if (cancelled) return;
+        await refetchTasks();
+        await stepsStore.fetchSteps(token, wordGroupId);
+      } catch (e) {
+        console.error('[vocabulary] backfill step1 failed', e);
+      }
     })();
     return () => {
       cancelled = true;
@@ -205,24 +209,82 @@ export default function VocabularyPartPage() {
     stepsState?.step1.unknown,
   ]);
 
-  useEffect(() => {
-    if (content?.topicId && content?.subtopicId && part?.id && mode) {
-      setStageStatus(content.topicId, content.subtopicId, part.id, mode, 'in_progress');
-    }
-  }, [content?.topicId, content?.subtopicId, part?.id, mode]);
+  const testQuestions = useMemo(() => {
+    if (!part) return [];
+    return part.entries.map((entry, index) => {
+      const pool = part.entries.filter((e) => e.russian !== entry.russian).map((e) => e.russian);
+      const distractors = shuffle(Array.from(new Set(pool))).slice(0, 3);
+      const options = shuffle([entry.russian, ...distractors]);
+      return { id: `${index}`, uzbek: entry.uzbek, options, correct: entry.russian };
+    });
+  }, [part]);
+
+  const pairGroups = useMemo(() => {
+    if (!part) return [];
+    return groupByRules(part.entries).map((group, idx) => ({
+      id: idx,
+      pairs: group,
+      left: shuffle(group.map((p, i) => ({ id: `${idx}-l-${i}`, pairId: i, text: p.russian }))),
+      right: shuffle(group.map((p, i) => ({ id: `${idx}-r-${i}`, pairId: i, text: p.uzbek }))),
+    }));
+  }, [part]);
+
+  const [testIndex, setTestIndex] = useState(0);
+  const [testSelected, setTestSelected] = useState<string | null>(null);
+  const [testCorrect, setTestCorrect] = useState(0);
+  const [step2Submitted, setStep2Submitted] = useState(false);
+
+  const [pairGroupIndex, setPairGroupIndex] = useState(0);
+  const [pairSelectedLeft, setPairSelectedLeft] = useState<string | null>(null);
+  const [matched, setMatched] = useState<string[]>([]);
+  const [pairMessage, setPairMessage] = useState('');
+  const [wrongPairIds, setWrongPairIds] = useState<string[] | null>(null);
+  const [step3Submitted, setStep3Submitted] = useState(false);
 
   const [cardIndex, setCardIndex] = useState(0);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [knownCount, setKnownCount] = useState(0);
   const [unknownCount, setUnknownCount] = useState(0);
   const [step1Submitted, setStep1Submitted] = useState(false);
+  const [step1SaveError, setStep1SaveError] = useState<string | null>(null);
+
+  const prevExerciseModeRef = useRef<Mode | null>(null);
 
   useEffect(() => {
-    if (mode === 'cards') setStep1Submitted(false);
-    if (mode === 'test') setStep2Submitted(false);
-    if (mode === 'pairs') setStep3Submitted(false);
+    if (!content?.topicId || !content?.subtopicId || !part?.id) {
+      prevExerciseModeRef.current = mode;
+      return;
+    }
+    if (mode) {
+      setStageStatus(content.topicId, content.subtopicId, part.id, mode, 'in_progress');
+    }
+
+    const prev = prevExerciseModeRef.current;
+    if (mode === 'cards' && prev !== 'cards') {
+      setStep1SaveError(null);
+      setCardIndex(0);
+      setKnownCount(0);
+      setUnknownCount(0);
+      setCardFlipped(false);
+      setStep1Submitted(false);
+    }
+    if (mode === 'test' && prev !== 'test') {
+      setTestIndex(0);
+      setTestSelected(null);
+      setTestCorrect(0);
+      setStep2Submitted(false);
+    }
+    if (mode === 'pairs' && prev !== 'pairs') {
+      setPairGroupIndex(0);
+      setPairSelectedLeft(null);
+      setMatched([]);
+      setPairMessage('');
+      setWrongPairIds(null);
+      setStep3Submitted(false);
+    }
+    prevExerciseModeRef.current = mode;
     setPointsEarnedMessage(null);
-  }, [mode]);
+  }, [mode, content?.topicId, content?.subtopicId, part?.id]);
 
   useEffect(() => {
     if (!content?.topicId || !content?.subtopicId || !part?.id) return;
@@ -233,7 +295,6 @@ export default function VocabularyPartPage() {
       (part.entries?.length ?? 0) > 0
     ) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'cards', 'completed');
-      // Always persist counts locally (fixes race when wordGroupId loads after finishing cards).
       setFlashcardStepCounts(
         content.topicId,
         content.subtopicId,
@@ -242,11 +303,12 @@ export default function VocabularyPartPage() {
         unknownCount
       );
       if (token && wordGroupId != null) {
-        stepsStore
-          .submitStep1(token, wordGroupId, knownCount, unknownCount)
-          .then(() => {
-            refetchTasks();
-            void stepsStore.fetchSteps(token, wordGroupId);
+        void (async () => {
+          try {
+            setStep1SaveError(null);
+            await stepsStore.submitStep1(token, wordGroupId, knownCount, unknownCount);
+            await refetchTasks();
+            await stepsStore.fetchSteps(token, wordGroupId);
             if (content?.subtopicId) {
               try {
                 sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
@@ -254,7 +316,12 @@ export default function VocabularyPartPage() {
                 // ignore
               }
             }
-          });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Saqlashda xatolik';
+            setStep1SaveError(msg);
+            console.error('[vocabulary] step1 save failed', e);
+          }
+        })();
       }
       setStep1Submitted(true);
     }
@@ -273,38 +340,6 @@ export default function VocabularyPartPage() {
     stepsStore,
   ]);
 
-  const testQuestions = useMemo(() => {
-    if (!part) return [];
-    return part.entries.map((entry, index) => {
-      const pool = part.entries.filter((e) => e.russian !== entry.russian).map((e) => e.russian);
-      const distractors = shuffle(Array.from(new Set(pool))).slice(0, 3);
-      const options = shuffle([entry.russian, ...distractors]);
-      return { id: `${index}`, uzbek: entry.uzbek, options, correct: entry.russian };
-    });
-  }, [part]);
-
-  const [testIndex, setTestIndex] = useState(0);
-  const [testSelected, setTestSelected] = useState<string | null>(null);
-  const [testCorrect, setTestCorrect] = useState(0);
-  const [step2Submitted, setStep2Submitted] = useState(false);
-
-  const pairGroups = useMemo(() => {
-    if (!part) return [];
-    return groupByRules(part.entries).map((group, idx) => ({
-      id: idx,
-      pairs: group,
-      left: shuffle(group.map((p, i) => ({ id: `${idx}-l-${i}`, pairId: i, text: p.russian }))),
-      right: shuffle(group.map((p, i) => ({ id: `${idx}-r-${i}`, pairId: i, text: p.uzbek }))),
-    }));
-  }, [part]);
-
-  const [pairGroupIndex, setPairGroupIndex] = useState(0);
-  const [pairSelectedLeft, setPairSelectedLeft] = useState<string | null>(null);
-  const [matched, setMatched] = useState<string[]>([]);
-  const [pairMessage, setPairMessage] = useState('');
-  const [wrongPairIds, setWrongPairIds] = useState<string[] | null>(null);
-  const [step3Submitted, setStep3Submitted] = useState(false);
-
   useEffect(() => {
     if (!content?.topicId || !content?.subtopicId || !part?.id) return;
     if (
@@ -315,16 +350,16 @@ export default function VocabularyPartPage() {
     ) {
       setStageStatus(content.topicId, content.subtopicId, part.id, 'test', 'completed');
       if (token && wordGroupId != null) {
-        stepsStore
-          .submitStep2(
-            token,
-            wordGroupId,
-            testCorrect,
-            testQuestions.length - testCorrect,
-            testQuestions.length
-          )
-          .then(() => {
-            refetchTasks();
+        void (async () => {
+          try {
+            await stepsStore.submitStep2(
+              token,
+              wordGroupId,
+              testCorrect,
+              testQuestions.length - testCorrect,
+              testQuestions.length
+            );
+            await refetchTasks();
             if (content?.subtopicId) {
               try {
                 sessionStorage.removeItem(`vocab_word_groups_${content.subtopicId}`);
@@ -332,7 +367,10 @@ export default function VocabularyPartPage() {
                 // ignore
               }
             }
-          });
+          } catch (e) {
+            console.error('[vocabulary] step2 save failed', e);
+          }
+        })();
       } else {
         setPartResultCount(
           content.topicId,
@@ -612,10 +650,25 @@ export default function VocabularyPartPage() {
           const serverKnown1 = effectiveStepsState?.step1.known ?? 0;
           const serverUnknown1 = effectiveStepsState?.step1.unknown ?? 0;
           const serverSum1 = serverKnown1 + serverUnknown1;
+          const cardsStageDone =
+            getStageStatus(content.topicId, content.subtopicId, part.id, 'cards') === 'completed';
+          const localSum = flashLocal ? flashLocal.known + flashLocal.unknown : 0;
+          const flashDiffersFromServer =
+            flashLocal != null &&
+            localSum > 0 &&
+            (flashLocal.known !== serverKnown1 || flashLocal.unknown !== serverUnknown1);
           const step1KnownDisplay =
-            serverSum1 > 0 ? serverKnown1 : (flashLocal?.known ?? 0);
+            cardsStageDone && flashDiffersFromServer
+              ? flashLocal.known
+              : serverSum1 > 0
+                ? serverKnown1
+                : (flashLocal?.known ?? 0);
           const step1UnknownDisplay =
-            serverSum1 > 0 ? serverUnknown1 : (flashLocal?.unknown ?? 0);
+            cardsStageDone && flashDiffersFromServer
+              ? flashLocal.unknown
+              : serverSum1 > 0
+                ? serverUnknown1
+                : (flashLocal?.unknown ?? 0);
 
           return (
             <>
@@ -873,39 +926,28 @@ export default function VocabularyPartPage() {
                 <p className="text-xl font-semibold" style={{ color: '#0F172A' }}>
                   Kartochkalar tugallandi
                 </p>
-                {(() => {
-                  const sk = stepsState?.step1.known ?? 0;
-                  const su = stepsState?.step1.unknown ?? 0;
-                  const sum = sk + su;
-                  const fl =
-                    content && part
-                      ? getFlashcardStepCounts(
-                          content.topicId,
-                          content.subtopicId,
-                          part.id
-                        )
-                      : null;
-                  const biladi = sum > 0 ? sk : (fl?.known ?? knownCount);
-                  const bilmaydi = sum > 0 ? su : (fl?.unknown ?? unknownCount);
-                  return (
-                    <div className="mt-4 flex flex-col gap-3 items-center">
-                      <div
-                        className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
-                        style={{ borderColor: '#BBF7D0', backgroundColor: '#F0FDF4', color: '#166534' }}
-                      >
-                        <span>🟢</span>
-                        Biladi: {biladi}
-                      </div>
-                      <div
-                        className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
-                        style={{ borderColor: '#FECACA', backgroundColor: '#FEF2F2', color: '#B91C1C' }}
-                      >
-                        <span>🔴</span>
-                        Bilmaydi: {bilmaydi}
-                      </div>
-                    </div>
-                  );
-                })()}
+                <div className="mt-4 flex flex-col gap-3 items-center">
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
+                    style={{ borderColor: '#BBF7D0', backgroundColor: '#F0FDF4', color: '#166534' }}
+                  >
+                    <span>🟢</span>
+                    Biladi: {knownCount}
+                  </div>
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
+                    style={{ borderColor: '#FECACA', backgroundColor: '#FEF2F2', color: '#B91C1C' }}
+                  >
+                    <span>🔴</span>
+                    Bilmaydi: {unknownCount}
+                  </div>
+                  {step1SaveError ? (
+                    <p className="max-w-sm text-center text-sm text-red-600">
+                      {step1SaveError}. Internet yoki serverni tekshirib, sahifani yangilab qayta urinib
+                      ko‘ring.
+                    </p>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   onClick={() => navigate(`${partUrl}/test`)}
