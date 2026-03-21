@@ -136,7 +136,8 @@ export async function fetchVocabularyTasksStatus(
   wordGroupId: number
 ): Promise<VocabularyTasksStatus | null> {
   if (!token) return null;
-  const res = await fetch(apiUrl(`/api/vocabulary/tasks/${wordGroupId}`), {
+  const q = encodeURIComponent(String(wordGroupId));
+  const res = await fetch(apiUrl(`/api/vocabulary/tasks?word_group=${q}`), {
     headers: authHeaders(token),
   });
   if (!res.ok) return null;
@@ -148,7 +149,8 @@ export async function fetchWordGroupStepsState(
   wordGroupId: number
 ): Promise<WordGroupStepsState | null> {
   if (!token) return null;
-  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${wordGroupId}/steps`), {
+  const q = encodeURIComponent(String(wordGroupId));
+  const res = await fetch(apiUrl(`/api/vocabulary/steps?word_group=${q}`), {
     headers: authHeaders(token),
   });
   if (!res.ok) return null;
@@ -210,7 +212,8 @@ export async function postStep1Result(
   unknown: number
 ): Promise<WordGroupStepsState | null> {
   if (!token) return null;
-  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${wordGroupId}/steps/1`), {
+  const q = encodeURIComponent(String(wordGroupId));
+  const res = await fetch(apiUrl(`/api/vocabulary/steps/1?word_group=${q}`), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ known, unknown }),
@@ -237,7 +240,8 @@ export async function postStep2Result(
   totalQuestions?: number
 ): Promise<WordGroupStepsState | null> {
   if (!token) return null;
-  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${wordGroupId}/steps/2`), {
+  const q = encodeURIComponent(String(wordGroupId));
+  const res = await fetch(apiUrl(`/api/vocabulary/steps/2?word_group=${q}`), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ correct, incorrect, totalQuestions }),

@@ -29,6 +29,7 @@ function segmentsFromPathname(req: VercelRequest): string[] {
     'subtopic',
     'word-groups',
     'tasks',
+    'steps',
     'progress',
     'daily-word-stats',
   ];

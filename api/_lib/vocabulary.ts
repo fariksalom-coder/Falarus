@@ -891,6 +891,13 @@ async function handleTasks(
   });
 }
 
+function parseWordGroupIdQuery(req: VercelRequest): number | null {
+  const raw = req.query.word_group ?? req.query.wordGroupId;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const wordGroupId = Number(value);
+  return Number.isFinite(wordGroupId) ? wordGroupId : null;
+}
+
 async function handlePostStep1(
   userId: number,
   wordGroupId: number,
@@ -1225,6 +1232,14 @@ export async function routeVocabularyRequest(
       return res.status(400).json({ error: 'subtopic query parameter required' });
     }
 
+    if (req.method === 'GET' && segments.length === 1 && segments[0] === 'steps') {
+      const wordGroupId = parseWordGroupIdQuery(req);
+      if (wordGroupId == null) {
+        return res.status(400).json({ error: 'word_group query parameter required' });
+      }
+      return await handleWordGroupSteps(userId, wordGroupId, res);
+    }
+
     if (segments.length === 2 && segments[0] === 'word-groups') {
       if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -1267,6 +1282,32 @@ export async function routeVocabularyRequest(
         return await handlePostStep2(userId, wordGroupId, body, res);
       }
       return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (segments.length === 2 && segments[0] === 'steps') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      const wordGroupId = parseWordGroupIdQuery(req);
+      if (wordGroupId == null) {
+        return res.status(400).json({ error: 'word_group query parameter required' });
+      }
+      const body = parseBody(req.body);
+      if (segments[1] === '1') {
+        return await handlePostStep1(userId, wordGroupId, body, res);
+      }
+      if (segments[1] === '2') {
+        return await handlePostStep2(userId, wordGroupId, body, res);
+      }
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    if (req.method === 'GET' && segments.length === 1 && segments[0] === 'tasks') {
+      const wordGroupId = parseWordGroupIdQuery(req);
+      if (wordGroupId == null) {
+        return res.status(400).json({ error: 'word_group query parameter required' });
+      }
+      return await handleTasks(userId, wordGroupId, res);
     }
 
     if (segments.length === 2 && segments[0] === 'tasks') {

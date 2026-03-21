@@ -16,6 +16,12 @@ function getUserId(req: Request): number | null {
   return Number.isFinite(n) && n >= 1 ? n : null;
 }
 
+function getWordGroupIdFromRequest(req: Request): number {
+  const raw = req.params.wordGroupId ?? req.query.word_group ?? req.query.wordGroupId;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return Number(value);
+}
+
 export function getTopics(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
@@ -202,7 +208,7 @@ export function getTasks(supabase: Supabase) {
     try {
       const userId = getUserId(req);
       if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-      const wordGroupId = Number(req.params.wordGroupId);
+      const wordGroupId = getWordGroupIdFromRequest(req);
       if (Number.isNaN(wordGroupId)) {
         return res.status(400).json({ error: 'wordGroupId required' });
       }
@@ -315,7 +321,7 @@ export function getWordGroupStepsState(supabase: Supabase) {
     try {
       const userId = getUserId(req);
       if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-      const wordGroupId = Number(req.params.wordGroupId);
+      const wordGroupId = getWordGroupIdFromRequest(req);
       if (Number.isNaN(wordGroupId)) {
         return res.status(400).json({ error: 'wordGroupId required' });
       }
@@ -337,7 +343,7 @@ export function postStep1Result(supabase: Supabase) {
     try {
       const userId = getUserId(req);
       if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-      const wordGroupId = Number(req.params.wordGroupId);
+      const wordGroupId = getWordGroupIdFromRequest(req);
       const known = Number(req.body?.known ?? 0);
       const unknown = Number(req.body?.unknown ?? 0);
       if (Number.isNaN(wordGroupId)) {
@@ -367,7 +373,7 @@ export function postStep2Result(supabase: Supabase) {
     try {
       const userId = getUserId(req);
       if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-      const wordGroupId = Number(req.params.wordGroupId);
+      const wordGroupId = getWordGroupIdFromRequest(req);
       const correct = Number(req.body?.correct ?? 0);
       const incorrect = Number(req.body?.incorrect ?? 0);
       const totalQuestions = req.body?.totalQuestions != null ? Number(req.body.totalQuestions) : undefined;

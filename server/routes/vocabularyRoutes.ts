@@ -22,12 +22,18 @@ export function createVocabularyRoutes(
   );
   router.get('/vocabulary/subtopic/:subtopicId/preview', authenticate, vocabularyController.getSubtopicPreview(supabase));
   router.get('/vocabulary/word-groups/:subtopicId', authenticate, vocabularyController.getWordGroups(supabase));
+  router.get('/vocabulary/tasks', authenticate, vocabularyController.getTasks(supabase));
   router.get('/vocabulary/tasks/:wordGroupId', authenticate, vocabularyController.getTasks(supabase));
   router.get('/vocabulary/words/:wordGroupId', authenticate, vocabularyController.getWords(supabase));
   router.get(
     '/vocabulary/daily-word-stats',
     authenticate,
     vocabularyController.getVocabularyDailyWordStats(supabase)
+  );
+  router.get(
+    '/vocabulary/steps',
+    authenticate,
+    vocabularyController.getWordGroupStepsState(supabase)
   );
   router.get(
     '/vocabulary/word-groups/:wordGroupId/steps',
@@ -39,9 +45,19 @@ export function createVocabularyRoutes(
   router.post('/vocabulary/test/finish', authenticate, vocabularyController.postTestFinish(supabase));
   router.post('/vocabulary/match/finish', authenticate, vocabularyController.postMatchFinish(supabase));
   router.post(
+    '/vocabulary/steps/1',
+    authenticate,
+    vocabularyController.postStep1Result(supabase)
+  );
+  router.post(
     '/vocabulary/word-groups/:wordGroupId/steps/1',
     authenticate,
     vocabularyController.postStep1Result(supabase)
+  );
+  router.post(
+    '/vocabulary/steps/2',
+    authenticate,
+    vocabularyController.postStep2Result(supabase)
   );
   router.post(
     '/vocabulary/word-groups/:wordGroupId/steps/2',

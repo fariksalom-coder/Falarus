@@ -123,14 +123,14 @@ try {
   if (Array.isArray(groups) && groups.length > 0) {
     const group = groups[0];
     await requireOk(
-      `/api/vocabulary/tasks/${group.id}`,
+      `/api/vocabulary/tasks?word_group=${encodeURIComponent(String(group.id))}`,
       { headers: authHeaders },
-      'GET /api/vocabulary/tasks/:wordGroupId'
+      'GET /api/vocabulary/tasks?word_group=:wordGroupId'
     );
     await requireOk(
-      `/api/vocabulary/word-groups/${group.id}/steps`,
+      `/api/vocabulary/steps?word_group=${encodeURIComponent(String(group.id))}`,
       { headers: authHeaders },
-      'GET /api/vocabulary/word-groups/:wordGroupId/steps'
+      'GET /api/vocabulary/steps?word_group=:wordGroupId'
     );
   }
 

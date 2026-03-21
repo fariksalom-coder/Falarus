@@ -218,12 +218,12 @@ async function main() {
 
   if (Array.isArray(wordGroups) && wordGroups.length > 0) {
     const firstGroup = wordGroups[0];
-    await requestApi('GET', `/api/vocabulary/tasks/${firstGroup.id}`, token);
-    await requestApi(
-      'GET',
-      `/api/vocabulary/word-groups/${firstGroup.id}/steps`,
-      token
-    );
+    await requestApi('GET', '/api/vocabulary/tasks', token, {
+      word_group: String(firstGroup.id),
+    });
+    await requestApi('GET', '/api/vocabulary/steps', token, {
+      word_group: String(firstGroup.id),
+    });
     if (firstGroup.part_id) {
       await requestApi('POST', '/api/vocabulary/progress', token, undefined, {
         topic_id: topicId,
