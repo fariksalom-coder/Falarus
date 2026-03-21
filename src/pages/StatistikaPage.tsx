@@ -180,54 +180,54 @@ export default function StatistikaPage() {
 
   return (
     <div className="min-h-screen pb-12" style={{ backgroundColor: BG }}>
-      <main className="mx-auto max-w-6xl px-4 pt-6 md:px-6">
-        <h1 className="mb-6 text-2xl font-bold md:text-3xl" style={{ color: TEXT }}>
+      <main className="mx-auto max-w-5xl px-4 pt-5 md:px-6 md:pt-6">
+        <h1 className="mb-5 text-2xl font-bold md:text-[30px]" style={{ color: TEXT }}>
           Statistika
         </h1>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div
-            className="overflow-hidden rounded-[32px] px-6 py-7 text-white shadow-[0_30px_80px_rgba(255,98,54,0.28)] md:px-8 md:py-8"
+            className="overflow-hidden rounded-[26px] px-5 py-5 text-white shadow-[0_22px_56px_rgba(255,98,54,0.24)] md:rounded-[30px] md:px-7 md:py-6"
             style={{
               background:
                 'linear-gradient(135deg, #FF8A1E 0%, #FF6A1A 36%, #FF5538 72%, #FF2E52 100%)',
             }}
           >
-            <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
-                <p className="text-lg font-semibold tracking-tight text-white/95 md:text-[22px]">
+                <p className="text-base font-semibold tracking-tight text-white/95 md:text-[20px]">
                   Ketma-ket kunlar
                 </p>
-                <div className="mt-4 flex items-end gap-3">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm md:h-20 md:w-20">
-                    <Flame className="h-9 w-9 text-white md:h-11 md:w-11" />
+                <div className="mt-3 flex items-end gap-3">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm md:h-[68px] md:w-[68px]">
+                    <Flame className="h-8 w-8 text-white md:h-9 md:w-9" />
                   </div>
                   <div className="leading-none">
-                    <div className="text-[56px] font-black tracking-tight md:text-[76px]">
+                    <div className="text-[42px] font-black tracking-tight md:text-[60px]">
                       {streakLoaded ? streak.streak_days : '—'}
                     </div>
-                    <div className="mt-1 text-lg font-medium text-white/80 md:text-xl">
+                    <div className="mt-1 text-sm font-medium text-white/80 md:text-lg">
                       kun ketma-ket
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="md:pt-3 md:text-right">
-                <p className="text-sm font-medium uppercase tracking-[0.28em] text-white/60">
+              <div className="md:pt-2 md:text-right">
+                <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-white/60 md:text-xs">
                   Oxirgi hafta
                 </p>
-                <p className="mt-2 text-base font-medium text-white/90 md:text-[22px]">
+                <p className="mt-1.5 text-sm font-medium text-white/90 md:text-[18px]">
                   Oxirgi 7 kun faoliyati
                 </p>
               </div>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+            <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
               {last7Rotated.map(({ label: d, active }, i) => {
                 return (
-                  <div key={`${d}-${i}`} className="flex flex-col items-center gap-3">
+                  <div key={`${d}-${i}`} className="flex flex-col items-center gap-2">
                     <div
-                      className="flex h-24 w-full items-center justify-center rounded-[24px] backdrop-blur-sm transition-all duration-300 md:h-28"
+                      className="flex h-20 w-full items-center justify-center rounded-[20px] backdrop-blur-sm transition-all duration-300 md:h-24 md:rounded-[22px]"
                       title={d}
                       style={{
                         backgroundColor: active
@@ -239,12 +239,12 @@ export default function StatistikaPage() {
                       }}
                     >
                       {active ? (
-                        <Flame className="h-8 w-8 text-white md:h-9 md:w-9" />
+                        <Flame className="h-7 w-7 text-white md:h-8 md:w-8" />
                       ) : (
-                        <span className="h-3 w-3 rounded-full bg-white/35" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-white/35" />
                       )}
                     </div>
-                    <div className="text-lg font-medium text-white/92 md:text-xl">
+                    <div className="text-base font-medium text-white/92 md:text-lg">
                       {d}
                     </div>
                   </div>
@@ -253,15 +253,15 @@ export default function StatistikaPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3.5 md:grid-cols-3">
             {summaryCards.map((card, index) => (
               <div
                 key={card.title}
-                className="rounded-[28px] border bg-white px-6 py-8 text-center shadow-[0_20px_45px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
+                className="rounded-[24px] border bg-white px-5 py-6 text-center shadow-[0_16px_34px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5 md:rounded-[26px] md:px-6 md:py-7"
                 style={{ borderColor: BORDER }}
               >
                 <div
-                  className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl"
+                  className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl"
                   style={{
                     backgroundColor:
                       index === 0 ? '#ECFDF5' : index === 1 ? '#EEF2FF' : '#FFF7ED',
@@ -276,26 +276,26 @@ export default function StatistikaPage() {
                     <Award className="h-5 w-5" />
                   )}
                 </div>
-                <p className="mt-5 text-[15px] font-medium" style={{ color: TEXT_SECONDARY }}>
+                <p className="mt-4 text-sm font-medium" style={{ color: TEXT_SECONDARY }}>
                   {card.title}
                 </p>
-                <p className="mt-3 text-5xl font-black tracking-tight" style={{ color: TEXT }}>
+                <p className="mt-2.5 text-[42px] font-black tracking-tight md:text-[46px]" style={{ color: TEXT }}>
                   {card.value}
                 </p>
-                <p className="mt-3 text-base" style={{ color: '#7C879B' }}>
+                <p className="mt-2.5 text-sm md:text-[15px]" style={{ color: '#7C879B' }}>
                   {card.subtitle}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+          <div className="grid gap-5 lg:grid-cols-[1.1fr,0.9fr]">
             <div
-              className="rounded-[28px] border bg-white p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]"
+              className="rounded-[24px] border bg-white p-5 shadow-[0_16px_34px_rgba(15,23,42,0.06)] md:rounded-[26px] md:p-6"
               style={{ borderColor: BORDER }}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-600">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-100 text-teal-600">
                   <Target className="h-5 w-5" />
                 </div>
                 <div>
@@ -305,8 +305,8 @@ export default function StatistikaPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
-                <div className="relative h-28 w-28 shrink-0">
+              <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div className="relative h-24 w-24 shrink-0 md:h-28 md:w-28">
                   <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
                     <path
                       fill="none"
@@ -324,26 +324,26 @@ export default function StatistikaPage() {
                     />
                   </svg>
                   <span
-                    className="absolute inset-0 flex items-center justify-center text-2xl font-black"
+                    className="absolute inset-0 flex items-center justify-center text-xl font-black md:text-2xl"
                     style={{ color: TEXT }}
                   >
                     {accuracyPercent}%
                   </span>
                 </div>
                 <div className="grid flex-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-slate-50 px-4 py-4">
-                    <p className="text-xs uppercase tracking-[0.2em]" style={{ color: TEXT_SECONDARY }}>
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3.5">
+                    <p className="text-[11px] uppercase tracking-[0.18em]" style={{ color: TEXT_SECONDARY }}>
                       To‘g‘ri
                     </p>
-                    <p className="mt-2 text-3xl font-black" style={{ color: TEXT }}>
+                    <p className="mt-1.5 text-[28px] font-black md:text-3xl" style={{ color: TEXT }}>
                       {lessonStats.correct}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-slate-50 px-4 py-4">
-                    <p className="text-xs uppercase tracking-[0.2em]" style={{ color: TEXT_SECONDARY }}>
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3.5">
+                    <p className="text-[11px] uppercase tracking-[0.18em]" style={{ color: TEXT_SECONDARY }}>
                       Noto‘g‘ri
                     </p>
-                    <p className="mt-2 text-3xl font-black" style={{ color: TEXT }}>
+                    <p className="mt-1.5 text-[28px] font-black md:text-3xl" style={{ color: TEXT }}>
                       {wrongCount}
                     </p>
                   </div>
@@ -352,11 +352,11 @@ export default function StatistikaPage() {
             </div>
 
             <div
-              className="rounded-[28px] border bg-white p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]"
+              className="rounded-[24px] border bg-white p-5 shadow-[0_16px_34px_rgba(15,23,42,0.06)] md:rounded-[26px] md:p-6"
               style={{ borderColor: BORDER }}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sky-600">
                   <Award className="h-5 w-5" />
                 </div>
                 <div>
@@ -366,7 +366,7 @@ export default function StatistikaPage() {
                   </p>
                 </div>
               </div>
-              <ul className="mt-6 space-y-3">
+              <ul className="mt-5 space-y-2.5">
                 {achievements.length > 0 ? (
                   achievements.map((a, i) => (
                     <li
@@ -388,11 +388,11 @@ export default function StatistikaPage() {
           </div>
 
           <div
-            className="rounded-[28px] border bg-white p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)]"
+            className="rounded-[24px] border bg-white p-5 shadow-[0_16px_34px_rgba(15,23,42,0.06)] md:rounded-[26px] md:p-6"
             style={{ borderColor: BORDER }}
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
                 <RefreshCw className="h-5 w-5" />
               </div>
               <div>
@@ -402,7 +402,7 @@ export default function StatistikaPage() {
                 </p>
               </div>
             </div>
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="mt-5 grid gap-3.5 md:grid-cols-2">
               {VOCABULARY_TOPICS.map((topic, index) => {
                 const fromApi = topicsProgress.find((t) => t.id === topic.id);
                 const total = getTopicWordCount(topic.id);
@@ -411,26 +411,26 @@ export default function StatistikaPage() {
                 return (
                   <div
                     key={topic.id}
-                    className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5"
+                    className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4 md:rounded-3xl md:p-5"
                   >
                     <p
-                      className="text-xs font-medium uppercase tracking-[0.24em]"
+                      className="text-[11px] font-medium uppercase tracking-[0.2em]"
                       style={{ color: TEXT_SECONDARY }}
                     >
                       {index + 1}-bo&apos;lim
                     </p>
-                    <div className="mt-2 flex items-start justify-between gap-4">
-                      <span className="text-base font-semibold" style={{ color: TEXT }}>
+                    <div className="mt-2 flex items-start justify-between gap-3">
+                      <span className="text-[15px] font-semibold md:text-base" style={{ color: TEXT }}>
                         {topic.title}
                       </span>
-                      <span className="shrink-0 text-sm" style={{ color: TEXT_SECONDARY }}>
+                      <span className="shrink-0 text-[13px] md:text-sm" style={{ color: TEXT_SECONDARY }}>
                         {topicsLoaded ? `${learned} / ${total}` : 'Yuklanmoqda...'}
                       </span>
                     </div>
-                    <p className="mt-3 text-sm" style={{ color: TEXT_SECONDARY }}>
+                    <p className="mt-2.5 text-[13px] md:text-sm" style={{ color: TEXT_SECONDARY }}>
                       {topicsLoaded ? `${pct}% o'rganildi` : 'Server ma’lumotlari yuklanmoqda'}
                     </p>
-                    <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white">
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white md:h-2.5">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{

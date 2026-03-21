@@ -206,7 +206,7 @@ export default function VocabularyPage() {
   /** One source of truth: /api/user/access (no extra “always unlock first list item” — that doubled with wrong server free_topic_id). */
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
-      <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
+      <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">
         <p className="mb-6 text-sm text-slate-500 md:text-base">
           Bo'limlarni tanlang va so'zlarni o'rganing
         </p>
@@ -239,46 +239,46 @@ export default function VocabularyPage() {
                     navigate(`/vocabulary/${topic.id}`);
                   }
                 }}
-                className="group relative w-full overflow-hidden rounded-[34px] border p-6 text-left shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_55px_rgba(15,23,42,0.12)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 md:px-8 md:py-7"
+                className="group relative w-full overflow-hidden rounded-[28px] border px-4 py-5 text-left shadow-[0_14px_32px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_48px_rgba(15,23,42,0.12)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 md:rounded-[32px] md:px-6 md:py-6"
                 style={{
                   background: theme.cardBackground,
                   borderColor: theme.cardBorder,
                 }}
               >
                 <div
-                  className="pointer-events-none absolute -right-5 top-0 opacity-100"
+                  className="pointer-events-none absolute -right-3 top-0 opacity-100 md:-right-4"
                   style={{ color: theme.watermarkColor }}
                   aria-hidden
                 >
-                  <Icon className="h-36 w-36 md:h-44 md:w-44" strokeWidth={1.2} />
+                  <Icon className="h-24 w-24 md:h-32 md:w-32 lg:h-36 lg:w-36" strokeWidth={1.2} />
                 </div>
 
-                <div className="relative flex items-start gap-4 md:gap-6">
+                <div className="relative flex items-start gap-3 md:gap-5">
                   <div
-                    className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[26px] shadow-[0_12px_30px_rgba(0,0,0,0.08)] transition-transform duration-300 group-hover:scale-[1.03]"
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] shadow-[0_10px_24px_rgba(0,0,0,0.08)] transition-transform duration-300 group-hover:scale-[1.03] md:h-[72px] md:w-[72px] md:rounded-[24px]"
                     style={{
                       background: theme.iconBackground,
                       color: theme.iconColor,
                     }}
                   >
-                    <Icon className="h-10 w-10" strokeWidth={1.8} />
+                    <Icon className="h-7 w-7 md:h-9 md:w-9" strokeWidth={1.8} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="pr-14 md:pr-20">
-                      <p className="text-3xl font-black tracking-tight text-slate-900 md:text-[38px]">
+                    <div className="pr-10 md:pr-16">
+                      <p className="text-[28px] font-black leading-none tracking-tight text-slate-900 md:text-[34px] lg:text-[36px]">
                         {topic.title}
                       </p>
-                      <p className="mt-2 text-xl font-medium text-slate-500 md:text-[22px]">
+                      <p className="mt-1.5 text-base font-medium leading-snug text-slate-500 md:mt-2 md:text-[21px]">
                         {subtitle}
                       </p>
                     </div>
 
-                    <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                      <p className="text-[22px] font-semibold tracking-tight text-slate-700 md:text-[24px]">
+                    <div className="mt-5 flex flex-col gap-2.5 md:mt-6 md:flex-row md:items-end md:justify-between md:gap-4">
+                      <p className="text-lg font-semibold tracking-tight text-slate-700 md:text-[22px]">
                         {learnedWords} / {wordCount.toLocaleString()} so&apos;z
                       </p>
                       <p
-                        className="text-[20px] font-bold md:text-[22px]"
+                        className="text-base font-bold md:text-[20px]"
                         style={{
                           color: locked ? '#9CA3AF' : theme.progressTextColor,
                         }}
@@ -287,7 +287,7 @@ export default function VocabularyPage() {
                       </p>
                     </div>
 
-                    <div className="mt-4 pr-2">
+                    <div className="mt-3.5 pr-0.5 md:mt-4 md:pr-1">
                       <VocabularyProgressBar
                         learned={learnedWords}
                         total={wordCount}
@@ -299,16 +299,16 @@ export default function VocabularyPage() {
                   </div>
 
                   <div
-                    className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full backdrop-blur-sm transition-transform duration-300 group-hover:translate-x-1"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full backdrop-blur-sm transition-transform duration-300 group-hover:translate-x-1 md:h-16 md:w-16"
                     style={{
                       backgroundColor: theme.arrowBackground,
                       color: theme.arrowColor,
                     }}
                   >
                     {locked ? (
-                      <Lock className="h-8 w-8 text-amber-500" strokeWidth={2} />
+                      <Lock className="h-5 w-5 text-amber-500 md:h-7 md:w-7" strokeWidth={2} />
                     ) : (
-                      <ChevronRight className="h-9 w-9" strokeWidth={2} />
+                      <ChevronRight className="h-6 w-6 md:h-8 md:w-8" strokeWidth={2} />
                     )}
                   </div>
                 </div>
