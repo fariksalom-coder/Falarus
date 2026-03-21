@@ -15,6 +15,11 @@ export function createVocabularyRoutes(
     authenticate,
     vocabularyController.getSubtopicPreviewQuery(supabase)
   );
+  router.get(
+    '/vocabulary/preview',
+    authenticate,
+    vocabularyController.getSubtopicPreviewQuery(supabase)
+  );
   router.get('/vocabulary/subtopic/:subtopicId/preview', authenticate, vocabularyController.getSubtopicPreview(supabase));
   router.get('/vocabulary/word-groups/:subtopicId', authenticate, vocabularyController.getWordGroups(supabase));
   router.get('/vocabulary/tasks/:wordGroupId', authenticate, vocabularyController.getTasks(supabase));

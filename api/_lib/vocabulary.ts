@@ -1133,7 +1133,7 @@ export async function routeVocabularyRequest(
     /**
      * Shallow URLs avoid Vercel edge 404 on deep paths like
      * /api/vocabulary/subtopics/:topicId, /api/vocabulary/word-groups/:slug,
-     * or /api/vocabulary/subtopic/:id/preview.
+     * /api/vocabulary/subtopic/:id/preview, or /api/vocabulary/subtopic/preview.
      */
     if (req.method === 'GET' && segments.length === 1 && segments[0] === 'subtopics') {
       const raw = typeof req.query.topic === 'string' ? req.query.topic.trim() : '';
@@ -1149,6 +1149,23 @@ export async function routeVocabularyRequest(
         return await handleSubtopics(userId, topicParam, res);
       }
       return res.status(400).json({ error: 'topic query parameter required' });
+    }
+
+    if (req.method === 'GET' && segments.length === 1 && segments[0] === 'preview') {
+      const raw =
+        typeof req.query.subtopic === 'string' ? req.query.subtopic.trim() : '';
+      let subtopicParam = raw;
+      if (raw.includes('%')) {
+        try {
+          subtopicParam = decodeURIComponent(raw);
+        } catch {
+          subtopicParam = raw;
+        }
+      }
+      if (!subtopicParam) {
+        return res.status(400).json({ error: 'subtopic query parameter required' });
+      }
+      return await handleSubtopicPreview(subtopicParam, res);
     }
 
     if (segments.length === 2 && segments[0] === 'subtopics') {

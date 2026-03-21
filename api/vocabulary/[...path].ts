@@ -24,6 +24,7 @@ function segmentsFromPathname(req: VercelRequest): string[] {
   // Nested serverless: pathname may be only /subtopics or /word-groups/... (no /api/vocabulary prefix).
   const tail = [
     'topics',
+    'preview',
     'subtopics',
     'subtopic',
     'word-groups',

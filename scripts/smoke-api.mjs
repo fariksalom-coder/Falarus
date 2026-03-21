@@ -108,9 +108,9 @@ try {
 
   const subtopicKey = openSubtopic.slug ?? openSubtopic.id;
   await requireOk(
-    `/api/vocabulary/subtopic/preview?subtopic=${encodeURIComponent(String(subtopicKey))}`,
+    `/api/vocabulary/preview?subtopic=${encodeURIComponent(String(subtopicKey))}`,
     { headers: authHeaders },
-    `GET /api/vocabulary/subtopic/preview?subtopic=${subtopicKey}`
+    `GET /api/vocabulary/preview?subtopic=${subtopicKey}`
   );
 
   const subtopicParam = encodeURIComponent(subtopicKey);
