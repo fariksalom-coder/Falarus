@@ -16,10 +16,11 @@ function hideNavBar(path: string): boolean {
   return false;
 }
 
-const springTab = { type: 'spring' as const, damping: 34, stiffness: 440, mass: 0.88 };
-const fadeSoft = { duration: 0.2, ease: [0.32, 0.72, 0, 1] as const };
+/** Sync enter/exit so panels pass side-by-side (Telegram-style); spring tuned for low overshoot. */
+const springTab = { type: 'spring' as const, damping: 38, stiffness: 520, mass: 0.82 };
+const fadeSoft = { duration: 0.18, ease: [0.32, 0.72, 0, 1] as const };
 
-/** Forward (next tab): new screen from right; backward: from left — similar to Telegram folder / chat list. */
+/** Forward (next tab): new from right, old exits left; backward: opposite. Nav stays fixed — only this block animates. */
 export default function MainLayout() {
   const { pathname } = useLocation();
   const showNavBar = !hideNavBar(pathname);
@@ -50,13 +51,13 @@ export default function MainLayout() {
     : {
         enter: (dir: number) =>
           dir === 0
-            ? { opacity: 0, y: 5 }
-            : { x: dir > 0 ? '26%' : '-26%', opacity: 0.96 },
-        center: { x: 0, y: 0, opacity: 1 },
+            ? { opacity: 0, y: 6, zIndex: 2 }
+            : { x: dir > 0 ? '100%' : '-100%', zIndex: 2 },
+        center: { x: 0, y: 0, opacity: 1, zIndex: 2 },
         exit: (dir: number) =>
           dir === 0
-            ? { opacity: 0, y: -4 }
-            : { x: dir > 0 ? '-20%' : '20%', opacity: 0.96 },
+            ? { opacity: 0, y: -4, zIndex: 1 }
+            : { x: dir > 0 ? '-100%' : '100%', zIndex: 1 },
       };
 
   const transition = reduceMotion ? fadeSoft : springTab;
@@ -80,8 +81,17 @@ export default function MainLayout() {
         onTouchEnd={swipe.onTouchEnd}
         onTouchCancel={swipe.onTouchCancel}
       >
-        <div className="relative min-h-0 overflow-x-hidden">
-          <AnimatePresence mode="wait" initial={false} custom={tabDir}>
+        <div
+          className="relative w-full overflow-hidden"
+          style={{
+            minHeight: showNavBar ? 'calc(100dvh - 78px)' : '100dvh',
+          }}
+        >
+          {/*
+            mode="sync": old and new routes animate together (no white gap).
+            Absolute inset-0: both layers overlap during the slide like Telegram folders.
+          */}
+          <AnimatePresence mode="sync" initial={false} custom={tabDir}>
             <motion.div
               key={pathname}
               custom={tabDir}
@@ -90,7 +100,7 @@ export default function MainLayout() {
               animate="center"
               exit="exit"
               transition={transition}
-              className="min-h-screen"
+              className="absolute inset-0 w-full overflow-y-auto overflow-x-hidden bg-[#F8FAFC] overscroll-y-contain"
             >
               <Outlet />
             </motion.div>
