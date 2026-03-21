@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getSubtopicContent } from '../data/vocabularyContent';
@@ -16,6 +16,8 @@ import {
   setCachedWordGroupsProgress,
   type VocabularyWordGroup,
 } from '../api/vocabulary';
+import { VocabularyProgressBar } from '../components/vocabulary/VocabularyProgressBar';
+import { aggregateSubtopicFromBlocks } from '../features/vocabulary/progressModel';
 import {
   ChevronRight,
   Package,
@@ -76,6 +78,17 @@ export default function VocabularySubtopicPage() {
       setCachedWordGroupsProgress(resolvedId, data);
     });
   }, [token, subtopicId, resolvedId]);
+
+  const subtopicAggregate = useMemo(() => {
+    if (!topic || !content || !resolvedId) return { learned: 0, total: 0 };
+    const partIds = content.parts.map((p) => p.id);
+    return aggregateSubtopicFromBlocks(
+      partIds,
+      (pid) => content.parts.find((p) => p.id === pid)?.entries.length ?? 0,
+      wordGroupsProgress,
+      (pid) => getPartLearnedCount(topic.id, resolvedId, pid)
+    );
+  }, [topic, content, resolvedId, wordGroupsProgress]);
 
   if (!topic) {
     return (
@@ -200,17 +213,37 @@ export default function VocabularySubtopicPage() {
         </h1>
 
         {content ? (
+          <div
+            className="mb-6 rounded-2xl border bg-white p-4 shadow-sm"
+            style={{ borderColor: '#E2E8F0' }}
+          >
+            <p className="text-sm text-slate-600">
+              Bu bo‘lim bo‘yicha jami (barcha qismlar bo‘yicha test natijasi)
+            </p>
+            <p className="mt-1 font-semibold text-slate-900">
+              {subtopicAggregate.learned} / {subtopicAggregate.total.toLocaleString()} so&apos;z
+              o&apos;rganildi
+            </p>
+            <VocabularyProgressBar
+              learned={subtopicAggregate.learned}
+              total={subtopicAggregate.total}
+              className="mt-3"
+            />
+          </div>
+        ) : null}
+
+        {content ? (
           <div className="space-y-4">
               {content.parts.map((part, index) => {
                 const Icon = PART_ICONS[part.id] ?? BookOpen;
-                const total = part.entries.length;
+                const contentTotal = part.entries.length;
                 const fromApi = wordGroupsProgress.find((g) => g.part_id === part.id);
+                const total = fromApi?.total_words ?? contentTotal;
                 const learned = fromApi?.learned_words ?? getPartLearnedCount(
                   topic.id,
                   subtopic.id,
                   part.id
                 );
-                const partPercent = total > 0 ? Math.round((learned / total) * 100) : 0;
                 const accent = PART_ACCENT[index % PART_ACCENT.length];
 
                 return (
@@ -244,15 +277,7 @@ export default function VocabularySubtopicPage() {
                       >
                         {learned} / {total.toLocaleString()} so'z o'rganildi
                       </p>
-                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${Math.max(partPercent, 2)}%`,
-                            backgroundColor: '#6366F1',
-                          }}
-                        />
-                      </div>
+                      <VocabularyProgressBar learned={learned} total={total} className="mt-2" />
                     </div>
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600">
                       <ChevronRight className="h-5 w-5" strokeWidth={2} />

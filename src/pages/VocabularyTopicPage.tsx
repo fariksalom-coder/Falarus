@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getSubtopicWordCount } from '../data/vocabularyContent';
@@ -18,6 +18,8 @@ import {
   canAccessVocabularySubtopicRoute,
   isVocabularyTopicLockedForUser,
 } from '../utils/vocabularyAccess';
+import { VocabularyProgressBar } from '../components/vocabulary/VocabularyProgressBar';
+import { aggregateTopicProgress } from '../features/vocabulary/progressModel';
 import {
   ChevronRight,
   ArrowLeft,
@@ -134,6 +136,17 @@ export default function VocabularyTopicPage() {
   const topicIndex = topic != null ? VOCABULARY_TOPICS.findIndex((t) => t.id === topic.id) : -1;
   const isTopicUnlocked = topic != null ? !isVocabularyTopicLockedForUser(access, topic.id) : false;
 
+  const topicProgress = useMemo(() => {
+    if (!topic) return { learned: 0, total: 0 };
+    const ids = topic.subtopics.map((s) => s.id);
+    return aggregateTopicProgress(
+      subtopicsProgress,
+      ids,
+      (subId) => getSubtopicWordCount(topic.id, subId),
+      (subId) => getLearnedCount(topic.id, subId)
+    );
+  }, [topic, subtopicsProgress]);
+
   useEffect(() => {
     if (!topicId) {
       setSubtopicsProgress([]);
@@ -248,14 +261,31 @@ export default function VocabularyTopicPage() {
           </div>
         )}
         {!fetchError && (!token || subtopicsLoaded) && (
-        <div className="space-y-4">
+          <>
+            <h1 className="mb-2 text-xl font-bold text-slate-900">{topic.title}</h1>
+            <div
+              className="mb-6 rounded-2xl border bg-white p-4 shadow-sm"
+              style={{ borderColor: '#E2E8F0' }}
+            >
+              <p className="text-sm text-slate-600">
+                Butun mavzu bo‘yicha o‘rganilgan so‘zlar (2-bosqich — test natijasi bo‘yicha)
+              </p>
+              <p className="mt-1 font-semibold text-slate-900">
+                {topicProgress.learned} / {topicProgress.total.toLocaleString()} so&apos;z
+              </p>
+              <VocabularyProgressBar
+                learned={topicProgress.learned}
+                total={topicProgress.total}
+                className="mt-3"
+              />
+            </div>
+            <div className="space-y-4">
           {topic.subtopics.map((subtopic, subtopicIndex) => {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
             const fromApi = subtopicsProgress.find((s) => s.id === subtopic.id);
             const locked = !canAccessVocabularySubtopicRoute(access, topic.id, subtopic.id);
-            const wordCount = getSubtopicWordCount(topic.id, subtopic.id);
+            const wordCount = fromApi?.total_words ?? getSubtopicWordCount(topic.id, subtopic.id);
             const learned = fromApi?.learned_words ?? getLearnedCount(topic.id, subtopic.id);
-            const percent = wordCount > 0 ? Math.round((learned / wordCount) * 100) : 0;
             const accentBg = ACCENT_BG[subtopicIndex % ACCENT_BG.length];
             const accentIcon = ACCENT_ICON[subtopicIndex % ACCENT_ICON.length];
 
@@ -287,15 +317,7 @@ export default function VocabularyTopicPage() {
                   <p className="mt-1 text-sm" style={{ color: '#64748B' }}>
                     {learned} / {wordCount.toLocaleString()} so'z o'rganildi
                   </p>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${Math.max(percent, 2)}%`,
-                        backgroundColor: '#6366F1',
-                      }}
-                    />
-                  </div>
+                  <VocabularyProgressBar learned={learned} total={wordCount} className="mt-2" />
                 </div>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600 relative">
                   {locked ? (
@@ -307,7 +329,8 @@ export default function VocabularyTopicPage() {
               </button>
             );
           })}
-        </div>
+            </div>
+          </>
         )}
       </main>
 

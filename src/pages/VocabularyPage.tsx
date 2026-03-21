@@ -14,6 +14,7 @@ import { isVocabularyTopicLockedForUser } from '../utils/vocabularyAccess';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { VocabularyProgressBar } from '../components/vocabulary/VocabularyProgressBar';
 import {
   ChevronRight,
   Lock,
@@ -109,7 +110,7 @@ export default function VocabularyPage() {
           {VOCABULARY_TOPICS.map((topic, topicIndex) => {
             const Icon = TOPIC_ICONS[topic.id] ?? Sparkles;
             const fromApi = topicsProgress.find((t) => t.id === topic.id);
-            const wordCount = getTopicWordCount(topic.id);
+            const wordCount = fromApi?.total_words ?? getTopicWordCount(topic.id);
             const learnedWords = fromApi?.learned_words ?? 0;
             const progressPercent = wordCount > 0 ? Math.round((learnedWords / wordCount) * 100) : 0;
             const accentBg = ACCENT_BG[topicIndex % ACCENT_BG.length];
@@ -148,15 +149,7 @@ export default function VocabularyPage() {
                       </span>
                     </div>
                     <div className="mt-3">
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full transition-all duration-500 ease-out"
-                          style={{
-                            width: `${Math.max(progressPercent, 2)}%`,
-                            backgroundColor: '#6366F1',
-                          }}
-                        />
-                      </div>
+                      <VocabularyProgressBar learned={learnedWords} total={wordCount} />
                       <p className="mt-1 text-xs text-slate-400">
                         {progressPercent}% o&apos;rganildi
                       </p>
