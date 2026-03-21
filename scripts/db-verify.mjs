@@ -45,7 +45,7 @@ const checks = [
   {
     label: 'vocabulary_subtopics',
     table: 'vocabulary_subtopics',
-    select: 'id,topic_id,title',
+    select: 'id,topic_id,title,slug',
   },
   {
     label: 'vocabulary_word_groups',

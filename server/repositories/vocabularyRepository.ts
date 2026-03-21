@@ -48,11 +48,33 @@ export async function getTotalWordsBySubtopicIds(
 export async function getSubtopicsByTopic(supabase: Supabase, topicId: string) {
   const { data, error } = await supabase
     .from('vocabulary_subtopics')
-    .select('id, topic_id, title')
+    .select('id, topic_id, title, slug')
     .eq('topic_id', topicId)
     .order('id');
   if (error) throw error;
-  return (data ?? []) as { id: string; topic_id: string; title: string }[];
+  return (data ?? []) as { id: string; topic_id: string; title: string; slug: string }[];
+}
+
+/** Path param may be `slug` or legacy subtopic `id`. */
+export async function resolveSubtopicFromPathParam(
+  supabase: Supabase,
+  subtopicSlug: string
+): Promise<{ id: string; topic_id: string } | null> {
+  const { data: bySlug, error: slugErr } = await supabase
+    .from('vocabulary_subtopics')
+    .select('id, topic_id')
+    .eq('slug', subtopicSlug)
+    .maybeSingle();
+  if (slugErr) throw slugErr;
+  if (bySlug) return bySlug as { id: string; topic_id: string };
+
+  const { data: byId, error: idErr } = await supabase
+    .from('vocabulary_subtopics')
+    .select('id, topic_id')
+    .eq('id', subtopicSlug)
+    .maybeSingle();
+  if (idErr) throw idErr;
+  return (byId as { id: string; topic_id: string } | null) ?? null;
 }
 
 export async function getWordGroupsBySubtopic(supabase: Supabase, subtopicId: string) {

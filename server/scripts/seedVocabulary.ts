@@ -7,6 +7,7 @@ import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { VOCABULARY_TOPICS } from '../../src/data/vocabularyTopics';
 import { VOCABULARY_CONTENT } from '../../src/data/vocabularyContent';
+import { slugifyVocabularyTitle } from '../../api/_lib/slugifyVocabularyTitle';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -48,8 +49,10 @@ async function main() {
       throw topicErr;
     }
     for (const subtopic of topic.subtopics) {
+      const slug =
+        slugifyVocabularyTitle(subtopic.title) || subtopic.id;
       const { error: subErr } = await supabase.from('vocabulary_subtopics').upsert(
-        { id: subtopic.id, topic_id: topic.id, title: subtopic.title },
+        { id: subtopic.id, topic_id: topic.id, title: subtopic.title, slug },
         { onConflict: 'id' }
       );
       if (subErr) {

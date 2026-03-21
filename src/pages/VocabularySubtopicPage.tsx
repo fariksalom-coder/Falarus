@@ -5,6 +5,7 @@ import { getSubtopicContent } from '../data/vocabularyContent';
 import { getPartLearnedCount, setLastPartId } from '../utils/vocabProgress';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
+import { useResolvedVocabularySubtopicId } from '../hooks/useResolvedVocabularySubtopicId';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -48,14 +49,18 @@ export default function VocabularySubtopicPage() {
   const [showPaywall, setShowPaywall] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
   const topic = VOCABULARY_TOPICS.find((item) => item.id === topicId);
-  const subtopic = topic?.subtopics.find((item) => item.id === subtopicId);
-  const content = getSubtopicContent(topicId, subtopicId);
-  const [wordGroupsProgress, setWordGroupsProgress] = useState<VocabularyWordGroup[]>(() =>
-    subtopicId ? (getCachedWordGroupsProgress(subtopicId) ?? []) : []
+  const { resolvedId, loading: resolvingSubtopic } = useResolvedVocabularySubtopicId(
+    topicId,
+    subtopicId,
+    token
   );
+  const subtopic =
+    topic && resolvedId ? topic.subtopics.find((item) => item.id === resolvedId) : undefined;
+  const content = resolvedId ? getSubtopicContent(topicId, resolvedId) : undefined;
+  const [wordGroupsProgress, setWordGroupsProgress] = useState<VocabularyWordGroup[]>([]);
 
   useEffect(() => {
-    if (!subtopicId) {
+    if (!subtopicId || !resolvedId) {
       setWordGroupsProgress([]);
       return;
     }
@@ -63,14 +68,45 @@ export default function VocabularySubtopicPage() {
       setWordGroupsProgress([]);
       return;
     }
-    setWordGroupsProgress(getCachedWordGroupsProgress(subtopicId) ?? []);
+    setWordGroupsProgress(getCachedWordGroupsProgress(resolvedId) ?? []);
     fetchVocabularyWordGroups(token, subtopicId).then((data) => {
       setWordGroupsProgress(data);
-      setCachedWordGroupsProgress(subtopicId, data);
+      setCachedWordGroupsProgress(resolvedId, data);
     });
-  }, [token, subtopicId]);
+  }, [token, subtopicId, resolvedId]);
 
-  if (!topic || !subtopic) {
+  if (!topic) {
+    return (
+      <div
+        className="min-h-screen p-6"
+        style={{ backgroundColor: '#F8FAFC' }}
+      >
+        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <p className="font-semibold text-slate-900">Mavzu topilmadi.</p>
+          <button
+            type="button"
+            onClick={() => navigate('/vocabulary')}
+            className="mt-4 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+          >
+            Orqaga
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (resolvingSubtopic) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center p-6"
+        style={{ backgroundColor: '#F8FAFC' }}
+      >
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!resolvedId || !subtopic) {
     return (
       <div
         className="min-h-screen p-6"
@@ -93,7 +129,7 @@ export default function VocabularySubtopicPage() {
   const accessDenied =
     Boolean(token) &&
     accessLoaded &&
-    !canAccessVocabularySubtopicRoute(access, topicId, subtopicId);
+    !canAccessVocabularySubtopicRoute(access, topicId, resolvedId);
 
   if (accessDenied) {
     return (
@@ -182,7 +218,7 @@ export default function VocabularySubtopicPage() {
                     onClick={() => {
                       setLastPartId(topic.id, subtopic.id, part.id);
                       navigate(
-                        `/vocabulary/${topic.id}/${subtopic.id}/${part.id}`
+                        `/vocabulary/${topic.id}/${subtopicId}/${part.id}`
                       );
                     }}
                     className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-indigo-200/80 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20"

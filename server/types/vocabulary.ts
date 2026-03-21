@@ -11,6 +11,7 @@ export type VocabularySubtopicRow = {
   id: string;
   topic_id: string;
   title: string;
+  slug: string;
 };
 
 export type VocabularyWordGroupRow = {

@@ -17,6 +17,7 @@ import { useAccess } from '../context/AccessContext';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { useResolvedVocabularySubtopicId } from '../hooks/useResolvedVocabularySubtopicId';
 import { canAccessVocabularySubtopicRoute } from '../utils/vocabularyAccess';
 import {
   fetchVocabularyWordGroups,
@@ -74,24 +75,32 @@ export default function VocabularyPartPage() {
   const { access, accessLoaded } = useAccess();
   const { hasPendingPayment } = usePaymentStatus();
   const [showVocabPaywall, setShowVocabPaywall] = useState(false);
-  const content = getSubtopicContent(topicId, subtopicId);
+  const { resolvedId, loading: resolvingSubtopic } = useResolvedVocabularySubtopicId(
+    topicId,
+    subtopicId,
+    token
+  );
+  const content = resolvedId ? getSubtopicContent(topicId, resolvedId) : undefined;
   const part = content?.parts.find((item) => item.id === partId);
 
   const mode: Mode | null =
     modeParam === 'cards' || modeParam === 'test' || modeParam === 'pairs' ? modeParam : null;
   const isExerciseScreen = mode !== null;
-  const partUrl = `/vocabulary/${content?.topicId}/${content?.subtopicId}/${partId}`;
+  const partUrl =
+    topicId && subtopicId && partId
+      ? `/vocabulary/${topicId}/${subtopicId}/${partId}`
+      : '';
 
   const [wordGroupId, setWordGroupId] = useState<number | null>(() => {
-    if (!content?.subtopicId || !part?.id) return null;
-    const cached = getCachedWordGroupsProgress(content.subtopicId);
-    const group = cached?.find((g) => g.part_id === part.id);
+    if (!resolvedId || !partId) return null;
+    const cached = getCachedWordGroupsProgress(resolvedId);
+    const group = cached?.find((g) => g.part_id === partId);
     return group?.id ?? null;
   });
   const [tasksStatus, setTasksStatus] = useState<VocabularyTasksStatus | null>(() => {
-    if (!content?.subtopicId || !part?.id) return null;
-    const cached = getCachedWordGroupsProgress(content.subtopicId);
-    const group = cached?.find((g) => g.part_id === part.id);
+    if (!resolvedId || !partId) return null;
+    const cached = getCachedWordGroupsProgress(resolvedId);
+    const group = cached?.find((g) => g.part_id === partId);
     if (group?.id == null) return null;
     return getCachedTasksStatus(group.id);
   });
@@ -137,14 +146,14 @@ export default function VocabularyPartPage() {
   }, [content?.topicId, content?.subtopicId, part?.id]);
 
   useEffect(() => {
-    if (!token || !content?.subtopicId || !part?.id) return;
+    if (!token || !resolvedId || !subtopicId || !part?.id) return;
     setWordGroupId((prev) => {
-      const cached = getCachedWordGroupsProgress(content.subtopicId);
+      const cached = getCachedWordGroupsProgress(resolvedId);
       const group = cached?.find((g) => g.part_id === part.id);
       return group?.id ?? prev ?? null;
     });
     setTasksStatus((prev) => {
-      const cached = getCachedWordGroupsProgress(content.subtopicId);
+      const cached = getCachedWordGroupsProgress(resolvedId);
       const group = cached?.find((g) => g.part_id === part.id);
       if (group?.id != null) {
         const cachedStatus = getCachedTasksStatus(group.id);
@@ -154,7 +163,7 @@ export default function VocabularyPartPage() {
     });
     let cancelled = false;
     (async () => {
-      const groups = await fetchVocabularyWordGroups(token, content.subtopicId);
+      const groups = await fetchVocabularyWordGroups(token, subtopicId);
       if (cancelled) return;
       const group = groups.find((g) => g.part_id === part.id);
       if (group) {
@@ -170,7 +179,7 @@ export default function VocabularyPartPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [token, content?.subtopicId, part?.id, stepsStore]);
+  }, [token, resolvedId, subtopicId, part?.id, stepsStore]);
 
   // If flashcards finished while wordGroupId was still null, or API row still has 0/0, push saved Biladi/Bilmaydi to DB.
   useEffect(() => {
@@ -433,6 +442,31 @@ export default function VocabularyPartPage() {
     step3Submitted,
   ]);
 
+  if (resolvingSubtopic) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!resolvedId) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 text-center">
+          <p className="font-semibold text-slate-900">Mavzu topilmadi.</p>
+          <button
+            type="button"
+            onClick={() => navigate('/vocabulary')}
+            className="mt-4 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Orqaga
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!content || !part) {
     return (
       <div className="min-h-screen bg-slate-50 p-6">
@@ -453,7 +487,9 @@ export default function VocabularyPartPage() {
   const vocabAccessDenied =
     Boolean(token) &&
     accessLoaded &&
-    !canAccessVocabularySubtopicRoute(access, content.topicId, content.subtopicId);
+    content &&
+    resolvedId != null &&
+    !canAccessVocabularySubtopicRoute(access, content.topicId, resolvedId);
 
   if (vocabAccessDenied) {
     return (

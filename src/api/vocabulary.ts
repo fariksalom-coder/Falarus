@@ -10,6 +10,8 @@ export type VocabularyTopic = {
 
 export type VocabularySubtopic = {
   id: string;
+  /** URL slug for `/api/vocabulary/word-groups/:slug` (may match `id` for legacy rows). */
+  slug: string;
   topic_id: string;
   title: string;
   learned_words: number;
@@ -72,6 +74,14 @@ function authHeaders(token: string | null): HeadersInit {
   return h;
 }
 
+/** Ensures `slug` exists for older sessionStorage payloads. */
+function normalizeVocabularySubtopics(data: unknown[]): VocabularySubtopic[] {
+  return data.map((raw) => {
+    const s = raw as VocabularySubtopic & { slug?: string };
+    return { ...s, slug: s.slug ?? s.id };
+  });
+}
+
 export async function fetchVocabularyTopics(token: string | null): Promise<VocabularyTopic[]> {
   if (!token) return [];
   const res = await fetch(apiUrl('/api/vocabulary/topics'), { headers: authHeaders(token) });
@@ -90,15 +100,15 @@ export async function fetchVocabularySubtopics(
   });
   if (!res.ok) return [];
   const data = await res.json();
-  return Array.isArray(data) ? data : [];
+  return Array.isArray(data) ? normalizeVocabularySubtopics(data) : [];
 }
 
 export async function fetchVocabularyWordGroups(
   token: string | null,
-  subtopicId: string
+  subtopicSlug: string
 ): Promise<VocabularyWordGroup[]> {
   if (!token) return [];
-  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${subtopicId}`), {
+  const res = await fetch(apiUrl(`/api/vocabulary/word-groups/${subtopicSlug}`), {
     headers: authHeaders(token),
   });
   if (!res.ok) return [];
@@ -259,7 +269,7 @@ export function getCachedSubtopicsProgress(topicId: string): VocabularySubtopic[
     const raw = sessionStorage.getItem(CACHE_SUBTOPICS(topicId));
     if (!raw) return null;
     const data = JSON.parse(raw);
-    return Array.isArray(data) ? data : null;
+    return Array.isArray(data) ? normalizeVocabularySubtopics(data) : null;
   } catch {
     return null;
   }

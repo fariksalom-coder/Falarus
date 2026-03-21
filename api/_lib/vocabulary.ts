@@ -12,6 +12,8 @@ import { buildRequestLogContext, logError } from './logger.js';
 import { calculateCappedMatchPoints, calculateImprovementDelta } from './scoring.js';
 import { getAccessInfo } from './subscription.js';
 
+export { slugifyVocabularyTitle } from './slugifyVocabularyTitle.js';
+
 async function handleVocabularyRootGet(userId: number, res: VercelResponse) {
   // Legacy root vocabulary table (`vocabulary`) might be deleted.
   // Current app reads vocab from `vocabulary_topics/*_subtopics/*_word_groups` and progress caches.
@@ -145,11 +147,39 @@ async function getUserTopicProgress(userId: number) {
 async function getSubtopicsByTopic(topicId: string) {
   const { data, error } = await supabase
     .from('vocabulary_subtopics')
-    .select('id, topic_id, title')
+    .select('id, topic_id, title, slug')
     .eq('topic_id', topicId)
     .order('id');
   if (error) throw error;
-  return (data ?? []) as { id: string; topic_id: string; title: string }[];
+  return (data ?? []) as {
+    id: string;
+    topic_id: string;
+    title: string;
+    slug: string;
+  }[];
+}
+
+/**
+ * Resolve a path segment to a subtopic row. Tries `slug` first, then legacy `id` (same string as before migration).
+ */
+async function resolveVocabularySubtopicFromPathParam(subtopicSlug: string) {
+  const { data: bySlug, error: slugErr } = await supabase
+    .from('vocabulary_subtopics')
+    .select('id, topic_id')
+    .eq('slug', subtopicSlug)
+    .maybeSingle();
+  if (slugErr) throw slugErr;
+  if (bySlug) {
+    return bySlug as { id: string; topic_id: string };
+  }
+
+  const { data: byId, error: idErr } = await supabase
+    .from('vocabulary_subtopics')
+    .select('id, topic_id')
+    .eq('id', subtopicSlug)
+    .maybeSingle();
+  if (idErr) throw idErr;
+  return (byId as { id: string; topic_id: string } | null) ?? null;
 }
 
 async function getWordGroupsBySubtopic(subtopicId: string) {
@@ -650,6 +680,7 @@ async function handleSubtopics(
         progress?.total_words ?? (await getSubtopicTotalWords(subtopic.id));
       return {
         id: subtopic.id,
+        slug: subtopic.slug,
         topic_id: subtopic.topic_id,
         title: subtopic.title,
         learned_words: progress?.learned_words ?? 0,
@@ -662,8 +693,12 @@ async function handleSubtopics(
   return res.status(200).json(applySubtopicsLock(list, topicId, access));
 }
 
-async function handleSubtopicPreview(subtopicId: string, res: VercelResponse) {
-  const preview = await getSubtopicPreview(supabase, subtopicId);
+async function handleSubtopicPreview(subtopicSlug: string, res: VercelResponse) {
+  const subtopic = await resolveVocabularySubtopicFromPathParam(subtopicSlug);
+  if (!subtopic) {
+    return res.status(404).json({ error: 'Subtopic topilmadi' });
+  }
+  const preview = await getSubtopicPreview(supabase, subtopic.id);
   if (!preview) {
     return res.status(404).json({ error: 'Subtopic topilmadi' });
   }
@@ -672,19 +707,21 @@ async function handleSubtopicPreview(subtopicId: string, res: VercelResponse) {
 
 async function handleWordGroups(
   userId: number,
-  subtopicId: string,
+  subtopicSlug: string,
   res: VercelResponse
 ) {
-  const { data: subtopic, error: subErr } = await supabase
-    .from('vocabulary_subtopics')
-    .select('topic_id')
-    .eq('id', subtopicId)
-    .maybeSingle();
-  if (subErr) {
+  let subtopic: { id: string; topic_id: string } | null;
+  try {
+    subtopic = await resolveVocabularySubtopicFromPathParam(subtopicSlug);
+  } catch {
     return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
+  if (!subtopic) {
+    return res.status(404).json({ error: 'Subtopic not found' });
+  }
 
-  const topicId = (subtopic as { topic_id?: string } | null)?.topic_id ?? '';
+  const subtopicId = subtopic.id;
+  const topicId = subtopic.topic_id ?? '';
   const access = await getAccessInfo(supabase, userId);
   if (!canAccessSubtopic(topicId, subtopicId, access)) {
     return res

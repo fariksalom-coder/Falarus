@@ -77,6 +77,7 @@ export function getSubtopics(supabase: Supabase) {
           const total_words = prog?.total_words ?? totalWordsBySubtopic[s.id] ?? 0;
           return {
             id: s.id,
+            slug: s.slug,
             topic_id: s.topic_id,
             title: s.title,
             learned_words: prog?.learned_words ?? 0,
@@ -98,8 +99,10 @@ export function getSubtopics(supabase: Supabase) {
 export function getSubtopicPreview(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {
-      const subtopicId = req.params.subtopicId as string;
-      const preview = await accessControlService.getSubtopicPreview(supabase, subtopicId);
+      const param = req.params.subtopicId as string;
+      const resolved = await repo.resolveSubtopicFromPathParam(supabase, param);
+      if (!resolved) return res.status(404).json({ error: 'Subtopic topilmadi' });
+      const preview = await accessControlService.getSubtopicPreview(supabase, resolved.id);
       if (!preview) return res.status(404).json({ error: 'Subtopic topilmadi' });
       res.json(preview);
     } catch (e) {
@@ -114,14 +117,21 @@ export function getWordGroups(supabase: Supabase) {
     try {
       const userId = getUserId(req);
       if (userId == null) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-      const subtopicId = req.params.subtopicId as string;
-      const access = await subscriptionService.getAccessInfo(supabase, userId);
-      const { data: subtopic, error: subErr } = await supabase.from('vocabulary_subtopics').select('topic_id').eq('id', subtopicId).maybeSingle();
-      if (subErr) {
-        console.error('[vocabulary/getWordGroups] subtopic fetch', subErr.message);
+      const subtopicSlug = req.params.subtopicId as string;
+      let subtopic: { id: string; topic_id: string };
+      try {
+        const resolved = await repo.resolveSubtopicFromPathParam(supabase, subtopicSlug);
+        if (!resolved) {
+          return res.status(404).json({ error: 'Subtopic not found' });
+        }
+        subtopic = resolved;
+      } catch (e) {
+        console.error('[vocabulary/getWordGroups] subtopic fetch', e);
         return res.status(500).json({ error: 'Xatolik yuz berdi' });
       }
-      const topicId = subtopic?.topic_id ?? '';
+      const subtopicId = subtopic.id;
+      const access = await subscriptionService.getAccessInfo(supabase, userId);
+      const topicId = subtopic.topic_id ?? '';
       const allowed =
         accessControlService.canAccessSubtopic(topicId, subtopicId, access) ||
         (!access.subscription_active && String(subtopicId) === 'salomlashish-xayrlashish-odob');

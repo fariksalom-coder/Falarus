@@ -269,7 +269,8 @@ export default function VocabularyTopicPage() {
                     return;
                   }
                   setLastSubtopicId(topic.id, subtopic.id);
-                  navigate(`/vocabulary/${topic.id}/${subtopic.id}`);
+                  const pathSeg = fromApi?.slug ?? subtopic.id;
+                  navigate(`/vocabulary/${topic.id}/${pathSeg}`);
                 }}
                 className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-indigo-200/80 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 style={{ borderColor: '#E2E8F0' }}
