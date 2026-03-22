@@ -3,8 +3,8 @@ import bcrypt from 'bcryptjs';
 import {
   isValidNormalizedEmail,
   normalizeEmail,
-  normalizePhone,
-  REGIONAL_PHONE_HINT,
+  sanitizePhoneForDb,
+  PHONE_MAX_LENGTH,
 } from './authIdentifiers.js';
 
 export type AccountPatchResult =
@@ -74,12 +74,12 @@ export async function applyUserAccountPatch(
     if (v === null || v === '') {
       nextPhone = null;
     } else if (typeof v === 'string') {
-      const ph = normalizePhone(v);
+      const ph = sanitizePhoneForDb(v);
       if (!ph) {
         return {
           ok: false,
           status: 400,
-          error: `Telefon noto'g'ri. ${REGIONAL_PHONE_HINT}`,
+          error: `Telefon bo'sh yoki ${PHONE_MAX_LENGTH} belgidan oshmasin`,
         };
       }
       nextPhone = ph;

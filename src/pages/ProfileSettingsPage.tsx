@@ -208,7 +208,7 @@ export default function ProfileSettingsPage() {
                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="pochta@misol.uz"
+                placeholder="pochta"
               />
             </div>
             <button
@@ -231,7 +231,7 @@ export default function ProfileSettingsPage() {
                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+998901234567"
+                placeholder="Istalgan formatda"
               />
             </div>
             <button

@@ -123,7 +123,7 @@ export default function AuthPage() {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Email yoki telefon raqami
+              Telefon raqami yoki pochta
             </label>
             <input
               type="text"
@@ -132,7 +132,7 @@ export default function AuthPage() {
               className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
               value={formData.identifier}
               onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-              placeholder="+998901234567 yoki pochta@misol.uz"
+              placeholder="Pochta yoki telefon raqami"
             />
           </div>
 
