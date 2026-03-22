@@ -78,6 +78,7 @@ export default function AdminUsersPage() {
                   <th className="text-left py-3 px-4 font-medium text-slate-600">User ID</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Name</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Email</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Phone</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Registration date</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Subscription</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Status</th>
@@ -94,7 +95,8 @@ export default function AdminUsersPage() {
                       </Link>
                     </td>
                     <td className="py-3 px-4">{u.name}</td>
-                    <td className="py-3 px-4">{u.email}</td>
+                    <td className="py-3 px-4 text-slate-700">{u.email ?? '—'}</td>
+                    <td className="py-3 px-4 text-slate-600">{u.phone ?? '—'}</td>
                     <td className="py-3 px-4 text-slate-600">
                       {u.registration_date ? new Date(u.registration_date).toLocaleDateString() : '—'}
                     </td>

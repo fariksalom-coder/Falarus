@@ -172,7 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let q = supabase
         .from('users')
-        .select('id, first_name, last_name, email, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
+        .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
         .order('created_at', { ascending: false });
 
       if (registered === 'today') {
@@ -199,7 +199,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const list = (rows ?? []).map((u: any) => ({
         id: u.id,
         name: [u.first_name, u.last_name].filter(Boolean).join(' ') || '—',
-        email: u.email,
+        email: u.email ?? null,
+        phone: u.phone ?? null,
         registration_date: u.created_at,
         subscription_type: u.plan_name ?? '—',
         subscription_status: u.plan_expires_at && u.plan_expires_at > now ? 'active' : 'expired',
@@ -215,7 +216,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!id) return res.status(400).json({ error: 'Invalid user id' });
       const { data: user, error: userErr } = await supabase
         .from('users')
-        .select('id, first_name, last_name, email, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
+        .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
         .eq('id', id)
         .single();
       if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
@@ -226,7 +227,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({
         id: (user as any).id,
         name: [(user as any).first_name, (user as any).last_name].filter(Boolean).join(' ') || '—',
-        email: (user as any).email,
+        email: (user as any).email ?? null,
+        phone: (user as any).phone ?? null,
         registration_date: (user as any).created_at,
         subscription: {
           plan_type: (user as any).plan_name ?? null,
@@ -253,7 +255,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
       const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id))];
-      const { data: users } = await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds);
+      const { data: users } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, email, phone')
+        .in('id', userIds);
       const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
       const planLabel: Record<string, string> = { month: '1 OY', '3months': '3 OY', year: '1 YIL' };
       const list = (rows ?? []).map((r: any) => {
@@ -263,6 +268,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           user_id: r.user_id,
           user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : '—',
           user_email: u?.email ?? '—',
+          user_phone: u?.phone ?? null,
           plan: planLabel[r.tariff_type] ?? r.tariff_type,
           tariff_type: r.tariff_type,
           currency: r.currency,

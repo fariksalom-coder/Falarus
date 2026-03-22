@@ -17,7 +17,8 @@ export type DashboardStats = {
 export type AdminUserRow = {
   id: number;
   name: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   registration_date: string;
   subscription_type: string;
   subscription_status: string;
@@ -28,7 +29,8 @@ export type AdminUserRow = {
 export type AdminUserProfile = {
   id: number;
   name: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   registration_date: string;
   subscription: { plan_type: string | null; status: string; expires_at: string | null };
   statistics: { total_points: number; lessons_completed: number; words_learned: number };
@@ -40,6 +42,7 @@ export type AdminPaymentRow = {
   user_id: number;
   user: string;
   user_email: string;
+  user_phone: string | null;
   plan: string;
   tariff_type: string;
   currency: string;

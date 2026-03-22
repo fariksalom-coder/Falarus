@@ -73,6 +73,7 @@ export default function AdminPaymentsPage() {
                 <tr>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Foydalanuvchi</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Email</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Phone</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Tarif</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Valyuta</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">To'lov vaqti</th>
@@ -86,6 +87,7 @@ export default function AdminPaymentsPage() {
                   <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="py-3 px-4 font-medium text-slate-800">{p.user}</td>
                     <td className="py-3 px-4 text-slate-600">{p.user_email}</td>
+                    <td className="py-3 px-4 text-slate-600">{p.user_phone ?? '—'}</td>
                     <td className="py-3 px-4">{p.plan}</td>
                     <td className="py-3 px-4">{p.currency}</td>
                     <td className="py-3 px-4 text-slate-600">

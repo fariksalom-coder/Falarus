@@ -53,7 +53,9 @@ export default function AdminUserProfilePage() {
           <h2 className="text-sm font-medium text-slate-500 mb-3">Profile</h2>
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-slate-500">Email</dt>
-            <dd>{profile.email}</dd>
+            <dd>{profile.email ?? '—'}</dd>
+            <dt className="text-slate-500">Phone</dt>
+            <dd>{profile.phone ?? '—'}</dd>
             <dt className="text-slate-500">Registration date</dt>
             <dd>{profile.registration_date ? new Date(profile.registration_date).toLocaleString() : '—'}</dd>
           </dl>

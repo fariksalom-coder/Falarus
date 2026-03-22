@@ -89,6 +89,7 @@ export function createAdminController(supabase: SupabaseClient) {
         first_name,
         last_name,
         email,
+        phone,
         created_at,
         plan_name,
         plan_expires_at,
@@ -137,7 +138,8 @@ export function createAdminController(supabase: SupabaseClient) {
     const list = (rows ?? []).map((u: any) => ({
       id: u.id,
       name: [u.first_name, u.last_name].filter(Boolean).join(' ') || '—',
-      email: u.email,
+      email: u.email ?? null,
+      phone: u.phone ?? null,
       registration_date: u.created_at,
       subscription_type: u.plan_name ?? '—',
       subscription_status: u.plan_expires_at && u.plan_expires_at > now ? 'active' : 'expired',
@@ -154,7 +156,7 @@ export function createAdminController(supabase: SupabaseClient) {
 
     const { data: user, error: userErr } = await supabase
       .from('users')
-      .select('id, first_name, last_name, email, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
+      .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
       .eq('id', id)
       .single();
     if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
@@ -174,7 +176,8 @@ export function createAdminController(supabase: SupabaseClient) {
     return res.json({
       id: (user as any).id,
       name: [(user as any).first_name, (user as any).last_name].filter(Boolean).join(' ') || '—',
-      email: (user as any).email,
+      email: (user as any).email ?? null,
+      phone: (user as any).phone ?? null,
       registration_date: (user as any).created_at,
       subscription: {
         plan_type: (user as any).plan_name ?? null,
@@ -204,7 +207,10 @@ export function createAdminController(supabase: SupabaseClient) {
       return res.status(500).json({ error: error.message });
     }
     const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id))];
-    const { data: users } = await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds);
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, email, phone')
+      .in('id', userIds);
     const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
 
     const list = (rows ?? []).map((r: any) => {
@@ -214,6 +220,7 @@ export function createAdminController(supabase: SupabaseClient) {
         id: r.id,
         user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : '—',
         user_email: u?.email ?? '—',
+        user_phone: u?.phone ?? null,
         user_id: r.user_id,
         plan: planLabel,
         tariff_type: r.tariff_type,
