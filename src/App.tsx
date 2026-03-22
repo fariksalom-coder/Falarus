@@ -172,6 +172,7 @@ import VocabularyPartPage from './pages/VocabularyPartPage';
 import LessonPreviewPage from './pages/LessonPreviewPage';
 import VocabularySubtopicPreviewPage from './pages/VocabularySubtopicPreviewPage';
 import ProfilePage from './pages/ProfilePage';
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import ReferralPage from './pages/ReferralPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import StatistikaPage from './pages/StatistikaPage';
@@ -233,6 +234,7 @@ function AppRoutes() {
         <Route path="vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartRoute />} />
         <Route path="vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartRoute />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/settings" element={<ProfileSettingsPage />} />
         <Route path="invite" element={<ReferralPage />} />
         <Route path="statistika" element={<StatistikaPage />} />
         <Route path="tariflar" element={<PricingPage />} />

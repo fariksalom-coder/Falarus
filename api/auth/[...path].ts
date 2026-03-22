@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
+import { parseContactIdentifier } from '../../shared/authIdentifiers.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-uz-ru';
 
@@ -36,6 +37,22 @@ function getPathSegment(req: VercelRequest): string | undefined {
   return undefined;
 }
 
+function readLoginIdentifier(body: Record<string, unknown>): string {
+  const id = body.identifier;
+  if (typeof id === 'string' && id.trim()) return id.trim();
+  const legacy = body.email;
+  if (typeof legacy === 'string' && legacy.trim()) return legacy.trim();
+  return '';
+}
+
+function readRegisterContact(body: Record<string, unknown>): string {
+  const id = body.identifier;
+  if (typeof id === 'string' && id.trim()) return id.trim();
+  const legacy = body.email;
+  if (typeof legacy === 'string' && legacy.trim()) return legacy.trim();
+  return '';
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
@@ -46,25 +63,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (segment === 'login') {
       const body = parseBody(req.body);
-      const email = body.email as string | undefined;
       const password = body.password as string | undefined;
-      if (!email || !password) {
-        return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
+      const idRaw = readLoginIdentifier(body);
+      if (!idRaw || !password) {
+        return res.status(400).json({ error: "Email/telefon va parol kiritilishi shart" });
       }
-      const { data: user, error } = await supabase
+      const parsed = parseContactIdentifier(idRaw);
+      if (parsed.ok === false) {
+        return res.status(400).json({ error: parsed.error });
+      }
+      let q = supabase
         .from('users')
-        .select('id, first_name, last_name, email, password, level, onboarded, total_points')
-        .eq('email', email)
-        .maybeSingle();
+        .select('id, first_name, last_name, email, phone, password, level, onboarded, total_points');
+      if (parsed.email) {
+        q = q.eq('email', parsed.email);
+      } else {
+        q = q.eq('phone', parsed.phone!);
+      }
+      const { data: user, error } = await q.maybeSingle();
       if (error) {
         console.error('[api/auth/login]', error.message);
         return res.status(500).json({ error: 'Xatolik yuz berdi' });
       }
-      if (!user) return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
+      if (!user) {
+        return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
+      }
       const hash = user.password;
-      if (typeof hash !== 'string') return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
+      if (typeof hash !== 'string') {
+        return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
+      }
       const valid = await bcrypt.compare(password, hash);
-      if (!valid) return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
+      if (!valid) {
+        return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
+      }
       const token = jwt.sign({ id: user.id }, JWT_SECRET);
       return res.status(200).json({
         token,
@@ -72,7 +103,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           id: user.id,
           firstName: user.first_name,
           lastName: user.last_name,
-          email: user.email,
+          email: user.email ?? null,
+          phone: user.phone ?? null,
           level: user.level,
           onboarded: user.onboarded,
           totalPoints: user.total_points ?? 0,
@@ -84,10 +116,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const body = parseBody(req.body);
       const firstName = body.firstName as string | undefined;
       const lastName = body.lastName as string | undefined;
-      const email = body.email as string | undefined;
       const password = body.password as string | undefined;
-      if (!email || !password) {
-        return res.status(400).json({ error: 'Email va parol kiritilishi shart' });
+      const contactRaw = readRegisterContact(body);
+      const parsed = parseContactIdentifier(contactRaw);
+      if (parsed.ok === false) {
+        return res.status(400).json({ error: parsed.error });
+      }
+      if (!password) {
+        return res.status(400).json({ error: 'Parol kiritilishi shart' });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
       const { data: user, error } = await supabase
@@ -95,13 +131,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .insert({
           first_name: firstName ?? '',
           last_name: lastName ?? '',
-          email,
+          email: parsed.email,
+          phone: parsed.phone,
           password: hashedPassword,
         })
-        .select('id, first_name, last_name, email, level, onboarded, total_points')
+        .select('id, first_name, last_name, email, phone, level, onboarded, total_points')
         .single();
       if (error) {
-        if (error.code === '23505') return res.status(400).json({ error: 'Email allaqachon mavjud' });
+        if (error.code === '23505') {
+          return res.status(400).json({ error: "Bu email yoki telefon allaqachon ro'yxatdan o'tgan" });
+        }
         console.error('[api/auth/register]', error.message);
         return res.status(500).json({ error: 'Xatolik yuz berdi' });
       }
@@ -126,7 +165,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           id: user.id,
           firstName: user.first_name,
           lastName: user.last_name,
-          email: user.email,
+          email: user.email ?? null,
+          phone: user.phone ?? null,
           level: user.level ?? 'A0',
           onboarded: user.onboarded ?? 0,
           totalPoints: user.total_points ?? 0,

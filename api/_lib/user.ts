@@ -3,12 +3,13 @@ import { supabase } from './supabase.js';
 import { parseBody } from './request.js';
 import { getAccessInfo } from './subscription.js';
 import { buildRequestLogContext, logError } from './logger.js';
+import { applyUserAccountPatch } from '../../shared/userAccountPatch.js';
 
 async function handleMe(userId: number, res: VercelResponse) {
   const { data: user, error } = await supabase
     .from('users')
     .select(
-      'id, first_name, last_name, email, level, onboarded, progress, total_points, plan_name, plan_expires_at'
+      'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at'
     )
     .eq('id', userId)
     .maybeSingle();
@@ -20,7 +21,8 @@ async function handleMe(userId: number, res: VercelResponse) {
     id: user.id,
     firstName: user.first_name,
     lastName: user.last_name,
-    email: user.email,
+    email: user.email ?? null,
+    phone: user.phone ?? null,
     level: user.level,
     onboarded: user.onboarded,
     progress: user.progress,
@@ -28,6 +30,18 @@ async function handleMe(userId: number, res: VercelResponse) {
     planName: user.plan_name ?? null,
     planExpiresAt: user.plan_expires_at ?? null,
   });
+}
+
+async function handleAccount(userId: number, req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'PATCH') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  const body = parseBody(req.body);
+  const result = await applyUserAccountPatch(supabase, userId, body);
+  if (result.ok === false) {
+    return res.status(result.status).json({ error: result.error });
+  }
+  return handleMe(userId, res);
 }
 
 async function handleOnboard(
@@ -104,6 +118,9 @@ export async function routeUserRequest(
         return res.status(405).json({ error: 'Method not allowed' });
       }
       return await handlePayments(userId, res);
+    }
+    if (segment === 'account') {
+      return await handleAccount(userId, req, res);
     }
     return res.status(404).json({ error: 'Not found' });
   } catch (error) {

@@ -33,6 +33,8 @@ import {
 import { assignCompetitionRanks } from './shared/leaderboardRanks.ts';
 import { fetchPeriodLeaderboardFromEvents } from './shared/periodLeaderboard.ts';
 import { insertPointEvent } from './shared/pointEvents.ts';
+import { parseContactIdentifier } from './shared/authIdentifiers.ts';
+import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -193,22 +195,38 @@ async function startServer() {
     './server/services/referral.service'
   );
   app.post('/api/auth/register', async (req, res) => {
-    const { firstName, lastName, email, password, ref: refCode } = req.body;
+    const { firstName, lastName, password, ref: refCode, identifier, email: legacyEmail } = req.body ?? {};
+    const contactRaw =
+      typeof identifier === 'string' && identifier.trim()
+        ? identifier.trim()
+        : typeof legacyEmail === 'string' && legacyEmail.trim()
+          ? legacyEmail.trim()
+          : '';
+    const parsed = parseContactIdentifier(contactRaw);
+    if (parsed.ok === false) {
+      return res.status(400).json({ error: parsed.error });
+    }
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Parol kiritilishi shart' });
+    }
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const { data: user, error } = await supabase
         .from('users')
         .insert({
-          first_name: firstName,
-          last_name: lastName,
-          email,
+          first_name: firstName ?? '',
+          last_name: lastName ?? '',
+          email: parsed.email,
+          phone: parsed.phone,
           password: hashedPassword,
           onboarded: 1,
         })
-        .select('id, first_name, last_name, email, level, onboarded')
+        .select('id, first_name, last_name, email, phone, level, onboarded')
         .single();
       if (error) {
-        if (error.code === '23505') return res.status(400).json({ error: 'Email allaqachon mavjud' });
+        if (error.code === '23505') {
+          return res.status(400).json({ error: "Bu email yoki telefon allaqachon ro'yxatdan o'tgan" });
+        }
         throw error;
       }
       if (refCode && typeof refCode === 'string') {
@@ -226,7 +244,8 @@ async function startServer() {
           id: user.id,
           firstName: user.first_name,
           lastName: user.last_name,
-          email: user.email,
+          email: user.email ?? null,
+          phone: user.phone ?? null,
           level: user.level ?? 'A0',
           onboarded: 1,
           planName: null,
@@ -240,10 +259,29 @@ async function startServer() {
   });
 
   app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
-    const { data: user, error } = await supabase.from('users').select('*').eq('email', email).single();
+    const { password, identifier, email: legacyEmail } = req.body ?? {};
+    const idRaw =
+      typeof identifier === 'string' && identifier.trim()
+        ? identifier.trim()
+        : typeof legacyEmail === 'string' && legacyEmail.trim()
+          ? legacyEmail.trim()
+          : '';
+    if (!idRaw || !password) {
+      return res.status(400).json({ error: "Email/telefon va parol kiritilishi shart" });
+    }
+    const parsed = parseContactIdentifier(idRaw);
+    if (parsed.ok === false) {
+      return res.status(400).json({ error: parsed.error });
+    }
+    let q = supabase.from('users').select('*');
+    if (parsed.email) {
+      q = q.eq('email', parsed.email);
+    } else {
+      q = q.eq('phone', parsed.phone!);
+    }
+    const { data: user, error } = await q.maybeSingle();
     if (error || !user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
+      return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
     }
     const token = jwt.sign({ id: user.id }, JWT_SECRET);
     res.json({
@@ -252,7 +290,8 @@ async function startServer() {
         id: user.id,
         firstName: user.first_name,
         lastName: user.last_name,
-        email: user.email,
+        email: user.email ?? null,
+        phone: user.phone ?? null,
         level: user.level,
         onboarded: user.onboarded,
         planName: user.plan_name ?? null,
@@ -309,7 +348,9 @@ async function startServer() {
   app.get('/api/user/me', authenticate, async (req: any, res) => {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, first_name, last_name, email, level, onboarded, progress, plan_name, plan_expires_at')
+      .select(
+        'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at'
+      )
       .eq('id', req.userId)
       .single();
     if (error || !user) return res.status(404).json({ error: 'User topilmadi' });
@@ -317,10 +358,40 @@ async function startServer() {
       id: user.id,
       firstName: user.first_name,
       lastName: user.last_name,
-      email: user.email,
+      email: user.email ?? null,
+      phone: user.phone ?? null,
       level: user.level,
       onboarded: user.onboarded,
       progress: user.progress,
+      totalPoints: user.total_points ?? 0,
+      planName: user.plan_name ?? null,
+      planExpiresAt: user.plan_expires_at ?? null,
+    });
+  });
+
+  app.patch('/api/user/account', authenticate, async (req: any, res) => {
+    const result = await applyUserAccountPatch(supabase, req.userId, req.body ?? {});
+    if (result.ok === false) {
+      return res.status(result.status).json({ error: result.error });
+    }
+    const { data: user, error } = await supabase
+      .from('users')
+      .select(
+        'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at'
+      )
+      .eq('id', req.userId)
+      .single();
+    if (error || !user) return res.status(404).json({ error: 'User topilmadi' });
+    res.json({
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email ?? null,
+      phone: user.phone ?? null,
+      level: user.level,
+      onboarded: user.onboarded,
+      progress: user.progress,
+      totalPoints: user.total_points ?? 0,
       planName: user.plan_name ?? null,
       planExpiresAt: user.plan_expires_at ?? null,
     });

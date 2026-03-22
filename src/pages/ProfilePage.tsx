@@ -14,6 +14,7 @@ import {
   Calendar,
   Package,
   History,
+  Phone,
 } from 'lucide-react';
 
 const TARIFF_LABELS: Record<string, string> = {
@@ -72,9 +73,16 @@ export default function ProfilePage() {
             <User className="w-12 h-12 text-indigo-600" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900">{user?.firstName} {user?.lastName}</h2>
-          <p className="text-slate-500 flex items-center justify-center gap-2 mt-1">
-            <Mail className="w-4 h-4" /> {user?.email}
-          </p>
+          <div className="text-slate-500 mt-2 space-y-1 text-sm">
+            <p className="flex items-center justify-center gap-2">
+              <Mail className="w-4 h-4 shrink-0" />
+              <span>{user?.email ?? "Email qo'shilmagan"}</span>
+            </p>
+            <p className="flex items-center justify-center gap-2">
+              <Phone className="w-4 h-4 shrink-0" />
+              <span>{user?.phone ?? "Telefon qo'shilmagan"}</span>
+            </p>
+          </div>
 
           <div className="mt-8 grid grid-cols-2 gap-4">
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -134,7 +142,11 @@ export default function ProfilePage() {
             <span className="font-medium text-slate-700 flex-1 text-left">To'lovlar tarixi</span>
             <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
           </button>
-          <button className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100">
+          <button
+            type="button"
+            onClick={() => navigate('/profile/settings')}
+            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+          >
             <Settings className="w-5 h-5 text-slate-400" />
             <span className="font-medium text-slate-700 flex-1 text-left">Sozlamalar</span>
             <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
