@@ -132,7 +132,7 @@ export default function AuthPage() {
               className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
               value={formData.identifier}
               onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-              placeholder="Email yoki telefon (UZ, RU, KZ, TJ, KG)"
+              placeholder="+998901234567 yoki pochta@misol.uz"
             />
           </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
@@ -24,14 +24,19 @@ export default function ProfileSettingsPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
+
+  const [emailCurrentPassword, setEmailCurrentPassword] = useState('');
+  const [phoneCurrentPassword, setPhoneCurrentPassword] = useState('');
+  const [passwordCurrentPassword, setPasswordCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-  const [error, setError] = useState('');
-  const [ok, setOk] = useState('');
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const loadMe = useCallback(() => {
     if (!token) return;
     fetch(apiUrl('/api/user/me'), { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => (res.ok ? res.json() : null))
@@ -43,68 +48,132 @@ export default function ProfileSettingsPage() {
       .catch(() => {});
   }, [token]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    loadMe();
+  }, [loadMe]);
+
+  const applyMeToContext = (me: MeResponse) => {
+    updateUser({
+      email: me.email ?? null,
+      phone: me.phone ?? null,
+      totalPoints: me.totalPoints,
+      planName: me.planName,
+      planExpiresAt: me.planExpiresAt,
+    });
+  };
+
+  const patchAccount = async (body: Record<string, string>) => {
+    const res = await fetch(apiUrl('/api/user/account'), {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token!}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(typeof data.error === 'string' ? data.error : 'Xatolik yuz berdi');
+    }
+    return data as MeResponse;
+  };
+
+  const handleSaveEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setOk('');
+    setBanner(null);
     if (!token) {
-      setError('Sessiya topilmadi');
+      setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
       return;
     }
-    if (!currentPassword) {
-      setError("O'zgarishlar uchun joriy parolni kiriting");
+    if (!emailCurrentPassword) {
+      setBanner({ kind: 'error', text: "Emailni saqlash uchun joriy parolni kiriting" });
       return;
     }
-    if (newPassword || newPasswordConfirm) {
-      if (newPassword !== newPasswordConfirm) {
-        setError('Yangi parollar mos kelmadi');
-        return;
-      }
-      if (newPassword.length < 6) {
-        setError("Yangi parol kamida 6 belgi bo'lsin");
-        return;
-      }
-    }
-    setSaving(true);
+    setSavingEmail(true);
     try {
-      const body: Record<string, string> = {
-        currentPassword,
+      const me = await patchAccount({
+        currentPassword: emailCurrentPassword,
         email: email.trim(),
-        phone: phone.trim(),
-      };
-      if (newPassword) {
-        body.newPassword = newPassword;
-        body.newPasswordConfirm = newPasswordConfirm;
-      }
-      const res = await fetch(apiUrl('/api/user/account'), {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(typeof data.error === 'string' ? data.error : 'Xatolik yuz berdi');
-        return;
-      }
-      const me = data as MeResponse;
-      updateUser({
-        email: me.email ?? null,
-        phone: me.phone ?? null,
-        totalPoints: me.totalPoints,
-        planName: me.planName,
-        planExpiresAt: me.planExpiresAt,
-      });
-      setOk("Sozlamalar saqlandi");
-      setCurrentPassword('');
-      setNewPassword('');
-      setNewPasswordConfirm('');
+      applyMeToContext(me);
+      setEmail(me.email ?? '');
+      setEmailCurrentPassword('');
+      setBanner({ kind: 'ok', text: 'Email yangilandi' });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
     } finally {
-      setSaving(false);
+      setSavingEmail(false);
     }
   };
+
+  const handleSavePhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBanner(null);
+    if (!token) {
+      setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
+      return;
+    }
+    if (!phoneCurrentPassword) {
+      setBanner({ kind: 'error', text: "Telefonni saqlash uchun joriy parolni kiriting" });
+      return;
+    }
+    setSavingPhone(true);
+    try {
+      const me = await patchAccount({
+        currentPassword: phoneCurrentPassword,
+        phone: phone.trim(),
+      });
+      applyMeToContext(me);
+      setPhone(me.phone ?? '');
+      setPhoneCurrentPassword('');
+      setBanner({ kind: 'ok', text: 'Telefon raqami yangilandi' });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleSavePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBanner(null);
+    if (!token) {
+      setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
+      return;
+    }
+    if (!passwordCurrentPassword) {
+      setBanner({ kind: 'error', text: "Parolni almashtirish uchun joriy parolni kiriting" });
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setBanner({ kind: 'error', text: 'Yangi parollar mos kelmadi' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      setBanner({ kind: 'error', text: "Yangi parol kamida 6 belgi bo'lsin" });
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const me = await patchAccount({
+        currentPassword: passwordCurrentPassword,
+        newPassword,
+        newPasswordConfirm,
+      });
+      applyMeToContext(me);
+      setPasswordCurrentPassword('');
+      setNewPassword('');
+      setNewPasswordConfirm('');
+      setBanner({ kind: 'ok', text: 'Parol yangilandi' });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const cardClass =
+    'bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -121,23 +190,31 @@ export default function ProfileSettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200"
+          className="space-y-6"
         >
-          <h1 className="text-xl font-bold text-slate-900 mb-1">Sozlamalar</h1>
-          <p className="text-slate-500 text-sm mb-6">
-            Email, telefon yoki parolni yangilash uchun joriy parolingiz kerak.
-          </p>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 mb-1">Sozlamalar</h1>
+            <p className="text-slate-500 text-sm">
+              Email, telefon va parol alohida saqlanadi. Har bir bo‘lim uchun joriy parol kerak.
+            </p>
+          </div>
 
-          {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>
-          )}
-          {ok && (
-            <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg mb-4 text-sm">{ok}</div>
+          {banner && (
+            <div
+              className={
+                banner.kind === 'ok'
+                  ? 'bg-emerald-50 text-emerald-700 p-3 rounded-lg text-sm'
+                  : 'bg-red-50 text-red-600 p-3 rounded-lg text-sm'
+              }
+            >
+              {banner.text}
+            </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSaveEmail} className={cardClass}>
+            <h2 className="text-base font-semibold text-slate-900">Email</h2>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Yangi email</label>
               <input
                 type="email"
                 autoComplete="email"
@@ -148,7 +225,28 @@ export default function ProfileSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Telefon raqami</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Joriy parol</label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={emailCurrentPassword}
+                onChange={(e) => setEmailCurrentPassword(e.target.value)}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={savingEmail}
+              className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
+            >
+              {savingEmail ? 'Saqlanmoqda…' : 'Emailni saqlash'}
+            </button>
+          </form>
+
+          <form onSubmit={handleSavePhone} className={cardClass}>
+            <h2 className="text-base font-semibold text-slate-900">Telefon raqami</h2>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Yangi telefon</label>
               <input
                 type="tel"
                 autoComplete="tel"
@@ -156,59 +254,68 @@ export default function ProfileSettingsPage() {
                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+7, +998, +992, +996…"
+                placeholder="+998901234567"
               />
             </div>
-
-            <div className="pt-2 border-t border-slate-100">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                Parol
-              </p>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Joriy parol</label>
-                  <input
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Yangi parol (ixtiyoriy)
-                  </label>
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Yangi parolni tasdiqlash
-                  </label>
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                    value={newPasswordConfirm}
-                    onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                  />
-                </div>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Joriy parol</label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={phoneCurrentPassword}
+                onChange={(e) => setPhoneCurrentPassword(e.target.value)}
+              />
             </div>
-
             <button
               type="submit"
-              disabled={saving}
-              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
+              disabled={savingPhone}
+              className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
             >
-              {saving ? 'Saqlanmoqda…' : 'Saqlash'}
+              {savingPhone ? 'Saqlanmoqda…' : 'Telefonni saqlash'}
+            </button>
+          </form>
+
+          <form onSubmit={handleSavePassword} className={cardClass}>
+            <h2 className="text-base font-semibold text-slate-900">Parol</h2>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Joriy parol</label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={passwordCurrentPassword}
+                onChange={(e) => setPasswordCurrentPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Yangi parol</label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Yangi parolni tasdiqlash
+              </label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={newPasswordConfirm}
+                onChange={(e) => setNewPasswordConfirm(e.target.value)}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={savingPassword}
+              className="w-full bg-slate-800 text-white py-2.5 rounded-xl font-semibold hover:bg-slate-900 transition-colors disabled:opacity-60"
+            >
+              {savingPassword ? 'Saqlanmoqda…' : 'Parolni almashtirish'}
             </button>
           </form>
         </motion.div>

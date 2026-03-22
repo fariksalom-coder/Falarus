@@ -2,7 +2,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 
 /** Short hint for validation errors (Latin digits in examples). */
 export const REGIONAL_PHONE_HINT =
-  "UZ: 901234567; RU/KZ: 9161234567 yoki +79161234567; TJ: +99290123456; KG: +996555123456";
+  "UZ: +998901234567; RU/KZ: 9161234567 yoki +79161234567; TJ: +99290123456; KG: +996555123456";
 
 export function isValidNormalizedEmail(email: string): boolean {
   return EMAIL_RE.test(email);
