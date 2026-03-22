@@ -5,6 +5,7 @@ import AppNavBar from './AppNavBar';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { useSectionSwipeNavigation } from '../hooks/useSectionSwipeNavigation';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
+import { appMainContentMinHeightCss, appMainTopOffsetCss } from '../constants/appLayout';
 
 /** Routes where we hide the top nav bar (payment = fullscreen, vocabulary nested = back only, invite = has back button). */
 function hideNavBar(path: string): boolean {
@@ -62,20 +63,18 @@ export default function MainLayout() {
 
   const transition = reduceMotion ? fadeSoft : springTab;
 
+  const topOffset = showNavBar ? appMainTopOffsetCss() : undefined;
+  const contentMinH = showNavBar ? appMainContentMinHeightCss() : '100dvh';
+
   return (
     <>
       {showNavBar && <AppNavBar />}
       <motion.div
-        className={
-          showNavBar
-            ? `min-h-screen pt-[78px]${swipe.canSwipe ? ' will-change-transform' : ''}`
-            : 'min-h-screen'
-        }
-        style={
-          swipe.canSwipe
-            ? { x: swipe.x, touchAction: 'pan-y pinch-zoom' }
-            : undefined
-        }
+        className={showNavBar ? `min-h-screen${swipe.canSwipe ? ' will-change-transform' : ''}` : 'min-h-screen'}
+        style={{
+          ...(showNavBar && topOffset ? { paddingTop: topOffset } : {}),
+          ...(swipe.canSwipe ? { x: swipe.x, touchAction: 'pan-y pinch-zoom' } : {}),
+        }}
         onTouchStart={swipe.onTouchStart}
         onTouchMove={swipe.onTouchMove}
         onTouchEnd={swipe.onTouchEnd}
@@ -84,7 +83,7 @@ export default function MainLayout() {
         <div
           className="relative w-full overflow-hidden"
           style={{
-            minHeight: showNavBar ? 'calc(100dvh - 78px)' : '100dvh',
+            minHeight: contentMinH,
           }}
         >
           {/*

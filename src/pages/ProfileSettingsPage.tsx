@@ -25,8 +25,6 @@ export default function ProfileSettingsPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
 
-  const [emailCurrentPassword, setEmailCurrentPassword] = useState('');
-  const [phoneCurrentPassword, setPhoneCurrentPassword] = useState('');
   const [passwordCurrentPassword, setPasswordCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
@@ -85,19 +83,13 @@ export default function ProfileSettingsPage() {
       setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
       return;
     }
-    if (!emailCurrentPassword) {
-      setBanner({ kind: 'error', text: "Emailni saqlash uchun joriy parolni kiriting" });
-      return;
-    }
     setSavingEmail(true);
     try {
       const me = await patchAccount({
-        currentPassword: emailCurrentPassword,
         email: email.trim(),
       });
       applyMeToContext(me);
       setEmail(me.email ?? '');
-      setEmailCurrentPassword('');
       setBanner({ kind: 'ok', text: 'Email yangilandi' });
     } catch (err) {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
@@ -113,19 +105,13 @@ export default function ProfileSettingsPage() {
       setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
       return;
     }
-    if (!phoneCurrentPassword) {
-      setBanner({ kind: 'error', text: "Telefonni saqlash uchun joriy parolni kiriting" });
-      return;
-    }
     setSavingPhone(true);
     try {
       const me = await patchAccount({
-        currentPassword: phoneCurrentPassword,
         phone: phone.trim(),
       });
       applyMeToContext(me);
       setPhone(me.phone ?? '');
-      setPhoneCurrentPassword('');
       setBanner({ kind: 'ok', text: 'Telefon raqami yangilandi' });
     } catch (err) {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
@@ -195,7 +181,8 @@ export default function ProfileSettingsPage() {
           <div>
             <h1 className="text-xl font-bold text-slate-900 mb-1">Sozlamalar</h1>
             <p className="text-slate-500 text-sm">
-              Email, telefon va parol alohida saqlanadi. Har bir bo‘lim uchun joriy parol kerak.
+              Email va telefonni sessiya orqali yangilashingiz mumkin. Parolni almashtirish uchun joriy
+              parol kerak.
             </p>
           </div>
 
@@ -224,16 +211,6 @@ export default function ProfileSettingsPage() {
                 placeholder="pochta@misol.uz"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Joriy parol</label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={emailCurrentPassword}
-                onChange={(e) => setEmailCurrentPassword(e.target.value)}
-              />
-            </div>
             <button
               type="submit"
               disabled={savingEmail}
@@ -255,16 +232,6 @@ export default function ProfileSettingsPage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+998901234567"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Joriy parol</label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={phoneCurrentPassword}
-                onChange={(e) => setPhoneCurrentPassword(e.target.value)}
               />
             </div>
             <button

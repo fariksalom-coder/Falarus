@@ -12,7 +12,8 @@ export type AccountPatchResult =
   | { ok: false; status: number; error: string };
 
 /**
- * PATCH body: currentPassword (required), optional email, phone, newPassword, newPasswordConfirm.
+ * PATCH body: optional email, phone; newPassword + newPasswordConfirm to change password.
+ * currentPassword is required only when setting a new password (email/phone use session auth only).
  * Empty string for email/phone clears the field if the other contact remains.
  */
 export async function applyUserAccountPatch(
@@ -20,10 +21,9 @@ export async function applyUserAccountPatch(
   userId: number,
   body: Record<string, unknown>
 ): Promise<AccountPatchResult> {
-  const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
-  if (!currentPassword) {
-    return { ok: false, status: 400, error: "Joriy parol kiritilishi shart" };
-  }
+  const newPassRaw = typeof body.newPassword === 'string' ? body.newPassword : '';
+  const newPass2Raw = typeof body.newPasswordConfirm === 'string' ? body.newPasswordConfirm : '';
+  const wantsPasswordChange = Boolean(newPassRaw || newPass2Raw);
 
   const { data: user, error: fetchErr } = await supabase
     .from('users')
@@ -38,9 +38,15 @@ export async function applyUserAccountPatch(
     return { ok: false, status: 404, error: 'User topilmadi' };
   }
 
-  const valid = await bcrypt.compare(currentPassword, user.password);
-  if (!valid) {
-    return { ok: false, status: 401, error: "Parol noto'g'ri" };
+  if (wantsPasswordChange) {
+    const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
+    if (!currentPassword) {
+      return { ok: false, status: 400, error: "Parolni almashtirish uchun joriy parol kiritilishi shart" };
+    }
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) {
+      return { ok: false, status: 401, error: "Parol noto'g'ri" };
+    }
   }
 
   let nextEmail: string | null =
@@ -114,8 +120,8 @@ export async function applyUserAccountPatch(
     }
   }
 
-  const newPass = typeof body.newPassword === 'string' ? body.newPassword : '';
-  const newPass2 = typeof body.newPasswordConfirm === 'string' ? body.newPasswordConfirm : '';
+  const newPass = newPassRaw;
+  const newPass2 = newPass2Raw;
 
   const updates: Record<string, unknown> = {
     email: nextEmail,
