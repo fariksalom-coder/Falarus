@@ -45,6 +45,8 @@ import LessonFifteenTaskSixPage from './pages/LessonFifteenTaskSixPage';
 import LessonFifteenTaskSevenPage from './pages/LessonFifteenTaskSevenPage';
 import LessonSixteenPage from './pages/LessonSixteenPage';
 import LessonSixteenTaskOnePage from './pages/LessonSixteenTaskOnePage';
+import LessonSixteenTaskTwoPage from './pages/LessonSixteenTaskTwoPage';
+import LessonSixteenTaskThreePage from './pages/LessonSixteenTaskThreePage';
 import LessonSeventeenPage from './pages/LessonSeventeenPage';
 import LessonSeventeenTaskOnePage from './pages/LessonSeventeenTaskOnePage';
 import LessonSeventeenTaskTwoPage from './pages/LessonSeventeenTaskTwoPage';
@@ -270,6 +272,8 @@ function AppRoutes() {
       <Route path="/lesson-15/topshiriq-7" element={<LessonFifteenTaskSevenPage />} />
       <Route path="/lesson-16" element={<LessonSixteenPage />} />
       <Route path="/lesson-16/topshiriq-1" element={<LessonSixteenTaskOnePage />} />
+      <Route path="/lesson-16/topshiriq-2" element={<LessonSixteenTaskTwoPage />} />
+      <Route path="/lesson-16/topshiriq-3" element={<LessonSixteenTaskThreePage />} />
       <Route path="/lesson-17" element={<LessonSeventeenPage />} />
       <Route path="/lesson-17/topshiriq-1" element={<LessonSeventeenTaskOnePage />} />
       <Route path="/lesson-17/topshiriq-2" element={<LessonSeventeenTaskTwoPage />} />

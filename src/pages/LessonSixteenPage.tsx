@@ -63,13 +63,18 @@ export default function LessonSixteenPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-16/topshiriq-1')}
-            className={getTaskButtonClassName('/lesson-16', 1, true)}
-          >
-            Topshiriq
-          </button>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[1, 2, 3].map((taskNum) => (
+              <button
+                key={taskNum}
+                type="button"
+                onClick={() => navigate(`/lesson-16/topshiriq-${taskNum}`)}
+                className={getTaskButtonClassName('/lesson-16', taskNum, taskNum === 1)}
+              >
+                Topshiriq {taskNum}
+              </button>
+            ))}
+          </div>
         </div>
       </main>
     </div>
