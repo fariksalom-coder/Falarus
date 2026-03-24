@@ -226,6 +226,8 @@ export default function VocabularyPage() {
             const progressPercent = wordCount > 0 ? Math.round((learnedWords / wordCount) * 100) : 0;
             const theme = TOPIC_THEMES[topicIndex % TOPIC_THEMES.length];
             const locked = isVocabularyTopicLockedForUser(access, topic.id);
+            const grayscaleForFreeTier =
+              access?.subscription_active === false && topicIndex > 0;
             const subtitle = TOPIC_RU_SUBTITLE[topic.id] ?? topic.title;
 
             return (
@@ -243,6 +245,7 @@ export default function VocabularyPage() {
                 style={{
                   background: theme.cardBackground,
                   borderColor: theme.cardBorder,
+                  filter: grayscaleForFreeTier ? 'grayscale(100%) saturate(0.15)' : undefined,
                 }}
               >
                 <div
@@ -257,8 +260,8 @@ export default function VocabularyPage() {
                   <div
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] shadow-[0_8px_18px_rgba(0,0,0,0.08)] transition-transform duration-300 group-hover:scale-[1.03] md:h-14 md:w-14 md:rounded-[18px]"
                     style={{
-                      background: theme.iconBackground,
-                      color: theme.iconColor,
+                      background: grayscaleForFreeTier ? '#E2E8F0' : theme.iconBackground,
+                      color: grayscaleForFreeTier ? '#475569' : theme.iconColor,
                     }}
                   >
                     <Icon className="h-6 w-6 md:h-7 md:w-7" strokeWidth={1.8} />
@@ -280,7 +283,7 @@ export default function VocabularyPage() {
                       <p
                         className="text-[13px] font-bold md:text-[15px]"
                         style={{
-                          color: locked ? '#9CA3AF' : theme.progressTextColor,
+                          color: locked || grayscaleForFreeTier ? '#9CA3AF' : theme.progressTextColor,
                         }}
                       >
                         {progressPercent}% o&apos;rganildi
@@ -292,7 +295,7 @@ export default function VocabularyPage() {
                         learned={learnedWords}
                         total={wordCount}
                         trackClassName="bg-white/80"
-                        barColor={locked ? '#CBD5E1' : theme.progressColor}
+                        barColor={locked || grayscaleForFreeTier ? '#CBD5E1' : theme.progressColor}
                         className="drop-shadow-[0_2px_4px_rgba(255,255,255,0.65)]"
                       />
                     </div>
@@ -301,8 +304,8 @@ export default function VocabularyPage() {
                   <div
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur-sm transition-transform duration-300 group-hover:translate-x-1 md:h-12 md:w-12"
                     style={{
-                      backgroundColor: theme.arrowBackground,
-                      color: theme.arrowColor,
+                      backgroundColor: grayscaleForFreeTier ? 'rgba(241,245,249,0.95)' : theme.arrowBackground,
+                      color: grayscaleForFreeTier ? '#64748B' : theme.arrowColor,
                     }}
                   >
                     {locked ? (
