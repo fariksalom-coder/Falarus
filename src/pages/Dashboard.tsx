@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useSequentialLesson } from '../context/SequentialLessonContext';
 import { useLessonsSubscriptionLock } from '../hooks/useLessonsSubscriptionLock';
+import { useAccess } from '../context/AccessContext';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -59,6 +60,7 @@ function getCardStateStyles(state: LessonCardState) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { access } = useAccess();
   const { lessonStates, results, isReady: seqReady } = useSequentialLesson();
   const { isLessonLockedBySubscription, loaded: subLoaded } = useLessonsSubscriptionLock();
   const [modalOpen, setModalOpen] = useState(false);
@@ -138,53 +140,65 @@ export default function Dashboard() {
                       : 'Oldingi dars tugagach ochiladi';
 
               return (
-                <motion.button
-                  key={lesson.id}
-                  type="button"
-                  onClick={() => handleLessonClick(lesson)}
-                  disabled={lockedBySeq}
-                  className={`group flex w-full items-center gap-3 rounded-[28px] border px-4 py-4 text-left transition-all duration-200 sm:gap-5 sm:px-6 sm:py-5 ${styles.cardClassName} ${
-                    canInteract ? 'hover:-translate-y-0.5' : 'cursor-not-allowed'
-                  }`}
-                  style={{ borderColor: state === 'current' ? 'transparent' : BORDER, backgroundColor: state === 'current' ? undefined : CARD_BG }}
-                  whileHover={canInteract ? { scale: 1.005 } : undefined}
-                  whileTap={canInteract ? { scale: 0.995 } : undefined}
-                >
-                  <div
-                    className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] ${styles.iconWrapClassName} sm:h-20 sm:w-20`}
+                <div key={lesson.id} className="space-y-3.5 sm:space-y-4">
+                  <motion.button
+                    type="button"
+                    onClick={() => handleLessonClick(lesson)}
+                    disabled={lockedBySeq}
+                    className={`group flex w-full items-center gap-3 rounded-[28px] border px-4 py-4 text-left transition-all duration-200 sm:gap-5 sm:px-6 sm:py-5 ${styles.cardClassName} ${
+                      canInteract ? 'hover:-translate-y-0.5' : 'cursor-not-allowed'
+                    }`}
+                    style={{ borderColor: state === 'current' ? 'transparent' : BORDER, backgroundColor: state === 'current' ? undefined : CARD_BG }}
+                    whileHover={canInteract ? { scale: 1.005 } : undefined}
+                    whileTap={canInteract ? { scale: 0.995 } : undefined}
                   >
-                    {state === 'completed' ? (
-                      <Check className="h-8 w-8 sm:h-10 sm:w-10" strokeWidth={2.7} />
-                    ) : state === 'current' ? (
-                      <Play className="ml-0.5 h-7 w-7 fill-current sm:h-9 sm:w-9" strokeWidth={2.4} />
-                    ) : (
-                      <Lock className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={2.2} />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={`truncate text-[1.05rem] font-bold leading-tight sm:text-[1.2rem] ${
-                        state === 'locked' ? 'text-slate-400' : ''
-                      }`}
-                      style={{ color: state === 'current' ? '#FFFFFF' : state === 'locked' ? '#9CA3AF' : TEXT }}
-                    >
-                      {lesson.num}. {title}
-                    </p>
-                    <p className={`mt-1 truncate text-sm sm:text-base ${styles.subtitleClassName}`}>{subtitle}</p>
-                    {footerText ? (
-                      <p className={`mt-3 text-xs font-medium sm:text-sm ${styles.metaClassName}`}>{footerText}</p>
-                    ) : null}
-                  </div>
-
-                  {averagePercent != null && state !== 'locked' ? (
                     <div
-                      className={`shrink-0 rounded-full px-3 py-2 text-sm font-bold sm:px-4 sm:text-[1.05rem] ${styles.pillClassName}`}
+                      className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] ${styles.iconWrapClassName} sm:h-20 sm:w-20`}
                     >
-                      {averagePercent}%
+                      {state === 'completed' ? (
+                        <Check className="h-8 w-8 sm:h-10 sm:w-10" strokeWidth={2.7} />
+                      ) : state === 'current' ? (
+                        <Play className="ml-0.5 h-7 w-7 fill-current sm:h-9 sm:w-9" strokeWidth={2.4} />
+                      ) : (
+                        <Lock className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={2.2} />
+                      )}
                     </div>
-                  ) : null}
-                </motion.button>
+
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`truncate text-[1.05rem] font-bold leading-tight sm:text-[1.2rem] ${
+                          state === 'locked' ? 'text-slate-400' : ''
+                        }`}
+                        style={{ color: state === 'current' ? '#FFFFFF' : state === 'locked' ? '#9CA3AF' : TEXT }}
+                      >
+                        {lesson.num}. {title}
+                      </p>
+                      <p className={`mt-1 truncate text-sm sm:text-base ${styles.subtitleClassName}`}>{subtitle}</p>
+                      {footerText ? (
+                        <p className={`mt-3 text-xs font-medium sm:text-sm ${styles.metaClassName}`}>{footerText}</p>
+                      ) : null}
+                    </div>
+
+                    {averagePercent != null && state !== 'locked' ? (
+                      <div
+                        className={`shrink-0 rounded-full px-3 py-2 text-sm font-bold sm:px-4 sm:text-[1.05rem] ${styles.pillClassName}`}
+                      >
+                        {averagePercent}%
+                      </div>
+                    ) : null}
+                  </motion.button>
+
+                  {lesson.id === 3 && access?.subscription_active === false && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/tariflar')}
+                      className="w-full rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-4 text-left transition-colors hover:bg-indigo-100"
+                    >
+                      <p className="text-base font-bold text-indigo-800">4-darsdan keyingi darslar pullik</p>
+                      <p className="mt-1 text-sm text-indigo-700">Davom etish uchun tarif sotib oling</p>
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
