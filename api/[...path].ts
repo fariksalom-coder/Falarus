@@ -395,6 +395,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { data: topRows, error: topErr } = await supabase
           .from('users')
           .select('id, first_name, last_name, avatar_url, total_points')
+          .eq('hide_from_leaderboard', false)
           .order('total_points', { ascending: false })
           .order('id', { ascending: true })
           .limit(100);
@@ -408,16 +409,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })));
         const { data: me } = await supabase
           .from('users')
-          .select('id, first_name, last_name, avatar_url, total_points')
+          .select('id, first_name, last_name, avatar_url, total_points, hide_from_leaderboard')
           .eq('id', userId)
           .single();
-        if (!me) {
+        if (!me || me.hide_from_leaderboard) {
           return res.status(200).json({ top, myRank: null });
         }
         const myPoints = Number(me.total_points ?? 0);
         const { count, error: countErr } = await supabase
           .from('users')
           .select('id', { count: 'exact', head: true })
+          .eq('hide_from_leaderboard', false)
           .gt('total_points', myPoints);
         return res.status(200).json({
           top,
@@ -439,19 +441,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { data: top, error: topErr } = await supabase
           .from('users')
           .select('id, first_name, last_name, avatar_url, monthly_points')
+          .eq('hide_from_leaderboard', false)
           .order('monthly_points', { ascending: false })
           .limit(100);
         if (topErr) throw topErr;
         const { data: me, error: meErr } = await supabase
           .from('users')
-          .select('id, first_name, last_name, avatar_url, monthly_points')
+          .select('id, first_name, last_name, avatar_url, monthly_points, hide_from_leaderboard')
           .eq('id', userId)
           .single();
-        if (meErr || !me) return res.status(200).json({ top: top ?? [], myRank: null });
+        if (meErr || !me || me.hide_from_leaderboard) return res.status(200).json({ top: top ?? [], myRank: null });
         const myPoints = me.monthly_points ?? 0;
         const { count, error: countErr } = await supabase
           .from('users')
           .select('id', { count: 'exact', head: true })
+          .eq('hide_from_leaderboard', false)
           .gt('monthly_points', myPoints);
         const rank = countErr ? null : (count ?? 0) + 1;
         return res.status(200).json({
@@ -484,6 +488,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { data: top, error: topErr } = await supabase
           .from('users')
           .select('id, first_name, last_name, avatar_url, points, points_date')
+          .eq('hide_from_leaderboard', false)
           .eq('points_date', today)
           .gt('points', 0)
           .order('points', { ascending: false })
@@ -493,20 +498,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const { data: legacyTop, error: legacyTopErr } = await supabase
             .from('users')
             .select('id, first_name, last_name, avatar_url, points')
+            .eq('hide_from_leaderboard', false)
             .gt('points', 0)
             .order('points', { ascending: false })
             .limit(100);
           if (legacyTopErr) throw legacyTopErr;
           const { data: legacyMe, error: legacyMeErr } = await supabase
             .from('users')
-            .select('id, first_name, last_name, avatar_url, points')
+            .select('id, first_name, last_name, avatar_url, points, hide_from_leaderboard')
             .eq('id', userId)
             .single();
-          if (legacyMeErr || !legacyMe) return res.status(200).json({ top: legacyTop ?? [], myRank: null });
+          if (legacyMeErr || !legacyMe || legacyMe.hide_from_leaderboard) return res.status(200).json({ top: legacyTop ?? [], myRank: null });
           const myPoints = legacyMe.points ?? 0;
           const { count, error: legacyCountErr } = await supabase
             .from('users')
             .select('id', { count: 'exact', head: true })
+            .eq('hide_from_leaderboard', false)
             .gt('points', myPoints);
           const rank = legacyCountErr ? null : (count ?? 0) + 1;
           return res.status(200).json({
@@ -532,14 +539,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         const { data: me, error: meErr } = await supabase
           .from('users')
-          .select('id, first_name, last_name, avatar_url, points, points_date')
+          .select('id, first_name, last_name, avatar_url, points, points_date, hide_from_leaderboard')
           .eq('id', userId)
           .single();
-        if (meErr || !me) return res.status(200).json({ top: top ?? [], myRank: null });
+        if (meErr || !me || me.hide_from_leaderboard) return res.status(200).json({ top: top ?? [], myRank: null });
         const myPoints = getDailyPoints(me, today);
         const { count, error: countErr } = await supabase
           .from('users')
           .select('id', { count: 'exact', head: true })
+          .eq('hide_from_leaderboard', false)
           .eq('points_date', today)
           .gt('points', myPoints > 0 ? myPoints : 0);
         const rank = countErr ? null : (count ?? 0) + 1;
@@ -573,6 +581,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: top, error: topErr } = await supabase
         .from('users')
         .select('id, first_name, last_name, avatar_url, weekly_points, weekly_points_week_start')
+        .eq('hide_from_leaderboard', false)
         .eq('weekly_points_week_start', weekStart)
         .gt('weekly_points', 0)
         .order('weekly_points', { ascending: false })
@@ -582,20 +591,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { data: legacyTop, error: legacyTopErr } = await supabase
           .from('users')
           .select('id, first_name, last_name, avatar_url, weekly_points')
+          .eq('hide_from_leaderboard', false)
           .gt('weekly_points', 0)
           .order('weekly_points', { ascending: false })
           .limit(100);
         if (legacyTopErr) throw legacyTopErr;
         const { data: legacyMe, error: legacyMeErr } = await supabase
           .from('users')
-          .select('id, first_name, last_name, avatar_url, weekly_points')
+          .select('id, first_name, last_name, avatar_url, weekly_points, hide_from_leaderboard')
           .eq('id', userId)
           .single();
-        if (legacyMeErr || !legacyMe) return res.status(200).json({ top: legacyTop ?? [], myRank: null });
+        if (legacyMeErr || !legacyMe || legacyMe.hide_from_leaderboard) return res.status(200).json({ top: legacyTop ?? [], myRank: null });
         const myPoints = legacyMe.weekly_points ?? 0;
         const { count, error: legacyCountErr } = await supabase
           .from('users')
           .select('id', { count: 'exact', head: true })
+          .eq('hide_from_leaderboard', false)
           .gt('weekly_points', myPoints);
         const rank = legacyCountErr ? null : (count ?? 0) + 1;
         return res.status(200).json({
@@ -621,14 +632,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const { data: me, error: meErr } = await supabase
         .from('users')
-        .select('id, first_name, last_name, avatar_url, weekly_points, weekly_points_week_start')
+        .select('id, first_name, last_name, avatar_url, weekly_points, weekly_points_week_start, hide_from_leaderboard')
         .eq('id', userId)
         .single();
-      if (meErr || !me) return res.status(200).json({ top: top ?? [], myRank: null });
+      if (meErr || !me || me.hide_from_leaderboard) return res.status(200).json({ top: top ?? [], myRank: null });
       const myPoints = getWeeklyPoints(me, today);
       const { count, error: countErr } = await supabase
         .from('users')
         .select('id', { count: 'exact', head: true })
+        .eq('hide_from_leaderboard', false)
         .eq('weekly_points_week_start', weekStart)
         .gt('weekly_points', myPoints > 0 ? myPoints : 0);
       const rank = countErr ? null : (count ?? 0) + 1;

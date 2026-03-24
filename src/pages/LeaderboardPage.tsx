@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchLeaderboard, type LeaderboardPeriod, type LeaderboardResponse } from '../api/leaderboard';
 import LeaderboardList from '../components/leaderboard/LeaderboardList';
-import LeaderboardPodium from '../components/leaderboard/LeaderboardPodium';
 import UserRankCard from '../components/leaderboard/UserRankCard';
 
 const BG = '#F8FAFC';
@@ -42,9 +41,6 @@ export default function LeaderboardPage() {
       setLoading(false);
     });
   }, [token, period]);
-
-  const topThree = data?.top.slice(0, 3) ?? [];
-  const listItems = data?.top.slice(3) ?? [];
 
   return (
     <div className="min-h-screen pb-10" style={{ backgroundColor: BG }}>
@@ -96,15 +92,12 @@ export default function LeaderboardPage() {
           </div>
         ) : (
           <>
-            {topThree.length > 0 && <LeaderboardPodium items={topThree} />}
-
-            {listItems.length > 0 && (
+            {data?.top.length ? (
               <LeaderboardList
-                items={listItems}
+                items={data.top}
                 currentUserId={user?.id}
-                startRank={4}
               />
-            )}
+            ) : null}
 
             {data?.myRank != null && (
               <div className="mt-6">
