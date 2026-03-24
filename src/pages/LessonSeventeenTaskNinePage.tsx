@@ -53,7 +53,7 @@ const TASKS: Task[] = [
   {
     type: 'sentence',
     prompt: "Men xat yozayotgan edim, singlim esa kitob o‘qiyotgan edi.",
-    words: ['я', 'писал', 'письмо', 'моя', 'сестра', 'читала', 'книгу', 'прочитала'],
+    words: ['я', 'писал', 'письмо', 'а', 'моя', 'сестра', 'читала', 'книгу', 'прочитала'],
     correct: 'Я писал письмо, а моя сестра читала книгу.',
   },
   {
