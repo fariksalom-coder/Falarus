@@ -285,7 +285,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // POST /api/admin/payments/:id/confirm and .../reject — payments table
     if (path[0] === 'payments' && path.length >= 3 && req.method === 'POST') {
       const payId = Number(path[1]);
-      const action = path[2];
+      const rawAction = String(path[2] ?? '').toLowerCase();
+      const action =
+        rawAction === 'confirm' || rawAction.startsWith('confirm')
+          ? 'confirm'
+          : rawAction === 'reject' || rawAction.startsWith('reject')
+            ? 'reject'
+            : rawAction;
       if (!payId) return res.status(400).json({ error: 'Invalid id' });
       if (action === 'confirm') {
         const { data: row, error: fe } = await supabase.from('payments').select('user_id, tariff_type').eq('id', payId).eq('status', 'pending').single();
