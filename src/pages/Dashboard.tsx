@@ -192,10 +192,20 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => navigate('/tariflar')}
-                      className="w-full rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-4 text-left transition-colors hover:bg-indigo-100"
+                      className="group relative w-full overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-5 py-4 text-left text-white shadow-[0_14px_30px_rgba(99,102,241,0.32)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_42px_rgba(99,102,241,0.42)] active:translate-y-0"
                     >
-                      <p className="text-base font-bold text-indigo-800">4-darsdan keyingi darslar pullik</p>
-                      <p className="mt-1 text-sm text-indigo-700">Davom etish uchun tarif sotib oling</p>
+                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_55%)] opacity-90" />
+                      <div className="relative">
+                        <p className="text-base font-extrabold tracking-tight">
+                          Keyingi darslar Premium foydalanuvchilar uchun ochiladi
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-white/90">
+                          Davom etish uchun xarid qiling
+                        </p>
+                        <span className="mt-3 inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-sm transition-colors group-hover:bg-white/30">
+                          Premium olish
+                        </span>
+                      </div>
                     </button>
                   )}
                 </div>
