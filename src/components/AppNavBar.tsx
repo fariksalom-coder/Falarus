@@ -3,10 +3,10 @@ import { House, BookMarked, BarChart3, Trophy, User } from 'lucide-react';
 
 const BORDER = '#E2E8F0';
 const TEXT_SECONDARY = '#64748B';
-const PRIMARY = '#6D35D2';
-const ACTIVE_BG = 'linear-gradient(180deg, #7E49EC 0%, #6D35D2 100%)';
+const PRIMARY = '#2563EB';
+const ACTIVE_BG = 'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)';
 const ACTIVE_BORDER = 'rgba(255,255,255,0.2)';
-const ACTIVE_SHADOW = '0 10px 22px rgba(109,53,210,0.16), inset 0 1px 0 rgba(255,255,255,0.22)';
+const ACTIVE_SHADOW = '0 10px 22px rgba(37,99,235,0.18), inset 0 1px 0 rgba(255,255,255,0.22)';
 
 export default function AppNavBar() {
   const navigate = useNavigate();
