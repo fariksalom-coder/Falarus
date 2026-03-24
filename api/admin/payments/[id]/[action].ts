@@ -4,7 +4,7 @@
  */
 import '../../../_lib/suppress-dep0169.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import adminHandler from '../../../[...path].js';
+import adminHandler from '../../[...path].js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const idRaw = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
