@@ -48,7 +48,6 @@ import {
 } from '../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../shared/paymentsCompat.js';
 import { embedFalarusProductInProofUrl } from '../shared/paymentsProofUrl.js';
-import { listPatentVariantResults, persistPatentVariantResult } from '../shared/patentVariantResultsDb.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -100,7 +99,6 @@ const ROOT_API_PREFIXES = new Set([
   'activity',
   'user',
   'vocabulary',
-  'patent',
 ]);
 
 function getPathParts(req: VercelRequest): string[] {
@@ -299,51 +297,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return routeVocabularyRequest(req, res, userId, path.slice(1));
   }
 
-  if (path[0] === 'patent' && path[1] === 'results') {
-    const userId = requireAuth(req, res);
-    if (userId == null) return;
-    try {
-      if (req.method === 'GET') {
-        const { data, error } = await listPatentVariantResults(supabase, userId);
-        if (error) return res.status(500).json({ error: error.message });
-        return res.status(200).json(data ?? []);
-      }
-
-      if (req.method === 'POST') {
-        const body = parseBody(req.body);
-        const variantNumber = Number(body.variant_number);
-        const correctCount = Number(body.correct_count);
-        const totalCount = Number(body.total_count || 22);
-        if (!Number.isInteger(variantNumber) || variantNumber < 1 || variantNumber > 11) {
-          return res.status(400).json({ error: 'variant_number noto‘g‘ri' });
-        }
-        if (!Number.isInteger(correctCount) || correctCount < 0) {
-          return res.status(400).json({ error: 'correct_count noto‘g‘ri' });
-        }
-        if (!Number.isInteger(totalCount) || totalCount <= 0) {
-          return res.status(400).json({ error: 'total_count noto‘g‘ri' });
-        }
-        if (correctCount > totalCount) {
-          return res.status(400).json({ error: 'correct_count total_count dan oshmasin' });
-        }
-        const { data, error } = await persistPatentVariantResult(
-          supabase,
-          userId,
-          variantNumber,
-          correctCount,
-          totalCount
-        );
-        if (error) return res.status(500).json({ error: error.message });
-        if (!data) return res.status(500).json({ error: 'Patent natijasi saqlanmadi' });
-        return res.status(200).json(data);
-      }
-
-      return res.status(405).json({ error: 'Method not allowed' });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Xatolik yuz berdi';
-      return res.status(500).json({ error: message });
-    }
-  }
+  // /api/patent/results — implemented in api/patent/results.ts (Vercel catch-all 404 for this path)
 
   // /api/lesson-task-results — merged from dedicated function to reduce serverless count
   if (path[0] === 'lesson-task-results') {
