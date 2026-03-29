@@ -10,6 +10,7 @@ import {
   isSubscriptionTariffType,
   normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
+import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
 
 export function createAdminController(supabase: SupabaseClient) {
@@ -204,10 +205,16 @@ export function createAdminController(supabase: SupabaseClient) {
 
   // --- Payments (subscription_payment_requests)
   async function getPayments(_req: Request, res: Response) {
-    const { data: rows, error } = await supabase
-      .from('payments')
-      .select('id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, approved_at, created_at')
-      .order('created_at', { ascending: false });
+    const PAY_FULL =
+      'id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, approved_at, created_at';
+    const PAY_LEGACY =
+      'id, user_id, tariff_type, currency, payment_proof_url, payment_time, status, approved_at, created_at';
+    let { data: rows, error } = await supabase.from('payments').select(PAY_FULL).order('created_at', { ascending: false });
+    if (error && isPaymentsProductCodeSchemaError(error)) {
+      const second = await supabase.from('payments').select(PAY_LEGACY).order('created_at', { ascending: false });
+      rows = second.data as typeof rows;
+      error = second.error;
+    }
     if (error) {
       console.error('[admin/payments]', error);
       return res.status(500).json({ error: error.message });
@@ -256,12 +263,23 @@ export function createAdminController(supabase: SupabaseClient) {
       const adminId = (req as any).adminId;
       if (!id) return res.status(400).json({ error: 'Invalid payment id' });
 
-      const { data: row, error: fetchErr } = await supabase
+      let { data: row, error: fetchErr } = await supabase
         .from('payments')
         .select('user_id, tariff_type, product_code')
         .eq('id', id)
         .eq('status', 'pending')
         .single();
+      if (fetchErr && isPaymentsProductCodeSchemaError(fetchErr)) {
+        const second = await supabase
+          .from('payments')
+          .select('user_id, tariff_type')
+          .eq('id', id)
+          .eq('status', 'pending')
+          .single();
+        row = second.data as typeof row;
+        fetchErr = second.error;
+        if (row) (row as { product_code?: string }).product_code = 'russian';
+      }
       if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi yoki tasdiqlangan' });
 
       const userId = Number((row as any).user_id);

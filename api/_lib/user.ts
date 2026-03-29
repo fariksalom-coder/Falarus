@@ -4,6 +4,8 @@ import { parseBody } from './request.js';
 import { getAccessInfo } from './subscription.js';
 import { buildRequestLogContext, logError } from './logger.js';
 import { applyUserAccountPatch } from '../../shared/userAccountPatch.js';
+import { normalizePaymentProductCode } from '../../shared/paymentProducts.js';
+import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 
 async function handleMe(userId: number, res: VercelResponse) {
   const { data: user, error } = await supabase
@@ -61,18 +63,36 @@ async function handleOnboard(
   return res.status(200).json({ success: true });
 }
 
+const PAYMENTS_SELECT_FULL =
+  'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at';
+const PAYMENTS_SELECT_LEGACY =
+  'id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at';
+
 async function handlePayments(userId: number, res: VercelResponse) {
-  const { data: rows, error } = await supabase
+  let { data: rows, error } = await supabase
     .from('payments')
-    .select(
-      'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at'
-    )
+    .select(PAYMENTS_SELECT_FULL)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
+  if (error && isPaymentsProductCodeSchemaError(error)) {
+    const second = await supabase
+      .from('payments')
+      .select(PAYMENTS_SELECT_LEGACY)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    rows = second.data as typeof rows;
+    error = second.error;
+  }
   if (error) {
     return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
-  return res.status(200).json(rows ?? []);
+  const normalized = (rows ?? []).map((row: Record<string, unknown>) => ({
+    ...row,
+    product_code: normalizePaymentProductCode(
+      (row.product_code as string | null | undefined) ?? 'russian'
+    ),
+  }));
+  return res.status(200).json(normalized);
 }
 
 async function handleAccess(userId: number, res: VercelResponse) {

@@ -36,6 +36,7 @@ import { insertPointEvent } from './shared/pointEvents.ts';
 import { parseContactIdentifier } from './shared/authIdentifiers.ts';
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { normalizePaymentProductCode } from './shared/paymentProducts.ts';
+import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -405,16 +406,29 @@ async function startServer() {
   });
 
   app.get('/api/user/payments', authenticate, async (req: any, res) => {
-    const { data: rows, error } = await supabase
+    const PAY_FULL =
+      'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at';
+    const PAY_LEGACY =
+      'id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at';
+    let { data: rows, error } = await supabase
       .from('payments')
-      .select('id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at')
+      .select(PAY_FULL)
       .eq('user_id', req.userId)
       .order('created_at', { ascending: false });
+    if (error && isPaymentsProductCodeSchemaError(error)) {
+      const second = await supabase
+        .from('payments')
+        .select(PAY_LEGACY)
+        .eq('user_id', req.userId)
+        .order('created_at', { ascending: false });
+      rows = second.data as typeof rows;
+      error = second.error;
+    }
     if (error) return res.status(500).json({ error: error.message });
     res.json(
       (rows ?? []).map((row: any) => ({
         ...row,
-        product_code: normalizePaymentProductCode(row.product_code),
+        product_code: normalizePaymentProductCode(row.product_code ?? 'russian'),
       }))
     );
   });

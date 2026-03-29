@@ -4,6 +4,7 @@ import {
   normalizePaymentProductCode,
   type CourseProductCode,
 } from '../../shared/paymentProducts.js';
+import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 
 export type SubscriptionRow = {
   id: number;
@@ -90,13 +91,24 @@ export async function hasActiveAccess(
     if (Number.isFinite(expiry.getTime()) && expiry > new Date()) return true;
   }
 
-  const { data: approvedPayment } = await supabase
+  const { data: approvedPayment, error: payErr } = await supabase
     .from('payments')
     .select('id, product_code')
     .eq('user_id', uid)
     .eq('status', 'approved')
     .order('approved_at', { ascending: false })
     .limit(10);
+  if (payErr && isPaymentsProductCodeSchemaError(payErr)) {
+    const { data: legacy } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('user_id', uid)
+      .eq('status', 'approved')
+      .order('approved_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return Boolean(legacy);
+  }
   return (approvedPayment ?? []).some(
     (row: { product_code?: string | null }) =>
       normalizePaymentProductCode(row.product_code) === 'russian'
@@ -110,7 +122,7 @@ export async function hasApprovedCourseAccess(
 ): Promise<boolean> {
   const uid = Number(userId);
   if (!Number.isFinite(uid)) return false;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('payments')
     .select('id')
     .eq('user_id', uid)
@@ -118,6 +130,9 @@ export async function hasApprovedCourseAccess(
     .eq('product_code', productCode)
     .limit(1)
     .maybeSingle();
+  if (error && isPaymentsProductCodeSchemaError(error)) {
+    return false;
+  }
   return Boolean(data);
 }
 

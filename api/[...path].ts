@@ -46,6 +46,7 @@ import {
   isSubscriptionTariffType,
   normalizePaymentProductCode,
 } from '../shared/paymentProducts.js';
+import { isPaymentsProductCodeSchemaError } from '../shared/paymentsCompat.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -179,7 +180,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
       if (productCode === 'russian' && !isSubscriptionTariffType(tariffType))
         return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
-      const { data: pending } = await supabase
+      let pendingQuery = supabase
         .from('payments')
         .select('id')
         .eq('user_id', userId)
@@ -187,6 +188,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('product_code', productCode)
         .limit(1)
         .maybeSingle();
+      let { data: pending, error: pendingErr } = await pendingQuery;
+      if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
+        const legacy = await supabase
+          .from('payments')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'pending')
+          .limit(1)
+          .maybeSingle();
+        pending = legacy.data;
+      }
       if (pending) {
         return res.status(400).json({
           error: 'PENDING_PAYMENT',
@@ -225,16 +237,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const { data: urlData } = supabase.storage.from(PAYMENT_PROOFS_BUCKET).getPublicUrl(pathStr);
       const paymentProofUrl = urlData?.publicUrl ?? null;
-      const { data: row, error: insertErr } = await supabase.from('payments').insert({
+      const paymentTime =
+        (fields.payment_time && new Date(fields.payment_time).toISOString()) || new Date().toISOString();
+      const insertBase: Record<string, unknown> = {
         user_id: userId,
         tariff_type: productCode === 'russian' ? tariffType : null,
-        product_code: productCode,
         currency,
         amount,
         payment_proof_url: paymentProofUrl,
-        payment_time: (fields.payment_time && new Date(fields.payment_time).toISOString()) || new Date().toISOString(),
+        payment_time: paymentTime,
         status: 'pending',
-      }).select('id').single();
+      };
+      let { data: row, error: insertErr } = await supabase
+        .from('payments')
+        .insert({ ...insertBase, product_code: productCode })
+        .select('id')
+        .single();
+      if (insertErr && isPaymentsProductCodeSchemaError(insertErr)) {
+        if (productCode !== 'russian') {
+          return res.status(503).json({
+            error:
+              "To'lov tizimi yangilanmoqda. Iltimos, keyinroq urinib ko'ring yoki qo'llab-quvvatlashga murojaat qiling.",
+          });
+        }
+        const legacyIns = await supabase.from('payments').insert(insertBase).select('id').single();
+        row = legacyIns.data;
+        insertErr = legacyIns.error;
+      }
       if (insertErr) {
         console.error('[payments insert]', insertErr);
         return res.status(500).json({ error: insertErr.message });

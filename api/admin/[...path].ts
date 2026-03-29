@@ -15,6 +15,7 @@ import {
   isSubscriptionTariffType,
   normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
+import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { invalidateAccessCache } from '../_lib/subscription.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
@@ -256,10 +257,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // GET /api/admin/payments — from payments table (user uploads proof, admin confirms)
     if (path[0] === 'payments' && path.length === 1 && req.method === 'GET') {
-      const { data: rows, error } = await supabase
-        .from('payments')
-        .select('id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, created_at, approved_at')
-        .order('created_at', { ascending: false });
+      const PAY_FULL =
+        'id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, created_at, approved_at';
+      const PAY_LEGACY =
+        'id, user_id, tariff_type, currency, payment_proof_url, payment_time, status, created_at, approved_at';
+      let { data: rows, error } = await supabase.from('payments').select(PAY_FULL).order('created_at', { ascending: false });
+      if (error && isPaymentsProductCodeSchemaError(error)) {
+        const second = await supabase.from('payments').select(PAY_LEGACY).order('created_at', { ascending: false });
+        rows = second.data as typeof rows;
+        error = second.error;
+      }
       if (error) return res.status(500).json({ error: error.message });
       const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id))];
       const { data: users } = await supabase
@@ -307,12 +314,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             : rawAction;
       if (!payId) return res.status(400).json({ error: 'Invalid id' });
       if (action === 'confirm') {
-        const { data: row, error: fe } = await supabase
+        let { data: row, error: fe } = await supabase
           .from('payments')
           .select('user_id, tariff_type, product_code')
           .eq('id', payId)
           .eq('status', 'pending')
           .single();
+        if (fe && isPaymentsProductCodeSchemaError(fe)) {
+          const second = await supabase
+            .from('payments')
+            .select('user_id, tariff_type')
+            .eq('id', payId)
+            .eq('status', 'pending')
+            .single();
+          row = second.data as typeof row;
+          fe = second.error;
+          if (row) (row as { product_code?: string }).product_code = 'russian';
+        }
         if (fe || !row) return res.status(404).json({ error: 'To\'lov topilmadi' });
         const userId = (row as any).user_id;
         const now = new Date();
