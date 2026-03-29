@@ -37,6 +37,7 @@ import { parseContactIdentifier } from './shared/authIdentifiers.ts';
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
+import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -434,11 +435,7 @@ async function startServer() {
   });
 
   app.get('/api/patent/results', authenticate, async (req: any, res) => {
-    const { data, error } = await supabase
-      .from('patent_variant_results')
-      .select('variant_number, correct_count, total_count, score_percent, passed, completed_at')
-      .eq('user_id', req.userId)
-      .order('variant_number', { ascending: true });
+    const { data, error } = await listPatentVariantResults(supabase, req.userId);
     if (error) return res.status(500).json({ error: error.message });
     res.json(data ?? []);
   });
@@ -456,26 +453,18 @@ async function startServer() {
     if (!Number.isInteger(totalCount) || totalCount <= 0) {
       return res.status(400).json({ error: 'total_count noto‘g‘ri' });
     }
-    const scorePercent = Math.max(0, Math.min(100, Math.round((correctCount / totalCount) * 100)));
-    const completedAt = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('patent_variant_results')
-      .upsert(
-        {
-          user_id: req.userId,
-          variant_number: variantNumber,
-          correct_count: correctCount,
-          total_count: totalCount,
-          score_percent: scorePercent,
-          passed: correctCount >= 19,
-          completed_at: completedAt,
-          updated_at: completedAt,
-        },
-        { onConflict: 'user_id,variant_number' }
-      )
-      .select('variant_number, correct_count, total_count, score_percent, passed, completed_at')
-      .single();
+    if (correctCount > totalCount) {
+      return res.status(400).json({ error: 'correct_count total_count dan oshmasin' });
+    }
+    const { data, error } = await persistPatentVariantResult(
+      supabase,
+      req.userId,
+      variantNumber,
+      correctCount,
+      totalCount
+    );
     if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(500).json({ error: 'Patent natijasi saqlanmadi' });
     res.json(data);
   });
 

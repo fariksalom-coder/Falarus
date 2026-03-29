@@ -48,6 +48,7 @@ import {
 } from '../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../shared/paymentsCompat.js';
 import { embedFalarusProductInProofUrl } from '../shared/paymentsProofUrl.js';
+import { listPatentVariantResults, persistPatentVariantResult } from '../shared/patentVariantResultsDb.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -303,13 +304,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (userId == null) return;
     try {
       if (req.method === 'GET') {
-        const { data, error } = await supabase
-          .from('patent_variant_results')
-          .select(
-            'variant_number, correct_count, total_count, score_percent, passed, completed_at'
-          )
-          .eq('user_id', userId)
-          .order('variant_number', { ascending: true });
+        const { data, error } = await listPatentVariantResults(supabase, userId);
         if (error) return res.status(500).json({ error: error.message });
         return res.status(200).json(data ?? []);
       }
@@ -328,31 +323,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!Number.isInteger(totalCount) || totalCount <= 0) {
           return res.status(400).json({ error: 'total_count noto‘g‘ri' });
         }
-        const scorePercent = Math.max(
-          0,
-          Math.min(100, Math.round((correctCount / totalCount) * 100))
+        if (correctCount > totalCount) {
+          return res.status(400).json({ error: 'correct_count total_count dan oshmasin' });
+        }
+        const { data, error } = await persistPatentVariantResult(
+          supabase,
+          userId,
+          variantNumber,
+          correctCount,
+          totalCount
         );
-        const completedAt = new Date().toISOString();
-        const { data, error } = await supabase
-          .from('patent_variant_results')
-          .upsert(
-            {
-              user_id: userId,
-              variant_number: variantNumber,
-              correct_count: correctCount,
-              total_count: totalCount,
-              score_percent: scorePercent,
-              passed: correctCount >= 19,
-              completed_at: completedAt,
-              updated_at: completedAt,
-            },
-            { onConflict: 'user_id,variant_number' }
-          )
-          .select(
-            'variant_number, correct_count, total_count, score_percent, passed, completed_at'
-          )
-          .single();
         if (error) return res.status(500).json({ error: error.message });
+        if (!data) return res.status(500).json({ error: 'Patent natijasi saqlanmadi' });
         return res.status(200).json(data);
       }
 

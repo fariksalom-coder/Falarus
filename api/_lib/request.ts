@@ -2,6 +2,13 @@ import type { VercelRequest } from '@vercel/node';
 
 export function parseBody(body: unknown): Record<string, unknown> {
   if (body == null) return {};
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(body)) {
+    try {
+      return JSON.parse(body.toString('utf8')) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
   if (typeof body === 'string') {
     try {
       return JSON.parse(body) as Record<string, unknown>;

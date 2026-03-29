@@ -14,6 +14,8 @@ function hideNavBar(path: string): boolean {
   if (path === '/payment-history') return true;
   if (path === '/invite') return true;
   if (path.startsWith('/vocabulary/')) return true;
+  if (path.startsWith('/kurslar/patent')) return true;
+  if (path.startsWith('/kurslar/vnzh')) return true;
   return false;
 }
 

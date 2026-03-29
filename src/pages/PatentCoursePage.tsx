@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -25,19 +25,35 @@ const patentMeta = COURSE_PRODUCT_META.patent;
 
 export default function PatentCoursePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { token } = useAuth();
   const { access } = useAccess();
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
   const [results, setResults] = useState<PatentVariantResult[]>([]);
+  const [resultsError, setResultsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
       setResults([]);
+      setResultsError(null);
       return;
     }
-    getPatentVariantResults(token).then(setResults).catch(() => setResults([]));
-  }, [token, access?.patent_course_active]);
+    let cancelled = false;
+    setResultsError(null);
+    getPatentVariantResults(token)
+      .then((rows) => {
+        if (!cancelled) setResults(rows);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setResults([]);
+        setResultsError(e instanceof Error ? e.message : 'Natijalar yuklanmadi');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, access?.patent_course_active, location.key]);
 
   const resultMap = useMemo(
     () => new Map(results.map((item) => [item.variant_number, item])),
@@ -71,6 +87,12 @@ export default function PatentCoursePage() {
             <ArrowLeft className="h-6 w-6" />
           </button>
         </div>
+
+        {resultsError ? (
+          <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {resultsError}
+          </p>
+        ) : null}
 
         {access?.patent_course_active !== true ? (
           <section className="mb-5 rounded-[28px] border border-[#D9E7F7] bg-white/88 p-5 shadow-[0_18px_44px_rgba(148,163,184,0.12)]">
@@ -122,20 +144,6 @@ export default function PatentCoursePage() {
                         : BORDER,
                 }}
               >
-                <div
-                  className={`pointer-events-none absolute bottom-1 right-3 text-[56px] font-black leading-none ${
-                    isPassed
-                      ? 'text-[#DCFCE7]'
-                      : isFailed
-                        ? 'text-[#FEE2E2]'
-                        : isLocked
-                          ? 'text-slate-300/90'
-                          : 'text-[#C9D9EE]'
-                  }`}
-                >
-                  {variant.variantNumber}
-                </div>
-
                 <div className="mt-1">
                   <p className="text-[13px] font-bold sm:text-[15px]" style={{ color: TEXT }}>
                     Variant {variant.variantNumber}
