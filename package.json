@@ -18,6 +18,8 @@
     "seed:vocabulary": "tsx server/scripts/seedVocabulary.ts",
     "seed:admin": "tsx server/scripts/seedAdmin.ts",
     "import:patent": "python3 scripts/import_patent_exam.py",
+    "upload:course-media": "tsx scripts/upload-course-media.ts",
+    "compress:course-mp4": "node scripts/compress-mp4-for-supabase-free.mjs",
     "test:catchall": "node --import tsx scripts/smoke-catchall-local.ts",
     "test:smoke": "node scripts/smoke-api.mjs",
     "test:smoke:full": "cross-env SMOKE_INCLUDE_LESSONS=1 node scripts/smoke-api.mjs",

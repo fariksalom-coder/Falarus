@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { courseAssetUrl } from '../utils/courseAssetUrl';
 
 const BG = '#F8FAFC';
 const BORDER = '#E2E8F0';
@@ -49,7 +50,7 @@ export default function CoursesPage() {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={imageSrc}
+                  src={courseAssetUrl(imageSrc)}
                   alt={title}
                   className="h-16 w-16 shrink-0 rounded-full object-contain shadow-[0_12px_24px_rgba(37,99,235,0.18)] sm:h-[72px] sm:w-[72px]"
                 />

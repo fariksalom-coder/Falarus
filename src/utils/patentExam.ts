@@ -12,6 +12,9 @@ function isAnswered(value: string | number | undefined): boolean {
 }
 
 export function isImageAssetOption(option: string): boolean {
+  if (/^https?:\/\//i.test(option)) {
+    return /\.(png|jpg|jpeg)(\?|$)/i.test(option.split('?')[0]);
+  }
   return /^\/courses\/patent\/media\/.+\.(png|jpg|jpeg)$/i.test(option);
 }
 

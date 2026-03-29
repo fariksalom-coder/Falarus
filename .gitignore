@@ -6,9 +6,11 @@ coverage/
 *.log
 .env*
 !.env.example
+!.env.production
 *.db
 
 # Тяжёлые материалы курсов (~2+ ГБ) — не в GitHub; заливайте на хостинг/CDN или в Supabase Storage.
 # Иначе git push падает с HTTP 500 (лимит размера пакета).
 public/courses/patent/media/
 public/courses/vnzh/source/
+public/courses/**/*.bak

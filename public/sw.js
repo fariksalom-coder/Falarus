@@ -3,7 +3,7 @@
    - network-first for JS/CSS so new deployments reflect immediately
    - fallback to cache if network fails
 */
-const CACHE_NAME = 'falarus-pwa-v3';
+const CACHE_NAME = 'falarus-pwa-v4';
 
 const STATIC_ASSETS = [
   '/',

@@ -18,6 +18,7 @@ import {
   type PatentExamWrittenBlock,
 } from '../data/patentExamData';
 import { evaluatePatentVariant, isImageAssetOption, type PatentExamAnswerMap } from '../utils/patentExam';
+import { courseAssetUrl } from '../utils/courseAssetUrl';
 import { useAuth } from '../context/AuthContext';
 import { savePatentVariantResult, type PatentVariantResult } from '../api/patentResults';
 
@@ -96,6 +97,7 @@ function ChoiceCard({
           const isWrong = answered && answer === optionIndex && optionIndex !== question.correctIndex;
           const isSelected = answer === optionIndex;
           const imageOption = isImageAssetOption(option);
+          const optionSrc = courseAssetUrl(option);
 
           let borderColor = '#C4D6EC';
           let backgroundColor = '#FFFFFF';
@@ -143,7 +145,7 @@ function ChoiceCard({
                 <div className="flex items-center gap-2.5">
                   <div className="shrink-0">{icon}</div>
                   <div className="min-w-0 flex-1 overflow-hidden rounded-[18px] bg-white/70">
-                    <img src={option} alt={`Variant ${optionIndex + 1}`} className="h-28 w-full object-contain bg-slate-50 sm:h-32" />
+                    <img src={optionSrc} alt={`Variant ${optionIndex + 1}`} className="h-28 w-full object-contain bg-slate-50 sm:h-32" />
                   </div>
                 </div>
               ) : (
@@ -185,7 +187,7 @@ function WrittenCard({
 
       {block.mediaUrl ? (
         <div className="mt-4 overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
-          <img src={block.mediaUrl} alt={`Question ${block.questionNumber}`} className="w-full object-contain" />
+          <img src={courseAssetUrl(block.mediaUrl)} alt={`Question ${block.questionNumber}`} className="w-full object-contain" />
         </div>
       ) : null}
 
@@ -221,7 +223,7 @@ function WrittenCard({
 function AudioPlayerCard({ mediaUrl }: { mediaUrl: string }) {
   return (
     <div className="rounded-[24px] bg-white p-4 shadow-[0_14px_28px_rgba(96,132,184,0.12)]">
-      <audio controls preload="none" className="w-full" src={mediaUrl} />
+      <audio controls preload="none" className="w-full" src={courseAssetUrl(mediaUrl)} />
     </div>
   );
 }
@@ -451,7 +453,7 @@ export default function PatentCourseVariantPage() {
                 {currentChoiceBlock.mediaUrl ? (
                   <div className="rounded-[24px] bg-white p-3.5 shadow-[0_14px_28px_rgba(96,132,184,0.12)]">
                     <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
-                      <img src={currentChoiceBlock.mediaUrl} alt={currentChoiceBlock.question.text} className="w-full object-contain" />
+                      <img src={courseAssetUrl(currentChoiceBlock.mediaUrl)} alt={currentChoiceBlock.question.text} className="w-full object-contain" />
                     </div>
                   </div>
                 ) : null}

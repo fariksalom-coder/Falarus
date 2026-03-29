@@ -8,6 +8,7 @@ import { VNZH_READING_TASK_ELEVEN, VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN, VNZH
 import { VNZH_SPEAKING_TASK_FOUR, VNZH_SPEAKING_TASK_ONE, VNZH_SPEAKING_TASK_THREE, VNZH_SPEAKING_TASK_TWO } from '../data/vnzhSpeakingTasks';
 import { VNZH_STATIC_CHOICE_TASKS, type VnzhStaticChoiceItem } from '../data/vnzhStaticChoiceTasks';
 import { VNZH_WRITING_TASK_EIGHTEEN, VNZH_WRITING_TASK_NINETEEN, type VnzhWritingMediaItem, type VnzhWritingPromptAnswerItem } from '../data/vnzhWritingTasks';
+import { courseAssetUrl } from '../utils/courseAssetUrl';
 
 const BG = '#F8FBFF';
 const BORDER = '#D9E7F7';
@@ -41,7 +42,7 @@ function matchesFillAnswer(value: string, expected: string) {
 function AudioCard({ src }: { src: string }) {
   return (
     <div className="rounded-[24px] border bg-white p-4 shadow-[0_14px_28px_rgba(148,163,184,0.12)]" style={{ borderColor: BORDER }}>
-      <audio controls preload="none" className="w-full" src={src} />
+      <audio controls preload="none" className="w-full" src={courseAssetUrl(src)} />
     </div>
   );
 }
@@ -343,7 +344,7 @@ function NoticeChoiceContent({
         </section>
       ) : item.imageUrl ? (
         <div className="mb-5 overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
-          <img src={item.imageUrl} alt={`Объявление ${item.index}`} className="w-full object-contain" />
+          <img src={courseAssetUrl(item.imageUrl)} alt={`Объявление ${item.index}`} className="w-full object-contain" />
         </div>
       ) : null}
 
@@ -465,9 +466,9 @@ function WritingVideoPhotoContent({
       </div>
 
       <div className="space-y-5">
-        <video controls preload="metadata" className="w-full rounded-[22px] bg-slate-950" src={item.videoUrl} />
+        <video controls preload="metadata" className="w-full rounded-[22px] bg-slate-950" src={courseAssetUrl(item.videoUrl)} />
         <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
-          <img src={item.imageUrl} alt={`Задание 18 — фото ${item.index}`} className="w-full object-contain" />
+          <img src={courseAssetUrl(item.imageUrl)} alt={`Задание 18 — фото ${item.index}`} className="w-full object-contain" />
         </div>
       </div>
     </article>
@@ -596,7 +597,7 @@ function SpeakingTaskOneContent({ currentIndex }: { currentIndex: number }) {
           controls
           preload="metadata"
           className="w-full rounded-[22px] bg-slate-950"
-          src={VNZH_SPEAKING_TASK_ONE.tutorialVideoUrl}
+          src={courseAssetUrl(VNZH_SPEAKING_TASK_ONE.tutorialVideoUrl)}
         />
       </section>
 
@@ -609,12 +610,12 @@ function SpeakingTaskOneContent({ currentIndex }: { currentIndex: number }) {
         </div>
 
         <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
-          <img src={item.imageUrl} alt={`Задание 1 — фото ${item.index}`} className="w-full object-contain" />
+          <img src={courseAssetUrl(item.imageUrl)} alt={`Задание 1 — фото ${item.index}`} className="w-full object-contain" />
         </div>
 
         <div className="mt-5">
           <div className="rounded-[22px] border bg-[#FAFCFF] p-3" style={{ borderColor: BORDER }}>
-            <audio controls preload="none" className="w-full" src={item.audioUrl} />
+            <audio controls preload="none" className="w-full" src={courseAssetUrl(item.audioUrl)} />
           </div>
         </div>
       </article>
@@ -638,7 +639,7 @@ function SpeakingTaskTwoContent({ currentIndex }: { currentIndex: number }) {
         <div className="space-y-5">
           <div>
             <div className="rounded-[22px] border bg-[#FAFCFF] p-3" style={{ borderColor: BORDER }}>
-              <audio controls preload="none" className="w-full" src={item.questionAudioUrl} />
+              <audio controls preload="none" className="w-full" src={courseAssetUrl(item.questionAudioUrl)} />
             </div>
           </div>
 
@@ -648,19 +649,19 @@ function SpeakingTaskTwoContent({ currentIndex }: { currentIndex: number }) {
               controls
               preload="metadata"
               className="w-full rounded-[22px] bg-slate-950"
-              src={item.lessonVideoUrl}
+              src={courseAssetUrl(item.lessonVideoUrl)}
             />
           </div>
 
           <div>
             <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
-              <img src={item.imageUrl} alt={`Задание 2 — фото ${item.index}`} className="w-full object-contain" />
+              <img src={courseAssetUrl(item.imageUrl)} alt={`Задание 2 — фото ${item.index}`} className="w-full object-contain" />
             </div>
           </div>
 
           <div>
             <div className="rounded-[22px] border bg-[#FAFCFF] p-3" style={{ borderColor: BORDER }}>
-              <audio controls preload="none" className="w-full" src={item.answerAudioUrl} />
+              <audio controls preload="none" className="w-full" src={courseAssetUrl(item.answerAudioUrl)} />
             </div>
           </div>
         </div>
@@ -684,18 +685,18 @@ function SpeakingTaskThreeContent({ currentIndex }: { currentIndex: number }) {
 
         <div className="space-y-5">
           <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
-            <img src={item.imageUrl} alt={`Задание 3 — фото ${item.index}`} className="w-full object-contain" />
+            <img src={courseAssetUrl(item.imageUrl)} alt={`Задание 3 — фото ${item.index}`} className="w-full object-contain" />
           </div>
 
           <video
             controls
             preload="metadata"
             className="w-full rounded-[22px] bg-slate-950"
-            src={item.videoUrl}
+            src={courseAssetUrl(item.videoUrl)}
           />
 
           <div className="rounded-[22px] border bg-[#FAFCFF] p-3" style={{ borderColor: BORDER }}>
-            <audio controls preload="none" className="w-full" src={item.audioUrl} />
+            <audio controls preload="none" className="w-full" src={courseAssetUrl(item.audioUrl)} />
           </div>
         </div>
       </article>
@@ -718,7 +719,7 @@ function SpeakingTaskFourContent({ currentIndex }: { currentIndex: number }) {
 
         <div className="space-y-5">
           <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
-            <img src={item.imageUrl} alt={`Задание 4 — фото ${item.index}`} className="w-full object-contain" />
+            <img src={courseAssetUrl(item.imageUrl)} alt={`Задание 4 — фото ${item.index}`} className="w-full object-contain" />
           </div>
 
           <section className="rounded-[24px] border bg-[#FAFCFF] p-4" style={{ borderColor: BORDER }}>
@@ -737,7 +738,7 @@ function SpeakingTaskFourContent({ currentIndex }: { currentIndex: number }) {
           </section>
 
           <div className="rounded-[22px] border bg-[#FAFCFF] p-3" style={{ borderColor: BORDER }}>
-            <audio controls preload="none" className="w-full" src={item.audioUrl} />
+            <audio controls preload="none" className="w-full" src={courseAssetUrl(item.audioUrl)} />
           </div>
         </div>
       </article>

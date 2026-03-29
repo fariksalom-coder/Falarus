@@ -5,6 +5,7 @@ import { VNZH_COURSE_SECTIONS } from '../data/vnzhCourseData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
 import { useAccess } from '../context/AccessContext';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
+import { courseAssetUrl } from '../utils/courseAssetUrl';
 
 const BG = '#F8FAFC';
 const BORDER = '#E2E8F0';
@@ -79,7 +80,7 @@ export default function VnzhCoursePage() {
         >
           <div className="flex items-start gap-4">
             <img
-              src="/courses/course-vnzh-badge.svg"
+              src={courseAssetUrl('/courses/course-vnzh-badge.svg')}
               alt="Экзамен на ВНЖ"
               className="h-16 w-16 shrink-0 rounded-full object-cover shadow-[0_14px_28px_rgba(37,99,235,0.18)]"
             />
