@@ -24,7 +24,7 @@ export default function UserRankCard({ rank, user, isCurrentUser, caption }: Use
       className={`
         flex items-center gap-3 rounded-[28px] border bg-white px-4 py-4 transition-all duration-200
         shadow-[0_12px_30px_rgba(148,163,184,0.12)] sm:gap-5 sm:px-6
-        ${isCurrentUser ? 'ring-2 ring-[#6D35D2] shadow-[0_18px_40px_rgba(109,53,210,0.16)]' : ''}
+        ${isCurrentUser ? 'ring-2 ring-[#2563EB] shadow-[0_18px_40px_rgba(37,99,235,0.16)]' : ''}
       `}
       style={{ borderColor: BORDER }}
     >
@@ -32,7 +32,7 @@ export default function UserRankCard({ rank, user, isCurrentUser, caption }: Use
         {rank}
       </div>
 
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EEE8FF] text-xl font-bold text-[#6C35D2] sm:h-16 sm:w-16 sm:text-2xl">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EAF4FF] text-xl font-bold text-[#2563EB] sm:h-16 sm:w-16 sm:text-2xl">
         {user.avatarUrl ? (
           <img src={user.avatarUrl} alt={name} className="h-full w-full object-cover" />
         ) : (

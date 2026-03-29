@@ -18,6 +18,8 @@ export function createAccessRoutes(
         vocabulary_free_topic: access.vocabulary_free_topic,
         vocabulary_free_subtopic: access.vocabulary_free_subtopic,
         subscription_active: access.subscription_active,
+        patent_course_active: access.patent_course_active,
+        vnzh_course_active: access.vnzh_course_active,
         vocabulary_free_topic_id: access.vocabulary_free_topic_id ?? null,
         vocabulary_free_subtopic_id: access.vocabulary_free_subtopic_id ?? null,
       });

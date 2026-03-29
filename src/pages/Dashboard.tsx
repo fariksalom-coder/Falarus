@@ -39,7 +39,7 @@ function getCardStateStyles(state: LessonCardState) {
   if (state === 'current') {
     return {
       cardClassName:
-        'border-transparent bg-[linear-gradient(135deg,#6E2DE2_0%,#7C3AED_45%,#5B21B6_100%)] text-white shadow-[0_18px_44px_rgba(91,33,182,0.28)]',
+        'border-transparent bg-[linear-gradient(135deg,#2563EB_0%,#3B82F6_45%,#0EA5E9_100%)] text-white shadow-[0_18px_44px_rgba(37,99,235,0.28)]',
       iconWrapClassName: 'bg-white/18 text-white backdrop-blur-sm',
       pillClassName: 'bg-white/16 text-white/95',
       subtitleClassName: 'text-white/75',
@@ -101,7 +101,7 @@ export default function Dashboard() {
         {token && !dataReady && (
           <div className="flex items-center justify-center py-16">
             <div
-              className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"
+              className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
               aria-hidden
             />
           </div>
@@ -192,7 +192,7 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => navigate('/tariflar')}
-                      className="group relative w-full overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-5 py-4 text-left text-white shadow-[0_14px_30px_rgba(99,102,241,0.32)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_42px_rgba(99,102,241,0.42)] active:translate-y-0"
+                      className="group relative w-full overflow-hidden rounded-2xl border border-sky-200 bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-500 px-5 py-4 text-left text-white shadow-[0_14px_30px_rgba(37,99,235,0.32)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_42px_rgba(37,99,235,0.42)] active:translate-y-0"
                     >
                       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_55%)] opacity-90" />
                       <div className="relative">

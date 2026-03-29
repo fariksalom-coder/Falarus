@@ -1,0 +1,42 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="vnzhBg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 256) rotate(90) scale(240)">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </radialGradient>
+    <linearGradient id="passportCover" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#1E40AF"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="256" cy="256" r="238" fill="url(#vnzhBg)"/>
+  <circle cx="256" cy="256" r="238" stroke="#93C5FD" stroke-width="8"/>
+  <g filter="url(#shadow)">
+    <g transform="rotate(-7 256 256)">
+      <rect x="180" y="138" width="160" height="226" rx="16" fill="#E2E8F0"/>
+      <rect x="170" y="128" width="160" height="226" rx="16" fill="url(#passportCover)"/>
+      <rect x="182" y="142" width="136" height="196" rx="10" fill="white" fill-opacity="0.06"/>
+
+      <path d="M250 178L259 196L279 199L264 213L267 233L250 224L233 233L236 213L221 199L241 196L250 178Z" fill="#E2E8F0"/>
+      <path d="M250 172C255 185 274 189 274 189C268 194 266 204 266 204C259 199 250 205 250 205C250 205 241 199 234 204C234 204 232 194 226 189C226 189 245 185 250 172Z" fill="#F8FAFC"/>
+
+      <path d="M226 228H274" stroke="#DBEAFE" stroke-width="4" stroke-linecap="round"/>
+      <path d="M218 246H282" stroke="#DBEAFE" stroke-width="4" stroke-linecap="round"/>
+      <path d="M214 264H286" stroke="#DBEAFE" stroke-width="4" stroke-linecap="round"/>
+
+      <text x="212" y="315" fill="#F8FAFC" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700">ВНЖ</text>
+    </g>
+  </g>
+  <defs>
+    <filter id="shadow" x="140" y="108" width="230" height="292" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="14"/>
+      <feGaussianBlur stdDeviation="10"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.109804 0 0 0 0 0.243137 0 0 0 0 0.588235 0 0 0 0.28 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_1" result="shape"/>
+    </filter>
+  </defs>
+</svg>

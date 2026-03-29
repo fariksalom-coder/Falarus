@@ -1,5 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { resolveFreeVocabularyIds } from '../lib/freeVocabularyIds';
+import {
+  normalizePaymentProductCode,
+  type CourseProductCode,
+} from '../../shared/paymentProducts.js';
 
 const PLAN_TYPES = ['monthly', 'three_months', 'yearly'] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
@@ -18,6 +22,8 @@ export type AccessInfo = {
   vocabulary_free_topic: number;
   vocabulary_free_subtopic: number;
   subscription_active: boolean;
+  patent_course_active: boolean;
+  vnzh_course_active: boolean;
   vocabulary_free_topic_id?: string | null;
   vocabulary_free_subtopic_id?: string | null;
 };
@@ -93,13 +99,33 @@ export async function hasActiveAccess(
   }
   const { data: approvedPayment } = await supabase
     .from('payments')
-    .select('id')
+    .select('id, product_code')
     .eq('user_id', uid)
     .eq('status', 'approved')
     .order('approved_at', { ascending: false })
+    .limit(10);
+  return (approvedPayment ?? []).some(
+    (row: { product_code?: string | null }) =>
+      normalizePaymentProductCode(row.product_code) === 'russian'
+  );
+}
+
+export async function hasApprovedCourseAccess(
+  supabase: SupabaseClient,
+  userId: number,
+  productCode: CourseProductCode
+): Promise<boolean> {
+  const uid = Number(userId);
+  if (!Number.isFinite(uid)) return false;
+  const { data } = await supabase
+    .from('payments')
+    .select('id')
+    .eq('user_id', uid)
+    .eq('status', 'approved')
+    .eq('product_code', productCode)
     .limit(1)
     .maybeSingle();
-  return !!approvedPayment;
+  return Boolean(data);
 }
 
 /**
@@ -117,12 +143,18 @@ export async function getAccessInfo(
       vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
       vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
       subscription_active: false,
+      patent_course_active: false,
+      vnzh_course_active: false,
     };
   }
   const cached = getCachedAccess(uid);
   if (cached) return cached;
 
   let subscriptionActive = await hasActiveAccess(supabase, uid);
+  const [patentCourseActive, vnzhCourseActive] = await Promise.all([
+    hasApprovedCourseAccess(supabase, uid, 'patent'),
+    hasApprovedCourseAccess(supabase, uid, 'vnzh'),
+  ]);
   if (!subscriptionActive) {
     const { data: user } = await supabase
       .from('users')
@@ -144,6 +176,8 @@ export async function getAccessInfo(
     vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
     vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
     subscription_active: subscriptionActive,
+    patent_course_active: patentCourseActive,
+    vnzh_course_active: vnzhCourseActive,
     vocabulary_free_topic_id: vocabulary_free_topic_id ?? undefined,
     vocabulary_free_subtopic_id: vocabulary_free_subtopic_id ?? undefined,
   };

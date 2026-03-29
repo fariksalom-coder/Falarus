@@ -4,6 +4,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../middleware/adminAuth';
 import * as subscriptionService from '../services/subscription.service';
+import {
+  getPaymentDisplayLabel,
+  getPaymentProductLabel,
+  isSubscriptionTariffType,
+  normalizePaymentProductCode,
+} from '../../shared/paymentProducts.js';
 import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
 
 export function createAdminController(supabase: SupabaseClient) {
@@ -200,7 +206,7 @@ export function createAdminController(supabase: SupabaseClient) {
   async function getPayments(_req: Request, res: Response) {
     const { data: rows, error } = await supabase
       .from('payments')
-      .select('id, user_id, tariff_type, currency, payment_proof_url, payment_time, status, approved_at, created_at')
+      .select('id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, approved_at, created_at')
       .order('created_at', { ascending: false });
     if (error) {
       console.error('[admin/payments]', error);
@@ -215,15 +221,24 @@ export function createAdminController(supabase: SupabaseClient) {
 
     const list = (rows ?? []).map((r: any) => {
       const u = userMap.get(r.user_id);
-      const planLabel = r.tariff_type === 'year' ? '1 yil' : r.tariff_type === '3months' ? '3 oy' : '1 oy';
+      const productCode = normalizePaymentProductCode(r.product_code);
       return {
         id: r.id,
         user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : '—',
         user_email: u?.email ?? '—',
         user_phone: u?.phone ?? null,
         user_id: r.user_id,
-        plan: planLabel,
+        plan:
+          productCode === 'russian'
+            ? r.tariff_type === 'year'
+              ? '1 yil'
+              : r.tariff_type === '3months'
+                ? '3 oy'
+                : '1 oy'
+            : getPaymentProductLabel(productCode),
         tariff_type: r.tariff_type,
+        product_code: productCode,
+        product_label: getPaymentDisplayLabel(productCode, r.tariff_type),
         currency: r.currency,
         payment_proof_url: r.payment_proof_url,
         payment_time: r.payment_time,
@@ -243,7 +258,7 @@ export function createAdminController(supabase: SupabaseClient) {
 
       const { data: row, error: fetchErr } = await supabase
         .from('payments')
-        .select('user_id, tariff_type')
+        .select('user_id, tariff_type, product_code')
         .eq('id', id)
         .eq('status', 'pending')
         .single();
@@ -252,9 +267,7 @@ export function createAdminController(supabase: SupabaseClient) {
       const userId = Number((row as any).user_id);
       if (!Number.isFinite(userId)) return res.status(400).json({ error: 'To\'lovda user_id xato' });
       const tariffType = (row as any).tariff_type;
-      const planType = tariffType === 'year' ? 'yearly' : tariffType === '3months' ? 'three_months' : 'monthly';
-      const daysToAdd = tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
-      const planName = tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+      const productCode = normalizePaymentProductCode((row as any).product_code);
       const now = new Date();
 
       const { error: updatePayErr } = await supabase
@@ -266,22 +279,43 @@ export function createAdminController(supabase: SupabaseClient) {
         return res.status(500).json({ error: updatePayErr.message });
       }
 
-      const { data: current } = await supabase.from('users').select('plan_expires_at').eq('id', userId).single();
-      const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
-      const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
-      const ext = new Date(startFrom);
-      ext.setDate(ext.getDate() + daysToAdd);
+      if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
+        const planType =
+          tariffType === 'year'
+            ? 'yearly'
+            : tariffType === '3months'
+              ? 'three_months'
+              : 'monthly';
+        const daysToAdd =
+          tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
+        const planName =
+          tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+        const { data: current } = await supabase
+          .from('users')
+          .select('plan_expires_at')
+          .eq('id', userId)
+          .single();
+        const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
+        const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
+        const ext = new Date(startFrom);
+        ext.setDate(ext.getDate() + daysToAdd);
 
-      const { error: updateUserErr } = await supabase
-        .from('users')
-        .update({ plan_name: planName, plan_expires_at: ext.toISOString() })
-        .eq('id', userId);
-      if (updateUserErr) {
-        console.error('[admin/confirmPayment] users update', updateUserErr);
-        return res.status(500).json({ error: updateUserErr.message });
+        const { error: updateUserErr } = await supabase
+          .from('users')
+          .update({ plan_name: planName, plan_expires_at: ext.toISOString() })
+          .eq('id', userId);
+        if (updateUserErr) {
+          console.error('[admin/confirmPayment] users update', updateUserErr);
+          return res.status(500).json({ error: updateUserErr.message });
+        }
+
+        await subscriptionService.createOrExtendSubscription(
+          supabase as any,
+          userId,
+          planType as any,
+          ext
+        );
       }
-
-      await subscriptionService.createOrExtendSubscription(supabase as any, userId, planType as any, ext);
       subscriptionService.invalidateAccessCache(userId);
       try {
         const { invalidateLessonsCache } = await import('../cache/lessonsCache');

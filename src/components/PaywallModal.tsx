@@ -6,6 +6,7 @@ type PaywallModalProps = {
   title?: string;
   description?: string;
   buttonText?: string;
+  onAction?: () => void;
 };
 
 export default function PaywallModal({
@@ -16,11 +17,16 @@ export default function PaywallModal({
 🧠 2600+ eng kerakli so'zlar
 🎮 O'yin va mashqlar orqali oson o'rganish`,
   buttonText = "🚀 Kursni sotib olish",
+  onAction,
 }: PaywallModalProps) {
   const navigate = useNavigate();
 
   const handleOpenPricing = () => {
     onClose();
+    if (onAction) {
+      onAction();
+      return;
+    }
     navigate('/tariflar');
   };
 

@@ -176,8 +176,13 @@ import VocabularySubtopicPreviewPage from './pages/VocabularySubtopicPreviewPage
 import ProfilePage from './pages/ProfilePage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import ReferralPage from './pages/ReferralPage';
-import LeaderboardPage from './pages/LeaderboardPage';
 import StatistikaPage from './pages/StatistikaPage';
+import CoursesPage from './pages/CoursesPage';
+import PatentCoursePage from './pages/PatentCoursePage';
+import PatentCourseVariantPage from './pages/PatentCourseVariantPage';
+import VnzhCoursePage from './pages/VnzhCoursePage';
+import VnzhCourseSectionPage from './pages/VnzhCourseSectionPage';
+import VnzhCourseTaskPage from './pages/VnzhCourseTaskPage';
 import PricingPage from './pages/PricingPage';
 import PaymentPage from './pages/PaymentPage';
 import PaymentHistoryPage from './pages/PaymentHistoryPage';
@@ -239,11 +244,17 @@ function AppRoutes() {
         <Route path="profile/settings" element={<ProfileSettingsPage />} />
         <Route path="invite" element={<ReferralPage />} />
         <Route path="statistika" element={<StatistikaPage />} />
+        <Route path="kurslar" element={<CoursesPage />} />
+        <Route path="kurslar/patent" element={<PatentCoursePage />} />
+        <Route path="kurslar/patent/:variantNumber" element={<PatentCourseVariantPage />} />
+        <Route path="kurslar/vnzh" element={<VnzhCoursePage />} />
+        <Route path="kurslar/vnzh/:sectionSlug" element={<VnzhCourseSectionPage />} />
+        <Route path="kurslar/vnzh/:sectionSlug/:taskSlug" element={<VnzhCourseTaskPage />} />
         <Route path="tariflar" element={<PricingPage />} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="payment" element={<PaymentPage />} />
         <Route path="payment-history" element={<PaymentHistoryPage />} />
-        <Route path="reyting" element={<LeaderboardPage />} />
+        <Route path="reyting" element={<Navigate to="/statistika?tab=leaderboard" replace />} />
         <Route path="preview/lesson/:id" element={<LessonPreviewPage />} />
         <Route path="preview/vocabulary/:subtopicId" element={<VocabularySubtopicPreviewPage />} />
       </Route>

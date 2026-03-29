@@ -17,6 +17,7 @@
     "db:verify": "node scripts/db-verify.mjs",
     "seed:vocabulary": "tsx server/scripts/seedVocabulary.ts",
     "seed:admin": "tsx server/scripts/seedAdmin.ts",
+    "import:patent": "python3 scripts/import_patent_exam.py",
     "test:catchall": "node --import tsx scripts/smoke-catchall-local.ts",
     "test:smoke": "node scripts/smoke-api.mjs",
     "test:smoke:full": "cross-env SMOKE_INCLUDE_LESSONS=1 node scripts/smoke-api.mjs",

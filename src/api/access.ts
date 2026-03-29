@@ -5,6 +5,8 @@ export type AccessInfo = {
   vocabulary_free_topic: number;
   vocabulary_free_subtopic: number;
   subscription_active: boolean;
+  patent_course_active: boolean;
+  vnzh_course_active: boolean;
   vocabulary_free_topic_id?: string | null;
   vocabulary_free_subtopic_id?: string | null;
 };

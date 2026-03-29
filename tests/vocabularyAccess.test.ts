@@ -10,6 +10,8 @@ const freeAccess = {
   vocabulary_free_topic: 1,
   vocabulary_free_subtopic: 1,
   subscription_active: false,
+  patent_course_active: false,
+  vnzh_course_active: false,
   vocabulary_free_topic_id: 'kundalik-hayot',
   vocabulary_free_subtopic_id: 'salomlashish-xayrlashish-odob',
 };

@@ -35,6 +35,7 @@ import { fetchPeriodLeaderboardFromEvents } from './shared/periodLeaderboard.ts'
 import { insertPointEvent } from './shared/pointEvents.ts';
 import { parseContactIdentifier } from './shared/authIdentifiers.ts';
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
+import { normalizePaymentProductCode } from './shared/paymentProducts.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -406,11 +407,62 @@ async function startServer() {
   app.get('/api/user/payments', authenticate, async (req: any, res) => {
     const { data: rows, error } = await supabase
       .from('payments')
-      .select('id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at')
+      .select('id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at')
       .eq('user_id', req.userId)
       .order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
-    res.json(rows ?? []);
+    res.json(
+      (rows ?? []).map((row: any) => ({
+        ...row,
+        product_code: normalizePaymentProductCode(row.product_code),
+      }))
+    );
+  });
+
+  app.get('/api/patent/results', authenticate, async (req: any, res) => {
+    const { data, error } = await supabase
+      .from('patent_variant_results')
+      .select('variant_number, correct_count, total_count, score_percent, passed, completed_at')
+      .eq('user_id', req.userId)
+      .order('variant_number', { ascending: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data ?? []);
+  });
+
+  app.post('/api/patent/results', authenticate, async (req: any, res) => {
+    const variantNumber = Number(req.body?.variant_number);
+    const correctCount = Number(req.body?.correct_count);
+    const totalCount = Number(req.body?.total_count || 22);
+    if (!Number.isInteger(variantNumber) || variantNumber < 1 || variantNumber > 11) {
+      return res.status(400).json({ error: 'variant_number noto‘g‘ri' });
+    }
+    if (!Number.isInteger(correctCount) || correctCount < 0) {
+      return res.status(400).json({ error: 'correct_count noto‘g‘ri' });
+    }
+    if (!Number.isInteger(totalCount) || totalCount <= 0) {
+      return res.status(400).json({ error: 'total_count noto‘g‘ri' });
+    }
+    const scorePercent = Math.max(0, Math.min(100, Math.round((correctCount / totalCount) * 100)));
+    const completedAt = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('patent_variant_results')
+      .upsert(
+        {
+          user_id: req.userId,
+          variant_number: variantNumber,
+          correct_count: correctCount,
+          total_count: totalCount,
+          score_percent: scorePercent,
+          passed: correctCount >= 19,
+          completed_at: completedAt,
+          updated_at: completedAt,
+        },
+        { onConflict: 'user_id,variant_number' }
+      )
+      .select('variant_number, correct_count, total_count, score_percent, passed, completed_at')
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
   });
 
   // User: request subscription payment (by card) — admin confirms later

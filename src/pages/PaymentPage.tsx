@@ -4,6 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { submitPayment, getMyPayments, type TariffType, type Currency } from '../api/payment';
 import { getPaymentMethodByCurrency, getTariffPricesByCurrency } from '../api/publicPricing';
 import {
+  getCourseProductPrice,
+  getPaymentProductLabel,
+  normalizePaymentProductCode,
+  type PaymentProductCode,
+} from '../../shared/paymentProducts';
+import {
   Copy,
   Upload,
   X,
@@ -59,7 +65,14 @@ export default function PaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useAuth();
-  const state = location.state as { tariffType?: TariffType; currency?: Currency; tariffLabel?: string } | null;
+  const state = location.state as {
+    tariffType?: TariffType;
+    currency?: Currency;
+    tariffLabel?: string;
+    productCode?: PaymentProductCode;
+    productLabel?: string;
+    returnTo?: string;
+  } | null;
 
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -76,23 +89,40 @@ export default function PaymentPage() {
   const [hasPendingPayment, setHasPendingPayment] = useState(false);
   const [pendingCheckDone, setPendingCheckDone] = useState(false);
 
-  const tariffType = state?.tariffType ?? 'month';
+  const productCode = normalizePaymentProductCode(state?.productCode);
+  const isRussianCourse = productCode === 'russian';
+  const tariffType = state?.tariffType ?? (isRussianCourse ? 'month' : undefined);
   const currency = state?.currency ?? 'UZS';
   const tariffLabel = state?.tariffLabel ?? '1 OY';
+  const productLabel = state?.productLabel ?? getPaymentProductLabel(productCode);
+  const backPath =
+    state?.returnTo ??
+    (productCode === 'patent'
+      ? '/kurslar/patent'
+      : productCode === 'vnzh'
+        ? '/kurslar/vnzh'
+        : '/tariflar');
 
   useEffect(() => {
     if (!token) return;
-    getMyPayments(token).then((list) => {
-      setHasPendingPayment(list.some((p) => p.status === 'pending'));
-      setPendingCheckDone(true);
-    }).catch(() => setPendingCheckDone(true));
-  }, [token]);
+    getMyPayments(token)
+      .then((list) => {
+        setHasPendingPayment(
+          list.some(
+            (payment) =>
+              payment.status === 'pending' && payment.product_code === productCode
+          )
+        );
+        setPendingCheckDone(true);
+      })
+      .catch(() => setPendingCheckDone(true));
+  }, [token, productCode]);
 
   useEffect(() => {
     setDetailsLoading(true);
     Promise.all([
       getPaymentMethodByCurrency(currency),
-      getTariffPricesByCurrency(currency),
+      isRussianCourse ? getTariffPricesByCurrency(currency) : Promise.resolve(null),
     ])
       .then(([m, prices]) => {
         setPaymentMethod(
@@ -104,9 +134,19 @@ export default function PaymentPage() {
                 card_holder_name: FALLBACK_HOLDER,
               }
         );
-        const key =
-          tariffType === 'year' ? 'year' : tariffType === '3months' ? 'three_months' : 'month';
-        setPrice((prices as Record<string, number>)[key] ?? null);
+        if (isRussianCourse && tariffType) {
+          const key =
+            tariffType === 'year'
+              ? 'year'
+              : tariffType === '3months'
+                ? 'three_months'
+                : 'month';
+          setPrice((prices as Record<string, number> | null)?.[key] ?? null);
+          return;
+        }
+        setPrice(
+          productCode === 'russian' ? null : getCourseProductPrice(productCode, currency)
+        );
       })
       .catch(() => {
         setPaymentMethod({
@@ -117,7 +157,7 @@ export default function PaymentPage() {
         setPrice(null);
       })
       .finally(() => setDetailsLoading(false));
-  }, [currency, tariffType]);
+  }, [currency, isRussianCourse, productCode, tariffType]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -161,7 +201,12 @@ export default function PaymentPage() {
     setSubmitting(true);
     setError('');
     try {
-      await submitPayment(token, tariffType, currency, file);
+      await submitPayment(token, {
+        tariffType: isRussianCourse ? tariffType : null,
+        productCode,
+        currency,
+        file,
+      });
       setSuccess(true);
     } catch (e: unknown) {
       const err = e as Error & { code?: string };
@@ -172,11 +217,13 @@ export default function PaymentPage() {
     }
   };
 
-  if (!state?.tariffType && !hasPendingPayment && pendingCheckDone) {
-    navigate('/tariflar', { replace: true });
+  const hasValidState = isRussianCourse ? Boolean(state?.tariffType) : Boolean(state?.productCode);
+
+  if (!hasValidState && !hasPendingPayment && pendingCheckDone) {
+    navigate(backPath, { replace: true });
     return null;
   }
-  if (!state?.tariffType && !hasPendingPayment && !pendingCheckDone) {
+  if (!hasValidState && !hasPendingPayment && !pendingCheckDone) {
     return null;
   }
 
@@ -240,7 +287,7 @@ export default function PaymentPage() {
       <div className="mx-auto max-w-xl px-4 pt-6 sm:pt-8">
         <button
           type="button"
-          onClick={() => navigate('/tariflar')}
+          onClick={() => navigate(backPath)}
           className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-8"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -255,7 +302,9 @@ export default function PaymentPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900 mb-1">To'lov summasi</h2>
-              <p className="text-slate-600 text-sm mb-1">Tarif: {tariffLabel}</p>
+              <p className="text-slate-600 text-sm mb-1">
+                {isRussianCourse ? `Tarif: ${tariffLabel}` : `Kurs: ${productLabel}`}
+              </p>
               <p className="text-slate-600 text-sm">Iltimos, aynan shu summani o'tkazing.</p>
             </div>
             <div className="sm:text-right">
@@ -411,11 +460,11 @@ export default function PaymentPage() {
 
         <button
           type="button"
-          onClick={() => navigate('/tariflar')}
+          onClick={() => navigate(backPath)}
           className="w-full mt-4 text-slate-500 hover:text-slate-700 text-sm font-medium flex items-center justify-center gap-1"
         >
           <ChevronRight className="h-4 w-4 rotate-180" />
-          Tariflar sahifasiga
+          Orqaga qaytish
         </button>
       </div>
     </div>

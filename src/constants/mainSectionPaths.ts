@@ -3,7 +3,7 @@ export const MAIN_SECTION_PATHS = [
   '/',
   '/vocabulary',
   '/statistika',
-  '/reyting',
+  '/kurslar',
   '/profile',
 ] as const;
 

@@ -65,7 +65,7 @@ async function handlePayments(userId: number, res: VercelResponse) {
   const { data: rows, error } = await supabase
     .from('payments')
     .select(
-      'id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at'
+      'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at'
     )
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
@@ -82,6 +82,8 @@ async function handleAccess(userId: number, res: VercelResponse) {
     vocabulary_free_topic: access.vocabulary_free_topic,
     vocabulary_free_subtopic: access.vocabulary_free_subtopic,
     subscription_active: access.subscription_active,
+    patent_course_active: access.patent_course_active,
+    vnzh_course_active: access.vnzh_course_active,
     vocabulary_free_topic_id: access.vocabulary_free_topic_id ?? null,
     vocabulary_free_subtopic_id: access.vocabulary_free_subtopic_id ?? null,
   });

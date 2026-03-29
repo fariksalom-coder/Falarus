@@ -39,6 +39,13 @@ import {
 } from '../shared/leaderboardPeriods.js';
 import { assignCompetitionRanks } from '../shared/leaderboardRanks.js';
 import { fetchPeriodLeaderboardFromEvents } from '../shared/periodLeaderboard.js';
+import {
+  getCourseProductPrice,
+  isCourseProductCode,
+  isCurrencyCode,
+  isSubscriptionTariffType,
+  normalizePaymentProductCode,
+} from '../shared/paymentProducts.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -90,6 +97,7 @@ const ROOT_API_PREFIXES = new Set([
   'activity',
   'user',
   'vocabulary',
+  'patent',
 ]);
 
 function getPathParts(req: VercelRequest): string[] {
@@ -163,26 +171,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const userId = requireAuth(req, res);
     if (userId == null) return;
     try {
-      const { data: pending } = await supabase.from('payments').select('id').eq('user_id', userId).eq('status', 'pending').limit(1).maybeSingle();
+      const { fields, file } = await parseMultipartPayments(req);
+      const productCode = normalizePaymentProductCode(fields.product_code);
+      const tariffType = (fields.tariff_type || '').trim();
+      const currency = (fields.currency || '').toUpperCase();
+      if (!isCurrencyCode(currency))
+        return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
+      if (productCode === 'russian' && !isSubscriptionTariffType(tariffType))
+        return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
+      const { data: pending } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .eq('product_code', productCode)
+        .limit(1)
+        .maybeSingle();
       if (pending) {
         return res.status(400).json({
           error: 'PENDING_PAYMENT',
           message: "To'lovingiz tekshirilmoqda. Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi.",
         });
       }
-      const { fields, file } = await parseMultipartPayments(req);
-      const tariff_type = (fields.tariff_type || '').trim();
-      const currency = (fields.currency || '').toUpperCase();
-      if (!tariff_type || !['month', '3months', 'year'].includes(tariff_type))
-        return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
-      if (!currency || !['UZS', 'RUB', 'USD'].includes(currency))
-        return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
       if (!file || !file.buffer.length)
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
-      // amount required by payments table (e.g. from 009_referral) — get from tariff_prices
-      const priceKey = tariff_type === 'year' ? 'year' : tariff_type === '3months' ? 'three_months' : 'month';
-      const { data: priceRow } = await supabase.from('tariff_prices').select('price').eq('currency', currency).eq('tariff_type', priceKey).maybeSingle();
-      const amount = priceRow != null ? Number((priceRow as { price: number }).price) : 0;
+      let amount = 0;
+      if (productCode === 'russian') {
+        const priceKey =
+          tariffType === 'year'
+            ? 'year'
+            : tariffType === '3months'
+              ? 'three_months'
+              : 'month';
+        const { data: priceRow } = await supabase
+          .from('tariff_prices')
+          .select('price')
+          .eq('currency', currency)
+          .eq('tariff_type', priceKey)
+          .maybeSingle();
+        amount = priceRow != null ? Number((priceRow as { price: number }).price) : 0;
+      } else if (isCourseProductCode(productCode)) {
+        amount = getCourseProductPrice(productCode, currency);
+      }
       const ext = file.mimetype === 'application/pdf' ? 'pdf' : file.mimetype.split('/')[1] || 'jpg';
       const pathStr = `${userId}/${Date.now()}_proof.${ext}`;
       const { data: bucketList } = await supabase.storage.listBuckets();
@@ -197,7 +227,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const paymentProofUrl = urlData?.publicUrl ?? null;
       const { data: row, error: insertErr } = await supabase.from('payments').insert({
         user_id: userId,
-        tariff_type,
+        tariff_type: productCode === 'russian' ? tariffType : null,
+        product_code: productCode,
         currency,
         amount,
         payment_proof_url: paymentProofUrl,
@@ -232,6 +263,71 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const userId = requireAuth(req, res);
     if (userId == null) return;
     return routeVocabularyRequest(req, res, userId, path.slice(1));
+  }
+
+  if (path[0] === 'patent' && path[1] === 'results') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    try {
+      if (req.method === 'GET') {
+        const { data, error } = await supabase
+          .from('patent_variant_results')
+          .select(
+            'variant_number, correct_count, total_count, score_percent, passed, completed_at'
+          )
+          .eq('user_id', userId)
+          .order('variant_number', { ascending: true });
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json(data ?? []);
+      }
+
+      if (req.method === 'POST') {
+        const body = parseBody(req.body);
+        const variantNumber = Number(body.variant_number);
+        const correctCount = Number(body.correct_count);
+        const totalCount = Number(body.total_count || 22);
+        if (!Number.isInteger(variantNumber) || variantNumber < 1 || variantNumber > 11) {
+          return res.status(400).json({ error: 'variant_number noto‘g‘ri' });
+        }
+        if (!Number.isInteger(correctCount) || correctCount < 0) {
+          return res.status(400).json({ error: 'correct_count noto‘g‘ri' });
+        }
+        if (!Number.isInteger(totalCount) || totalCount <= 0) {
+          return res.status(400).json({ error: 'total_count noto‘g‘ri' });
+        }
+        const scorePercent = Math.max(
+          0,
+          Math.min(100, Math.round((correctCount / totalCount) * 100))
+        );
+        const completedAt = new Date().toISOString();
+        const { data, error } = await supabase
+          .from('patent_variant_results')
+          .upsert(
+            {
+              user_id: userId,
+              variant_number: variantNumber,
+              correct_count: correctCount,
+              total_count: totalCount,
+              score_percent: scorePercent,
+              passed: correctCount >= 19,
+              completed_at: completedAt,
+              updated_at: completedAt,
+            },
+            { onConflict: 'user_id,variant_number' }
+          )
+          .select(
+            'variant_number, correct_count, total_count, score_percent, passed, completed_at'
+          )
+          .single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json(data);
+      }
+
+      return res.status(405).json({ error: 'Method not allowed' });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Xatolik yuz berdi';
+      return res.status(500).json({ error: message });
+    }
   }
 
   // /api/lesson-task-results — merged from dedicated function to reduce serverless count

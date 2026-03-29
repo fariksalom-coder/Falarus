@@ -5,12 +5,7 @@ import { useAccess } from '../context/AccessContext';
 import { getMyPayments, type MyPaymentRow, type PaymentStatus } from '../api/payment';
 import { adminContact } from '../config/adminContact';
 import { ArrowLeft, History, MessageCircle } from 'lucide-react';
-
-const TARIFF_LABELS: Record<string, string> = {
-  month: '1 OY',
-  '3months': '3 OY',
-  year: '1 YIL',
-};
+import { getPaymentDisplayLabel } from '../../shared/paymentProducts';
 
 function formatPaymentAmount(amount: number, currency: string): string {
   if (currency === 'UZS') return `${Number(amount).toLocaleString('uz-UZ')} so'm`;
@@ -90,7 +85,7 @@ export default function PaymentHistoryPage() {
               >
                 <div className="flex justify-between items-start gap-2 mb-3">
                   <span className="text-lg font-semibold text-slate-900">
-                    {TARIFF_LABELS[p.tariff_type] ?? p.tariff_type}
+                    {getPaymentDisplayLabel(p.product_code, p.tariff_type)}
                   </span>
                   <StatusBadge status={p.status} />
                 </div>

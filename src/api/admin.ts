@@ -1,4 +1,5 @@
 import { adminApi } from '../lib/adminApi';
+import type { PaymentProductCode } from '../../shared/paymentProducts';
 
 export type RevenueByCurrency = { UZS: number; USD: number; RUB: number };
 
@@ -45,6 +46,8 @@ export type AdminPaymentRow = {
   user_phone: string | null;
   plan: string;
   tariff_type: string;
+  product_code: PaymentProductCode;
+  product_label: string;
   currency: string;
   payment_proof_url: string | null;
   payment_time: string;
@@ -263,4 +266,3 @@ export async function updateTariffPrice(data: {
     body: JSON.stringify(data),
   });
 }
-

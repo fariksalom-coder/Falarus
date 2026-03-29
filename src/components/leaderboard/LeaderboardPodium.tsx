@@ -41,12 +41,12 @@ function PodiumAvatar({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }
   return (
     <div className="relative">
       <div
-        className={`relative overflow-hidden rounded-full border-[5px] bg-[#EEE8FF] ${meta.avatarSize} ${meta.ringClassName}`}
+        className={`relative overflow-hidden rounded-full border-[5px] bg-[#EAF4FF] ${meta.avatarSize} ${meta.ringClassName}`}
       >
         {user.avatarUrl ? (
           <img src={user.avatarUrl} alt={name} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[#E9E3FB] text-3xl font-bold text-[#6C35D2] sm:text-5xl">
+          <div className="flex h-full w-full items-center justify-center bg-[#DBECFF] text-3xl font-bold text-[#2563EB] sm:text-5xl">
             {getLeaderboardInitial(user)}
           </div>
         )}

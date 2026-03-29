@@ -1,6 +1,13 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  getCourseProductPrice,
+  isCourseProductCode,
+  isCurrencyCode,
+  isSubscriptionTariffType,
+  normalizePaymentProductCode,
+} from '../../shared/paymentProducts.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const ALLOWED_MIMES = [
@@ -38,19 +45,27 @@ export function createPaymentRoutes(
     async (req: any, res: Response) => {
       const userId = req.userId;
       const { tariff_type, currency } = req.body || {};
+      const productCode = normalizePaymentProductCode(req.body?.product_code);
       const file = req.file;
 
-      if (!tariff_type || !['month', '3months', 'year'].includes(tariff_type)) {
+      if (productCode === 'russian' && !isSubscriptionTariffType(tariff_type)) {
         return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
       }
-      if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
+      if (!isCurrencyCode(currency)) {
         return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
       }
       if (!file || !file.buffer) {
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
       }
 
-      const { data: pending } = await supabase.from('payments').select('id').eq('user_id', userId).eq('status', 'pending').limit(1).maybeSingle();
+      const { data: pending } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .eq('product_code', productCode)
+        .limit(1)
+        .maybeSingle();
       if (pending) {
         return res.status(400).json({
           error: 'PENDING_PAYMENT',
@@ -58,8 +73,21 @@ export function createPaymentRoutes(
         });
       }
 
-      const { data: priceRow } = await supabase.from('tariff_prices').select('price').eq('currency', currency).eq('tariff_type', tariff_type === 'year' ? 'year' : tariff_type === '3months' ? 'three_months' : 'month').maybeSingle();
-      const amount = priceRow != null ? Number((priceRow as { price: number }).price) : 0;
+      let amount = 0;
+      if (productCode === 'russian') {
+        const { data: priceRow } = await supabase
+          .from('tariff_prices')
+          .select('price')
+          .eq('currency', currency)
+          .eq(
+            'tariff_type',
+            tariff_type === 'year' ? 'year' : tariff_type === '3months' ? 'three_months' : 'month'
+          )
+          .maybeSingle();
+        amount = priceRow != null ? Number((priceRow as { price: number }).price) : 0;
+      } else if (isCourseProductCode(productCode)) {
+        amount = getCourseProductPrice(productCode, currency);
+      }
 
       try {
         const ext = file.mimetype === 'application/pdf' ? 'pdf' : file.mimetype.split('/')[1] || 'jpg';
@@ -91,7 +119,8 @@ export function createPaymentRoutes(
           .from('payments')
           .insert({
             user_id: userId,
-            tariff_type,
+            tariff_type: productCode === 'russian' ? tariff_type : null,
+            product_code: productCode,
             currency,
             amount,
             payment_proof_url: paymentProofUrl,

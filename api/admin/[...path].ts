@@ -9,6 +9,13 @@ import jwt from 'jsonwebtoken';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
 import { getUserCompletedLessonsCount } from '../_lib/lessonProgress.js';
+import {
+  getPaymentDisplayLabel,
+  getPaymentProductLabel,
+  isSubscriptionTariffType,
+  normalizePaymentProductCode,
+} from '../../shared/paymentProducts.js';
+import { invalidateAccessCache } from '../_lib/subscription.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
 
@@ -251,7 +258,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path[0] === 'payments' && path.length === 1 && req.method === 'GET') {
       const { data: rows, error } = await supabase
         .from('payments')
-        .select('id, user_id, tariff_type, currency, payment_proof_url, payment_time, status, created_at, approved_at')
+        .select('id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, created_at, approved_at')
         .order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
       const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id))];
@@ -263,14 +270,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const planLabel: Record<string, string> = { month: '1 OY', '3months': '3 OY', year: '1 YIL' };
       const list = (rows ?? []).map((r: any) => {
         const u = userMap.get(r.user_id);
+        const productCode = normalizePaymentProductCode(r.product_code);
         return {
           id: r.id,
           user_id: r.user_id,
           user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : '—',
           user_email: u?.email ?? '—',
           user_phone: u?.phone ?? null,
-          plan: planLabel[r.tariff_type] ?? r.tariff_type,
+          plan:
+            productCode === 'russian'
+              ? planLabel[r.tariff_type] ?? r.tariff_type
+              : getPaymentProductLabel(productCode),
           tariff_type: r.tariff_type,
+          product_code: productCode,
+          product_label: getPaymentDisplayLabel(productCode, r.tariff_type),
           currency: r.currency,
           payment_proof_url: r.payment_proof_url ?? null,
           payment_time: r.payment_time ?? r.created_at ?? '',
@@ -294,29 +307,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             : rawAction;
       if (!payId) return res.status(400).json({ error: 'Invalid id' });
       if (action === 'confirm') {
-        const { data: row, error: fe } = await supabase.from('payments').select('user_id, tariff_type').eq('id', payId).eq('status', 'pending').single();
+        const { data: row, error: fe } = await supabase
+          .from('payments')
+          .select('user_id, tariff_type, product_code')
+          .eq('id', payId)
+          .eq('status', 'pending')
+          .single();
         if (fe || !row) return res.status(404).json({ error: 'To\'lov topilmadi' });
         const userId = (row as any).user_id;
-        const tariffType = (row as any).tariff_type; // month | 3months | year
-        const planType = tariffType === 'month' ? 'monthly' : tariffType === '3months' ? 'three_months' : 'yearly';
         const now = new Date();
-        const planName = tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+        const tariffType = (row as any).tariff_type;
+        const productCode = normalizePaymentProductCode((row as any).product_code);
         await supabase.from('payments').update({ status: 'approved', approved_at: now.toISOString(), admin_id: adminId }).eq('id', payId);
-        const { data: current } = await supabase.from('users').select('plan_expires_at').eq('id', userId).single();
-        const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
-        const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
-        const ext = new Date(startFrom);
-        if (tariffType === 'month') ext.setMonth(ext.getMonth() + 1);
-        else if (tariffType === '3months') ext.setMonth(ext.getMonth() + 3);
-        else ext.setFullYear(ext.getFullYear() + 1);
-        await supabase.from('users').update({ plan_name: planName, plan_expires_at: ext.toISOString() }).eq('id', userId);
-        await supabase.from('subscriptions').insert({
-          user_id: userId,
-          plan_type: planType,
-          started_at: now.toISOString(),
-          expires_at: ext.toISOString(),
-          status: 'active',
-        });
+        if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
+          const planType =
+            tariffType === 'month'
+              ? 'monthly'
+              : tariffType === '3months'
+                ? 'three_months'
+                : 'yearly';
+          const planName =
+            tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+          const { data: current } = await supabase
+            .from('users')
+            .select('plan_expires_at')
+            .eq('id', userId)
+            .single();
+          const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
+          const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
+          const ext = new Date(startFrom);
+          if (tariffType === 'month') ext.setMonth(ext.getMonth() + 1);
+          else if (tariffType === '3months') ext.setMonth(ext.getMonth() + 3);
+          else ext.setFullYear(ext.getFullYear() + 1);
+          await supabase
+            .from('users')
+            .update({ plan_name: planName, plan_expires_at: ext.toISOString() })
+            .eq('id', userId);
+          await supabase.from('subscriptions').insert({
+            user_id: userId,
+            plan_type: planType,
+            started_at: now.toISOString(),
+            expires_at: ext.toISOString(),
+            status: 'active',
+          });
+        }
+        invalidateAccessCache(userId);
         return res.status(200).json({ success: true });
       }
       if (action === 'reject') {
