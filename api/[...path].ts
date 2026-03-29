@@ -47,6 +47,7 @@ import {
   normalizePaymentProductCode,
 } from '../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../shared/paymentsCompat.js';
+import { embedFalarusProductInProofUrl } from '../shared/paymentsProofUrl.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -254,13 +255,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('id')
         .single();
       if (insertErr && isPaymentsProductCodeSchemaError(insertErr)) {
-        if (productCode !== 'russian') {
-          return res.status(503).json({
-            error:
-              "To'lov tizimi yangilanmoqda. Iltimos, keyinroq urinib ko'ring yoki qo'llab-quvvatlashga murojaat qiling.",
-          });
-        }
-        const legacyIns = await supabase.from('payments').insert(insertBase).select('id').single();
+        const proofUrl =
+          productCode === 'russian'
+            ? paymentProofUrl
+            : embedFalarusProductInProofUrl(paymentProofUrl, productCode);
+        const legacyBase = {
+          ...insertBase,
+          payment_proof_url: proofUrl,
+          tariff_type: productCode === 'russian' ? tariffType : 'month',
+        };
+        const legacyIns = await supabase.from('payments').insert(legacyBase).select('id').single();
         row = legacyIns.data;
         insertErr = legacyIns.error;
       }

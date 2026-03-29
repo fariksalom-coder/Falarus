@@ -8,9 +8,9 @@ import {
   getPaymentDisplayLabel,
   getPaymentProductLabel,
   isSubscriptionTariffType,
-  normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
+import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
 
 export function createAdminController(supabase: SupabaseClient) {
@@ -228,7 +228,7 @@ export function createAdminController(supabase: SupabaseClient) {
 
     const list = (rows ?? []).map((r: any) => {
       const u = userMap.get(r.user_id);
-      const productCode = normalizePaymentProductCode(r.product_code);
+      const productCode = resolvePaymentProductFromRow(r);
       return {
         id: r.id,
         user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : '—',
@@ -272,20 +272,19 @@ export function createAdminController(supabase: SupabaseClient) {
       if (fetchErr && isPaymentsProductCodeSchemaError(fetchErr)) {
         const second = await supabase
           .from('payments')
-          .select('user_id, tariff_type')
+          .select('user_id, tariff_type, payment_proof_url')
           .eq('id', id)
           .eq('status', 'pending')
           .single();
-        row = second.data as typeof row;
+        row = second.data as unknown as typeof row;
         fetchErr = second.error;
-        if (row) (row as { product_code?: string }).product_code = 'russian';
       }
       if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi yoki tasdiqlangan' });
 
       const userId = Number((row as any).user_id);
       if (!Number.isFinite(userId)) return res.status(400).json({ error: 'To\'lovda user_id xato' });
       const tariffType = (row as any).tariff_type;
-      const productCode = normalizePaymentProductCode((row as any).product_code);
+      const productCode = resolvePaymentProductFromRow(row as any);
       const now = new Date();
 
       const { error: updatePayErr } = await supabase

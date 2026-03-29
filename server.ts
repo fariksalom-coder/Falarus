@@ -35,8 +35,8 @@ import { fetchPeriodLeaderboardFromEvents } from './shared/periodLeaderboard.ts'
 import { insertPointEvent } from './shared/pointEvents.ts';
 import { parseContactIdentifier } from './shared/authIdentifiers.ts';
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
-import { normalizePaymentProductCode } from './shared/paymentProducts.ts';
 import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
+import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -428,7 +428,7 @@ async function startServer() {
     res.json(
       (rows ?? []).map((row: any) => ({
         ...row,
-        product_code: normalizePaymentProductCode(row.product_code ?? 'russian'),
+        product_code: resolvePaymentProductFromRow(row),
       }))
     );
   });

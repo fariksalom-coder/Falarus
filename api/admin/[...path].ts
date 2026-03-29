@@ -16,6 +16,7 @@ import {
   normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
+import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { invalidateAccessCache } from '../_lib/subscription.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
@@ -277,7 +278,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const planLabel: Record<string, string> = { month: '1 OY', '3months': '3 OY', year: '1 YIL' };
       const list = (rows ?? []).map((r: any) => {
         const u = userMap.get(r.user_id);
-        const productCode = normalizePaymentProductCode(r.product_code);
+        const productCode = resolvePaymentProductFromRow(r);
         return {
           id: r.id,
           user_id: r.user_id,
@@ -323,19 +324,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (fe && isPaymentsProductCodeSchemaError(fe)) {
           const second = await supabase
             .from('payments')
-            .select('user_id, tariff_type')
+            .select('user_id, tariff_type, payment_proof_url')
             .eq('id', payId)
             .eq('status', 'pending')
             .single();
-          row = second.data as typeof row;
+          row = second.data as unknown as typeof row;
           fe = second.error;
-          if (row) (row as { product_code?: string }).product_code = 'russian';
         }
         if (fe || !row) return res.status(404).json({ error: 'To\'lov topilmadi' });
         const userId = (row as any).user_id;
         const now = new Date();
         const tariffType = (row as any).tariff_type;
-        const productCode = normalizePaymentProductCode((row as any).product_code);
+        const productCode = resolvePaymentProductFromRow(row as any);
         await supabase.from('payments').update({ status: 'approved', approved_at: now.toISOString(), admin_id: adminId }).eq('id', payId);
         if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
           const planType =

@@ -5,6 +5,7 @@ import {
   type CourseProductCode,
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
+import { readFalarusProductFromProofUrl } from '../../shared/paymentsProofUrl.js';
 
 const PLAN_TYPES = ['monthly', 'three_months', 'yearly'] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
@@ -138,7 +139,17 @@ export async function hasApprovedCourseAccess(
     .limit(1)
     .maybeSingle();
   if (error && isPaymentsProductCodeSchemaError(error)) {
-    return false;
+    const { data: rows } = await supabase
+      .from('payments')
+      .select('payment_proof_url')
+      .eq('user_id', uid)
+      .eq('status', 'approved')
+      .order('approved_at', { ascending: false })
+      .limit(30);
+    return (rows ?? []).some((r: { payment_proof_url?: string | null }) => {
+      const p = readFalarusProductFromProofUrl(r.payment_proof_url ?? undefined);
+      return p && normalizePaymentProductCode(p) === productCode;
+    });
   }
   return Boolean(data);
 }

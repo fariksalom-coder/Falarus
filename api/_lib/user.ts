@@ -4,8 +4,8 @@ import { parseBody } from './request.js';
 import { getAccessInfo } from './subscription.js';
 import { buildRequestLogContext, logError } from './logger.js';
 import { applyUserAccountPatch } from '../../shared/userAccountPatch.js';
-import { normalizePaymentProductCode } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
+import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 
 async function handleMe(userId: number, res: VercelResponse) {
   const { data: user, error } = await supabase
@@ -88,9 +88,10 @@ async function handlePayments(userId: number, res: VercelResponse) {
   }
   const normalized = (rows ?? []).map((row: Record<string, unknown>) => ({
     ...row,
-    product_code: normalizePaymentProductCode(
-      (row.product_code as string | null | undefined) ?? 'russian'
-    ),
+    product_code: resolvePaymentProductFromRow({
+      product_code: row.product_code as string | null | undefined,
+      payment_proof_url: row.payment_proof_url as string | null | undefined,
+    }),
   }));
   return res.status(200).json(normalized);
 }
