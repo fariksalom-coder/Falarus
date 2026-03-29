@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Circle, FileText, MonitorPlay, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getVnzhSection, getVnzhTask, isVnzhFreeTask } from '../data/vnzhCourseData';
@@ -101,13 +101,17 @@ function ChoiceOption({
 function ListeningChoiceContent({
   items,
   currentIndex,
+  answers,
+  setAnswers,
 }: {
   items: VnzhListeningChoiceItem[];
   currentIndex: number;
+  answers: Record<string, number>;
+  setAnswers: Dispatch<SetStateAction<Record<string, number>>>;
 }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({});
   const item = items[currentIndex - 1];
-  const selected = answers[item.index];
+  const key = String(item.index);
+  const selected = answers[key];
   const answered = typeof selected === 'number';
 
   return (
@@ -118,10 +122,6 @@ function ListeningChoiceContent({
         className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
         style={{ borderColor: BORDER }}
       >
-        <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-          {item.index}
-        </div>
-
         <h2 className="text-[18px] font-bold sm:text-[20px]" style={{ color: TEXT }}>
           {item.prompt}
         </h2>
@@ -139,7 +139,7 @@ function ListeningChoiceContent({
                 label={option}
                 state={state}
                 disabled={answered}
-                onClick={() => setAnswers((prev) => ({ ...prev, [item.index]: optionIndex }))}
+                onClick={() => setAnswers((prev) => ({ ...prev, [key]: optionIndex }))}
               />
             );
           })}
@@ -170,10 +170,6 @@ function ListeningFillBlankContent({
         className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
         style={{ borderColor: BORDER }}
       >
-        <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-          {item.index}
-        </div>
-
         <p className="text-[18px] font-bold leading-8 sm:text-[20px]" style={{ color: TEXT }}>
           {item.prompt}
         </p>
@@ -211,11 +207,14 @@ function ListeningFillBlankContent({
 function ListeningTripleChoiceContent({
   items,
   currentIndex,
+  answers,
+  setAnswers,
 }: {
   items: VnzhListeningTripleChoiceItem[];
   currentIndex: number;
+  answers: Record<string, number>;
+  setAnswers: Dispatch<SetStateAction<Record<string, number>>>;
 }) {
-  const [answers, setAnswers] = useState<Record<string, number>>({});
   const item = items[currentIndex - 1];
 
   return (
@@ -234,10 +233,6 @@ function ListeningTripleChoiceContent({
               className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
               style={{ borderColor: BORDER }}
             >
-              <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-                {item.index}.{questionIndex + 1}
-              </div>
-
               <h2 className="text-[18px] font-bold sm:text-[20px]" style={{ color: TEXT }}>
                 {question.prompt}
               </h2>
@@ -271,13 +266,17 @@ function ListeningTripleChoiceContent({
 function StaticChoiceContent({
   items,
   currentIndex,
+  answers,
+  setAnswers,
 }: {
   items: VnzhStaticChoiceItem[];
   currentIndex: number;
+  answers: Record<string, number>;
+  setAnswers: Dispatch<SetStateAction<Record<string, number>>>;
 }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({});
   const item = items[currentIndex - 1];
-  const selected = answers[item.index];
+  const key = String(item.index);
+  const selected = answers[key];
   const answered = typeof selected === 'number';
 
   return (
@@ -285,10 +284,6 @@ function StaticChoiceContent({
       className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
       style={{ borderColor: BORDER }}
     >
-      <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-        {item.index}
-      </div>
-
       <h2 className="text-[18px] font-bold whitespace-pre-line sm:text-[20px]" style={{ color: TEXT }}>
         {item.prompt}
       </h2>
@@ -306,7 +301,7 @@ function StaticChoiceContent({
               label={option}
               state={state}
               disabled={answered}
-              onClick={() => setAnswers((prev) => ({ ...prev, [item.index]: optionIndex }))}
+              onClick={() => setAnswers((prev) => ({ ...prev, [key]: optionIndex }))}
             />
           );
         })}
@@ -318,13 +313,17 @@ function StaticChoiceContent({
 function NoticeChoiceContent({
   items,
   currentIndex,
+  answers,
+  setAnswers,
 }: {
   items: VnzhNoticeChoiceItem[];
   currentIndex: number;
+  answers: Record<string, number>;
+  setAnswers: Dispatch<SetStateAction<Record<string, number>>>;
 }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({});
   const item = items[currentIndex - 1];
-  const selected = answers[item.index];
+  const key = String(item.index);
+  const selected = answers[key];
   const answered = typeof selected === 'number';
 
   return (
@@ -332,10 +331,6 @@ function NoticeChoiceContent({
       className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
       style={{ borderColor: BORDER }}
     >
-      <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-        {item.index}
-      </div>
-
       {item.noticeText ? (
         <section className="mb-5 rounded-[24px] border bg-[#FAFCFF] p-4" style={{ borderColor: BORDER }}>
           <p className="whitespace-pre-line text-[15px] leading-7" style={{ color: TEXT }}>
@@ -365,7 +360,7 @@ function NoticeChoiceContent({
               label={option}
               state={state}
               disabled={answered}
-              onClick={() => setAnswers((prev) => ({ ...prev, [item.index]: optionIndex }))}
+              onClick={() => setAnswers((prev) => ({ ...prev, [key]: optionIndex }))}
             />
           );
         })}
@@ -377,11 +372,14 @@ function NoticeChoiceContent({
 function ReadingPassageContent({
   items,
   currentIndex,
+  answers,
+  setAnswers,
 }: {
   items: VnzhReadingPassageItem[];
   currentIndex: number;
+  answers: Record<string, number>;
+  setAnswers: Dispatch<SetStateAction<Record<string, number>>>;
 }) {
-  const [answers, setAnswers] = useState<Record<string, number>>({});
   const item = items[currentIndex - 1];
 
   return (
@@ -389,10 +387,6 @@ function ReadingPassageContent({
       className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
       style={{ borderColor: BORDER }}
     >
-      <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-        {item.index}
-      </div>
-
       {item.title ? (
         <h2 className="mb-3 text-[18px] font-bold sm:text-[20px]" style={{ color: TEXT }}>
           {item.title}
@@ -413,10 +407,6 @@ function ReadingPassageContent({
 
           return (
             <section key={answerKey} className="rounded-[24px] border bg-[#FAFCFF] p-4" style={{ borderColor: BORDER }}>
-              <div className="mb-3 inline-flex rounded-full bg-white px-3 py-1.5 text-sm font-bold text-[#2563EB] shadow-[0_8px_18px_rgba(148,163,184,0.12)]">
-                {item.index}.{questionIndex + 1}
-              </div>
-
               <h3 className="text-[17px] font-bold sm:text-[18px]" style={{ color: TEXT }}>
                 {question.prompt}
               </h3>
@@ -461,10 +451,6 @@ function WritingVideoPhotoContent({
       className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
       style={{ borderColor: BORDER }}
     >
-      <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-        {item.index}
-      </div>
-
       <div className="space-y-5">
         <video controls preload="metadata" className="w-full rounded-[22px] bg-slate-950" src={courseAssetUrl(item.videoUrl)} />
         <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
@@ -489,10 +475,6 @@ function WritingPromptAnswerContent({
       className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
       style={{ borderColor: BORDER }}
     >
-      <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-        {item.index}
-      </div>
-
       <section className="rounded-[24px] border bg-[#FAFCFF] p-4" style={{ borderColor: BORDER }}>
         <h2 className="text-[17px] font-bold sm:text-[18px]" style={{ color: TEXT }}>
           Задание
@@ -518,10 +500,13 @@ function BlockTabs({
   total,
   activeIndex,
   onSelect,
+  tabOutcome,
 }: {
   total: number;
   activeIndex: number;
   onSelect: (index: number) => void;
+  /** MCQ tests: green = верно, red = неверно, pending = ещё не отвечен или не все подвопросы */
+  tabOutcome?: (tabNumber: number) => 'pending' | 'correct' | 'wrong';
 }) {
   return (
     <div className="overflow-x-auto pb-1">
@@ -529,18 +514,33 @@ function BlockTabs({
         {Array.from({ length: total }, (_, index) => {
           const number = index + 1;
           const active = number === activeIndex;
+          const outcome = tabOutcome?.(number);
+
+          let background = '#B8C7D9';
+          let color = '#FFFFFF';
+          let boxShadow = 'none';
+          let border = '2px solid transparent';
+
+          if (outcome === 'correct') {
+            background = '#16A34A';
+            boxShadow = '0 10px 24px rgba(22,163,74,0.16)';
+          } else if (outcome === 'wrong') {
+            background = '#EF4444';
+            boxShadow = '0 10px 24px rgba(239,68,68,0.16)';
+          } else if (active) {
+            background = '#DBEAFE';
+            color = '#2563EB';
+            border = '2px solid #93C5FD';
+            boxShadow = '0 8px 20px rgba(147,197,253,0.28)';
+          }
+
           return (
             <button
               key={number}
               type="button"
               onClick={() => onSelect(number)}
-              className="flex h-11 w-11 items-center justify-center rounded-[15px] text-[18px] font-bold transition-all duration-200"
-              style={{
-                background: active ? '#DBEAFE' : '#B8C7D9',
-                color: active ? '#2563EB' : '#FFFFFF',
-                border: active ? '2px solid #93C5FD' : '2px solid transparent',
-                boxShadow: active ? '0 8px 18px rgba(147,197,253,0.22)' : 'none',
-              }}
+              className="flex h-12 w-12 items-center justify-center rounded-[16px] text-[18px] font-bold transition-all duration-200 sm:h-[52px] sm:w-[52px] sm:text-[20px]"
+              style={{ background, color, boxShadow, border }}
             >
               {number}
             </button>
@@ -549,6 +549,78 @@ function BlockTabs({
       </div>
     </div>
   );
+}
+
+function tabOutcomeStaticChoice(
+  items: VnzhStaticChoiceItem[],
+  answers: Record<string, number>,
+  tabNum: number
+): 'pending' | 'correct' | 'wrong' {
+  const item = items[tabNum - 1];
+  if (!item) return 'pending';
+  const s = answers[String(item.index)];
+  if (typeof s !== 'number') return 'pending';
+  return s === item.correctIndex ? 'correct' : 'wrong';
+}
+
+function tabOutcomeListeningItem(
+  items: VnzhListeningChoiceItem[],
+  answers: Record<string, number>,
+  tabNum: number
+): 'pending' | 'correct' | 'wrong' {
+  const item = items[tabNum - 1];
+  if (!item) return 'pending';
+  const s = answers[String(item.index)];
+  if (typeof s !== 'number') return 'pending';
+  return s === item.correctIndex ? 'correct' : 'wrong';
+}
+
+function tabOutcomeNotice(
+  items: VnzhNoticeChoiceItem[],
+  answers: Record<string, number>,
+  tabNum: number
+): 'pending' | 'correct' | 'wrong' {
+  const item = items[tabNum - 1];
+  if (!item) return 'pending';
+  const s = answers[String(item.index)];
+  if (typeof s !== 'number') return 'pending';
+  return s === item.correctIndex ? 'correct' : 'wrong';
+}
+
+function tabOutcomeTripleBlock(
+  items: VnzhListeningTripleChoiceItem[],
+  answers: Record<string, number>,
+  tabNum: number
+): 'pending' | 'correct' | 'wrong' {
+  const item = items[tabNum - 1];
+  if (!item) return 'pending';
+  for (let qi = 0; qi < item.questions.length; qi++) {
+    const k = `${item.index}-${qi}`;
+    if (typeof answers[k] !== 'number') return 'pending';
+  }
+  for (let qi = 0; qi < item.questions.length; qi++) {
+    const k = `${item.index}-${qi}`;
+    if (answers[k] !== item.questions[qi].correctIndex) return 'wrong';
+  }
+  return 'correct';
+}
+
+function tabOutcomeReadingPassage(
+  items: VnzhReadingPassageItem[],
+  answers: Record<string, number>,
+  tabNum: number
+): 'pending' | 'correct' | 'wrong' {
+  const item = items[tabNum - 1];
+  if (!item) return 'pending';
+  for (let qi = 0; qi < item.questions.length; qi++) {
+    const k = `${item.index}-${qi}`;
+    if (typeof answers[k] !== 'number') return 'pending';
+  }
+  for (let qi = 0; qi < item.questions.length; qi++) {
+    const k = `${item.index}-${qi}`;
+    if (answers[k] !== item.questions[qi].correctIndex) return 'wrong';
+  }
+  return 'correct';
 }
 
 function TaskPager({
@@ -605,10 +677,6 @@ function SpeakingTaskOneContent({ currentIndex }: { currentIndex: number }) {
         className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
         style={{ borderColor: BORDER }}
       >
-        <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-          {item.index}
-        </div>
-
         <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
           <img src={courseAssetUrl(item.imageUrl)} alt={`Задание 1 — фото ${item.index}`} className="w-full object-contain" />
         </div>
@@ -632,10 +700,6 @@ function SpeakingTaskTwoContent({ currentIndex }: { currentIndex: number }) {
         className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
         style={{ borderColor: BORDER }}
       >
-        <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-          {item.index}
-        </div>
-
         <div className="space-y-5">
           <div>
             <div className="rounded-[22px] border bg-[#FAFCFF] p-3" style={{ borderColor: BORDER }}>
@@ -679,10 +743,6 @@ function SpeakingTaskThreeContent({ currentIndex }: { currentIndex: number }) {
         className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
         style={{ borderColor: BORDER }}
       >
-        <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-          {item.index}
-        </div>
-
         <div className="space-y-5">
           <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
             <img src={courseAssetUrl(item.imageUrl)} alt={`Задание 3 — фото ${item.index}`} className="w-full object-contain" />
@@ -713,10 +773,6 @@ function SpeakingTaskFourContent({ currentIndex }: { currentIndex: number }) {
         className="rounded-[28px] border bg-white p-5 shadow-[0_16px_38px_rgba(148,163,184,0.12)]"
         style={{ borderColor: BORDER }}
       >
-        <div className="mb-4 inline-flex rounded-full bg-[#EAF1FF] px-3 py-1.5 text-sm font-bold text-[#2563EB]">
-          {item.index}
-        </div>
-
         <div className="space-y-5">
           <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
             <img src={courseAssetUrl(item.imageUrl)} alt={`Задание 4 — фото ${item.index}`} className="w-full object-contain" />
@@ -754,9 +810,11 @@ export default function VnzhCourseTaskPage() {
   const { access } = useAccess();
   const staticChoiceItems = task ? VNZH_STATIC_CHOICE_TASKS[task.slug] ?? null : null;
   const [currentIndex, setCurrentIndex] = useState(1);
+  const [mcqAnswers, setMcqAnswers] = useState<Record<string, number>>({});
 
   useEffect(() => {
     setCurrentIndex(1);
+    setMcqAnswers({});
   }, [sectionSlug, taskSlug]);
 
   const locked =
@@ -854,9 +912,19 @@ export default function VnzhCourseTaskPage() {
             </div>
           ) : section.slug === 'audirovanie' && task.slug === '5' ? (
             <div>
-              <BlockTabs total={VNZH_LISTENING_TASK_FIVE.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs
+                total={VNZH_LISTENING_TASK_FIVE.length}
+                activeIndex={currentIndex}
+                onSelect={setCurrentIndex}
+                tabOutcome={(n) => tabOutcomeListeningItem(VNZH_LISTENING_TASK_FIVE, mcqAnswers, n)}
+              />
               <div className="mt-4">
-                <ListeningChoiceContent items={VNZH_LISTENING_TASK_FIVE} currentIndex={currentIndex} />
+                <ListeningChoiceContent
+                  items={VNZH_LISTENING_TASK_FIVE}
+                  currentIndex={currentIndex}
+                  answers={mcqAnswers}
+                  setAnswers={setMcqAnswers}
+                />
                 <TaskPager currentIndex={currentIndex} total={VNZH_LISTENING_TASK_FIVE.length} onSelect={setCurrentIndex} />
               </div>
             </div>
@@ -870,41 +938,91 @@ export default function VnzhCourseTaskPage() {
             </div>
           ) : section.slug === 'audirovanie' && task.slug === '7' ? (
             <div>
-              <BlockTabs total={VNZH_LISTENING_TASK_SEVEN.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs
+                total={VNZH_LISTENING_TASK_SEVEN.length}
+                activeIndex={currentIndex}
+                onSelect={setCurrentIndex}
+                tabOutcome={(n) => tabOutcomeListeningItem(VNZH_LISTENING_TASK_SEVEN, mcqAnswers, n)}
+              />
               <div className="mt-4">
-                <ListeningChoiceContent items={VNZH_LISTENING_TASK_SEVEN} currentIndex={currentIndex} />
+                <ListeningChoiceContent
+                  items={VNZH_LISTENING_TASK_SEVEN}
+                  currentIndex={currentIndex}
+                  answers={mcqAnswers}
+                  setAnswers={setMcqAnswers}
+                />
                 <TaskPager currentIndex={currentIndex} total={VNZH_LISTENING_TASK_SEVEN.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'audirovanie' && task.slug === '8-10' ? (
             <div>
-              <BlockTabs total={VNZH_LISTENING_TASK_EIGHT_TO_TEN.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs
+                total={VNZH_LISTENING_TASK_EIGHT_TO_TEN.length}
+                activeIndex={currentIndex}
+                onSelect={setCurrentIndex}
+                tabOutcome={(n) => tabOutcomeTripleBlock(VNZH_LISTENING_TASK_EIGHT_TO_TEN, mcqAnswers, n)}
+              />
               <div className="mt-4">
-                <ListeningTripleChoiceContent items={VNZH_LISTENING_TASK_EIGHT_TO_TEN} currentIndex={currentIndex} />
+                <ListeningTripleChoiceContent
+                  items={VNZH_LISTENING_TASK_EIGHT_TO_TEN}
+                  currentIndex={currentIndex}
+                  answers={mcqAnswers}
+                  setAnswers={setMcqAnswers}
+                />
                 <TaskPager currentIndex={currentIndex} total={VNZH_LISTENING_TASK_EIGHT_TO_TEN.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'chtenie' && task.slug === '11' ? (
             <div>
-              <BlockTabs total={VNZH_READING_TASK_ELEVEN.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs
+                total={VNZH_READING_TASK_ELEVEN.length}
+                activeIndex={currentIndex}
+                onSelect={setCurrentIndex}
+                tabOutcome={(n) => tabOutcomeNotice(VNZH_READING_TASK_ELEVEN, mcqAnswers, n)}
+              />
               <div className="mt-4">
-                <NoticeChoiceContent items={VNZH_READING_TASK_ELEVEN} currentIndex={currentIndex} />
+                <NoticeChoiceContent
+                  items={VNZH_READING_TASK_ELEVEN}
+                  currentIndex={currentIndex}
+                  answers={mcqAnswers}
+                  setAnswers={setMcqAnswers}
+                />
                 <TaskPager currentIndex={currentIndex} total={VNZH_READING_TASK_ELEVEN.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'chtenie' && task.slug === '12' ? (
             <div>
-              <BlockTabs total={VNZH_READING_TASK_TWELVE.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs
+                total={VNZH_READING_TASK_TWELVE.length}
+                activeIndex={currentIndex}
+                onSelect={setCurrentIndex}
+                tabOutcome={(n) => tabOutcomeNotice(VNZH_READING_TASK_TWELVE, mcqAnswers, n)}
+              />
               <div className="mt-4">
-                <NoticeChoiceContent items={VNZH_READING_TASK_TWELVE} currentIndex={currentIndex} />
+                <NoticeChoiceContent
+                  items={VNZH_READING_TASK_TWELVE}
+                  currentIndex={currentIndex}
+                  answers={mcqAnswers}
+                  setAnswers={setMcqAnswers}
+                />
                 <TaskPager currentIndex={currentIndex} total={VNZH_READING_TASK_TWELVE.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'chtenie' && task.slug === '13-17' ? (
             <div>
-              <BlockTabs total={VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs
+                total={VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN.length}
+                activeIndex={currentIndex}
+                onSelect={setCurrentIndex}
+                tabOutcome={(n) => tabOutcomeReadingPassage(VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN, mcqAnswers, n)}
+              />
               <div className="mt-4">
-                <ReadingPassageContent items={VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN} currentIndex={currentIndex} />
+                <ReadingPassageContent
+                  items={VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN}
+                  currentIndex={currentIndex}
+                  answers={mcqAnswers}
+                  setAnswers={setMcqAnswers}
+                />
                 <TaskPager currentIndex={currentIndex} total={VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN.length} onSelect={setCurrentIndex} />
               </div>
             </div>
@@ -926,9 +1044,19 @@ export default function VnzhCourseTaskPage() {
             </div>
           ) : staticChoiceItems ? (
             <div>
-              <BlockTabs total={staticChoiceItems.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs
+                total={staticChoiceItems.length}
+                activeIndex={currentIndex}
+                onSelect={setCurrentIndex}
+                tabOutcome={(n) => tabOutcomeStaticChoice(staticChoiceItems, mcqAnswers, n)}
+              />
               <div className="mt-4">
-                <StaticChoiceContent items={staticChoiceItems} currentIndex={currentIndex} />
+                <StaticChoiceContent
+                  items={staticChoiceItems}
+                  currentIndex={currentIndex}
+                  answers={mcqAnswers}
+                  setAnswers={setMcqAnswers}
+                />
                 <TaskPager currentIndex={currentIndex} total={staticChoiceItems.length} onSelect={setCurrentIndex} />
               </div>
             </div>
