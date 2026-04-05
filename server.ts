@@ -859,25 +859,18 @@ async function startServer() {
     if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
     const cached = lessonsCache.getCachedLessonsList(userId);
     if (cached != null) return res.json(cached);
-    const { data: user } = await supabase.from('users').select('level').eq('id', userId).single();
-    if (!user?.level) return res.status(404).json({ error: 'User topilmadi' });
-    const { data: lessons, error } = await supabase.from('lessons').select('*').eq('level', user.level).order('id');
-    if (error) return res.status(500).json({ error: error.message });
+    // NOTE: the `lessons` table has been removed from the DB (migration 022).
+    // We now use the static LESSONS list from the frontend data file.
+    const { LESSONS } = await import('./src/data/lessonsList.ts');
     const access = await getAccessForRequest(supabase, userId);
-    const withLock = accessControlService.applyLessonsLock(lessons ?? [], access);
-    const lessonIds = (lessons ?? []).map((l: any) => l.id);
-    const { data: exCounts } = await supabase.from('exercises').select('lesson_id').in('lesson_id', lessonIds);
-    const countByLesson: Record<number, number> = {};
-    (exCounts ?? []).forEach((r: any) => { countByLesson[r.lesson_id] = (countByLesson[r.lesson_id] || 0) + 1; });
-    const list = withLock.map((l: any) => ({
+    const withLock = accessControlService.applyLessonsLock(
+      LESSONS.map((l) => ({ id: l.id, title: l.title })),
+      access
+    );
+    const list = withLock.map((l) => ({
       id: l.id,
-      level: l.level,
-      module_name: l.module_name,
       title: l.title,
-      content_uz: l.content_uz,
-      content_ru: l.content_ru,
       locked: l.locked,
-      tasks_count: countByLesson[l.id] ?? 0,
     }));
     lessonsCache.setCachedLessonsList(userId, list);
     res.json(list);

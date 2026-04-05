@@ -5,7 +5,7 @@ import AppNavBar from './AppNavBar';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { useSectionSwipeNavigation } from '../hooks/useSectionSwipeNavigation';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
-import { appMainContentMinHeightCss, appMainTopOffsetCss } from '../constants/appLayout';
+import { appMainTopOffsetCss, appMainBottomOffsetCss } from '../constants/appLayout';
 
 /** Routes where we hide the top nav bar (payment = fullscreen, vocabulary nested = back only, invite = has back button). */
 function hideNavBar(path: string): boolean {
@@ -65,16 +65,40 @@ export default function MainLayout() {
 
   const transition = reduceMotion ? fadeSoft : springTab;
 
-  const topOffset = showNavBar ? appMainTopOffsetCss() : undefined;
-  const contentMinH = showNavBar ? appMainContentMinHeightCss() : '100dvh';
+  // On mobile (< sm): nav is at the bottom → paddingBottom.
+  // On desktop (sm+): nav is at the top → paddingTop.
+  // We inject a <style> tag with responsive CSS vars to avoid JS-based breakpoint detection.
+  const topOffset = appMainTopOffsetCss();
+  const bottomOffset = appMainBottomOffsetCss();
 
   return (
     <>
+      {showNavBar && (
+        <style>{`
+          .nav-layout-pad {
+            padding-top: 0;
+            padding-bottom: ${bottomOffset};
+          }
+          @media (min-width: 640px) {
+            .nav-layout-pad {
+              padding-top: ${topOffset};
+              padding-bottom: 0;
+            }
+          }
+          .nav-content-min-h {
+            min-height: calc(100dvh - ${bottomOffset});
+          }
+          @media (min-width: 640px) {
+            .nav-content-min-h {
+              min-height: calc(100dvh - ${topOffset});
+            }
+          }
+        `}</style>
+      )}
       {showNavBar && <AppNavBar />}
       <motion.div
-        className={showNavBar ? `min-h-screen${swipe.canSwipe ? ' will-change-transform' : ''}` : 'min-h-screen'}
+        className={showNavBar ? `min-h-screen${swipe.canSwipe ? ' will-change-transform' : ''} nav-layout-pad` : 'min-h-screen'}
         style={{
-          ...(showNavBar && topOffset ? { paddingTop: topOffset } : {}),
           ...(swipe.canSwipe ? { x: swipe.x, touchAction: 'pan-y pinch-zoom' } : {}),
         }}
         onTouchStart={swipe.onTouchStart}
@@ -83,10 +107,8 @@ export default function MainLayout() {
         onTouchCancel={swipe.onTouchCancel}
       >
         <div
-          className="relative w-full overflow-hidden"
-          style={{
-            minHeight: contentMinH,
-          }}
+          className={`relative w-full overflow-hidden${showNavBar ? ' nav-content-min-h' : ''}`}
+          style={showNavBar ? undefined : { minHeight: '100dvh' }}
         >
           {/*
             mode="sync": old and new routes animate together (no white gap).

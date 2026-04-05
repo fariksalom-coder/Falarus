@@ -19,6 +19,8 @@ import AdminPaymentMethodsPage from './pages/admin/AdminPaymentMethodsPage';
 import AdminTariffPricingPage from './pages/admin/AdminTariffPricingPage';
 import AdminPricingPage from './pages/admin/AdminPricingPage';
 import Dashboard from './pages/Dashboard';
+import HomePage from './pages/HomePage';
+import RussianCoursePage from './pages/RussianCoursePage';
 import LessonPage from './pages/LessonPage';
 import LessonOnePage from './pages/LessonOnePage';
 import LessonTwoPage from './pages/LessonTwoPage';
@@ -234,7 +236,9 @@ function AppRoutes() {
       ) : (
         <>
       <Route path="/" element={<MainLayout />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<HomePage />} />
+        <Route path="russian" element={<RussianCoursePage />} />
+        <Route path="russian/grammar" element={<Dashboard />} />
         <Route path="vocabulary" element={<VocabularyPage />} />
         <Route path="vocabulary/:topicId" element={<VocabularyTopicPage />} />
         <Route path="vocabulary/:topicId/:subtopicId" element={<VocabularySubtopicPage />} />

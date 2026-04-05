@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { House, BookMarked, BarChart3, GraduationCap, User } from 'lucide-react';
+import { House, BookMarked, BarChart3, User } from 'lucide-react';
 
 const BORDER = '#E2E8F0';
 const TEXT_SECONDARY = '#64748B';
@@ -39,14 +39,13 @@ export default function AppNavBar() {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 border-b bg-white/95 backdrop-blur-sm pt-[env(safe-area-inset-top,0px)]"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t sm:bottom-auto sm:top-0 sm:border-b sm:border-t-0 bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)] sm:pb-0 sm:pt-[env(safe-area-inset-top,0px)]"
       style={{ borderColor: BORDER }}
     >
       <div className="mx-auto flex h-[78px] max-w-[820px] items-center justify-between gap-2 px-4 sm:px-5">
-        {btn('/', ['/'], "Bosh sahifa", House)}
+        {btn('/', ['/', '/russian'], "Bosh sahifa", House)}
         {btn('/vocabulary', ['/vocabulary'], "Lug'at", BookMarked)}
         {btn('/statistika', ['/statistika'], 'Statistika', BarChart3)}
-        {btn('/kurslar', ['/kurslar'], 'Kurslar', GraduationCap)}
         {btn('/profile', ['/profile'], 'Profil', User)}
       </div>
     </header>
