@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
+import { prefetchRoutePath } from '../routeModules';
 
 const BG = '#F8FAFC';
 const BORDER = '#E2E8F0';
@@ -42,6 +43,9 @@ export default function CoursesPage() {
               key={id}
               type="button"
               onClick={() => navigate(href)}
+              onMouseEnter={() => prefetchRoutePath(href)}
+              onTouchStart={() => prefetchRoutePath(href)}
+              onFocus={() => prefetchRoutePath(href)}
               className="w-full overflow-hidden rounded-[24px] border px-4 py-4 text-left shadow-[0_14px_34px_rgba(148,163,184,0.12)] sm:px-5 sm:py-5"
               style={{
                 borderColor: BORDER,

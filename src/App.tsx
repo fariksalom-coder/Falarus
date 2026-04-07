@@ -1,198 +1,17 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Outlet, Route, Routes, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AccessProvider } from './context/AccessContext';
 import { SequentialLessonProvider } from './context/SequentialLessonContext';
 import { SequentialAccessEnforcer } from './components/SequentialAccessEnforcer';
 import { AdminAuthProvider } from './context/AdminAuthContext';
-import AuthPage from './pages/AuthPage';
-import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminGuard from './pages/admin/AdminGuard';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminUserProfilePage from './pages/admin/AdminUserProfilePage';
-import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
-import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
-import AdminReferralsPage from './pages/admin/AdminReferralsPage';
-import AdminSupportPage from './pages/admin/AdminSupportPage';
-import AdminPaymentMethodsPage from './pages/admin/AdminPaymentMethodsPage';
-import AdminTariffPricingPage from './pages/admin/AdminTariffPricingPage';
-import AdminPricingPage from './pages/admin/AdminPricingPage';
-import Dashboard from './pages/Dashboard';
-import HomePage from './pages/HomePage';
-import RussianCoursePage from './pages/RussianCoursePage';
-import LessonPage from './pages/LessonPage';
-import LessonOnePage from './pages/LessonOnePage';
-import LessonTwoPage from './pages/LessonTwoPage';
-import LessonThreePage from './pages/LessonThreePage';
-import LessonFourPage from './pages/LessonFourPage';
-import LessonFivePage from './pages/LessonFivePage';
-import LessonSixPage from './pages/LessonSixPage';
-import LessonSevenPage from './pages/LessonSevenPage';
-import LessonEightPage from './pages/LessonEightPage';
-import LessonNinePage from './pages/LessonNinePage';
-import LessonTenPage from './pages/LessonTenPage';
-import LessonElevenPage from './pages/LessonElevenPage';
-import LessonTwelvePage from './pages/LessonTwelvePage';
-import LessonThirteenPage from './pages/LessonThirteenPage';
-import LessonFourteenPage from './pages/LessonFourteenPage';
-import LessonFifteenPage from './pages/LessonFifteenPage';
-import LessonFifteenPracticePage from './pages/LessonFifteenPracticePage';
-import LessonFifteenTaskOnePage from './pages/LessonFifteenTaskOnePage';
-import LessonFifteenTaskTwoPage from './pages/LessonFifteenTaskTwoPage';
-import LessonFifteenTaskThreePage from './pages/LessonFifteenTaskThreePage';
-import LessonFifteenTaskFourPage from './pages/LessonFifteenTaskFourPage';
-import LessonFifteenTaskFivePage from './pages/LessonFifteenTaskFivePage';
-import LessonFifteenTaskSixPage from './pages/LessonFifteenTaskSixPage';
-import LessonFifteenTaskSevenPage from './pages/LessonFifteenTaskSevenPage';
-import LessonSixteenPage from './pages/LessonSixteenPage';
-import LessonSixteenTaskOnePage from './pages/LessonSixteenTaskOnePage';
-import LessonSixteenTaskTwoPage from './pages/LessonSixteenTaskTwoPage';
-import LessonSixteenTaskThreePage from './pages/LessonSixteenTaskThreePage';
-import LessonSeventeenPage from './pages/LessonSeventeenPage';
-import LessonSeventeenTaskOnePage from './pages/LessonSeventeenTaskOnePage';
-import LessonSeventeenTaskTwoPage from './pages/LessonSeventeenTaskTwoPage';
-import LessonSeventeenTaskThreePage from './pages/LessonSeventeenTaskThreePage';
-import LessonSeventeenTaskFourPage from './pages/LessonSeventeenTaskFourPage';
-import LessonSeventeenTaskFivePage from './pages/LessonSeventeenTaskFivePage';
-import LessonSeventeenTaskSixPage from './pages/LessonSeventeenTaskSixPage';
-import LessonSeventeenTaskSevenPage from './pages/LessonSeventeenTaskSevenPage';
-import LessonSeventeenTaskEightPage from './pages/LessonSeventeenTaskEightPage';
-import LessonSeventeenTaskNinePage from './pages/LessonSeventeenTaskNinePage';
-import LessonSeventeenTaskTenPage from './pages/LessonSeventeenTaskTenPage';
-import LessonSeventeenTaskElevenPage from './pages/LessonSeventeenTaskElevenPage';
-import LessonSeventeenTaskTwelvePage from './pages/LessonSeventeenTaskTwelvePage';
-import LessonSeventeenTaskThirteenPage from './pages/LessonSeventeenTaskThirteenPage';
-import LessonSeventeenTaskFourteenPage from './pages/LessonSeventeenTaskFourteenPage';
-import LessonSeventeenTaskFifteenPage from './pages/LessonSeventeenTaskFifteenPage';
-import LessonSeventeenTaskSixteenPage from './pages/LessonSeventeenTaskSixteenPage';
-import LessonSeventeenTaskSeventeenPage from './pages/LessonSeventeenTaskSeventeenPage';
-import LessonEighteenPage from './pages/LessonEighteenPage';
-import LessonEighteenTaskOnePage from './pages/LessonEighteenTaskOnePage';
-import LessonEighteenTaskTwoPage from './pages/LessonEighteenTaskTwoPage';
-import LessonEighteenTaskThreePage from './pages/LessonEighteenTaskThreePage';
-import LessonEighteenTaskFourPage from './pages/LessonEighteenTaskFourPage';
-import LessonEighteenTaskFivePage from './pages/LessonEighteenTaskFivePage';
-import LessonNineteenPage from './pages/LessonNineteenPage';
-import LessonNineteenTaskOnePage from './pages/LessonNineteenTaskOnePage';
-import LessonNineteenTaskTwoPage from './pages/LessonNineteenTaskTwoPage';
-import LessonNineteenTaskThreePage from './pages/LessonNineteenTaskThreePage';
-import LessonNineteenTaskFourPage from './pages/LessonNineteenTaskFourPage';
-import LessonNineteenTaskFivePage from './pages/LessonNineteenTaskFivePage';
-import LessonNineteenTaskSixPage from './pages/LessonNineteenTaskSixPage';
-import LessonNineteenTaskSevenPage from './pages/LessonNineteenTaskSevenPage';
-import LessonNineteenTaskEightPage from './pages/LessonNineteenTaskEightPage';
-import LessonNineteenTaskNinePage from './pages/LessonNineteenTaskNinePage';
-import LessonNineteenTaskTenPage from './pages/LessonNineteenTaskTenPage';
-import LessonNineteenTaskElevenPage from './pages/LessonNineteenTaskElevenPage';
-import LessonNineteenTaskTwelvePage from './pages/LessonNineteenTaskTwelvePage';
-import LessonNineteenTaskThirteenPage from './pages/LessonNineteenTaskThirteenPage';
-import LessonNineteenTaskFourteenPage from './pages/LessonNineteenTaskFourteenPage';
-import LessonNineteenTaskFifteenPage from './pages/LessonNineteenTaskFifteenPage';
-import LessonNineteenTaskSixteenPage from './pages/LessonNineteenTaskSixteenPage';
-import LessonTwentyPage from './pages/LessonTwentyPage';
-import LessonTwentyTaskOnePage from './pages/LessonTwentyTaskOnePage';
-import LessonTwentyTaskTwoPage from './pages/LessonTwentyTaskTwoPage';
-import LessonTwentyTaskThreePage from './pages/LessonTwentyTaskThreePage';
-import LessonTwentyTaskFourPage from './pages/LessonTwentyTaskFourPage';
-import LessonTwentyTaskFivePage from './pages/LessonTwentyTaskFivePage';
-import LessonTwentyTaskSixPage from './pages/LessonTwentyTaskSixPage';
-import LessonTwentyTaskSevenPage from './pages/LessonTwentyTaskSevenPage';
-import LessonTwentyOnePage from './pages/LessonTwentyOnePage';
-import LessonTwentyOneTaskOnePage from './pages/LessonTwentyOneTaskOnePage';
-import LessonTwentyTwoPage from './pages/LessonTwentyTwoPage';
-import LessonTwentyTwoTaskOnePage from './pages/LessonTwentyTwoTaskOnePage';
-import LessonTwentyTwoTaskTwoPage from './pages/LessonTwentyTwoTaskTwoPage';
-import LessonTwentyTwoTaskThreePage from './pages/LessonTwentyTwoTaskThreePage';
-import LessonTwentyTwoTaskFourPage from './pages/LessonTwentyTwoTaskFourPage';
-import LessonTwentyTwoTaskFivePage from './pages/LessonTwentyTwoTaskFivePage';
-import LessonTwentyTwoTaskSixPage from './pages/LessonTwentyTwoTaskSixPage';
-import LessonTwentyTwoTaskSevenPage from './pages/LessonTwentyTwoTaskSevenPage';
-import LessonTwentyTwoTaskEightPage from './pages/LessonTwentyTwoTaskEightPage';
-import LessonTwentyTwoTaskNinePage from './pages/LessonTwentyTwoTaskNinePage';
-import LessonTwentyTwoTaskTenPage from './pages/LessonTwentyTwoTaskTenPage';
-import LessonTwentyTwoTaskElevenPage from './pages/LessonTwentyTwoTaskElevenPage';
-import LessonTwentyTwoTaskTwelvePage from './pages/LessonTwentyTwoTaskTwelvePage';
-import LessonTwentyThreePage from './pages/LessonTwentyThreePage';
-import LessonTwentyThreeTaskOnePage from './pages/LessonTwentyThreeTaskOnePage';
-import LessonTwentyThreeTaskTwoPage from './pages/LessonTwentyThreeTaskTwoPage';
-import LessonTwentyFourPage from './pages/LessonTwentyFourPage';
-import LessonTwentyFourTaskOnePage from './pages/LessonTwentyFourTaskOnePage';
-import LessonTwentyFourTaskTwoPage from './pages/LessonTwentyFourTaskTwoPage';
-import LessonTwentyFourTaskThreePage from './pages/LessonTwentyFourTaskThreePage';
-import LessonTwentyFourTaskFourPage from './pages/LessonTwentyFourTaskFourPage';
-import GreetingTestPage from './pages/GreetingTestPage';
-import GreetingQuizPage from './pages/GreetingQuizPage';
-import MatchingPairsPage from './pages/MatchingPairsPage';
-import SentenceBuilderPage from './pages/SentenceBuilderPage';
-import UnifiedLessonPracticePage from './pages/UnifiedLessonPracticePage';
-import UnifiedLessonTwoPracticePage from './pages/UnifiedLessonTwoPracticePage';
-import UnifiedLessonThreePracticePage from './pages/UnifiedLessonThreePracticePage';
-import UnifiedLessonFourPracticePage from './pages/UnifiedLessonFourPracticePage';
-import UnifiedLessonFivePracticePage from './pages/UnifiedLessonFivePracticePage';
-import UnifiedLessonSixPracticePage from './pages/UnifiedLessonSixPracticePage';
-import UnifiedLessonSevenPracticePage from './pages/UnifiedLessonSevenPracticePage';
-import UnifiedLessonEightPracticePage from './pages/UnifiedLessonEightPracticePage';
-import UnifiedLessonNinePracticePage from './pages/UnifiedLessonNinePracticePage';
-import UnifiedLessonTenPracticePage from './pages/UnifiedLessonTenPracticePage';
-import UnifiedLessonElevenPracticePage from './pages/UnifiedLessonElevenPracticePage';
-import LessonElevenTaskOnePage from './pages/LessonElevenTaskOnePage';
-import LessonElevenTaskTwoPage from './pages/LessonElevenTaskTwoPage';
-import LessonElevenTaskThreePage from './pages/LessonElevenTaskThreePage';
-import LessonElevenTaskFourPage from './pages/LessonElevenTaskFourPage';
-import LessonElevenTaskFivePage from './pages/LessonElevenTaskFivePage';
-import LessonElevenTaskSixPage from './pages/LessonElevenTaskSixPage';
-import LessonElevenTaskSevenPage from './pages/LessonElevenTaskSevenPage';
-import LessonElevenTaskEightPage from './pages/LessonElevenTaskEightPage';
-import LessonElevenTaskNinePage from './pages/LessonElevenTaskNinePage';
-import LessonElevenTaskTenPage from './pages/LessonElevenTaskTenPage';
-import LessonElevenTaskElevenPage from './pages/LessonElevenTaskElevenPage';
-import LessonElevenTaskTwelvePage from './pages/LessonElevenTaskTwelvePage';
-import LessonElevenTaskThirteenPage from './pages/LessonElevenTaskThirteenPage';
-import LessonElevenTaskFourteenPage from './pages/LessonElevenTaskFourteenPage';
-import LessonElevenTaskFifteenPage from './pages/LessonElevenTaskFifteenPage';
-import LessonTwelveTaskOnePage from './pages/LessonTwelveTaskOnePage';
-import LessonThirteenTaskOnePage from './pages/LessonThirteenTaskOnePage';
-import LessonFourteenTaskOnePage from './pages/LessonFourteenTaskOnePage';
-import LessonFourteenTaskTwoPage from './pages/LessonFourteenTaskTwoPage';
-import LessonFourteenTaskThreePage from './pages/LessonFourteenTaskThreePage';
-import LessonFourteenTaskFourPage from './pages/LessonFourteenTaskFourPage';
-import LessonFourteenTaskFivePage from './pages/LessonFourteenTaskFivePage';
-import LessonFourteenTaskSixPage from './pages/LessonFourteenTaskSixPage';
-import LessonFourteenTaskSevenPage from './pages/LessonFourteenTaskSevenPage';
-import LessonFourteenTaskEightPage from './pages/LessonFourteenTaskEightPage';
-import LessonFourteenTaskNinePage from './pages/LessonFourteenTaskNinePage';
-import LessonFourteenTaskTenPage from './pages/LessonFourteenTaskTenPage';
-import LessonFourteenTaskElevenPage from './pages/LessonFourteenTaskElevenPage';
-import LessonFourteenTaskTwelvePage from './pages/LessonFourteenTaskTwelvePage';
-import LessonFourteenTaskThirteenPage from './pages/LessonFourteenTaskThirteenPage';
-import LessonFourteenTaskFourteenPage from './pages/LessonFourteenTaskFourteenPage';
-import LessonFourteenTaskFifteenPage from './pages/LessonFourteenTaskFifteenPage';
-import LessonFourteenTaskSixteenPage from './pages/LessonFourteenTaskSixteenPage';
-import VocabularyPage from './pages/VocabularyPage';
-import VocabularyTopicPage from './pages/VocabularyTopicPage';
-import VocabularySubtopicPage from './pages/VocabularySubtopicPage';
-import VocabularyPartPage from './pages/VocabularyPartPage';
-import LessonPreviewPage from './pages/LessonPreviewPage';
-import VocabularySubtopicPreviewPage from './pages/VocabularySubtopicPreviewPage';
-import ProfilePage from './pages/ProfilePage';
-import ProfileSettingsPage from './pages/ProfileSettingsPage';
-import ReferralPage from './pages/ReferralPage';
-import StatistikaPage from './pages/StatistikaPage';
-import CoursesPage from './pages/CoursesPage';
-import PatentCoursePage from './pages/PatentCoursePage';
-import PatentCourseVariantPage from './pages/PatentCourseVariantPage';
-import VnzhCoursePage from './pages/VnzhCoursePage';
-import VnzhCourseSectionPage from './pages/VnzhCourseSectionPage';
-import VnzhCourseTaskPage from './pages/VnzhCourseTaskPage';
-import PricingPage from './pages/PricingPage';
-import PaymentPage from './pages/PaymentPage';
-import PaymentHistoryPage from './pages/PaymentHistoryPage';
 import MainLayout from './components/MainLayout';
+import { renderLazyPage } from './routeModules';
 
 function VocabularyPartRoute() {
   const { topicId, subtopicId, partId } = useParams();
-  return <VocabularyPartPage key={`${topicId}-${subtopicId}-${partId}`} />;
+  return renderLazyPage('./pages/VocabularyPartPage.tsx', undefined, `${topicId}-${subtopicId}-${partId}`);
 }
 
 function AppRoutes() {
@@ -200,217 +19,225 @@ function AppRoutes() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-blue-600" />
       </div>
     );
   }
 
   return (
     <Routes>
-      <Route path="/admin" element={<AdminAuthProvider><Outlet /></AdminAuthProvider>}>
+      <Route
+        path="/admin"
+        element={
+          <AdminAuthProvider>
+            <Outlet />
+          </AdminAuthProvider>
+        }
+      >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="login" element={<AdminLoginPage />} />
+        <Route path="login" element={renderLazyPage('./pages/admin/AdminLoginPage.tsx')} />
         <Route element={<AdminGuard />}>
           <Route element={<AdminLayout />}>
-            <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="users/:id" element={<AdminUserProfilePage />} />
-            <Route path="payments" element={<AdminPaymentsPage />} />
-            <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
-            <Route path="referrals" element={<AdminReferralsPage />} />
-            <Route path="support" element={<AdminSupportPage />} />
-            <Route path="payment-methods" element={<AdminPaymentMethodsPage />} />
-            <Route path="tariff-pricing" element={<AdminTariffPricingPage />} />
-            <Route path="pricing" element={<AdminPricingPage />} />
+            <Route path="dashboard" element={renderLazyPage('./pages/admin/AdminDashboardPage.tsx')} />
+            <Route path="users" element={renderLazyPage('./pages/admin/AdminUsersPage.tsx')} />
+            <Route path="users/:id" element={renderLazyPage('./pages/admin/AdminUserProfilePage.tsx')} />
+            <Route path="payments" element={renderLazyPage('./pages/admin/AdminPaymentsPage.tsx')} />
+            <Route path="subscriptions" element={renderLazyPage('./pages/admin/AdminSubscriptionsPage.tsx')} />
+            <Route path="referrals" element={renderLazyPage('./pages/admin/AdminReferralsPage.tsx')} />
+            <Route path="support" element={renderLazyPage('./pages/admin/AdminSupportPage.tsx')} />
+            <Route path="payment-methods" element={renderLazyPage('./pages/admin/AdminPaymentMethodsPage.tsx')} />
+            <Route path="tariff-pricing" element={renderLazyPage('./pages/admin/AdminTariffPricingPage.tsx')} />
+            <Route path="pricing" element={renderLazyPage('./pages/admin/AdminPricingPage.tsx')} />
           </Route>
         </Route>
       </Route>
 
       {!user ? (
         <>
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/register" element={<AuthPage />} />
+          <Route path="/auth" element={renderLazyPage('./pages/AuthPage.tsx')} />
+          <Route path="/register" element={renderLazyPage('./pages/AuthPage.tsx')} />
           <Route path="*" element={<Navigate to="/auth" replace />} />
         </>
       ) : (
         <>
-      <Route path="/" element={<MainLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="russian" element={<RussianCoursePage />} />
-        <Route path="russian/grammar" element={<Dashboard />} />
-        <Route path="vocabulary" element={<VocabularyPage />} />
-        <Route path="vocabulary/:topicId" element={<VocabularyTopicPage />} />
-        <Route path="vocabulary/:topicId/:subtopicId" element={<VocabularySubtopicPage />} />
-        <Route path="vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartRoute />} />
-        <Route path="vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartRoute />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="profile/settings" element={<ProfileSettingsPage />} />
-        <Route path="invite" element={<ReferralPage />} />
-        <Route path="statistika" element={<StatistikaPage />} />
-        <Route path="kurslar" element={<CoursesPage />} />
-        <Route path="kurslar/patent" element={<PatentCoursePage />} />
-        <Route path="kurslar/patent/:variantNumber" element={<PatentCourseVariantPage />} />
-        <Route path="kurslar/vnzh" element={<VnzhCoursePage />} />
-        <Route path="kurslar/vnzh/:sectionSlug" element={<VnzhCourseSectionPage />} />
-        <Route path="kurslar/vnzh/:sectionSlug/:taskSlug" element={<VnzhCourseTaskPage />} />
-        <Route path="tariflar" element={<PricingPage />} />
-        <Route path="pricing" element={<PricingPage />} />
-        <Route path="payment" element={<PaymentPage />} />
-        <Route path="payment-history" element={<PaymentHistoryPage />} />
-        <Route path="reyting" element={<Navigate to="/statistika?tab=leaderboard" replace />} />
-        <Route path="preview/lesson/:id" element={<LessonPreviewPage />} />
-        <Route path="preview/vocabulary/:subtopicId" element={<VocabularySubtopicPreviewPage />} />
-      </Route>
-      <Route path="/lesson-1" element={<LessonOnePage />} />
-      <Route path="/lesson-2" element={<LessonTwoPage />} />
-      <Route path="/lesson-3" element={<LessonThreePage />} />
-      <Route path="/lesson-4" element={<LessonFourPage />} />
-      <Route path="/lesson-5" element={<LessonFivePage />} />
-      <Route path="/lesson-6" element={<LessonSixPage />} />
-      <Route path="/lesson-7" element={<LessonSevenPage />} />
-      <Route path="/lesson-8" element={<LessonEightPage />} />
-      <Route path="/lesson-9" element={<LessonNinePage />} />
-      <Route path="/lesson-10" element={<LessonTenPage />} />
-      <Route path="/lesson-11" element={<LessonElevenPage />} />
-      <Route path="/lesson-12" element={<LessonTwelvePage />} />
-      <Route path="/lesson-13" element={<LessonThirteenPage />} />
-      <Route path="/lesson-14" element={<LessonFourteenPage />} />
-      <Route path="/lesson-15" element={<LessonFifteenPage />} />
-      <Route path="/lesson-15/mustahkamlash" element={<LessonFifteenPracticePage />} />
-      <Route path="/lesson-15/topshiriq-1" element={<LessonFifteenTaskOnePage />} />
-      <Route path="/lesson-15/topshiriq-2" element={<LessonFifteenTaskTwoPage />} />
-      <Route path="/lesson-15/topshiriq-3" element={<LessonFifteenTaskThreePage />} />
-      <Route path="/lesson-15/topshiriq-4" element={<LessonFifteenTaskFourPage />} />
-      <Route path="/lesson-15/topshiriq-5" element={<LessonFifteenTaskFivePage />} />
-      <Route path="/lesson-15/topshiriq-6" element={<LessonFifteenTaskSixPage />} />
-      <Route path="/lesson-15/topshiriq-7" element={<LessonFifteenTaskSevenPage />} />
-      <Route path="/lesson-16" element={<LessonSixteenPage />} />
-      <Route path="/lesson-16/topshiriq-1" element={<LessonSixteenTaskOnePage />} />
-      <Route path="/lesson-16/topshiriq-2" element={<LessonSixteenTaskTwoPage />} />
-      <Route path="/lesson-16/topshiriq-3" element={<LessonSixteenTaskThreePage />} />
-      <Route path="/lesson-17" element={<LessonSeventeenPage />} />
-      <Route path="/lesson-17/topshiriq-1" element={<LessonSeventeenTaskOnePage />} />
-      <Route path="/lesson-17/topshiriq-2" element={<LessonSeventeenTaskTwoPage />} />
-      <Route path="/lesson-17/topshiriq-3" element={<LessonSeventeenTaskThreePage />} />
-      <Route path="/lesson-17/topshiriq-4" element={<LessonSeventeenTaskFourPage />} />
-      <Route path="/lesson-17/topshiriq-5" element={<LessonSeventeenTaskFivePage />} />
-      <Route path="/lesson-17/topshiriq-6" element={<LessonSeventeenTaskSixPage />} />
-      <Route path="/lesson-17/topshiriq-7" element={<LessonSeventeenTaskSevenPage />} />
-      <Route path="/lesson-17/topshiriq-8" element={<LessonSeventeenTaskEightPage />} />
-      <Route path="/lesson-17/topshiriq-9" element={<LessonSeventeenTaskNinePage />} />
-      <Route path="/lesson-17/topshiriq-10" element={<LessonSeventeenTaskTenPage />} />
-      <Route path="/lesson-17/topshiriq-11" element={<LessonSeventeenTaskElevenPage />} />
-      <Route path="/lesson-17/topshiriq-12" element={<LessonSeventeenTaskTwelvePage />} />
-      <Route path="/lesson-17/topshiriq-13" element={<LessonSeventeenTaskThirteenPage />} />
-      <Route path="/lesson-17/topshiriq-14" element={<LessonSeventeenTaskFourteenPage />} />
-      <Route path="/lesson-17/topshiriq-15" element={<LessonSeventeenTaskFifteenPage />} />
-      <Route path="/lesson-17/topshiriq-16" element={<LessonSeventeenTaskSixteenPage />} />
-      <Route path="/lesson-17/topshiriq-17" element={<LessonSeventeenTaskSeventeenPage />} />
-      <Route path="/lesson-18" element={<LessonEighteenPage />} />
-      <Route path="/lesson-18/topshiriq-1" element={<LessonEighteenTaskOnePage />} />
-      <Route path="/lesson-18/topshiriq-2" element={<LessonEighteenTaskTwoPage />} />
-      <Route path="/lesson-18/topshiriq-3" element={<LessonEighteenTaskThreePage />} />
-      <Route path="/lesson-18/topshiriq-4" element={<LessonEighteenTaskFourPage />} />
-      <Route path="/lesson-18/topshiriq-5" element={<LessonEighteenTaskFivePage />} />
-      <Route path="/lesson-19" element={<LessonNineteenPage />} />
-      <Route path="/lesson-19/topshiriq-1" element={<LessonNineteenTaskOnePage />} />
-      <Route path="/lesson-19/topshiriq-2" element={<LessonNineteenTaskTwoPage />} />
-      <Route path="/lesson-19/topshiriq-3" element={<LessonNineteenTaskThreePage />} />
-      <Route path="/lesson-19/topshiriq-4" element={<LessonNineteenTaskFourPage />} />
-      <Route path="/lesson-19/topshiriq-5" element={<LessonNineteenTaskFivePage />} />
-      <Route path="/lesson-19/topshiriq-6" element={<LessonNineteenTaskSixPage />} />
-      <Route path="/lesson-19/topshiriq-7" element={<LessonNineteenTaskSevenPage />} />
-      <Route path="/lesson-19/topshiriq-8" element={<LessonNineteenTaskEightPage />} />
-      <Route path="/lesson-19/topshiriq-9" element={<LessonNineteenTaskNinePage />} />
-      <Route path="/lesson-19/topshiriq-10" element={<LessonNineteenTaskTenPage />} />
-      <Route path="/lesson-19/topshiriq-11" element={<LessonNineteenTaskElevenPage />} />
-      <Route path="/lesson-19/topshiriq-12" element={<LessonNineteenTaskTwelvePage />} />
-      <Route path="/lesson-19/topshiriq-13" element={<LessonNineteenTaskThirteenPage />} />
-      <Route path="/lesson-19/topshiriq-14" element={<LessonNineteenTaskFourteenPage />} />
-      <Route path="/lesson-19/topshiriq-15" element={<LessonNineteenTaskFifteenPage />} />
-      <Route path="/lesson-19/topshiriq-16" element={<LessonNineteenTaskSixteenPage />} />
-      <Route path="/lesson-20" element={<LessonTwentyPage />} />
-      <Route path="/lesson-20/topshiriq-1" element={<LessonTwentyTaskOnePage />} />
-      <Route path="/lesson-20/topshiriq-2" element={<LessonTwentyTaskTwoPage />} />
-      <Route path="/lesson-20/topshiriq-3" element={<LessonTwentyTaskThreePage />} />
-      <Route path="/lesson-20/topshiriq-4" element={<LessonTwentyTaskFourPage />} />
-      <Route path="/lesson-20/topshiriq-5" element={<LessonTwentyTaskFivePage />} />
-      <Route path="/lesson-20/topshiriq-6" element={<LessonTwentyTaskSixPage />} />
-      <Route path="/lesson-20/topshiriq-7" element={<LessonTwentyTaskSevenPage />} />
-      <Route path="/lesson-21" element={<LessonTwentyOnePage />} />
-      <Route path="/lesson-21/topshiriq-1" element={<LessonTwentyOneTaskOnePage />} />
-      <Route path="/lesson-22" element={<LessonTwentyTwoPage />} />
-      <Route path="/lesson-22/topshiriq-1" element={<LessonTwentyTwoTaskOnePage />} />
-      <Route path="/lesson-22/topshiriq-2" element={<LessonTwentyTwoTaskTwoPage />} />
-      <Route path="/lesson-22/topshiriq-3" element={<LessonTwentyTwoTaskThreePage />} />
-      <Route path="/lesson-22/topshiriq-4" element={<LessonTwentyTwoTaskFourPage />} />
-      <Route path="/lesson-22/topshiriq-5" element={<LessonTwentyTwoTaskFivePage />} />
-      <Route path="/lesson-22/topshiriq-6" element={<LessonTwentyTwoTaskSixPage />} />
-      <Route path="/lesson-22/topshiriq-7" element={<LessonTwentyTwoTaskSevenPage />} />
-      <Route path="/lesson-22/topshiriq-8" element={<LessonTwentyTwoTaskEightPage />} />
-      <Route path="/lesson-22/topshiriq-9" element={<LessonTwentyTwoTaskNinePage />} />
-      <Route path="/lesson-22/topshiriq-10" element={<LessonTwentyTwoTaskTenPage />} />
-      <Route path="/lesson-22/topshiriq-11" element={<LessonTwentyTwoTaskElevenPage />} />
-      <Route path="/lesson-22/topshiriq-12" element={<LessonTwentyTwoTaskTwelvePage />} />
-      <Route path="/lesson-23" element={<LessonTwentyThreePage />} />
-      <Route path="/lesson-23/topshiriq-1" element={<LessonTwentyThreeTaskOnePage />} />
-      <Route path="/lesson-23/topshiriq-2" element={<LessonTwentyThreeTaskTwoPage />} />
-      <Route path="/lesson-24" element={<LessonTwentyFourPage />} />
-      <Route path="/lesson-24/topshiriq-1" element={<LessonTwentyFourTaskOnePage />} />
-      <Route path="/lesson-24/topshiriq-2" element={<LessonTwentyFourTaskTwoPage />} />
-      <Route path="/lesson-24/topshiriq-3" element={<LessonTwentyFourTaskThreePage />} />
-      <Route path="/lesson-24/topshiriq-4" element={<LessonTwentyFourTaskFourPage />} />
-      <Route path="/lesson-1/salomlashish-test" element={<GreetingTestPage />} />
-      <Route path="/lesson-1/salomlashish-test/quiz" element={<GreetingQuizPage />} />
-      <Route path="/lesson-1/juftini-toping" element={<MatchingPairsPage />} />
-      <Route path="/lesson-1/gapni-tuzing" element={<SentenceBuilderPage />} />
-      <Route path="/lesson-1/bitta-mashq" element={<UnifiedLessonPracticePage />} />
-      <Route path="/lesson-2/mustahkamlash" element={<UnifiedLessonTwoPracticePage />} />
-      <Route path="/lesson-3/mustahkamlash" element={<UnifiedLessonThreePracticePage />} />
-      <Route path="/lesson-4/mustahkamlash" element={<UnifiedLessonFourPracticePage />} />
-      <Route path="/lesson-5/mustahkamlash" element={<UnifiedLessonFivePracticePage />} />
-      <Route path="/lesson-6/mustahkamlash" element={<UnifiedLessonSixPracticePage />} />
-      <Route path="/lesson-7/mustahkamlash" element={<UnifiedLessonSevenPracticePage />} />
-      <Route path="/lesson-8/mustahkamlash" element={<UnifiedLessonEightPracticePage />} />
-      <Route path="/lesson-9/mustahkamlash" element={<UnifiedLessonNinePracticePage />} />
-      <Route path="/lesson-10/mustahkamlash" element={<UnifiedLessonTenPracticePage />} />
-      <Route path="/lesson-11/mustahkamlash" element={<UnifiedLessonElevenPracticePage />} />
-      <Route path="/lesson-11/zadanie-1" element={<LessonElevenTaskOnePage />} />
-      <Route path="/lesson-11/topshiriq-2" element={<LessonElevenTaskTwoPage />} />
-      <Route path="/lesson-11/topshiriq-3" element={<LessonElevenTaskThreePage />} />
-      <Route path="/lesson-11/topshiriq-4" element={<LessonElevenTaskFourPage />} />
-      <Route path="/lesson-11/topshiriq-5" element={<LessonElevenTaskFivePage />} />
-      <Route path="/lesson-11/topshiriq-6" element={<LessonElevenTaskSixPage />} />
-      <Route path="/lesson-11/topshiriq-7" element={<LessonElevenTaskSevenPage />} />
-      <Route path="/lesson-11/topshiriq-8" element={<LessonElevenTaskEightPage />} />
-      <Route path="/lesson-11/topshiriq-9" element={<LessonElevenTaskNinePage />} />
-      <Route path="/lesson-11/topshiriq-10" element={<LessonElevenTaskTenPage />} />
-      <Route path="/lesson-11/topshiriq-11" element={<LessonElevenTaskElevenPage />} />
-      <Route path="/lesson-11/topshiriq-12" element={<LessonElevenTaskTwelvePage />} />
-      <Route path="/lesson-11/topshiriq-13" element={<LessonElevenTaskThirteenPage />} />
-      <Route path="/lesson-11/topshiriq-14" element={<LessonElevenTaskFourteenPage />} />
-      <Route path="/lesson-11/topshiriq-15" element={<LessonElevenTaskFifteenPage />} />
-      <Route path="/lesson-12/topshiriq-1" element={<LessonTwelveTaskOnePage />} />
-      <Route path="/lesson-13/topshiriq-1" element={<LessonThirteenTaskOnePage />} />
-      <Route path="/lesson-14/topshiriq-1" element={<LessonFourteenTaskOnePage />} />
-      <Route path="/lesson-14/topshiriq-2" element={<LessonFourteenTaskTwoPage />} />
-      <Route path="/lesson-14/topshiriq-3" element={<LessonFourteenTaskThreePage />} />
-      <Route path="/lesson-14/topshiriq-4" element={<LessonFourteenTaskFourPage />} />
-      <Route path="/lesson-14/topshiriq-5" element={<LessonFourteenTaskFivePage />} />
-      <Route path="/lesson-14/topshiriq-6" element={<LessonFourteenTaskSixPage />} />
-      <Route path="/lesson-14/topshiriq-7" element={<LessonFourteenTaskSevenPage />} />
-      <Route path="/lesson-14/topshiriq-8" element={<LessonFourteenTaskEightPage />} />
-      <Route path="/lesson-14/topshiriq-9" element={<LessonFourteenTaskNinePage />} />
-      <Route path="/lesson-14/topshiriq-10" element={<LessonFourteenTaskTenPage />} />
-      <Route path="/lesson-14/topshiriq-11" element={<LessonFourteenTaskElevenPage />} />
-      <Route path="/lesson-14/topshiriq-12" element={<LessonFourteenTaskTwelvePage />} />
-      <Route path="/lesson-14/topshiriq-13" element={<LessonFourteenTaskThirteenPage />} />
-      <Route path="/lesson-14/topshiriq-14" element={<LessonFourteenTaskFourteenPage />} />
-      <Route path="/lesson-14/topshiriq-15" element={<LessonFourteenTaskFifteenPage />} />
-      <Route path="/lesson-14/topshiriq-16" element={<LessonFourteenTaskSixteenPage />} />
-      <Route path="/lesson/:id" element={<LessonPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<MainLayout />}>
+            <Route index element={renderLazyPage('./pages/HomePage.tsx')} />
+            <Route path="russian" element={renderLazyPage('./pages/RussianCoursePage.tsx')} />
+            <Route path="russian/grammar" element={renderLazyPage('./pages/Dashboard.tsx')} />
+            <Route path="vocabulary" element={renderLazyPage('./pages/VocabularyPage.tsx')} />
+            <Route path="vocabulary/:topicId" element={renderLazyPage('./pages/VocabularyTopicPage.tsx')} />
+            <Route path="vocabulary/:topicId/:subtopicId" element={renderLazyPage('./pages/VocabularySubtopicPage.tsx')} />
+            <Route path="vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartRoute />} />
+            <Route path="vocabulary/:topicId/:subtopicId/:partId/:mode" element={<VocabularyPartRoute />} />
+            <Route path="profile" element={renderLazyPage('./pages/ProfilePage.tsx')} />
+            <Route path="profile/settings" element={renderLazyPage('./pages/ProfileSettingsPage.tsx')} />
+            <Route path="invite" element={renderLazyPage('./pages/ReferralPage.tsx')} />
+            <Route path="statistika" element={renderLazyPage('./pages/StatistikaPage.tsx')} />
+            <Route path="kurslar" element={renderLazyPage('./pages/CoursesPage.tsx')} />
+            <Route path="kurslar/patent" element={renderLazyPage('./pages/PatentCoursePage.tsx')} />
+            <Route path="kurslar/patent/:variantNumber" element={renderLazyPage('./pages/PatentCourseVariantPage.tsx')} />
+            <Route path="kurslar/vnzh" element={renderLazyPage('./pages/VnzhCoursePage.tsx')} />
+            <Route path="kurslar/vnzh/:sectionSlug" element={renderLazyPage('./pages/VnzhCourseSectionPage.tsx')} />
+            <Route path="kurslar/vnzh/:sectionSlug/:taskSlug" element={renderLazyPage('./pages/VnzhCourseTaskPage.tsx')} />
+            <Route path="tariflar" element={renderLazyPage('./pages/PricingPage.tsx')} />
+            <Route path="pricing" element={renderLazyPage('./pages/PricingPage.tsx')} />
+            <Route path="payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
+            <Route path="payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
+            <Route path="reyting" element={<Navigate to="/statistika?tab=leaderboard" replace />} />
+            <Route path="preview/lesson/:id" element={renderLazyPage('./pages/LessonPreviewPage.tsx')} />
+            <Route path="preview/vocabulary/:subtopicId" element={renderLazyPage('./pages/VocabularySubtopicPreviewPage.tsx')} />
+          </Route>
+
+          <Route path="/lesson-1" element={renderLazyPage('./pages/LessonOnePage.tsx')} />
+          <Route path="/lesson-2" element={renderLazyPage('./pages/LessonTwoPage.tsx')} />
+          <Route path="/lesson-3" element={renderLazyPage('./pages/LessonThreePage.tsx')} />
+          <Route path="/lesson-4" element={renderLazyPage('./pages/LessonFourPage.tsx')} />
+          <Route path="/lesson-5" element={renderLazyPage('./pages/LessonFivePage.tsx')} />
+          <Route path="/lesson-6" element={renderLazyPage('./pages/LessonSixPage.tsx')} />
+          <Route path="/lesson-7" element={renderLazyPage('./pages/LessonSevenPage.tsx')} />
+          <Route path="/lesson-8" element={renderLazyPage('./pages/LessonEightPage.tsx')} />
+          <Route path="/lesson-9" element={renderLazyPage('./pages/LessonNinePage.tsx')} />
+          <Route path="/lesson-10" element={renderLazyPage('./pages/LessonTenPage.tsx')} />
+          <Route path="/lesson-11" element={renderLazyPage('./pages/LessonElevenPage.tsx')} />
+          <Route path="/lesson-12" element={renderLazyPage('./pages/LessonTwelvePage.tsx')} />
+          <Route path="/lesson-13" element={renderLazyPage('./pages/LessonThirteenPage.tsx')} />
+          <Route path="/lesson-14" element={renderLazyPage('./pages/LessonFourteenPage.tsx')} />
+          <Route path="/lesson-15" element={renderLazyPage('./pages/LessonFifteenPage.tsx')} />
+          <Route path="/lesson-15/mustahkamlash" element={renderLazyPage('./pages/LessonFifteenPracticePage.tsx')} />
+          <Route path="/lesson-15/topshiriq-1" element={renderLazyPage('./pages/LessonFifteenTaskOnePage.tsx')} />
+          <Route path="/lesson-15/topshiriq-2" element={renderLazyPage('./pages/LessonFifteenTaskTwoPage.tsx')} />
+          <Route path="/lesson-15/topshiriq-3" element={renderLazyPage('./pages/LessonFifteenTaskThreePage.tsx')} />
+          <Route path="/lesson-15/topshiriq-4" element={renderLazyPage('./pages/LessonFifteenTaskFourPage.tsx')} />
+          <Route path="/lesson-15/topshiriq-5" element={renderLazyPage('./pages/LessonFifteenTaskFivePage.tsx')} />
+          <Route path="/lesson-15/topshiriq-6" element={renderLazyPage('./pages/LessonFifteenTaskSixPage.tsx')} />
+          <Route path="/lesson-15/topshiriq-7" element={renderLazyPage('./pages/LessonFifteenTaskSevenPage.tsx')} />
+          <Route path="/lesson-16" element={renderLazyPage('./pages/LessonSixteenPage.tsx')} />
+          <Route path="/lesson-16/topshiriq-1" element={renderLazyPage('./pages/LessonSixteenTaskOnePage.tsx')} />
+          <Route path="/lesson-16/topshiriq-2" element={renderLazyPage('./pages/LessonSixteenTaskTwoPage.tsx')} />
+          <Route path="/lesson-16/topshiriq-3" element={renderLazyPage('./pages/LessonSixteenTaskThreePage.tsx')} />
+          <Route path="/lesson-17" element={renderLazyPage('./pages/LessonSeventeenPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-1" element={renderLazyPage('./pages/LessonSeventeenTaskOnePage.tsx')} />
+          <Route path="/lesson-17/topshiriq-2" element={renderLazyPage('./pages/LessonSeventeenTaskTwoPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-3" element={renderLazyPage('./pages/LessonSeventeenTaskThreePage.tsx')} />
+          <Route path="/lesson-17/topshiriq-4" element={renderLazyPage('./pages/LessonSeventeenTaskFourPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-5" element={renderLazyPage('./pages/LessonSeventeenTaskFivePage.tsx')} />
+          <Route path="/lesson-17/topshiriq-6" element={renderLazyPage('./pages/LessonSeventeenTaskSixPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-7" element={renderLazyPage('./pages/LessonSeventeenTaskSevenPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-8" element={renderLazyPage('./pages/LessonSeventeenTaskEightPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-9" element={renderLazyPage('./pages/LessonSeventeenTaskNinePage.tsx')} />
+          <Route path="/lesson-17/topshiriq-10" element={renderLazyPage('./pages/LessonSeventeenTaskTenPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-11" element={renderLazyPage('./pages/LessonSeventeenTaskElevenPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-12" element={renderLazyPage('./pages/LessonSeventeenTaskTwelvePage.tsx')} />
+          <Route path="/lesson-17/topshiriq-13" element={renderLazyPage('./pages/LessonSeventeenTaskThirteenPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-14" element={renderLazyPage('./pages/LessonSeventeenTaskFourteenPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-15" element={renderLazyPage('./pages/LessonSeventeenTaskFifteenPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-16" element={renderLazyPage('./pages/LessonSeventeenTaskSixteenPage.tsx')} />
+          <Route path="/lesson-17/topshiriq-17" element={renderLazyPage('./pages/LessonSeventeenTaskSeventeenPage.tsx')} />
+          <Route path="/lesson-18" element={renderLazyPage('./pages/LessonEighteenPage.tsx')} />
+          <Route path="/lesson-18/topshiriq-1" element={renderLazyPage('./pages/LessonEighteenTaskOnePage.tsx')} />
+          <Route path="/lesson-18/topshiriq-2" element={renderLazyPage('./pages/LessonEighteenTaskTwoPage.tsx')} />
+          <Route path="/lesson-18/topshiriq-3" element={renderLazyPage('./pages/LessonEighteenTaskThreePage.tsx')} />
+          <Route path="/lesson-18/topshiriq-4" element={renderLazyPage('./pages/LessonEighteenTaskFourPage.tsx')} />
+          <Route path="/lesson-18/topshiriq-5" element={renderLazyPage('./pages/LessonEighteenTaskFivePage.tsx')} />
+          <Route path="/lesson-19" element={renderLazyPage('./pages/LessonNineteenPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-1" element={renderLazyPage('./pages/LessonNineteenTaskOnePage.tsx')} />
+          <Route path="/lesson-19/topshiriq-2" element={renderLazyPage('./pages/LessonNineteenTaskTwoPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-3" element={renderLazyPage('./pages/LessonNineteenTaskThreePage.tsx')} />
+          <Route path="/lesson-19/topshiriq-4" element={renderLazyPage('./pages/LessonNineteenTaskFourPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-5" element={renderLazyPage('./pages/LessonNineteenTaskFivePage.tsx')} />
+          <Route path="/lesson-19/topshiriq-6" element={renderLazyPage('./pages/LessonNineteenTaskSixPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-7" element={renderLazyPage('./pages/LessonNineteenTaskSevenPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-8" element={renderLazyPage('./pages/LessonNineteenTaskEightPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-9" element={renderLazyPage('./pages/LessonNineteenTaskNinePage.tsx')} />
+          <Route path="/lesson-19/topshiriq-10" element={renderLazyPage('./pages/LessonNineteenTaskTenPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-11" element={renderLazyPage('./pages/LessonNineteenTaskElevenPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-12" element={renderLazyPage('./pages/LessonNineteenTaskTwelvePage.tsx')} />
+          <Route path="/lesson-19/topshiriq-13" element={renderLazyPage('./pages/LessonNineteenTaskThirteenPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-14" element={renderLazyPage('./pages/LessonNineteenTaskFourteenPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-15" element={renderLazyPage('./pages/LessonNineteenTaskFifteenPage.tsx')} />
+          <Route path="/lesson-19/topshiriq-16" element={renderLazyPage('./pages/LessonNineteenTaskSixteenPage.tsx')} />
+          <Route path="/lesson-20" element={renderLazyPage('./pages/LessonTwentyPage.tsx')} />
+          <Route path="/lesson-20/topshiriq-1" element={renderLazyPage('./pages/LessonTwentyTaskOnePage.tsx')} />
+          <Route path="/lesson-20/topshiriq-2" element={renderLazyPage('./pages/LessonTwentyTaskTwoPage.tsx')} />
+          <Route path="/lesson-20/topshiriq-3" element={renderLazyPage('./pages/LessonTwentyTaskThreePage.tsx')} />
+          <Route path="/lesson-20/topshiriq-4" element={renderLazyPage('./pages/LessonTwentyTaskFourPage.tsx')} />
+          <Route path="/lesson-20/topshiriq-5" element={renderLazyPage('./pages/LessonTwentyTaskFivePage.tsx')} />
+          <Route path="/lesson-20/topshiriq-6" element={renderLazyPage('./pages/LessonTwentyTaskSixPage.tsx')} />
+          <Route path="/lesson-20/topshiriq-7" element={renderLazyPage('./pages/LessonTwentyTaskSevenPage.tsx')} />
+          <Route path="/lesson-21" element={renderLazyPage('./pages/LessonTwentyOnePage.tsx')} />
+          <Route path="/lesson-21/topshiriq-1" element={renderLazyPage('./pages/LessonTwentyOneTaskOnePage.tsx')} />
+          <Route path="/lesson-22" element={renderLazyPage('./pages/LessonTwentyTwoPage.tsx')} />
+          <Route path="/lesson-22/topshiriq-1" element={renderLazyPage('./pages/LessonTwentyTwoTaskOnePage.tsx')} />
+          <Route path="/lesson-22/topshiriq-2" element={renderLazyPage('./pages/LessonTwentyTwoTaskTwoPage.tsx')} />
+          <Route path="/lesson-22/topshiriq-3" element={renderLazyPage('./pages/LessonTwentyTwoTaskThreePage.tsx')} />
+          <Route path="/lesson-22/topshiriq-4" element={renderLazyPage('./pages/LessonTwentyTwoTaskFourPage.tsx')} />
+          <Route path="/lesson-22/topshiriq-5" element={renderLazyPage('./pages/LessonTwentyTwoTaskFivePage.tsx')} />
+          <Route path="/lesson-22/topshiriq-6" element={renderLazyPage('./pages/LessonTwentyTwoTaskSixPage.tsx')} />
+          <Route path="/lesson-22/topshiriq-7" element={renderLazyPage('./pages/LessonTwentyTwoTaskSevenPage.tsx')} />
+          <Route path="/lesson-22/topshiriq-8" element={renderLazyPage('./pages/LessonTwentyTwoTaskEightPage.tsx')} />
+          <Route path="/lesson-22/topshiriq-9" element={renderLazyPage('./pages/LessonTwentyTwoTaskNinePage.tsx')} />
+          <Route path="/lesson-22/topshiriq-10" element={renderLazyPage('./pages/LessonTwentyTwoTaskTenPage.tsx')} />
+          <Route path="/lesson-22/topshiriq-11" element={renderLazyPage('./pages/LessonTwentyTwoTaskElevenPage.tsx')} />
+          <Route path="/lesson-22/topshiriq-12" element={renderLazyPage('./pages/LessonTwentyTwoTaskTwelvePage.tsx')} />
+          <Route path="/lesson-23" element={renderLazyPage('./pages/LessonTwentyThreePage.tsx')} />
+          <Route path="/lesson-23/topshiriq-1" element={renderLazyPage('./pages/LessonTwentyThreeTaskOnePage.tsx')} />
+          <Route path="/lesson-23/topshiriq-2" element={renderLazyPage('./pages/LessonTwentyThreeTaskTwoPage.tsx')} />
+          <Route path="/lesson-24" element={renderLazyPage('./pages/LessonTwentyFourPage.tsx')} />
+          <Route path="/lesson-24/topshiriq-1" element={renderLazyPage('./pages/LessonTwentyFourTaskOnePage.tsx')} />
+          <Route path="/lesson-24/topshiriq-2" element={renderLazyPage('./pages/LessonTwentyFourTaskTwoPage.tsx')} />
+          <Route path="/lesson-24/topshiriq-3" element={renderLazyPage('./pages/LessonTwentyFourTaskThreePage.tsx')} />
+          <Route path="/lesson-24/topshiriq-4" element={renderLazyPage('./pages/LessonTwentyFourTaskFourPage.tsx')} />
+          <Route path="/lesson-1/salomlashish-test" element={renderLazyPage('./pages/GreetingTestPage.tsx')} />
+          <Route path="/lesson-1/salomlashish-test/quiz" element={renderLazyPage('./pages/GreetingQuizPage.tsx')} />
+          <Route path="/lesson-1/juftini-toping" element={renderLazyPage('./pages/MatchingPairsPage.tsx')} />
+          <Route path="/lesson-1/gapni-tuzing" element={renderLazyPage('./pages/SentenceBuilderPage.tsx')} />
+          <Route path="/lesson-1/bitta-mashq" element={renderLazyPage('./pages/UnifiedLessonPracticePage.tsx')} />
+          <Route path="/lesson-2/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonTwoPracticePage.tsx')} />
+          <Route path="/lesson-3/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonThreePracticePage.tsx')} />
+          <Route path="/lesson-4/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonFourPracticePage.tsx')} />
+          <Route path="/lesson-5/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonFivePracticePage.tsx')} />
+          <Route path="/lesson-6/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonSixPracticePage.tsx')} />
+          <Route path="/lesson-7/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonSevenPracticePage.tsx')} />
+          <Route path="/lesson-8/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonEightPracticePage.tsx')} />
+          <Route path="/lesson-9/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonNinePracticePage.tsx')} />
+          <Route path="/lesson-10/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonTenPracticePage.tsx')} />
+          <Route path="/lesson-11/mustahkamlash" element={renderLazyPage('./pages/UnifiedLessonElevenPracticePage.tsx')} />
+          <Route path="/lesson-11/zadanie-1" element={renderLazyPage('./pages/LessonElevenTaskOnePage.tsx')} />
+          <Route path="/lesson-11/topshiriq-2" element={renderLazyPage('./pages/LessonElevenTaskTwoPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-3" element={renderLazyPage('./pages/LessonElevenTaskThreePage.tsx')} />
+          <Route path="/lesson-11/topshiriq-4" element={renderLazyPage('./pages/LessonElevenTaskFourPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-5" element={renderLazyPage('./pages/LessonElevenTaskFivePage.tsx')} />
+          <Route path="/lesson-11/topshiriq-6" element={renderLazyPage('./pages/LessonElevenTaskSixPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-7" element={renderLazyPage('./pages/LessonElevenTaskSevenPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-8" element={renderLazyPage('./pages/LessonElevenTaskEightPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-9" element={renderLazyPage('./pages/LessonElevenTaskNinePage.tsx')} />
+          <Route path="/lesson-11/topshiriq-10" element={renderLazyPage('./pages/LessonElevenTaskTenPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-11" element={renderLazyPage('./pages/LessonElevenTaskElevenPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-12" element={renderLazyPage('./pages/LessonElevenTaskTwelvePage.tsx')} />
+          <Route path="/lesson-11/topshiriq-13" element={renderLazyPage('./pages/LessonElevenTaskThirteenPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-14" element={renderLazyPage('./pages/LessonElevenTaskFourteenPage.tsx')} />
+          <Route path="/lesson-11/topshiriq-15" element={renderLazyPage('./pages/LessonElevenTaskFifteenPage.tsx')} />
+          <Route path="/lesson-12/topshiriq-1" element={renderLazyPage('./pages/LessonTwelveTaskOnePage.tsx')} />
+          <Route path="/lesson-13/topshiriq-1" element={renderLazyPage('./pages/LessonThirteenTaskOnePage.tsx')} />
+          <Route path="/lesson-14/topshiriq-1" element={renderLazyPage('./pages/LessonFourteenTaskOnePage.tsx')} />
+          <Route path="/lesson-14/topshiriq-2" element={renderLazyPage('./pages/LessonFourteenTaskTwoPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-3" element={renderLazyPage('./pages/LessonFourteenTaskThreePage.tsx')} />
+          <Route path="/lesson-14/topshiriq-4" element={renderLazyPage('./pages/LessonFourteenTaskFourPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-5" element={renderLazyPage('./pages/LessonFourteenTaskFivePage.tsx')} />
+          <Route path="/lesson-14/topshiriq-6" element={renderLazyPage('./pages/LessonFourteenTaskSixPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-7" element={renderLazyPage('./pages/LessonFourteenTaskSevenPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-8" element={renderLazyPage('./pages/LessonFourteenTaskEightPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-9" element={renderLazyPage('./pages/LessonFourteenTaskNinePage.tsx')} />
+          <Route path="/lesson-14/topshiriq-10" element={renderLazyPage('./pages/LessonFourteenTaskTenPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-11" element={renderLazyPage('./pages/LessonFourteenTaskElevenPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-12" element={renderLazyPage('./pages/LessonFourteenTaskTwelvePage.tsx')} />
+          <Route path="/lesson-14/topshiriq-13" element={renderLazyPage('./pages/LessonFourteenTaskThirteenPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-14" element={renderLazyPage('./pages/LessonFourteenTaskFourteenPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-15" element={renderLazyPage('./pages/LessonFourteenTaskFifteenPage.tsx')} />
+          <Route path="/lesson-14/topshiriq-16" element={renderLazyPage('./pages/LessonFourteenTaskSixteenPage.tsx')} />
+          <Route path="/lesson/:id" element={renderLazyPage('./pages/LessonPage.tsx')} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </>
       )}
     </Routes>

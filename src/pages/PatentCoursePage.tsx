@@ -80,7 +80,7 @@ export default function PatentCoursePage() {
         <div className="mb-6 flex items-center">
           <button
             type="button"
-            onClick={() => navigate('/kurslar')}
+            onClick={() => navigate('/')}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-[#2563EB] shadow-[0_10px_24px_rgba(37,99,235,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5"
             aria-label="Orqaga"
           >

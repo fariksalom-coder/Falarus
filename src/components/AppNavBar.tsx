@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { House, BookMarked, BarChart3, User } from 'lucide-react';
+import { prefetchRoutePath } from '../routeModules';
 
 const BORDER = '#E2E8F0';
 const TEXT_SECONDARY = '#64748B';
@@ -23,6 +24,9 @@ export default function AppNavBar() {
         type="button"
         aria-label={label}
         onClick={() => navigate(to)}
+        onMouseEnter={() => prefetchRoutePath(to)}
+        onTouchStart={() => prefetchRoutePath(to)}
+        onFocus={() => prefetchRoutePath(to)}
         className="flex min-w-[60px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-200"
         style={{
           background: active ? ACTIVE_BG : 'transparent',

@@ -63,7 +63,7 @@ export default function VnzhCoursePage() {
       <main className="mx-auto max-w-4xl px-4 py-5 sm:px-5">
         <button
           type="button"
-          onClick={() => navigate('/kurslar')}
+          onClick={() => navigate('/')}
           className="mb-4 inline-flex items-center gap-2 rounded-full border bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-[0_10px_24px_rgba(148,163,184,0.12)] transition hover:-translate-y-0.5"
           style={{ borderColor: BORDER }}
         >
