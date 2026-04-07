@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
 import { addUserPoints } from '../api/leaderboard';
+import { getLessonQuestions, postUserAnswer } from '../api/lessonQuestions';
+import { useAuth } from '../context/AuthContext';
 
 export type ChoiceTask = { type: 'choice'; prompt: string; options: string[]; correct: string };
 export type MatchingTask = {
@@ -12,6 +14,7 @@ export type MatchingTask = {
 };
 export type SentenceTask = { type: 'sentence'; prompt: string; words: string[]; correct: string };
 export type Task = ChoiceTask | MatchingTask | SentenceTask;
+type RuntimeTask = Task & { questionId?: number };
 
 type MatchCard = { id: string; text: string; pairId: number; side: 'left' | 'right' };
 type SentencePoolItem = { id: string; word: string; used: boolean };
@@ -42,6 +45,13 @@ const checkSentence = (built: string, correct: string) => {
   const c = normalize(correct);
   return b === c;
 };
+const readStringAnswer = (answer: Record<string, unknown>): string => {
+  const value = answer.value;
+  if (typeof value === 'string' && value.trim()) return value;
+  const legacy = answer.correct;
+  if (typeof legacy === 'string') return legacy;
+  return '';
+};
 const renderPrompt = (text: string) =>
   text.split(/(【[^】]+】)/g).map((part, idx) => {
     if (part.startsWith('【') && part.endsWith('】')) {
@@ -68,6 +78,11 @@ export default function LessonFourteenTaskRunner({
   token,
 }: Props) {
   const navigate = useNavigate();
+  const { token: authToken } = useAuth();
+  const effectiveToken = token ?? authToken;
+  const [runtimeTasks, setRuntimeTasks] = useState<RuntimeTask[]>(TASKS);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [tasksError, setTasksError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [message, setMessage] = useState('');
@@ -85,11 +100,63 @@ export default function LessonFourteenTaskRunner({
   const [sentenceAnswer, setSentenceAnswer] = useState<string[]>([]);
   const [correctCount, setCorrectCount] = useState(0);
 
-  const currentTask = TASKS[currentIndex];
-  const progress = useMemo(() => ((currentIndex + (finished ? 1 : 0)) / TASKS.length) * 100, [currentIndex, finished, TASKS.length]);
+  const currentTask = runtimeTasks[currentIndex];
+  const progress = useMemo(() => ((currentIndex + (finished ? 1 : 0)) / Math.max(1, runtimeTasks.length)) * 100, [currentIndex, finished, runtimeTasks.length]);
 
   useEffect(() => {
-    const task = TASKS[currentIndex];
+    setRuntimeTasks(TASKS);
+  }, [TASKS]);
+
+  useEffect(() => {
+    if (!effectiveToken || !lessonPath) return;
+    const lessonIdMatch = lessonPath.match(/\/lesson-(\d+)/);
+    const lessonId = lessonIdMatch ? Number(lessonIdMatch[1]) : null;
+    if (!lessonId) return;
+
+    setLoadingTasks(true);
+    setTasksError(null);
+    getLessonQuestions(effectiveToken, lessonId)
+      .then((rows) => {
+        if (!Array.isArray(rows) || rows.length === 0) return;
+        const mapped = rows
+          .map((row) => {
+            if (row.type === 'matching') {
+              const pairs = Array.isArray((row.content as { pairs?: unknown }).pairs)
+                ? ((row.content as { pairs: { left: string; right: string }[] }).pairs ?? [])
+                : [];
+              return { type: 'matching', prompt: row.prompt, pairs, questionId: row.id } as RuntimeTask;
+            }
+            if (row.type === 'sentence') {
+              const words = Array.isArray((row.content as { words?: unknown }).words)
+                ? ((row.content as { words: string[] }).words ?? [])
+                : [];
+              const correct = readStringAnswer(row.answer);
+              return { type: 'sentence', prompt: row.prompt, words, correct, questionId: row.id } as RuntimeTask;
+            }
+            const options = Array.isArray((row.content as { options?: unknown }).options)
+              ? ((row.content as { options: string[] }).options ?? [])
+              : [];
+            const correct = readStringAnswer(row.answer);
+            return { type: 'choice', prompt: row.prompt, options, correct, questionId: row.id } as RuntimeTask;
+          })
+          .filter((task) => Boolean(task.prompt));
+
+        if (mapped.length > 0) {
+          setRuntimeTasks(mapped);
+          setCurrentIndex(0);
+          setFinished(false);
+          setCorrectCount(0);
+        }
+      })
+      .catch((err) => {
+        setTasksError(err instanceof Error ? err.message : 'Savollar yuklanmadi');
+      })
+      .finally(() => setLoadingTasks(false));
+  }, [effectiveToken, lessonPath, TASKS]);
+
+  useEffect(() => {
+    const task = runtimeTasks[currentIndex];
+    if (!task) return;
     setStatus('idle');
     setMessage('');
     if (task.type === 'choice') {
@@ -110,11 +177,11 @@ export default function LessonFourteenTaskRunner({
       setSentencePool(shuffle(task.words).map((word, idx) => ({ id: `${idx}-${word}`, word, used: false })));
       setSentenceAnswer([]);
     }
-  }, [currentIndex, TASKS]);
+  }, [currentIndex, runtimeTasks]);
 
   const handleNext = () => {
     if (status === 'correct') setCorrectCount((c) => c + 1);
-    if (currentIndex < TASKS.length - 1) setCurrentIndex((prev) => prev + 1);
+    if (currentIndex < runtimeTasks.length - 1) setCurrentIndex((prev) => prev + 1);
     else setFinished(true);
   };
 
@@ -210,6 +277,16 @@ export default function LessonFourteenTaskRunner({
                         if (status === 'correct') return;
                         setSelectedOption(option);
                         const ok = option === currentTask.correct;
+                        if (effectiveToken && lessonPath && currentTask.questionId) {
+                          const lessonId = Number(lessonPath.match(/\/lesson-(\d+)/)?.[1] ?? 0);
+                          if (lessonId > 0) {
+                            postUserAnswer(effectiveToken, lessonId, {
+                              question_id: currentTask.questionId,
+                              answer: { selected: option },
+                              is_correct: ok,
+                            }).catch(() => {});
+                          }
+                        }
                         setStatus(ok ? 'correct' : 'wrong');
                         setMessage(ok ? 'To‘g‘ri!' : `Noto‘g‘ri. To‘g‘ri javob: ${currentTask.correct}`);
                       }}
@@ -283,6 +360,16 @@ export default function LessonFourteenTaskRunner({
                 onClick={() => {
                   const built = sentenceAnswer.join(' ').trim();
                   const ok = checkSentence(built, currentTask.correct);
+                  if (effectiveToken && lessonPath && currentTask.questionId) {
+                    const lessonId = Number(lessonPath.match(/\/lesson-(\d+)/)?.[1] ?? 0);
+                    if (lessonId > 0) {
+                      postUserAnswer(effectiveToken, lessonId, {
+                        question_id: currentTask.questionId,
+                        answer: { built },
+                        is_correct: ok,
+                      }).catch(() => {});
+                    }
+                  }
                   setStatus(ok ? 'correct' : 'wrong');
                   setMessage(ok ? 'To‘g‘ri!' : `Noto‘g‘ri. To‘g‘ri javob: ${currentTask.correct}`);
                 }}
@@ -294,19 +381,21 @@ export default function LessonFourteenTaskRunner({
             )}
             {((currentTask.type === 'choice' && status !== 'idle') || (currentTask.type === 'matching' && status === 'correct') || (currentTask.type === 'sentence' && status === 'correct')) && (
               <button type="button" onClick={handleNext} className="mt-5 w-full rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
-                {currentIndex < TASKS.length - 1 ? 'Keyingi' : 'Yakunlash'}
+                {currentIndex < runtimeTasks.length - 1 ? 'Keyingi' : 'Yakunlash'}
               </button>
             )}
           </div>
         )}
+        {loadingTasks && <p className="mt-4 text-sm text-slate-500">Savollar yuklanmoqda...</p>}
+        {!loadingTasks && tasksError && <p className="mt-4 text-sm text-red-600">{tasksError}</p>}
         {finished && (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm">
             <p className="text-lg font-bold text-slate-900">Natija</p>
             <p className="mt-2 text-2xl font-bold text-slate-800">
-              To‘g‘ri javoblar: {correctCount} / {TASKS.length}
+              To‘g‘ri javoblar: {correctCount} / {runtimeTasks.length}
             </p>
             <p className="mt-1 text-sm text-slate-500">
-              {TASKS.length > 0 ? Math.round((correctCount / TASKS.length) * 100) : 0}%
+              {runtimeTasks.length > 0 ? Math.round((correctCount / runtimeTasks.length) * 100) : 0}%
             </p>
             <p className="mt-3 text-sm font-semibold" style={{ color: '#0F172A' }}>
               Siz {correctCount} ball oldingiz!
@@ -314,16 +403,16 @@ export default function LessonFourteenTaskRunner({
             <button
               type="button"
               onClick={() => {
-                if (lessonPath != null && taskNumber != null && TASKS.length > 0) {
-                  setLessonTaskResult(lessonPath, taskNumber, correctCount, TASKS.length);
-                  if (token) {
-                    addUserPoints(token, correctCount);
+                if (lessonPath != null && taskNumber != null && runtimeTasks.length > 0) {
+                  setLessonTaskResult(lessonPath, taskNumber, correctCount, runtimeTasks.length);
+                  if (effectiveToken) {
+                    addUserPoints(effectiveToken, correctCount);
                   }
                 }
                 navigate(backPath);
               }}
               className={`mt-6 w-full rounded-xl px-5 py-3.5 text-base font-semibold text-white transition-colors ${
-                TASKS.length > 0 && correctCount / TASKS.length >= 0.8
+                runtimeTasks.length > 0 && correctCount / runtimeTasks.length >= 0.8
                   ? 'bg-emerald-600 hover:bg-emerald-700'
                   : 'bg-orange-500 hover:bg-orange-600'
               }`}

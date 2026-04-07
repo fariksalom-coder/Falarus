@@ -41,6 +41,18 @@ type CourseLessonDetail = {
   exercises: CourseLessonExercise[];
 };
 
+type DbQuestionRow = {
+  id: number;
+  type: string;
+  prompt: string;
+  order_index: number;
+  version?: number;
+  difficulty?: number;
+  skill?: string;
+  meta?: Record<string, unknown>;
+  question_content: { content: Record<string, unknown>; answer: Record<string, unknown> }[] | null;
+};
+
 const courseLessonsCatalog: CourseLessonDetail[] = courseData.flatMap((level) =>
   level.modules.flatMap((module) =>
     module.lessons.map((lesson) => ({
@@ -103,6 +115,125 @@ async function handleLessonDetail(
   });
 }
 
+async function handleLessonQuestions(
+  userId: number,
+  lessonId: number,
+  res: VercelResponse
+) {
+  const access = await getAccessInfo(supabase, userId);
+  if (!canAccessLesson(lessonId, access)) {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
+  }
+
+  const { data, error } = await supabase
+    .from('questions')
+    .select('id,type,prompt,order_index,version,difficulty,skill,meta,question_content(content,answer)')
+    .eq('lesson_id', lessonId)
+    .eq('is_active', true)
+    .order('order_index', { ascending: true });
+
+  if (error) return res.status(500).json({ error: 'Savollar yuklanmadi' });
+
+  const items = ((data as unknown as DbQuestionRow[] | null) ?? []).map((q) => {
+    const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+    return {
+      id: q.id,
+      type: q.type,
+      prompt: q.prompt,
+      order_index: q.order_index,
+      version: q.version ?? 1,
+      difficulty: q.difficulty ?? 1,
+      skill: q.skill ?? 'grammar',
+      meta: q.meta ?? {},
+      content: payload.content ?? {},
+      answer: payload.answer ?? {},
+    };
+  });
+  return res.status(200).json(items);
+}
+
+async function handleLessonTaskQuestionsByPath(
+  userId: number,
+  lessonPath: string,
+  taskNumber: number,
+  res: VercelResponse
+) {
+  const lessonIdMatch = lessonPath.match(/\/lesson-(\d+)/);
+  const lessonId = lessonIdMatch ? Number(lessonIdMatch[1]) : null;
+  if (!lessonId || lessonId <= 0) return res.status(400).json({ error: 'lessonPath noto‘g‘ri' });
+
+  const access = await getAccessInfo(supabase, userId);
+  if (!canAccessLesson(lessonId, access)) {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
+  }
+
+  const start = taskNumber * 1000;
+  const end = start + 999;
+  const { data, error } = await supabase
+    .from('questions')
+    .select('id,type,prompt,order_index,version,difficulty,skill,meta,question_content(content,answer)')
+    .eq('lesson_id', lessonId)
+    .eq('is_active', true)
+    .gte('order_index', start)
+    .lte('order_index', end)
+    .order('order_index', { ascending: true });
+
+  if (error) return res.status(500).json({ error: 'Savollar yuklanmadi' });
+
+  const items = ((data as unknown as DbQuestionRow[] | null) ?? []).map((q) => {
+    const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+    return {
+      id: q.id,
+      type: q.type,
+      prompt: q.prompt,
+      order_index: q.order_index,
+      version: q.version ?? 1,
+      difficulty: q.difficulty ?? 1,
+      skill: q.skill ?? 'grammar',
+      meta: q.meta ?? {},
+      content: payload.content ?? {},
+      answer: payload.answer ?? {},
+    };
+  });
+  return res.status(200).json(items);
+}
+
+async function handleLessonAnswer(
+  userId: number,
+  lessonId: number,
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  const access = await getAccessInfo(supabase, userId);
+  if (!canAccessLesson(lessonId, access)) {
+    return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
+  }
+
+  const body = (req.body ?? {}) as {
+    question_id?: number;
+    answer?: unknown;
+    is_correct?: boolean;
+    duration_ms?: number;
+  };
+
+  const questionId = Number(body.question_id);
+  if (!Number.isFinite(questionId) || questionId <= 0) {
+    return res.status(400).json({ error: 'question_id kerak' });
+  }
+
+  const { error } = await supabase.from('user_answers').insert({
+    user_id: userId,
+    question_id: questionId,
+    lesson_id: lessonId,
+    answer: (body.answer ?? {}) as Record<string, unknown>,
+    is_correct: typeof body.is_correct === 'boolean' ? body.is_correct : null,
+    duration_ms: Number.isFinite(Number(body.duration_ms)) ? Number(body.duration_ms) : null,
+  });
+
+  if (error) return res.status(500).json({ error: 'Javob saqlanmadi' });
+  return res.status(200).json({ success: true });
+}
+
 async function handleLessonPreview(lessonId: number, res: VercelResponse) {
   const preview = await getLessonPreview(supabase, lessonId);
   if (!preview) {
@@ -148,6 +279,18 @@ export async function routeLessonsRequest(
       return await handleLessonsList(userId, res);
     }
 
+    if (segments.length === 4 && segments[0] === 'path' && segments[2] === 'tasks') {
+      if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      const lessonPath = decodeURIComponent(segments[1]);
+      const taskNumber = Number(segments[3]);
+      if (!Number.isFinite(taskNumber) || taskNumber <= 0) {
+        return res.status(400).json({ error: 'taskNumber noto‘g‘ri' });
+      }
+      return await handleLessonTaskQuestionsByPath(userId, lessonPath, taskNumber, res);
+    }
+
     const lessonIdFromPath = Number(segments[0]);
     if (!Number.isFinite(lessonIdFromPath) || lessonIdFromPath <= 0) {
       const qId = parseLessonIdFromQuery(req);
@@ -185,6 +328,20 @@ export async function routeLessonsRequest(
         return res.status(405).json({ error: 'Method not allowed' });
       }
       return await handleCompleteLesson(userId, lessonId, res);
+    }
+
+    if (segments.length === 2 && segments[1] === 'questions') {
+      if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      return await handleLessonQuestions(userId, lessonId, res);
+    }
+
+    if (segments.length === 2 && segments[1] === 'answers') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      return await handleLessonAnswer(userId, lessonId, req, res);
     }
 
     return res.status(404).json({ error: 'Not found' });
