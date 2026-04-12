@@ -897,6 +897,50 @@ async function startServer() {
     res.json(preview);
   });
 
+  app.get('/api/lessons/:lessonId/tasks/:taskNumber', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+    const lessonId = Number(req.params.lessonId);
+    const taskNumber = Number(req.params.taskNumber);
+    if (!Number.isFinite(lessonId) || lessonId <= 0 || !Number.isFinite(taskNumber) || taskNumber <= 0) {
+      return res.status(400).json({ error: 'lesson yoki task raqami noto‘g‘ri' });
+    }
+    const access = await getAccessForRequest(supabase, userId);
+    if (!accessControlService.canAccessLesson(lessonId, access)) {
+      return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
+    }
+    const start = taskNumber * 1000;
+    const end = start + 999;
+    const { data, error } = await supabase
+      .from('questions')
+      .select('id,type,prompt,order_index,version,difficulty,skill,meta,question_content(content,answer)')
+      .eq('lesson_id', lessonId)
+      .eq('is_active', true)
+      .gte('order_index', start)
+      .lte('order_index', end)
+      .order('order_index', { ascending: true });
+    if (error) {
+      console.error('[lessons/:id/tasks]', error.message);
+      return res.status(500).json({ error: 'Savollar yuklanmadi' });
+    }
+    const items = (data ?? []).map((q: any) => {
+      const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+      return {
+        id: q.id,
+        type: q.type,
+        prompt: q.prompt,
+        order_index: q.order_index,
+        version: q.version ?? 1,
+        difficulty: q.difficulty ?? 1,
+        skill: q.skill ?? 'grammar',
+        meta: q.meta ?? {},
+        content: payload.content ?? {},
+        answer: payload.answer ?? {},
+      };
+    });
+    res.json(items);
+  });
+
   app.get('/api/lessons/:id', authenticate, async (req: any, res) => {
     const id = Number(req.params.id);
     const userId = Number(req.userId);

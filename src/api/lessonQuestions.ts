@@ -41,13 +41,26 @@ export async function postUserAnswer(
 }
 
 export async function getLessonTaskQuestions(token: string, lessonPath: string, taskNumber: number): Promise<ApiQuestion[]> {
-  const encodedPath = encodeURIComponent(lessonPath);
-  const res = await fetch(apiUrl(`/api/lessons/path/${encodedPath}/tasks/${taskNumber}`), {
+  const idMatch = lessonPath.match(/^\/lesson-(\d+)$/);
+  const lessonId = idMatch ? Number(idMatch[1]) : NaN;
+  if (!Number.isFinite(lessonId) || lessonId <= 0) {
+    throw new Error('Dars yo‘li noto‘g‘ri');
+  }
+  /** Pathda `%2F` bo‘lmasin — Vercel va ba’zi CDNlar 404 beradi. */
+  const res = await fetch(apiUrl(`/api/lessons/${lessonId}/tasks/${taskNumber}`), {
     headers: { Authorization: `Bearer ${token}` },
   });
-  const body = await res.json().catch(() => []);
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error((body as { error?: string })?.error || 'Savollar yuklanmadi');
+    const err = (body as { error?: string; message?: string })?.error;
+    const msg = (body as { message?: string })?.message;
+    if (res.status === 401) {
+      throw new Error(err || 'Kirish muddati tugagan yoki token yaroqsiz. Qayta kiring.');
+    }
+    if (res.status === 403 && (err === 'locked' || msg)) {
+      throw new Error(msg || 'Ushbu dars uchun tarif kerak.');
+    }
+    throw new Error(err || 'Savollar yuklanmadi');
   }
   return Array.isArray(body) ? (body as ApiQuestion[]) : [];
 }

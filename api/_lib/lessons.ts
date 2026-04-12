@@ -178,7 +178,10 @@ async function handleLessonTaskQuestionsByPath(
     .lte('order_index', end)
     .order('order_index', { ascending: true });
 
-  if (error) return res.status(500).json({ error: 'Savollar yuklanmadi' });
+  if (error) {
+    console.error('[lessons/path/tasks] Supabase:', error.message, error.code, error.details);
+    return res.status(500).json({ error: 'Savollar yuklanmadi' });
+  }
 
   const items = ((data as unknown as DbQuestionRow[] | null) ?? []).map((q) => {
     const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
@@ -288,6 +291,20 @@ export async function routeLessonsRequest(
       if (!Number.isFinite(taskNumber) || taskNumber <= 0) {
         return res.status(400).json({ error: 'taskNumber noto‘g‘ri' });
       }
+      return await handleLessonTaskQuestionsByPath(userId, lessonPath, taskNumber, res);
+    }
+
+    /** Vercel/CDN ko‘pincha URL ichidagi `%2F` bilan nosoz; shuning uchun `/lessons/:id/tasks/:n` afzal. */
+    if (segments.length === 3 && segments[1] === 'tasks') {
+      if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      const lessonId = Number(segments[0]);
+      const taskNumber = Number(segments[2]);
+      if (!Number.isFinite(lessonId) || lessonId <= 0 || !Number.isFinite(taskNumber) || taskNumber <= 0) {
+        return res.status(400).json({ error: 'lesson yoki task raqami noto‘g‘ri' });
+      }
+      const lessonPath = `/lesson-${lessonId}`;
       return await handleLessonTaskQuestionsByPath(userId, lessonPath, taskNumber, res);
     }
 

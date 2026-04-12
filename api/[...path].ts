@@ -94,6 +94,7 @@ const ROOT_API_PREFIXES = new Set([
   'pricing',
   'tariff-prices',
   'payment-methods',
+  'grammar',
   'lessons',
   'leaderboard',
   'lesson-task-results',
