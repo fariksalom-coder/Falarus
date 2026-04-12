@@ -51,7 +51,7 @@ function squareClass(
    * `w-full max-w-[10rem]` — maksimum bir xil, tor ekranda katak bo‘yicha kichrayadi.
    */
   const base =
-    'relative box-border flex aspect-square w-full max-w-[10rem] shrink-0 justify-self-center flex-col items-center gap-1 rounded-[24px] border-2 p-2.5 text-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:gap-1.5 sm:p-3';
+    'relative box-border flex h-full min-h-[11rem] w-full max-w-[10rem] shrink-0 justify-self-center flex-col items-center gap-1 rounded-[24px] border-2 p-2.5 text-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:min-h-[12rem] sm:gap-1.5 sm:p-3';
 
   if (passed) {
     return `${base} border-emerald-500 bg-gradient-to-br from-emerald-100 via-emerald-50 to-white text-emerald-950 shadow-[0_12px_36px_rgba(34,197,94,0.35)] ring-2 ring-emerald-400/70 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(34,197,94,0.4)] active:scale-[0.98] focus-visible:ring-emerald-500`;
@@ -188,7 +188,7 @@ export function LessonTaskSquareGrid({
   return (
     <div className="mt-6">
       {mashqlarHeading ? <p className="mb-3 text-sm font-semibold text-slate-500">Mashqlar</p> : null}
-      <div className={`grid items-start justify-items-center gap-2 sm:gap-4 ${gridClass}`}>
+      <div className={`grid items-stretch justify-items-center gap-2 sm:gap-4 ${gridClass}`}>
         {tasks.map(({ path, taskNum, label, hint, Icon = ListChecks }) => {
           const locked = sequentialLock && isTaskLockedSequential(taskNum, results);
           const passed = !!(results[taskNum] && isTaskResultGood(results[taskNum]!));
@@ -230,7 +230,7 @@ export function LessonTaskSquareGrid({
                 key={path}
                 className={`${squareClass(taskNum, currentTask, sequentialLock, results)} justify-between gap-1 overflow-hidden py-2 sm:gap-1.5 sm:py-2.5`}
               >
-                <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-0.5 px-0.5">
+                <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-0.5 px-0.5 sm:flex-1">
                   {body}
                 </div>
                 <button

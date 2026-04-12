@@ -19,11 +19,14 @@ export function LessonHubTitle({ lessonPath, subtitle }: LessonHubTitleProps) {
 
   return (
     <>
-      <h1 className="mb-4 text-balance text-center text-xl font-bold leading-snug text-slate-900 sm:mb-5 sm:text-2xl">
+      <h1
+        className="mb-4 text-balance text-center text-xl font-bold leading-snug text-slate-900 sm:mb-5 sm:text-2xl"
+        title={meta.titleRu ? `${meta.titleUz} (${meta.titleRu})` : meta.titleUz}
+      >
         <span>{meta.num}-dars</span>
         <span className="font-normal text-slate-300"> — </span>
-        <span>{meta.titleUz}</span>{' '}
-        <span className="text-lg font-semibold text-slate-500 sm:text-xl">({meta.titleRu})</span>
+        <span>{meta.titleUz}</span>
+        {meta.titleRu ? <span className="sr-only"> ({meta.titleRu})</span> : null}
       </h1>
       {subtitle ? <p className="-mt-2 mb-4 text-center text-sm text-slate-500 sm:-mt-3">{subtitle}</p> : null}
     </>

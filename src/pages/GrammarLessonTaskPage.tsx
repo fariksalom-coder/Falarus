@@ -5,7 +5,6 @@ import { getLessonTaskQuestions, type ApiQuestion } from '../api/lessonQuestions
 import { addUserPoints } from '../api/leaderboard';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
 import { resolveGrammarTaskFromPath } from '../utils/grammarTaskPaths';
-import { LESSONS } from '../data/lessonsList';
 import {
   parseChoicePayload,
   parseMatchingPayload,
@@ -110,8 +109,6 @@ export default function GrammarLessonTaskPage() {
   const { token } = useAuth();
 
   const resolved = useMemo(() => resolveGrammarTaskFromPath(pathname), [pathname]);
-  const lessonNum = resolved ? Number(resolved.lessonPath.match(/lesson-(\d+)/)?.[1] ?? NaN) : NaN;
-  const lessonMeta = LESSONS.find((l) => l.path === resolved?.lessonPath);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -344,9 +341,6 @@ export default function GrammarLessonTaskPage() {
     );
   }
 
-  const lessonTitleUz = lessonMeta?.titleUz ?? '';
-  const lessonTitleRu = lessonMeta?.titleRu ?? '';
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
@@ -359,19 +353,7 @@ export default function GrammarLessonTaskPage() {
         </button>
 
         <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/80 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-            {lessonNum}-dars
-            {lessonMeta ? (
-              <>
-                {' '}
-                — {lessonTitleUz}{' '}
-                <span className="font-normal normal-case text-indigo-500/90">({lessonTitleRu})</span>
-              </>
-            ) : null}
-          </p>
-          <p className="text-lg font-bold text-slate-900">
-            Topshiriq {resolved.taskNumber} (ma&apos;lumotlar bazasi)
-          </p>
+          <p className="text-lg font-bold text-slate-900">Topshiriq {resolved.taskNumber}</p>
         </div>
 
         {!finished && (
@@ -492,15 +474,25 @@ export default function GrammarLessonTaskPage() {
                 <div className="min-h-[3rem] rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-center text-lg font-semibold text-slate-900">
                   {sentenceAnswer.length ? sentenceAnswer.join(' ') : '—'}
                 </div>
-                <div className="flex flex-wrap justify-center gap-2">
+                <div
+                  className={`grid w-full gap-2 ${
+                    sentencePool.length <= 1
+                      ? 'grid-cols-1'
+                      : sentencePool.length === 2
+                        ? 'grid-cols-2'
+                        : sentencePool.length === 4
+                          ? 'grid-cols-2'
+                          : 'grid-cols-3'
+                  }`}
+                >
                   {sentencePool.map((item, idx) => (
                     <button
                       key={item.id}
                       type="button"
                       disabled={item.used}
                       onClick={() => moveWordToAnswer(item, idx)}
-                      className={`rounded-full px-4 py-2 text-sm font-semibold transition-all active:scale-95 ${
-                        item.used ? 'cursor-not-allowed opacity-30' : 'border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50'
+                      className={`flex min-h-11 w-full items-center justify-center break-words rounded-2xl border px-2 py-2.5 text-center text-sm font-semibold leading-snug transition-all active:scale-[0.98] sm:min-h-12 sm:px-3 ${
+                        item.used ? 'cursor-not-allowed opacity-30' : 'border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50'
                       }`}
                     >
                       {item.word}
