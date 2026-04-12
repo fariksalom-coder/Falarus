@@ -11,6 +11,7 @@ import {
   Banknote,
   DollarSign,
   LogOut,
+  BookOpen,
 } from 'lucide-react';
 
 const nav = [
@@ -23,6 +24,7 @@ const nav = [
   { to: '/admin/payment-methods', label: 'Payment Methods', icon: Banknote },
   { to: '/admin/tariff-pricing', label: 'Tariff Pricing', icon: DollarSign },
   { to: '/admin/pricing', label: 'Pricing', icon: Settings },
+  { to: '/admin/grammar', label: 'Grammar', icon: BookOpen },
 ];
 
 export default function AdminLayout() {

@@ -75,10 +75,11 @@ test('setLessonTaskResult saves locally and posts to lesson-task-results API whe
 
   storage.setItem('token', 'test-token');
 
-  setLessonTaskResult('/lesson-1', 1, 8, 10);
+  /* 1-dars vazifa 1: joriy tanlovlar soni bilan mos total (aks holda eski sxema deb filtrlanadi) */
+  setLessonTaskResult('/lesson-1', 1, 13, 18);
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  assert.deepEqual(getLessonTaskResult('/lesson-1', 1), { correct: 8, total: 10 });
+  assert.deepEqual(getLessonTaskResult('/lesson-1', 1), { correct: 13, total: 18 });
   assert.equal(fetchCalls.length, 1);
   assert.equal(fetchCalls[0]?.input, '/api/lesson-task-results');
   assert.equal(fetchCalls[0]?.init?.method, 'POST');

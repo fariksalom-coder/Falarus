@@ -160,20 +160,24 @@ async function main() {
 
     let lessonPath = '/lesson-1';
     let taskNumber = 1;
-    const byFile = parseLessonRefFromFile(abs);
-    if (byFile) {
-      lessonPath = byFile.lessonPath;
-      taskNumber = byFile.taskNumber;
+
+    const str = src.match(/setLessonTaskResult\(\s*'([^']+)'\s*,\s*(\d+)/);
+    if (str) {
+      lessonPath = str[1];
+      taskNumber = Number(str[2]);
     } else {
-      const byCode =
-        src.match(/lessonPath="([^"]+)"/) ||
-        src.match(/setLessonTaskResult\(\s*'([^']+)'/) ||
-        src.match(/navigate\('([^']*\/lesson-\d+)'\)/);
-      const taskByCode =
-        src.match(/taskNumber=\{(\d+)\}/) ||
-        src.match(/setLessonTaskResult\(\s*'[^']+'\s*,\s*(\d+)/);
-      if (byCode) lessonPath = byCode[1];
-      if (taskByCode) taskNumber = Number(taskByCode[1]);
+      const byFile = parseLessonRefFromFile(abs);
+      if (byFile) {
+        lessonPath = byFile.lessonPath;
+        taskNumber = byFile.taskNumber;
+      } else {
+        const byCode =
+          src.match(/lessonPath="([^"]+)"/) ||
+          src.match(/navigate\('([^']*\/lesson-\d+)'\)/);
+        const taskByCode2 = src.match(/taskNumber=\{(\d+)\}/);
+        if (byCode) lessonPath = byCode[1];
+        if (taskByCode2) taskNumber = Number(taskByCode2[1]);
+      }
     }
 
     lessons.push({

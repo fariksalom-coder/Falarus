@@ -22,6 +22,12 @@ type Inventory = {
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
+function argValue(prefix: string): string | null {
+  const raw = process.argv.find((a) => a.startsWith(prefix));
+  if (!raw) return null;
+  return raw.slice(prefix.length) || null;
+}
+
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing env ${name}`);
@@ -44,10 +50,23 @@ async function main() {
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
       });
 
+  const lessonPathFilter = argValue('--lesson=');
+  const taskFilterRaw = argValue('--task=');
+  const taskNumberFilter = taskFilterRaw != null ? Number(taskFilterRaw) : null;
+  if (taskFilterRaw != null && !Number.isFinite(taskNumberFilter!)) {
+    throw new Error('Invalid --task= (number)');
+  }
+
+  const filteredLessons = inventory.lessons.filter((g) => {
+    if (lessonPathFilter && g.lessonPath !== lessonPathFilter) return false;
+    if (taskNumberFilter != null && g.taskNumber !== taskNumberFilter) return false;
+    return true;
+  });
+
   let lessonCount = 0;
   let questionCount = 0;
   const blockOffsets = new Map<string, number>();
-  for (const group of inventory.lessons) {
+  for (const group of filteredLessons) {
     const lessonId = lessonIdFromPath(group.lessonPath);
     if (!lessonId) continue;
     const meta = LESSONS.find((l) => l.id === lessonId);

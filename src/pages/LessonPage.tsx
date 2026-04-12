@@ -3,14 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ChevronLeft, 
-  CheckCircle2, 
-  XCircle, 
-  ArrowRight,
-  Volume2,
-  Lightbulb
-} from 'lucide-react';
+import { ChevronLeft, CheckCircle2, XCircle, ArrowRight, Volume2 } from 'lucide-react';
+import { LessonTheoryCollapsible } from '../components/lesson/LessonTheoryCollapsible';
+import { LESSONS_LIST_PATH } from '../constants/lessonRoutes';
 
 export default function LessonPage() {
   const { id } = useParams();
@@ -108,21 +103,23 @@ export default function LessonPage() {
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Tabriklaymiz!</h2>
           <p className="text-slate-600 mb-8">Siz ushbu darsni muvaffaqiyatli yakunladingiz.</p>
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => navigate(LESSONS_LIST_PATH)}
             className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-colors"
           >
-            Dashboardga qaytish
+            Darslarga qaytish
           </button>
         </motion.div>
       </div>
     );
   }
 
+  const contentUz = String(lesson.content_uz ?? '');
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4">
-        <button onClick={() => navigate('/')} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+        <button onClick={() => navigate(LESSONS_LIST_PATH)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
           <ChevronLeft className="w-6 h-6 text-slate-600" />
         </button>
         <div className="flex-1">
@@ -146,20 +143,24 @@ export default function LessonPage() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-6"
             >
-              <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-                <div className="flex items-center gap-2 text-indigo-600 mb-4">
-                  <Lightbulb className="w-5 h-5" />
-                  <span className="text-sm font-bold uppercase tracking-wider">Tushuntirish</span>
-                </div>
-                <p className="text-lg text-slate-800 leading-relaxed mb-8">{lesson.content_uz}</p>
-                
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                  <div className="flex items-center gap-2 text-slate-500 mb-3">
-                    <Volume2 className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase">Misol</span>
-                  </div>
-                  <p className="text-2xl font-bold text-slate-900 italic">"{lesson.content_ru}"</p>
-                </div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                <LessonTheoryCollapsible
+                  key={String(id)}
+                  bodyClassName="mt-4 text-lg leading-relaxed text-slate-800"
+                  example={
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6">
+                      <div className="mb-3 flex items-center gap-2 text-slate-500">
+                        <Volume2 className="h-4 w-4" aria-hidden />
+                        <span className="text-xs font-bold uppercase">Misol</span>
+                      </div>
+                      <p className="text-xl font-bold italic text-slate-900 sm:text-2xl">
+                        &ldquo;{lesson.content_ru}&rdquo;
+                      </p>
+                    </div>
+                  }
+                >
+                  <p>{contentUz}</p>
+                </LessonTheoryCollapsible>
               </div>
               
               {lesson.exercises && lesson.exercises.length > 0 ? (
@@ -267,7 +268,7 @@ export default function LessonPage() {
           ) : (
             <div className="text-center py-10">
               <p className="text-slate-500">Mashqlar yuklanmadi.</p>
-              <button onClick={() => navigate('/')} className="mt-4 text-indigo-600 font-bold">Orqaga qaytish</button>
+              <button onClick={() => navigate(LESSONS_LIST_PATH)} className="mt-4 text-indigo-600 font-bold">Orqaga qaytish</button>
             </div>
           )}
         </AnimatePresence>

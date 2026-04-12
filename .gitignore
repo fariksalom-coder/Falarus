@@ -15,3 +15,8 @@ public/courses/patent/media/
 public/courses/vnzh/source/
 public/courses/**/*.bak
 .vercel
+
+# One-off: содержит email и данные конкретного пользователя — не в репозиторий
+scripts/oneoff/fariksalom_full_progress.sql
+scripts/oneoff/rollback_fariksalom_full_progress.sql
+scripts/oneoff/generate_fariksalom_full_progress.ts

@@ -1,24 +1,22 @@
 import { useNavigate } from 'react-router-dom';
-import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+import { LessonHubLayout } from '../components/lesson/LessonHubLayout';
+import { LessonHubTitle } from '../components/lesson/LessonHubTitle';
+import { VazifaHubTaskGrid } from '../components/lesson/LessonHubTaskGrids';
+import { LessonTheoryCollapsible } from '../components/lesson/LessonTheoryCollapsible';
+import { LESSONS_LIST_PATH } from '../constants/lessonRoutes';
+import { LESSON_9_VAZIFALARI } from '../data/lessonNineTasks';
+
+const LESSON_PATH = '/lesson-9';
 
 export default function LessonNinePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="max-w-5xl mx-auto p-6">
-        <div className="bg-white rounded-2xl border-2 border-slate-100 p-5">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="mb-4 inline-flex items-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-          >
-            Orqaga
-          </button>
+    <LessonHubLayout onBack={() => navigate(LESSONS_LIST_PATH)}>
+      <LessonHubTitle lessonPath={LESSON_PATH} />
+      <div className="space-y-4">
+        <LessonTheoryCollapsible>
 
-          <h1 className="text-xl font-bold text-slate-900 mb-4">7-dars — Sifat so‘z turkumi (Имя прилагательное)</h1>
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4 text-sm text-slate-800 leading-relaxed">
             <p>
               Sifatlar rus tilida <span className="font-semibold">Какой? Какая? Какое? Какие?</span> savollariga javob beradi.
               Sifat otning sifati va belgisini bildiradi, va otning rodi hamda soniga moslashadi.
@@ -69,17 +67,11 @@ export default function LessonNinePage() {
                 <p>интересный — скучный</p>
               </div>
             </div>
-          </div>
+          
+        </LessonTheoryCollapsible>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-9/mustahkamlash')}
-            className={getTaskButtonClassName('/lesson-9', 1, true)}
-          >
-            Topshiriq
-          </button>
-        </div>
-      </main>
-    </div>
+        <VazifaHubTaskGrid lessonPath={LESSON_PATH} vazifalari={LESSON_9_VAZIFALARI} sequentialLock />
+      </div>
+    </LessonHubLayout>
   );
 }

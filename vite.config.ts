@@ -57,7 +57,7 @@ export default defineConfig(({mode}) => {
               id.includes('/src/pages/LessonTwentyTwo') ||
               id.includes('/src/pages/LessonTwentyThree') ||
               id.includes('/src/pages/LessonTwentyFour') ||
-              id.includes('/src/pages/UnifiedLesson')
+              id.includes('/src/pages/GrammarLessonTaskPage')
             ) {
               return 'lessons-late';
             }

@@ -38,6 +38,7 @@ import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
+import { buildGrammarCatalogPayload } from './api/_lib/grammarCatalogHandler.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -934,6 +935,65 @@ async function startServer() {
       Number(req.userId)
     );
     res.json({ success: true, progress });
+  });
+
+  app.get('/api/lessons/path/:encodedPath/tasks/:taskNumber', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+    let lessonPath = '';
+    try {
+      lessonPath = decodeURIComponent(String(req.params.encodedPath));
+    } catch {
+      return res.status(400).json({ error: 'lessonPath noto‘g‘ri' });
+    }
+    const taskNumber = Number(req.params.taskNumber);
+    const lessonIdMatch = lessonPath.match(/\/lesson-(\d+)/);
+    const lessonId = lessonIdMatch ? Number(lessonIdMatch[1]) : null;
+    if (!lessonId || !Number.isFinite(taskNumber) || taskNumber <= 0) {
+      return res.status(400).json({ error: 'lessonPath yoki taskNumber noto‘g‘ri' });
+    }
+    const access = await getAccessForRequest(supabase, userId);
+    if (!accessControlService.canAccessLesson(lessonId, access)) {
+      return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
+    }
+    const start = taskNumber * 1000;
+    const end = start + 999;
+    const { data, error } = await supabase
+      .from('questions')
+      .select('id,type,prompt,order_index,version,difficulty,skill,meta,question_content(content,answer)')
+      .eq('lesson_id', lessonId)
+      .eq('is_active', true)
+      .gte('order_index', start)
+      .lte('order_index', end)
+      .order('order_index', { ascending: true });
+    if (error) {
+      console.error('[lessons/path/tasks]', error.message);
+      return res.status(500).json({ error: 'Savollar yuklanmadi' });
+    }
+    const items = (data ?? []).map((q: any) => {
+      const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+      return {
+        id: q.id,
+        type: q.type,
+        prompt: q.prompt,
+        order_index: q.order_index,
+        version: q.version ?? 1,
+        difficulty: q.difficulty ?? 1,
+        skill: q.skill ?? 'grammar',
+        meta: q.meta ?? {},
+        content: payload.content ?? {},
+        answer: payload.answer ?? {},
+      };
+    });
+    res.json(items);
+  });
+
+  app.get('/api/grammar/catalog', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+    const result = await buildGrammarCatalogPayload(supabase, userId);
+    if (result.ok === false) return res.status(500).json({ error: result.error });
+    res.json(result.payload);
   });
 
   // Vocabulary

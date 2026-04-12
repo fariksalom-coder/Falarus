@@ -2,10 +2,12 @@ import { Router } from 'express';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { adminAuthMiddleware } from '../middleware/adminAuth';
 import { createAdminController } from '../controllers/adminController';
+import { createAdminGrammarController } from '../controllers/adminGrammarController';
 
 export function createAdminRoutes(supabase: SupabaseClient): Router {
   const router = Router();
   const ctrl = createAdminController(supabase);
+  const grammar = createAdminGrammarController(supabase);
 
   router.post('/login', (req, res, next) => ctrl.login(req, res).catch(next));
 
@@ -33,6 +35,12 @@ export function createAdminRoutes(supabase: SupabaseClient): Router {
   router.get('/tariff-prices', (req, res, next) => ctrl.getTariffPrices(req, res).catch(next));
   router.put('/tariff-prices', (req, res, next) => ctrl.updateTariffPrice(req, res).catch(next));
   router.put('/tariff-prices/bulk', (req, res, next) => ctrl.bulkUpdateTariffPrices(req, res).catch(next));
+
+  router.get('/grammar/lessons', (req, res, next) => grammar.listLessons(req, res).catch(next));
+  router.get('/grammar/lessons/:lessonId/questions', (req, res, next) => grammar.listQuestions(req, res).catch(next));
+  router.post('/grammar/lessons/:lessonId/questions', (req, res, next) => grammar.createQuestion(req, res).catch(next));
+  router.get('/grammar/questions/:questionId', (req, res, next) => grammar.getQuestion(req, res).catch(next));
+  router.put('/grammar/questions/:questionId', (req, res, next) => grammar.updateQuestion(req, res).catch(next));
 
   return router;
 }

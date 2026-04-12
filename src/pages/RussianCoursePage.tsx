@@ -45,7 +45,7 @@ export default function RussianCoursePage() {
         </button>
 
         <h1 className="mb-5 text-[24px] font-bold sm:text-[28px]" style={{ color: TEXT }}>
-          Ruscha tili
+          Rus tili
         </h1>
 
         <div className="space-y-4">

@@ -25,8 +25,8 @@ const COURSES = [
   {
     id: 'patent',
     href: '/kurslar/patent',
-    title: 'Экзамен на патент',
-    subtitle: 'Подготовительный курс к экзамену на патент',
+    title: 'Patent imtihoni',
+    subtitle: 'Patent imtihoniga tayyorlov kursi',
     accent: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
     borderColor: '#DDD6FE',
     imageSrc: '/courses/course-patent-badge.svg',
@@ -36,8 +36,8 @@ const COURSES = [
   {
     id: 'vnzh',
     href: '/kurslar/vnzh',
-    title: 'Экзамен на ВНЖ',
-    subtitle: 'Подготовительный курс к экзамену на ВНЖ',
+    title: 'ВНЖ imtihoni',
+    subtitle: 'ВНЖ imtihoniga tayyorlov kursi',
     accent: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
     borderColor: '#A7F3D0',
     imageSrc: '/courses/course-vnzh-badge.svg',

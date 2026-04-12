@@ -16,6 +16,7 @@ import {
   parseBody,
 } from './_lib/request.js';
 import { routeLessonsRequest } from './_lib/lessons.js';
+import { handleGrammarCatalog } from './_lib/grammarCatalogHandler.js';
 import { routeUserRequest } from './_lib/user.js';
 import { routeVocabularyRequest } from './_lib/vocabulary.js';
 import {
@@ -277,6 +278,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('[POST /api/payments]', message);
       return res.status(500).json({ error: message });
     }
+  }
+
+  if (path[0] === 'grammar' && path[1] === 'catalog' && path.length === 2) {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+    return handleGrammarCatalog(userId, res);
   }
 
   if (path[0] === 'lessons') {

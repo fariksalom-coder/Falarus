@@ -1,4 +1,5 @@
 import { saveLessonTaskResult } from '../api/lessonTaskResults';
+import { getExpectedLessonTaskCount } from '../data/unifiedLessonVazifaRegistry';
 
 const STORAGE_KEY = 'lessonTaskResults';
 const AUTH_TOKEN_STORAGE_KEY = 'token';
@@ -61,13 +62,21 @@ export function mergeLessonTaskResultsFromServer(items: LessonTaskResultSnapshot
   save(data);
 }
 
+function isResultAlignedWithCurrentVazifa(lessonPath: string, taskNumber: number, result: TaskResult): boolean {
+  const expected = getExpectedLessonTaskCount(lessonPath, taskNumber);
+  if (expected == null) return true;
+  return result.total === expected;
+}
+
 /** Get result for one task. Returns null if not completed. */
 export function getLessonTaskResult(lessonPath: string, taskNumber: number): TaskResult | null {
   const data = load();
   const lesson = data[lessonPath];
   if (!lesson) return null;
   const result = lesson[String(taskNumber)];
-  return result ?? null;
+  if (!result) return null;
+  if (!isResultAlignedWithCurrentVazifa(lessonPath, taskNumber, result)) return null;
+  return result;
 }
 
 /** Get all task results for a lesson. Keys are task numbers (1-based). */
@@ -79,6 +88,7 @@ export function getLessonTaskResults(lessonPath: string): Record<number, TaskRes
   for (const [key, value] of Object.entries(lesson)) {
     const num = parseInt(key, 10);
     if (!Number.isNaN(num) && value && typeof value.correct === 'number' && typeof value.total === 'number') {
+      if (!isResultAlignedWithCurrentVazifa(lessonPath, num, value)) continue;
       out[num] = { correct: value.correct, total: value.total };
     }
   }

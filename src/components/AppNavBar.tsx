@@ -3,11 +3,6 @@ import { House, BookMarked, BarChart3, User } from 'lucide-react';
 import { prefetchRoutePath } from '../routeModules';
 
 const BORDER = '#E2E8F0';
-const TEXT_SECONDARY = '#64748B';
-const PRIMARY = '#2563EB';
-const ACTIVE_BG = 'linear-gradient(180deg, #3B82F6 0%, #2563EB 100%)';
-const ACTIVE_BORDER = 'rgba(255,255,255,0.2)';
-const ACTIVE_SHADOW = '0 10px 22px rgba(37,99,235,0.18), inset 0 1px 0 rgba(255,255,255,0.22)';
 
 export default function AppNavBar() {
   const navigate = useNavigate();
@@ -27,16 +22,17 @@ export default function AppNavBar() {
         onMouseEnter={() => prefetchRoutePath(to)}
         onTouchStart={() => prefetchRoutePath(to)}
         onFocus={() => prefetchRoutePath(to)}
-        className="flex min-w-[60px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-200"
-        style={{
-          background: active ? ACTIVE_BG : 'transparent',
-          color: active ? '#fff' : TEXT_SECONDARY,
-          border: active ? `1px solid ${ACTIVE_BORDER}` : '1px solid transparent',
-          boxShadow: active ? ACTIVE_SHADOW : 'none',
-        }}
+        className="flex min-h-[44px] min-w-[60px] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-colors duration-200"
       >
-        <Icon className="h-5 w-5 shrink-0" />
-        <span className="text-[10px] font-semibold leading-none sm:text-[11px]">{label}</span>
+        <Icon
+          className={`h-5 w-5 shrink-0 ${active ? 'text-blue-600' : 'text-slate-500'}`}
+          aria-hidden
+        />
+        <span
+          className={`text-[10px] leading-none sm:text-[11px] ${active ? 'font-bold text-slate-900' : 'font-medium text-slate-500'}`}
+        >
+          {label}
+        </span>
       </button>
     );
   };

@@ -35,6 +35,15 @@ export function parseTaskNumberFromPathname(pathname: string): { lessonPath: str
     return { lessonPath, taskNumber: null };
   }
 
+  const vazifaMatch = pathname.match(/\/lesson-(\d+)\/vazifa\/(\d+)(?:\/|$)/);
+  if (vazifaMatch) {
+    const lessonNum = parseInt(vazifaMatch[1], 10);
+    const n = parseInt(vazifaMatch[2], 10);
+    if (lessonNum >= 1 && lessonNum <= 10 && n >= 1 && n <= 10) {
+      return { lessonPath: `/lesson-${lessonNum}`, taskNumber: n };
+    }
+  }
+
   if (pathname.includes('/mustahkamlash') || pathname.includes('/bitta-mashq')) {
     return { lessonPath, taskNumber: 1 };
   }

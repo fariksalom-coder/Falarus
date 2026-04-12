@@ -22,12 +22,12 @@ type CourseProductMeta = {
 
 export const COURSE_PRODUCT_META: Record<CourseProductCode, CourseProductMeta> = {
   patent: {
-    label: 'Экзамен на патент',
-    buyButtonLabel: 'Купить курс',
-    paywallTitle: 'Экзамен на патент',
+    label: 'Patent imtihoni',
+    buyButtonLabel: 'Kursni sotib olish',
+    paywallTitle: 'Patent imtihoni',
     paywallDescription:
-      'Чтобы открыть остальные варианты курса, нужно оплатить курс «Экзамен на патент».',
-    freeDescription: 'Бесплатно открыт только Variant 1.',
+      'Qolgan kurs variantlarini ochish uchun «Patent imtihoni» kursini toʻlash kerak.',
+    freeDescription: 'Faqat Variant 1 bepul ochiq.',
     prices: {
       UZS: 67_500,
       RUB: 450,
@@ -35,12 +35,12 @@ export const COURSE_PRODUCT_META: Record<CourseProductCode, CourseProductMeta> =
     },
   },
   vnzh: {
-    label: 'Экзамен на ВНЖ',
-    buyButtonLabel: 'Купить курс',
-    paywallTitle: 'Экзамен на ВНЖ',
+    label: 'ВНЖ imtihoni',
+    buyButtonLabel: 'Kursni sotib olish',
+    paywallTitle: 'ВНЖ imtihoni',
     paywallDescription:
-      'Чтобы открыть остальные задания курса, нужно оплатить курс «Экзамен на ВНЖ».',
-    freeDescription: 'Бесплатно открыто только задание 4 (Говорение).',
+      'Qolgan topshiriqlarni ochish uchun «ВНЖ imtihoni» kursini toʻlash kerak.',
+    freeDescription: 'Faqat 4-topshiriq (Gapirish) bepul ochiq.',
     prices: {
       UZS: 435_000,
       RUB: 2_900,

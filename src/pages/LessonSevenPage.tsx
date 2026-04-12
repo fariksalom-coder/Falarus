@@ -1,25 +1,23 @@
 import { useNavigate } from 'react-router-dom';
-import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+import { LessonHubLayout } from '../components/lesson/LessonHubLayout';
+import { LessonHubTitle } from '../components/lesson/LessonHubTitle';
+import { VazifaHubTaskGrid } from '../components/lesson/LessonHubTaskGrids';
+import { LessonTheoryCollapsible } from '../components/lesson/LessonTheoryCollapsible';
+import { LESSONS_LIST_PATH } from '../constants/lessonRoutes';
+import { LESSON_7_VAZIFALARI } from '../data/lessonSevenTasks';
+
+const LESSON_PATH = '/lesson-7';
 
 export default function LessonSevenPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="max-w-5xl mx-auto p-6">
-        <div className="bg-white rounded-2xl border-2 border-slate-100 p-5">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="mb-4 inline-flex items-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-          >
-            Orqaga
-          </button>
+    <LessonHubLayout onBack={() => navigate(LESSONS_LIST_PATH)}>
+      <LessonHubTitle lessonPath={LESSON_PATH} />
+      <p className="mb-4 text-center text-sm text-slate-600">Tushuntirish — o‘zbek tilida, misollar — rus tilida.</p>
+      <div className="space-y-4">
+        <LessonTheoryCollapsible>
 
-          <h1 className="text-xl font-bold text-slate-900 mb-2">8-dars — Ko‘plik shakli (Множественное число)</h1>
-          <p className="text-sm text-slate-600 mb-4">Tushuntirish — o‘zbek tilida, misollar — rus tilida.</p>
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 space-y-4 leading-relaxed">
             <p>
               Rus tilida otlarning <span className="font-semibold">ko‘plik shakli</span> (множественное число) bor.
               Bir dona — единственное число, ko‘p dona — множественное число.
@@ -85,17 +83,11 @@ export default function LessonSevenPage() {
               <p className="font-semibold">Faqat ko‘plikda ishlatiladigan so‘zlar:</p>
               <p className="mt-1">родители, часы, очки, деньги, брюки, джинсы</p>
             </div>
-          </div>
+          
+        </LessonTheoryCollapsible>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-7/mustahkamlash')}
-            className={getTaskButtonClassName('/lesson-7', 1, true)}
-          >
-            Topshiriq
-          </button>
-        </div>
-      </main>
-    </div>
+        <VazifaHubTaskGrid lessonPath={LESSON_PATH} vazifalari={LESSON_7_VAZIFALARI} sequentialLock />
+      </div>
+    </LessonHubLayout>
   );
 }

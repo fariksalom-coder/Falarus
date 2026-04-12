@@ -81,12 +81,12 @@ export default function VnzhCoursePage() {
           <div className="flex items-start gap-4">
             <img
               src={courseAssetUrl('/courses/course-vnzh-badge.svg')}
-              alt="Экзамен на ВНЖ"
+              alt="ВНЖ imtihoni"
               className="h-16 w-16 shrink-0 rounded-full object-cover shadow-[0_14px_28px_rgba(37,99,235,0.18)]"
             />
             <div className="min-w-0">
               <h1 className="text-[24px] font-bold sm:text-[28px]" style={{ color: TEXT }}>
-                Экзамен на ВНЖ
+                ВНЖ imtihoni
               </h1>
             </div>
           </div>
@@ -100,7 +100,7 @@ export default function VnzhCoursePage() {
               onClick={() => setCurrencyModalOpen(true)}
               className="mt-4 inline-flex w-full items-center justify-center rounded-[18px] bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_14px_28px_rgba(37,99,235,0.2)] transition hover:-translate-y-0.5 sm:w-auto"
             >
-              Купить за {vnzhMeta.prices.RUB} ₽
+              Sotib olish: {vnzhMeta.prices.RUB} ₽
             </button>
           </section>
         ) : null}

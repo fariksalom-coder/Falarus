@@ -110,7 +110,7 @@ export default function VnzhCourseSectionPage() {
               onClick={() => setCurrencyModalOpen(true)}
               className="mt-4 inline-flex w-full items-center justify-center rounded-[18px] bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_14px_28px_rgba(37,99,235,0.2)] transition hover:-translate-y-0.5 sm:w-auto"
             >
-              Купить за {vnzhMeta.prices.RUB} ₽
+              Sotib olish: {vnzhMeta.prices.RUB} ₽
             </button>
           </section>
         ) : null}

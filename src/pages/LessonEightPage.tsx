@@ -1,40 +1,32 @@
 import { useNavigate } from 'react-router-dom';
-import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+import { LessonHubLayout } from '../components/lesson/LessonHubLayout';
+import { LessonHubTitle } from '../components/lesson/LessonHubTitle';
+import { VazifaHubTaskGrid } from '../components/lesson/LessonHubTaskGrids';
+import { LessonTheoryCollapsible } from '../components/lesson/LessonTheoryCollapsible';
+import { LESSONS_LIST_PATH } from '../constants/lessonRoutes';
+import { LESSON_8_VAZIFALARI } from '../data/lessonEightTasks';
+
+const LESSON_PATH = '/lesson-8';
 
 export default function LessonEightPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-2xl border-2 border-slate-100 p-5">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="mb-4 inline-flex items-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-          >
-            Orqaga
-          </button>
+    <LessonHubLayout onBack={() => navigate(LESSONS_LIST_PATH)}>
+      <LessonHubTitle lessonPath={LESSON_PATH} />
+      <div className="space-y-4">
+        <LessonTheoryCollapsible>
 
-          <h1 className="text-xl font-bold text-slate-900 mb-4">9-dars — Takrorlash</h1>
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 leading-relaxed space-y-2">
             <p>Bu dars umumiy takrorlash uchun.</p>
             <p>Ichida 3 ta blok bor:</p>
             <p>1) Test (10 ta)</p>
             <p>2) Gapni tuzing (10 ta)</p>
             <p>3) Juftini toping (10 ta)</p>
-          </div>
+          
+        </LessonTheoryCollapsible>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-8/mustahkamlash')}
-            className={getTaskButtonClassName('/lesson-8', 1, true)}
-          >
-            Topshiriq
-          </button>
-        </div>
-      </main>
-    </div>
+        <VazifaHubTaskGrid lessonPath={LESSON_PATH} vazifalari={LESSON_8_VAZIFALARI} sequentialLock />
+      </div>
+    </LessonHubLayout>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Lock, Check, Play } from 'lucide-react';
+import { ArrowLeft, Check, Lock, Play } from 'lucide-react';
 import { LESSONS } from '../data/lessonsList';
 import {
   getLessonAveragePercentFromResults,
@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSequentialLesson } from '../context/SequentialLessonContext';
 import { useLessonsSubscriptionLock } from '../hooks/useLessonsSubscriptionLock';
 import { useAccess } from '../context/AccessContext';
+import { useGrammarCatalog } from '../context/GrammarCatalogContext';
 import PaywallModal from '../components/PaywallModal';
 import PendingPaymentModal from '../components/PendingPaymentModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -23,6 +24,17 @@ const TEXT = '#0F172A';
 const TEXT_SECONDARY = '#64748B';
 
 type LessonCardState = 'completed' | 'current' | 'locked';
+
+type DashboardLessonRow = {
+  id: number;
+  num: number;
+  path: string;
+  title: string;
+  titleUz: string;
+  titleRu: string;
+  exercisesTotal: number;
+  lockedFromCatalog?: boolean;
+};
 
 function getCardStateStyles(state: LessonCardState) {
   if (state === 'completed') {
@@ -63,14 +75,39 @@ export default function Dashboard() {
   const { access } = useAccess();
   const { lessonStates, results, isReady: seqReady } = useSequentialLesson();
   const { isLessonLockedBySubscription, loaded: subLoaded } = useLessonsSubscriptionLock();
+  const { lessons: catalogLessons, loading: catalogLoading } = useGrammarCatalog();
   const [modalOpen, setModalOpen] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
 
-  const dataReady = !token || (seqReady && subLoaded);
+  const catalogReady = !token || !catalogLoading;
+  const dataReady = !token || (seqReady && subLoaded && catalogReady);
 
-  const handleLessonClick = (lesson: (typeof LESSONS)[number]) => {
+  const displayLessons: DashboardLessonRow[] =
+    token && catalogLessons
+      ? catalogLessons.map((l) => ({
+          id: l.id,
+          num: l.id,
+          path: l.path,
+          title: l.title,
+          titleUz: l.titleUz,
+          titleRu: l.titleRu,
+          exercisesTotal: l.exercisesTotal,
+          lockedFromCatalog: l.locked,
+        }))
+      : LESSONS.map((l) => ({
+          id: l.id,
+          num: l.num,
+          path: l.path,
+          title: l.title,
+          titleUz: l.titleUz ?? l.title,
+          titleRu: l.titleRu ?? l.title,
+          exercisesTotal: l.exercisesTotal,
+        }));
+
+  const handleLessonClick = (lesson: DashboardLessonRow) => {
     const seq = lessonStates.find((s) => s.lessonPath === lesson.path);
-    const lockedBySub = isLessonLockedBySubscription(lesson.id);
+    const lockedBySub =
+      lesson.lockedFromCatalog !== undefined ? lesson.lockedFromCatalog : isLessonLockedBySubscription(lesson.id);
     const lockedBySeq = seq != null && !seq.isUnlocked;
 
     if (lockedBySub) {
@@ -93,6 +130,14 @@ export default function Dashboard() {
     >
       <main className="mx-auto max-w-4xl px-4 py-6 sm:px-5 sm:py-8">
         <div className="mb-6 sm:mb-8">
+          <button
+            type="button"
+            onClick={() => navigate('/russian')}
+            className="mb-4 flex min-h-[44px] items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 sm:mb-5"
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+            Orqaga
+          </button>
           <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem]" style={{ color: TEXT }}>
             Darslar
           </h1>
@@ -108,9 +153,12 @@ export default function Dashboard() {
         )}
         {(!token || dataReady) && (
           <div className="space-y-3.5 sm:space-y-4">
-            {LESSONS.map((lesson) => {
+            {displayLessons.map((lesson) => {
               const seq = lessonStates.find((s) => s.lessonPath === lesson.path);
-              const lockedBySub = isLessonLockedBySubscription(lesson.id);
+              const lockedBySub =
+                lesson.lockedFromCatalog !== undefined
+                  ? lesson.lockedFromCatalog
+                  : isLessonLockedBySubscription(lesson.id);
               const lockedBySeq = seq != null && !seq.isUnlocked;
               const isLocked = lockedBySub || lockedBySeq;
               const lessonResults = results[lesson.path] ?? {};

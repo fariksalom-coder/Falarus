@@ -1,24 +1,23 @@
 import { useNavigate } from 'react-router-dom';
-import { getTaskButtonClassName } from '../utils/lessonTaskResults';
+import { LessonHubLayout } from '../components/lesson/LessonHubLayout';
+import { LessonHubTitle } from '../components/lesson/LessonHubTitle';
+import { ExtendedHubTaskGrid } from '../components/lesson/LessonHubTaskGrids';
+import { LessonTheoryCollapsible } from '../components/lesson/LessonTheoryCollapsible';
+import { LESSONS_LIST_PATH } from '../constants/lessonRoutes';
+
+const LESSON_PATH = '/lesson-12';
+
+const HUB_ROUTES = [{ path: '/lesson-12/topshiriq-1', taskNum: 1 }];
 
 export default function LessonTwelvePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="max-w-5xl mx-auto p-6">
-        <div className="bg-white rounded-2xl border-2 border-slate-100 p-5">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="mb-4 inline-flex items-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
-          >
-            Orqaga
-          </button>
+    <LessonHubLayout onBack={() => navigate(LESSONS_LIST_PATH)}>
+      <LessonHubTitle lessonPath={LESSON_PATH} />
+      <div className="space-y-4">
+        <LessonTheoryCollapsible>
 
-          <h1 className="text-xl font-bold text-slate-900 mb-4">12-dars — -ова-, -ева- fe’llari (hozirgi zamon)</h1>
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4 text-sm text-slate-800 leading-relaxed">
             <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 space-y-2">
               <p className="font-semibold text-sky-900">Qoida</p>
               <p>
@@ -60,17 +59,11 @@ export default function LessonTwelvePage() {
               <p>Вы: -ете</p>
               <p>Они: -ют / -ут</p>
             </div>
-          </div>
+          
+        </LessonTheoryCollapsible>
 
-          <button
-            type="button"
-            onClick={() => navigate('/lesson-12/topshiriq-1')}
-            className={getTaskButtonClassName('/lesson-12', 1, true)}
-          >
-            Topshiriq 1
-          </button>
-        </div>
-      </main>
-    </div>
+        <ExtendedHubTaskGrid lessonPath={LESSON_PATH} hubRoutes={HUB_ROUTES} sequentialLock />
+      </div>
+    </LessonHubLayout>
   );
 }
