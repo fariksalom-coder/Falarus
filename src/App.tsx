@@ -62,7 +62,6 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/auth" replace />} />
         </>
       ) : (
-        <GrammarCatalogProvider>
         <>
           <Route path="/" element={<MainLayout />}>
             <Route index element={renderLazyPage('./pages/HomePage.tsx')} />
@@ -154,7 +153,6 @@ function AppRoutes() {
           <Route path="/lesson/:id" element={renderLazyPage('./pages/LessonPage.tsx')} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </>
-        </GrammarCatalogProvider>
       )}
     </Routes>
   );
@@ -166,7 +164,9 @@ export default function App() {
       <Router>
         <AccessProvider>
           <SequentialLessonProvider>
-            <AppRoutes />
+            <GrammarCatalogProvider>
+              <AppRoutes />
+            </GrammarCatalogProvider>
             <SequentialAccessEnforcer />
           </SequentialLessonProvider>
         </AccessProvider>
