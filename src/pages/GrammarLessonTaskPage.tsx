@@ -48,18 +48,20 @@ function buildMatchCards(pairs: { left: string; right: string }[]) {
 function normalizeQuestions(rows: ApiQuestion[]): NormTask[] {
   const out: NormTask[] = [];
   for (const q of rows) {
-    if (q.type === 'choice' || q.type === 'fill') {
+    const t = String(q.type ?? '').trim().toLowerCase();
+    let added = false;
+
+    if (t === 'choice' || t === 'fill') {
       const p = parseChoicePayload(q.content, q.answer);
       if (p) {
         out.push({
-          kind: q.type === 'fill' ? 'fill' : 'choice',
+          kind: t === 'fill' ? 'fill' : 'choice',
           prompt: q.prompt || '',
           ...p,
         });
+        added = true;
       }
-      continue;
-    }
-    if (q.type === 'reorder') {
+    } else if (t === 'reorder') {
       const p = parseChoicePayload(q.content, q.answer);
       if (p) {
         out.push({
@@ -68,17 +70,35 @@ function normalizeQuestions(rows: ApiQuestion[]): NormTask[] {
           words: p.options,
           correct: p.correct,
         });
+        added = true;
       }
-      continue;
-    }
-    if (q.type === 'matching') {
+    } else if (t === 'matching') {
       const p = parseMatchingPayload(q.content, q.answer);
-      if (p) out.push({ kind: 'matching', prompt: q.prompt || '', ...p });
-      continue;
-    }
-    if (q.type === 'sentence') {
+      if (p) {
+        out.push({ kind: 'matching', prompt: q.prompt || '', ...p });
+        added = true;
+      }
+    } else if (t === 'sentence') {
       const p = parseSentencePayload(q.content, q.answer);
-      if (p) out.push({ kind: 'sentence', prompt: q.prompt || '', ...p });
+      if (p) {
+        out.push({ kind: 'sentence', prompt: q.prompt || '', ...p });
+        added = true;
+      }
+    }
+
+    if (!added) {
+      const pc = parseChoicePayload(q.content, q.answer);
+      if (pc) {
+        out.push({ kind: 'choice', prompt: q.prompt || '', ...pc });
+        continue;
+      }
+      const pm = parseMatchingPayload(q.content, q.answer);
+      if (pm) {
+        out.push({ kind: 'matching', prompt: q.prompt || '', ...pm });
+        continue;
+      }
+      const ps = parseSentencePayload(q.content, q.answer);
+      if (ps) out.push({ kind: 'sentence', prompt: q.prompt || '', ...ps });
     }
   }
   return out;

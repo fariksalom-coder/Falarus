@@ -39,6 +39,7 @@ import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
 import { buildGrammarCatalogPayload } from './api/_lib/grammarCatalogHandler.ts';
+import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -924,7 +925,7 @@ async function startServer() {
       return res.status(500).json({ error: 'Savollar yuklanmadi' });
     }
     const items = (data ?? []).map((q: any) => {
-      const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+      const payload = payloadFromQuestionContentEmbed(q.question_content);
       return {
         id: q.id,
         type: q.type,
@@ -969,7 +970,7 @@ async function startServer() {
       return res.status(500).json({ error: 'Savollar yuklanmadi' });
     }
     const items = (data ?? []).map((q: any) => {
-      const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+      const payload = payloadFromQuestionContentEmbed(q.question_content);
       return {
         id: q.id,
         type: q.type,
@@ -1060,7 +1061,7 @@ async function startServer() {
       return res.status(500).json({ error: 'Savollar yuklanmadi' });
     }
     const items = (data ?? []).map((q: any) => {
-      const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+      const payload = payloadFromQuestionContentEmbed(q.question_content);
       return {
         id: q.id,
         type: q.type,

@@ -27,6 +27,7 @@ import {
   syncUserLessonProgressPercent,
 } from './lessonProgress.js';
 import { buildRequestLogContext, logError } from './logger.js';
+import { payloadFromQuestionContentEmbed } from '../../shared/questionContentPayload.js';
 
 type CourseLessonExercise = {
   type: string;
@@ -50,7 +51,7 @@ type DbQuestionRow = {
   difficulty?: number;
   skill?: string;
   meta?: Record<string, unknown>;
-  question_content: { content: Record<string, unknown>; answer: Record<string, unknown> }[] | null;
+  question_content: unknown;
 };
 
 const courseLessonsCatalog: CourseLessonDetail[] = courseData.flatMap((level) =>
@@ -135,7 +136,7 @@ async function handleLessonQuestions(
   if (error) return res.status(500).json({ error: 'Savollar yuklanmadi' });
 
   const items = ((data as unknown as DbQuestionRow[] | null) ?? []).map((q) => {
-    const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+    const payload = payloadFromQuestionContentEmbed(q.question_content);
     return {
       id: q.id,
       type: q.type,
@@ -184,7 +185,7 @@ async function handleLessonTaskQuestionsByPath(
   }
 
   const items = ((data as unknown as DbQuestionRow[] | null) ?? []).map((q) => {
-    const payload = q.question_content?.[0] ?? { content: {}, answer: {} };
+    const payload = payloadFromQuestionContentEmbed(q.question_content);
     return {
       id: q.id,
       type: q.type,
