@@ -352,7 +352,7 @@ export default function GrammarLessonTaskPage() {
           Orqaga
         </button>
 
-        <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/80 px-4 py-3">
+        <div className="mt-4 rounded-2xl border border-indigo-100/90 bg-indigo-50/80 px-4 py-3 shadow-[0_6px_22px_rgba(99,102,241,0.1)] max-sm:border-0 max-sm:bg-indigo-50/60 max-sm:shadow-none">
           <p className="text-lg font-bold text-slate-900">Topshiriq {resolved.taskNumber}</p>
         </div>
 
@@ -363,7 +363,7 @@ export default function GrammarLessonTaskPage() {
         )}
 
         {!finished && currentTask && (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="mt-6 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_10px_36px_rgba(15,23,42,0.07)] sm:border-slate-200 sm:p-5 sm:shadow-[0_14px_40px_rgba(148,163,184,0.1)] max-sm:border-0 max-sm:shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
             {currentTask.kind === 'sentence' ? (
               <div className="space-y-1 text-center">
                 <p className="text-sm font-semibold text-slate-600">Gapni tuzing</p>
@@ -407,7 +407,7 @@ export default function GrammarLessonTaskPage() {
                         setStatus(ok ? 'correct' : 'wrong');
                         setMessage(ok ? 'To‘g‘ri!' : `Noto‘g‘ri. To‘g‘ri javob: ${currentTask.correct}`);
                       }}
-                      className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition-all active:scale-[0.98] ${className}`}
+                      className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-all active:scale-[0.98] max-sm:border-slate-200/70 sm:shadow-none ${className}`}
                     >
                       {option}
                     </button>
@@ -435,7 +435,7 @@ export default function GrammarLessonTaskPage() {
                         key={card.id}
                         type="button"
                         onClick={() => handleMatchingClick(card)}
-                        className={`w-full rounded-2xl border px-3 py-3 text-left text-sm font-semibold transition-all ${stateClass}`}
+                        className={`w-full rounded-2xl border px-3 py-3 text-left text-sm font-semibold shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-all sm:shadow-none ${stateClass}`}
                       >
                         {card.text}
                       </button>
@@ -459,7 +459,7 @@ export default function GrammarLessonTaskPage() {
                         key={card.id}
                         type="button"
                         onClick={() => handleMatchingClick(card)}
-                        className={`w-full rounded-2xl border px-3 py-3 text-left text-sm font-semibold transition-all ${stateClass}`}
+                        className={`w-full rounded-2xl border px-3 py-3 text-left text-sm font-semibold shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-all sm:shadow-none ${stateClass}`}
                       >
                         {card.text}
                       </button>
@@ -471,7 +471,7 @@ export default function GrammarLessonTaskPage() {
 
             {isWordBankTask(currentTask) && (
               <div className="mt-5 space-y-4">
-                <div className="min-h-[3rem] rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-center text-lg font-semibold text-slate-900">
+                <div className="min-h-[3rem] rounded-2xl border border-dashed border-slate-300/90 bg-slate-50/90 px-3 py-3 text-center text-lg font-semibold text-slate-900 max-sm:border-slate-300/60 max-sm:bg-slate-50">
                   {sentenceAnswer.length ? sentenceAnswer.join(' ') : '—'}
                 </div>
                 <div
@@ -491,8 +491,8 @@ export default function GrammarLessonTaskPage() {
                       type="button"
                       disabled={item.used}
                       onClick={() => moveWordToAnswer(item, idx)}
-                      className={`flex min-h-11 w-full items-center justify-center break-words rounded-2xl border px-2 py-2.5 text-center text-sm font-semibold leading-snug transition-all active:scale-[0.98] sm:min-h-12 sm:px-3 ${
-                        item.used ? 'cursor-not-allowed opacity-30' : 'border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50'
+                      className={`flex min-h-11 w-full items-center justify-center break-words rounded-2xl border border-indigo-200/70 bg-white px-2 py-2.5 text-center text-sm font-semibold leading-snug shadow-[0_4px_16px_rgba(99,102,241,0.08)] transition-all active:scale-[0.98] sm:min-h-12 sm:border-indigo-200 sm:px-3 sm:shadow-none ${
+                        item.used ? 'cursor-not-allowed opacity-30' : 'text-indigo-700 hover:bg-indigo-50'
                       }`}
                     >
                       {item.word}
