@@ -46,10 +46,13 @@ export async function getLessonTaskQuestions(token: string, lessonPath: string, 
   if (!Number.isFinite(lessonId) || lessonId <= 0) {
     throw new Error('Dars yo‘li noto‘g‘ri');
   }
-  /** Pathda `%2F` bo‘lmasin — Vercel va ba’zi CDNlar 404 beradi. */
-  const res = await fetch(apiUrl(`/api/lessons/${lessonId}/tasks/${taskNumber}`), {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  /** Alohida endpoint — Vercel ba’zan `/api/lessons/path/%2F...` va ichki catch-allda 404 beradi. */
+  const res = await fetch(
+    apiUrl(`/api/lesson-task-questions?lesson_id=${lessonId}&task_number=${taskNumber}`),
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = (body as { error?: string; message?: string })?.error;
