@@ -39,7 +39,7 @@ export function parseTaskNumberFromPathname(pathname: string): { lessonPath: str
   if (vazifaMatch) {
     const lessonNum = parseInt(vazifaMatch[1], 10);
     const n = parseInt(vazifaMatch[2], 10);
-    if (lessonNum >= 1 && lessonNum <= 10 && n >= 1 && n <= 10) {
+    if (lessonNum >= 1 && n >= 1) {
       return { lessonPath: `/lesson-${lessonNum}`, taskNumber: n };
     }
   }
@@ -51,6 +51,14 @@ export function parseTaskNumberFromPathname(pathname: string): { lessonPath: str
   if (lessonPath === '/lesson-11') {
     const t = parseLesson11(pathname);
     return { lessonPath, taskNumber: t };
+  }
+
+  /** 15-dars: `grammarTaskPaths` bilan bir xil — topshiriq-N → vazifa (task) raqami N+1 */
+  if (lessonPath === '/lesson-15') {
+    if (pathname.includes('/mustahkamlash')) return { lessonPath, taskNumber: 1 };
+    const m = pathname.match(/\/topshiriq-(\d+)(?:\/|$)/);
+    if (m) return { lessonPath, taskNumber: parseInt(m[1], 10) + 1 };
+    return { lessonPath, taskNumber: null };
   }
 
   const topshiriq = defaultTopshiriq(pathname);

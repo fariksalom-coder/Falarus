@@ -122,7 +122,7 @@ function AppRoutes() {
           <Route path="/lesson-1/bitta-mashq" element={<Navigate to="/lesson-1/vazifa/1" replace />} />
           <Route path="/lesson-1/mustahkamlash" element={<Navigate to="/lesson-1/vazifa/1" replace />} />
           {/* RR7: `/lesson-:id/vazifa/...` URL bilan `/lesson-1/...` mos kelmaydi; har bir dars uchun aniq yo‘l */}
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+          {Array.from({ length: 24 }, (_, i) => i + 1).map((n) => (
             <Route
               key={`vazifa-${n}`}
               path={`/lesson-${n}/vazifa/:vazifaId`}
