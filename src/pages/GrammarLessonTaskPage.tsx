@@ -15,10 +15,19 @@ import {
 type MatchCard = { id: string; text: string; pairId: number; side: 'left' | 'right' };
 type SentencePoolItem = { id: string; word: string; used: boolean };
 
-type NormChoice = { kind: 'choice'; prompt: string; options: string[]; correct: string };
+/** `fill` / `choice` — bir xil JSON (`options` + `answer.value`); `reorder` ham shu shaklda, lekin so‘z banki bilan tekshiriladi. */
+type NormChoice = { kind: 'choice' | 'fill'; prompt: string; options: string[]; correct: string };
 type NormMatching = { kind: 'matching'; prompt: string; pairs: { left: string; right: string }[] };
-type NormSentence = { kind: 'sentence'; prompt: string; words: string[]; correct: string };
+type NormSentence = { kind: 'sentence' | 'reorder'; prompt: string; words: string[]; correct: string };
 type NormTask = NormChoice | NormMatching | NormSentence;
+
+function isWordBankTask(t: NormTask | undefined): t is NormSentence {
+  return t != null && (t.kind === 'sentence' || t.kind === 'reorder');
+}
+
+function isChoiceLikeTask(t: NormTask | undefined): t is NormChoice {
+  return t != null && (t.kind === 'choice' || t.kind === 'fill');
+}
 
 const shuffle = <T,>(items: T[]): T[] => {
   const arr = [...items];
@@ -39,9 +48,27 @@ function buildMatchCards(pairs: { left: string; right: string }[]) {
 function normalizeQuestions(rows: ApiQuestion[]): NormTask[] {
   const out: NormTask[] = [];
   for (const q of rows) {
-    if (q.type === 'choice') {
+    if (q.type === 'choice' || q.type === 'fill') {
       const p = parseChoicePayload(q.content, q.answer);
-      if (p) out.push({ kind: 'choice', prompt: q.prompt || '', ...p });
+      if (p) {
+        out.push({
+          kind: q.type === 'fill' ? 'fill' : 'choice',
+          prompt: q.prompt || '',
+          ...p,
+        });
+      }
+      continue;
+    }
+    if (q.type === 'reorder') {
+      const p = parseChoicePayload(q.content, q.answer);
+      if (p) {
+        out.push({
+          kind: 'reorder',
+          prompt: q.prompt || '',
+          words: p.options,
+          correct: p.correct,
+        });
+      }
       continue;
     }
     if (q.type === 'matching') {
@@ -108,7 +135,7 @@ export default function GrammarLessonTaskPage() {
           );
         } else {
           setError(
-            "Savollar yuklandi, lekin ularning turi (choice / matching / sentence) yoki JSON tuzilmasi hozirgi topshiriq ekranida qo'llab-quvvatlanmaydi. Admin panelda kontentni tekshiring.",
+            "Savollar yuklandi, lekin ayrimlari `choice`, `fill`, `matching`, `sentence`, `reorder` dan boshqa turda yoki `content`/`answer` JSON noto‘g‘ri. Admin panelda tur va JSONni tekshiring.",
           );
         }
       }
@@ -148,11 +175,11 @@ export default function GrammarLessonTaskPage() {
     if (!currentTask) return;
     setStatus('idle');
     setMessage('');
-    if (currentTask.kind === 'choice') {
+    if (isChoiceLikeTask(currentTask)) {
       setChoiceOptions(shuffle(currentTask.options));
       setSelectedOption('');
     }
-    if (currentTask.kind === 'sentence') {
+    if (isWordBankTask(currentTask)) {
       setSentencePool(
         shuffle(currentTask.words).map((word, idx) => ({
           id: `${idx}-${word}`,
@@ -196,9 +223,10 @@ export default function GrammarLessonTaskPage() {
   };
 
   const handleCheckSentence = () => {
-    if (!currentTask || currentTask.kind !== 'sentence') return;
-    const built = sentenceAnswer.join(' ').trim().toLowerCase();
-    const ok = built === currentTask.correct.trim().toLowerCase();
+    if (!isWordBankTask(currentTask)) return;
+    const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+    const built = norm(sentenceAnswer.join(' '));
+    const ok = built === norm(currentTask.correct);
     setStatus(ok ? 'correct' : 'wrong');
     setMessage(ok ? 'To‘g‘ri!' : 'Xato. Yana urinib ko‘ring.');
   };
@@ -238,7 +266,7 @@ export default function GrammarLessonTaskPage() {
   };
 
   const moveWordToAnswer = (item: SentencePoolItem, idx: number) => {
-    if (!currentTask || currentTask.kind !== 'sentence') return;
+    if (!isWordBankTask(currentTask)) return;
     if (status === 'correct') return;
     if (item.used) return;
     if (status === 'wrong') {
@@ -341,12 +369,20 @@ export default function GrammarLessonTaskPage() {
                   {currentTask.prompt.split(':').slice(1).join(':').trim() || currentTask.prompt}
                 </p>
               </div>
+            ) : currentTask.kind === 'reorder' ? (
+              <div className="space-y-1 text-center">
+                <p className="text-sm font-semibold text-slate-600">So‘zlarni to‘g‘ri tartiblang</p>
+                <p className="text-lg font-bold text-slate-900">{currentTask.prompt}</p>
+              </div>
             ) : (
               <p className="text-base font-semibold text-slate-900">{currentTask.prompt}</p>
             )}
 
-            {currentTask.kind === 'choice' && (
+            {isChoiceLikeTask(currentTask) && (
               <div className="mt-4 space-y-2">
+                {currentTask.kind === 'fill' ? (
+                  <p className="text-sm font-medium text-slate-600">Bo‘shliq uchun to‘g‘ri variantni tanlang</p>
+                ) : null}
                 {choiceOptions.map((option) => {
                   const isSelected = selectedOption === option;
                   const showCorrect = status === 'correct' && isSelected;
@@ -431,7 +467,7 @@ export default function GrammarLessonTaskPage() {
               </div>
             )}
 
-            {currentTask.kind === 'sentence' && (
+            {isWordBankTask(currentTask) && (
               <div className="mt-5 space-y-4">
                 <div className="min-h-[3rem] rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-center text-lg font-semibold text-slate-900">
                   {sentenceAnswer.length ? sentenceAnswer.join(' ') : '—'}

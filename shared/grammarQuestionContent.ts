@@ -90,6 +90,11 @@ export function validateGrammarQuestionPayload(
   if (type === 'sentence') {
     return parseSentencePayload(content, answer) ? null : 'sentence: content.words va answer.value kerak';
   }
+  if (type === 'fill' || type === 'reorder') {
+    return parseChoicePayload(content, answer)
+      ? null
+      : `${type}: content.options va answer.value (yoki correct) kerak`;
+  }
   if (!isRecord(content) || !isRecord(answer)) return `${type}: content va answer obyekt bo‘lishi kerak`;
   return null;
 }
