@@ -3,7 +3,7 @@
    - network-first for JS/CSS so new deployments reflect immediately
    - fallback to cache if network fails
 */
-const CACHE_NAME = 'falarus-pwa-v6';
+const CACHE_NAME = 'falarus-pwa-v7';
 
 const STATIC_ASSETS = [
   '/',
@@ -50,7 +50,9 @@ self.addEventListener('fetch', (event) => {
         .then((res) => {
           if (res && res.ok && res.type === 'basic' && request.method === 'GET') {
             const copy = res.clone();
-            void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            void caches.open(CACHE_NAME).then((cache) =>
+              cache.put(request, copy).catch(() => {})
+            );
           }
           return res;
         })
@@ -71,7 +73,9 @@ self.addEventListener('fetch', (event) => {
         .then((res) => {
           if (res && res.ok && res.type === 'basic' && request.method === 'GET') {
             const clone = res.clone();
-            void caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            void caches.open(CACHE_NAME).then((cache) =>
+              cache.put(request, clone).catch(() => {})
+            );
           }
           return res;
         })
@@ -81,16 +85,19 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(request).then((cached) =>
-      cached
-        ? Promise.resolve(cached)
-        : fetch(request).then((res) => {
-            if (res.ok && res.type === 'basic' && request.method === 'GET') {
-              const clone = res.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-            }
-            return res;
-          })
-    )
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request)
+        .then((res) => {
+          if (res.ok && res.type === 'basic' && request.method === 'GET') {
+            const clone = res.clone();
+            void caches.open(CACHE_NAME).then((cache) =>
+              cache.put(request, clone).catch(() => {})
+            );
+          }
+          return res;
+        })
+        .catch(() => Response.error());
+    })
   );
 });

@@ -102,12 +102,23 @@ export default function GrammarLessonTaskPage() {
       const norm = normalizeQuestions(rows);
       setTasks(norm);
       if (norm.length === 0) {
-        setError(
-          "Bu topshiriq uchun ma'lumotlar bazasida savollar topilmadi. `npm run extract:lesson-tasks && npm run import:lesson-tasks` yoki admin panel orqali kontent qo‘shing.",
-        );
+        if (rows.length === 0) {
+          setError(
+            "Bu topshiriq uchun ma'lumotlar bazasida savollar yo'q. `npm run extract:lesson-tasks && npm run import:lesson-tasks` yoki admin orqali savollarni qo'shing.",
+          );
+        } else {
+          setError(
+            "Savollar yuklandi, lekin ularning turi (choice / matching / sentence) yoki JSON tuzilmasi hozirgi topshiriq ekranida qo'llab-quvvatlanmaydi. Admin panelda kontentni tekshiring.",
+          );
+        }
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Yuklashda xato');
+      const msg = e instanceof Error ? e.message : 'Yuklashda xato';
+      setError(
+        msg === 'Failed to fetch'
+          ? "Serverga ulanib bo'lmadi (tarmoq yoki VPN). Internetni tekshiring yoki sahifani yangilang."
+          : msg,
+      );
       setTasks([]);
     } finally {
       setLoading(false);
