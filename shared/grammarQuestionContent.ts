@@ -33,9 +33,16 @@ export function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
+function stringListFromUnknown(arr: unknown): string[] {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((x) => (typeof x === 'string' ? x : x != null && (typeof x === 'number' || typeof x === 'boolean') ? String(x) : ''))
+    .filter((s) => s.length > 0);
+}
+
 export function parseChoicePayload(content: unknown, answer: unknown): { options: string[]; correct: string } | null {
   if (!isRecord(content) || !isRecord(answer)) return null;
-  const options = Array.isArray(content.options) ? content.options.filter((x): x is string => typeof x === 'string') : [];
+  const options = stringListFromUnknown(content.options);
   const correct =
     typeof answer.value === 'string'
       ? answer.value
@@ -64,17 +71,20 @@ export function parseMatchingPayload(
 
 export function parseSentencePayload(content: unknown, answer: unknown): { words: string[]; correct: string } | null {
   if (!isRecord(content) || !isRecord(answer)) return null;
-  const words = Array.isArray(content.words) ? content.words.filter((x): x is string => typeof x === 'string') : [];
-  const correct = typeof answer.value === 'string' ? answer.value : '';
+  const words = stringListFromUnknown(content.words);
+  const correct =
+    typeof answer.value === 'string'
+      ? answer.value
+      : typeof (answer as { correct?: string }).correct === 'string'
+        ? (answer as { correct: string }).correct
+        : '';
   if (words.length === 0 || !correct) return null;
   return { words, correct };
 }
 
 const SUPPORTED_TYPES = new Set(['choice', 'matching', 'sentence', 'fill', 'reorder']);
 
-/**
- * Admin/import uchun: `fill` va `reorder` hali UI da emas — lekin JSON saqlashga ruxsat.
- */
+/** Admin/import uchun: `fill` / `reorder` JSON shakli `choice` bilan mos. */
 export function validateGrammarQuestionPayload(
   type: string,
   content: unknown,

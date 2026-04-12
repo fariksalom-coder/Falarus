@@ -1,6 +1,12 @@
+/**
+ * `src/pages` dan `TASKS` massivlarini o‘qiydi va `lesson_tasks_inventory.json` ni yangilaydi.
+ * Standart: mavjud inventar bilan **merge** (boshqa guruhlar o‘chmaydi). To‘liq qayta yozish: `tsx ... --fresh`.
+ * `/lesson-1` vazifa 1 har doim `src/data/lessonOneTasks.ts` dan qo‘shiladi.
+ */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
+import { getLessonOneVazifaOneInventoryGroup } from './_lib/lessonOneVazifaOneInventory.js';
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 
@@ -147,9 +153,31 @@ function parseLessonRefFromFile(filePath: string): { lessonPath: string; taskNum
   return null;
 }
 
+function inventoryKey(lessonPath: string, taskNumber: number): string {
+  return `${lessonPath}\0${taskNumber}`;
+}
+
+async function loadExistingInventoryMap(outPath: string): Promise<Map<string, ExtractedLesson>> {
+  const map = new Map<string, ExtractedLesson>();
+  try {
+    const raw = await fs.readFile(outPath, 'utf8');
+    const data = JSON.parse(raw) as { lessons?: ExtractedLesson[] };
+    for (const g of data.lessons ?? []) {
+      if (!g?.lessonPath || typeof g.taskNumber !== 'number' || !Array.isArray(g.tasks)) continue;
+      map.set(inventoryKey(g.lessonPath, g.taskNumber), g);
+    }
+  } catch {
+    /* fayl yo‘q yoki JSON buzilgan */
+  }
+  return map;
+}
+
 async function main() {
+  const outPath = path.join(ROOT, 'scripts/generated/lesson_tasks_inventory.json');
+  const fresh = process.argv.includes('--fresh');
+  const byKey = fresh ? new Map<string, ExtractedLesson>() : await loadExistingInventoryMap(outPath);
+
   const names = await fs.readdir(PAGES_DIR);
-  const lessons: ExtractedLesson[] = [];
 
   for (const name of names) {
     if (!name.endsWith('.tsx')) continue;
@@ -180,7 +208,7 @@ async function main() {
       }
     }
 
-    lessons.push({
+    byKey.set(inventoryKey(lessonPath, taskNumber), {
       lessonPath,
       taskNumber,
       sourceFile: path.relative(ROOT, abs),
@@ -188,15 +216,20 @@ async function main() {
     });
   }
 
-  lessons.sort((a, b) => (a.lessonPath === b.lessonPath ? a.taskNumber - b.taskNumber : a.lessonPath.localeCompare(b.lessonPath)));
+  const l1t1 = getLessonOneVazifaOneInventoryGroup() as ExtractedLesson;
+  byKey.set(inventoryKey(l1t1.lessonPath, l1t1.taskNumber), l1t1);
+
+  const lessons = [...byKey.values()].sort((a, b) =>
+    a.lessonPath === b.lessonPath ? a.taskNumber - b.taskNumber : a.lessonPath.localeCompare(b.lessonPath),
+  );
   const out = {
     generatedAt: new Date().toISOString(),
     lessons,
   };
-  const outPath = path.join(ROOT, 'scripts/generated/lesson_tasks_inventory.json');
   await fs.mkdir(path.dirname(outPath), { recursive: true });
   await fs.writeFile(outPath, JSON.stringify(out, null, 2));
-  console.log(`Wrote ${lessons.length} lesson task groups -> scripts/generated/lesson_tasks_inventory.json`);
+  const mode = fresh ? 'fresh' : 'merge';
+  console.log(`Wrote ${lessons.length} lesson task groups (${mode}) -> scripts/generated/lesson_tasks_inventory.json`);
 }
 
 main().catch((err) => {

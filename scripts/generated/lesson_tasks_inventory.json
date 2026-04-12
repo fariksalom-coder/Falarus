@@ -1,6 +1,355 @@
 {
-  "generatedAt": "2026-04-12T07:19:41.691Z",
+  "generatedAt": "2026-04-12T08:37:17.584Z",
   "lessons": [
+    {
+      "lessonPath": "/lesson-1",
+      "taskNumber": 1,
+      "sourceFile": "src/data/lessonOneTasks.ts",
+      "tasks": [
+        {
+          "type": "choice",
+          "prompt": "Xayrli kun!",
+          "content": {
+            "options": [
+              "Доброй ночи!",
+              "Доброе утро!",
+              "Добрый день!"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Добрый день!",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Xayrli tong!",
+          "content": {
+            "options": [
+              "Добрый вечерь",
+              "Доброе утро!",
+              "Добрый день"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Доброе утро!",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Xayrli kech!",
+          "content": {
+            "options": [
+              "Доброе утро!",
+              "Добрый день!",
+              "Добрый вечер!"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Добрый вечер!",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Salom!",
+          "content": {
+            "options": [
+              "Привет",
+              "Здравствуйте!",
+              "Доброе утро!"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Привет",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Assalomu alaykum!",
+          "content": {
+            "options": [
+              "Привет!",
+              "Здравствуйте!",
+              "Добрый день!"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Здравствуйте!",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Xayr!",
+          "content": {
+            "options": [
+              "До свидание!",
+              "Пока!",
+              "Привет!"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Пока!",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Ko'rishguncha!",
+          "content": {
+            "options": [
+              "До свидание!",
+              "Пока!",
+              "Привет!"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "До свидание!",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Sizning ismingiz nima? (rasmiy)",
+          "content": {
+            "options": [
+              "Как тебя зовут?",
+              "Как вас зовут?",
+              "Кто вы?"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Как вас зовут?",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Sening isming nima?",
+          "content": {
+            "options": [
+              "Как вас зовут?",
+              "Как тебя зовут?",
+              "Откуда ты?"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Как тебя зовут?",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Mening ismim Farmon.",
+          "content": {
+            "options": [
+              "Я Farmon.",
+              "Меня зовут Фармон.",
+              "Мой имя Фармон."
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Меня зовут Фармон.",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Siz qayerdansiz? (rasmiy)",
+          "content": {
+            "options": [
+              "Где вы живёте?",
+              "Откуда вы?",
+              "Кто вы?"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Откуда вы?",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Qayerdansan?",
+          "content": {
+            "options": [
+              "Откуда вы?",
+              "Откуда ты?",
+              "Где ты работаешь?"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Откуда ты?",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Men O‘zbekistondanman.",
+          "content": {
+            "options": [
+              "Я Узбекистан.",
+              "Я из Узбекистана.",
+              "Я в Узбекистане."
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Я из Узбекистана.",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Men Buxorodanman.",
+          "content": {
+            "options": [
+              "Я из Бухары.",
+              "Я Бухара.",
+              "Я в Бухара."
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Я из Бухары.",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Siz kim bo‘lib ishlaysiz?",
+          "content": {
+            "options": [
+              "Где вы работаете?",
+              "Кем вы работаете?",
+              "Кто вы?"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Кем вы работаете?",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Kim bo'lib ishlaysan?",
+          "content": {
+            "options": [
+              "Кем ты работаешь?",
+              "Кто ты?",
+              "Где ты?"
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Кем ты работаешь?",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "Men haydovchiman.",
+          "content": {
+            "options": [
+              "Я водитель.",
+              "Я работает водитель.",
+              "Я из водитель."
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Я водитель.",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        },
+        {
+          "type": "choice",
+          "prompt": "U muhandis.",
+          "content": {
+            "options": [
+              "Он учитель.",
+              "Он инженер.",
+              "Он студент."
+            ]
+          },
+          "answer": {
+            "type": "string",
+            "value": "Он инженер.",
+            "alternatives": []
+          },
+          "difficulty": 1,
+          "skill": "grammar",
+          "meta": {}
+        }
+      ]
+    },
     {
       "lessonPath": "/lesson-1",
       "taskNumber": 2,
@@ -6029,669 +6378,6 @@
           "answer": {
             "type": "string",
             "value": "Они играли во дворе",
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        }
-      ]
-    },
-    {
-      "lessonPath": "/lesson-15",
-      "taskNumber": 1,
-      "sourceFile": "src/pages/LessonFifteenTaskOnePage.tsx",
-      "tasks": [
-        {
-          "type": "matching",
-          "prompt": "играть",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "играл"
-              },
-              {
-                "left": "она",
-                "right": "играла"
-              },
-              {
-                "left": "они",
-                "right": "играли"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "играл"
-              },
-              {
-                "left": "она",
-                "right": "играла"
-              },
-              {
-                "left": "они",
-                "right": "играли"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "вспоминать",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "вспоминал"
-              },
-              {
-                "left": "она",
-                "right": "вспоминала"
-              },
-              {
-                "left": "они",
-                "right": "вспоминали"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "вспоминал"
-              },
-              {
-                "left": "она",
-                "right": "вспоминала"
-              },
-              {
-                "left": "они",
-                "right": "вспоминали"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "рассказывать",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "рассказывал"
-              },
-              {
-                "left": "она",
-                "right": "рассказывала"
-              },
-              {
-                "left": "они",
-                "right": "рассказывали"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "рассказывал"
-              },
-              {
-                "left": "она",
-                "right": "рассказывала"
-              },
-              {
-                "left": "они",
-                "right": "рассказывали"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "любить",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "любил"
-              },
-              {
-                "left": "она",
-                "right": "любила"
-              },
-              {
-                "left": "они",
-                "right": "любили"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "любил"
-              },
-              {
-                "left": "она",
-                "right": "любила"
-              },
-              {
-                "left": "они",
-                "right": "любили"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "сказать",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "сказал"
-              },
-              {
-                "left": "она",
-                "right": "сказала"
-              },
-              {
-                "left": "они",
-                "right": "сказали"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "сказал"
-              },
-              {
-                "left": "она",
-                "right": "сказала"
-              },
-              {
-                "left": "они",
-                "right": "сказали"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "жить",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "жил"
-              },
-              {
-                "left": "она",
-                "right": "жила"
-              },
-              {
-                "left": "они",
-                "right": "жили"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "жил"
-              },
-              {
-                "left": "она",
-                "right": "жила"
-              },
-              {
-                "left": "они",
-                "right": "жили"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "участвовать",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "участвовал"
-              },
-              {
-                "left": "она",
-                "right": "участвовала"
-              },
-              {
-                "left": "они",
-                "right": "участвовали"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "участвовал"
-              },
-              {
-                "left": "она",
-                "right": "участвовала"
-              },
-              {
-                "left": "они",
-                "right": "участвовали"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "покупать",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "покупал"
-              },
-              {
-                "left": "она",
-                "right": "покупала"
-              },
-              {
-                "left": "они",
-                "right": "покупали"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "покупал"
-              },
-              {
-                "left": "она",
-                "right": "покупала"
-              },
-              {
-                "left": "они",
-                "right": "покупали"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "купить",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "купил"
-              },
-              {
-                "left": "она",
-                "right": "купила"
-              },
-              {
-                "left": "они",
-                "right": "купили"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "купил"
-              },
-              {
-                "left": "она",
-                "right": "купила"
-              },
-              {
-                "left": "они",
-                "right": "купили"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "быть",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "был"
-              },
-              {
-                "left": "она",
-                "right": "была"
-              },
-              {
-                "left": "они",
-                "right": "были"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "был"
-              },
-              {
-                "left": "она",
-                "right": "была"
-              },
-              {
-                "left": "они",
-                "right": "были"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "хотеть",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "хотел"
-              },
-              {
-                "left": "она",
-                "right": "хотела"
-              },
-              {
-                "left": "они",
-                "right": "хотели"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "хотел"
-              },
-              {
-                "left": "она",
-                "right": "хотела"
-              },
-              {
-                "left": "они",
-                "right": "хотели"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "учиться",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "учился"
-              },
-              {
-                "left": "она",
-                "right": "училась"
-              },
-              {
-                "left": "они",
-                "right": "учились"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "учился"
-              },
-              {
-                "left": "она",
-                "right": "училась"
-              },
-              {
-                "left": "они",
-                "right": "учились"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "смеяться",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "смеялся"
-              },
-              {
-                "left": "она",
-                "right": "смеялась"
-              },
-              {
-                "left": "они",
-                "right": "смеялись"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "смеялся"
-              },
-              {
-                "left": "она",
-                "right": "смеялась"
-              },
-              {
-                "left": "они",
-                "right": "смеялись"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "переводить",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "переводил"
-              },
-              {
-                "left": "она",
-                "right": "переводила"
-              },
-              {
-                "left": "они",
-                "right": "переводили"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "переводил"
-              },
-              {
-                "left": "она",
-                "right": "переводила"
-              },
-              {
-                "left": "они",
-                "right": "переводили"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "понимать",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "понимал"
-              },
-              {
-                "left": "она",
-                "right": "понимала"
-              },
-              {
-                "left": "они",
-                "right": "понимали"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "понимал"
-              },
-              {
-                "left": "она",
-                "right": "понимала"
-              },
-              {
-                "left": "они",
-                "right": "понимали"
-              }
-            ],
-            "alternatives": []
-          },
-          "difficulty": 1,
-          "skill": "grammar",
-          "meta": {}
-        },
-        {
-          "type": "matching",
-          "prompt": "помнить",
-          "content": {
-            "pairs": [
-              {
-                "left": "он",
-                "right": "помнил"
-              },
-              {
-                "left": "она",
-                "right": "помнила"
-              },
-              {
-                "left": "они",
-                "right": "помнили"
-              }
-            ]
-          },
-          "answer": {
-            "type": "pairs",
-            "value": [
-              {
-                "left": "он",
-                "right": "помнил"
-              },
-              {
-                "left": "она",
-                "right": "помнила"
-              },
-              {
-                "left": "они",
-                "right": "помнили"
-              }
-            ],
             "alternatives": []
           },
           "difficulty": 1,

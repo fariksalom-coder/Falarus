@@ -24,6 +24,7 @@
     "test:smoke": "node scripts/smoke-api.mjs",
     "test:smoke:full": "cross-env SMOKE_INCLUDE_LESSONS=1 node scripts/smoke-api.mjs",
     "extract:lesson-tasks": "tsx scripts/extract_lesson_tasks.ts",
+    "patch:inventory:lesson1-task1": "tsx scripts/ensure_lesson_one_task_one_inventory.ts",
     "import:lesson-tasks": "tsx scripts/import_lesson_tasks.ts",
     "verify:lesson-task-inventory": "tsx scripts/verify_lesson_task_inventory.ts",
     "verify:grammar-db-counts": "tsx scripts/verify_grammar_db_counts.ts",
