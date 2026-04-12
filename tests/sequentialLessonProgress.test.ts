@@ -16,6 +16,8 @@ test('first lesson is unlocked and next lesson unlocks only after passing previo
   const passedFirstLesson: TaskResultsMap = {
     '/lesson-1': {
       1: { correct: 7, total: 10 },
+      2: { correct: 7, total: 10 },
+      3: { correct: 7, total: 10 },
     },
   };
   const nextStates = computeLessonStates(passedFirstLesson);
@@ -33,6 +35,7 @@ test('next task unlocks only after previous task reaches 70 percent', () => {
   const passed: TaskResultsMap = {
     '/lesson-10': {
       1: { correct: 7, total: 10 },
+      2: { correct: 7, total: 10 },
     },
     '/lesson-11': {
       1: { correct: 7, total: 10 },

@@ -108,3 +108,66 @@ test('setLessonTaskResult saves locally and posts to lesson-task-results API whe
     });
   }
 });
+
+test('setLessonTaskResult does not replace a passing score with a failing retry', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalLocalStorage = (globalThis as typeof globalThis & { localStorage?: StorageShape }).localStorage;
+  const originalWindow = (globalThis as typeof globalThis & { window?: unknown }).window;
+  const originalCustomEvent = globalThis.CustomEvent;
+
+  const storage = createStorage();
+  const fetchCalls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      location: { origin: 'https://www.falarus.uz' },
+      dispatchEvent() {
+        return true;
+      },
+    },
+  });
+  Object.defineProperty(globalThis, 'CustomEvent', {
+    configurable: true,
+    value: class CustomEventShim<T> {
+      type: string;
+      detail?: T;
+      constructor(type: string, init?: { detail?: T }) {
+        this.type = type;
+        this.detail = init?.detail;
+      }
+    },
+  });
+
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    fetchCalls.push({ input, init });
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  storage.setItem('token', 'test-token');
+
+  setLessonTaskResult('/lesson-1', 1, 13, 18);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(fetchCalls.length, 1);
+
+  const kept = setLessonTaskResult('/lesson-1', 1, 2, 18);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(kept, false);
+  assert.equal(fetchCalls.length, 1);
+  assert.deepEqual(getLessonTaskResult('/lesson-1', 1), { correct: 13, total: 18 });
+
+  if (originalFetch) globalThis.fetch = originalFetch;
+  if (originalLocalStorage) {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalLocalStorage });
+  }
+  if (originalWindow) {
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: originalWindow });
+  }
+  if (originalCustomEvent) {
+    Object.defineProperty(globalThis, 'CustomEvent', { configurable: true, value: originalCustomEvent });
+  }
+});

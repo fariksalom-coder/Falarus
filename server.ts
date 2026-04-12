@@ -36,6 +36,7 @@ import { insertPointEvent } from './shared/pointEvents.ts';
 import { parseContactIdentifier } from './shared/authIdentifiers.ts';
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
+import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassing.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
 import { buildGrammarCatalogPayload } from './api/_lib/grammarCatalogHandler.ts';
@@ -1133,11 +1134,18 @@ async function startServer() {
     const { calculateImprovementDelta } = await import('./server/services/scoringRules.service');
     const { data: prevRow } = await supabase
       .from('lesson_task_results')
-      .select('correct')
+      .select('correct, total')
       .eq('user_id', req.userId)
       .eq('lesson_path', lessonPath)
       .eq('task_number', taskNumber)
       .maybeSingle();
+    const prev =
+      prevRow != null && prevRow.correct != null && prevRow.total != null
+        ? { correct: Number(prevRow.correct), total: Number(prevRow.total) }
+        : null;
+    if (shouldPreservePreviousLessonTaskResult(prev, correctCount, totalCount)) {
+      return res.json({ success: true, preserved: true });
+    }
     const prevCorrect = Number(prevRow?.correct ?? 0);
     const delta = calculateImprovementDelta(prevCorrect, correctCount);
     if (delta > 0) {

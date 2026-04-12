@@ -13,6 +13,20 @@ function parseLessonIdFromQuery(req: VercelRequest): number | null {
   if (!Number.isFinite(n) || n <= 0) return null;
   return n;
 }
+
+function parseTaskNumberFromQuery(req: VercelRequest): number | null {
+  const pick = (v: unknown): string => {
+    if (typeof v === 'string') return v.trim();
+    if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') return v[0].trim();
+    if (typeof v === 'number' && Number.isFinite(v)) return String(Math.trunc(v));
+    return '';
+  };
+  const raw = pick(req.query.task_number);
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
 import { supabase } from './supabase.js';
 import { getAccessInfo } from './subscription.js';
 import { LESSONS } from '../../src/data/lessonsList.js';
@@ -200,6 +214,21 @@ async function handleLessonTaskQuestionsByPath(
     };
   });
   return res.status(200).json(items);
+}
+
+/** `GET /api/lesson-task-questions?lesson_id=&task_number=` — same range query as Express. */
+export async function handleLessonTaskQuestionsGet(
+  req: VercelRequest,
+  res: VercelResponse,
+  userId: number
+) {
+  const lessonId = parseLessonIdFromQuery(req);
+  const taskNumber = parseTaskNumberFromQuery(req);
+  if (lessonId == null || taskNumber == null) {
+    return res.status(400).json({ error: 'lesson_id va task_number kerak' });
+  }
+  const lessonPath = `/lesson-${lessonId}`;
+  return handleLessonTaskQuestionsByPath(userId, lessonPath, taskNumber, res);
 }
 
 async function handleLessonAnswer(

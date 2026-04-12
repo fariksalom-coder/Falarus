@@ -1,5 +1,9 @@
 import { saveLessonTaskResult } from '../api/lessonTaskResults';
 import { getExpectedLessonTaskCount } from '../data/unifiedLessonVazifaRegistry';
+import {
+  isLessonTaskResultPassing,
+  shouldPreservePreviousLessonTaskResult,
+} from '../../shared/lessonTaskPassing';
 
 const STORAGE_KEY = 'lessonTaskResults';
 const AUTH_TOKEN_STORAGE_KEY = 'token';
@@ -97,13 +101,20 @@ export function getLessonTaskResults(lessonPath: string): Record<number, TaskRes
 
 export type LessonCompletionStatus = 'not_started' | 'in_progress' | 'completed';
 
-/** Save result when user completes a task. */
+/**
+ * Save result when user completes a task.
+ * @returns false if a previous passing score (≥70%) was kept and the worse attempt was discarded.
+ */
 export function setLessonTaskResult(
   lessonPath: string,
   taskNumber: number,
   correct: number,
   total: number
-): void {
+): boolean {
+  const existing = getLessonTaskResult(lessonPath, taskNumber);
+  if (shouldPreservePreviousLessonTaskResult(existing, correct, total)) {
+    return false;
+  }
   const data = load();
   if (!data[lessonPath]) data[lessonPath] = {};
   data[lessonPath][String(taskNumber)] = { correct, total };
@@ -125,15 +136,12 @@ export function setLessonTaskResult(
   if (token) {
     void saveLessonTaskResult(token, lessonPath, taskNumber, correct, total);
   }
+  return true;
 }
-
-/** Progress threshold: ≥70% unlocks next task / counts toward lesson completion. */
-const PASS_RATIO = 0.7;
 
 /** Whether the result passes the course threshold (≥70%). */
 export function isTaskResultGood(result: TaskResult): boolean {
-  if (result.total <= 0) return false;
-  return result.correct / result.total >= PASS_RATIO;
+  return isLessonTaskResultPassing(result.correct, result.total);
 }
 
 /** Shared task button className: not started = white, in progress = orange, passed = green. */

@@ -15,7 +15,7 @@ import {
   normalizeQueryPathSegments,
   parseBody,
 } from './_lib/request.js';
-import { routeLessonsRequest } from './_lib/lessons.js';
+import { routeLessonsRequest, handleLessonTaskQuestionsGet } from './_lib/lessons.js';
 import { handleGrammarCatalog } from './_lib/grammarCatalogHandler.js';
 import { routeUserRequest } from './_lib/user.js';
 import { routeVocabularyRequest } from './_lib/vocabulary.js';
@@ -31,6 +31,7 @@ import { awardUserPoints } from './_lib/awardUserPoints.js';
 import { syncUserLessonProgressPercent } from './_lib/lessonProgress.js';
 import { buildRequestLogContext, logError } from './_lib/logger.js';
 import { calculateImprovementDelta } from './_lib/scoring.js';
+import { shouldPreservePreviousLessonTaskResult } from '../shared/lessonTaskPassing.js';
 import { formatDateInAppTimezone } from './_lib/appDate.js';
 import {
   getDailyPoints,
@@ -98,6 +99,7 @@ const ROOT_API_PREFIXES = new Set([
   'lessons',
   'leaderboard',
   'lesson-task-results',
+  'lesson-task-questions',
   'activity',
   'user',
   'vocabulary',
@@ -342,11 +344,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const tn = Number(taskNumber);
         const { data: prevRow } = await supabase
           .from('lesson_task_results')
-          .select('correct')
+          .select('correct, total')
           .eq('user_id', userId)
           .eq('lesson_path', String(lessonPath))
           .eq('task_number', tn)
           .maybeSingle();
+
+        const prev =
+          prevRow != null && prevRow.correct != null && prevRow.total != null
+            ? { correct: Number(prevRow.correct), total: Number(prevRow.total) }
+            : null;
+        if (shouldPreservePreviousLessonTaskResult(prev, correct, total)) {
+          const progress = await syncUserLessonProgressPercent(supabase, userId);
+          return res.status(200).json({ success: true, preserved: true, progress });
+        }
 
         const prevCorrect = Number(prevRow?.correct ?? 0);
         const delta = calculateImprovementDelta(prevCorrect, correct);
@@ -389,6 +400,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
+  }
+
+  /** Same as Express `GET /api/lesson-task-questions` — frontend uses query params (Vercel-safe). */
+  if (path[0] === 'lesson-task-questions') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+    return handleLessonTaskQuestionsGet(req, res, userId);
   }
 
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });

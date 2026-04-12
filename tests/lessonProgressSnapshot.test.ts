@@ -33,6 +33,8 @@ test('legacy and task-based progress merge into one completed lesson set', () =>
   const merged = mergeCompletedLessonPathSets(
     getCompletedLessonPathsFromTaskRows([
       { lesson_path: '/lesson-1', task_number: 1, correct: 7, total: 10 },
+      { lesson_path: '/lesson-1', task_number: 2, correct: 7, total: 10 },
+      { lesson_path: '/lesson-1', task_number: 3, correct: 7, total: 10 },
     ]),
     getCompletedLessonPathsFromLegacyRows([
       { lesson_id: 2, completed: 1 },

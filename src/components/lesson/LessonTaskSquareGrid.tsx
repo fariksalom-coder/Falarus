@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, type LucideIcon, ListChecks } from 'lucide-react';
+import { type LucideIcon, ListChecks } from 'lucide-react';
 import { getExpectedLessonTaskCount } from '../../data/unifiedLessonVazifaRegistry';
 import type { TaskResult } from '../../utils/lessonTaskResults';
 import { isTaskResultGood } from '../../utils/lessonTaskResults';
@@ -46,22 +46,20 @@ function squareClass(
   const isCurrent = !passed && !locked && current === taskNum;
 
   /**
-   * Karta kengligi: faqat `min(100%,14rem)` bo‘lsa, 2 ustunda katak keng, ramka 14rem gacha katta bo‘lardi;
-   * 4 ustunda esa tor — breakpoint bo‘yicha o‘lcham sakrab ketardi (11/15/17 va ko‘p vazifali hub).
-   * `w-full max-w-[10rem]` — maksimum bir xil, tor ekranda katak bo‘yicha kichrayadi.
-   * Mobil: ingichka border + soyya, ring yo‘q — tashqi layout bilan ikki marta ramka bo‘lmaydi.
+   * Karta kengligi: `max-w-[10rem]` — mobil va desktopda bir xil maksimal kenglik.
+   * Bajarilgan / joriy kartalar: mobil ham `border-2` + rangli ring va soyya (desktop bilan mos).
    */
   const base =
     'relative box-border flex h-full min-h-[11rem] w-full max-w-[10rem] shrink-0 justify-self-center flex-col items-stretch rounded-2xl border border-slate-200/75 bg-white p-2.5 text-center shadow-[0_8px_28px_rgba(15,23,42,0.07)] ring-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:min-h-[12rem] sm:rounded-[24px] sm:border-2 sm:p-3 sm:shadow-[0_14px_34px_rgba(148,163,184,0.12)]';
 
   if (passed) {
-    return `${base} border-emerald-400/80 bg-gradient-to-br from-emerald-100 via-emerald-50 to-white text-emerald-950 shadow-[0_10px_32px_rgba(34,197,94,0.2)] hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(34,197,94,0.28)] active:scale-[0.98] sm:border-emerald-500 sm:shadow-[0_12px_36px_rgba(34,197,94,0.35)] sm:ring-2 sm:ring-emerald-400/70 sm:hover:shadow-[0_16px_44px_rgba(34,197,94,0.4)] focus-visible:ring-emerald-500`;
+    return `${base} border-2 border-emerald-500 bg-gradient-to-br from-emerald-100 via-emerald-50 to-white text-emerald-950 shadow-[0_10px_32px_rgba(34,197,94,0.22)] ring-2 ring-emerald-400/70 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(34,197,94,0.3)] active:scale-[0.98] focus-visible:ring-emerald-500 sm:shadow-[0_12px_36px_rgba(34,197,94,0.35)] sm:hover:shadow-[0_16px_44px_rgba(34,197,94,0.42)]`;
   }
   if (locked) {
     return `${base} cursor-not-allowed border-slate-200/80 bg-slate-100/85 text-slate-400 opacity-[0.72] shadow-none grayscale hover:translate-y-0 sm:border-slate-200/90`;
   }
   if (isCurrent) {
-    return `${base} border-blue-400/85 bg-gradient-to-br from-blue-100 via-blue-50 to-white text-blue-950 shadow-[0_10px_32px_rgba(37,99,235,0.18)] hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(37,99,235,0.26)] active:scale-[0.98] sm:border-blue-500 sm:shadow-[0_12px_36px_rgba(37,99,235,0.28)] sm:ring-2 sm:ring-blue-400/55 sm:hover:shadow-[0_16px_44px_rgba(37,99,235,0.38)] focus-visible:ring-blue-500`;
+    return `${base} border-2 border-blue-500 bg-gradient-to-br from-blue-100 via-blue-50 to-white text-blue-950 shadow-[0_10px_32px_rgba(37,99,235,0.22)] ring-2 ring-blue-400/60 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(37,99,235,0.3)] active:scale-[0.98] focus-visible:ring-blue-500 sm:shadow-[0_12px_36px_rgba(37,99,235,0.3)] sm:hover:shadow-[0_16px_44px_rgba(37,99,235,0.4)]`;
   }
   return `${base} border-indigo-200/70 bg-gradient-to-br from-white via-white to-indigo-50/80 text-indigo-900 hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgba(99,102,241,0.12)] active:scale-[0.98] sm:border-indigo-200/90 sm:hover:shadow-[0_18px_40px_rgba(148,163,184,0.18)] focus-visible:ring-indigo-500`;
 }
@@ -253,15 +251,6 @@ export function LessonTaskSquareGrid({
           const questionTotal =
             fromCatalog !== undefined ? fromCatalog : getExpectedLessonTaskCount(lessonPath, taskNum);
 
-          const checkDone = passed ? (
-            <span
-              className="absolute right-2 top-2 z-[1] flex h-7 w-7 items-center justify-center rounded-full bg-white text-emerald-500 shadow-md ring-2 ring-emerald-400/80 sm:right-2.5 sm:top-2.5 sm:h-8 sm:w-8"
-              aria-label="Bajarildi"
-            >
-              <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.25} aria-hidden />
-            </span>
-          ) : null;
-
           const stacked = (
             <TaskCardStackedBody
               label={label}
@@ -281,7 +270,6 @@ export function LessonTaskSquareGrid({
                 key={path}
                 className={`${squareClass(taskNum, currentTask, sequentialLock, results)} justify-between gap-1 overflow-hidden py-2 sm:gap-1.5 sm:py-2.5`}
               >
-                {checkDone}
                 {stacked}
                 <button
                   type="button"
@@ -304,7 +292,6 @@ export function LessonTaskSquareGrid({
               }}
               className={`${squareClass(taskNum, currentTask, sequentialLock, results)} justify-between`}
             >
-              {checkDone}
               {stacked}
             </button>
           );
