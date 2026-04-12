@@ -52,7 +52,7 @@ function squareClass(
    * Mobil: ingichka border + soyya, ring yo‘q — tashqi layout bilan ikki marta ramka bo‘lmaydi.
    */
   const base =
-    'relative box-border flex h-full min-h-[11rem] w-full max-w-[10rem] shrink-0 justify-self-center flex-col items-center gap-1 rounded-2xl border border-slate-200/75 bg-white p-2.5 text-center shadow-[0_8px_28px_rgba(15,23,42,0.07)] ring-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:min-h-[12rem] sm:gap-1.5 sm:rounded-[24px] sm:border-2 sm:p-3 sm:shadow-[0_14px_34px_rgba(148,163,184,0.12)]';
+    'relative box-border flex h-full min-h-[11rem] w-full max-w-[10rem] shrink-0 justify-self-center flex-col items-stretch rounded-2xl border border-slate-200/75 bg-white p-2.5 text-center shadow-[0_8px_28px_rgba(15,23,42,0.07)] ring-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:min-h-[12rem] sm:rounded-[24px] sm:border-2 sm:p-3 sm:shadow-[0_14px_34px_rgba(148,163,184,0.12)]';
 
   if (passed) {
     return `${base} border-emerald-400/80 bg-gradient-to-br from-emerald-100 via-emerald-50 to-white text-emerald-950 shadow-[0_10px_32px_rgba(34,197,94,0.2)] hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(34,197,94,0.28)] active:scale-[0.98] sm:border-emerald-500 sm:shadow-[0_12px_36px_rgba(34,197,94,0.35)] sm:ring-2 sm:ring-emerald-400/70 sm:hover:shadow-[0_16px_44px_rgba(34,197,94,0.4)] focus-visible:ring-emerald-500`;
@@ -103,7 +103,7 @@ function labelClass(
   const passed = result && isTaskResultGood(result);
   const locked = sequentialLock && isTaskLockedSequential(taskNum, results);
   const isCurrent = !passed && !locked && current === taskNum;
-  const base = 'text-[11px] font-bold uppercase tracking-wide sm:text-xs';
+  const base = 'block max-w-full text-center text-[11px] font-bold uppercase tracking-wide sm:text-xs';
   if (isCurrent) return `${base} text-blue-900`;
   if (locked) return `${base} text-slate-400`;
   return `${base} opacity-80`;
@@ -119,7 +119,7 @@ function hintClass(
   const passed = result && isTaskResultGood(result);
   const locked = sequentialLock && isTaskLockedSequential(taskNum, results);
   const isCurrent = !passed && !locked && current === taskNum;
-  const base = 'line-clamp-3 text-[10px] font-medium leading-snug sm:line-clamp-4 sm:text-[11px]';
+  const base = 'block max-w-full text-center line-clamp-3 text-[10px] font-medium leading-snug sm:line-clamp-4 sm:text-[11px]';
   if (isCurrent) return `${base} font-medium text-blue-900`;
   if (passed) return `${base} font-semibold text-emerald-900`;
   if (locked) return `${base} text-slate-400`;
@@ -148,6 +148,61 @@ function defaultGridClass(taskCount: number): string {
   if (taskCount <= 3) return 'grid-cols-3';
   if (taskCount <= 6) return 'grid-cols-2 sm:grid-cols-3';
   return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4';
+}
+
+/** Ikon va «Vazifa N» matni barcha kartochkalarda bir xil vertikal qatorda turishi uchun qat’iy qatorlar. */
+function TaskCardStackedBody({
+  label,
+  hint,
+  Icon,
+  questionTotal,
+  questionCountClassName,
+  labelClassName,
+  hintClassName,
+  iconWrapClassName,
+}: {
+  label: string;
+  hint: string;
+  Icon: LucideIcon;
+  questionTotal: number | null;
+  questionCountClassName: string;
+  labelClassName: string;
+  hintClassName: string;
+  iconWrapClassName: string;
+}) {
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col items-stretch gap-1 px-0.5 pt-0.5 sm:gap-1.5">
+      <div className="flex h-10 w-full shrink-0 items-center justify-center sm:h-11">
+        <span className={iconWrapClassName}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
+        </span>
+      </div>
+      <div className="flex min-h-[2.5rem] w-full shrink-0 items-center justify-center px-0.5">
+        <span className={labelClassName}>{label}</span>
+      </div>
+      <div className="flex h-[1.375rem] w-full shrink-0 items-center justify-center sm:h-6">
+        {questionTotal != null ? (
+          <span
+            className={questionCountClassName}
+            title={`${questionTotal} ta savol`}
+            aria-label={`${questionTotal} ta savol`}
+          >
+            {questionTotal} ta
+          </span>
+        ) : (
+          <span
+            className="invisible rounded-full px-2 py-0.5 text-[9px] font-bold tabular-nums leading-none sm:text-[10px]"
+            aria-hidden
+          >
+            0 ta
+          </span>
+        )}
+      </div>
+      <div className="flex min-h-[2.75rem] w-full flex-1 items-start justify-center overflow-hidden">
+        <span className={hintClassName}>{hint}</span>
+      </div>
+    </div>
+  );
 }
 
 export function LessonTaskSquareGrid({
@@ -198,31 +253,26 @@ export function LessonTaskSquareGrid({
           const questionTotal =
             fromCatalog !== undefined ? fromCatalog : getExpectedLessonTaskCount(lessonPath, taskNum);
 
-          const body = (
-            <>
-              {passed ? (
-                <span
-                  className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-emerald-500 shadow-md ring-2 ring-emerald-400/80 sm:right-2.5 sm:top-2.5 sm:h-8 sm:w-8"
-                  aria-label="Bajarildi"
-                >
-                  <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.25} aria-hidden />
-                </span>
-              ) : null}
-              <span className={iconWrapClass(taskNum, currentTask, sequentialLock, results)}>
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
-              </span>
-              <span className={labelClass(taskNum, currentTask, sequentialLock, results)}>{label}</span>
-              {questionTotal != null ? (
-                <span
-                  className={questionCountClass(taskNum, currentTask, sequentialLock, results)}
-                  title={`${questionTotal} ta savol`}
-                  aria-label={`${questionTotal} ta savol`}
-                >
-                  {questionTotal} ta
-                </span>
-              ) : null}
-              <span className={hintClass(taskNum, currentTask, sequentialLock, results)}>{hint}</span>
-            </>
+          const checkDone = passed ? (
+            <span
+              className="absolute right-2 top-2 z-[1] flex h-7 w-7 items-center justify-center rounded-full bg-white text-emerald-500 shadow-md ring-2 ring-emerald-400/80 sm:right-2.5 sm:top-2.5 sm:h-8 sm:w-8"
+              aria-label="Bajarildi"
+            >
+              <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.25} aria-hidden />
+            </span>
+          ) : null;
+
+          const stacked = (
+            <TaskCardStackedBody
+              label={label}
+              hint={hint}
+              Icon={Icon}
+              questionTotal={questionTotal ?? null}
+              questionCountClassName={questionCountClass(taskNum, currentTask, sequentialLock, results)}
+              labelClassName={labelClass(taskNum, currentTask, sequentialLock, results)}
+              hintClassName={hintClass(taskNum, currentTask, sequentialLock, results)}
+              iconWrapClassName={iconWrapClass(taskNum, currentTask, sequentialLock, results)}
+            />
           );
 
           if (boshlash && isCurrent) {
@@ -231,9 +281,8 @@ export function LessonTaskSquareGrid({
                 key={path}
                 className={`${squareClass(taskNum, currentTask, sequentialLock, results)} justify-between gap-1 overflow-hidden py-2 sm:gap-1.5 sm:py-2.5`}
               >
-                <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-0.5 px-0.5 sm:flex-1">
-                  {body}
-                </div>
+                {checkDone}
+                {stacked}
                 <button
                   type="button"
                   onClick={() => navigate(path)}
@@ -253,9 +302,10 @@ export function LessonTaskSquareGrid({
               onClick={() => {
                 if (!locked) navigate(path);
               }}
-              className={`${squareClass(taskNum, currentTask, sequentialLock, results)} justify-center`}
+              className={`${squareClass(taskNum, currentTask, sequentialLock, results)} justify-between`}
             >
-              {body}
+              {checkDone}
+              {stacked}
             </button>
           );
         })}
