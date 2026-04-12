@@ -566,8 +566,8 @@ export const LESSON_7_VAZIFALARI: {
   tasks: LessonOneTask[];
 }[] = [
   { vazifaId: 1, label: 'Vazifa 1', hint: "To'g'ri javobni tanlang", tasks: LESSON_7_VAZIFA_CHOICE },
-  { vazifaId: 2, label: 'Vazifa 2', hint: 'Gapni tuzing', tasks: LESSON_7_VAZIFA_SENTENCE },
-  { vazifaId: 3, label: 'Vazifa 3', hint: 'Juftini toping', tasks: LESSON_7_VAZIFA_MATCHING },
+  { vazifaId: 2, label: 'Vazifa 2', hint: 'Juftini toping', tasks: LESSON_7_VAZIFA_MATCHING },
+  { vazifaId: 3, label: 'Vazifa 3', hint: 'Gapni tuzing', tasks: LESSON_7_VAZIFA_SENTENCE },
 ];
 
 export function getLessonSevenVazifaConfig(vazifaId: number) {

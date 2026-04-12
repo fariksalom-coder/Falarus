@@ -63,8 +63,8 @@ export const LESSON_THREE_VAZIFALARI: {
   tasks: LessonOneTask[];
 }[] = [
   { vazifaId: 1, label: 'Vazifa 1', hint: "To'g'ri javobni tanlang", tasks: CHOICE },
-  { vazifaId: 2, label: 'Vazifa 2', hint: 'Gapni tuzing', tasks: SENTENCE },
-  { vazifaId: 3, label: 'Vazifa 3', hint: 'Juftini toping', tasks: MATCHING },
+  { vazifaId: 2, label: 'Vazifa 2', hint: 'Juftini toping', tasks: MATCHING },
+  { vazifaId: 3, label: 'Vazifa 3', hint: 'Gapni tuzing', tasks: SENTENCE },
 ];
 
 export function getLessonThreeVazifaConfig(vazifaId: number) {

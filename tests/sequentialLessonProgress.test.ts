@@ -36,6 +36,7 @@ test('next task unlocks only after previous task reaches 70 percent', () => {
     '/lesson-10': {
       1: { correct: 7, total: 10 },
       2: { correct: 7, total: 10 },
+      3: { correct: 7, total: 10 },
     },
     '/lesson-11': {
       1: { correct: 7, total: 10 },

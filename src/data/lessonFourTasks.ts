@@ -257,7 +257,56 @@ export const LESSON_4_VAZIFA_CHOICE: Extract<LessonOneTask, { type: 'choice' }>[
   }
 ];
 
-export const LESSON_4_VAZIFA_SENTENCE: Extract<LessonOneTask, { type: 'sentence' }>[] = [];
+export const LESSON_4_VAZIFA_SENTENCE: Extract<LessonOneTask, { type: 'sentence' }>[] = [
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: katta uy (erkak jins).',
+    words: ['большой', 'дом'],
+    correct: 'большой дом',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: chiroyli mashina (ayol jins).',
+    words: ['красивая', 'машина'],
+    correct: 'красивая машина',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: katta oyna (o‘rta jins).',
+    words: ['большое', 'окно'],
+    correct: 'большое окно',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: yangi shahar (erkak jins).',
+    words: ['новый', 'город'],
+    correct: 'новый город',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: eski maktab (ayol).',
+    words: ['старая', 'школа'],
+    correct: 'старая школа',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: ko‘k dengiz (o‘rta).',
+    words: ['синее', 'море'],
+    correct: 'синее море',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: yaxshi talaba (erkak jins).',
+    words: ['хороший', 'студент'],
+    correct: 'хороший студент',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: ochiq eshik (ayol).',
+    words: ['открытая', 'дверь'],
+    correct: 'открытая дверь',
+  },
+];
 
 export const LESSON_4_VAZIFA_MATCHING: Extract<LessonOneTask, { type: 'matching' }>[] = [
   {
@@ -540,6 +589,7 @@ export const LESSON_4_VAZIFALARI: {
 }[] = [
   { vazifaId: 1, label: 'Vazifa 1', hint: "To'g'ri javobni tanlang", tasks: LESSON_4_VAZIFA_CHOICE },
   { vazifaId: 2, label: 'Vazifa 2', hint: 'Juftini toping', tasks: LESSON_4_VAZIFA_MATCHING },
+  { vazifaId: 3, label: 'Vazifa 3', hint: 'Gapni tuzing', tasks: LESSON_4_VAZIFA_SENTENCE },
 ];
 
 export function getLessonFourVazifaConfig(vazifaId: number) {

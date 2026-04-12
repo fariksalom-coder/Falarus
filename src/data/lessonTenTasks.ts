@@ -330,7 +330,31 @@ export const LESSON_10_VAZIFA_SENTENCE: Extract<LessonOneTask, { type: 'sentence
   }
 ];
 
-export const LESSON_10_VAZIFA_MATCHING: Extract<LessonOneTask, { type: 'matching' }>[] = [];
+export const LESSON_10_VAZIFA_MATCHING: Extract<LessonOneTask, { type: 'matching' }>[] = [
+  {
+    type: 'matching',
+    prompt: 'Juftini toping: infinitiv ↔ ma’no',
+    pairs: [
+      { left: 'читать', right: "o'qimoq" },
+      { left: 'писать', right: 'yozmoq' },
+      { left: 'говорить', right: 'gapirmoq' },
+      { left: 'работать', right: 'ishlamoq' },
+      { left: 'помочь', right: "yordam bermoq" },
+      { left: 'отдыхать', right: 'dam olmoq' },
+    ],
+  },
+  {
+    type: 'matching',
+    prompt: 'Juftini toping',
+    pairs: [
+      { left: 'знать', right: 'bilmoq' },
+      { left: 'слушать', right: 'tinglamoq' },
+      { left: 'заниматься', right: "shug'ullanmoq" },
+      { left: 'одеваться', right: 'kiyinmoq' },
+      { left: 'смотреть', right: "ko'rmoq" },
+    ],
+  },
+];
 
 export const LESSON_10_VAZIFALARI: {
   vazifaId: number;
@@ -339,7 +363,8 @@ export const LESSON_10_VAZIFALARI: {
   tasks: LessonOneTask[];
 }[] = [
   { vazifaId: 1, label: 'Vazifa 1', hint: "To'g'ri javobni tanlang", tasks: LESSON_10_VAZIFA_CHOICE },
-  { vazifaId: 2, label: 'Vazifa 2', hint: 'Gapni tuzing', tasks: LESSON_10_VAZIFA_SENTENCE },
+  { vazifaId: 2, label: 'Vazifa 2', hint: 'Juftini toping', tasks: LESSON_10_VAZIFA_MATCHING },
+  { vazifaId: 3, label: 'Vazifa 3', hint: 'Gapni tuzing', tasks: LESSON_10_VAZIFA_SENTENCE },
 ];
 
 export function getLessonTenVazifaConfig(vazifaId: number) {

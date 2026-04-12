@@ -68,6 +68,7 @@ export const LESSON_TWO_VAZIFA_MATCHING: Extract<LessonOneTask, { type: 'matchin
   },
 ];
 
+/** Tartib: 1) tanlov, 2) juftlash, 3) gap — barcha 1–10-darslar uchun bir xil. */
 export const LESSON_TWO_VAZIFALARI: {
   vazifaId: number;
   label: string;
@@ -75,8 +76,8 @@ export const LESSON_TWO_VAZIFALARI: {
   tasks: LessonOneTask[];
 }[] = [
   { vazifaId: 1, label: 'Vazifa 1', hint: "To'g'ri javobni tanlang", tasks: LESSON_TWO_VAZIFA_CHOICE },
-  { vazifaId: 2, label: 'Vazifa 2', hint: 'Gapni tuzing', tasks: LESSON_TWO_VAZIFA_SENTENCE },
-  { vazifaId: 3, label: 'Vazifa 3', hint: 'Juftini toping', tasks: LESSON_TWO_VAZIFA_MATCHING },
+  { vazifaId: 2, label: 'Vazifa 2', hint: 'Juftini toping', tasks: LESSON_TWO_VAZIFA_MATCHING },
+  { vazifaId: 3, label: 'Vazifa 3', hint: 'Gapni tuzing', tasks: LESSON_TWO_VAZIFA_SENTENCE },
 ];
 
 export function getLessonTwoVazifaConfig(vazifaId: number) {

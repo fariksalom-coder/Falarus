@@ -157,7 +157,56 @@ export const LESSON_5_VAZIFA_CHOICE: Extract<LessonOneTask, { type: 'choice' }>[
   }
 ];
 
-export const LESSON_5_VAZIFA_SENTENCE: Extract<LessonOneTask, { type: 'sentence' }>[] = [];
+export const LESSON_5_VAZIFA_SENTENCE: Extract<LessonOneTask, { type: 'sentence' }>[] = [
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: yangi lug‘at (erkak jins, -ь).',
+    words: ['новый', 'словарь'],
+    correct: 'новый словарь',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: katta eshik (ayol, -ь).',
+    words: ['большая', 'дверь'],
+    correct: 'большая дверь',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: yaxshi o‘qituvchi (erkak jins).',
+    words: ['хороший', 'учитель'],
+    correct: 'хороший учитель',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: qorong‘u tun (ayol, -ь).',
+    words: ['тёмная', 'ночь'],
+    correct: 'тёмная ночь',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: sovuq yanvar (erkak jins).',
+    words: ['холодный', 'январь'],
+    correct: 'холодный январь',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: kichik daftar (ayol, -ь).',
+    words: ['маленькая', 'тетрадь'],
+    correct: 'маленькая тетрадь',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: yorug‘ kun (erkak jins).',
+    words: ['светлый', 'день'],
+    correct: 'светлый день',
+  },
+  {
+    type: 'sentence',
+    prompt: 'Gapni tuzing: keng maydon (ayol, -ь).',
+    words: ['большая', 'площадь'],
+    correct: 'большая площадь',
+  },
+];
 
 export const LESSON_5_VAZIFA_MATCHING: Extract<LessonOneTask, { type: 'matching' }>[] = [
   {
@@ -240,6 +289,7 @@ export const LESSON_5_VAZIFALARI: {
 }[] = [
   { vazifaId: 1, label: 'Vazifa 1', hint: "To'g'ri javobni tanlang", tasks: LESSON_5_VAZIFA_CHOICE },
   { vazifaId: 2, label: 'Vazifa 2', hint: 'Juftini toping', tasks: LESSON_5_VAZIFA_MATCHING },
+  { vazifaId: 3, label: 'Vazifa 3', hint: 'Gapni tuzing', tasks: LESSON_5_VAZIFA_SENTENCE },
 ];
 
 export function getLessonFiveVazifaConfig(vazifaId: number) {
