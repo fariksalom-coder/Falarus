@@ -64,6 +64,23 @@ export default function HomePage() {
   return (
     <div className="min-h-screen pb-24 sm:pb-12" style={{ backgroundColor: BG }}>
       <main className="mx-auto max-w-2xl px-4 pt-6 sm:px-5 sm:pt-8">
+        {/* Brend: faqat mobil (pastki nav bo‘lganida) */}
+        <div className="mb-6 flex items-center gap-3 sm:hidden">
+          <img
+            src="/icons/icon-192.png"
+            width={44}
+            height={44}
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-2xl object-cover shadow-[0_6px_20px_rgba(37,99,235,0.2)] ring-1 ring-slate-200/90"
+            decoding="async"
+          />
+          <span
+            className="text-[22px] font-bold tracking-tight"
+            style={{ color: TEXT, letterSpacing: '-0.02em' }}
+          >
+            Falarus
+          </span>
+        </div>
 
         {/* Header greeting */}
         <motion.div
