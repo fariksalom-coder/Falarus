@@ -23,7 +23,17 @@ function resolveApiBase(): string {
   }
 }
 
-export const API_BASE = resolveApiBase();
+function resolveFallbackApiBaseForWww(): string {
+  if (typeof window === 'undefined') return '';
+  const host = window.location.hostname;
+  if (!host.startsWith('www.')) return '';
+  const apexHost = host.slice(4);
+  if (!apexHost) return '';
+  return `${window.location.protocol}//${apexHost}`;
+}
+
+const resolvedBase = resolveApiBase();
+export const API_BASE = resolvedBase || resolveFallbackApiBaseForWww();
 
 export function apiUrl(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`;
