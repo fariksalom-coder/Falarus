@@ -10,10 +10,14 @@ function resolveApiBase(): string {
     const configured = new URL(ENV_API_BASE, window.location.origin);
     const current = new URL(window.location.origin);
 
-    // Only use relative `/api` when origins match exactly (same host + scheme).
-    // Treating www vs apex as "same" forces requests to www, which may be static-only
-    // while API lives on the apex (or vice versa) → 404 on vocabulary routes.
-    if (configured.origin === current.origin) {
+    const normalizeHost = (h: string) => h.replace(/^www\./, '');
+    const sameHostFamily =
+      normalizeHost(configured.hostname) === normalizeHost(current.hostname) &&
+      configured.protocol === current.protocol;
+
+    // Keep API same-origin for same host family (apex <-> www).
+    // This avoids CORS preflight redirects between www and apex domains.
+    if (configured.origin === current.origin || sameHostFamily) {
       return '';
     }
 
@@ -23,17 +27,7 @@ function resolveApiBase(): string {
   }
 }
 
-function resolveFallbackApiBaseForWww(): string {
-  if (typeof window === 'undefined') return '';
-  const host = window.location.hostname;
-  if (!host.startsWith('www.')) return '';
-  const apexHost = host.slice(4);
-  if (!apexHost) return '';
-  return `${window.location.protocol}//${apexHost}`;
-}
-
-const resolvedBase = resolveApiBase();
-export const API_BASE = resolvedBase || resolveFallbackApiBaseForWww();
+export const API_BASE = resolveApiBase();
 
 export function apiUrl(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`;
