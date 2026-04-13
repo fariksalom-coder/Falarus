@@ -413,7 +413,7 @@ export async function routePartnerRequest(
       return handleSendRequest(userId, req, res);
     }
 
-    if (s0 === 'requests' && s1 === 'incoming' && req.method === 'GET') {
+    if ((s0 === 'requests' && s1 === 'incoming' || s0 === 'incoming-requests') && req.method === 'GET') {
       return handleIncomingRequests(userId, res);
     }
 
@@ -421,8 +421,16 @@ export async function routePartnerRequest(
       return handleAcceptRequest(userId, Number(s1), res);
     }
 
+    if (s0 === 'accept-request' && req.method === 'POST') {
+      return handleAcceptRequest(userId, Number(req.query.id), res);
+    }
+
     if (s0 === 'request' && s1 && s2 === 'reject' && req.method === 'POST') {
       return handleRejectRequest(userId, Number(s1), res);
+    }
+
+    if (s0 === 'reject-request' && req.method === 'POST') {
+      return handleRejectRequest(userId, Number(req.query.id), res);
     }
 
     if (s0 === 'match' && !s1 && req.method === 'GET') {

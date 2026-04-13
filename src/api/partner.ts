@@ -109,13 +109,13 @@ export async function sendPartnerRequest(token: string, receiverId: number): Pro
 }
 
 export async function getIncomingRequests(token: string): Promise<PartnerRequest[]> {
-  const res = await fetch(apiUrl('/api/partner/requests/incoming'), { headers: authHeaders(token) });
+  const res = await fetch(apiUrl('/api/partner/incoming-requests'), { headers: authHeaders(token) });
   if (!res.ok) throw new Error('So\'rovlar yuklanmadi');
   return res.json();
 }
 
 export async function acceptRequest(token: string, requestId: number): Promise<PartnerMatch> {
-  const res = await fetch(apiUrl(`/api/partner/request/${requestId}/accept`), {
+  const res = await fetch(apiUrl(`/api/partner/accept-request?id=${requestId}`), {
     method: 'POST',
     headers: authHeaders(token),
   });
@@ -124,7 +124,7 @@ export async function acceptRequest(token: string, requestId: number): Promise<P
 }
 
 export async function rejectRequest(token: string, requestId: number): Promise<void> {
-  const res = await fetch(apiUrl(`/api/partner/request/${requestId}/reject`), {
+  const res = await fetch(apiUrl(`/api/partner/reject-request?id=${requestId}`), {
     method: 'POST',
     headers: authHeaders(token),
   });

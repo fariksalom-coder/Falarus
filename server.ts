@@ -1174,7 +1174,7 @@ async function startServer() {
           .insert({ sender_id: userId, receiver_id: receiverId }).select().single();
         return res.status(201).json(data);
       }
-      if (s0 === 'requests' && s1 === 'incoming' && req.method === 'GET') {
+      if ((s0 === 'requests' && s1 === 'incoming' || s0 === 'incoming-requests') && req.method === 'GET') {
         const { data } = await supabase.from('partner_requests')
           .select('id, sender_id, status, created_at')
           .eq('receiver_id', userId).eq('status', 'pending').order('created_at', { ascending: false });
@@ -1198,8 +1198,23 @@ async function startServer() {
         const { data: match } = await supabase.from('partner_matches').insert({ user1_id: rq.sender_id, user2_id: userId }).select().single();
         return res.json(match);
       }
+      if (s0 === 'accept-request' && req.method === 'POST') {
+        const requestId = Number(req.query.id);
+        const { data: rq } = await supabase.from('partner_requests').select('id, sender_id, receiver_id, status')
+          .eq('id', requestId).eq('receiver_id', userId).maybeSingle();
+        if (!rq || rq.status !== 'pending') return res.status(404).json({ error: 'Topilmadi' });
+        await supabase.from('partner_requests').update({ status: 'accepted', responded_at: new Date().toISOString() }).eq('id', requestId);
+        await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() })
+          .eq('status', 'pending').or(`sender_id.eq.${rq.sender_id},sender_id.eq.${userId},receiver_id.eq.${rq.sender_id},receiver_id.eq.${userId}`).neq('id', requestId);
+        const { data: match } = await supabase.from('partner_matches').insert({ user1_id: rq.sender_id, user2_id: userId }).select().single();
+        return res.json(match);
+      }
       if (s0 === 'request' && s1 && s2 === 'reject' && req.method === 'POST') {
         await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() }).eq('id', Number(s1)).eq('receiver_id', userId);
+        return res.json({ success: true });
+      }
+      if (s0 === 'reject-request' && req.method === 'POST') {
+        await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() }).eq('id', Number(req.query.id)).eq('receiver_id', userId);
         return res.json({ success: true });
       }
       if (s0 === 'match' && !s1 && req.method === 'GET') {
