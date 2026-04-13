@@ -36,7 +36,8 @@ export default function PartnerPage() {
         setView('browse');
       }
     } catch {
-      setView('browse');
+      setStatus(null);
+      setView('profile-form');
     }
   }, [token]);
 
@@ -74,15 +75,6 @@ export default function PartnerPage() {
       }}
     >
       <main className="mx-auto max-w-4xl px-4 py-6 sm:px-5 sm:py-8">
-        {view !== 'chat' && view !== 'incoming' && (
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[2rem]">
-              Naparnik
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">Rus tilini birga o'rganing</p>
-          </div>
-        )}
-
         <AnimatePresence mode="wait">
           {view === 'loading' && (
             <motion.div
@@ -109,10 +101,10 @@ export default function PartnerPage() {
                   <Lock className="h-8 w-8 text-blue-600" />
                 </div>
                 <h2 className="mt-5 text-xl font-bold text-slate-900">
-                  Naparnik funksiyasidan foydalanish uchun obuna kerak
+                  Sherik funksiyasidan foydalanish uchun obuna kerak
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Obuna orqali naparnik topish, suhbat qilish va tilni birga o'rganish imkoniyatiga ega bo'lasiz
+                  Obuna orqali sherik topish, suhbat qilish va tilni birga o'rganish imkoniyatiga ega bo'lasiz
                 </p>
                 <button
                   type="button"
@@ -136,16 +128,25 @@ export default function PartnerPage() {
             </motion.div>
           )}
 
-          {view === 'browse' && status && (
+          {view === 'browse' && (
             <motion.div
               key="browse"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
+              <div className="mx-auto mb-4 flex max-w-lg justify-end">
+                <button
+                  type="button"
+                  onClick={() => setView('profile-form')}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                  Anketani to'ldirish
+                </button>
+              </div>
               <PartnerPeopleList
                 onRequestSent={handleRequestSent}
-                incomingCount={status.incomingRequestsCount}
+                incomingCount={status?.incomingRequestsCount ?? 0}
                 onShowIncoming={() => setView('incoming')}
               />
             </motion.div>
@@ -165,7 +166,7 @@ export default function PartnerPage() {
                 </div>
                 <h2 className="mt-5 text-xl font-bold text-slate-900">So'rov yuborildi</h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Javob kutilmoqda. Naparnik qabul qilgandan so'ng chat ochiladi.
+                  Javob kutilmoqda. Sherik qabul qilgandan so'ng chat ochiladi.
                 </p>
               </div>
 

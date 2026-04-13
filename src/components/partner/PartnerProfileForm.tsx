@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { savePartnerProfile, type PartnerProfile } from '../../api/partner';
 import { useAuth } from '../../context/AuthContext';
@@ -26,16 +26,23 @@ const inputClass =
 const labelClass = 'mb-1.5 block text-sm font-semibold text-slate-700';
 
 export default function PartnerProfileForm({ existing, onSaved }: Props) {
-  const { token } = useAuth();
-  const [displayName, setDisplayName] = useState(existing?.display_name ?? '');
+  const { token, user } = useAuth();
+  const profileFullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+  const [displayName, setDisplayName] = useState(existing?.display_name ?? profileFullName);
   const [age, setAge] = useState(existing?.age?.toString() ?? '');
   const [gender, setGender] = useState<string>(existing?.gender ?? '');
   const [level, setLevel] = useState(existing?.language_level ?? '');
   const [goal, setGoal] = useState<string>(existing?.goal ?? '');
   const [about, setAbout] = useState(existing?.about ?? '');
-  const [seeking, setSeeking] = useState(existing?.seeking ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (existing?.display_name) return;
+    if (!displayName && profileFullName) {
+      setDisplayName(profileFullName);
+    }
+  }, [existing?.display_name, displayName, profileFullName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +57,7 @@ export default function PartnerProfileForm({ existing, onSaved }: Props) {
         language_level: level,
         goal: goal as 'work' | 'conversation',
         about: about.trim(),
-        seeking: seeking.trim(),
+        seeking: existing?.seeking ?? '',
       });
       onSaved();
     } catch (err) {
@@ -70,7 +77,7 @@ export default function PartnerProfileForm({ existing, onSaved }: Props) {
     >
       <div className="text-center">
         <h2 className="text-xl font-bold text-slate-900">Anketa to'ldiring</h2>
-        <p className="mt-1 text-sm text-slate-500">Naparnik topish uchun ma'lumotlaringizni kiriting</p>
+        <p className="mt-1 text-sm text-slate-500">Sherik topish uchun ma'lumotlaringizni kiriting</p>
       </div>
 
       <div>
@@ -151,17 +158,6 @@ export default function PartnerProfileForm({ existing, onSaved }: Props) {
           onChange={(e) => setAbout(e.target.value)}
           placeholder="Qisqacha o'zingiz haqida yozing..."
           rows={3}
-          className={inputClass + ' resize-none'}
-        />
-      </div>
-
-      <div>
-        <label className={labelClass}>Kimni qidiryapsiz</label>
-        <textarea
-          value={seeking}
-          onChange={(e) => setSeeking(e.target.value)}
-          placeholder="Qanday naparnik qidiryapsiz..."
-          rows={2}
           className={inputClass + ' resize-none'}
         />
       </div>

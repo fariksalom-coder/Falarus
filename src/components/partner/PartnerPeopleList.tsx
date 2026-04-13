@@ -46,7 +46,7 @@ export default function PartnerPeopleList({ onRequestSent, incomingCount, onShow
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Odamlar</h2>
-          <p className="mt-0.5 text-sm text-slate-500">Naparnik tanlang</p>
+          <p className="mt-0.5 text-sm text-slate-500">Sherik tanlang</p>
         </div>
         {incomingCount > 0 && (
           <button

@@ -141,7 +141,7 @@ async function handleSendRequest(userId: number, req: VercelRequest, res: Vercel
     .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
     .maybeSingle();
   if (activeMatch)
-    return res.status(400).json({ error: 'Sizda allaqachon naparnik bor' });
+    return res.status(400).json({ error: 'Sizda allaqachon sherik bor' });
 
   const { data: pending } = await supabase
     .from('partner_requests')

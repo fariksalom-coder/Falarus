@@ -44,7 +44,7 @@ export default function AppNavBar() {
     >
       <div className="mx-auto flex h-[78px] max-w-[820px] items-center justify-between gap-2 px-4 sm:px-5">
         {btn('/', ['/', '/russian'], "Bosh sahifa", House)}
-        {btn('/partner', ['/partner'], 'Naparnik', Users)}
+        {btn('/partner', ['/partner'], 'Sherik', Users)}
         {btn('/statistika', ['/statistika'], 'Statistika', BarChart3)}
         {btn('/profile', ['/profile'], 'Profil', User)}
       </div>

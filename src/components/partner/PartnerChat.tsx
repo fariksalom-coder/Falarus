@@ -99,8 +99,8 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
           {initials}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-bold text-slate-900">{partner?.display_name ?? 'Naparnik'}</p>
-          <p className="text-xs text-slate-500">Naparnikingiz</p>
+          <p className="truncate text-base font-bold text-slate-900">{partner?.display_name ?? 'Sherik'}</p>
+          <p className="text-xs text-slate-500">Sherigingiz</p>
         </div>
         <button
           type="button"
@@ -181,9 +181,9 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
           >
-            <h3 className="text-lg font-bold text-slate-900">Naparniklikni tugatish</h3>
+            <h3 className="text-lg font-bold text-slate-900">Sheriklikni tugatish</h3>
             <p className="mt-2 text-sm text-slate-600">
-              Haqiqatan ham naparniklikni tugatmoqchimisiz? Chat tarixi saqlanadi, lekin siz yangi naparnik qidirishingiz mumkin.
+              Haqiqatan ham sheriklikni tugatmoqchimisiz? Chat tarixi saqlanadi, lekin siz yangi sherik qidirishingiz mumkin.
             </p>
             <div className="mt-5 flex gap-3">
               <button

@@ -70,7 +70,7 @@ export default function PartnerIncomingRequests({ onBack, onAccepted }: Props) {
         </button>
         <div>
           <h2 className="text-xl font-bold text-slate-900">Kiruvchi so'rovlar</h2>
-          <p className="mt-0.5 text-sm text-slate-500">Sizga yuborilgan naparniklik so'rovlari</p>
+          <p className="mt-0.5 text-sm text-slate-500">Sizga yuborilgan sheriklik so'rovlari</p>
         </div>
       </div>
 
