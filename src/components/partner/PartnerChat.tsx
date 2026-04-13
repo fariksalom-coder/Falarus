@@ -245,7 +245,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             onFocus={scrollToBottom}
             placeholder="Xabar yozing..."
-            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[0.95rem] text-slate-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100 sm:text-[0.95rem]"
           />
           <button
             type="button"

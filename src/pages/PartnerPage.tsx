@@ -213,7 +213,11 @@ export default function PartnerPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <PartnerChat match={status.match} onEnded={handlePartnershipEnded} />
+              <PartnerChat
+                match={status.match}
+                onEnded={handlePartnershipEnded}
+                onBack={() => setView('browse')}
+              />
             </motion.div>
           )}
         </AnimatePresence>
