@@ -10,6 +10,7 @@ import {
 } from '../../api/partner';
 import { useAuth } from '../../context/AuthContext';
 import { usePartnerRealtimeChat } from '../../hooks/usePartnerRealtimeChat';
+import { isRealtimeEnabled } from '../../lib/supabaseClient';
 
 type Props = {
   match: PartnerMatch;
@@ -41,6 +42,19 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [token, match.id]);
+
+  useEffect(() => {
+    if (!token || isRealtimeEnabled) return;
+    const interval = setInterval(() => {
+      void getChatMessages(token, match.id)
+        .then((msgs) => {
+          setMessages(msgs);
+          markSeen(msgs.map((m) => m.id));
+        })
+        .catch(() => {});
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [token, match.id, markSeen]);
 
   const allMessages = useMemo(() => {
     const map = new Map<number, ChatMessage>();

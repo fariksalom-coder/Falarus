@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabaseClient } from '../lib/supabaseClient';
 import type { ChatMessage } from '../api/partner';
 
@@ -35,9 +35,9 @@ export function usePartnerRealtimeChat(matchId: number | null) {
     };
   }, [matchId]);
 
-  const markSeen = (ids: number[]) => {
+  const markSeen = useCallback((ids: number[]) => {
     for (const id of ids) seenIds.current.add(id);
-  };
+  }, []);
 
   return { realtimeMessages, markSeen };
 }
