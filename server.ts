@@ -1110,7 +1110,7 @@ async function startServer() {
   // ---------------------------------------------------------------------------
   // Partner (Naparnik) routes — delegate to the same handler used by Vercel
   // ---------------------------------------------------------------------------
-  app.all('/api/partner/*', authenticate, async (req: any, res) => {
+  app.use('/api/partner', authenticate, async (req: any, res) => {
     const userId = req.userId as number;
     const access = await getAccessInfo(supabase, userId);
     if (!access.subscription_active) return res.status(403).json({ error: 'Obuna kerak' });
