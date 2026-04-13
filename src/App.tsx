@@ -138,18 +138,28 @@ function AppRoutes() {
           <Route path="/lesson-8/mustahkamlash" element={<Navigate to="/lesson-8/vazifa/1" replace />} />
           <Route path="/lesson-9/mustahkamlash" element={<Navigate to="/lesson-9/vazifa/1" replace />} />
           <Route path="/lesson-10/mustahkamlash" element={<Navigate to="/lesson-10/vazifa/1" replace />} />
-          <Route
-            path="/lesson-:lessonId/mustahkamlash"
-            element={renderLazyPage('./pages/GrammarLessonTaskPage.tsx')}
-          />
-          <Route
-            path="/lesson-:lessonId/zadanie-1"
-            element={renderLazyPage('./pages/GrammarLessonTaskPage.tsx')}
-          />
-          <Route
-            path="/lesson-:lessonId/topshiriq-:topIdx"
-            element={renderLazyPage('./pages/GrammarLessonTaskPage.tsx')}
-          />
+          {/* RR7: `lesson-:id` inline params ishlamaydi; 11–24 uchun aniq yo'llar */}
+          <Route path="/lesson-11/mustahkamlash" element={renderLazyPage('./pages/GrammarLessonTaskPage.tsx')} />
+          <Route path="/lesson-11/zadanie-1" element={renderLazyPage('./pages/GrammarLessonTaskPage.tsx')} />
+          <Route path="/lesson-15/mustahkamlash" element={renderLazyPage('./pages/GrammarLessonTaskPage.tsx')} />
+          {[
+            ...Array.from({ length: 14 }, (_, i) => `/lesson-11/topshiriq-${i + 2}`),
+            ...Array.from({ length: 1 }, () => `/lesson-12/topshiriq-1`),
+            ...Array.from({ length: 1 }, () => `/lesson-13/topshiriq-1`),
+            ...Array.from({ length: 16 }, (_, i) => `/lesson-14/topshiriq-${i + 1}`),
+            ...Array.from({ length: 7 }, (_, i) => `/lesson-15/topshiriq-${i + 1}`),
+            ...Array.from({ length: 3 }, (_, i) => `/lesson-16/topshiriq-${i + 1}`),
+            ...Array.from({ length: 17 }, (_, i) => `/lesson-17/topshiriq-${i + 1}`),
+            ...Array.from({ length: 5 }, (_, i) => `/lesson-18/topshiriq-${i + 1}`),
+            ...Array.from({ length: 16 }, (_, i) => `/lesson-19/topshiriq-${i + 1}`),
+            ...Array.from({ length: 7 }, (_, i) => `/lesson-20/topshiriq-${i + 1}`),
+            ...Array.from({ length: 1 }, () => `/lesson-21/topshiriq-1`),
+            ...Array.from({ length: 12 }, (_, i) => `/lesson-22/topshiriq-${i + 1}`),
+            ...Array.from({ length: 2 }, (_, i) => `/lesson-23/topshiriq-${i + 1}`),
+            ...Array.from({ length: 4 }, (_, i) => `/lesson-24/topshiriq-${i + 1}`),
+          ].map((p) => (
+            <Route key={p} path={p} element={renderLazyPage('./pages/GrammarLessonTaskPage.tsx')} />
+          ))}
           <Route path="/lesson/:id" element={renderLazyPage('./pages/LessonPage.tsx')} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </>

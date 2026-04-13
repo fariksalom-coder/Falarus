@@ -5,6 +5,7 @@ import { getLessonTaskQuestions, type ApiQuestion } from '../api/lessonQuestions
 import { addUserPoints } from '../api/leaderboard';
 import { setLessonTaskResult } from '../utils/lessonTaskResults';
 import { resolveGrammarTaskFromPath } from '../utils/grammarTaskPaths';
+import { getUnifiedVazifaConfig } from '../data/unifiedLessonVazifaRegistry';
 import {
   parseChoicePayload,
   parseMatchingPayload,
@@ -19,6 +20,30 @@ type NormChoice = { kind: 'choice' | 'fill'; prompt: string; options: string[]; 
 type NormMatching = { kind: 'matching'; prompt: string; pairs: { left: string; right: string }[] };
 type NormSentence = { kind: 'sentence' | 'reorder'; prompt: string; words: string[]; correct: string };
 type NormTask = NormChoice | NormMatching | NormSentence;
+
+/**
+ * Fallback: 1–10-darslar uchun statik `lessonOneTasks` / `lessonTwoTasks` va h.k.
+ * dan savollarni olish (agar API/DB bo'sh bo'lsa).
+ */
+function getStaticFallbackTasks(lessonPath: string, taskNumber: number): NormTask[] {
+  const m = lessonPath.match(/^\/lesson-(\d+)$/);
+  if (!m) return [];
+  const lessonNum = Number(m[1]);
+  if (lessonNum < 1 || lessonNum > 10) return [];
+  const cfg = getUnifiedVazifaConfig(lessonNum, taskNumber);
+  if (!cfg) return [];
+  const out: NormTask[] = [];
+  for (const t of cfg.tasks) {
+    if (t.type === 'choice') {
+      out.push({ kind: 'choice', prompt: t.prompt, options: t.options, correct: t.correct });
+    } else if (t.type === 'matching') {
+      out.push({ kind: 'matching', prompt: t.prompt, pairs: t.pairs });
+    } else if (t.type === 'sentence') {
+      out.push({ kind: 'sentence', prompt: t.prompt, words: t.words, correct: t.correct });
+    }
+  }
+  return out;
+}
 
 function isWordBankTask(t: NormTask | undefined): t is NormSentence {
   return t != null && (t.kind === 'sentence' || t.kind === 'reorder');
@@ -143,7 +168,13 @@ export default function GrammarLessonTaskPage() {
     setError(null);
     try {
       const rows = await getLessonTaskQuestions(token, resolved.lessonPath, resolved.taskNumber);
-      const norm = normalizeQuestions(rows);
+      let norm = normalizeQuestions(rows);
+
+      if (norm.length === 0) {
+        const fallback = getStaticFallbackTasks(resolved.lessonPath, resolved.taskNumber);
+        if (fallback.length > 0) norm = fallback;
+      }
+
       setTasks(norm);
       if (norm.length === 0) {
         if (rows.length === 0) {

@@ -3,6 +3,12 @@ import { LESSONS } from '../../src/data/lessonsList.js';
 
 export const LESSON_PASS_THRESHOLD = 0.7;
 
+const LEGACY_EXERCISES_TOTAL: Readonly<Record<string, number>> = {
+  '/lesson-4': 2,
+  '/lesson-5': 2,
+  '/lesson-10': 2,
+};
+
 type LessonTaskResultRow = {
   lesson_path: string;
   task_number: number;
@@ -46,16 +52,22 @@ export function getCompletedLessonPathsFromTaskRows(
   for (const lesson of LESSONS) {
     const tasks = passedTasksByLesson.get(lesson.path);
     if (!tasks) continue;
-    let allPassed = true;
-    for (let taskNumber = 1; taskNumber <= lesson.exercisesTotal; taskNumber += 1) {
-      const row = tasks.get(taskNumber);
-      if (!row || !isLessonTaskPassed(row)) {
-        allPassed = false;
-        break;
-      }
+
+    let allCurrent = true;
+    for (let t = 1; t <= lesson.exercisesTotal; t += 1) {
+      const row = tasks.get(t);
+      if (!row || !isLessonTaskPassed(row)) { allCurrent = false; break; }
     }
-    if (allPassed) {
-      completed.add(lesson.path);
+    if (allCurrent) { completed.add(lesson.path); continue; }
+
+    const legacy = LEGACY_EXERCISES_TOTAL[lesson.path];
+    if (legacy != null && legacy < lesson.exercisesTotal) {
+      let legacyOk = true;
+      for (let t = 1; t <= legacy; t += 1) {
+        const row = tasks.get(t);
+        if (!row || !isLessonTaskPassed(row)) { legacyOk = false; break; }
+      }
+      if (legacyOk) completed.add(lesson.path);
     }
   }
 

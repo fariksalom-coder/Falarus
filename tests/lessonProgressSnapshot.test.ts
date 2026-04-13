@@ -29,6 +29,14 @@ test('completed lessons are derived from fully passed lesson_task_results', () =
   assert.equal(completed.has('/lesson-11'), true);
 });
 
+test('lesson with legacy exercisesTotal counts as completed with old 2-task results', () => {
+  const completed = getCompletedLessonPathsFromTaskRows([
+    { lesson_path: '/lesson-10', task_number: 1, correct: 8, total: 10 },
+    { lesson_path: '/lesson-10', task_number: 2, correct: 8, total: 10 },
+  ]);
+  assert.equal(completed.has('/lesson-10'), true, 'lesson-10 with 2 passed tasks should complete via legacy');
+});
+
 test('legacy and task-based progress merge into one completed lesson set', () => {
   const merged = mergeCompletedLessonPathSets(
     getCompletedLessonPathsFromTaskRows([

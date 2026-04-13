@@ -9,6 +9,16 @@ export const PASS_THRESHOLD = 0.7;
 
 export type TaskResultsMap = Record<string, Record<number, TaskResult>>;
 
+/**
+ * Lessons whose exercisesTotal was raised from 2 → 3 during the task-type split.
+ * Users who already passed the old 2 tasks should not lose access to later lessons.
+ */
+const LEGACY_EXERCISES_TOTAL: Readonly<Record<string, number>> = {
+  '/lesson-4': 2,
+  '/lesson-5': 2,
+  '/lesson-10': 2,
+};
+
 /** Percentage 0..100 */
 export function taskScorePercent(result: TaskResult): number {
   if (result.total <= 0) return 0;
@@ -29,11 +39,22 @@ export function isLessonFullyPassed(
 ): boolean {
   if (totalTasks <= 0) return true;
   const lesson = results[lessonPath] ?? {};
+  let allCurrent = true;
   for (let t = 1; t <= totalTasks; t += 1) {
     const r = lesson[t];
-    if (!r || !isTaskPassedForProgress(r)) return false;
+    if (!r || !isTaskPassedForProgress(r)) { allCurrent = false; break; }
   }
-  return true;
+  if (allCurrent) return true;
+
+  const legacy = LEGACY_EXERCISES_TOTAL[lessonPath];
+  if (legacy != null && legacy < totalTasks) {
+    for (let t = 1; t <= legacy; t += 1) {
+      const r = lesson[t];
+      if (!r || !isTaskPassedForProgress(r)) return false;
+    }
+    return true;
+  }
+  return false;
 }
 
 /** Lesson index 0 = first lesson — always sequentially unlockable (subject to subscription). */

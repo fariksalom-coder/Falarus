@@ -1,19 +1,28 @@
 import type { ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LESSONS_LIST_PATH } from '../../constants/lessonRoutes';
 
 type LessonHubLayoutProps = {
-  onBack: () => void;
+  onBack?: () => void;
   children: ReactNode;
   /** Wide lessons (jadval) uchun */
   maxWidthClass?: string;
 };
 
 export function LessonHubLayout({ onBack, children, maxWidthClass = 'max-w-3xl' }: LessonHubLayoutProps) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const handleBack = onBack ?? (() => {
+    navigate(LESSONS_LIST_PATH, { state: { scrollToLesson: pathname } });
+  });
+
   return (
     <div className="min-h-screen bg-slate-50">
       <main className={`mx-auto ${maxWidthClass} px-4 py-5 sm:p-6`}>
         <button
           type="button"
-          onClick={onBack}
+          onClick={handleBack}
           className="mb-4 inline-flex min-h-[44px] items-center rounded-2xl border border-slate-200/90 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-[0_4px_18px_rgba(15,23,42,0.06)] transition-colors hover:bg-slate-50 max-sm:border-slate-200/70"
         >
           Orqaga

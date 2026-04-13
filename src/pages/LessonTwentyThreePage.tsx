@@ -1,9 +1,7 @@
-import { useNavigate } from 'react-router-dom';
 import { LessonHubLayout } from '../components/lesson/LessonHubLayout';
 import { LessonHubTitle } from '../components/lesson/LessonHubTitle';
 import { ExtendedHubTaskGrid } from '../components/lesson/LessonHubTaskGrids';
 import { LessonTheoryCollapsible } from '../components/lesson/LessonTheoryCollapsible';
-import { LESSONS_LIST_PATH } from '../constants/lessonRoutes';
 
 const LESSON_PATH = '/lesson-23';
 
@@ -13,10 +11,8 @@ const HUB_ROUTES = Array.from({ length: 2 }, (_, i) => {
 });
 
 export default function LessonTwentyThreePage() {
-  const navigate = useNavigate();
-
   return (
-    <LessonHubLayout onBack={() => navigate(LESSONS_LIST_PATH)}>
+    <LessonHubLayout>
       <LessonHubTitle lessonPath={LESSON_PATH} />
       <div className="space-y-4">
         <LessonTheoryCollapsible>

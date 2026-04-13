@@ -44,3 +44,15 @@ test('next task unlocks only after previous task reaches 70 percent', () => {
   };
   assert.equal(isTaskUnlocked('/lesson-11', 2, 16, passed), true);
 });
+
+test('lesson with legacy exercisesTotal unlocks next lesson with old 2-task results', () => {
+  const oldResults: TaskResultsMap = {
+    '/lesson-1': { 1: { correct: 8, total: 10 }, 2: { correct: 8, total: 10 }, 3: { correct: 8, total: 10 } },
+    '/lesson-2': { 1: { correct: 8, total: 10 }, 2: { correct: 8, total: 10 }, 3: { correct: 8, total: 10 } },
+    '/lesson-3': { 1: { correct: 8, total: 10 }, 2: { correct: 8, total: 10 }, 3: { correct: 8, total: 10 } },
+    '/lesson-4': { 1: { correct: 8, total: 10 }, 2: { correct: 8, total: 10 } },
+  };
+  const states = computeLessonStates(oldResults);
+  const lesson5 = states.find(s => s.lessonPath === '/lesson-5');
+  assert.equal(lesson5?.isUnlocked, true, 'lesson 5 should be unlocked via legacy 2-task pass of lesson 4');
+});

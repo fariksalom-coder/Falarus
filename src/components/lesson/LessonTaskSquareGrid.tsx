@@ -248,8 +248,9 @@ export function LessonTaskSquareGrid({
           const passed = !!(results[taskNum] && isTaskResultGood(results[taskNum]!));
           const isCurrent = !passed && !locked && currentTask === taskNum;
           const fromCatalog = questionCountByTask?.[taskNum];
+          const staticCount = getExpectedLessonTaskCount(lessonPath, taskNum);
           const questionTotal =
-            fromCatalog !== undefined ? fromCatalog : getExpectedLessonTaskCount(lessonPath, taskNum);
+            fromCatalog != null && fromCatalog > 0 ? fromCatalog : (staticCount ?? fromCatalog ?? null);
 
           const stacked = (
             <TaskCardStackedBody

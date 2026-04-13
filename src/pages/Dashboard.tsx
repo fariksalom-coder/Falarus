@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Check, Lock, Play } from 'lucide-react';
 import { LESSONS } from '../data/lessonsList';
@@ -71,6 +71,7 @@ function getCardStateStyles(state: LessonCardState) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { token } = useAuth();
   const { access } = useAccess();
   const { lessonStates, results, isReady: seqReady } = useSequentialLesson();
@@ -78,9 +79,20 @@ export default function Dashboard() {
   const { lessons: catalogLessons, loading: catalogLoading } = useGrammarCatalog();
   const [modalOpen, setModalOpen] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
+  const scrolledRef = useRef(false);
 
   const catalogReady = !token || !catalogLoading;
   const dataReady = !token || (seqReady && subLoaded && catalogReady);
+
+  const scrollTarget = (location.state as { scrollToLesson?: string } | null)?.scrollToLesson;
+  useEffect(() => {
+    if (!scrollTarget || scrolledRef.current || !dataReady) return;
+    scrolledRef.current = true;
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-lesson-path="${scrollTarget}"]`);
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'instant' });
+    });
+  }, [scrollTarget, dataReady]);
 
   const displayLessons: DashboardLessonRow[] =
     token && catalogLessons
@@ -188,7 +200,7 @@ export default function Dashboard() {
                       : 'Oldingi dars tugagach ochiladi';
 
               return (
-                <div key={lesson.id} className="space-y-3.5 sm:space-y-4">
+                <div key={lesson.id} data-lesson-path={lesson.path} className="space-y-3.5 sm:space-y-4">
                   <motion.button
                     type="button"
                     onClick={() => handleLessonClick(lesson)}

@@ -1,12 +1,12 @@
 /**
  * `src/pages` dan `TASKS` massivlarini o‘qiydi va `lesson_tasks_inventory.json` ni yangilaydi.
  * Standart: mavjud inventar bilan **merge** (boshqa guruhlar o‘chmaydi). To‘liq qayta yozish: `tsx ... --fresh`.
- * `/lesson-1` vazifa 1 har doim `src/data/lessonOneTasks.ts` dan qo‘shiladi.
+ * `/lesson-1` barcha 3 vazifa `src/data/lessonOneTasks.ts` dan (eski MatchingPairs/Sentence sahifalar emas).
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
-import { getLessonOneVazifaOneInventoryGroup } from './_lib/lessonOneVazifaOneInventory.js';
+import { getLessonOneInventoryGroups } from './_lib/lessonOneVazifaOneInventory.js';
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 
@@ -30,17 +30,26 @@ type ExtractedLesson = {
 const ROOT = process.cwd();
 const PAGES_DIR = path.join(ROOT, 'src/pages');
 
-function asJson(node: ts.Expression): Json | undefined {
+type ConstScope = Map<string, Json[]>;
+
+function asJson(node: ts.Expression, scope?: ConstScope): Json | undefined {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
   if (ts.isNumericLiteral(node)) return Number(node.text);
   if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
   if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
   if (node.kind === ts.SyntaxKind.NullKeyword) return null;
+  if (scope && ts.isElementAccessExpression(node) && ts.isIdentifier(node.expression) && node.argumentExpression && ts.isNumericLiteral(node.argumentExpression)) {
+    const arr = scope.get(node.expression.text);
+    if (arr) {
+      const idx = Number(node.argumentExpression.text);
+      if (idx >= 0 && idx < arr.length) return arr[idx];
+    }
+  }
   if (ts.isArrayLiteralExpression(node)) {
     const arr: Json[] = [];
     for (const el of node.elements) {
       if (!ts.isExpression(el)) return undefined;
-      const parsed = asJson(el);
+      const parsed = asJson(el, scope);
       if (parsed === undefined) return undefined;
       arr.push(parsed);
     }
@@ -52,7 +61,7 @@ function asJson(node: ts.Expression): Json | undefined {
       if (!ts.isPropertyAssignment(prop)) return undefined;
       const key = ts.isIdentifier(prop.name) ? prop.name.text : ts.isStringLiteral(prop.name) ? prop.name.text : undefined;
       if (!key) return undefined;
-      const parsed = asJson(prop.initializer);
+      const parsed = asJson(prop.initializer, scope);
       if (parsed === undefined) return undefined;
       obj[key] = parsed;
     }
@@ -61,13 +70,54 @@ function asJson(node: ts.Expression): Json | undefined {
   return undefined;
 }
 
+function asJsonWithIdentScope(node: ts.Expression, scope: ConstScope, identScope: Map<string, Json>): Json | undefined {
+  if (ts.isIdentifier(node)) {
+    const val = identScope.get(node.text);
+    if (val !== undefined) return val;
+  }
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+  if (ts.isNumericLiteral(node)) return Number(node.text);
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+  if (node.kind === ts.SyntaxKind.NullKeyword) return null;
+  if (ts.isArrayLiteralExpression(node)) {
+    const arr: Json[] = [];
+    for (const el of node.elements) {
+      if (!ts.isExpression(el)) return undefined;
+      const parsed = asJsonWithIdentScope(el, scope, identScope);
+      if (parsed === undefined) return undefined;
+      arr.push(parsed);
+    }
+    return arr;
+  }
+  if (ts.isObjectLiteralExpression(node)) {
+    const obj: Record<string, Json> = {};
+    for (const prop of node.properties) {
+      if (!ts.isPropertyAssignment(prop)) return undefined;
+      const key = ts.isIdentifier(prop.name) ? prop.name.text : ts.isStringLiteral(prop.name) ? prop.name.text : undefined;
+      if (!key) return undefined;
+      const parsed = asJsonWithIdentScope(prop.initializer, scope, identScope);
+      if (parsed === undefined) return undefined;
+      obj[key] = parsed;
+    }
+    return obj;
+  }
+  if (ts.isAsExpression(node)) return asJsonWithIdentScope(node.expression, scope, identScope);
+  return asJson(node, scope);
+}
+
 function extractTasksFromText(sourceText: string): ExtractedTask[] {
   const sourceFile = ts.createSourceFile('x.tsx', sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const tasks: ExtractedTask[] = [];
 
   function parseTaskObject(raw: Record<string, Json>): ExtractedTask | null {
-    const type = typeof raw.type === 'string' ? raw.type : null;
-    if (!type) return null;
+    let type = typeof raw.type === 'string' ? raw.type : null;
+    if (!type) {
+      if (Array.isArray(raw.pairs)) type = 'matching';
+      else if (Array.isArray(raw.words) && typeof raw.correct === 'string') type = 'sentence';
+      else if (Array.isArray(raw.options) && typeof raw.correct === 'string') type = 'choice';
+      else return null;
+    }
     const prompt = typeof raw.prompt === 'string' ? raw.prompt : '';
     const base = { difficulty: 1, skill: 'grammar', meta: {} as Record<string, Json> };
     if (type === 'matching') {
@@ -105,14 +155,65 @@ function extractTasksFromText(sourceText: string): ExtractedTask[] {
     return { type, prompt, content: raw, answer: { type: 'unknown', value: '', alternatives: [] }, ...base };
   }
 
+  const constScope: ConstScope = new Map();
+
+  function collectConsts(node: ts.Node) {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && ts.isArrayLiteralExpression(node.initializer)) {
+      const name = node.name.text;
+      if (name !== 'TASKS') {
+        const arr = asJson(node.initializer) as Json[] | undefined;
+        if (arr && Array.isArray(arr)) constScope.set(name, arr);
+      }
+    }
+    ts.forEachChild(node, collectConsts);
+  }
+  collectConsts(sourceFile);
+
   function visit(node: ts.Node) {
-    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === 'TASKS' && node.initializer && ts.isArrayLiteralExpression(node.initializer)) {
-      for (const el of node.initializer.elements) {
-        if (!ts.isObjectLiteralExpression(el)) continue;
-        const parsed = asJson(el);
-        if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') continue;
-        const mapped = parseTaskObject(parsed);
-        if (mapped) tasks.push(mapped);
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === 'TASKS' && node.initializer) {
+      if (ts.isArrayLiteralExpression(node.initializer)) {
+        for (const el of node.initializer.elements) {
+          if (!ts.isObjectLiteralExpression(el)) continue;
+          const parsed = asJson(el, constScope);
+          if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') continue;
+          const mapped = parseTaskObject(parsed);
+          if (mapped) tasks.push(mapped);
+        }
+      } else if (ts.isCallExpression(node.initializer) && ts.isPropertyAccessExpression(node.initializer.expression) && node.initializer.expression.name.text === 'map') {
+        const srcIdent = node.initializer.expression.expression;
+        if (ts.isIdentifier(srcIdent)) {
+          const srcArr = constScope.get(srcIdent.text);
+          const mapFn = node.initializer.arguments[0];
+          if (srcArr && mapFn && (ts.isArrowFunction(mapFn) || ts.isFunctionExpression(mapFn))) {
+            const params = mapFn.parameters;
+            if (params.length >= 1 && ts.isObjectBindingPattern(params[0].name)) {
+              const bindings = params[0].name.elements;
+              const paramNames = bindings.map(b => ts.isIdentifier(b.name) ? b.name.text : '');
+              const body = ts.isBlock(mapFn.body) ? null : mapFn.body;
+              if (body && ts.isParenthesizedExpression(body) && ts.isObjectLiteralExpression(body.expression) || body && ts.isObjectLiteralExpression(body)) {
+                const objExpr = ts.isParenthesizedExpression(body) ? body.expression as ts.ObjectLiteralExpression : body as ts.ObjectLiteralExpression;
+                for (const srcItem of srcArr) {
+                  if (!srcItem || typeof srcItem !== 'object' || Array.isArray(srcItem)) continue;
+                  const itemScope: ConstScope = new Map(constScope);
+                  for (const pName of paramNames) {
+                    const val = (srcItem as Record<string, Json>)[pName];
+                    if (typeof val === 'string') itemScope.set(pName, [val]);
+                  }
+                  const fnScope = new Map<string, Json>();
+                  for (const pName of paramNames) {
+                    const val = (srcItem as Record<string, Json>)[pName];
+                    if (val !== undefined) fnScope.set(pName, val);
+                  }
+                  const resolved = asJsonWithIdentScope(objExpr, itemScope, fnScope);
+                  if (resolved && typeof resolved === 'object' && !Array.isArray(resolved)) {
+                    const mapped = parseTaskObject(resolved);
+                    if (mapped) tasks.push(mapped);
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
     ts.forEachChild(node, visit);
@@ -198,14 +299,13 @@ async function main() {
       if (byFile) {
         lessonPath = byFile.lessonPath;
         taskNumber = byFile.taskNumber;
-      } else {
-        const byCode =
-          src.match(/lessonPath="([^"]+)"/) ||
-          src.match(/navigate\('([^']*\/lesson-\d+)'\)/);
-        const taskByCode2 = src.match(/taskNumber=\{(\d+)\}/);
-        if (byCode) lessonPath = byCode[1];
-        if (taskByCode2) taskNumber = Number(taskByCode2[1]);
       }
+      const byCode =
+        src.match(/lessonPath="([^"]+)"/) ||
+        src.match(/navigate\('([^']*\/lesson-\d+)'\)/);
+      const taskByCode = src.match(/taskNumber=\{(\d+)\}/);
+      if (byCode) lessonPath = byCode[1];
+      if (taskByCode) taskNumber = Number(taskByCode[1]);
     }
 
     byKey.set(inventoryKey(lessonPath, taskNumber), {
@@ -216,8 +316,9 @@ async function main() {
     });
   }
 
-  const l1t1 = getLessonOneVazifaOneInventoryGroup() as ExtractedLesson;
-  byKey.set(inventoryKey(l1t1.lessonPath, l1t1.taskNumber), l1t1);
+  for (const g of getLessonOneInventoryGroups()) {
+    byKey.set(inventoryKey(g.lessonPath, g.taskNumber), g as ExtractedLesson);
+  }
 
   const lessons = [...byKey.values()].sort((a, b) =>
     a.lessonPath === b.lessonPath ? a.taskNumber - b.taskNumber : a.lessonPath.localeCompare(b.lessonPath),

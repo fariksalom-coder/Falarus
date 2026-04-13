@@ -3,7 +3,6 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import AppNavBar from './AppNavBar';
 import PWAInstallPrompt from './PWAInstallPrompt';
-import { useSectionSwipeNavigation } from '../hooks/useSectionSwipeNavigation';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
 import { appMainTopOffsetCss, appMainBottomOffsetCss } from '../constants/appLayout';
 
@@ -27,7 +26,6 @@ const fadeSoft = { duration: 0.18, ease: [0.32, 0.72, 0, 1] as const };
 export default function MainLayout() {
   const { pathname } = useLocation();
   const showNavBar = !hideNavBar(pathname);
-  const swipe = useSectionSwipeNavigation(showNavBar);
   const reduceMotion = useReducedMotion();
 
   const prevPathRef = useRef(pathname);
@@ -96,15 +94,8 @@ export default function MainLayout() {
         `}</style>
       )}
       {showNavBar && <AppNavBar />}
-      <motion.div
-        className={showNavBar ? `min-h-screen${swipe.canSwipe ? ' will-change-transform' : ''} nav-layout-pad` : 'min-h-screen'}
-        style={{
-          ...(swipe.canSwipe ? { x: swipe.x, touchAction: 'pan-y pinch-zoom' } : {}),
-        }}
-        onTouchStart={swipe.onTouchStart}
-        onTouchMove={swipe.onTouchMove}
-        onTouchEnd={swipe.onTouchEnd}
-        onTouchCancel={swipe.onTouchCancel}
+      <div
+        className={showNavBar ? 'min-h-screen nav-layout-pad' : 'min-h-screen'}
       >
         <div
           className={`relative w-full overflow-hidden${showNavBar ? ' nav-content-min-h' : ''}`}
@@ -129,7 +120,7 @@ export default function MainLayout() {
             </motion.div>
           </AnimatePresence>
         </div>
-      </motion.div>
+      </div>
       {showNavBar && <PWAInstallPrompt />}
     </>
   );
