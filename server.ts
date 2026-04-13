@@ -1211,7 +1211,7 @@ async function startServer() {
           .select('user_id, display_name, age, gender, language_level, goal, about').eq('user_id', partnerId).maybeSingle();
         return res.json({ ...match, partner_profile: profile });
       }
-      if (s0 === 'match' && s1 === 'end' && req.method === 'POST') {
+      if ((s0 === 'match' && s1 === 'end' || s0 === 'end-match') && req.method === 'POST') {
         const { data: match } = await supabase.from('partner_matches').select('id')
           .eq('status', 'active').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).maybeSingle();
         if (!match) return res.status(404).json({ error: 'Topilmadi' });

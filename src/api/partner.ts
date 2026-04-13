@@ -138,7 +138,7 @@ export async function getPartnerMatch(token: string): Promise<PartnerMatch | nul
 }
 
 export async function endPartnership(token: string): Promise<void> {
-  const res = await fetch(apiUrl('/api/partner/match/end'), {
+  const res = await fetch(apiUrl('/api/partner/end-match'), {
     method: 'POST',
     headers: authHeaders(token),
   });

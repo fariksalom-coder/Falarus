@@ -433,6 +433,10 @@ export async function routePartnerRequest(
       return handleEndMatch(userId, res);
     }
 
+    if (s0 === 'end-match' && req.method === 'POST') {
+      return handleEndMatch(userId, res);
+    }
+
     if (s0 === 'messages') {
       if (req.method === 'GET') return handleGetMessages(userId, req, res);
       if (req.method === 'POST') return handleSendMessage(userId, req, res);
