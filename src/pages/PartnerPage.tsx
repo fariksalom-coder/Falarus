@@ -130,7 +130,14 @@ export default function PartnerPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
-              <PartnerProfileForm onSaved={handleProfileSaved} />
+              <PartnerProfileForm
+                onSaved={handleProfileSaved}
+                onBack={status?.hasProfile ? () => {
+                  if (status?.match) setView('chat-list');
+                  else if (status?.outgoingRequest) setView('waiting');
+                  else setView('browse');
+                } : undefined}
+              />
             </motion.div>
           )}
 
