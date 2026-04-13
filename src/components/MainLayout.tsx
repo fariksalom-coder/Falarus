@@ -74,8 +74,8 @@ export default function MainLayout() {
       {showNavBar && (
         <style>{`
           .nav-layout-pad {
-            padding-top: 0;
-            padding-bottom: ${bottomOffset};
+            padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+            padding-bottom: 0;
           }
           @media (min-width: 640px) {
             .nav-layout-pad {
@@ -84,11 +84,19 @@ export default function MainLayout() {
             }
           }
           .nav-content-min-h {
-            min-height: calc(100dvh - ${bottomOffset});
+            min-height: calc(100dvh - (env(safe-area-inset-top, 0px) + 8px));
           }
           @media (min-width: 640px) {
             .nav-content-min-h {
               min-height: calc(100dvh - ${topOffset});
+            }
+          }
+          .nav-scroll-pad {
+            padding-bottom: ${bottomOffset};
+          }
+          @media (min-width: 640px) {
+            .nav-scroll-pad {
+              padding-bottom: 0;
             }
           }
         `}</style>
@@ -114,7 +122,7 @@ export default function MainLayout() {
               animate="center"
               exit="exit"
               transition={transition}
-              className="absolute inset-0 w-full overflow-y-auto overflow-x-hidden bg-[#F8FAFC] overscroll-y-contain"
+              className={`absolute inset-0 w-full overflow-y-auto overflow-x-hidden bg-[#F8FAFC] overscroll-y-contain${showNavBar ? ' nav-scroll-pad' : ''}`}
             >
               <Outlet />
             </motion.div>

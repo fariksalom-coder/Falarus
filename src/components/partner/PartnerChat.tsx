@@ -101,9 +101,12 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
     .toUpperCase();
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col" style={{ height: 'calc(100dvh - 100px)' }}>
+    <div
+      className="mx-auto flex w-full max-w-lg flex-col overflow-hidden px-4 pt-2 sm:px-5 sm:pt-3"
+      style={{ height: 'calc(100dvh - 92px - env(safe-area-inset-bottom, 0px))' }}
+    >
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-slate-200/80 pb-4">
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200/80 bg-[#F8FAFC] pb-3 pt-1">
         {onBack && (
           <button type="button" onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
             <ArrowLeft className="h-4 w-4" />
@@ -127,7 +130,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-4">
+      <div className="flex-1 overflow-y-auto py-3">
         {loading && (
           <div className="flex items-center justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -168,7 +171,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 border-t border-slate-200/80 pt-3 pb-2">
+      <div className="sticky bottom-0 z-10 flex gap-2 border-t border-slate-200/80 bg-[#F8FAFC] pb-[max(8px,env(safe-area-inset-bottom,0px))] pt-3">
         <input
           type="text"
           value={text}

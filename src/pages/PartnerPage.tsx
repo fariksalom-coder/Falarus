@@ -74,7 +74,13 @@ export default function PartnerPage() {
         backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
       }}
     >
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-5 sm:py-8">
+      <main
+        className={
+          view === 'chat'
+            ? 'mx-auto max-w-4xl px-0 py-0 sm:px-0 sm:py-0'
+            : 'mx-auto max-w-4xl px-4 py-6 sm:px-5 sm:py-8'
+        }
+      >
         <AnimatePresence mode="wait">
           {view === 'loading' && (
             <motion.div
