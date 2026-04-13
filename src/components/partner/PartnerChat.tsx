@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { Send, LogOut, ArrowLeft } from 'lucide-react';
 import {
@@ -18,24 +19,35 @@ type Props = {
   onBack?: () => void;
 };
 
+const SM_BREAKPOINT = 640;
+const NAV_BAR_HEIGHT = 79;
+
 function useVisualViewport() {
   const [dims, setDims] = useState(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     return {
       height: vv?.height ?? window.innerHeight,
       offsetTop: vv?.offsetTop ?? 0,
+      isDesktop: typeof window !== 'undefined' ? window.innerWidth >= SM_BREAKPOINT : true,
     };
   });
 
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setDims({ height: vv.height, offsetTop: vv.offsetTop });
+    const update = () =>
+      setDims({
+        height: vv.height,
+        offsetTop: vv.offsetTop,
+        isDesktop: window.innerWidth >= SM_BREAKPOINT,
+      });
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
     return () => {
       vv.removeEventListener('resize', update);
       vv.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
     };
   }, []);
 
@@ -134,13 +146,16 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
     .slice(0, 2)
     .toUpperCase();
 
-  return (
+  const topOffset = vp.isDesktop ? NAV_BAR_HEIGHT : vp.offsetTop;
+  const chatHeight = vp.isDesktop ? vp.height - NAV_BAR_HEIGHT : vp.height;
+
+  const chat = (
     <div
       className="fixed inset-x-0 z-[60] flex flex-col bg-[#F8FAFC]"
-      style={{ top: vp.offsetTop, height: vp.height }}
+      style={{ top: topOffset, height: chatHeight }}
     >
-      {/* Header — fixed top bar */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-slate-200/80 bg-[#F8FAFC] px-4 pb-3 pt-[max(env(safe-area-inset-top,0px),12px)] sm:px-5">
+      {/* Header */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-slate-200/80 bg-[#F8FAFC] px-4 pb-3 pt-3 max-sm:pt-[max(env(safe-area-inset-top,0px),12px)] sm:px-5">
         {onBack && (
           <button type="button" onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
             <ArrowLeft className="h-4 w-4" />
@@ -232,7 +247,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
 
       {/* End confirmation modal */}
       {showEndConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -264,4 +279,6 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
       )}
     </div>
   );
+
+  return createPortal(chat, document.body);
 }
