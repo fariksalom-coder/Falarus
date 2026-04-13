@@ -22,36 +22,47 @@ type Props = {
 const SM_BREAKPOINT = 640;
 const NAV_BAR_HEIGHT = 79;
 
-function useVisualViewport() {
-  const [dims, setDims] = useState(() => {
-    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+function useChatLayout() {
+  const [state, setState] = useState(() => {
+    const w = typeof window !== 'undefined' ? window : null;
+    const vv = w?.visualViewport;
     return {
-      height: vv?.height ?? window.innerHeight,
-      offsetTop: vv?.offsetTop ?? 0,
-      isDesktop: typeof window !== 'undefined' ? window.innerWidth >= SM_BREAKPOINT : true,
+      vpHeight: vv?.height ?? w?.innerHeight ?? 800,
+      vpOffsetTop: vv?.offsetTop ?? 0,
+      innerHeight: w?.innerHeight ?? 800,
+      isDesktop: (w?.innerWidth ?? 1024) >= SM_BREAKPOINT,
     };
   });
 
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () =>
-      setDims({
-        height: vv.height,
-        offsetTop: vv.offsetTop,
+    const update = () => {
+      setState({
+        vpHeight: vv?.height ?? window.innerHeight,
+        vpOffsetTop: vv?.offsetTop ?? 0,
+        innerHeight: window.innerHeight,
         isDesktop: window.innerWidth >= SM_BREAKPOINT,
       });
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+    };
+    vv?.addEventListener('resize', update);
+    vv?.addEventListener('scroll', update);
     window.addEventListener('resize', update);
     return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
+      vv?.removeEventListener('resize', update);
+      vv?.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
   }, []);
 
-  return dims;
+  const keyboardOpen = !state.isDesktop && state.vpHeight < state.innerHeight - 80;
+
+  const containerStyle: React.CSSProperties = state.isDesktop
+    ? { top: NAV_BAR_HEIGHT, left: 0, right: 0, bottom: 0 }
+    : keyboardOpen
+      ? { top: state.vpOffsetTop, left: 0, right: 0, height: state.vpHeight }
+      : { top: 0, left: 0, right: 0, bottom: 0 };
+
+  return { containerStyle, keyboardOpen, isDesktop: state.isDesktop, vpHeight: state.vpHeight };
 }
 
 export default function PartnerChat({ match, onEnded, onBack }: Props) {
@@ -67,7 +78,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { realtimeMessages, markSeen } = usePartnerRealtimeChat(match.id);
-  const vp = useVisualViewport();
+  const layout = useChatLayout();
 
   useEffect(() => {
     if (!token) return;
@@ -113,7 +124,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [vp.height, scrollToBottom]);
+  }, [layout.vpHeight, scrollToBottom]);
 
   const handleSend = async () => {
     if (!token || !text.trim() || sending) return;
@@ -146,13 +157,10 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
     .slice(0, 2)
     .toUpperCase();
 
-  const topOffset = vp.isDesktop ? NAV_BAR_HEIGHT : vp.offsetTop;
-  const chatHeight = vp.isDesktop ? vp.height - NAV_BAR_HEIGHT : vp.height;
-
   const chat = (
     <div
-      className="fixed inset-x-0 z-[60] flex flex-col bg-[#F8FAFC]"
-      style={{ top: topOffset, height: chatHeight }}
+      className="fixed z-[60] flex flex-col bg-[#F8FAFC]"
+      style={layout.containerStyle}
     >
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b border-slate-200/80 bg-[#F8FAFC] px-4 pb-3 pt-3 max-sm:pt-[max(env(safe-area-inset-top,0px),12px)] sm:px-5">
@@ -222,8 +230,13 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input — fixed bottom composer */}
-      <div className="shrink-0 border-t border-slate-200/80 bg-[#F8FAFC] px-4 pb-2 pt-2 sm:px-5">
+      {/* Input — bottom composer */}
+      <div
+        className="shrink-0 border-t border-slate-200/80 bg-[#F8FAFC] px-4 pt-2 sm:px-5 sm:pb-2"
+        style={{
+          paddingBottom: layout.isDesktop ? undefined : layout.keyboardOpen ? 4 : 'max(8px, env(safe-area-inset-bottom, 0px))',
+        }}
+      >
         <div className="mx-auto flex w-full max-w-lg gap-2">
           <input
             type="text"
