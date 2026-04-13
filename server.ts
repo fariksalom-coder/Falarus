@@ -1254,6 +1254,85 @@ async function startServer() {
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // Speaking trainer routes
+  // ---------------------------------------------------------------------------
+  app.use('/api/speaking', authenticate, async (req: any, res) => {
+    const userId = req.userId as number;
+    const access = await getAccessInfo(supabase, userId);
+    if (!access.subscription_active) return res.status(403).json({ error: 'Obuna kerak' });
+
+    const fullPath = (req.originalUrl || req.url || '').split('?')[0];
+    const segments = fullPath.replace(/^\/api\/speaking\/?/, '').split('/').filter(Boolean);
+    const s0 = segments[0];
+
+    try {
+      if (s0 === 'topics' && req.method === 'GET') {
+        const { data } = await supabase.from('speaking_tasks').select('topic, level');
+        const map = new Map<string, { topic: string; level: string; count: number }>();
+        for (const row of data ?? []) {
+          const ex = map.get(row.topic);
+          if (ex) ex.count++;
+          else map.set(row.topic, { topic: row.topic, level: row.level, count: 1 });
+        }
+        return res.json(Array.from(map.values()));
+      }
+
+      if (s0 === 'tasks' && req.method === 'GET') {
+        const topic = req.query.topic as string | undefined;
+        const lessonId = req.query.lesson_id ? Number(req.query.lesson_id) : undefined;
+        let q = supabase.from('speaking_tasks')
+          .select('id, uz_text, ru_correct, topic, level, lesson_id, sort_order')
+          .order('sort_order', { ascending: true }).limit(50);
+        if (topic) q = q.eq('topic', topic);
+        if (lessonId) q = q.eq('lesson_id', lessonId);
+        const { data } = await q;
+        return res.json(data ?? []);
+      }
+
+      if (s0 === 'check' && req.method === 'POST') {
+        const { task_id, user_answer, mode = 'text', attempt = 1 } = req.body;
+        const { data: task } = await supabase.from('speaking_tasks')
+          .select('id, uz_text, ru_correct').eq('id', Number(task_id)).maybeSingle();
+        if (!task) return res.status(404).json({ error: 'Topshiriq topilmadi' });
+
+        const { checkTranslation } = await import('./api/_lib/openai.js');
+        const result = await checkTranslation(task.uz_text, task.ru_correct, String(user_answer).trim(), Math.max(1, Number(attempt) || 1));
+
+        await supabase.from('speaking_results').insert({
+          user_id: userId, task_id: Number(task_id),
+          user_answer: String(user_answer).trim(), mode, status: result.status, feedback: result.feedback,
+        });
+        return res.json(result);
+      }
+
+      if (s0 === 'transcribe' && req.method === 'POST') {
+        const audioBase64 = String(req.body.audio ?? '');
+        if (!audioBase64) return res.status(400).json({ error: 'audio kerak' });
+        const buffer = Buffer.from(audioBase64, 'base64');
+        const { transcribeAudio } = await import('./api/_lib/openai.js');
+        const text = await transcribeAudio(buffer, 'recording.webm');
+        return res.json({ text });
+      }
+
+      if (s0 === 'stats' && req.method === 'GET') {
+        const { data } = await supabase.from('speaking_results').select('status').eq('user_id', userId);
+        const rows = data ?? [];
+        return res.json({
+          total: rows.length,
+          correct: rows.filter((r: any) => r.status === 'correct').length,
+          partial: rows.filter((r: any) => r.status === 'partial').length,
+          wrong: rows.filter((r: any) => r.status === 'wrong').length,
+        });
+      }
+
+      return res.status(404).json({ error: 'Not found' });
+    } catch (e) {
+      console.error('[speaking]', e);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  });
+
   // Lesson task results (e.g. /lesson-14 topshiriq 1–16)
   app.get('/api/lesson-task-results', authenticate, async (req: any, res) => {
     const lessonPath = req.query.lesson_path as string | undefined;

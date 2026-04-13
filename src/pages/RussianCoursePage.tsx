@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, GraduationCap, BookMarked } from 'lucide-react';
+import { ArrowLeft, ArrowRight, GraduationCap, BookMarked, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const BG = '#F8FAFC';
@@ -26,6 +26,16 @@ const SECTIONS = [
     Icon: BookMarked,
     iconColor: '#16A34A',
     iconBg: '#DCFCE7',
+  },
+  {
+    id: 'speaking',
+    href: '/russian/speaking',
+    title: 'Gapir',
+    subtitle: 'Rus tilida gapirish mashqi',
+    accent: 'linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)',
+    Icon: Mic,
+    iconColor: '#0D9488',
+    iconBg: '#CCFBF1',
   },
 ] as const;
 
