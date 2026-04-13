@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Mic, MicOff, Keyboard, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, Mic, Keyboard, Loader2, Send, Pencil } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   checkSpeakingAnswer,
@@ -32,6 +32,10 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
+function formatTimer(seconds: number): string {
+  return `0:${String(seconds).padStart(2, '0')}`;
+}
+
 export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }: Props) {
   const { token } = useAuth();
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -39,6 +43,9 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
   const [answer, setAnswer] = useState('');
   const [checking, setChecking] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [voiceText, setVoiceText] = useState('');
+  const [isVoiceEditing, setIsVoiceEditing] = useState(false);
+  const [voiceDraft, setVoiceDraft] = useState('');
   const [result, setResult] = useState<CheckResult | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState('');
@@ -46,6 +53,39 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
   const recorder = useVoiceRecorder();
   const task = tasks[currentIdx];
   const progress = ((currentIdx + (result?.status === 'correct' ? 1 : 0)) / tasks.length) * 100;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function transcribe() {
+      if (!token || !recorder.audioBlob || recorder.isRecording) return;
+      setTranscribing(true);
+      setError('');
+      try {
+        const base64 = await blobToBase64(recorder.audioBlob);
+        const text = await transcribeSpeakingAudio(token, base64);
+        if (!cancelled) {
+          const normalized = text.trim();
+          setVoiceText(normalized);
+          setVoiceDraft(normalized);
+          setIsVoiceEditing(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Ovozni tanib bo'lmadi. Qayta urinib ko'ring.");
+        }
+      } finally {
+        if (!cancelled) {
+          setTranscribing(false);
+        }
+      }
+    }
+
+    void transcribe();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, recorder.audioBlob, recorder.isRecording]);
 
   const handleCheck = useCallback(
     async (text: string, mode: 'text' | 'voice') => {
@@ -70,25 +110,44 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
     handleCheck(answer, 'text');
   }, [answer, handleCheck]);
 
-  const handleVoiceStop = useCallback(async () => {
-    recorder.stopRecording();
+  const handleVoiceCheck = useCallback(() => {
+    const text = voiceText.trim();
+    if (!text) return;
+    setAnswer(text);
+    void handleCheck(text, 'voice');
+  }, [voiceText, handleCheck]);
+
+  const handleStartVoiceEdit = useCallback(() => {
+    setVoiceDraft(voiceText);
+    setIsVoiceEditing(true);
+  }, [voiceText]);
+
+  const handleSaveVoiceEdit = useCallback(() => {
+    const normalized = voiceDraft.trim();
+    setVoiceText(normalized);
+    setIsVoiceEditing(false);
+  }, [voiceDraft]);
+
+  const handleCancelVoiceEdit = useCallback(() => {
+    setVoiceDraft(voiceText);
+    setIsVoiceEditing(false);
+  }, [voiceText]);
+
+  const handleStartVoice = useCallback(() => {
+    setVoiceText('');
+    setVoiceDraft('');
+    setIsVoiceEditing(false);
+    setError('');
+    void recorder.startRecording();
   }, [recorder]);
 
-  const handleTranscribeAndCheck = useCallback(async () => {
-    if (!token || !recorder.audioBlob) return;
-    setTranscribing(true);
+  const handleResetVoice = useCallback(() => {
+    setVoiceText('');
+    setVoiceDraft('');
+    setIsVoiceEditing(false);
     setError('');
-    try {
-      const base64 = await blobToBase64(recorder.audioBlob);
-      const text = await transcribeSpeakingAudio(token, base64);
-      setAnswer(text);
-      await handleCheck(text, 'voice');
-    } catch {
-      setError("Ovozni tanib bo'lmadi. Qayta urinib ko'ring.");
-    } finally {
-      setTranscribing(false);
-    }
-  }, [token, recorder.audioBlob, handleCheck]);
+    recorder.reset();
+  }, [recorder]);
 
   const handleNext = useCallback(() => {
     if (currentIdx + 1 >= tasks.length) {
@@ -97,6 +156,9 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
     }
     setCurrentIdx((i) => i + 1);
     setAnswer('');
+    setVoiceText('');
+    setVoiceDraft('');
+    setIsVoiceEditing(false);
     setResult(null);
     setAttempts(0);
     setInputMode('choose');
@@ -115,7 +177,6 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
 
   return (
     <div className="mx-auto max-w-lg">
-      {/* Header */}
       <div className="mb-5 flex items-center gap-3">
         <button
           type="button"
@@ -132,7 +193,6 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="mb-6 h-2 overflow-hidden rounded-full bg-slate-200">
         <motion.div
           className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400"
@@ -142,7 +202,6 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
         />
       </div>
 
-      {/* Task card */}
       <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
         <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
           Tarjima qiling
@@ -150,7 +209,6 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
         <p className="text-xl font-bold leading-relaxed text-slate-900">{task.uz_text}</p>
       </div>
 
-      {/* Input area */}
       <div className="mt-5">
         {inputMode === 'choose' && !result && (
           <motion.div
@@ -223,49 +281,104 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            {!recorder.audioBlob ? (
+            {!recorder.audioBlob && !recorder.isRecording && (
               <div className="flex flex-col items-center gap-4">
                 <button
                   type="button"
-                  onClick={recorder.isRecording ? handleVoiceStop : recorder.startRecording}
-                  className={`flex h-20 w-20 items-center justify-center rounded-full transition-all ${
-                    recorder.isRecording
-                      ? 'bg-red-500 shadow-[0_0_0_8px_rgba(239,68,68,0.2)] animate-pulse'
-                      : 'bg-blue-600 shadow-[0_8px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_12px_32px_rgba(37,99,235,0.4)]'
-                  }`}
+                  onClick={handleStartVoice}
+                  className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-white shadow-[0_8px_24px_rgba(37,99,235,0.3)] transition-all hover:shadow-[0_12px_32px_rgba(37,99,235,0.4)]"
                 >
-                  {recorder.isRecording ? (
-                    <MicOff className="h-8 w-8 text-white" />
-                  ) : (
-                    <Mic className="h-8 w-8 text-white" />
-                  )}
+                  <Mic className="h-8 w-8" />
                 </button>
-                <p className="text-sm text-slate-500">
-                  {recorder.isRecording
-                    ? "Yozib olinmoqda... Tugatish uchun bosing"
-                    : "Bosib gapiring (max 15 soniya)"}
-                </p>
+                <p className="text-sm text-slate-500">Bosib gapiring (max 15 soniya)</p>
               </div>
-            ) : (
+            )}
+
+            {recorder.isRecording && (
               <div className="flex flex-col items-center gap-4">
-                <p className="text-sm font-medium text-slate-700">Ovoz yozib olindi</p>
-                <div className="flex gap-3">
+                <motion.button
+                  type="button"
+                  onClick={recorder.stopRecording}
+                  animate={{ scale: [1, 1.06, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                  className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-white shadow-[0_10px_30px_rgba(37,99,235,0.35)]"
+                >
+                  <Mic className="h-8 w-8" />
+                </motion.button>
+
+                <div className="flex items-end justify-center gap-1.5">
+                  {[0.6, 0.9, 1.2, 0.9, 0.6].map((mult, idx) => {
+                    const height = Math.max(8, 8 + recorder.audioLevel * 26 * mult);
+                    return (
+                      <motion.span
+                        key={idx}
+                        className="w-1.5 rounded-full bg-blue-500"
+                        animate={{ height }}
+                        transition={{ duration: 0.18 }}
+                        style={{ height: 10 }}
+                      />
+                    );
+                  })}
+                </div>
+
+                <p className="text-sm font-medium text-blue-700">Gapiryapsiz... {formatTimer(recorder.elapsedSeconds)}</p>
+                <p className="text-xs text-slate-400">To'xtatish uchun mikrofon tugmasini bosing</p>
+              </div>
+            )}
+
+            {recorder.audioBlob && !recorder.isRecording && (
+              <div className="space-y-4">
+                {transcribing ? (
+                  <div className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                    <p className="text-sm text-slate-600">Ovoz matnga aylantirilmoqda...</p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4 text-left">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Siz aytdingiz:</p>
+                    {isVoiceEditing ? (
+                      <div className="mt-2 space-y-3">
+                        <textarea
+                          value={voiceDraft}
+                          onChange={(e) => setVoiceDraft(e.target.value)}
+                          rows={3}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                          placeholder="Matnni tahrirlang..."
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={handleSaveVoiceEdit}
+                            disabled={!voiceDraft.trim()}
+                            className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            Saqlash
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelVoiceEdit}
+                            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                          >
+                            Bekor qilish
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-2 min-h-10 text-sm text-slate-800">
+                        {voiceText || "Matn aniqlanmadi. Qayta yozib ko'ring."}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-center gap-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      recorder.reset();
-                    }}
-                    className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-                  >
-                    Qayta yozish
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleTranscribeAndCheck}
-                    disabled={transcribing || checking}
+                    onClick={handleVoiceCheck}
+                    disabled={checking || transcribing || isVoiceEditing || !voiceText.trim()}
                     className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(37,99,235,0.3)] transition-all hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {transcribing || checking ? (
+                    {checking ? (
                       <span className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Tekshirilmoqda...
@@ -274,16 +387,33 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
                       'Tekshirish'
                     )}
                   </button>
+                  <button
+                    type="button"
+                    onClick={handleStartVoiceEdit}
+                    disabled={transcribing || isVoiceEditing || !voiceText.trim()}
+                    className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Tahrirlash
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetVoice}
+                    className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                  >
+                    Qayta yozish
+                  </button>
                 </div>
               </div>
             )}
+
             {recorder.error && (
               <p className="mt-3 text-sm text-red-500">{recorder.error}</p>
             )}
             <button
               type="button"
               onClick={() => {
-                recorder.reset();
+                handleResetVoice();
                 setInputMode('choose');
               }}
               className="mt-3 text-xs text-slate-400 transition-colors hover:text-slate-600"

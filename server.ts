@@ -102,7 +102,8 @@ async function startServer() {
   await seedDatabase();
 
   const app = express();
-  app.use(express.json());
+  // Voice answers are sent as base64 JSON payloads; keep limit above default.
+  app.use(express.json({ limit: '2mb' }));
   app.use((_req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
