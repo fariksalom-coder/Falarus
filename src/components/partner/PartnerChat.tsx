@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Send, LogOut, ArrowLeft } from 'lucide-react';
 import {
@@ -18,6 +18,30 @@ type Props = {
   onBack?: () => void;
 };
 
+function useVisualViewport() {
+  const [dims, setDims] = useState(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    return {
+      height: vv?.height ?? window.innerHeight,
+      offsetTop: vv?.offsetTop ?? 0,
+    };
+  });
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setDims({ height: vv.height, offsetTop: vv.offsetTop });
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
+  return dims;
+}
+
 export default function PartnerChat({ match, onEnded, onBack }: Props) {
   const { token, user } = useAuth();
   const userId = user?.id;
@@ -28,8 +52,10 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
   const [loading, setLoading] = useState(true);
   const [ending, setEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { realtimeMessages, markSeen } = usePartnerRealtimeChat(match.id);
+  const vp = useVisualViewport();
 
   useEffect(() => {
     if (!token) return;
@@ -65,9 +91,17 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
     );
   }, [messages, realtimeMessages]);
 
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [allMessages.length]);
+    scrollToBottom();
+  }, [allMessages.length, scrollToBottom]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [vp.height, scrollToBottom]);
 
   const handleSend = async () => {
     if (!token || !text.trim() || sending) return;
@@ -102,15 +136,11 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-lg flex-col px-4 sm:px-5"
-      style={{
-        marginTop: 'calc(-1 * (env(safe-area-inset-top, 0px) + 8px))',
-        height:
-          'calc(100dvh - 92px - env(safe-area-inset-bottom, 0px) + env(safe-area-inset-top, 0px) + 8px)',
-      }}
+      className="fixed inset-x-0 z-[60] flex flex-col bg-[#F8FAFC]"
+      style={{ top: vp.offsetTop, height: vp.height }}
     >
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200/80 bg-[#F8FAFC] pb-3 pt-[calc(env(safe-area-inset-top,0px)+6px)]">
+      {/* Header — fixed top bar */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-slate-200/80 bg-[#F8FAFC] px-4 pb-3 pt-[max(env(safe-area-inset-top,0px),12px)] sm:px-5">
         {onBack && (
           <button type="button" onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
             <ArrowLeft className="h-4 w-4" />
@@ -133,8 +163,11 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-3 pb-[120px] sm:pb-[88px]">
+      {/* Messages — scrollable middle */}
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto overscroll-y-contain px-4 py-3 sm:px-5"
+      >
         {loading && (
           <div className="flex items-center justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -145,7 +178,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             <p className="text-sm text-slate-400">Birinchi xabarni yuboring!</p>
           </div>
         )}
-        <div className="space-y-2.5">
+        <div className="mx-auto max-w-lg space-y-2.5">
           {allMessages.map((msg) => {
             const isMine = msg.sender_id === userId;
             return (
@@ -171,17 +204,18 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             );
           })}
         </div>
-        <div ref={bottomRef} />
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="max-sm:fixed max-sm:bottom-[calc(78px+env(safe-area-inset-bottom,0px))] max-sm:left-0 max-sm:right-0 max-sm:z-20 max-sm:border-t max-sm:border-slate-200/80 max-sm:bg-[#F8FAFC] max-sm:px-4 max-sm:pt-3 max-sm:pb-2 sm:sticky sm:bottom-0 sm:z-10 sm:border-t sm:border-slate-200/80 sm:bg-[#F8FAFC] sm:pb-[max(8px,env(safe-area-inset-bottom,0px))] sm:pt-3">
+      {/* Input — fixed bottom composer */}
+      <div className="shrink-0 border-t border-slate-200/80 bg-[#F8FAFC] px-4 pb-2 pt-2 sm:px-5">
         <div className="mx-auto flex w-full max-w-lg gap-2">
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            onFocus={scrollToBottom}
             placeholder="Xabar yozing..."
             className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[0.95rem] text-slate-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           />
@@ -196,7 +230,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
         </div>
       </div>
 
-      {/* End confirmation */}
+      {/* End confirmation modal */}
       {showEndConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <motion.div
