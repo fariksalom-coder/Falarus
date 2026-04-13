@@ -102,11 +102,15 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-lg flex-col overflow-hidden px-4 pt-2 sm:px-5 sm:pt-3"
-      style={{ height: 'calc(100dvh - 92px - env(safe-area-inset-bottom, 0px))' }}
+      className="mx-auto flex w-full max-w-lg flex-col px-4 sm:px-5"
+      style={{
+        marginTop: 'calc(-1 * (env(safe-area-inset-top, 0px) + 8px))',
+        height:
+          'calc(100dvh - 92px - env(safe-area-inset-bottom, 0px) + env(safe-area-inset-top, 0px) + 8px)',
+      }}
     >
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200/80 bg-[#F8FAFC] pb-3 pt-1">
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200/80 bg-[#F8FAFC] pb-3 pt-[calc(env(safe-area-inset-top,0px)+6px)]">
         {onBack && (
           <button type="button" onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
             <ArrowLeft className="h-4 w-4" />
@@ -130,7 +134,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-3">
+      <div className="flex-1 overflow-y-auto py-3 pb-[120px] sm:pb-[88px]">
         {loading && (
           <div className="flex items-center justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
@@ -171,23 +175,25 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 z-10 flex gap-2 border-t border-slate-200/80 bg-[#F8FAFC] pb-[max(8px,env(safe-area-inset-bottom,0px))] pt-3">
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-          placeholder="Xabar yozing..."
-          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[0.95rem] text-slate-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={sending || !text.trim()}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_4px_16px_rgba(37,99,235,0.3)] transition-all hover:bg-blue-700 disabled:opacity-40"
-        >
-          <Send className="h-5 w-5" />
-        </button>
+      <div className="max-sm:fixed max-sm:bottom-[calc(78px+env(safe-area-inset-bottom,0px))] max-sm:left-0 max-sm:right-0 max-sm:z-20 max-sm:border-t max-sm:border-slate-200/80 max-sm:bg-[#F8FAFC] max-sm:px-4 max-sm:pt-3 max-sm:pb-2 sm:sticky sm:bottom-0 sm:z-10 sm:border-t sm:border-slate-200/80 sm:bg-[#F8FAFC] sm:pb-[max(8px,env(safe-area-inset-bottom,0px))] sm:pt-3">
+        <div className="mx-auto flex w-full max-w-lg gap-2">
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            placeholder="Xabar yozing..."
+            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[0.95rem] text-slate-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={sending || !text.trim()}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_4px_16px_rgba(37,99,235,0.3)] transition-all hover:bg-blue-700 disabled:opacity-40"
+          >
+            <Send className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* End confirmation */}
