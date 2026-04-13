@@ -70,6 +70,7 @@ const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
   '/profile': ['./pages/ProfilePage.tsx'],
   '/russian': ['./pages/RussianCoursePage.tsx'],
   '/russian/grammar': ['./pages/Dashboard.tsx'],
+  '/partner': ['./pages/PartnerPage.tsx'],
   '/vocabulary': ['./pages/VocabularyPage.tsx'],
   '/statistika': ['./pages/StatistikaPage.tsx'],
   '/kurslar': ['./pages/CoursesPage.tsx'],

@@ -1,7 +1,7 @@
 /** Top-tab section routes (exact match only — not nested `/vocabulary/...`). */
 export const MAIN_SECTION_PATHS = [
   '/',
-  '/vocabulary',
+  '/partner',
   '/statistika',
   '/kurslar',
   '/profile',

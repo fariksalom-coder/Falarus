@@ -41,6 +41,7 @@ import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
 import { buildGrammarCatalogPayload } from './api/_lib/grammarCatalogHandler.ts';
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
+import { getAccessInfo } from './api/_lib/subscription.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -1104,6 +1105,138 @@ async function startServer() {
     });
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Partner (Naparnik) routes — delegate to the same handler used by Vercel
+  // ---------------------------------------------------------------------------
+  app.all('/api/partner/*', authenticate, async (req: any, res) => {
+    const userId = req.userId as number;
+    const access = await getAccessInfo(supabase, userId);
+    if (!access.subscription_active) return res.status(403).json({ error: 'Obuna kerak' });
+
+    const fullPath = (req.originalUrl || req.url || '').split('?')[0];
+    const segments = fullPath.replace(/^\/api\/partner\/?/, '').split('/').filter(Boolean);
+    const s0 = segments[0];
+    const s1 = segments[1];
+    const s2 = segments[2];
+
+    try {
+      if (s0 === 'status' && req.method === 'GET') {
+        const [profileRes, matchRes, outgoingRes, incomingRes] = await Promise.all([
+          supabase.from('partner_profiles').select('user_id').eq('user_id', userId).maybeSingle(),
+          supabase.from('partner_matches').select('id, user1_id, user2_id, matched_at')
+            .eq('status', 'active').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).maybeSingle(),
+          supabase.from('partner_requests').select('id, receiver_id, created_at')
+            .eq('sender_id', userId).eq('status', 'pending').maybeSingle(),
+          supabase.from('partner_requests').select('id').eq('receiver_id', userId).eq('status', 'pending'),
+        ]);
+        let partnerProfile = null;
+        if (matchRes.data) {
+          const partnerId = matchRes.data.user1_id === userId ? matchRes.data.user2_id : matchRes.data.user1_id;
+          const { data } = await supabase.from('partner_profiles')
+            .select('user_id, display_name, age, gender, language_level, goal, about')
+            .eq('user_id', partnerId).maybeSingle();
+          partnerProfile = data;
+        }
+        return res.json({
+          hasProfile: !!profileRes.data,
+          match: matchRes.data ? { ...matchRes.data, partner_profile: partnerProfile } : null,
+          outgoingRequest: outgoingRes.data ?? null,
+          incomingRequestsCount: (incomingRes.data ?? []).length,
+        });
+      }
+
+      if (s0 === 'profile' && req.method === 'GET') {
+        const { data } = await supabase.from('partner_profiles').select('*').eq('user_id', userId).maybeSingle();
+        return res.json(data);
+      }
+      if (s0 === 'profile' && req.method === 'POST') {
+        const { display_name, age, gender, language_level, goal, about = '', seeking = '' } = req.body;
+        const { data, error } = await supabase.from('partner_profiles')
+          .upsert({ user_id: userId, display_name, age: Number(age), gender, language_level, goal, about, seeking, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+          .select().single();
+        if (error) return res.status(500).json({ error: 'Xatolik yuz berdi' });
+        return res.json(data);
+      }
+      if (s0 === 'people' && req.method === 'GET') {
+        const { data: activeMatch } = await supabase.from('partner_matches').select('id')
+          .eq('status', 'active').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).maybeSingle();
+        if (activeMatch) return res.json([]);
+        const { data } = await supabase.from('partner_profiles')
+          .select('user_id, display_name, age, gender, language_level, goal, about, seeking')
+          .neq('user_id', userId).order('created_at', { ascending: false }).limit(50);
+        return res.json(data ?? []);
+      }
+      if (s0 === 'request' && !s1 && req.method === 'POST') {
+        const receiverId = Number(req.body.receiver_id);
+        const { data } = await supabase.from('partner_requests')
+          .insert({ sender_id: userId, receiver_id: receiverId }).select().single();
+        return res.status(201).json(data);
+      }
+      if (s0 === 'requests' && s1 === 'incoming' && req.method === 'GET') {
+        const { data } = await supabase.from('partner_requests')
+          .select('id, sender_id, status, created_at')
+          .eq('receiver_id', userId).eq('status', 'pending').order('created_at', { ascending: false });
+        const senderIds = (data ?? []).map((r: any) => r.sender_id);
+        const profiles: Record<number, any> = {};
+        if (senderIds.length) {
+          const { data: profs } = await supabase.from('partner_profiles')
+            .select('user_id, display_name, age, language_level, goal, about').in('user_id', senderIds);
+          for (const p of profs ?? []) profiles[p.user_id] = p;
+        }
+        return res.json((data ?? []).map((r: any) => ({ ...r, sender_profile: profiles[r.sender_id] ?? null })));
+      }
+      if (s0 === 'request' && s1 && s2 === 'accept' && req.method === 'POST') {
+        const requestId = Number(s1);
+        const { data: rq } = await supabase.from('partner_requests').select('id, sender_id, receiver_id, status')
+          .eq('id', requestId).eq('receiver_id', userId).maybeSingle();
+        if (!rq || rq.status !== 'pending') return res.status(404).json({ error: 'Topilmadi' });
+        await supabase.from('partner_requests').update({ status: 'accepted', responded_at: new Date().toISOString() }).eq('id', requestId);
+        await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() })
+          .eq('status', 'pending').or(`sender_id.eq.${rq.sender_id},sender_id.eq.${userId},receiver_id.eq.${rq.sender_id},receiver_id.eq.${userId}`).neq('id', requestId);
+        const { data: match } = await supabase.from('partner_matches').insert({ user1_id: rq.sender_id, user2_id: userId }).select().single();
+        return res.json(match);
+      }
+      if (s0 === 'request' && s1 && s2 === 'reject' && req.method === 'POST') {
+        await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() }).eq('id', Number(s1)).eq('receiver_id', userId);
+        return res.json({ success: true });
+      }
+      if (s0 === 'match' && !s1 && req.method === 'GET') {
+        const { data: match } = await supabase.from('partner_matches').select('id, user1_id, user2_id, status, matched_at')
+          .eq('status', 'active').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).maybeSingle();
+        if (!match) return res.json(null);
+        const partnerId = match.user1_id === userId ? match.user2_id : match.user1_id;
+        const { data: profile } = await supabase.from('partner_profiles')
+          .select('user_id, display_name, age, gender, language_level, goal, about').eq('user_id', partnerId).maybeSingle();
+        return res.json({ ...match, partner_profile: profile });
+      }
+      if (s0 === 'match' && s1 === 'end' && req.method === 'POST') {
+        const { data: match } = await supabase.from('partner_matches').select('id')
+          .eq('status', 'active').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).maybeSingle();
+        if (!match) return res.status(404).json({ error: 'Topilmadi' });
+        await supabase.from('partner_matches').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', match.id);
+        return res.json({ success: true });
+      }
+      if (s0 === 'messages' && req.method === 'GET') {
+        const matchId = Number(req.query.match_id);
+        let q = supabase.from('chat_messages').select('id, match_id, sender_id, content, created_at')
+          .eq('match_id', matchId).order('created_at', { ascending: false }).limit(50);
+        if (req.query.before) q = q.lt('created_at', String(req.query.before));
+        const { data } = await q;
+        return res.json((data ?? []).reverse());
+      }
+      if (s0 === 'messages' && req.method === 'POST') {
+        const { match_id, content } = req.body;
+        const { data } = await supabase.from('chat_messages')
+          .insert({ match_id: Number(match_id), sender_id: userId, content: String(content).trim() }).select().single();
+        return res.status(201).json(data);
+      }
+      return res.status(404).json({ error: 'Not found' });
+    } catch (e) {
+      console.error('[partner]', e);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
   });
 
   // Lesson task results (e.g. /lesson-14 topshiriq 1–16)

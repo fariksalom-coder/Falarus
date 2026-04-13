@@ -67,6 +67,7 @@ function AppRoutes() {
             <Route index element={renderLazyPage('./pages/HomePage.tsx')} />
             <Route path="russian" element={renderLazyPage('./pages/RussianCoursePage.tsx')} />
             <Route path="russian/grammar" element={renderLazyPage('./pages/Dashboard.tsx')} />
+            <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
             <Route path="vocabulary" element={renderLazyPage('./pages/VocabularyPage.tsx')} />
             <Route path="vocabulary/:topicId" element={renderLazyPage('./pages/VocabularyTopicPage.tsx')} />
             <Route path="vocabulary/:topicId/:subtopicId" element={renderLazyPage('./pages/VocabularySubtopicPage.tsx')} />

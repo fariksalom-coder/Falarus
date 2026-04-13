@@ -19,6 +19,7 @@ import { routeLessonsRequest, handleLessonTaskQuestionsGet } from './_lib/lesson
 import { handleGrammarCatalog } from './_lib/grammarCatalogHandler.js';
 import { routeUserRequest } from './_lib/user.js';
 import { routeVocabularyRequest } from './_lib/vocabulary.js';
+import { routePartnerRequest } from './_lib/partner.js';
 import {
   getReferralLink,
   getReferralStats,
@@ -103,6 +104,7 @@ const ROOT_API_PREFIXES = new Set([
   'activity',
   'user',
   'vocabulary',
+  'partner',
 ]);
 
 function getPathParts(req: VercelRequest): string[] {
@@ -306,6 +308,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const userId = requireAuth(req, res);
     if (userId == null) return;
     return routeVocabularyRequest(req, res, userId, path.slice(1));
+  }
+
+  if (path[0] === 'partner') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    return routePartnerRequest(req, res, userId, path.slice(1));
   }
 
   // /api/patent/results — implemented in api/patent/results.ts (Vercel catch-all 404 for this path)
