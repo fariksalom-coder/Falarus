@@ -1269,14 +1269,43 @@ async function startServer() {
 
     try {
       if (s0 === 'topics' && req.method === 'GET') {
-        const { data } = await supabase.from('speaking_tasks').select('topic, level');
-        const map = new Map<string, { topic: string; level: string; count: number }>();
-        for (const row of data ?? []) {
+        const { data: taskRows } = await supabase.from('speaking_tasks').select('topic, level');
+        const { data: catalogRows } = await supabase
+          .from('speaking_topics_catalog')
+          .select('topic, level, order_index')
+          .order('order_index', { ascending: true });
+
+        const map = new Map<string, { topic: string; level: string; count: number; order: number }>();
+        for (const row of taskRows ?? []) {
           const ex = map.get(row.topic);
-          if (ex) ex.count++;
-          else map.set(row.topic, { topic: row.topic, level: row.level, count: 1 });
+          if (ex) {
+            ex.count++;
+            continue;
+          }
+          const fromCatalog = (catalogRows ?? []).find((c: any) => c.topic === row.topic);
+          map.set(row.topic, {
+            topic: row.topic,
+            level: fromCatalog?.level ?? row.level,
+            count: 1,
+            order: fromCatalog?.order_index ?? 9999,
+          });
         }
-        return res.json(Array.from(map.values()));
+        for (const c of catalogRows ?? []) {
+          if (!map.has(c.topic)) {
+            map.set(c.topic, {
+              topic: c.topic,
+              level: c.level,
+              count: 0,
+              order: c.order_index ?? 9999,
+            });
+          }
+        }
+
+        return res.json(
+          Array.from(map.values())
+            .sort((a, b) => (a.order - b.order) || a.topic.localeCompare(b.topic))
+            .map(({ topic, level, count }) => ({ topic, level, count }))
+        );
       }
 
       if (s0 === 'tasks' && req.method === 'GET') {
