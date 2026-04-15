@@ -65,8 +65,10 @@ export function preloadPage(modulePath: string) {
 }
 
 const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
-  '/': ['./pages/HomePage.tsx'],
+  '/': ['./pages/LandingPage.tsx', './pages/HomePage.tsx'],
   '/auth': ['./pages/AuthPage.tsx'],
+  '/login': ['./pages/AuthPage.tsx'],
+  '/register': ['./pages/AuthPage.tsx'],
   '/profile': ['./pages/ProfilePage.tsx'],
   '/russian': ['./pages/RussianCoursePage.tsx'],
   '/russian/grammar': ['./pages/Dashboard.tsx'],

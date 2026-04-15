@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
 import { motion } from 'motion/react';
@@ -7,9 +7,15 @@ import { UserPlus, LogIn } from 'lucide-react';
 import { FalaRusLogoMark } from '../components/FalaRusLogoMark';
 
 export default function AuthPage() {
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const refFromUrl = searchParams.get('ref') ?? '';
-  const [isLogin, setIsLogin] = useState(!refFromUrl);
+  const pathMode = useMemo(() => {
+    if (location.pathname === '/register') return 'register';
+    if (location.pathname === '/login' || location.pathname === '/auth') return 'login';
+    return 'login';
+  }, [location.pathname]);
+  const [isLogin, setIsLogin] = useState(pathMode !== 'register');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -21,16 +27,18 @@ export default function AuthPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const effectiveIsLogin = pathMode === 'register' ? false : isLogin;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
+    if (!effectiveIsLogin && formData.password !== formData.confirmPassword) {
       setError('Parollar mos kelmadi');
       return;
     }
 
-    const payload = isLogin
+    const payload = effectiveIsLogin
       ? { identifier: formData.identifier.trim(), password: formData.password }
       : {
           firstName: formData.firstName,
@@ -40,7 +48,7 @@ export default function AuthPage() {
           confirmPassword: formData.confirmPassword,
           ref: refFromUrl || undefined,
         };
-    const endpoint = apiUrl(isLogin ? '/api/auth/login' : '/api/auth/register');
+    const endpoint = apiUrl(effectiveIsLogin ? '/api/auth/login' : '/api/auth/register');
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -83,10 +91,10 @@ export default function AuthPage() {
         </div>
         
         <h2 className="text-2xl font-bold text-center text-slate-900 mb-2">
-          {isLogin ? 'Xush kelibsiz!' : 'Ro‘yxatdan o‘tish'}
+          {effectiveIsLogin ? 'Xush kelibsiz!' : 'Ro‘yxatdan o‘tish'}
         </h2>
         <p className="text-slate-500 text-center mb-8">
-          {isLogin ? 'Hisobingizga kiring' : 'Yangi hisob yarating'}
+          {effectiveIsLogin ? 'Hisobingizga kiring' : 'Yangi hisob yarating'}
         </p>
 
         {error && (
@@ -96,7 +104,7 @@ export default function AuthPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+          {!effectiveIsLogin && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Ism</label>
@@ -147,7 +155,7 @@ export default function AuthPage() {
             />
           </div>
 
-          {!isLogin && (
+          {!effectiveIsLogin && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Parolni tasdiqlash</label>
               <input
@@ -164,17 +172,23 @@ export default function AuthPage() {
             type="submit"
             className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
           >
-            {isLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
-            {isLogin ? 'Kirish' : 'Ro‘yxatdan o‘tish'}
+            {effectiveIsLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+            {effectiveIsLogin ? 'Kirish' : 'Ro‘yxatdan o‘tish'}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              if (pathMode === 'register' || pathMode === 'login' || pathMode === 'auth') {
+                navigate(effectiveIsLogin ? '/register' : '/login');
+              } else {
+                setIsLogin(!effectiveIsLogin);
+              }
+            }}
             className="text-indigo-600 text-sm font-medium hover:underline"
           >
-            {isLogin ? 'Hisobingiz yo‘qmi? Ro‘yxatdan o‘ting' : 'Hisobingiz bormi? Kirish'}
+            {effectiveIsLogin ? 'Hisobingiz yo‘qmi? Ro‘yxatdan o‘ting' : 'Hisobingiz bormi? Kirish'}
           </button>
         </div>
       </motion.div>
