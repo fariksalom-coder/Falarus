@@ -50,7 +50,7 @@ function squareClass(
    * Bajarilgan / joriy kartalar: mobil ham `border-2` + rangli ring va soyya (desktop bilan mos).
    */
   const base =
-    'relative box-border flex h-full min-h-[11rem] w-full max-w-[10rem] shrink-0 justify-self-center flex-col items-stretch rounded-2xl border border-slate-200/75 bg-white p-2.5 text-center shadow-[0_8px_28px_rgba(15,23,42,0.07)] ring-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:min-h-[12rem] sm:rounded-[24px] sm:border-2 sm:p-3 sm:shadow-[0_14px_34px_rgba(148,163,184,0.12)]';
+    'relative box-border flex h-full min-h-[8.9rem] w-full shrink-0 justify-self-center flex-col items-stretch rounded-2xl border border-slate-200/75 bg-white p-2 text-center shadow-[0_8px_24px_rgba(15,23,42,0.07)] ring-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:min-h-[10.5rem] sm:rounded-[24px] sm:border-2 sm:p-3 sm:shadow-[0_14px_34px_rgba(148,163,184,0.12)]';
 
   if (passed) {
     return `${base} border-2 border-emerald-500 bg-gradient-to-br from-emerald-100 via-emerald-50 to-white text-emerald-950 shadow-[0_10px_32px_rgba(34,197,94,0.22)] ring-2 ring-emerald-400/70 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(34,197,94,0.3)] active:scale-[0.98] focus-visible:ring-emerald-500 sm:shadow-[0_12px_36px_rgba(34,197,94,0.35)] sm:hover:shadow-[0_16px_44px_rgba(34,197,94,0.42)]`;
@@ -75,7 +75,7 @@ function iconWrapClass(
   const locked = sequentialLock && isTaskLockedSequential(taskNum, results);
   const isCurrent = !passed && !locked && current === taskNum;
 
-  const base = 'flex h-9 w-9 items-center justify-center rounded-2xl shadow-inner ring-1 sm:h-11 sm:w-11';
+  const base = 'flex h-8 w-8 items-center justify-center rounded-xl shadow-inner ring-1 sm:h-10 sm:w-10';
   if (passed) {
     return `${base} bg-white text-emerald-600 shadow-emerald-200/60 ring-emerald-300`;
   }
@@ -101,7 +101,7 @@ function labelClass(
   const passed = result && isTaskResultGood(result);
   const locked = sequentialLock && isTaskLockedSequential(taskNum, results);
   const isCurrent = !passed && !locked && current === taskNum;
-  const base = 'block max-w-full text-center text-[11px] font-bold uppercase tracking-wide sm:text-xs';
+  const base = 'block max-w-full text-center text-[10px] font-bold uppercase tracking-wide sm:text-xs';
   if (isCurrent) return `${base} text-blue-900`;
   if (locked) return `${base} text-slate-400`;
   return `${base} opacity-80`;
@@ -117,7 +117,7 @@ function hintClass(
   const passed = result && isTaskResultGood(result);
   const locked = sequentialLock && isTaskLockedSequential(taskNum, results);
   const isCurrent = !passed && !locked && current === taskNum;
-  const base = 'block max-w-full text-center line-clamp-3 text-[10px] font-medium leading-snug sm:line-clamp-4 sm:text-[11px]';
+  const base = 'block max-w-full text-center line-clamp-2 text-[9px] font-medium leading-snug sm:line-clamp-3 sm:text-[10px]';
   if (isCurrent) return `${base} font-medium text-blue-900`;
   if (passed) return `${base} font-semibold text-emerald-900`;
   if (locked) return `${base} text-slate-400`;
@@ -144,8 +144,8 @@ function questionCountClass(
 
 function defaultGridClass(taskCount: number): string {
   if (taskCount <= 3) return 'grid-cols-3';
-  if (taskCount <= 6) return 'grid-cols-2 sm:grid-cols-3';
-  return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4';
+  if (taskCount <= 6) return 'grid-cols-3';
+  return 'grid-cols-3 sm:grid-cols-3 md:grid-cols-4';
 }
 
 /** Ikon va «Vazifa N» matni barcha kartochkalarda bir xil vertikal qatorda turishi uchun qat’iy qatorlar. */
@@ -169,16 +169,16 @@ function TaskCardStackedBody({
   iconWrapClassName: string;
 }) {
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col items-stretch gap-1 px-0.5 pt-0.5 sm:gap-1.5">
-      <div className="flex h-10 w-full shrink-0 items-center justify-center sm:h-11">
+    <div className="flex min-h-0 w-full flex-1 flex-col items-stretch gap-0.5 px-0.5 pt-0.5 sm:gap-1">
+      <div className="flex h-8 w-full shrink-0 items-center justify-center sm:h-10">
         <span className={iconWrapClassName}>
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2} aria-hidden />
+          <Icon className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" strokeWidth={2} aria-hidden />
         </span>
       </div>
-      <div className="flex min-h-[2.5rem] w-full shrink-0 items-center justify-center px-0.5">
+      <div className="flex min-h-[2rem] w-full shrink-0 items-center justify-center px-0.5">
         <span className={labelClassName}>{label}</span>
       </div>
-      <div className="flex h-[1.375rem] w-full shrink-0 items-center justify-center sm:h-6">
+      <div className="flex h-[1.2rem] w-full shrink-0 items-center justify-center sm:h-5">
         {questionTotal != null ? (
           <span
             className={questionCountClassName}
@@ -196,7 +196,7 @@ function TaskCardStackedBody({
           </span>
         )}
       </div>
-      <div className="flex min-h-[2.75rem] w-full flex-1 items-start justify-center overflow-hidden">
+      <div className="flex min-h-[2.1rem] w-full flex-1 items-start justify-center overflow-hidden">
         <span className={hintClassName}>{hint}</span>
       </div>
     </div>
@@ -242,7 +242,7 @@ export function LessonTaskSquareGrid({
   return (
     <div className="mt-6">
       {mashqlarHeading ? <p className="mb-3 text-sm font-semibold text-slate-500">Mashqlar</p> : null}
-      <div className={`grid items-stretch justify-items-center gap-2 sm:gap-4 ${gridClass}`}>
+      <div className={`grid items-stretch justify-items-stretch gap-2 sm:gap-3 ${gridClass}`}>
         {tasks.map(({ path, taskNum, label, hint, Icon = ListChecks }) => {
           const locked = sequentialLock && isTaskLockedSequential(taskNum, results);
           const passed = !!(results[taskNum] && isTaskResultGood(results[taskNum]!));

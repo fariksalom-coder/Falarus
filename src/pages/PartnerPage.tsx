@@ -13,9 +13,11 @@ import PartnerChat from '../components/partner/PartnerChat';
 type View = 'loading' | 'paywall' | 'profile-form' | 'chat-list' | 'chat' | 'waiting' | 'browse' | 'incoming';
 
 export default function PartnerPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { access, accessLoaded } = useAccess();
   const navigate = useNavigate();
+  const subscriptionExpired =
+    access?.subscription_active === false && Boolean(user?.planName || user?.planExpiresAt);
 
   const [view, setView] = useState<View>('loading');
   const [status, setStatus] = useState<PartnerStatus | null>(null);
@@ -107,10 +109,14 @@ export default function PartnerPage() {
                   <Lock className="h-8 w-8 text-blue-600" />
                 </div>
                 <h2 className="mt-5 text-xl font-bold text-slate-900">
-                  Sherik funksiyasidan foydalanish uchun obuna kerak
+                  {subscriptionExpired
+                    ? "Sizning obunangiz muddati tugagan"
+                    : "Sherik funksiyasidan foydalanish uchun obuna kerak"}
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Obuna orqali sherik topish, suhbat qilish va tilni birga o'rganish imkoniyatiga ega bo'lasiz
+                  {subscriptionExpired
+                    ? "Davom etish uchun obunani yangilang va sherik bilan o‘rganishni davom ettiring"
+                    : "Obuna orqali sherik topish, suhbat qilish va tilni birga o'rganish imkoniyatiga ega bo'lasiz"}
                 </p>
                 <button
                   type="button"

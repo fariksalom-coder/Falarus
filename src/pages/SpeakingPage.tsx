@@ -444,9 +444,11 @@ function topicSubtitle(topic: string): string {
 }
 
 export default function SpeakingPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { access, accessLoaded } = useAccess();
   const navigate = useNavigate();
+  const subscriptionExpired =
+    access?.subscription_active === false && Boolean(user?.planName || user?.planExpiresAt);
 
   const [view, setView] = useState<View>('loading');
   const [topics, setTopics] = useState<SpeakingTopic[]>([]);
@@ -549,10 +551,14 @@ export default function SpeakingPage() {
                   <Lock className="h-8 w-8 text-blue-600" />
                 </div>
                 <h2 className="mt-5 text-xl font-bold text-slate-900">
-                  Gapirish mashqini ochish uchun obuna kerak
+                  {subscriptionExpired
+                    ? "Sizning obunangiz muddati tugagan"
+                    : "Gapirish mashqini ochish uchun obuna kerak"}
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Obuna orqali rus tilida gapirish mashqini bajarishingiz mumkin
+                  {subscriptionExpired
+                    ? "Davom etish uchun obunani yangilang va gapirish mashqlarini davom ettiring"
+                    : "Obuna orqali rus tilida gapirish mashqini bajarishingiz mumkin"}
                 </p>
                 <button
                   type="button"

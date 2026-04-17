@@ -1,5 +1,7 @@
 import { ArrowLeft, ArrowRight, GraduationCap, BookMarked, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAccess } from '../context/AccessContext';
+import { useAuth } from '../context/AuthContext';
 
 const BG = '#F8FAFC';
 const BORDER = '#E2E8F0';
@@ -41,6 +43,10 @@ const SECTIONS = [
 
 export default function RussianCoursePage() {
   const navigate = useNavigate();
+  const { access } = useAccess();
+  const { user } = useAuth();
+  const subscriptionExpired =
+    access?.subscription_active === false && Boolean(user?.planName || user?.planExpiresAt);
 
   return (
     <div className="min-h-screen pb-12" style={{ backgroundColor: BG }}>
@@ -57,6 +63,21 @@ export default function RussianCoursePage() {
         <h1 className="mb-5 text-[24px] font-bold sm:text-[28px]" style={{ color: TEXT }}>
           Rus tili
         </h1>
+
+        {subscriptionExpired && (
+          <button
+            type="button"
+            onClick={() => navigate('/tariflar')}
+            className="mb-4 w-full rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left"
+          >
+            <p className="text-sm font-bold text-amber-900">
+              Sizning obunangiz muddati tugagan
+            </p>
+            <p className="mt-1 text-xs font-medium text-amber-700">
+              Davom etish uchun obuna sotib oling
+            </p>
+          </button>
+        )}
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           {SECTIONS.map(({ id, href, title, subtitle, accent, Icon, iconColor, iconBg }) => (
