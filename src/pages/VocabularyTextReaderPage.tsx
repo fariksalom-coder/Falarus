@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Volume2, X } from 'lucide-react';
+import { ArrowLeft, Volume2 } from 'lucide-react';
 import { VOCABULARY_TEXTS, type VocabularyTextWord } from '../data/vocabularyTexts';
 import { useAuth } from '../context/AuthContext';
 import { fetchVocabularyTextDictionary, type VocabularyTextDictionaryWord } from '../api/vocabulary';
@@ -10,7 +10,13 @@ type WordTooltipState = {
   entry: VocabularyTextWord | null;
   x: number;
   y: number;
+  width: number;
 };
+
+const TOOLTIP_SIDE_PADDING = 12;
+const TOOLTIP_VERTICAL_GAP = 10;
+const TOOLTIP_APPROX_HEIGHT = 56;
+const TOOLTIP_MIN_WIDTH = 180;
 
 type TextToken =
   | { type: 'word'; value: string }
@@ -42,6 +48,31 @@ function buildDictionaryLookup(dictionary: VocabularyTextWord[]): Map<string, Vo
   const map = new Map<string, VocabularyTextWord>();
   dictionary.forEach((entry) => map.set(normalizeWord(entry.key), entry));
   return map;
+}
+
+function estimateTooltipWidth(token: string, translation: string) {
+  const viewportWidth = window.innerWidth;
+  const maxWidth = viewportWidth - TOOLTIP_SIDE_PADDING * 2;
+  const chars = token.length + translation.length;
+  const estimated = 120 + chars * 10;
+  return Math.max(TOOLTIP_MIN_WIDTH, Math.min(maxWidth, estimated));
+}
+
+function getTooltipPosition(rect: DOMRect, bubbleWidth: number) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const safeWidth = Math.min(bubbleWidth, viewportWidth - TOOLTIP_SIDE_PADDING * 2);
+  const minCenterX = TOOLTIP_SIDE_PADDING + bubbleWidth / 2;
+  const maxCenterX = viewportWidth - TOOLTIP_SIDE_PADDING - bubbleWidth / 2;
+  const centerX = rect.left + rect.width / 2;
+  const x = Math.min(Math.max(centerX, minCenterX), maxCenterX);
+
+  const canShowBelow = rect.bottom + TOOLTIP_VERTICAL_GAP + TOOLTIP_APPROX_HEIGHT <= viewportHeight - TOOLTIP_SIDE_PADDING;
+  const y = canShowBelow
+    ? rect.bottom + TOOLTIP_VERTICAL_GAP
+    : Math.max(TOOLTIP_SIDE_PADDING, rect.top - TOOLTIP_VERTICAL_GAP - TOOLTIP_APPROX_HEIGHT);
+
+  return { x, y, width: safeWidth };
 }
 
 export default function VocabularyTextReaderPage() {
@@ -148,11 +179,15 @@ export default function VocabularyTextReaderPage() {
                     const normalized = normalizeWord(token.value);
                     const entry = dictLookup.get(normalized) ?? null;
                     const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                    const translation = entry?.translationUz ?? 'Tarjima topilmadi';
+                    const width = estimateTooltipWidth(token.value, translation);
+                    const position = getTooltipPosition(rect, width);
                     setTooltip({
                       token: token.value,
                       entry,
-                      x: rect.left + rect.width / 2,
-                      y: rect.bottom + 10,
+                      x: position.x,
+                      y: position.y,
+                      width: position.width,
                     });
                   }}
                   className="rounded px-0.5 text-left font-medium text-slate-900 underline decoration-dotted underline-offset-4 transition hover:bg-blue-50 hover:text-blue-700"
@@ -168,34 +203,27 @@ export default function VocabularyTextReaderPage() {
       {tooltip && (
         <div
           ref={tooltipRef}
-          className="fixed z-50 w-[min(320px,calc(100vw-24px))] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_20px_45px_rgba(15,23,42,0.18)]"
-          style={{ left: tooltip.x, top: tooltip.y }}
+          className="fixed z-50 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-[0_20px_45px_rgba(15,23,42,0.18)]"
+          style={{ left: tooltip.x, top: tooltip.y, width: tooltip.width }}
         >
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-sm font-bold text-slate-900">{tooltip.token}</p>
-              <p className="mt-1 text-sm text-slate-600">
-                {tooltip.entry ? `${tooltip.entry.key} — ${tooltip.entry.translationUz}` : 'Tarjima topilmadi'}
-              </p>
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <div className="min-w-0 overflow-x-auto overflow-y-hidden">
+              <span className="mr-2 text-[20px] font-extrabold leading-tight text-slate-900 sm:text-[22px]">
+                {tooltip.token}
+              </span>
+              <span className="text-[18px] font-semibold leading-tight text-slate-500 sm:text-[20px]">
+              {tooltip.entry ? tooltip.entry.translationUz : 'Tarjima topilmadi'}
+              </span>
             </div>
             <button
               type="button"
-              onClick={() => setTooltip(null)}
-              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              aria-label="Yopish"
+              onClick={() => speakWord(tooltip.entry?.audioRu ?? tooltip.token)}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+              aria-label="Eshitish"
             >
-              <X className="h-4 w-4" />
+              <Volume2 className="h-5 w-5" />
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => speakWord(tooltip.entry?.audioRu ?? tooltip.token)}
-            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
-          >
-            <Volume2 className="h-4 w-4" />
-            Eshitish
-          </button>
         </div>
       )}
     </div>
