@@ -54,14 +54,24 @@ import { isPaymentsProductCodeSchemaError } from '../shared/paymentsCompat.js';
 import { embedFalarusProductInProofUrl } from '../shared/paymentsProofUrl.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
+const FOSSILS_CHECKS_BUCKET = 'fossils-checks';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+const FOSSILS_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const PAYMENT_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
-function parseMultipartPayments(req: VercelRequest): Promise<{ fields: Record<string, string>; file: { buffer: Buffer; mimetype: string } | null }> {
+function parseMultipartPayments(
+  req: VercelRequest,
+  opts?: {
+    fileFieldName?: string;
+    allowedMimes?: string[];
+  }
+): Promise<{ fields: Record<string, string>; file: { buffer: Buffer; mimetype: string } | null }> {
   return new Promise((resolve, reject) => {
     const fields: Record<string, string> = {};
     let file: { buffer: Buffer; mimetype: string } | null = null;
     const chunks: Buffer[] = [];
+    const fileFieldName = opts?.fileFieldName ?? 'upload_file';
+    const allowedMimes = opts?.allowedMimes ?? PAYMENT_ALLOWED_MIMES;
     const contentType = req.headers['content-type'];
     if (!contentType || !contentType.includes('multipart/form-data')) {
       reject(new Error('Content-Type must be multipart/form-data'));
@@ -71,8 +81,8 @@ function parseMultipartPayments(req: VercelRequest): Promise<{ fields: Record<st
     bb.on('field', (name: string, value: string) => { fields[name] = value; });
     bb.on('file', (name, stream, info) => {
       const { mimeType } = info;
-      if (name !== 'upload_file') { stream.resume(); return; }
-      if (!PAYMENT_ALLOWED_MIMES.includes(mimeType)) {
+      if (name !== fileFieldName) { stream.resume(); return; }
+      if (!allowedMimes.includes(mimeType)) {
         stream.resume();
         reject(new Error('Faqat JPG, PNG, WEBP yoki PDF yuklashingiz mumkin'));
         return;
@@ -283,6 +293,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Xatolik yuz berdi';
       console.error('[POST /api/payments]', message);
+      return res.status(500).json({ error: message });
+    }
+  }
+
+  // POST /api/payment — public endpoint for fossils landing checkout
+  if (path[0] === 'payment' && path.length === 1 && req.method === 'POST') {
+    try {
+      const { fields, file } = await parseMultipartPayments(req, {
+        fileFieldName: 'receipt',
+        allowedMimes: FOSSILS_ALLOWED_MIMES,
+      });
+      const phone = String(fields.phone ?? '').trim();
+      const tariff = String(fields.tariff ?? '').trim();
+
+      if (!phone) return res.status(400).json({ error: 'Telefon raqami kerak' });
+      if (!tariff) return res.status(400).json({ error: 'Tarif kerak' });
+      if (!file || !file.buffer.length) return res.status(400).json({ error: 'Chek rasmi kerak' });
+
+      const ext = file.mimetype.split('/')[1] || 'jpg';
+      const pathStr = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+      const { data: bucketList } = await supabase.storage.listBuckets();
+      const bucketExists = (bucketList ?? []).some((b: { name: string }) => b.name === FOSSILS_CHECKS_BUCKET);
+      if (!bucketExists) await supabase.storage.createBucket(FOSSILS_CHECKS_BUCKET, { public: true });
+      const { error: uploadErr } = await supabase.storage
+        .from(FOSSILS_CHECKS_BUCKET)
+        .upload(pathStr, file.buffer, { contentType: file.mimetype, upsert: false });
+      if (uploadErr) {
+        console.error('[fossils payment upload]', uploadErr);
+        return res.status(500).json({ error: 'Fayl yuklanmadi' });
+      }
+
+      const { data: urlData } = supabase.storage.from(FOSSILS_CHECKS_BUCKET).getPublicUrl(pathStr);
+      const imageUrl = urlData?.publicUrl ?? '';
+      const { data: row, error: insertError } = await supabase
+        .from('fossils_payments')
+        .insert({
+          phone,
+          tariff,
+          image_url: imageUrl,
+          status: 'pending',
+        })
+        .select('id, status')
+        .single();
+      if (insertError || !row) {
+        console.error('[fossils payment insert]', insertError);
+        return res.status(500).json({ error: 'Xatolik yuz berdi' });
+      }
+      return res.status(201).json({ success: true, id: row.id, status: row.status });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Xatolik yuz berdi';
+      console.error('[POST /api/payment]', message);
       return res.status(500).json({ error: message });
     }
   }
