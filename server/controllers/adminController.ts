@@ -257,6 +257,36 @@ export function createAdminController(supabase: SupabaseClient) {
     return res.json(list);
   }
 
+  async function getFossilsPayments(_req: Request, res: Response) {
+    const { data: rows, error } = await supabase
+      .from('fossils_payments')
+      .select('id, phone, tariff, image_url, status, created_at, updated_at')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('[admin/fossils-payments]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.json(rows ?? []);
+  }
+
+  async function updateFossilsPaymentStatus(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    const status = String(req.body?.status ?? '');
+    if (!id) return res.status(400).json({ error: 'Invalid payment id' });
+    if (!['pending', 'confirmed', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'status noto‘g‘ri' });
+    }
+    const { error } = await supabase
+      .from('fossils_payments')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) {
+      console.error('[admin/fossils-payments update]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.json({ success: true });
+  }
+
   async function confirmPayment(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
@@ -707,6 +737,8 @@ export function createAdminController(supabase: SupabaseClient) {
     getUsers,
     getUserProfile,
     getPayments,
+    getFossilsPayments,
+    updateFossilsPaymentStatus,
     confirmPayment,
     rejectPayment,
     getSubscriptions,

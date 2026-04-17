@@ -56,6 +56,16 @@ export type AdminPaymentRow = {
   approved_at: string | null;
 };
 
+export type AdminFossilsPaymentRow = {
+  id: number;
+  phone: string;
+  tariff: string;
+  image_url: string;
+  status: 'pending' | 'confirmed' | 'rejected';
+  created_at: string;
+  updated_at: string;
+};
+
 export type AdminSubscriptionRow = {
   id: number;
   user_id: number;
@@ -132,6 +142,20 @@ export async function getUserProfile(id: number): Promise<AdminUserProfile> {
 
 export async function getPayments(): Promise<AdminPaymentRow[]> {
   return adminApi<AdminPaymentRow[]>('/payments');
+}
+
+export async function getFossilsPayments(): Promise<AdminFossilsPaymentRow[]> {
+  return adminApi<AdminFossilsPaymentRow[]>('/fossils-payments');
+}
+
+export async function updateFossilsPaymentStatus(
+  id: number,
+  status: AdminFossilsPaymentRow['status']
+): Promise<void> {
+  await adminApi(`/fossils-payments/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function confirmPayment(id: number): Promise<void> {

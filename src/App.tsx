@@ -28,6 +28,8 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/fossils" element={renderLazyPage('./pages/FossilsLandingPage.tsx')} />
+      <Route path="/fossils/checkout" element={renderLazyPage('./pages/FossilsCheckoutPage.tsx')} />
       <Route
         path="/admin"
         element={
@@ -44,6 +46,7 @@ function AppRoutes() {
             <Route path="users" element={renderLazyPage('./pages/admin/AdminUsersPage.tsx')} />
             <Route path="users/:id" element={renderLazyPage('./pages/admin/AdminUserProfilePage.tsx')} />
             <Route path="payments" element={renderLazyPage('./pages/admin/AdminPaymentsPage.tsx')} />
+            <Route path="fossils-payments" element={renderLazyPage('./pages/admin/AdminFossilsPaymentsPage.tsx')} />
             <Route path="subscriptions" element={renderLazyPage('./pages/admin/AdminSubscriptionsPage.tsx')} />
             <Route path="referrals" element={renderLazyPage('./pages/admin/AdminReferralsPage.tsx')} />
             <Route path="support" element={renderLazyPage('./pages/admin/AdminSupportPage.tsx')} />

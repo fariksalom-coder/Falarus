@@ -17,6 +17,10 @@ export function createAdminRoutes(supabase: SupabaseClient): Router {
   router.get('/users', (req, res, next) => ctrl.getUsers(req, res).catch(next));
   router.get('/users/:id', (req, res, next) => ctrl.getUserProfile(req, res).catch(next));
   router.get('/payments', (req, res, next) => ctrl.getPayments(req, res).catch(next));
+  router.get('/fossils-payments', (req, res, next) => ctrl.getFossilsPayments(req, res).catch(next));
+  router.put('/fossils-payments/:id/status', (req, res, next) =>
+    ctrl.updateFossilsPaymentStatus(req, res).catch(next)
+  );
   router.post('/payments/:id/confirm', (req, res, next) => ctrl.confirmPayment(req, res).catch(next));
   router.post('/payments/:id/reject', (req, res, next) => ctrl.rejectPayment(req, res).catch(next));
   router.get('/subscriptions', (req, res, next) => ctrl.getSubscriptions(req, res).catch(next));

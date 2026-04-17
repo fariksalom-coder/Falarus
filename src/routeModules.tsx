@@ -81,6 +81,8 @@ const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
   '/kurslar/vnzh': ['./pages/VnzhCoursePage.tsx'],
   '/tariflar': ['./pages/PricingPage.tsx'],
   '/payment': ['./pages/PaymentPage.tsx'],
+  '/fossils': ['./pages/FossilsLandingPage.tsx'],
+  '/fossils/checkout': ['./pages/FossilsCheckoutPage.tsx'],
 };
 
 export function prefetchRoutePath(path: string) {

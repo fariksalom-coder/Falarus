@@ -104,6 +104,7 @@ async function startServer() {
   const app = express();
   // Voice answers are sent as base64 JSON payloads; keep limit above default.
   app.use(express.json({ limit: '2mb' }));
+  app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
   app.use((_req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
@@ -153,6 +154,15 @@ async function startServer() {
       res.status(500).json({ error: 'Xatolik' });
     }
   });
+
+  // Public "fossils" landing payment endpoint (Telegram traffic funnel).
+  try {
+    const { createFossilsPaymentRoutes } = await import('./server/routes/fossilsPaymentRoutes');
+    app.use('/api', createFossilsPaymentRoutes(supabase));
+    console.log('Fossils API: POST /api/payment (public + receipt upload)');
+  } catch (err) {
+    console.error('Fossils payment routes failed:', err);
+  }
 
   // Public tariff prices by currency (no auth) — month, three_months, year
   app.get('/api/tariff-prices', async (req, res) => {

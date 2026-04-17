@@ -12,12 +12,14 @@ import {
   DollarSign,
   LogOut,
   BookOpen,
+  Video,
 } from 'lucide-react';
 
 const nav = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/payments', label: 'Payments', icon: CreditCard },
+  { to: '/admin/fossils-payments', label: 'Fossils Payments', icon: Video },
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: Repeat },
   { to: '/admin/referrals', label: 'Referrals', icon: Wallet },
   { to: '/admin/support', label: 'Support', icon: MessageSquare },
