@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
 import { getSubtopicContent } from '../data/vocabularyContent';
@@ -16,10 +16,7 @@ import {
   setCachedWordGroupsProgress,
   type VocabularyWordGroup,
 } from '../api/vocabulary';
-import { VocabularyProgressBar } from '../components/vocabulary/VocabularyProgressBar';
-import { aggregateSubtopicFromBlocks } from '../features/vocabulary/progressModel';
 import {
-  ChevronRight,
   Package,
   Palette,
   Zap,
@@ -79,17 +76,6 @@ export default function VocabularySubtopicPage() {
     });
   }, [token, subtopicId, resolvedId]);
 
-  const subtopicAggregate = useMemo(() => {
-    if (!topic || !content || !resolvedId) return { learned: 0, total: 0 };
-    const partIds = content.parts.map((p) => p.id);
-    return aggregateSubtopicFromBlocks(
-      partIds,
-      (pid) => content.parts.find((p) => p.id === pid)?.entries.length ?? 0,
-      wordGroupsProgress,
-      (pid) => getPartLearnedCount(topic.id, resolvedId, pid)
-    );
-  }, [topic, content, resolvedId, wordGroupsProgress]);
-
   if (!topic) {
     return (
       <div
@@ -100,7 +86,7 @@ export default function VocabularySubtopicPage() {
           <p className="font-semibold text-slate-900">Mavzu topilmadi.</p>
           <button
             type="button"
-            onClick={() => navigate('/vocabulary')}
+            onClick={() => navigate('/vocabulary/words')}
             className="mt-4 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
           >
             Orqaga
@@ -131,7 +117,7 @@ export default function VocabularySubtopicPage() {
           <p className="font-semibold text-slate-900">Mavzu topilmadi.</p>
           <button
             type="button"
-            onClick={() => navigate('/vocabulary')}
+            onClick={() => navigate('/vocabulary/words')}
             className="mt-4 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
           >
             Orqaga
@@ -160,7 +146,7 @@ export default function VocabularySubtopicPage() {
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <button
               type="button"
-              onClick={() => navigate('/vocabulary')}
+              onClick={() => navigate('/vocabulary/words')}
               className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
             >
               Lug&apos;atga qaytish
@@ -197,7 +183,7 @@ export default function VocabularySubtopicPage() {
         backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
       }}
     >
-      <main className="mx-auto max-w-[720px] px-4 py-8">
+      <main className="mx-auto max-w-[720px] px-4 py-6">
         {/* Back */}
         <button
           type="button"
@@ -208,32 +194,13 @@ export default function VocabularySubtopicPage() {
           ← Orqaga
         </button>
 
-        <h1 className="mb-4 text-xl font-bold text-slate-900">
+        <h1 className="mb-1 text-xl font-bold text-slate-900">
           {subtopic.title.charAt(0).toUpperCase() + subtopic.title.slice(1)}
         </h1>
+        {content ? <p className="mb-4 text-sm text-slate-600">{wordGroupsProgress.reduce((sum, g) => sum + (g.learned_words ?? 0), 0)} / {wordGroupsProgress.reduce((sum, g) => sum + (g.total_words ?? 0), 0)}</p> : null}
 
         {content ? (
-          <div
-            className="mb-6 rounded-2xl border bg-white p-4 shadow-sm"
-            style={{ borderColor: '#E2E8F0' }}
-          >
-            <p className="text-sm text-slate-600">
-              Bu bo‘lim bo‘yicha jami (barcha qismlar bo‘yicha test natijasi)
-            </p>
-            <p className="mt-1 font-semibold text-slate-900">
-              {subtopicAggregate.learned} / {subtopicAggregate.total.toLocaleString()} so&apos;z
-              o&apos;rganildi
-            </p>
-            <VocabularyProgressBar
-              learned={subtopicAggregate.learned}
-              total={subtopicAggregate.total}
-              className="mt-3"
-            />
-          </div>
-        ) : null}
-
-        {content ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2.5">
               {content.parts.map((part, index) => {
                 const Icon = PART_ICONS[part.id] ?? BookOpen;
                 const contentTotal = part.entries.length;
@@ -256,32 +223,16 @@ export default function VocabularySubtopicPage() {
                         `/vocabulary/${topic.id}/${subtopicId}/${part.id}`
                       );
                     }}
-                    className="group flex w-full items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-indigo-200/80 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="group flex w-full flex-col items-start rounded-2xl border bg-white p-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200/80 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     style={{ borderColor: '#E2E8F0' }}
                   >
                     <div
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${accent} transition-transform group-hover:scale-105`}
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${accent} transition-transform group-hover:scale-105`}
                     >
-                      <Icon className="h-6 w-6" strokeWidth={1.8} />
+                      <Icon className="h-5 w-5" strokeWidth={1.8} />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="font-semibold leading-snug"
-                        style={{ color: '#0F172A' }}
-                      >
-                        {part.title}
-                      </p>
-                      <p
-                        className="mt-1 text-sm"
-                        style={{ color: '#64748B' }}
-                      >
-                        {learned} / {total.toLocaleString()} so'z o'rganildi
-                      </p>
-                      <VocabularyProgressBar learned={learned} total={total} className="mt-2" />
-                    </div>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600">
-                      <ChevronRight className="h-5 w-5" strokeWidth={2} />
-                    </div>
+                    <p className="mt-2 text-sm font-semibold leading-5 text-slate-900">{part.title}</p>
+                    <p className="mt-1 text-xs text-slate-600">{learned} / {total.toLocaleString()}</p>
                   </button>
                 );
               })}

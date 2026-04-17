@@ -1113,6 +1113,30 @@ async function handleDailyWordStats(userId: number, res: VercelResponse) {
   return res.status(200).json(clamped);
 }
 
+async function handleTextDictionary(req: VercelRequest, res: VercelResponse) {
+  const textIdRaw = req.query.text_id;
+  const textId = (Array.isArray(textIdRaw) ? textIdRaw[0] : textIdRaw)?.trim();
+  if (!textId) {
+    return res.status(400).json({ error: 'text_id query parameter required' });
+  }
+
+  const { data, error } = await supabase
+    .from('vocabulary_text_dictionary')
+    .select('word_ru, word_ru_normalized, translation_uz, audio_ru')
+    .eq('text_id', textId)
+    .order('word_ru', { ascending: true });
+  if (error) throw error;
+
+  return res.status(200).json(
+    (data ?? []).map((row: any) => ({
+      key: row.word_ru,
+      normalizedKey: row.word_ru_normalized,
+      translationUz: row.translation_uz,
+      audioRu: row.audio_ru ?? undefined,
+    }))
+  );
+}
+
 async function handleProgress(
   userId: number,
   req: VercelRequest,
@@ -1408,6 +1432,13 @@ export async function routeVocabularyRequest(
         return res.status(405).json({ error: 'Method not allowed' });
       }
       return await handleDailyWordStats(userId, res);
+    }
+
+    if (segments.length === 1 && segments[0] === 'text-dictionary') {
+      if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      return await handleTextDictionary(req, res);
     }
 
     if (segments.length === 2 && segments[0] === 'match' && segments[1] === 'finish') {

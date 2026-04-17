@@ -8,6 +8,7 @@ import { appMainTopOffsetCss, appMainBottomOffsetCss } from '../constants/appLay
 
 /** Routes where we hide the top nav bar (payment = fullscreen, vocabulary nested = back only, invite = has back button). */
 function hideNavBar(path: string): boolean {
+  if (path === '/vocabulary') return true;
   if (path === '/payment' || path.startsWith('/payment')) return true;
   if (path === '/tariflar') return true;
   if (path === '/payment-history') return true;

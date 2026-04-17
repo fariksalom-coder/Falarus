@@ -74,7 +74,13 @@ function AppRoutes() {
             <Route path="russian/grammar" element={renderLazyPage('./pages/Dashboard.tsx')} />
             <Route path="russian/speaking" element={renderLazyPage('./pages/SpeakingPage.tsx')} />
             <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
-            <Route path="vocabulary" element={renderLazyPage('./pages/VocabularyPage.tsx')} />
+            <Route path="vocabulary" element={renderLazyPage('./pages/VocabularyHubPage.tsx')} />
+            <Route path="vocabulary/words" element={renderLazyPage('./pages/VocabularyPage.tsx')} />
+            <Route path="vocabulary/matnlar" element={renderLazyPage('./pages/VocabularyTextsPage.tsx')} />
+            <Route
+              path="vocabulary/matnlar/:textId"
+              element={renderLazyPage('./pages/VocabularyTextReaderPage.tsx')}
+            />
             <Route path="vocabulary/:topicId" element={renderLazyPage('./pages/VocabularyTopicPage.tsx')} />
             <Route path="vocabulary/:topicId/:subtopicId" element={renderLazyPage('./pages/VocabularySubtopicPage.tsx')} />
             <Route path="vocabulary/:topicId/:subtopicId/:partId" element={<VocabularyPartRoute />} />

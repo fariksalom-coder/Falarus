@@ -68,6 +68,13 @@ export type TestFinishResult = {
   match_unlocked: boolean;
 };
 
+export type VocabularyTextDictionaryWord = {
+  key: string;
+  normalizedKey: string;
+  translationUz: string;
+  audioRu?: string;
+};
+
 function authHeaders(token: string | null): HeadersInit {
   const h: HeadersInit = { 'Content-Type': 'application/json' };
   if (token) (h as Record<string, string>)['Authorization'] = `Bearer ${token}`;
@@ -258,6 +265,20 @@ export async function postStep2Result(
     throw new Error(detail);
   }
   return res.json();
+}
+
+export async function fetchVocabularyTextDictionary(
+  token: string | null,
+  textId: string
+): Promise<VocabularyTextDictionaryWord[]> {
+  if (!token) return [];
+  const q = encodeURIComponent(textId);
+  const res = await fetch(apiUrl(`/api/vocabulary/text-dictionary?text_id=${q}`), {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
 }
 
 const CACHE_TOPICS = 'vocab_topics_progress';

@@ -248,6 +248,36 @@ export function getWords(supabase: Supabase) {
   };
 }
 
+export function getTextDictionary(supabase: Supabase) {
+  return async (req: Request, res: Response) => {
+    try {
+      const textIdRaw = req.query.text_id;
+      const textIdCandidate = Array.isArray(textIdRaw) ? textIdRaw[0] : textIdRaw;
+      const textId = typeof textIdCandidate === 'string' ? textIdCandidate.trim() : '';
+      if (!textId) return res.status(400).json({ error: 'text_id query parameter required' });
+
+      const { data, error } = await supabase
+        .from('vocabulary_text_dictionary')
+        .select('word_ru, word_ru_normalized, translation_uz, audio_ru')
+        .eq('text_id', textId)
+        .order('word_ru', { ascending: true });
+      if (error) throw error;
+
+      res.json(
+        (data ?? []).map((row: any) => ({
+          key: row.word_ru,
+          normalizedKey: row.word_ru_normalized,
+          translationUz: row.translation_uz,
+          audioRu: row.audio_ru ?? undefined,
+        }))
+      );
+    } catch (e) {
+      console.error('[vocabulary/getTextDictionary]', e);
+      res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  };
+}
+
 export function postFlashcardsComplete(supabase: Supabase) {
   return async (req: Request, res: Response) => {
     try {

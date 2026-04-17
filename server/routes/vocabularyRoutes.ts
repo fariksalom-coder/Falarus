@@ -25,6 +25,7 @@ export function createVocabularyRoutes(
   router.get('/vocabulary/tasks', authenticate, vocabularyController.getTasks(supabase));
   router.get('/vocabulary/tasks/:wordGroupId', authenticate, vocabularyController.getTasks(supabase));
   router.get('/vocabulary/words/:wordGroupId', authenticate, vocabularyController.getWords(supabase));
+  router.get('/vocabulary/text-dictionary', authenticate, vocabularyController.getTextDictionary(supabase));
   router.get(
     '/vocabulary/daily-word-stats',
     authenticate,
