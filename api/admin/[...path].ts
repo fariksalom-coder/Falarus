@@ -303,6 +303,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(list);
     }
 
+    // GET /api/admin/fossils-payments
+    if (path[0] === 'fossils-payments' && path.length === 1 && req.method === 'GET') {
+      const { data: rows, error } = await supabase
+        .from('fossils_payments')
+        .select('id, phone, tariff, image_url, status, created_at, updated_at')
+        .order('created_at', { ascending: false });
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json(rows ?? []);
+    }
+
+    // PUT /api/admin/fossils-payments/:id/status
+    if (
+      path[0] === 'fossils-payments' &&
+      path.length === 3 &&
+      path[2] === 'status' &&
+      (req.method === 'PUT' || req.method === 'PATCH')
+    ) {
+      const paymentId = Number(path[1]);
+      const body = parseBody(req.body);
+      const status = typeof body.status === 'string' ? body.status : '';
+      if (!paymentId) return res.status(400).json({ error: 'Invalid payment id' });
+      if (!['pending', 'confirmed', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'status noto‘g‘ri' });
+      }
+      const { error } = await supabase
+        .from('fossils_payments')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', paymentId);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true });
+    }
+
     // POST /api/admin/payments/:id/confirm and .../reject — payments table
     if (path[0] === 'payments' && path.length >= 3 && req.method === 'POST') {
       const payId = Number(path[1]);
