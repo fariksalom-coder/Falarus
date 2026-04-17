@@ -21,6 +21,13 @@ import { invalidateAccessCache } from '../_lib/subscription.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
 
+function isMissingRelationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = String((error as { code?: unknown }).code ?? '');
+  const message = String((error as { message?: unknown }).message ?? '').toLowerCase();
+  return code === '42P01' || message.includes('relation') && message.includes('does not exist');
+}
+
 /**
  * Normalize admin API path.
  * Examples:
@@ -309,7 +316,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('fossils_payments')
         .select('id, phone, tariff, image_url, status, created_at, updated_at')
         .order('created_at', { ascending: false });
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) {
+        if (isMissingRelationError(error)) {
+          // Keep admin page usable until DB migration is applied in production.
+          return res.status(200).json([]);
+        }
+        return res.status(500).json({ error: error.message });
+      }
       return res.status(200).json(rows ?? []);
     }
 
@@ -331,7 +344,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('fossils_payments')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', paymentId);
-      if (error) return res.status(500).json({ error: error.message });
+      if (error) {
+        if (isMissingRelationError(error)) {
+          return res.status(503).json({ error: 'fossils_payments jadvali hali yaratilmagan' });
+        }
+        return res.status(500).json({ error: error.message });
+      }
       return res.status(200).json({ success: true });
     }
 
