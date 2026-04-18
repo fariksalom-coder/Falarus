@@ -1,23 +1,19 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Clock, Users, MessageCircle } from 'lucide-react';
+import { LogIn, Clock, Users, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useAccess } from '../context/AccessContext';
 import { getPartnerStatus, type PartnerStatus } from '../api/partner';
 import PartnerProfileForm from '../components/partner/PartnerProfileForm';
 import PartnerPeopleList from '../components/partner/PartnerPeopleList';
 import PartnerIncomingRequests from '../components/partner/PartnerIncomingRequests';
 import PartnerChat from '../components/partner/PartnerChat';
 
-type View = 'loading' | 'paywall' | 'profile-form' | 'chat-list' | 'chat' | 'waiting' | 'browse' | 'incoming';
+type View = 'loading' | 'guest' | 'profile-form' | 'chat-list' | 'chat' | 'waiting' | 'browse' | 'incoming';
 
 export default function PartnerPage() {
-  const { token, user } = useAuth();
-  const { access, accessLoaded } = useAccess();
+  const { token } = useAuth();
   const navigate = useNavigate();
-  const subscriptionExpired =
-    access?.subscription_active === false && Boolean(user?.planName || user?.planExpiresAt);
 
   const [view, setView] = useState<View>('loading');
   const [status, setStatus] = useState<PartnerStatus | null>(null);
@@ -44,13 +40,12 @@ export default function PartnerPage() {
   }, [token]);
 
   useEffect(() => {
-    if (!accessLoaded) return;
-    if (!access?.subscription_active) {
-      setView('paywall');
+    if (!token) {
+      setView('guest');
       return;
     }
     loadStatus();
-  }, [accessLoaded, access?.subscription_active, loadStatus]);
+  }, [token, loadStatus]);
 
   const handleProfileSaved = () => {
     loadStatus();
@@ -96,9 +91,9 @@ export default function PartnerPage() {
             </motion.div>
           )}
 
-          {view === 'paywall' && (
+          {view === 'guest' && (
             <motion.div
-              key="paywall"
+              key="guest"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
@@ -106,24 +101,18 @@ export default function PartnerPage() {
             >
               <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
-                  <Lock className="h-8 w-8 text-blue-600" />
+                  <LogIn className="h-8 w-8 text-blue-600" />
                 </div>
-                <h2 className="mt-5 text-xl font-bold text-slate-900">
-                  {subscriptionExpired
-                    ? "Sizning obunangiz muddati tugagan"
-                    : "Sherik funksiyasidan foydalanish uchun obuna kerak"}
-                </h2>
+                <h2 className="mt-5 text-xl font-bold text-slate-900">Sherik bilan o‘rganish</h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  {subscriptionExpired
-                    ? "Davom etish uchun obunani yangilang va sherik bilan o‘rganishni davom ettiring"
-                    : "Obuna orqali sherik topish, suhbat qilish va tilni birga o'rganish imkoniyatiga ega bo'lasiz"}
+                  Sherik topish va chat uchun akkauntingizga kiring
                 </p>
                 <button
                   type="button"
-                  onClick={() => navigate('/tariflar')}
+                  onClick={() => navigate('/login')}
                   className="mt-6 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(37,99,235,0.3)] transition-all hover:shadow-[0_12px_32px_rgba(37,99,235,0.4)]"
                 >
-                  Obunani olish
+                  Kirish
                 </button>
               </div>
             </motion.div>

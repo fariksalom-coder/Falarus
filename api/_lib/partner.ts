@@ -1,17 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from './supabase.js';
 import { parseBody } from './request.js';
-import { getAccessInfo } from './subscription.js';
 import { buildRequestLogContext, logError } from './logger.js';
-
-async function requireSubscription(userId: number, res: VercelResponse): Promise<boolean> {
-  const access = await getAccessInfo(supabase, userId);
-  if (!access.subscription_active) {
-    res.status(403).json({ error: 'Obuna kerak' });
-    return false;
-  }
-  return true;
-}
 
 // ---------------------------------------------------------------------------
 // GET /api/partner/profile — current user's profile
@@ -393,8 +383,6 @@ export async function routePartnerRequest(
   segments: string[]
 ) {
   try {
-    if (!(await requireSubscription(userId, res))) return;
-
     const s0 = segments[0];
     const s1 = segments[1];
     const s2 = segments[2];

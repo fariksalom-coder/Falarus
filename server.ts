@@ -1123,8 +1123,6 @@ async function startServer() {
   // ---------------------------------------------------------------------------
   app.use('/api/partner', authenticate, async (req: any, res) => {
     const userId = req.userId as number;
-    const access = await getAccessInfo(supabase, userId);
-    if (!access.subscription_active) return res.status(403).json({ error: 'Obuna kerak' });
 
     const fullPath = (req.originalUrl || req.url || '').split('?')[0];
     const segments = fullPath.replace(/^\/api\/partner\/?/, '').split('/').filter(Boolean);
