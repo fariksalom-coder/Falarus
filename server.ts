@@ -61,7 +61,40 @@ const supabase: SupabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
   },
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-uz-ru';
+const jwtSecretEnv = process.env.JWT_SECRET;
+const isProduction = process.env.NODE_ENV === 'production';
+const TOKEN_TTL_SECONDS = Number(process.env.JWT_EXPIRES_SECONDS || 60 * 60 * 24 * 7);
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_ATTEMPTS = 10;
+const GLOBAL_WINDOW_MS = 60 * 1000;
+const GLOBAL_MAX_REQUESTS = 180;
+
+if (!jwtSecretEnv || jwtSecretEnv.length < 32) {
+  console.error('JWT_SECRET must be set to a strong value (>=32 chars)');
+  process.exit(1);
+}
+const JWT_SECRET = jwtSecretEnv;
+
+function createIpRateLimiter(windowMs: number, maxRequests: number) {
+  const hits = new Map<string, { count: number; resetAt: number }>();
+  return (req: any, res: any, next: any) => {
+    const ip = String(req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || 'unknown')
+      .split(',')[0]
+      .trim();
+    const now = Date.now();
+    const existing = hits.get(ip);
+    if (!existing || existing.resetAt <= now) {
+      hits.set(ip, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    existing.count += 1;
+    if (existing.count > maxRequests) {
+      res.setHeader('Retry-After', String(Math.ceil((existing.resetAt - now) / 1000)));
+      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
+    }
+    return next();
+  };
+}
 
 // Seed lessons and exercises from courseData if table is empty
 async function seedDatabase() {
@@ -102,14 +135,33 @@ async function startServer() {
   await seedDatabase();
 
   const app = express();
+  app.set('trust proxy', 1);
+  const globalRateLimiter = createIpRateLimiter(GLOBAL_WINDOW_MS, GLOBAL_MAX_REQUESTS);
+  const authRateLimiter = createIpRateLimiter(AUTH_WINDOW_MS, AUTH_MAX_ATTEMPTS);
   // Voice answers are sent as base64 JSON payloads; keep limit above default.
   app.use(express.json({ limit: '2mb' }));
   app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
-  app.use((_req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (_req.method === 'OPTIONS') return res.sendStatus(204);
+  app.use(globalRateLimiter);
+  app.disable('x-powered-by');
+  app.use((req, res, next) => {
+    const origin = process.env.CORS_ORIGIN;
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-Id');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (isProduction) {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; frame-ancestors 'none';");
+    }
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
   });
   app.use((req: any, res, next) => {
@@ -212,7 +264,7 @@ async function startServer() {
   const { attachReferralOnRegister, resolveReferrerFromCode } = await import(
     './server/services/referral.service'
   );
-  app.post('/api/auth/register', async (req, res) => {
+  app.post('/api/auth/register', authRateLimiter, async (req, res) => {
     const { firstName, lastName, password, ref: refCode, identifier, email: legacyEmail } = req.body ?? {};
     const contactRaw =
       typeof identifier === 'string' && identifier.trim()
@@ -255,7 +307,7 @@ async function startServer() {
       }
       const { ensureUserInLeaderboard } = await import('./server/services/leaderboard.service');
       await ensureUserInLeaderboard(supabase, user.id).catch(() => {});
-      const token = jwt.sign({ id: user.id }, JWT_SECRET);
+      const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       res.json({
         token,
         user: {
@@ -276,7 +328,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/login', async (req, res) => {
+  app.post('/api/auth/login', authRateLimiter, async (req, res) => {
     const { password, identifier, email: legacyEmail } = req.body ?? {};
     const idRaw =
       typeof identifier === 'string' && identifier.trim()
@@ -301,7 +353,7 @@ async function startServer() {
     if (error || !user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
     }
-    const token = jwt.sign({ id: user.id }, JWT_SECRET);
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
     res.json({
       token,
       user: {
@@ -319,10 +371,11 @@ async function startServer() {
   });
 
   const authenticate = (req: any, res: any, next: any) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!token) return res.status(401).json({ error: 'Ruxsat berilmagan' });
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as any;
       const rawId = decoded.id ?? decoded.sub;
       const userId = Number(rawId);
       if (!Number.isFinite(userId) || userId < 1) return res.status(401).json({ error: 'Yaroqsiz token' });
@@ -1148,10 +1201,17 @@ async function startServer() {
             .eq('user_id', partnerId).maybeSingle();
           partnerProfile = data;
         }
+        let outgoingReceiverProfile = null;
+        if (outgoingRes.data?.receiver_id) {
+          const { data } = await supabase.from('partner_profiles')
+            .select('user_id, display_name, age, gender, language_level, goal, about')
+            .eq('user_id', outgoingRes.data.receiver_id).maybeSingle();
+          outgoingReceiverProfile = data ?? null;
+        }
         return res.json({
           hasProfile: !!profileRes.data,
           match: matchRes.data ? { ...matchRes.data, partner_profile: partnerProfile } : null,
-          outgoingRequest: outgoingRes.data ?? null,
+          outgoingRequest: outgoingRes.data ? { ...outgoingRes.data, receiver_profile: outgoingReceiverProfile } : null,
           incomingRequestsCount: (incomingRes.data ?? []).length,
         });
       }
@@ -1222,8 +1282,24 @@ async function startServer() {
         await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() }).eq('id', Number(s1)).eq('receiver_id', userId);
         return res.json({ success: true });
       }
+      if (s0 === 'request' && s1 && s2 === 'cancel' && req.method === 'POST') {
+        const requestId = Number(s1);
+        const { data: rq } = await supabase.from('partner_requests').select('id, sender_id, status')
+          .eq('id', requestId).eq('sender_id', userId).maybeSingle();
+        if (!rq || rq.status !== 'pending') return res.status(404).json({ error: 'Topilmadi' });
+        await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() }).eq('id', requestId);
+        return res.json({ success: true });
+      }
       if (s0 === 'reject-request' && req.method === 'POST') {
         await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() }).eq('id', Number(req.query.id)).eq('receiver_id', userId);
+        return res.json({ success: true });
+      }
+      if (s0 === 'cancel-request' && req.method === 'POST') {
+        const requestId = Number(req.query.id);
+        const { data: rq } = await supabase.from('partner_requests').select('id, sender_id, status')
+          .eq('id', requestId).eq('sender_id', userId).maybeSingle();
+        if (!rq || rq.status !== 'pending') return res.status(404).json({ error: 'Topilmadi' });
+        await supabase.from('partner_requests').update({ status: 'rejected', responded_at: new Date().toISOString() }).eq('id', requestId);
         return res.json({ success: true });
       }
       if (s0 === 'match' && !s1 && req.method === 'GET') {

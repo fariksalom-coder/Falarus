@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogIn, Clock, Users, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getPartnerStatus, type PartnerStatus } from '../api/partner';
+import { cancelPartnerRequest, getPartnerStatus, type PartnerStatus } from '../api/partner';
 import PartnerProfileForm from '../components/partner/PartnerProfileForm';
 import PartnerPeopleList from '../components/partner/PartnerPeopleList';
 import PartnerIncomingRequests from '../components/partner/PartnerIncomingRequests';
@@ -17,6 +17,7 @@ export default function PartnerPage() {
 
   const [view, setView] = useState<View>('loading');
   const [status, setStatus] = useState<PartnerStatus | null>(null);
+  const [cancelingRequest, setCancelingRequest] = useState(false);
 
   const loadStatus = useCallback(async () => {
     if (!token) return;
@@ -62,6 +63,17 @@ export default function PartnerPage() {
   const handlePartnershipEnded = () => {
     loadStatus();
   };
+
+  const handleCancelRequest = useCallback(async () => {
+    if (!token || !status?.outgoingRequest?.id || cancelingRequest) return;
+    setCancelingRequest(true);
+    try {
+      await cancelPartnerRequest(token, status.outgoingRequest.id);
+      await loadStatus();
+    } finally {
+      setCancelingRequest(false);
+    }
+  }, [token, status?.outgoingRequest?.id, cancelingRequest, loadStatus]);
 
   return (
     <div
@@ -213,6 +225,25 @@ export default function PartnerPage() {
                 <p className="mt-2 text-sm text-slate-500">
                   Javob kutilmoqda. Sherik qabul qilgandan so'ng chat ochiladi.
                 </p>
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    So'rov yuborildi
+                  </p>
+                  <p className="mt-1 text-base font-bold text-slate-900">
+                    {status.outgoingRequest?.receiver_profile?.display_name ?? `ID: ${status.outgoingRequest?.receiver_id ?? '-'}`}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Sherik javobini kutyapsiz
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelRequest}
+                  disabled={cancelingRequest || !status.outgoingRequest}
+                  className="mt-4 w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {cancelingRequest ? 'Bekor qilinmoqda...' : 'So\'rovni bekor qilish'}
+                </button>
               </div>
 
               {status.incomingRequestsCount > 0 && (

@@ -20,3 +20,7 @@ public/courses/**/*.bak
 scripts/oneoff/fariksalom_full_progress.sql
 scripts/oneoff/rollback_fariksalom_full_progress.sql
 scripts/oneoff/generate_fariksalom_full_progress.ts
+
+# Sensitive user uploads/payment artifacts
+uploads/
+data/fossils-payments.json

@@ -58,6 +58,28 @@ const FOSSILS_CHECKS_BUCKET = 'fossils-checks';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
 const FOSSILS_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const PAYMENT_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 120;
+const HOT_PATH_LIMIT_MAX = 20;
+const requestHits = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(req: VercelRequest, bucket: string, maxRequests: number): { limited: boolean; retryAfterSec: number } {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown')
+    .split(',')[0]
+    .trim();
+  const key = `${bucket}:${ip}`;
+  const now = Date.now();
+  const existing = requestHits.get(key);
+  if (!existing || existing.resetAt <= now) {
+    requestHits.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { limited: false, retryAfterSec: 0 };
+  }
+  existing.count += 1;
+  if (existing.count > maxRequests) {
+    return { limited: true, retryAfterSec: Math.ceil((existing.resetAt - now) / 1000) };
+  }
+  return { limited: false, retryAfterSec: 0 };
+}
 
 function parseMultipartPayments(
   req: VercelRequest,
@@ -136,6 +158,11 @@ function getPathParts(req: VercelRequest): string[] {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
+  const baseRate = checkRateLimit(req, 'global', RATE_LIMIT_MAX_REQUESTS);
+  if (baseRate.limited) {
+    res.setHeader('Retry-After', String(baseRate.retryAfterSec));
+    return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
+  }
 
   const path = getPathParts(req);
 
@@ -187,6 +214,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // POST /api/payments — inline to avoid extra serverless function (Vercel 12 limit)
   if (path[0] === 'payments' && path.length === 1 && req.method === 'POST') {
+    const hotRate = checkRateLimit(req, 'payments-upload', HOT_PATH_LIMIT_MAX);
+    if (hotRate.limited) {
+      res.setHeader('Retry-After', String(hotRate.retryAfterSec));
+      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
+    }
     const userId = requireAuth(req, res);
     if (userId == null) return;
     try {
@@ -299,6 +331,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // POST /api/payment — public endpoint for fossils landing checkout
   if (path[0] === 'payment' && path.length === 1 && req.method === 'POST') {
+    const hotRate = checkRateLimit(req, 'fossils-payment-upload', HOT_PATH_LIMIT_MAX);
+    if (hotRate.limited) {
+      res.setHeader('Retry-After', String(hotRate.retryAfterSec));
+      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
+    }
     try {
       const { fields, file } = await parseMultipartPayments(req, {
         fileFieldName: 'receipt',
@@ -306,9 +343,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
       const phone = String(fields.phone ?? '').trim();
       const tariff = String(fields.tariff ?? '').trim();
+      const normalizedPhone = phone.replace(/[^\d+]/g, '');
+      const allowedTariffs = new Set(['month', '3months', 'year']);
 
-      if (!phone) return res.status(400).json({ error: 'Telefon raqami kerak' });
-      if (!tariff) return res.status(400).json({ error: 'Tarif kerak' });
+      if (!normalizedPhone || normalizedPhone.length < 8 || normalizedPhone.length > 20) {
+        return res.status(400).json({ error: 'Telefon raqami noto‘g‘ri' });
+      }
+      if (!allowedTariffs.has(tariff)) return res.status(400).json({ error: 'Tarif noto‘g‘ri' });
       if (!file || !file.buffer.length) return res.status(400).json({ error: 'Chek rasmi kerak' });
 
       const ext = file.mimetype.split('/')[1] || 'jpg';

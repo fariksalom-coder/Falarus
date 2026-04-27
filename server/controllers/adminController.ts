@@ -14,6 +14,7 @@ import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
 
 export function createAdminController(supabase: SupabaseClient) {
+  const tokenTtlSeconds = Number(process.env.ADMIN_JWT_EXPIRES_SECONDS || 60 * 60 * 8);
   // --- Login (no auth)
   async function login(req: Request, res: Response) {
     const { email, password } = req.body || {};
@@ -32,7 +33,8 @@ export function createAdminController(supabase: SupabaseClient) {
     if (!ok) return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
     const token = jwt.sign(
       { adminId: (admin as any).id, email: (admin as any).email },
-      JWT_SECRET
+      JWT_SECRET,
+      { expiresIn: tokenTtlSeconds }
     );
     return res.json({ token, admin: { id: (admin as any).id, email: (admin as any).email } });
   }

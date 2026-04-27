@@ -19,7 +19,12 @@ import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js
 import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { invalidateAccessCache } from '../_lib/subscription.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
+const adminJwtSecretEnv = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET;
+const ADMIN_TOKEN_TTL_SECONDS = Number(process.env.ADMIN_JWT_EXPIRES_SECONDS || 60 * 60 * 8);
+if (!adminJwtSecretEnv || adminJwtSecretEnv.length < 32) {
+  throw new Error('ADMIN_JWT_SECRET (or JWT_SECRET) must be set to a strong value (>=32 chars)');
+}
+const JWT_SECRET = adminJwtSecretEnv;
 
 function isMissingRelationError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
@@ -96,7 +101,7 @@ function getAdminId(req: VercelRequest): number | null {
   const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return null;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { adminId?: number; id?: number };
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { adminId?: number; id?: number };
     const adminId = decoded.adminId ?? decoded.id;
     return adminId != null && typeof adminId === 'number' ? adminId : null;
   } catch {
@@ -123,7 +128,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!valid) return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
       const token = jwt.sign(
         { adminId: (admin as { id: number }).id, email: (admin as { email: string }).email },
-        JWT_SECRET
+        JWT_SECRET,
+        { expiresIn: ADMIN_TOKEN_TTL_SECONDS }
       );
       return res.status(200).json({ token, admin: { id: (admin as { id: number }).id, email: (admin as { email: string }).email } });
     } catch (e) {

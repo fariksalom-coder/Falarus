@@ -56,7 +56,12 @@ export type ChatMessage = {
 export type PartnerStatus = {
   hasProfile: boolean;
   match: PartnerMatch | null;
-  outgoingRequest: { id: number; receiver_id: number; created_at: string } | null;
+  outgoingRequest: {
+    id: number;
+    receiver_id: number;
+    created_at: string;
+    receiver_profile?: PartnerPerson | null;
+  } | null;
   incomingRequestsCount: number;
 };
 
@@ -105,6 +110,17 @@ export async function sendPartnerRequest(token: string, receiverId: number): Pro
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'So\'rov yuborilmadi');
+  }
+}
+
+export async function cancelPartnerRequest(token: string, requestId: number): Promise<void> {
+  const res = await fetch(apiUrl(`/api/partner/cancel-request?id=${requestId}`), {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'So\'rovni bekor qilib bo\'lmadi');
   }
 }
 

@@ -240,6 +240,27 @@ async function handleRejectRequest(userId: number, requestId: number, res: Verce
 }
 
 // ---------------------------------------------------------------------------
+// POST /api/partner/request/:id/cancel
+// ---------------------------------------------------------------------------
+async function handleCancelOwnRequest(userId: number, requestId: number, res: VercelResponse) {
+  const { data: req, error: reqErr } = await supabase
+    .from('partner_requests')
+    .select('id, sender_id, status')
+    .eq('id', requestId)
+    .eq('sender_id', userId)
+    .maybeSingle();
+  if (reqErr || !req) return res.status(404).json({ error: 'So\'rov topilmadi' });
+  if (req.status !== 'pending') return res.status(400).json({ error: 'So\'rov allaqachon yakunlangan' });
+
+  const { error } = await supabase
+    .from('partner_requests')
+    .update({ status: 'rejected', responded_at: new Date().toISOString() })
+    .eq('id', requestId);
+  if (error) return res.status(500).json({ error: 'Xatolik yuz berdi' });
+  return res.status(200).json({ success: true });
+}
+
+// ---------------------------------------------------------------------------
 // GET /api/partner/match — current active match + partner profile
 // ---------------------------------------------------------------------------
 async function handleGetMatch(userId: number, res: VercelResponse) {
@@ -365,10 +386,22 @@ async function handleGetStatus(userId: number, res: VercelResponse) {
     partnerProfile = data;
   }
 
+  let outgoingReceiverProfile = null;
+  if (outgoingRes.data?.receiver_id) {
+    const { data } = await supabase
+      .from('partner_profiles')
+      .select('user_id, display_name, age, gender, language_level, goal, about')
+      .eq('user_id', outgoingRes.data.receiver_id)
+      .maybeSingle();
+    outgoingReceiverProfile = data ?? null;
+  }
+
   return res.status(200).json({
     hasProfile: !!profileRes.data,
     match: matchRes.data ? { ...matchRes.data, partner_profile: partnerProfile } : null,
-    outgoingRequest: outgoingRes.data ?? null,
+    outgoingRequest: outgoingRes.data
+      ? { ...outgoingRes.data, receiver_profile: outgoingReceiverProfile }
+      : null,
     incomingRequestsCount: (incomingRes.data ?? []).length,
   });
 }
@@ -417,8 +450,16 @@ export async function routePartnerRequest(
       return handleRejectRequest(userId, Number(s1), res);
     }
 
+    if (s0 === 'request' && s1 && s2 === 'cancel' && req.method === 'POST') {
+      return handleCancelOwnRequest(userId, Number(s1), res);
+    }
+
     if (s0 === 'reject-request' && req.method === 'POST') {
       return handleRejectRequest(userId, Number(req.query.id), res);
+    }
+
+    if (s0 === 'cancel-request' && req.method === 'POST') {
+      return handleCancelOwnRequest(userId, Number(req.query.id), res);
     }
 
     if (s0 === 'match' && !s1 && req.method === 'GET') {

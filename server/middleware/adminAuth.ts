@@ -1,7 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'super-secret-key-uz-ru';
+const adminJwtSecretEnv = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET;
+if (!adminJwtSecretEnv || adminJwtSecretEnv.length < 32) {
+  throw new Error('ADMIN_JWT_SECRET (or JWT_SECRET) must be set to a strong value (>=32 chars)');
+}
+const JWT_SECRET = adminJwtSecretEnv;
 
 export interface AdminPayload {
   adminId: number;
@@ -21,7 +25,11 @@ export function adminAuthMiddleware(req: Request, res: Response, next: NextFunct
     return;
   }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id?: number; adminId?: number; email?: string };
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as {
+      id?: number;
+      adminId?: number;
+      email?: string;
+    };
     const adminId = decoded.adminId ?? decoded.id;
     if (adminId == null || typeof adminId !== 'number') {
       res.status(403).json({ error: 'Ruxsat yo\'q' });

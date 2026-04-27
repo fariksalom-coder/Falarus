@@ -33,6 +33,14 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) {
+      cb(new Error('Faqat JPG, PNG yoki WEBP ruxsat etiladi'));
+      return;
+    }
+    cb(null, true);
+  },
 });
 
 export function createFossilsPaymentRoutes(supabase: SupabaseClient): Router {
@@ -44,9 +52,13 @@ export function createFossilsPaymentRoutes(supabase: SupabaseClient): Router {
       const phone = String(req.body?.phone ?? '').trim();
       const tariff = String(req.body?.tariff ?? '').trim();
       const imageFile = req.file;
+      const normalizedPhone = phone.replace(/[^\d+]/g, '');
+      const allowedTariffs = new Set(['month', '3months', 'year']);
 
-      if (!phone) return res.status(400).json({ error: 'Telefon raqami kerak' });
-      if (!tariff) return res.status(400).json({ error: 'Tarif kerak' });
+      if (!normalizedPhone || normalizedPhone.length < 8 || normalizedPhone.length > 20) {
+        return res.status(400).json({ error: 'Telefon raqami noto‘g‘ri' });
+      }
+      if (!allowedTariffs.has(tariff)) return res.status(400).json({ error: 'Tarif noto‘g‘ri' });
       if (!imageFile) return res.status(400).json({ error: 'Chek rasmi kerak' });
 
       const imagePublicPath = `/uploads/fossils-checks/${imageFile.filename}`;

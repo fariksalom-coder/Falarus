@@ -9,7 +9,16 @@ import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
 import { parseContactIdentifier } from '../../shared/authIdentifiers.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-uz-ru';
+const jwtSecretEnv = process.env.JWT_SECRET;
+const TOKEN_TTL_SECONDS = Number(process.env.JWT_EXPIRES_SECONDS || 60 * 60 * 24 * 7);
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_ATTEMPTS = 10;
+const authHits = new Map<string, { count: number; resetAt: number }>();
+
+if (!jwtSecretEnv || jwtSecretEnv.length < 32) {
+  throw new Error('JWT_SECRET must be set to a strong value (>=32 chars)');
+}
+const JWT_SECRET = jwtSecretEnv;
 
 function parseBody(body: unknown): Record<string, unknown> {
   if (body == null) return {};
@@ -57,6 +66,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown')
+    .split(',')[0]
+    .trim();
+  const now = Date.now();
+  const hit = authHits.get(ip);
+  if (!hit || hit.resetAt <= now) {
+    authHits.set(ip, { count: 1, resetAt: now + AUTH_WINDOW_MS });
+  } else {
+    hit.count += 1;
+    if (hit.count > AUTH_MAX_ATTEMPTS) {
+      res.setHeader('Retry-After', String(Math.ceil((hit.resetAt - now) / 1000)));
+      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
+    }
+  }
 
   const segment = getPathSegment(req);
 
@@ -96,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!valid) {
         return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
       }
-      const token = jwt.sign({ id: user.id }, JWT_SECRET);
+      const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       return res.status(200).json({
         token,
         user: {
@@ -158,7 +181,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           });
         }
       }
-      const token = jwt.sign({ id: user.id }, JWT_SECRET);
+      const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       return res.status(200).json({
         token,
         user: {
