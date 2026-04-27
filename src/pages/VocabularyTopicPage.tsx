@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
-import { getSubtopicWordCount } from '../data/vocabularyContent';
 import { getLearnedCount, setLastSubtopicId } from '../utils/vocabProgress';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
@@ -127,6 +126,7 @@ export default function VocabularyTopicPage() {
   const [subtopicsLoaded, setSubtopicsLoaded] = useState(!!cachedSubtopics?.length);
   const [showPaywall, setShowPaywall] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
+  const [fallbackSubtopicCounts, setFallbackSubtopicCounts] = useState<Record<string, number>>({});
 
   const topicIndex = topic != null ? VOCABULARY_TOPICS.findIndex((t) => t.id === topic.id) : -1;
   const isTopicUnlocked = topic != null ? !isVocabularyTopicLockedForUser(access, topic.id) : false;
@@ -166,6 +166,31 @@ export default function VocabularyTopicPage() {
       .catch(() => {})
       .finally(() => setSubtopicsLoaded(true));
   }, [token, topicId, topicIndex, isTopicUnlocked]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!topic?.id) {
+      setFallbackSubtopicCounts({});
+      return;
+    }
+    import('../data/vocabularyContent')
+      .then((module) => {
+        if (cancelled) return;
+        const counts = Object.fromEntries(
+          topic.subtopics.map((subtopic) => [
+            subtopic.id,
+            module.getSubtopicWordCount(topic.id, subtopic.id),
+          ])
+        );
+        setFallbackSubtopicCounts(counts);
+      })
+      .catch(() => {
+        if (!cancelled) setFallbackSubtopicCounts({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [topic?.id, topic?.subtopics]);
 
   if (!topic) {
     return (
@@ -237,7 +262,7 @@ export default function VocabularyTopicPage() {
             const Icon = SUBTOPIC_ICONS[subtopic.id] ?? BookOpen;
             const fromApi = subtopicsProgress.find((s) => s.id === subtopic.id);
             const locked = !canAccessVocabularySubtopicRoute(access, topic.id, subtopic.id);
-            const wordCount = fromApi?.total_words ?? getSubtopicWordCount(topic.id, subtopic.id);
+            const wordCount = fromApi?.total_words ?? fallbackSubtopicCounts[subtopic.id] ?? 0;
             const learned = fromApi?.learned_words ?? getLearnedCount(topic.id, subtopic.id);
             const accentBg = ACCENT_BG[subtopicIndex % ACCENT_BG.length];
             const accentIcon = ACCENT_ICON[subtopicIndex % ACCENT_ICON.length];

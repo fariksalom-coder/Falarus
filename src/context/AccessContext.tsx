@@ -24,9 +24,32 @@ interface AccessContextType {
 
 const AccessContext = createContext<AccessContextType | undefined>(undefined);
 
+function isExpiredByProfile(planExpiresAt?: string | null): boolean {
+  if (!planExpiresAt) return false;
+  const ts = Date.parse(planExpiresAt);
+  if (!Number.isFinite(ts)) return false;
+  return ts <= Date.now();
+}
+
+function normalizeAccessForExpiredPlan(
+  access: AccessInfo,
+  planExpiresAt?: string | null
+): AccessInfo {
+  if (!isExpiredByProfile(planExpiresAt)) return access;
+  return {
+    ...access,
+    subscription_active: false,
+    patent_course_active: false,
+    vnzh_course_active: false,
+  };
+}
+
 export function AccessProvider({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth();
-  const [access, setAccessState] = useState<AccessInfo | null>(getCachedAccess);
+  const { token, user } = useAuth();
+  const [access, setAccessState] = useState<AccessInfo | null>(() => {
+    const cached = getCachedAccess();
+    return cached ? normalizeAccessForExpiredPlan(cached, user?.planExpiresAt) : null;
+  });
   const [accessLoaded, setAccessLoaded] = useState(!!getCachedAccess());
 
   const refreshAccess = useCallback(async () => {
@@ -38,14 +61,15 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const data = await getAccess(t);
-      setAccessState(data);
-      setCachedAccess(data);
+      const normalized = normalizeAccessForExpiredPlan(data, user?.planExpiresAt);
+      setAccessState(normalized);
+      setCachedAccess(normalized);
     } catch {
       setAccessState(defaultAccess);
     } finally {
       setAccessLoaded(true);
     }
-  }, [token]);
+  }, [token, user?.planExpiresAt]);
 
   useEffect(() => {
     if (!token) {
@@ -55,19 +79,20 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
     }
     const cached = getCachedAccess();
     if (cached) {
-      setAccessState(cached);
+      setAccessState(normalizeAccessForExpiredPlan(cached, user?.planExpiresAt));
       setAccessLoaded(true);
     } else {
       setAccessLoaded(false);
     }
     getAccess(token)
       .then((data) => {
-        setAccessState(data);
-        setCachedAccess(data);
+        const normalized = normalizeAccessForExpiredPlan(data, user?.planExpiresAt);
+        setAccessState(normalized);
+        setCachedAccess(normalized);
       })
       .catch(() => setAccessState(defaultAccess))
       .finally(() => setAccessLoaded(true));
-  }, [token]);
+  }, [token, user?.planExpiresAt]);
 
   return (
     <AccessContext.Provider value={{ access, accessLoaded, refreshAccess }}>

@@ -1,4 +1,5 @@
 import { apiUrl } from '../api';
+import { cachedRequest, invalidateCacheByPrefix } from '../utils/requestCache';
 
 export type AccessInfo = {
   lessons_free_limit: number;
@@ -18,6 +19,8 @@ function authHeaders(token: string | null): HeadersInit {
 }
 
 const CACHE_ACCESS = 'vocab_access';
+const ACCESS_REQUEST_TTL_MS = 30_000;
+const LESSONS_REQUEST_TTL_MS = 30_000;
 
 export function getCachedAccess(): AccessInfo | null {
   try {
@@ -39,9 +42,12 @@ export function setCachedAccess(data: AccessInfo): void {
 }
 
 export async function getAccess(token: string | null): Promise<AccessInfo> {
-  const res = await fetch(apiUrl('/api/user/access'), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Access yuklanmadi');
-  return res.json();
+  const cacheKey = `access:${token ?? 'guest'}`;
+  return cachedRequest(cacheKey, ACCESS_REQUEST_TTL_MS, async () => {
+    const res = await fetch(apiUrl('/api/user/access'), { headers: authHeaders(token) });
+    if (!res.ok) throw new Error('Access yuklanmadi');
+    return res.json();
+  });
 }
 
 export type LessonWithLock = {
@@ -75,9 +81,17 @@ export function setCachedLessons(list: LessonWithLock[]): void {
 }
 
 export async function getLessons(token: string | null): Promise<LessonWithLock[]> {
-  const res = await fetch(apiUrl('/api/lessons'), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Darslar yuklanmadi');
-  return res.json();
+  const cacheKey = `lessons:${token ?? 'guest'}`;
+  return cachedRequest(cacheKey, LESSONS_REQUEST_TTL_MS, async () => {
+    const res = await fetch(apiUrl('/api/lessons'), { headers: authHeaders(token) });
+    if (!res.ok) throw new Error('Darslar yuklanmadi');
+    return res.json();
+  });
+}
+
+export function invalidateAccessAndLessonsRequestCache(): void {
+  invalidateCacheByPrefix('access:');
+  invalidateCacheByPrefix('lessons:');
 }
 
 export type LessonPreview = {

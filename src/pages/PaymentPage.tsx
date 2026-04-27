@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { submitPayment, getMyPayments, type TariffType, type Currency } from '../api/payment';
+import { submitPayment, type TariffType, type Currency } from '../api/payment';
 import { getPaymentMethodByCurrency, getTariffPricesByCurrency } from '../api/publicPricing';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import {
   getCourseProductPrice,
   getPaymentProductLabel,
@@ -65,6 +66,7 @@ export default function PaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useAuth();
+  const { payments, loading: paymentsLoading, refreshPayments } = usePaymentStatus();
   const state = location.state as {
     tariffType?: TariffType;
     currency?: Currency;
@@ -87,7 +89,6 @@ export default function PaymentPage() {
   const [price, setPrice] = useState<number | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(true);
   const [hasPendingPayment, setHasPendingPayment] = useState(false);
-  const [pendingCheckDone, setPendingCheckDone] = useState(false);
 
   const productCode = normalizePaymentProductCode(state?.productCode);
   const isRussianCourse = productCode === 'russian';
@@ -104,19 +105,10 @@ export default function PaymentPage() {
         : '/tariflar');
 
   useEffect(() => {
-    if (!token) return;
-    getMyPayments(token)
-      .then((list) => {
-        setHasPendingPayment(
-          list.some(
-            (payment) =>
-              payment.status === 'pending' && payment.product_code === productCode
-          )
-        );
-        setPendingCheckDone(true);
-      })
-      .catch(() => setPendingCheckDone(true));
-  }, [token, productCode]);
+    setHasPendingPayment(
+      payments.some((payment) => payment.status === 'pending' && payment.product_code === productCode)
+    );
+  }, [payments, productCode]);
 
   useEffect(() => {
     setDetailsLoading(true);
@@ -207,6 +199,7 @@ export default function PaymentPage() {
         currency,
         file,
       });
+      await refreshPayments();
       setSuccess(true);
     } catch (e: unknown) {
       const err = e as Error & { code?: string };
@@ -219,16 +212,16 @@ export default function PaymentPage() {
 
   const hasValidState = isRussianCourse ? Boolean(state?.tariffType) : Boolean(state?.productCode);
 
-  if (!hasValidState && !hasPendingPayment && pendingCheckDone) {
+  if (!hasValidState && !hasPendingPayment && !paymentsLoading) {
     navigate(backPath, { replace: true });
     return null;
   }
-  if (!hasValidState && !hasPendingPayment && !pendingCheckDone) {
+  if (!hasValidState && !hasPendingPayment && paymentsLoading) {
     return null;
   }
 
   // ——— Pending payment: block duplicate ———
-  if (pendingCheckDone && hasPendingPayment && !success) {
+  if (!paymentsLoading && hasPendingPayment && !success) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 text-center">

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -8,14 +8,13 @@ import {
   Circle,
   X,
 } from 'lucide-react';
-import {
-  PATENT_EXAM_VARIANTS,
-  type PatentExamAudioDoubleBlock,
-  type PatentExamBlock,
-  type PatentExamChoiceQuestion,
-  type PatentExamMultipleChoiceBlock,
-  type PatentExamVariant,
-  type PatentExamWrittenBlock,
+import type {
+  PatentExamAudioDoubleBlock,
+  PatentExamBlock,
+  PatentExamChoiceQuestion,
+  PatentExamMultipleChoiceBlock,
+  PatentExamVariant,
+  PatentExamWrittenBlock,
 } from '../data/patentExamData';
 import { evaluatePatentVariant, isImageAssetOption, type PatentExamAnswerMap } from '../utils/patentExam';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
@@ -233,9 +232,33 @@ export default function PatentCourseVariantPage() {
   const { token } = useAuth();
   const params = useParams();
   const variantNumber = Number(params.variantNumber);
+  const [variants, setVariants] = useState<PatentExamVariant[] | null>(null);
+  const [variantsLoading, setVariantsLoading] = useState(true);
+  const [variantsError, setVariantsError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setVariantsLoading(true);
+    import('../data/patentExamData')
+      .then((module) => {
+        if (cancelled) return;
+        setVariants(module.PATENT_EXAM_VARIANTS);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setVariantsError("Ma'lumotlar yuklanmadi");
+      })
+      .finally(() => {
+        if (!cancelled) setVariantsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const variant = useMemo<PatentExamVariant | null>(
-    () => PATENT_EXAM_VARIANTS.find((item) => item.variantNumber === variantNumber) ?? null,
-    [variantNumber]
+    () => variants?.find((item) => item.variantNumber === variantNumber) ?? null,
+    [variantNumber, variants]
   );
 
   const [answers, setAnswers] = useState<PatentExamAnswerMap>({});
@@ -296,6 +319,32 @@ export default function PatentCourseVariantPage() {
       setSubmitting(false);
     }
   };
+
+  if (variantsLoading) {
+    return (
+      <div className="min-h-screen px-4 py-8" style={{ backgroundColor: BG }}>
+        <div className="mx-auto flex max-w-5xl items-center justify-center py-16">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        </div>
+      </div>
+    );
+  }
+
+  if (variantsError) {
+    return (
+      <div className="min-h-screen px-4 py-8" style={{ backgroundColor: BG }}>
+        <button
+          type="button"
+          onClick={() => navigate('/kurslar/patent')}
+          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Orqaga
+        </button>
+        <p className="mt-6 text-lg font-semibold text-red-600">{variantsError}</p>
+      </div>
+    );
+  }
 
   if (!variant) {
     return (

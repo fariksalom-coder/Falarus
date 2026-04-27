@@ -1,4 +1,5 @@
 import { apiUrl } from '../api';
+import { cachedRequest, invalidateCacheByPrefix } from '../utils/requestCache';
 import {
   normalizePaymentProductCode,
   type PaymentProductCode,
@@ -22,16 +23,20 @@ export type MyPaymentRow = {
   approved_at: string | null;
 };
 
+const PAYMENTS_TTL_MS = 30_000;
+
 export async function getMyPayments(token: string): Promise<MyPaymentRow[]> {
-  const res = await fetch(apiUrl('/api/user/payments'), {
-    headers: { Authorization: `Bearer ${token}` },
+  return cachedRequest(`payments:${token}`, PAYMENTS_TTL_MS, async () => {
+    const res = await fetch(apiUrl('/api/user/payments'), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'To\'lovlar yuklanmadi');
+    return (data ?? []).map((row: MyPaymentRow) => ({
+      ...row,
+      product_code: normalizePaymentProductCode(row.product_code),
+    }));
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'To\'lovlar yuklanmadi');
-  return (data ?? []).map((row: MyPaymentRow) => ({
-    ...row,
-    product_code: normalizePaymentProductCode(row.product_code),
-  }));
 }
 
 export async function submitPayment(
@@ -61,5 +66,14 @@ export async function submitPayment(
     err.code = data?.error;
     throw err;
   }
+  invalidateCacheByPrefix(`payments:${token}`);
   return data;
+}
+
+export function invalidatePaymentsCache(token: string | null): void {
+  if (!token) {
+    invalidateCacheByPrefix('payments:');
+    return;
+  }
+  invalidateCacheByPrefix(`payments:${token}`);
 }

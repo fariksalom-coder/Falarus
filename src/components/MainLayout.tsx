@@ -28,6 +28,8 @@ export default function MainLayout() {
   const { pathname } = useLocation();
   const showNavBar = !hideNavBar(pathname);
   const reduceMotion = useReducedMotion();
+  const sectionIdx = mainSectionIndex(pathname);
+  const motionKey = sectionIdx >= 0 ? `section-${sectionIdx}` : pathname;
 
   const prevPathRef = useRef(pathname);
   const [tabDir, setTabDir] = useState(0);
@@ -116,7 +118,7 @@ export default function MainLayout() {
           */}
           <AnimatePresence mode="sync" initial={false} custom={tabDir}>
             <motion.div
-              key={pathname}
+              key={motionKey}
               custom={tabDir}
               variants={variants}
               initial="enter"

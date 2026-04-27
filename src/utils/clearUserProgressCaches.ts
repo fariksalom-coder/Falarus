@@ -4,6 +4,7 @@
  * Не трогает token / adminToken.
  */
 import { useVocabularyStepsStore } from '../state/vocabularyStepsStore';
+import { invalidateCacheByPrefix } from './requestCache';
 
 const LOCAL_STORAGE_KEEP = new Set(['token', 'adminToken']);
 
@@ -54,6 +55,7 @@ function clearLocalStorageProgress(): void {
 export function clearUserProgressCaches(): void {
   clearLocalStorageProgress();
   clearSessionStorageCaches();
+  invalidateCacheByPrefix('');
   try {
     useVocabularyStepsStore.setState({
       byGroup: {},

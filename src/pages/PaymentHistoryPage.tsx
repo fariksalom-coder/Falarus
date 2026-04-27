@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
-import { getMyPayments, type MyPaymentRow, type PaymentStatus } from '../api/payment';
+import { type PaymentStatus } from '../api/payment';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { adminContact } from '../config/adminContact';
 import { ArrowLeft, History, MessageCircle } from 'lucide-react';
 import { getPaymentDisplayLabel } from '../../shared/paymentProducts';
@@ -37,21 +38,12 @@ export default function PaymentHistoryPage() {
   const { token } = useAuth();
   const { refreshAccess } = useAccess();
   const navigate = useNavigate();
-  const [payments, setPayments] = useState<MyPaymentRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { payments, loading } = usePaymentStatus();
 
   useEffect(() => {
     if (!token) return;
     refreshAccess();
   }, [token, refreshAccess]);
-
-  useEffect(() => {
-    if (!token) return;
-    getMyPayments(token)
-      .then(setPayments)
-      .catch(() => setPayments([]))
-      .finally(() => setLoading(false));
-  }, [token]);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">

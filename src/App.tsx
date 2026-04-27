@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Navigate, Outlet, Route, Routes, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AccessProvider } from './context/AccessContext';
+import { PaymentStatusProvider } from './context/PaymentStatusContext';
 import { SequentialLessonProvider } from './context/SequentialLessonContext';
 import { GrammarCatalogProvider } from './context/GrammarCatalogContext';
 import { SequentialAccessEnforcer } from './components/SequentialAccessEnforcer';
@@ -186,12 +187,14 @@ export default function App() {
     <AuthProvider>
       <Router>
         <AccessProvider>
-          <SequentialLessonProvider>
-            <GrammarCatalogProvider>
-              <AppRoutes />
-            </GrammarCatalogProvider>
-            <SequentialAccessEnforcer />
-          </SequentialLessonProvider>
+          <PaymentStatusProvider>
+            <SequentialLessonProvider>
+              <GrammarCatalogProvider>
+                <AppRoutes />
+              </GrammarCatalogProvider>
+              <SequentialAccessEnforcer />
+            </SequentialLessonProvider>
+          </PaymentStatusProvider>
         </AccessProvider>
       </Router>
     </AuthProvider>

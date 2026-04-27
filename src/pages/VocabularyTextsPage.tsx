@@ -10,6 +10,12 @@ const LEVEL_STYLE: Record<string, string> = {
 
 export default function VocabularyTextsPage() {
   const navigate = useNavigate();
+  const levelOrder: Record<string, number> = { A1: 1, A2: 2, B1: 3, B2: 4 };
+  const orderedTexts = [...VOCABULARY_TEXTS].sort((a, b) => {
+    const byLevel = (levelOrder[a.level] ?? 99) - (levelOrder[b.level] ?? 99);
+    if (byLevel !== 0) return byLevel;
+    return a.title.localeCompare(b.title, 'ru');
+  });
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -29,7 +35,7 @@ export default function VocabularyTextsPage() {
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-2.5">
-          {VOCABULARY_TEXTS.map((text) => (
+          {orderedTexts.map((text) => (
             <button
               key={text.id}
               type="button"

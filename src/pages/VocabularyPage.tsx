@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
-import { getTopicWordCount } from '../data/vocabularyContent';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import {
@@ -58,13 +57,16 @@ const TOPIC_RU_SUBTITLE: Record<string, string> = {
 
 export default function VocabularyPage() {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { access, accessLoaded } = useAccess();
   const [topicsProgress, setTopicsProgress] = useState<VocabularyTopic[]>(() =>
     getCachedTopicsProgress() ?? []
   );
   const [showPaywall, setShowPaywall] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
+  const [fallbackTopicCounts, setFallbackTopicCounts] = useState<Record<string, number>>({});
+  const subscriptionExpired =
+    access?.subscription_active === false && Boolean(user?.planName || user?.planExpiresAt);
 
   useEffect(() => {
     if (!token) {
@@ -79,6 +81,24 @@ export default function VocabularyPage() {
       .catch(() => {});
   }, [token]);
 
+  useEffect(() => {
+    let cancelled = false;
+    import('../data/vocabularyContent')
+      .then((module) => {
+        if (cancelled) return;
+        const counts = Object.fromEntries(
+          VOCABULARY_TOPICS.map((topic) => [topic.id, module.getTopicWordCount(topic.id)])
+        );
+        setFallbackTopicCounts(counts);
+      })
+      .catch(() => {
+        if (!cancelled) setFallbackTopicCounts({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   /** One source of truth: /api/user/access (no extra “always unlock first list item” — that doubled with wrong server free_topic_id). */
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F8FAFC' }}>
@@ -92,6 +112,21 @@ export default function VocabularyPage() {
           Orqaga
         </button>
         <p className="mb-3 text-xs text-slate-500 md:text-sm">Mavzuni tanlang</p>
+        {subscriptionExpired && (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-bold text-amber-900">Obuna muddati tugagan</p>
+            <p className="mt-1 text-xs font-medium text-amber-700">
+              Siz bepul rejimdasiz. Faqat bepul mavzular ochiq. To'liq lug'at uchun tarif sotib oling.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/tariflar')}
+              className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-amber-600"
+            >
+              Sotib olish
+            </button>
+          </div>
+        )}
 
         {token && !accessLoaded && (
           <div className="flex items-center justify-center py-16">
@@ -103,7 +138,7 @@ export default function VocabularyPage() {
           {VOCABULARY_TOPICS.map((topic, topicIndex) => {
             const Icon = TOPIC_ICONS[topic.id] ?? Sparkles;
             const fromApi = topicsProgress.find((t) => t.id === topic.id);
-            const wordCount = fromApi?.total_words ?? getTopicWordCount(topic.id);
+            const wordCount = fromApi?.total_words ?? fallbackTopicCounts[topic.id] ?? 0;
             const learnedWords = fromApi?.learned_words ?? 0;
             const locked = isVocabularyTopicLockedForUser(access, topic.id);
             const grayscaleForFreeTier =

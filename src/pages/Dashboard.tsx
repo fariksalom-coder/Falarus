@@ -72,7 +72,7 @@ function getCardStateStyles(state: LessonCardState) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { access } = useAccess();
   const { lessonStates, results, isReady: seqReady } = useSequentialLesson();
   const { isLessonLockedBySubscription, loaded: subLoaded } = useLessonsSubscriptionLock();
@@ -80,6 +80,8 @@ export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const { hasPendingPayment } = usePaymentStatus();
   const scrolledRef = useRef(false);
+  const subscriptionExpired =
+    access?.subscription_active === false && Boolean(user?.planName || user?.planExpiresAt);
 
   const catalogReady = !token || !catalogLoading;
   const dataReady = !token || (seqReady && subLoaded && catalogReady);
@@ -154,6 +156,21 @@ export default function Dashboard() {
             Darslar
           </h1>
         </div>
+        {subscriptionExpired && (
+          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-bold text-amber-900">Obuna muddati tugagan</p>
+            <p className="mt-1 text-xs font-medium text-amber-700">
+              Siz bepul rejimdasiz. Premium darslarni davom ettirish uchun tarif sotib oling.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/tariflar')}
+              className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-amber-600"
+            >
+              Sotib olish
+            </button>
+          </div>
+        )}
 
         {token && !dataReady && (
           <div className="flex items-center justify-center py-16">

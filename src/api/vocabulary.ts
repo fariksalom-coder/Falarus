@@ -1,4 +1,5 @@
 import { apiUrl } from '../api';
+import { cachedRequest, invalidateCacheByPrefix } from '../utils/requestCache';
 
 export type VocabularyTopic = {
   id: string;
@@ -81,6 +82,11 @@ function authHeaders(token: string | null): HeadersInit {
   return h;
 }
 
+const VOCAB_TOPICS_TTL_MS = 30_000;
+const VOCAB_SUBTOPICS_TTL_MS = 30_000;
+const VOCAB_WORD_GROUPS_TTL_MS = 20_000;
+const VOCAB_TASKS_TTL_MS = 10_000;
+
 /** Ensures `slug` exists for older sessionStorage payloads. */
 function normalizeVocabularySubtopics(data: unknown[]): VocabularySubtopic[] {
   return data.map((raw) => {
@@ -91,10 +97,13 @@ function normalizeVocabularySubtopics(data: unknown[]): VocabularySubtopic[] {
 
 export async function fetchVocabularyTopics(token: string | null): Promise<VocabularyTopic[]> {
   if (!token) return [];
-  const res = await fetch(apiUrl('/api/vocabulary/topics'), { headers: authHeaders(token) });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
+  const cacheKey = `vocab-topics:${token}`;
+  return cachedRequest(cacheKey, VOCAB_TOPICS_TTL_MS, async () => {
+    const res = await fetch(apiUrl('/api/vocabulary/topics'), { headers: authHeaders(token) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  });
 }
 
 export async function fetchVocabularySubtopics(
@@ -102,13 +111,16 @@ export async function fetchVocabularySubtopics(
   topicId: string
 ): Promise<VocabularySubtopic[]> {
   if (!token) return [];
-  const q = encodeURIComponent(topicId);
-  const res = await fetch(apiUrl(`/api/vocabulary/subtopics?topic=${q}`), {
-    headers: authHeaders(token),
+  const cacheKey = `vocab-subtopics:${token}:${topicId}`;
+  return cachedRequest(cacheKey, VOCAB_SUBTOPICS_TTL_MS, async () => {
+    const q = encodeURIComponent(topicId);
+    const res = await fetch(apiUrl(`/api/vocabulary/subtopics?topic=${q}`), {
+      headers: authHeaders(token),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? normalizeVocabularySubtopics(data) : [];
   });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return Array.isArray(data) ? normalizeVocabularySubtopics(data) : [];
 }
 
 export async function fetchVocabularyWordGroups(
@@ -116,26 +128,29 @@ export async function fetchVocabularyWordGroups(
   subtopicSlug: string
 ): Promise<VocabularyWordGroup[]> {
   if (!token) return [];
-  const q = encodeURIComponent(subtopicSlug);
-  const res = await fetch(apiUrl(`/api/vocabulary/word-groups?subtopic=${q}`), {
-    headers: authHeaders(token),
-  });
-  const text = await res.text();
-  if (!res.ok) {
-    try {
-      const body = JSON.parse(text) as Record<string, unknown>;
-      console.error('[fetchVocabularyWordGroups]', res.status, body);
-    } catch {
-      console.error('[fetchVocabularyWordGroups]', res.status, text.slice(0, 500));
+  const cacheKey = `vocab-word-groups:${token}:${subtopicSlug}`;
+  return cachedRequest(cacheKey, VOCAB_WORD_GROUPS_TTL_MS, async () => {
+    const q = encodeURIComponent(subtopicSlug);
+    const res = await fetch(apiUrl(`/api/vocabulary/word-groups?subtopic=${q}`), {
+      headers: authHeaders(token),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      try {
+        const body = JSON.parse(text) as Record<string, unknown>;
+        console.error('[fetchVocabularyWordGroups]', res.status, body);
+      } catch {
+        console.error('[fetchVocabularyWordGroups]', res.status, text.slice(0, 500));
+      }
+      return [];
     }
-    return [];
-  }
-  try {
-    const data = JSON.parse(text) as unknown;
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
+    try {
+      const data = JSON.parse(text) as unknown;
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  });
 }
 
 export async function fetchVocabularyTasksStatus(
@@ -143,12 +158,15 @@ export async function fetchVocabularyTasksStatus(
   wordGroupId: number
 ): Promise<VocabularyTasksStatus | null> {
   if (!token) return null;
-  const q = encodeURIComponent(String(wordGroupId));
-  const res = await fetch(apiUrl(`/api/vocabulary/tasks?word_group=${q}`), {
-    headers: authHeaders(token),
+  const cacheKey = `vocab-tasks:${token}:${wordGroupId}`;
+  return cachedRequest(cacheKey, VOCAB_TASKS_TTL_MS, async () => {
+    const q = encodeURIComponent(String(wordGroupId));
+    const res = await fetch(apiUrl(`/api/vocabulary/tasks?word_group=${q}`), {
+      headers: authHeaders(token),
+    });
+    if (!res.ok) return null;
+    return res.json();
   });
-  if (!res.ok) return null;
-  return res.json();
 }
 
 export async function fetchWordGroupStepsState(
@@ -174,6 +192,8 @@ export async function postFlashcardsComplete(
     headers: authHeaders(token),
     body: JSON.stringify({ word_group_id: wordGroupId }),
   });
+  invalidateCacheByPrefix(`vocab-word-groups:${token}:`);
+  invalidateCacheByPrefix(`vocab-tasks:${token}:`);
   return res.ok;
 }
 
@@ -194,6 +214,8 @@ export async function postVocabularyTestFinish(
     }),
   });
   if (!res.ok) return null;
+  invalidateCacheByPrefix(`vocab-word-groups:${token}:`);
+  invalidateCacheByPrefix(`vocab-tasks:${token}:`);
   return res.json();
 }
 
@@ -209,6 +231,8 @@ export async function postVocabularyMatchFinish(
     body: JSON.stringify({ word_group_id: wordGroupId, correct_pairs: correctPairs }),
   });
   if (!res.ok) return null;
+  invalidateCacheByPrefix(`vocab-word-groups:${token}:`);
+  invalidateCacheByPrefix(`vocab-tasks:${token}:`);
   return res.json();
 }
 

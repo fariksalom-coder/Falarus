@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
-import { getSubtopicContent } from '../data/vocabularyContent';
 import { getPartLearnedCount, setLastPartId } from '../utils/vocabProgress';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
@@ -55,8 +54,29 @@ export default function VocabularySubtopicPage() {
   );
   const subtopic =
     topic && resolvedId ? topic.subtopics.find((item) => item.id === resolvedId) : undefined;
-  const content = resolvedId ? getSubtopicContent(topicId, resolvedId) : undefined;
+  const [content, setContent] = useState<ReturnType<
+    typeof import('../data/vocabularyContent')['getSubtopicContent']
+  > | undefined>(undefined);
   const [wordGroupsProgress, setWordGroupsProgress] = useState<VocabularyWordGroup[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!resolvedId) {
+      setContent(undefined);
+      return;
+    }
+    import('../data/vocabularyContent')
+      .then((module) => {
+        if (cancelled) return;
+        setContent(module.getSubtopicContent(topicId, resolvedId));
+      })
+      .catch(() => {
+        if (!cancelled) setContent(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [topicId, resolvedId]);
 
   useEffect(() => {
     if (!subtopicId || !resolvedId) {

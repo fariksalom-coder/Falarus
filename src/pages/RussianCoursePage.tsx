@@ -65,18 +65,19 @@ export default function RussianCoursePage() {
         </h1>
 
         {subscriptionExpired && (
-          <button
-            type="button"
-            onClick={() => navigate('/tariflar')}
-            className="mb-4 w-full rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left"
-          >
-            <p className="text-sm font-bold text-amber-900">
-              Sizning obunangiz muddati tugagan
-            </p>
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-bold text-amber-900">Sizning obunangiz muddati tugagan</p>
             <p className="mt-1 text-xs font-medium text-amber-700">
-              Davom etish uchun obuna sotib oling
+              Siz hozir bepul rejimdasiz. Grammar, Lug'at va Gapir bo'limlari bepul limit bilan ishlaydi.
             </p>
-          </button>
+            <button
+              type="button"
+              onClick={() => navigate('/tariflar')}
+              className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-amber-600"
+            >
+              Sotib olish
+            </button>
+          </div>
         )}
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">

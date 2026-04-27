@@ -28,11 +28,28 @@ export default function AppNavBar() {
     if (!token || !user?.id || path.startsWith('/partner')) return;
 
     let cancelled = false;
+    let intervalMs = 12_000;
+    let timer: number | null = null;
+
+    const schedule = () => {
+      if (cancelled) return;
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        void run();
+      }, intervalMs);
+    };
+
     const run = async () => {
+      if (document.visibilityState !== 'visible') {
+        schedule();
+        return;
+      }
       try {
         const status = await getPartnerStatus(token);
         if (!status.match) {
           if (!cancelled) setHasUnreadPartnerMessage(false);
+          intervalMs = 30_000;
+          schedule();
           return;
         }
 
@@ -40,6 +57,8 @@ export default function AppNavBar() {
         const latest = messages[messages.length - 1];
         if (!latest) {
           if (!cancelled) setHasUnreadPartnerMessage(false);
+          intervalMs = 20_000;
+          schedule();
           return;
         }
 
@@ -49,16 +68,27 @@ export default function AppNavBar() {
         const isUnread = latest.sender_id !== user.id && latestMs > lastSeenMs;
 
         if (!cancelled) setHasUnreadPartnerMessage(isUnread);
+        intervalMs = isUnread ? 12_000 : 20_000;
       } catch {
         // keep previous badge state on transient network errors
+        intervalMs = 30_000;
+      } finally {
+        schedule();
       }
     };
 
     void run();
-    const interval = setInterval(() => void run(), 12000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        intervalMs = 12_000;
+        void run();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [token, user?.id, path, partnerLastSeenKey]);
 

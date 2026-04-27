@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getMyPayments, type MyPaymentRow } from '../api/payment';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { motion } from 'motion/react';
 import {
   ChevronLeft,
@@ -38,22 +37,13 @@ function formatPaymentDateTime(createdAt: string): string {
 }
 
 export default function ProfilePage() {
-  const { user, token, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [payments, setPayments] = useState<MyPaymentRow[]>([]);
-  const [paymentsLoading, setPaymentsLoading] = useState(true);
+  const { payments, loading: paymentsLoading } = usePaymentStatus();
 
   const pendingPayment = payments.find((p) => p.status === 'pending') ?? null;
   const hasPendingPayment = !!pendingPayment;
   const hasActivePlan = user?.planExpiresAt && new Date(user.planExpiresAt) > new Date();
-
-  useEffect(() => {
-    if (!token) return;
-    getMyPayments(token)
-      .then(setPayments)
-      .catch(() => setPayments([]))
-      .finally(() => setPaymentsLoading(false));
-  }, [token]);
 
   const handleLogout = () => {
     logout();

@@ -1,8 +1,14 @@
 import { ArrowLeft, BookOpen, BookOpenText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 
 export default function VocabularyHubPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { access } = useAccess();
+  const subscriptionExpired =
+    access?.subscription_active === false && Boolean(user?.planName || user?.planExpiresAt);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -18,6 +24,21 @@ export default function VocabularyHubPage() {
 
         <h1 className="text-2xl font-bold text-slate-900">Lug&apos;at bo&apos;limi</h1>
         <p className="mt-1 text-sm text-slate-500">Kerakli bo&apos;limni tanlang</p>
+        {subscriptionExpired && (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-bold text-amber-900">Obuna muddati tugagan</p>
+            <p className="mt-1 text-xs font-medium text-amber-700">
+              Siz bepul rejimdasiz. To'liq lug'at materiallarini ochish uchun tarif sotib oling.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/tariflar')}
+              className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-amber-600"
+            >
+              Sotib olish
+            </button>
+          </div>
+        )}
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button

@@ -3,11 +3,20 @@ import { ArrowLeft, Check, ChevronLeft, ChevronRight, Circle, FileText, MonitorP
 import { useNavigate, useParams } from 'react-router-dom';
 import { getVnzhSection, getVnzhTask, isVnzhFreeTask } from '../data/vnzhCourseData';
 import { useAccess } from '../context/AccessContext';
-import { VNZH_LISTENING_TASK_EIGHT_TO_TEN, VNZH_LISTENING_TASK_FIVE, VNZH_LISTENING_TASK_SEVEN, VNZH_LISTENING_TASK_SIX, type VnzhListeningChoiceItem, type VnzhListeningFillBlankItem, type VnzhListeningTripleChoiceItem } from '../data/vnzhListeningTasks';
-import { VNZH_READING_TASK_ELEVEN, VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN, VNZH_READING_TASK_TWELVE, type VnzhNoticeChoiceItem, type VnzhReadingPassageItem } from '../data/vnzhReadingTasks';
-import { VNZH_SPEAKING_TASK_FOUR, VNZH_SPEAKING_TASK_ONE, VNZH_SPEAKING_TASK_THREE, VNZH_SPEAKING_TASK_TWO } from '../data/vnzhSpeakingTasks';
-import { VNZH_STATIC_CHOICE_TASKS, type VnzhStaticChoiceItem } from '../data/vnzhStaticChoiceTasks';
-import { VNZH_WRITING_TASK_EIGHTEEN, VNZH_WRITING_TASK_NINETEEN, type VnzhWritingMediaItem, type VnzhWritingPromptAnswerItem } from '../data/vnzhWritingTasks';
+import type {
+  VnzhListeningChoiceItem,
+  VnzhListeningFillBlankItem,
+  VnzhListeningTripleChoiceItem,
+} from '../data/vnzhListeningTasks';
+import type { VnzhNoticeChoiceItem, VnzhReadingPassageItem } from '../data/vnzhReadingTasks';
+import type { VnzhStaticChoiceItem } from '../data/vnzhStaticChoiceTasks';
+import type { VnzhWritingMediaItem, VnzhWritingPromptAnswerItem } from '../data/vnzhWritingTasks';
+import {
+  VNZH_SPEAKING_TASK_FOUR,
+  VNZH_SPEAKING_TASK_ONE,
+  VNZH_SPEAKING_TASK_THREE,
+  VNZH_SPEAKING_TASK_TWO,
+} from '../data/vnzhSpeakingTasks';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
 
 const BG = '#F8FBFF';
@@ -808,7 +817,24 @@ export default function VnzhCourseTaskPage() {
   const section = getVnzhSection(sectionSlug);
   const task = getVnzhTask(sectionSlug, taskSlug);
   const { access } = useAccess();
-  const staticChoiceItems = task ? VNZH_STATIC_CHOICE_TASKS[task.slug] ?? null : null;
+  const [vnzhData, setVnzhData] = useState<{
+    listeningTaskFive: VnzhListeningChoiceItem[];
+    listeningTaskSix: VnzhListeningFillBlankItem[];
+    listeningTaskSeven: VnzhListeningChoiceItem[];
+    listeningTaskEightToTen: VnzhListeningTripleChoiceItem[];
+    readingTaskEleven: VnzhNoticeChoiceItem[];
+    readingTaskTwelve: VnzhNoticeChoiceItem[];
+    readingTaskThirteenToSeventeen: VnzhReadingPassageItem[];
+    speakingTaskOneCount: number;
+    speakingTaskTwoCount: number;
+    speakingTaskThreeCount: number;
+    speakingTaskFourCount: number;
+    staticChoiceTasks: Record<string, VnzhStaticChoiceItem[]>;
+    writingTaskEighteen: VnzhWritingMediaItem[];
+    writingTaskNineteen: VnzhWritingPromptAnswerItem[];
+  } | null>(null);
+  const [vnzhLoading, setVnzhLoading] = useState(true);
+  const staticChoiceItems = task && vnzhData ? vnzhData.staticChoiceTasks[task.slug] ?? null : null;
   const [currentIndex, setCurrentIndex] = useState(1);
   const [mcqAnswers, setMcqAnswers] = useState<Record<string, number>>({});
 
@@ -816,6 +842,43 @@ export default function VnzhCourseTaskPage() {
     setCurrentIndex(1);
     setMcqAnswers({});
   }, [sectionSlug, taskSlug]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setVnzhLoading(true);
+    Promise.all([
+      import('../data/vnzhListeningTasks'),
+      import('../data/vnzhReadingTasks'),
+      import('../data/vnzhSpeakingTasks'),
+      import('../data/vnzhStaticChoiceTasks'),
+      import('../data/vnzhWritingTasks'),
+    ])
+      .then(([listening, reading, speaking, staticChoice, writing]) => {
+        if (cancelled) return;
+        setVnzhData({
+          listeningTaskFive: listening.VNZH_LISTENING_TASK_FIVE,
+          listeningTaskSix: listening.VNZH_LISTENING_TASK_SIX,
+          listeningTaskSeven: listening.VNZH_LISTENING_TASK_SEVEN,
+          listeningTaskEightToTen: listening.VNZH_LISTENING_TASK_EIGHT_TO_TEN,
+          readingTaskEleven: reading.VNZH_READING_TASK_ELEVEN,
+          readingTaskTwelve: reading.VNZH_READING_TASK_TWELVE,
+          readingTaskThirteenToSeventeen: reading.VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN,
+          speakingTaskOneCount: speaking.VNZH_SPEAKING_TASK_ONE.items.length,
+          speakingTaskTwoCount: speaking.VNZH_SPEAKING_TASK_TWO.items.length,
+          speakingTaskThreeCount: speaking.VNZH_SPEAKING_TASK_THREE.items.length,
+          speakingTaskFourCount: speaking.VNZH_SPEAKING_TASK_FOUR.items.length,
+          staticChoiceTasks: staticChoice.VNZH_STATIC_CHOICE_TASKS,
+          writingTaskEighteen: writing.VNZH_WRITING_TASK_EIGHTEEN,
+          writingTaskNineteen: writing.VNZH_WRITING_TASK_NINETEEN,
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setVnzhLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const locked =
     section &&
@@ -849,6 +912,14 @@ export default function VnzhCourseTaskPage() {
     return null;
   }
 
+  if (vnzhLoading || !vnzhData) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F8FBFF] p-6">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pb-16" style={{ backgroundColor: BG }}>
       <main className="mx-auto max-w-4xl px-4 py-5 sm:px-5">
@@ -880,166 +951,166 @@ export default function VnzhCourseTaskPage() {
         <div className="mt-5">
           {section.slug === 'govorenie' && task.slug === '1' ? (
             <div>
-              <BlockTabs total={VNZH_SPEAKING_TASK_ONE.items.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs total={vnzhData.speakingTaskOneCount} activeIndex={currentIndex} onSelect={setCurrentIndex} />
               <div className="mt-4">
                 <SpeakingTaskOneContent currentIndex={currentIndex} />
-                <TaskPager currentIndex={currentIndex} total={VNZH_SPEAKING_TASK_ONE.items.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.speakingTaskOneCount} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'govorenie' && task.slug === '2' ? (
             <div>
-              <BlockTabs total={VNZH_SPEAKING_TASK_TWO.items.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs total={vnzhData.speakingTaskTwoCount} activeIndex={currentIndex} onSelect={setCurrentIndex} />
               <div className="mt-4">
                 <SpeakingTaskTwoContent currentIndex={currentIndex} />
-                <TaskPager currentIndex={currentIndex} total={VNZH_SPEAKING_TASK_TWO.items.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.speakingTaskTwoCount} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'govorenie' && task.slug === '3' ? (
             <div>
-              <BlockTabs total={VNZH_SPEAKING_TASK_THREE.items.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs total={vnzhData.speakingTaskThreeCount} activeIndex={currentIndex} onSelect={setCurrentIndex} />
               <div className="mt-4">
                 <SpeakingTaskThreeContent currentIndex={currentIndex} />
-                <TaskPager currentIndex={currentIndex} total={VNZH_SPEAKING_TASK_THREE.items.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.speakingTaskThreeCount} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'govorenie' && task.slug === '4' ? (
             <div>
-              <BlockTabs total={VNZH_SPEAKING_TASK_FOUR.items.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs total={vnzhData.speakingTaskFourCount} activeIndex={currentIndex} onSelect={setCurrentIndex} />
               <div className="mt-4">
                 <SpeakingTaskFourContent currentIndex={currentIndex} />
-                <TaskPager currentIndex={currentIndex} total={VNZH_SPEAKING_TASK_FOUR.items.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.speakingTaskFourCount} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'audirovanie' && task.slug === '5' ? (
             <div>
               <BlockTabs
-                total={VNZH_LISTENING_TASK_FIVE.length}
+                total={vnzhData.listeningTaskFive.length}
                 activeIndex={currentIndex}
                 onSelect={setCurrentIndex}
-                tabOutcome={(n) => tabOutcomeListeningItem(VNZH_LISTENING_TASK_FIVE, mcqAnswers, n)}
+                tabOutcome={(n) => tabOutcomeListeningItem(vnzhData.listeningTaskFive, mcqAnswers, n)}
               />
               <div className="mt-4">
                 <ListeningChoiceContent
-                  items={VNZH_LISTENING_TASK_FIVE}
+                  items={vnzhData.listeningTaskFive}
                   currentIndex={currentIndex}
                   answers={mcqAnswers}
                   setAnswers={setMcqAnswers}
                 />
-                <TaskPager currentIndex={currentIndex} total={VNZH_LISTENING_TASK_FIVE.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.listeningTaskFive.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'audirovanie' && task.slug === '6' ? (
             <div>
-              <BlockTabs total={VNZH_LISTENING_TASK_SIX.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs total={vnzhData.listeningTaskSix.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
               <div className="mt-4">
-                <ListeningFillBlankContent items={VNZH_LISTENING_TASK_SIX} currentIndex={currentIndex} />
-                <TaskPager currentIndex={currentIndex} total={VNZH_LISTENING_TASK_SIX.length} onSelect={setCurrentIndex} />
+                <ListeningFillBlankContent items={vnzhData.listeningTaskSix} currentIndex={currentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.listeningTaskSix.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'audirovanie' && task.slug === '7' ? (
             <div>
               <BlockTabs
-                total={VNZH_LISTENING_TASK_SEVEN.length}
+                total={vnzhData.listeningTaskSeven.length}
                 activeIndex={currentIndex}
                 onSelect={setCurrentIndex}
-                tabOutcome={(n) => tabOutcomeListeningItem(VNZH_LISTENING_TASK_SEVEN, mcqAnswers, n)}
+                tabOutcome={(n) => tabOutcomeListeningItem(vnzhData.listeningTaskSeven, mcqAnswers, n)}
               />
               <div className="mt-4">
                 <ListeningChoiceContent
-                  items={VNZH_LISTENING_TASK_SEVEN}
+                  items={vnzhData.listeningTaskSeven}
                   currentIndex={currentIndex}
                   answers={mcqAnswers}
                   setAnswers={setMcqAnswers}
                 />
-                <TaskPager currentIndex={currentIndex} total={VNZH_LISTENING_TASK_SEVEN.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.listeningTaskSeven.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'audirovanie' && task.slug === '8-10' ? (
             <div>
               <BlockTabs
-                total={VNZH_LISTENING_TASK_EIGHT_TO_TEN.length}
+                total={vnzhData.listeningTaskEightToTen.length}
                 activeIndex={currentIndex}
                 onSelect={setCurrentIndex}
-                tabOutcome={(n) => tabOutcomeTripleBlock(VNZH_LISTENING_TASK_EIGHT_TO_TEN, mcqAnswers, n)}
+                tabOutcome={(n) => tabOutcomeTripleBlock(vnzhData.listeningTaskEightToTen, mcqAnswers, n)}
               />
               <div className="mt-4">
                 <ListeningTripleChoiceContent
-                  items={VNZH_LISTENING_TASK_EIGHT_TO_TEN}
+                  items={vnzhData.listeningTaskEightToTen}
                   currentIndex={currentIndex}
                   answers={mcqAnswers}
                   setAnswers={setMcqAnswers}
                 />
-                <TaskPager currentIndex={currentIndex} total={VNZH_LISTENING_TASK_EIGHT_TO_TEN.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.listeningTaskEightToTen.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'chtenie' && task.slug === '11' ? (
             <div>
               <BlockTabs
-                total={VNZH_READING_TASK_ELEVEN.length}
+                total={vnzhData.readingTaskEleven.length}
                 activeIndex={currentIndex}
                 onSelect={setCurrentIndex}
-                tabOutcome={(n) => tabOutcomeNotice(VNZH_READING_TASK_ELEVEN, mcqAnswers, n)}
+                tabOutcome={(n) => tabOutcomeNotice(vnzhData.readingTaskEleven, mcqAnswers, n)}
               />
               <div className="mt-4">
                 <NoticeChoiceContent
-                  items={VNZH_READING_TASK_ELEVEN}
+                  items={vnzhData.readingTaskEleven}
                   currentIndex={currentIndex}
                   answers={mcqAnswers}
                   setAnswers={setMcqAnswers}
                 />
-                <TaskPager currentIndex={currentIndex} total={VNZH_READING_TASK_ELEVEN.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.readingTaskEleven.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'chtenie' && task.slug === '12' ? (
             <div>
               <BlockTabs
-                total={VNZH_READING_TASK_TWELVE.length}
+                total={vnzhData.readingTaskTwelve.length}
                 activeIndex={currentIndex}
                 onSelect={setCurrentIndex}
-                tabOutcome={(n) => tabOutcomeNotice(VNZH_READING_TASK_TWELVE, mcqAnswers, n)}
+                tabOutcome={(n) => tabOutcomeNotice(vnzhData.readingTaskTwelve, mcqAnswers, n)}
               />
               <div className="mt-4">
                 <NoticeChoiceContent
-                  items={VNZH_READING_TASK_TWELVE}
+                  items={vnzhData.readingTaskTwelve}
                   currentIndex={currentIndex}
                   answers={mcqAnswers}
                   setAnswers={setMcqAnswers}
                 />
-                <TaskPager currentIndex={currentIndex} total={VNZH_READING_TASK_TWELVE.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.readingTaskTwelve.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'chtenie' && task.slug === '13-17' ? (
             <div>
               <BlockTabs
-                total={VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN.length}
+                total={vnzhData.readingTaskThirteenToSeventeen.length}
                 activeIndex={currentIndex}
                 onSelect={setCurrentIndex}
-                tabOutcome={(n) => tabOutcomeReadingPassage(VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN, mcqAnswers, n)}
+                tabOutcome={(n) => tabOutcomeReadingPassage(vnzhData.readingTaskThirteenToSeventeen, mcqAnswers, n)}
               />
               <div className="mt-4">
                 <ReadingPassageContent
-                  items={VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN}
+                  items={vnzhData.readingTaskThirteenToSeventeen}
                   currentIndex={currentIndex}
                   answers={mcqAnswers}
                   setAnswers={setMcqAnswers}
                 />
-                <TaskPager currentIndex={currentIndex} total={VNZH_READING_TASK_THIRTEEN_TO_SEVENTEEN.length} onSelect={setCurrentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.readingTaskThirteenToSeventeen.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'pismo' && task.slug === '18' ? (
             <div>
-              <BlockTabs total={VNZH_WRITING_TASK_EIGHTEEN.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs total={vnzhData.writingTaskEighteen.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
               <div className="mt-4">
-                <WritingVideoPhotoContent items={VNZH_WRITING_TASK_EIGHTEEN} currentIndex={currentIndex} />
-                <TaskPager currentIndex={currentIndex} total={VNZH_WRITING_TASK_EIGHTEEN.length} onSelect={setCurrentIndex} />
+                <WritingVideoPhotoContent items={vnzhData.writingTaskEighteen} currentIndex={currentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.writingTaskEighteen.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : section.slug === 'pismo' && task.slug === '19' ? (
             <div>
-              <BlockTabs total={VNZH_WRITING_TASK_NINETEEN.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
+              <BlockTabs total={vnzhData.writingTaskNineteen.length} activeIndex={currentIndex} onSelect={setCurrentIndex} />
               <div className="mt-4">
-                <WritingPromptAnswerContent items={VNZH_WRITING_TASK_NINETEEN} currentIndex={currentIndex} />
-                <TaskPager currentIndex={currentIndex} total={VNZH_WRITING_TASK_NINETEEN.length} onSelect={setCurrentIndex} />
+                <WritingPromptAnswerContent items={vnzhData.writingTaskNineteen} currentIndex={currentIndex} />
+                <TaskPager currentIndex={currentIndex} total={vnzhData.writingTaskNineteen.length} onSelect={setCurrentIndex} />
               </div>
             </div>
           ) : staticChoiceItems ? (

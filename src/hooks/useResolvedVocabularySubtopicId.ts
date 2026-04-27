@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { VOCABULARY_TOPICS } from '../data/vocabularyTopics';
-import { fetchVocabularySubtopics, type VocabularySubtopic } from '../api/vocabulary';
+import {
+  fetchVocabularySubtopics,
+  getCachedSubtopicsProgress,
+  type VocabularySubtopic,
+} from '../api/vocabulary';
 
 /**
  * URL `:subtopicId` may be a DB `slug` or legacy static `id`. Resolves to canonical `id` for local content keys.
@@ -24,6 +28,12 @@ export function useResolvedVocabularySubtopicId(
     }
     if (!token) {
       setFetchRows(null);
+      setFetchDone(true);
+      return;
+    }
+    const cached = getCachedSubtopicsProgress(topicId);
+    if (cached?.length) {
+      setFetchRows(cached);
       setFetchDone(true);
       return;
     }

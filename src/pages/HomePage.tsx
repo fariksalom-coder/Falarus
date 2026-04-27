@@ -15,7 +15,7 @@ const COURSES = [
     id: 'russian',
     href: '/russian',
     title: 'Rus tili',
-    subtitle: "Grammatika va lug'at",
+    subtitle: "Har kun rus tiliga bir qadam yaqinroq",
     accent: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
     borderColor: '#BFDBFE',
     imageSrc: null,

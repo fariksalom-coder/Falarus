@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Lock } from 'lucide-react';
-import { getSubtopicContent } from '../data/vocabularyContent';
 import {
   setLastPartId,
   getPartResultCount,
@@ -49,8 +48,29 @@ export default function VocabularyPartPage() {
     subtopicId,
     token
   );
-  const content = resolvedId ? getSubtopicContent(topicId, resolvedId) : undefined;
+  const [content, setContent] = useState<ReturnType<
+    typeof import('../data/vocabularyContent')['getSubtopicContent']
+  > | undefined>(undefined);
   const part = content?.parts.find((item) => item.id === partId);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!resolvedId) {
+      setContent(undefined);
+      return;
+    }
+    import('../data/vocabularyContent')
+      .then((module) => {
+        if (cancelled) return;
+        setContent(module.getSubtopicContent(topicId, resolvedId));
+      })
+      .catch(() => {
+        if (!cancelled) setContent(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [topicId, resolvedId]);
 
   const {
     wordGroupId,
