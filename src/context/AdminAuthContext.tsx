@@ -25,8 +25,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         setIsAdmin(true);
       })
       .catch(() => {
-        clearAdminToken();
-        setIsAdmin(false);
+        // 401: adminApi clears the token already. Network/5xx: keep stored token so a flaky connection doesn't log the admin out.
+        setIsAdmin(Boolean(getAdminToken()));
       })
       .finally(() => setLoading(false));
   }, []);

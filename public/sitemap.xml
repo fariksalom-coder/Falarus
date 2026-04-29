@@ -6,9 +6,34 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://www.falarus.uz/auth</loc>
+    <loc>https://www.falarus.uz/login</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.falarus.uz/russian</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.falarus.uz/kurslar</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.falarus.uz/kurslar/patent</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.falarus.uz/kurslar/vnzh</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.falarus.uz/fossils</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.falarus.uz/register</loc>
@@ -22,11 +47,6 @@
   </url>
   <url>
     <loc>https://www.falarus.uz/tariflar</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.falarus.uz/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

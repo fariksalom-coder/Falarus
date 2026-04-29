@@ -7,7 +7,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { supabase } from '../_lib/supabase.js';
 import { setCors, handleOptions } from '../_lib/cors.js';
-import { parseContactIdentifier } from '../../shared/authIdentifiers.js';
+import { parseContactIdentifier, sanitizePhoneRaw } from '../../shared/authIdentifiers.js';
+
+const AUTH_USER_SELECT =
+  'id, first_name, last_name, email, phone, password, level, onboarded, total_points';
 
 const jwtSecretEnv = process.env.JWT_SECRET;
 const TOKEN_TTL_SECONDS = Number(process.env.JWT_EXPIRES_SECONDS || 60 * 60 * 24 * 7);
@@ -95,17 +98,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (parsed.ok === false) {
         return res.status(400).json({ error: parsed.error });
       }
-      let q = supabase
-        .from('users')
-        .select('id, first_name, last_name, email, phone, password, level, onboarded, total_points');
+      let user: Record<string, unknown> | null = null;
+      let lookupErr: { message: string } | null = null;
+
       if (parsed.email) {
-        q = q.eq('email', parsed.email);
+        const r = await supabase.from('users').select(AUTH_USER_SELECT).eq('email', parsed.email).maybeSingle();
+        lookupErr = r.error ?? null;
+        user = (r.data as Record<string, unknown>) ?? null;
       } else {
-        q = q.eq('phone', parsed.phone!);
+        const ph = parsed.phone!;
+        const first = await supabase.from('users').select(AUTH_USER_SELECT).eq('phone_normalized', ph).maybeSingle();
+        if (first.error) {
+          lookupErr = first.error;
+        } else if (first.data) {
+          user = first.data as Record<string, unknown>;
+        } else {
+          const second = await supabase.from('users').select(AUTH_USER_SELECT).eq('phone', ph).maybeSingle();
+          lookupErr = second.error ?? null;
+          user = (second.data as Record<string, unknown>) ?? null;
+        }
       }
-      const { data: user, error } = await q.maybeSingle();
-      if (error) {
-        console.error('[api/auth/login]', error.message);
+
+      if (lookupErr) {
+        console.error('[api/auth/login]', lookupErr.message);
         return res.status(500).json({ error: 'Xatolik yuz berdi' });
       }
       if (!user) {
@@ -149,15 +164,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Parol kiritilishi shart' });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
+      const insertRow: Record<string, unknown> = {
+        first_name: firstName ?? '',
+        last_name: lastName ?? '',
+        email: parsed.email,
+        phone: parsed.phone,
+        password: hashedPassword,
+      };
+      if (parsed.phone) {
+        insertRow.phone_raw = sanitizePhoneRaw(contactRaw);
+        insertRow.phone_normalized = parsed.phone;
+        insertRow.country_code = parsed.phoneCountryIso ?? null;
+        insertRow.phone_verified = false;
+        insertRow.phone_invalid = false;
+      }
       const { data: user, error } = await supabase
         .from('users')
-        .insert({
-          first_name: firstName ?? '',
-          last_name: lastName ?? '',
-          email: parsed.email,
-          phone: parsed.phone,
-          password: hashedPassword,
-        })
+        .insert(insertRow)
         .select('id, first_name, last_name, email, phone, level, onboarded, total_points')
         .single();
       if (error) {

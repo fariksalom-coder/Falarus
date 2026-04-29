@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /payment
+Disallow: /payment-history
+Disallow: /profile
 
 Sitemap: https://www.falarus.uz/sitemap.xml

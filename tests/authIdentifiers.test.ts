@@ -18,12 +18,16 @@ test('sanitizePhoneForDb: rejects over max length', () => {
   assert.ok(sanitizePhoneForDb('a'.repeat(PHONE_MAX_LENGTH)));
 });
 
-test('parseContactIdentifier: email vs free-form phone', () => {
+test('parseContactIdentifier: email vs E.164 phone', () => {
   const e = parseContactIdentifier('A@B.CO');
   assert.equal(e.ok, true);
   if (e.ok) assert.equal(e.email, 'a@b.co');
 
-  const p = parseContactIdentifier('  +7 (916) 123-xx  ');
+  const p = parseContactIdentifier('  +7 (916) 123-45-67  ');
   assert.equal(p.ok, true);
-  if (p.ok) assert.equal(p.phone, '+7 (916) 123-xx');
+  if (p.ok) assert.equal(p.phone, '+79161234567');
+
+  const uz = parseContactIdentifier('901234567');
+  assert.equal(uz.ok, true);
+  if (uz.ok) assert.equal(uz.phone, '+998901234567');
 });

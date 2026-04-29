@@ -18,6 +18,7 @@ import { createServer as createViteServer } from 'vite';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import Busboy from 'busboy';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { courseData } from './src/data/courseData.ts';
@@ -33,7 +34,10 @@ import {
 import { assignCompetitionRanks } from './shared/leaderboardRanks.ts';
 import { fetchPeriodLeaderboardFromEvents } from './shared/periodLeaderboard.ts';
 import { insertPointEvent } from './shared/pointEvents.ts';
-import { parseContactIdentifier } from './shared/authIdentifiers.ts';
+import { parseContactIdentifier, sanitizePhoneRaw } from './shared/authIdentifiers.ts';
+
+const AUTH_USER_SELECT =
+  'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at';
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassing.ts';
@@ -74,6 +78,10 @@ if (!jwtSecretEnv || jwtSecretEnv.length < 32) {
   process.exit(1);
 }
 const JWT_SECRET = jwtSecretEnv;
+const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
+const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
+const HELP_IMAGE_PREFIX = '__image__:';
 
 function createIpRateLimiter(windowMs: number, maxRequests: number) {
   const hits = new Map<string, { count: number; resetAt: number }>();
@@ -141,7 +149,14 @@ async function startServer() {
   // Voice answers are sent as base64 JSON payloads; keep limit above default.
   app.use(express.json({ limit: '2mb' }));
   app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
-  app.use(globalRateLimiter);
+  app.use((req, res, next) => {
+    const url = String(req.originalUrl || req.url || '');
+    // Help chat long-polling can be frequent; avoid blocking message sends with global 429.
+    if (url.startsWith('/api/help/') || url.startsWith('/api/admin/help/')) {
+      return next();
+    }
+    return globalRateLimiter(req, res, next);
+  });
   app.disable('x-powered-by');
   app.use((req, res, next) => {
     const origin = process.env.CORS_ORIGIN;
@@ -281,16 +296,24 @@ async function startServer() {
     }
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
+      const insertRow: Record<string, unknown> = {
+        first_name: firstName ?? '',
+        last_name: lastName ?? '',
+        email: parsed.email,
+        phone: parsed.phone,
+        password: hashedPassword,
+        onboarded: 1,
+      };
+      if (parsed.phone) {
+        insertRow.phone_raw = sanitizePhoneRaw(contactRaw);
+        insertRow.phone_normalized = parsed.phone;
+        insertRow.country_code = parsed.phoneCountryIso ?? null;
+        insertRow.phone_verified = false;
+        insertRow.phone_invalid = false;
+      }
       const { data: user, error } = await supabase
         .from('users')
-        .insert({
-          first_name: firstName ?? '',
-          last_name: lastName ?? '',
-          email: parsed.email,
-          phone: parsed.phone,
-          password: hashedPassword,
-          onboarded: 1,
-        })
+        .insert(insertRow)
         .select('id, first_name, last_name, email, phone, level, onboarded')
         .single();
       if (error) {
@@ -343,14 +366,33 @@ async function startServer() {
     if (parsed.ok === false) {
       return res.status(400).json({ error: parsed.error });
     }
-    let q = supabase.from('users').select('*');
+    let user: Record<string, unknown> | null = null;
+    let lookupErr: { message: string } | null = null;
+
     if (parsed.email) {
-      q = q.eq('email', parsed.email);
+      const r = await supabase.from('users').select(AUTH_USER_SELECT).eq('email', parsed.email).maybeSingle();
+      lookupErr = r.error ?? null;
+      user = (r.data as Record<string, unknown>) ?? null;
     } else {
-      q = q.eq('phone', parsed.phone!);
+      const ph = parsed.phone!;
+      const first = await supabase.from('users').select(AUTH_USER_SELECT).eq('phone_normalized', ph).maybeSingle();
+      if (first.error) {
+        lookupErr = first.error;
+      } else if (first.data) {
+        user = first.data as Record<string, unknown>;
+      } else {
+        const second = await supabase.from('users').select(AUTH_USER_SELECT).eq('phone', ph).maybeSingle();
+        lookupErr = second.error ?? null;
+        user = (second.data as Record<string, unknown>) ?? null;
+      }
     }
-    const { data: user, error } = await q.maybeSingle();
-    if (error || !user || !(await bcrypt.compare(password, user.password))) {
+
+    if (lookupErr) {
+      console.error('[login]', lookupErr.message);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+
+    if (!user || !(await bcrypt.compare(password, user.password as string))) {
       return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
     }
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
@@ -578,6 +620,394 @@ async function startServer() {
       return res.status(500).json({ error: error.message });
     }
     res.json({ success: true });
+  });
+
+  async function ensureSupportChat(userId: number): Promise<number> {
+    const { data: existing, error: existingErr } = await supabase
+      .from('support_chats')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (existingErr) throw existingErr;
+    if (existing?.id) return Number(existing.id);
+
+    const now = new Date().toISOString();
+    const { data: created, error: createErr } = await supabase
+      .from('support_chats')
+      .insert({
+        user_id: userId,
+        status: 'open',
+        created_at: now,
+        updated_at: now,
+      })
+      .select('id')
+      .single();
+    if (createErr || !created) throw createErr ?? new Error('Support chat yaratilmadi');
+    return Number(created.id);
+  }
+
+  function isMissingSupportChatSchemaError(error: unknown): boolean {
+    const message = typeof error === 'object' && error && 'message' in error
+      ? String((error as { message?: unknown }).message ?? '')
+      : String(error ?? '');
+    return message.includes('support_chats') || message.includes('support_chat_messages');
+  }
+
+  app.get('/api/help/chats', authenticate, async (req: any, res) => {
+    try {
+      const userId = Number(req.userId);
+      const chatId = await ensureSupportChat(userId);
+
+      const [{ data: chat, error: chatErr }, { data: lastRows, error: lastErr }, { count, error: countErr }] = await Promise.all([
+        supabase
+          .from('support_chats')
+          .select('id, status, created_at, updated_at, last_message_at, user_last_read_at')
+          .eq('id', chatId)
+          .single(),
+        supabase
+          .from('support_chat_messages')
+          .select('id, content, sender_type, created_at')
+          .eq('chat_id', chatId)
+          .order('created_at', { ascending: false })
+          .limit(1),
+        supabase
+          .from('support_chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('chat_id', chatId)
+          .eq('sender_type', 'admin')
+          .gt('created_at', new Date(0).toISOString()),
+      ]);
+
+      if (chatErr) return res.status(500).json({ error: chatErr.message });
+      if (lastErr) return res.status(500).json({ error: lastErr.message });
+      if (countErr) return res.status(500).json({ error: countErr.message });
+      const userLastReadAt = chat?.user_last_read_at ? String(chat.user_last_read_at) : null;
+
+      let unreadCount = Number(count ?? 0);
+      if (userLastReadAt) {
+        const { count: unreadFiltered, error: unreadErr } = await supabase
+          .from('support_chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('chat_id', chatId)
+          .eq('sender_type', 'admin')
+          .gt('created_at', userLastReadAt);
+        if (unreadErr) return res.status(500).json({ error: unreadErr.message });
+        unreadCount = Number(unreadFiltered ?? 0);
+      }
+
+      const last = lastRows?.[0] ?? null;
+      return res.json([
+        {
+          id: Number(chat!.id),
+          title: 'Admin',
+          status: chat!.status,
+          created_at: chat!.created_at,
+          updated_at: chat!.updated_at,
+          last_message_at: chat!.last_message_at,
+          last_message: last
+            ? {
+                id: Number(last.id),
+                content: String(last.content),
+                sender_type: String(last.sender_type),
+                created_at: String(last.created_at),
+              }
+            : null,
+          unread_count: unreadCount,
+        },
+      ]);
+    } catch (e: any) {
+      if (isMissingSupportChatSchemaError(e)) {
+        const { data: lastSupportRows } = await supabase
+          .from('support_messages')
+          .select('id, message, reply, created_at, answered_at, status')
+          .eq('user_id', Number(req.userId))
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const last = lastSupportRows?.[0] ?? null;
+        const lastMessageAt = last ? String(last.answered_at ?? last.created_at) : null;
+        const lastMessageContent = last
+          ? String(last.reply ?? last.message)
+          : null;
+        const unreadCount = last?.status === 'answered' && !last?.reply ? 0 : 0;
+        return res.json([
+          {
+            id: -1,
+            title: 'Admin',
+            status: 'open',
+            created_at: new Date(0).toISOString(),
+            updated_at: lastMessageAt ?? new Date(0).toISOString(),
+            last_message_at: lastMessageAt,
+            last_message: lastMessageContent
+              ? {
+                  id: Number(last.id ?? 0),
+                  content: lastMessageContent,
+                  sender_type: last?.reply ? 'admin' : 'user',
+                  created_at: lastMessageAt ?? String(last.created_at),
+                }
+              : null,
+            unread_count: unreadCount,
+          },
+        ]);
+      }
+      console.error('[GET /api/help/chats]', e);
+      return res.status(500).json({ error: e?.message || 'Xatolik' });
+    }
+  });
+
+  app.get('/api/help/chats/:chatId/messages', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    const chatId = Number(req.params.chatId);
+    if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+    if (chatId === -1) {
+      const { data: rows, error } = await supabase
+        .from('support_messages')
+        .select('id, message, reply, created_at, answered_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(200);
+      if (error) return res.status(500).json({ error: error.message });
+      const mapped = (rows ?? []).flatMap((r: any) => {
+        const rawMessage = String(r.message ?? '');
+        const userMessage = rawMessage.startsWith('[ADMIN_NOTE]')
+          ? []
+          : [{
+              id: Number(r.id) * 2,
+              chat_id: -1,
+              sender_type: 'user',
+              sender_user_id: userId,
+              content: rawMessage,
+              created_at: String(r.created_at),
+            }];
+        const adminMessage = r.reply
+          ? [{
+              id: Number(r.id) * 2 + 1,
+              chat_id: -1,
+              sender_type: 'admin',
+              sender_user_id: null,
+              content: String(r.reply),
+              created_at: String(r.answered_at ?? r.created_at),
+            }]
+          : rawMessage.startsWith('[ADMIN_NOTE]')
+            ? [{
+                id: Number(r.id) * 2 + 1,
+                chat_id: -1,
+                sender_type: 'admin',
+                sender_user_id: null,
+                content: rawMessage.slice('[ADMIN_NOTE]'.length).trim(),
+                created_at: String(r.created_at),
+              }]
+            : [];
+        return [...userMessage, ...adminMessage];
+      });
+      return res.json(mapped);
+    }
+
+    const { data: chat, error: chatErr } = await supabase
+      .from('support_chats')
+      .select('id, user_id')
+      .eq('id', chatId)
+      .single();
+    if (chatErr || !chat) return res.status(404).json({ error: 'Chat topilmadi' });
+    if (Number(chat.user_id) !== userId) return res.status(403).json({ error: 'Ruxsat yo‘q' });
+
+    const { data: rows, error } = await supabase
+      .from('support_chat_messages')
+      .select('id, chat_id, sender_type, sender_user_id, content, created_at')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true })
+      .limit(300);
+    if (error) {
+      console.error('[GET /api/help/chats/:chatId/messages]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    return res.json(rows ?? []);
+  });
+
+  async function parseHelpChatMultipartImage(
+    req: express.Request
+  ): Promise<{ file: { buffer: Buffer; mimetype: string } | null }> {
+    return new Promise((resolve, reject) => {
+      const contentType = req.headers['content-type'];
+      if (!contentType || !contentType.includes('multipart/form-data')) {
+        reject(new Error('Content-Type must be multipart/form-data'));
+        return;
+      }
+      let file: { buffer: Buffer; mimetype: string } | null = null;
+      const chunks: Buffer[] = [];
+      const bb = Busboy({ headers: { 'content-type': contentType } });
+      bb.on('file', (name, stream, info) => {
+        if (name !== 'image') {
+          stream.resume();
+          return;
+        }
+        const mimeType = info.mimeType;
+        if (!HELP_CHAT_ALLOWED_MIMES.includes(mimeType)) {
+          stream.resume();
+          reject(new Error('Faqat JPG, PNG yoki WEBP ruxsat etiladi'));
+          return;
+        }
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        stream.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          if (buffer.length > HELP_CHAT_MAX_SIZE) {
+            reject(new Error('Rasm hajmi 4 MB dan oshmasligi kerak'));
+            return;
+          }
+          file = { buffer, mimetype: mimeType };
+        });
+        stream.on('error', reject);
+      });
+      bb.on('error', reject);
+      bb.on('finish', () => resolve({ file }));
+      (req as unknown as NodeJS.ReadableStream).pipe(bb);
+    });
+  }
+
+  app.post('/api/help/chats/:chatId/media', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    const chatId = Number(req.params.chatId);
+    if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+
+    try {
+      const { file } = await parseHelpChatMultipartImage(req);
+      if (!file) return res.status(400).json({ error: 'Rasm yuklanmadi' });
+      const ext = file.mimetype === 'image/png' ? 'png' : file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+      const objectPath = `${userId}/${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const hasBucket = (buckets ?? []).some((b: any) => b.name === HELP_CHAT_MEDIA_BUCKET);
+      if (!hasBucket) await supabase.storage.createBucket(HELP_CHAT_MEDIA_BUCKET, { public: true });
+      const { error: uploadErr } = await supabase.storage
+        .from(HELP_CHAT_MEDIA_BUCKET)
+        .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: false });
+      if (uploadErr) return res.status(500).json({ error: uploadErr.message });
+      const { data: publicData } = supabase.storage.from(HELP_CHAT_MEDIA_BUCKET).getPublicUrl(objectPath);
+      const imageUrl = publicData?.publicUrl;
+      if (!imageUrl) return res.status(500).json({ error: 'Rasm URL olinmadi' });
+      const content = `${HELP_IMAGE_PREFIX}${imageUrl}`;
+
+      if (chatId === -1) {
+        const { data: created, error } = await supabase
+          .from('support_messages')
+          .insert({ user_id: userId, message: content, status: 'new' })
+          .select('id, message, created_at')
+          .single();
+        if (error || !created) return res.status(500).json({ error: error?.message || 'Rasm yuborilmadi' });
+        return res.status(201).json({
+          id: Number((created as any).id) * 2,
+          chat_id: -1,
+          sender_type: 'user',
+          sender_user_id: userId,
+          content: String((created as any).message),
+          created_at: String((created as any).created_at),
+        });
+      }
+
+      const { data: chat, error: chatErr } = await supabase
+        .from('support_chats')
+        .select('id, user_id')
+        .eq('id', chatId)
+        .single();
+      if (chatErr || !chat) return res.status(404).json({ error: 'Chat topilmadi' });
+      if (Number(chat.user_id) !== userId) return res.status(403).json({ error: 'Ruxsat yo‘q' });
+
+      const now = new Date().toISOString();
+      const { data: created, error: createErr } = await supabase
+        .from('support_chat_messages')
+        .insert({
+          chat_id: chatId,
+          sender_type: 'user',
+          sender_user_id: userId,
+          content,
+          created_at: now,
+        })
+        .select('id, chat_id, sender_type, sender_user_id, content, created_at')
+        .single();
+      if (createErr || !created) return res.status(500).json({ error: createErr?.message || 'Rasm yuborilmadi' });
+      await supabase.from('support_chats').update({ updated_at: now, last_message_at: now }).eq('id', chatId);
+      return res.status(201).json(created);
+    } catch (e: any) {
+      return res.status(400).json({ error: e?.message || 'Rasm yuborilmadi' });
+    }
+  });
+
+  app.post('/api/help/chats/:chatId/messages', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    const chatId = Number(req.params.chatId);
+    const content = String(req.body?.content ?? '').trim();
+    if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+    if (!content) return res.status(400).json({ error: 'Xabar bo‘sh' });
+    if (chatId === -1) {
+      const { data: created, error } = await supabase
+        .from('support_messages')
+        .insert({
+          user_id: userId,
+          message: content,
+          status: 'new',
+        })
+        .select('id, message, created_at')
+        .single();
+      if (error || !created) return res.status(500).json({ error: error?.message || 'Xabar yuborilmadi' });
+      return res.status(201).json({
+        id: Number((created as any).id) * 2,
+        chat_id: -1,
+        sender_type: 'user',
+        sender_user_id: userId,
+        content: String((created as any).message),
+        created_at: String((created as any).created_at),
+      });
+    }
+
+    const { data: chat, error: chatErr } = await supabase
+      .from('support_chats')
+      .select('id, user_id')
+      .eq('id', chatId)
+      .single();
+    if (chatErr || !chat) return res.status(404).json({ error: 'Chat topilmadi' });
+    if (Number(chat.user_id) !== userId) return res.status(403).json({ error: 'Ruxsat yo‘q' });
+
+    const now = new Date().toISOString();
+    const { data: created, error: msgErr } = await supabase
+      .from('support_chat_messages')
+      .insert({
+        chat_id: chatId,
+        sender_type: 'user',
+        sender_user_id: userId,
+        content,
+        created_at: now,
+      })
+      .select('id, chat_id, sender_type, sender_user_id, content, created_at')
+      .single();
+    if (msgErr || !created) return res.status(500).json({ error: msgErr?.message || 'Xabar yuborilmadi' });
+
+    const { error: updErr } = await supabase
+      .from('support_chats')
+      .update({ updated_at: now, last_message_at: now })
+      .eq('id', chatId);
+    if (updErr) return res.status(500).json({ error: updErr.message });
+
+    return res.status(201).json(created);
+  });
+
+  app.post('/api/help/chats/:chatId/read', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    const chatId = Number(req.params.chatId);
+    if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+    if (chatId === -1) return res.json({ success: true });
+
+    const { data: chat, error: chatErr } = await supabase
+      .from('support_chats')
+      .select('id, user_id')
+      .eq('id', chatId)
+      .single();
+    if (chatErr || !chat) return res.status(404).json({ error: 'Chat topilmadi' });
+    if (Number(chat.user_id) !== userId) return res.status(403).json({ error: 'Ruxsat yo‘q' });
+
+    const { error } = await supabase
+      .from('support_chats')
+      .update({ user_last_read_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', chatId);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true });
   });
 
   // Leaderboard: "all" = cached top 100 from leaderboard table + Redis; daily/weekly = period-aware user counters

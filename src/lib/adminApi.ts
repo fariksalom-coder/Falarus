@@ -25,9 +25,10 @@ export async function adminApi<T = unknown>(
 ): Promise<T> {
   const { skipAuthRedirect, headers, ...rest } = options;
   const token = getAdminToken();
+  const isFormDataBody = typeof FormData !== 'undefined' && rest.body instanceof FormData;
 
   const mergedHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(isFormDataBody ? {} : { 'Content-Type': 'application/json' }),
     ...(headers as HeadersInit | undefined),
   };
   if (token) {

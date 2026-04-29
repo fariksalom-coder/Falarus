@@ -89,6 +89,7 @@ const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
   '/russian/grammar': ['./pages/Dashboard.tsx'],
   '/russian/speaking': ['./pages/SpeakingPage.tsx'],
   '/partner': ['./pages/PartnerPage.tsx'],
+  '/help': ['./pages/HelpPage.tsx'],
   '/vocabulary': ['./pages/VocabularyHubPage.tsx', './pages/VocabularyPage.tsx'],
   '/vocabulary/words': ['./pages/VocabularyPage.tsx', './pages/VocabularyTopicPage.tsx'],
   '/vocabulary/matnlar': ['./pages/VocabularyTextsPage.tsx'],

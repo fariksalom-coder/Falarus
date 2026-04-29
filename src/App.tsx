@@ -1,4 +1,7 @@
+import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Navigate, Outlet, Route, Routes, useParams } from 'react-router-dom';
+import { AnalyticsScripts } from './components/AnalyticsScripts';
+import { GlobalSeo } from './components/GlobalSeo';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AccessProvider } from './context/AccessContext';
 import { PaymentStatusProvider } from './context/PaymentStatusContext';
@@ -9,6 +12,7 @@ import { AdminAuthProvider } from './context/AdminAuthContext';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminGuard from './pages/admin/AdminGuard';
 import MainLayout from './components/MainLayout';
+import NotFoundPage from './pages/NotFoundPage';
 import { renderLazyPage } from './routeModules';
 
 function VocabularyPartRoute() {
@@ -65,7 +69,7 @@ function AppRoutes() {
           <Route path="/auth" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={renderLazyPage('./pages/AuthPage.tsx')} />
           <Route path="/register" element={renderLazyPage('./pages/AuthPage.tsx')} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </>
       ) : (
         <>
@@ -75,6 +79,8 @@ function AppRoutes() {
             <Route path="russian/grammar" element={renderLazyPage('./pages/Dashboard.tsx')} />
             <Route path="russian/speaking" element={renderLazyPage('./pages/SpeakingPage.tsx')} />
             <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
+            <Route path="help" element={renderLazyPage('./pages/HelpPage.tsx')} />
+            <Route path="help/:chatId" element={renderLazyPage('./pages/HelpPage.tsx')} />
             <Route path="vocabulary" element={renderLazyPage('./pages/VocabularyHubPage.tsx')} />
             <Route path="vocabulary/words" element={renderLazyPage('./pages/VocabularyPage.tsx')} />
             <Route path="vocabulary/matnlar" element={renderLazyPage('./pages/VocabularyTextsPage.tsx')} />
@@ -175,7 +181,7 @@ function AppRoutes() {
             <Route key={p} path={p} element={renderLazyPage('./pages/GrammarLessonTaskPage.tsx')} />
           ))}
           <Route path="/lesson/:id" element={renderLazyPage('./pages/LessonPage.tsx')} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </>
       )}
     </Routes>
@@ -184,19 +190,23 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AccessProvider>
-          <PaymentStatusProvider>
-            <SequentialLessonProvider>
-              <GrammarCatalogProvider>
-                <AppRoutes />
-              </GrammarCatalogProvider>
-              <SequentialAccessEnforcer />
-            </SequentialLessonProvider>
-          </PaymentStatusProvider>
-        </AccessProvider>
-      </Router>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <Router>
+          <GlobalSeo />
+          <AnalyticsScripts />
+          <AccessProvider>
+            <PaymentStatusProvider>
+              <SequentialLessonProvider>
+                <GrammarCatalogProvider>
+                  <AppRoutes />
+                </GrammarCatalogProvider>
+                <SequentialAccessEnforcer />
+              </SequentialLessonProvider>
+            </PaymentStatusProvider>
+          </AccessProvider>
+        </Router>
+      </AuthProvider>
+    </HelmetProvider>
   );
 }

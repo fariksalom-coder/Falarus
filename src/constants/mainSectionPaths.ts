@@ -2,6 +2,7 @@
 export const MAIN_SECTION_PATHS = [
   '/',
   '/partner',
+  '/help',
   '/statistika',
   '/kurslar',
   '/profile',

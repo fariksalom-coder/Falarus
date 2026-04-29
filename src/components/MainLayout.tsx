@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import AppNavBar from './AppNavBar';
@@ -16,35 +15,18 @@ function hideNavBar(path: string): boolean {
   if (path.startsWith('/vocabulary/')) return true;
   if (path.startsWith('/kurslar/patent')) return true;
   if (path.startsWith('/kurslar/vnzh')) return true;
+  if (path.startsWith('/help/')) return true;
   return false;
 }
 
-/** Sync enter/exit so panels pass side-by-side (Telegram-style); spring tuned for low overshoot. */
-const springTab = { type: 'spring' as const, damping: 38, stiffness: 520, mass: 0.82 };
-const fadeSoft = { duration: 0.18, ease: [0.32, 0.72, 0, 1] as const };
+const zoomTransition = { duration: 0.22, ease: [0.32, 0.72, 0, 1] as const };
 
-/** Forward (next tab): new from right, old exits left; backward: opposite. Nav stays fixed — only this block animates. */
 export default function MainLayout() {
   const { pathname } = useLocation();
   const showNavBar = !hideNavBar(pathname);
   const reduceMotion = useReducedMotion();
   const sectionIdx = mainSectionIndex(pathname);
   const motionKey = sectionIdx >= 0 ? `section-${sectionIdx}` : pathname;
-
-  const prevPathRef = useRef(pathname);
-  const [tabDir, setTabDir] = useState(0);
-
-  useLayoutEffect(() => {
-    const prev = prevPathRef.current;
-    const a = mainSectionIndex(prev);
-    const b = mainSectionIndex(pathname);
-    let d = 0;
-    if (a >= 0 && b >= 0 && prev !== pathname) {
-      d = b > a ? 1 : b < a ? -1 : 0;
-    }
-    setTabDir(d);
-    prevPathRef.current = pathname;
-  }, [pathname]);
 
   const variants = reduceMotion
     ? {
@@ -53,18 +35,11 @@ export default function MainLayout() {
         exit: { opacity: 0 },
       }
     : {
-        enter: (dir: number) =>
-          dir === 0
-            ? { opacity: 0, y: 6, zIndex: 2 }
-            : { x: dir > 0 ? '100%' : '-100%', zIndex: 2 },
-        center: { x: 0, y: 0, opacity: 1, zIndex: 2 },
-        exit: (dir: number) =>
-          dir === 0
-            ? { opacity: 0, y: -4, zIndex: 1 }
-            : { x: dir > 0 ? '-100%' : '100%', zIndex: 1 },
+        enter: { opacity: 0, scale: 0.985, zIndex: 2 },
+        center: { opacity: 1, scale: 1, zIndex: 2 },
+        exit: { opacity: 0, scale: 1.012, zIndex: 1 },
       };
-
-  const transition = reduceMotion ? fadeSoft : springTab;
+  const transition = zoomTransition;
 
   // On mobile (< sm): nav is at the bottom → paddingBottom.
   // On desktop (sm+): nav is at the top → paddingTop.
@@ -113,13 +88,12 @@ export default function MainLayout() {
           style={showNavBar ? undefined : { minHeight: '100dvh' }}
         >
           {/*
-            mode="sync": old and new routes animate together (no white gap).
-            Absolute inset-0: both layers overlap during the slide like Telegram folders.
+            mode="sync": old/new routes animate together with subtle zoom.
+            Absolute inset-0 keeps transitions smooth without layout jump.
           */}
-          <AnimatePresence mode="sync" initial={false} custom={tabDir}>
+          <AnimatePresence mode="sync" initial={false}>
             <motion.div
               key={motionKey}
-              custom={tabDir}
               variants={variants}
               initial="enter"
               animate="center"

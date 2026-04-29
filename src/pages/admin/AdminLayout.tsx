@@ -1,4 +1,5 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import {
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
   BookOpen,
   Video,
 } from 'lucide-react';
+import { getAdminHelpChats } from '../../api/admin';
 
 const nav = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,7 +24,7 @@ const nav = [
   { to: '/admin/fossils-payments', label: 'Fossils Payments', icon: Video },
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: Repeat },
   { to: '/admin/referrals', label: 'Referrals', icon: Wallet },
-  { to: '/admin/support', label: 'Support', icon: MessageSquare },
+  { to: '/admin/support', label: 'Yozishmalar', icon: MessageSquare },
   { to: '/admin/payment-methods', label: 'Payment Methods', icon: Banknote },
   { to: '/admin/tariff-pricing', label: 'Tariff Pricing', icon: DollarSign },
   { to: '/admin/pricing', label: 'Pricing', icon: Settings },
@@ -32,6 +34,31 @@ const nav = [
 export default function AdminLayout() {
   const { logout } = useAdminAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [unreadSupportCount, setUnreadSupportCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const run = async () => {
+      try {
+        const chats = await getAdminHelpChats();
+        const totalUnread = (chats ?? []).reduce((acc, c) => acc + Number(c.unread_count ?? 0), 0);
+        if (!cancelled) setUnreadSupportCount(totalUnread);
+      } catch {
+        // Keep previous counter on transient errors.
+      } finally {
+        if (!cancelled) timer = window.setTimeout(() => void run(), 10_000);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [location.pathname]);
 
   function handleLogout() {
     logout();
@@ -56,7 +83,12 @@ export default function AdminLayout() {
               }
             >
               <Icon className="h-5 w-5 shrink-0" />
-              {label}
+              <span className="min-w-0 flex-1 truncate">{label}</span>
+              {to === '/admin/support' && unreadSupportCount > 0 ? (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                  {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
+                </span>
+              ) : null}
             </NavLink>
           ))}
         </nav>

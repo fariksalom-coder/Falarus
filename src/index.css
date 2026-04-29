@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+/* intl-tel-input: match auth card width */
+.intl-phone-field .iti {
+  width: 100%;
+}
+.intl-phone-field .iti__country-container .iti__selected-flag {
+  border-radius: 0.75rem 0 0 0.75rem;
+}

@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogIn, Clock, Users, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { cancelPartnerRequest, getPartnerStatus, type PartnerStatus } from '../api/partner';
+import {
+  cancelPartnerRequest,
+  getPartnerStatus,
+  getCachedPartnerStatus,
+  setCachedPartnerStatus,
+  type PartnerStatus,
+} from '../api/partner';
 import PartnerProfileForm from '../components/partner/PartnerProfileForm';
 import PartnerPeopleList from '../components/partner/PartnerPeopleList';
 import PartnerIncomingRequests from '../components/partner/PartnerIncomingRequests';
@@ -12,41 +18,49 @@ import PartnerChat from '../components/partner/PartnerChat';
 type View = 'loading' | 'guest' | 'profile-form' | 'chat-list' | 'chat' | 'waiting' | 'browse' | 'incoming';
 
 export default function PartnerPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
 
   const [view, setView] = useState<View>('loading');
   const [status, setStatus] = useState<PartnerStatus | null>(null);
   const [cancelingRequest, setCancelingRequest] = useState(false);
 
+  const applyStatusToView = useCallback((s: PartnerStatus) => {
+    setStatus(s);
+    if (!s.hasProfile) {
+      setView('profile-form');
+    } else if (s.match) {
+      setView('chat-list');
+    } else if (s.outgoingRequest) {
+      setView('waiting');
+    } else {
+      setView('browse');
+    }
+  }, []);
+
   const loadStatus = useCallback(async () => {
     if (!token) return;
     try {
       const s = await getPartnerStatus(token);
-      setStatus(s);
-
-      if (!s.hasProfile) {
-        setView('profile-form');
-      } else if (s.match) {
-        setView('chat-list');
-      } else if (s.outgoingRequest) {
-        setView('waiting');
-      } else {
-        setView('browse');
-      }
+      if (user?.id) setCachedPartnerStatus(user.id, s);
+      applyStatusToView(s);
     } catch {
       setStatus(null);
       setView('profile-form');
     }
-  }, [token]);
+  }, [token, user?.id, applyStatusToView]);
 
   useEffect(() => {
     if (!token) {
       setView('guest');
       return;
     }
+    if (user?.id) {
+      const cached = getCachedPartnerStatus(user.id);
+      if (cached) applyStatusToView(cached);
+    }
     loadStatus();
-  }, [token, loadStatus]);
+  }, [token, user?.id, loadStatus, applyStatusToView]);
 
   const handleProfileSaved = () => {
     loadStatus();

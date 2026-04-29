@@ -3,8 +3,9 @@ import bcrypt from 'bcryptjs';
 import {
   isValidNormalizedEmail,
   normalizeEmail,
-  sanitizePhoneForDb,
+  sanitizePhoneRaw,
   PHONE_MAX_LENGTH,
+  normalizePhoneInputToE164,
 } from './authIdentifiers.js';
 
 export type AccountPatchResult =
@@ -27,7 +28,7 @@ export async function applyUserAccountPatch(
 
   const { data: user, error: fetchErr } = await supabase
     .from('users')
-    .select('id, email, phone, password')
+    .select('id, email, phone, phone_normalized, password')
     .eq('id', userId)
     .maybeSingle();
 
@@ -53,6 +54,8 @@ export async function applyUserAccountPatch(
     user.email === undefined || user.email === null ? null : String(user.email);
   let nextPhone: string | null =
     user.phone === undefined || user.phone === null ? null : String(user.phone);
+  let nextPhoneRaw: string | null = null;
+  let nextCountryIso: string | null = null;
 
   if ('email' in body) {
     const v = body.email;
@@ -73,16 +76,28 @@ export async function applyUserAccountPatch(
     const v = body.phone;
     if (v === null || v === '') {
       nextPhone = null;
+      nextPhoneRaw = null;
+      nextCountryIso = null;
     } else if (typeof v === 'string') {
-      const ph = sanitizePhoneForDb(v);
-      if (!ph) {
+      const rawSnap = sanitizePhoneRaw(v);
+      if (!rawSnap || rawSnap.length > PHONE_MAX_LENGTH) {
         return {
           ok: false,
           status: 400,
           error: `Telefon bo'sh yoki ${PHONE_MAX_LENGTH} belgidan oshmasin`,
         };
       }
-      nextPhone = ph;
+      const norm = normalizePhoneInputToE164(rawSnap);
+      if (norm.invalid || !norm.e164) {
+        return {
+          ok: false,
+          status: 400,
+          error: "Telefon noto'g'ri yoki mintaqa qo'llab-quvvatlanmaydi (UZ, RU, TJ, KG)",
+        };
+      }
+      nextPhone = norm.e164;
+      nextPhoneRaw = rawSnap;
+      nextCountryIso = norm.countryIso ?? null;
     } else {
       return { ok: false, status: 400, error: "Telefon noto'g'ri" };
     }
@@ -108,15 +123,30 @@ export async function applyUserAccountPatch(
     }
   }
 
-  if (nextPhone !== user.phone && nextPhone) {
-    const { data: taken } = await supabase
-      .from('users')
-      .select('id')
-      .eq('phone', nextPhone)
-      .neq('id', userId)
-      .maybeSingle();
-    if (taken) {
-      return { ok: false, status: 400, error: 'Bu telefon allaqachon band' };
+  const prevNorm =
+    user.phone_normalized != null ? String(user.phone_normalized) : null;
+
+  if ('phone' in body && nextPhone) {
+    const unchanged = nextPhone === prevNorm || nextPhone === String(user.phone ?? '');
+    if (!unchanged) {
+      const { data: byNorm } = await supabase
+        .from('users')
+        .select('id')
+        .eq('phone_normalized', nextPhone)
+        .neq('id', userId)
+        .maybeSingle();
+      if (byNorm) {
+        return { ok: false, status: 400, error: 'Bu telefon allaqachon band' };
+      }
+      const { data: byLegacy } = await supabase
+        .from('users')
+        .select('id')
+        .eq('phone', nextPhone)
+        .neq('id', userId)
+        .maybeSingle();
+      if (byLegacy) {
+        return { ok: false, status: 400, error: 'Bu telefon allaqachon band' };
+      }
     }
   }
 
@@ -127,6 +157,13 @@ export async function applyUserAccountPatch(
     email: nextEmail,
     phone: nextPhone,
   };
+
+  if ('phone' in body) {
+    updates.phone_normalized = nextPhone;
+    updates.phone_raw = nextPhoneRaw;
+    updates.country_code = nextCountryIso;
+    updates.phone_invalid = false;
+  }
 
   if (newPass || newPass2) {
     if (newPass.length < 6) {

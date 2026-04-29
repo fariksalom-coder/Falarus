@@ -1,6 +1,10 @@
+import { normalizePhoneInputToE164, sanitizePhoneRaw } from './phoneE164.js';
+
+export { sanitizePhoneRaw, normalizePhoneInputToE164 };
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 
-/** Max stored phone length (arbitrary input, still bounded for DB/API safety). */
+/** Max raw identifier length before normalization (paste buffers). */
 export const PHONE_MAX_LENGTH = 128;
 
 export function isValidNormalizedEmail(email: string): boolean {
@@ -12,8 +16,7 @@ export function normalizeEmail(raw: string): string {
 }
 
 /**
- * Phone as free-form text: trim only. Login/register compare this exact string to `users.phone`.
- * Returns null if empty or too long.
+ * Legacy trim-only sanitizer (profile/display). Prefer {@link normalizePhoneInputToE164} for auth.
  */
 export function sanitizePhoneForDb(raw: string): string | null {
   const s = raw.trim();
@@ -27,16 +30,29 @@ export const normalizePhone = sanitizePhoneForDb;
 export const normalizeUzPhone = sanitizePhoneForDb;
 
 export type ParsedContact =
-  | { ok: true; email: string | null; phone: string | null }
+  | {
+      ok: true;
+      email: string | null;
+      /** E.164 when phone login/register */
+      phone: string | null;
+      /** ISO 3166-1 alpha-2 when phone branch succeeded */
+      phoneCountryIso?: string | null;
+    }
   | { ok: false; error: string };
 
 /**
- * Single user input: valid email, or any non-empty phone string (trimmed, length-capped).
+ * Email or international phone (normalized to E.164 for allowed regions).
  */
 export function parseContactIdentifier(raw: string): ParsedContact {
   const t = raw.trim();
   if (!t) {
     return { ok: false, error: "Email yoki telefon kiritilishi shart" };
+  }
+  if (t.length > PHONE_MAX_LENGTH) {
+    return {
+      ok: false,
+      error: `Telefon yoki email juda uzun (${PHONE_MAX_LENGTH} belgidan oshmasin)`,
+    };
   }
   if (t.includes('@')) {
     const email = normalizeEmail(t);
@@ -45,12 +61,19 @@ export function parseContactIdentifier(raw: string): ParsedContact {
     }
     return { ok: true, email, phone: null };
   }
-  const phone = sanitizePhoneForDb(t);
-  if (!phone) {
+
+  const norm = normalizePhoneInputToE164(t);
+  if (norm.invalid || !norm.e164) {
     return {
       ok: false,
-      error: `Telefon noto'g'ri yoki ${PHONE_MAX_LENGTH} belgidan oshmasin`,
+      error: "Telefon noto'g'ri yoki mintaqa qo'llab-quvvatlanmaydi (UZ, RU, TJ, KG)",
     };
   }
-  return { ok: true, email: null, phone };
+
+  return {
+    ok: true,
+    email: null,
+    phone: norm.e164,
+    phoneCountryIso: norm.countryIso ?? null,
+  };
 }

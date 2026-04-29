@@ -117,6 +117,24 @@ export default function LandingPage() {
           </div>
         </motion.section>
 
+        <nav
+          className="mt-10 rounded-[24px] border border-slate-200/90 bg-white/85 px-4 py-3.5 text-center shadow-[0_10px_28px_rgba(148,163,184,0.1)] backdrop-blur-sm sm:px-6"
+          aria-label="Rus tili va FalaRus"
+        >
+          <p className="text-[13px] leading-relaxed text-slate-600">
+            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/register">
+              Rus tili noldan va migrantlar uchun
+            </Link>
+            {' · '}
+            <span className="text-slate-500">
+              русский язык для патента / ВНЖ —{' '}
+              <Link className="font-medium text-blue-600 underline-offset-2 hover:underline" to="/login">
+                ФалаРус platformasi
+              </Link>
+            </span>
+          </p>
+        </nav>
+
         <section className="mt-10 sm:mt-14">
           <div className="mb-4 flex items-end justify-between gap-3">
             <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Nega FalaRus?</h2>

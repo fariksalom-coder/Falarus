@@ -14,7 +14,18 @@ import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
 
 export function createAdminController(supabase: SupabaseClient) {
-  const tokenTtlSeconds = Number(process.env.ADMIN_JWT_EXPIRES_SECONDS || 60 * 60 * 8);
+  /** Default 7 days (same order of magnitude as user JWT) — override via ADMIN_JWT_EXPIRES_SECONDS. */
+  const tokenTtlSeconds = Number(process.env.ADMIN_JWT_EXPIRES_SECONDS || 60 * 60 * 24 * 7);
+  const SUPPORT_ADMIN_NOTE_MARKER = '[ADMIN_NOTE]';
+  const HELP_IMAGE_PREFIX = '__image__:';
+  const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
+
+  function isMissingSupportChatSchemaError(error: unknown): boolean {
+    const message = typeof error === 'object' && error && 'message' in error
+      ? String((error as { message?: unknown }).message ?? '')
+      : String(error ?? '');
+    return message.includes('support_chats') || message.includes('support_chat_messages');
+  }
   // --- Login (no auth)
   async function login(req: Request, res: Response) {
     const { email, password } = req.body || {};
@@ -555,6 +566,395 @@ export function createAdminController(supabase: SupabaseClient) {
     return res.json({ success: true });
   }
 
+  // --- Support chats (Telegram-like)
+  async function getSupportChats(_req: Request, res: Response) {
+    const { data: chats, error: chatErr } = await supabase
+      .from('support_chats')
+      .select('id, user_id, status, created_at, updated_at, last_message_at, admin_last_read_at')
+      .order('last_message_at', { ascending: false, nullsFirst: false });
+    if (chatErr) {
+      if (!isMissingSupportChatSchemaError(chatErr)) return res.status(500).json({ error: chatErr.message });
+      const { data: supportRows, error: supportErr } = await supabase
+        .from('support_messages')
+        .select('id, user_id, message, reply, status, created_at, answered_at')
+        .order('created_at', { ascending: false });
+      if (supportErr) return res.status(500).json({ error: supportErr.message });
+      const userIdsFallback = [...new Set((supportRows ?? []).map((r: any) => Number(r.user_id)).filter(Boolean))];
+      const { data: usersFallback, error: usersErrFallback } = userIdsFallback.length
+        ? await supabase
+            .from('users')
+            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance')
+            .in('id', userIdsFallback)
+        : ({ data: [], error: null } as any);
+      if (usersErrFallback) return res.status(500).json({ error: usersErrFallback.message });
+
+      const userMapFallback = new Map((usersFallback ?? []).map((u: any) => [Number(u.id), u]));
+      const grouped = new Map<number, any[]>();
+      for (const row of supportRows ?? []) {
+        const uid = Number((row as any).user_id);
+        if (!grouped.has(uid)) grouped.set(uid, []);
+        grouped.get(uid)!.push(row);
+      }
+      const nowIso = new Date().toISOString();
+      const listFallback = Array.from(grouped.entries()).map(([uid, rows]) => {
+        const user = userMapFallback.get(uid) as any;
+        const latest = rows[0] as any;
+        const latestContent = latest?.reply
+          ? String(latest.reply)
+          : String(latest.message).startsWith(SUPPORT_ADMIN_NOTE_MARKER)
+            ? String(latest.message).slice(SUPPORT_ADMIN_NOTE_MARKER.length).trim()
+            : String(latest.message);
+        const latestSender = latest?.reply || String(latest.message).startsWith(SUPPORT_ADMIN_NOTE_MARKER) ? 'admin' : 'user';
+        const unreadCount = rows.filter((r: any) => r.status === 'new' && !String(r.message).startsWith(SUPPORT_ADMIN_NOTE_MARKER)).length;
+        const isActiveSubscription = Boolean(user?.plan_expires_at && String(user.plan_expires_at) > nowIso);
+        return {
+          id: -uid,
+          user_id: uid,
+          status: 'open',
+          created_at: latest?.created_at ?? new Date(0).toISOString(),
+          updated_at: latest?.answered_at ?? latest?.created_at ?? new Date(0).toISOString(),
+          last_message_at: latest?.answered_at ?? latest?.created_at ?? null,
+          unread_count: unreadCount,
+          user: {
+            id: Number(user?.id ?? 0),
+            name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || '—' : '—',
+            email: user?.email ?? null,
+            phone: user?.phone ?? null,
+            registration_date: user?.created_at ?? null,
+            subscription: {
+              plan_type: user?.plan_name ?? null,
+              status: isActiveSubscription ? 'active' : 'inactive',
+              expires_at: user?.plan_expires_at ?? null,
+            },
+            total_points: Number(user?.total_points ?? 0),
+            referral_balance: Number(user?.referral_balance ?? 0),
+          },
+          last_message: latest
+            ? {
+                id: Number(latest.id),
+                sender_type: latestSender,
+                content: latestContent,
+                created_at: String(latest.answered_at ?? latest.created_at),
+              }
+            : null,
+        };
+      });
+      return res.json(listFallback);
+    }
+
+    const userIds = [...new Set((chats ?? []).map((c: any) => Number(c.user_id)).filter(Boolean))];
+    const chatIds = [...new Set((chats ?? []).map((c: any) => Number(c.id)).filter(Boolean))];
+    const nowIso = new Date().toISOString();
+
+    const [{ data: users, error: usersErr }, { data: latestRows, error: latestErr }] = await Promise.all([
+      userIds.length
+        ? supabase
+            .from('users')
+            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance')
+            .in('id', userIds)
+        : Promise.resolve({ data: [], error: null } as any),
+      chatIds.length
+        ? supabase
+            .from('support_chat_messages')
+            .select('id, chat_id, sender_type, content, created_at')
+            .in('chat_id', chatIds)
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null } as any),
+    ]);
+
+    if (usersErr) return res.status(500).json({ error: usersErr.message });
+    if (latestErr) return res.status(500).json({ error: latestErr.message });
+
+    const userMap = new Map((users ?? []).map((u: any) => [Number(u.id), u]));
+    const latestByChat = new Map<number, any>();
+    for (const row of latestRows ?? []) {
+      const key = Number((row as any).chat_id);
+      if (!latestByChat.has(key)) latestByChat.set(key, row);
+    }
+
+    const unreadByChat = new Map<number, number>();
+    await Promise.all(
+      (chats ?? []).map(async (chat: any) => {
+        const chatId = Number(chat.id);
+        let q = supabase
+          .from('support_chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('chat_id', chatId)
+          .eq('sender_type', 'user');
+        if (chat.admin_last_read_at) {
+          q = q.gt('created_at', String(chat.admin_last_read_at));
+        }
+        const { count } = await q;
+        unreadByChat.set(chatId, Number(count ?? 0));
+      })
+    );
+
+    const list = (chats ?? []).map((chat: any) => {
+      const user = userMap.get(Number(chat.user_id)) as any;
+      const last = latestByChat.get(Number(chat.id));
+      const isActiveSubscription = Boolean(user?.plan_expires_at && String(user.plan_expires_at) > nowIso);
+      return {
+        id: Number(chat.id),
+        user_id: Number(chat.user_id),
+        status: String(chat.status),
+        created_at: String(chat.created_at),
+        updated_at: String(chat.updated_at),
+        last_message_at: chat.last_message_at ? String(chat.last_message_at) : null,
+        unread_count: unreadByChat.get(Number(chat.id)) ?? 0,
+        user: {
+          id: Number(user?.id ?? 0),
+          name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || '—' : '—',
+          email: user?.email ?? null,
+          phone: user?.phone ?? null,
+          registration_date: user?.created_at ?? null,
+          subscription: {
+            plan_type: user?.plan_name ?? null,
+            status: isActiveSubscription ? 'active' : 'inactive',
+            expires_at: user?.plan_expires_at ?? null,
+          },
+          total_points: Number(user?.total_points ?? 0),
+          referral_balance: Number(user?.referral_balance ?? 0),
+        },
+        last_message: last
+          ? {
+              id: Number(last.id),
+              sender_type: String(last.sender_type),
+              content: String(last.content),
+              created_at: String(last.created_at),
+            }
+          : null,
+      };
+    });
+
+    return res.json(list);
+  }
+
+  async function getSupportChatMessages(req: Request, res: Response) {
+    const chatId = Number(req.params.chatId);
+    if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+    if (chatId < 0) {
+      const userId = Math.abs(chatId);
+      const { data: rows, error } = await supabase
+        .from('support_messages')
+        .select('id, message, reply, created_at, answered_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(500);
+      if (error) return res.status(500).json({ error: error.message });
+      const mapped = (rows ?? []).flatMap((r: any) => {
+        const msg = String(r.message ?? '');
+        const userMsg = msg.startsWith(SUPPORT_ADMIN_NOTE_MARKER)
+          ? []
+          : [{
+              id: Number(r.id) * 2,
+              chat_id: chatId,
+              sender_type: 'user',
+              sender_user_id: userId,
+              content: msg,
+              created_at: String(r.created_at),
+            }];
+        const adminMsg = r.reply
+          ? [{
+              id: Number(r.id) * 2 + 1,
+              chat_id: chatId,
+              sender_type: 'admin',
+              sender_user_id: null,
+              content: String(r.reply),
+              created_at: String(r.answered_at ?? r.created_at),
+            }]
+          : msg.startsWith(SUPPORT_ADMIN_NOTE_MARKER)
+            ? [{
+                id: Number(r.id) * 2 + 1,
+                chat_id: chatId,
+                sender_type: 'admin',
+                sender_user_id: null,
+                content: msg.slice(SUPPORT_ADMIN_NOTE_MARKER.length).trim(),
+                created_at: String(r.created_at),
+              }]
+            : [];
+        return [...userMsg, ...adminMsg];
+      });
+      return res.json(mapped);
+    }
+
+    const { data: chat, error: chatErr } = await supabase
+      .from('support_chats')
+      .select('id')
+      .eq('id', chatId)
+      .single();
+    if (chatErr || !chat) return res.status(404).json({ error: 'Chat topilmadi' });
+
+    const { data: rows, error } = await supabase
+      .from('support_chat_messages')
+      .select('id, chat_id, sender_type, sender_user_id, content, created_at')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true })
+      .limit(500);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(rows ?? []);
+  }
+
+  async function sendSupportChatMessage(req: Request, res: Response) {
+    const chatId = Number(req.params.chatId);
+    const content = String((req.body as any)?.content ?? '').trim();
+    if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+    if (!content) return res.status(400).json({ error: 'Xabar bo‘sh' });
+    if (chatId < 0) {
+      const userId = Math.abs(chatId);
+      const now = new Date().toISOString();
+      const { data: pending } = await supabase
+        .from('support_messages')
+        .select('id')
+        .eq('user_id', userId)
+        .is('reply', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (pending?.id) {
+        const { error } = await supabase
+          .from('support_messages')
+          .update({ status: 'answered', answered_at: now, reply: content })
+          .eq('id', Number(pending.id));
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(201).json({
+          id: Number(pending.id) * 2 + 1,
+          chat_id: chatId,
+          sender_type: 'admin',
+          sender_user_id: null,
+          content,
+          created_at: now,
+        });
+      }
+
+      const { data: created, error } = await supabase
+        .from('support_messages')
+        .insert({
+          user_id: userId,
+          message: `${SUPPORT_ADMIN_NOTE_MARKER} ${content}`,
+          status: 'answered',
+          answered_at: now,
+          reply: null,
+        })
+        .select('id, created_at')
+        .single();
+      if (error || !created) return res.status(500).json({ error: error?.message || 'Xabar yuborilmadi' });
+      return res.status(201).json({
+        id: Number((created as any).id) * 2 + 1,
+        chat_id: chatId,
+        sender_type: 'admin',
+        sender_user_id: null,
+        content,
+        created_at: String((created as any).created_at),
+      });
+    }
+
+    const now = new Date().toISOString();
+    const { data: created, error: msgErr } = await supabase
+      .from('support_chat_messages')
+      .insert({
+        chat_id: chatId,
+        sender_type: 'admin',
+        sender_user_id: null,
+        content,
+        created_at: now,
+      })
+      .select('id, chat_id, sender_type, sender_user_id, content, created_at')
+      .single();
+    if (msgErr || !created) return res.status(500).json({ error: msgErr?.message || 'Xabar yuborilmadi' });
+
+    const { error: updErr } = await supabase
+      .from('support_chats')
+      .update({ updated_at: now, last_message_at: now })
+      .eq('id', chatId);
+    if (updErr) return res.status(500).json({ error: updErr.message });
+
+    return res.status(201).json(created);
+  }
+
+  async function sendSupportChatMedia(req: Request, res: Response) {
+    const chatId = Number(req.params.chatId);
+    if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+    const file = (req as Request & { file?: Express.Multer.File }).file;
+    if (!file?.buffer?.length) return res.status(400).json({ error: 'Rasm yuklanmadi' });
+
+    const ext = file.mimetype === 'image/png' ? 'png' : file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+    const objectPath = `admin/${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const hasBucket = (buckets ?? []).some((b: any) => b.name === HELP_CHAT_MEDIA_BUCKET);
+    if (!hasBucket) await supabase.storage.createBucket(HELP_CHAT_MEDIA_BUCKET, { public: true });
+    const { error: uploadErr } = await supabase.storage
+      .from(HELP_CHAT_MEDIA_BUCKET)
+      .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: false });
+    if (uploadErr) return res.status(500).json({ error: uploadErr.message });
+    const { data: publicData } = supabase.storage.from(HELP_CHAT_MEDIA_BUCKET).getPublicUrl(objectPath);
+    const imageUrl = publicData?.publicUrl;
+    if (!imageUrl) return res.status(500).json({ error: 'Rasm URL olinmadi' });
+    const content = `${HELP_IMAGE_PREFIX}${imageUrl}`;
+
+    if (chatId < 0) {
+      const userId = Math.abs(chatId);
+      const now = new Date().toISOString();
+      const { data: created, error } = await supabase
+        .from('support_messages')
+        .insert({
+          user_id: userId,
+          message: `${SUPPORT_ADMIN_NOTE_MARKER} ${content}`,
+          status: 'answered',
+          answered_at: now,
+          reply: null,
+        })
+        .select('id, created_at')
+        .single();
+      if (error || !created) return res.status(500).json({ error: error?.message || 'Rasm yuborilmadi' });
+      return res.status(201).json({
+        id: Number((created as any).id) * 2 + 1,
+        chat_id: chatId,
+        sender_type: 'admin',
+        sender_user_id: null,
+        content,
+        created_at: String((created as any).created_at),
+      });
+    }
+
+    const now = new Date().toISOString();
+    const { data: created, error: msgErr } = await supabase
+      .from('support_chat_messages')
+      .insert({
+        chat_id: chatId,
+        sender_type: 'admin',
+        sender_user_id: null,
+        content,
+        created_at: now,
+      })
+      .select('id, chat_id, sender_type, sender_user_id, content, created_at')
+      .single();
+    if (msgErr || !created) return res.status(500).json({ error: msgErr?.message || 'Rasm yuborilmadi' });
+    await supabase.from('support_chats').update({ updated_at: now, last_message_at: now }).eq('id', chatId);
+    return res.status(201).json(created);
+  }
+
+  async function markSupportChatRead(req: Request, res: Response) {
+    const chatId = Number(req.params.chatId);
+    if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+    if (chatId < 0) {
+      const userId = Math.abs(chatId);
+      const { error } = await supabase
+        .from('support_messages')
+        .update({ status: 'answered', answered_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('status', 'new');
+      if (error) return res.status(500).json({ error: error.message });
+      return res.json({ success: true });
+    }
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('support_chats')
+      .update({ admin_last_read_at: now, updated_at: now })
+      .eq('id', chatId);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true });
+  }
+
   // --- Pricing
   async function getPricing(_req: Request, res: Response) {
     const { data: rows, error } = await supabase
@@ -749,6 +1149,11 @@ export function createAdminController(supabase: SupabaseClient) {
     rejectWithdrawal,
     getSupportMessages,
     replySupport,
+    getSupportChats,
+    getSupportChatMessages,
+    sendSupportChatMessage,
+    sendSupportChatMedia,
+    markSupportChatRead,
     getPricing,
     updatePricing,
     getPaymentMethods,

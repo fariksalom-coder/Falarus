@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { House, Users, BarChart3, User } from 'lucide-react';
+import { House, Users, BarChart3, User, MessageCircle } from 'lucide-react';
 import { prefetchRoutePath } from '../routeModules';
 import { useAuth } from '../context/AuthContext';
-import { getPartnerStatus, getChatMessages } from '../api/partner';
+import { getPartnerStatus, getChatMessages, setCachedPartnerStatus } from '../api/partner';
+import { getHelpChats } from '../api/help';
 
 const BORDER = '#E2E8F0';
 
@@ -13,8 +14,10 @@ export default function AppNavBar() {
   const path = location.pathname;
   const { token, user } = useAuth();
   const [hasUnreadPartnerMessage, setHasUnreadPartnerMessage] = useState(false);
+  const [hasUnreadHelpMessage, setHasUnreadHelpMessage] = useState(false);
 
   const partnerLastSeenKey = user ? `partner_last_seen_at_${user.id}` : null;
+  const helpLastSeenKey = user ? `help_last_seen_at_${user.id}` : null;
 
   useEffect(() => {
     if (!partnerLastSeenKey) return;
@@ -46,6 +49,7 @@ export default function AppNavBar() {
       }
       try {
         const status = await getPartnerStatus(token);
+        setCachedPartnerStatus(user.id, status);
         if (!status.match) {
           if (!cancelled) setHasUnreadPartnerMessage(false);
           intervalMs = 30_000;
@@ -91,6 +95,45 @@ export default function AppNavBar() {
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [token, user?.id, path, partnerLastSeenKey]);
+
+  useEffect(() => {
+    if (!token || path.startsWith('/help/')) return;
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const run = async () => {
+      try {
+        const chats = await getHelpChats(token);
+        const lastSeenAt = helpLastSeenKey ? localStorage.getItem(helpLastSeenKey) : null;
+        const lastSeenMs = lastSeenAt ? new Date(lastSeenAt).getTime() : 0;
+        const hasUnread = (chats ?? []).some((c) => {
+          if (Number(c.unread_count ?? 0) > 0) return true;
+          const last = c.last_message;
+          if (!last || last.sender_type !== 'admin') return false;
+          return new Date(last.created_at).getTime() > lastSeenMs;
+        });
+        if (!cancelled) setHasUnreadHelpMessage(hasUnread);
+      } catch {
+        // keep previous unread state
+      } finally {
+        if (!cancelled) timer = window.setTimeout(() => void run(), 20_000);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [token, path, helpLastSeenKey]);
+
+  useEffect(() => {
+    if (!helpLastSeenKey) return;
+    if (path.startsWith('/help/')) {
+      localStorage.setItem(helpLastSeenKey, new Date().toISOString());
+      setHasUnreadHelpMessage(false);
+    }
+  }, [helpLastSeenKey, path]);
 
   const isActive = (paths: string[]) =>
     paths.some((p) => (p === '/' ? path === '/' : path === p || path.startsWith(p + '/')));
@@ -140,6 +183,7 @@ export default function AppNavBar() {
         {btn('/', ['/', '/russian'], "Bosh sahifa", House)}
         {btn('/partner', ['/partner'], 'Sherik', Users, hasUnreadPartnerMessage)}
         {btn('/statistika', ['/statistika'], 'Statistika', BarChart3)}
+        {btn('/help', ['/help'], 'Yordam', MessageCircle, hasUnreadHelpMessage)}
         {btn('/profile', ['/profile'], 'Profil', User)}
       </div>
     </header>

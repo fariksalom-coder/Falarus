@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
 import { prefetchRoutePath } from '../routeModules';
 
@@ -56,6 +56,8 @@ export default function CoursesPage() {
                 <img
                   src={courseAssetUrl(imageSrc)}
                   alt={title}
+                  loading="lazy"
+                  decoding="async"
                   className="h-16 w-16 shrink-0 rounded-full object-contain shadow-[0_12px_24px_rgba(37,99,235,0.18)] sm:h-[72px] sm:w-[72px]"
                 />
 
@@ -75,6 +77,30 @@ export default function CoursesPage() {
             </button>
           ))}
         </div>
+
+        <nav
+          className="mt-10 rounded-[24px] border px-4 py-4 text-center shadow-[0_14px_34px_rgba(148,163,184,0.08)] sm:px-6"
+          style={{ borderColor: BORDER, backgroundColor: '#fff' }}
+          aria-label="Rus tili yo‘nalishlari"
+        >
+          <p className="text-[13px] leading-relaxed" style={{ color: TEXT_SECONDARY }}>
+            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/russian">
+              Rus tili kursi
+            </Link>
+            {' · '}
+            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/kurslar/patent">
+              rus tili patent uchun
+            </Link>
+            {' · '}
+            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/kurslar/vnzh">
+              ВНЖ uchun rus tili
+            </Link>
+            {' · '}
+            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/tariflar">
+              Tariflar
+            </Link>
+          </p>
+        </nav>
       </main>
     </div>
   );

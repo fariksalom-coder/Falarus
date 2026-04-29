@@ -101,6 +101,45 @@ export type AdminSupportRow = {
   reply: string | null;
 };
 
+export type AdminHelpChatListRow = {
+  id: number;
+  user_id: number;
+  status: 'open' | 'closed';
+  created_at: string;
+  updated_at: string;
+  last_message_at: string | null;
+  unread_count: number;
+  user: {
+    id: number;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    registration_date: string | null;
+    subscription: {
+      plan_type: string | null;
+      status: 'active' | 'inactive';
+      expires_at: string | null;
+    };
+    total_points: number;
+    referral_balance: number;
+  };
+  last_message: {
+    id: number;
+    sender_type: 'user' | 'admin';
+    content: string;
+    created_at: string;
+  } | null;
+};
+
+export type AdminHelpChatMessage = {
+  id: number;
+  chat_id: number;
+  sender_type: 'user' | 'admin';
+  sender_user_id: number | null;
+  content: string;
+  created_at: string;
+};
+
 export type PricingPlan = {
   id: number;
   plan_name: string;
@@ -202,6 +241,37 @@ export async function replySupport(id: number, reply: string): Promise<void> {
   await adminApi(`/support/${id}/reply`, {
     method: 'POST',
     body: JSON.stringify({ reply }),
+  });
+}
+
+export async function getAdminHelpChats(): Promise<AdminHelpChatListRow[]> {
+  return adminApi<AdminHelpChatListRow[]>('/help/chats');
+}
+
+export async function getAdminHelpChatMessages(chatId: number): Promise<AdminHelpChatMessage[]> {
+  return adminApi<AdminHelpChatMessage[]>(`/help/chats/${chatId}/messages`);
+}
+
+export async function sendAdminHelpChatMessage(chatId: number, content: string): Promise<AdminHelpChatMessage> {
+  return adminApi<AdminHelpChatMessage>(`/help/chats/${chatId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function sendAdminHelpChatImage(chatId: number, file: File): Promise<AdminHelpChatMessage> {
+  const form = new FormData();
+  form.append('image', file);
+  return adminApi<AdminHelpChatMessage>(`/help/chats/${chatId}/media`, {
+    method: 'POST',
+    body: form as unknown as BodyInit,
+  });
+}
+
+export async function markAdminHelpChatRead(chatId: number): Promise<void> {
+  await adminApi(`/help/chats/${chatId}/read`, {
+    method: 'POST',
+    body: JSON.stringify({}),
   });
 }
 

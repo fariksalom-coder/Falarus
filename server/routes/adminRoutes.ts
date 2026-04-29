@@ -1,11 +1,24 @@
 import { Router } from 'express';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import multer from 'multer';
 import { adminAuthMiddleware } from '../middleware/adminAuth';
 import { createAdminController } from '../controllers/adminController';
 import { createAdminGrammarController } from '../controllers/adminGrammarController';
 
 export function createAdminRoutes(supabase: SupabaseClient): Router {
   const router = Router();
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 4 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowed.includes(file.mimetype)) {
+        cb(new Error('Faqat JPG, PNG yoki WEBP ruxsat etiladi'));
+        return;
+      }
+      cb(null, true);
+    },
+  });
   const ctrl = createAdminController(supabase);
   const grammar = createAdminGrammarController(supabase);
 
@@ -29,6 +42,13 @@ export function createAdminRoutes(supabase: SupabaseClient): Router {
   router.post('/referrals/:id/reject', (req, res, next) => ctrl.rejectWithdrawal(req, res).catch(next));
   router.get('/support', (req, res, next) => ctrl.getSupportMessages(req, res).catch(next));
   router.post('/support/:id/reply', (req, res, next) => ctrl.replySupport(req, res).catch(next));
+  router.get('/help/chats', (req, res, next) => ctrl.getSupportChats(req, res).catch(next));
+  router.get('/help/chats/:chatId/messages', (req, res, next) => ctrl.getSupportChatMessages(req, res).catch(next));
+  router.post('/help/chats/:chatId/messages', (req, res, next) => ctrl.sendSupportChatMessage(req, res).catch(next));
+  router.post('/help/chats/:chatId/media', upload.single('image'), (req, res, next) =>
+    ctrl.sendSupportChatMedia(req, res).catch(next)
+  );
+  router.post('/help/chats/:chatId/read', (req, res, next) => ctrl.markSupportChatRead(req, res).catch(next));
   router.get('/pricing', (req, res, next) => ctrl.getPricing(req, res).catch(next));
   router.put('/pricing/update', (req, res, next) => ctrl.updatePricing(req, res).catch(next));
   router.get('/payment-methods', (req, res, next) => ctrl.getPaymentMethods(req, res).catch(next));

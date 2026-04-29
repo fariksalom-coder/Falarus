@@ -65,6 +65,39 @@ export type PartnerStatus = {
   incomingRequestsCount: number;
 };
 
+const PARTNER_STATUS_CACHE_TTL_MS = 45_000;
+
+function partnerStatusCacheKey(userId: number): string {
+  return `partner_status_cache_${userId}`;
+}
+
+type PartnerStatusCachePayload = {
+  status: PartnerStatus;
+  ts: number;
+};
+
+export function getCachedPartnerStatus(userId: number): PartnerStatus | null {
+  try {
+    const raw = localStorage.getItem(partnerStatusCacheKey(userId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PartnerStatusCachePayload;
+    if (!parsed?.status || !parsed?.ts) return null;
+    if (Date.now() - parsed.ts > PARTNER_STATUS_CACHE_TTL_MS) return null;
+    return parsed.status;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedPartnerStatus(userId: number, status: PartnerStatus): void {
+  try {
+    const payload: PartnerStatusCachePayload = { status, ts: Date.now() };
+    localStorage.setItem(partnerStatusCacheKey(userId), JSON.stringify(payload));
+  } catch {
+    // ignore storage quota/availability failures
+  }
+}
+
 // -- API calls --------------------------------------------------------------
 
 export async function getPartnerStatus(token: string): Promise<PartnerStatus> {
