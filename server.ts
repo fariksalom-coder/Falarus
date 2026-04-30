@@ -160,7 +160,8 @@ async function startServer() {
       // keep raw URL when decode fails
     }
     const normalized = decodedUrl.toLowerCase();
-    if (normalized.includes('.env')) {
+    const blocked = ['.env', '.git'];
+    if (blocked.some((segment) => normalized.includes(segment))) {
       return res.status(403).send('Forbidden');
     }
     return next();
