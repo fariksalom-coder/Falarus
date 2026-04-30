@@ -79,6 +79,20 @@ function isMissingRelationError(error: unknown): boolean {
   return code === '42P01' || message.includes('relation') && message.includes('does not exist');
 }
 
+function isMissingSupportChatSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = String((error as { code?: unknown }).code ?? '');
+  const message = String((error as { message?: unknown }).message ?? '').toLowerCase();
+  return (
+    code === '42P01' ||
+    code === '42703' ||
+    message.includes('support_chats') ||
+    message.includes('support_chat_messages') ||
+    message.includes('admin_last_read_at') ||
+    message.includes('user_last_read_at')
+  );
+}
+
 /**
  * Normalize admin API path.
  * Examples:
@@ -582,7 +596,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('support_chats')
         .select('id, user_id, status, created_at, updated_at, last_message_at, admin_last_read_at')
         .order('last_message_at', { ascending: false, nullsFirst: false });
-      if (chatErr) return res.status(500).json({ error: chatErr.message });
+      if (chatErr) {
+        if (!isMissingSupportChatSchemaError(chatErr)) {
+          return res.status(500).json({ error: chatErr.message });
+        }
+        const { data: rows, error: legacyErr } = await supabase
+          .from('support_messages')
+          .select('id, user_id, message, reply, created_at, answered_at')
+          .order('created_at', { ascending: false });
+        if (legacyErr) return res.status(500).json({ error: legacyErr.message });
+
+        const latestByUser = new Map<number, any>();
+        for (const row of rows ?? []) {
+          const userId = Number((row as any).user_id);
+          if (!userId || latestByUser.has(userId)) continue;
+          latestByUser.set(userId, row);
+        }
+        const userIds = [...latestByUser.keys()];
+        const { data: users, error: usersErr } = userIds.length
+          ? await supabase
+              .from('users')
+              .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance')
+              .in('id', userIds)
+          : { data: [], error: null as any };
+        if (usersErr) return res.status(500).json({ error: usersErr.message });
+        const userMap = new Map((users ?? []).map((u: any) => [Number(u.id), u]));
+        const nowIso = new Date().toISOString();
+        const list = userIds.map((userId) => {
+          const user = userMap.get(userId) as any;
+          const last = latestByUser.get(userId);
+          const isActiveSubscription = Boolean(user?.plan_expires_at && String(user.plan_expires_at) > nowIso);
+          const lastCreatedAt = String(last?.answered_at ?? last?.created_at ?? new Date(0).toISOString());
+          const isAdminNote = String(last?.message ?? '').startsWith(SUPPORT_ADMIN_NOTE_MARKER);
+          const lastContent = isAdminNote
+            ? String(last?.message ?? '').slice(SUPPORT_ADMIN_NOTE_MARKER.length).trim()
+            : String(last?.reply ?? last?.message ?? '');
+          const senderType = isAdminNote ? 'admin' : (last?.reply ? 'admin' : 'user');
+          return {
+            id: -userId,
+            user_id: userId,
+            status: 'open',
+            created_at: String(last?.created_at ?? new Date(0).toISOString()),
+            updated_at: lastCreatedAt,
+            last_message_at: lastCreatedAt,
+            unread_count: 0,
+            user: {
+              id: userId,
+              name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || '—' : '—',
+              email: user?.email ?? null,
+              phone: user?.phone ?? null,
+              registration_date: user?.created_at ?? null,
+              subscription: {
+                plan_type: user?.plan_name ?? null,
+                status: isActiveSubscription ? 'active' : 'inactive',
+                expires_at: user?.plan_expires_at ?? null,
+              },
+              total_points: Number(user?.total_points ?? 0),
+              referral_balance: Number(user?.referral_balance ?? 0),
+            },
+            last_message: {
+              id: Number(last?.id ?? 0),
+              sender_type: senderType,
+              content: lastContent,
+              created_at: lastCreatedAt,
+            },
+          };
+        });
+        return res.status(200).json(list);
+      }
 
       const userIds = [...new Set((chats ?? []).map((c: any) => Number(c.user_id)).filter(Boolean))];
       const chatIds = [...new Set((chats ?? []).map((c: any) => Number(c.id)).filter(Boolean))];
@@ -671,6 +752,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path[0] === 'help' && path[1] === 'chats' && path[3] === 'messages' && req.method === 'GET') {
       const chatId = Number(path[2]);
       if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+      if (chatId < 0) {
+        const userId = Math.abs(chatId);
+        const { data: rows, error } = await supabase
+          .from('support_messages')
+          .select('id, message, reply, created_at, answered_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: true })
+          .limit(500);
+        if (error) return res.status(500).json({ error: error.message });
+        const mapped = (rows ?? []).flatMap((r: any) => {
+          const rawMessage = String(r.message ?? '');
+          const isAdminNote = rawMessage.startsWith(SUPPORT_ADMIN_NOTE_MARKER);
+          const userMessage = isAdminNote
+            ? []
+            : [{
+                id: Number(r.id) * 2,
+                chat_id: chatId,
+                sender_type: 'user',
+                sender_user_id: userId,
+                content: rawMessage,
+                created_at: String(r.created_at),
+              }];
+          const adminContent = isAdminNote
+            ? rawMessage.slice(SUPPORT_ADMIN_NOTE_MARKER.length).trim()
+            : String(r.reply ?? '');
+          const adminMessage = adminContent
+            ? [{
+                id: Number(r.id) * 2 + 1,
+                chat_id: chatId,
+                sender_type: 'admin',
+                sender_user_id: null,
+                content: adminContent,
+                created_at: String(r.answered_at ?? r.created_at),
+              }]
+            : [];
+          return [...userMessage, ...adminMessage];
+        });
+        return res.status(200).json(mapped);
+      }
       const { data: chat, error: chatErr } = await supabase.from('support_chats').select('id').eq('id', chatId).single();
       if (chatErr || !chat) return res.status(404).json({ error: 'Chat topilmadi' });
       const { data: rows, error } = await supabase
@@ -690,6 +810,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const content = typeof body.content === 'string' ? body.content.trim() : '';
       if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
       if (!content) return res.status(400).json({ error: 'Xabar bo‘sh' });
+      if (chatId < 0) {
+        const userId = Math.abs(chatId);
+        const now = new Date().toISOString();
+        const { data: created, error } = await supabase
+          .from('support_messages')
+          .insert({
+            user_id: userId,
+            message: `${SUPPORT_ADMIN_NOTE_MARKER} ${content}`,
+            status: 'answered',
+            answered_at: now,
+            reply: null,
+          })
+          .select('id, created_at')
+          .single();
+        if (error || !created) return res.status(500).json({ error: error?.message || 'Xabar yuborilmadi' });
+        return res.status(201).json({
+          id: Number((created as any).id) * 2 + 1,
+          chat_id: chatId,
+          sender_type: 'admin',
+          sender_user_id: null,
+          content,
+          created_at: String((created as any).created_at),
+        });
+      }
       const now = new Date().toISOString();
       const { data: created, error: msgErr } = await supabase
         .from('support_chat_messages')
@@ -775,6 +919,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path[0] === 'help' && path[1] === 'chats' && path[3] === 'read' && req.method === 'POST') {
       const chatId = Number(path[2]);
       if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
+      if (chatId < 0) return res.status(200).json({ success: true });
       const now = new Date().toISOString();
       const { error } = await supabase.from('support_chats').update({ admin_last_read_at: now, updated_at: now }).eq('id', chatId);
       if (error) return res.status(500).json({ error: error.message });

@@ -64,6 +64,8 @@ const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/
 const HELP_IMAGE_PREFIX = '__image__:';
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
+const PARTNER_RATE_LIMIT_MAX_REQUESTS = 300;
+const PARTNER_STATUS_RATE_LIMIT_MAX_REQUESTS = 600;
 const HOT_PATH_LIMIT_MAX = 20;
 const requestHits = new Map<string, { count: number; resetAt: number }>();
 
@@ -165,22 +167,39 @@ function getPathParts(req: VercelRequest): string[] {
 }
 
 function isMissingSupportChatSchemaError(error: unknown): boolean {
+  const code = typeof error === 'object' && error && 'code' in error
+    ? String((error as { code?: unknown }).code ?? '')
+    : '';
   const message = typeof error === 'object' && error && 'message' in error
     ? String((error as { message?: unknown }).message ?? '')
     : String(error ?? '');
-  return message.includes('support_chats') || message.includes('support_chat_messages');
+  return (
+    code === '42P01' ||
+    code === '42703' ||
+    message.includes('support_chats') ||
+    message.includes('support_chat_messages') ||
+    message.includes('user_last_read_at') ||
+    message.includes('admin_last_read_at')
+  );
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
-  const baseRate = checkRateLimit(req, 'global', RATE_LIMIT_MAX_REQUESTS);
+  const path = getPathParts(req);
+  const isPartnerPath = path[0] === 'partner';
+  const isPartnerStatusPath = isPartnerPath && path[1] === 'status';
+  const baseBucket = isPartnerStatusPath ? 'partner-status' : isPartnerPath ? 'partner' : 'global';
+  const baseLimit = isPartnerStatusPath
+    ? PARTNER_STATUS_RATE_LIMIT_MAX_REQUESTS
+    : isPartnerPath
+      ? PARTNER_RATE_LIMIT_MAX_REQUESTS
+      : RATE_LIMIT_MAX_REQUESTS;
+  const baseRate = checkRateLimit(req, baseBucket, baseLimit);
   if (baseRate.limited) {
     res.setHeader('Retry-After', String(baseRate.retryAfterSec));
     return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
   }
-
-  const path = getPathParts(req);
 
   // /api/referral?action=... — moved from dedicated function to keep under Vercel limit
   if (path[0] === 'referral') {
