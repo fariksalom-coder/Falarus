@@ -14,6 +14,7 @@ process.emitWarning = function (
 };
 
 import express from 'express';
+import helmet from 'helmet';
 import { createServer as createViteServer } from 'vite';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
@@ -145,6 +146,7 @@ async function startServer() {
 
   const app = express();
   app.set('trust proxy', 1);
+  app.use(helmet());
   const globalRateLimiter = createIpRateLimiter(GLOBAL_WINDOW_MS, GLOBAL_MAX_REQUESTS);
   const authRateLimiter = createIpRateLimiter(AUTH_WINDOW_MS, AUTH_MAX_ATTEMPTS);
   // Voice answers are sent as base64 JSON payloads; keep limit above default.
