@@ -149,6 +149,20 @@ async function startServer() {
   const authRateLimiter = createIpRateLimiter(AUTH_WINDOW_MS, AUTH_MAX_ATTEMPTS);
   // Voice answers are sent as base64 JSON payloads; keep limit above default.
   app.use(express.json({ limit: '2mb' }));
+  app.use((req, res, next) => {
+    const rawUrl = String(req.originalUrl || req.url || '');
+    let decodedUrl = rawUrl;
+    try {
+      decodedUrl = decodeURIComponent(rawUrl);
+    } catch {
+      // keep raw URL when decode fails
+    }
+    const normalized = decodedUrl.toLowerCase();
+    if (normalized.includes('.env')) {
+      return res.status(403).send('Forbidden');
+    }
+    return next();
+  });
   app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
   app.use((req, res, next) => {
     const url = String(req.originalUrl || req.url || '');

@@ -186,6 +186,16 @@ function isMissingSupportChatSchemaError(error: unknown): boolean {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return handleOptions(res);
+  const rawUrl = String(req.url || '');
+  let decodedUrl = rawUrl;
+  try {
+    decodedUrl = decodeURIComponent(rawUrl);
+  } catch {
+    // keep raw URL when decode fails
+  }
+  if (decodedUrl.toLowerCase().includes('.env')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   const path = getPathParts(req);
   const isPartnerPath = path[0] === 'partner';
   const isPartnerStatusPath = isPartnerPath && path[1] === 'status';
