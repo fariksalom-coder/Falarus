@@ -1,10 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogIn, Clock, Users, MessageCircle } from 'lucide-react';
+import { ArrowLeft, LogIn, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
-  cancelPartnerRequest,
   getPartnerStatus,
   getCachedPartnerStatus,
   setCachedPartnerStatus,
@@ -13,9 +12,10 @@ import {
 import PartnerProfileForm from '../components/partner/PartnerProfileForm';
 import PartnerPeopleList from '../components/partner/PartnerPeopleList';
 import PartnerIncomingRequests from '../components/partner/PartnerIncomingRequests';
+import PartnerOutgoingRequests from '../components/partner/PartnerOutgoingRequests';
 import PartnerChat from '../components/partner/PartnerChat';
 
-type View = 'loading' | 'guest' | 'profile-form' | 'chat-list' | 'chat' | 'waiting' | 'browse' | 'incoming';
+type View = 'loading' | 'guest' | 'profile-form' | 'chat-list' | 'chat' | 'browse' | 'incoming' | 'outgoing';
 
 export default function PartnerPage() {
   const { token, user } = useAuth();
@@ -23,30 +23,56 @@ export default function PartnerPage() {
 
   const [view, setView] = useState<View>('loading');
   const [status, setStatus] = useState<PartnerStatus | null>(null);
-  const [cancelingRequest, setCancelingRequest] = useState(false);
+  const [activeMatchId, setActiveMatchId] = useState<number | null>(null);
+  const loadingStatusRef = useRef(false);
 
-  const applyStatusToView = useCallback((s: PartnerStatus) => {
-    setStatus(s);
-    if (!s.hasProfile) {
+  const normalizeStatus = useCallback((s: PartnerStatus): PartnerStatus => {
+    const matches = Array.isArray(s.matches) ? s.matches : [];
+    const outgoingRequests = Array.isArray(s.outgoingRequests) ? s.outgoingRequests : [];
+    return {
+      ...s,
+      matches,
+      outgoingRequests,
+      outgoingRequestsCount: typeof s.outgoingRequestsCount === 'number'
+        ? s.outgoingRequestsCount
+        : outgoingRequests.length,
+    };
+  }, []);
+
+  const applyStatusToView = useCallback((s: PartnerStatus, forceViewTransition = true) => {
+    const normalized = normalizeStatus(s);
+    setStatus(normalized);
+    setActiveMatchId((prev) => {
+      if (!normalized.matches.length) return null;
+      if (prev && normalized.matches.some((m) => m.id === prev)) return prev;
+      return normalized.matches[0].id;
+    });
+    if (!forceViewTransition) {
+      return;
+    }
+    if (!normalized.hasProfile) {
       setView('profile-form');
-    } else if (s.match) {
+    } else if (normalized.matches.length > 0) {
       setView('chat-list');
-    } else if (s.outgoingRequest) {
-      setView('waiting');
     } else {
       setView('browse');
     }
-  }, []);
+  }, [normalizeStatus]);
 
-  const loadStatus = useCallback(async () => {
-    if (!token) return;
+  const loadStatus = useCallback(async (forceViewTransition = true) => {
+    if (!token || loadingStatusRef.current) return;
+    loadingStatusRef.current = true;
     try {
       const s = await getPartnerStatus(token);
       if (user?.id) setCachedPartnerStatus(user.id, s);
-      applyStatusToView(s);
+      applyStatusToView(s, forceViewTransition);
     } catch {
-      setStatus(null);
-      setView('profile-form');
+      if (forceViewTransition) {
+        setStatus(null);
+        setView('profile-form');
+      }
+    } finally {
+      loadingStatusRef.current = false;
     }
   }, [token, user?.id, applyStatusToView]);
 
@@ -59,8 +85,17 @@ export default function PartnerPage() {
       const cached = getCachedPartnerStatus(user.id);
       if (cached) applyStatusToView(cached);
     }
-    loadStatus();
+    loadStatus(true);
   }, [token, user?.id, loadStatus, applyStatusToView]);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      void loadStatus(false);
+    }, 10000);
+    return () => window.clearInterval(interval);
+  }, [token, loadStatus]);
 
   const handleProfileSaved = () => {
     loadStatus();
@@ -78,16 +113,27 @@ export default function PartnerPage() {
     loadStatus();
   };
 
-  const handleCancelRequest = useCallback(async () => {
-    if (!token || !status?.outgoingRequest?.id || cancelingRequest) return;
-    setCancelingRequest(true);
-    try {
-      await cancelPartnerRequest(token, status.outgoingRequest.id);
-      await loadStatus();
-    } finally {
-      setCancelingRequest(false);
-    }
-  }, [token, status?.outgoingRequest?.id, cancelingRequest, loadStatus]);
+  const outgoingReceiverIds = status?.outgoingRequests?.map((r) => r.receiver_id) ?? [];
+  const shouldHideGlobalNav =
+    view === 'incoming' ||
+    view === 'outgoing' ||
+    (view === 'browse' && Boolean(status?.matches.length)) ||
+    (view === 'profile-form' && Boolean(status?.hasProfile));
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('partner-nav-mode', {
+        detail: { hideGlobalNav: shouldHideGlobalNav },
+      })
+    );
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent('partner-nav-mode', {
+          detail: { hideGlobalNav: false },
+        })
+      );
+    };
+  }, [shouldHideGlobalNav]);
 
   return (
     <div
@@ -154,8 +200,7 @@ export default function PartnerPage() {
               <PartnerProfileForm
                 onSaved={handleProfileSaved}
                 onBack={status?.hasProfile ? () => {
-                  if (status?.match) setView('chat-list');
-                  else if (status?.outgoingRequest) setView('waiting');
+                  if (status?.matches.length) setView('chat-list');
                   else setView('browse');
                 } : undefined}
               />
@@ -169,7 +214,19 @@ export default function PartnerPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
-              <div className="mx-auto mb-4 flex max-w-lg justify-end">
+              <div className="mx-auto mb-4 flex max-w-lg items-center justify-between gap-3">
+                {status?.matches.length ? (
+                  <button
+                    type="button"
+                    onClick={() => setView('chat-list')}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Orqaga
+                  </button>
+                ) : (
+                  <div />
+                )}
                 <button
                   type="button"
                   onClick={() => setView('profile-form')}
@@ -181,12 +238,17 @@ export default function PartnerPage() {
               <PartnerPeopleList
                 onRequestSent={handleRequestSent}
                 incomingCount={status?.incomingRequestsCount ?? 0}
+                outgoingCount={status?.outgoingRequestsCount ?? 0}
+                initiallyRequestedIds={outgoingReceiverIds}
                 onShowIncoming={() => setView('incoming')}
+                onShowOutgoing={() => setView('outgoing')}
+                showRequestNav={!status?.matches.length}
+                canSendRequests={true}
               />
             </motion.div>
           )}
 
-          {view === 'chat-list' && status?.match && (
+          {view === 'chat-list' && status && status.matches.length > 0 && (
             <motion.div
               key="chat-list"
               initial={{ opacity: 0, y: 12 }}
@@ -196,80 +258,61 @@ export default function PartnerPage() {
             >
               <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
                 <h2 className="text-xl font-bold text-slate-900">Chatlar</h2>
-                <p className="mt-1 text-sm text-slate-500">Sherigingiz bilan yozishmalar</p>
-
-                <button
-                  type="button"
-                  onClick={() => setView('chat')}
-                  className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100"
-                >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-bold text-white">
-                    {(status.match.partner_profile?.display_name ?? 'S')
-                      .split(' ')
-                      .map((w) => w[0])
-                      .join('')
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold text-slate-900">
-                      {status.match.partner_profile?.display_name ?? 'Sherik'}
-                    </p>
-                    <p className="truncate text-sm text-slate-500">Chatni ochish</p>
-                  </div>
-                  <MessageCircle className="h-5 w-5 text-blue-600" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {view === 'waiting' && status && (
-            <motion.div
-              key="waiting"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="mx-auto max-w-md"
-            >
-              <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50">
-                  <Clock className="h-8 w-8 text-amber-600" />
+                <p className="mt-1 text-sm text-slate-500">Sheriklaringiz bilan yozishmalar</p>
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => setView('browse')}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100"
+                  >
+                    Anketalar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setView('incoming')}
+                    className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+                  >
+                    Kiruvchi ({status.incomingRequestsCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setView('outgoing')}
+                    className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
+                  >
+                    Chiquvchi ({status.outgoingRequestsCount})
+                  </button>
                 </div>
-                <h2 className="mt-5 text-xl font-bold text-slate-900">So'rov yuborildi</h2>
-                <p className="mt-2 text-sm text-slate-500">
-                  Javob kutilmoqda. Sherik qabul qilgandan so'ng chat ochiladi.
-                </p>
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    So'rov yuborildi
-                  </p>
-                  <p className="mt-1 text-base font-bold text-slate-900">
-                    {status.outgoingRequest?.receiver_profile?.display_name ?? `ID: ${status.outgoingRequest?.receiver_id ?? '-'}`}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Sherik javobini kutyapsiz
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCancelRequest}
-                  disabled={cancelingRequest || !status.outgoingRequest}
-                  className="mt-4 w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {cancelingRequest ? 'Bekor qilinmoqda...' : 'So\'rovni bekor qilish'}
-                </button>
-              </div>
 
-              {status.incomingRequestsCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setView('incoming')}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3.5 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100"
-                >
-                  <Users className="h-4 w-4" />
-                  Kiruvchi so'rovlar ({status.incomingRequestsCount})
-                </button>
-              )}
+                <div className="mt-4 space-y-3">
+                  {status.matches.map((match) => (
+                    <button
+                      key={match.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveMatchId(match.id);
+                        setView('chat');
+                      }}
+                      className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100"
+                    >
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-bold text-white">
+                        {(match.partner_profile?.display_name ?? 'S')
+                          .split(' ')
+                          .map((w) => w[0])
+                          .join('')
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-base font-semibold text-slate-900">
+                          {match.partner_profile?.display_name ?? 'Sherik'}
+                        </p>
+                        <p className="truncate text-sm text-slate-500">Chatni ochish</p>
+                      </div>
+                      <MessageCircle className="h-5 w-5 text-blue-600" />
+                    </button>
+                  ))}
+                </div>
+              </div>
             </motion.div>
           )}
 
@@ -282,7 +325,7 @@ export default function PartnerPage() {
             >
               <PartnerIncomingRequests
                 onBack={() => {
-                  if (status?.outgoingRequest) setView('waiting');
+                  if (status?.matches.length) setView('chat-list');
                   else setView('browse');
                 }}
                 onAccepted={handleAccepted}
@@ -290,7 +333,24 @@ export default function PartnerPage() {
             </motion.div>
           )}
 
-          {view === 'chat' && status?.match && (
+          {view === 'outgoing' && (
+            <motion.div
+              key="outgoing"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
+              <PartnerOutgoingRequests
+                onBack={() => {
+                  if (status?.matches.length) setView('chat-list');
+                  else setView('browse');
+                }}
+                onUpdated={loadStatus}
+              />
+            </motion.div>
+          )}
+
+          {view === 'chat' && status && activeMatchId && (
             <motion.div
               key="chat"
               initial={{ opacity: 0 }}
@@ -298,7 +358,7 @@ export default function PartnerPage() {
               exit={{ opacity: 0 }}
             >
               <PartnerChat
-                match={status.match}
+                match={status.matches.find((m) => m.id === activeMatchId) ?? status.matches[0]}
                 onEnded={handlePartnershipEnded}
                 onBack={() => setView('chat-list')}
               />

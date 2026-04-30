@@ -19,9 +19,17 @@ type Props = {
   person: PartnerPerson;
   onSendRequest: (userId: number) => void;
   sending?: boolean;
+  requested?: boolean;
+  canSendRequest?: boolean;
 };
 
-export default function PartnerPersonCard({ person, onSendRequest, sending }: Props) {
+export default function PartnerPersonCard({
+  person,
+  onSendRequest,
+  sending,
+  requested,
+  canSendRequest = true,
+}: Props) {
   const initials = person.display_name
     .split(' ')
     .map((w) => w[0])
@@ -61,15 +69,17 @@ export default function PartnerPersonCard({ person, onSendRequest, sending }: Pr
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => onSendRequest(person.user_id)}
-        disabled={sending}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-3 text-sm font-bold text-white shadow-[0_6px_20px_rgba(37,99,235,0.25)] transition-all hover:shadow-[0_10px_28px_rgba(37,99,235,0.35)] disabled:opacity-50"
-      >
-        <Send className="h-4 w-4" />
-        So'rov yuborish
-      </button>
+      {canSendRequest && (
+        <button
+          type="button"
+          onClick={() => onSendRequest(person.user_id)}
+          disabled={sending || requested}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-3 text-sm font-bold text-white shadow-[0_6px_20px_rgba(37,99,235,0.25)] transition-all hover:shadow-[0_10px_28px_rgba(37,99,235,0.35)] disabled:opacity-50"
+        >
+          <Send className="h-4 w-4" />
+          {requested ? 'So\'rov yuborilgan' : 'So\'rov yuborish'}
+        </button>
+      )}
     </motion.div>
   );
 }

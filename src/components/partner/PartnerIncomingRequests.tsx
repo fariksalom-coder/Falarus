@@ -27,6 +27,7 @@ export default function PartnerIncomingRequests({ onBack, onAccepted }: Props) {
   const [requests, setRequests] = useState<PartnerRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!token) return;
@@ -40,10 +41,17 @@ export default function PartnerIncomingRequests({ onBack, onAccepted }: Props) {
   const handleAccept = async (id: number) => {
     if (!token) return;
     setProcessingId(id);
+    setError('');
     try {
       await acceptRequest(token, id);
       onAccepted();
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Qabul qilishda xatolik';
+      if (message.toLowerCase().includes('allaqachon javob berilgan')) {
+        onAccepted();
+        return;
+      }
+      setError(message);
       setProcessingId(null);
     }
   };
@@ -73,6 +81,10 @@ export default function PartnerIncomingRequests({ onBack, onAccepted }: Props) {
           <p className="mt-0.5 text-sm text-slate-500">Sizga yuborilgan sheriklik so'rovlari</p>
         </div>
       </div>
+
+      {error && (
+        <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600">{error}</p>
+      )}
 
       {loading && (
         <div className="flex items-center justify-center py-16">

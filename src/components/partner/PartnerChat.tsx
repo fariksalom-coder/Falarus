@@ -143,7 +143,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
     if (!token) return;
     setEnding(true);
     try {
-      await endPartnership(token);
+      await endPartnership(token, match.id);
       onEnded();
     } catch {
       setEnding(false);

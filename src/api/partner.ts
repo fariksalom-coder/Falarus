@@ -34,6 +34,7 @@ export type PartnerRequest = {
   created_at: string;
   responded_at: string | null;
   sender_profile?: PartnerPerson | null;
+  receiver_profile?: PartnerPerson | null;
 };
 
 export type PartnerMatch = {
@@ -55,13 +56,14 @@ export type ChatMessage = {
 
 export type PartnerStatus = {
   hasProfile: boolean;
-  match: PartnerMatch | null;
-  outgoingRequest: {
+  matches: PartnerMatch[];
+  outgoingRequests: Array<{
     id: number;
     receiver_id: number;
     created_at: string;
     receiver_profile?: PartnerPerson | null;
-  } | null;
+  }>;
+  outgoingRequestsCount: number;
   incomingRequestsCount: number;
 };
 
@@ -76,6 +78,29 @@ type PartnerStatusCachePayload = {
   ts: number;
 };
 
+function normalizePartnerStatus(raw: PartnerStatus | (Omit<PartnerStatus, 'matches'> & { match?: PartnerMatch | null })): PartnerStatus {
+  const maybeLegacy = raw as Omit<PartnerStatus, 'matches'> & { match?: PartnerMatch | null; matches?: PartnerMatch[] };
+  const matches = Array.isArray(maybeLegacy.matches)
+    ? maybeLegacy.matches
+    : maybeLegacy.match
+      ? [maybeLegacy.match]
+      : [];
+  const outgoingRequests = Array.isArray(maybeLegacy.outgoingRequests) ? maybeLegacy.outgoingRequests : [];
+  return {
+    hasProfile: Boolean(maybeLegacy.hasProfile),
+    matches,
+    outgoingRequests,
+    outgoingRequestsCount:
+      typeof maybeLegacy.outgoingRequestsCount === 'number'
+        ? maybeLegacy.outgoingRequestsCount
+        : outgoingRequests.length,
+    incomingRequestsCount:
+      typeof maybeLegacy.incomingRequestsCount === 'number'
+        ? maybeLegacy.incomingRequestsCount
+        : 0,
+  };
+}
+
 export function getCachedPartnerStatus(userId: number): PartnerStatus | null {
   try {
     const raw = localStorage.getItem(partnerStatusCacheKey(userId));
@@ -83,7 +108,7 @@ export function getCachedPartnerStatus(userId: number): PartnerStatus | null {
     const parsed = JSON.parse(raw) as PartnerStatusCachePayload;
     if (!parsed?.status || !parsed?.ts) return null;
     if (Date.now() - parsed.ts > PARTNER_STATUS_CACHE_TTL_MS) return null;
-    return parsed.status;
+    return normalizePartnerStatus(parsed.status);
   } catch {
     return null;
   }
@@ -103,7 +128,8 @@ export function setCachedPartnerStatus(userId: number, status: PartnerStatus): v
 export async function getPartnerStatus(token: string): Promise<PartnerStatus> {
   const res = await fetch(apiUrl('/api/partner/status'), { headers: authHeaders(token) });
   if (!res.ok) throw new Error('Partner status yuklanmadi');
-  return res.json();
+  const data = await res.json();
+  return normalizePartnerStatus(data);
 }
 
 export async function getPartnerProfile(token: string): Promise<PartnerProfile | null> {
@@ -163,12 +189,21 @@ export async function getIncomingRequests(token: string): Promise<PartnerRequest
   return res.json();
 }
 
+export async function getOutgoingRequests(token: string): Promise<PartnerRequest[]> {
+  const res = await fetch(apiUrl('/api/partner/outgoing-requests'), { headers: authHeaders(token) });
+  if (!res.ok) throw new Error('Chiquvchi so\'rovlar yuklanmadi');
+  return res.json();
+}
+
 export async function acceptRequest(token: string, requestId: number): Promise<PartnerMatch> {
   const res = await fetch(apiUrl(`/api/partner/accept-request?id=${requestId}`), {
     method: 'POST',
     headers: authHeaders(token),
   });
-  if (!res.ok) throw new Error('Qabul qilishda xatolik');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Qabul qilishda xatolik');
+  }
   return res.json();
 }
 
@@ -186,8 +221,8 @@ export async function getPartnerMatch(token: string): Promise<PartnerMatch | nul
   return res.json();
 }
 
-export async function endPartnership(token: string): Promise<void> {
-  const res = await fetch(apiUrl('/api/partner/end-match'), {
+export async function endPartnership(token: string, matchId: number): Promise<void> {
+  const res = await fetch(apiUrl(`/api/partner/end-match?id=${matchId}`), {
     method: 'POST',
     headers: authHeaders(token),
   });

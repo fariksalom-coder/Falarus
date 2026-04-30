@@ -8,15 +8,34 @@ import PartnerPersonCard from './PartnerPersonCard';
 type Props = {
   onRequestSent: () => void;
   incomingCount: number;
+  outgoingCount: number;
+  initiallyRequestedIds?: number[];
   onShowIncoming: () => void;
+  onShowOutgoing: () => void;
+  showRequestNav?: boolean;
+  canSendRequests?: boolean;
 };
 
-export default function PartnerPeopleList({ onRequestSent, incomingCount, onShowIncoming }: Props) {
+export default function PartnerPeopleList({
+  onRequestSent,
+  incomingCount,
+  outgoingCount,
+  initiallyRequestedIds = [],
+  onShowIncoming,
+  onShowOutgoing,
+  showRequestNav = true,
+  canSendRequests = true,
+}: Props) {
   const { token } = useAuth();
   const [people, setPeople] = useState<PartnerPerson[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingTo, setSendingTo] = useState<number | null>(null);
+  const [requestedIds, setRequestedIds] = useState<Set<number>>(new Set(initiallyRequestedIds));
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setRequestedIds(new Set(initiallyRequestedIds));
+  }, [initiallyRequestedIds]);
 
   useEffect(() => {
     if (!token) return;
@@ -33,6 +52,11 @@ export default function PartnerPeopleList({ onRequestSent, incomingCount, onShow
     setError('');
     try {
       await sendPartnerRequest(token, userId);
+      setRequestedIds((prev) => {
+        const next = new Set(prev);
+        next.add(userId);
+        return next;
+      });
       onRequestSent();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
@@ -43,23 +67,39 @@ export default function PartnerPeopleList({ onRequestSent, incomingCount, onShow
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Odamlar</h2>
           <p className="mt-0.5 text-sm text-slate-500">Sherik tanlang</p>
         </div>
-        {incomingCount > 0 && (
-          <button
-            type="button"
-            onClick={onShowIncoming}
-            className="relative flex items-center gap-1.5 rounded-2xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
-          >
-            <Inbox className="h-4 w-4" />
-            Kiruvchi
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-              {incomingCount}
-            </span>
-          </button>
+        {showRequestNav && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onShowIncoming}
+              className="relative flex items-center gap-1.5 rounded-2xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+            >
+              <Inbox className="h-4 w-4" />
+              Kiruvchi
+              {incomingCount > 0 && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                  {incomingCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onShowOutgoing}
+              className="relative flex items-center gap-1.5 rounded-2xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
+            >
+              Chiquvchi
+              {outgoingCount > 0 && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-xs font-bold text-white">
+                  {outgoingCount}
+                </span>
+              )}
+            </button>
+          </div>
         )}
       </div>
 
@@ -93,6 +133,8 @@ export default function PartnerPeopleList({ onRequestSent, incomingCount, onShow
               person={person}
               onSendRequest={handleSendRequest}
               sending={sendingTo === person.user_id}
+              requested={requestedIds.has(person.user_id)}
+              canSendRequest={canSendRequests}
             />
           ))}
         </div>

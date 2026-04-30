@@ -15,9 +15,27 @@ export default function AppNavBar() {
   const { token, user } = useAuth();
   const [hasUnreadPartnerMessage, setHasUnreadPartnerMessage] = useState(false);
   const [hasUnreadHelpMessage, setHasUnreadHelpMessage] = useState(false);
+  const [hideOnPartnerSubpage, setHideOnPartnerSubpage] = useState(false);
 
   const partnerLastSeenKey = user ? `partner_last_seen_at_${user.id}` : null;
   const helpLastSeenKey = user ? `help_last_seen_at_${user.id}` : null;
+
+  useEffect(() => {
+    const onPartnerNavMode = (event: Event) => {
+      const custom = event as CustomEvent<{ hideGlobalNav?: boolean }>;
+      setHideOnPartnerSubpage(Boolean(custom.detail?.hideGlobalNav));
+    };
+    window.addEventListener('partner-nav-mode', onPartnerNavMode as EventListener);
+    return () => {
+      window.removeEventListener('partner-nav-mode', onPartnerNavMode as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!path.startsWith('/partner') && hideOnPartnerSubpage) {
+      setHideOnPartnerSubpage(false);
+    }
+  }, [path, hideOnPartnerSubpage]);
 
   useEffect(() => {
     if (!partnerLastSeenKey) return;
@@ -50,14 +68,14 @@ export default function AppNavBar() {
       try {
         const status = await getPartnerStatus(token);
         setCachedPartnerStatus(user.id, status);
-        if (!status.match) {
+        if (!status.matches.length) {
           if (!cancelled) setHasUnreadPartnerMessage(false);
           intervalMs = 30_000;
           schedule();
           return;
         }
 
-        const messages = await getChatMessages(token, status.match.id);
+        const messages = await getChatMessages(token, status.matches[0].id);
         const latest = messages[messages.length - 1];
         if (!latest) {
           if (!cancelled) setHasUnreadPartnerMessage(false);
@@ -137,6 +155,10 @@ export default function AppNavBar() {
 
   const isActive = (paths: string[]) =>
     paths.some((p) => (p === '/' ? path === '/' : path === p || path.startsWith(p + '/')));
+
+  if (path.startsWith('/partner') && hideOnPartnerSubpage) {
+    return null;
+  }
 
   const btn = (
     to: string,

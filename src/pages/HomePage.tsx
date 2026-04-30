@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
 import { prefetchRoutePath } from '../routeModules';
+import PlatformTutorialStrip from '../components/home/PlatformTutorialStrip';
 
 const BG = '#F8FAFC';
 const TEXT = '#0F172A';
@@ -87,16 +88,19 @@ export default function HomePage() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-          className="mb-7"
+          className="mb-4"
         >
           <p className="text-sm font-medium" style={{ color: TEXT_SECONDARY }}>
             {greeting}
             {firstName ? `, ${firstName}` : ''}
           </p>
-          <h1 className="mt-0.5 text-[26px] font-bold tracking-tight sm:text-[30px]" style={{ color: TEXT }}>
-            Kurslar
-          </h1>
         </motion.div>
+
+        <PlatformTutorialStrip />
+
+        <h1 className="mb-4 text-[26px] font-bold tracking-tight sm:text-[30px]" style={{ color: TEXT }}>
+          Kurslar
+        </h1>
 
         {/* Course cards */}
         <div className="flex flex-col gap-4">
