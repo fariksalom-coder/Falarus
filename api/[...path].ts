@@ -154,7 +154,7 @@ const ROOT_API_PREFIXES = new Set([
 
 function getPathParts(req: VercelRequest): string[] {
   const fromQuery = normalizeQueryPathSegments(req.query.path as string | string[] | undefined);
-  if (fromQuery.length > 0) return fromQuery;
+  if (fromQuery.length > 0 && ROOT_API_PREFIXES.has(fromQuery[0])) return fromQuery;
   const pathname = getRequestPathname(req);
   const parts = pathname.split('/').filter(Boolean);
   const apiIndex = parts.indexOf('api');
