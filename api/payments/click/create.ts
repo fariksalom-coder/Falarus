@@ -7,13 +7,13 @@ import { parseBody } from '../../_lib/request.js';
 import {
   isSubscriptionTariffType,
   normalizePaymentProductCode,
-} from '../../../../shared/paymentProducts.js';
+} from '../../../shared/paymentProducts.js';
 import {
   buildClickPaymentUrl,
   getClickAmountForProduct,
-} from '../../../../shared/clickPayments.js';
-import { isPaymentsProductCodeSchemaError } from '../../../../shared/paymentsCompat.js';
-import { getClickConfig } from '../../../../shared/clickConfig.js';
+} from '../../../shared/clickPayments.js';
+import { isPaymentsProductCodeSchemaError } from '../../../shared/paymentsCompat.js';
+import { getClickConfig } from '../../../shared/clickConfig.js';
 
 async function fetchUzTariffPrices() {
   const { data: rows, error } = await supabase
