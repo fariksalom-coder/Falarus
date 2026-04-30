@@ -13,11 +13,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     : typeof pathParam === 'string' && pathParam.length > 0
       ? [pathParam]
       : [];
+  const normalizedPath = rest[0] === 'help' ? rest : ['help', ...rest];
 
   const anyReq = req as unknown as { query: Record<string, unknown> };
   anyReq.query = {
     ...(anyReq.query ?? {}),
-    path: ['help', ...rest],
+    path: normalizedPath,
   };
 
   return rootApiHandler(req, res);
