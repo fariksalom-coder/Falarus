@@ -12,6 +12,7 @@
   ],
   "rewrites": [
     { "source": "/api/activity/streak", "destination": "/api/streak" },
+    { "source": "/api/admin/payments/:id/:action", "destination": "/api/admin/users?path=payments/:id/:action" },
     { "source": "/api/admin/help/chats", "destination": "/api/admin/users?path=help/chats" },
     { "source": "/api/admin/help/chats/:chatId/messages", "destination": "/api/admin/users?path=help/chats/:chatId/messages" },
     { "source": "/api/admin/help/chats/:chatId/media", "destination": "/api/admin/users?path=help/chats/:chatId/media" },
