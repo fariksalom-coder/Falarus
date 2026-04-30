@@ -14,13 +14,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? [pathParam]
       : [];
   const normalizedPath = rest[0] === 'help' ? rest : ['help', ...rest];
-  const proxiedReq = {
-    ...req,
-    query: {
-      ...(req.query as Record<string, unknown>),
-      path: normalizedPath,
-    },
-  } as VercelRequest;
+  const proxiedReq = req as unknown as VercelRequest & { query: Record<string, unknown> };
+  proxiedReq.query = {
+    ...(req.query as Record<string, unknown>),
+    path: normalizedPath,
+  };
 
   return rootApiHandler(proxiedReq, res);
 }
