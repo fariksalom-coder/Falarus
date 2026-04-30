@@ -67,6 +67,16 @@ export default function VnzhCourseSectionPage() {
     });
   };
 
+  const handleClickPurchase = () => {
+    navigate('/payment/click', {
+      state: {
+        productCode: 'vnzh',
+        productLabel: vnzhMeta.label,
+        returnTo: sectionSlug ? `/kurslar/vnzh/${sectionSlug}` : '/kurslar/vnzh',
+      },
+    });
+  };
+
   if (!section) {
     return (
       <div className="min-h-screen bg-[#F8FBFF] px-4 py-6">
@@ -206,7 +216,12 @@ export default function VnzhCourseSectionPage() {
       ) : null}
 
       {currencyModalOpen ? (
-        <CurrencyModal onClose={() => setCurrencyModalOpen(false)} onSelect={handlePurchase} />
+        <CurrencyModal
+          onClose={() => setCurrencyModalOpen(false)}
+          onSelect={handlePurchase}
+          onClickPay={handleClickPurchase}
+          clickLabel={`Click bilan ${vnzhMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
+        />
       ) : null}
     </div>
   );

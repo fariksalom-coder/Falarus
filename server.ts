@@ -48,6 +48,7 @@ import { buildGrammarCatalogPayload } from './api/_lib/grammarCatalogHandler.ts'
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
 import { getAccessInfo } from './api/_lib/subscription.ts';
 import { routePartnerRequest } from './api/_lib/partner.ts';
+import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -146,11 +147,16 @@ async function startServer() {
 
   const app = express();
   app.set('trust proxy', 1);
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+    })
+  );
   const globalRateLimiter = createIpRateLimiter(GLOBAL_WINDOW_MS, GLOBAL_MAX_REQUESTS);
   const authRateLimiter = createIpRateLimiter(AUTH_WINDOW_MS, AUTH_MAX_ATTEMPTS);
   // Voice answers are sent as base64 JSON payloads; keep limit above default.
   app.use(express.json({ limit: '2mb' }));
+  app.use(express.urlencoded({ extended: false }));
   app.use((req, res, next) => {
     const rawUrl = String(req.originalUrl || req.url || '');
     let decodedUrl = rawUrl;
@@ -450,14 +456,9 @@ async function startServer() {
     }
   };
 
-  // Payment submission (tariff + currency + proof file)
-  try {
-    const { createPaymentRoutes } = await import('./server/routes/paymentRoutes');
-    app.use('/api/payments', createPaymentRoutes(supabase, authenticate));
-    console.log('Payments API: POST /api/payments (auth + file upload)');
-  } catch (err) {
-    console.error('Payment routes failed:', err);
-  }
+  // Payment submission (manual proof + Click)
+  app.use('/api/payments', createPaymentRoutes(supabase, authenticate));
+  app.use('/api/click', createClickMerchantRoutes(supabase));
 
   // Progress tracking (lesson/task status)
   const { createProgressRoutes } = await import('./server/routes/progressRoutes');

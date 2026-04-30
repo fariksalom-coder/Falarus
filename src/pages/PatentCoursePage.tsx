@@ -71,6 +71,16 @@ export default function PatentCoursePage() {
     });
   };
 
+  const handleClickPurchase = () => {
+    navigate('/payment/click', {
+      state: {
+        productCode: 'patent',
+        productLabel: patentMeta.label,
+        returnTo: '/kurslar/patent',
+      },
+    });
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden pb-16" style={{ backgroundColor: BG }}>
       <div className="pointer-events-none absolute -left-16 bottom-[-3rem] h-52 w-52 rounded-full bg-[#DCEBFF]" />
@@ -206,6 +216,8 @@ export default function PatentCoursePage() {
         <CurrencyModal
           onClose={() => setCurrencyModalOpen(false)}
           onSelect={handlePurchase}
+          onClickPay={handleClickPurchase}
+          clickLabel={`Click bilan ${patentMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
         />
       ) : null}
     </div>

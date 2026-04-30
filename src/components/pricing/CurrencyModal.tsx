@@ -11,9 +11,16 @@ const OPTIONS: { value: Currency; label: string; sub: string }[] = [
 type CurrencyModalProps = {
   onClose: () => void;
   onSelect: (currency: Currency) => void;
+  onClickPay?: () => void;
+  clickLabel?: string;
 };
 
-export default function CurrencyModal({ onClose, onSelect }: CurrencyModalProps) {
+export default function CurrencyModal({
+  onClose,
+  onSelect,
+  onClickPay,
+  clickLabel = 'Click orqali to‘lash',
+}: CurrencyModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div
@@ -51,6 +58,27 @@ export default function CurrencyModal({ onClose, onSelect }: CurrencyModalProps)
               </div>
             </button>
           ))}
+          {onClickPay ? (
+            <>
+              <div className="my-1 h-px bg-slate-200" />
+              <button
+                type="button"
+                onClick={() => {
+                  onClickPay();
+                  onClose();
+                }}
+                className="flex items-center justify-between gap-4 w-full rounded-xl border-2 border-blue-200 bg-blue-50/80 p-4 text-left hover:border-blue-400 hover:bg-blue-100/70 transition-colors"
+              >
+                <div>
+                  <span className="font-semibold text-slate-900 block">Click</span>
+                  <span className="text-sm text-slate-500">{clickLabel}</span>
+                </div>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">
+                  Online
+                </span>
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
     </div>

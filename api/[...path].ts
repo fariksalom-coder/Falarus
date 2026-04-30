@@ -50,8 +50,20 @@ import {
   isSubscriptionTariffType,
   normalizePaymentProductCode,
 } from '../shared/paymentProducts.js';
+import {
+  buildClickErrorResponse,
+  buildClickPaymentUrl,
+  buildClickSuccessResponse,
+  inferPaymentProviderFromProofUrl,
+  getClickAmountForProduct,
+  normalizeClickCallbackPayload,
+  verifyClickSignature,
+} from '../shared/clickPayments.js';
 import { isPaymentsProductCodeSchemaError } from '../shared/paymentsCompat.js';
 import { embedFalarusProductInProofUrl } from '../shared/paymentsProofUrl.js';
+import { activateApprovedPayment } from '../shared/paymentActivation.js';
+import { getClickConfig } from '../shared/clickConfig.js';
+import { invalidateAccessCache } from './_lib/subscription.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const FOSSILS_CHECKS_BUCKET = 'fossils-checks';
@@ -131,6 +143,20 @@ function parseMultipartPayments(
     bb.on('finish', () => resolve({ fields, file }));
     (req as NodeJS.ReadableStream).pipe(bb);
   });
+}
+
+async function fetchUzTariffPrices() {
+  const { data: rows, error } = await supabase
+    .from('tariff_prices')
+    .select('tariff_type, price')
+    .eq('currency', 'UZS')
+    .in('tariff_type', ['month', 'three_months', 'year']);
+  if (error) throw error;
+  return {
+    month: Number(rows?.find((r: { tariff_type: string }) => r.tariff_type === 'month')?.price ?? 0),
+    three_months: Number(rows?.find((r: { tariff_type: string }) => r.tariff_type === 'three_months')?.price ?? 0),
+    year: Number(rows?.find((r: { tariff_type: string }) => r.tariff_type === 'year')?.price ?? 0),
+  };
 }
 
 const ROOT_API_PREFIXES = new Set([
@@ -372,6 +398,310 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('[POST /api/payments]', message);
       return res.status(500).json({ error: message });
     }
+  }
+
+  // POST /api/payments/click/create
+  if (path[0] === 'payments' && path[1] === 'click' && path[2] === 'create' && req.method === 'POST') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+
+    try {
+      const {
+        serviceId: clickServiceId,
+        merchantId: clickMerchantId,
+        returnUrl: clickReturnUrl,
+      } = getClickConfig();
+      if (!clickServiceId || !clickMerchantId) {
+        return res.status(503).json({ error: 'Click sozlanmagan. CLICK_SERVICE_ID va CLICK_MERCHANT_ID kerak.' });
+      }
+
+      const body = parseBody(req.body);
+      const productCode = normalizePaymentProductCode(body.product_code);
+      const tariffType = String(body.tariff_type ?? '').trim();
+      if (productCode === 'russian' && !isSubscriptionTariffType(tariffType)) {
+        return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
+      }
+
+      let { data: pending, error: pendingErr } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .eq('product_code', productCode)
+        .limit(1)
+        .maybeSingle();
+      if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
+        const legacy = await supabase
+          .from('payments')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'pending')
+          .limit(1)
+          .maybeSingle();
+        pending = legacy.data;
+      }
+      if (pending) {
+        return res.status(400).json({
+          error: 'PENDING_PAYMENT',
+          message: "To'lovingiz tekshirilmoqda. Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi.",
+        });
+      }
+
+      const tariffPrices = productCode === 'russian' ? await fetchUzTariffPrices() : null;
+      const amount = getClickAmountForProduct({
+        productCode,
+        tariffType: productCode === 'russian' && isSubscriptionTariffType(tariffType) ? tariffType : null,
+        tariffPrices,
+      });
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "To'lov summasi aniqlanmadi" });
+      }
+
+      const insertBase: Record<string, unknown> = {
+        user_id: userId,
+        tariff_type: productCode === 'russian' ? tariffType : null,
+        currency: 'UZS',
+        amount,
+        payment_proof_url: null,
+        payment_time: new Date().toISOString(),
+        status: 'pending',
+      };
+      let { data: row, error: insertErr } = await supabase
+        .from('payments')
+        .insert({ ...insertBase, product_code: productCode })
+        .select('id')
+        .single();
+      if (insertErr && isPaymentsProductCodeSchemaError(insertErr)) {
+        const legacyIns = await supabase
+          .from('payments')
+          .insert({
+            ...insertBase,
+            tariff_type: productCode === 'russian' ? tariffType : 'month',
+          })
+          .select('id')
+          .single();
+        row = legacyIns.data;
+        insertErr = legacyIns.error;
+      }
+      if (insertErr || !row) {
+        return res.status(500).json({ error: insertErr?.message || 'To‘lov yaratilmadi' });
+      }
+
+      const paymentId = Number((row as { id: number }).id);
+      const paymentUrl = buildClickPaymentUrl({
+        serviceId: clickServiceId,
+        merchantId: clickMerchantId,
+        amount,
+        paymentId,
+        returnUrl: clickReturnUrl,
+      });
+      await supabase.from('payments').update({ payment_proof_url: paymentUrl }).eq('id', paymentId);
+      return res.status(200).json({
+        success: true,
+        payment_id: paymentId,
+        payment_url: paymentUrl,
+        amount,
+        currency: 'UZS',
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Click to‘lovi yaratilmadi';
+      console.error('[POST /api/payments/click/create]', message);
+      return res.status(500).json({ error: message });
+    }
+  }
+
+  // POST /api/click/prepare
+  if (path[0] === 'click' && path[1] === 'prepare' && req.method === 'POST') {
+    const payload = normalizeClickCallbackPayload(parseBody(req.body));
+    const { secretKey: clickSecretKey, serviceId: clickServiceId } = getClickConfig();
+    const paymentId = Number(payload.merchant_trans_id);
+
+    if (!clickSecretKey || !clickServiceId) {
+      return res.status(503).json(
+        buildClickErrorResponse({ payload, error: -9, note: 'Click konfiguratsiyasi topilmadi' })
+      );
+    }
+    if (payload.service_id !== clickServiceId || !verifyClickSignature(payload, clickSecretKey)) {
+      return res.status(400).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'Imzo noto‘g‘ri',
+        })
+      );
+    }
+    if (!Number.isFinite(paymentId) || paymentId <= 0) {
+      return res.status(400).json(
+        buildClickErrorResponse({ payload, error: -5, note: 'To‘lov topilmadi' })
+      );
+    }
+
+    const { data: payment, error } = await supabase
+      .from('payments')
+      .select('id, amount, status')
+      .eq('id', paymentId)
+      .maybeSingle();
+    if (error || !payment) {
+      return res.status(404).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -5,
+          note: 'To‘lov topilmadi',
+        })
+      );
+    }
+    if (Number(payment.amount) !== Number(payload.amount)) {
+      return res.status(400).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -2,
+          note: 'Summa mos emas',
+        })
+      );
+    }
+
+    return res.status(200).json(
+      buildClickSuccessResponse({
+        payload,
+        merchantPrepareId: paymentId,
+      })
+    );
+  }
+
+  // POST /api/click/complete
+  if (path[0] === 'click' && path[1] === 'complete' && req.method === 'POST') {
+    const payload = normalizeClickCallbackPayload(parseBody(req.body));
+    const {
+      secretKey: clickSecretKey,
+      serviceId: clickServiceId,
+      merchantId: clickMerchantId,
+    } = getClickConfig();
+    const paymentId = Number(payload.merchant_trans_id);
+
+    if (!clickSecretKey || !clickServiceId) {
+      return res.status(503).json(
+        buildClickErrorResponse({ payload, error: -9, note: 'Click konfiguratsiyasi topilmadi' })
+      );
+    }
+    if (payload.service_id !== clickServiceId || !verifyClickSignature(payload, clickSecretKey)) {
+      return res.status(400).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'Imzo noto‘g‘ri',
+        })
+      );
+    }
+    if (!Number.isFinite(paymentId) || paymentId <= 0) {
+      return res.status(400).json(
+        buildClickErrorResponse({ payload, error: -5, note: 'To‘lov topilmadi' })
+      );
+    }
+
+    let { data: payment, error } = await supabase
+      .from('payments')
+      .select('id, user_id, tariff_type, product_code, amount, status, payment_proof_url')
+      .eq('id', paymentId)
+      .maybeSingle();
+    if (error && isPaymentsProductCodeSchemaError(error)) {
+      const legacy = await supabase
+        .from('payments')
+        .select('id, user_id, tariff_type, amount, status, payment_proof_url')
+        .eq('id', paymentId)
+        .maybeSingle();
+      payment = legacy.data as typeof payment;
+      error = legacy.error;
+    }
+    if (error || !payment) {
+      return res.status(404).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -5,
+          note: 'To‘lov topilmadi',
+        })
+      );
+    }
+    if (Number(payment.amount) !== Number(payload.amount)) {
+      return res.status(400).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -2,
+          note: 'Summa mos emas',
+        })
+      );
+    }
+    if (String(payload.error || '0') !== '0') {
+      await supabase.from('payments').update({ status: 'rejected' }).eq('id', paymentId).eq('status', 'pending');
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -9,
+          note: payload.error_note || 'To‘lov bekor qilindi',
+        })
+      );
+    }
+    if (payment.status === 'approved') {
+      return res.status(200).json(
+        buildClickSuccessResponse({
+          payload,
+          merchantPrepareId: paymentId,
+        })
+      );
+    }
+
+    const productCode = normalizePaymentProductCode((payment as { product_code?: string | null }).product_code);
+    const { error: approveErr } = await supabase
+      .from('payments')
+      .update({
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        payment_proof_url:
+          inferPaymentProviderFromProofUrl((payment as { payment_proof_url?: string | null }).payment_proof_url) === 'click'
+            ? (payment as { payment_proof_url?: string | null }).payment_proof_url
+            : buildClickPaymentUrl({
+                serviceId: clickServiceId,
+                merchantId: clickMerchantId,
+                amount: Number(payment.amount),
+                paymentId,
+              }),
+      })
+      .eq('id', paymentId)
+      .eq('status', 'pending');
+    if (approveErr) {
+      return res.status(500).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -9,
+          note: approveErr.message,
+        })
+      );
+    }
+
+    try {
+      await activateApprovedPayment(supabase, {
+        userId: Number((payment as { user_id: number }).user_id),
+        productCode,
+        tariffType: (payment as { tariff_type?: string | null }).tariff_type,
+      });
+      invalidateAccessCache(Number((payment as { user_id: number }).user_id));
+    } catch (activationErr) {
+      console.error('[click/complete activation]', activationErr);
+    }
+
+    return res.status(200).json(
+      buildClickSuccessResponse({
+        payload,
+        merchantPrepareId: paymentId,
+      })
+    );
   }
 
   // POST /api/payment — public endpoint for fossils landing checkout

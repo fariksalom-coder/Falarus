@@ -16,6 +16,7 @@ import {
   isSubscriptionTariffType,
   normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
+import { inferPaymentProviderFromProofUrl } from '../../shared/clickPayments.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { invalidateAccessCache } from '../_lib/subscription.js';
@@ -365,6 +366,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           tariff_type: r.tariff_type,
           product_code: productCode,
           product_label: getPaymentDisplayLabel(productCode, r.tariff_type),
+          payment_provider: inferPaymentProviderFromProofUrl(r.payment_proof_url ?? null),
           currency: r.currency,
           payment_proof_url: r.payment_proof_url ?? null,
           payment_time: r.payment_time ?? r.created_at ?? '',

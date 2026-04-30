@@ -75,6 +75,7 @@ export default function AdminPaymentsPage() {
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Email</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Phone</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Tarif</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Usul</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Valyuta</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">To'lov vaqti</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Chek</th>
@@ -89,6 +90,11 @@ export default function AdminPaymentsPage() {
                     <td className="py-3 px-4 text-slate-600">{p.user_email}</td>
                     <td className="py-3 px-4 text-slate-600">{p.user_phone ?? '—'}</td>
                     <td className="py-3 px-4">{p.plan}</td>
+                    <td className="py-3 px-4">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                        {p.payment_provider === 'click' ? 'Click' : 'Manual'}
+                      </span>
+                    </td>
                     <td className="py-3 px-4">{p.currency}</td>
                     <td className="py-3 px-4 text-slate-600">
                       {p.payment_time ? new Date(p.payment_time).toLocaleString() : '—'}
@@ -101,7 +107,7 @@ export default function AdminPaymentsPage() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-indigo-600 hover:underline"
                         >
-                          Ko'rish <ExternalLink className="h-3.5 w-3.5" />
+                          {p.payment_provider === 'click' ? 'Ochish' : "Ko'rish"} <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       ) : (
                         '—'

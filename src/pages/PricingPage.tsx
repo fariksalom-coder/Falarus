@@ -154,6 +154,20 @@ export default function PricingPage() {
     setCurrencyModal(null);
   };
 
+  const handleClickSelect = () => {
+    if (!currencyModal) return;
+    navigate('/payment/click', {
+      state: {
+        tariffType: currencyModal.tariffType,
+        tariffLabel: currencyModal.tariffLabel,
+        productCode: 'russian',
+        productLabel: 'Курс русского языка',
+        returnTo: '/tariflar',
+      },
+    });
+    setCurrencyModal(null);
+  };
+
   const scrollToTariffs = () => {
     const el = document.getElementById('tariflar');
     if (el) {
@@ -318,6 +332,8 @@ export default function PricingPage() {
         <CurrencyModal
           onClose={() => setCurrencyModal(null)}
           onSelect={handleCurrencySelect}
+          onClickPay={handleClickSelect}
+          clickLabel="Click orqali onlayn to‘lov"
         />
       )}
     </div>

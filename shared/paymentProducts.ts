@@ -2,6 +2,7 @@ export type CurrencyCode = 'UZS' | 'RUB' | 'USD';
 export type SubscriptionTariffType = 'month' | '3months' | 'year';
 export type CourseProductCode = 'patent' | 'vnzh';
 export type PaymentProductCode = 'russian' | CourseProductCode;
+export type PaymentProvider = 'manual' | 'click';
 
 export const SUBSCRIPTION_PRODUCT_CODE = 'russian' as const;
 

@@ -58,6 +58,16 @@ export default function VnzhCoursePage() {
     });
   };
 
+  const handleClickPurchase = () => {
+    navigate('/payment/click', {
+      state: {
+        productCode: 'vnzh',
+        productLabel: vnzhMeta.label,
+        returnTo: '/kurslar/vnzh',
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen pb-16" style={{ backgroundColor: BG }}>
       <main className="mx-auto max-w-4xl px-4 py-5 sm:px-5">
@@ -148,6 +158,8 @@ export default function VnzhCoursePage() {
         <CurrencyModal
           onClose={() => setCurrencyModalOpen(false)}
           onSelect={handlePurchase}
+          onClickPay={handleClickPurchase}
+          clickLabel={`Click bilan ${vnzhMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
         />
       ) : null}
     </div>

@@ -1,5 +1,5 @@
 import { adminApi } from '../lib/adminApi';
-import type { PaymentProductCode } from '../../shared/paymentProducts';
+import type { PaymentProductCode, PaymentProvider } from '../../shared/paymentProducts';
 
 export type RevenueByCurrency = { UZS: number; USD: number; RUB: number };
 
@@ -48,6 +48,7 @@ export type AdminPaymentRow = {
   tariff_type: string;
   product_code: PaymentProductCode;
   product_label: string;
+  payment_provider: PaymentProvider;
   currency: string;
   payment_proof_url: string | null;
   payment_time: string;
