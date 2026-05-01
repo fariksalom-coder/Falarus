@@ -53,7 +53,7 @@ export function createFossilsPaymentRoutes(supabase: SupabaseClient): Router {
       const tariff = String(req.body?.tariff ?? '').trim();
       const imageFile = req.file;
       const normalizedPhone = phone.replace(/[^\d+]/g, '');
-      const allowedTariffs = new Set(['month', '3months', 'year']);
+      const allowedTariffs = new Set(['month', 'year']);
 
       if (!normalizedPhone || normalizedPhone.length < 8 || normalizedPhone.length > 20) {
         return res.status(400).json({ error: 'Telefon raqami noto‘g‘ri' });

@@ -35,6 +35,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/fossils" element={renderLazyPage('./pages/FossilsLandingPage.tsx')} />
       <Route path="/fossils/checkout" element={renderLazyPage('./pages/FossilsCheckoutPage.tsx')} />
+      <Route path="/huquqiy/ommaviy-oferta" element={renderLazyPage('./pages/legal/LegalOfferPage.tsx')} />
+      <Route path="/huquqiy/maxfiylik" element={renderLazyPage('./pages/legal/LegalPrivacyPage.tsx')} />
+      <Route path="/huquqiy/qaytarish" element={renderLazyPage('./pages/legal/LegalRefundPage.tsx')} />
       <Route
         path="/admin"
         element={

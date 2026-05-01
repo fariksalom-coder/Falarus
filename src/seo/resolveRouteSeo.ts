@@ -454,6 +454,34 @@ export function resolveRouteSeo(
     };
   }
 
+  if (raw === '/huquqiy/ommaviy-oferta') {
+    return {
+      title: clipTitle('Ommaviy oferta — FalaRus'),
+      description: clipDescription(
+        'FalaRus platformasi xizmatlaridan foydalanishning ommaviy oferta shartlari.'
+      ),
+      canonicalPath: '/huquqiy/ommaviy-oferta',
+    };
+  }
+  if (raw === '/huquqiy/maxfiylik') {
+    return {
+      title: clipTitle('Maxfiylik siyosati — FalaRus'),
+      description: clipDescription(
+        'FalaRus foydalanuvchi ma’lumotlarini qanday yig‘ishi va himoya qilishi haqida.'
+      ),
+      canonicalPath: '/huquqiy/maxfiylik',
+    };
+  }
+  if (raw === '/huquqiy/qaytarish') {
+    return {
+      title: clipTitle('Pul qaytarish siyosati — FalaRus'),
+      description: clipDescription(
+        'FalaRus platformasida to‘lovlar va pulni qaytarish tartibi.'
+      ),
+      canonicalPath: '/huquqiy/qaytarish',
+    };
+  }
+
   // --- Admin ---
   if (raw.startsWith('/admin')) {
     return {

@@ -4,11 +4,10 @@ import { AlertCircle, Pencil, X } from 'lucide-react';
 
 const TARIFF_LABELS: Record<string, string> = {
   month: '1 oy',
-  three_months: '3 oy',
   year: '1 yil',
 };
 const CURRENCIES = ['UZS', 'RUB', 'USD'] as const;
-const TARIFF_TYPES = ['month', 'three_months', 'year'] as const;
+const TARIFF_TYPES = ['month', 'year'] as const;
 
 type PriceMatrix = Record<string, Record<string, number>>;
 

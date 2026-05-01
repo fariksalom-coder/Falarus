@@ -1,5 +1,5 @@
 export type CurrencyCode = 'UZS' | 'RUB' | 'USD';
-export type SubscriptionTariffType = 'month' | '3months' | 'year';
+export type SubscriptionTariffType = 'month' | 'year';
 export type CourseProductCode = 'patent' | 'vnzh';
 export type PaymentProductCode = 'russian' | CourseProductCode;
 export type PaymentProvider = 'manual' | 'click';
@@ -55,7 +55,7 @@ export function isCurrencyCode(value: unknown): value is CurrencyCode {
 }
 
 export function isSubscriptionTariffType(value: unknown): value is SubscriptionTariffType {
-  return value === 'month' || value === '3months' || value === 'year';
+  return value === 'month' || value === 'year';
 }
 
 export function isCourseProductCode(value: unknown): value is CourseProductCode {
@@ -84,7 +84,6 @@ export function getPaymentProductLabel(productCode: PaymentProductCode): string 
 
 export function getSubscriptionTariffLabel(tariffType: SubscriptionTariffType): string {
   if (tariffType === 'year') return '1 YIL';
-  if (tariffType === '3months') return '3 OY';
   return '1 OY';
 }
 

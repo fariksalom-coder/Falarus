@@ -6,7 +6,7 @@ import * as repo from '../repositories/referralRepository';
 export type RecordPaymentInput = {
   userId: number;
   originalAmount: number; // price before discount
-  planName?: string; // e.g. "1 OY", "3 OY", "1 YIL"
+  planName?: string; // e.g. "1 OY", "1 YIL"
   planDurationMonths?: number; // 1, 3, or 12
 };
 
@@ -86,12 +86,7 @@ export async function recordPayment(
         plan_expires_at: planExpiresAt.toISOString(),
       })
       .eq('id', userId);
-    const planType =
-      input.planDurationMonths >= 12
-        ? ('yearly' as const)
-        : input.planDurationMonths >= 3
-          ? ('three_months' as const)
-          : ('monthly' as const);
+    const planType = input.planDurationMonths >= 12 ? ('yearly' as const) : ('monthly' as const);
     const { createOrExtendSubscription } = await import('./subscription.service');
     await createOrExtendSubscription(supabase, userId, planType, planExpiresAt);
   }

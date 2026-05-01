@@ -7,7 +7,7 @@ import {
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { readFalarusProductFromProofUrl } from '../../shared/paymentsProofUrl.js';
 
-const PLAN_TYPES = ['monthly', 'three_months', 'yearly'] as const;
+const PLAN_TYPES = ['monthly', 'yearly'] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
 
 export type SubscriptionRow = {

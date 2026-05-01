@@ -22,6 +22,7 @@ import {
   CheckCircle,
   ChevronRight,
 } from 'lucide-react';
+import { PaymentLegalConsentCheckbox } from '../components/legal/PaymentLegalConsent';
 
 const FALLBACK_CARD = 'XXXX XXXX XXXX XXXX';
 const FALLBACK_PHONE = '+7 XXX XXX XX XX';
@@ -89,6 +90,7 @@ export default function PaymentPage() {
   const [price, setPrice] = useState<number | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(true);
   const [hasPendingPayment, setHasPendingPayment] = useState(false);
+  const [legalAccepted, setLegalAccepted] = useState(false);
 
   const productCode = normalizePaymentProductCode(state?.productCode);
   const isRussianCourse = productCode === 'russian';
@@ -127,12 +129,7 @@ export default function PaymentPage() {
               }
         );
         if (isRussianCourse && tariffType) {
-          const key =
-            tariffType === 'year'
-              ? 'year'
-              : tariffType === '3months'
-                ? 'three_months'
-                : 'month';
+          const key = tariffType === 'year' ? 'year' : 'month';
           setPrice((prices as Record<string, number> | null)?.[key] ?? null);
           return;
         }
@@ -440,11 +437,19 @@ export default function PaymentPage() {
           )}
         </section>
 
+        <section className="mb-6">
+          <PaymentLegalConsentCheckbox
+            idPrefix="manual-payment"
+            checked={legalAccepted}
+            onChange={setLegalAccepted}
+          />
+        </section>
+
         {/* Submit button — light blue bg, blue border */}
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!file || submitting}
+          disabled={!file || submitting || !legalAccepted}
           className="w-full rounded-xl py-4 text-lg font-semibold border-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.99] hover:opacity-90"
           style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
         >

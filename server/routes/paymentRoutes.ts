@@ -208,7 +208,7 @@ export function createPaymentRoutes(
       const file = req.file;
 
       if (productCode === 'russian' && !isSubscriptionTariffType(tariff_type)) {
-        return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
+        return res.status(400).json({ error: 'tariff_type kerak: month, year' });
       }
       if (!isCurrencyCode(currency)) {
         return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
@@ -250,7 +250,7 @@ export function createPaymentRoutes(
           .eq('currency', currency)
           .eq(
             'tariff_type',
-            tariff_type === 'year' ? 'year' : tariff_type === '3months' ? 'three_months' : 'month'
+            tariff_type === 'year' ? 'year' : 'month'
           )
           .maybeSingle();
         amount = priceRow != null ? Number((priceRow as { price: number }).price) : 0;

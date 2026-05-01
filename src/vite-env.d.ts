@@ -12,6 +12,12 @@ interface ImportMetaEnv {
   readonly VITE_GOOGLE_SITE_VERIFICATION?: string;
   /** Yandex Webmaster verification meta content. */
   readonly VITE_YANDEX_VERIFICATION?: string;
+  /** Footer / huquqiy sahifalar: yakka tartibdagi tadbirkor.F.I.SH */
+  readonly VITE_LEGAL_OWNER_NAME?: string;
+  /** STIR / INN */
+  readonly VITE_LEGAL_INN?: string;
+  readonly VITE_LEGAL_SUPPORT_EMAIL?: string;
+  readonly VITE_LEGAL_SUPPORT_PHONE?: string;
 }
 
 interface ImportMeta {

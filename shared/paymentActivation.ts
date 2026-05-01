@@ -21,16 +21,9 @@ export async function activateRussianSubscription(
 ): Promise<{ expires_at: string }> {
   const tariffType = params.tariffType;
   const now = new Date();
-  const daysToAdd =
-    tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
-  const planType =
-    tariffType === 'year'
-      ? 'yearly'
-      : tariffType === '3months'
-        ? 'three_months'
-        : 'monthly';
-  const planName =
-    tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+  const daysToAdd = tariffType === 'year' ? 365 : 30;
+  const planType = tariffType === 'year' ? 'yearly' : 'monthly';
+  const planName = tariffType === 'year' ? '1 YIL' : '1 OY';
 
   const { data: current, error: currentErr } = await supabase
     .from('users')

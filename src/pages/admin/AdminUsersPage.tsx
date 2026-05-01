@@ -46,7 +46,6 @@ export default function AdminUsersPage() {
           <option value="">All</option>
           <option value="none">No subscription</option>
           <option value="monthly">Monthly</option>
-          <option value="three_months">3 months</option>
           <option value="yearly">Yearly</option>
         </select>
         <label className="flex items-center gap-2 text-sm">

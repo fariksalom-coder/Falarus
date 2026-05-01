@@ -5,7 +5,6 @@ export type Currency = 'UZS' | 'RUB' | 'USD';
 
 export type TariffPricesByCurrency = {
   month: number;
-  three_months: number;
   year: number;
 };
 
@@ -18,7 +17,11 @@ export async function getTariffPricesByCurrency(
   return cachedRequest(`tariff-prices:${currency}`, PRICING_TTL_MS, async () => {
     const res = await fetch(apiUrl(`/api/tariff-prices?currency=${currency}`));
     if (!res.ok) throw new Error('Narxlar yuklanmadi');
-    return res.json();
+    const data = (await res.json()) as Record<string, unknown>;
+    return {
+      month: Number(data.month) || 0,
+      year: Number(data.year) || 0,
+    };
   });
 }
 

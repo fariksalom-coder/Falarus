@@ -335,7 +335,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!isCurrencyCode(currency))
         return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
       if (productCode === 'russian' && !isSubscriptionTariffType(tariffType))
-        return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
+        return res.status(400).json({ error: 'tariff_type kerak: month, year' });
       let pendingQuery = supabase
         .from('payments')
         .select('id')
@@ -365,12 +365,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
       let amount = 0;
       if (productCode === 'russian') {
-        const priceKey =
-          tariffType === 'year'
-            ? 'year'
-            : tariffType === '3months'
-              ? 'three_months'
-              : 'month';
+        const priceKey = tariffType === 'year' ? 'year' : 'month';
         const { data: priceRow } = await supabase
           .from('tariff_prices')
           .select('price')
@@ -864,7 +859,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const phone = String(fields.phone ?? '').trim();
       const tariff = String(fields.tariff ?? '').trim();
       const normalizedPhone = phone.replace(/[^\d+]/g, '');
-      const allowedTariffs = new Set(['month', '3months', 'year']);
+      const allowedTariffs = new Set(['month', 'year']);
 
       if (!normalizedPhone || normalizedPhone.length < 8 || normalizedPhone.length > 20) {
         return res.status(400).json({ error: 'Telefon raqami noto‘g‘ri' });
@@ -1408,7 +1403,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const rows = (data ?? []) as { tariff_type: string; price: number }[];
       const out: Record<string, number> = {};
       rows.forEach((r) => { out[r.tariff_type] = Number(r.price); });
-      return res.status(200).json({ month: out.month, three_months: out.three_months, year: out.year });
+      return res.status(200).json({ month: out.month, year: out.year });
     } catch (e) {
       console.error('[api/tariff-prices]', e instanceof Error ? e.message : e);
       return res.status(500).json({ error: 'Xatolik' });

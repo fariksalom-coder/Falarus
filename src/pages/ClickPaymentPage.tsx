@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
-import { deleteClickCardToken, requestClickCardToken, verifyClickCardToken } from '../api/click';
+import { requestClickCardToken, verifyClickCardToken } from '../api/click';
 import { getTariffPricesByCurrency } from '../api/publicPricing';
 import {
   getCourseProductPrice,
@@ -20,6 +20,7 @@ import {
   isValidPanLuhn,
   normalizeCardPanDigits,
 } from '../../shared/cardPan';
+import { PaymentLegalConsentCheckbox } from '../components/legal/PaymentLegalConsent';
 
 function formatAmount(price: number): string {
   return `${price.toLocaleString('uz-UZ')} so'm`;
@@ -27,6 +28,13 @@ function formatAmount(price: number): string {
 
 function normalizeExpireInput(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, 4);
+}
+
+/** Ko‘rinish: `12/26`; state faqat 4 ta raqam. */
+function formatExpireSlash(digitsOnly: string): string {
+  const d = digitsOnly.replace(/\D/g, '').slice(0, 4);
+  if (d.length <= 2) return d;
+  return `${d.slice(0, 2)}/${d.slice(2)}`;
 }
 
 export default function ClickPaymentPage() {
@@ -50,6 +58,9 @@ export default function ClickPaymentPage() {
   const isCourseOneOffClick = productCode === 'patent' || productCode === 'vnzh';
   const tariffType = state?.tariffType ?? (isRussianCourse ? 'month' : undefined);
   const productLabel = state?.productLabel ?? getPaymentProductLabel(productCode);
+  const russianTariffDisplay =
+    state?.tariffLabel ??
+    (tariffType === 'year' ? '1 yil' : '1 oy');
   const backPath =
     state?.returnTo ??
     (productCode === 'patent'
@@ -69,6 +80,7 @@ export default function ClickPaymentPage() {
   const [pendingCardToken, setPendingCardToken] = useState('');
   const [smsCode, setSmsCode] = useState('');
   const [autoStep, setAutoStep] = useState<'idle' | 'sms_sent' | 'done'>('idle');
+  const [legalAccepted, setLegalAccepted] = useState(false);
 
   const hasValidState = isRussianCourse ? Boolean(tariffType) : Boolean(state?.productCode);
   const hasPendingPayment = useMemo(
@@ -83,12 +95,7 @@ export default function ClickPaymentPage() {
     if (isRussianCourse && tariffType) {
       getTariffPricesByCurrency('UZS')
         .then((prices) => {
-          const next =
-            tariffType === 'year'
-              ? prices.year
-              : tariffType === '3months'
-                ? prices.three_months
-                : prices.month;
+          const next = tariffType === 'year' ? prices.year : prices.month;
           setAmount(Number(next));
         })
         .catch(() => setAmount(null))
@@ -121,7 +128,7 @@ export default function ClickPaymentPage() {
     try {
       const exp = normalizeExpireInput(expireDate);
       if (exp.length !== 4) {
-        setError('Amal qilish muddati: MMYY (4 raqam)');
+        setError('Karta muddatini kiriting (masalan 12/26)');
         return;
       }
       if (panDigits.length !== CARD_PAN_DIGITS_UZ) {
@@ -169,20 +176,6 @@ export default function ClickPaymentPage() {
       } else {
         setError(err.message || 'Tasdiqlash yoki to‘lov amalga oshmadi');
       }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDisableAutoPay = async () => {
-    if (!token) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      await deleteClickCardToken(token);
-      updateUser({ billingNoticeUz: null });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'O‘chirish muvaffaqiyatsiz');
     } finally {
       setSubmitting(false);
     }
@@ -238,7 +231,9 @@ export default function ClickPaymentPage() {
           </button>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium uppercase tracking-wider text-slate-400">To‘lov</p>
-            <p className="truncate text-sm font-medium text-slate-600">{productLabel}</p>
+            <p className="truncate text-sm font-semibold text-slate-900">
+              {isRussianCourse ? russianTariffDisplay : productLabel}
+            </p>
           </div>
         </div>
 
@@ -250,29 +245,27 @@ export default function ClickPaymentPage() {
         ) : null}
 
         <section className={`${cardShell} p-6 sm:p-8`}>
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900">{productLabel}</h2>
-              {state?.tariffLabel ? (
-                <p className="mt-1 text-sm text-slate-500">{state.tariffLabel}</p>
-              ) : null}
-              {!isRussianCourse ? (
-                <p className="mt-2 max-w-sm text-sm text-slate-500">
-                  Bir martalik to‘lov — CLICK orqali.
-                </p>
-              ) : autoStep !== 'done' ? (
-                <p className="mt-2 max-w-sm text-sm text-slate-500">
-                  Avtomatik obuna: SMS tasdiqlangandan keyin birinchi yechilish amalga oshadi.
-                </p>
-              ) : null}
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Ja‘mi · UZS</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
+          {isRussianCourse ? (
+            <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 pb-5">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">{russianTariffDisplay}</h2>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
                 {loadingPrice || amount == null ? '—' : formatAmount(amount)}
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
+              <div>
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900">{productLabel}</h2>
+                <p className="mt-2 max-w-sm text-sm text-slate-500">Bir martalik to‘lov — CLICK orqali.</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Ja‘mi · UZS</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
+                  {loadingPrice || amount == null ? '—' : formatAmount(amount)}
+                </p>
+              </div>
+            </div>
+          )}
 
           {error ? (
             <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -281,11 +274,16 @@ export default function ClickPaymentPage() {
           ) : null}
 
           {isCourseOneOffClick ? (
-            <div className="mt-6">
+            <div className="mt-6 space-y-4">
+              <PaymentLegalConsentCheckbox
+                idPrefix="click-course"
+                checked={legalAccepted}
+                onChange={setLegalAccepted}
+              />
               <ClickCoursePayButton
                 token={token}
                 productCode={productCode as ClickCoursePayProduct}
-                disabled={loadingPrice || amount == null}
+                disabled={loadingPrice || amount == null || !legalAccepted}
                 onStarted={() => setError('')}
                 onError={(msg) => setError(msg)}
                 onSuccess={() => refreshPayments()}
@@ -298,46 +296,61 @@ export default function ClickPaymentPage() {
               {autoStep === 'idle' ? (
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="cc-num" className="text-sm font-medium text-slate-700">
-                      Karta raqami
-                    </label>
-                    <input
-                      id="cc-num"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      spellCheck={false}
-                      placeholder="8600 1234 5678 9012"
-                      value={formatCardPanGroups(cardNumber)}
-                      onChange={(e) => setCardNumber(normalizeCardPanDigits(e.target.value))}
-                      className={`${inputClass} font-mono tabular-nums tracking-[0.02em]`}
-                    />
+                    <div className="flex flex-row items-start gap-3 sm:gap-4">
+                      <div className="min-w-0 flex-1">
+                        <label htmlFor="cc-num" className="text-sm font-medium text-slate-700">
+                          Karta raqami
+                        </label>
+                        <input
+                          id="cc-num"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="cc-number"
+                          spellCheck={false}
+                          placeholder="8600 1234 5678 9012"
+                          value={formatCardPanGroups(cardNumber)}
+                          onChange={(e) => setCardNumber(normalizeCardPanDigits(e.target.value))}
+                          className={`${inputClass} font-mono tabular-nums tracking-[0.02em]`}
+                        />
+                      </div>
+                      <div className="w-[6.75rem] shrink-0 sm:w-[7.5rem]">
+                        <label htmlFor="cc-exp" className="text-sm font-medium text-slate-700">
+                          Karta muddati
+                        </label>
+                        <input
+                          id="cc-exp"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="cc-exp"
+                          placeholder="12/26"
+                          maxLength={5}
+                          value={formatExpireSlash(expireDate)}
+                          onChange={(e) => setExpireDate(normalizeExpireInput(e.target.value))}
+                          className={`${inputClass} font-mono tabular-nums`}
+                        />
+                      </div>
+                    </div>
                     {panFilled && !panLuhnOk ? (
                       <p className="mt-2 text-sm text-red-600">
                         Bu raqam bank kartasi formatiga mos kelmaydi. Tekshirib, qayta kiriting.
                       </p>
                     ) : null}
                   </div>
-                  <div className="max-w-[140px]">
-                    <label htmlFor="cc-exp" className="text-sm font-medium text-slate-700">
-                      MMYY
-                    </label>
-                    <input
-                      id="cc-exp"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="MMYY"
-                      maxLength={6}
-                      value={expireDate}
-                      onChange={(e) => setExpireDate(normalizeExpireInput(e.target.value))}
-                      className={inputClass}
-                    />
-                  </div>
+                  <PaymentLegalConsentCheckbox
+                    idPrefix="click-russian"
+                    checked={legalAccepted}
+                    onChange={setLegalAccepted}
+                  />
                   <button
                     type="button"
                     onClick={handleRequestSms}
                     disabled={
-                      submitting || loadingPrice || amount == null || !panLuhnOk || !expireOk
+                      submitting ||
+                      loadingPrice ||
+                      amount == null ||
+                      !panLuhnOk ||
+                      !expireOk ||
+                      !legalAccepted
                     }
                     className={primaryBtn}
                   >
@@ -405,17 +418,6 @@ export default function ClickPaymentPage() {
                     Tayyor
                   </button>
                 </div>
-              ) : null}
-
-              {autoStep !== 'done' ? (
-                <button
-                  type="button"
-                  onClick={() => void handleDisableAutoPay()}
-                  disabled={submitting}
-                  className="mt-6 w-full text-center text-xs font-medium text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline disabled:opacity-40"
-                >
-                  Saqlangan kartani o‘chirish
-                </button>
               ) : null}
             </div>
           ) : null}

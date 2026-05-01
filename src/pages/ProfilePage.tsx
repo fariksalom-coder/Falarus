@@ -18,7 +18,6 @@ import {
 
 const TARIFF_LABELS: Record<string, string> = {
   month: '1 OY',
-  '3months': '3 OY',
   year: '1 YIL',
 };
 

@@ -10,6 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { FalaRusLogoMark } from '../components/FalaRusLogoMark';
+import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 import { useAuth } from '../context/AuthContext';
 
 const benefits = [
@@ -166,14 +167,21 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-slate-200/80 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6">
-          <p className="text-base font-semibold text-slate-800">Rus tilini bugunoq o‘rganishni boshlang</p>
-          <Link
-            to="/register"
-            className="rounded-2xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
-          >
-            Ro‘yxatdan o‘tish
-          </Link>
+        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <p className="text-center text-base font-semibold text-slate-800 sm:text-left">
+              Rus tilini bugunoq o‘rganishni boshlang
+            </p>
+            <Link
+              to="/register"
+              className="shrink-0 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
+            >
+              Ro‘yxatdan o‘tish
+            </Link>
+          </div>
+          <div className="mt-10 border-t border-slate-100 pt-8">
+            <SiteLegalFooter embedded variant="full" />
+          </div>
         </div>
       </footer>
     </div>

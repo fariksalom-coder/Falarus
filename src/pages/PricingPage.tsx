@@ -23,62 +23,59 @@ const BENEFITS = [
   'Reyting tizimi',
 ];
 
-const ORIGINAL_PER_MONTH = "250 000 so'm/oy";
-
 type PlanCard = {
   duration: string;
   price: string;
   pricePerMonth: string;
   pricePerMonthUnit: string;
-  originalPerMonth: string;
-  periodLabel?: string;
-  totalOriginal: string;
+  compareAtPrice: string;
+  /** Ilgari va joriy narxlardan hisoblangan chegirma foizi */
+  discountPercent?: number;
   features: string[];
   buttonLabel: string;
   highlighted: boolean;
   badge?: string;
 };
 
+/** Marketing: ilgari narxlari (chiziq bilan kartochkada) */
+const WAS_UZS = {
+  month: 250_000,
+  year: 3_000_000,
+} as const;
+
 function formatPrice(n: number): string {
   return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-/** Строит три карточки из tariff_prices (UZS) — один источник правды с админкой Tariff Pricing */
-function buildPlansFromTariffPrices(prices: { month: number; three_months: number; year: number }): PlanCard[] {
-  const { month, three_months, year } = prices;
-  const totalOriginalMonth = 250_000;
-  const totalOriginal3 = 750_000;
-  const totalOriginalYear = 3_000_000;
+/** Ilgari narxdan chegirma foizi (yaxlitlangan). */
+function discountPercentFromWas(was: number, sale: number): number | undefined {
+  if (!Number.isFinite(was) || !Number.isFinite(sale) || was <= 0 || sale <= 0 || sale >= was) return undefined;
+  const pct = Math.round(((was - sale) / was) * 100);
+  return pct > 0 ? pct : undefined;
+}
+
+/** Kartochkalar: joriy `tariff_prices` UZS. Ilgari narxlari dizayn konstantalari. */
+function buildPlansFromTariffPrices(prices: { month: number; year: number }): PlanCard[] {
+  const { month, year } = prices;
   return [
     {
       duration: '1 OY',
       price: `${formatPrice(month)} so'm`,
       pricePerMonth: formatPrice(month),
-      pricePerMonthUnit: "so'm/oy",
-      originalPerMonth: ORIGINAL_PER_MONTH,
-      totalOriginal: `${formatPrice(totalOriginalMonth)} so'm`,
+      pricePerMonthUnit: "so'm",
+      compareAtPrice: `${formatPrice(WAS_UZS.month)} so'm`,
+      discountPercent: discountPercentFromWas(WAS_UZS.month, month),
       features: BENEFITS,
       buttonLabel: "1 oyga sotib olish",
       highlighted: false,
     },
     {
-      duration: '3 OY',
-      price: `${formatPrice(three_months)} so'm`,
-      pricePerMonth: formatPrice(three_months / 3),
-      pricePerMonthUnit: "so'm/oy",
-      originalPerMonth: ORIGINAL_PER_MONTH,
-      totalOriginal: `${formatPrice(totalOriginal3)} so'm`,
-      features: BENEFITS,
-      buttonLabel: "3 oyga sotib olish",
-      highlighted: false,
-    },
-    {
       duration: '1 YIL',
       price: `${formatPrice(year)} so'm`,
-      pricePerMonth: formatPrice(year / 12),
-      pricePerMonthUnit: "so'm/oy",
-      originalPerMonth: ORIGINAL_PER_MONTH,
-      totalOriginal: `${formatPrice(totalOriginalYear)} so'm`,
+      pricePerMonth: formatPrice(year),
+      pricePerMonthUnit: "so'm",
+      compareAtPrice: `${formatPrice(WAS_UZS.year)} so'm`,
+      discountPercent: discountPercentFromWas(WAS_UZS.year, year),
       features: BENEFITS,
       buttonLabel: "Bir yilga sotib olish",
       highlighted: true,
@@ -116,9 +113,8 @@ const VOCAB_STEPS = [
   { num: '3', title: "Juftini topish", desc: "So'z va tarjimani moslashtirish" },
 ];
 
-function durationToTariffType(duration: string): 'month' | '3months' | 'year' {
+function durationToTariffType(duration: string): 'month' | 'year' {
   if (duration === '1 YIL') return 'year';
-  if (duration === '3 OY') return '3months';
   return 'month';
 }
 
@@ -128,7 +124,7 @@ export default function PricingPage() {
   const { hasPendingPayment } = usePaymentStatus();
   const [plans, setPlans] = useState<PlanCard[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | '3months' | 'year'; tariffLabel: string } | null>(null);
+  const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | 'year'; tariffLabel: string } | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -207,12 +203,9 @@ export default function PricingPage() {
               </p>
             </div>
           )}
-          <p className="mb-6 text-center text-sm text-slate-500">
-            Oddiy narx: <span className="font-semibold text-slate-600">250 000 so'm</span> / oy — hozir chegirmada
-          </p>
           {loading ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-              {[1, 2, 3].map((i) => (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:max-w-4xl md:mx-auto md:gap-8">
+              {[1, 2].map((i) => (
                 <div key={i} className="rounded-2xl border border-slate-200 bg-white p-6 animate-pulse">
                   <div className="h-6 bg-slate-200 rounded w-16 mb-4" />
                   <div className="h-8 bg-slate-200 rounded w-24 mb-2" />
@@ -227,14 +220,9 @@ export default function PricingPage() {
               ))}
             </div>
           ) : plans && plans.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-              {plans.map((plan, index) => (
-                <div
-                  key={plan.duration}
-                  className={
-                    index === 0 ? 'order-3 md:order-1' : index === 1 ? 'order-2 md:order-2' : 'order-1 md:order-3'
-                  }
-                >
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:max-w-4xl md:mx-auto md:gap-8">
+              {plans.map((plan) => (
+                <div key={plan.duration}>
                   <PricingCard
                     duration={plan.duration}
                     price={plan.price}
@@ -244,9 +232,8 @@ export default function PricingPage() {
                     badge={plan.badge}
                     pricePerMonth={plan.pricePerMonth}
                     pricePerMonthUnit={plan.pricePerMonthUnit}
-                    originalPerMonth={plan.originalPerMonth}
-                    periodLabel={plan.periodLabel}
-                    totalOriginal={plan.totalOriginal}
+                    compareAtPrice={plan.compareAtPrice}
+                    discountPercent={plan.discountPercent}
                     onSelect={hasPendingPayment ? undefined : () => handleSelectPlan(plan)}
                     purchaseDisabled={!!token && hasPendingPayment}
                   />

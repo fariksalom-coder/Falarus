@@ -152,8 +152,6 @@ export function createAdminController(supabase: SupabaseClient) {
       q = q.or('plan_expires_at.is.null,plan_expires_at.lt.' + now);
     } else if (subscription === 'monthly') {
       q = q.eq('plan_name', '1 OY').gt('plan_expires_at', now);
-    } else if (subscription === 'three_months') {
-      q = q.eq('plan_name', '3 OY').gt('plan_expires_at', now);
     } else if (subscription === 'yearly') {
       q = q.eq('plan_name', '1 YIL').gt('plan_expires_at', now);
     }
@@ -272,9 +270,7 @@ export function createAdminController(supabase: SupabaseClient) {
           productCode === 'russian'
             ? r.tariff_type === 'year'
               ? '1 yil'
-              : r.tariff_type === '3months'
-                ? '3 oy'
-                : '1 oy'
+              : '1 oy'
             : getPaymentProductLabel(productCode),
         tariff_type: r.tariff_type,
         product_code: productCode,
@@ -365,16 +361,9 @@ export function createAdminController(supabase: SupabaseClient) {
       }
 
       if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
-        const planType =
-          tariffType === 'year'
-            ? 'yearly'
-            : tariffType === '3months'
-              ? 'three_months'
-              : 'monthly';
-        const daysToAdd =
-          tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
-        const planName =
-          tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+        const planType = tariffType === 'year' ? 'yearly' : 'monthly';
+        const daysToAdd = tariffType === 'year' ? 365 : 30;
+        const planName = tariffType === 'year' ? '1 YIL' : '1 OY';
         const { data: current } = await supabase
           .from('users')
           .select('plan_expires_at')
@@ -1192,8 +1181,8 @@ export function createAdminController(supabase: SupabaseClient) {
   async function updateTariffPrice(req: Request, res: Response) {
     const body = req.body || {};
     const { tariff_type, currency, price } = body;
-    if (!tariff_type || !['month', 'three_months', 'year'].includes(tariff_type)) {
-      return res.status(400).json({ error: 'tariff_type kerak: month, three_months, year' });
+    if (!tariff_type || !['month', 'year'].includes(tariff_type)) {
+      return res.status(400).json({ error: 'tariff_type kerak: month, year' });
     }
     if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
       return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });

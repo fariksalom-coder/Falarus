@@ -43,15 +43,12 @@ function sleep(ms: number): Promise<void> {
 
 function planTypeToTariff(planType: string): SubscriptionTariffType | null {
   if (planType === 'monthly') return 'month';
-  if (planType === 'three_months') return '3months';
   if (planType === 'yearly') return 'year';
   return null;
 }
 
-function tariffToDbTariffKey(t: SubscriptionTariffType): 'month' | 'three_months' | 'year' {
-  if (t === '3months') return 'three_months';
-  if (t === 'year') return 'year';
-  return 'month';
+function tariffToDbTariffKey(t: SubscriptionTariffType): 'month' | 'year' {
+  return t === 'year' ? 'year' : 'month';
 }
 
 async function logClickSafe(
@@ -256,7 +253,10 @@ export async function handleClickCardTokenRequest(
   if (!card_digits || expire_date.length !== 4 || !isSubscriptionTariffType(plan_type)) {
     return {
       status: 400,
-      json: { error: 'card_number, expire_date (MMYY), plan_type kerak: month | 3months | year' },
+      json: {
+        error:
+          'card_number, expire_date (karta muddati: oy-yil, 4 raqam), plan_type kerak: month | year',
+      },
     };
   }
 

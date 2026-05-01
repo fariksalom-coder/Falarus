@@ -279,7 +279,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (subscription === 'none') q = q.or('plan_expires_at.is.null,plan_expires_at.lt.' + now);
       else if (subscription === 'monthly') q = q.eq('plan_name', '1 OY').gt('plan_expires_at', now);
-      else if (subscription === 'three_months') q = q.eq('plan_name', '3 OY').gt('plan_expires_at', now);
       else if (subscription === 'yearly') q = q.eq('plan_name', '1 YIL').gt('plan_expires_at', now);
       if (referralOnly) q = q.not('referred_by', 'is', null);
 
@@ -362,7 +361,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('id, first_name, last_name, email, phone')
         .in('id', userIds);
       const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
-      const planLabel: Record<string, string> = { month: '1 OY', '3months': '3 OY', year: '1 YIL' };
+      const planLabel: Record<string, string> = { month: '1 OY', year: '1 YIL' };
       const list = (rows ?? []).map((r: any) => {
         const u = userMap.get(r.user_id);
         const productCode = resolvePaymentProductFromRow(r);
@@ -473,14 +472,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const productCode = resolvePaymentProductFromRow(row as any);
         await supabase.from('payments').update({ status: 'approved', approved_at: now.toISOString(), admin_id: adminId }).eq('id', payId);
         if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
-          const planType =
-            tariffType === 'month'
-              ? 'monthly'
-              : tariffType === '3months'
-                ? 'three_months'
-                : 'yearly';
-          const planName =
-            tariffType === 'year' ? '1 YIL' : tariffType === '3months' ? '3 OY' : '1 OY';
+          const planType = tariffType === 'month' ? 'monthly' : 'yearly';
+          const planName = tariffType === 'year' ? '1 YIL' : '1 OY';
           const { data: current } = await supabase
             .from('users')
             .select('plan_expires_at')
@@ -490,7 +483,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
           const ext = new Date(startFrom);
           if (tariffType === 'month') ext.setMonth(ext.getMonth() + 1);
-          else if (tariffType === '3months') ext.setMonth(ext.getMonth() + 3);
           else ext.setFullYear(ext.getFullYear() + 1);
           await supabase
             .from('users')
@@ -1132,7 +1124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const tariff_type = typeof body.tariff_type === 'string' ? body.tariff_type : '';
         const currency = typeof body.currency === 'string' ? body.currency : '';
         const price = Number(body.price);
-        if (!['month', 'three_months', 'year'].includes(tariff_type) || !['UZS', 'RUB', 'USD'].includes(currency) || Number.isNaN(price) || price < 0) {
+        if (!['month', 'year'].includes(tariff_type) || !['UZS', 'RUB', 'USD'].includes(currency) || Number.isNaN(price) || price < 0) {
           return res.status(400).json({ error: 'tariff_type, currency, price kerak' });
         }
         const now = new Date().toISOString();

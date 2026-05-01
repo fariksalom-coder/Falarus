@@ -2,10 +2,15 @@ import { useState } from 'react';
 import { apiUrl } from '../api';
 
 type Tariff = {
-  id: '1_oy' | '3_oy' | '12_oy';
+  id: '1_oy' | '12_oy';
   label: string;
   price: string;
   oldPrice: string;
+};
+
+const FOSSILS_API_TARIFF: Record<Tariff['id'], 'month' | 'year'> = {
+  '1_oy': 'month',
+  '12_oy': 'year',
 };
 
 type Step = 'tariff' | 'payment' | 'success';
@@ -21,7 +26,6 @@ type CountryOption = {
 
 const TARIFS: Tariff[] = [
   { id: '1_oy', label: "1 oy", price: "99 000 so'm", oldPrice: "250 000 so'm" },
-  { id: '3_oy', label: "3 oy", price: "199 000 so'm", oldPrice: "750 000 so'm" },
   { id: '12_oy', label: "12 oy", price: "299 000 so'm", oldPrice: "3 000 000 so'm" },
 ];
 const RECOMMENDED_TARIFF_ID: Tariff['id'] = '12_oy';
@@ -32,7 +36,6 @@ const PAYMENT_CARD_NUMBER = '5614 6868 0541 4235';
 const PAYMENT_CARD_HOLDER = 'OmonovFarmon';
 const DISCOUNT_LABEL_BY_TARIFF: Record<Tariff['id'], string> = {
   '1_oy': '-60%',
-  '3_oy': '-73%',
   '12_oy': '-90%',
 };
 const formatByGroups = (digits: string, groups: number[]): string => {
@@ -156,7 +159,7 @@ export default function FossilsCheckoutPage() {
           ? normalizedOtherPhone
           : `${selectedCountry.dialCode}${rawPhoneDigits}`;
       formData.append('phone', fullPhone);
-      formData.append('tariff', selectedTariff.label);
+      formData.append('tariff', FOSSILS_API_TARIFF[selectedTariff.id]);
       formData.append('receipt', receipt);
 
       const response = await fetch(apiUrl('/api/payment'), { method: 'POST', body: formData });

@@ -3,16 +3,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { apiUrl } from '../api';
 
 type Tariff = {
-  id: '1_oy' | '3_oy' | '12_oy';
+  id: '1_oy' | '12_oy';
   label: string;
   price: string;
+};
+
+const FOSSILS_API_TARIFF: Record<Tariff['id'], 'month' | 'year'> = {
+  '1_oy': 'month',
+  '12_oy': 'year',
 };
 
 type ModalStep = 'closed' | 'tariff' | 'payment' | 'success';
 
 const TARIFS: Tariff[] = [
   { id: '1_oy', label: "1 oy", price: "99 000 so'm" },
-  { id: '3_oy', label: "3 oy", price: "199 000 so'm" },
   { id: '12_oy', label: "12 oy", price: "299 000 so'm" },
 ];
 
@@ -213,7 +217,7 @@ export default function FossilsLandingPage() {
     try {
       const formData = new FormData();
       formData.append('phone', phone.trim());
-      formData.append('tariff', selectedTariff.label);
+      formData.append('tariff', FOSSILS_API_TARIFF[selectedTariff.id]);
       formData.append('receipt', receipt);
 
       const response = await fetch(apiUrl('/api/payment'), {

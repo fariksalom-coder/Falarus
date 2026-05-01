@@ -261,7 +261,7 @@ async function startServer() {
     console.error('Fossils payment routes failed:', err);
   }
 
-  // Public tariff prices by currency (no auth) — month, three_months, year
+  // Public tariff prices by currency (no auth) — month, year
   app.get('/api/tariff-prices', async (req, res) => {
     const currency = (req.query.currency as string)?.toUpperCase();
     if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
@@ -276,7 +276,7 @@ async function startServer() {
       const rows = (data ?? []) as { tariff_type: string; price: number }[];
       const out: Record<string, number> = {};
       rows.forEach((r) => { out[r.tariff_type] = Number(r.price); });
-      res.json({ month: out.month, three_months: out.three_months, year: out.year });
+      res.json({ month: out.month, year: out.year });
     } catch (e) {
       console.error('[GET /api/tariff-prices]', e);
       res.status(500).json({ error: 'Xatolik' });
@@ -644,8 +644,8 @@ async function startServer() {
   // User: request subscription payment (by card) — admin confirms later
   app.post('/api/payment-request', authenticate, async (req: any, res) => {
     const { plan_type, amount } = req.body || {};
-    if (!plan_type || !['monthly', 'three_months', 'yearly'].includes(plan_type)) {
-      return res.status(400).json({ error: 'plan_type kerak: monthly, three_months, yearly' });
+    if (!plan_type || !['monthly', 'yearly'].includes(plan_type)) {
+      return res.status(400).json({ error: 'plan_type kerak: monthly, yearly' });
     }
     const amt = Number(amount);
     if (!(amt > 0)) return res.status(400).json({ error: 'amount kerak' });
