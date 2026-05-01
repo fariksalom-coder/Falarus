@@ -122,11 +122,14 @@ export function createPaymentRoutes(
         });
       }
 
-      const amount = getClickAmountForProduct({
-        productCode,
-        tariffType: null,
-        tariffPrices: null,
-      });
+      const amount =
+        productCode === 'vnzh'
+          ? 1000
+          : getClickAmountForProduct({
+              productCode,
+              tariffType: null,
+              tariffPrices: null,
+            });
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "To'lov summasi aniqlanmadi" });
       }
