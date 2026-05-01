@@ -149,6 +149,13 @@ export default defineConfig(({mode}) => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
+      // Ngrok / Cloudflare Tunnel и др.: иначе Vite режет запрос «host is not allowed».
+      // Точечно: задайте VITE_ALLOWED_HOSTS=host1.ngrok-free.dev,host2.trycloudflare.com
+      allowedHosts: process.env.VITE_ALLOWED_HOSTS
+        ? process.env.VITE_ALLOWED_HOSTS.split(',')
+            .map((h) => h.trim())
+            .filter(Boolean)
+        : true,
     },
   };
 });

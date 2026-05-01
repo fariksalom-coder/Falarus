@@ -55,6 +55,11 @@ export type AdminPaymentRow = {
   date: string;
   status: string;
   approved_at: string | null;
+  payment_channel?: string | null;
+  click_merchant_payment_id?: string | null;
+  /** OFD / Click fiscalization (admin only) */
+  fiscal_status?: string | null;
+  fiscal_receipt_id?: string | null;
 };
 
 export type AdminFossilsPaymentRow = {
@@ -75,6 +80,35 @@ export type AdminSubscriptionRow = {
   status: string;
   started_at: string;
   expires_at: string;
+  next_payment_date?: string | null;
+  auto_payment_enabled?: boolean;
+  card_token_id?: number | null;
+  auto_payment_retry_count?: number;
+  auto_payment_last_error?: string | null;
+};
+
+export type AdminCardTokenRow = {
+  id: number;
+  user_id: number;
+  user: string;
+  user_email: string | null;
+  masked_phone: string | null;
+  masked_card: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type AdminClickPaymentLogRow = {
+  id: number;
+  user_id: number | null;
+  subscription_id: number | null;
+  user: string | null;
+  operation: string;
+  click_payment_id: string | null;
+  merchant_trans_id: string | null;
+  error_code: number | null;
+  error_note: string | null;
+  created_at: string;
 };
 
 export type AdminWithdrawalRow = {
@@ -214,6 +248,14 @@ export async function rejectPayment(id: number): Promise<void> {
 
 export async function getSubscriptions(): Promise<AdminSubscriptionRow[]> {
   return adminApi<AdminSubscriptionRow[]>('/subscriptions');
+}
+
+export async function getCardTokens(): Promise<AdminCardTokenRow[]> {
+  return adminApi<AdminCardTokenRow[]>('/card-tokens');
+}
+
+export async function getClickPaymentLogs(): Promise<AdminClickPaymentLogRow[]> {
+  return adminApi<AdminClickPaymentLogRow[]>('/click-payment-logs');
 }
 
 export async function getWithdrawals(): Promise<AdminWithdrawalRow[]> {

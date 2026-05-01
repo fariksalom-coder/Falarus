@@ -8,6 +8,27 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: "Rad etilgan",
 };
 
+const FISCAL_LABELS: Record<string, string> = {
+  pending: "Fiskal: kutilmoqda",
+  success: "Fiskal: OK",
+  failed: "Fiskal: xato",
+};
+
+function paymentChannelLabel(ch: string | null | undefined): string {
+  switch (ch) {
+    case 'click_button':
+      return 'Click tugma';
+    case 'click_auto_token':
+      return 'Click token';
+    case 'click_auto_cron':
+      return 'Click avto';
+    case 'manual':
+      return 'Qo‘lda';
+    default:
+      return '—';
+  }
+}
+
 export default function AdminPaymentsPage() {
   const [list, setList] = useState<AdminPaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +97,10 @@ export default function AdminPaymentsPage() {
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Phone</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Tarif</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Usul</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Kanal</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Click payment id</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Fiskal</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Fiskal chek</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Valyuta</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">To'lov vaqti</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Chek</th>
@@ -94,6 +119,31 @@ export default function AdminPaymentsPage() {
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                         {p.payment_provider === 'click' ? 'Click' : 'Manual'}
                       </span>
+                    </td>
+                    <td className="py-3 px-4 text-xs text-slate-600">{paymentChannelLabel(p.payment_channel)}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-slate-600 max-w-[140px] truncate" title={p.click_merchant_payment_id ?? ''}>
+                      {p.click_merchant_payment_id ?? '—'}
+                    </td>
+                    <td className="py-3 px-4 text-xs text-slate-600">
+                      {p.fiscal_status ? FISCAL_LABELS[p.fiscal_status] ?? p.fiscal_status : '—'}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-xs text-slate-600 max-w-[180px] truncate" title={p.fiscal_receipt_id ?? ''}>
+                      {p.fiscal_receipt_id ? (
+                        /^https?:\/\//i.test(p.fiscal_receipt_id) ? (
+                          <a
+                            href={p.fiscal_receipt_id}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:underline"
+                          >
+                            Ochish
+                          </a>
+                        ) : (
+                          p.fiscal_receipt_id
+                        )
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="py-3 px-4">{p.currency}</td>
                     <td className="py-3 px-4 text-slate-600">

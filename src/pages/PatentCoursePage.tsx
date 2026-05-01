@@ -12,6 +12,7 @@ import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModa
 import PaywallModal from '../components/PaywallModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { getPatentVariantResults, type PatentVariantResult } from '../api/patentResults';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
 
@@ -27,6 +28,7 @@ export default function PatentCoursePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = useAuth();
+  const { refreshPayments } = usePaymentStatus();
   const { access } = useAccess();
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
@@ -66,16 +68,6 @@ export default function PatentCoursePage() {
         productCode: 'patent',
         productLabel: patentMeta.label,
         currency,
-        returnTo: '/kurslar/patent',
-      },
-    });
-  };
-
-  const handleClickPurchase = () => {
-    navigate('/payment/click', {
-      state: {
-        productCode: 'patent',
-        productLabel: patentMeta.label,
         returnTo: '/kurslar/patent',
       },
     });
@@ -216,8 +208,12 @@ export default function PatentCoursePage() {
         <CurrencyModal
           onClose={() => setCurrencyModalOpen(false)}
           onSelect={handlePurchase}
-          onClickPay={handleClickPurchase}
           clickLabel={`Click bilan ${patentMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
+          directClickCourse={{
+            token,
+            productCode: 'patent',
+            refreshPayments,
+          }}
         />
       ) : null}
     </div>

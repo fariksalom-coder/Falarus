@@ -17,6 +17,8 @@ import { getVnzhSection, isVnzhFreeTask } from '../data/vnzhCourseData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
 import PaywallModal from '../components/PaywallModal';
 import { useAccess } from '../context/AccessContext';
+import { useAuth } from '../context/AuthContext';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
 
 const BG = '#EEF6FF';
@@ -48,6 +50,8 @@ function getSectionIcon(icon: ReturnType<typeof getVnzhSection> extends infer T 
 
 export default function VnzhCourseSectionPage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const { refreshPayments } = usePaymentStatus();
   const { sectionSlug } = useParams();
   const section = getVnzhSection(sectionSlug);
   const { access } = useAccess();
@@ -62,16 +66,6 @@ export default function VnzhCourseSectionPage() {
         productCode: 'vnzh',
         productLabel: vnzhMeta.label,
         currency,
-        returnTo: sectionSlug ? `/kurslar/vnzh/${sectionSlug}` : '/kurslar/vnzh',
-      },
-    });
-  };
-
-  const handleClickPurchase = () => {
-    navigate('/payment/click', {
-      state: {
-        productCode: 'vnzh',
-        productLabel: vnzhMeta.label,
         returnTo: sectionSlug ? `/kurslar/vnzh/${sectionSlug}` : '/kurslar/vnzh',
       },
     });
@@ -219,8 +213,12 @@ export default function VnzhCourseSectionPage() {
         <CurrencyModal
           onClose={() => setCurrencyModalOpen(false)}
           onSelect={handlePurchase}
-          onClickPay={handleClickPurchase}
           clickLabel={`Click bilan ${vnzhMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
+          directClickCourse={{
+            token,
+            productCode: 'vnzh',
+            refreshPayments,
+          }}
         />
       ) : null}
     </div>

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { VNZH_COURSE_SECTIONS } from '../data/vnzhCourseData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
 import { useAccess } from '../context/AccessContext';
+import { useAuth } from '../context/AuthContext';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
 
@@ -44,6 +46,8 @@ function getSectionRangeLabel(tasks: (typeof VNZH_COURSE_SECTIONS)[number]['task
 
 export default function VnzhCoursePage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const { refreshPayments } = usePaymentStatus();
   const { access } = useAccess();
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
 
@@ -53,16 +57,6 @@ export default function VnzhCoursePage() {
         productCode: 'vnzh',
         productLabel: vnzhMeta.label,
         currency,
-        returnTo: '/kurslar/vnzh',
-      },
-    });
-  };
-
-  const handleClickPurchase = () => {
-    navigate('/payment/click', {
-      state: {
-        productCode: 'vnzh',
-        productLabel: vnzhMeta.label,
         returnTo: '/kurslar/vnzh',
       },
     });
@@ -158,8 +152,12 @@ export default function VnzhCoursePage() {
         <CurrencyModal
           onClose={() => setCurrencyModalOpen(false)}
           onSelect={handlePurchase}
-          onClickPay={handleClickPurchase}
           clickLabel={`Click bilan ${vnzhMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
+          directClickCourse={{
+            token,
+            productCode: 'vnzh',
+            refreshPayments,
+          }}
         />
       ) : null}
     </div>

@@ -21,6 +21,18 @@ export function createAdminController(supabase: SupabaseClient) {
   const HELP_IMAGE_PREFIX = '__image__:';
   const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
 
+  function isUndefinedColumnError(error: unknown): boolean {
+    const msg = String((error as { message?: unknown })?.message ?? '').toLowerCase();
+    const code = String((error as { code?: unknown })?.code ?? '');
+    return code === '42703' || (msg.includes('column') && msg.includes('does not exist'));
+  }
+
+  function isMissingRelationError(error: unknown): boolean {
+    const msg = String((error as { message?: unknown })?.message ?? '').toLowerCase();
+    const code = String((error as { code?: unknown })?.code ?? '');
+    return code === '42P01' || (msg.includes('relation') && msg.includes('does not exist'));
+  }
+
   function isMissingSupportChatSchemaError(error: unknown): boolean {
     const message = typeof error === 'object' && error && 'message' in error
       ? String((error as { message?: unknown }).message ?? '')
@@ -219,15 +231,22 @@ export function createAdminController(supabase: SupabaseClient) {
 
   // --- Payments (subscription_payment_requests)
   async function getPayments(_req: Request, res: Response) {
+    const PAY_EXTENDED =
+      'id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, approved_at, created_at, payment_channel, click_merchant_payment_id, fiscal_status, fiscal_receipt_id';
     const PAY_FULL =
       'id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, approved_at, created_at';
     const PAY_LEGACY =
       'id, user_id, tariff_type, currency, payment_proof_url, payment_time, status, approved_at, created_at';
-    let { data: rows, error } = await supabase.from('payments').select(PAY_FULL).order('created_at', { ascending: false });
-    if (error && isPaymentsProductCodeSchemaError(error)) {
-      const second = await supabase.from('payments').select(PAY_LEGACY).order('created_at', { ascending: false });
+    let { data: rows, error } = await supabase.from('payments').select(PAY_EXTENDED).order('created_at', { ascending: false });
+    if (error && (isPaymentsProductCodeSchemaError(error) || isUndefinedColumnError(error))) {
+      const second = await supabase.from('payments').select(PAY_FULL).order('created_at', { ascending: false });
       rows = second.data as typeof rows;
       error = second.error;
+    }
+    if (error && isPaymentsProductCodeSchemaError(error)) {
+      const third = await supabase.from('payments').select(PAY_LEGACY).order('created_at', { ascending: false });
+      rows = third.data as typeof rows;
+      error = third.error;
     }
     if (error) {
       console.error('[admin/payments]', error);
@@ -267,6 +286,10 @@ export function createAdminController(supabase: SupabaseClient) {
         date: r.created_at,
         status: r.status,
         approved_at: r.approved_at,
+        payment_channel: r.payment_channel ?? null,
+        click_merchant_payment_id: r.click_merchant_payment_id ?? null,
+        fiscal_status: r.fiscal_status ?? null,
+        fiscal_receipt_id: r.fiscal_receipt_id ?? null,
       };
     });
     return res.json(list);
@@ -415,10 +438,15 @@ export function createAdminController(supabase: SupabaseClient) {
 
   // --- Subscriptions list
   async function getSubscriptions(_req: Request, res: Response) {
-    const { data: rows, error } = await supabase
-      .from('subscriptions')
-      .select('id, user_id, plan_type, status, started_at, expires_at')
-      .order('expires_at', { ascending: false });
+    const SUB_FULL =
+      'id, user_id, plan_type, status, started_at, expires_at, next_payment_date, auto_payment_enabled, card_token_id, auto_payment_retry_count, auto_payment_last_error';
+    const SUB_LEGACY = 'id, user_id, plan_type, status, started_at, expires_at';
+    let { data: rows, error } = await supabase.from('subscriptions').select(SUB_FULL).order('expires_at', { ascending: false });
+    if (error && isUndefinedColumnError(error)) {
+      const second = await supabase.from('subscriptions').select(SUB_LEGACY).order('expires_at', { ascending: false });
+      rows = second.data as typeof rows;
+      error = second.error;
+    }
     if (error) {
       console.error('[admin/subscriptions]', error);
       return res.status(500).json({ error: error.message });
@@ -435,7 +463,77 @@ export function createAdminController(supabase: SupabaseClient) {
       status: r.status,
       started_at: r.started_at,
       expires_at: r.expires_at,
+      next_payment_date: r.next_payment_date ?? null,
+      auto_payment_enabled: Boolean(r.auto_payment_enabled),
+      card_token_id: r.card_token_id ?? null,
+      auto_payment_retry_count: r.auto_payment_retry_count ?? 0,
+      auto_payment_last_error: r.auto_payment_last_error ?? null,
     }));
+    return res.json(list);
+  }
+
+  async function getCardTokens(_req: Request, res: Response) {
+    const { data: rows, error } = await supabase
+      .from('card_tokens')
+      .select('id, user_id, masked_phone, masked_card, is_active, created_at')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) {
+      if (isMissingRelationError(error)) return res.json([]);
+      console.error('[admin/card-tokens]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id))];
+    const { data: users } = await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds);
+    const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
+    const list = (rows ?? []).map((r: any) => {
+      const u = userMap.get(r.user_id);
+      return {
+        id: r.id,
+        user_id: r.user_id,
+        user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : '—',
+        user_email: u?.email ?? null,
+        masked_phone: r.masked_phone ?? null,
+        masked_card: r.masked_card ?? null,
+        is_active: Boolean(r.is_active),
+        created_at: r.created_at,
+      };
+    });
+    return res.json(list);
+  }
+
+  async function getClickPaymentLogs(_req: Request, res: Response) {
+    const { data: rows, error } = await supabase
+      .from('click_payment_logs')
+      .select('id, user_id, subscription_id, operation, click_payment_id, merchant_trans_id, error_code, error_note, created_at')
+      .order('created_at', { ascending: false })
+      .limit(400);
+    if (error) {
+      if (isMissingRelationError(error)) return res.json([]);
+      console.error('[admin/click-payment-logs]', error);
+      return res.status(500).json({ error: error.message });
+    }
+    const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean))];
+    const { data: users } =
+      userIds.length > 0
+        ? await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds)
+        : { data: [] };
+    const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
+    const list = (rows ?? []).map((r: any) => {
+      const u = r.user_id ? userMap.get(r.user_id) : null;
+      return {
+        id: r.id,
+        user_id: r.user_id,
+        subscription_id: r.subscription_id,
+        user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : null,
+        operation: r.operation,
+        click_payment_id: r.click_payment_id ?? null,
+        merchant_trans_id: r.merchant_trans_id ?? null,
+        error_code: r.error_code ?? null,
+        error_note: r.error_note ?? null,
+        created_at: r.created_at,
+      };
+    });
     return res.json(list);
   }
 
@@ -1146,6 +1244,8 @@ export function createAdminController(supabase: SupabaseClient) {
     confirmPayment,
     rejectPayment,
     getSubscriptions,
+    getCardTokens,
+    getClickPaymentLogs,
     getWithdrawals,
     approveWithdrawal,
     rejectWithdrawal,

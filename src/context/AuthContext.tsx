@@ -17,6 +17,7 @@ interface User {
   totalPoints?: number;
   planName?: string | null;
   planExpiresAt?: string | null;
+  billingNoticeUz?: string | null;
 }
 
 interface AuthContextType {

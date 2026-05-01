@@ -47,6 +47,7 @@ import {
   getCourseProductPrice,
   isCourseProductCode,
   isCurrencyCode,
+  isPaymentProductCode,
   isSubscriptionTariffType,
   normalizePaymentProductCode,
 } from '../shared/paymentProducts.js';
@@ -54,9 +55,12 @@ import {
   buildClickErrorResponse,
   buildClickPaymentUrl,
   buildClickSuccessResponse,
+  CLICK_PAY_CARD_TYPE_DEFAULT,
   inferPaymentProviderFromProofUrl,
   getClickAmountForProduct,
+  isResumableClickButtonPending,
   normalizeClickCallbackPayload,
+  shouldSkipClickSignatureVerify,
   verifyClickSignature,
 } from '../shared/clickPayments.js';
 import { isPaymentsProductCodeSchemaError } from '../shared/paymentsCompat.js';
@@ -64,6 +68,13 @@ import { embedFalarusProductInProofUrl } from '../shared/paymentsProofUrl.js';
 import { activateApprovedPayment } from '../shared/paymentActivation.js';
 import { getClickConfig } from '../shared/clickConfig.js';
 import { invalidateAccessCache } from './_lib/subscription.js';
+import {
+  handleClickCardTokenDelete,
+  handleClickCardTokenRequest,
+  handleClickCardTokenVerify,
+  runClickAutoRenewalCron,
+} from '../server/services/clickCardToken.service.js';
+import { fiscalizePayment, runClickFiscalRetryCron } from '../server/services/clickFiscal.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const FOSSILS_CHECKS_BUCKET = 'fossils-checks';
@@ -145,21 +156,8 @@ function parseMultipartPayments(
   });
 }
 
-async function fetchUzTariffPrices() {
-  const { data: rows, error } = await supabase
-    .from('tariff_prices')
-    .select('tariff_type, price')
-    .eq('currency', 'UZS')
-    .in('tariff_type', ['month', 'three_months', 'year']);
-  if (error) throw error;
-  return {
-    month: Number(rows?.find((r: { tariff_type: string }) => r.tariff_type === 'month')?.price ?? 0),
-    three_months: Number(rows?.find((r: { tariff_type: string }) => r.tariff_type === 'three_months')?.price ?? 0),
-    year: Number(rows?.find((r: { tariff_type: string }) => r.tariff_type === 'year')?.price ?? 0),
-  };
-}
-
 const ROOT_API_PREFIXES = new Set([
+  'cron',
   'referral',
   'payments',
   'pricing',
@@ -223,6 +221,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   const path = getPathParts(req);
+
+  if (path[0] === 'cron' && path[1] === 'click-auto-pay') {
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+    const secret = process.env.CLICK_CRON_SECRET || process.env.CRON_SECRET;
+    const auth = req.headers.authorization;
+    if (!secret || auth !== `Bearer ${secret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const result = await runClickAutoRenewalCron(supabase);
+      return res.status(200).json(result);
+    } catch (e) {
+      console.error('[cron/click-auto-pay]', e);
+      return res.status(500).json({ error: 'Cron failed' });
+    }
+  }
+
+  if (path[0] === 'cron' && path[1] === 'click-fiscal-retry') {
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+    const secret = process.env.CLICK_CRON_SECRET || process.env.CRON_SECRET;
+    const auth = req.headers.authorization;
+    if (!secret || auth !== `Bearer ${secret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const result = await runClickFiscalRetryCron(supabase);
+      return res.status(200).json(result);
+    } catch (e) {
+      console.error('[cron/click-fiscal-retry]', e);
+      return res.status(500).json({ error: 'Cron failed' });
+    }
+  }
+
   const isPartnerPath = path[0] === 'partner';
   const isPartnerStatusPath = isPartnerPath && path[1] === 'status';
   const baseBucket = isPartnerStatusPath ? 'partner-status' : isPartnerPath ? 'partner' : 'global';
@@ -409,6 +444,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const {
         serviceId: clickServiceId,
         merchantId: clickMerchantId,
+        merchantUserId: clickMerchantUserId,
         returnUrl: clickReturnUrl,
       } = getClickConfig();
       if (!clickServiceId || !clickMerchantId) {
@@ -416,42 +452,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const body = parseBody(req.body);
-      const productCode = normalizePaymentProductCode(body.product_code);
-      const tariffType = String(body.tariff_type ?? '').trim();
-      if (productCode === 'russian' && !isSubscriptionTariffType(tariffType)) {
-        return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
+      const rawProductCode =
+        typeof body.product_code === 'string' ? body.product_code.trim() : body.product_code;
+      if (!isPaymentProductCode(rawProductCode)) {
+        return res.status(400).json({
+          error: 'INVALID_PRODUCT_CODE',
+          message: "product_code majburiy va patent | vnzh | russian bo‘lishi kerak.",
+        });
+      }
+      const productCode = rawProductCode;
+      if (productCode === 'russian') {
+        return res.status(400).json({
+          error: 'AUTO_PAY_ONLY',
+          message:
+            'Rus tili kursi uchun bir martalik Click tugmasi o‘chirilgan. Faqat avtomatik to‘lov (karta + SMS) mavjud.',
+        });
       }
 
       let { data: pending, error: pendingErr } = await supabase
         .from('payments')
-        .select('id')
+        .select('id, payment_channel, payment_proof_url, amount')
         .eq('user_id', userId)
         .eq('status', 'pending')
         .eq('product_code', productCode)
         .limit(1)
         .maybeSingle();
       if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
-        const legacy = await supabase
-          .from('payments')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('status', 'pending')
-          .limit(1)
-          .maybeSingle();
-        pending = legacy.data;
+        pending = null;
       }
       if (pending) {
+        if (isResumableClickButtonPending(pending)) {
+          const proofUrl = String(pending.payment_proof_url ?? '').trim();
+          return res.status(200).json({
+            success: true,
+            payment_id: Number(pending.id),
+            payment_url: proofUrl,
+            amount: Number(pending.amount),
+            currency: 'UZS',
+          });
+        }
         return res.status(400).json({
           error: 'PENDING_PAYMENT',
           message: "To'lovingiz tekshirilmoqda. Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi.",
         });
       }
 
-      const tariffPrices = productCode === 'russian' ? await fetchUzTariffPrices() : null;
       const amount = getClickAmountForProduct({
         productCode,
-        tariffType: productCode === 'russian' && isSubscriptionTariffType(tariffType) ? tariffType : null,
-        tariffPrices,
+        tariffType: null,
+        tariffPrices: null,
       });
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "To'lov summasi aniqlanmadi" });
@@ -459,12 +508,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const insertBase: Record<string, unknown> = {
         user_id: userId,
-        tariff_type: productCode === 'russian' ? tariffType : null,
+        tariff_type: null,
         currency: 'UZS',
         amount,
         payment_proof_url: null,
         payment_time: new Date().toISOString(),
         status: 'pending',
+        payment_channel: 'click_button',
       };
       let { data: row, error: insertErr } = await supabase
         .from('payments')
@@ -476,7 +526,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .from('payments')
           .insert({
             ...insertBase,
-            tariff_type: productCode === 'russian' ? tariffType : 'month',
+            tariff_type: 'month',
           })
           .select('id')
           .single();
@@ -491,9 +541,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const paymentUrl = buildClickPaymentUrl({
         serviceId: clickServiceId,
         merchantId: clickMerchantId,
+        merchantUserId: clickMerchantUserId,
         amount,
         paymentId,
         returnUrl: clickReturnUrl,
+        cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
       });
       await supabase.from('payments').update({ payment_proof_url: paymentUrl }).eq('id', paymentId);
       return res.status(200).json({
@@ -510,6 +562,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  // POST /api/payments/click/card-token/request
+  if (
+    path[0] === 'payments' &&
+    path[1] === 'click' &&
+    path[2] === 'card-token' &&
+    path[3] === 'request' &&
+    req.method === 'POST'
+  ) {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    const hotRate = checkRateLimit(req, 'click-card-token', HOT_PATH_LIMIT_MAX);
+    if (hotRate.limited) {
+      res.setHeader('Retry-After', String(hotRate.retryAfterSec));
+      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
+    }
+    const out = await handleClickCardTokenRequest(supabase, userId, parseBody(req.body));
+    return res.status(out.status).json(out.json);
+  }
+
+  // POST /api/payments/click/card-token/verify
+  if (
+    path[0] === 'payments' &&
+    path[1] === 'click' &&
+    path[2] === 'card-token' &&
+    path[3] === 'verify' &&
+    req.method === 'POST'
+  ) {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    const hotRate = checkRateLimit(req, 'click-card-verify', HOT_PATH_LIMIT_MAX);
+    if (hotRate.limited) {
+      res.setHeader('Retry-After', String(hotRate.retryAfterSec));
+      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
+    }
+    const out = await handleClickCardTokenVerify(supabase, userId, parseBody(req.body));
+    return res.status(out.status).json(out.json);
+  }
+
+  // POST /api/payments/click/card-token/delete
+  if (
+    path[0] === 'payments' &&
+    path[1] === 'click' &&
+    path[2] === 'card-token' &&
+    path[3] === 'delete' &&
+    req.method === 'POST'
+  ) {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    const out = await handleClickCardTokenDelete(supabase, userId);
+    return res.status(out.status).json(out.json);
+  }
+
   // POST /api/click/prepare
   if (path[0] === 'click' && path[1] === 'prepare' && req.method === 'POST') {
     const payload = normalizeClickCallbackPayload(parseBody(req.body));
@@ -521,7 +625,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         buildClickErrorResponse({ payload, error: -9, note: 'Click konfiguratsiyasi topilmadi' })
       );
     }
-    if (payload.service_id !== clickServiceId || !verifyClickSignature(payload, clickSecretKey)) {
+    if (payload.service_id !== clickServiceId) {
+      return res.status(400).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'service_id mos emas',
+        })
+      );
+    }
+    const skipSigPrepareApi = shouldSkipClickSignatureVerify();
+    if (skipSigPrepareApi) {
+      console.warn('[click/prepare] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
+    }
+    if (!skipSigPrepareApi && !verifyClickSignature(payload, clickSecretKey)) {
       return res.status(400).json(
         buildClickErrorResponse({
           payload,
@@ -578,6 +696,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       secretKey: clickSecretKey,
       serviceId: clickServiceId,
       merchantId: clickMerchantId,
+      merchantUserId: clickMerchantUserId,
+      returnUrl: clickReturnUrl,
     } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
 
@@ -586,7 +706,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         buildClickErrorResponse({ payload, error: -9, note: 'Click konfiguratsiyasi topilmadi' })
       );
     }
-    if (payload.service_id !== clickServiceId || !verifyClickSignature(payload, clickSecretKey)) {
+    if (payload.service_id !== clickServiceId) {
+      return res.status(400).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'service_id mos emas',
+        })
+      );
+    }
+    const skipSigCompleteApi = shouldSkipClickSignatureVerify();
+    if (skipSigCompleteApi) {
+      console.warn('[click/complete] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
+    }
+    if (!skipSigCompleteApi && !verifyClickSignature(payload, clickSecretKey)) {
       return res.status(400).json(
         buildClickErrorResponse({
           payload,
@@ -604,13 +738,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let { data: payment, error } = await supabase
       .from('payments')
-      .select('id, user_id, tariff_type, product_code, amount, status, payment_proof_url')
+      .select(
+        'id, user_id, tariff_type, product_code, amount, status, payment_proof_url, click_merchant_payment_id'
+      )
       .eq('id', paymentId)
       .maybeSingle();
     if (error && isPaymentsProductCodeSchemaError(error)) {
       const legacy = await supabase
         .from('payments')
-        .select('id, user_id, tariff_type, amount, status, payment_proof_url')
+        .select('id, user_id, tariff_type, amount, status, payment_proof_url, click_merchant_payment_id')
         .eq('id', paymentId)
         .maybeSingle();
       payment = legacy.data as typeof payment;
@@ -656,20 +792,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
 
+    const clickPaydocId = String(payload.click_paydoc_id ?? '').trim();
     const productCode = normalizePaymentProductCode((payment as { product_code?: string | null }).product_code);
     const { error: approveErr } = await supabase
       .from('payments')
       .update({
         status: 'approved',
         approved_at: new Date().toISOString(),
+        click_merchant_payment_id:
+          clickPaydocId ||
+          ((payment as { click_merchant_payment_id?: string | null }).click_merchant_payment_id ?? null),
         payment_proof_url:
           inferPaymentProviderFromProofUrl((payment as { payment_proof_url?: string | null }).payment_proof_url) === 'click'
             ? (payment as { payment_proof_url?: string | null }).payment_proof_url
             : buildClickPaymentUrl({
                 serviceId: clickServiceId,
                 merchantId: clickMerchantId,
+                merchantUserId: clickMerchantUserId,
                 amount: Number(payment.amount),
                 paymentId,
+                returnUrl: clickReturnUrl,
+                cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
               }),
       })
       .eq('id', paymentId)
@@ -695,6 +838,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (activationErr) {
       console.error('[click/complete activation]', activationErr);
     }
+
+    void fiscalizePayment(supabase, paymentId);
 
     return res.status(200).json(
       buildClickSuccessResponse({

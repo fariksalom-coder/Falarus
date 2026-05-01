@@ -41,7 +41,7 @@ View your app in AI Studio: https://ai.studio/apps/949bd97b-2cb7-4a22-88ac-fe7c9
 
 1. `npm install`
 2. `npm run dev`
-3. Open `http://localhost:3000/fossils`
+3. Open `http://localhost:3001/fossils`
 
 ### Deploy notes for fossils.us
 

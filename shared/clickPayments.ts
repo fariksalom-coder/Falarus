@@ -23,21 +23,48 @@ export type ClickCallbackPayload = {
 };
 
 export const CLICK_BASE_URL = 'https://my.click.uz/services/pay';
+export const CLICK_PAY_CARD_TYPE_DEFAULT = 'uzcard/humo';
+export const CLICK_TOKEN_PAYMENT_PREFIX = 'click-token:';
 export const CLICK_PROVIDER_LABEL = 'Click';
+
+export function isClickShopCheckoutUrl(url: string | null | undefined): boolean {
+  const u = typeof url === 'string' ? url.trim() : '';
+  return u.length > 0 && u.startsWith(CLICK_BASE_URL);
+}
+
+/** Pending Click Shop checkout — qayta `/create` chaqirilsa, avvalgi havolani qaytarish mumkin */
+export function isResumableClickButtonPending(row: {
+  payment_channel?: string | null;
+  payment_proof_url?: string | null;
+}): boolean {
+  if (!isClickShopCheckoutUrl(row.payment_proof_url)) return false;
+  const ch = row.payment_channel;
+  return ch === 'click_button' || ch == null || ch === '';
+}
+
+export function buildClickTokenPaymentProofUrl(paymentId: number | string): string {
+  return `${CLICK_TOKEN_PAYMENT_PREFIX}${paymentId}`;
+}
 
 export function inferPaymentProviderFromProofUrl(
   paymentProofUrl?: string | null
 ): PaymentProvider {
   if (!paymentProofUrl) return 'manual';
-  return paymentProofUrl.startsWith(CLICK_BASE_URL) ? 'click' : 'manual';
+  if (paymentProofUrl.startsWith(CLICK_BASE_URL)) return 'click';
+  if (paymentProofUrl.startsWith(CLICK_TOKEN_PAYMENT_PREFIX)) return 'click';
+  return 'manual';
 }
 
 export function buildClickPaymentUrl(params: {
   serviceId: string;
   merchantId: string;
+  /** Shop/Button pay form field `merchant_user_id` (often differs from numeric merchant_id). */
+  merchantUserId?: string | null;
   amount: number;
   paymentId: number | string;
   returnUrl?: string | null;
+  /** e.g. uzcard/humo — matches Click Button docs */
+  cardType?: string | null;
 }): string {
   const search = new URLSearchParams({
     service_id: String(params.serviceId),
@@ -47,6 +74,14 @@ export function buildClickPaymentUrl(params: {
   });
   if (params.returnUrl) {
     search.set('return_url', params.returnUrl);
+  }
+  const muid = params.merchantUserId?.trim();
+  if (muid) {
+    search.set('merchant_user_id', muid);
+  }
+  const ct = (params.cardType ?? CLICK_PAY_CARD_TYPE_DEFAULT).trim();
+  if (ct) {
+    search.set('card_type', ct);
   }
   return `${CLICK_BASE_URL}?${search.toString()}`;
 }
@@ -100,6 +135,24 @@ export function verifyClickSignature(payload: ClickCallbackPayload, secretKey: s
       ? buildClickCompleteSignature(payload, secretKey)
       : buildClickPrepareSignature(payload, secretKey);
   return expected.toLowerCase() === String(payload.sign_string || '').toLowerCase();
+}
+
+/**
+ * Production: signature is NEVER skipped (even if CLICK_SKIP_SIGNATURE_VERIFY is set).
+ * Non-production: CLICK_SKIP_SIGNATURE_VERIFY=true|1 skips MD5 verify (local tools only).
+ */
+export function shouldSkipClickSignatureVerify(): boolean {
+  const isProd = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+  const flag = ['true', '1'].includes(
+    String(process.env.CLICK_SKIP_SIGNATURE_VERIFY || '').trim().toLowerCase()
+  );
+  if (isProd && flag) {
+    console.warn(
+      '[click] CLICK_SKIP_SIGNATURE_VERIFY is ignored when NODE_ENV=production (signatures required)'
+    );
+  }
+  if (isProd) return false;
+  return flag;
 }
 
 export function normalizeClickCallbackPayload(

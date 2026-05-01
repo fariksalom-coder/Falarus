@@ -14,6 +14,8 @@ import {
   LogOut,
   BookOpen,
   Video,
+  KeyRound,
+  ScrollText,
 } from 'lucide-react';
 import { getAdminHelpChats } from '../../api/admin';
 
@@ -23,6 +25,8 @@ const nav = [
   { to: '/admin/payments', label: 'Payments', icon: CreditCard },
   { to: '/admin/fossils-payments', label: 'Fossils Payments', icon: Video },
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: Repeat },
+  { to: '/admin/card-tokens', label: 'Click tokens', icon: KeyRound },
+  { to: '/admin/click-logs', label: 'Click logs', icon: ScrollText },
   { to: '/admin/referrals', label: 'Referrals', icon: Wallet },
   { to: '/admin/support', label: 'Yozishmalar', icon: MessageSquare },
   { to: '/admin/payment-methods', label: 'Payment Methods', icon: Banknote },

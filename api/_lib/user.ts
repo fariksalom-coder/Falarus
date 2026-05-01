@@ -8,10 +8,10 @@ import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js
 import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 
 async function handleMe(userId: number, res: VercelResponse) {
-  const { data: user, error } = await supabase
+    const { data: user, error } = await supabase
     .from('users')
     .select(
-      'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at'
+      'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz'
     )
     .eq('id', userId)
     .maybeSingle();
@@ -31,6 +31,7 @@ async function handleMe(userId: number, res: VercelResponse) {
     totalPoints: user.total_points ?? 0,
     planName: user.plan_name ?? null,
     planExpiresAt: user.plan_expires_at ?? null,
+    billingNoticeUz: (user as { billing_notice_uz?: string | null }).billing_notice_uz ?? null,
   });
 }
 

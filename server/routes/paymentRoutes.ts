@@ -5,6 +5,7 @@ import {
   getCourseProductPrice,
   isCourseProductCode,
   isCurrencyCode,
+  isPaymentProductCode,
   isSubscriptionTariffType,
   normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
@@ -12,9 +13,12 @@ import {
   buildClickErrorResponse,
   buildClickPaymentUrl,
   buildClickSuccessResponse,
+  CLICK_PAY_CARD_TYPE_DEFAULT,
   inferPaymentProviderFromProofUrl,
   getClickAmountForProduct,
+  isResumableClickButtonPending,
   normalizeClickCallbackPayload,
+  shouldSkipClickSignatureVerify,
   verifyClickSignature,
 } from '../../shared/clickPayments.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
@@ -22,6 +26,12 @@ import { embedFalarusProductInProofUrl } from '../../shared/paymentsProofUrl.js'
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
 import { invalidateAccessCache } from '../services/subscription.service.js';
 import { getClickConfig } from '../../shared/clickConfig.js';
+import {
+  handleClickCardTokenDelete,
+  handleClickCardTokenRequest,
+  handleClickCardTokenVerify,
+} from '../services/clickCardToken.service.js';
+import { fiscalizePayment } from '../services/clickFiscal.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const ALLOWED_MIMES = [
@@ -57,65 +67,65 @@ export function createPaymentRoutes(
     authenticate,
     async (req: any, res: Response) => {
       const userId = req.userId;
-      const tariffType = req.body?.tariff_type;
-      const productCode = normalizePaymentProductCode(req.body?.product_code);
+      const rawProductCode =
+        typeof req.body?.product_code === 'string' ? req.body.product_code.trim() : req.body?.product_code;
+      if (!isPaymentProductCode(rawProductCode)) {
+        return res.status(400).json({
+          error: 'INVALID_PRODUCT_CODE',
+          message: "product_code majburiy va patent | vnzh | russian bo‘lishi kerak.",
+        });
+      }
+      const productCode = rawProductCode;
       const {
         serviceId: clickServiceId,
         merchantId: clickMerchantId,
+        merchantUserId: clickMerchantUserId,
         returnUrl: clickReturnUrl,
       } = getClickConfig();
 
       if (!clickServiceId || !clickMerchantId) {
         return res.status(503).json({ error: 'Click sozlanmagan. CLICK_SERVICE_ID va CLICK_MERCHANT_ID kerak.' });
       }
-      if (productCode === 'russian' && !isSubscriptionTariffType(tariffType)) {
-        return res.status(400).json({ error: 'tariff_type kerak: month, 3months, year' });
+      if (productCode === 'russian') {
+        return res.status(400).json({
+          error: 'AUTO_PAY_ONLY',
+          message:
+            'Rus tili kursi uchun bir martalik Click tugmasi o‘chirilgan. Faqat avtomatik to‘lov (karta + SMS) mavjud.',
+        });
       }
 
       let { data: pending, error: pendingErr } = await supabase
         .from('payments')
-        .select('id')
+        .select('id, payment_channel, payment_proof_url, amount')
         .eq('user_id', userId)
         .eq('status', 'pending')
         .eq('product_code', productCode)
         .limit(1)
         .maybeSingle();
       if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
-        const legacy = await supabase
-          .from('payments')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('status', 'pending')
-          .limit(1)
-          .maybeSingle();
-        pending = legacy.data;
+        pending = null;
       }
       if (pending) {
+        if (isResumableClickButtonPending(pending)) {
+          const proofUrl = String(pending.payment_proof_url ?? '').trim();
+          return res.json({
+            success: true,
+            payment_id: Number(pending.id),
+            payment_url: proofUrl,
+            amount: Number(pending.amount),
+            currency: 'UZS',
+          });
+        }
         return res.status(400).json({
           error: 'PENDING_PAYMENT',
           message: "To'lovingiz tekshirilmoqda. Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi.",
         });
       }
 
-      let tariffPrices: { month: number; three_months: number; year: number } | null = null;
-      if (productCode === 'russian') {
-        const { data: rows, error } = await supabase
-          .from('tariff_prices')
-          .select('tariff_type, price')
-          .eq('currency', 'UZS')
-          .in('tariff_type', ['month', 'three_months', 'year']);
-        if (error) return res.status(500).json({ error: error.message });
-        tariffPrices = {
-          month: Number(rows?.find((r: any) => r.tariff_type === 'month')?.price ?? 0),
-          three_months: Number(rows?.find((r: any) => r.tariff_type === 'three_months')?.price ?? 0),
-          year: Number(rows?.find((r: any) => r.tariff_type === 'year')?.price ?? 0),
-        };
-      }
-
       const amount = getClickAmountForProduct({
         productCode,
-        tariffType: productCode === 'russian' && isSubscriptionTariffType(tariffType) ? tariffType : null,
-        tariffPrices,
+        tariffType: null,
+        tariffPrices: null,
       });
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "To'lov summasi aniqlanmadi" });
@@ -123,12 +133,13 @@ export function createPaymentRoutes(
 
       const insertBase: Record<string, unknown> = {
         user_id: userId,
-        tariff_type: productCode === 'russian' ? tariffType : null,
+        tariff_type: null,
         currency: 'UZS',
         amount,
         payment_proof_url: null,
         payment_time: new Date().toISOString(),
         status: 'pending' as const,
+        payment_channel: 'click_button',
       };
 
       let { data: row, error: insertErr } = await supabase
@@ -139,7 +150,7 @@ export function createPaymentRoutes(
       if (insertErr && isPaymentsProductCodeSchemaError(insertErr)) {
         const legacyBase = {
           ...insertBase,
-          tariff_type: productCode === 'russian' ? tariffType : 'month',
+          tariff_type: 'month',
         };
         const legacyIns = await supabase.from('payments').insert(legacyBase).select('id').single();
         row = legacyIns.data;
@@ -153,9 +164,11 @@ export function createPaymentRoutes(
       const paymentUrl = buildClickPaymentUrl({
         serviceId: clickServiceId,
         merchantId: clickMerchantId,
+        merchantUserId: clickMerchantUserId,
         amount,
         paymentId,
         returnUrl: clickReturnUrl,
+        cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
       });
       await supabase.from('payments').update({ payment_proof_url: paymentUrl }).eq('id', paymentId);
 
@@ -168,6 +181,21 @@ export function createPaymentRoutes(
       });
     }
   );
+
+  router.post('/click/card-token/request', authenticate, async (req: any, res: Response) => {
+    const out = await handleClickCardTokenRequest(supabase, req.userId, (req.body ?? {}) as Record<string, unknown>);
+    return res.status(out.status).json(out.json);
+  });
+
+  router.post('/click/card-token/verify', authenticate, async (req: any, res: Response) => {
+    const out = await handleClickCardTokenVerify(supabase, req.userId, (req.body ?? {}) as Record<string, unknown>);
+    return res.status(out.status).json(out.json);
+  });
+
+  router.post('/click/card-token/delete', authenticate, async (req: any, res: Response) => {
+    const out = await handleClickCardTokenDelete(supabase, req.userId);
+    return res.status(out.status).json(out.json);
+  });
 
   router.post(
     '/',
@@ -318,7 +346,21 @@ export function createClickMerchantRoutes(
         })
       );
     }
-    if (payload.service_id !== clickServiceId || !verifyClickSignature(payload, clickSecretKey)) {
+    if (payload.service_id !== clickServiceId) {
+      return res.status(400).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'service_id mos emas',
+        })
+      );
+    }
+    const skipSigPrepare = shouldSkipClickSignatureVerify();
+    if (skipSigPrepare) {
+      console.warn('[click/prepare] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
+    }
+    if (!skipSigPrepare && !verifyClickSignature(payload, clickSecretKey)) {
       return res.status(400).json(
         buildClickErrorResponse({
           payload,
@@ -379,6 +421,8 @@ export function createClickMerchantRoutes(
       secretKey: clickSecretKey,
       serviceId: clickServiceId,
       merchantId: clickMerchantId,
+      merchantUserId: clickMerchantUserId,
+      returnUrl: clickReturnUrl,
     } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
 
@@ -391,7 +435,21 @@ export function createClickMerchantRoutes(
         })
       );
     }
-    if (payload.service_id !== clickServiceId || !verifyClickSignature(payload, clickSecretKey)) {
+    if (payload.service_id !== clickServiceId) {
+      return res.status(400).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'service_id mos emas',
+        })
+      );
+    }
+    const skipSigComplete = shouldSkipClickSignatureVerify();
+    if (skipSigComplete) {
+      console.warn('[click/complete] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
+    }
+    if (!skipSigComplete && !verifyClickSignature(payload, clickSecretKey)) {
       return res.status(400).json(
         buildClickErrorResponse({
           payload,
@@ -413,13 +471,15 @@ export function createClickMerchantRoutes(
 
     let { data: payment, error } = await supabase
       .from('payments')
-      .select('id, user_id, tariff_type, product_code, amount, status, payment_proof_url')
+      .select(
+        'id, user_id, tariff_type, product_code, amount, status, payment_proof_url, click_merchant_payment_id'
+      )
       .eq('id', paymentId)
       .maybeSingle();
     if (error && isPaymentsProductCodeSchemaError(error)) {
       const legacy = await supabase
         .from('payments')
-        .select('id, user_id, tariff_type, amount, status, payment_proof_url')
+        .select('id, user_id, tariff_type, amount, status, payment_proof_url, click_merchant_payment_id')
         .eq('id', paymentId)
         .maybeSingle();
       payment = legacy.data as any;
@@ -467,20 +527,27 @@ export function createClickMerchantRoutes(
       );
     }
 
+    const clickPaydocId = String(payload.click_paydoc_id ?? '').trim();
     const productCode = normalizePaymentProductCode((payment as any).product_code);
     const { error: approveErr } = await supabase
       .from('payments')
       .update({
         status: 'approved',
         approved_at: new Date().toISOString(),
+        click_merchant_payment_id:
+          clickPaydocId ||
+          ((payment as { click_merchant_payment_id?: string | null }).click_merchant_payment_id ?? null),
         payment_proof_url:
           inferPaymentProviderFromProofUrl((payment as any).payment_proof_url) === 'click'
             ? (payment as any).payment_proof_url
             : buildClickPaymentUrl({
                 serviceId: clickServiceId,
                 merchantId: clickMerchantId,
+                merchantUserId: clickMerchantUserId,
                 amount: Number(payment.amount),
                 paymentId,
+                returnUrl: clickReturnUrl,
+                cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
               }),
       })
       .eq('id', paymentId)
@@ -506,6 +573,8 @@ export function createClickMerchantRoutes(
     } catch (activationErr) {
       console.error('[click/complete activation]', activationErr);
     }
+
+    void fiscalizePayment(supabase, paymentId);
 
     return res.json(
       buildClickSuccessResponse({

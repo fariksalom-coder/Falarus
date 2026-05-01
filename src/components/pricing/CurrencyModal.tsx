@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { X } from 'lucide-react';
+import type { ClickCoursePayProduct } from '../click/ClickCoursePayButton';
+import { ClickCoursePayButton } from '../click/ClickCoursePayButton';
 
 export type Currency = 'UZS' | 'RUB' | 'USD';
 
@@ -11,8 +14,15 @@ const OPTIONS: { value: Currency; label: string; sub: string }[] = [
 type CurrencyModalProps = {
   onClose: () => void;
   onSelect: (currency: Currency) => void;
+  /** Rus tili: `/payment/click` ga o‘tish yoki boshqa callback */
   onClickPay?: () => void;
   clickLabel?: string;
+  /** Patent / VNZH: API orqali darhol Click ga o‘tish (promo sahifa kerak emas) */
+  directClickCourse?: {
+    token: string | null;
+    productCode: ClickCoursePayProduct;
+    refreshPayments?: () => Promise<void>;
+  };
 };
 
 export default function CurrencyModal({
@@ -20,7 +30,10 @@ export default function CurrencyModal({
   onSelect,
   onClickPay,
   clickLabel = 'Click orqali to‘lash',
+  directClickCourse,
 }: CurrencyModalProps) {
+  const [directPayError, setDirectPayError] = useState('');
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div
@@ -58,7 +71,32 @@ export default function CurrencyModal({
               </div>
             </button>
           ))}
-          {onClickPay ? (
+          {directClickCourse ? (
+            <>
+              <div className="my-1 h-px bg-slate-200" />
+              <div className="flex flex-col gap-3 rounded-xl border-2 border-blue-200 bg-blue-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <span className="font-semibold text-slate-900 block">Click</span>
+                  <span className="text-sm text-slate-500">{clickLabel}</span>
+                </div>
+                <ClickCoursePayButton
+                  token={directClickCourse.token}
+                  productCode={directClickCourse.productCode}
+                  disabled={!directClickCourse.token}
+                  onStarted={() => setDirectPayError('')}
+                  onError={(msg) => setDirectPayError(msg)}
+                  onSuccess={async () => {
+                    setDirectPayError('');
+                    await directClickCourse.refreshPayments?.();
+                    onClose();
+                  }}
+                />
+              </div>
+              {directPayError ? (
+                <p className="text-sm font-medium text-red-600">{directPayError}</p>
+              ) : null}
+            </>
+          ) : onClickPay ? (
             <>
               <div className="my-1 h-px bg-slate-200" />
               <button

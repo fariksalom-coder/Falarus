@@ -38,6 +38,10 @@ export default function AdminSubscriptionsPage() {
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Started</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Expires</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Auto-pay</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Next charge</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Retries</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Last error</th>
                 </tr>
               </thead>
               <tbody>
@@ -55,6 +59,20 @@ export default function AdminSubscriptionsPage() {
                     </td>
                     <td className="py-3 px-4 text-slate-600">
                       {s.expires_at ? new Date(s.expires_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="py-3 px-4">
+                      {s.auto_payment_enabled ? (
+                        <span className="text-green-700 font-medium text-xs">On</span>
+                      ) : (
+                        <span className="text-slate-400 text-xs">Off</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 text-xs whitespace-nowrap">
+                      {s.next_payment_date ? new Date(s.next_payment_date).toLocaleString() : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-slate-700">{s.auto_payment_retry_count ?? 0}</td>
+                    <td className="py-3 px-4 text-xs text-red-600 max-w-[200px] truncate" title={s.auto_payment_last_error ?? ''}>
+                      {s.auto_payment_last_error ?? '—'}
                     </td>
                   </tr>
                 ))}

@@ -49,6 +49,8 @@ import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload
 import { getAccessInfo } from './api/_lib/subscription.ts';
 import { routePartnerRequest } from './api/_lib/partner.ts';
 import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
+import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
+import { runClickFiscalRetryCron } from './server/services/clickFiscal.service.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -456,6 +458,42 @@ async function startServer() {
     }
   };
 
+  app.all('/api/cron/click-auto-pay', async (req: any, res: any) => {
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+    const secret = process.env.CLICK_CRON_SECRET || process.env.CRON_SECRET;
+    const auth = req.headers.authorization;
+    if (!secret || auth !== `Bearer ${secret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const result = await runClickAutoRenewalCron(supabase);
+      return res.json(result);
+    } catch (e) {
+      console.error('[cron/click-auto-pay]', e);
+      return res.status(500).json({ error: 'Cron failed' });
+    }
+  });
+
+  app.all('/api/cron/click-fiscal-retry', async (req: any, res: any) => {
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+    const secret = process.env.CLICK_CRON_SECRET || process.env.CRON_SECRET;
+    const auth = req.headers.authorization;
+    if (!secret || auth !== `Bearer ${secret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const result = await runClickFiscalRetryCron(supabase);
+      return res.json(result);
+    } catch (e) {
+      console.error('[cron/click-fiscal-retry]', e);
+      return res.status(500).json({ error: 'Cron failed' });
+    }
+  });
+
   // Payment submission (manual proof + Click)
   app.use('/api/payments', createPaymentRoutes(supabase, authenticate));
   app.use('/api/click', createClickMerchantRoutes(supabase));
@@ -485,7 +523,7 @@ async function startServer() {
     const { data: user, error } = await supabase
       .from('users')
       .select(
-        'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at'
+        'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz'
       )
       .eq('id', req.userId)
       .single();
@@ -502,6 +540,7 @@ async function startServer() {
       totalPoints: user.total_points ?? 0,
       planName: user.plan_name ?? null,
       planExpiresAt: user.plan_expires_at ?? null,
+      billingNoticeUz: (user as { billing_notice_uz?: string | null }).billing_notice_uz ?? null,
     });
   });
 
@@ -513,7 +552,7 @@ async function startServer() {
     const { data: user, error } = await supabase
       .from('users')
       .select(
-        'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at'
+        'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz'
       )
       .eq('id', req.userId)
       .single();
@@ -530,6 +569,7 @@ async function startServer() {
       totalPoints: user.total_points ?? 0,
       planName: user.plan_name ?? null,
       planExpiresAt: user.plan_expires_at ?? null,
+      billingNoticeUz: (user as { billing_notice_uz?: string | null }).billing_notice_uz ?? null,
     });
   });
 

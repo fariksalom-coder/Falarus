@@ -3,6 +3,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "crons": [
+    { "path": "/api/cron/click-auto-pay", "schedule": "15 * * * *" },
+    { "path": "/api/cron/click-fiscal-retry", "schedule": "45 * * * *" }
+  ],
   "redirects": [
     { "source": "/pricing", "destination": "/tariflar", "permanent": true },
     { "source": "/auth", "destination": "/login", "permanent": true }

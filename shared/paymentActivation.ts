@@ -5,18 +5,21 @@ import {
   type SubscriptionTariffType,
 } from './paymentProducts.js';
 
-export async function activateApprovedPayment(
+export type RussianSubscriptionExtras = {
+  auto_payment_enabled?: boolean;
+  next_payment_date?: string | null;
+  card_token_id?: number | null;
+};
+
+export async function activateRussianSubscription(
   supabase: SupabaseClient,
   params: {
     userId: number;
-    productCode: PaymentProductCode;
-    tariffType?: string | null;
+    tariffType: SubscriptionTariffType;
+    extras?: RussianSubscriptionExtras;
   }
-): Promise<void> {
-  if (params.productCode !== 'russian') return;
-  if (!isSubscriptionTariffType(params.tariffType)) return;
-
-  const tariffType = params.tariffType as SubscriptionTariffType;
+): Promise<{ expires_at: string }> {
+  const tariffType = params.tariffType;
   const now = new Date();
   const daysToAdd =
     tariffType === 'year' ? 365 : tariffType === '3months' ? 90 : 30;
@@ -47,12 +50,52 @@ export async function activateApprovedPayment(
     .eq('id', params.userId);
   if (updateUserErr) throw updateUserErr;
 
-  const { error: subscriptionErr } = await supabase.from('subscriptions').insert({
+  const extras = params.extras;
+  if (extras?.auto_payment_enabled) {
+    await supabase
+      .from('subscriptions')
+      .update({ status: 'expired', auto_payment_enabled: false })
+      .eq('user_id', params.userId)
+      .eq('auto_payment_enabled', true);
+  }
+
+  const nextPayment =
+    extras?.next_payment_date ??
+    (extras?.auto_payment_enabled ? expiresAt.toISOString() : null);
+
+  const insertRow: Record<string, unknown> = {
     user_id: params.userId,
     plan_type: planType,
     started_at: now.toISOString(),
     expires_at: expiresAt.toISOString(),
     status: 'active',
-  });
+    auto_payment_enabled: extras?.auto_payment_enabled ?? false,
+    next_payment_date: nextPayment,
+    card_token_id: extras?.card_token_id ?? null,
+    auto_payment_retry_count: 0,
+    auto_payment_last_error: null,
+  };
+
+  const { error: subscriptionErr } = await supabase.from('subscriptions').insert(insertRow);
   if (subscriptionErr) throw subscriptionErr;
+
+  return { expires_at: expiresAt.toISOString() };
+}
+
+export async function activateApprovedPayment(
+  supabase: SupabaseClient,
+  params: {
+    userId: number;
+    productCode: PaymentProductCode;
+    tariffType?: string | null;
+  }
+): Promise<void> {
+  if (params.productCode !== 'russian') return;
+  if (!isSubscriptionTariffType(params.tariffType)) return;
+
+  await activateRussianSubscription(supabase, {
+    userId: params.userId,
+    tariffType: params.tariffType as SubscriptionTariffType,
+    extras: undefined,
+  });
 }
