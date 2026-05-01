@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import type { ClickCoursePayProduct } from '../click/ClickCoursePayButton';
 import { ClickCoursePayButton } from '../click/ClickCoursePayButton';
@@ -34,10 +35,18 @@ export default function CurrencyModal({
 }: CurrencyModalProps) {
   const [directPayError, setDirectPayError] = useState('');
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+  /** Portal + high z-index: escape MainLayout motion/transform overflow so Click row stays visible above bottom nav. */
+  const overlay = (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/50 p-4 py-8 sm:py-10"
+      role="presentation"
+      onClick={onClose}
+    >
       <div
-        className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative"
+        className="relative my-auto max-h-[min(560px,90dvh)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="currency-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -48,7 +57,7 @@ export default function CurrencyModal({
         >
           <X className="w-5 h-5" />
         </button>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">
+        <h2 id="currency-modal-title" className="text-xl font-bold text-slate-900 mb-2">
           To'lov valyutasini tanlang
         </h2>
         <p className="text-slate-600 text-sm mb-6">
@@ -121,4 +130,6 @@ export default function CurrencyModal({
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }
