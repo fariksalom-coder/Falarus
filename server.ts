@@ -2103,6 +2103,9 @@ async function startServer() {
   } else {
     app.use(express.static('dist'));
     app.get('*', (req, res) => {
+      if (String(req.path || '').startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint topilmadi' });
+      }
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });
   }
