@@ -23,7 +23,12 @@ export type ClickCallbackPayload = {
 };
 
 export const CLICK_BASE_URL = 'https://my.click.uz/services/pay';
-export const CLICK_PAY_CARD_TYPE_DEFAULT = 'uzcard/humo';
+/**
+ * Empty = do not send `card_type` (optional per Click docs). Both uzcard and humo stay available on Click UI.
+ * Combined `uzcard/humo` triggers «Неверный тип карты»; valid single values are only `uzcard` or `humo`.
+ * @see https://docs.click.uz/click-button/
+ */
+export const CLICK_PAY_CARD_TYPE_DEFAULT = '';
 export const CLICK_TOKEN_PAYMENT_PREFIX = 'click-token:';
 export const CLICK_PROVIDER_LABEL = 'Click';
 
@@ -63,7 +68,7 @@ export function buildClickPaymentUrl(params: {
   amount: number;
   paymentId: number | string;
   returnUrl?: string | null;
-  /** e.g. uzcard/humo — matches Click Button docs */
+  /** Single value `uzcard` or `humo`, or omit (empty) for both — not `uzcard/humo`. */
   cardType?: string | null;
 }): string {
   const search = new URLSearchParams({
