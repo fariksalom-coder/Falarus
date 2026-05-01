@@ -439,7 +439,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const {
         serviceId: clickServiceId,
         merchantId: clickMerchantId,
-        merchantUserId: clickMerchantUserId,
         returnUrl: clickReturnUrl,
       } = getClickConfig();
       if (!clickServiceId || !clickMerchantId) {
@@ -539,7 +538,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const paymentUrl = buildClickPaymentUrl({
         serviceId: clickServiceId,
         merchantId: clickMerchantId,
-        merchantUserId: clickMerchantUserId,
+        merchantUserId: String(userId),
         amount,
         paymentId,
         returnUrl: clickReturnUrl,
@@ -806,7 +805,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             : buildClickPaymentUrl({
                 serviceId: clickServiceId,
                 merchantId: clickMerchantId,
-                merchantUserId: clickMerchantUserId,
+                merchantUserId: String((payment as { user_id: number }).user_id),
                 amount: Number(payment.amount),
                 paymentId,
                 returnUrl: clickReturnUrl,

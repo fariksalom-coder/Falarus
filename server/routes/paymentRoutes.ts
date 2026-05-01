@@ -79,7 +79,6 @@ export function createPaymentRoutes(
       const {
         serviceId: clickServiceId,
         merchantId: clickMerchantId,
-        merchantUserId: clickMerchantUserId,
         returnUrl: clickReturnUrl,
       } = getClickConfig();
 
@@ -167,7 +166,7 @@ export function createPaymentRoutes(
       const paymentUrl = buildClickPaymentUrl({
         serviceId: clickServiceId,
         merchantId: clickMerchantId,
-        merchantUserId: clickMerchantUserId,
+        merchantUserId: String(userId),
         amount,
         paymentId,
         returnUrl: clickReturnUrl,
@@ -546,7 +545,7 @@ export function createClickMerchantRoutes(
             : buildClickPaymentUrl({
                 serviceId: clickServiceId,
                 merchantId: clickMerchantId,
-                merchantUserId: clickMerchantUserId,
+                merchantUserId: String((payment as any).user_id),
                 amount: Number(payment.amount),
                 paymentId,
                 returnUrl: clickReturnUrl,
