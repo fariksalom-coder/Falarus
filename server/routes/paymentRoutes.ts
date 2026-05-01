@@ -336,6 +336,7 @@ export function createClickMerchantRoutes(
 
   router.post('/prepare', async (req: Request, res: Response) => {
     const payload = normalizeClickCallbackPayload((req.body ?? {}) as Record<string, unknown>);
+    console.log('CLICK BODY:', payload);
     const { secretKey: clickSecretKey, serviceId: clickServiceId } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
 

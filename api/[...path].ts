@@ -614,6 +614,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // POST /api/click/prepare
   if (path[0] === 'click' && path[1] === 'prepare' && req.method === 'POST') {
     const payload = normalizeClickCallbackPayload(parseBody(req.body));
+    console.log('CLICK BODY:', payload);
     const { secretKey: clickSecretKey, serviceId: clickServiceId } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
 
