@@ -340,7 +340,7 @@ export function createClickMerchantRoutes(
     const paymentId = Number(payload.merchant_trans_id);
 
     if (!clickSecretKey || !clickServiceId) {
-      return res.status(503).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           error: -9,
@@ -349,7 +349,7 @@ export function createClickMerchantRoutes(
       );
     }
     if (payload.service_id !== clickServiceId) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId || 0,
@@ -363,7 +363,7 @@ export function createClickMerchantRoutes(
       console.warn('[click/prepare] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
     }
     if (!skipSigPrepare && !verifyClickSignature(payload, clickSecretKey)) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId || 0,
@@ -373,7 +373,7 @@ export function createClickMerchantRoutes(
       );
     }
     if (!Number.isFinite(paymentId) || paymentId <= 0) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           error: -5,
@@ -388,7 +388,7 @@ export function createClickMerchantRoutes(
       .eq('id', paymentId)
       .maybeSingle();
     if (error || !payment) {
-      return res.status(404).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
@@ -399,7 +399,7 @@ export function createClickMerchantRoutes(
     }
 
     if (Number(payment.amount) !== Number(payload.amount)) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
@@ -429,7 +429,7 @@ export function createClickMerchantRoutes(
     const paymentId = Number(payload.merchant_trans_id);
 
     if (!clickSecretKey || !clickServiceId) {
-      return res.status(503).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           error: -9,
@@ -438,7 +438,7 @@ export function createClickMerchantRoutes(
       );
     }
     if (payload.service_id !== clickServiceId) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId || 0,
@@ -452,7 +452,7 @@ export function createClickMerchantRoutes(
       console.warn('[click/complete] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
     }
     if (!skipSigComplete && !verifyClickSignature(payload, clickSecretKey)) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId || 0,
@@ -462,7 +462,7 @@ export function createClickMerchantRoutes(
       );
     }
     if (!Number.isFinite(paymentId) || paymentId <= 0) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           error: -5,
@@ -488,7 +488,7 @@ export function createClickMerchantRoutes(
       error = legacy.error;
     }
     if (error || !payment) {
-      return res.status(404).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
@@ -498,7 +498,7 @@ export function createClickMerchantRoutes(
       );
     }
     if (Number(payment.amount) !== Number(payload.amount)) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
@@ -555,7 +555,7 @@ export function createClickMerchantRoutes(
       .eq('id', paymentId)
       .eq('status', 'pending');
     if (approveErr) {
-      return res.status(500).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,

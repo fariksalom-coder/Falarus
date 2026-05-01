@@ -618,12 +618,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const paymentId = Number(payload.merchant_trans_id);
 
     if (!clickSecretKey || !clickServiceId) {
-      return res.status(503).json(
+      return res.status(200).json(
         buildClickErrorResponse({ payload, error: -9, note: 'Click konfiguratsiyasi topilmadi' })
       );
     }
     if (payload.service_id !== clickServiceId) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId || 0,
@@ -637,7 +637,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.warn('[click/prepare] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
     }
     if (!skipSigPrepareApi && !verifyClickSignature(payload, clickSecretKey)) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId || 0,
@@ -647,7 +647,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
     if (!Number.isFinite(paymentId) || paymentId <= 0) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({ payload, error: -5, note: 'To‘lov topilmadi' })
       );
     }
@@ -658,7 +658,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('id', paymentId)
       .maybeSingle();
     if (error || !payment) {
-      return res.status(404).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
@@ -668,7 +668,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
     if (Number(payment.amount) !== Number(payload.amount)) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
@@ -699,12 +699,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const paymentId = Number(payload.merchant_trans_id);
 
     if (!clickSecretKey || !clickServiceId) {
-      return res.status(503).json(
+      return res.status(200).json(
         buildClickErrorResponse({ payload, error: -9, note: 'Click konfiguratsiyasi topilmadi' })
       );
     }
     if (payload.service_id !== clickServiceId) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId || 0,
@@ -718,7 +718,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.warn('[click/complete] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
     }
     if (!skipSigCompleteApi && !verifyClickSignature(payload, clickSecretKey)) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId || 0,
@@ -728,7 +728,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
     if (!Number.isFinite(paymentId) || paymentId <= 0) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({ payload, error: -5, note: 'To‘lov topilmadi' })
       );
     }
@@ -750,7 +750,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error = legacy.error;
     }
     if (error || !payment) {
-      return res.status(404).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
@@ -760,7 +760,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
     if (Number(payment.amount) !== Number(payload.amount)) {
-      return res.status(400).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
@@ -815,7 +815,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('id', paymentId)
       .eq('status', 'pending');
     if (approveErr) {
-      return res.status(500).json(
+      return res.status(200).json(
         buildClickErrorResponse({
           payload,
           merchantPrepareId: paymentId,
