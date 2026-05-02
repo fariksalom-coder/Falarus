@@ -451,14 +451,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (action === 'confirm') {
         let { data: row, error: fe } = await supabase
           .from('payments')
-          .select('user_id, tariff_type, product_code')
+          .select('user_id, tariff_type, product_code, payment_channel, payment_proof_url')
           .eq('id', payId)
           .eq('status', 'pending')
           .single();
         if (fe && isPaymentsProductCodeSchemaError(fe)) {
           const second = await supabase
             .from('payments')
-            .select('user_id, tariff_type, payment_proof_url')
+            .select('user_id, tariff_type, payment_proof_url, payment_channel')
             .eq('id', payId)
             .eq('status', 'pending')
             .single();
@@ -466,6 +466,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           fe = second.error;
         }
         if (fe || !row) return res.status(404).json({ error: 'To\'lov topilmadi' });
+        if (String((row as any).payment_channel ?? '') === 'click_button') {
+          return res.status(400).json({
+            error:
+              "Click tugma orqali yaratilgan to'lovni qo'lda tasdiqlash mumkin emas — to'lov yakunlangach avtomatik tasdiqlanadi.",
+          });
+        }
         const userId = (row as any).user_id;
         const now = new Date();
         const tariffType = (row as any).tariff_type;

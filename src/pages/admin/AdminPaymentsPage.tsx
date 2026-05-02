@@ -95,7 +95,7 @@ export default function AdminPaymentsPage() {
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Foydalanuvchi</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Email</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Phone</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Tarif</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Obuna / kurs</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Usul</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Kanal</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Click payment id</th>
@@ -114,7 +114,7 @@ export default function AdminPaymentsPage() {
                     <td className="py-3 px-4 font-medium text-slate-800">{p.user}</td>
                     <td className="py-3 px-4 text-slate-600">{p.user_email}</td>
                     <td className="py-3 px-4 text-slate-600">{p.user_phone ?? '—'}</td>
-                    <td className="py-3 px-4">{p.plan}</td>
+                    <td className="py-3 px-4">{p.product_label}</td>
                     <td className="py-3 px-4">
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                         {p.payment_provider === 'click' ? 'Click' : 'Manual'}
@@ -178,23 +178,35 @@ export default function AdminPaymentsPage() {
                     </td>
                     <td className="py-3 px-4 text-right">
                       {p.status === 'pending' && (
-                        <span className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleConfirm(p.id)}
-                            disabled={actioning !== null}
-                            className="rounded-lg bg-green-600 px-3 py-1.5 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-50"
-                          >
-                            {actioning === p.id ? '...' : 'Tasdiqlash'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleReject(p.id)}
-                            disabled={actioning !== null}
-                            className="rounded-lg bg-red-600 px-3 py-1.5 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
-                          >
-                            {actioning === p.id ? '...' : 'Rad etish'}
-                          </button>
+                        <span className="flex flex-col items-end gap-2">
+                          {p.payment_channel === 'click_button' && (
+                            <span className="text-xs text-slate-500">Click — toʻlov yakunlanganda avtomatik</span>
+                          )}
+                          <span className="flex items-center justify-end gap-2">
+                            {p.payment_channel !== 'click_button' && (
+                              <button
+                                type="button"
+                                onClick={() => handleConfirm(p.id)}
+                                disabled={actioning !== null}
+                                className="rounded-lg bg-green-600 px-3 py-1.5 text-white text-xs font-medium hover:bg-green-700 disabled:opacity-50"
+                              >
+                                {actioning === p.id ? '...' : 'Tasdiqlash'}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleReject(p.id)}
+                              disabled={actioning !== null}
+                              className="rounded-lg bg-red-600 px-3 py-1.5 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
+                              title={
+                                p.payment_channel === 'click_button'
+                                  ? 'Foydalanuvchi toʻlamagan bo‘lsa, kutishni bekor qilish'
+                                  : undefined
+                              }
+                            >
+                              {actioning === p.id ? '...' : 'Rad etish'}
+                            </button>
+                          </span>
                         </span>
                       )}
                     </td>

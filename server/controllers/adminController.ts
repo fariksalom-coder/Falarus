@@ -329,14 +329,14 @@ export function createAdminController(supabase: SupabaseClient) {
 
       let { data: row, error: fetchErr } = await supabase
         .from('payments')
-        .select('user_id, tariff_type, product_code')
+        .select('user_id, tariff_type, product_code, payment_channel, payment_proof_url')
         .eq('id', id)
         .eq('status', 'pending')
         .single();
       if (fetchErr && isPaymentsProductCodeSchemaError(fetchErr)) {
         const second = await supabase
           .from('payments')
-          .select('user_id, tariff_type, payment_proof_url')
+          .select('user_id, tariff_type, payment_proof_url, payment_channel')
           .eq('id', id)
           .eq('status', 'pending')
           .single();
@@ -344,6 +344,13 @@ export function createAdminController(supabase: SupabaseClient) {
         fetchErr = second.error;
       }
       if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi yoki tasdiqlangan' });
+
+      if (String((row as any).payment_channel ?? '') === 'click_button') {
+        return res.status(400).json({
+          error:
+            "Click tugma orqali yaratilgan to'lovni qo'lda tasdiqlash mumkin emas — to'lov yakunlangach avtomatik tasdiqlanadi.",
+        });
+      }
 
       const userId = Number((row as any).user_id);
       if (!Number.isFinite(userId)) return res.status(400).json({ error: 'To\'lovda user_id xato' });

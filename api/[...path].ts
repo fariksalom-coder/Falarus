@@ -535,15 +535,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const paymentId = Number((row as { id: number }).id);
-      const paymentUrl = buildClickPaymentUrl({
-        serviceId: clickServiceId,
-        merchantId: clickMerchantId,
-        merchantUserId: String(userId),
-        amount,
-        paymentId,
-        returnUrl: clickReturnUrl,
-        cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
-      });
+      const paymentUrl = embedFalarusProductInProofUrl(
+        buildClickPaymentUrl({
+          serviceId: clickServiceId,
+          merchantId: clickMerchantId,
+          merchantUserId: String(userId),
+          amount,
+          paymentId,
+          returnUrl: clickReturnUrl,
+          cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
+        }),
+        productCode
+      );
       await supabase.from('payments').update({ payment_proof_url: paymentUrl }).eq('id', paymentId);
       return res.status(200).json({
         success: true,
@@ -614,7 +617,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // POST /api/click/prepare
   if (path[0] === 'click' && path[1] === 'prepare' && req.method === 'POST') {
     const payload = normalizeClickCallbackPayload(parseBody(req.body));
-    console.log('CLICK BODY:', payload);
     const { secretKey: clickSecretKey, serviceId: clickServiceId } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
 

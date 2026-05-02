@@ -163,15 +163,18 @@ export function createPaymentRoutes(
       }
 
       const paymentId = Number((row as any).id);
-      const paymentUrl = buildClickPaymentUrl({
-        serviceId: clickServiceId,
-        merchantId: clickMerchantId,
-        merchantUserId: String(userId),
-        amount,
-        paymentId,
-        returnUrl: clickReturnUrl,
-        cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
-      });
+      const paymentUrl = embedFalarusProductInProofUrl(
+        buildClickPaymentUrl({
+          serviceId: clickServiceId,
+          merchantId: clickMerchantId,
+          merchantUserId: String(userId),
+          amount,
+          paymentId,
+          returnUrl: clickReturnUrl,
+          cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
+        }),
+        productCode
+      );
       await supabase.from('payments').update({ payment_proof_url: paymentUrl }).eq('id', paymentId);
 
       return res.json({
@@ -336,7 +339,6 @@ export function createClickMerchantRoutes(
 
   router.post('/prepare', async (req: Request, res: Response) => {
     const payload = normalizeClickCallbackPayload((req.body ?? {}) as Record<string, unknown>);
-    console.log('CLICK BODY:', payload);
     const { secretKey: clickSecretKey, serviceId: clickServiceId } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
 

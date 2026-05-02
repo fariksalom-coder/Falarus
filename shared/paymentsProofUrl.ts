@@ -1,4 +1,8 @@
-import { normalizePaymentProductCode, type PaymentProductCode } from './paymentProducts.js';
+import {
+  isPaymentProductCode,
+  normalizePaymentProductCode,
+  type PaymentProductCode,
+} from './paymentProducts.js';
 
 /** Legacy DB without `payments.product_code`: encode product on proof URL query string. */
 const PARAM = 'falarus_product';
@@ -30,10 +34,13 @@ export function resolvePaymentProductFromRow(row: {
   product_code?: string | null;
   payment_proof_url?: string | null;
 }): PaymentProductCode {
+  const fromUrl = readFalarusProductFromProofUrl(row.payment_proof_url ?? undefined);
+  if (fromUrl && isPaymentProductCode(fromUrl)) {
+    return normalizePaymentProductCode(fromUrl);
+  }
   if (row.product_code != null && String(row.product_code).trim() !== '') {
     return normalizePaymentProductCode(row.product_code);
   }
-  const fromUrl = readFalarusProductFromProofUrl(row.payment_proof_url ?? undefined);
   if (fromUrl) return normalizePaymentProductCode(fromUrl);
   return normalizePaymentProductCode(undefined);
 }
