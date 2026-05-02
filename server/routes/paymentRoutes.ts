@@ -335,23 +335,256 @@ export function createClickMerchantRoutes(
   const router = Router();
 
   router.post('/prepare', async (req: Request, res: Response) => {
-    const merchantTransId =
-      String((req.body as Record<string, unknown> | null | undefined)?.merchant_trans_id ?? '').trim() || 0;
-    return res.json({
-      error: 0,
-      error_note: 'Success',
-      merchant_prepare_id: merchantTransId,
-    });
+    const payload = normalizeClickCallbackPayload((req.body ?? {}) as Record<string, unknown>);
+    console.log('CLICK BODY:', payload);
+    const { secretKey: clickSecretKey, serviceId: clickServiceId } = getClickConfig();
+    const paymentId = Number(payload.merchant_trans_id);
+
+    if (!clickSecretKey || !clickServiceId) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          error: -9,
+          note: 'Click konfiguratsiyasi topilmadi',
+        })
+      );
+    }
+    if (payload.service_id !== clickServiceId) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'service_id mos emas',
+        })
+      );
+    }
+    const skipSigPrepare = shouldSkipClickSignatureVerify();
+    if (skipSigPrepare) {
+      console.warn('[click/prepare] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
+    }
+    if (!skipSigPrepare && !verifyClickSignature(payload, clickSecretKey)) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'Imzo noto‘g‘ri',
+        })
+      );
+    }
+    if (!Number.isFinite(paymentId) || paymentId <= 0) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          error: -5,
+          note: 'To‘lov topilmadi',
+        })
+      );
+    }
+
+    const { data: payment, error } = await supabase
+      .from('payments')
+      .select('id, amount, status')
+      .eq('id', paymentId)
+      .maybeSingle();
+    if (error || !payment) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -5,
+          note: 'To‘lov topilmadi',
+        })
+      );
+    }
+
+    if (Number(payment.amount) !== Number(payload.amount)) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -2,
+          note: 'Summa mos emas',
+        })
+      );
+    }
+
+    return res.json(
+      buildClickSuccessResponse({
+        payload,
+        merchantPrepareId: paymentId,
+      })
+    );
   });
 
   router.post('/complete', async (req: Request, res: Response) => {
-    const merchantTransId =
-      String((req.body as Record<string, unknown> | null | undefined)?.merchant_trans_id ?? '').trim() || 0;
-    return res.json({
-      error: 0,
-      error_note: 'Success',
-      merchant_confirm_id: merchantTransId,
-    });
+    const payload = normalizeClickCallbackPayload((req.body ?? {}) as Record<string, unknown>);
+    const {
+      secretKey: clickSecretKey,
+      serviceId: clickServiceId,
+      merchantId: clickMerchantId,
+      merchantUserId: clickMerchantUserId,
+      returnUrl: clickReturnUrl,
+    } = getClickConfig();
+    const paymentId = Number(payload.merchant_trans_id);
+
+    if (!clickSecretKey || !clickServiceId) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          error: -9,
+          note: 'Click konfiguratsiyasi topilmadi',
+        })
+      );
+    }
+    if (payload.service_id !== clickServiceId) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'service_id mos emas',
+        })
+      );
+    }
+    const skipSigComplete = shouldSkipClickSignatureVerify();
+    if (skipSigComplete) {
+      console.warn('[click/complete] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
+    }
+    if (!skipSigComplete && !verifyClickSignature(payload, clickSecretKey)) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId || 0,
+          error: -1,
+          note: 'Imzo noto‘g‘ri',
+        })
+      );
+    }
+    if (!Number.isFinite(paymentId) || paymentId <= 0) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          error: -5,
+          note: 'To‘lov topilmadi',
+        })
+      );
+    }
+
+    let { data: payment, error } = await supabase
+      .from('payments')
+      .select(
+        'id, user_id, tariff_type, product_code, amount, status, payment_proof_url, click_merchant_payment_id'
+      )
+      .eq('id', paymentId)
+      .maybeSingle();
+    if (error && isPaymentsProductCodeSchemaError(error)) {
+      const legacy = await supabase
+        .from('payments')
+        .select('id, user_id, tariff_type, amount, status, payment_proof_url, click_merchant_payment_id')
+        .eq('id', paymentId)
+        .maybeSingle();
+      payment = legacy.data as any;
+      error = legacy.error;
+    }
+    if (error || !payment) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -5,
+          note: 'To‘lov topilmadi',
+        })
+      );
+    }
+    if (Number(payment.amount) !== Number(payload.amount)) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -2,
+          note: 'Summa mos emas',
+        })
+      );
+    }
+
+    if (String(payload.error || '0') !== '0') {
+      await supabase.from('payments').update({ status: 'rejected' }).eq('id', paymentId).eq('status', 'pending');
+      return res.json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -9,
+          note: payload.error_note || 'To‘lov bekor qilindi',
+        })
+      );
+    }
+
+    if (payment.status === 'approved') {
+      return res.json(
+        buildClickSuccessResponse({
+          payload,
+          merchantPrepareId: paymentId,
+        })
+      );
+    }
+
+    const clickPaydocId = String(payload.click_paydoc_id ?? '').trim();
+    const productCode = normalizePaymentProductCode((payment as any).product_code);
+    const { error: approveErr } = await supabase
+      .from('payments')
+      .update({
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        click_merchant_payment_id:
+          clickPaydocId ||
+          ((payment as { click_merchant_payment_id?: string | null }).click_merchant_payment_id ?? null),
+        payment_proof_url:
+          inferPaymentProviderFromProofUrl((payment as any).payment_proof_url) === 'click'
+            ? (payment as any).payment_proof_url
+            : buildClickPaymentUrl({
+                serviceId: clickServiceId,
+                merchantId: clickMerchantId,
+                merchantUserId: String((payment as any).user_id),
+                amount: Number(payment.amount),
+                paymentId,
+                returnUrl: clickReturnUrl,
+                cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
+              }),
+      })
+      .eq('id', paymentId)
+      .eq('status', 'pending');
+    if (approveErr) {
+      return res.status(200).json(
+        buildClickErrorResponse({
+          payload,
+          merchantPrepareId: paymentId,
+          error: -9,
+          note: approveErr.message,
+        })
+      );
+    }
+
+    try {
+      await activateApprovedPayment(supabase, {
+        userId: Number((payment as any).user_id),
+        productCode,
+        tariffType: (payment as any).tariff_type,
+      });
+      invalidateAccessCache(Number((payment as any).user_id));
+    } catch (activationErr) {
+      console.error('[click/complete activation]', activationErr);
+    }
+
+    void fiscalizePayment(supabase, paymentId);
+
+    return res.json(
+      buildClickSuccessResponse({
+        payload,
+        merchantPrepareId: paymentId,
+      })
+    );
   });
 
   return router;
