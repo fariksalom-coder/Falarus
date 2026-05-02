@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -14,7 +15,9 @@ import {
   Package,
   History,
   Phone,
+  Contact,
 } from 'lucide-react';
+import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 
 const TARIFF_LABELS: Record<string, string> = {
   month: '1 OY',
@@ -39,6 +42,7 @@ export default function ProfilePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { payments, loading: paymentsLoading } = usePaymentStatus();
+  const [contactsOpen, setContactsOpen] = useState(false);
 
   const pendingPayment = payments.find((p) => p.status === 'pending') ?? null;
   const hasPendingPayment = !!pendingPayment;
@@ -140,6 +144,22 @@ export default function ProfilePage() {
             <span className="font-medium text-slate-700 flex-1 text-left">Sozlamalar</span>
             <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
           </button>
+          <button
+            type="button"
+            onClick={() => setContactsOpen((v) => !v)}
+            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+          >
+            <Contact className="w-5 h-5 text-slate-400" />
+            <span className="font-medium text-slate-700 flex-1 text-left">Kontaktlar</span>
+            <ChevronLeft
+              className={`w-5 h-5 text-slate-300 shrink-0 transition-transform ${contactsOpen ? '-rotate-90' : 'rotate-180'}`}
+            />
+          </button>
+          {contactsOpen && (
+            <div className="border-b border-slate-100 bg-slate-50/90 px-4 py-5">
+              <SiteLegalFooter embedded variant="compact" />
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="w-full px-6 py-4 flex items-center gap-4 hover:bg-red-50 transition-colors text-red-600"

@@ -33,15 +33,8 @@ export default function PlatformTutorialStrip() {
   return (
     <>
       <section className="mb-7" aria-label="Qo‘llanma videolar">
-        <div className="mb-3 flex items-end justify-between gap-2">
-          <div>
-            <h2 className="text-[15px] font-bold leading-tight text-[#0F172A]">
-              Qo‘llanma videolar
-            </h2>
-            <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#64748B]">
-              Platformadan qanday foydalanish
-            </p>
-          </div>
+        <div className="mb-3">
+          <h2 className="text-[15px] font-bold leading-tight text-[#0F172A]">Qo‘llanma videolar</h2>
         </div>
 
         <div className="-mx-4 overflow-x-auto overflow-y-hidden px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

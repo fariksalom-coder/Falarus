@@ -10,7 +10,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { FalaRusLogoMark } from '../components/FalaRusLogoMark';
-import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 import { useAuth } from '../context/AuthContext';
 
 const benefits = [
@@ -178,9 +177,6 @@ export default function LandingPage() {
             >
               Ro‘yxatdan o‘tish
             </Link>
-          </div>
-          <div className="mt-10 border-t border-slate-100 pt-8">
-            <SiteLegalFooter embedded variant="full" />
           </div>
         </div>
       </footer>

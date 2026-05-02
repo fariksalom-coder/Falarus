@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { SiteLegalFooter } from '../../components/legal/SiteLegalFooter';
 
 export function LegalDocShell({ title, children }: { title: string; children: ReactNode }) {
   const navigate = useNavigate();
@@ -28,7 +27,6 @@ export function LegalDocShell({ title, children }: { title: string; children: Re
           <div className="mt-6 space-y-5 text-sm leading-relaxed text-slate-700">{children}</div>
         </article>
       </div>
-      <SiteLegalFooter variant="compact" />
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import AppNavBar from './AppNavBar';
 import PWAInstallPrompt from './PWAInstallPrompt';
-import { SiteLegalFooter } from './legal/SiteLegalFooter';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
 import { appMainTopOffsetCss, appMainBottomOffsetCss } from '../constants/appLayout';
 
@@ -24,7 +23,6 @@ const zoomTransition = { duration: 0.22, ease: [0.32, 0.72, 0, 1] as const };
 
 export default function MainLayout() {
   const { pathname } = useLocation();
-  const legalFooterCompact = pathname === '/payment' || pathname.startsWith('/payment/');
   const showNavBar = !hideNavBar(pathname);
   const reduceMotion = useReducedMotion();
   const sectionIdx = mainSectionIndex(pathname);
@@ -107,7 +105,6 @@ export default function MainLayout() {
                 <div className="flex-1">
                   <Outlet />
                 </div>
-                <SiteLegalFooter variant={legalFooterCompact ? 'compact' : 'full'} />
               </div>
             </motion.div>
           </AnimatePresence>
