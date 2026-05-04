@@ -121,14 +121,14 @@ export function createPaymentRoutes(
         });
       }
 
-      const amount =
-        productCode === 'vnzh'
-          ? 1000
-          : getClickAmountForProduct({
-              productCode,
-              tariffType: null,
-              tariffPrices: null,
-            });
+      // TODO: убрать после теста — временно 1000 для vnzh
+      const amount = productCode === 'vnzh'
+        ? 1000
+        : getClickAmountForProduct({
+            productCode,
+            tariffType: null,
+            tariffPrices: null,
+          });
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "To'lov summasi aniqlanmadi" });
       }
@@ -585,6 +585,7 @@ export function createClickMerchantRoutes(
       buildClickSuccessResponse({
         payload,
         merchantPrepareId: paymentId,
+        merchantConfirmId: paymentId,
       })
     );
   });

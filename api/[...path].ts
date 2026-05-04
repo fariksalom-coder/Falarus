@@ -158,6 +158,7 @@ function parseMultipartPayments(
 
 const ROOT_API_PREFIXES = new Set([
   'cron',
+  'click',
   'referral',
   'payments',
   'pricing',
@@ -491,14 +492,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const amount =
-        productCode === 'vnzh'
-          ? 1000
-          : getClickAmountForProduct({
-              productCode,
-              tariffType: null,
-              tariffPrices: null,
-            });
+      const amount = getClickAmountForProduct({
+        productCode,
+        tariffType: null,
+        tariffPrices: null,
+      });
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "To'lov summasi aniqlanmadi" });
       }
@@ -845,6 +843,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       buildClickSuccessResponse({
         payload,
         merchantPrepareId: paymentId,
+        merchantConfirmId: paymentId,
       })
     );
   }

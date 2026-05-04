@@ -195,12 +195,17 @@ export function buildClickErrorResponse(params: {
 export function buildClickSuccessResponse(params: {
   payload: ClickCallbackPayload;
   merchantPrepareId: number | string;
+  merchantConfirmId?: number | string | null;
 }) {
-  return {
+  const resp: Record<string, unknown> = {
     click_trans_id: params.payload.click_trans_id || '',
     merchant_trans_id: params.payload.merchant_trans_id || '',
     merchant_prepare_id: params.merchantPrepareId,
     error: 0,
     error_note: 'Success',
   };
+  if (params.merchantConfirmId != null) {
+    resp.merchant_confirm_id = params.merchantConfirmId;
+  }
+  return resp;
 }
