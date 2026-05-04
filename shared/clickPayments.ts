@@ -74,7 +74,7 @@ export function buildClickPaymentUrl(params: {
   const search = new URLSearchParams({
     service_id: String(params.serviceId),
     merchant_id: String(params.merchantId),
-    amount: String(params.amount),
+    amount: params.amount.toFixed(2),
     transaction_param: String(params.paymentId),
   });
   if (params.returnUrl) {

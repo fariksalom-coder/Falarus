@@ -342,7 +342,13 @@ export function createClickMerchantRoutes(
     const { secretKey: clickSecretKey, serviceId: clickServiceId } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
 
+    console.log('[click/prepare] body=%s service_id=%s merchant_trans_id=%s amount=%s action=%s',
+      JSON.stringify(req.body ?? {}),
+      payload.service_id, payload.merchant_trans_id, payload.amount, payload.action
+    );
+
     if (!clickSecretKey || !clickServiceId) {
+      console.error('[click/prepare] config missing secretKey=%s serviceId=%s', !!clickSecretKey, !!clickServiceId);
       return res.status(200).json(
         buildClickErrorResponse({
           payload,
@@ -352,6 +358,7 @@ export function createClickMerchantRoutes(
       );
     }
     if (payload.service_id !== clickServiceId) {
+      console.error('[click/prepare] service_id mismatch got=%s expected=%s', payload.service_id, clickServiceId);
       return res.status(200).json(
         buildClickErrorResponse({
           payload,
@@ -366,6 +373,7 @@ export function createClickMerchantRoutes(
       console.warn('[click/prepare] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
     }
     if (!skipSigPrepare && !verifyClickSignature(payload, clickSecretKey)) {
+      console.error('[click/prepare] signature mismatch sign_string=%s', payload.sign_string);
       return res.status(200).json(
         buildClickErrorResponse({
           payload,
@@ -376,6 +384,7 @@ export function createClickMerchantRoutes(
       );
     }
     if (!Number.isFinite(paymentId) || paymentId <= 0) {
+      console.error('[click/prepare] invalid paymentId=%s', payload.merchant_trans_id);
       return res.status(200).json(
         buildClickErrorResponse({
           payload,
@@ -391,6 +400,7 @@ export function createClickMerchantRoutes(
       .eq('id', paymentId)
       .maybeSingle();
     if (error || !payment) {
+      console.error('[click/prepare] payment not found id=%d dbError=%s', paymentId, error?.message);
       return res.status(200).json(
         buildClickErrorResponse({
           payload,
@@ -402,6 +412,7 @@ export function createClickMerchantRoutes(
     }
 
     if (Number(payment.amount) !== Number(payload.amount)) {
+      console.error('[click/prepare] amount mismatch db=%s click=%s', payment.amount, payload.amount);
       return res.status(200).json(
         buildClickErrorResponse({
           payload,
@@ -412,6 +423,7 @@ export function createClickMerchantRoutes(
       );
     }
 
+    console.log('[click/prepare] success paymentId=%d', paymentId);
     return res.json(
       buildClickSuccessResponse({
         payload,
