@@ -231,8 +231,8 @@ export default function HelpPage() {
             {error ? <p className="px-5 py-2 text-xs text-red-600">{error}</p> : null}
           </section>
         ) : (
-          <section className="flex min-h-screen flex-col bg-[#F3F4F8]">
-            <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 pb-3 pt-3">
+          <section className="fixed inset-0 z-50 flex min-h-screen flex-col bg-[#F3F4F8]">
+            <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 pb-3 pt-3 max-sm:pt-[max(env(safe-area-inset-top,0px),12px)]">
               <button
                 type="button"
                 onClick={() => navigate('/help')}
@@ -249,7 +249,7 @@ export default function HelpPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-3">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain px-4 py-3">
               {messagesLoading ? (
                 <div className="py-8 text-center text-sm text-slate-500">Xabarlar yuklanmoqda...</div>
               ) : (
@@ -290,8 +290,11 @@ export default function HelpPage() {
               )}
             </div>
 
-            <div className="border-t border-slate-200 bg-white px-4 py-3">
-              <div className="mx-auto flex max-w-2xl gap-2">
+            <div
+              className="shrink-0 border-t border-slate-200 bg-white px-4 pt-2"
+              style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))' }}
+            >
+              <div className="mx-auto flex max-w-2xl gap-2 pb-1">
                 <label className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50">
                   <ImagePlus className="h-4 w-4" />
                   <input

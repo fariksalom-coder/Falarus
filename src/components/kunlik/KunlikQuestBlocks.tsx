@@ -1,3 +1,4 @@
+import { useEffect, useRef, type RefObject } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import { BookOpen, Brain, Check, FileText, Lock, Mic, Play, Star } from 'lucide-react';
@@ -168,28 +169,65 @@ export function buildKunlikQuestSteps(params: {
 }
 
 export function QuestBlocks({ steps }: { steps: QuestStep[] }) {
+  const activeStepRef = useRef<HTMLDivElement | null>(null);
+  const activeIdx = steps.findIndex((s) => s.state === 'active');
+  const activeAnchor: ScrollLogicalPosition =
+    activeIdx <= 0 ? 'start' : activeIdx <= 2 ? 'center' : 'end';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth >= 640) return;
+    if (!activeStepRef.current) return;
+
+    const raf = window.requestAnimationFrame(() => {
+      activeStepRef.current?.scrollIntoView({
+        block: activeAnchor,
+        inline: 'nearest',
+        behavior: 'smooth',
+      });
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [steps, activeAnchor]);
+
   return (
     <div className="relative">
       <div className="absolute bottom-8 left-[19px] top-8 w-0.5 bg-gradient-to-b from-gray-200 via-gray-200 to-transparent" />
 
       <div className="space-y-2">
         {steps.map((step, i) => (
-          <QuestTimelineStep key={`${step.kind}-${i}`} step={step} idx={i} isLast={i === steps.length - 1} />
+          <QuestTimelineStep
+            key={`${step.kind}-${i}`}
+            step={step}
+            idx={i}
+            isLast={i === steps.length - 1}
+            rootRef={step.state === 'active' ? activeStepRef : undefined}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function QuestTimelineStep({ step, idx, isLast }: { step: QuestStep; idx: number; isLast: boolean }) {
+function QuestTimelineStep({
+  step,
+  idx,
+  isLast,
+  rootRef,
+}: {
+  step: QuestStep;
+  idx: number;
+  isLast: boolean;
+  rootRef?: RefObject<HTMLDivElement | null>;
+}) {
   const { state, icon: Icon } = step;
 
   return (
     <motion.div
+      ref={state === 'active' ? rootRef : undefined}
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.05 * idx, duration: 0.2 }}
-      className="flex items-stretch gap-3"
+      className="flex scroll-mb-24 items-stretch gap-3"
     >
       <div className="flex flex-col items-center">
         <div

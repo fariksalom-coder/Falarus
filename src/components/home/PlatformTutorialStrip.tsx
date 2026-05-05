@@ -98,11 +98,13 @@ export default function PlatformTutorialStrip({ className = '' }: { className?: 
                     />
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
-                    <p className="text-sm font-medium leading-relaxed text-[#475569]">
-                      Video hali joylanmagan. Tez orada bu bo‘lim uchun qo‘llanma videosi
-                      paydo bo‘ladi.
-                    </p>
+                  <div className="flex min-h-[44vh] items-center justify-center">
+                    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                      <p className="text-sm font-medium leading-relaxed text-[#475569]">
+                        Video hali joylanmagan. Tez orada bu bo‘lim uchun qo‘llanma videosi
+                        paydo bo‘ladi.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
