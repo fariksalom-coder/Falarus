@@ -5,6 +5,7 @@ import { adminPath } from '../../constants/adminPath';
 import {
   LayoutDashboard,
   Users,
+  CreditCard,
   Wallet,
   MessageSquare,
   Banknote,
@@ -17,6 +18,7 @@ import { getAdminHelpChats } from '../../api/admin';
 const nav = [
   { to: adminPath('/dashboard'), label: 'Dashboard', icon: LayoutDashboard },
   { to: adminPath('/users'), label: 'Users', icon: Users },
+  { to: adminPath('/payments'), label: 'Payments', icon: CreditCard },
   { to: adminPath('/click-logs'), label: 'Click logs', icon: ScrollText },
   { to: adminPath('/referrals'), label: 'Referrals', icon: Wallet },
   { to: adminPath('/support'), label: 'Yozishmalar', icon: MessageSquare },
