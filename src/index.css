@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/*
+  iOS Safari/PWA auto-zooms focused fields below 16px.
+  Keep readable tap targets and prevent accidental viewport zoom.
+*/
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 /* intl-tel-input: match auth card width */
 .intl-phone-field .iti {
   width: 100%;

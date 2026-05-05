@@ -44,27 +44,24 @@ export default function MainLayout() {
 
   return (
     <>
-      {showNavBar && (
-        <style>{`
-          .nav-layout-pad {
-            padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
-            padding-bottom: 0;
-          }
-          .nav-content-min-h {
-            min-height: calc(100dvh - (env(safe-area-inset-top, 0px) + 8px));
-          }
-          .nav-scroll-pad {
-            padding-bottom: ${bottomOffset};
-          }
-        `}</style>
-      )}
+      <style>{`
+        .app-layout-safe-pad {
+          padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+          padding-bottom: 0;
+        }
+        .app-content-safe-min-h {
+          min-height: calc(100dvh - (env(safe-area-inset-top, 0px) + 8px));
+        }
+        .nav-scroll-pad {
+          padding-bottom: ${bottomOffset};
+        }
+      `}</style>
       {showNavBar && <AppNavBar />}
       <div
-        className={showNavBar ? 'min-h-screen nav-layout-pad' : 'min-h-screen'}
+        className="min-h-screen app-layout-safe-pad"
       >
         <div
-          className={`relative w-full overflow-hidden${showNavBar ? ' nav-content-min-h' : ''}`}
-          style={showNavBar ? undefined : { minHeight: '100dvh' }}
+          className="relative w-full overflow-hidden app-content-safe-min-h"
         >
           {/*
             mode="sync": old/new routes animate together with subtle zoom.

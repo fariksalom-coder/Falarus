@@ -181,7 +181,6 @@ const ROOT_API_PREFIXES = new Set([
 
 const DEPRECATED_API_PREFIXES = new Set([
   'vocabulary',
-  'speaking',
 ]);
 
 function getPathParts(req: VercelRequest): string[] {
