@@ -284,7 +284,6 @@ async function startServer() {
     const url = String(req.originalUrl || req.url || '').split('?')[0];
     const deprecatedPrefixes = [
       '/api/vocabulary',
-      '/api/speaking',
       '/api/support',
     ];
     if (deprecatedPrefixes.some((prefix) => url.startsWith(prefix))) {

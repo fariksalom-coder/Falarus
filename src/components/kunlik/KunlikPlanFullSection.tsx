@@ -123,17 +123,20 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
   /** Faqat «hali tugamagan → tugagan» o‘tishi uchun avto-yopish (ochilgan yakunlangan kunni darhol yopmaydi). */
   const expandedCompletionSnapRef = useRef<{ day: number; complete: boolean } | null>(null);
   const weekSectionRefs = useRef(new Map<number, HTMLDivElement>());
-  const weekTouchStartYRef = useRef<number | null>(null);
-  const lastBoundaryCollapseAtRef = useRef(0);
 
   const toggleWeek = useCallback((weekNum: number) => {
+    const isCurrentWeek = dayToWeek.get(currentDay) === weekNum;
     setExpandedWeekNum((prev) => {
       if (prev === weekNum) return null;
       return weekNum;
     });
-    setExpandedDayNum(null);
+    setExpandedDayNum((prev) => {
+      if (expandedWeekNum === weekNum) return null;
+      if (isCurrentWeek) return currentDay;
+      return prev != null && dayToWeek.get(prev) === weekNum ? prev : null;
+    });
     setRibbonOpenedDayNum(null);
-  }, []);
+  }, [currentDay, dayToWeek, expandedWeekNum]);
 
   const [expandedDayNum, setExpandedDayNum] = useState<number | null>(null);
   /** Lentadan tanlangan yakunlangan kun — to‘liq kartochka ochiladi. */
@@ -145,15 +148,6 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
       setExpandedDayNum(next);
       return next;
     });
-  }, []);
-
-  const collapseCurrentWeekOnBoundary = useCallback(() => {
-    const now = Date.now();
-    if (now - lastBoundaryCollapseAtRef.current < 320) return;
-    lastBoundaryCollapseAtRef.current = now;
-    setExpandedWeekNum(null);
-    setExpandedDayNum(null);
-    setRibbonOpenedDayNum(null);
   }, []);
 
   useEffect(() => {
@@ -506,31 +500,7 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
                       if (el) weekDaysScrollRefs.current.set(weekNum, el);
                       else weekDaysScrollRefs.current.delete(weekNum);
                     }}
-                    onWheel={(e) => {
-                      const el = e.currentTarget;
-                      const atTop = el.scrollTop <= 0;
-                      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-                      if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) {
-                        collapseCurrentWeekOnBoundary();
-                      }
-                    }}
-                    onTouchStart={(e) => {
-                      weekTouchStartYRef.current = e.touches[0]?.clientY ?? null;
-                    }}
-                    onTouchMove={(e) => {
-                      const startY = weekTouchStartYRef.current;
-                      const currentY = e.touches[0]?.clientY;
-                      if (startY == null || currentY == null) return;
-                      const delta = currentY - startY;
-                      const el = e.currentTarget;
-                      const atTop = el.scrollTop <= 0;
-                      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-                      if ((delta > 18 && atTop) || (delta < -18 && atBottom)) {
-                        collapseCurrentWeekOnBoundary();
-                        weekTouchStartYRef.current = currentY;
-                      }
-                    }}
-                    className={`min-h-0 space-y-2 overflow-y-auto overscroll-y-contain px-3 pt-2 ${mode === 'embedded' ? 'pb-24' : 'pb-6'} ${weekDaysScrollLayout}`}
+                    className={`min-h-0 space-y-2 overflow-y-auto overscroll-y-auto px-3 pt-2 ${mode === 'embedded' ? 'pb-24' : 'pb-6'} ${weekDaysScrollLayout}`}
                   >
                     {ribbonOpenedDayNum != null &&
                       (() => {
