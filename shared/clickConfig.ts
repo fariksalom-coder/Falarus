@@ -5,7 +5,9 @@ import { parse as parseDotenv } from 'dotenv';
 type ClickConfig = {
   serviceId: string;
   merchantId: string;
-  /** Merchant API (`api.click.uz`) — same as docs `merchant_user_id` */
+  /** Merchant API (`api.click.uz`) Auth header id (NOT end-user id). */
+  apiMerchantUserId: string;
+  /** @deprecated Use `apiMerchantUserId` to avoid confusion. */
   merchantUserId: string;
   secretKey: string;
   returnUrl: string | null;
@@ -38,12 +40,13 @@ function getEnvValue(key: string): string {
 }
 
 export function getClickConfig(): ClickConfig {
-  const merchantUserId =
+  const apiMerchantUserId =
     getEnvValue('CLICK_MERCHANT_USER_ID') || getEnvValue('CLICK_MERCHANT_ID');
   return {
     serviceId: getEnvValue('CLICK_SERVICE_ID'),
     merchantId: getEnvValue('CLICK_MERCHANT_ID'),
-    merchantUserId,
+    apiMerchantUserId,
+    merchantUserId: apiMerchantUserId,
     secretKey: getEnvValue('CLICK_SECRET_KEY'),
     returnUrl: getEnvValue('CLICK_RETURN_URL') || null,
   };

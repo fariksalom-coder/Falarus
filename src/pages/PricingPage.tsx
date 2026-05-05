@@ -4,6 +4,7 @@ import { ArrowLeft, Info } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
 import CurrencyModal from '../components/pricing/CurrencyModal';
+import UzsPaymentMethodModal from '../components/pricing/UzsPaymentMethodModal';
 import { getTariffPricesByCurrency, getUserTariffPricesByCurrency, type UserTariffPricesPayload } from '../api/publicPricing';
 import type { Currency } from '../components/pricing/CurrencyModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -29,6 +30,7 @@ type PlanCard = {
   pricePerMonth: string;
   pricePerMonthUnit: string;
   compareAtPrice: string;
+  topCompareAtPrice?: string;
   /** Ilgari va joriy narxlardan hisoblangan chegirma foizi */
   discountPercent?: number;
   promoActive?: boolean;
@@ -93,6 +95,8 @@ function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[]
   const yearFinal = Number(payload.quotes?.year?.final_amount ?? payload.year ?? 0);
   const yearBase = Number(payload.quotes?.year?.base_amount ?? yearFinal);
   const promoActive = Boolean(payload.promo?.is_active);
+  const monthDiscountPct = promoActive ? 90 : discountPercentFromWas(monthBase, monthFinal);
+  const yearDiscountPct = promoActive ? 95 : discountPercentFromWas(yearBase, yearFinal);
   return [
     {
       duration: '1 OY',
@@ -100,7 +104,8 @@ function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[]
       pricePerMonth: formatPrice(monthFinal),
       pricePerMonthUnit: "so'm",
       compareAtPrice: promoActive && monthBase > monthFinal ? `${formatPrice(monthBase)} so'm` : undefined,
-      discountPercent: discountPercentFromWas(monthBase, monthFinal),
+      topCompareAtPrice: promoActive ? `${formatPrice(WAS_UZS.month)} so'm` : undefined,
+      discountPercent: monthDiscountPct,
       promoActive,
       features: BENEFITS,
       buttonLabel: "1 oyga sotib olish",
@@ -112,7 +117,8 @@ function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[]
       pricePerMonth: formatPrice(yearFinal),
       pricePerMonthUnit: "so'm",
       compareAtPrice: promoActive && yearBase > yearFinal ? `${formatPrice(yearBase)} so'm` : undefined,
-      discountPercent: discountPercentFromWas(yearBase, yearFinal),
+      topCompareAtPrice: promoActive ? `${formatPrice(WAS_UZS.year)} so'm` : undefined,
+      discountPercent: yearDiscountPct,
       promoActive,
       features: BENEFITS,
       buttonLabel: "Bir yilga sotib olish",
@@ -164,10 +170,12 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(true);
   const [promoExpiresAt, setPromoExpiresAt] = useState<string | null>(null);
   const [promoRemainingSec, setPromoRemainingSec] = useState(0);
+  const [promoSpotlight, setPromoSpotlight] = useState(false);
   const [currencyQuotes, setCurrencyQuotes] = useState<
     Partial<Record<Currency, { month: { final: number; base: number; discount: number }; year: { final: number; base: number; discount: number } }>>
   >({});
   const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | 'year'; tariffLabel: string } | null>(null);
+  const [uzsMethodModal, setUzsMethodModal] = useState<{ tariffType: 'month' | 'year'; tariffLabel: string } | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -197,6 +205,17 @@ export default function PricingPage() {
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [promoExpiresAt]);
+
+  useEffect(() => {
+    if (promoRemainingSec <= 0) return;
+    const key = 'pricing-promo-spotlight-v1';
+    const wasSeen = sessionStorage.getItem(key) === '1';
+    if (wasSeen) return;
+    sessionStorage.setItem(key, '1');
+    setPromoSpotlight(true);
+    const id = window.setTimeout(() => setPromoSpotlight(false), 7000);
+    return () => window.clearTimeout(id);
+  }, [promoRemainingSec]);
 
   const handleSelectPlan = (plan: PlanCard) => {
     setCurrencyModal({
@@ -256,27 +275,52 @@ export default function PricingPage() {
   const promoClock = `${String(Math.floor(promoRemainingSec / 60)).padStart(2, '0')}:${String(
     promoRemainingSec % 60
   ).padStart(2, '0')}`;
+  const promoProgressPct = Math.max(0, Math.min(100, (promoRemainingSec / (30 * 60)) * 100));
 
   const handleCurrencySelect = (currency: Currency) => {
     if (!currencyModal) return;
+    if (currency === 'UZS') {
+      setUzsMethodModal({
+        tariffType: currencyModal.tariffType,
+        tariffLabel: currencyModal.tariffLabel,
+      });
+      setCurrencyModal(null);
+      return;
+    }
     navigate('/payment', {
       state: { tariffType: currencyModal.tariffType, currency, tariffLabel: currencyModal.tariffLabel },
     });
     setCurrencyModal(null);
   };
 
-  const handleClickSelect = () => {
-    if (!currencyModal) return;
-    navigate('/payment/click', {
+  const handleManualTransfer = () => {
+    if (!uzsMethodModal) return;
+    navigate('/payment', {
       state: {
-        tariffType: currencyModal.tariffType,
-        tariffLabel: currencyModal.tariffLabel,
+        tariffType: uzsMethodModal.tariffType,
+        tariffLabel: uzsMethodModal.tariffLabel,
+        currency: 'UZS' as const,
         productCode: 'russian',
         productLabel: 'Курс русского языка',
         returnTo: '/tariflar',
       },
     });
-    setCurrencyModal(null);
+    setUzsMethodModal(null);
+  };
+
+  const handleClickCardSms = () => {
+    if (!uzsMethodModal) return;
+    navigate('/payment/click', {
+      state: {
+        tariffType: uzsMethodModal.tariffType,
+        tariffLabel: uzsMethodModal.tariffLabel,
+        productCode: 'russian',
+        productLabel: 'Курс русского языка',
+        returnTo: '/tariflar',
+        clickMode: 'card_sms',
+      },
+    });
+    setUzsMethodModal(null);
   };
 
   const scrollToTariffs = () => {
@@ -298,25 +342,41 @@ export default function PricingPage() {
           <ArrowLeft className="h-5 w-5" />
           Orqaga
         </button>
-        {/* 1. Hero */}
-        <section className="mb-16 text-center">
-          <h1
-            className="text-3xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-4xl lg:text-5xl"
-            style={{ color: TEXT }}
-          >
-            Rus tilini 0 dan erkin suhbatgacha o‘rganing
-          </h1>
-        </section>
-
-        {/* 2. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
+        {/* 1. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
         <section id="tariflar" className="mb-20">
           {promoRemainingSec > 0 && (
-            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-              <p className="text-sm font-semibold text-amber-900">
-                Maxsus narx tugashiga: <span className="tabular-nums">{promoClock}</span>
-              </p>
-              <p className="mt-1 text-xs text-amber-800">
-                Premiumni hozir faollashtiring — vaqt tugagach odatiy narx qaytadi.
+            <div
+              className={`mb-6 overflow-hidden rounded-[24px] border border-amber-300/70 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-5 shadow-[0_18px_38px_rgba(245,158,11,0.18)] transition-all duration-500 ${
+                promoSpotlight ? 'scale-[1.02] ring-4 ring-amber-300/50' : 'scale-100'
+              }`}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="w-full">
+                  <p className="text-center text-sm font-extrabold uppercase tracking-wide text-amber-800">
+                    Narx oshishiga oz qoldi
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/85 px-4 py-3 shadow-sm ring-1 ring-amber-200">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Qolgan vaqt</p>
+                  <p
+                    className={`mt-1 text-4xl font-black tabular-nums leading-none text-amber-950 ${
+                      promoRemainingSec <= 300 ? 'animate-pulse' : ''
+                    }`}
+                  >
+                    {promoClock}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-100">
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 transition-all duration-1000 ${
+                    promoRemainingSec <= 300 ? 'animate-pulse' : ''
+                  }`}
+                  style={{ width: `${promoProgressPct}%` }}
+                />
+              </div>
+              <p className="mt-3 text-[13px] font-semibold text-amber-900">
+                Hoziroq xarid qiling
               </p>
             </div>
           )}
@@ -368,6 +428,7 @@ export default function PricingPage() {
                     pricePerMonth={plan.pricePerMonth}
                     pricePerMonthUnit={plan.pricePerMonthUnit}
                     compareAtPrice={plan.compareAtPrice}
+                    topCompareAtPrice={plan.topCompareAtPrice}
                     discountPercent={plan.discountPercent}
                     onSelect={hasPendingPayment ? undefined : () => handleSelectPlan(plan)}
                     purchaseDisabled={!!token && hasPendingPayment}
@@ -454,8 +515,6 @@ export default function PricingPage() {
         <CurrencyModal
           onClose={() => setCurrencyModal(null)}
           onSelect={handleCurrencySelect}
-          onClickPay={handleClickSelect}
-          clickLabel="Click (karta + SMS, avtoto‘lov)"
           showPromoHint={promoRemainingSec > 0}
           currencyPriceMeta={currencyModal ? {
             UZS: {
@@ -476,6 +535,19 @@ export default function PricingPage() {
           } : undefined}
         />
       )}
+
+      {uzsMethodModal ? (
+        <UzsPaymentMethodModal
+          onClose={() => setUzsMethodModal(null)}
+          onManualTransfer={handleManualTransfer}
+          onClickCardSms={handleClickCardSms}
+          clickButtonConfig={{
+            token,
+            productCode: 'russian',
+            tariffType: uzsMethodModal.tariffType,
+          }}
+        />
+      ) : null}
     </div>
   );
 }

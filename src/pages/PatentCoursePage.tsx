@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { PATENT_EXAM_VARIANTS } from '../data/patentExamData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
+import UzsPaymentMethodModal from '../components/pricing/UzsPaymentMethodModal';
 import PaywallModal from '../components/PaywallModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +33,7 @@ export default function PatentCoursePage() {
   const { access } = useAccess();
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
+  const [uzsMethodModalOpen, setUzsMethodModalOpen] = useState(false);
   const [results, setResults] = useState<PatentVariantResult[]>([]);
   const [resultsError, setResultsError] = useState<string | null>(null);
 
@@ -63,6 +65,10 @@ export default function PatentCoursePage() {
   );
 
   const handlePurchase = (currency: Currency) => {
+    if (currency === 'UZS') {
+      setUzsMethodModalOpen(true);
+      return;
+    }
     navigate('/payment', {
       state: {
         productCode: 'patent',
@@ -71,6 +77,30 @@ export default function PatentCoursePage() {
         returnTo: '/kurslar/patent',
       },
     });
+  };
+
+  const handleManualTransfer = () => {
+    navigate('/payment', {
+      state: {
+        productCode: 'patent',
+        productLabel: patentMeta.label,
+        currency: 'UZS' as const,
+        returnTo: '/kurslar/patent',
+      },
+    });
+    setUzsMethodModalOpen(false);
+  };
+
+  const handleClickCardSms = () => {
+    navigate('/payment/click', {
+      state: {
+        productCode: 'patent',
+        productLabel: patentMeta.label,
+        returnTo: '/kurslar/patent',
+        clickMode: 'card_sms',
+      },
+    });
+    setUzsMethodModalOpen(false);
   };
 
   return (
@@ -208,8 +238,15 @@ export default function PatentCoursePage() {
         <CurrencyModal
           onClose={() => setCurrencyModalOpen(false)}
           onSelect={handlePurchase}
-          clickLabel={`Click bilan ${patentMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
-          directClickCourse={{
+        />
+      ) : null}
+
+      {uzsMethodModalOpen ? (
+        <UzsPaymentMethodModal
+          onClose={() => setUzsMethodModalOpen(false)}
+          onManualTransfer={handleManualTransfer}
+          onClickCardSms={handleClickCardSms}
+          clickButtonConfig={{
             token,
             productCode: 'patent',
             refreshPayments,

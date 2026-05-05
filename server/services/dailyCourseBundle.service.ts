@@ -151,8 +151,9 @@ export async function fetchDailyCourseDayBundle(
     topicRow &&
     (String(topicRow.title ?? '').trim() !== '' || String(topicRow.theory_text ?? '').trim() !== '');
   const grammarMcqs = (grammarMcqRes.data ?? []) as DbMcq[];
-  const ruleMcqs = grammarMcqs.filter((r) => r.quiz_kind === 'rule').map(mapMcq);
-  const sentenceMcqs = grammarMcqs.filter((r) => r.quiz_kind === 'sentence').map(mapMcq);
+  // Legacy rows may have null/empty quiz_kind; treat them as rule tasks, not as "missing grammar".
+  const sentenceMcqs = grammarMcqs.filter((r) => String(r.quiz_kind ?? '').trim() === 'sentence').map(mapMcq);
+  const ruleMcqs = grammarMcqs.filter((r) => String(r.quiz_kind ?? '').trim() !== 'sentence').map(mapMcq);
 
   const arrangeRows = grammarSentenceArrangeRes.data ?? [];
   const sentenceArrange: DailyGrammarSentenceArrange[] = (arrangeRows as Array<Record<string, unknown>>).map(

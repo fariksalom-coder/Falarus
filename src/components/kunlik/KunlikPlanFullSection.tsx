@@ -792,16 +792,32 @@ function DayPlanRow({
                     : 'Avvalgi kunni tugatish kerak'}
                 </p>
                 {isPremiumLocked && (
-                  <button
+                  <motion.button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate('/tariflar');
                     }}
-                    className="min-h-[32px] rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-900 transition-colors hover:bg-amber-200"
+                    whileTap={{ scale: 0.96 }}
+                    animate={{
+                      scale: [1, 1.04, 1],
+                      boxShadow: [
+                        '0 6px 16px rgba(245,158,11,0.18)',
+                        '0 10px 22px rgba(245,158,11,0.3)',
+                        '0 6px 16px rgba(245,158,11,0.18)',
+                      ],
+                    }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                    className="relative min-h-[34px] overflow-hidden rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-300 px-3 py-1 text-[11px] font-extrabold tracking-wide text-amber-950 ring-1 ring-amber-200/70"
                   >
-                    Premium
-                  </button>
+                    <motion.span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 -left-8 w-6 rotate-12 bg-white/45 blur-[1px]"
+                      animate={{ x: [-12, 64] }}
+                      transition={{ duration: 1.3, repeat: Infinity, repeatDelay: 0.7, ease: 'easeOut' }}
+                    />
+                    <span className="relative">Premium</span>
+                  </motion.button>
                 )}
               </div>
             )}

@@ -77,6 +77,7 @@ import {
   runClickAutoRenewalCron,
 } from '../server/services/clickCardToken.service.js';
 import { fiscalizePayment, runClickFiscalRetryCron } from '../server/services/clickFiscal.service.js';
+import { resolveRussianTariffQuote } from '../server/services/promoPricing.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -480,6 +481,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const body = parseBody(req.body);
+      const tariffTypeRaw = String(body.tariff_type ?? '').trim();
       const rawProductCode =
         typeof body.product_code === 'string' ? body.product_code.trim() : body.product_code;
       if (!isPaymentProductCode(rawProductCode)) {
@@ -489,12 +491,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
       const productCode = rawProductCode;
-      if (productCode === 'russian') {
-        return res.status(400).json({
-          error: 'AUTO_PAY_ONLY',
-          message:
-            'Rus tili kursi uchun bir martalik Click tugmasi o‘chirilgan. Faqat avtomatik to‘lov (karta + SMS) mavjud.',
-        });
+      const russianTariffType = isSubscriptionTariffType(tariffTypeRaw) ? tariffTypeRaw : null;
+      if (productCode === 'russian' && !russianTariffType) {
+        return res.status(400).json({ error: 'tariff_type kerak: month, year' });
       }
 
       let { data: pending, error: pendingErr } = await supabase
@@ -525,20 +524,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const amount = getClickAmountForProduct({
-        productCode,
-        tariffType: null,
-        tariffPrices: null,
-      });
+      let amount = 0;
+      let baseAmount = 0;
+      let discountAmount = 0;
+      let discountMeta: Record<string, unknown> | null = null;
+      if (productCode === 'russian' && russianTariffType) {
+        const quote = await resolveRussianTariffQuote(supabase, {
+          userId,
+          currency: 'UZS',
+          tariffType: russianTariffType,
+          startPromoIfMissing: false,
+        });
+        amount = quote.finalAmount;
+        baseAmount = quote.baseAmount;
+        discountAmount = quote.discountAmount;
+        discountMeta = quote.discountAmount > 0
+          ? {
+              campaign: 'russian-first-tariffs-30m',
+              expires_at: quote.promo.expiresAt,
+              currency: quote.currency,
+              tariff_type: quote.tariffType,
+            }
+          : null;
+      } else {
+        amount = getClickAmountForProduct({
+          productCode,
+          tariffType: null,
+          tariffPrices: null,
+        });
+        baseAmount = amount;
+      }
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "To'lov summasi aniqlanmadi" });
       }
 
       const insertBase: Record<string, unknown> = {
         user_id: userId,
-        tariff_type: null,
+        tariff_type: productCode === 'russian' ? russianTariffType : null,
         currency: 'UZS',
         amount,
+        base_amount: baseAmount || amount,
+        discount_amount: discountAmount,
+        discount_meta: discountMeta,
         payment_proof_url: null,
         payment_time: new Date().toISOString(),
         status: 'pending',
@@ -727,7 +754,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       secretKey: clickSecretKey,
       serviceId: clickServiceId,
       merchantId: clickMerchantId,
-      merchantUserId: clickMerchantUserId,
+      apiMerchantUserId: clickMerchantUserId,
       returnUrl: clickReturnUrl,
     } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);

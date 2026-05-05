@@ -3,7 +3,7 @@ import type { SubscriptionTariffType } from '../../shared/paymentProducts.js';
 
 export const RUSSIAN_PROMO_DURATION_MS = 30 * 60 * 1000;
 export const RUSSIAN_PROMO_UZS_PRICE: Record<SubscriptionTariffType, number> = {
-  month: 25_000,
+  month: 49_000,
   year: 149_000,
 };
 

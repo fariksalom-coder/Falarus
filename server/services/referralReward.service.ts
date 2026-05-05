@@ -1,10 +1,13 @@
 import type { Supabase } from '../types/referral';
 import { REFERRAL_REWARD_PERCENT } from '../types/referral';
-import * as repo from '../repositories/referralRepository';
+import { logError } from '../lib/logger.js';
 
 /**
  * After a referred user pays: give 25% of paid amount to referrer, only once per referral.
- * Call after payment is recorded; paymentAmount = actual amount paid (after discount).
+ * Idempotency, balance arithmetic, and the multi-row update are all done atomically
+ * inside the Postgres function `process_referral_reward` (migration 117).
+ *
+ * Call after the payment row is recorded; paymentAmount = actual amount paid (after discount).
  */
 export async function processReferralReward(
   supabase: Supabase,
@@ -12,17 +15,28 @@ export async function processReferralReward(
   paymentId: number,
   paymentAmount: number
 ): Promise<{ rewarded: boolean; rewardAmount?: number }> {
-  const referral = await repo.getReferralByReferredUser(supabase, referredUserId);
-  if (!referral || referral.status === 'rewarded') return { rewarded: false };
-  if (referral.referrer_id === referredUserId) return { rewarded: false };
-
-  const referrerId = referral.referrer_id;
   const rewardAmount = Math.round(paymentAmount * REFERRAL_REWARD_PERCENT);
   if (rewardAmount <= 0) return { rewarded: false };
 
-  await repo.updateReferralToPaid(supabase, referral.id, paymentId);
-  await repo.addReferralRewardToUser(supabase, referrerId, rewardAmount);
-  await repo.updateReferralToRewarded(supabase, referral.id, rewardAmount);
+  const { data, error } = await supabase.rpc('process_referral_reward', {
+    p_referred_user_id: referredUserId,
+    p_payment_id: paymentId,
+    p_reward_amount: rewardAmount,
+  });
 
-  return { rewarded: true, rewardAmount };
+  if (error) {
+    logError('referral.process_reward.rpc_failed', error, {
+      referredUserId,
+      paymentId,
+      rewardAmount,
+    });
+    throw error;
+  }
+
+  // TABLE-returning function comes back as an array of one row.
+  const row = Array.isArray(data) ? data[0] : data;
+  const rewarded = Boolean(row?.rewarded);
+  return rewarded
+    ? { rewarded: true, rewardAmount: Number(row?.reward_amount ?? rewardAmount) }
+    : { rewarded: false };
 }

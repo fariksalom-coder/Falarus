@@ -28,7 +28,10 @@ import {
   activateRussianSubscription,
 } from '../../shared/paymentActivation.js';
 import {
+  getCourseProductPrice,
+  isPaymentProductCode,
   isSubscriptionTariffType,
+  type PaymentProductCode,
   type SubscriptionTariffType,
 } from '../../shared/paymentProducts.js';
 import { invalidateAccessCache } from './subscription.service.js';
@@ -97,13 +100,17 @@ async function fetchUzAmountForTariff(
   return row != null ? Number((row as { price: number }).price) : 0;
 }
 
-async function userHasPendingRussianPayment(supabase: SupabaseClient, userId: number): Promise<boolean> {
+async function userHasPendingPaymentForProduct(
+  supabase: SupabaseClient,
+  userId: number,
+  productCode: PaymentProductCode
+): Promise<boolean> {
   let q = supabase
     .from('payments')
     .select('id')
     .eq('user_id', userId)
     .eq('status', 'pending')
-    .eq('product_code', 'russian')
+    .eq('product_code', productCode)
     .limit(1)
     .maybeSingle();
   let { data: pending, error } = await q;
@@ -191,11 +198,12 @@ function lastPaymentIdFromJson(json: ClickMerchantJson): string | null {
   return String(raw);
 }
 
-async function insertRussianPaymentPending(
+async function insertClickTokenPaymentPending(
   supabase: SupabaseClient,
   params: {
     userId: number;
-    tariffType: SubscriptionTariffType;
+    productCode: PaymentProductCode;
+    tariffType: SubscriptionTariffType | null;
     amount: number;
     baseAmount?: number;
     discountAmount?: number;
@@ -217,7 +225,7 @@ async function insertRussianPaymentPending(
   };
   let { data: row, error } = await supabase
     .from('payments')
-    .insert({ ...insertBase, product_code: 'russian' })
+    .insert({ ...insertBase, product_code: params.productCode })
     .select('id')
     .single();
   if (error && isPaymentsProductCodeSchemaError(error)) {
@@ -225,7 +233,7 @@ async function insertRussianPaymentPending(
       .from('payments')
       .insert({
         ...insertBase,
-        tariff_type: params.tariffType,
+        tariff_type: params.tariffType ?? 'month',
       })
       .select('id')
       .single();
@@ -256,13 +264,22 @@ export async function handleClickCardTokenRequest(
   const card_digits = card_number_raw.replace(/\D/g, '');
   const expire_date = String(body.expire_date ?? '').replace(/\D/g, '');
   const plan_type = String(body.plan_type ?? body.tariff_type ?? '').trim();
+  const productCodeRaw = String(body.product_code ?? '').trim();
+  const productCode: PaymentProductCode = isPaymentProductCode(productCodeRaw) ? productCodeRaw : 'russian';
 
-  if (!card_digits || expire_date.length !== 4 || !isSubscriptionTariffType(plan_type)) {
+  if (!card_digits || expire_date.length !== 4) {
     return {
       status: 400,
       json: {
-        error:
-          'card_number, expire_date (karta muddati: oy-yil, 4 raqam), plan_type kerak: month | year',
+        error: 'card_number, expire_date (karta muddati: oy-yil, 4 raqam) kerak',
+      },
+    };
+  }
+  if (productCode === 'russian' && !isSubscriptionTariffType(plan_type)) {
+    return {
+      status: 400,
+      json: {
+        error: 'Rus tili uchun plan_type kerak: month | year',
       },
     };
   }
@@ -291,6 +308,7 @@ export async function handleClickCardTokenRequest(
       expire_date,
       temporary: 0,
       plan_type,
+      product_code: productCode,
     },
     response_safe: apiJson as Record<string, unknown>,
   });
@@ -322,7 +340,7 @@ export async function handleClickCardTokenVerify(
 ): Promise<{ status: number; json: Record<string, unknown> }> {
   const cfg = getClickConfig();
   const serviceId = Number(cfg.serviceId);
-  const merchantUserId = cfg.merchantUserId?.trim();
+  const merchantUserId = cfg.apiMerchantUserId?.trim();
   const secretKey = cfg.secretKey?.trim();
 
   if (!merchantUserId || !secretKey || !cfg.serviceId || !Number.isFinite(serviceId)) {
@@ -332,15 +350,23 @@ export async function handleClickCardTokenVerify(
   const card_token = String(body.card_token ?? '').trim();
   const sms_code = body.sms_code;
   const plan_type = String(body.plan_type ?? body.tariff_type ?? '').trim();
+  const productCodeRaw = String(body.product_code ?? '').trim();
+  const productCode: PaymentProductCode = isPaymentProductCode(productCodeRaw) ? productCodeRaw : 'russian';
 
-  if (!card_token || sms_code == null || sms_code === '' || !isSubscriptionTariffType(plan_type)) {
+  if (!card_token || sms_code == null || sms_code === '') {
     return {
       status: 400,
-      json: { error: 'card_token, sms_code, plan_type kerak' },
+      json: { error: 'card_token, sms_code kerak' },
+    };
+  }
+  if (productCode === 'russian' && !isSubscriptionTariffType(plan_type)) {
+    return {
+      status: 400,
+      json: { error: 'Rus tili uchun plan_type kerak: month | year' },
     };
   }
 
-  if (await userHasPendingRussianPayment(supabase, userId)) {
+  if (await userHasPendingPaymentForProduct(supabase, userId, productCode)) {
     return {
       status: 400,
       json: {
@@ -350,7 +376,7 @@ export async function handleClickCardTokenVerify(
     };
   }
 
-  const tariffType = plan_type as SubscriptionTariffType;
+  const tariffType = isSubscriptionTariffType(plan_type) ? (plan_type as SubscriptionTariffType) : null;
   const verifyJson = await clickCardTokenVerify({
     serviceId,
     card_token,
@@ -407,13 +433,32 @@ export async function handleClickCardTokenVerify(
 
   const cardTokenId = Number((tokenRow as { id: number }).id);
 
-  const quote = await resolveRussianTariffQuote(supabase, {
-    userId,
-    currency: 'UZS',
-    tariffType,
-    startPromoIfMissing: false,
-  });
-  const amount = quote.finalAmount;
+  let amount = 0;
+  let baseAmount = 0;
+  let discountAmount = 0;
+  let discountMeta: Record<string, unknown> | null = null;
+  if (productCode === 'russian') {
+    const quote = await resolveRussianTariffQuote(supabase, {
+      userId,
+      currency: 'UZS',
+      tariffType: (tariffType ?? 'month'),
+      startPromoIfMissing: false,
+    });
+    amount = quote.finalAmount;
+    baseAmount = quote.baseAmount;
+    discountAmount = quote.discountAmount;
+    discountMeta = quote.discountAmount > 0
+      ? {
+          campaign: 'russian-first-tariffs-30m',
+          expires_at: quote.promo.expiresAt,
+          currency: 'UZS',
+          tariff_type: quote.tariffType,
+        }
+      : null;
+  } else {
+    amount = getCourseProductPrice(productCode, 'UZS');
+    baseAmount = amount;
+  }
   if (!amount || amount <= 0) {
     await supabase.from('card_tokens').update({ is_active: false }).eq('id', cardTokenId);
     return { status: 400, json: { error: "Tarif narxi topilmadi" } };
@@ -421,20 +466,14 @@ export async function handleClickCardTokenVerify(
 
   let paymentId: number;
   try {
-    paymentId = await insertRussianPaymentPending(supabase, {
+    paymentId = await insertClickTokenPaymentPending(supabase, {
       userId,
       tariffType,
+      productCode,
       amount,
-      baseAmount: quote.baseAmount,
-      discountAmount: quote.discountAmount,
-      discountMeta: quote.discountAmount > 0
-        ? {
-            campaign: 'russian-first-tariffs-30m',
-            expires_at: quote.promo.expiresAt,
-            currency: 'UZS',
-            tariff_type: quote.tariffType,
-          }
-        : null,
+      baseAmount,
+      discountAmount,
+      discountMeta,
       paymentChannel: 'click_auto_token',
     });
   } catch (e) {
@@ -484,39 +523,41 @@ export async function handleClickCardTokenVerify(
   await supabase.from('payments').update(approvePatch).eq('id', paymentId);
 
   try {
-    await activateRussianSubscription(supabase, {
-      userId,
-      tariffType,
-      extras: {
-        auto_payment_enabled: true,
-        card_token_id: cardTokenId,
-        next_payment_date: null,
-      },
-    });
-    const { data: u } = await supabase
-      .from('users')
-      .select('plan_expires_at')
-      .eq('id', userId)
-      .single();
-    const next = u?.plan_expires_at ? String(u.plan_expires_at) : null;
-    const { data: latestSub } = await supabase
-      .from('subscriptions')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('auto_payment_enabled', true)
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (latestSub?.id && next) {
-      await supabase
+    if (productCode === 'russian' && tariffType) {
+      await activateRussianSubscription(supabase, {
+        userId,
+        tariffType,
+        extras: {
+          auto_payment_enabled: true,
+          card_token_id: cardTokenId,
+          next_payment_date: null,
+        },
+      });
+      const { data: u } = await supabase
+        .from('users')
+        .select('plan_expires_at')
+        .eq('id', userId)
+        .single();
+      const next = u?.plan_expires_at ? String(u.plan_expires_at) : null;
+      const { data: latestSub } = await supabase
         .from('subscriptions')
-        .update({ next_payment_date: next })
-        .eq('id', latestSub.id);
+        .select('id')
+        .eq('user_id', userId)
+        .eq('auto_payment_enabled', true)
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestSub?.id && next) {
+        await supabase
+          .from('subscriptions')
+          .update({ next_payment_date: next })
+          .eq('id', latestSub.id);
+      }
+      await supabase.from('users').update({
+        billing_notice_uz:
+          'Avtomatik to‘lov yoqildi. Keyingi yechilish muddatiga yaqinligi haqida xabar beramiz.',
+      }).eq('id', userId);
     }
-    await supabase.from('users').update({
-      billing_notice_uz:
-        'Avtomatik to‘lov yoqildi. Keyingi yechilish muddatiga yaqinligi haqida xabar beramiz.',
-    }).eq('id', userId);
     invalidateAccessCache(userId);
   } catch (activationErr) {
     console.error('[click verify activation]', activationErr);
@@ -549,7 +590,7 @@ export async function handleClickCardTokenDelete(
 ): Promise<{ status: number; json: Record<string, unknown> }> {
   const cfg = getClickConfig();
   const serviceId = Number(cfg.serviceId);
-  const merchantUserId = cfg.merchantUserId?.trim();
+  const merchantUserId = cfg.apiMerchantUserId?.trim();
   const secretKey = cfg.secretKey?.trim();
   if (!merchantUserId || !secretKey || !cfg.serviceId || !Number.isFinite(serviceId)) {
     return { status: 503, json: { error: 'Click sozlanmagan' } };
@@ -621,7 +662,7 @@ export async function runClickAutoRenewalCron(
 ): Promise<{ scanned: number; renewed: number; failed: number }> {
   const cfg = getClickConfig();
   const serviceId = Number(cfg.serviceId);
-  const merchantUserId = cfg.merchantUserId?.trim();
+  const merchantUserId = cfg.apiMerchantUserId?.trim();
   const secretKey = cfg.secretKey?.trim();
   if (!merchantUserId || !secretKey || !cfg.serviceId || !Number.isFinite(serviceId)) {
     console.warn('[cron click-auto-pay] Click config incomplete');
@@ -704,8 +745,9 @@ export async function runClickAutoRenewalCron(
 
     let paymentId: number;
     try {
-      paymentId = await insertRussianPaymentPending(supabase, {
+      paymentId = await insertClickTokenPaymentPending(supabase, {
         userId: sub.user_id,
+        productCode: 'russian',
         tariffType: tariff,
         amount,
         paymentChannel: 'click_auto_cron',

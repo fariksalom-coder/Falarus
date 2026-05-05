@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { createClickPayment } from '../../api/click';
-import type { PaymentProductCode } from '../../../shared/paymentProducts';
+import type { PaymentProductCode, SubscriptionTariffType } from '../../../shared/paymentProducts';
 import styles from './ClickOfficialPayForm.module.css';
 
-export type ClickCoursePayProduct = Extract<PaymentProductCode, 'patent' | 'vnzh'>;
+export type ClickCoursePayProduct = PaymentProductCode;
 
 type Props = {
   token: string | null;
   productCode: ClickCoursePayProduct;
+  tariffType?: SubscriptionTariffType;
   disabled?: boolean;
   /** Called after pending payment row is created (before redirect). */
   onSuccess?: () => void | Promise<void>;
@@ -24,6 +25,7 @@ type Props = {
 export function ClickCoursePayButton({
   token,
   productCode,
+  tariffType,
   disabled,
   onSuccess,
   onStarted,
@@ -41,8 +43,12 @@ export function ClickCoursePayButton({
     setLoading(true);
     onStarted?.();
     try {
+      if (productCode === 'russian' && !tariffType) {
+        onError('Tarif turi topilmadi. Sahifani yangilang.');
+        return;
+      }
       const result = await createClickPayment(token, {
-        tariffType: null,
+        tariffType: productCode === 'russian' ? tariffType : null,
         productCode,
       });
       await onSuccess?.();

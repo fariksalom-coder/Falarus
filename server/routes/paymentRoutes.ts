@@ -69,6 +69,7 @@ export function createPaymentRoutes(
     authenticate,
     async (req: any, res: Response) => {
       const userId = req.userId;
+      const tariffTypeRaw = String(req.body?.tariff_type ?? '').trim();
       const rawProductCode =
         typeof req.body?.product_code === 'string' ? req.body.product_code.trim() : req.body?.product_code;
       if (!isPaymentProductCode(rawProductCode)) {
@@ -87,11 +88,10 @@ export function createPaymentRoutes(
       if (!clickServiceId || !clickMerchantId) {
         return res.status(503).json({ error: 'Click sozlanmagan. CLICK_SERVICE_ID va CLICK_MERCHANT_ID kerak.' });
       }
-      if (productCode === 'russian') {
+      const russianTariffType = isSubscriptionTariffType(tariffTypeRaw) ? tariffTypeRaw : null;
+      if (productCode === 'russian' && !russianTariffType) {
         return res.status(400).json({
-          error: 'AUTO_PAY_ONLY',
-          message:
-            'Rus tili kursi uchun bir martalik Click tugmasi o‘chirilgan. Faqat avtomatik to‘lov (karta + SMS) mavjud.',
+          error: 'tariff_type kerak: month, year',
         });
       }
 
@@ -123,26 +123,48 @@ export function createPaymentRoutes(
         });
       }
 
-      // TODO: убрать после теста — временно 1000 для vnzh
-      const amount = productCode === 'vnzh'
-        ? 1000
-        : getClickAmountForProduct({
-            productCode,
-            tariffType: null,
-            tariffPrices: null,
-          });
+      let amount = 0;
+      let baseAmount = 0;
+      let discountAmount = 0;
+      let discountMeta: Record<string, unknown> | null = null;
+      if (productCode === 'russian' && russianTariffType) {
+        const quote = await resolveRussianTariffQuote(supabase, {
+          userId,
+          currency: 'UZS',
+          tariffType: russianTariffType,
+          startPromoIfMissing: false,
+        });
+        amount = quote.finalAmount;
+        baseAmount = quote.baseAmount;
+        discountAmount = quote.discountAmount;
+        discountMeta = quote.discountAmount > 0
+          ? {
+              campaign: 'russian-first-tariffs-30m',
+              expires_at: quote.promo.expiresAt,
+              currency: quote.currency,
+              tariff_type: quote.tariffType,
+            }
+          : null;
+      } else {
+        amount = getClickAmountForProduct({
+          productCode,
+          tariffType: null,
+          tariffPrices: null,
+        });
+        baseAmount = amount;
+      }
       if (!amount || amount <= 0) {
         return res.status(400).json({ error: "To'lov summasi aniqlanmadi" });
       }
 
       const insertBase: Record<string, unknown> = {
         user_id: userId,
-        tariff_type: null,
+        tariff_type: productCode === 'russian' ? russianTariffType : null,
         currency: 'UZS',
         amount,
-        base_amount: amount,
-        discount_amount: 0,
-        discount_meta: null,
+        base_amount: baseAmount || amount,
+        discount_amount: discountAmount,
+        discount_meta: discountMeta,
         payment_proof_url: null,
         payment_time: new Date().toISOString(),
         status: 'pending' as const,

@@ -486,7 +486,7 @@ export function createAdminController(supabase: SupabaseClient) {
 
       const cfg = getClickConfig();
       const serviceId = Number(cfg.serviceId);
-      const merchantUserId = cfg.merchantUserId?.trim();
+      const merchantUserId = cfg.apiMerchantUserId?.trim();
       const secretKey = cfg.secretKey?.trim();
       if (!Number.isFinite(serviceId) || !merchantUserId || !secretKey) {
         return res.status(503).json({ error: 'Click Merchant API sozlanmagan' });

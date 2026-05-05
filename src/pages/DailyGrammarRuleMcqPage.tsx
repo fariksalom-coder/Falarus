@@ -119,7 +119,8 @@ export default function DailyGrammarRuleMcqPage() {
       setCurrentIndex((p) => p + 1);
       return;
     }
-    setFinished(true);
+    patchDay(dayNumber, { grammar_1: true });
+    navigate(`/kunlik-reja/kun/${dayNumber}/grammatika/juftlik`, { replace: true });
   };
 
   if (!isValidDailyCourseDay(dayNumber)) {

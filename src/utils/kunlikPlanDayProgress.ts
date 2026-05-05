@@ -6,8 +6,6 @@ import {
 import { DAILY_PLAN, TOTAL_DAYS, type DayBlock, type DayPlan } from '../data/dailyPlan';
 import { LESSONS } from '../data/lessonsList';
 import { isLessonFullyPassed } from '../lib/sequentialLessonProgress';
-import { loadDailyVocabProgress } from './dailyVocabProgress';
-import { getLearnedCount } from './vocabProgress';
 
 /** SequentialLessonContext.results shape */
 export type PlanLessonResults = Record<
@@ -41,10 +39,10 @@ export function isBlockDoneLocallyForPlan(
     return isLessonFullyPassed(block.lessonPath, total, results);
   }
   if (block.kind === 'vocabulary') {
-    if (getLearnedCount(block.topicId, block.subtopicId) > 0) return true;
-    /** Kunlik lug‘at `/lugat/*` lug‘at progressidan boshqa — mahalliy bosqichlar va DB `words_match` */
-    const dv = loadDailyVocabProgress(day);
-    return dv.step3Completed || dv.step2Passed;
+    // For day-plan completion we only trust DB-backed state (`words_match`) via `serverDone`.
+    // Local step cache can be stale and caused false "done" state in UI.
+    void day;
+    return false;
   }
   if (block.kind === 'text') {
     return false;

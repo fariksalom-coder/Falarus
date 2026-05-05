@@ -99,6 +99,8 @@ export function postWithdraw(supabase: Supabase) {
           error: `Minimal summa ${MIN_WITHDRAWAL_AMOUNT.toLocaleString()} so'm`,
         });
       }
+      // Cheap pre-check for friendlier 4xx error message; the authoritative
+      // overdraw guard is the atomic deduct_referral_balance() RPC below.
       const balanceRow = await repo.getUserReferralBalance(supabase, userId);
       const balance = balanceRow?.referral_balance ?? 0;
       if (amount > balance) {
@@ -107,7 +109,16 @@ export function postWithdraw(supabase: Supabase) {
       const card_number = req.body?.card_number;
       const phone = req.body?.phone;
       const full_name = req.body?.full_name;
-      await repo.deductReferralBalance(supabase, userId, amount);
+      // Atomic conditional UPDATE: refuses to overdraw under concurrency.
+      const { data: deductRows, error: deductErr } = await supabase.rpc('deduct_referral_balance', {
+        p_user_id: userId,
+        p_amount: amount,
+      });
+      if (deductErr) throw deductErr;
+      const deductRow = Array.isArray(deductRows) ? deductRows[0] : deductRows;
+      if (!deductRow?.deducted) {
+        return res.status(409).json({ error: 'Balans yetarli emas' });
+      }
       const id = await repo.createWithdrawal(supabase, userId, amount, {
         card_number: card_number != null ? String(card_number) : undefined,
         phone: phone != null ? String(phone) : undefined,

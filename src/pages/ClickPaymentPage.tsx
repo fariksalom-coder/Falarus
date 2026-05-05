@@ -50,12 +50,14 @@ export default function ClickPaymentPage() {
         productCode?: PaymentProductCode;
         productLabel?: string;
         returnTo?: string;
+        clickMode?: 'card_sms' | 'button';
       }
     | null;
 
   const productCode = normalizePaymentProductCode(state?.productCode);
   const isRussianCourse = productCode === 'russian';
   const isCourseOneOffClick = productCode === 'patent' || productCode === 'vnzh';
+  const useCardSmsFlow = state?.clickMode === 'card_sms' || isRussianCourse;
   const tariffType = state?.tariffType ?? (isRussianCourse ? 'month' : undefined);
   const productLabel = state?.productLabel ?? getPaymentProductLabel(productCode);
   const russianTariffDisplay =
@@ -83,7 +85,9 @@ export default function ClickPaymentPage() {
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [promoActive, setPromoActive] = useState(false);
 
-  const hasValidState = isRussianCourse ? Boolean(tariffType) : Boolean(state?.productCode);
+  const hasValidState = isRussianCourse
+    ? Boolean(tariffType)
+    : (useCardSmsFlow ? Boolean(state?.productCode) : Boolean(state?.productCode));
   const hasPendingPayment = useMemo(
     () =>
       payments.some((payment) => payment.status === 'pending' && payment.product_code === productCode),
@@ -132,7 +136,8 @@ export default function ClickPaymentPage() {
   const expireOk = normalizeExpireInput(expireDate).length === 4;
 
   const handleRequestSms = async () => {
-    if (!token || !tariffType) return;
+    if (!token) return;
+    if (isRussianCourse && !tariffType) return;
     setSubmitting(true);
     setError('');
     try {
@@ -153,6 +158,7 @@ export default function ClickPaymentPage() {
         card_number: panDigits,
         expire_date: exp,
         plan_type: tariffType,
+        product_code: productCode,
       });
       setPendingCardToken(res.card_token);
       setMaskedPhone(res.phone_number || '');
@@ -165,7 +171,8 @@ export default function ClickPaymentPage() {
   };
 
   const handleVerifyAndPay = async () => {
-    if (!token || !tariffType || !pendingCardToken) return;
+    if (!token || !pendingCardToken) return;
+    if (isRussianCourse && !tariffType) return;
     setSubmitting(true);
     setError('');
     try {
@@ -173,6 +180,7 @@ export default function ClickPaymentPage() {
         card_token: pendingCardToken,
         sms_code: smsCode.trim(),
         plan_type: tariffType,
+        product_code: productCode,
       });
       setAutoStep('done');
       await refreshPayments();
@@ -288,7 +296,7 @@ export default function ClickPaymentPage() {
             </div>
           ) : null}
 
-          {isCourseOneOffClick ? (
+          {isCourseOneOffClick && !useCardSmsFlow ? (
             <div className="mt-6 space-y-4">
               <PaymentLegalConsentCheckbox
                 idPrefix="click-course"
@@ -306,7 +314,7 @@ export default function ClickPaymentPage() {
             </div>
           ) : null}
 
-          {isRussianCourse ? (
+          {useCardSmsFlow ? (
             <div className="mt-6">
               {autoStep === 'idle' ? (
                 <div className="space-y-4">

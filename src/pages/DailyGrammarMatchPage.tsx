@@ -228,7 +228,8 @@ export default function DailyGrammarMatchPage() {
       setChunkSubIndex(0);
       return;
     }
-    setFinished(true);
+    patchDay(dayNumber, { grammar_2: true });
+    navigate(`/kunlik-reja/kun/${dayNumber}/grammatika/gap-tuzish`, { replace: true });
   };
 
   const nextButtonLabel = (() => {

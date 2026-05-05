@@ -1,5 +1,5 @@
 import { apiUrl } from '../api';
-import type { CourseProductCode, SubscriptionTariffType } from '../../shared/paymentProducts';
+import type { PaymentProductCode, SubscriptionTariffType } from '../../shared/paymentProducts';
 
 export type ClickPaymentCreateResponse = {
   success: true;
@@ -20,7 +20,8 @@ export async function requestClickCardToken(
   payload: {
     card_number: string;
     expire_date: string;
-    plan_type: SubscriptionTariffType;
+    plan_type?: SubscriptionTariffType;
+    product_code?: PaymentProductCode;
   }
 ): Promise<ClickCardTokenRequestResponse> {
   const res = await fetch(apiUrl('/api/payments/click/card-token/request'), {
@@ -33,6 +34,7 @@ export async function requestClickCardToken(
       card_number: payload.card_number,
       expire_date: payload.expire_date,
       plan_type: payload.plan_type,
+      product_code: payload.product_code,
     }),
   });
   const data = await res.json();
@@ -47,7 +49,8 @@ export async function verifyClickCardToken(
   payload: {
     card_token: string;
     sms_code: string;
-    plan_type: SubscriptionTariffType;
+    plan_type?: SubscriptionTariffType;
+    product_code?: PaymentProductCode;
   }
 ): Promise<{ success: boolean; auto_pay_enabled?: boolean; message?: string }> {
   const res = await fetch(apiUrl('/api/payments/click/card-token/verify'), {
@@ -60,6 +63,7 @@ export async function verifyClickCardToken(
       card_token: payload.card_token,
       sms_code: payload.sms_code,
       plan_type: payload.plan_type,
+      product_code: payload.product_code,
     }),
   });
   const data = await res.json();
@@ -90,8 +94,7 @@ export async function createClickPayment(
   token: string,
   payload: {
     tariffType?: SubscriptionTariffType | null;
-    /** Patent / VNZH bir martalik Click — `russian` bu yerda boʻlmasligi kerak */
-    productCode: CourseProductCode;
+    productCode: PaymentProductCode;
   }
 ): Promise<ClickPaymentCreateResponse> {
   const res = await fetch(apiUrl('/api/payments/click/create'), {

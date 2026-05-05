@@ -17,6 +17,8 @@ export type PricingCardProps = {
   pricePerMonthUnit?: string;
   /** Ilgari narxi — chiziq bilan (masalan «250 000 so'm») */
   compareAtPrice?: string;
+  /** Yana eskiroq narx (kichik, compareAtPrice ustida). */
+  topCompareAtPrice?: string;
   /** Ilgari narxdan chegirma foizi (masalan 60) */
   discountPercent?: number;
   onSelect?: () => void;
@@ -35,6 +37,7 @@ export default function PricingCard({
   pricePerMonth,
   pricePerMonthUnit,
   compareAtPrice,
+  topCompareAtPrice,
   discountPercent,
   onSelect,
   purchaseDisabled = false,
@@ -96,6 +99,11 @@ export default function PricingCard({
         <div
           className={`mb-5 mt-1 border-t pt-5 ${highlighted ? 'border-emerald-100/90' : 'border-slate-100'}`}
         >
+          {topCompareAtPrice ? (
+            <p className="text-center text-lg font-semibold text-slate-400 line-through decoration-slate-400 decoration-2">
+              {topCompareAtPrice}
+            </p>
+          ) : null}
           {compareAtPrice ? (
             <p className="text-center text-lg font-semibold text-slate-400 line-through decoration-slate-400 decoration-2">
               {compareAtPrice}

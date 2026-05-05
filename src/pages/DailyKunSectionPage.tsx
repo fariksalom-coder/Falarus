@@ -133,11 +133,19 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
   useEffect(() => {
     if (!kunlikLoaded || !g || grammarGapPatchSent.current) return;
     const patch: KunlikDayPatch = {};
-    if (g.ruleMcqs.length === 0) patch.grammar_1 = true;
-    if (!g.matchSets.some((s) => s.pairs.length > 0)) patch.grammar_2 = true;
     const usableSentence = g.sentenceArrange.filter(
       (t) => t.wordBank.length > 0 && String(t.answerRu ?? '').trim() !== '',
     );
+    const hasAnyGrammarContent =
+      g.ruleMcqs.length > 0 ||
+      g.sentenceMcqs.length > 0 ||
+      g.matchSets.some((s) => s.pairs.length > 0) ||
+      usableSentence.length > 0 ||
+      Boolean(g.topic && (g.topic.title || g.topic.theoryText));
+
+    // Only auto-complete grammar_1 for truly empty grammar days.
+    if (!hasAnyGrammarContent) patch.grammar_1 = true;
+    if (!g.matchSets.some((s) => s.pairs.length > 0)) patch.grammar_2 = true;
     if (usableSentence.length === 0) patch.grammar_3 = true;
     if (Object.keys(patch).length === 0) return;
     grammarGapPatchSent.current = true;

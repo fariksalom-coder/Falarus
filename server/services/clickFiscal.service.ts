@@ -98,6 +98,7 @@ export type FiscalPaymentRow = {
   id: number;
   status: string;
   amount: number | string | null;
+  payment_channel?: string | null;
   click_merchant_payment_id?: string | null;
   product_code?: string | null;
   tariff_type?: string | null;
@@ -122,13 +123,13 @@ async function fiscalizePaymentInner(supabase: SupabaseClient, paymentId: number
   const fiscalGate = fiscalConfigReady(fiscalEnv);
   const merchantCfg = getClickConfig();
   const serviceId = Number(merchantCfg.serviceId);
-  const merchantUserId = merchantCfg.merchantUserId?.trim();
+  const merchantUserId = merchantCfg.apiMerchantUserId?.trim();
   const secretKey = merchantCfg.secretKey?.trim();
 
   const { data: row, error } = await supabase
     .from('payments')
     .select(
-      'id, status, amount, click_merchant_payment_id, product_code, tariff_type, fiscal_status, fiscal_attempt_count'
+      'id, status, amount, payment_channel, click_merchant_payment_id, product_code, tariff_type, fiscal_status, fiscal_attempt_count'
     )
     .eq('id', paymentId)
     .maybeSingle();
@@ -145,6 +146,13 @@ async function fiscalizePaymentInner(supabase: SupabaseClient, paymentId: number
   const clickPid = String(payment.click_merchant_payment_id ?? '').trim();
   if (!clickPid || !Number.isFinite(Number(clickPid))) {
     console.info('[click.fiscal] skip — no Click payment_id on row', paymentId);
+    if (String(payment.payment_channel ?? '').startsWith('click')) {
+      await markFiscalFailed(
+        supabase,
+        paymentId,
+        'Click payment approved but click_merchant_payment_id is empty; fiscalization cannot start.'
+      );
+    }
     return;
   }
 
@@ -158,11 +166,21 @@ async function fiscalizePaymentInner(supabase: SupabaseClient, paymentId: number
 
   if (!fiscalGate.ok) {
     console.warn('[click.fiscal] skipped', paymentId, fiscalGate.reason);
+    await markFiscalFailed(
+      supabase,
+      paymentId,
+      `Fiscal config is incomplete: ${String(fiscalGate.reason ?? 'unknown reason')}`
+    );
     return;
   }
 
   if (!merchantUserId || !secretKey || !merchantCfg.serviceId || !Number.isFinite(serviceId)) {
     console.warn('[click.fiscal] skipped — Click merchant credentials incomplete');
+    await markFiscalFailed(
+      supabase,
+      paymentId,
+      'Click merchant credentials are incomplete (service_id / merchant_user_id / secret_key).'
+    );
     return;
   }
 

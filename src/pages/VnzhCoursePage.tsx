@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, Headphones, Landmark, Languages, MessageSquareText
 import { useNavigate } from 'react-router-dom';
 import { VNZH_COURSE_SECTIONS } from '../data/vnzhCourseData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
+import UzsPaymentMethodModal from '../components/pricing/UzsPaymentMethodModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -50,8 +51,13 @@ export default function VnzhCoursePage() {
   const { refreshPayments } = usePaymentStatus();
   const { access } = useAccess();
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
+  const [uzsMethodModalOpen, setUzsMethodModalOpen] = useState(false);
 
   const handlePurchase = (currency: Currency) => {
+    if (currency === 'UZS') {
+      setUzsMethodModalOpen(true);
+      return;
+    }
     navigate('/payment', {
       state: {
         productCode: 'vnzh',
@@ -60,6 +66,30 @@ export default function VnzhCoursePage() {
         returnTo: '/kurslar/vnzh',
       },
     });
+  };
+
+  const handleManualTransfer = () => {
+    navigate('/payment', {
+      state: {
+        productCode: 'vnzh',
+        productLabel: vnzhMeta.label,
+        currency: 'UZS' as const,
+        returnTo: '/kurslar/vnzh',
+      },
+    });
+    setUzsMethodModalOpen(false);
+  };
+
+  const handleClickCardSms = () => {
+    navigate('/payment/click', {
+      state: {
+        productCode: 'vnzh',
+        productLabel: vnzhMeta.label,
+        returnTo: '/kurslar/vnzh',
+        clickMode: 'card_sms',
+      },
+    });
+    setUzsMethodModalOpen(false);
   };
 
   return (
@@ -152,8 +182,15 @@ export default function VnzhCoursePage() {
         <CurrencyModal
           onClose={() => setCurrencyModalOpen(false)}
           onSelect={handlePurchase}
-          clickLabel={`Click bilan ${vnzhMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
-          directClickCourse={{
+        />
+      ) : null}
+
+      {uzsMethodModalOpen ? (
+        <UzsPaymentMethodModal
+          onClose={() => setUzsMethodModalOpen(false)}
+          onManualTransfer={handleManualTransfer}
+          onClickCardSms={handleClickCardSms}
+          clickButtonConfig={{
             token,
             productCode: 'vnzh',
             refreshPayments,
