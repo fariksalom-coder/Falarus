@@ -2,6 +2,7 @@ import { adminApi } from '../lib/adminApi';
 import type { PaymentProductCode, PaymentProvider } from '../../shared/paymentProducts';
 
 export type RevenueByCurrency = { UZS: number; USD: number; RUB: number };
+export type ClickTodayStats = { total: number; success: number; errors: number };
 
 export type DashboardStats = {
   users_today: number;
@@ -13,6 +14,7 @@ export type DashboardStats = {
   total_revenue: RevenueByCurrency;
   active_subscriptions: number;
   referral_payouts_pending: number;
+  click_today: ClickTodayStats;
 };
 
 export type AdminUserRow = {
@@ -60,16 +62,6 @@ export type AdminPaymentRow = {
   /** OFD / Click fiscalization (admin only) */
   fiscal_status?: string | null;
   fiscal_receipt_id?: string | null;
-};
-
-export type AdminFossilsPaymentRow = {
-  id: number;
-  phone: string;
-  tariff: string;
-  image_url: string;
-  status: 'pending' | 'confirmed' | 'rejected';
-  created_at: string;
-  updated_at: string;
 };
 
 export type AdminSubscriptionRow = {
@@ -216,20 +208,6 @@ export async function getUserProfile(id: number): Promise<AdminUserProfile> {
 
 export async function getPayments(): Promise<AdminPaymentRow[]> {
   return adminApi<AdminPaymentRow[]>('/payments');
-}
-
-export async function getFossilsPayments(): Promise<AdminFossilsPaymentRow[]> {
-  return adminApi<AdminFossilsPaymentRow[]>('/fossils-payments');
-}
-
-export async function updateFossilsPaymentStatus(
-  id: number,
-  status: AdminFossilsPaymentRow['status']
-): Promise<void> {
-  await adminApi(`/fossils-payments/${id}/status`, {
-    method: 'PUT',
-    body: JSON.stringify({ status }),
-  });
 }
 
 export async function confirmPayment(id: number): Promise<void> {

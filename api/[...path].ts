@@ -17,6 +17,8 @@ import {
 } from './_lib/request.js';
 import { routeLessonsRequest, handleLessonTaskQuestionsGet } from './_lib/lessons.js';
 import { handleGrammarCatalog } from './_lib/grammarCatalogHandler.js';
+import { handleDailyCourseDayGet } from './_lib/dailyCourseHandler.js';
+import { handleKunlikProgressRequest } from './_lib/kunlikProgressHandler.js';
 import { routeUserRequest } from './_lib/user.js';
 import { routeVocabularyRequest } from './_lib/vocabulary.js';
 import { routePartnerRequest } from './_lib/partner.js';
@@ -77,9 +79,7 @@ import {
 import { fiscalizePayment, runClickFiscalRetryCron } from '../server/services/clickFiscal.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
-const FOSSILS_CHECKS_BUCKET = 'fossils-checks';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
-const FOSSILS_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const PAYMENT_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
@@ -165,6 +165,8 @@ const ROOT_API_PREFIXES = new Set([
   'tariff-prices',
   'payment-methods',
   'grammar',
+  'daily-course',
+  'kunlik-progress',
   'lessons',
   'leaderboard',
   'lesson-task-results',
@@ -174,6 +176,11 @@ const ROOT_API_PREFIXES = new Set([
   'vocabulary',
   'partner',
   'help',
+  'speaking',
+]);
+
+const DEPRECATED_API_PREFIXES = new Set([
+  'vocabulary',
   'speaking',
 ]);
 
@@ -208,8 +215,29 @@ function isMissingSupportChatSchemaError(error: unknown): boolean {
   );
 }
 
+function isLessonTaskResultsSchemaError(error: unknown): boolean {
+  const code = typeof error === 'object' && error && 'code' in error
+    ? String((error as { code?: unknown }).code ?? '')
+    : '';
+  const message = typeof error === 'object' && error && 'message' in error
+    ? String((error as { message?: unknown }).message ?? '')
+    : String(error ?? '');
+  return (
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    code === 'PGRST204' ||
+    message.includes('lesson_task_results') ||
+    message.toLowerCase().includes('schema cache')
+  );
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
+  // Prevent stale API responses from browser/proxy caches.
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
   if (req.method === 'OPTIONS') return handleOptions(res);
   const rawUrl = String(req.url || '');
   let decodedUrl = rawUrl;
@@ -222,6 +250,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   const path = getPathParts(req);
+  if (path[0] && DEPRECATED_API_PREFIXES.has(path[0])) {
+    return res.status(410).json({
+      error: 'Deprecated API route',
+      message: 'Bu endpoint yangi platforma strukturasidan olib tashlangan.',
+    });
+  }
 
   if (path[0] === 'cron' && path[1] === 'click-auto-pay') {
     if (req.method !== 'GET' && req.method !== 'POST') {
@@ -848,71 +882,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
   }
 
-  // POST /api/payment — public endpoint for fossils landing checkout
-  if (path[0] === 'payment' && path.length === 1 && req.method === 'POST') {
-    const hotRate = checkRateLimit(req, 'fossils-payment-upload', HOT_PATH_LIMIT_MAX);
-    if (hotRate.limited) {
-      res.setHeader('Retry-After', String(hotRate.retryAfterSec));
-      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
-    }
-    try {
-      const { fields, file } = await parseMultipartPayments(req, {
-        fileFieldName: 'receipt',
-        allowedMimes: FOSSILS_ALLOWED_MIMES,
-      });
-      const phone = String(fields.phone ?? '').trim();
-      const tariff = String(fields.tariff ?? '').trim();
-      const normalizedPhone = phone.replace(/[^\d+]/g, '');
-      const allowedTariffs = new Set(['month', 'year']);
-
-      if (!normalizedPhone || normalizedPhone.length < 8 || normalizedPhone.length > 20) {
-        return res.status(400).json({ error: 'Telefon raqami noto‘g‘ri' });
-      }
-      if (!allowedTariffs.has(tariff)) return res.status(400).json({ error: 'Tarif noto‘g‘ri' });
-      if (!file || !file.buffer.length) return res.status(400).json({ error: 'Chek rasmi kerak' });
-
-      const ext = file.mimetype.split('/')[1] || 'jpg';
-      const pathStr = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-      const { data: bucketList } = await supabase.storage.listBuckets();
-      const bucketExists = (bucketList ?? []).some((b: { name: string }) => b.name === FOSSILS_CHECKS_BUCKET);
-      if (!bucketExists) await supabase.storage.createBucket(FOSSILS_CHECKS_BUCKET, { public: true });
-      const { error: uploadErr } = await supabase.storage
-        .from(FOSSILS_CHECKS_BUCKET)
-        .upload(pathStr, file.buffer, { contentType: file.mimetype, upsert: false });
-      if (uploadErr) {
-        console.error('[fossils payment upload]', uploadErr);
-        return res.status(500).json({ error: 'Fayl yuklanmadi' });
-      }
-
-      const { data: urlData } = supabase.storage.from(FOSSILS_CHECKS_BUCKET).getPublicUrl(pathStr);
-      const imageUrl = urlData?.publicUrl ?? '';
-      const { data: row, error: insertError } = await supabase
-        .from('fossils_payments')
-        .insert({
-          phone,
-          tariff,
-          image_url: imageUrl,
-          status: 'pending',
-        })
-        .select('id, status')
-        .single();
-      if (insertError || !row) {
-        console.error('[fossils payment insert]', insertError);
-        return res.status(500).json({ error: 'Xatolik yuz berdi' });
-      }
-      return res.status(201).json({ success: true, id: row.id, status: row.status });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Xatolik yuz berdi';
-      console.error('[POST /api/payment]', message);
-      return res.status(500).json({ error: message });
-    }
-  }
-
   if (path[0] === 'grammar' && path[1] === 'catalog' && path.length === 2) {
     const userId = requireAuth(req, res);
     if (userId == null) return;
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
     return handleGrammarCatalog(userId, res);
+  }
+
+  if (path[0] === 'daily-course' && path[1] === 'day' && path.length === 3) {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+    return handleDailyCourseDayGet(path[2], res);
+  }
+
+  if (path[0] === 'kunlik-progress') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    return handleKunlikProgressRequest(req, res, userId, path.slice(1));
   }
 
   if (path[0] === 'lessons') {
@@ -1288,6 +1275,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (lessonPath) q = q.eq('lesson_path', lessonPath);
         const { data: rows, error } = await q;
         if (error) {
+          if (isLessonTaskResultsSchemaError(error)) {
+            return res.status(200).json([]);
+          }
           console.error('[api/lesson-task-results] GET error:', error.message);
           return res.status(500).json({ error: error.message });
         }
@@ -1306,13 +1296,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const tn = Number(taskNumber);
-        const { data: prevRow } = await supabase
+        const { data: prevRow, error: prevError } = await supabase
           .from('lesson_task_results')
           .select('correct, total')
           .eq('user_id', userId)
           .eq('lesson_path', String(lessonPath))
           .eq('task_number', tn)
           .maybeSingle();
+        if (prevError && isLessonTaskResultsSchemaError(prevError)) {
+          return res.status(200).json({ success: true, skipped: 'lesson_task_results_missing' });
+        }
 
         const prev =
           prevRow != null && prevRow.correct != null && prevRow.total != null
@@ -1344,6 +1337,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           onConflict: 'user_id,lesson_path,task_number',
         });
         if (error) {
+          if (isLessonTaskResultsSchemaError(error)) {
+            return res.status(200).json({ success: true, skipped: 'lesson_task_results_missing' });
+          }
           console.error('[api/lesson-task-results] POST error:', error.message);
           return res.status(500).json({ error: error.message });
         }

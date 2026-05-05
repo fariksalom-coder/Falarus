@@ -93,6 +93,20 @@ export function createAdminController(supabase: SupabaseClient) {
       supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active').gt('expires_at', now.toISOString()),
       supabase.from('referral_withdrawals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     ]);
+    const { data: clickTodayRows, error: clickTodayError } = await supabase
+      .from('click_payment_logs')
+      .select('error_code, error_note')
+      .gte('created_at', todayStart);
+    const clickRows =
+      clickTodayError && isMissingRelationError(clickTodayError)
+        ? []
+        : (clickTodayRows ?? []);
+    const clickErrors = clickRows.filter((row: any) => {
+      const code = Number(row?.error_code ?? 0);
+      return code !== 0 || Boolean(String(row?.error_note ?? '').trim());
+    }).length;
+    const clickTotal = clickRows.length;
+    const clickSuccess = Math.max(0, clickTotal - clickErrors);
 
     const sum = (arr: { amount?: number }[] | null) => (arr ?? []).reduce((a, r) => a + Number(r.amount ?? 0), 0);
 
@@ -106,6 +120,11 @@ export function createAdminController(supabase: SupabaseClient) {
       total_revenue: sum((totalRevenue as any).data ?? []),
       active_subscriptions: (activeSubs as any).count ?? 0,
       referral_payouts_pending: (pendingWithdrawals as any).count ?? 0,
+      click_today: {
+        total: clickTotal,
+        success: clickSuccess,
+        errors: clickErrors,
+      },
     });
   }
 
@@ -289,36 +308,6 @@ export function createAdminController(supabase: SupabaseClient) {
       };
     });
     return res.json(list);
-  }
-
-  async function getFossilsPayments(_req: Request, res: Response) {
-    const { data: rows, error } = await supabase
-      .from('fossils_payments')
-      .select('id, phone, tariff, image_url, status, created_at, updated_at')
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('[admin/fossils-payments]', error);
-      return res.status(500).json({ error: error.message });
-    }
-    return res.json(rows ?? []);
-  }
-
-  async function updateFossilsPaymentStatus(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const status = String(req.body?.status ?? '');
-    if (!id) return res.status(400).json({ error: 'Invalid payment id' });
-    if (!['pending', 'confirmed', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'status noto‘g‘ri' });
-    }
-    const { error } = await supabase
-      .from('fossils_payments')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id);
-    if (error) {
-      console.error('[admin/fossils-payments update]', error);
-      return res.status(500).json({ error: error.message });
-    }
-    return res.json({ success: true });
   }
 
   async function confirmPayment(req: Request, res: Response) {
@@ -1235,8 +1224,6 @@ export function createAdminController(supabase: SupabaseClient) {
     getUsers,
     getUserProfile,
     getPayments,
-    getFossilsPayments,
-    updateFossilsPaymentStatus,
     confirmPayment,
     rejectPayment,
     getSubscriptions,

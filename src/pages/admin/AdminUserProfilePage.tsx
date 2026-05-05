@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getUserProfile, type AdminUserProfile } from '../../api/admin';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { adminPath } from '../../constants/adminPath';
 
 export default function AdminUserProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +31,7 @@ export default function AdminUserProfilePage() {
       <div className="rounded-lg bg-red-50 p-4 flex items-center gap-2 text-red-700">
         <AlertCircle className="h-5 w-5 shrink-0" />
         {error || 'User not found'}
-        <Link to="/admin/users" className="ml-2 text-indigo-600 hover:underline">
+        <Link to={adminPath('/users')} className="ml-2 text-indigo-600 hover:underline">
           Back to users
         </Link>
       </div>
@@ -40,7 +41,7 @@ export default function AdminUserProfilePage() {
   return (
     <div>
       <Link
-        to="/admin/users"
+        to={adminPath('/users')}
         className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-indigo-600 mb-4"
       >
         <ArrowLeft className="h-4 w-4" />

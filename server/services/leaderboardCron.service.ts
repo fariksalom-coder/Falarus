@@ -19,8 +19,10 @@ export function startLeaderboardCron(supabase: SupabaseClient): void {
       console.error('[leaderboardCron]', e);
     }
   }
-  cronTimer = setInterval(tick, CRON_INTERVAL_MS);
-  tick().catch((e) => console.error('[leaderboardCron] initial run', e));
+  cronTimer = setInterval(() => {
+    void tick().catch((e) => console.error('[leaderboardCron] tick', e));
+  }, CRON_INTERVAL_MS);
+  void tick().catch((e) => console.error('[leaderboardCron] initial run', e));
 }
 
 /**

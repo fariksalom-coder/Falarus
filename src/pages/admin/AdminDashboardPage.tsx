@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getDashboard, type DashboardStats, type RevenueByCurrency } from '../../api/admin';
-import { Users, CreditCard, TrendingUp, Wallet, Repeat, AlertCircle } from 'lucide-react';
+import { getDashboard, type ClickTodayStats, type DashboardStats, type RevenueByCurrency } from '../../api/admin';
+import { Users, CreditCard, TrendingUp, Wallet, Repeat, AlertCircle, ScrollText } from 'lucide-react';
 
 const cards: { key: keyof DashboardStats; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: 'users_today', label: 'Users today', icon: Users },
@@ -12,6 +12,7 @@ const cards: { key: keyof DashboardStats; label: string; icon: React.ComponentTy
   { key: 'total_revenue', label: 'Total revenue', icon: TrendingUp },
   { key: 'active_subscriptions', label: 'Active subscriptions', icon: Repeat },
   { key: 'referral_payouts_pending', label: 'Referral payouts pending', icon: Wallet },
+  { key: 'click_today', label: 'Click today', icon: ScrollText },
 ];
 
 function formatRevenue(rev: RevenueByCurrency | number): React.ReactNode {
@@ -24,6 +25,17 @@ function formatRevenue(rev: RevenueByCurrency | number): React.ReactNode {
       <span className="block">{uzs} so'm</span>
       <span className="block text-slate-600">${usd}</span>
       <span className="block text-slate-600">{rub} ₽</span>
+    </span>
+  );
+}
+
+function formatClickToday(stats: ClickTodayStats | null | undefined): React.ReactNode {
+  const safe = stats ?? { total: 0, success: 0, errors: 0 };
+  return (
+    <span className="block space-y-0.5 text-lg">
+      <span className="block">Jami: {Number(safe.total).toLocaleString('uz-UZ')}</span>
+      <span className="block text-emerald-600">Success: {Number(safe.success).toLocaleString('uz-UZ')}</span>
+      <span className="block text-rose-600">Errors: {Number(safe.errors).toLocaleString('uz-UZ')}</span>
     </span>
   );
 }
@@ -64,9 +76,12 @@ export default function AdminDashboardPage() {
         {cards.map(({ key, label, icon: Icon }) => {
           const val = stats?.[key];
           const isRevenue = key === 'payments_today' || key === 'payments_this_month' || key === 'total_revenue';
+          const isClickStats = key === 'click_today';
           const displayValue: React.ReactNode = isRevenue
             ? formatRevenue(typeof val === 'object' && val !== null && 'UZS' in val ? (val as RevenueByCurrency) : Number(val ?? 0))
-            : Number(val ?? 0).toLocaleString('uz-UZ');
+            : isClickStats
+              ? formatClickToday((val as ClickTodayStats | null | undefined) ?? null)
+              : Number(val ?? 0).toLocaleString('uz-UZ');
           return (
             <div
               key={key}

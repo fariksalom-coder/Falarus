@@ -45,6 +45,8 @@ import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassi
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
 import { buildGrammarCatalogPayload } from './api/_lib/grammarCatalogHandler.ts';
+import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.service.ts';
+import { DAILY_COURSE_DAY_MAX, DAILY_COURSE_DAY_MIN, isValidDailyCourseDay } from './shared/dailyCourseDay.ts';
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
 import { getAccessInfo } from './api/_lib/subscription.ts';
 import { routePartnerRequest } from './api/_lib/partner.ts';
@@ -87,6 +89,64 @@ const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
 const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
+const USER_PROFILE_SELECT_FULL =
+  'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz';
+const USER_PROFILE_SELECT_LEGACY =
+  'id, first_name, last_name, email, phone, level, onboarded, progress';
+
+function isUserProfileSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? (error as { code?: unknown }).code : null;
+  const message = 'message' in error ? (error as { message?: unknown }).message : '';
+  if (typeof code === 'string' && (code === 'PGRST204' || code === 'PGRST205')) return true;
+  return typeof message === 'string' && message.toLowerCase().includes('schema cache');
+}
+
+function isSupabaseNoRowsError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? (error as { code?: unknown }).code : null;
+  return code === 'PGRST116';
+}
+
+function isLessonTaskResultsSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+  const message = 'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
+  return (
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    code === 'PGRST204' ||
+    message.includes('lesson_task_results') ||
+    message.toLowerCase().includes('schema cache')
+  );
+}
+
+async function fetchUserProfileById(userId: number) {
+  let { data: user, error } = await supabase.from('users').select(USER_PROFILE_SELECT_FULL).eq('id', userId).maybeSingle();
+  if (error && (isUserProfileSchemaError(error) || !isSupabaseNoRowsError(error))) {
+    const legacy = await supabase.from('users').select(USER_PROFILE_SELECT_LEGACY).eq('id', userId).maybeSingle();
+    user = legacy.data as typeof user;
+    error = legacy.error;
+  }
+  return { user, error };
+}
+
+function mapUserProfile(user: Record<string, any>) {
+  return {
+    id: user.id,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email ?? null,
+    phone: user.phone ?? null,
+    level: user.level,
+    onboarded: user.onboarded,
+    progress: user.progress,
+    totalPoints: user.total_points ?? 0,
+    planName: user.plan_name ?? null,
+    planExpiresAt: user.plan_expires_at ?? null,
+    billingNoticeUz: user.billing_notice_uz ?? null,
+  };
+}
 
 function createIpRateLimiter(windowMs: number, maxRequests: number) {
   const hits = new Map<string, { count: number; resetAt: number }>();
@@ -201,7 +261,15 @@ async function startServer() {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    // Prevent stale API responses (e.g. old 410 from disk cache) from being reused by browsers.
+    if (String(req.originalUrl || req.url || '').startsWith('/api/')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+    }
+    // Ovozli javob (Speaking, kunlik gapirish) uchun `microphone=(self)` kerak; `()` butunlay taqiqlaydi.
+    res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()');
     if (isProduction) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
       res.setHeader(
@@ -211,6 +279,21 @@ async function startServer() {
     }
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
+  });
+  app.use((req, res, next) => {
+    const url = String(req.originalUrl || req.url || '').split('?')[0];
+    const deprecatedPrefixes = [
+      '/api/vocabulary',
+      '/api/speaking',
+      '/api/support',
+    ];
+    if (deprecatedPrefixes.some((prefix) => url.startsWith(prefix))) {
+      return res.status(410).json({
+        error: 'Deprecated API route',
+        message: 'Bu endpoint yangi platforma strukturasidan olib tashlangan.',
+      });
+    }
+    return next();
   });
   app.use((req: any, res, next) => {
     const requestId = req.headers['x-request-id'] || createRequestId();
@@ -254,15 +337,6 @@ async function startServer() {
       res.status(500).json({ error: 'Xatolik' });
     }
   });
-
-  // Public "fossils" landing payment endpoint (Telegram traffic funnel).
-  try {
-    const { createFossilsPaymentRoutes } = await import('./server/routes/fossilsPaymentRoutes');
-    app.use('/api', createFossilsPaymentRoutes(supabase));
-    console.log('Fossils API: POST /api/payment (public + receipt upload)');
-  } catch (err) {
-    console.error('Fossils payment routes failed:', err);
-  }
 
   // Public tariff prices by currency (no auth) — month, year
   app.get('/api/tariff-prices', async (req, res) => {
@@ -501,17 +575,17 @@ async function startServer() {
   app.use('/api/payments', createPaymentRoutes(supabase, authenticate));
   app.use('/api/click', createClickMerchantRoutes(supabase));
 
-  // Progress tracking (lesson/task status)
-  const { createProgressRoutes } = await import('./server/routes/progressRoutes');
-  app.use('/api', createProgressRoutes(supabase, authenticate));
-
-  // Vocabulary (So'zlar): topics, subtopics, word groups, tasks, flashcards/test/match
-  const { createVocabularyRoutes } = await import('./server/routes/vocabularyRoutes');
-  app.use('/api', createVocabularyRoutes(supabase, authenticate));
-
   // Activity / streak (Ketma-ket kunlar)
   const { createActivityRoutes } = await import('./server/routes/activityRoutes');
   app.use('/api', createActivityRoutes(supabase, authenticate));
+
+  // Kunlik reja block completions (single table for all blocks)
+  const { createKunlikProgressRoutes } = await import('./server/routes/kunlikProgressRoutes');
+  app.use('/api', createKunlikProgressRoutes(supabase, authenticate));
+
+  // Statistics (course progress, activity calendar, record-course-day)
+  const { createStatsRoutes } = await import('./server/routes/statsRoutes');
+  app.use('/api', createStatsRoutes(supabase, authenticate));
 
   // Referral (referral link, stats, list, withdraw, discount, payments)
   const { createReferralRoutes } = await import('./server/routes/referralRoutes');
@@ -523,28 +597,14 @@ async function startServer() {
 
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select(
-        'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz'
-      )
-      .eq('id', req.userId)
-      .single();
-    if (error || !user) return res.status(404).json({ error: 'User topilmadi' });
-    res.json({
-      id: user.id,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      email: user.email ?? null,
-      phone: user.phone ?? null,
-      level: user.level,
-      onboarded: user.onboarded,
-      progress: user.progress,
-      totalPoints: user.total_points ?? 0,
-      planName: user.plan_name ?? null,
-      planExpiresAt: user.plan_expires_at ?? null,
-      billingNoticeUz: (user as { billing_notice_uz?: string | null }).billing_notice_uz ?? null,
-    });
+    const { user, error } = await fetchUserProfileById(req.userId);
+    if (error || !user) {
+      if (error && !isSupabaseNoRowsError(error)) {
+        return res.status(500).json({ error: 'Profilni yuklab bo‘lmadi' });
+      }
+      return res.status(404).json({ error: 'User topilmadi' });
+    }
+    res.json(mapUserProfile(user));
   });
 
   app.patch('/api/user/account', authenticate, async (req: any, res) => {
@@ -552,28 +612,14 @@ async function startServer() {
     if (result.ok === false) {
       return res.status(result.status).json({ error: result.error });
     }
-    const { data: user, error } = await supabase
-      .from('users')
-      .select(
-        'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz'
-      )
-      .eq('id', req.userId)
-      .single();
-    if (error || !user) return res.status(404).json({ error: 'User topilmadi' });
-    res.json({
-      id: user.id,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      email: user.email ?? null,
-      phone: user.phone ?? null,
-      level: user.level,
-      onboarded: user.onboarded,
-      progress: user.progress,
-      totalPoints: user.total_points ?? 0,
-      planName: user.plan_name ?? null,
-      planExpiresAt: user.plan_expires_at ?? null,
-      billingNoticeUz: (user as { billing_notice_uz?: string | null }).billing_notice_uz ?? null,
-    });
+    const { user, error } = await fetchUserProfileById(req.userId);
+    if (error || !user) {
+      if (error && !isSupabaseNoRowsError(error)) {
+        return res.status(500).json({ error: 'Profilni yuklab bo‘lmadi' });
+      }
+      return res.status(404).json({ error: 'User topilmadi' });
+    }
+    res.json(mapUserProfile(user));
   });
 
   app.post('/api/user/onboard', authenticate, async (req: any, res) => {
@@ -583,31 +629,48 @@ async function startServer() {
   });
 
   app.get('/api/user/payments', authenticate, async (req: any, res) => {
-    const PAY_FULL =
-      'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at';
-    const PAY_LEGACY =
-      'id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at';
-    let { data: rows, error } = await supabase
-      .from('payments')
-      .select(PAY_FULL)
-      .eq('user_id', req.userId)
-      .order('created_at', { ascending: false });
-    if (error && isPaymentsProductCodeSchemaError(error)) {
-      const second = await supabase
+    try {
+      const PAY_FULL =
+        'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at';
+      const PAY_LEGACY =
+        'id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at';
+      let { data: rows, error } = await supabase
         .from('payments')
-        .select(PAY_LEGACY)
+        .select(PAY_FULL)
         .eq('user_id', req.userId)
         .order('created_at', { ascending: false });
-      rows = second.data as typeof rows;
-      error = second.error;
+      if (error && isPaymentsProductCodeSchemaError(error)) {
+        const second = await supabase
+          .from('payments')
+          .select(PAY_LEGACY)
+          .eq('user_id', req.userId)
+          .order('created_at', { ascending: false });
+        rows = second.data as typeof rows;
+        error = second.error;
+      }
+      if (error) {
+        const msg =
+          error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string'
+            ? (error as { message: string }).message
+            : 'Xatolik';
+        return res.status(500).json({ error: msg });
+      }
+      res.json(
+        (rows ?? []).map((row: any) => ({
+          ...row,
+          product_code: resolvePaymentProductFromRow(row),
+        }))
+      );
+    } catch (e) {
+      console.error('[GET /api/user/payments]', e);
+      const msg =
+        e instanceof Error
+          ? e.message
+          : e && typeof e === 'object' && 'message' in e && typeof (e as { message: unknown }).message === 'string'
+            ? (e as { message: string }).message
+            : 'Xatolik';
+      if (!res.headersSent) res.status(500).json({ error: msg });
     }
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(
-      (rows ?? []).map((row: any) => ({
-        ...row,
-        product_code: resolvePaymentProductFromRow(row),
-      }))
-    );
   });
 
   app.get('/api/patent/results', authenticate, async (req: any, res) => {
@@ -1648,6 +1711,18 @@ async function startServer() {
     res.json(result.payload);
   });
 
+  app.get('/api/daily-course/day/:dayNumber', authenticate, async (req: any, res) => {
+    const dayNumber = Number(req.params.dayNumber);
+    if (!isValidDailyCourseDay(dayNumber)) {
+      return res.status(400).json({
+        error: `Kun raqami ${DAILY_COURSE_DAY_MIN}–${DAILY_COURSE_DAY_MAX} oralig‘ida bo‘lishi kerak`,
+      });
+    }
+    const result = await fetchDailyCourseDayBundle(supabase, dayNumber);
+    if (result.ok === false) return res.status(500).json({ error: result.error });
+    res.json(result.bundle);
+  });
+
   // Vocabulary
   app.get('/api/vocabulary', authenticate, async (req: any, res) => {
     const { data: words, error } = await supabase.from('vocabulary').select('*').eq('user_id', req.userId);
@@ -1901,8 +1976,31 @@ async function startServer() {
     const access = await getAccessInfo(supabase, userId);
     if (!access.subscription_active) return res.status(403).json({ error: 'Obuna kerak' });
 
-    const fullPath = (req.originalUrl || req.url || '').split('?')[0];
-    const segments = fullPath.replace(/^\/api\/speaking\/?/, '').split('/').filter(Boolean);
+    // `app.use('/api/speaking', …)` ichida Express odatda `req.url` ni `/check` qilib beradi.
+    // Baʼzi proxylar / middleware lar `req.url` da toʻliq `/api/speaking/...` qoldirishi mumkin —
+    // ikkala holatni ham `segments[0] === 'check'` qilib chiqaramiz.
+    const rawMounted = String(req.url || '').split('?')[0];
+    let segments = rawMounted
+      .replace(/^\/+/, '')
+      .split('/')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!segments.length || segments[0] === 'api') {
+      let fullPath = String(req.originalUrl || req.url || '').split('?')[0];
+      try {
+        if (/^https?:\/\//i.test(fullPath)) {
+          fullPath = new URL(fullPath).pathname;
+        }
+      } catch {
+        /* ignore */
+      }
+      segments = fullPath
+        .replace(/^\/api\/speaking\/?/i, '')
+        .replace(/^\/+/, '')
+        .split('/')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
     const s0 = segments[0];
 
     try {
@@ -1959,18 +2057,50 @@ async function startServer() {
       }
 
       if (s0 === 'check' && req.method === 'POST') {
-        const { task_id, user_answer, mode = 'text', attempt = 1 } = req.body;
-        const { data: task } = await supabase.from('speaking_tasks')
-          .select('id, uz_text, ru_correct').eq('id', Number(task_id)).maybeSingle();
-        if (!task) return res.status(404).json({ error: 'Topshiriq topilmadi' });
+        const body = req.body ?? {};
+        const userAnswer = String(body.user_answer ?? '').trim();
+        const mode = String(body.mode ?? 'text');
+        const attempt = Math.max(1, Number(body.attempt) || 1);
+
+        if (!userAnswer) return res.status(400).json({ error: 'Javob kiritilmagan' });
+        if (mode !== 'text' && mode !== 'voice') return res.status(400).json({ error: 'mode noto\'g\'ri' });
+
+        const uzInline = String(body.uz_text ?? '').trim();
+        const ruInline = String(body.ru_correct ?? '').trim();
+
+        let uzText: string;
+        let ruCorrect: string;
+        let persistTaskId: number | null = null;
+
+        if (uzInline && ruInline) {
+          uzText = uzInline;
+          ruCorrect = ruInline;
+        } else {
+          const taskId = Number(body.task_id);
+          if (!Number.isFinite(taskId)) return res.status(400).json({ error: 'task_id kerak' });
+
+          const { data: task } = await supabase.from('speaking_tasks')
+            .select('id, uz_text, ru_correct').eq('id', taskId).maybeSingle();
+          if (!task) return res.status(404).json({ error: 'Topshiriq topilmadi' });
+
+          uzText = task.uz_text;
+          ruCorrect = task.ru_correct;
+          persistTaskId = task.id;
+        }
 
         const { checkTranslation } = await import('./api/_lib/openai.js');
-        const result = await checkTranslation(task.uz_text, task.ru_correct, String(user_answer).trim(), Math.max(1, Number(attempt) || 1));
+        const result = await checkTranslation(uzText, ruCorrect, userAnswer, attempt);
 
-        await supabase.from('speaking_results').insert({
-          user_id: userId, task_id: Number(task_id),
-          user_answer: String(user_answer).trim(), mode, status: result.status, feedback: result.feedback,
-        });
+        if (persistTaskId !== null) {
+          await supabase.from('speaking_results').insert({
+            user_id: userId,
+            task_id: persistTaskId,
+            user_answer: userAnswer,
+            mode,
+            status: result.status,
+            feedback: result.feedback,
+          });
+        }
         return res.json(result);
       }
 
@@ -2011,6 +2141,9 @@ async function startServer() {
     if (lessonPath) q = q.eq('lesson_path', lessonPath);
     const { data: rows, error } = await q;
     if (error) {
+      if (isLessonTaskResultsSchemaError(error)) {
+        return res.json([]);
+      }
       console.error('[api/lesson-task-results] GET error:', error.message);
       return res.status(500).json({ error: error.message });
     }
@@ -2027,13 +2160,16 @@ async function startServer() {
     const correctCount = Number(correct) || 0;
     const totalCount = Number(total) || 0;
     const { calculateImprovementDelta } = await import('./server/services/scoringRules.service');
-    const { data: prevRow } = await supabase
+    const { data: prevRow, error: prevError } = await supabase
       .from('lesson_task_results')
       .select('correct, total')
       .eq('user_id', req.userId)
       .eq('lesson_path', lessonPath)
       .eq('task_number', taskNumber)
       .maybeSingle();
+    if (prevError && isLessonTaskResultsSchemaError(prevError)) {
+      return res.json({ success: true, skipped: 'lesson_task_results_missing' });
+    }
     const prev =
       prevRow != null && prevRow.correct != null && prevRow.total != null
         ? { correct: Number(prevRow.correct), total: Number(prevRow.total) }
@@ -2090,6 +2226,9 @@ async function startServer() {
       onConflict: 'user_id,lesson_path,task_number',
     });
     if (error) {
+      if (isLessonTaskResultsSchemaError(error)) {
+        return res.json({ success: true, skipped: 'lesson_task_results_missing' });
+      }
       console.error('[api/lesson-task-results] POST error:', error.message);
       return res.status(500).json({ error: error.message });
     }

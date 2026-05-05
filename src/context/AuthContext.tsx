@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        if (res.status === 401) {
+        if (res.status === 401 || res.status === 404) {
           clearUserProgressCaches();
           localStorage.removeItem('token');
           writeCachedUser(null);

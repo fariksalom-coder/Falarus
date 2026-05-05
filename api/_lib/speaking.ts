@@ -89,32 +89,51 @@ async function handleGetTopics(res: VercelResponse) {
 // ---------------------------------------------------------------------------
 async function handleCheck(userId: number, req: VercelRequest, res: VercelResponse) {
   const body = parseBody(req.body);
-  const taskId = Number(body.task_id);
   const userAnswer = String(body.user_answer ?? '').trim();
   const mode = String(body.mode ?? 'text');
   const attempt = Math.max(1, Number(body.attempt) || 1);
 
-  if (!Number.isFinite(taskId)) return res.status(400).json({ error: 'task_id kerak' });
   if (!userAnswer) return res.status(400).json({ error: 'Javob kiritilmagan' });
   if (mode !== 'text' && mode !== 'voice') return res.status(400).json({ error: 'mode noto\'g\'ri' });
 
-  const { data: task } = await supabase
-    .from('speaking_tasks')
-    .select('id, uz_text, ru_correct')
-    .eq('id', taskId)
-    .maybeSingle();
-  if (!task) return res.status(404).json({ error: 'Topshiriq topilmadi' });
+  const uzInline = String(body.uz_text ?? '').trim();
+  const ruInline = String(body.ru_correct ?? '').trim();
 
-  const result = await checkTranslation(task.uz_text, task.ru_correct, userAnswer, attempt);
+  let uzText: string;
+  let ruCorrect: string;
+  let persistTaskId: number | null = null;
 
-  await supabase.from('speaking_results').insert({
-    user_id: userId,
-    task_id: taskId,
-    user_answer: userAnswer,
-    mode,
-    status: result.status,
-    feedback: result.feedback,
-  });
+  if (uzInline && ruInline) {
+    uzText = uzInline;
+    ruCorrect = ruInline;
+  } else {
+    const taskId = Number(body.task_id);
+    if (!Number.isFinite(taskId)) return res.status(400).json({ error: 'task_id kerak' });
+
+    const { data: task } = await supabase
+      .from('speaking_tasks')
+      .select('id, uz_text, ru_correct')
+      .eq('id', taskId)
+      .maybeSingle();
+    if (!task) return res.status(404).json({ error: 'Topshiriq topilmadi' });
+
+    uzText = task.uz_text;
+    ruCorrect = task.ru_correct;
+    persistTaskId = task.id;
+  }
+
+  const result = await checkTranslation(uzText, ruCorrect, userAnswer, attempt);
+
+  if (persistTaskId !== null) {
+    await supabase.from('speaking_results').insert({
+      user_id: userId,
+      task_id: persistTaskId,
+      user_answer: userAnswer,
+      mode,
+      status: result.status,
+      feedback: result.feedback,
+    });
+  }
 
   return res.status(200).json(result);
 }

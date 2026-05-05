@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getUsers, type AdminUserRow } from '../../api/admin';
 import { AlertCircle } from 'lucide-react';
+import { adminPath } from '../../constants/adminPath';
 
 export default function AdminUsersPage() {
   const [list, setList] = useState<AdminUserRow[]>([]);
@@ -89,7 +90,7 @@ export default function AdminUsersPage() {
                 {list.map((u) => (
                   <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="py-3 px-4">
-                      <Link to={`/admin/users/${u.id}`} className="text-indigo-600 hover:underline">
+                      <Link to={adminPath(`/users/${u.id}`)} className="text-indigo-600 hover:underline">
                         {u.id}
                       </Link>
                     </td>

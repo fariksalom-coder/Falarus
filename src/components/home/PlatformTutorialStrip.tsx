@@ -8,7 +8,7 @@ const GRADIENT_RING =
 
 type ActiveTutorial = PlatformTutorialVideo | null;
 
-export default function PlatformTutorialStrip() {
+export default function PlatformTutorialStrip({ className = '' }: { className?: string }) {
   const [active, setActive] = useState<ActiveTutorial>(null);
 
   const close = useCallback(() => setActive(null), []);
@@ -32,13 +32,9 @@ export default function PlatformTutorialStrip() {
 
   return (
     <>
-      <section className="mb-7" aria-label="Qo‘llanma videolar">
-        <div className="mb-3">
-          <h2 className="text-[15px] font-bold leading-tight text-[#0F172A]">Qo‘llanma videolar</h2>
-        </div>
-
-        <div className="-mx-4 overflow-x-auto overflow-y-hidden px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex w-max gap-3 pr-1">
+      <section className={`mb-0 w-full min-w-0 ${className}`} aria-label="Video qo‘llanmalar">
+        <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-0 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max min-w-0 gap-3 py-0 pl-0.5 pr-3 sm:pr-4">
             {PLATFORM_TUTORIAL_VIDEOS.map((item, index) => (
               <TutorialCircle
                 key={item.id}
@@ -137,7 +133,7 @@ function TutorialCircle({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.04 * index, ease: [0.32, 0.72, 0, 1] }}
       whileTap={{ scale: 0.94 }}
-      className="flex w-[76px] shrink-0 flex-col items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+      className="flex w-[76px] shrink-0 flex-col items-center gap-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
       <span className="relative h-[56px] w-[56px] shrink-0 rounded-full p-[2px]" style={{ background: GRADIENT_RING }}>
         <span className="flex h-full w-full items-center justify-center rounded-full bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">

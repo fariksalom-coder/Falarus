@@ -228,6 +228,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active').gt('expires_at', now.toISOString()),
         supabase.from('referral_withdrawals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
+      const { data: clickTodayRows, error: clickTodayErr } = await supabase
+        .from('click_payment_logs')
+        .select('error_code, error_note')
+        .gte('created_at', todayStart);
+      const clickRows =
+        clickTodayErr && isMissingRelationError(clickTodayErr)
+          ? []
+          : (clickTodayRows ?? []);
+      const clickErrors = clickRows.filter((row: any) => {
+        const code = Number(row?.error_code ?? 0);
+        return code !== 0 || Boolean(String(row?.error_note ?? '').trim());
+      }).length;
+      const clickTotal = clickRows.length;
+      const clickSuccess = Math.max(0, clickTotal - clickErrors);
 
       function sumByCurrency(rows: { amount?: number; currency?: string }[] | null): { UZS: number; USD: number; RUB: number } {
         const out = { UZS: 0, USD: 0, RUB: 0 };
@@ -249,6 +263,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         total_revenue: sumByCurrency((pAllRows as any).data ?? []),
         active_subscriptions: (subs as any).count ?? 0,
         referral_payouts_pending: (wdraw as any).count ?? 0,
+        click_today: {
+          total: clickTotal,
+          success: clickSuccess,
+          errors: clickErrors,
+        },
       });
     }
 
@@ -392,49 +411,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
       });
       return res.status(200).json(list);
-    }
-
-    // GET /api/admin/fossils-payments
-    if (path[0] === 'fossils-payments' && path.length === 1 && req.method === 'GET') {
-      const { data: rows, error } = await supabase
-        .from('fossils_payments')
-        .select('id, phone, tariff, image_url, status, created_at, updated_at')
-        .order('created_at', { ascending: false });
-      if (error) {
-        if (isMissingRelationError(error)) {
-          // Keep admin page usable until DB migration is applied in production.
-          return res.status(200).json([]);
-        }
-        return res.status(500).json({ error: error.message });
-      }
-      return res.status(200).json(rows ?? []);
-    }
-
-    // PUT /api/admin/fossils-payments/:id/status
-    if (
-      path[0] === 'fossils-payments' &&
-      path.length === 3 &&
-      path[2] === 'status' &&
-      (req.method === 'PUT' || req.method === 'PATCH')
-    ) {
-      const paymentId = Number(path[1]);
-      const body = parseBody(req.body);
-      const status = typeof body.status === 'string' ? body.status : '';
-      if (!paymentId) return res.status(400).json({ error: 'Invalid payment id' });
-      if (!['pending', 'confirmed', 'rejected'].includes(status)) {
-        return res.status(400).json({ error: 'status noto‘g‘ri' });
-      }
-      const { error } = await supabase
-        .from('fossils_payments')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', paymentId);
-      if (error) {
-        if (isMissingRelationError(error)) {
-          return res.status(503).json({ error: 'fossils_payments jadvali hali yaratilmagan' });
-        }
-        return res.status(500).json({ error: error.message });
-      }
-      return res.status(200).json({ success: true });
     }
 
     // POST /api/admin/payments/:id/confirm and .../reject — payments table

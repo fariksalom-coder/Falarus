@@ -2,6 +2,8 @@
  * Mirrors App.tsx routing enough for SEO / 404 detection.
  * Update when adding major path prefixes.
  */
+import { ADMIN_BASE_PATH } from '../constants/adminPath';
+
 export function isKnownAppRoute(pathname: string): boolean {
   const p = pathname.split('?')[0].replace(/\/+$/, '') || '/';
 
@@ -9,11 +11,10 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/',
     '/login',
     '/register',
-    '/fossils',
-    '/fossils/checkout',
     '/russian',
     '/russian/grammar',
     '/russian/speaking',
+    '/kunlik-reja',
     '/partner',
     '/help',
     '/vocabulary',
@@ -35,15 +36,15 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/huquqiy/qaytarish',
     '/payment-history',
     '/reyting',
-    '/admin',
     '/auth',
   ]);
+  exact.add(ADMIN_BASE_PATH);
 
   if (exact.has(p)) return true;
 
   const patterns: RegExp[] = [
     /^\/help\/[^/]+$/,
-    /^\/admin(?:\/|$)/,
+    new RegExp(`^${ADMIN_BASE_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:/|$)`),
     /^\/vocabulary\/matnlar\/[^/]+$/,
     /^\/vocabulary\/[^/]+\/?$/,
     /^\/vocabulary\/[^/]+\/[^/]+\/?$/,

@@ -3,16 +3,14 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import AppNavBar from './AppNavBar';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
-import { appMainTopOffsetCss, appMainBottomOffsetCss } from '../constants/appLayout';
+import { appMainBottomOffsetCss } from '../constants/appLayout';
 
-/** Routes where we hide the top nav bar (payment = fullscreen, vocabulary nested = back only, invite = has back button). */
+/** Routes where we hide the global bottom nav (payment = fullscreen, vocabulary nested = back only, invite = has back button). */
 function hideNavBar(path: string): boolean {
-  if (path === '/vocabulary') return true;
   if (path === '/payment' || path.startsWith('/payment')) return true;
   if (path === '/tariflar' || path === '/pricing') return true;
   if (path === '/payment-history') return true;
   if (path === '/invite') return true;
-  if (path.startsWith('/vocabulary/')) return true;
   if (path.startsWith('/kurslar/patent')) return true;
   if (path.startsWith('/kurslar/vnzh')) return true;
   if (path.startsWith('/help/')) return true;
@@ -41,10 +39,7 @@ export default function MainLayout() {
       };
   const transition = zoomTransition;
 
-  // On mobile (< sm): nav is at the bottom → paddingBottom.
-  // On desktop (sm+): nav is at the top → paddingTop.
-  // We inject a <style> tag with responsive CSS vars to avoid JS-based breakpoint detection.
-  const topOffset = appMainTopOffsetCss();
+  // Nav har doim pastda → tepada faqat status zonasi, scroll uchun pastdan padding.
   const bottomOffset = appMainBottomOffsetCss();
 
   return (
@@ -55,27 +50,11 @@ export default function MainLayout() {
             padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
             padding-bottom: 0;
           }
-          @media (min-width: 640px) {
-            .nav-layout-pad {
-              padding-top: ${topOffset};
-              padding-bottom: 0;
-            }
-          }
           .nav-content-min-h {
             min-height: calc(100dvh - (env(safe-area-inset-top, 0px) + 8px));
           }
-          @media (min-width: 640px) {
-            .nav-content-min-h {
-              min-height: calc(100dvh - ${topOffset});
-            }
-          }
           .nav-scroll-pad {
             padding-bottom: ${bottomOffset};
-          }
-          @media (min-width: 640px) {
-            .nav-scroll-pad {
-              padding-bottom: 0;
-            }
           }
         `}</style>
       )}
@@ -99,7 +78,7 @@ export default function MainLayout() {
               animate="center"
               exit="exit"
               transition={transition}
-              className={`absolute inset-0 w-full overflow-y-auto overflow-x-hidden bg-[#F8FAFC] overscroll-y-contain${showNavBar ? ' nav-scroll-pad' : ''}`}
+              className={`absolute inset-0 w-full min-w-0 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] overscroll-y-contain${showNavBar ? ' nav-scroll-pad' : ''}`}
             >
               <div className="flex min-h-full flex-col">
                 <div className="flex-1">

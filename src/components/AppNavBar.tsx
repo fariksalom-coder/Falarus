@@ -46,6 +46,45 @@ export default function AppNavBar() {
   }, [partnerLastSeenKey, path]);
 
   useEffect(() => {
+    if (!token || path.startsWith('/help/')) return;
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const run = async () => {
+      try {
+        const chats = await getHelpChats(token);
+        const lastSeenAt = helpLastSeenKey ? localStorage.getItem(helpLastSeenKey) : null;
+        const lastSeenMs = lastSeenAt ? new Date(lastSeenAt).getTime() : 0;
+        const hasUnread = (chats ?? []).some((c) => {
+          if (Number(c.unread_count ?? 0) > 0) return true;
+          const last = c.last_message;
+          if (!last || last.sender_type !== 'admin') return false;
+          return new Date(last.created_at).getTime() > lastSeenMs;
+        });
+        if (!cancelled) setHasUnreadHelpMessage(hasUnread);
+      } catch {
+        // keep previous unread state
+      } finally {
+        if (!cancelled) timer = window.setTimeout(() => void run(), 20_000);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [token, path, helpLastSeenKey]);
+
+  useEffect(() => {
+    if (!helpLastSeenKey) return;
+    if (path.startsWith('/help/')) {
+      localStorage.setItem(helpLastSeenKey, new Date().toISOString());
+      setHasUnreadHelpMessage(false);
+    }
+  }, [helpLastSeenKey, path]);
+
+  useEffect(() => {
     if (!token || !user?.id || path.startsWith('/partner')) return;
 
     let cancelled = false;
@@ -114,45 +153,6 @@ export default function AppNavBar() {
     };
   }, [token, user?.id, path, partnerLastSeenKey]);
 
-  useEffect(() => {
-    if (!token || path.startsWith('/help/')) return;
-    let cancelled = false;
-    let timer: number | null = null;
-
-    const run = async () => {
-      try {
-        const chats = await getHelpChats(token);
-        const lastSeenAt = helpLastSeenKey ? localStorage.getItem(helpLastSeenKey) : null;
-        const lastSeenMs = lastSeenAt ? new Date(lastSeenAt).getTime() : 0;
-        const hasUnread = (chats ?? []).some((c) => {
-          if (Number(c.unread_count ?? 0) > 0) return true;
-          const last = c.last_message;
-          if (!last || last.sender_type !== 'admin') return false;
-          return new Date(last.created_at).getTime() > lastSeenMs;
-        });
-        if (!cancelled) setHasUnreadHelpMessage(hasUnread);
-      } catch {
-        // keep previous unread state
-      } finally {
-        if (!cancelled) timer = window.setTimeout(() => void run(), 20_000);
-      }
-    };
-
-    void run();
-    return () => {
-      cancelled = true;
-      if (timer) window.clearTimeout(timer);
-    };
-  }, [token, path, helpLastSeenKey]);
-
-  useEffect(() => {
-    if (!helpLastSeenKey) return;
-    if (path.startsWith('/help/')) {
-      localStorage.setItem(helpLastSeenKey, new Date().toISOString());
-      setHasUnreadHelpMessage(false);
-    }
-  }, [helpLastSeenKey, path]);
-
   const isActive = (paths: string[]) =>
     paths.some((p) => (p === '/' ? path === '/' : path === p || path.startsWith(p + '/')));
 
@@ -198,11 +198,11 @@ export default function AppNavBar() {
 
   return (
     <header
-      className="fixed bottom-0 left-0 right-0 z-50 border-t sm:bottom-auto sm:top-0 sm:border-b sm:border-t-0 bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)] sm:pb-0 sm:pt-[env(safe-area-inset-top,0px)]"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom,0px)]"
       style={{ borderColor: BORDER }}
     >
       <div className="mx-auto flex h-[78px] max-w-[820px] items-center justify-between gap-2 px-4 sm:px-5">
-        {btn('/', ['/', '/russian'], "Bosh sahifa", House)}
+        {btn('/', ['/', '/russian', '/kunlik-reja'], "Bosh sahifa", House)}
         {btn('/partner', ['/partner'], 'Sherik', Users, hasUnreadPartnerMessage)}
         {btn('/statistika', ['/statistika'], 'Statistika', BarChart3)}
         {btn('/help', ['/help'], 'Yordam', MessageCircle, hasUnreadHelpMessage)}

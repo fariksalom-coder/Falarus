@@ -19,6 +19,7 @@ export async function fetchLessonTaskResults(
       ? apiUrl(`/api/lesson-task-results?lesson_path=${encodeURIComponent(lessonPath)}`)
       : apiUrl('/api/lesson-task-results');
     const res = await fetch(url, {
+      cache: 'no-store',
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return [];

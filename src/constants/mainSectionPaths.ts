@@ -1,10 +1,12 @@
-/** Top-tab section routes (exact match only — not nested `/vocabulary/...`). */
+/**
+ * Exact paths that participate in main layout section index + horizontal swipe (mobile).
+ * Order matches `AppNavBar` tabs. `/kurslar` is not a bottom tab — omit from swipe ring.
+ */
 export const MAIN_SECTION_PATHS = [
   '/',
   '/partner',
-  '/help',
   '/statistika',
-  '/kurslar',
+  '/help',
   '/profile',
 ] as const;
 

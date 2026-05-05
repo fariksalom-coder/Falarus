@@ -1,39 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
+import { adminPath } from '../../constants/adminPath';
 import {
   LayoutDashboard,
   Users,
-  CreditCard,
-  Repeat,
   Wallet,
   MessageSquare,
-  Settings,
   Banknote,
   DollarSign,
   LogOut,
-  BookOpen,
-  Video,
-  KeyRound,
   ScrollText,
 } from 'lucide-react';
 import { getAdminHelpChats } from '../../api/admin';
 
 const nav = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/admin/users', label: 'Users', icon: Users },
-  { to: '/admin/payments', label: 'Payments', icon: CreditCard },
-  { to: '/admin/fossils-payments', label: 'Fossils Payments', icon: Video },
-  { to: '/admin/subscriptions', label: 'Subscriptions', icon: Repeat },
-  { to: '/admin/card-tokens', label: 'Click tokens', icon: KeyRound },
-  { to: '/admin/click-logs', label: 'Click logs', icon: ScrollText },
-  { to: '/admin/referrals', label: 'Referrals', icon: Wallet },
-  { to: '/admin/support', label: 'Yozishmalar', icon: MessageSquare },
-  { to: '/admin/payment-methods', label: 'Payment Methods', icon: Banknote },
-  { to: '/admin/tariff-pricing', label: 'Tariff Pricing', icon: DollarSign },
-  { to: '/admin/pricing', label: 'Pricing', icon: Settings },
-  { to: '/admin/grammar', label: 'Grammar', icon: BookOpen },
-];
+  { to: adminPath('/dashboard'), label: 'Dashboard', icon: LayoutDashboard },
+  { to: adminPath('/users'), label: 'Users', icon: Users },
+  { to: adminPath('/click-logs'), label: 'Click logs', icon: ScrollText },
+  { to: adminPath('/referrals'), label: 'Referrals', icon: Wallet },
+  { to: adminPath('/support'), label: 'Yozishmalar', icon: MessageSquare },
+  { to: adminPath('/payment-methods'), label: 'Payment Methods', icon: Banknote },
+  { to: adminPath('/tariff-pricing'), label: 'Tariff Pricing', icon: DollarSign },
+] as const;
 
 export default function AdminLayout() {
   const { logout } = useAdminAuth();
@@ -66,7 +55,7 @@ export default function AdminLayout() {
 
   function handleLogout() {
     logout();
-    navigate('/admin/login', { replace: true });
+    navigate(adminPath('/login'), { replace: true });
   }
 
   return (
@@ -88,7 +77,7 @@ export default function AdminLayout() {
             >
               <Icon className="h-5 w-5 shrink-0" />
               <span className="min-w-0 flex-1 truncate">{label}</span>
-              {to === '/admin/support' && unreadSupportCount > 0 ? (
+              {to === adminPath('/support') && unreadSupportCount > 0 ? (
                 <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
                   {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
                 </span>

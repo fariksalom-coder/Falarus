@@ -4,6 +4,7 @@ import { ArrowLeft, Mic, Keyboard, Loader2, Send, Pencil } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   checkSpeakingAnswer,
+  checkSpeakingPromptAnswer,
   transcribeSpeakingAudio,
   type SpeakingTask,
   type CheckResult,
@@ -16,6 +17,14 @@ type Props = {
   topicLabel: string;
   onFinish: () => void;
   onBack: () => void;
+  /** `speaking_tasks` id o‘rniga `uz_text` / `ru_correct` bilan tekshirish (kunlik topshiriqlar) */
+  useInlineCheck?: boolean;
+  /** Tashqi sahifada allaqachon «Orqaga» bo‘lsa, ichki sarlavhani yashirish */
+  embedded?: boolean;
+  /** Kunlik: DB dagi `speaking_level` — tugallangan topshiruvlar soni (keyingi topshiruv indeksi) */
+  initialResumeIndex?: number;
+  /** To‘g‘ri javobdan keyin «Keyingisi» bosilganda (oxirgisidan oldin) */
+  onCheckpoint?: (completedTasksCount: number) => void;
 };
 
 type InputMode = 'choose' | 'text' | 'voice';
@@ -36,9 +45,21 @@ function formatTimer(seconds: number): string {
   return `0:${String(seconds).padStart(2, '0')}`;
 }
 
-export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }: Props) {
+export default function SpeakingExercise({
+  tasks,
+  topicLabel,
+  onFinish,
+  onBack,
+  useInlineCheck = false,
+  embedded = false,
+  initialResumeIndex = 0,
+  onCheckpoint,
+}: Props) {
   const { token } = useAuth();
-  const [currentIdx, setCurrentIdx] = useState(0);
+  const [currentIdx, setCurrentIdx] = useState(() => {
+    if (tasks.length === 0) return 0;
+    return Math.max(0, Math.min(initialResumeIndex, tasks.length - 1));
+  });
   const [inputMode, setInputMode] = useState<InputMode>('choose');
   const [answer, setAnswer] = useState('');
   const [checking, setChecking] = useState(false);
@@ -94,7 +115,16 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
       setError('');
       try {
         const nextAttempt = attempts + 1;
-        const r = await checkSpeakingAnswer(token, task.id, text.trim(), mode, nextAttempt);
+        const r = useInlineCheck
+          ? await checkSpeakingPromptAnswer(
+              token,
+              task.uz_text,
+              task.ru_correct,
+              text.trim(),
+              mode,
+              nextAttempt
+            )
+          : await checkSpeakingAnswer(token, task.id, text.trim(), mode, nextAttempt);
         setResult(r);
         setAttempts(nextAttempt);
       } catch {
@@ -103,7 +133,7 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
         setChecking(false);
       }
     },
-    [token, task?.id, checking, attempts]
+    [token, task?.id, task?.uz_text, task?.ru_correct, useInlineCheck, checking, attempts]
   );
 
   const handleTextSubmit = useCallback(() => {
@@ -154,6 +184,9 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
       onFinish();
       return;
     }
+    if (result?.status === 'correct') {
+      onCheckpoint?.(currentIdx + 1);
+    }
     setCurrentIdx((i) => i + 1);
     setAnswer('');
     setVoiceText('');
@@ -164,7 +197,7 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
     setInputMode('choose');
     setError('');
     recorder.reset();
-  }, [currentIdx, tasks.length, onFinish, recorder]);
+  }, [currentIdx, tasks.length, onFinish, onCheckpoint, recorder, result?.status]);
 
   const handleRetry = useCallback(() => {
     setResult(null);
@@ -177,21 +210,30 @@ export default function SpeakingExercise({ tasks, topicLabel, onFinish, onBack }
 
   return (
     <div className="mx-auto max-w-lg">
-      <div className="mb-5 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900">{topicLabel}</p>
-          <p className="text-xs text-slate-500">
+      {!embedded ? (
+        <div className="mb-5 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-900">{topicLabel}</p>
+            <p className="text-xs text-slate-500">
+              {currentIdx + 1} / {tasks.length}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{topicLabel}</p>
+          <p className="text-xs font-medium text-slate-500">
             {currentIdx + 1} / {tasks.length}
           </p>
         </div>
-      </div>
+      )}
 
       <div className="mb-6 h-2 overflow-hidden rounded-full bg-slate-200">
         <motion.div

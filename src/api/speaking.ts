@@ -79,6 +79,29 @@ export async function checkSpeakingAnswer(
   return res.json();
 }
 
+export async function checkSpeakingPromptAnswer(
+  token: string,
+  userAnswer: string,
+  uzText: string,
+  ruCorrect: string,
+  mode: 'text' | 'voice',
+  attempt: number = 1
+): Promise<CheckResult> {
+  const res = await fetch(apiUrl('/api/speaking/check'), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({
+      user_answer: userAnswer,
+      uz_text: uzText,
+      ru_correct: ruCorrect,
+      mode,
+      attempt,
+    }),
+  });
+  if (!res.ok) throw new Error('Tekshirishda xatolik');
+  return res.json();
+}
+
 export async function transcribeSpeakingAudio(
   token: string,
   audioBase64: string

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { adminLogin } from '../../api/admin';
 import { setAdminToken } from '../../lib/adminApi';
+import { adminPath } from '../../constants/adminPath';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -20,7 +21,7 @@ export default function AdminLoginPage() {
       const { token } = await adminLogin(email.trim(), password);
       setAdminToken(token);
       login(token);
-      navigate('/admin/dashboard', { replace: true });
+      navigate(adminPath('/dashboard'), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

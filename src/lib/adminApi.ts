@@ -1,4 +1,5 @@
 import { apiUrl } from '../api';
+import { adminPath } from '../constants/adminPath';
 
 const ADMIN_TOKEN_KEY = 'adminToken';
 
@@ -41,7 +42,7 @@ export async function adminApi<T = unknown>(
   if (res.status === 401) {
     clearAdminToken();
     if (!skipAuthRedirect && typeof window !== 'undefined') {
-      window.location.href = '/admin/login';
+      window.location.href = adminPath('/login');
     }
     throw new Error('Unauthorized');
   }

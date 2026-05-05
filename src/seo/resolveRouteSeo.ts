@@ -3,6 +3,7 @@
  * Title ~50–65 chars with brand; description ~140–170 chars.
  */
 import { SITE_ORIGIN, clipTitle, clipDescription } from './constants';
+import { ADMIN_BASE_PATH } from '../constants/adminPath';
 
 export type RouteSeoResult = {
   title: string;
@@ -142,26 +143,6 @@ export function resolveRouteSeo(
     };
   }
 
-  // --- Fossils ---
-  if (raw === '/fossils') {
-    return {
-      title: clipTitle('FalaRus Fossils'),
-      description: clipDescription(
-        'FalaRus Fossils — qisqa kirish sahifasi va mahsulot haqida ma\'lumot.'
-      ),
-      canonicalPath: '/fossils',
-    };
-  }
-  if (raw === '/fossils/checkout') {
-    return {
-      title: clipTitle('Fossils checkout'),
-      description: clipDescription(
-        'FalaRus Fossils buyurtmasini yakunlash uchun checkout sahifasi.'
-      ),
-      noindex: true,
-    };
-  }
-
   // --- Priority keyword URLs ---
   if (raw === '/russian') {
     return {
@@ -199,6 +180,21 @@ export function resolveRouteSeo(
       description: clipDescription(
         'Real situatsiyalar bo\'yicha gapirish mashqlari va audio materiallar. Migratsiya va ish uchun rus tilida nutq.'
       ),
+    };
+  }
+
+  if (raw === '/kunlik-reja') {
+    return {
+      title: clipTitle('Kunlik reja — 182 kunlik rus tili dasturi'),
+      description: clipDescription(
+        'Grammatika, lug\'at va matnlar bo\'yicha kunlik rejali o\'qish. Bosqichlar, haftalik bloklar va jarayon.'
+      ),
+      extraJsonLd: [
+        crumbLd([
+          { name: 'Bosh sahifa', path: '/' },
+          { name: 'Kunlik reja', path: '/kunlik-reja' },
+        ]),
+      ],
     };
   }
 
@@ -483,7 +479,7 @@ export function resolveRouteSeo(
   }
 
   // --- Admin ---
-  if (raw.startsWith('/admin')) {
+  if (raw.startsWith(ADMIN_BASE_PATH)) {
     return {
       title: clipTitle('Admin panel'),
       description: clipDescription(

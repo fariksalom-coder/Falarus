@@ -148,9 +148,10 @@ export async function recalculateRanks(supabase: SupabaseClient): Promise<void> 
       currentRank = i + 1;
       previousPoints = points;
     }
-    await supabase
+    const { error: upErr } = await supabase
       .from(LEADERBOARD)
       .update({ rank: currentRank, updated_at: new Date().toISOString() })
       .eq('user_id', rows[i].user_id);
+    if (upErr) throw upErr;
   }
 }
