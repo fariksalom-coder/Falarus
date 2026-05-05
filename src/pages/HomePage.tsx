@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { Crown } from 'lucide-react';
 import { prefetchRoutePath } from '../routeModules';
 import KunlikPlanFullSection from '../components/kunlik/KunlikPlanFullSection';
 import PlatformTutorialStrip from '../components/home/PlatformTutorialStrip';
@@ -14,6 +15,7 @@ const QUICK_COURSES = [
     ariaLabel: 'Patent imtihoni — tayyorlov kursi',
     className:
       'border-violet-200/90 bg-violet-50/90 text-violet-900 shadow-sm hover:bg-violet-100/90',
+    icon: null,
   },
   {
     href: '/kurslar/vnzh',
@@ -21,6 +23,15 @@ const QUICK_COURSES = [
     ariaLabel: 'ВНЖ imtihoni — tayyorlov kursi',
     className:
       'border-emerald-200/90 bg-emerald-50/90 text-emerald-900 shadow-sm hover:bg-emerald-100/90',
+    icon: null,
+  },
+  {
+    href: '/tariflar',
+    label: 'Premium',
+    ariaLabel: 'Premium tariflar — bir oy yoki bir yil',
+    className:
+      'border-amber-300/90 bg-amber-100/95 text-amber-900 shadow-sm hover:bg-amber-200/95',
+    icon: Crown,
   },
 ] as const;
 
@@ -28,7 +39,7 @@ function HomeQuickCourseButtons({ className = '' }: { className?: string }) {
   const navigate = useNavigate();
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
-      {QUICK_COURSES.map(({ href, label, ariaLabel, className: btnCls }, i) => (
+      {QUICK_COURSES.map(({ href, label, ariaLabel, className: btnCls, icon: Icon }, i) => (
         <motion.button
           key={href}
           type="button"
@@ -43,7 +54,10 @@ function HomeQuickCourseButtons({ className = '' }: { className?: string }) {
           whileTap={{ scale: 0.97 }}
           className={`min-h-[44px] shrink-0 rounded-xl border px-2.5 py-2 text-center text-[12px] font-bold leading-tight transition-colors lg:min-h-[36px] lg:py-1.5 lg:text-[13px] ${btnCls}`}
         >
-          {label}
+          <span className="inline-flex items-center gap-1">
+            {Icon ? <Icon className="h-3.5 w-3.5" strokeWidth={2.2} /> : null}
+            <span>{label}</span>
+          </span>
         </motion.button>
       ))}
     </div>

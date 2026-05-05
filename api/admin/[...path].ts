@@ -100,6 +100,23 @@ function isMissingSupportChatSchemaError(error: unknown): boolean {
   );
 }
 
+const ADMIN_USERS_SELECT_FULL =
+  'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by';
+const ADMIN_USERS_SELECT_LEGACY =
+  'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, total_referral_earned, referred_by';
+
+function isAdminUsersSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = String((error as { code?: unknown }).code ?? '');
+  const message = String((error as { message?: unknown }).message ?? '').toLowerCase();
+  return (
+    code === '42703' ||
+    (message.includes('column') &&
+      message.includes('does not exist') &&
+      (message.includes('total_points') || message.includes('total_referral_earned') || message.includes('referral_balance')))
+  );
+}
+
 /**
  * Normalize admin API path.
  * Examples:
@@ -280,7 +297,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let q = supabase
         .from('users')
-        .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
+        .select(ADMIN_USERS_SELECT_FULL)
         .order('created_at', { ascending: false });
 
       if (registered === 'today') {
@@ -301,7 +318,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       else if (subscription === 'yearly') q = q.eq('plan_name', '1 YIL').gt('plan_expires_at', now);
       if (referralOnly) q = q.not('referred_by', 'is', null);
 
-      const { data: rows, error } = await q;
+      const firstRes = await q;
+      let rows: any[] | null = (firstRes.data as any[] | null) ?? null;
+      let error = firstRes.error;
+      if (error && isAdminUsersSchemaError(error)) {
+        let legacyQ = supabase
+          .from('users')
+          .select(ADMIN_USERS_SELECT_LEGACY)
+          .order('created_at', { ascending: false });
+        if (registered === 'today') {
+          const d = new Date();
+          d.setHours(0, 0, 0, 0);
+          legacyQ = legacyQ.gte('created_at', d.toISOString());
+        } else if (registered === 'week') {
+          const d = new Date();
+          d.setDate(d.getDate() - 7);
+          legacyQ = legacyQ.gte('created_at', d.toISOString());
+        } else if (registered === 'month') {
+          const d = new Date();
+          d.setMonth(d.getMonth() - 1);
+          legacyQ = legacyQ.gte('created_at', d.toISOString());
+        }
+        if (subscription === 'none') legacyQ = legacyQ.or('plan_expires_at.is.null,plan_expires_at.lt.' + now);
+        else if (subscription === 'monthly') legacyQ = legacyQ.eq('plan_name', '1 OY').gt('plan_expires_at', now);
+        else if (subscription === 'yearly') legacyQ = legacyQ.eq('plan_name', '1 YIL').gt('plan_expires_at', now);
+        if (referralOnly) legacyQ = legacyQ.not('referred_by', 'is', null);
+        const legacyRes = await legacyQ;
+        rows = (legacyRes.data as any[] | null) ?? null;
+        error = legacyRes.error;
+      }
       if (error) return res.status(500).json({ error: error.message });
       const list = (rows ?? []).map((u: any) => ({
         id: u.id,
@@ -321,11 +366,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (path[0] === 'users' && path.length === 2 && req.method === 'GET') {
       const id = Number(path[1]);
       if (!id) return res.status(400).json({ error: 'Invalid user id' });
-      const { data: user, error: userErr } = await supabase
+      let { data: user, error: userErr } = await supabase
         .from('users')
-        .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
+        .select(ADMIN_USERS_SELECT_FULL)
         .eq('id', id)
         .single();
+      if (userErr && isAdminUsersSchemaError(userErr)) {
+        const legacy = await supabase.from('users').select(ADMIN_USERS_SELECT_LEGACY).eq('id', id).single();
+        user = legacy.data as typeof user;
+        userErr = legacy.error;
+      }
       if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
       const now = new Date().toISOString();
       const lessonsCompleted = await getUserCompletedLessonsCount(supabase, id);
@@ -684,12 +734,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           latestByUser.set(userId, row);
         }
         const userIds = [...latestByUser.keys()];
-        const { data: users, error: usersErr } = userIds.length
+        let usersRes = userIds.length
           ? await supabase
               .from('users')
               .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance')
               .in('id', userIds)
-          : { data: [], error: null as any };
+          : ({ data: [], error: null } as any);
+        if (usersRes.error && isAdminUsersSchemaError(usersRes.error)) {
+          usersRes = userIds.length
+            ? await supabase
+                .from('users')
+                .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance')
+                .in('id', userIds)
+            : ({ data: [], error: null } as any);
+        }
+        const { data: users, error: usersErr } = usersRes;
         if (usersErr) return res.status(500).json({ error: usersErr.message });
         const userMap = new Map((users ?? []).map((u: any) => [Number(u.id), u]));
         const nowIso = new Date().toISOString();
@@ -740,7 +799,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const chatIds = [...new Set((chats ?? []).map((c: any) => Number(c.id)).filter(Boolean))];
       const nowIso = new Date().toISOString();
 
-      const [{ data: users, error: usersErr }, { data: latestRows, error: latestErr }] = await Promise.all([
+      const [usersResult, { data: latestRows, error: latestErr }] = await Promise.all([
         userIds.length
           ? supabase
               .from('users')
@@ -755,6 +814,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               .order('created_at', { ascending: false })
           : Promise.resolve({ data: [], error: null } as any),
       ]);
+
+      let users = usersResult.data;
+      let usersErr = usersResult.error;
+      if (usersErr && isAdminUsersSchemaError(usersErr)) {
+        const legacyUsersResult = userIds.length
+          ? await supabase
+              .from('users')
+              .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance')
+              .in('id', userIds)
+          : ({ data: [], error: null } as any);
+        users = legacyUsersResult.data;
+        usersErr = legacyUsersResult.error;
+      }
 
       if (usersErr) return res.status(500).json({ error: usersErr.message });
       if (latestErr) return res.status(500).json({ error: latestErr.message });

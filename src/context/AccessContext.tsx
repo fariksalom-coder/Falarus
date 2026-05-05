@@ -3,7 +3,7 @@ import { getAccess, getCachedAccess, setCachedAccess, type AccessInfo } from '..
 import { useAuth } from './AuthContext';
 
 const defaultAccess: AccessInfo = {
-  lessons_free_limit: 3,
+  lessons_free_limit: 2,
   vocabulary_free_topic: 1,
   vocabulary_free_subtopic: 1,
   subscription_active: false,

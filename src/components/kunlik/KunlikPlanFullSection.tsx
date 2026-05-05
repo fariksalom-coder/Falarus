@@ -8,6 +8,7 @@ import {
   DAILY_PLAN_REVIEW_STORAGE_KEY,
 } from '../../config/dailyPlanProgress';
 import { useSequentialLesson } from '../../context/SequentialLessonContext';
+import { useAccess } from '../../context/AccessContext';
 import { takeKunlikRestoreDay } from '../../utils/kunlikLastDay';
 import {
   computeDayPlanQuestProgress,
@@ -23,6 +24,7 @@ type DayUiState = 'completed' | 'current' | 'locked';
 
 /** 1-kun doimo to‘liq `DayPlanRow` ko‘rinishida (eskicha); «Yakunlangan kunlar» lentasiga chiqmaydi. */
 const ALWAYS_EXPANDED_LAYOUT_DAY_NUM = 1;
+const FREE_DAILY_PLAN_DAY_LIMIT = 2;
 
 export type KunlikPlanFullSectionProps = {
   /**
@@ -36,6 +38,7 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { results, isReady } = useSequentialLesson();
+  const { access } = useAccess();
   const { rows: kunlikRows, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
   const [reviewVisits, setReviewVisits] = useState<Record<number, true>>(readPlanReviewVisits);
   const [vocabProgressTick, setVocabProgressTick] = useState(0);
@@ -291,6 +294,8 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
   }, [expandedWeekNum, expandedDayNum]);
 
   const dayUiState = (day: DayPlan): DayUiState => {
+    const hasSubscription = Boolean(access?.subscription_active);
+    if (!hasSubscription && day.day > FREE_DAILY_PLAN_DAY_LIMIT) return 'locked';
     const p = dayProgress.get(day.day);
     if (p && p.done >= p.total && p.total > 0) return 'completed';
     if (day.day === currentDay) return 'current';
@@ -518,6 +523,7 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
                             results={results}
                             reviewVisits={reviewVisits}
                             isServerDone={isServerDone}
+                            hasSubscription={Boolean(access?.subscription_active)}
                           />
                         );
                       })()}
@@ -548,6 +554,7 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
                           results={results}
                           reviewVisits={reviewVisits}
                           isServerDone={isServerDone}
+                          hasSubscription={Boolean(access?.subscription_active)}
                         />
                       ))
                     )}
@@ -634,6 +641,7 @@ function DayPlanRow({
   results,
   reviewVisits,
   isServerDone,
+  hasSubscription,
 }: {
   day: DayPlan;
   ui: DayUiState;
@@ -649,6 +657,7 @@ function DayPlanRow({
   results: ReturnType<typeof useSequentialLesson>['results'];
   reviewVisits: Record<number, true>;
   isServerDone: (dayNum: number, kind: string) => boolean;
+  hasSubscription: boolean;
 }) {
   const navigate = useNavigate();
 
@@ -672,6 +681,7 @@ function DayPlanRow({
   ];
 
   const isLocked = ui === 'locked';
+  const isPremiumLocked = isLocked && !hasSubscription && day.day > FREE_DAILY_PLAN_DAY_LIMIT;
 
   const styles =
     ui === 'completed'
@@ -770,9 +780,25 @@ function DayPlanRow({
               </div>
             )}
             {isLocked && (
-              <p className="mt-0.5 text-[12px] font-medium leading-snug text-slate-500">
-                Avvalgi kunni tugatish kerak
-              </p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <p className="text-[12px] font-medium leading-snug text-slate-500">
+                  {isPremiumLocked
+                    ? '1–2 kun bepul. 3-kundan Premium kerak'
+                    : 'Avvalgi kunni tugatish kerak'}
+                </p>
+                {isPremiumLocked && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/tariflar');
+                    }}
+                    className="min-h-[32px] rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-900 transition-colors hover:bg-amber-200"
+                  >
+                    Premium
+                  </button>
+                )}
+              </div>
             )}
           </div>
 

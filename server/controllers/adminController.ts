@@ -20,6 +20,10 @@ export function createAdminController(supabase: SupabaseClient) {
   const SUPPORT_ADMIN_NOTE_MARKER = '[ADMIN_NOTE]';
   const HELP_IMAGE_PREFIX = '__image__:';
   const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
+  const ADMIN_USERS_SELECT_FULL =
+    'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by';
+  const ADMIN_USERS_SELECT_LEGACY =
+    'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, total_referral_earned, referred_by';
 
   function isUndefinedColumnError(error: unknown): boolean {
     const msg = String((error as { message?: unknown })?.message ?? '').toLowerCase();
@@ -38,6 +42,17 @@ export function createAdminController(supabase: SupabaseClient) {
       ? String((error as { message?: unknown }).message ?? '')
       : String(error ?? '');
     return message.includes('support_chats') || message.includes('support_chat_messages');
+  }
+
+  function isAdminUsersSchemaError(error: unknown): boolean {
+    const msg = String((error as { message?: unknown })?.message ?? '').toLowerCase();
+    const code = String((error as { code?: unknown })?.code ?? '');
+    return (
+      code === '42703' ||
+      (msg.includes('column') &&
+        msg.includes('does not exist') &&
+        (msg.includes('total_points') || msg.includes('total_referral_earned') || msg.includes('referral_balance')))
+    );
   }
   // --- Login (no auth)
   async function login(req: Request, res: Response) {
@@ -136,20 +151,7 @@ export function createAdminController(supabase: SupabaseClient) {
 
     let q = supabase
       .from('users')
-      .select(`
-        id,
-        first_name,
-        last_name,
-        email,
-        phone,
-        created_at,
-        plan_name,
-        plan_expires_at,
-        total_points,
-        referral_balance,
-        total_referral_earned,
-        referred_by
-      `)
+      .select(ADMIN_USERS_SELECT_FULL)
       .order('created_at', { ascending: false });
 
     const now = new Date().toISOString();
@@ -179,7 +181,41 @@ export function createAdminController(supabase: SupabaseClient) {
       q = q.not('referred_by', 'is', null);
     }
 
-    const { data: rows, error } = await q;
+    const firstRes = await q;
+    let rows: any[] | null = (firstRes.data as any[] | null) ?? null;
+    let error = firstRes.error;
+    if (error && isAdminUsersSchemaError(error)) {
+      let legacyQ = supabase
+        .from('users')
+        .select(ADMIN_USERS_SELECT_LEGACY)
+        .order('created_at', { ascending: false });
+      if (registered === 'today') {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        legacyQ = legacyQ.gte('created_at', todayStart.toISOString());
+      } else if (registered === 'week') {
+        const d = new Date();
+        d.setDate(d.getDate() - 7);
+        legacyQ = legacyQ.gte('created_at', d.toISOString());
+      } else if (registered === 'month') {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 1);
+        legacyQ = legacyQ.gte('created_at', d.toISOString());
+      }
+      if (subscription === 'none') {
+        legacyQ = legacyQ.or('plan_expires_at.is.null,plan_expires_at.lt.' + now);
+      } else if (subscription === 'monthly') {
+        legacyQ = legacyQ.eq('plan_name', '1 OY').gt('plan_expires_at', now);
+      } else if (subscription === 'yearly') {
+        legacyQ = legacyQ.eq('plan_name', '1 YIL').gt('plan_expires_at', now);
+      }
+      if (referralOnly) {
+        legacyQ = legacyQ.not('referred_by', 'is', null);
+      }
+      const legacyRes = await legacyQ;
+      rows = (legacyRes.data as any[] | null) ?? null;
+      error = legacyRes.error;
+    }
     if (error) {
       console.error('[admin/users]', error);
       return res.status(500).json({ error: error.message });
@@ -204,11 +240,16 @@ export function createAdminController(supabase: SupabaseClient) {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: 'Invalid user id' });
 
-    const { data: user, error: userErr } = await supabase
+    let { data: user, error: userErr } = await supabase
       .from('users')
-      .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by')
+      .select(ADMIN_USERS_SELECT_FULL)
       .eq('id', id)
       .single();
+    if (userErr && isAdminUsersSchemaError(userErr)) {
+      const legacy = await supabase.from('users').select(ADMIN_USERS_SELECT_LEGACY).eq('id', id).single();
+      user = legacy.data as typeof user;
+      userErr = legacy.error;
+    }
     if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
 
     const now = new Date().toISOString();
@@ -665,12 +706,21 @@ export function createAdminController(supabase: SupabaseClient) {
         .order('created_at', { ascending: false });
       if (supportErr) return res.status(500).json({ error: supportErr.message });
       const userIdsFallback = [...new Set((supportRows ?? []).map((r: any) => Number(r.user_id)).filter(Boolean))];
-      const { data: usersFallback, error: usersErrFallback } = userIdsFallback.length
+      let usersFallbackRes = userIdsFallback.length
         ? await supabase
             .from('users')
             .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance')
             .in('id', userIdsFallback)
         : ({ data: [], error: null } as any);
+      if (usersFallbackRes.error && isAdminUsersSchemaError(usersFallbackRes.error)) {
+        usersFallbackRes = userIdsFallback.length
+          ? await supabase
+              .from('users')
+              .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance')
+              .in('id', userIdsFallback)
+          : ({ data: [], error: null } as any);
+      }
+      const { data: usersFallback, error: usersErrFallback } = usersFallbackRes;
       if (usersErrFallback) return res.status(500).json({ error: usersErrFallback.message });
 
       const userMapFallback = new Map((usersFallback ?? []).map((u: any) => [Number(u.id), u]));
@@ -731,7 +781,7 @@ export function createAdminController(supabase: SupabaseClient) {
     const chatIds = [...new Set((chats ?? []).map((c: any) => Number(c.id)).filter(Boolean))];
     const nowIso = new Date().toISOString();
 
-    const [{ data: users, error: usersErr }, { data: latestRows, error: latestErr }] = await Promise.all([
+    const [usersResult, { data: latestRows, error: latestErr }] = await Promise.all([
       userIds.length
         ? supabase
             .from('users')
@@ -746,6 +796,19 @@ export function createAdminController(supabase: SupabaseClient) {
             .order('created_at', { ascending: false })
         : Promise.resolve({ data: [], error: null } as any),
     ]);
+
+    let users = usersResult.data;
+    let usersErr = usersResult.error;
+    if (usersErr && isAdminUsersSchemaError(usersErr)) {
+      const legacyUsersResult = userIds.length
+        ? await supabase
+            .from('users')
+            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance')
+            .in('id', userIds)
+        : ({ data: [], error: null } as any);
+      users = legacyUsersResult.data;
+      usersErr = legacyUsersResult.error;
+    }
 
     if (usersErr) return res.status(500).json({ error: usersErr.message });
     if (latestErr) return res.status(500).json({ error: latestErr.message });
