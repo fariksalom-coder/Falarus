@@ -33,6 +33,7 @@ import {
 } from '../services/clickCardToken.service.js';
 import { fiscalizePayment } from '../services/clickFiscal.service.js';
 import { resolveRussianTariffQuote } from '../services/promoPricing.service.js';
+import { extractRequestMeta, recordPaymentEvent } from '../lib/paymentEvents.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const ALLOWED_MIMES = [
@@ -359,95 +360,80 @@ export function createClickMerchantRoutes(
     const payload = normalizeClickCallbackPayload((req.body ?? {}) as Record<string, unknown>);
     const { secretKey: clickSecretKey, serviceId: clickServiceId } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
-
-    console.log('[click/prepare] body=%s service_id=%s merchant_trans_id=%s amount=%s action=%s',
-      JSON.stringify(req.body ?? {}),
-      payload.service_id, payload.merchant_trans_id, payload.amount, payload.action
-    );
+    const meta = extractRequestMeta(req as any);
+    const paymentIdSafe = Number.isFinite(paymentId) && paymentId > 0 ? paymentId : null;
+    const clickPaydocId = String(payload.click_paydoc_id ?? '').trim() || null;
+    const audit = (
+      outcome: Parameters<typeof recordPaymentEvent>[1]['outcome'],
+      extra: Partial<Parameters<typeof recordPaymentEvent>[1]> = {}
+    ) =>
+      recordPaymentEvent(supabase, {
+        paymentId: paymentIdSafe,
+        provider: 'click',
+        eventType: 'prepare',
+        outcome,
+        applied: false,
+        clickPaydocId,
+        amountReceived: Number(payload.amount) || null,
+        payload,
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+        ...extra,
+      });
 
     if (!clickSecretKey || !clickServiceId) {
-      console.error('[click/prepare] config missing secretKey=%s serviceId=%s', !!clickSecretKey, !!clickServiceId);
+      void audit('config_missing', { note: 'click secret/service missing' });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          error: -9,
-          note: 'Click konfiguratsiyasi topilmadi',
-        })
+        buildClickErrorResponse({ payload, error: -9, note: 'Click konfiguratsiyasi topilmadi' })
       );
     }
     if (payload.service_id !== clickServiceId) {
-      console.error('[click/prepare] service_id mismatch got=%s expected=%s', payload.service_id, clickServiceId);
+      void audit('invalid_payload', { note: `service_id mismatch got=${payload.service_id}` });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId || 0,
-          error: -1,
-          note: 'service_id mos emas',
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentId || 0, error: -1, note: 'service_id mos emas' })
       );
     }
     const skipSigPrepare = shouldSkipClickSignatureVerify();
-    if (skipSigPrepare) {
-      console.warn('[click/prepare] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
-    }
-    if (!skipSigPrepare && !verifyClickSignature(payload, clickSecretKey)) {
-      console.error('[click/prepare] signature mismatch sign_string=%s', payload.sign_string);
+    const signatureValid = skipSigPrepare ? null : verifyClickSignature(payload, clickSecretKey);
+    if (signatureValid === false) {
+      void audit('invalid_signature', { signatureValid: false });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId || 0,
-          error: -1,
-          note: 'Imzo noto‘g‘ri',
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentId || 0, error: -1, note: 'Imzo noto‘g‘ri' })
       );
     }
-    if (!Number.isFinite(paymentId) || paymentId <= 0) {
-      console.error('[click/prepare] invalid paymentId=%s', payload.merchant_trans_id);
+    if (paymentIdSafe === null) {
+      void audit('invalid_payload', { signatureValid, note: `bad merchant_trans_id=${payload.merchant_trans_id}` });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          error: -5,
-          note: 'To‘lov topilmadi',
-        })
+        buildClickErrorResponse({ payload, error: -5, note: 'To‘lov topilmadi' })
       );
     }
 
     const { data: payment, error } = await supabase
       .from('payments')
       .select('id, amount, status')
-      .eq('id', paymentId)
+      .eq('id', paymentIdSafe)
       .maybeSingle();
     if (error || !payment) {
-      console.error('[click/prepare] payment not found id=%d dbError=%s', paymentId, error?.message);
+      void audit('not_found', { signatureValid, note: error?.message ?? 'no row' });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId,
-          error: -5,
-          note: 'To‘lov topilmadi',
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentIdSafe, error: -5, note: 'To‘lov topilmadi' })
       );
     }
 
     if (Number(payment.amount) !== Number(payload.amount)) {
-      console.error('[click/prepare] amount mismatch db=%s click=%s', payment.amount, payload.amount);
+      void audit('amount_mismatch', {
+        signatureValid,
+        statusBefore: payment.status,
+        amountExpected: Number(payment.amount),
+        amountReceived: Number(payload.amount),
+      });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId,
-          error: -2,
-          note: 'Summa mos emas',
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentIdSafe, error: -2, note: 'Summa mos emas' })
       );
     }
 
-    console.log('[click/prepare] success paymentId=%d', paymentId);
-    return res.json(
-      buildClickSuccessResponse({
-        payload,
-        merchantPrepareId: paymentId,
-      })
-    );
+    void audit('applied', { signatureValid, statusBefore: payment.status, statusAfter: payment.status, amountExpected: Number(payment.amount) });
+    return res.json(buildClickSuccessResponse({ payload, merchantPrepareId: paymentIdSafe }));
   });
 
   router.post('/complete', async (req: Request, res: Response) => {
@@ -456,51 +442,54 @@ export function createClickMerchantRoutes(
       secretKey: clickSecretKey,
       serviceId: clickServiceId,
       merchantId: clickMerchantId,
-      merchantUserId: clickMerchantUserId,
       returnUrl: clickReturnUrl,
     } = getClickConfig();
     const paymentId = Number(payload.merchant_trans_id);
+    const paymentIdSafe = Number.isFinite(paymentId) && paymentId > 0 ? paymentId : null;
+    const clickPaydocId = String(payload.click_paydoc_id ?? '').trim() || null;
+    const meta = extractRequestMeta(req as any);
+    const audit = (
+      outcome: Parameters<typeof recordPaymentEvent>[1]['outcome'],
+      extra: Partial<Parameters<typeof recordPaymentEvent>[1]> = {}
+    ) =>
+      recordPaymentEvent(supabase, {
+        paymentId: paymentIdSafe,
+        provider: 'click',
+        eventType: 'complete',
+        outcome,
+        applied: false,
+        clickPaydocId,
+        amountReceived: Number(payload.amount) || null,
+        payload,
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+        ...extra,
+      });
 
     if (!clickSecretKey || !clickServiceId) {
+      void audit('config_missing');
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          error: -9,
-          note: 'Click konfiguratsiyasi topilmadi',
-        })
+        buildClickErrorResponse({ payload, error: -9, note: 'Click konfiguratsiyasi topilmadi' })
       );
     }
     if (payload.service_id !== clickServiceId) {
+      void audit('invalid_payload', { note: `service_id mismatch got=${payload.service_id}` });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId || 0,
-          error: -1,
-          note: 'service_id mos emas',
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentId || 0, error: -1, note: 'service_id mos emas' })
       );
     }
     const skipSigComplete = shouldSkipClickSignatureVerify();
-    if (skipSigComplete) {
-      console.warn('[click/complete] MD5 imzo tekshiruvi o‘tkazib yuborildi (faqat NODE_ENV !== production)');
-    }
-    if (!skipSigComplete && !verifyClickSignature(payload, clickSecretKey)) {
+    const signatureValid = skipSigComplete ? null : verifyClickSignature(payload, clickSecretKey);
+    if (signatureValid === false) {
+      void audit('invalid_signature', { signatureValid: false });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId || 0,
-          error: -1,
-          note: 'Imzo noto‘g‘ri',
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentId || 0, error: -1, note: 'Imzo noto‘g‘ri' })
       );
     }
-    if (!Number.isFinite(paymentId) || paymentId <= 0) {
+    if (paymentIdSafe === null) {
+      void audit('invalid_payload', { signatureValid, note: `bad merchant_trans_id=${payload.merchant_trans_id}` });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          error: -5,
-          note: 'To‘lov topilmadi',
-        })
+        buildClickErrorResponse({ payload, error: -5, note: 'To‘lov topilmadi' })
       );
     }
 
@@ -509,92 +498,132 @@ export function createClickMerchantRoutes(
       .select(
         'id, user_id, tariff_type, product_code, amount, status, payment_proof_url, click_merchant_payment_id'
       )
-      .eq('id', paymentId)
+      .eq('id', paymentIdSafe)
       .maybeSingle();
     if (error && isPaymentsProductCodeSchemaError(error)) {
       const legacy = await supabase
         .from('payments')
         .select('id, user_id, tariff_type, amount, status, payment_proof_url, click_merchant_payment_id')
-        .eq('id', paymentId)
+        .eq('id', paymentIdSafe)
         .maybeSingle();
       payment = legacy.data as any;
       error = legacy.error;
     }
     if (error || !payment) {
+      void audit('not_found', { signatureValid, note: error?.message ?? 'no row' });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId,
-          error: -5,
-          note: 'To‘lov topilmadi',
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentIdSafe, error: -5, note: 'To‘lov topilmadi' })
       );
     }
-    if (Number(payment.amount) !== Number(payload.amount)) {
+    const statusBefore = String((payment as any).status ?? '');
+    const expectedAmount = Number(payment.amount);
+    if (expectedAmount !== Number(payload.amount)) {
+      void audit('amount_mismatch', {
+        signatureValid,
+        statusBefore,
+        amountExpected: expectedAmount,
+        amountReceived: Number(payload.amount),
+      });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId,
-          error: -2,
-          note: 'Summa mos emas',
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentIdSafe, error: -2, note: 'Summa mos emas' })
       );
     }
 
+    // Provider says the user cancelled / payment failed.
     if (String(payload.error || '0') !== '0') {
-      await supabase.from('payments').update({ status: 'rejected' }).eq('id', paymentId).eq('status', 'pending');
+      const { data: rejected } = await supabase
+        .from('payments')
+        .update({ status: 'rejected' })
+        .eq('id', paymentIdSafe)
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle();
+      void audit('rejected', {
+        signatureValid,
+        statusBefore,
+        statusAfter: rejected ? 'rejected' : statusBefore,
+        applied: Boolean(rejected),
+        amountExpected: expectedAmount,
+        note: payload.error_note || 'To‘lov bekor qilindi',
+      });
       return res.json(
         buildClickErrorResponse({
           payload,
-          merchantPrepareId: paymentId,
+          merchantPrepareId: paymentIdSafe,
           error: -9,
           note: payload.error_note || 'To‘lov bekor qilindi',
         })
       );
     }
 
-    if (payment.status === 'approved') {
-      return res.json(
-        buildClickSuccessResponse({
-          payload,
-          merchantPrepareId: paymentId,
-        })
-      );
+    // Idempotent fast path: already approved by an earlier webhook.
+    if (statusBefore === 'approved') {
+      void audit('duplicate', {
+        signatureValid,
+        statusBefore,
+        statusAfter: statusBefore,
+        amountExpected: expectedAmount,
+        note: 'already approved',
+      });
+      return res.json(buildClickSuccessResponse({ payload, merchantPrepareId: paymentIdSafe }));
     }
 
-    const clickPaydocId = String(payload.click_paydoc_id ?? '').trim();
     const productCode = normalizePaymentProductCode((payment as any).product_code);
-    const { error: approveErr } = await supabase
+    const proofUrl =
+      inferPaymentProviderFromProofUrl((payment as any).payment_proof_url) === 'click'
+        ? ((payment as any).payment_proof_url as string | null | undefined) ?? null
+        : buildClickPaymentUrl({
+            serviceId: clickServiceId,
+            merchantId: clickMerchantId,
+            merchantUserId: String((payment as any).user_id),
+            amount: expectedAmount,
+            paymentId: paymentIdSafe,
+            returnUrl: clickReturnUrl,
+            cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
+          });
+
+    // Atomic transition: only ONE concurrent webhook can flip pending→approved.
+    // The .select() forces Supabase to return the row IFF the WHERE matched —
+    // so an empty result tells us a parallel request already approved (or the
+    // row was rejected in between). In that case we DO NOT activate again.
+    const { data: flipped, error: approveErr } = await supabase
       .from('payments')
       .update({
         status: 'approved',
         approved_at: new Date().toISOString(),
         click_merchant_payment_id:
-          clickPaydocId ||
-          ((payment as { click_merchant_payment_id?: string | null }).click_merchant_payment_id ?? null),
-        payment_proof_url:
-          inferPaymentProviderFromProofUrl((payment as any).payment_proof_url) === 'click'
-            ? (payment as any).payment_proof_url
-            : buildClickPaymentUrl({
-                serviceId: clickServiceId,
-                merchantId: clickMerchantId,
-                merchantUserId: String((payment as any).user_id),
-                amount: Number(payment.amount),
-                paymentId,
-                returnUrl: clickReturnUrl,
-                cardType: CLICK_PAY_CARD_TYPE_DEFAULT,
-              }),
+          clickPaydocId ?? ((payment as { click_merchant_payment_id?: string | null }).click_merchant_payment_id ?? null),
+        payment_proof_url: proofUrl,
       })
-      .eq('id', paymentId)
-      .eq('status', 'pending');
+      .eq('id', paymentIdSafe)
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
     if (approveErr) {
+      void audit('not_found', {
+        signatureValid,
+        statusBefore,
+        amountExpected: expectedAmount,
+        note: `update_failed: ${approveErr.message}`,
+      });
       return res.status(200).json(
-        buildClickErrorResponse({
-          payload,
-          merchantPrepareId: paymentId,
-          error: -9,
-          note: approveErr.message,
-        })
+        buildClickErrorResponse({ payload, merchantPrepareId: paymentIdSafe, error: -9, note: approveErr.message })
+      );
+    }
+
+    if (!flipped) {
+      // Lost the race. Another webhook already approved (or rejected) this
+      // payment row. Tell Click "success" — but DO NOT re-activate or
+      // re-fiscalize: that would extend the user's plan twice.
+      void audit('duplicate', {
+        signatureValid,
+        statusBefore,
+        statusAfter: 'approved',
+        amountExpected: expectedAmount,
+        note: 'lost approve race',
+      });
+      return res.json(
+        buildClickSuccessResponse({ payload, merchantPrepareId: paymentIdSafe, merchantConfirmId: paymentIdSafe })
       );
     }
 
@@ -609,14 +638,18 @@ export function createClickMerchantRoutes(
       console.error('[click/complete activation]', activationErr);
     }
 
-    void fiscalizePayment(supabase, paymentId);
+    void fiscalizePayment(supabase, paymentIdSafe);
+
+    void audit('applied', {
+      signatureValid,
+      statusBefore,
+      statusAfter: 'approved',
+      applied: true,
+      amountExpected: expectedAmount,
+    });
 
     return res.json(
-      buildClickSuccessResponse({
-        payload,
-        merchantPrepareId: paymentId,
-        merchantConfirmId: paymentId,
-      })
+      buildClickSuccessResponse({ payload, merchantPrepareId: paymentIdSafe, merchantConfirmId: paymentIdSafe })
     );
   });
 
