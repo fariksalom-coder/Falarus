@@ -32,6 +32,7 @@ export function createAdminRoutes(supabase: SupabaseClient): Router {
   router.get('/payments', (req, res, next) => ctrl.getPayments(req, res).catch(next));
   router.post('/payments/:id/confirm', (req, res, next) => ctrl.confirmPayment(req, res).catch(next));
   router.post('/payments/:id/reject', (req, res, next) => ctrl.rejectPayment(req, res).catch(next));
+  router.post('/payments/:id/refund', (req, res, next) => ctrl.refundPayment(req, res).catch(next));
   router.get('/subscriptions', (req, res, next) => ctrl.getSubscriptions(req, res).catch(next));
   router.get('/card-tokens', (req, res, next) => ctrl.getCardTokens(req, res).catch(next));
   router.get('/click-payment-logs', (req, res, next) => ctrl.getClickPaymentLogs(req, res).catch(next));

@@ -224,6 +224,13 @@ export async function rejectPayment(id: number): Promise<void> {
   });
 }
 
+export async function refundPayment(id: number): Promise<void> {
+  await adminApi(`/payments/${id}/refund`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
 export async function getSubscriptions(): Promise<AdminSubscriptionRow[]> {
   return adminApi<AdminSubscriptionRow[]>('/subscriptions');
 }

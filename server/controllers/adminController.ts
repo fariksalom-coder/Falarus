@@ -13,6 +13,8 @@ import { inferPaymentProviderFromProofUrl } from '../../shared/clickPayments.js'
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
+import { clickPaymentRefund, isClickMerchantSuccess } from '../../shared/clickMerchantClient.js';
+import { getClickConfig } from '../../shared/clickConfig.js';
 
 export function createAdminController(supabase: SupabaseClient) {
   /** Default 7 days (same order of magnitude as user JWT) — override via ADMIN_JWT_EXPIRES_SECONDS. */
@@ -459,6 +461,80 @@ export function createAdminController(supabase: SupabaseClient) {
     } catch (e: any) {
       console.error('[admin/rejectPayment]', e);
       return res.status(500).json({ error: e?.message || 'Server xatosi' });
+    }
+  }
+
+  async function refundPayment(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (!id) return res.status(400).json({ error: 'Invalid payment id' });
+
+      const { data: row, error: fetchErr } = await supabase
+        .from('payments')
+        .select('id, user_id, status, product_code, click_merchant_payment_id')
+        .eq('id', id)
+        .maybeSingle();
+      if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi' });
+      if (String((row as any).status) !== 'approved') {
+        return res.status(400).json({ error: 'Faqat tasdiqlangan to\'lov qaytariladi' });
+      }
+
+      const clickPaymentId = String((row as any).click_merchant_payment_id ?? '').trim();
+      if (!clickPaymentId) {
+        return res.status(400).json({ error: 'Bu to\'lov Click orqali emas yoki payment_id yo\'q' });
+      }
+
+      const cfg = getClickConfig();
+      const serviceId = Number(cfg.serviceId);
+      const merchantUserId = cfg.merchantUserId?.trim();
+      const secretKey = cfg.secretKey?.trim();
+      if (!Number.isFinite(serviceId) || !merchantUserId || !secretKey) {
+        return res.status(503).json({ error: 'Click Merchant API sozlanmagan' });
+      }
+
+      const refundJson = await clickPaymentRefund({
+        serviceId,
+        paymentId: clickPaymentId,
+        merchantUserId,
+        secretKey,
+      });
+
+      if (!isClickMerchantSuccess(refundJson)) {
+        return res.status(400).json({
+          error: String(refundJson?.error_note ?? 'Click refund rad etildi'),
+          click_error_code: Number(refundJson?.error_code ?? -1),
+        });
+      }
+
+      const userId = Number((row as any).user_id);
+      await supabase
+        .from('payments')
+        .update({
+          status: 'refunded',
+          approved_at: null,
+          click_refund_raw: refundJson as unknown as Record<string, unknown>,
+          refunded_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      const productCode = resolvePaymentProductFromRow(row as any);
+      if (productCode === 'russian') {
+        await supabase
+          .from('users')
+          .update({ plan_name: null, plan_expires_at: null })
+          .eq('id', userId);
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'expired', auto_payment_enabled: false })
+          .eq('user_id', userId)
+          .eq('status', 'active');
+      }
+      subscriptionService.invalidateAccessCache(userId);
+
+      return res.json({ success: true });
+    } catch (e: any) {
+      console.error('[admin/refundPayment]', e);
+      return res.status(500).json({ error: e?.message || 'Refund amalga oshmadi' });
     }
   }
 
@@ -1289,6 +1365,7 @@ export function createAdminController(supabase: SupabaseClient) {
     getPayments,
     confirmPayment,
     rejectPayment,
+    refundPayment,
     getSubscriptions,
     getCardTokens,
     getClickPaymentLogs,

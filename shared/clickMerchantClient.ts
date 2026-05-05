@@ -297,3 +297,26 @@ export async function clickFetchOfdReceipt(params: {
 export function isClickOfdSubmitSuccess(json: ClickMerchantJson): boolean {
   return clickMerchantErrorCode(json) === 0;
 }
+
+export async function clickPaymentRefund(params: {
+  serviceId: number;
+  paymentId: string | number;
+  merchantUserId: string;
+  secretKey: string;
+}): Promise<ClickMerchantJson> {
+  const url = `${CLICK_MERCHANT_API_BASE}/payment/reversal`;
+  const body = {
+    service_id: params.serviceId,
+    payment_id: Number(params.paymentId),
+  };
+  console.info('[click.merchant]', 'POST', url, body);
+  const { httpStatus, json } = await clickMerchantAuthorizedRequest({
+    method: 'POST',
+    url,
+    merchantUserId: params.merchantUserId,
+    secretKey: params.secretKey,
+    body,
+  });
+  console.info('[click.merchant]', 'response', url, 'status', httpStatus, json);
+  return json;
+}

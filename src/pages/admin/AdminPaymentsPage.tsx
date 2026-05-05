@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { getPayments, confirmPayment, rejectPayment, type AdminPaymentRow } from '../../api/admin';
+import { getPayments, confirmPayment, rejectPayment, refundPayment, type AdminPaymentRow } from '../../api/admin';
 import { AlertCircle, ExternalLink } from 'lucide-react';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Kutilmoqda",
   approved: "Tasdiqlangan",
   rejected: "Rad etilgan",
+  refunded: "Qaytarilgan",
 };
 
 const FISCAL_LABELS: Record<string, string> = {
@@ -68,6 +69,19 @@ export default function AdminPaymentsPage() {
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Rad etish amalga oshmadi');
+    } finally {
+      setActioning(null);
+    }
+  }
+
+  async function handleRefund(id: number) {
+    setError('');
+    setActioning(id);
+    try {
+      await refundPayment(id);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Refund amalga oshmadi');
     } finally {
       setActioning(null);
     }
@@ -208,6 +222,16 @@ export default function AdminPaymentsPage() {
                             </button>
                           </span>
                         </span>
+                      )}
+                      {p.status === 'approved' && p.payment_provider === 'click' && (
+                        <button
+                          type="button"
+                          onClick={() => handleRefund(p.id)}
+                          disabled={actioning !== null}
+                          className="rounded-lg bg-slate-800 px-3 py-1.5 text-white text-xs font-medium hover:bg-slate-900 disabled:opacity-50"
+                        >
+                          {actioning === p.id ? '...' : 'Refund'}
+                        </button>
                       )}
                     </td>
                   </tr>
