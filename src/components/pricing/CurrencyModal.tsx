@@ -24,6 +24,8 @@ type CurrencyModalProps = {
     productCode: ClickCoursePayProduct;
     refreshPayments?: () => Promise<void>;
   };
+  currencyPriceMeta?: Partial<Record<Currency, { final: number; base?: number; discount?: number }>>;
+  showPromoHint?: boolean;
 };
 
 export default function CurrencyModal({
@@ -32,6 +34,8 @@ export default function CurrencyModal({
   onClickPay,
   clickLabel = 'Click orqali to‘lash',
   directClickCourse,
+  currencyPriceMeta,
+  showPromoHint = false,
 }: CurrencyModalProps) {
   const [directPayError, setDirectPayError] = useState('');
 
@@ -77,9 +81,33 @@ export default function CurrencyModal({
               <div>
                 <span className="font-semibold text-slate-900 block">{opt.value} — {opt.label}</span>
                 <span className="text-sm text-slate-500">{opt.sub}</span>
+                {currencyPriceMeta?.[opt.value] &&
+                Number.isFinite(currencyPriceMeta[opt.value]?.final) ? (
+                  <span className="mt-1 block text-xs text-slate-600">
+                    {currencyPriceMeta[opt.value]?.discount ? (
+                      <>
+                        <span className="mr-1 line-through text-slate-400">
+                          {currencyPriceMeta[opt.value]?.base?.toLocaleString('ru-RU')}
+                        </span>
+                        <span className="font-semibold text-emerald-700">
+                          {currencyPriceMeta[opt.value]?.final?.toLocaleString('ru-RU')}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-semibold text-slate-700">
+                        {currencyPriceMeta[opt.value]?.final?.toLocaleString('ru-RU')}
+                      </span>
+                    )}
+                  </span>
+                ) : null}
               </div>
             </button>
           ))}
+          {showPromoHint ? (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+              Chegirma vaqtincha. Taymer tugashidan oldin premiumni faollashtiring.
+            </p>
+          ) : null}
           {directClickCourse ? (
             <>
               <div className="my-1 h-px bg-slate-200" />

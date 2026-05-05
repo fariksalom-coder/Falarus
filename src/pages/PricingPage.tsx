@@ -4,7 +4,7 @@ import { ArrowLeft, Info } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
 import CurrencyModal from '../components/pricing/CurrencyModal';
-import { getTariffPricesByCurrency } from '../api/publicPricing';
+import { getTariffPricesByCurrency, getUserTariffPricesByCurrency, type UserTariffPricesPayload } from '../api/publicPricing';
 import type { Currency } from '../components/pricing/CurrencyModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +31,7 @@ type PlanCard = {
   compareAtPrice: string;
   /** Ilgari va joriy narxlardan hisoblangan chegirma foizi */
   discountPercent?: number;
+  promoActive?: boolean;
   features: string[];
   buttonLabel: string;
   highlighted: boolean;
@@ -65,6 +66,7 @@ function buildPlansFromTariffPrices(prices: { month: number; year: number }): Pl
       pricePerMonthUnit: "so'm",
       compareAtPrice: `${formatPrice(WAS_UZS.month)} so'm`,
       discountPercent: discountPercentFromWas(WAS_UZS.month, month),
+      promoActive: false,
       features: BENEFITS,
       buttonLabel: "1 oyga sotib olish",
       highlighted: false,
@@ -76,6 +78,42 @@ function buildPlansFromTariffPrices(prices: { month: number; year: number }): Pl
       pricePerMonthUnit: "so'm",
       compareAtPrice: `${formatPrice(WAS_UZS.year)} so'm`,
       discountPercent: discountPercentFromWas(WAS_UZS.year, year),
+      promoActive: false,
+      features: BENEFITS,
+      buttonLabel: "Bir yilga sotib olish",
+      highlighted: true,
+      badge: 'Eng mashhur ⭐',
+    },
+  ];
+}
+
+function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[] {
+  const monthFinal = Number(payload.quotes?.month?.final_amount ?? payload.month ?? 0);
+  const monthBase = Number(payload.quotes?.month?.base_amount ?? monthFinal);
+  const yearFinal = Number(payload.quotes?.year?.final_amount ?? payload.year ?? 0);
+  const yearBase = Number(payload.quotes?.year?.base_amount ?? yearFinal);
+  const promoActive = Boolean(payload.promo?.is_active);
+  return [
+    {
+      duration: '1 OY',
+      price: `${formatPrice(monthFinal)} so'm`,
+      pricePerMonth: formatPrice(monthFinal),
+      pricePerMonthUnit: "so'm",
+      compareAtPrice: promoActive && monthBase > monthFinal ? `${formatPrice(monthBase)} so'm` : undefined,
+      discountPercent: discountPercentFromWas(monthBase, monthFinal),
+      promoActive,
+      features: BENEFITS,
+      buttonLabel: "1 oyga sotib olish",
+      highlighted: false,
+    },
+    {
+      duration: '1 YIL',
+      price: `${formatPrice(yearFinal)} so'm`,
+      pricePerMonth: formatPrice(yearFinal),
+      pricePerMonthUnit: "so'm",
+      compareAtPrice: promoActive && yearBase > yearFinal ? `${formatPrice(yearBase)} so'm` : undefined,
+      discountPercent: discountPercentFromWas(yearBase, yearFinal),
+      promoActive,
       features: BENEFITS,
       buttonLabel: "Bir yilga sotib olish",
       highlighted: true,
@@ -124,15 +162,41 @@ export default function PricingPage() {
   const { hasPendingPayment } = usePaymentStatus();
   const [plans, setPlans] = useState<PlanCard[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [promoExpiresAt, setPromoExpiresAt] = useState<string | null>(null);
+  const [promoRemainingSec, setPromoRemainingSec] = useState(0);
+  const [currencyQuotes, setCurrencyQuotes] = useState<
+    Partial<Record<Currency, { month: { final: number; base: number; discount: number }; year: { final: number; base: number; discount: number } }>>
+  >({});
   const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | 'year'; tariffLabel: string } | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    getTariffPricesByCurrency('UZS')
-      .then((prices) => setPlans(buildPlansFromTariffPrices(prices)))
+    const load = async () => {
+      if (token) {
+        const data = await getUserTariffPricesByCurrency(token, 'UZS', { startPromo: true });
+        setPlans(buildPlansFromUserPricing(data));
+        setPromoExpiresAt(data.promo?.expires_at ?? null);
+        setPromoRemainingSec(Number(data.promo?.remaining_sec ?? 0));
+        return;
+      }
+      const prices = await getTariffPricesByCurrency('UZS');
+      setPlans(buildPlansFromTariffPrices(prices));
+    };
+    load()
       .catch(() => setPlans([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [token]);
+
+  useEffect(() => {
+    if (!promoExpiresAt) return;
+    const tick = () => {
+      const sec = Math.max(0, Math.floor((new Date(promoExpiresAt).getTime() - Date.now()) / 1000));
+      setPromoRemainingSec(sec);
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [promoExpiresAt]);
 
   const handleSelectPlan = (plan: PlanCard) => {
     setCurrencyModal({
@@ -140,7 +204,58 @@ export default function PricingPage() {
       tariffType: durationToTariffType(plan.duration),
       tariffLabel: plan.duration,
     });
+    if (!token) return;
+    void Promise.all([
+      getUserTariffPricesByCurrency(token, 'UZS'),
+      getUserTariffPricesByCurrency(token, 'RUB'),
+      getUserTariffPricesByCurrency(token, 'USD'),
+    ]).then(([uzs, rub, usd]) => {
+      setCurrencyQuotes({
+        UZS: {
+          month: {
+            final: Number(uzs.quotes?.month?.final_amount ?? uzs.month),
+            base: Number(uzs.quotes?.month?.base_amount ?? uzs.month),
+            discount: Number(uzs.quotes?.month?.discount_amount ?? 0),
+          },
+          year: {
+            final: Number(uzs.quotes?.year?.final_amount ?? uzs.year),
+            base: Number(uzs.quotes?.year?.base_amount ?? uzs.year),
+            discount: Number(uzs.quotes?.year?.discount_amount ?? 0),
+          },
+        },
+        RUB: {
+          month: {
+            final: Number(rub.quotes?.month?.final_amount ?? rub.month),
+            base: Number(rub.quotes?.month?.base_amount ?? rub.month),
+            discount: Number(rub.quotes?.month?.discount_amount ?? 0),
+          },
+          year: {
+            final: Number(rub.quotes?.year?.final_amount ?? rub.year),
+            base: Number(rub.quotes?.year?.base_amount ?? rub.year),
+            discount: Number(rub.quotes?.year?.discount_amount ?? 0),
+          },
+        },
+        USD: {
+          month: {
+            final: Number(usd.quotes?.month?.final_amount ?? usd.month),
+            base: Number(usd.quotes?.month?.base_amount ?? usd.month),
+            discount: Number(usd.quotes?.month?.discount_amount ?? 0),
+          },
+          year: {
+            final: Number(usd.quotes?.year?.final_amount ?? usd.year),
+            base: Number(usd.quotes?.year?.base_amount ?? usd.year),
+            discount: Number(usd.quotes?.year?.discount_amount ?? 0),
+          },
+        },
+      });
+    }).catch(() => {
+      setCurrencyQuotes({});
+    });
   };
+
+  const promoClock = `${String(Math.floor(promoRemainingSec / 60)).padStart(2, '0')}:${String(
+    promoRemainingSec % 60
+  ).padStart(2, '0')}`;
 
   const handleCurrencySelect = (currency: Currency) => {
     if (!currencyModal) return;
@@ -195,6 +310,16 @@ export default function PricingPage() {
 
         {/* 2. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
         <section id="tariflar" className="mb-20">
+          {promoRemainingSec > 0 && (
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-900">
+                Maxsus narx tugashiga: <span className="tabular-nums">{promoClock}</span>
+              </p>
+              <p className="mt-1 text-xs text-amber-800">
+                Premiumni hozir faollashtiring — vaqt tugagach odatiy narx qaytadi.
+              </p>
+            </div>
+          )}
           {token && hasPendingPayment && (
             <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
               <Info className="h-5 w-5 shrink-0" />
@@ -330,7 +455,25 @@ export default function PricingPage() {
           onClose={() => setCurrencyModal(null)}
           onSelect={handleCurrencySelect}
           onClickPay={handleClickSelect}
-          clickLabel="Click orqali onlayn to‘lov"
+          clickLabel="Click (karta + SMS, avtoto‘lov)"
+          showPromoHint={promoRemainingSec > 0}
+          currencyPriceMeta={currencyModal ? {
+            UZS: {
+              final: currencyQuotes.UZS?.[currencyModal.tariffType].final ?? NaN,
+              base: currencyQuotes.UZS?.[currencyModal.tariffType].base ?? NaN,
+              discount: currencyQuotes.UZS?.[currencyModal.tariffType].discount ?? 0,
+            },
+            RUB: {
+              final: currencyQuotes.RUB?.[currencyModal.tariffType].final ?? NaN,
+              base: currencyQuotes.RUB?.[currencyModal.tariffType].base ?? NaN,
+              discount: currencyQuotes.RUB?.[currencyModal.tariffType].discount ?? 0,
+            },
+            USD: {
+              final: currencyQuotes.USD?.[currencyModal.tariffType].final ?? NaN,
+              base: currencyQuotes.USD?.[currencyModal.tariffType].base ?? NaN,
+              discount: currencyQuotes.USD?.[currencyModal.tariffType].discount ?? 0,
+            },
+          } : undefined}
         />
       )}
     </div>

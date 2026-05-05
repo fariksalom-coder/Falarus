@@ -53,6 +53,7 @@ import { routePartnerRequest } from './api/_lib/partner.ts';
 import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
 import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
 import { runClickFiscalRetryCron } from './server/services/clickFiscal.service.ts';
+import { resolveRussianTariffQuote } from './server/services/promoPricing.service.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -533,6 +534,54 @@ async function startServer() {
       res.status(401).json({ error: 'Yaroqsiz token' });
     }
   };
+
+  app.get('/api/user/tariff-prices', authenticate, async (req: any, res) => {
+    const currency = (req.query.currency as string)?.toUpperCase();
+    if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
+      return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
+    }
+    const startPromo = String(req.query.start_promo ?? '') === '1';
+    try {
+      const month = await resolveRussianTariffQuote(supabase, {
+        userId: req.userId,
+        currency: currency as 'UZS' | 'RUB' | 'USD',
+        tariffType: 'month',
+        startPromoIfMissing: startPromo,
+      });
+      const year = await resolveRussianTariffQuote(supabase, {
+        userId: req.userId,
+        currency: currency as 'UZS' | 'RUB' | 'USD',
+        tariffType: 'year',
+        startPromoIfMissing: startPromo,
+      });
+      return res.json({
+        currency,
+        month: month.finalAmount,
+        year: year.finalAmount,
+        quotes: {
+          month: {
+            base_amount: month.baseAmount,
+            final_amount: month.finalAmount,
+            discount_amount: month.discountAmount,
+          },
+          year: {
+            base_amount: year.baseAmount,
+            final_amount: year.finalAmount,
+            discount_amount: year.discountAmount,
+          },
+        },
+        promo: {
+          started_at: month.promo.startedAt,
+          expires_at: month.promo.expiresAt,
+          is_active: month.promo.isActive,
+          remaining_sec: month.promo.remainingSec,
+        },
+      });
+    } catch (e) {
+      console.error('[GET /api/user/tariff-prices]', e);
+      return res.status(500).json({ error: 'Xatolik' });
+    }
+  });
 
   app.all('/api/cron/click-auto-pay', async (req: any, res: any) => {
     if (req.method !== 'GET' && req.method !== 'POST') {

@@ -32,6 +32,7 @@ import {
   handleClickCardTokenVerify,
 } from '../services/clickCardToken.service.js';
 import { fiscalizePayment } from '../services/clickFiscal.service.js';
+import { resolveRussianTariffQuote } from '../services/promoPricing.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const ALLOWED_MIMES = [
@@ -138,6 +139,9 @@ export function createPaymentRoutes(
         tariff_type: null,
         currency: 'UZS',
         amount,
+        base_amount: amount,
+        discount_amount: 0,
+        discount_meta: null,
         payment_proof_url: null,
         payment_time: new Date().toISOString(),
         status: 'pending' as const,
@@ -248,19 +252,30 @@ export function createPaymentRoutes(
       }
 
       let amount = 0;
+      let baseAmount = 0;
+      let discountAmount = 0;
+      let discountMeta: Record<string, unknown> | null = null;
       if (productCode === 'russian') {
-        const { data: priceRow } = await supabase
-          .from('tariff_prices')
-          .select('price')
-          .eq('currency', currency)
-          .eq(
-            'tariff_type',
-            tariff_type === 'year' ? 'year' : 'month'
-          )
-          .maybeSingle();
-        amount = priceRow != null ? Number((priceRow as { price: number }).price) : 0;
+        const quote = await resolveRussianTariffQuote(supabase, {
+          userId,
+          currency,
+          tariffType: tariff_type === 'year' ? 'year' : 'month',
+          startPromoIfMissing: false,
+        });
+        amount = quote.finalAmount;
+        baseAmount = quote.baseAmount;
+        discountAmount = quote.discountAmount;
+        discountMeta = quote.discountAmount > 0
+          ? {
+              campaign: 'russian-first-tariffs-30m',
+              expires_at: quote.promo.expiresAt,
+              currency: quote.currency,
+              tariff_type: quote.tariffType,
+            }
+          : null;
       } else if (isCourseProductCode(productCode)) {
         amount = getCourseProductPrice(productCode, currency);
+        baseAmount = amount;
       }
 
       try {
@@ -294,6 +309,9 @@ export function createPaymentRoutes(
           tariff_type: productCode === 'russian' ? tariff_type : null,
           currency,
           amount,
+          base_amount: baseAmount || amount,
+          discount_amount: discountAmount,
+          discount_meta: discountMeta,
           payment_proof_url: paymentProofUrl,
           payment_time: new Date().toISOString(),
           status: 'pending' as const,

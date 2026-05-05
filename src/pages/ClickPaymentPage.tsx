@@ -4,7 +4,7 @@ import { ArrowLeft, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { requestClickCardToken, verifyClickCardToken } from '../api/click';
-import { getTariffPricesByCurrency } from '../api/publicPricing';
+import { getTariffPricesByCurrency, getUserTariffPricesByCurrency } from '../api/publicPricing';
 import {
   getCourseProductPrice,
   getPaymentProductLabel,
@@ -81,6 +81,7 @@ export default function ClickPaymentPage() {
   const [smsCode, setSmsCode] = useState('');
   const [autoStep, setAutoStep] = useState<'idle' | 'sms_sent' | 'done'>('idle');
   const [legalAccepted, setLegalAccepted] = useState(false);
+  const [promoActive, setPromoActive] = useState(false);
 
   const hasValidState = isRussianCourse ? Boolean(tariffType) : Boolean(state?.productCode);
   const hasPendingPayment = useMemo(
@@ -93,12 +94,20 @@ export default function ClickPaymentPage() {
     if (!hasValidState) return;
     setLoadingPrice(true);
     if (isRussianCourse && tariffType) {
-      getTariffPricesByCurrency('UZS')
+      const loader = token
+        ? getUserTariffPricesByCurrency(token, 'UZS')
+        : getTariffPricesByCurrency('UZS');
+      loader
         .then((prices) => {
           const next = tariffType === 'year' ? prices.year : prices.month;
           setAmount(Number(next));
+          const promo = (prices as { promo?: { is_active?: boolean } }).promo;
+          setPromoActive(Boolean(promo?.is_active));
         })
-        .catch(() => setAmount(null))
+        .catch(() => {
+          setAmount(null);
+          setPromoActive(false);
+        })
         .finally(() => setLoadingPrice(false));
       return;
     }
@@ -107,8 +116,9 @@ export default function ClickPaymentPage() {
     } else {
       setAmount(null);
     }
+    setPromoActive(false);
     setLoadingPrice(false);
-  }, [hasValidState, isRussianCourse, productCode, tariffType]);
+  }, [hasValidState, isRussianCourse, productCode, tariffType, token]);
 
   useEffect(() => {
     if (!hasValidState && !paymentsLoading) {
@@ -245,6 +255,11 @@ export default function ClickPaymentPage() {
         ) : null}
 
         <section className={`${cardShell} p-6 sm:p-8`}>
+          {promoActive ? (
+            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-800">
+              Aktsiya narxi faol. Click to‘lovini hozir yakunlang.
+            </div>
+          ) : null}
           {isRussianCourse ? (
             <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 pb-5">
               <h2 className="text-lg font-semibold tracking-tight text-slate-900">{russianTariffDisplay}</h2>

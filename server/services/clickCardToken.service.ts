@@ -33,6 +33,7 @@ import {
 } from '../../shared/paymentProducts.js';
 import { invalidateAccessCache } from './subscription.service.js';
 import { fiscalizePayment } from './clickFiscal.service.js';
+import { resolveRussianTariffQuote } from './promoPricing.service.js';
 
 const MAX_CHARGE_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 1600;
@@ -196,6 +197,9 @@ async function insertRussianPaymentPending(
     userId: number;
     tariffType: SubscriptionTariffType;
     amount: number;
+    baseAmount?: number;
+    discountAmount?: number;
+    discountMeta?: Record<string, unknown> | null;
     paymentChannel: 'click_auto_token' | 'click_auto_cron';
   }
 ): Promise<number> {
@@ -204,6 +208,9 @@ async function insertRussianPaymentPending(
     tariff_type: params.tariffType,
     currency: 'UZS',
     amount: params.amount,
+    base_amount: params.baseAmount ?? params.amount,
+    discount_amount: params.discountAmount ?? 0,
+    discount_meta: params.discountMeta ?? null,
     payment_time: new Date().toISOString(),
     status: 'pending',
     payment_channel: params.paymentChannel,
@@ -400,7 +407,13 @@ export async function handleClickCardTokenVerify(
 
   const cardTokenId = Number((tokenRow as { id: number }).id);
 
-  const amount = await fetchUzAmountForTariff(supabase, tariffType);
+  const quote = await resolveRussianTariffQuote(supabase, {
+    userId,
+    currency: 'UZS',
+    tariffType,
+    startPromoIfMissing: false,
+  });
+  const amount = quote.finalAmount;
   if (!amount || amount <= 0) {
     await supabase.from('card_tokens').update({ is_active: false }).eq('id', cardTokenId);
     return { status: 400, json: { error: "Tarif narxi topilmadi" } };
@@ -412,6 +425,16 @@ export async function handleClickCardTokenVerify(
       userId,
       tariffType,
       amount,
+      baseAmount: quote.baseAmount,
+      discountAmount: quote.discountAmount,
+      discountMeta: quote.discountAmount > 0
+        ? {
+            campaign: 'russian-first-tariffs-30m',
+            expires_at: quote.promo.expiresAt,
+            currency: 'UZS',
+            tariff_type: quote.tariffType,
+          }
+        : null,
       paymentChannel: 'click_auto_token',
     });
   } catch (e) {
