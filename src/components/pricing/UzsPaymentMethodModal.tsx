@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { CreditCard, Landmark, Smartphone, Wallet, X } from 'lucide-react';
+import { ChevronRight, CreditCard, Shield, Smartphone, X } from 'lucide-react';
 import type { PaymentProductCode, SubscriptionTariffType } from '../../../shared/paymentProducts';
 import { ClickCoursePayButton } from '../click/ClickCoursePayButton';
 
@@ -30,37 +30,40 @@ function MethodButton(props: {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-2xl border p-4 text-left transition ${
+      className={`w-full rounded-3xl border p-4 text-left transition ${
         disabled
-          ? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
-          : 'cursor-pointer border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_12px_30px_rgba(37,99,235,0.12)]'
+          ? 'cursor-not-allowed border-slate-100 bg-slate-50/80 text-slate-400'
+          : 'cursor-pointer border-slate-100 bg-white hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_12px_28px_rgba(37,99,235,0.12)]'
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div
-            className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-              disabled ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 text-blue-600'
+            className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl ${
+              disabled ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-blue-600'
             }`}
           >
             {icon}
           </div>
           <div className="min-w-0">
-            <p className={`text-sm font-semibold ${disabled ? 'text-slate-500' : 'text-slate-900'}`}>{title}</p>
-            <p className={`mt-1 text-xs leading-relaxed ${disabled ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p className={`text-lg font-semibold ${disabled ? 'text-slate-500' : 'text-slate-900'}`}>{title}</p>
+            <p className={`mt-1 text-sm leading-relaxed ${disabled ? 'text-slate-400' : 'text-slate-500'}`}>
               {description}
             </p>
           </div>
         </div>
-        {badge ? (
-          <span
-            className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-              disabled ? 'bg-slate-200 text-slate-500' : 'bg-emerald-100 text-emerald-700'
-            }`}
-          >
-            {badge}
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {badge ? (
+            <span
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                disabled ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+              }`}
+            >
+              {badge}
+            </span>
+          ) : null}
+          {!disabled ? <ChevronRight className="h-5 w-5 text-slate-400" /> : null}
+        </div>
       </div>
     </button>
   );
@@ -73,15 +76,17 @@ export default function UzsPaymentMethodModal({
   clickButtonConfig,
 }: UzsPaymentMethodModalProps) {
   const [directPayError, setDirectPayError] = useState('');
+  const clickLogoSrc = '/payment-logos/click-logo-new.png';
+  const rahmatLogoSrc = '/payment-logos/rahmat-logo.png';
 
   const overlay = (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/55 p-4 py-8 sm:py-10"
+      className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/40 p-3 py-6 sm:py-10"
       role="presentation"
       onClick={onClose}
     >
       <div
-        className="relative my-auto w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        className="relative my-auto w-full max-w-md rounded-[30px] bg-white p-6 shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="uzs-method-modal-title"
@@ -97,59 +102,67 @@ export default function UzsPaymentMethodModal({
         </button>
 
         <h2 id="uzs-method-modal-title" className="pr-8 text-xl font-bold text-slate-900">
-          UZS uchun to'lov usulini tanlang
+          To'lov usulini tanlang
         </h2>
-        <p className="mt-1 text-sm text-slate-600">4 ta usuldan birini tanlang. Xavfsiz to'lov sahifasiga yo'naltiramiz.</p>
+        <p className="mt-1 text-base text-slate-500">4 ta usuldan birini tanlang</p>
 
-        <div className="mt-5 space-y-3">
-          <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
-            <div className="mb-3 flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600">
-                <Landmark className="h-5 w-5" />
+        <div className="mt-5 space-y-3.5">
+          <div className="rounded-3xl border border-blue-200 bg-white p-4 shadow-[0_12px_32px_rgba(37,99,235,0.08)]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <img src={clickLogoSrc} alt="Click" className="h-10 w-10 rounded-lg object-contain" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-slate-900">Click orqali</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Click (tez to'lov)</p>
-                <p className="mt-1 text-xs text-slate-600">Click sahifasida bir martalik online to'lov.</p>
+              <div className="shrink-0">
+                <ClickCoursePayButton
+                  compact
+                  token={clickButtonConfig.token}
+                  productCode={clickButtonConfig.productCode}
+                  tariffType={clickButtonConfig.tariffType}
+                  onStarted={() => setDirectPayError('')}
+                  onError={(message) => setDirectPayError(message)}
+                  onSuccess={async () => {
+                    setDirectPayError('');
+                    await clickButtonConfig.refreshPayments?.();
+                    onClose();
+                  }}
+                  label="To'lash"
+                />
               </div>
             </div>
-            <ClickCoursePayButton
-              token={clickButtonConfig.token}
-              productCode={clickButtonConfig.productCode}
-              tariffType={clickButtonConfig.tariffType}
-              onStarted={() => setDirectPayError('')}
-              onError={(message) => setDirectPayError(message)}
-              onSuccess={async () => {
-                setDirectPayError('');
-                await clickButtonConfig.refreshPayments?.();
-                onClose();
-              }}
-              label="Click orqali to'lash"
-            />
             {directPayError ? <p className="mt-2 text-sm font-medium text-red-600">{directPayError}</p> : null}
           </div>
 
           <MethodButton
-            title="Click karta + SMS (avtotolov)"
-            description="Karta raqami va SMS tasdiqlash orqali to'lovni yakunlash."
+            title="Karta + SMS"
+            description=""
             icon={<Smartphone className="h-5 w-5" />}
             onClick={onClickCardSms}
-            badge="Online"
           />
 
           <MethodButton
-            title="Kartaga o'tkazma (chek yuborish)"
-            description="Kartaga pul o'tkazing va chek/screenshot yuklang."
+            title="Kartaga o'tkazma"
+            description=""
             icon={<CreditCard className="h-5 w-5" />}
             onClick={onManualTransfer}
           />
 
           <MethodButton
-            title="Rahmat — tez kunda"
-            description="Rahmat Merchant ulanishi yakunlangach ushbu usul faollashadi."
-            icon={<Wallet className="h-5 w-5" />}
+            title="Rahmat"
+            description=""
+            icon={<img src={rahmatLogoSrc} alt="Rahmat" className="h-10 w-10 rounded-md object-contain" />}
             disabled
             badge="Tez kunda"
           />
+        </div>
+
+        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-slate-500">
+          <Shield className="h-4 w-4" />
+          <span>Barcha to'lovlar himoyalangan</span>
         </div>
       </div>
     </div>

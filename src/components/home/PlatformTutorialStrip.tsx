@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { PLATFORM_TUTORIAL_VIDEOS, type PlatformTutorialVideo } from '../../data/platformTutorialVideos';
 
 const GRADIENT_RING =
@@ -30,6 +31,76 @@ export default function PlatformTutorialStrip({ className = '' }: { className?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [close]);
 
+  const modal =
+    active && typeof document !== 'undefined'
+      ? createPortal(
+          <AnimatePresence>
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="platform-tutorial-title"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+              onClick={close}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                className="relative w-full max-w-lg overflow-hidden rounded-[24px] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={close}
+                  className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100"
+                  aria-label="Yopish"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                <div className="border-b border-slate-100 px-5 pb-4 pt-5 pr-14">
+                  <h3
+                    id="platform-tutorial-title"
+                    className="text-[17px] font-bold leading-snug text-[#0F172A]"
+                  >
+                    {active.titleUz}
+                  </h3>
+                </div>
+
+                <div className="p-5 pt-4">
+                  {active.youtubeId ? (
+                    <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-950">
+                      <iframe
+                        title={active.titleUz}
+                        src={`https://www.youtube-nocookie.com/embed/${active.youtubeId}?rel=0&modestbranding=1&playsinline=1`}
+                        className="absolute inset-0 h-full w-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex min-h-[44vh] items-center justify-center">
+                      <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                        <p className="text-sm font-medium leading-relaxed text-[#475569]">
+                          Video hali joylanmagan. Tez orada bu bo‘lim uchun qo‘llanma videosi
+                          paydo bo‘ladi.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>,
+          document.body
+        )
+      : null;
+
   return (
     <>
       <section className={`mb-0 w-full min-w-0 ${className}`} aria-label="Video qo‘llanmalar">
@@ -46,72 +117,7 @@ export default function PlatformTutorialStrip({ className = '' }: { className?: 
           </div>
         </div>
       </section>
-
-      <AnimatePresence>
-        {active ? (
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="platform-tutorial-title"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
-            onClick={close}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 12, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.98 }}
-              transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-              className="relative w-full max-w-lg overflow-hidden rounded-[24px] bg-white shadow-[0_24px_64px_rgba(15,23,42,0.2)]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={close}
-                className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100"
-                aria-label="Yopish"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
-              <div className="border-b border-slate-100 px-5 pb-4 pt-5 pr-14">
-                <h3
-                  id="platform-tutorial-title"
-                  className="text-[17px] font-bold leading-snug text-[#0F172A]"
-                >
-                  {active.titleUz}
-                </h3>
-              </div>
-
-              <div className="p-5 pt-4">
-                {active.youtubeId ? (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-slate-950">
-                    <iframe
-                      title={active.titleUz}
-                      src={`https://www.youtube-nocookie.com/embed/${active.youtubeId}?rel=0&modestbranding=1&playsinline=1`}
-                      className="absolute inset-0 h-full w-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : (
-                  <div className="flex min-h-[44vh] items-center justify-center">
-                    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
-                      <p className="text-sm font-medium leading-relaxed text-[#475569]">
-                        Video hali joylanmagan. Tez orada bu bo‘lim uchun qo‘llanma videosi
-                        paydo bo‘ladi.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {modal}
     </>
   );
 }

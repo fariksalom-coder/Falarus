@@ -181,7 +181,11 @@ export default function PricingPage() {
     setLoading(true);
     const load = async () => {
       if (token) {
-        const data = await getUserTariffPricesByCurrency(token, 'UZS', { startPromo: true });
+        const current = await getUserTariffPricesByCurrency(token, 'UZS');
+        const shouldStartPromo = !current.promo?.started_at && !current.promo?.expires_at;
+        const data = shouldStartPromo
+          ? await getUserTariffPricesByCurrency(token, 'UZS', { startPromo: true })
+          : current;
         setPlans(buildPlansFromUserPricing(data));
         setPromoExpiresAt(data.promo?.expires_at ?? null);
         setPromoRemainingSec(Number(data.promo?.remaining_sec ?? 0));

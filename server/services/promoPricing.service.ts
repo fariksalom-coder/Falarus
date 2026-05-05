@@ -75,19 +75,35 @@ export async function ensureRussianPromoWindow(supabase: SupabaseClient, userId:
 
   const startedAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + RUSSIAN_PROMO_DURATION_MS).toISOString();
-  await supabase
+  const { data: updatedRow, error } = await supabase
     .from('users')
     .update({
       russian_promo_started_at: startedAt,
       russian_promo_expires_at: expiresAt,
     })
+    .select('russian_promo_started_at, russian_promo_expires_at')
     .eq('id', userId);
+  if (error) {
+    return current;
+  }
+
+  const updated = Array.isArray(updatedRow) ? updatedRow[0] : null;
+  const persistedStartedAt = updated
+    ? String((updated as Record<string, unknown>).russian_promo_started_at ?? '') || null
+    : null;
+  const persistedExpiresAt = updated
+    ? String((updated as Record<string, unknown>).russian_promo_expires_at ?? '') || null
+    : null;
+
+  if (!persistedStartedAt && !persistedExpiresAt) {
+    return current;
+  }
 
   return {
-    startedAt,
-    expiresAt,
-    isActive: true,
-    remainingSec: computeRemainingSec(expiresAt),
+    startedAt: persistedStartedAt,
+    expiresAt: persistedExpiresAt,
+    isActive: computeRemainingSec(persistedExpiresAt) > 0,
+    remainingSec: computeRemainingSec(persistedExpiresAt),
   };
 }
 

@@ -11,6 +11,7 @@ type Props = {
   productCode: ClickCoursePayProduct;
   tariffType?: SubscriptionTariffType;
   disabled?: boolean;
+  compact?: boolean;
   /** Called after pending payment row is created (before redirect). */
   onSuccess?: () => void | Promise<void>;
   /** Clears inline errors when user retries (first tick of payment flow). */
@@ -27,6 +28,7 @@ export function ClickCoursePayButton({
   productCode,
   tariffType,
   disabled,
+  compact = false,
   onSuccess,
   onStarted,
   onError,
@@ -75,7 +77,7 @@ export function ClickCoursePayButton({
   return (
     <button
       type="button"
-      className={`${styles.click_logo} w-full shrink-0 justify-center sm:w-auto`}
+      className={`${styles.click_logo} ${compact ? 'min-w-[132px] px-4' : 'w-full shrink-0 justify-center sm:w-auto'}`}
       disabled={disabled || loading || !token}
       onClick={() => void handleClick()}
     >

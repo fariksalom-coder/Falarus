@@ -537,31 +537,52 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
                         Bu haftaning barcha kunlari yakunlandi.
                       </p>
                     ) : (
-                      activeDaysInWeek.map((day) => (
-                        <DayPlanRow
-                          key={day.day}
-                          day={day}
-                          ui={dayUiState(day)}
-                          kunlikRows={kunlikRows}
-                          practicePromptCount={practicePromptCountByDay.get(day.day) ?? 0}
-                          expanded={expandedDayNum === day.day && dayUiState(day) !== 'locked'}
-                          dayAccent={weekAccent.dayAccent}
-                          rootRef={(el) => {
-                            if (el) dayRowRefs.current.set(day.day, el);
-                            else dayRowRefs.current.delete(day.day);
-                          }}
-                          onToggleExpand={() =>
-                            setExpandedDayNum((prev) => (prev === day.day ? null : day.day))
-                          }
-                          onNavigateBlock={(block) => navigateToBlock(day, block)}
-                          onMarkReview={() => persistReview(day.day)}
-                          reviewDone={Boolean(reviewVisits[day.day]) || isServerDone(day.day, 'review')}
-                          results={results}
-                          reviewVisits={reviewVisits}
-                          isServerDone={isServerDone}
-                          hasSubscription={Boolean(access?.subscription_active)}
-                        />
-                      ))
+                      activeDaysInWeek.flatMap((day) => {
+                        const hasSubscription = Boolean(access?.subscription_active);
+                        const rowNode = (
+                          <DayPlanRow
+                            key={day.day}
+                            day={day}
+                            ui={dayUiState(day)}
+                            kunlikRows={kunlikRows}
+                            practicePromptCount={practicePromptCountByDay.get(day.day) ?? 0}
+                            expanded={expandedDayNum === day.day && dayUiState(day) !== 'locked'}
+                            dayAccent={weekAccent.dayAccent}
+                            rootRef={(el) => {
+                              if (el) dayRowRefs.current.set(day.day, el);
+                              else dayRowRefs.current.delete(day.day);
+                            }}
+                            onToggleExpand={() =>
+                              setExpandedDayNum((prev) => (prev === day.day ? null : day.day))
+                            }
+                            onNavigateBlock={(block) => navigateToBlock(day, block)}
+                            onMarkReview={() => persistReview(day.day)}
+                            reviewDone={Boolean(reviewVisits[day.day]) || isServerDone(day.day, 'review')}
+                            results={results}
+                            reviewVisits={reviewVisits}
+                            isServerDone={isServerDone}
+                            hasSubscription={hasSubscription}
+                          />
+                        );
+
+                        if (!hasSubscription && day.day === FREE_DAILY_PLAN_DAY_LIMIT + 1) {
+                          return [
+                            <motion.button
+                              key="premium-between-day-2-3"
+                              type="button"
+                              onClick={() => navigate('/tariflar')}
+                              whileTap={{ scale: 0.98 }}
+                              className="flex min-h-[46px] w-full items-center justify-center rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-100 via-yellow-50 to-orange-100 px-4 py-2 text-sm font-bold text-amber-900 shadow-[0_10px_24px_rgba(245,158,11,0.18)]"
+                            >
+                              Premium sotib olish
+                            </motion.button>
+                            ,
+                            rowNode,
+                          ];
+                        }
+
+                        return [rowNode];
+                      })
                     )}
                   </div>
                 </motion.div>
