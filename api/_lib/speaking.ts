@@ -4,6 +4,7 @@ import { parseBody } from './request.js';
 import { getAccessInfo } from './subscription.js';
 import { checkTranslation, transcribeAudio } from './openai.js';
 import { buildRequestLogContext, logError } from './logger.js';
+import { enforceRateLimit } from '../../server/lib/rateLimit.js';
 
 async function requireSubscription(userId: number, res: VercelResponse): Promise<boolean> {
   const access = await getAccessInfo(supabase, userId);
@@ -88,6 +89,7 @@ async function handleGetTopics(res: VercelResponse) {
 // POST /api/speaking/check — AI-powered answer checking
 // ---------------------------------------------------------------------------
 async function handleCheck(userId: number, req: VercelRequest, res: VercelResponse) {
+  if (!(await enforceRateLimit(res, `ai:speaking-check:${userId}`, 30, 60))) return;
   const body = parseBody(req.body);
   const userAnswer = String(body.user_answer ?? '').trim();
   const mode = String(body.mode ?? 'text');
@@ -141,7 +143,8 @@ async function handleCheck(userId: number, req: VercelRequest, res: VercelRespon
 // ---------------------------------------------------------------------------
 // POST /api/speaking/transcribe — Whisper speech-to-text
 // ---------------------------------------------------------------------------
-async function handleTranscribe(req: VercelRequest, res: VercelResponse) {
+async function handleTranscribe(userId: number, req: VercelRequest, res: VercelResponse) {
+  if (!(await enforceRateLimit(res, `ai:speaking-transcribe:${userId}`, 20, 60))) return;
   const body = parseBody(req.body);
   const audioBase64 = String(body.audio ?? '');
 
@@ -202,7 +205,7 @@ export async function routeSpeakingRequest(
     }
 
     if (s0 === 'transcribe' && req.method === 'POST') {
-      return handleTranscribe(req, res);
+      return handleTranscribe(userId, req, res);
     }
 
     if (s0 === 'stats' && req.method === 'GET') {

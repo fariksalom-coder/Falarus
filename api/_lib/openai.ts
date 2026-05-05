@@ -2,11 +2,61 @@ import OpenAI from 'openai';
 
 let _client: OpenAI | undefined;
 
+const CHECK_TIMEOUT_MS = 15_000;
+const TRANSCRIBE_TIMEOUT_MS = 30_000;
+const MAX_RETRIES = 2;
+
 function getClient(): OpenAI {
   if (!_client) {
-    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    _client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      maxRetries: 0, // we do our own retry/timeout
+    });
   }
   return _client;
+}
+
+export class OpenAIRetryableError extends Error {
+  constructor(message: string, readonly cause?: unknown) {
+    super(message);
+    this.name = 'OpenAIRetryableError';
+  }
+}
+
+function isRetryable(err: unknown): boolean {
+  if (!err) return false;
+  const e = err as { status?: number; code?: string; name?: string };
+  if (e.name === 'AbortError') return true;
+  if (e.code === 'ETIMEDOUT' || e.code === 'ECONNRESET' || e.code === 'ECONNREFUSED') return true;
+  const status = e.status;
+  if (typeof status === 'number' && (status === 408 || status === 429 || status >= 500)) return true;
+  return false;
+}
+
+async function withTimeoutAndRetry<T>(
+  fn: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fn(controller.signal);
+    } catch (err) {
+      lastError = err;
+      if (attempt < MAX_RETRIES && isRetryable(err)) {
+        const backoff = Math.min(2000, 250 * Math.pow(2, attempt));
+        await new Promise((r) => setTimeout(r, backoff));
+        continue;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw new OpenAIRetryableError(`${label} failed after ${MAX_RETRIES + 1} attempts`, lastError);
 }
 
 export type MistakeDetail = {
@@ -93,16 +143,24 @@ User: ${userAnswer}
 
 Сначала мысленно проверь: есть ли в ответе ученика **все** части смысла узбекского предложения. Если нет — status не может быть correct.`;
 
-  const response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
-    temperature: 0.15,
-    max_tokens: 500,
-    response_format: { type: 'json_object' },
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-  });
+  const response = await withTimeoutAndRetry(
+    (signal) =>
+      client.chat.completions.create(
+        {
+          model: 'gpt-4o-mini',
+          temperature: 0.15,
+          max_tokens: 500,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        },
+        { signal }
+      ),
+    CHECK_TIMEOUT_MS,
+    'checkTranslation'
+  );
 
   const raw = response.choices[0]?.message?.content ?? '{}';
   const parsed = JSON.parse(raw);
@@ -132,11 +190,19 @@ export async function transcribeAudio(
 
   const file = new File([audioBuffer], filename, { type: 'audio/webm' });
 
-  const transcription = await client.audio.transcriptions.create({
-    model: 'whisper-1',
-    file,
-    language: 'ru',
-  });
+  const transcription = await withTimeoutAndRetry(
+    (signal) =>
+      client.audio.transcriptions.create(
+        {
+          model: 'whisper-1',
+          file,
+          language: 'ru',
+        },
+        { signal }
+      ),
+    TRANSCRIBE_TIMEOUT_MS,
+    'transcribeAudio'
+  );
 
   return transcription.text;
 }

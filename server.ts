@@ -49,6 +49,7 @@ import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.s
 import { DAILY_COURSE_DAY_MAX, DAILY_COURSE_DAY_MIN, isValidDailyCourseDay } from './shared/dailyCourseDay.ts';
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
 import { getAccessInfo } from './api/_lib/subscription.ts';
+import { enforceRateLimit } from './server/lib/rateLimit.ts';
 import { routePartnerRequest } from './api/_lib/partner.ts';
 import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
 import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
@@ -2105,6 +2106,7 @@ async function startServer() {
       }
 
       if (s0 === 'check' && req.method === 'POST') {
+        if (!(await enforceRateLimit(res, `ai:speaking-check:${userId}`, 30, 60))) return;
         const body = req.body ?? {};
         const userAnswer = String(body.user_answer ?? '').trim();
         const mode = String(body.mode ?? 'text');
@@ -2153,9 +2155,11 @@ async function startServer() {
       }
 
       if (s0 === 'transcribe' && req.method === 'POST') {
+        if (!(await enforceRateLimit(res, `ai:speaking-transcribe:${userId}`, 20, 60))) return;
         const audioBase64 = String(req.body.audio ?? '');
         if (!audioBase64) return res.status(400).json({ error: 'audio kerak' });
         const buffer = Buffer.from(audioBase64, 'base64');
+        if (buffer.length > 5 * 1024 * 1024) return res.status(400).json({ error: 'Audio juda katta (max 5MB)' });
         const { transcribeAudio } = await import('./api/_lib/openai.js');
         const text = await transcribeAudio(buffer, 'recording.webm');
         return res.json({ text });
