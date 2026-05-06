@@ -9,7 +9,6 @@ import {
 } from '../../config/dailyPlanProgress';
 import { useSequentialLesson } from '../../context/SequentialLessonContext';
 import { useAccess } from '../../context/AccessContext';
-import { useAuth } from '../../context/AuthContext';
 import { takeKunlikRestoreDay } from '../../utils/kunlikLastDay';
 import {
   computeDayPlanQuestProgress,
@@ -40,7 +39,6 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
   const [searchParams, setSearchParams] = useSearchParams();
   const { results, isReady } = useSequentialLesson();
   const { access, accessLoaded } = useAccess();
-  const { user } = useAuth();
   const { rows: kunlikRows, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
   const [reviewVisits, setReviewVisits] = useState<Record<number, true>>(readPlanReviewVisits);
   const [vocabProgressTick, setVocabProgressTick] = useState(0);
@@ -81,13 +79,6 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
   }, []);
 
   void vocabProgressTick;
-
-  const hasActivePlanByProfile = (() => {
-    const raw = user?.planExpiresAt;
-    if (!raw) return false;
-    const ts = Date.parse(raw);
-    return Number.isFinite(ts) && ts > Date.now();
-  })();
 
   const isServerDone = useMemo(() => buildPlanServerDoneChecker(kunlikRows), [kunlikRows]);
 
@@ -389,7 +380,7 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
         const weekAllDone = weekDone === days.length;
         const hasCurrentDay = days.some((d) => d.day === currentDay);
 
-        const hasSubscription = Boolean(access?.subscription_active) && hasActivePlanByProfile;
+        const hasSubscription = Boolean(access?.subscription_active);
         const completedDaysInWeek = days.filter((d) => dayUiState(d) === 'completed');
         const completedDaysForRibbon = completedDaysInWeek.filter(
           (d) => d.day !== ALWAYS_EXPANDED_LAYOUT_DAY_NUM,

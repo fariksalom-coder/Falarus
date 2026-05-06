@@ -9,6 +9,7 @@ import { getTariffPricesByCurrency, getUserTariffPricesByCurrency, type UserTari
 import type { Currency } from '../components/pricing/CurrencyModal';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 
 const BG = '#F8FAFC';
 const TEXT = '#0F172A';
@@ -161,7 +162,9 @@ function durationToTariffType(duration: string): 'month' | 'year' {
 export default function PricingPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { access } = useAccess();
   const { hasPendingPayment } = usePaymentStatus();
+  const hasActivePremium = Boolean(access?.subscription_active);
   const [plans, setPlans] = useState<PlanCard[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [promoExpiresAt, setPromoExpiresAt] = useState<string | null>(null);
@@ -430,8 +433,9 @@ export default function PricingPage() {
                     compareAtPrice={plan.compareAtPrice}
                     topCompareAtPrice={plan.topCompareAtPrice}
                     discountPercent={plan.discountPercent}
-                    onSelect={hasPendingPayment ? undefined : () => handleSelectPlan(plan)}
-                    purchaseDisabled={!!token && hasPendingPayment}
+                    onSelect={hasPendingPayment || hasActivePremium ? undefined : () => handleSelectPlan(plan)}
+                    purchaseDisabled={(!!token && hasPendingPayment) || hasActivePremium}
+                    purchaseDisabledLabel={hasActivePremium ? 'Premium allaqachon faol' : "To'lov tekshirilmoqda"}
                   />
                 </div>
               ))}

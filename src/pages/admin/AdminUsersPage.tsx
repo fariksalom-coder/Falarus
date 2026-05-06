@@ -91,7 +91,7 @@ export default function AdminUsersPage() {
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Registration date</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Subscription</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Status</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">Points</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Kunlik progress</th>
                   <th className="text-right py-3 px-4 font-medium text-slate-600">Referral earnings</th>
                 </tr>
               </thead>
@@ -121,7 +121,23 @@ export default function AdminUsersPage() {
                         {u.subscription_status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right">{u.total_points.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-slate-700">
+                      {u.reached_day > 0 ? (
+                        <div className="space-y-0.5">
+                          <div className="font-medium">{u.reached_day}-kun</div>
+                          {u.day_progress ? (
+                            <div className="text-xs text-slate-500">
+                              Grammatika {u.day_progress.grammar_done}/{u.day_progress.grammar_total} ·{' '}
+                              Lug'at {u.day_progress.vocabulary_done ? '✓' : '✗'} ·{' '}
+                              O'qish {u.day_progress.reading_done ? '✓' : '✗'} ·{' '}
+                              Gapirish {u.day_progress.speaking_level}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">Boshlamagan</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-right">{u.referral_earnings.toLocaleString()}</td>
                   </tr>
                 ))}

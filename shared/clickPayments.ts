@@ -31,6 +31,7 @@ export const CLICK_BASE_URL = 'https://my.click.uz/services/pay';
 export const CLICK_PAY_CARD_TYPE_DEFAULT = '';
 export const CLICK_TOKEN_PAYMENT_PREFIX = 'click-token:';
 export const CLICK_PROVIDER_LABEL = 'Click';
+export const CLICK_PENDING_EXPIRE_MS = 5 * 60 * 1000;
 
 export function isClickShopCheckoutUrl(url: string | null | undefined): boolean {
   const u = typeof url === 'string' ? url.trim() : '';
@@ -45,6 +46,23 @@ export function isResumableClickButtonPending(row: {
   if (!isClickShopCheckoutUrl(row.payment_proof_url)) return false;
   const ch = row.payment_channel;
   return ch === 'click_button' || ch == null || ch === '';
+}
+
+export function isClickLikePendingChannel(channel?: string | null): boolean {
+  return channel === 'click_button' || channel === 'click_auto_token' || channel === 'click_auto_cron';
+}
+
+export function isExpiredClickPending(row: {
+  payment_channel?: string | null;
+  created_at?: string | null;
+  payment_time?: string | null;
+}): boolean {
+  if (!isClickLikePendingChannel(row.payment_channel)) return false;
+  const rawTs = row.created_at ?? row.payment_time ?? null;
+  if (!rawTs) return false;
+  const createdAtMs = Date.parse(rawTs);
+  if (!Number.isFinite(createdAtMs)) return false;
+  return Date.now() - createdAtMs >= CLICK_PENDING_EXPIRE_MS;
 }
 
 export function buildClickTokenPaymentProofUrl(paymentId: number | string): string {

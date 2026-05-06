@@ -14,6 +14,7 @@ import {
 import { getClickConfig } from '../../shared/clickConfig.js';
 import {
   buildClickTokenPaymentProofUrl,
+  isExpiredClickPending,
 } from '../../shared/clickPayments.js';
 import {
   CARD_PAN_DIGITS_UZ,
@@ -107,7 +108,7 @@ async function userHasPendingPaymentForProduct(
 ): Promise<boolean> {
   let q = supabase
     .from('payments')
-    .select('id')
+    .select('id, payment_channel, created_at, payment_time')
     .eq('user_id', userId)
     .eq('status', 'pending')
     .eq('product_code', productCode)
@@ -117,12 +118,20 @@ async function userHasPendingPaymentForProduct(
   if (error && isPaymentsProductCodeSchemaError(error)) {
     const legacy = await supabase
       .from('payments')
-      .select('id')
+      .select('id, payment_channel, created_at, payment_time')
       .eq('user_id', userId)
       .eq('status', 'pending')
       .limit(1)
       .maybeSingle();
     pending = legacy.data;
+  }
+  if (pending && isExpiredClickPending(pending as any)) {
+    await supabase
+      .from('payments')
+      .update({ status: 'rejected' })
+      .eq('id', Number((pending as any).id))
+      .eq('status', 'pending');
+    return false;
   }
   return Boolean(pending);
 }

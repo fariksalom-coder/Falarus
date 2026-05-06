@@ -60,6 +60,7 @@ import {
   CLICK_PAY_CARD_TYPE_DEFAULT,
   inferPaymentProviderFromProofUrl,
   getClickAmountForProduct,
+  isExpiredClickPending,
   isResumableClickButtonPending,
   normalizeClickCallbackPayload,
   shouldSkipClickSignatureVerify,
@@ -373,7 +374,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'tariff_type kerak: month, year' });
       let pendingQuery = supabase
         .from('payments')
-        .select('id')
+        .select('id, payment_channel, created_at, payment_time')
         .eq('user_id', userId)
         .eq('status', 'pending')
         .eq('product_code', productCode)
@@ -389,6 +390,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .limit(1)
           .maybeSingle();
         pending = legacy.data;
+      }
+      if (pending && isExpiredClickPending(pending as any)) {
+        await supabase
+          .from('payments')
+          .update({ status: 'rejected' })
+          .eq('id', Number((pending as any).id))
+          .eq('status', 'pending');
+        pending = null;
       }
       if (pending) {
         return res.status(400).json({
@@ -498,13 +507,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let { data: pending, error: pendingErr } = await supabase
         .from('payments')
-        .select('id, payment_channel, payment_proof_url, amount')
+        .select('id, payment_channel, payment_proof_url, amount, created_at, payment_time')
         .eq('user_id', userId)
         .eq('status', 'pending')
         .eq('product_code', productCode)
         .limit(1)
         .maybeSingle();
       if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
+        pending = null;
+      }
+      if (pending && isExpiredClickPending(pending as any)) {
+        await supabase
+          .from('payments')
+          .update({ status: 'rejected' })
+          .eq('id', Number((pending as any).id))
+          .eq('status', 'pending');
         pending = null;
       }
       if (pending) {

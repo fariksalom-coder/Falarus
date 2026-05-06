@@ -351,7 +351,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error = legacyRes.error;
       }
       if (error) return res.status(500).json({ error: error.message });
-      const list = (rows ?? []).map((u: any) => ({
+      const userIds = (rows ?? []).map((u: any) => Number(u.id)).filter((id: number) => Number.isFinite(id));
+      const { data: kunlikRows } = await supabase
+        .from('user_kunlik_day_progress')
+        .select('user_id, day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, speaking_level')
+        .in('user_id', userIds);
+      const kunlikByUser = new Map<number, any[]>();
+      for (const row of kunlikRows ?? []) {
+        const uid = Number((row as any).user_id);
+        const arr = kunlikByUser.get(uid) ?? [];
+        arr.push(row);
+        kunlikByUser.set(uid, arr);
+      }
+
+      const list = (rows ?? []).map((u: any) => {
+        const dayRows = (kunlikByUser.get(Number(u.id)) ?? []).sort(
+          (a: any, b: any) => Number(a.day_number) - Number(b.day_number)
+        );
+        const lastDayRow = dayRows.length ? dayRows[dayRows.length - 1] : null;
+        const reachedDay = lastDayRow ? Number(lastDayRow.day_number) : 0;
+        const grammarDone = lastDayRow
+          ? [lastDayRow.grammar_1, lastDayRow.grammar_2, lastDayRow.grammar_3].filter(Boolean).length
+          : 0;
+        const dayProgress = lastDayRow
+          ? {
+              day_number: reachedDay,
+              grammar_done: grammarDone,
+              grammar_total: 3,
+              vocabulary_done: Boolean(lastDayRow.words_match),
+              reading_done: Boolean(lastDayRow.oqish_done),
+              speaking_level: Number(lastDayRow.speaking_level ?? 0),
+            }
+          : null;
+
+        return {
         id: u.id,
         name: [u.first_name, u.last_name].filter(Boolean).join(' ') || '—',
         email: u.email ?? null,
@@ -359,9 +392,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         registration_date: u.created_at,
         subscription_type: u.plan_name ?? '—',
         subscription_status: u.plan_expires_at && u.plan_expires_at > now ? 'active' : 'expired',
-        total_points: u.total_points ?? 0,
+        reached_day: reachedDay,
+        day_progress: dayProgress,
         referral_earnings: u.total_referral_earned ?? 0,
-      }));
+        };
+      });
       return res.status(200).json(list);
     }
 

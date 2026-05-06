@@ -4,6 +4,7 @@ import { Crown } from 'lucide-react';
 import { prefetchRoutePath } from '../routeModules';
 import KunlikPlanFullSection from '../components/kunlik/KunlikPlanFullSection';
 import PlatformTutorialStrip from '../components/home/PlatformTutorialStrip';
+import { useAccess } from '../context/AccessContext';
 
 const BG = '#F8FAFC';
 const TEXT = '#0F172A';
@@ -37,9 +38,14 @@ const QUICK_COURSES = [
 
 function HomeQuickCourseButtons({ className = '' }: { className?: string }) {
   const navigate = useNavigate();
+  const { access } = useAccess();
+  const hasActivePremium = Boolean(access?.subscription_active);
+  const buttons = hasActivePremium
+    ? QUICK_COURSES.filter((item) => item.href !== '/tariflar')
+    : QUICK_COURSES;
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
-      {QUICK_COURSES.map(({ href, label, ariaLabel, className: btnCls, icon: Icon }, i) => (
+      {buttons.map(({ href, label, ariaLabel, className: btnCls, icon: Icon }, i) => (
         <motion.button
           key={href}
           type="button"

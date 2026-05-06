@@ -24,6 +24,11 @@ const TARIFF_LABELS: Record<string, string> = {
   year: '1 YIL',
 };
 
+const PRODUCT_PENDING_LABELS: Record<string, string> = {
+  patent: 'Patent kursi',
+  vnzh: 'VNJ kursi',
+};
+
 function formatPlanTimeLeft(planExpiresAt: string | null | undefined): string {
   if (!planExpiresAt) return '—';
   const end = new Date(planExpiresAt);
@@ -36,6 +41,15 @@ function formatPlanTimeLeft(planExpiresAt: string | null | undefined): string {
 function formatPaymentDateTime(createdAt: string): string {
   const d = new Date(createdAt);
   return d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) + ' — ' + d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+}
+
+function getPendingPaymentLabel(payment: { product_code?: string; tariff_type?: string | null }): string {
+  const productCode = String(payment.product_code ?? 'russian');
+  if (productCode === 'russian') {
+    const t = String(payment.tariff_type ?? '');
+    return TARIFF_LABELS[t] ?? "Rus tili kursi";
+  }
+  return PRODUCT_PENDING_LABELS[productCode] ?? "Kurs to'lovi";
 }
 
 export default function ProfilePage() {
@@ -98,7 +112,9 @@ export default function ProfilePage() {
             {hasPendingPayment && pendingPayment ? (
               <div className="text-left space-y-1">
                 <p className="text-amber-700 font-medium">Tekshirilmoqda</p>
-                <p className="text-slate-700 text-sm">Tarif: {TARIFF_LABELS[pendingPayment.tariff_type] ?? pendingPayment.tariff_type}</p>
+                <p className="text-slate-700 text-sm">
+                  To'lov: {getPendingPaymentLabel(pendingPayment)}
+                </p>
                 <p className="text-slate-600 text-sm">To'lov vaqti: {formatPaymentDateTime(pendingPayment.created_at)}</p>
               </div>
             ) : hasActivePlan && user?.planName ? (

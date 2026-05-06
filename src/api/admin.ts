@@ -25,7 +25,15 @@ export type AdminUserRow = {
   registration_date: string;
   subscription_type: string;
   subscription_status: string;
-  total_points: number;
+  reached_day: number;
+  day_progress: {
+    day_number: number;
+    grammar_done: number;
+    grammar_total: number;
+    vocabulary_done: boolean;
+    reading_done: boolean;
+    speaking_level: number;
+  } | null;
   referral_earnings: number;
 };
 

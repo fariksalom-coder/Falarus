@@ -24,6 +24,7 @@ export type PricingCardProps = {
   onSelect?: () => void;
   /** When true, hide purchase button and show "To'lov tekshirilmoqda" (pending) */
   purchaseDisabled?: boolean;
+  purchaseDisabledLabel?: string;
 };
 
 export default function PricingCard({
@@ -41,6 +42,7 @@ export default function PricingCard({
   discountPercent,
   onSelect,
   purchaseDisabled = false,
+  purchaseDisabledLabel = "To'lov tekshirilmoqda",
 }: PricingCardProps) {
   const useNewStructure = pricePerMonth != null;
 
@@ -176,7 +178,7 @@ export default function PricingCard({
               : { backgroundColor: PRIMARY }
         }
       >
-        {purchaseDisabled ? "To'lov tekshirilmoqda" : buttonLabel}
+        {purchaseDisabled ? purchaseDisabledLabel : buttonLabel}
       </button>
     </div>
   );
