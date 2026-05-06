@@ -2297,8 +2297,13 @@ async function startServer() {
     });
   }
 
-  const { startLeaderboardCron } = await import('./server/services/leaderboardCron.service');
-  startLeaderboardCron(supabase);
+  const leaderboardCronEnabled = String(process.env.ENABLE_LEADERBOARD_CRON ?? 'false').toLowerCase() === 'true';
+  if (leaderboardCronEnabled) {
+    const { startLeaderboardCron } = await import('./server/services/leaderboardCron.service');
+    startLeaderboardCron(supabase);
+  } else {
+    console.warn('[leaderboardCron] disabled by ENABLE_LEADERBOARD_CRON flag');
+  }
 
   const port = Number(process.env.PORT) || 3000;
   app.listen(port, '0.0.0.0', () => {
@@ -2308,4 +2313,12 @@ async function startServer() {
 
 startServer().catch((err) => {
   console.error('Failed to start server:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
 });
