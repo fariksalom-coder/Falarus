@@ -101,33 +101,9 @@ export async function getReferralsByReferrer(
   }));
 }
 
-export async function updateReferralToPaid(
-  supabase: Supabase,
-  referralId: number,
-  paymentId: number
-) {
-  const { error } = await supabase
-    .from('referrals')
-    .update({ status: 'paid', payment_id: paymentId })
-    .eq('id', referralId);
-  if (error) throw error;
-}
-
-export async function updateReferralToRewarded(
-  supabase: Supabase,
-  referralId: number,
-  rewardAmount: number
-) {
-  const { error } = await supabase
-    .from('referrals')
-    .update({
-      status: 'rewarded',
-      reward_amount: rewardAmount,
-      rewarded_at: new Date().toISOString(),
-    })
-    .eq('id', referralId);
-  if (error) throw error;
-}
+// NOTE: updateReferralToPaid + updateReferralToRewarded were removed as part
+// of P0 #3 (migration 117). They are now done atomically inside the
+// process_referral_reward() Postgres function — see referralReward.service.ts.
 
 export async function updateReferralDiscountUsed(
   supabase: Supabase,
@@ -156,25 +132,9 @@ export async function getUserReferralBalance(
   };
 }
 
-export async function addReferralRewardToUser(
-  supabase: Supabase,
-  userId: number,
-  rewardAmount: number
-) {
-  const { data: user, error: fetchErr } = await supabase
-    .from('users')
-    .select('referral_balance, total_referral_earned')
-    .eq('id', userId)
-    .single();
-  if (fetchErr || !user) throw new Error('User not found');
-  const newBalance = Number(user.referral_balance ?? 0) + rewardAmount;
-  const newTotal = Number(user.total_referral_earned ?? 0) + rewardAmount;
-  const { error: updateErr } = await supabase
-    .from('users')
-    .update({ referral_balance: newBalance, total_referral_earned: newTotal })
-    .eq('id', userId);
-  if (updateErr) throw updateErr;
-}
+// NOTE: addReferralRewardToUser was removed in P0 #3. The atomic
+// referral_balance / total_referral_earned increment now lives in the
+// process_referral_reward() Postgres function (migration 117).
 
 export async function createWithdrawal(
   supabase: Supabase,
@@ -195,22 +155,7 @@ export async function createWithdrawal(
   return data!.id;
 }
 
-export async function deductReferralBalance(
-  supabase: Supabase,
-  userId: number,
-  amount: number
-) {
-  const { data: user, error: fetchErr } = await supabase
-    .from('users')
-    .select('referral_balance')
-    .eq('id', userId)
-    .single();
-  if (fetchErr || !user) throw new Error('User not found');
-  const balance = Number(user.referral_balance ?? 0);
-  if (balance < amount) throw new Error('Insufficient balance');
-  const { error: updateErr } = await supabase
-    .from('users')
-    .update({ referral_balance: balance - amount })
-    .eq('id', userId);
-  if (updateErr) throw updateErr;
-}
+// NOTE: deductReferralBalance was removed in P0 #3. Withdraw now goes
+// through deduct_referral_balance() Postgres function (migration 117) —
+// the atomic predicate "balance >= amount" lives in the WHERE clause so
+// concurrent withdrawals cannot overdraw.
