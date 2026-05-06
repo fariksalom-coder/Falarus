@@ -91,20 +91,17 @@ function buildPlansFromTariffPrices(prices: { month: number; year: number }): Pl
 
 function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[] {
   const monthFinal = Number(payload.quotes?.month?.final_amount ?? payload.month ?? 0);
-  const monthBase = Number(payload.quotes?.month?.base_amount ?? monthFinal);
   const yearFinal = Number(payload.quotes?.year?.final_amount ?? payload.year ?? 0);
-  const yearBase = Number(payload.quotes?.year?.base_amount ?? yearFinal);
   const promoActive = Boolean(payload.promo?.is_active);
-  const monthDiscountPct = promoActive ? 90 : discountPercentFromWas(monthBase, monthFinal);
-  const yearDiscountPct = promoActive ? 95 : discountPercentFromWas(yearBase, yearFinal);
+  const monthDiscountPct = discountPercentFromWas(WAS_UZS.month, monthFinal);
+  const yearDiscountPct = discountPercentFromWas(WAS_UZS.year, yearFinal);
   return [
     {
       duration: '1 OY',
       price: `${formatPrice(monthFinal)} so'm`,
       pricePerMonth: formatPrice(monthFinal),
       pricePerMonthUnit: "so'm",
-      compareAtPrice: promoActive && monthBase > monthFinal ? `${formatPrice(monthBase)} so'm` : undefined,
-      topCompareAtPrice: promoActive ? `${formatPrice(WAS_UZS.month)} so'm` : undefined,
+      compareAtPrice: `${formatPrice(WAS_UZS.month)} so'm`,
       discountPercent: monthDiscountPct,
       promoActive,
       features: BENEFITS,
@@ -116,8 +113,7 @@ function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[]
       price: `${formatPrice(yearFinal)} so'm`,
       pricePerMonth: formatPrice(yearFinal),
       pricePerMonthUnit: "so'm",
-      compareAtPrice: promoActive && yearBase > yearFinal ? `${formatPrice(yearBase)} so'm` : undefined,
-      topCompareAtPrice: promoActive ? `${formatPrice(WAS_UZS.year)} so'm` : undefined,
+      compareAtPrice: `${formatPrice(WAS_UZS.year)} so'm`,
       discountPercent: yearDiscountPct,
       promoActive,
       features: BENEFITS,

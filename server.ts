@@ -44,13 +44,13 @@ import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassing.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
-import { buildGrammarCatalogPayload } from './api/_lib/grammarCatalogHandler.ts';
+import { buildGrammarCatalogPayload } from './server/services/grammarCatalog.service.ts';
 import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.service.ts';
 import { DAILY_COURSE_DAY_MAX, DAILY_COURSE_DAY_MIN, isValidDailyCourseDay } from './shared/dailyCourseDay.ts';
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
-import { getAccessInfo } from './api/_lib/subscription.ts';
+import { getAccessInfo } from './server/services/subscription.service.ts';
 import { createIpRateLimitMiddleware, enforceRateLimit } from './server/lib/rateLimit.ts';
-import { routePartnerRequest } from './api/_lib/partner.ts';
+import { routePartnerRequest } from './server/services/partner.service.ts';
 import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
 import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
 import { runClickFiscalRetryCron } from './server/services/clickFiscal.service.ts';
@@ -2131,7 +2131,7 @@ async function startServer() {
           persistTaskId = task.id;
         }
 
-        const { checkTranslation } = await import('./api/_lib/openai.js');
+        const { checkTranslation } = await import('./server/lib/openai.js');
         const result = await checkTranslation(uzText, ruCorrect, userAnswer, attempt);
 
         if (persistTaskId !== null) {
@@ -2153,7 +2153,7 @@ async function startServer() {
         if (!audioBase64) return res.status(400).json({ error: 'audio kerak' });
         const buffer = Buffer.from(audioBase64, 'base64');
         if (buffer.length > 5 * 1024 * 1024) return res.status(400).json({ error: 'Audio juda katta (max 5MB)' });
-        const { transcribeAudio } = await import('./api/_lib/openai.js');
+        const { transcribeAudio } = await import('./server/lib/openai.js');
         const text = await transcribeAudio(buffer, 'recording.webm');
         return res.json({ text });
       }

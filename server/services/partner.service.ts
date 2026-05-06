@@ -1,12 +1,16 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase } from './supabase.js';
-import { parseBody } from './request.js';
-import { buildRequestLogContext, logError } from './logger.js';
+// Express-shaped req/res surface used by this router. Replaces the old
+// @vercel/node types so we don't pull a Vercel runtime dep.
+type RouterReq = { body?: unknown; method?: string; headers?: Record<string, unknown>; url?: string; originalUrl?: string };
+type RouterRes = { status: (code: number) => { json: (body: unknown) => unknown } };
+
+import { supabase } from '../lib/supabaseClient.js';
+import { parseBody } from '../lib/request.js';
+import { buildRequestLogContext, logError } from '../lib/logger.js';
 
 // ---------------------------------------------------------------------------
 // GET /api/partner/profile — current user's profile
 // ---------------------------------------------------------------------------
-async function handleGetProfile(userId: number, res: VercelResponse) {
+async function handleGetProfile(userId: number, res: RouterRes) {
   const { data, error } = await supabase
     .from('partner_profiles')
     .select('*')
@@ -19,7 +23,7 @@ async function handleGetProfile(userId: number, res: VercelResponse) {
 // ---------------------------------------------------------------------------
 // POST /api/partner/profile — create or update profile
 // ---------------------------------------------------------------------------
-async function handleSaveProfile(userId: number, req: VercelRequest, res: VercelResponse) {
+async function handleSaveProfile(userId: number, req: RouterReq, res: RouterRes) {
   const body = parseBody(req.body);
   const display_name = String(body.display_name ?? '').trim();
   const age = Number(body.age);
@@ -63,7 +67,7 @@ async function handleSaveProfile(userId: number, req: VercelRequest, res: Vercel
 // ---------------------------------------------------------------------------
 // GET /api/partner/people — list available people
 // ---------------------------------------------------------------------------
-async function handleGetPeople(userId: number, res: VercelResponse) {
+async function handleGetPeople(userId: number, res: RouterRes) {
   let query = supabase
     .from('partner_profiles')
     .select('user_id, display_name, age, gender, language_level, goal, about, seeking')
@@ -80,7 +84,7 @@ async function handleGetPeople(userId: number, res: VercelResponse) {
 // ---------------------------------------------------------------------------
 // POST /api/partner/request — send partner request
 // ---------------------------------------------------------------------------
-async function handleSendRequest(userId: number, req: VercelRequest, res: VercelResponse) {
+async function handleSendRequest(userId: number, req: RouterReq, res: RouterRes) {
   const body = parseBody(req.body);
   const receiverId = Number(body.receiver_id);
   if (!Number.isFinite(receiverId) || receiverId === userId)
@@ -116,7 +120,7 @@ async function handleSendRequest(userId: number, req: VercelRequest, res: Vercel
 // ---------------------------------------------------------------------------
 // GET /api/partner/requests/incoming — incoming pending requests
 // ---------------------------------------------------------------------------
-async function handleIncomingRequests(userId: number, res: VercelResponse) {
+async function handleIncomingRequests(userId: number, res: RouterRes) {
   const { data, error } = await supabase
     .from('partner_requests')
     .select('id, sender_id, status, created_at')
@@ -147,7 +151,7 @@ async function handleIncomingRequests(userId: number, res: VercelResponse) {
 // ---------------------------------------------------------------------------
 // GET /api/partner/requests/outgoing — outgoing pending requests
 // ---------------------------------------------------------------------------
-async function handleOutgoingRequests(userId: number, res: VercelResponse) {
+async function handleOutgoingRequests(userId: number, res: RouterRes) {
   const { data, error } = await supabase
     .from('partner_requests')
     .select('id, receiver_id, status, created_at')
@@ -178,7 +182,7 @@ async function handleOutgoingRequests(userId: number, res: VercelResponse) {
 // ---------------------------------------------------------------------------
 // POST /api/partner/request/:id/accept
 // ---------------------------------------------------------------------------
-async function handleAcceptRequest(userId: number, requestId: number, res: VercelResponse) {
+async function handleAcceptRequest(userId: number, requestId: number, res: RouterRes) {
   const { data: req, error: reqErr } = await supabase
     .from('partner_requests')
     .select('id, sender_id, receiver_id, status')
@@ -227,7 +231,7 @@ async function handleAcceptRequest(userId: number, requestId: number, res: Verce
 // ---------------------------------------------------------------------------
 // POST /api/partner/request/:id/reject
 // ---------------------------------------------------------------------------
-async function handleRejectRequest(userId: number, requestId: number, res: VercelResponse) {
+async function handleRejectRequest(userId: number, requestId: number, res: RouterRes) {
   const { data: req, error: reqErr } = await supabase
     .from('partner_requests')
     .select('id, receiver_id, status')
@@ -248,7 +252,7 @@ async function handleRejectRequest(userId: number, requestId: number, res: Verce
 // ---------------------------------------------------------------------------
 // POST /api/partner/request/:id/cancel
 // ---------------------------------------------------------------------------
-async function handleCancelOwnRequest(userId: number, requestId: number, res: VercelResponse) {
+async function handleCancelOwnRequest(userId: number, requestId: number, res: RouterRes) {
   const { data: req, error: reqErr } = await supabase
     .from('partner_requests')
     .select('id, sender_id, status')
@@ -269,7 +273,7 @@ async function handleCancelOwnRequest(userId: number, requestId: number, res: Ve
 // ---------------------------------------------------------------------------
 // GET /api/partner/match — current active match + partner profile
 // ---------------------------------------------------------------------------
-async function handleGetMatch(userId: number, res: VercelResponse) {
+async function handleGetMatch(userId: number, res: RouterRes) {
   const { data: match, error } = await supabase
     .from('partner_matches')
     .select('id, user1_id, user2_id, status, matched_at')
@@ -294,7 +298,7 @@ async function handleGetMatch(userId: number, res: VercelResponse) {
 // ---------------------------------------------------------------------------
 // POST /api/partner/match/end — end partnership
 // ---------------------------------------------------------------------------
-async function handleEndMatch(userId: number, req: VercelRequest, res: VercelResponse) {
+async function handleEndMatch(userId: number, req: RouterReq, res: RouterRes) {
   const matchId = Number(req.query.id);
   if (!Number.isFinite(matchId)) {
     return res.status(400).json({ error: 'id kerak' });
@@ -320,7 +324,7 @@ async function handleEndMatch(userId: number, req: VercelRequest, res: VercelRes
 // ---------------------------------------------------------------------------
 // GET /api/partner/messages?match_id=...&before=...
 // ---------------------------------------------------------------------------
-async function handleGetMessages(userId: number, req: VercelRequest, res: VercelResponse) {
+async function handleGetMessages(userId: number, req: RouterReq, res: RouterRes) {
   const matchId = Number(req.query.match_id);
   if (!Number.isFinite(matchId)) return res.status(400).json({ error: 'match_id kerak' });
 
@@ -352,7 +356,7 @@ async function handleGetMessages(userId: number, req: VercelRequest, res: Vercel
 // ---------------------------------------------------------------------------
 // POST /api/partner/messages — send message
 // ---------------------------------------------------------------------------
-async function handleSendMessage(userId: number, req: VercelRequest, res: VercelResponse) {
+async function handleSendMessage(userId: number, req: RouterReq, res: RouterRes) {
   const body = parseBody(req.body);
   const matchId = Number(body.match_id);
   const content = String(body.content ?? '').trim();
@@ -381,7 +385,7 @@ async function handleSendMessage(userId: number, req: VercelRequest, res: Vercel
 // ---------------------------------------------------------------------------
 // GET /api/partner/status — aggregated status for the main page state machine
 // ---------------------------------------------------------------------------
-async function handleGetStatus(userId: number, res: VercelResponse) {
+async function handleGetStatus(userId: number, res: RouterRes) {
   const [profileRes, matchesRes, outgoingRes, incomingRes] = await Promise.all([
     supabase.from('partner_profiles').select('user_id').eq('user_id', userId).maybeSingle(),
     supabase.from('partner_matches').select('id, user1_id, user2_id, matched_at')
@@ -435,8 +439,8 @@ async function handleGetStatus(userId: number, res: VercelResponse) {
 // Router
 // ---------------------------------------------------------------------------
 export async function routePartnerRequest(
-  req: VercelRequest,
-  res: VercelResponse,
+  req: RouterReq,
+  res: RouterRes,
   userId: number,
   segments: string[]
 ) {

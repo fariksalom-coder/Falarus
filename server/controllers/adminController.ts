@@ -15,6 +15,7 @@ import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
 import { clickPaymentRefund, isClickMerchantSuccess } from '../../shared/clickMerchantClient.js';
 import { getClickConfig } from '../../shared/clickConfig.js';
+import { adminCreateUserWithAccess } from '../services/adminCreateUser.service.js';
 
 export function createAdminController(supabase: SupabaseClient) {
   /** Default 7 days (same order of magnitude as user JWT) — override via ADMIN_JWT_EXPIRES_SECONDS. */
@@ -235,6 +236,71 @@ export function createAdminController(supabase: SupabaseClient) {
       referral_earnings: u.total_referral_earned ?? 0,
     }));
     return res.json(list);
+  }
+
+  async function createUser(req: Request, res: Response) {
+    try {
+      const adminId = (req as any).adminId as number;
+      const body = req.body ?? {};
+      const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+      const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
+      const identifier = typeof body.identifier === 'string' ? body.identifier.trim() : '';
+      const password = typeof body.password === 'string' ? body.password : '';
+      const russianTariff =
+        body.russianTariff === 'month' || body.russianTariff === 'year' ? body.russianTariff : null;
+      const grantPatent = Boolean(body.grantPatent);
+      const grantVnzh = Boolean(body.grantVnzh);
+      const courseCurrency =
+        body.courseCurrency === 'USD' || body.courseCurrency === 'RUB' || body.courseCurrency === 'UZS'
+          ? body.courseCurrency
+          : 'UZS';
+
+      const num = (v: unknown) => (v == null || v === '' ? null : Number(v));
+      const amountRussian = num(body.amountRussian);
+      const amountPatent = num(body.amountPatent);
+      const amountVnzh = num(body.amountVnzh);
+
+      if (!firstName && !lastName) {
+        return res.status(400).json({ error: 'Ism yoki familiya kiritilishi kerak' });
+      }
+      if (!identifier) {
+        return res.status(400).json({ error: 'Email yoki telefon kiritilishi kerak' });
+      }
+      if (!russianTariff && !grantPatent && !grantVnzh) {
+        return res.status(400).json({
+          error: "Kamida bitta tarif yoki kurs tanlang (Rus tili, Patent yoki VNJ)",
+        });
+      }
+
+      const out = await adminCreateUserWithAccess(supabase, {
+        firstName,
+        lastName,
+        identifier,
+        password,
+        adminId,
+        russianTariff,
+        grantPatent,
+        grantVnzh,
+        amountRussian: amountRussian != null && Number.isFinite(amountRussian) ? amountRussian : null,
+        amountPatent: amountPatent != null && Number.isFinite(amountPatent) ? amountPatent : null,
+        amountVnzh: amountVnzh != null && Number.isFinite(amountVnzh) ? amountVnzh : null,
+        courseCurrency,
+      });
+      return res.status(201).json(out);
+    } catch (e: any) {
+      const msg = e?.message || 'Server xatosi';
+      if (
+        typeof msg === 'string' &&
+        (msg.includes("allaqachon ro'yxatdan") ||
+          msg.includes('Parol kamida') ||
+          msg.includes('Email yoki telefon') ||
+          msg.includes("noto'g'ri"))
+      ) {
+        return res.status(400).json({ error: msg });
+      }
+      console.error('[admin/createUser]', e);
+      return res.status(500).json({ error: msg });
+    }
   }
 
   // --- User profile by id
@@ -1361,6 +1427,7 @@ export function createAdminController(supabase: SupabaseClient) {
     login,
     getDashboard,
     getUsers,
+    createUser,
     getUserProfile,
     getPayments,
     confirmPayment,

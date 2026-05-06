@@ -272,9 +272,12 @@ function ActiveStepCard({ step }: { step: QuestStep }) {
       type="button"
       whileTap={{ scale: 0.97 }}
       onClick={step.onPress}
-      className={`group relative w-full overflow-hidden rounded-2xl bg-gradient-to-br ${step.gradient} text-left shadow-lg`}
-      style={{ boxShadow: '0 8px 24px rgba(59,130,246,0.25)' }}
+      className={`group relative w-full overflow-hidden rounded-[24px] bg-gradient-to-br ${step.gradient} text-left shadow-lg`}
+      style={{ boxShadow: '0 16px 34px rgba(37,99,235,0.30)' }}
     >
+      <div className="pointer-events-none absolute -right-3 -top-3 h-20 w-16 rounded-2xl border border-white/14 bg-white/5 rotate-[8deg]" />
+      <div className="pointer-events-none absolute right-6 top-1 h-20 w-16 rounded-2xl border border-white/12 bg-white/[0.04] rotate-[11deg]" />
+
       <motion.div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-20"
@@ -286,21 +289,20 @@ function ActiveStepCard({ step }: { step: QuestStep }) {
         transition={{ duration: 2.4, repeat: Infinity, ease: 'linear', repeatDelay: 1.2 }}
       />
 
-      <Icon
-        className="pointer-events-none absolute -right-3 top-1/2 h-28 w-28 -translate-y-1/2 rotate-12 text-white/10"
-        strokeWidth={1}
-      />
+      <div className="pointer-events-none absolute -right-8 -bottom-10 h-36 w-36 rounded-full bg-blue-300/25 blur-2xl" />
 
-      <div className="relative z-10 px-4 pb-3.5 pt-3">
+      <div className="relative z-10 px-4 pb-3 pt-2.5">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/16 backdrop-blur-sm ring-1 ring-white/10">
             <Icon className="h-4 w-4 text-white" strokeWidth={2} />
           </div>
-          <span className="text-[16px] font-extrabold tracking-tight text-white">{step.label}</span>
+          <span className="leading-none font-extrabold tracking-tight text-white [font-size:clamp(18px,4.6vw,26px)]">
+            {step.label}
+          </span>
         </div>
 
         <motion.div
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-2.5 shadow-md"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[16px] bg-white py-2.5 shadow-[0_10px_20px_rgba(2,6,23,0.18)]"
           animate={{ scale: [1, 1.03, 1] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
         >

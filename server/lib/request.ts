@@ -1,4 +1,10 @@
-import type { VercelRequest } from '@vercel/node';
+// Express-shaped request type — minimal surface needed by the helpers
+// in this file. Replaces a former @vercel/node dep so we don't pull a
+// Vercel runtime package into a non-Vercel deployment.
+type GenericRequest = {
+  url?: string;
+  originalUrl?: string;
+};
 
 function parseLooseStringBody(raw: string): Record<string, unknown> {
   try {
@@ -48,8 +54,8 @@ export function normalizeQueryPathSegments(
     : [];
 }
 
-export function getRequestPathname(req: VercelRequest): string {
-  const url = req.url || (req as { originalUrl?: string }).originalUrl || '';
+export function getRequestPathname(req: GenericRequest): string {
+  const url = req.url || req.originalUrl || '';
   if (!url || typeof url !== 'string') return '';
   const withoutQuery = url.split('?')[0];
   if (withoutQuery.includes('://')) {

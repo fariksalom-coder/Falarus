@@ -28,6 +28,7 @@ export function createAdminRoutes(supabase: SupabaseClient): Router {
 
   router.get('/dashboard', (req, res, next) => ctrl.getDashboard(req, res).catch(next));
   router.get('/users', (req, res, next) => ctrl.getUsers(req, res).catch(next));
+  router.post('/users', (req, res, next) => ctrl.createUser(req, res).catch(next));
   router.get('/users/:id', (req, res, next) => ctrl.getUserProfile(req, res).catch(next));
   router.get('/payments', (req, res, next) => ctrl.getPayments(req, res).catch(next));
   router.post('/payments/:id/confirm', (req, res, next) => ctrl.confirmPayment(req, res).catch(next));

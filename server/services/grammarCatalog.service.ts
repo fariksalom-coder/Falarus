@@ -1,9 +1,8 @@
-import type { VercelResponse } from '@vercel/node';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from './supabase.js';
-import { getAccessInfo } from './subscription.js';
+import { supabase } from '../lib/supabaseClient.js';
+import { getAccessInfo } from './subscription.service.js';
 import { LESSONS } from '../../src/data/lessonsList.js';
-import { applyLessonsLock } from './accessControl.js';
+import { applyLessonsLock } from './accessControl.service.js';
 import { aggregateTasksByLesson, lessonTaskListFromAggregate, type QuestionRow } from '../../shared/grammarCatalog.js';
 
 export type GrammarCatalogPayload = {
@@ -57,8 +56,6 @@ export async function buildGrammarCatalogPayload(
   return { ok: true, payload: { lessons } };
 }
 
-export async function handleGrammarCatalog(userId: number, res: VercelResponse): Promise<VercelResponse> {
-  const result = await buildGrammarCatalogPayload(supabase, userId);
-  if (result.ok === false) return res.status(500).json({ error: result.error });
-  return res.status(200).json(result.payload);
-}
+// handleGrammarCatalog (Vercel-shaped wrapper) was removed alongside the
+// rest of the Vercel-only api/ directory. Express routes call
+// buildGrammarCatalogPayload directly and shape the response themselves.

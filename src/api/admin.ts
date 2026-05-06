@@ -202,6 +202,38 @@ export async function getUsers(params?: {
   return adminApi<AdminUserRow[]>(`/users${q ? `?${q}` : ''}`);
 }
 
+export type AdminCreateUserResponse = {
+  user: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+  };
+  login_identifier: string;
+  password: string;
+  grants: { russian: boolean; patent: boolean; vnzh: boolean };
+};
+
+export async function createAdminUser(body: {
+  firstName: string;
+  lastName: string;
+  identifier: string;
+  password: string;
+  russianTariff: 'month' | 'year' | null;
+  grantPatent: boolean;
+  grantVnzh: boolean;
+  courseCurrency?: 'UZS' | 'USD' | 'RUB';
+  amountRussian?: number | null;
+  amountPatent?: number | null;
+  amountVnzh?: number | null;
+}): Promise<AdminCreateUserResponse> {
+  return adminApi<AdminCreateUserResponse>('/users', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export async function getUserProfile(id: number): Promise<AdminUserProfile> {
   return adminApi<AdminUserProfile>(`/users/${id}`);
 }

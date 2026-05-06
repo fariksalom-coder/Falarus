@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getUsers, type AdminUserRow } from '../../api/admin';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, UserPlus } from 'lucide-react';
 import { adminPath } from '../../constants/adminPath';
 
 export default function AdminUsersPage() {
@@ -26,7 +26,16 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-4">Users</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h1 className="text-2xl font-semibold text-slate-800">Users</h1>
+        <Link
+          to={adminPath('/users/create')}
+          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          <UserPlus className="h-4 w-4" />
+          Yangi foydalanuvchi
+        </Link>
+      </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
         <select

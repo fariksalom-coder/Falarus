@@ -9,6 +9,7 @@ import {
 } from '../../config/dailyPlanProgress';
 import { useSequentialLesson } from '../../context/SequentialLessonContext';
 import { useAccess } from '../../context/AccessContext';
+import { useAuth } from '../../context/AuthContext';
 import { takeKunlikRestoreDay } from '../../utils/kunlikLastDay';
 import {
   computeDayPlanQuestProgress,
@@ -38,7 +39,8 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { results, isReady } = useSequentialLesson();
-  const { access } = useAccess();
+  const { access, accessLoaded } = useAccess();
+  const { user } = useAuth();
   const { rows: kunlikRows, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
   const [reviewVisits, setReviewVisits] = useState<Record<number, true>>(readPlanReviewVisits);
   const [vocabProgressTick, setVocabProgressTick] = useState(0);
@@ -79,6 +81,13 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
   }, []);
 
   void vocabProgressTick;
+
+  const hasActivePlanByProfile = (() => {
+    const raw = user?.planExpiresAt;
+    if (!raw) return false;
+    const ts = Date.parse(raw);
+    return Number.isFinite(ts) && ts > Date.now();
+  })();
 
   const isServerDone = useMemo(() => buildPlanServerDoneChecker(kunlikRows), [kunlikRows]);
 
@@ -380,6 +389,7 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
         const weekAllDone = weekDone === days.length;
         const hasCurrentDay = days.some((d) => d.day === currentDay);
 
+        const hasSubscription = Boolean(access?.subscription_active) && hasActivePlanByProfile;
         const completedDaysInWeek = days.filter((d) => dayUiState(d) === 'completed');
         const completedDaysForRibbon = completedDaysInWeek.filter(
           (d) => d.day !== ALWAYS_EXPANDED_LAYOUT_DAY_NUM,
@@ -387,6 +397,11 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
         const activeDaysInWeek = days.filter(
           (d) => d.day === ALWAYS_EXPANDED_LAYOUT_DAY_NUM || dayUiState(d) !== 'completed',
         );
+        const premiumEntryDay = FREE_DAILY_PLAN_DAY_LIMIT + 1;
+        const showPremiumBetweenDaysCta =
+          accessLoaded &&
+          !hasSubscription &&
+          activeDaysInWeek.some((d) => d.day === premiumEntryDay);
 
         const weekAccent = weekAllDone
           ? {
@@ -537,52 +552,60 @@ export default function KunlikPlanFullSection({ mode }: KunlikPlanFullSectionPro
                         Bu haftaning barcha kunlari yakunlandi.
                       </p>
                     ) : (
-                      activeDaysInWeek.flatMap((day) => {
-                        const hasSubscription = Boolean(access?.subscription_active);
-                        const rowNode = (
-                          <DayPlanRow
-                            key={day.day}
-                            day={day}
-                            ui={dayUiState(day)}
-                            kunlikRows={kunlikRows}
-                            practicePromptCount={practicePromptCountByDay.get(day.day) ?? 0}
-                            expanded={expandedDayNum === day.day && dayUiState(day) !== 'locked'}
-                            dayAccent={weekAccent.dayAccent}
-                            rootRef={(el) => {
-                              if (el) dayRowRefs.current.set(day.day, el);
-                              else dayRowRefs.current.delete(day.day);
-                            }}
-                            onToggleExpand={() =>
-                              setExpandedDayNum((prev) => (prev === day.day ? null : day.day))
-                            }
-                            onNavigateBlock={(block) => navigateToBlock(day, block)}
-                            onMarkReview={() => persistReview(day.day)}
-                            reviewDone={Boolean(reviewVisits[day.day]) || isServerDone(day.day, 'review')}
-                            results={results}
-                            reviewVisits={reviewVisits}
-                            isServerDone={isServerDone}
-                            hasSubscription={hasSubscription}
-                          />
-                        );
+                      <>
+                        {activeDaysInWeek.flatMap((day) => {
+                          const rowNode = (
+                            <DayPlanRow
+                              key={day.day}
+                              day={day}
+                              ui={dayUiState(day)}
+                              kunlikRows={kunlikRows}
+                              practicePromptCount={practicePromptCountByDay.get(day.day) ?? 0}
+                              expanded={expandedDayNum === day.day && dayUiState(day) !== 'locked'}
+                              dayAccent={weekAccent.dayAccent}
+                              rootRef={(el) => {
+                                if (el) dayRowRefs.current.set(day.day, el);
+                                else dayRowRefs.current.delete(day.day);
+                              }}
+                              onToggleExpand={() =>
+                                setExpandedDayNum((prev) => (prev === day.day ? null : day.day))
+                              }
+                              onNavigateBlock={(block) => navigateToBlock(day, block)}
+                              onMarkReview={() => persistReview(day.day)}
+                              reviewDone={Boolean(reviewVisits[day.day]) || isServerDone(day.day, 'review')}
+                              results={results}
+                              reviewVisits={reviewVisits}
+                              isServerDone={isServerDone}
+                              hasSubscription={hasSubscription}
+                            />
+                          );
 
-                        if (!hasSubscription && day.day === FREE_DAILY_PLAN_DAY_LIMIT + 1) {
-                          return [
-                            <motion.button
-                              key="premium-between-day-2-3"
-                              type="button"
-                              onClick={() => navigate('/tariflar')}
-                              whileTap={{ scale: 0.98 }}
-                              className="flex min-h-[46px] w-full items-center justify-center rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-100 via-yellow-50 to-orange-100 px-4 py-2 text-sm font-bold text-amber-900 shadow-[0_10px_24px_rgba(245,158,11,0.18)]"
-                            >
-                              Premium sotib olish
-                            </motion.button>
-                            ,
-                            rowNode,
-                          ];
-                        }
+                          if (showPremiumBetweenDaysCta && day.day === premiumEntryDay) {
+                            return [
+                              <motion.button
+                                key={`premium-between-day-${weekNum}-${premiumEntryDay}`}
+                                type="button"
+                                onClick={() => navigate('/tariflar')}
+                                whileTap={{ scale: 0.985 }}
+                                whileHover={{ y: -1 }}
+                                className="group relative flex min-h-[50px] w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 px-4 py-3 text-sm font-extrabold text-amber-950 shadow-[0_12px_26px_rgba(245,158,11,0.25)] ring-1 ring-amber-200/60"
+                              >
+                                <motion.span
+                                  aria-hidden
+                                  className="pointer-events-none absolute inset-y-0 -left-10 w-8 rotate-12 bg-white/45 blur-[1px]"
+                                  animate={{ x: [-12, 520] }}
+                                  transition={{ duration: 1.4, repeat: Infinity, repeatDelay: 0.9, ease: 'easeOut' }}
+                                />
+                                <Play className="h-4 w-4 fill-current" />
+                                Premium sotib olish
+                              </motion.button>,
+                              rowNode,
+                            ];
+                          }
 
-                        return [rowNode];
-                      })
+                          return [rowNode];
+                        })}
+                      </>
                     )}
                   </div>
                 </motion.div>

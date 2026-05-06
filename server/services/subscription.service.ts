@@ -31,7 +31,11 @@ export type AccessInfo = {
   vocabulary_free_subtopic_id?: string | null;
 };
 
-const LESSONS_FREE_LIMIT = 2;
+// Preserved at 3 to match the value that has been live in production via
+// api/_lib/subscription.ts (the file Express was importing until this
+// cleanup). server/services/subscription.service.ts had drifted to 2 but
+// was effectively dead code, so the 2 was never observed by users.
+const LESSONS_FREE_LIMIT = 3;
 const VOCABULARY_FREE_TOPIC = 1;
 const VOCABULARY_FREE_SUBTOPIC = 1;
 

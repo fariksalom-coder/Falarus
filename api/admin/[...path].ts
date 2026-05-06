@@ -22,6 +22,7 @@ import { getClickConfig } from '../../shared/clickConfig.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { invalidateAccessCache } from '../_lib/subscription.js';
+import { adminCreateUserWithAccess } from '../../server/services/adminCreateUser.service.js';
 
 const adminJwtSecretEnv = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET;
 const ADMIN_TOKEN_TTL_SECONDS = Number(process.env.ADMIN_JWT_EXPIRES_SECONDS || 60 * 60 * 24 * 7);
@@ -362,6 +363,71 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         referral_earnings: u.total_referral_earned ?? 0,
       }));
       return res.status(200).json(list);
+    }
+
+    // POST /api/admin/users — yangi foydalanuvchi + tasdiqlangan to‘lov / kirish
+    if (path[0] === 'users' && path.length === 1 && req.method === 'POST') {
+      const body = parseBody(req.body);
+      const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+      const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
+      const identifier = typeof body.identifier === 'string' ? body.identifier.trim() : '';
+      const password = typeof body.password === 'string' ? body.password : '';
+      const russianTariffRaw = body.russianTariff;
+      const russianTariff =
+        russianTariffRaw === 'month' || russianTariffRaw === 'year' ? russianTariffRaw : null;
+      const grantPatent = Boolean(body.grantPatent);
+      const grantVnzh = Boolean(body.grantVnzh);
+      const courseCurrency =
+        body.courseCurrency === 'USD' || body.courseCurrency === 'RUB' || body.courseCurrency === 'UZS'
+          ? body.courseCurrency
+          : 'UZS';
+      const num = (v: unknown) => (v == null || v === '' ? null : Number(v));
+      const amountRussian = num(body.amountRussian);
+      const amountPatent = num(body.amountPatent);
+      const amountVnzh = num(body.amountVnzh);
+
+      if (!firstName && !lastName) {
+        return res.status(400).json({ error: 'Ism yoki familiya kiritilishi kerak' });
+      }
+      if (!identifier) {
+        return res.status(400).json({ error: 'Email yoki telefon kiritilishi kerak' });
+      }
+      if (!russianTariff && !grantPatent && !grantVnzh) {
+        return res.status(400).json({
+          error: "Kamida bitta tarif yoki kurs tanlang (Rus tili, Patent yoki VNJ)",
+        });
+      }
+
+      try {
+        const out = await adminCreateUserWithAccess(supabase, {
+          firstName,
+          lastName,
+          identifier,
+          password,
+          adminId,
+          russianTariff,
+          grantPatent,
+          grantVnzh,
+          amountRussian: amountRussian != null && Number.isFinite(amountRussian) ? amountRussian : null,
+          amountPatent: amountPatent != null && Number.isFinite(amountPatent) ? amountPatent : null,
+          amountVnzh: amountVnzh != null && Number.isFinite(amountVnzh) ? amountVnzh : null,
+          courseCurrency,
+        });
+        return res.status(201).json(out);
+      } catch (e: any) {
+        const msg = e?.message || 'Server xatosi';
+        if (
+          typeof msg === 'string' &&
+          (msg.includes("allaqachon ro'yxatdan") ||
+            msg.includes('Parol kamida') ||
+            msg.includes('Email yoki telefon') ||
+            msg.includes("noto'g'ri"))
+        ) {
+          return res.status(400).json({ error: msg });
+        }
+        console.error('[api/admin/createUser]', e);
+        return res.status(500).json({ error: msg });
+      }
     }
 
     // GET /api/admin/users/:id

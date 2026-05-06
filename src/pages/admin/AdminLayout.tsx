@@ -5,6 +5,7 @@ import { adminPath } from '../../constants/adminPath';
 import {
   LayoutDashboard,
   Users,
+  UserPlus,
   CreditCard,
   Wallet,
   MessageSquare,
@@ -18,6 +19,7 @@ import { getAdminHelpChats } from '../../api/admin';
 const nav = [
   { to: adminPath('/dashboard'), label: 'Dashboard', icon: LayoutDashboard },
   { to: adminPath('/users'), label: 'Users', icon: Users },
+  { to: adminPath('/users/create'), label: 'Yangi foydalanuvchi', icon: UserPlus },
   { to: adminPath('/payments'), label: 'Payments', icon: CreditCard },
   { to: adminPath('/click-logs'), label: 'Click logs', icon: ScrollText },
   { to: adminPath('/referrals'), label: 'Referrals', icon: Wallet },
@@ -61,8 +63,8 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <aside className="w-56 bg-slate-900 text-white flex flex-col">
+    <div className="min-h-screen bg-slate-50">
+      <aside className="fixed inset-y-0 left-0 w-56 bg-slate-900 text-white flex flex-col">
         <div className="p-4 border-b border-slate-700">
           <span className="font-semibold text-slate-100">FalaRus Admin</span>
         </div>
@@ -71,6 +73,7 @@ export default function AdminLayout() {
             <NavLink
               key={to}
               to={to}
+              end={to === adminPath('/users')}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
@@ -97,7 +100,7 @@ export default function AdminLayout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto p-6">
+      <main className="min-h-screen ml-56 overflow-auto p-6">
         <Outlet />
       </main>
     </div>
