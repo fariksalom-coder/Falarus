@@ -230,6 +230,14 @@ export function createPaymentRoutes(
   });
 
   router.post('/click/card-token/verify', authenticate, async (req: any, res: Response) => {
+    const cfg = getClickConfig();
+
+    console.log('CLICK CONFIG FINAL:', {
+      serviceId: cfg.serviceId,
+      merchantUserId: cfg.apiMerchantUserId,
+      secretKey: cfg.secretKey ? 'OK' : 'MISSING'
+    });
+
     const payload = (req.body ?? {}) as Record<string, unknown>;
     const verifyOut = await handleClickCardTokenVerify(supabase, req.userId, payload);
     if (verifyOut.status !== 200) {
