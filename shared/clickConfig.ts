@@ -40,8 +40,7 @@ function getEnvValue(key: string): string {
 }
 
 export function getClickConfig(): ClickConfig {
-  const apiMerchantUserId =
-    getEnvValue('CLICK_MERCHANT_USER_ID') || getEnvValue('CLICK_MERCHANT_ID');
+  const apiMerchantUserId = getEnvValue('CLICK_MERCHANT_USER_ID');
   return {
     serviceId: getEnvValue('CLICK_SERVICE_ID'),
     merchantId: getEnvValue('CLICK_MERCHANT_ID'),

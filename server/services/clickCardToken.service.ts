@@ -364,13 +364,42 @@ export async function handleClickCardTokenVerify(
       json: { error: 'card_token, sms_code kerak' },
     };
   }
-  const verifyJson = await clickCardTokenVerify({
-    serviceId,
-    card_token,
-    sms_code: String(sms_code).trim(),
-    merchantUserId,
-    secretKey,
-  });
+  let verifyJson: ClickMerchantJson;
+  try {
+    verifyJson = await clickCardTokenVerify({
+      serviceId,
+      card_token,
+      sms_code: String(sms_code).trim(),
+      merchantUserId,
+      secretKey,
+    });
+    console.log('CLICK VERIFY OK:', verifyJson);
+  } catch (e: unknown) {
+    const details = (() => {
+      if (typeof e === 'object' && e && 'response' in e) {
+        const resp = (e as { response?: { data?: unknown } }).response;
+        if (resp?.data != null) return resp.data;
+      }
+      if (e instanceof Error) return e.message;
+      return String(e ?? 'unknown verify error');
+    })();
+    console.error('CLICK VERIFY ERROR FULL:', e);
+    console.error('CLICK VERIFY ERROR DATA:', details);
+    await logClickSafe(supabase, {
+      user_id: userId,
+      operation: 'card_token_verify_exception',
+      error_code: null,
+      error_note: String(details),
+      response_safe: { details: details as unknown } as Record<string, unknown>,
+    });
+    return {
+      status: 500,
+      json: {
+        error: 'Click request failed',
+        details,
+      },
+    };
+  }
   await logClickSafe(supabase, {
     user_id: userId,
     operation: 'card_token_verify',
@@ -549,17 +578,34 @@ export async function handleClickCardTokenPayment(
   }
 
   const merchantTransId = String(paymentId);
-  const charge = await chargeCardTokenWithRetries({
-    supabase,
-    userId,
-    serviceId,
-    merchantUserId,
-    secretKey,
-    cardTokenPlain,
-    amount,
-    merchantTransId,
-    subscriptionId: null,
-  });
+  let charge: { ok: boolean; paymentId: string | null; lastJson: ClickMerchantJson };
+  try {
+    charge = await chargeCardTokenWithRetries({
+      supabase,
+      userId,
+      serviceId,
+      merchantUserId,
+      secretKey,
+      cardTokenPlain,
+      amount,
+      merchantTransId,
+      subscriptionId: null,
+    });
+  } catch (chargeErr) {
+    console.error('[click payment charge]', chargeErr);
+    await supabase
+      .from('payments')
+      .update({ status: 'rejected' })
+      .eq('id', paymentId)
+      .eq('status', 'pending');
+    return {
+      status: 502,
+      json: {
+        error: 'CLICK_CHARGE_FAILED',
+        message: 'Click bilan to‘lovni yechish vaqtida xatolik yuz berdi. Qayta urinib ko‘ring.',
+      },
+    };
+  }
 
   if (!charge.ok) {
     await supabase.from('payments').update({ status: 'rejected' }).eq('id', paymentId);

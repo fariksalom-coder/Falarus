@@ -37,6 +37,7 @@ export async function clickMerchantAuthorizedRequest(params: {
   body?: unknown;
 }): Promise<{ httpStatus: number; json: ClickMerchantJson }> {
   const Auth = buildClickMerchantAuthHeader(params.merchantUserId, params.secretKey);
+  console.log('AUTH HEADER:', Auth);
   try {
     const res = await fetch(params.url, {
       method: params.method,
