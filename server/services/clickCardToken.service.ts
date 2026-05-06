@@ -358,34 +358,12 @@ export async function handleClickCardTokenVerify(
 
   const card_token = String(body.card_token ?? '').trim();
   const sms_code = body.sms_code;
-  const plan_type = String(body.plan_type ?? body.tariff_type ?? '').trim();
-  const productCodeRaw = String(body.product_code ?? '').trim();
-  const productCode: PaymentProductCode = isPaymentProductCode(productCodeRaw) ? productCodeRaw : 'russian';
-
   if (!card_token || sms_code == null || sms_code === '') {
     return {
       status: 400,
       json: { error: 'card_token, sms_code kerak' },
     };
   }
-  if (productCode === 'russian' && !isSubscriptionTariffType(plan_type)) {
-    return {
-      status: 400,
-      json: { error: 'Rus tili uchun plan_type kerak: month | year' },
-    };
-  }
-
-  if (await userHasPendingPaymentForProduct(supabase, userId, productCode)) {
-    return {
-      status: 400,
-      json: {
-        error: 'PENDING_PAYMENT',
-        message: "Oldingi to'lov tekshirilmoqda",
-      },
-    };
-  }
-
-  const tariffType = isSubscriptionTariffType(plan_type) ? (plan_type as SubscriptionTariffType) : null;
   const verifyJson = await clickCardTokenVerify({
     serviceId,
     card_token,
@@ -440,8 +418,87 @@ export async function handleClickCardTokenVerify(
     return { status: 500, json: { error: 'Karta tokeni saqlanmadi' } };
   }
 
-  const cardTokenId = Number((tokenRow as { id: number }).id);
+  return {
+    status: 200,
+    json: {
+      success: true,
+      card_token_id: Number((tokenRow as { id: number }).id),
+      card_verified: true,
+      message: 'Karta tasdiqlandi',
+    },
+  };
+}
 
+export async function handleClickCardTokenPayment(
+  supabase: SupabaseClient,
+  userId: number,
+  body: Record<string, unknown>
+): Promise<{ status: number; json: Record<string, unknown> }> {
+  const cfg = getClickConfig();
+  const serviceId = Number(cfg.serviceId);
+  const merchantUserId = cfg.apiMerchantUserId?.trim();
+  const secretKey = cfg.secretKey?.trim();
+
+  if (!merchantUserId || !secretKey || !cfg.serviceId || !Number.isFinite(serviceId)) {
+    return { status: 503, json: { error: 'Click Merchant API sozlanmagan (CLICK_MERCHANT_USER_ID, CLICK_SECRET_KEY, CLICK_SERVICE_ID)' } };
+  }
+
+  const card_token = String(body.card_token ?? '').trim();
+  const plan_type = String(body.plan_type ?? body.tariff_type ?? '').trim();
+  const productCodeRaw = String(body.product_code ?? '').trim();
+  const productCode: PaymentProductCode = isPaymentProductCode(productCodeRaw) ? productCodeRaw : 'russian';
+
+  if (productCode === 'russian' && !isSubscriptionTariffType(plan_type)) {
+    return {
+      status: 400,
+      json: { error: 'Rus tili uchun plan_type kerak: month | year' },
+    };
+  }
+  if (await userHasPendingPaymentForProduct(supabase, userId, productCode)) {
+    return {
+      status: 400,
+      json: {
+        error: 'PENDING_PAYMENT',
+        message: "Oldingi to'lov tekshirilmoqda",
+      },
+    };
+  }
+
+  let cardTokenPlain = card_token;
+  let cardTokenId: number | null = null;
+  if (!cardTokenPlain) {
+    const { data: activeToken } = await supabase
+      .from('card_tokens')
+      .select('id, encrypted_card_token')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!activeToken) {
+      return { status: 400, json: { error: 'card_token kerak yoki faol karta topilmadi' } };
+    }
+    cardTokenId = Number((activeToken as { id: number }).id);
+    try {
+      cardTokenPlain = decryptCardTokenPlaintext(
+        String((activeToken as { encrypted_card_token: string }).encrypted_card_token)
+      );
+    } catch {
+      return { status: 500, json: { error: 'Token ochilmadi' } };
+    }
+  } else {
+    const { data: latestToken } = await supabase
+      .from('card_tokens')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    cardTokenId = latestToken?.id ? Number(latestToken.id) : null;
+  }
+
+  const tariffType = isSubscriptionTariffType(plan_type) ? (plan_type as SubscriptionTariffType) : null;
   let amount = 0;
   let baseAmount = 0;
   let discountAmount = 0;
@@ -469,7 +526,6 @@ export async function handleClickCardTokenVerify(
     baseAmount = amount;
   }
   if (!amount || amount <= 0) {
-    await supabase.from('card_tokens').update({ is_active: false }).eq('id', cardTokenId);
     return { status: 400, json: { error: "Tarif narxi topilmadi" } };
   }
 
@@ -486,7 +542,6 @@ export async function handleClickCardTokenVerify(
       paymentChannel: 'click_auto_token',
     });
   } catch (e) {
-    await supabase.from('card_tokens').update({ is_active: false }).eq('id', cardTokenId);
     return {
       status: 500,
       json: { error: e instanceof Error ? e.message : 'To‘lov yozilmadi' },
@@ -500,7 +555,7 @@ export async function handleClickCardTokenVerify(
     serviceId,
     merchantUserId,
     secretKey,
-    cardTokenPlain: card_token,
+    cardTokenPlain,
     amount,
     merchantTransId,
     subscriptionId: null,
@@ -508,7 +563,6 @@ export async function handleClickCardTokenVerify(
 
   if (!charge.ok) {
     await supabase.from('payments').update({ status: 'rejected' }).eq('id', paymentId);
-    await supabase.from('card_tokens').update({ is_active: false }).eq('id', cardTokenId);
     await supabase.from('users').update({
       billing_notice_uz:
         'Karta rad etildi. Click kabinetiga kirib, boshqa karta bilan qayta urinib ko‘ring.',
@@ -532,7 +586,7 @@ export async function handleClickCardTokenVerify(
   await supabase.from('payments').update(approvePatch).eq('id', paymentId);
 
   try {
-    if (productCode === 'russian' && tariffType) {
+    if (productCode === 'russian' && tariffType && cardTokenId) {
       await activateRussianSubscription(supabase, {
         userId,
         tariffType,
@@ -569,7 +623,7 @@ export async function handleClickCardTokenVerify(
     }
     invalidateAccessCache(userId);
   } catch (activationErr) {
-    console.error('[click verify activation]', activationErr);
+    console.error('[click payment activation]', activationErr);
     void fiscalizePayment(supabase, paymentId);
     return {
       status: 500,
@@ -580,7 +634,6 @@ export async function handleClickCardTokenVerify(
   }
 
   void fiscalizePayment(supabase, paymentId);
-
   return {
     status: 200,
     json: {

@@ -73,6 +73,7 @@ import { getClickConfig } from '../shared/clickConfig.js';
 import { invalidateAccessCache } from './_lib/subscription.js';
 import {
   handleClickCardTokenDelete,
+  handleClickCardTokenPayment,
   handleClickCardTokenRequest,
   handleClickCardTokenVerify,
   runClickAutoRenewalCron,
@@ -671,7 +672,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.setHeader('Retry-After', String(hotRate.retryAfterSec));
       return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
     }
-    const out = await handleClickCardTokenVerify(supabase, userId, parseBody(req.body));
+    const payload = parseBody(req.body);
+    const verifyOut = await handleClickCardTokenVerify(supabase, userId, payload);
+    if (verifyOut.status !== 200) {
+      return res.status(verifyOut.status).json(verifyOut.json);
+    }
+
+    // Backward compatibility for existing clients:
+    // old frontend sends plan/product to verify and expects immediate activation.
+    const shouldAutoCharge =
+      typeof payload.product_code === 'string' ||
+      typeof payload.plan_type === 'string' ||
+      typeof payload.tariff_type === 'string';
+    if (!shouldAutoCharge) {
+      return res.status(verifyOut.status).json(verifyOut.json);
+    }
+
+    const paymentOut = await handleClickCardTokenPayment(supabase, userId, payload);
+    if (paymentOut.status !== 200) {
+      return res.status(paymentOut.status).json(paymentOut.json);
+    }
+    return res.status(200).json({
+      ...paymentOut.json,
+      card_verified: true,
+      card_token_id: verifyOut.json.card_token_id ?? null,
+    });
+  }
+
+  // POST /api/payments/click/card-token/payment
+  if (
+    path[0] === 'payments' &&
+    path[1] === 'click' &&
+    path[2] === 'card-token' &&
+    path[3] === 'payment' &&
+    req.method === 'POST'
+  ) {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    const hotRate = checkRateLimit(req, 'click-card-payment', HOT_PATH_LIMIT_MAX);
+    if (hotRate.limited) {
+      res.setHeader('Retry-After', String(hotRate.retryAfterSec));
+      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
+    }
+    const out = await handleClickCardTokenPayment(supabase, userId, parseBody(req.body));
     return res.status(out.status).json(out.json);
   }
 

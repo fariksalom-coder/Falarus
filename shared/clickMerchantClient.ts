@@ -37,17 +37,27 @@ export async function clickMerchantAuthorizedRequest(params: {
   body?: unknown;
 }): Promise<{ httpStatus: number; json: ClickMerchantJson }> {
   const Auth = buildClickMerchantAuthHeader(params.merchantUserId, params.secretKey);
-  const res = await fetch(params.url, {
-    method: params.method,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Auth,
-    },
-    body: params.method === 'POST' ? JSON.stringify(params.body ?? {}) : undefined,
-  });
-  const text = await res.text();
-  return { httpStatus: res.status, json: safeJsonParse(text) };
+  try {
+    const res = await fetch(params.url, {
+      method: params.method,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Auth,
+      },
+      body: params.method === 'POST' ? JSON.stringify(params.body ?? {}) : undefined,
+    });
+    const text = await res.text();
+    const json = safeJsonParse(text);
+    console.log('CLICK RESPONSE:', json);
+    if (!res.ok) {
+      console.error('CLICK ERROR:', json);
+    }
+    return { httpStatus: res.status, json };
+  } catch (error) {
+    console.error('CLICK ERROR:', error);
+    throw error;
+  }
 }
 
 export async function clickCardTokenRequest(params: {
@@ -67,18 +77,27 @@ export async function clickCardTokenRequest(params: {
     ...body,
     card_number: maskCardNumberInput(body.card_number),
   });
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-  const text = await res.text();
-  const json = safeJsonParse(text);
-  console.info('[click.merchant]', 'response', url, 'status', res.status, json);
-  return json;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    const json = safeJsonParse(text);
+    console.log('CLICK RESPONSE:', json);
+    if (!res.ok) {
+      console.error('CLICK ERROR:', json);
+    }
+    console.info('[click.merchant]', 'response', url, 'status', res.status, json);
+    return json;
+  } catch (error) {
+    console.error('CLICK ERROR:', error);
+    throw error;
+  }
 }
 
 export async function clickCardTokenVerify(params: {

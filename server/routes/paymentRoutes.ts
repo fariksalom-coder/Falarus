@@ -29,6 +29,7 @@ import { invalidateAccessCache } from '../services/subscription.service.js';
 import { getClickConfig } from '../../shared/clickConfig.js';
 import {
   handleClickCardTokenDelete,
+  handleClickCardTokenPayment,
   handleClickCardTokenRequest,
   handleClickCardTokenVerify,
 } from '../services/clickCardToken.service.js';
@@ -229,7 +230,35 @@ export function createPaymentRoutes(
   });
 
   router.post('/click/card-token/verify', authenticate, async (req: any, res: Response) => {
-    const out = await handleClickCardTokenVerify(supabase, req.userId, (req.body ?? {}) as Record<string, unknown>);
+    const payload = (req.body ?? {}) as Record<string, unknown>;
+    const verifyOut = await handleClickCardTokenVerify(supabase, req.userId, payload);
+    if (verifyOut.status !== 200) {
+      return res.status(verifyOut.status).json(verifyOut.json);
+    }
+
+    // Backward compatibility for existing clients:
+    // old frontend sends plan/product to verify and expects immediate activation.
+    const shouldAutoCharge =
+      typeof payload.product_code === 'string' ||
+      typeof payload.plan_type === 'string' ||
+      typeof payload.tariff_type === 'string';
+    if (!shouldAutoCharge) {
+      return res.status(verifyOut.status).json(verifyOut.json);
+    }
+
+    const paymentOut = await handleClickCardTokenPayment(supabase, req.userId, payload);
+    if (paymentOut.status !== 200) {
+      return res.status(paymentOut.status).json(paymentOut.json);
+    }
+    return res.status(200).json({
+      ...paymentOut.json,
+      card_verified: true,
+      card_token_id: verifyOut.json.card_token_id ?? null,
+    });
+  });
+
+  router.post('/click/card-token/payment', authenticate, async (req: any, res: Response) => {
+    const out = await handleClickCardTokenPayment(supabase, req.userId, (req.body ?? {}) as Record<string, unknown>);
     return res.status(out.status).json(out.json);
   });
 
