@@ -49,7 +49,7 @@ import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.s
 import { DAILY_COURSE_DAY_MAX, DAILY_COURSE_DAY_MIN, isValidDailyCourseDay } from './shared/dailyCourseDay.ts';
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
 import { getAccessInfo } from './api/_lib/subscription.ts';
-import { enforceRateLimit } from './server/lib/rateLimit.ts';
+import { createIpRateLimitMiddleware, enforceRateLimit } from './server/lib/rateLimit.ts';
 import { routePartnerRequest } from './api/_lib/partner.ts';
 import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
 import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
@@ -150,26 +150,10 @@ function mapUserProfile(user: Record<string, any>) {
   };
 }
 
-function createIpRateLimiter(windowMs: number, maxRequests: number) {
-  const hits = new Map<string, { count: number; resetAt: number }>();
-  return (req: any, res: any, next: any) => {
-    const ip = String(req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || 'unknown')
-      .split(',')[0]
-      .trim();
-    const now = Date.now();
-    const existing = hits.get(ip);
-    if (!existing || existing.resetAt <= now) {
-      hits.set(ip, { count: 1, resetAt: now + windowMs });
-      return next();
-    }
-    existing.count += 1;
-    if (existing.count > maxRequests) {
-      res.setHeader('Retry-After', String(Math.ceil((existing.resetAt - now) / 1000)));
-      return res.status(429).json({ error: "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring." });
-    }
-    return next();
-  };
-}
+// IP-based rate limiting now lives in server/lib/rateLimit.ts and is
+// backed by Redis when REDIS_URL is set, with an in-memory LRU fallback.
+// The old in-process Map limiter was unsafe behind a load balancer
+// (each replica had its own counter, and the Map grew unbounded).
 
 // Seed lessons and exercises from courseData if table is empty
 async function seedDatabase() {
@@ -216,8 +200,17 @@ async function startServer() {
       contentSecurityPolicy: false,
     })
   );
-  const globalRateLimiter = createIpRateLimiter(GLOBAL_WINDOW_MS, GLOBAL_MAX_REQUESTS);
-  const authRateLimiter = createIpRateLimiter(AUTH_WINDOW_MS, AUTH_MAX_ATTEMPTS);
+  const globalRateLimiter = createIpRateLimitMiddleware(
+    'global',
+    GLOBAL_WINDOW_MS / 1000,
+    GLOBAL_MAX_REQUESTS
+  );
+  const authRateLimiter = createIpRateLimitMiddleware(
+    'auth',
+    AUTH_WINDOW_MS / 1000,
+    AUTH_MAX_ATTEMPTS,
+    'Juda koʻp urinish. Bir necha daqiqadan keyin qayta urinib koʻring.'
+  );
   // Voice answers are sent as base64 JSON payloads; keep limit above default.
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: false }));

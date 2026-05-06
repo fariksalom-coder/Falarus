@@ -103,3 +103,42 @@ export async function enforceRateLimit(
   res.status(429).json({ error: message, retry_after: retry });
   return false;
 }
+
+/**
+ * Extract the client IP from an Express-shaped request, honouring
+ * X-Forwarded-For (Railway/Render add it) but trusting only the leftmost
+ * entry — the closest-to-client value is what we want for limiting.
+ */
+export function clientIpFromRequest(req: {
+  headers?: Record<string, unknown>;
+  ip?: string;
+  socket?: { remoteAddress?: string };
+}): string {
+  const xff = req.headers?.['x-forwarded-for'];
+  const xffStr = typeof xff === 'string' ? xff : Array.isArray(xff) ? xff[0] : '';
+  const ip =
+    (xffStr ? xffStr.split(',')[0].trim() : '') ||
+    req.ip ||
+    req.socket?.remoteAddress ||
+    'unknown';
+  return ip;
+}
+
+/**
+ * Express middleware factory: per-IP rate limit backed by Redis (with
+ * in-memory fallback). Drop-in replacement for the old in-process
+ * `createIpRateLimiter`. The bucket prefix lets us separate independent
+ * limits (e.g. 'global' vs 'auth') so they don't share counters.
+ */
+export function createIpRateLimitMiddleware(
+  bucketPrefix: string,
+  windowSec: number,
+  maxRequests: number,
+  message: string = "So'rovlar soni oshib ketdi. Keyinroq qayta urinib ko'ring."
+) {
+  return async (req: any, res: any, next: any) => {
+    const ip = clientIpFromRequest(req);
+    const ok = await enforceRateLimit(res, `${bucketPrefix}:${ip}`, maxRequests, windowSec, message);
+    if (ok) next();
+  };
+}
