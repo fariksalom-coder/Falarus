@@ -106,7 +106,7 @@ export async function hasActiveAccess(
       .limit(30);
     return (legacyRows ?? []).some((r: { payment_proof_url?: string | null }) => {
       const inferred = readFalarusProductFromProofUrl(r.payment_proof_url ?? undefined);
-      if (!inferred) return true; // legacy russian records had no embedded product marker
+      if (!inferred) return false;
       return normalizePaymentProductCode(inferred) === 'russian';
     });
   }
