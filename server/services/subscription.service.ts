@@ -119,15 +119,18 @@ export async function hasActiveAccess(
     .order('approved_at', { ascending: false })
     .limit(10);
   if (payErr && isPaymentsProductCodeSchemaError(payErr)) {
-    const { data: legacy } = await supabase
+    const { data: legacyRows } = await supabase
       .from('payments')
-      .select('id')
+      .select('payment_proof_url')
       .eq('user_id', uid)
       .eq('status', 'approved')
       .order('approved_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return Boolean(legacy);
+      .limit(30);
+    return (legacyRows ?? []).some((r: { payment_proof_url?: string | null }) => {
+      const inferred = readFalarusProductFromProofUrl(r.payment_proof_url ?? undefined);
+      if (!inferred) return true; // legacy russian records had no embedded product marker
+      return normalizePaymentProductCode(inferred) === 'russian';
+    });
   }
   return (approvedPayment ?? []).some(
     (row: { product_code?: string | null }) =>
