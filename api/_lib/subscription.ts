@@ -6,6 +6,7 @@ import {
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { readFalarusProductFromProofUrl } from '../../shared/paymentsProofUrl.js';
+import { LruTtlCache } from '../../server/lib/lruCache.js';
 
 export type SubscriptionRow = {
   id: number;
@@ -31,7 +32,8 @@ const LESSONS_FREE_LIMIT = 3;
 const VOCABULARY_FREE_TOPIC = 1;
 const VOCABULARY_FREE_SUBTOPIC = 1;
 const ACCESS_CACHE_TTL_MS = 90 * 1000;
-const accessCache = new Map<number, { access: AccessInfo; until: number }>();
+const ACCESS_CACHE_MAX = 10_000;
+const accessCache = new LruTtlCache<number, AccessInfo>(ACCESS_CACHE_MAX);
 
 export function invalidateAccessCache(userId: number): void {
   const uid = Number(userId);
@@ -39,16 +41,11 @@ export function invalidateAccessCache(userId: number): void {
 }
 
 function getCachedAccess(userId: number): AccessInfo | null {
-  const entry = accessCache.get(Number(userId));
-  if (!entry || Date.now() > entry.until) return null;
-  return entry.access;
+  return accessCache.get(Number(userId));
 }
 
 function setCachedAccess(userId: number, access: AccessInfo): void {
-  accessCache.set(Number(userId), {
-    access,
-    until: Date.now() + ACCESS_CACHE_TTL_MS,
-  });
+  accessCache.set(Number(userId), access, ACCESS_CACHE_TTL_MS);
 }
 
 export async function getActiveSubscription(

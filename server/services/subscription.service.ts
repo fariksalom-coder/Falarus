@@ -6,6 +6,7 @@ import {
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { readFalarusProductFromProofUrl } from '../../shared/paymentsProofUrl.js';
+import { LruTtlCache } from '../lib/lruCache.js';
 
 const PLAN_TYPES = ['monthly', 'yearly'] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
@@ -34,9 +35,18 @@ const LESSONS_FREE_LIMIT = 2;
 const VOCABULARY_FREE_TOPIC = 1;
 const VOCABULARY_FREE_SUBTOPIC = 1;
 
-/** In-memory cache for access info to avoid repeated DB hits on every request. TTL seconds. */
+/**
+ * In-memory cache for access info to avoid repeated DB hits on every request.
+ * Bounded LRU + per-entry TTL. The previous unbounded `new Map()` would have
+ * grown by one entry per unique active user — at 100k DAU that is a steady
+ * memory leak in a long-running Express process.
+ *
+ * Cap of 10k entries with 90s TTL covers concurrent-active users well; any
+ * cap-driven eviction just causes a fresh DB read on the next access call.
+ */
 const ACCESS_CACHE_TTL_MS = 90 * 1000;
-const accessCache = new Map<number, { access: AccessInfo; until: number }>();
+const ACCESS_CACHE_MAX = 10_000;
+const accessCache = new LruTtlCache<number, AccessInfo>(ACCESS_CACHE_MAX);
 
 export function invalidateAccessCache(userId: number): void {
   const uid = Number(userId);
@@ -44,13 +54,11 @@ export function invalidateAccessCache(userId: number): void {
 }
 
 function getCachedAccess(userId: number): AccessInfo | null {
-  const entry = accessCache.get(Number(userId));
-  if (!entry || Date.now() > entry.until) return null;
-  return entry.access;
+  return accessCache.get(Number(userId));
 }
 
 function setCachedAccess(userId: number, access: AccessInfo): void {
-  accessCache.set(Number(userId), { access, until: Date.now() + ACCESS_CACHE_TTL_MS });
+  accessCache.set(Number(userId), access, ACCESS_CACHE_TTL_MS);
 }
 
 /**
