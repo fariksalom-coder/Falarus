@@ -57,7 +57,7 @@ export function getMulticardConfig(): MulticardConfig {
   const baseUrl = trimSlash(getEnvValue('MULTICARD_BASE_URL') || 'https://dev-mesh.multicard.uz');
   const applicationId = getEnvValue('MULTICARD_APPLICATION_ID');
   const secret = getEnvValue('MULTICARD_SECRET');
-  const storeId = getEnvValue('MULTICARD_STORE_ID');
+  const storeId = getEnvValue('MULTICARD_STORE_ID').replace(/\s+/g, '');
   const publicApiBaseUrl = trimSlash(
     getEnvValue('MULTICARD_PUBLIC_API_BASE_URL') || getEnvValue('CLICK_PUBLIC_BASE_URL') || ''
   );
@@ -67,8 +67,10 @@ export function getMulticardConfig(): MulticardConfig {
     (returnUrlRaw ? trimSlash(returnUrlRaw) : '') || (appUrl ? `${appUrl}/payment/rahmat/done` : '');
   const returnErrorUrlRaw = getEnvValue('MULTICARD_RETURN_ERROR_URL');
   const returnErrorUrl = returnErrorUrlRaw ? trimSlash(returnErrorUrlRaw) : null;
-  const ofdMxik = getEnvValue('MULTICARD_OFD_MXIK') || getEnvValue('CLICK_IKPU_CODE') || '';
-  const ofdPackageCode = getEnvValue('MULTICARD_OFD_PACKAGE_CODE') || getEnvValue('CLICK_PACKAGE_CODE') || '';
+  const ofdMxik = (getEnvValue('MULTICARD_OFD_MXIK') || getEnvValue('CLICK_IKPU_CODE') || '').replace(/\s+/g, '');
+  const ofdPackageCode = String(
+    getEnvValue('MULTICARD_OFD_PACKAGE_CODE') || getEnvValue('CLICK_PACKAGE_CODE') || ''
+  ).replace(/\s+/g, '');
   const strictCallbackIp =
     String(getEnvValue('MULTICARD_CALLBACK_STRICT_IP') ?? '').trim().toLowerCase() === 'true' ||
     String(getEnvValue('MULTICARD_CALLBACK_STRICT_IP') ?? '').trim() === '1';

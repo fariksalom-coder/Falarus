@@ -14,6 +14,34 @@ export type MulticardOfdLine = {
   vat?: number;
 };
 
+/** Docs: store_id may be int or UUID string; numeric IDs must be JSON numbers for some Multicard backends. */
+export function normalizeMulticardStoreId(storeId: string): string | number {
+  const s = String(storeId ?? '').trim();
+  if (/^\d+$/.test(s)) {
+    const n = Number(s);
+    return Number.isSafeInteger(n) ? n : s;
+  }
+  return s;
+}
+
+export function normalizeMulticardOfdLines(lines: MulticardOfdLine[]): MulticardOfdLine[] {
+  return lines.map((line) => {
+    const qty = Math.max(1, Math.round(Number(line.qty)) || 1);
+    const price = Math.round(Number(line.price)) || 0;
+    const total = Math.round(Number(line.total)) || 0;
+    const vat = line.vat == null ? 0 : Math.round(Number(line.vat)) || 0;
+    return {
+      qty,
+      price,
+      total,
+      vat,
+      mxik: String(line.mxik ?? '').replace(/\s+/g, ''),
+      package_code: String(line.package_code ?? '').replace(/\s+/g, ''),
+      name: String(line.name ?? '').trim().slice(0, 255),
+    };
+  });
+}
+
 export function soumToTiyin(amountSoum: number): number {
   if (!Number.isFinite(amountSoum) || amountSoum <= 0) return 0;
   return Math.round(amountSoum * 100);
@@ -158,15 +186,16 @@ export async function multicardCreateInvoice(params: CreateInvoiceParams): Promi
   const { cfg, amountTiyin, invoiceId, lang, ofd } = params;
   const token = await getMulticardBearerToken(cfg);
   const callbackUrl = `${cfg.publicApiBaseUrl}/api/payments/rahmat/callback`;
+  const ofdNormalized = normalizeMulticardOfdLines(ofd);
   const body = {
-    store_id: cfg.storeId,
-    amount: amountTiyin,
-    invoice_id: invoiceId,
+    store_id: normalizeMulticardStoreId(cfg.storeId),
+    amount: Math.round(amountTiyin),
+    invoice_id: String(invoiceId).trim(),
     lang,
     return_url: cfg.returnUrl,
     return_error_url: cfg.returnErrorUrl ?? undefined,
     callback_url: callbackUrl,
-    ofd,
+    ofd: ofdNormalized,
   };
 
   const url = `${cfg.baseUrl}/payment/invoice`;
@@ -187,7 +216,11 @@ export async function multicardCreateInvoice(params: CreateInvoiceParams): Promi
   } | null;
   if (!res.ok || !parsed?.success || !parsed.data?.checkout_url || !parsed.data?.uuid) {
     const detail = summarizeMulticardBody(json, text, res.status);
-    const base = `Multicard invoice (${res.status}): ${detail}`;
+    let base = `Multicard invoice (${res.status}): ${detail}`;
+    if (/toArray\(\)\s+on\s+null/i.test(detail)) {
+      base +=
+        " Bu odatda noto‘g‘ri MULTICARD_STORE_ID (kassa) yoki ИКПУ/package_code juftligi (tasnif.soliq.uz) bilan bog‘liq — Rahmat/Multicard qo‘llab-quvvatlashiga yozing yoki kabinetdagi kassa bilan mosligini tekshiring.";
+    }
     const pub = cfg.publicApiBaseUrl.toLowerCase();
     if (pub.includes('localhost') || pub.includes('127.0.0.1')) {
       throw new Error(
