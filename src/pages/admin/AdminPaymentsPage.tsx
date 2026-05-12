@@ -25,6 +25,8 @@ function paymentChannelLabel(ch: string | null | undefined): string {
       return 'Click avto';
     case 'manual':
       return 'Qo‘lda';
+    case 'rahmat':
+      return 'Rahmat';
     default:
       return '—';
   }
@@ -131,7 +133,11 @@ export default function AdminPaymentsPage() {
                     <td className="py-3 px-4">{p.product_label}</td>
                     <td className="py-3 px-4">
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                        {p.payment_provider === 'click' ? 'Click' : 'Manual'}
+                        {p.payment_provider === 'click'
+                          ? 'Click'
+                          : p.payment_provider === 'rahmat'
+                            ? 'Rahmat'
+                            : 'Manual'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-xs text-slate-600">{paymentChannelLabel(p.payment_channel)}</td>
@@ -193,11 +199,13 @@ export default function AdminPaymentsPage() {
                     <td className="py-3 px-4 text-right">
                       {p.status === 'pending' && (
                         <span className="flex flex-col items-end gap-2">
-                          {p.payment_channel === 'click_button' && (
-                            <span className="text-xs text-slate-500">Click — toʻlov yakunlanganda avtomatik</span>
+                          {(p.payment_channel === 'click_button' || p.payment_channel === 'rahmat') && (
+                            <span className="text-xs text-slate-500">
+                              {p.payment_channel === 'rahmat' ? 'Rahmat' : 'Click'} — toʻlov yakunlanganda avtomatik
+                            </span>
                           )}
                           <span className="flex items-center justify-end gap-2">
-                            {p.payment_channel !== 'click_button' && (
+                            {p.payment_channel !== 'click_button' && p.payment_channel !== 'rahmat' && (
                               <button
                                 type="button"
                                 onClick={() => handleConfirm(p.id)}
@@ -213,7 +221,7 @@ export default function AdminPaymentsPage() {
                               disabled={actioning !== null}
                               className="rounded-lg bg-red-600 px-3 py-1.5 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
                               title={
-                                p.payment_channel === 'click_button'
+                                p.payment_channel === 'click_button' || p.payment_channel === 'rahmat'
                                   ? 'Foydalanuvchi toʻlamagan bo‘lsa, kutishni bekor qilish'
                                   : undefined
                               }

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronRight, CreditCard, Shield, Smartphone, X } from 'lucide-react';
 import type { PaymentProductCode, SubscriptionTariffType } from '../../../shared/paymentProducts';
 import { ClickCoursePayButton } from '../click/ClickCoursePayButton';
+import { RahmatCoursePayButton } from './RahmatCoursePayButton';
 
 type UzsPaymentMethodModalProps = {
   onClose: () => void;
@@ -76,6 +77,7 @@ export default function UzsPaymentMethodModal({
   clickButtonConfig,
 }: UzsPaymentMethodModalProps) {
   const [directPayError, setDirectPayError] = useState('');
+  const [rahmatError, setRahmatError] = useState('');
   const clickLogoSrc = '/payment-logos/click-logo-new.png';
   const rahmatLogoSrc = '/payment-logos/rahmat-logo.png';
 
@@ -151,13 +153,36 @@ export default function UzsPaymentMethodModal({
             onClick={onManualTransfer}
           />
 
-          <MethodButton
-            title="Rahmat"
-            description=""
-            icon={<img src={rahmatLogoSrc} alt="Rahmat" className="h-10 w-10 rounded-md object-contain" />}
-            disabled
-            badge="Tez kunda"
-          />
+          <div className="rounded-3xl border border-orange-100 bg-white p-4 shadow-[0_12px_32px_rgba(249,115,22,0.08)]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+                  <img src={rahmatLogoSrc} alt="Rahmat" className="h-10 w-10 rounded-md object-contain" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-slate-900">Rahmat</p>
+                  <p className="mt-0.5 text-sm text-slate-500">Payme, Click, Uzum va boshqa ilovalar</p>
+                </div>
+              </div>
+              <div className="shrink-0">
+                <RahmatCoursePayButton
+                  compact
+                  token={clickButtonConfig.token}
+                  productCode={clickButtonConfig.productCode}
+                  tariffType={clickButtonConfig.tariffType}
+                  onStarted={() => setRahmatError('')}
+                  onError={(message) => setRahmatError(message)}
+                  onSuccess={async () => {
+                    setRahmatError('');
+                    await clickButtonConfig.refreshPayments?.();
+                    onClose();
+                  }}
+                  label="To'lash"
+                />
+              </div>
+            </div>
+            {rahmatError ? <p className="mt-2 text-sm font-medium text-red-600">{rahmatError}</p> : null}
+          </div>
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-sm text-slate-500">

@@ -48,7 +48,8 @@ import { buildGrammarCatalogPayload } from './server/services/grammarCatalog.ser
 import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.service.ts';
 import { DAILY_COURSE_DAY_MAX, DAILY_COURSE_DAY_MIN, isValidDailyCourseDay } from './shared/dailyCourseDay.ts';
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
-import { getAccessInfo } from './server/services/subscription.service.ts';
+import { getAccessInfo, getActiveSubscription } from './server/services/subscription.service.ts';
+import { mergeRussianPlanForMeResponse } from './shared/russianProfilePlan.ts';
 import { createIpRateLimitMiddleware, enforceRateLimit } from './server/lib/rateLimit.ts';
 import { routePartnerRequest } from './server/services/partner.service.ts';
 import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
@@ -148,6 +149,24 @@ function mapUserProfile(user: Record<string, any>) {
     planExpiresAt: user.plan_expires_at ?? null,
     billingNoticeUz: user.billing_notice_uz ?? null,
   };
+}
+
+async function mergeProfileWithActiveSubscription(
+  userId: number,
+  profile: ReturnType<typeof mapUserProfile>
+): Promise<ReturnType<typeof mapUserProfile>> {
+  try {
+    const sub = await getActiveSubscription(supabase, userId);
+    const { planName, planExpiresAt } = mergeRussianPlanForMeResponse({
+      planName: profile.planName,
+      planExpiresAt: profile.planExpiresAt,
+      subscription: sub ? { plan_type: sub.plan_type, expires_at: sub.expires_at } : null,
+    });
+    return { ...profile, planName, planExpiresAt };
+  } catch (e) {
+    console.error('[mergeProfileWithActiveSubscription]', e);
+    return profile;
+  }
 }
 
 // IP-based rate limiting now lives in server/lib/rateLimit.ts and is
@@ -497,6 +516,12 @@ async function startServer() {
       return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
     }
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
+    const sub = await getActiveSubscription(supabase, Number(user.id));
+    const planFields = mergeRussianPlanForMeResponse({
+      planName: user.plan_name ?? null,
+      planExpiresAt: user.plan_expires_at ?? null,
+      subscription: sub ? { plan_type: sub.plan_type, expires_at: sub.expires_at } : null,
+    });
     res.json({
       token,
       user: {
@@ -507,8 +532,8 @@ async function startServer() {
         phone: user.phone ?? null,
         level: user.level,
         onboarded: user.onboarded,
-        planName: user.plan_name ?? null,
-        planExpiresAt: user.plan_expires_at ?? null,
+        planName: planFields.planName,
+        planExpiresAt: planFields.planExpiresAt,
       },
     });
   });
@@ -646,7 +671,8 @@ async function startServer() {
       }
       return res.status(404).json({ error: 'User topilmadi' });
     }
-    res.json(mapUserProfile(user));
+    const profile = mapUserProfile(user);
+    res.json(await mergeProfileWithActiveSubscription(req.userId, profile));
   });
 
   app.patch('/api/user/account', authenticate, async (req: any, res) => {
@@ -661,7 +687,8 @@ async function startServer() {
       }
       return res.status(404).json({ error: 'User topilmadi' });
     }
-    res.json(mapUserProfile(user));
+    const profile = mapUserProfile(user);
+    res.json(await mergeProfileWithActiveSubscription(req.userId, profile));
   });
 
   app.post('/api/user/onboard', authenticate, async (req: any, res) => {
@@ -2282,6 +2309,17 @@ async function startServer() {
 
   // Vite / static
   if (process.env.NODE_ENV !== 'production') {
+    // Unmatched /api/* would otherwise fall through to Vite and return an empty 404,
+    // which looks like a "missing route" bug. Prefer an explicit JSON body.
+    app.use((req, res, next) => {
+      const pathOnly = String(req.originalUrl || req.url || '').split('?')[0];
+      if (!pathOnly.startsWith('/api/')) return next();
+      return res.status(404).json({
+        error: 'API endpoint topilmadi',
+        method: req.method,
+        path: pathOnly,
+      });
+    });
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

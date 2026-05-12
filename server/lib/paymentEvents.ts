@@ -22,8 +22,8 @@ export type PaymentEventOutcome =
 
 export type RecordPaymentEventInput = {
   paymentId: number | null;
-  provider: 'click' | 'payme';
-  eventType: 'prepare' | 'complete' | 'card_register' | 'auto_pay' | 'refund';
+  provider: 'click' | 'payme' | 'multicard';
+  eventType: 'prepare' | 'complete' | 'card_register' | 'auto_pay' | 'refund' | 'callback' | 'rahmat_partner';
   outcome: PaymentEventOutcome;
   applied: boolean;
   statusBefore?: string | null;

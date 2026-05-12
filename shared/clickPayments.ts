@@ -52,6 +52,37 @@ export function isClickLikePendingChannel(channel?: string | null): boolean {
   return channel === 'click_button' || channel === 'click_auto_token' || channel === 'click_auto_cron';
 }
 
+const RAHMAT_PENDING_TTL_MS = 24 * 60 * 60 * 1000;
+
+export function isRahmatHostedCheckoutUrl(url: string | null | undefined): boolean {
+  const u = (url || '').trim().toLowerCase();
+  return (
+    u.startsWith('https://app.rhmt.uz/') ||
+    u.includes('dev-checkout.multicard.uz') ||
+    u.includes('checkout.multicard.uz')
+  );
+}
+
+export function isResumableRahmatPending(row: {
+  payment_channel?: string | null;
+  payment_proof_url?: string | null;
+}): boolean {
+  return row.payment_channel === 'rahmat' && isRahmatHostedCheckoutUrl(row.payment_proof_url);
+}
+
+export function isExpiredRahmatPending(row: {
+  payment_channel?: string | null;
+  created_at?: string | null;
+  payment_time?: string | null;
+}): boolean {
+  if (row.payment_channel !== 'rahmat') return false;
+  const rawTs = row.created_at ?? row.payment_time ?? null;
+  if (!rawTs) return false;
+  const createdAtMs = Date.parse(rawTs);
+  if (!Number.isFinite(createdAtMs)) return false;
+  return Date.now() - createdAtMs >= RAHMAT_PENDING_TTL_MS;
+}
+
 export function isExpiredClickPending(row: {
   payment_channel?: string | null;
   created_at?: string | null;
@@ -75,6 +106,7 @@ export function inferPaymentProviderFromProofUrl(
   if (!paymentProofUrl) return 'manual';
   if (paymentProofUrl.startsWith(CLICK_BASE_URL)) return 'click';
   if (paymentProofUrl.startsWith(CLICK_TOKEN_PAYMENT_PREFIX)) return 'click';
+  if (isRahmatHostedCheckoutUrl(paymentProofUrl)) return 'rahmat';
   return 'manual';
 }
 

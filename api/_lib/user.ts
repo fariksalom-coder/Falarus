@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase } from './supabase.js';
 import { parseBody } from './request.js';
-import { getAccessInfo } from './subscription.js';
+import { getAccessInfo, getActiveSubscription } from './subscription.js';
+import { mergeRussianPlanForMeResponse } from '../../shared/russianProfilePlan.js';
 import { buildRequestLogContext, logError } from './logger.js';
 import { applyUserAccountPatch } from '../../shared/userAccountPatch.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
@@ -19,6 +20,12 @@ async function handleMe(userId: number, res: VercelResponse) {
     return res.status(500).json({ error: 'Xatolik yuz berdi' });
   }
   if (!user) return res.status(404).json({ error: 'User topilmadi' });
+  const sub = await getActiveSubscription(supabase, userId);
+  const planFields = mergeRussianPlanForMeResponse({
+    planName: user.plan_name ?? null,
+    planExpiresAt: user.plan_expires_at ?? null,
+    subscription: sub ? { plan_type: sub.plan_type, expires_at: sub.expires_at } : null,
+  });
   return res.status(200).json({
     id: user.id,
     firstName: user.first_name,
@@ -29,8 +36,8 @@ async function handleMe(userId: number, res: VercelResponse) {
     onboarded: user.onboarded,
     progress: user.progress,
     totalPoints: user.total_points ?? 0,
-    planName: user.plan_name ?? null,
-    planExpiresAt: user.plan_expires_at ?? null,
+    planName: planFields.planName,
+    planExpiresAt: planFields.planExpiresAt,
     billingNoticeUz: (user as { billing_notice_uz?: string | null }).billing_notice_uz ?? null,
   });
 }

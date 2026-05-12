@@ -105,6 +105,7 @@ function AppRoutes() {
             <Route path="pricing" element={renderLazyPage('./pages/PricingPage.tsx')} />
             <Route path="payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
             <Route path="payment/click" element={renderLazyPage('./pages/ClickPaymentPage.tsx')} />
+            <Route path="payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
             <Route path="payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
             <Route path="reyting" element={<Navigate to="/statistika" replace />} />
           </Route>

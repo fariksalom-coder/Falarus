@@ -31,6 +31,7 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/pricing',
     '/payment',
     '/payment/click',
+    '/payment/rahmat/done',
     '/huquqiy/ommaviy-oferta',
     '/huquqiy/maxfiylik',
     '/huquqiy/qaytarish',

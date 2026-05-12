@@ -80,6 +80,10 @@ import {
 } from '../server/services/clickCardToken.service.js';
 import { fiscalizePayment, runClickFiscalRetryCron } from '../server/services/clickFiscal.service.js';
 import { resolveRussianTariffQuote } from '../server/services/promoPricing.service.js';
+import {
+  createRahmatMulticardPayment,
+  handleRahmatMulticardCallback,
+} from '../server/services/rahmatMulticardPayment.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const PAYMENT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -635,6 +639,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const message = e instanceof Error ? e.message : 'Click to‘lovi yaratilmadi';
       console.error('[POST /api/payments/click/create]', message);
       return res.status(500).json({ error: message });
+    }
+  }
+
+  // POST /api/payments/rahmat/create
+  if (path[0] === 'payments' && path[1] === 'rahmat' && path[2] === 'create' && req.method === 'POST') {
+    const userId = requireAuth(req, res);
+    if (userId == null) return;
+    try {
+      const out = await createRahmatMulticardPayment(supabase, userId, parseBody(req.body));
+      return res.status(out.status).json(out.json);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Rahmat to‘lovi yaratilmadi';
+      console.error('[POST /api/payments/rahmat/create]', message);
+      return res.status(500).json({ error: message });
+    }
+  }
+
+  // POST /api/payments/rahmat/callback
+  if (path[0] === 'payments' && path[1] === 'rahmat' && path[2] === 'callback' && req.method === 'POST') {
+    try {
+      const out = await handleRahmatMulticardCallback(supabase, req);
+      return res.status(out.status).json(out.json);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Callback xatolik';
+      console.error('[POST /api/payments/rahmat/callback]', message);
+      return res.status(500).json({ success: false, message });
     }
   }
 

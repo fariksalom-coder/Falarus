@@ -36,6 +36,10 @@ import {
 import { fiscalizePayment } from '../services/clickFiscal.service.js';
 import { resolveRussianTariffQuote } from '../services/promoPricing.service.js';
 import { extractRequestMeta, recordPaymentEvent } from '../lib/paymentEvents.js';
+import {
+  createRahmatMulticardPayment,
+  handleRahmatMulticardCallback,
+} from '../services/rahmatMulticardPayment.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const ALLOWED_MIMES = [
@@ -423,6 +427,16 @@ export function createPaymentRoutes(
       }
     }
   );
+
+  router.post('/rahmat/create', authenticate, async (req: any, res: Response) => {
+    const out = await createRahmatMulticardPayment(supabase, req.userId, req.body ?? {});
+    return res.status(out.status).json(out.json);
+  });
+
+  router.post('/rahmat/callback', async (req: Request, res: Response) => {
+    const out = await handleRahmatMulticardCallback(supabase, req);
+    return res.status(out.status).json(out.json);
+  });
 
   return router;
 }
