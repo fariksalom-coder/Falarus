@@ -242,7 +242,14 @@ export async function createRahmatMulticardPayment(
     await supabase.from('payments').delete().eq('id', paymentId);
     const msg = e instanceof Error ? e.message : 'Multicard xatolik';
     console.error('[rahmat/create]', msg);
-    return { status: 502, json: { error: 'MULTICARD_INVOICE_FAILED', message: msg } };
+    const ofdConfig = /^MULTICARD_OFD_(EMPTY|INVALID):/i.test(msg);
+    return {
+      status: ofdConfig ? 400 : 502,
+      json: {
+        error: ofdConfig ? 'MULTICARD_OFD_INVALID' : 'MULTICARD_INVOICE_FAILED',
+        message: msg,
+      },
+    };
   }
 }
 

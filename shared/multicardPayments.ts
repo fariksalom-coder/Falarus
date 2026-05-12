@@ -42,6 +42,63 @@ export function normalizeMulticardOfdLines(lines: MulticardOfdLine[]): Multicard
   });
 }
 
+/** Multicard expects a JSON array of objects; omit optional vat when 0 (matches official examples). */
+export function serializeOfdForMulticardApi(lines: MulticardOfdLine[]): Array<Record<string, string | number>> {
+  return lines.map((line) => {
+    const row: Record<string, string | number> = {
+      qty: line.qty,
+      price: line.price,
+      total: line.total,
+      mxik: line.mxik,
+      package_code: line.package_code,
+      name: line.name,
+    };
+    if (line.vat != null && line.vat !== 0) {
+      row.vat = line.vat;
+    }
+    return row;
+  });
+}
+
+/**
+ * Fail before HTTP if OFD would be empty or invalid — avoids Multicard PHP "toArray() on null".
+ */
+export function assertMulticardInvoiceOfd(lines: MulticardOfdLine[]): void {
+  if (!Array.isArray(lines) || lines.length === 0) {
+    throw new Error('MULTICARD_OFD_EMPTY: ofd bo‘sh — MULTICARD_OFD_MXIK va MULTICARD_OFD_PACKAGE_CODE tekshiring');
+  }
+  for (let i = 0; i < lines.length; i++) {
+    const L = lines[i]!;
+    if (!L.name || !String(L.name).trim()) {
+      throw new Error(`MULTICARD_OFD_INVALID: qator ${i + 1} — name bo‘sh`);
+    }
+    if (!L.mxik || L.mxik.length !== 17 || !/^\d{17}$/.test(L.mxik)) {
+      throw new Error(
+        `MULTICARD_OFD_INVALID: qator ${i + 1} — MXIK (ИКПУ) aniq 17 raqam bo‘lishi kerak, hozir: "${L.mxik ? `${L.mxik.length} belgi` : 'bo‘sh'}"`
+      );
+    }
+    if (!L.package_code || !String(L.package_code).trim()) {
+      throw new Error(`MULTICARD_OFD_INVALID: qator ${i + 1} — package_code bo‘sh`);
+    }
+    if (!Number.isFinite(L.qty) || L.qty < 1) {
+      throw new Error(`MULTICARD_OFD_INVALID: qator ${i + 1} — qty noto‘g‘ri`);
+    }
+    if (!Number.isFinite(L.price) || L.price <= 0 || !Number.isFinite(L.total) || L.total <= 0) {
+      throw new Error(`MULTICARD_OFD_INVALID: qator ${i + 1} — price/total tiyinda musbat bo‘lishi kerak`);
+    }
+    if (L.qty * L.price !== L.total) {
+      throw new Error(
+        `MULTICARD_OFD_INVALID: qator ${i + 1} — total (${L.total}) = qty*price (${L.qty * L.price}) bo‘lishi kerak`
+      );
+    }
+  }
+}
+
+function shouldLogMulticardOfd(): boolean {
+  const v = String(process.env.MULTICARD_LOG_OFD ?? '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
 export function soumToTiyin(amountSoum: number): number {
   if (!Number.isFinite(amountSoum) || amountSoum <= 0) return 0;
   return Math.round(amountSoum * 100);
@@ -184,19 +241,33 @@ export type CreateInvoiceResult = {
 
 export async function multicardCreateInvoice(params: CreateInvoiceParams): Promise<CreateInvoiceResult> {
   const { cfg, amountTiyin, invoiceId, lang, ofd } = params;
+  const ofdNormalized = normalizeMulticardOfdLines(Array.isArray(ofd) ? ofd : []);
+  assertMulticardInvoiceOfd(ofdNormalized);
+  const sumOfdTotal = ofdNormalized.reduce((s, L) => s + L.total, 0);
+  const amountRounded = Math.round(amountTiyin);
+  if (sumOfdTotal !== amountRounded) {
+    throw new Error(
+      `MULTICARD_OFD_INVALID: OFD qatorlari jami (${sumOfdTotal} tiyin) amount (${amountRounded} tiyin) bilan mos kelmaydi`
+    );
+  }
+  const ofdPayload = serializeOfdForMulticardApi(ofdNormalized);
+
   const token = await getMulticardBearerToken(cfg);
   const callbackUrl = `${cfg.publicApiBaseUrl}/api/payments/rahmat/callback`;
-  const ofdNormalized = normalizeMulticardOfdLines(ofd);
   const body = {
     store_id: normalizeMulticardStoreId(cfg.storeId),
-    amount: Math.round(amountTiyin),
+    amount: amountRounded,
     invoice_id: String(invoiceId).trim(),
     lang,
     return_url: cfg.returnUrl,
     return_error_url: cfg.returnErrorUrl ?? undefined,
     callback_url: callbackUrl,
-    ofd: ofdNormalized,
+    ofd: ofdPayload,
   };
+
+  if (shouldLogMulticardOfd()) {
+    console.log('[multicard] invoice request body', JSON.stringify(body, null, 2));
+  }
 
   const url = `${cfg.baseUrl}/payment/invoice`;
   const res = await multicardFetch(url, {
