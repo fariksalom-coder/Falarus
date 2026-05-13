@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { createRahmatPayment } from '../../api/rahmat';
+import { openRahmatCheckout } from '../../api/rahmat';
 import type { PaymentProductCode, SubscriptionTariffType } from '../../../shared/paymentProducts';
 
 type Props = {
@@ -33,27 +33,20 @@ export function RahmatCoursePayButton({
       if (!token) onError('Avval tizimga kiring.');
       return;
     }
-    const popup = window.open('', '_blank');
+    if (productCode === 'russian' && !tariffType) {
+      onError('Tarif turi topilmadi. Sahifani yangilang.');
+      return;
+    }
     setLoading(true);
     onStarted?.();
     try {
-      if (productCode === 'russian' && !tariffType) {
-        onError('Tarif turi topilmadi. Sahifani yangilang.');
-        return;
-      }
-      const result = await createRahmatPayment(token, {
-        tariffType: productCode === 'russian' ? tariffType : null,
+      await openRahmatCheckout({
+        token,
         productCode,
+        tariffType: productCode === 'russian' ? tariffType : null,
+        afterCreate: onSuccess,
       });
-      await onSuccess?.();
-      const url = result.payment_url;
-      if (popup && !popup.closed) {
-        popup.location.href = url;
-      } else {
-        window.location.href = url;
-      }
     } catch (e) {
-      popup?.close();
       const err = e as Error & { code?: string };
       if (err.code === 'PENDING_PAYMENT') {
         await onSuccess?.();

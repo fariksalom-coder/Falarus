@@ -15,6 +15,7 @@ import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { getPatentVariantResults, type PatentVariantResult } from '../api/patentResults';
+import { openRahmatCheckout } from '../api/rahmat';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
 
 const BG = '#EEF6FF';
@@ -66,7 +67,21 @@ export default function PatentCoursePage() {
 
   const handlePurchase = (currency: Currency) => {
     if (currency === 'UZS') {
-      setUzsMethodModalOpen(true);
+      if (!token) {
+        setUzsMethodModalOpen(true);
+        return;
+      }
+      void (async () => {
+        try {
+          await openRahmatCheckout({
+            token,
+            productCode: 'patent',
+            afterCreate: refreshPayments,
+          });
+        } catch {
+          setUzsMethodModalOpen(true);
+        }
+      })();
       return;
     }
     navigate('/payment', {

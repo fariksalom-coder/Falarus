@@ -37,7 +37,25 @@ export type RahmatCreateBody = {
 
 export type RahmatCreateJson =
   | { success: true; payment_id: number; payment_url: string; amount: number; currency: 'UZS' }
-  | { error: string; message?: string; code?: string };
+  | { error: string; message?: string; user_message?: string; code?: string };
+
+/** Foydalanuvchiga ko‘rinadigan qisqa izoh (texnik `message` jurnalda qoladi). */
+function userHintForRahmatInvoiceFailure(technicalMessage: string, publicApiBaseUrl: string): string {
+  const haystack = `${technicalMessage} ${publicApiBaseUrl}`.toLowerCase();
+  if (haystack.includes('localhost') || haystack.includes('127.0.0.1')) {
+    return "Multicard callback uchun asosiy manzil HTTPS va internetdan ochiq bo‘lishi kerak. Mahalliy port ishlamaydi — ngrok yoki Cloudflare Tunnel HTTPS URL sini .env dagi MULTICARD_PUBLIC_API_BASE_URL ga qo‘ying.";
+  }
+  if (/toarray\(\)\s+on\s+null/i.test(technicalMessage)) {
+    return "Kassa (MULTICARD_STORE_ID) yoki OFD: ИКПУ / package_code Multicard bilan mos kelmayapti. MULTICARD_OFD_MXIK va MULTICARD_OFD_PACKAGE_CODE (yoki CLICK_IKPU_CODE, CLICK_PACKAGE_CODE) ni tekshiring.";
+  }
+  if (/tarmoq xatosi|fetch failed|econnrefused|enotfound|socket hang up/i.test(haystack)) {
+    return "Multicard serveriga ulanib bo‘lmadi. Internet va MULTICARD_BASE_URL (masalan, https://dev-mesh.multicard.uz) ni tekshiring.";
+  }
+  if (/auth:|token yo‘q|401|403/i.test(technicalMessage)) {
+    return "Multicard autentifikatsiyasi xato. MULTICARD_APPLICATION_ID va MULTICARD_SECRET to‘g‘riligini tekshiring.";
+  }
+  return "To‘lov sahifasini hozircha ochib bo‘lmadi. Birozdan keyin qayta urinib ko‘ring yoki qo‘llab-quvvatlashga murojaat qiling.";
+}
 
 export async function createRahmatMulticardPayment(
   supabase: SupabaseClient,
@@ -244,10 +262,11 @@ export async function createRahmatMulticardPayment(
     console.error('[rahmat/create]', msg);
     const ofdConfig = /^MULTICARD_OFD_(EMPTY|INVALID):/i.test(msg);
     return {
-      status: ofdConfig ? 400 : 502,
+      status: ofdConfig ? 400 : 503,
       json: {
         error: ofdConfig ? 'MULTICARD_OFD_INVALID' : 'MULTICARD_INVOICE_FAILED',
         message: msg,
+        ...(ofdConfig ? {} : { user_message: userHintForRahmatInvoiceFailure(msg, cfg.publicApiBaseUrl) }),
       },
     };
   }

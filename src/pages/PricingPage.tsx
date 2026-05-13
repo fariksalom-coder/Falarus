@@ -7,6 +7,7 @@ import CurrencyModal from '../components/pricing/CurrencyModal';
 import UzsPaymentMethodModal from '../components/pricing/UzsPaymentMethodModal';
 import { getTariffPricesByCurrency, getUserTariffPricesByCurrency, type UserTariffPricesPayload } from '../api/publicPricing';
 import type { Currency } from '../components/pricing/CurrencyModal';
+import { openRahmatCheckout } from '../api/rahmat';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
@@ -163,7 +164,7 @@ export default function PricingPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
   const { access } = useAccess();
-  const { hasPendingPayment } = usePaymentStatus();
+  const { hasPendingPayment, refreshPayments } = usePaymentStatus();
   const hasActivePremium = Boolean(access?.subscription_active);
   const [plans, setPlans] = useState<PlanCard[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -283,11 +284,24 @@ export default function PricingPage() {
   const handleCurrencySelect = (currency: Currency) => {
     if (!currencyModal) return;
     if (currency === 'UZS') {
-      setUzsMethodModal({
-        tariffType: currencyModal.tariffType,
-        tariffLabel: currencyModal.tariffLabel,
-      });
+      const { tariffType, tariffLabel } = currencyModal;
       setCurrencyModal(null);
+      if (!token) {
+        setUzsMethodModal({ tariffType, tariffLabel });
+        return;
+      }
+      void (async () => {
+        try {
+          await openRahmatCheckout({
+            token,
+            productCode: 'russian',
+            tariffType,
+            afterCreate: refreshPayments,
+          });
+        } catch {
+          setUzsMethodModal({ tariffType, tariffLabel });
+        }
+      })();
       return;
     }
     navigate('/payment', {

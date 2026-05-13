@@ -7,6 +7,7 @@ import UzsPaymentMethodModal from '../components/pricing/UzsPaymentMethodModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { openRahmatCheckout } from '../api/rahmat';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
 
@@ -55,7 +56,21 @@ export default function VnzhCoursePage() {
 
   const handlePurchase = (currency: Currency) => {
     if (currency === 'UZS') {
-      setUzsMethodModalOpen(true);
+      if (!token) {
+        setUzsMethodModalOpen(true);
+        return;
+      }
+      void (async () => {
+        try {
+          await openRahmatCheckout({
+            token,
+            productCode: 'vnzh',
+            afterCreate: refreshPayments,
+          });
+        } catch {
+          setUzsMethodModalOpen(true);
+        }
+      })();
       return;
     }
     navigate('/payment', {
