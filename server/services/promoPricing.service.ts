@@ -3,8 +3,13 @@ import type { SubscriptionTariffType } from '../../shared/paymentProducts.js';
 
 export const RUSSIAN_PROMO_DURATION_MS = 30 * 60 * 1000;
 export const RUSSIAN_PROMO_UZS_PRICE: Record<SubscriptionTariffType, number> = {
-  month: 49_000,
-  year: 199_000,
+  month: 25_000,
+  year: 149_000,
+};
+
+/** Aksiya narxi RUBda (oylik); yillik uchun narx bazadagi UZS nisbatidan hisoblanadi. */
+export const RUSSIAN_PROMO_RUB_PRICE: Partial<Record<SubscriptionTariffType, number>> = {
+  month: 200,
 };
 
 type Currency = 'UZS' | 'RUB' | 'USD';
@@ -142,7 +147,13 @@ export async function resolveRussianTariffQuote(
   const promoUzsAmount = RUSSIAN_PROMO_UZS_PRICE[params.tariffType];
   let finalAmount = promoUzsAmount;
 
-  if (params.currency !== 'UZS') {
+  const rubPromoFixed =
+    params.currency === 'RUB' ? RUSSIAN_PROMO_RUB_PRICE[params.tariffType] : undefined;
+  if (params.currency === 'UZS') {
+    finalAmount = promoUzsAmount;
+  } else if (rubPromoFixed != null && rubPromoFixed > 0) {
+    finalAmount = rubPromoFixed;
+  } else {
     const baseUzsAmount = await getTariffPrice(supabase, 'UZS', params.tariffType);
     if (baseUzsAmount > 0) {
       finalAmount = Math.max(1, Math.round(baseAmount * (promoUzsAmount / baseUzsAmount)));
