@@ -3,7 +3,6 @@
  * не подтягивались данные предыдущего пользователя из localStorage/sessionStorage.
  * Не трогает token / adminToken.
  */
-import { useVocabularyStepsStore } from '../state/vocabularyStepsStore';
 import { invalidateCacheByPrefix } from './requestCache';
 
 const LOCAL_STORAGE_KEEP = new Set(['token', 'adminToken']);
@@ -56,13 +55,8 @@ export function clearUserProgressCaches(): void {
   clearLocalStorageProgress();
   clearSessionStorageCaches();
   invalidateCacheByPrefix('');
-  try {
-    useVocabularyStepsStore.setState({
-      byGroup: {},
-      statusByGroup: {},
-      errorByGroup: {},
-    });
-  } catch {
-    /* ignore */
-  }
+  // vocabularyStepsStore.setState({}) was called here for the legacy
+  // standalone vocabulary flow. That flow and the store were removed
+  // when the product collapsed to the 182-day kunlik plan, so this
+  // reset is now a no-op.
 }

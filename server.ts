@@ -294,20 +294,10 @@ async function startServer() {
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
   });
-  app.use((req, res, next) => {
-    const url = String(req.originalUrl || req.url || '').split('?')[0];
-    const deprecatedPrefixes = [
-      '/api/vocabulary',
-      '/api/support',
-    ];
-    if (deprecatedPrefixes.some((prefix) => url.startsWith(prefix))) {
-      return res.status(410).json({
-        error: 'Deprecated API route',
-        message: 'Bu endpoint yangi platforma strukturasidan olib tashlangan.',
-      });
-    }
-    return next();
-  });
+  // Standalone /api/vocabulary/* and /api/support/* used to be 410'd here
+  // as a soft-deprecation gate while the kunlik refactor was in flight.
+  // Both routes are gone now (handlers deleted, frontend stopped calling
+  // them), so we let Express fall through to a normal 404.
   app.use((req: any, res, next) => {
     const requestId = req.headers['x-request-id'] || createRequestId();
     req.requestId = Array.isArray(requestId) ? requestId[0] : requestId;
@@ -802,23 +792,9 @@ async function startServer() {
     res.json({ success: true, id: (row as any).id });
   });
 
-  // User: send support message
-  app.post('/api/support', authenticate, async (req: any, res) => {
-    const message = req.body?.message;
-    if (!message || String(message).trim() === '') {
-      return res.status(400).json({ error: 'message kerak' });
-    }
-    const { error } = await supabase.from('support_messages').insert({
-      user_id: req.userId,
-      message: String(message).trim(),
-      status: 'new',
-    });
-    if (error) {
-      console.error('[POST /api/support]', error);
-      return res.status(500).json({ error: error.message });
-    }
-    res.json({ success: true });
-  });
+  // /api/support was removed when standalone support flow was replaced by
+  // the help-chat (/api/help/chats/*). The route was already gated by 410
+  // middleware above; the handler below is dead and has been removed.
 
   async function ensureSupportChat(userId: number): Promise<number> {
     const { data: existing, error: existingErr } = await supabase
@@ -1792,24 +1768,11 @@ async function startServer() {
     res.json(result.bundle);
   });
 
-  // Vocabulary
-  app.get('/api/vocabulary', authenticate, async (req: any, res) => {
-    const { data: words, error } = await supabase.from('vocabulary').select('*').eq('user_id', req.userId);
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(words ?? []);
-  });
-
-  app.post('/api/vocabulary', authenticate, async (req: any, res) => {
-    const { word_ru, translation_uz, example_ru } = req.body;
-    const { error } = await supabase.from('vocabulary').insert({
-      user_id: req.userId,
-      word_ru,
-      translation_uz,
-      example_ru,
-    });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ success: true });
-  });
+  // Standalone /api/vocabulary endpoints were removed when the product
+  // collapsed into the 182-day kunlik plan. Vocab is now exercised inside
+  // each day's block via /api/kunlik-progress and /api/daily-course/* —
+  // there is no separate vocabulary table flow anymore. The 410
+  // middleware near the top of startServer() already shields these paths.
 
   // ---------------------------------------------------------------------------
   // Partner (Naparnik) routes — delegate to the same handler used by Vercel
