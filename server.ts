@@ -2306,6 +2306,18 @@ async function startServer() {
     console.warn('[leaderboardCron] disabled by ENABLE_LEADERBOARD_CRON flag');
   }
 
+  // Click auto-pay (every 15min) and fiscal retry (every hour at :45)
+  // used to be scheduled by vercel.json. They now run in-process via
+  // node-cron, gated by ENABLE_INTERNAL_CRON. Redis-backed distributed
+  // lock makes it safe to set the flag on every replica.
+  const { startInternalCron } = await import('./server/lib/cronScheduler.ts');
+  const cronActivated = startInternalCron(supabase);
+  if (cronActivated) {
+    console.log('[internalCron] click-auto-pay + click-fiscal-retry scheduled');
+  } else {
+    console.warn('[internalCron] disabled by ENABLE_INTERNAL_CRON flag');
+  }
+
   const port = Number(process.env.PORT) || 3000;
   app.listen(port, '0.0.0.0', () => {
     console.log('Server running on http://localhost:' + port);
