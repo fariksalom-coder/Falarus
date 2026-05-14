@@ -7,7 +7,7 @@ import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { VOCABULARY_TOPICS } from '../../src/data/vocabularyTopics';
 import { VOCABULARY_CONTENT } from '../../src/data/vocabularyContent';
-import { slugifyVocabularyTitle } from '../../api/_lib/slugifyVocabularyTitle';
+import { slugifyVocabularyTitle } from '../../shared/slugifyVocabularyTitle';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

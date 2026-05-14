@@ -518,8 +518,8 @@ async function startServer() {
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
     const sub = await getActiveSubscription(supabase, Number(user.id));
     const planFields = mergeRussianPlanForMeResponse({
-      planName: user.plan_name ?? null,
-      planExpiresAt: user.plan_expires_at ?? null,
+      planName: (user.plan_name as string | null | undefined) ?? null,
+      planExpiresAt: (user.plan_expires_at as string | null | undefined) ?? null,
       subscription: sub ? { plan_type: sub.plan_type, expires_at: sub.expires_at } : null,
     });
     res.json({

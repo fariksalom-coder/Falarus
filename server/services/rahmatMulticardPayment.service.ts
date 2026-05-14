@@ -448,7 +448,10 @@ export async function handleRahmatMulticardCallback(
       userAgent: meta.userAgent,
       note: rahmatOut.ok
         ? `rahmat_partner ok http=${rahmatOut.status}`
-        : `rahmat_partner fail: ${rahmatOut.error}${'status' in rahmatOut && rahmatOut.status ? ` http=${rahmatOut.status}` : ''}`,
+        : (() => {
+            const r = rahmatOut as { error: string; status?: number };
+            return `rahmat_partner fail: ${r.error}${r.status ? ` http=${r.status}` : ''}`;
+          })(),
     });
     if (!rahmatOut.ok) {
       console.error('[rahmat/partner-callback]', paymentId, rahmatOut);

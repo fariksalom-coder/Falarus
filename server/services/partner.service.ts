@@ -1,6 +1,13 @@
 // Express-shaped req/res surface used by this router. Replaces the old
 // @vercel/node types so we don't pull a Vercel runtime dep.
-type RouterReq = { body?: unknown; method?: string; headers?: Record<string, unknown>; url?: string; originalUrl?: string };
+type RouterReq = {
+  body?: unknown;
+  method?: string;
+  headers?: Record<string, unknown>;
+  url?: string;
+  originalUrl?: string;
+  query?: Record<string, unknown>;
+};
 type RouterRes = { status: (code: number) => { json: (body: unknown) => unknown } };
 
 import { supabase } from '../lib/supabaseClient.js';
