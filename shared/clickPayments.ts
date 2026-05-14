@@ -55,12 +55,19 @@ export function isClickLikePendingChannel(channel?: string | null): boolean {
 const RAHMAT_PENDING_TTL_MS = 24 * 60 * 60 * 1000;
 
 export function isRahmatHostedCheckoutUrl(url: string | null | undefined): boolean {
-  const u = (url || '').trim().toLowerCase();
-  return (
-    u.startsWith('https://app.rhmt.uz/') ||
-    u.includes('dev-checkout.multicard.uz') ||
-    u.includes('checkout.multicard.uz')
-  );
+  const raw = (url || '').trim();
+  if (!raw) return false;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== 'https:') return false;
+    const h = u.hostname.toLowerCase();
+    if (h === 'app.rhmt.uz') return true;
+    if (h.endsWith('multicard.uz')) return true;
+    if (h.endsWith('rhmt.uz')) return true;
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 export function isResumableRahmatPending(row: {

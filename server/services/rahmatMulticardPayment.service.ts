@@ -4,7 +4,6 @@ import {
   getClickAmountForProduct,
   isExpiredClickPending,
   isExpiredRahmatPending,
-  isResumableRahmatPending,
 } from '../../shared/clickPayments.js';
 import {
   multicardCreateInvoice,
@@ -119,20 +118,17 @@ export async function createRahmatMulticardPayment(
       .eq('status', 'pending');
     pending = null;
   }
+  // Yangi Rahmat urinish: avvalgi to'liq tugamagan Rahmat pending — bekor (iOS / popup / checkout yopilganda
+  // "admin tekshiruvi" holatiga tushmasin; yangi invoice yaratiladi). Manual / boshqa kanallar saqlanadi.
+  if (pending && String((pending as { payment_channel?: string | null }).payment_channel ?? '') === 'rahmat') {
+    await supabase
+      .from('payments')
+      .update({ status: 'rejected' })
+      .eq('id', Number((pending as { id: number }).id))
+      .eq('status', 'pending');
+    pending = null;
+  }
   if (pending) {
-    if (isResumableRahmatPending(pending as Parameters<typeof isResumableRahmatPending>[0])) {
-      const proofUrl = String((pending as { payment_proof_url?: string | null }).payment_proof_url ?? '').trim();
-      return {
-        status: 200,
-        json: {
-          success: true,
-          payment_id: Number((pending as { id: number }).id),
-          payment_url: proofUrl,
-          amount: Number((pending as { amount: number }).amount),
-          currency: 'UZS',
-        },
-      };
-    }
     return {
       status: 400,
       json: {
@@ -390,17 +386,36 @@ export async function handleRahmatMulticardCallback(
   }
 
   const extUuid = uuidIncoming || row.multicard_invoice_uuid || null;
-  const { data: flipped, error: approveErr } = await supabase
+  const approvePayload = {
+    status: 'approved' as const,
+    approved_at: new Date().toISOString(),
+    click_merchant_payment_id: extUuid,
+  };
+
+  let { data: flipped, error: approveErr } = await supabase
     .from('payments')
-    .update({
-      status: 'approved',
-      approved_at: new Date().toISOString(),
-      click_merchant_payment_id: extUuid,
-    })
+    .update(approvePayload)
     .eq('id', paymentId)
     .eq('status', 'pending')
     .select('id')
     .maybeSingle();
+
+  const canRecoverRejected =
+    row.status === 'rejected' &&
+    Boolean(uuidIncoming && row.multicard_invoice_uuid && uuidIncoming === row.multicard_invoice_uuid);
+
+  if (!flipped && canRecoverRejected) {
+    const recovered = await supabase
+      .from('payments')
+      .update(approvePayload)
+      .eq('id', paymentId)
+      .eq('status', 'rejected')
+      .eq('multicard_invoice_uuid', uuidIncoming)
+      .select('id')
+      .maybeSingle();
+    flipped = recovered.data;
+    if (recovered.error) approveErr = recovered.error;
+  }
 
   if (approveErr) {
     void audit('not_found', { note: approveErr.message, signatureValid: sigOk });
