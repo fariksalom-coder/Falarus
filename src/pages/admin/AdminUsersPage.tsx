@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getUsers, type AdminUserRow } from '../../api/admin';
-import { AlertCircle, UserPlus } from 'lucide-react';
+import { AlertCircle, UserPlus, MessageSquareText } from 'lucide-react';
 import { adminPath } from '../../constants/adminPath';
 
 export default function AdminUsersPage() {
@@ -92,6 +92,7 @@ export default function AdminUsersPage() {
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Subscription</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Kunlik progress</th>
+                  <th className="text-right py-3 px-4 font-medium text-slate-600">Xabar</th>
                   <th className="text-right py-3 px-4 font-medium text-slate-600">Referral earnings</th>
                 </tr>
               </thead>
@@ -137,6 +138,15 @@ export default function AdminUsersPage() {
                       ) : (
                         <span className="text-slate-400">Boshlamagan</span>
                       )}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <Link
+                        to={`${adminPath('/support')}?userId=${u.id}`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50"
+                      >
+                        <MessageSquareText className="h-3.5 w-3.5" />
+                        Xabar
+                      </Link>
                     </td>
                     <td className="py-3 px-4 text-right">{u.referral_earnings.toLocaleString()}</td>
                   </tr>

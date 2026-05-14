@@ -24,6 +24,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { courseData } from './src/data/courseData.ts';
 import { buildRequestLogContext, createRequestId, logError, logInfo } from './server/lib/logger.ts';
+import { ensureSupportChatForUser } from './server/lib/ensureSupportChat.ts';
 import { formatDateInAppTimezone } from './server/lib/appDate.ts';
 import {
   buildPeriodicPointsUpdate,
@@ -796,30 +797,6 @@ async function startServer() {
   // the help-chat (/api/help/chats/*). The route was already gated by 410
   // middleware above; the handler below is dead and has been removed.
 
-  async function ensureSupportChat(userId: number): Promise<number> {
-    const { data: existing, error: existingErr } = await supabase
-      .from('support_chats')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
-    if (existingErr) throw existingErr;
-    if (existing?.id) return Number(existing.id);
-
-    const now = new Date().toISOString();
-    const { data: created, error: createErr } = await supabase
-      .from('support_chats')
-      .insert({
-        user_id: userId,
-        status: 'open',
-        created_at: now,
-        updated_at: now,
-      })
-      .select('id')
-      .single();
-    if (createErr || !created) throw createErr ?? new Error('Support chat yaratilmadi');
-    return Number(created.id);
-  }
-
   function isMissingSupportChatSchemaError(error: unknown): boolean {
     const message = typeof error === 'object' && error && 'message' in error
       ? String((error as { message?: unknown }).message ?? '')
@@ -830,7 +807,7 @@ async function startServer() {
   app.get('/api/help/chats', authenticate, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
-      const chatId = await ensureSupportChat(userId);
+      const chatId = await ensureSupportChatForUser(supabase, userId);
 
       const [{ data: chat, error: chatErr }, { data: lastRows, error: lastErr }, { count, error: countErr }] = await Promise.all([
         supabase

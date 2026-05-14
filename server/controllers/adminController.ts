@@ -16,6 +16,142 @@ import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot
 import { clickPaymentRefund, isClickMerchantSuccess } from '../../shared/clickMerchantClient.js';
 import { getClickConfig } from '../../shared/clickConfig.js';
 import { adminCreateUserWithAccess } from '../services/adminCreateUser.service.js';
+import { ensureSupportChatForUser } from '../lib/ensureSupportChat.js';
+import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
+
+const BROADCAST_FILTERS = [
+  'subscription_active',
+  'subscription_inactive',
+  'kunlik_not_started',
+  'kunlik_day1_complete',
+  'kunlik_day1_incomplete',
+  'kunlik_registered_week_stalled',
+  'all_users',
+] as const;
+
+type BroadcastFilter = (typeof BROADCAST_FILTERS)[number];
+
+function isBroadcastFilter(f: string): f is BroadcastFilter {
+  return (BROADCAST_FILTERS as readonly string[]).includes(f);
+}
+
+const MAX_BROADCAST_RECIPIENTS = 8000;
+
+async function collectBroadcastRecipientIds(
+  supabase: SupabaseClient,
+  filter: BroadcastFilter
+): Promise<{ ids: number[]; error?: string }> {
+  const nowIso = new Date().toISOString();
+  const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const takeIds = (data: { id: unknown }[] | null | undefined) =>
+    (data ?? [])
+      .map((r) => Number(r.id))
+      .filter((id) => Number.isFinite(id) && id > 0)
+      .slice(0, MAX_BROADCAST_RECIPIENTS);
+
+  if (filter === 'subscription_active') {
+    const { data, error } = await supabase.from('users').select('id').gt('plan_expires_at', nowIso);
+    if (error) return { ids: [], error: error.message };
+    return { ids: takeIds(data as { id: unknown }[]) };
+  }
+  if (filter === 'subscription_inactive') {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .or(`plan_expires_at.is.null,plan_expires_at.lt.${nowIso}`);
+    if (error) return { ids: [], error: error.message };
+    return { ids: takeIds(data as { id: unknown }[]) };
+  }
+
+  const { data: progRows, error: progErr } = await supabase.from('user_kunlik_day_progress').select('user_id');
+  if (progErr) return { ids: [], error: progErr.message };
+  const startedUserIds = new Set(
+    (progRows ?? []).map((r) => Number((r as { user_id: unknown }).user_id)).filter((id) => id > 0)
+  );
+
+  if (filter === 'kunlik_not_started') {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id')
+      .order('id', { ascending: true })
+      .limit(MAX_BROADCAST_RECIPIENTS + 4000);
+    if (error) return { ids: [], error: error.message };
+    const ids = takeIds(users as { id: unknown }[]).filter((id) => !startedUserIds.has(id));
+    return { ids };
+  }
+
+  if (filter === 'kunlik_registered_week_stalled') {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, created_at')
+      .lt('created_at', weekAgoIso)
+      .order('id', { ascending: true })
+      .limit(MAX_BROADCAST_RECIPIENTS + 4000);
+    if (error) return { ids: [], error: error.message };
+    const ids = (users ?? [])
+      .map((r) => Number((r as { id: unknown }).id))
+      .filter((id) => Number.isFinite(id) && id > 0 && !startedUserIds.has(id))
+      .slice(0, MAX_BROADCAST_RECIPIENTS);
+    return { ids };
+  }
+
+  const { data: promptsD1, error: pErr } = await supabase
+    .from('daily_practice_prompts')
+    .select('day_number')
+    .eq('day_number', 1);
+  if (pErr) return { ids: [], error: pErr.message };
+  const practiceCountDay1 = (promptsD1 ?? []).length;
+  const countMap: Record<number, number> = { 1: practiceCountDay1 };
+
+  if (filter === 'kunlik_day1_complete' || filter === 'kunlik_day1_incomplete') {
+    const { data: rows, error } = await supabase
+      .from('user_kunlik_day_progress')
+      .select('user_id, day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, speaking_level')
+      .eq('day_number', 1);
+    if (error) return { ids: [], error: error.message };
+    const complete: number[] = [];
+    const incomplete: number[] = [];
+    for (const raw of rows ?? []) {
+      const r = raw as {
+        user_id: unknown;
+        grammar_1: unknown;
+        grammar_2: unknown;
+        grammar_3: unknown;
+        words_match: unknown;
+        oqish_done: unknown;
+        speaking_level: unknown;
+      };
+      const uid = Number(r.user_id);
+      if (!uid) continue;
+      const slice = {
+        day_number: 1,
+        grammar_1: Boolean(r.grammar_1),
+        grammar_2: Boolean(r.grammar_2),
+        grammar_3: Boolean(r.grammar_3),
+        words_match: Boolean(r.words_match),
+        oqish_done: Boolean(r.oqish_done),
+        speaking_level: Number(r.speaking_level ?? 0),
+      };
+      if (isKunlikDayRowFullyComplete(slice, countMap)) complete.push(uid);
+      else incomplete.push(uid);
+    }
+    const ids = filter === 'kunlik_day1_complete' ? [...new Set(complete)] : [...new Set(incomplete)];
+    return { ids: ids.slice(0, MAX_BROADCAST_RECIPIENTS) };
+  }
+
+  if (filter === 'all_users') {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(2500);
+    if (error) return { ids: [], error: error.message };
+    return { ids: takeIds(data as { id: unknown }[]) };
+  }
+
+  return { ids: [] };
+}
 
 export function createAdminController(supabase: SupabaseClient) {
   /** Default 7 days (same order of magnitude as user JWT) — override via ADMIN_JWT_EXPIRES_SECONDS. */
@@ -1280,6 +1416,97 @@ export function createAdminController(supabase: SupabaseClient) {
     return res.json({ success: true });
   }
 
+  async function sendHelpDirectUserMessage(req: Request, res: Response) {
+    const userId = Number(req.params.userId);
+    const content = String((req.body as { content?: unknown })?.content ?? '').trim();
+    if (!Number.isFinite(userId) || userId <= 0) return res.status(400).json({ error: 'user_id noto‘g‘ri' });
+    if (!content) return res.status(400).json({ error: 'Xabar bo‘sh' });
+    const { data: u, error: uErr } = await supabase.from('users').select('id').eq('id', userId).maybeSingle();
+    if (uErr) return res.status(500).json({ error: uErr.message });
+    if (!u) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+    try {
+      const chatId = await ensureSupportChatForUser(supabase, userId);
+      const now = new Date().toISOString();
+      const { data: created, error: msgErr } = await supabase
+        .from('support_chat_messages')
+        .insert({
+          chat_id: chatId,
+          sender_type: 'admin',
+          sender_user_id: null,
+          content,
+          created_at: now,
+        })
+        .select('id, chat_id, sender_type, sender_user_id, content, created_at')
+        .single();
+      if (msgErr || !created) return res.status(500).json({ error: msgErr?.message || 'Xabar yuborilmadi' });
+      await supabase.from('support_chats').update({ updated_at: now, last_message_at: now }).eq('id', chatId);
+      return res.status(201).json({ chat_id: chatId, message: created });
+    } catch (e) {
+      if (isMissingSupportChatSchemaError(e)) {
+        return res.status(503).json({ error: 'Yozishmalar (support_chats) mavjud emas' });
+      }
+      console.error('[admin/help/users message]', e);
+      return res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
+    }
+  }
+
+  async function getHelpBroadcastPreview(req: Request, res: Response) {
+    const filterRaw = String(req.query.filter ?? '').trim();
+    if (!isBroadcastFilter(filterRaw)) {
+      return res.status(400).json({ error: `filter: ${BROADCAST_FILTERS.join(', ')}` });
+    }
+    const { ids, error } = await collectBroadcastRecipientIds(supabase, filterRaw);
+    if (error) return res.status(500).json({ error });
+    return res.json({ count: ids.length, filter: filterRaw, max: MAX_BROADCAST_RECIPIENTS });
+  }
+
+  async function postHelpBroadcast(req: Request, res: Response) {
+    const body = (req.body ?? {}) as { filter?: unknown; content?: unknown; confirm_broadcast?: unknown };
+    const filterRaw = String(body.filter ?? '').trim();
+    const content = String(body.content ?? '').trim();
+    const confirm = body.confirm_broadcast === true || String(body.confirm_broadcast ?? '') === 'true';
+    if (!isBroadcastFilter(filterRaw)) {
+      return res.status(400).json({ error: `filter: ${BROADCAST_FILTERS.join(', ')}` });
+    }
+    if (!content) return res.status(400).json({ error: 'Xabar bo‘sh' });
+    if (filterRaw === 'all_users' && !confirm) {
+      return res.status(400).json({
+        error: "Barcha foydalanuvchilarga yuborish uchun JSON da confirm_broadcast: true yuboring (maks. 2500 ta, eng yangi ro'yxatdan).",
+      });
+    }
+    const { ids, error } = await collectBroadcastRecipientIds(supabase, filterRaw);
+    if (error) return res.status(500).json({ error });
+    if (!ids.length) return res.json({ sent: 0, total: 0 });
+
+    let sent = 0;
+    const BATCH = 25;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const slice = ids.slice(i, i + BATCH);
+      await Promise.all(
+        slice.map(async (uid) => {
+          try {
+            const chatId = await ensureSupportChatForUser(supabase, uid);
+            const now = new Date().toISOString();
+            const { error: insErr } = await supabase.from('support_chat_messages').insert({
+              chat_id: chatId,
+              sender_type: 'admin',
+              sender_user_id: null,
+              content,
+              created_at: now,
+            });
+            if (!insErr) {
+              await supabase.from('support_chats').update({ updated_at: now, last_message_at: now }).eq('id', chatId);
+              sent += 1;
+            }
+          } catch {
+            /* skip */
+          }
+        })
+      );
+    }
+    return res.json({ sent, total: ids.length, filter: filterRaw });
+  }
+
   // --- Pricing
   async function getPricing(_req: Request, res: Response) {
     const { data: rows, error } = await supabase
@@ -1481,6 +1708,9 @@ export function createAdminController(supabase: SupabaseClient) {
     sendSupportChatMessage,
     sendSupportChatMedia,
     markSupportChatRead,
+    sendHelpDirectUserMessage,
+    getHelpBroadcastPreview,
+    postHelpBroadcast,
     getPricing,
     updatePricing,
     getPaymentMethods,

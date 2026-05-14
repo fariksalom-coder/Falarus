@@ -1,13 +1,18 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
-import { AlertCircle, ArrowLeft, ImagePlus, MessageCircle, Send } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AlertCircle, ArrowLeft, ImagePlus, Megaphone, MessageCircle, Send, X } from 'lucide-react';
 import {
   getAdminHelpChats,
   getAdminHelpChatMessages,
+  getHelpBroadcastPreview,
   markAdminHelpChatRead,
+  postHelpBroadcast,
   sendAdminHelpChatImage,
   sendAdminHelpChatMessage,
+  sendHelpDirectUserMessage,
   type AdminHelpChatListRow,
   type AdminHelpChatMessage,
+  type HelpBroadcastFilter,
 } from '../../api/admin';
 import { parseHelpImageMessage } from '../../utils/helpMessageContent';
 
@@ -38,7 +43,24 @@ function initialsFromName(name: string): string {
     .toUpperCase();
 }
 
+const BROADCAST_OPTIONS: { value: HelpBroadcastFilter; label: string; hint: string }[] = [
+  { value: 'subscription_inactive', label: 'Obuna yo‘q / muddati tugagan', hint: '' },
+  { value: 'subscription_active', label: 'Obuna faol', hint: '' },
+  { value: 'kunlik_not_started', label: 'Kunlik rejani boshlamagan', hint: 'Hech qanday kun progressi yo‘q' },
+  {
+    value: 'kunlik_registered_week_stalled',
+    label: '7+ kun oldin ro‘yxatdan o‘tgan, lekin kunlikni boshlamagan',
+    hint: '',
+  },
+  { value: 'kunlik_day1_complete', label: '1-kun to‘liq tugagan', hint: '' },
+  { value: 'kunlik_day1_incomplete', label: '1-kun boshlangan, lekin tugallanmagan', hint: '' },
+  { value: 'all_users', label: 'Barcha (oxirgi 2500)', hint: 'confirm talab qilinadi' },
+];
+
 export default function AdminSupportPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [chats, setChats] = useState<AdminHelpChatListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,25 +71,56 @@ export default function AdminSupportPage() {
   const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  const [broadcastFilter, setBroadcastFilter] = useState<HelpBroadcastFilter>('subscription_inactive');
+  const [broadcastText, setBroadcastText] = useState('');
+  const [broadcastRecipientCount, setBroadcastRecipientCount] = useState<number | null>(null);
+  const [broadcastPreviewLoading, setBroadcastPreviewLoading] = useState(false);
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastConfirmAll, setBroadcastConfirmAll] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState('');
+
+  const [composeModalOpen, setComposeModalOpen] = useState(false);
+  const [composeUserId, setComposeUserId] = useState<number | null>(null);
+  const [composeText, setComposeText] = useState('');
+  const [composeSending, setComposeSending] = useState(false);
+
   const activeChat = useMemo(
     () => chats.find((c) => c.id === activeChatId) ?? null,
     [chats, activeChatId]
   );
 
-  useEffect(() => {
-    let mounted = true;
+  const reloadChats = useCallback(async () => {
     setLoading(true);
-    getAdminHelpChats()
-      .then((rows) => {
-        if (!mounted) return;
-        setChats(rows);
-      })
-      .catch((e: Error) => mounted && setError(e.message))
-      .finally(() => mounted && setLoading(false));
-    return () => {
-      mounted = false;
-    };
+    try {
+      const rows = await getAdminHelpChats();
+      setChats(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Xatolik');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void reloadChats();
+  }, [reloadChats]);
+
+  useEffect(() => {
+    const p = new URLSearchParams(location.search);
+    const raw = p.get('userId');
+    const uid = raw ? Number(raw) : NaN;
+    if (Number.isFinite(uid) && uid > 0) {
+      setComposeUserId(uid);
+      setComposeModalOpen(true);
+      navigate({ pathname: location.pathname, search: '' }, { replace: true });
+    }
+  }, [location.search, location.pathname, navigate]);
+
+  useEffect(() => {
+    setBroadcastConfirmAll(false);
+    setBroadcastRecipientCount(null);
+    setBroadcastResult('');
+  }, [broadcastFilter]);
 
   useEffect(() => {
     if (!activeChatId) return;
@@ -162,6 +215,61 @@ export default function AdminSupportPage() {
     }
   }
 
+  async function loadBroadcastPreview() {
+    setBroadcastPreviewLoading(true);
+    setBroadcastResult('');
+    try {
+      const out = await getHelpBroadcastPreview(broadcastFilter);
+      setBroadcastRecipientCount(out.count);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Xatolik');
+    } finally {
+      setBroadcastPreviewLoading(false);
+    }
+  }
+
+  async function handleBroadcastSend() {
+    const body = broadcastText.trim();
+    if (!body || broadcastSending) return;
+    if (broadcastFilter === 'all_users' && !broadcastConfirmAll) {
+      setError('«Barcha foydalanuvchilar» uchun tasdiqlash belgisini qo‘ying.');
+      return;
+    }
+    setBroadcastSending(true);
+    try {
+      const out = await postHelpBroadcast({
+        filter: broadcastFilter,
+        content: body,
+        confirm_broadcast: broadcastFilter === 'all_users' ? true : undefined,
+      });
+      setBroadcastResult(`Yuborildi: ${out.sent} / ${out.total}`);
+      setBroadcastText('');
+      setBroadcastRecipientCount(null);
+      await reloadChats();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Xatolik');
+    } finally {
+      setBroadcastSending(false);
+    }
+  }
+
+  async function handleComposeSend() {
+    if (!composeUserId || !composeText.trim() || composeSending) return;
+    setComposeSending(true);
+    try {
+      const { chat_id } = await sendHelpDirectUserMessage(composeUserId, composeText.trim());
+      setComposeModalOpen(false);
+      setComposeUserId(null);
+      setComposeText('');
+      await reloadChats();
+      setActiveChatId(chat_id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Xatolik');
+    } finally {
+      setComposeSending(false);
+    }
+  }
+
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold text-slate-800">Yozishmalar</h1>
@@ -171,6 +279,77 @@ export default function AdminSupportPage() {
           {error}
         </div>
       ) : null}
+
+      <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <Megaphone className="h-4 w-4 text-blue-600" />
+          Guruhga xabar (admin nomidan)
+        </div>
+        <p className="mb-3 text-xs text-slate-500">
+          Filtr bo‘yicha har bir foydalanuvchining yordam chatiga alohida xabar tushadi; javoblar shu sahifada ko‘rinadi.
+        </p>
+        <div className="flex flex-col gap-3 md:flex-row md:items-end">
+          <label className="flex-1 text-xs font-medium text-slate-600">
+            Filtr
+            <select
+              value={broadcastFilter}
+              onChange={(e) => setBroadcastFilter(e.target.value as HelpBroadcastFilter)}
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            >
+              {BROADCAST_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void loadBroadcastPreview()}
+              disabled={broadcastPreviewLoading}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {broadcastPreviewLoading ? 'Hisoblanmoqda...' : 'Qabul qiluvchilar soni'}
+            </button>
+            {broadcastRecipientCount !== null ? (
+              <span className="text-sm text-slate-600">
+                Taxminan: <strong className="text-slate-900">{broadcastRecipientCount}</strong>
+              </span>
+            ) : null}
+          </div>
+        </div>
+        {broadcastFilter === 'all_users' ? (
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={broadcastConfirmAll}
+              onChange={(e) => setBroadcastConfirmAll(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Barcha foydalanuvchilarga yuborishni tasdiqlayman (cheklov: oxirgi 2500)
+          </label>
+        ) : null}
+        <textarea
+          value={broadcastText}
+          onChange={(e) => setBroadcastText(e.target.value)}
+          rows={3}
+          placeholder="Guruhga yuboriladigan matn..."
+          className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void handleBroadcastSend()}
+            disabled={broadcastSending || !broadcastText.trim()}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" />
+            {broadcastSending ? 'Yuborilmoqda...' : 'Guruhga yuborish'}
+          </button>
+          {broadcastResult ? <span className="text-sm text-green-700">{broadcastResult}</span> : null}
+        </div>
+      </div>
 
       <div className="grid min-h-[740px] overflow-hidden rounded-xl border border-slate-200 bg-white">
         {!activeChat ? (
@@ -310,6 +489,63 @@ export default function AdminSupportPage() {
         ) : null}
 
       </div>
+
+      {composeModalOpen && composeUserId ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="compose-user-title"
+        >
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <button
+              type="button"
+              onClick={() => {
+                setComposeModalOpen(false);
+                setComposeUserId(null);
+                setComposeText('');
+              }}
+              className="absolute right-4 top-4 rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+              aria-label="Yopish"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 id="compose-user-title" className="pr-10 text-lg font-semibold text-slate-900">
+              Foydalanuvchiga xabar
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">ID: {composeUserId}</p>
+            <textarea
+              value={composeText}
+              onChange={(e) => setComposeText(e.target.value)}
+              rows={5}
+              placeholder="Matn..."
+              className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setComposeModalOpen(false);
+                  setComposeUserId(null);
+                  setComposeText('');
+                }}
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleComposeSend()}
+                disabled={composeSending || !composeText.trim()}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+                {composeSending ? 'Yuborilmoqda...' : 'Yuborish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

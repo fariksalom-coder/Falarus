@@ -42,6 +42,9 @@ export function createAdminRoutes(supabase: SupabaseClient): Router {
   router.post('/referrals/:id/reject', (req, res, next) => ctrl.rejectWithdrawal(req, res).catch(next));
   router.get('/support', (req, res, next) => ctrl.getSupportMessages(req, res).catch(next));
   router.post('/support/:id/reply', (req, res, next) => ctrl.replySupport(req, res).catch(next));
+  router.get('/help/broadcast-preview', (req, res, next) => ctrl.getHelpBroadcastPreview(req, res).catch(next));
+  router.post('/help/broadcast', (req, res, next) => ctrl.postHelpBroadcast(req, res).catch(next));
+  router.post('/help/users/:userId/messages', (req, res, next) => ctrl.sendHelpDirectUserMessage(req, res).catch(next));
   router.get('/help/chats', (req, res, next) => ctrl.getSupportChats(req, res).catch(next));
   router.get('/help/chats/:chatId/messages', (req, res, next) => ctrl.getSupportChatMessages(req, res).catch(next));
   router.post('/help/chats/:chatId/messages', (req, res, next) => ctrl.sendSupportChatMessage(req, res).catch(next));

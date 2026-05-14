@@ -336,6 +336,44 @@ export async function sendAdminHelpChatImage(chatId: number, file: File): Promis
   });
 }
 
+export type HelpBroadcastFilter =
+  | 'subscription_active'
+  | 'subscription_inactive'
+  | 'kunlik_not_started'
+  | 'kunlik_day1_complete'
+  | 'kunlik_day1_incomplete'
+  | 'kunlik_registered_week_stalled'
+  | 'all_users';
+
+export async function getHelpBroadcastPreview(filter: HelpBroadcastFilter): Promise<{
+  count: number;
+  filter: string;
+  max: number;
+}> {
+  return adminApi(`/help/broadcast-preview?filter=${encodeURIComponent(filter)}`);
+}
+
+export async function postHelpBroadcast(body: {
+  filter: HelpBroadcastFilter;
+  content: string;
+  confirm_broadcast?: boolean;
+}): Promise<{ sent: number; total: number; filter: string }> {
+  return adminApi('/help/broadcast', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function sendHelpDirectUserMessage(
+  userId: number,
+  content: string
+): Promise<{ chat_id: number; message: AdminHelpChatMessage }> {
+  return adminApi(`/help/users/${userId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+}
+
 export async function markAdminHelpChatRead(chatId: number): Promise<void> {
   await adminApi(`/help/chats/${chatId}/read`, {
     method: 'POST',
