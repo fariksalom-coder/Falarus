@@ -13,7 +13,11 @@ export async function getRedis(): Promise<import('ioredis').Redis | null> {
   if (client) return client;
   try {
     const { default: Redis } = await import('ioredis');
-    client = new Redis(REDIS_URL, { maxRetriesPerRequest: 2 });
+    client = new Redis(REDIS_URL, {
+      maxRetriesPerRequest: 2,
+      connectTimeout: 5_000,
+      commandTimeout: 4_000,
+    });
     client.on('error', () => {});
     return client;
   } catch {

@@ -16,7 +16,8 @@ process.emitWarning = function (
 import express from 'express';
 import helmet from 'helmet';
 import { createServer as createViteServer } from 'vite';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createSupabaseServer, isSupabaseTimeoutError } from './server/lib/createSupabaseServer.ts';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Busboy from 'busboy';
@@ -73,13 +74,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
   process.exit(1);
 }
 
-const supabase: SupabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-  },
-});
+const supabase: SupabaseClient = createSupabaseServer(supabaseUrl, supabaseServiceKey);
 
 const jwtSecretEnv = process.env.JWT_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
@@ -547,6 +542,11 @@ async function startServer() {
 
     if (lookupErr) {
       console.error('[login]', lookupErr.message);
+      if (isSupabaseTimeoutError(lookupErr)) {
+        return res.status(503).json({
+          error: 'Server vaqtincha band. Bir necha soniyadan keyin qayta urinib ko‘ring.',
+        });
+      }
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
 

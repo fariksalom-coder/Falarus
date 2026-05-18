@@ -61,9 +61,17 @@ export async function rateLimit(
 
   try {
     const redisKey = `rl:${bucketKey}`;
-    const count = await redis.incr(redisKey);
+    const count = await Promise.race([
+      redis.incr(redisKey),
+      new Promise<number>((_, reject) =>
+        setTimeout(() => reject(new Error('redis rate-limit timeout')), 4_000)
+      ),
+    ]);
     if (count === 1) {
-      await redis.expire(redisKey, windowSec);
+      await Promise.race([
+        redis.expire(redisKey, windowSec),
+        new Promise<void>((resolve) => setTimeout(resolve, 2_000)),
+      ]);
     }
     if (count > limit) {
       const ttl = await redis.ttl(redisKey);
