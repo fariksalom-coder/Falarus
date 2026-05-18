@@ -85,7 +85,8 @@ export async function checkSpeakingPromptAnswer(
   uzText: string,
   ruCorrect: string,
   mode: 'text' | 'voice',
-  attempt: number = 1
+  attempt: number = 1,
+  kunlikDayNumber?: number
 ): Promise<CheckResult> {
   const res = await fetch(apiUrl('/api/speaking/check'), {
     method: 'POST',
@@ -96,6 +97,7 @@ export async function checkSpeakingPromptAnswer(
       ru_correct: ruCorrect,
       mode,
       attempt,
+      ...(kunlikDayNumber != null ? { day_number: kunlikDayNumber } : {}),
     }),
   });
   if (!res.ok) throw new Error('Tekshirishda xatolik');
@@ -104,12 +106,16 @@ export async function checkSpeakingPromptAnswer(
 
 export async function transcribeSpeakingAudio(
   token: string,
-  audioBase64: string
+  audioBase64: string,
+  kunlikDayNumber?: number
 ): Promise<string> {
   const res = await fetch(apiUrl('/api/speaking/transcribe'), {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ audio: audioBase64 }),
+    body: JSON.stringify({
+      audio: audioBase64,
+      ...(kunlikDayNumber != null ? { day_number: kunlikDayNumber } : {}),
+    }),
   });
   if (!res.ok) throw new Error('Ovozni tanib bo\'lmadi');
   const data = await res.json();

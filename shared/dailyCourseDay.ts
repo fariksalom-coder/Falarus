@@ -87,6 +87,17 @@ export type DailyCourseDayBundle = {
 export const DAILY_COURSE_DAY_MIN = 1;
 export const DAILY_COURSE_DAY_MAX = 182;
 
+/** Kunlik gapirish: AI tekshiruvi obunasiz faqat shu kunlar uchun. */
+export const FREE_KUNLIK_SPEAKING_DAY_LIMIT = 2;
+
+export function isFreeKunlikSpeakingDay(dayNumber: number): boolean {
+  return (
+    Number.isInteger(dayNumber) &&
+    dayNumber >= DAILY_COURSE_DAY_MIN &&
+    dayNumber <= FREE_KUNLIK_SPEAKING_DAY_LIMIT
+  );
+}
+
 export function isValidDailyCourseDay(n: number): boolean {
   return Number.isInteger(n) && n >= DAILY_COURSE_DAY_MIN && n <= DAILY_COURSE_DAY_MAX;
 }

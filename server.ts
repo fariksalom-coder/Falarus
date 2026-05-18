@@ -47,7 +47,12 @@ import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
 import { buildGrammarCatalogPayload } from './server/services/grammarCatalog.service.ts';
 import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.service.ts';
-import { DAILY_COURSE_DAY_MAX, DAILY_COURSE_DAY_MIN, isValidDailyCourseDay } from './shared/dailyCourseDay.ts';
+import {
+  DAILY_COURSE_DAY_MAX,
+  DAILY_COURSE_DAY_MIN,
+  isFreeKunlikSpeakingDay,
+  isValidDailyCourseDay,
+} from './shared/dailyCourseDay.ts';
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
 import { getAccessInfo, getActiveSubscription } from './server/services/subscription.service.ts';
 import { mergeRussianPlanForMeResponse } from './shared/russianProfilePlan.ts';
@@ -1983,7 +1988,6 @@ async function startServer() {
   app.use('/api/speaking', authenticate, async (req: any, res) => {
     const userId = req.userId as number;
     const access = await getAccessInfo(supabase, userId);
-    if (!access.subscription_active) return res.status(403).json({ error: 'Obuna kerak' });
 
     // `app.use('/api/speaking', …)` ichida Express odatda `req.url` ni `/check` qilib beradi.
     // Baʼzi proxylar / middleware lar `req.url` da toʻliq `/api/speaking/...` qoldirishi mumkin —
@@ -2011,6 +2015,22 @@ async function startServer() {
         .filter(Boolean);
     }
     const s0 = segments[0];
+
+    const kunlikDayRaw = Number(req.body?.day_number);
+    const kunlikDayNumber =
+      Number.isFinite(kunlikDayRaw) && isValidDailyCourseDay(Math.floor(kunlikDayRaw))
+        ? Math.floor(kunlikDayRaw)
+        : null;
+
+    if (!access.subscription_active) {
+      const kunlikAiRoute =
+        (s0 === 'check' || s0 === 'transcribe') && req.method === 'POST';
+      const freeKunlikDay =
+        kunlikDayNumber != null && isFreeKunlikSpeakingDay(kunlikDayNumber);
+      if (!kunlikAiRoute || !freeKunlikDay) {
+        return res.status(403).json({ error: 'Obuna kerak' });
+      }
+    }
 
     try {
       if (s0 === 'topics' && req.method === 'GET') {

@@ -19,12 +19,14 @@ import {
 } from '../../utils/kunlikPlanDayProgress';
 import { useKunlikProgress, type KunlikDayProgress } from '../../hooks/useKunlikProgress';
 import { BLOCK_CONFIG, QuestBlocks, buildKunlikQuestSteps } from './KunlikQuestBlocks';
+import { FREE_KUNLIK_SPEAKING_DAY_LIMIT } from '../../../shared/dailyCourseDay';
 
 type DayUiState = 'completed' | 'current' | 'locked';
 
 /** 1-kun doimo to‘liq `DayPlanRow` ko‘rinishida (eskicha); «Yakunlangan kunlar» lentasiga chiqmaydi. */
 const ALWAYS_EXPANDED_LAYOUT_DAY_NUM = 1;
-const FREE_DAILY_PLAN_DAY_LIMIT = 2;
+
+const FREE_DAILY_PLAN_DAY_LIMIT = FREE_KUNLIK_SPEAKING_DAY_LIMIT;
 
 export type KunlikPlanFullSectionProps = {
   /**

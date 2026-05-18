@@ -668,6 +668,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
       tasks={tasks}
       topicLabel={`Kun ${dayNumber} · Gapirish`}
       useInlineCheck={true}
+      kunlikDayNumber={dayNumber}
       embedded
       initialResumeIndex={resumeIdx}
       onCheckpoint={(completed) => patchDay(dayNumber, { speaking_level: completed })}

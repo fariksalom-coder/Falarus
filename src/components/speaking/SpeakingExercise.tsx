@@ -23,6 +23,8 @@ type Props = {
   embedded?: boolean;
   /** Kunlik: DB dagi `speaking_level` — tugallangan topshiruvlar soni (keyingi topshiruv indeksi) */
   initialResumeIndex?: number;
+  /** Kunlik kun raqami — obunasiz 1–2-kunlar uchun AI tekshiruvi */
+  kunlikDayNumber?: number;
   /** To‘g‘ri javobdan keyin «Keyingisi» bosilganda (oxirgisidan oldin) */
   onCheckpoint?: (completedTasksCount: number) => void;
 };
@@ -53,6 +55,7 @@ export default function SpeakingExercise({
   useInlineCheck = false,
   embedded = false,
   initialResumeIndex = 0,
+  kunlikDayNumber,
   onCheckpoint,
 }: Props) {
   const { token } = useAuth();
@@ -84,7 +87,7 @@ export default function SpeakingExercise({
       setError('');
       try {
         const base64 = await blobToBase64(recorder.audioBlob);
-        const text = await transcribeSpeakingAudio(token, base64);
+        const text = await transcribeSpeakingAudio(token, base64, kunlikDayNumber);
         if (!cancelled) {
           const normalized = text.trim();
           setVoiceText(normalized);
@@ -106,7 +109,7 @@ export default function SpeakingExercise({
     return () => {
       cancelled = true;
     };
-  }, [token, recorder.audioBlob, recorder.isRecording]);
+  }, [token, recorder.audioBlob, recorder.isRecording, kunlikDayNumber]);
 
   const handleCheck = useCallback(
     async (text: string, mode: 'text' | 'voice') => {
@@ -118,11 +121,12 @@ export default function SpeakingExercise({
         const r = useInlineCheck
           ? await checkSpeakingPromptAnswer(
               token,
+              text.trim(),
               task.uz_text,
               task.ru_correct,
-              text.trim(),
               mode,
-              nextAttempt
+              nextAttempt,
+              kunlikDayNumber
             )
           : await checkSpeakingAnswer(token, task.id, text.trim(), mode, nextAttempt);
         setResult(r);
@@ -133,7 +137,7 @@ export default function SpeakingExercise({
         setChecking(false);
       }
     },
-    [token, task?.id, task?.uz_text, task?.ru_correct, useInlineCheck, checking, attempts]
+    [token, task?.id, task?.uz_text, task?.ru_correct, useInlineCheck, kunlikDayNumber, checking, attempts]
   );
 
   const handleTextSubmit = useCallback(() => {
