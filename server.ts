@@ -180,11 +180,30 @@ async function mergeProfileWithActiveSubscription(
 // The old in-process Map limiter was unsafe behind a load balancer
 // (each replica had its own counter, and the Map grew unbounded).
 
-// Seed lessons and exercises from courseData if table is empty
+// Seed lessons and exercises from courseData if table is empty (dev / explicit opt-in only).
 async function seedDatabase() {
-  const { count, error: countError } = await supabase.from('lessons').select('*', { count: 'exact', head: true });
-  if (countError || (count ?? 0) > 0) return;
-  console.log('Seeding database...');
+  if (isProduction && process.env.ENABLE_DB_SEED !== '1') {
+    console.log('[seed] skipped in production (set ENABLE_DB_SEED=1 to run on boot)');
+    return;
+  }
+
+  const countResult = await Promise.race([
+    supabase.from('lessons').select('*', { count: 'exact', head: true }),
+    new Promise<{ count: null; error: { message: string } }>((resolve) => {
+      setTimeout(
+        () => resolve({ count: null, error: { message: 'lessons count timeout (10s)' } }),
+        10_000
+      );
+    }),
+  ]);
+  const { count, error: countError } = countResult;
+  if (countError) {
+    console.warn('[seed] count check failed, skipping:', countError.message);
+    return;
+  }
+  if ((count ?? 0) > 0) return;
+
+  console.log('[seed] Seeding database...');
   for (const levelData of courseData) {
     for (const module of levelData.modules) {
       for (const lesson of module.lessons) {
@@ -212,7 +231,7 @@ async function seedDatabase() {
       }
     }
   }
-  console.log('Database seeded successfully.');
+  console.log('[seed] Database seeded successfully.');
 }
 
 async function startServer() {
@@ -330,6 +349,29 @@ async function startServer() {
   } catch (err) {
     logError('express.admin.routes_failed_to_load', err);
   }
+
+  app.get('/api/health', async (_req, res) => {
+    const started = Date.now();
+    try {
+      const probe = await Promise.race([
+        supabase.from('users').select('id', { head: true, count: 'exact' }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('supabase probe timeout')), 5_000)
+        ),
+      ]);
+      if (probe.error) {
+        return res.status(503).json({
+          ok: false,
+          error: probe.error.message,
+          durationMs: Date.now() - started,
+        });
+      }
+      return res.json({ ok: true, durationMs: Date.now() - started });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      return res.status(503).json({ ok: false, error: message, durationMs: Date.now() - started });
+    }
+  });
 
   // Public pricing (no auth) — for tariff page
   app.get('/api/pricing', async (_req, res) => {
