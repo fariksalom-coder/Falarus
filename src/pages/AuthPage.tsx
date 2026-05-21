@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
 import { motion } from 'motion/react';
-import { UserPlus, LogIn } from 'lucide-react';
+import { UserPlus, LogIn, Loader2 } from 'lucide-react';
 import { FalaRusLogoMark } from '../components/FalaRusLogoMark';
 import { IntlPhoneInput, type IntlPhoneInputHandle } from '../components/auth/IntlPhoneInput';
 
@@ -31,6 +31,7 @@ export default function AuthPage() {
   const loginPhoneRef = useRef<IntlPhoneInputHandle>(null);
 
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -38,6 +39,7 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError('');
 
     if (!effectiveIsLogin && formData.password !== formData.confirmPassword) {
@@ -77,44 +79,52 @@ export default function AuthPage() {
       identifierValue = e164;
     }
 
-    const payload = effectiveIsLogin
-      ? { identifier: identifierValue, password: formData.password }
-      : {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          identifier: identifierValue,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-          ref: refFromUrl || undefined,
-        };
-    const endpoint = apiUrl(effectiveIsLogin ? '/api/auth/login' : '/api/auth/register');
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    setIsSubmitting(true);
+    try {
+      const payload = effectiveIsLogin
+        ? { identifier: identifierValue, password: formData.password }
+        : {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            identifier: identifierValue,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword,
+            ref: refFromUrl || undefined,
+          };
+      const endpoint = apiUrl(effectiveIsLogin ? '/api/auth/login' : '/api/auth/register');
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-    let data: { token?: string; user?: unknown; error?: string } = {};
-    const contentType = response.headers.get('content-type');
-    if (contentType?.includes('application/json')) {
-      try {
-        data = await response.json();
-      } catch {
-        setError('Server javobi noto\'g\'ri');
+      let data: { token?: string; user?: unknown; error?: string } = {};
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch {
+          setError('Server javobi noto\'g\'ri');
+          return;
+        }
+      } else {
+        const text = await response.text();
+        console.error('API returned non-JSON:', text?.slice(0, 200));
+        setError(response.ok ? 'Xatolik yuz berdi' : 'Server xatosi. Keyinroq urinib ko\'ring.');
         return;
       }
-    } else {
-      const text = await response.text();
-      console.error('API returned non-JSON:', text?.slice(0, 200));
-      setError(response.ok ? 'Xatolik yuz berdi' : 'Server xatosi. Keyinroq urinib ko\'ring.');
-      return;
-    }
 
-    if (response.ok && data.token && data.user) {
-      login(data.token, data.user as Parameters<typeof login>[1]);
-      navigate('/');
-    } else {
-      setError(data.error || 'Xatolik yuz berdi');
+      if (response.ok && data.token && data.user) {
+        login(data.token, data.user as Parameters<typeof login>[1]);
+        navigate('/');
+      } else {
+        setError(data.error || 'Xatolik yuz berdi');
+      }
+    } catch (err) {
+      console.error('Auth request failed:', err);
+      setError('Internet bilan aloqa yo\'q. Iltimos, qayta urinib ko\'ring.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -264,16 +274,31 @@ export default function AuthPage() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 min-h-12 shadow-[0_14px_34px_rgba(37,99,235,0.22)]"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 min-h-12 shadow-[0_14px_34px_rgba(37,99,235,0.22)] disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
           >
-            {effectiveIsLogin ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
-            {effectiveIsLogin ? 'Kirish' : 'Ro‘yxatdan o‘tish'}
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : effectiveIsLogin ? (
+              <LogIn className="w-5 h-5" />
+            ) : (
+              <UserPlus className="w-5 h-5" />
+            )}
+            {isSubmitting
+              ? effectiveIsLogin
+                ? 'Kirilmoqda…'
+                : 'Yuborilmoqda…'
+              : effectiveIsLogin
+                ? 'Kirish'
+                : 'Ro‘yxatdan o‘tish'}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={() => {
               if (pathMode === 'register' || pathMode === 'login' || pathMode === 'auth') {
                 navigate(effectiveIsLogin ? '/register' : '/login');
@@ -281,7 +306,7 @@ export default function AuthPage() {
                 setIsLogin(!effectiveIsLogin);
               }
             }}
-            className="text-blue-600 text-sm font-medium hover:underline"
+            className="text-blue-600 text-sm font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
           >
             {effectiveIsLogin ? 'Hisobingiz yo‘qmi? Ro‘yxatdan o‘ting' : 'Hisobingiz bormi? Kirish'}
           </button>
