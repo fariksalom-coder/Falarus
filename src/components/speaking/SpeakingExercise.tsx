@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   checkSpeakingAnswer,
   checkSpeakingPromptAnswer,
+  isPassingStatus,
   transcribeSpeakingAudio,
   type SpeakingTask,
   type CheckResult,
@@ -76,7 +77,7 @@ export default function SpeakingExercise({
 
   const recorder = useVoiceRecorder();
   const task = tasks[currentIdx];
-  const progress = ((currentIdx + (result?.status === 'correct' ? 1 : 0)) / tasks.length) * 100;
+  const progress = ((currentIdx + (result && isPassingStatus(result.status) ? 1 : 0)) / tasks.length) * 100;
 
   useEffect(() => {
     let cancelled = false;
@@ -188,7 +189,7 @@ export default function SpeakingExercise({
       onFinish();
       return;
     }
-    if (result?.status === 'correct') {
+    if (result && isPassingStatus(result.status)) {
       onCheckpoint?.(currentIdx + 1);
     }
     setCurrentIdx((i) => i + 1);

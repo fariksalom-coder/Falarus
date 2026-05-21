@@ -36,6 +36,10 @@ export type CheckResult = {
   mistakes: MistakeDetail[];
 };
 
+export function isPassingStatus(status: CheckResult['status']): boolean {
+  return status === 'correct' || status === 'partial';
+}
+
 export type SpeakingStats = {
   total: number;
   correct: number;
