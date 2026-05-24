@@ -21,6 +21,11 @@ import {
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
+import {
+  embedFalarusProductInProofUrl,
+  inferCourseProductFromPaymentAmount,
+  resolvePaymentProductFromRow,
+} from '../../shared/paymentsProofUrl.js';
 import { invalidateAccessCache } from './subscription.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
 import { recordPaymentEvent, extractRequestMeta } from '../lib/paymentEvents.js';
@@ -199,7 +204,7 @@ export async function createRahmatMulticardPayment(
       .from('payments')
       .insert({
         ...insertBase,
-        tariff_type: 'month',
+        tariff_type: productCode === 'russian' ? russianTariffType : 'month',
       })
       .select('id')
       .single();
@@ -234,10 +239,11 @@ export async function createRahmatMulticardPayment(
       lang: 'uz',
       ofd,
     });
+    const checkoutUrl = embedFalarusProductInProofUrl(inv.checkout_url, productCode);
     await supabase
       .from('payments')
       .update({
-        payment_proof_url: inv.checkout_url,
+        payment_proof_url: checkoutUrl,
         multicard_invoice_uuid: inv.uuid,
       })
       .eq('id', paymentId);
@@ -247,7 +253,7 @@ export async function createRahmatMulticardPayment(
       json: {
         success: true,
         payment_id: paymentId,
-        payment_url: inv.checkout_url,
+        payment_url: checkoutUrl,
         amount,
         currency: 'UZS',
       },
@@ -386,11 +392,16 @@ export async function handleRahmatMulticardCallback(
   }
 
   const extUuid = uuidIncoming || row.multicard_invoice_uuid || null;
-  const approvePayload = {
+  const inferredCourse = inferCourseProductFromPaymentAmount(row);
+  const productCodeForAccess = inferredCourse ?? resolvePaymentProductFromRow(row);
+  const approvePayload: Record<string, unknown> = {
     status: 'approved' as const,
     approved_at: new Date().toISOString(),
     click_merchant_payment_id: extUuid,
   };
+  if (inferredCourse && normalizePaymentProductCode(row.product_code) !== inferredCourse) {
+    approvePayload.product_code = inferredCourse;
+  }
 
   let { data: flipped, error: approveErr } = await supabase
     .from('payments')
@@ -400,19 +411,19 @@ export async function handleRahmatMulticardCallback(
     .select('id')
     .maybeSingle();
 
-  const canRecoverRejected =
-    row.status === 'rejected' &&
-    Boolean(uuidIncoming && row.multicard_invoice_uuid && uuidIncoming === row.multicard_invoice_uuid);
+  // Yangi Rahmat urinishi avvalgi pending/rejected qiladi; to‘lov eski invoice bo‘yicha bo‘lsa ham tasdiqlash kerak.
+  const canRecoverRejected = row.status === 'rejected' && row.payment_channel === 'rahmat';
 
   if (!flipped && canRecoverRejected) {
-    const recovered = await supabase
+    let recoverQuery = supabase
       .from('payments')
       .update(approvePayload)
       .eq('id', paymentId)
-      .eq('status', 'rejected')
-      .eq('multicard_invoice_uuid', uuidIncoming)
-      .select('id')
-      .maybeSingle();
+      .eq('status', 'rejected');
+    if (uuidIncoming && row.multicard_invoice_uuid) {
+      recoverQuery = recoverQuery.eq('multicard_invoice_uuid', uuidIncoming);
+    }
+    const recovered = await recoverQuery.select('id').maybeSingle();
     flipped = recovered.data;
     if (recovered.error) approveErr = recovered.error;
   }
@@ -433,11 +444,10 @@ export async function handleRahmatMulticardCallback(
     return { status: 200, json: { success: true } };
   }
 
-  const productCode = normalizePaymentProductCode(row.product_code);
   try {
     await activateApprovedPayment(supabase, {
       userId: Number(row.user_id),
-      productCode,
+      productCode: productCodeForAccess,
       tariffType: row.tariff_type,
     });
     invalidateAccessCache(Number(row.user_id));

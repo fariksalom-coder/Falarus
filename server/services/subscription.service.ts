@@ -5,7 +5,10 @@ import {
   type CourseProductCode,
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
-import { readFalarusProductFromProofUrl } from '../../shared/paymentsProofUrl.js';
+import {
+  readFalarusProductFromProofUrl,
+  resolveApprovedCourseProduct,
+} from '../../shared/paymentsProofUrl.js';
 import { LruTtlCache } from '../lib/lruCache.js';
 
 const PLAN_TYPES = ['monthly', 'yearly'] as const;
@@ -145,28 +148,29 @@ export async function hasApprovedCourseAccess(
 ): Promise<boolean> {
   const uid = Number(userId);
   if (!Number.isFinite(uid)) return false;
-  const { data, error } = await supabase
+  const selectWithProduct =
+    'id, product_code, payment_proof_url, amount, currency';
+  const selectLegacy = 'id, payment_proof_url, amount, currency';
+  let { data: rows, error } = await supabase
     .from('payments')
-    .select('id')
+    .select(selectWithProduct)
     .eq('user_id', uid)
     .eq('status', 'approved')
-    .eq('product_code', productCode)
-    .limit(1)
-    .maybeSingle();
+    .order('approved_at', { ascending: false })
+    .limit(30);
   if (error && isPaymentsProductCodeSchemaError(error)) {
-    const { data: rows } = await supabase
+    const legacy = await supabase
       .from('payments')
-      .select('payment_proof_url')
+      .select(selectLegacy)
       .eq('user_id', uid)
       .eq('status', 'approved')
       .order('approved_at', { ascending: false })
       .limit(30);
-    return (rows ?? []).some((r: { payment_proof_url?: string | null }) => {
-      const p = readFalarusProductFromProofUrl(r.payment_proof_url ?? undefined);
-      return p && normalizePaymentProductCode(p) === productCode;
-    });
+    rows = legacy.data as typeof rows;
+    error = legacy.error;
   }
-  return Boolean(data);
+  if (error) throw error;
+  return (rows ?? []).some((row) => resolveApprovedCourseProduct(row) === productCode);
 }
 
 /**
