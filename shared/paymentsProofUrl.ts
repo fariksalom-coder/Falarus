@@ -1,6 +1,9 @@
 import {
+  COURSE_PRODUCT_META,
+  isCourseProductCode,
   isPaymentProductCode,
   normalizePaymentProductCode,
+  type CourseProductCode,
   type PaymentProductCode,
 } from './paymentProducts.js';
 
@@ -43,4 +46,28 @@ export function resolvePaymentProductFromRow(row: {
   }
   if (fromUrl) return normalizePaymentProductCode(fromUrl);
   return normalizePaymentProductCode(undefined);
+}
+
+/** Mis-tagged course payments (legacy default `russian`) — infer from UZS amount. */
+export function inferCourseProductFromPaymentAmount(row: {
+  amount?: number | null;
+  currency?: string | null;
+}): CourseProductCode | null {
+  if (String(row.currency ?? '').toUpperCase() !== 'UZS') return null;
+  const amount = Number(row.amount);
+  if (!Number.isFinite(amount)) return null;
+  if (amount === COURSE_PRODUCT_META.patent.prices.UZS) return 'patent';
+  if (amount === COURSE_PRODUCT_META.vnzh.prices.UZS || amount === 1000) return 'vnzh';
+  return null;
+}
+
+export function resolveApprovedCourseProduct(row: {
+  product_code?: string | null;
+  payment_proof_url?: string | null;
+  amount?: number | null;
+  currency?: string | null;
+}): CourseProductCode | null {
+  const fromRow = resolvePaymentProductFromRow(row);
+  if (isCourseProductCode(fromRow)) return fromRow;
+  return inferCourseProductFromPaymentAmount(row);
 }
