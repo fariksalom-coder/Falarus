@@ -38,7 +38,6 @@ import { assignCompetitionRanks } from './shared/leaderboardRanks.ts';
 import { fetchPeriodLeaderboardFromEvents } from './shared/periodLeaderboard.ts';
 import { insertPointEvent } from './shared/pointEvents.ts';
 import { parseContactIdentifier, sanitizePhoneRaw } from './shared/authIdentifiers.ts';
-import { resolveGoogleWebClientId } from './shared/googleOAuth.ts';
 
 const AUTH_USER_SELECT =
   'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at';
@@ -47,6 +46,8 @@ import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassing.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
+import { findOrCreateUserForSocial, SocialAuthError, verifyGoogleIdToken } from './server/services/socialAuth.service.ts';
+import { resolveGoogleWebClientId } from './shared/googleOAuth.ts';
 import { buildGrammarCatalogPayload } from './server/services/grammarCatalog.service.ts';
 import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.service.ts';
 import {
@@ -64,13 +65,6 @@ import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/
 import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
 import { runClickFiscalRetryCron } from './server/services/clickFiscal.service.ts';
 import { resolveRussianTariffQuote } from './server/services/promoPricing.service.ts';
-import {
-  findOrCreateUserForSocial,
-  SocialAuthError,
-  verifyAppleIdentityToken,
-  verifyGoogleIdToken,
-  type VerifiedSocialIdentity,
-} from './server/services/socialAuth.service.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -558,16 +552,7 @@ async function startServer() {
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
 
-    if (!user) {
-      return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
-    }
-    const storedPassword = typeof user.password === 'string' ? user.password : '';
-    if (!storedPassword) {
-      return res.status(401).json({
-        error: 'Bu akkaunt Google orqali yaratilgan. Google orqali kiring yoki email/parol bilan yangi akkaunt oching.',
-      });
-    }
-    if (!(await bcrypt.compare(password, storedPassword))) {
+    if (!user || !(await bcrypt.compare(password, user.password as string))) {
       return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
     }
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
@@ -593,133 +578,56 @@ async function startServer() {
     });
   });
 
-  // --- Social sign-in (Google / Apple) -------------------------------------
-  async function buildSocialSignInPayload(
-    req: express.Request,
-    identity: VerifiedSocialIdentity,
-  ): Promise<{ token: string; isNewUser: boolean; user: Record<string, unknown> } | null> {
-    const refCode =
-      typeof req.body?.ref === 'string' && req.body.ref.trim().length > 0
-        ? req.body.ref.trim()
-        : null;
-    let resolved;
-    try {
-      resolved = await findOrCreateUserForSocial(supabase, identity);
-    } catch (err) {
-      console.error('[social-auth provision]', err);
-      return null;
-    }
-    const user = resolved.user as Record<string, unknown>;
-    const userId = Number(user.id);
-
-    if (resolved.isNewUser) {
-      if (refCode) {
-        try {
-          const referrerId = await resolveReferrerFromCode(supabase, refCode, userId);
-          if (referrerId != null && referrerId !== userId) {
-            await attachReferralOnRegister(supabase, referrerId, userId);
-          }
-        } catch (refErr) {
-          console.error('[social-auth referral]', refErr);
-        }
-      }
-      try {
-        const { ensureUserInLeaderboard } = await import('./server/services/leaderboard.service');
-        await ensureUserInLeaderboard(supabase, userId);
-      } catch (lbErr) {
-        console.error('[social-auth leaderboard]', lbErr);
-      }
-    }
-
-    const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
-    const sub = await getActiveSubscription(supabase, userId);
-    const planFields = mergeRussianPlanForMeResponse({
-      planName: (user.plan_name as string | null | undefined) ?? null,
-      planExpiresAt: (user.plan_expires_at as string | null | undefined) ?? null,
-      subscription: sub ? { plan_type: sub.plan_type, expires_at: sub.expires_at } : null,
-    });
-
-    return {
-      token,
-      isNewUser: resolved.isNewUser,
-      user: {
-        id: userId,
-        firstName: user.first_name ?? '',
-        lastName: user.last_name ?? '',
-        email: user.email ?? null,
-        phone: user.phone ?? null,
-        level: user.level ?? 'A0',
-        onboarded: user.onboarded ?? 0,
-        planName: planFields.planName,
-        planExpiresAt: planFields.planExpiresAt,
-      },
-    };
-  }
-
-  async function handleSocialSignIn(
-    req: express.Request,
-    res: express.Response,
-    identity: VerifiedSocialIdentity,
-  ): Promise<void> {
-    const payload = await buildSocialSignInPayload(req, identity);
-    if (!payload) {
-      res.status(500).json({ error: 'Xatolik yuz berdi' });
-      return;
-    }
-    res.json(payload);
-  }
-
+  // GET /api/auth/google/client-id — let the SPA discover the OAuth client id
+  // without it being baked into the build (fallback when VITE_ env is missing).
   app.get('/api/auth/google/client-id', (_req, res) => {
-    res.json({ clientId: resolveGoogleWebClientId(process.env as Record<string, string | undefined>) });
+    const clientId = resolveGoogleWebClientId({
+      GOOGLE_OAUTH_WEB_CLIENT_ID: process.env.GOOGLE_OAUTH_WEB_CLIENT_ID,
+      GOOGLE_OAUTH_SERVER_CLIENT_ID: process.env.GOOGLE_OAUTH_SERVER_CLIENT_ID,
+    });
+    res.json({ clientId });
   });
 
+  // POST /api/auth/google — verify the Google ID token, find/create the local
+  // user, return the same `{ token, user }` shape as /api/auth/login.
   app.post('/api/auth/google', authRateLimiter, async (req, res) => {
     const idToken = typeof req.body?.idToken === 'string' ? req.body.idToken.trim() : '';
     if (!idToken) {
-      return res.status(400).json({ error: 'Google id_token kerak' });
+      return res.status(400).json({ error: 'idToken kerak' });
     }
-    let identity: VerifiedSocialIdentity;
     try {
-      identity = await verifyGoogleIdToken(idToken);
+      const identity = await verifyGoogleIdToken(idToken);
+      const { user } = await findOrCreateUserForSocial(supabase, identity);
+      const userId = Number((user as { id: number }).id);
+      const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
+      const sub = await getActiveSubscription(supabase, userId);
+      const planFields = mergeRussianPlanForMeResponse({
+        planName: (user.plan_name as string | null | undefined) ?? null,
+        planExpiresAt: (user.plan_expires_at as string | null | undefined) ?? null,
+        subscription: sub ? { plan_type: sub.plan_type, expires_at: sub.expires_at } : null,
+      });
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          email: user.email ?? null,
+          phone: user.phone ?? null,
+          level: user.level,
+          onboarded: user.onboarded,
+          planName: planFields.planName,
+          planExpiresAt: planFields.planExpiresAt,
+        },
+      });
     } catch (err) {
       if (err instanceof SocialAuthError) {
         return res.status(err.httpStatus).json({ error: err.publicMessage });
       }
-      console.error('[auth/google verify]', err);
+      console.error('[auth/google]', err);
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
-    await handleSocialSignIn(req, res, identity);
   });
-
-  app.post('/api/auth/apple', authRateLimiter, async (req, res) => {
-    const identityToken =
-      typeof req.body?.identityToken === 'string' ? req.body.identityToken.trim() : '';
-    if (!identityToken) {
-      return res.status(400).json({ error: 'Apple identity_token kerak' });
-    }
-    const firstName =
-      typeof req.body?.firstName === 'string' && req.body.firstName.trim()
-        ? req.body.firstName.trim()
-        : null;
-    const lastName =
-      typeof req.body?.lastName === 'string' && req.body.lastName.trim()
-        ? req.body.lastName.trim()
-        : null;
-    const nonce =
-      typeof req.body?.nonce === 'string' && req.body.nonce.trim() ? req.body.nonce.trim() : null;
-    let identity: VerifiedSocialIdentity;
-    try {
-      identity = await verifyAppleIdentityToken(identityToken, { firstName, lastName, nonce });
-    } catch (err) {
-      if (err instanceof SocialAuthError) {
-        return res.status(err.httpStatus).json({ error: err.publicMessage });
-      }
-      console.error('[auth/apple verify]', err);
-      return res.status(500).json({ error: 'Xatolik yuz berdi' });
-    }
-    await handleSocialSignIn(req, res, identity);
-  });
-  // -------------------------------------------------------------------------
 
   const authenticate = (req: any, res: any, next: any) => {
     const authHeader = req.headers.authorization;
@@ -1933,7 +1841,10 @@ async function startServer() {
       });
     }
     const result = await fetchDailyCourseDayBundle(supabase, dayNumber);
-    if (result.ok === false) return res.status(500).json({ error: result.error });
+    if (result.ok === false) {
+      console.error('[GET /api/daily-course/day/:dayNumber]', { dayNumber, error: result.error });
+      return res.status(500).json({ error: result.error });
+    }
     res.json(result.bundle);
   });
 
