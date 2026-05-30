@@ -11,13 +11,15 @@ type Props = {
   disabled?: boolean;
   className?: string;
   inputClassName?: string;
+  error?: string;
+  onChange?: () => void;
 };
 
 /**
  * UZ / RU / TJ / KG only — mirrors {@link shared/phoneE164} rules server-side.
  */
 export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function IntlPhoneInput(
-  { disabled, className = '', inputClassName = '' },
+  { disabled, className = '', inputClassName = '', error, onChange },
   ref
 ) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -54,11 +56,17 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
     });
     itiRef.current = iti;
 
+    const handleInput = () => onChange?.();
+    input.addEventListener('input', handleInput);
+    input.addEventListener('countrychange', handleInput);
+
     return () => {
+      input.removeEventListener('input', handleInput);
+      input.removeEventListener('countrychange', handleInput);
       iti.destroy();
       itiRef.current = null;
     };
-  }, []);
+  }, [onChange]);
 
   return (
     <div className={['intl-phone-field w-full', className].filter(Boolean).join(' ')}>
@@ -69,13 +77,16 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
         autoComplete="tel"
         disabled={disabled}
         className={[
-          'block w-full min-h-11 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm outline-none transition',
-          'focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15',
+          'block w-full min-h-12 px-4 py-3.5 rounded-xl border bg-white text-base font-semibold text-[#0F172A] outline-none transition',
+          error
+            ? 'border-[#EF4444] focus:border-[#EF4444] focus:ring-[1.2px] focus:ring-[#EF4444]'
+            : 'border-[#C8DCF3] focus:border-[#2563EB] focus:ring-[1.2px] focus:ring-[#2563EB]',
           inputClassName,
         ]
           .filter(Boolean)
           .join(' ')}
       />
+      {error ? <p className="mt-1.5 text-sm text-[#EF4444]">{error}</p> : null}
     </div>
   );
 });

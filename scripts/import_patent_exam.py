@@ -56,6 +56,8 @@ def normalize_cell(value: Any) -> Any:
 
 
 def read_shared_strings(zf: zipfile.ZipFile) -> list[str]:
+    if "xl/sharedStrings.xml" not in zf.namelist():
+        return []
     root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
     strings: list[str] = []
     for si in root.findall("a:si", NS):
@@ -183,6 +185,9 @@ def make_block(item: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
     _, variant_part, question_part = source_id.split("_")
     variant_number = int(variant_part)
     prompt = item.get("descriptionText")
+    passage = item.get("passage")
+    if isinstance(passage, str):
+        passage = passage.strip() or None
     media_name = normalize_media_name(item.get("mediaUrl"))
     copied_names: set[str] = set()
     media_url = None
@@ -225,6 +230,7 @@ def make_block(item: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
             "kind": "written",
             "questionNumber": question_number,
             "prompt": prompt,
+            "passage": passage,
             "mediaUrl": media_url,
             "correctAnswers": written_answers(item.get("Correctanswers")),
         }
@@ -244,6 +250,7 @@ def make_block(item: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
         "kind": "image-choice" if item["answerType"] == "imageChoice" else "multiple-choice",
         "questionNumber": question_number,
         "prompt": prompt,
+        "passage": passage,
         "mediaUrl": media_url,
         "question": {
             "key": source_id,
@@ -289,14 +296,21 @@ def build_variants(items: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], s
     return variants, all_media_names
 
 
-def ensure_public_assets(file_index: dict[str, list[Path]], media_names: set[str], output_dir: Path) -> None:
+def ensure_public_assets(file_index: dict[str, list[Path]], media_names: set[str], output_dir: Path) -> list[str]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    missing: list[str] = []
     for media_name in sorted(media_names):
-        source = resolve_media_source(file_index, media_name)
+        try:
+            source = resolve_media_source(file_index, media_name)
+        except FileNotFoundError:
+            missing.append(media_name)
+            print(f"WARNING: media source not found, skipped copy: {media_name}")
+            continue
         target = output_dir / media_name
         if target.exists() and target.stat().st_size == source.stat().st_size:
             continue
         shutil.copy2(source, target)
+    return missing
 
 
 def write_typescript_data(variants: list[dict[str, Any]], target_path: Path) -> None:
@@ -328,6 +342,7 @@ export type PatentExamMultipleChoiceBlock = {{
   kind: 'multiple-choice' | 'image-choice';
   questionNumber: number;
   prompt: string | null;
+  passage: string | null;
   mediaUrl: string | null;
   question: PatentExamChoiceQuestion;
 }};
@@ -338,6 +353,7 @@ export type PatentExamWrittenBlock = {{
   kind: 'written';
   questionNumber: number;
   prompt: string | null;
+  passage: string | null;
   mediaUrl: string | null;
   correctAnswers: string[];
 }};
@@ -370,11 +386,14 @@ def main() -> None:
     items = workbook_items(xlsx_path)
     variants, media_names = build_variants(items)
     file_index = build_file_index(downloads_dir)
-    ensure_public_assets(file_index, media_names, public_media_dir)
+    missing_media = ensure_public_assets(file_index, media_names, public_media_dir)
     write_typescript_data(variants, output_data_path)
 
+    copied_count = len(media_names) - len(missing_media)
     print(f"Imported {len(variants)} patent variants into {output_data_path}")
-    print(f"Copied {len(media_names)} media files into {public_media_dir}")
+    print(f"Copied {copied_count} media files into {public_media_dir}")
+    if missing_media:
+        print(f"Missing media ({len(missing_media)}): {', '.join(missing_media)}")
 
 
 if __name__ == "__main__":

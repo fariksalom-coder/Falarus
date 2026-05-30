@@ -17,10 +17,20 @@ html {
   }
 }
 
-/* intl-tel-input: match auth card width */
+/* intl-tel-input: match auth field styling */
 .intl-phone-field .iti {
   width: 100%;
 }
 .intl-phone-field .iti__country-container .iti__selected-flag {
   border-radius: 0.75rem 0 0 0.75rem;
+}
+.intl-phone-field .iti input {
+  min-height: 3rem;
+  border-radius: 0.75rem;
+  border-color: #c8dcf3;
+  font-weight: 600;
+}
+.intl-phone-field .iti input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1.2px #2563eb;
 }

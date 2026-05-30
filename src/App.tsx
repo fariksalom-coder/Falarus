@@ -60,8 +60,10 @@ function AppRoutes() {
         <>
           <Route path="/" element={renderLazyPage('./pages/LandingPage.tsx')} />
           <Route path="/auth" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={renderLazyPage('./pages/AuthPage.tsx')} />
-          <Route path="/register" element={renderLazyPage('./pages/AuthPage.tsx')} />
+          <Route path="/welcome" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={renderLazyPage('./pages/LoginPage.tsx')} />
+          <Route path="/register" element={renderLazyPage('./pages/RegisterPage.tsx')} />
+          <Route path="/forgot-password" element={renderLazyPage('./pages/ForgotPasswordPage.tsx')} />
           <Route path="*" element={<NotFoundPage />} />
         </>
       ) : (

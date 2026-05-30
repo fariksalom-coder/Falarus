@@ -1,12 +1,22 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { pool as localPgPool } from './db';
+import { createSupabaseShim, type SupabaseShim } from './supabaseShim';
 
 const DEFAULT_FETCH_TIMEOUT_MS = 12_000;
 
 /**
- * Server Supabase client with bounded HTTP timeouts so nginx does not sit on
- * 504 while PostgREST/undici waits ~30s+ for headers.
+ * Возвращает Supabase-совместимый клиент. Если в env задан DATABASE_URL и pg pool
+ * успешно создан — возвращается локальный shim (запросы идут в локальную PG через
+ * node-postgres, .storage всё ещё проксируется на настоящий supabase-js). Иначе —
+ * настоящий supabase-js client с ограниченным fetch timeout, чтобы nginx не висел
+ * на 504 пока undici ждёт 30+ секунд.
  */
 export function createSupabaseServer(url: string, serviceRoleKey: string): SupabaseClient {
+  if (localPgPool) {
+    console.log('[Supabase] createSupabaseServer → local PG shim (DATABASE_URL is set)');
+    return createSupabaseShim(localPgPool) as unknown as SupabaseClient;
+  }
+
   const timeoutMs = Math.max(
     3_000,
     Number(process.env.SUPABASE_FETCH_TIMEOUT_MS || DEFAULT_FETCH_TIMEOUT_MS)
@@ -28,6 +38,8 @@ export function createSupabaseServer(url: string, serviceRoleKey: string): Supab
     },
   });
 }
+
+export type { SupabaseShim };
 
 export function isSupabaseTimeoutError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;

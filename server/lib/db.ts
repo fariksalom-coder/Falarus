@@ -11,7 +11,21 @@
  * Типы таблиц генерируем через kysely-codegen (см. README ниже в файле).
  */
 import { Kysely, PostgresDialect } from 'kysely';
-import { Pool } from 'pg';
+import { Pool, types as pgTypes } from 'pg';
+
+/**
+ * Подстраиваем pg parsers под форму данных, которую возвращал supabase-js:
+ *   • TIMESTAMP / TIMESTAMPTZ → строки (ISO), а не Date — иначе сломаются
+ *     лексические сравнения вида `row.created_at > now.toISOString()`.
+ *   • BIGINT (int8) → number — иначе сломаются `user1_id === userId`.
+ *     Безопасно пока ID не превысят Number.MAX_SAFE_INTEGER (9e15);
+ *     для масштаба этого приложения — с огромным запасом.
+ *   • NUMERIC → number — для денежных значений и баллов.
+ */
+pgTypes.setTypeParser(pgTypes.builtins.INT8, (val: string) => parseInt(val, 10));
+pgTypes.setTypeParser(pgTypes.builtins.TIMESTAMP, (val: string) => val);
+pgTypes.setTypeParser(pgTypes.builtins.TIMESTAMPTZ, (val: string) => val);
+pgTypes.setTypeParser(pgTypes.builtins.NUMERIC, (val: string) => parseFloat(val));
 
 /**
  * Интерфейс схемы БД. Пока — placeholder. Сгенерировать актуальные типы:
