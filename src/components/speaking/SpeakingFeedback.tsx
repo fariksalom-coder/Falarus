@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle, AlertTriangle, XCircle, Eye } from 'lucide-react';
-import type { CheckResult } from '../../api/speaking';
+import { CheckCircle, XCircle, Eye } from 'lucide-react';
+import { isPassingStatus, type CheckResult } from '../../api/speaking';
 
 type Props = {
   result: CheckResult;
@@ -20,12 +20,12 @@ const STATUS_CONFIG = {
     textColor: 'text-emerald-800',
   },
   partial: {
-    Icon: AlertTriangle,
-    label: "Qisman to'g'ri",
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    iconColor: 'text-amber-600',
-    textColor: 'text-amber-800',
+    Icon: CheckCircle,
+    label: "To'g'ri (yaxshilash mumkin)",
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    iconColor: 'text-emerald-600',
+    textColor: 'text-emerald-800',
   },
   wrong: {
     Icon: XCircle,
@@ -62,7 +62,7 @@ export default function SpeakingFeedback({ result, attempts, onNext, onRetry }: 
           {result.mistakes.map((m, i) => (
             <div key={i} className="rounded-xl bg-white/60 px-4 py-3">
               <p className="text-sm text-slate-800">
-                <span className="font-semibold text-red-600">«{m.part}»</span>
+                <span className={`font-semibold ${result.status === 'partial' ? 'text-amber-600' : 'text-red-600'}`}>«{m.part}»</span>
                 {' — '}{m.issue}
               </p>
               {m.hint_uz && (
@@ -80,7 +80,7 @@ export default function SpeakingFeedback({ result, attempts, onNext, onRetry }: 
         </div>
       )}
 
-      {result.status !== 'correct' && attempts >= 2 && (
+      {result.status === 'wrong' && attempts >= 2 && (
         <div className="mt-3">
           {!showAnswer ? (
             <button
@@ -103,14 +103,25 @@ export default function SpeakingFeedback({ result, attempts, onNext, onRetry }: 
       )}
 
       <div className="mt-4 flex gap-3">
-        {result.status === 'correct' ? (
-          <button
-            type="button"
-            onClick={onNext}
-            className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_8px_24px_rgba(16,185,129,0.4)]"
-          >
-            Keyingisi
-          </button>
+        {isPassingStatus(result.status) ? (
+          <>
+            <button
+              type="button"
+              onClick={onNext}
+              className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_8px_24px_rgba(16,185,129,0.4)]"
+            >
+              Keyingisi
+            </button>
+            {result.status === 'partial' && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-50"
+              >
+                Qayta urinish
+              </button>
+            )}
+          </>
         ) : (
           <>
             <button

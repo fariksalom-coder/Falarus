@@ -35,6 +35,14 @@ function normalizeWrittenAnswer(value: string): string {
   return value.trim().toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').replace(/\s+/g, ' ');
 }
 
+function PassageBlock({ passage }: { passage: string }) {
+  return (
+    <div className="my-3 whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base leading-relaxed text-slate-800">
+      {passage}
+    </div>
+  );
+}
+
 function getStepQuestionNumbers(block: PatentExamBlock): number[] {
   if (block.kind === 'audio-double') {
     return block.subQuestions.map((question) => question.questionNumber);
@@ -183,6 +191,8 @@ function WrittenCard({
       <h2 className="text-[18px] font-bold leading-tight sm:text-[21px]" style={{ color: TEXT }}>
         {block.questionNumber}. {block.prompt ?? "To'g'ri javobni yozing"}
       </h2>
+
+      {block.passage ? <PassageBlock passage={block.passage} /> : null}
 
       {block.mediaUrl ? (
         <div className="mt-4 overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>
@@ -499,6 +509,20 @@ export default function PatentCourseVariantPage() {
               />
             ) : currentChoiceBlock ? (
               <div className="space-y-3">
+                {currentChoiceBlock.prompt ? (
+                  <div className="rounded-[24px] bg-white px-4 py-3.5 shadow-[0_14px_28px_rgba(96,132,184,0.12)] sm:px-5">
+                    <p className="text-[18px] font-bold leading-tight sm:text-[21px]" style={{ color: TEXT }}>
+                      {currentChoiceBlock.questionNumber}. {currentChoiceBlock.prompt}
+                    </p>
+                  </div>
+                ) : null}
+
+                {currentChoiceBlock.passage ? (
+                  <div className="rounded-[24px] bg-white px-4 py-1 shadow-[0_14px_28px_rgba(96,132,184,0.12)] sm:px-5 sm:py-2">
+                    <PassageBlock passage={currentChoiceBlock.passage} />
+                  </div>
+                ) : null}
+
                 {currentChoiceBlock.mediaUrl ? (
                   <div className="rounded-[24px] bg-white p-3.5 shadow-[0_14px_28px_rgba(96,132,184,0.12)]">
                     <div className="overflow-hidden rounded-[22px] border bg-slate-50" style={{ borderColor: BORDER }}>

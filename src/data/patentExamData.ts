@@ -24,6 +24,7 @@ export type PatentExamMultipleChoiceBlock = {
   kind: 'multiple-choice' | 'image-choice';
   questionNumber: number;
   prompt: string | null;
+  passage: string | null;
   mediaUrl: string | null;
   question: PatentExamChoiceQuestion;
 };
@@ -34,6 +35,7 @@ export type PatentExamWrittenBlock = {
   kind: 'written';
   questionNumber: number;
   prompt: string | null;
+  passage: string | null;
   mediaUrl: string | null;
   correctAnswers: string[];
 };
@@ -124,6 +126,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto51.png",
         "question": {
           "key": "P_1_5",
@@ -143,6 +146,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto61.png",
         "question": {
           "key": "P_1_6",
@@ -162,6 +166,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto71.png",
         "correctAnswers": [
           "строитель"
@@ -173,6 +178,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_8",
@@ -192,6 +198,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_9",
@@ -211,6 +218,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_10",
@@ -230,6 +238,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_11",
@@ -249,6 +258,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_12",
@@ -268,6 +278,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_13",
@@ -287,6 +298,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_14",
@@ -306,6 +318,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_15",
@@ -325,6 +338,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_16",
@@ -344,6 +358,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_17",
@@ -363,6 +378,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_18",
@@ -382,6 +398,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_19",
@@ -401,6 +418,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_20",
@@ -420,6 +438,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_21",
@@ -439,6 +458,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_1_22",
@@ -526,6 +546,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте киноафишу и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto52.png",
         "question": {
           "key": "P_2_5",
@@ -545,6 +566,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto62.png",
         "question": {
           "key": "P_2_6",
@@ -564,6 +586,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto72.png",
         "correctAnswers": [
           "Узбекистана"
@@ -575,6 +598,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_8",
@@ -594,6 +618,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_9",
@@ -613,6 +638,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_10",
@@ -632,6 +658,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_11",
@@ -651,6 +678,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_12",
@@ -670,6 +698,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_13",
@@ -689,6 +718,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_14",
@@ -708,6 +738,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_15",
@@ -727,6 +758,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_16",
@@ -746,6 +778,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_17",
@@ -765,6 +798,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_18",
@@ -784,6 +818,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_19",
@@ -803,6 +838,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_20",
@@ -822,6 +858,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_21",
@@ -841,6 +878,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_2_22",
@@ -928,6 +966,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto53.png",
         "question": {
           "key": "P_3_5",
@@ -947,6 +986,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto63.png",
         "question": {
           "key": "P_3_6",
@@ -966,6 +1006,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto73.png",
         "correctAnswers": [
           "водитель"
@@ -977,6 +1018,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_8",
@@ -996,6 +1038,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_9",
@@ -1015,6 +1058,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_10",
@@ -1034,6 +1078,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_11",
@@ -1053,6 +1098,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_12",
@@ -1072,6 +1118,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_13",
@@ -1091,6 +1138,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_14",
@@ -1110,6 +1158,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_15",
@@ -1129,6 +1178,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_16",
@@ -1148,6 +1198,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_17",
@@ -1167,6 +1218,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_18",
@@ -1186,6 +1238,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_19",
@@ -1205,6 +1258,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_20",
@@ -1224,6 +1278,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_21",
@@ -1243,6 +1298,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_3_22",
@@ -1330,6 +1386,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto54.png",
         "question": {
           "key": "P_4_5",
@@ -1349,6 +1406,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto64.png",
         "question": {
           "key": "P_4_6",
@@ -1368,6 +1426,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto74.png",
         "correctAnswers": [
           "курьера"
@@ -1379,6 +1438,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_8",
@@ -1398,6 +1458,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_9",
@@ -1417,6 +1478,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_10",
@@ -1436,6 +1498,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_11",
@@ -1455,6 +1518,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_12",
@@ -1474,6 +1538,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_13",
@@ -1493,6 +1558,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_14",
@@ -1512,6 +1578,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_15",
@@ -1531,6 +1598,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_16",
@@ -1550,6 +1618,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_17",
@@ -1569,6 +1638,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_18",
@@ -1588,6 +1658,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_19",
@@ -1607,6 +1678,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_20",
@@ -1626,6 +1698,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_21",
@@ -1645,6 +1718,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_4_22",
@@ -1732,6 +1806,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto55.png",
         "question": {
           "key": "P_5_5",
@@ -1751,6 +1826,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto65.png",
         "question": {
           "key": "P_5_6",
@@ -1770,6 +1846,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto75.png",
         "correctAnswers": [
           "женат"
@@ -1781,6 +1858,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_8",
@@ -1800,6 +1878,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_9",
@@ -1819,6 +1898,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_10",
@@ -1838,6 +1918,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_11",
@@ -1857,6 +1938,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_12",
@@ -1876,6 +1958,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_13",
@@ -1895,6 +1978,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_14",
@@ -1914,6 +1998,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_15",
@@ -1933,6 +2018,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_16",
@@ -1952,6 +2038,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_17",
@@ -1971,6 +2058,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_18",
@@ -1990,6 +2078,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_19",
@@ -2009,6 +2098,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_20",
@@ -2028,6 +2118,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_21",
@@ -2047,6 +2138,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_5_22",
@@ -2134,6 +2226,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto56.png",
         "question": {
           "key": "P_6_5",
@@ -2153,6 +2246,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto66.png",
         "question": {
           "key": "P_6_6",
@@ -2172,6 +2266,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto76.png",
         "correctAnswers": [
           "двадцать"
@@ -2183,6 +2278,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_8",
@@ -2202,6 +2298,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_9",
@@ -2221,6 +2318,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_10",
@@ -2240,6 +2338,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_11",
@@ -2259,6 +2358,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_12",
@@ -2278,6 +2378,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_13",
@@ -2297,6 +2398,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_14",
@@ -2316,6 +2418,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_15",
@@ -2335,6 +2438,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_16",
@@ -2354,6 +2458,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_17",
@@ -2373,6 +2478,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_18",
@@ -2392,6 +2498,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_19",
@@ -2411,6 +2518,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_20",
@@ -2430,6 +2538,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_21",
@@ -2449,6 +2558,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_6_22",
@@ -2536,6 +2646,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto57.png",
         "question": {
           "key": "P_7_5",
@@ -2555,6 +2666,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto67.png",
         "question": {
           "key": "P_7_6",
@@ -2574,6 +2686,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto77.png",
         "correctAnswers": [
           "повара"
@@ -2585,6 +2698,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_8",
@@ -2604,6 +2718,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_9",
@@ -2623,6 +2738,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_10",
@@ -2642,6 +2758,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_11",
@@ -2661,6 +2778,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_12",
@@ -2680,6 +2798,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_13",
@@ -2699,6 +2818,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_14",
@@ -2718,6 +2838,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_15",
@@ -2737,6 +2858,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_16",
@@ -2756,6 +2878,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_17",
@@ -2775,6 +2898,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_18",
@@ -2794,6 +2918,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_19",
@@ -2813,6 +2938,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_20",
@@ -2832,6 +2958,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_21",
@@ -2851,6 +2978,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_7_22",
@@ -2938,6 +3066,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto58.png",
         "question": {
           "key": "P_8_5",
@@ -2957,6 +3086,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto68.png",
         "question": {
           "key": "P_8_6",
@@ -2976,6 +3106,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto78.png",
         "correctAnswers": [
           "Султанов"
@@ -2987,6 +3118,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_8",
@@ -3006,6 +3138,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_9",
@@ -3025,6 +3158,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_10",
@@ -3044,6 +3178,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_11",
@@ -3063,6 +3198,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_12",
@@ -3082,6 +3218,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_13",
@@ -3101,6 +3238,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_14",
@@ -3120,6 +3258,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_15",
@@ -3139,6 +3278,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_16",
@@ -3158,6 +3298,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_17",
@@ -3177,6 +3318,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_18",
@@ -3196,6 +3338,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_19",
@@ -3215,6 +3358,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_20",
@@ -3234,6 +3378,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_21",
@@ -3253,6 +3398,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_8_22",
@@ -3340,6 +3486,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto59.png",
         "question": {
           "key": "P_9_5",
@@ -3359,6 +3506,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto69.png",
         "question": {
           "key": "P_9_6",
@@ -3378,6 +3526,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto79.png",
         "correctAnswers": [
           "замужем"
@@ -3389,6 +3538,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_8",
@@ -3408,6 +3558,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_9",
@@ -3427,6 +3578,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_10",
@@ -3446,6 +3598,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_11",
@@ -3465,6 +3618,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_12",
@@ -3484,6 +3638,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_13",
@@ -3503,6 +3658,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_14",
@@ -3522,6 +3678,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_15",
@@ -3541,6 +3698,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_16",
@@ -3560,6 +3718,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_17",
@@ -3579,6 +3738,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_18",
@@ -3598,6 +3758,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_19",
@@ -3617,6 +3778,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_20",
@@ -3636,6 +3798,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_21",
@@ -3655,6 +3818,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_9_22",
@@ -3742,6 +3906,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto510.png",
         "question": {
           "key": "P_10_5",
@@ -3761,6 +3926,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto610.png",
         "question": {
           "key": "P_10_6",
@@ -3780,6 +3946,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto710.png",
         "correctAnswers": [
           "грузчик"
@@ -3791,6 +3958,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_8",
@@ -3810,6 +3978,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_9",
@@ -3829,6 +3998,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_10",
@@ -3848,6 +4018,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_11",
@@ -3867,6 +4038,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_12",
@@ -3886,6 +4058,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_13",
@@ -3905,6 +4078,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_14",
@@ -3924,6 +4098,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_15",
@@ -3943,6 +4118,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_16",
@@ -3962,6 +4138,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_17",
@@ -3981,6 +4158,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_18",
@@ -4000,6 +4178,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_19",
@@ -4019,6 +4198,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_20",
@@ -4038,6 +4218,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_21",
@@ -4057,6 +4238,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_10_22",
@@ -4144,6 +4326,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 5,
         "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto511.png",
         "question": {
           "key": "P_11_5",
@@ -4163,6 +4346,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 6,
         "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto611.png",
         "question": {
           "key": "P_11_6",
@@ -4182,6 +4366,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "written",
         "questionNumber": 7,
         "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": null,
         "mediaUrl": "/courses/patent/media/foto711.png",
         "correctAnswers": [
           "кассира"
@@ -4193,6 +4378,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 8,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_8",
@@ -4212,6 +4398,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 9,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_9",
@@ -4231,6 +4418,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 10,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_10",
@@ -4250,6 +4438,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 11,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_11",
@@ -4269,6 +4458,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 12,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_12",
@@ -4288,6 +4478,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 13,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_13",
@@ -4307,6 +4498,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 14,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_14",
@@ -4326,6 +4518,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 15,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_15",
@@ -4345,6 +4538,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "image-choice",
         "questionNumber": 16,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_16",
@@ -4364,6 +4558,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 17,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_17",
@@ -4383,6 +4578,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 18,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_18",
@@ -4402,6 +4598,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 19,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_19",
@@ -4421,6 +4618,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 20,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_20",
@@ -4440,6 +4638,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 21,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_21",
@@ -4459,6 +4658,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "multiple-choice",
         "questionNumber": 22,
         "prompt": null,
+        "passage": null,
         "mediaUrl": null,
         "question": {
           "key": "P_11_22",
@@ -4469,6 +4669,2106 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
             "Неверно"
           ],
           "correctIndex": 0
+        }
+      }
+    ]
+  },
+  {
+    "variantNumber": 12,
+    "title": "12-variant",
+    "totalQuestions": 22,
+    "blocks": [
+      {
+        "blockId": "P_12_12",
+        "variantNumber": 12,
+        "kind": "audio-double",
+        "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
+        "mediaUrl": "/courses/patent/media/audio121.mp3",
+        "subQuestions": [
+          {
+            "key": "P_12_1",
+            "questionNumber": 1,
+            "text": "Вы слышите разговор",
+            "options": [
+              "друзей",
+              "незнакомых людей",
+              "родственников"
+            ],
+            "correctIndex": 0
+          },
+          {
+            "key": "P_12_2",
+            "questionNumber": 2,
+            "text": "Девушки хотят поехать на Камчатку",
+            "options": [
+              "весной",
+              "летом",
+              "осенью"
+            ],
+            "correctIndex": 2
+          }
+        ]
+      },
+      {
+        "blockId": "P_12_34",
+        "variantNumber": 12,
+        "kind": "audio-double",
+        "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
+        "mediaUrl": "/courses/patent/media/audio122.mp3",
+        "subQuestions": [
+          {
+            "key": "P_12_3",
+            "questionNumber": 3,
+            "text": "Объявление можно услышать",
+            "options": [
+              "в торговом центре",
+              "в автобусе",
+              "в метро"
+            ],
+            "correctIndex": 2
+          },
+          {
+            "key": "P_12_4",
+            "questionNumber": 4,
+            "text": "Поезд не едет до станции",
+            "options": [
+              "Театральная",
+              "Тульская",
+              "Тургеневская"
+            ],
+            "correctIndex": 0
+          }
+        ]
+      },
+      {
+        "blockId": "P_12_5",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 5,
+        "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": "Акция! При покупке чашки кофе вторая – в подарок!",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_5",
+          "questionNumber": 5,
+          "text": "Такое объявление можно прочитать",
+          "options": [
+            "на почте",
+            "в кафе",
+            "в метро"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_12_6",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 6,
+        "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": "Меня зовут Ясмина. Мне 45 лет. Каждый день я работаю по 8 часов на кухне, потому что я повар. По выходным я не люблю готовить, я хожу гулять с моими детьми и мужем.",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_6",
+          "questionNumber": 6,
+          "text": "Ясмина работает",
+          "options": [
+            "в кафе",
+            "на почте",
+            "в парикмахерской"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_12_7",
+        "variantNumber": 12,
+        "kind": "written",
+        "questionNumber": 7,
+        "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": "Фозил Толибов приехал в Россию из Таджикистана. Ему сорок лет.\nВпишите нужное слово в анкету.\n\nАнкета:\nКак Вас зовут?  Меня зовут Толибов Фозил\nИз какой страны Вы приехали?  Я приехал из Таджикистана\nСколько Вам лет?  Мне ____________ лет",
+        "mediaUrl": null,
+        "correctAnswers": [
+          "сорок"
+        ]
+      },
+      {
+        "blockId": "P_12_8",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 8,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_8",
+          "questionNumber": 8,
+          "text": "В библиотеке можно _____________ взять любые книги.",
+          "options": [
+            "бесплатно",
+            "правильно",
+            "медленно"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_12_9",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 9,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_9",
+          "questionNumber": 9,
+          "text": "Ваше _____________________ положение?",
+          "options": [
+            "семейная",
+            "семейное",
+            "семейный"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_12_10",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 10,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_10",
+          "questionNumber": 10,
+          "text": "Ира, _______________ есть братья?",
+          "options": [
+            "твои",
+            "ты",
+            "у тебя"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_12_11",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 11,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_11",
+          "questionNumber": 11,
+          "text": "Они говорят по-русски, _______________ живут в России.",
+          "options": [
+            "чтобы",
+            "потому что",
+            "который"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_12_12",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 12,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_12",
+          "questionNumber": 12,
+          "text": "12 июня в России отмечают ____.",
+          "options": [
+            "День защитника Отечества",
+            "Международный женский день",
+            "День России"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_12_13",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 13,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_13",
+          "questionNumber": 13,
+          "text": "В России находится город ____.",
+          "options": [
+            "Севастополь",
+            "Лиссабон",
+            "Венеция"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_12_14",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 14,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_14",
+          "questionNumber": 14,
+          "text": "22 июня 1941 г. на СССР напали войска",
+          "options": [
+            "Англии",
+            "Германии",
+            "Франции"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_12_15",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 15,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_15",
+          "questionNumber": 15,
+          "text": "Освобождение Москвы от польско-литовских войск в период Смуты относится к",
+          "options": [
+            "988 г.",
+            "1612 г.",
+            "1812 г."
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_12_16",
+        "variantNumber": 12,
+        "kind": "image-choice",
+        "questionNumber": 16,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_16",
+          "questionNumber": 16,
+          "text": "Укажите герб Российской Федерации.",
+          "options": [
+            "/courses/patent/media/flag12a.jpg",
+            "/courses/patent/media/flag12b.jpg",
+            "/courses/patent/media/flag12c.jpg"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_12_17",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 17,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_17",
+          "questionNumber": 17,
+          "text": "Иностранный гражданин, законно находящийся на территории Российской Федерации, имеет право",
+          "options": [
+            "организовывать демонстрации",
+            "выбирать место пребывания",
+            "избираться в органы власти"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_12_18",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 18,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_18",
+          "questionNumber": 18,
+          "text": "Работающий иностранный гражданин в Российской Федерации обязан",
+          "options": [
+            "участвовать в культурной жизни",
+            "направлять индивидуальные обращения в государственные органы",
+            "платить законно установленные налоги и сборы"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_12_19",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 19,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_19",
+          "questionNumber": 19,
+          "text": "В комплект документов для оформления патента иностранному гражданину в России НЕ входит",
+          "options": [
+            "свидетельство о рождении детей",
+            "дактилоскопическая карта с отпечатками пальцев",
+            "полис добровольного медицинского страхования (ДМС)"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_12_20",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 20,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_20",
+          "questionNumber": 20,
+          "text": "Основание для постановки на миграционный учёт –",
+          "options": [
+            "заключение трудового договора",
+            "факт въезда иностранного гражданина в РФ",
+            "приобретение собственности на территории РФ"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_12_21",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 21,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_21",
+          "questionNumber": 21,
+          "text": "К наказаниям за нарушение правил миграционного учёта относят",
+          "options": [
+            "дисциплинарное взыскание",
+            "административный арест",
+            "административное выдворение за пределы РФ"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_12_22",
+        "variantNumber": 12,
+        "kind": "multiple-choice",
+        "questionNumber": 22,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_12_22",
+          "questionNumber": 22,
+          "text": "Иностранный гражданин не исполнил обязанности по уведомлению о подтверждении своего проживания в РФ. Такое нарушение влечёт наложение дисциплинарного взыскания. Верно ли это утверждение?",
+          "options": [
+            "верно",
+            "неверно"
+          ],
+          "correctIndex": 1
+        }
+      }
+    ]
+  },
+  {
+    "variantNumber": 13,
+    "title": "13-variant",
+    "totalQuestions": 22,
+    "blocks": [
+      {
+        "blockId": "P_13_12",
+        "variantNumber": 13,
+        "kind": "audio-double",
+        "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
+        "mediaUrl": "/courses/patent/media/audio131.mp3",
+        "subQuestions": [
+          {
+            "key": "P_13_1",
+            "questionNumber": 1,
+            "text": "Они говорят",
+            "options": [
+              "на автовокзале",
+              "в аэропорту",
+              "на железнодорожном вокзале"
+            ],
+            "correctIndex": 2
+          },
+          {
+            "key": "P_13_2",
+            "questionNumber": 2,
+            "text": "Отправление поезда будет",
+            "options": [
+              "в 1 час",
+              "в 2 часа",
+              "в 3 часа"
+            ],
+            "correctIndex": 2
+          }
+        ]
+      },
+      {
+        "blockId": "P_13_34",
+        "variantNumber": 13,
+        "kind": "audio-double",
+        "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
+        "mediaUrl": "/courses/patent/media/audio132.mp3",
+        "subQuestions": [
+          {
+            "key": "P_13_3",
+            "questionNumber": 3,
+            "text": "Объявление можно услышать",
+            "options": [
+              "в школе",
+              "в торговом центре",
+              "в банке"
+            ],
+            "correctIndex": 1
+          },
+          {
+            "key": "P_13_4",
+            "questionNumber": 4,
+            "text": "В магазине «Мой дом» можно сделать бесплатно копию ключей",
+            "options": [
+              "весной",
+              "летом",
+              "осенью"
+            ],
+            "correctIndex": 2
+          }
+        ]
+      },
+      {
+        "blockId": "P_13_5",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 5,
+        "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": "Уважаемые граждане! Врач Иванова принимает в кабинете № 7.",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_5",
+          "questionNumber": 5,
+          "text": "Такое объявление можно прочитать",
+          "options": [
+            "в метро",
+            "в поликлинике",
+            "в торговом центре"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_13_6",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 6,
+        "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": "Меня зовут Света. После работы я ходила получать посылку и письмо от моей бабушки из Красноярска. В посылке были свитер и вкусные конфеты.",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_6",
+          "questionNumber": 6,
+          "text": "После работы Света была",
+          "options": [
+            "на почте",
+            "в магазине",
+            "в кафе"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_13_7",
+        "variantNumber": 13,
+        "kind": "written",
+        "questionNumber": 7,
+        "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": "Амир Хасанов приехал в Россию из Таджикистана. Он сварщик.\nВпишите нужное слово в анкету.\n\nАнкета:\nФамилия, имя  Хасанов Амир\nГражданство  Таджикистан\nПрофессия  _______________",
+        "mediaUrl": null,
+        "correctAnswers": [
+          "сварщик"
+        ]
+      },
+      {
+        "blockId": "P_13_8",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 8,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_8",
+          "questionNumber": 8,
+          "text": "В магазине «Обувь» акция! Купи _____________ и вторую пару получи бесплатно.",
+          "options": [
+            "кроссовки",
+            "джинсы",
+            "часы"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_13_9",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 9,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_9",
+          "questionNumber": 9,
+          "text": "Света, я __________ тебя и твоего мужа на день рождения.",
+          "options": [
+            "приглашать",
+            "приглашает",
+            "приглашаю"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_13_10",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 10,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_10",
+          "questionNumber": 10,
+          "text": "– Олег, кем ты работаешь? – Я работаю _______________.",
+          "options": [
+            "кассир",
+            "кассиром",
+            "кассира"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_13_11",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 11,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_11",
+          "questionNumber": 11,
+          "text": "На улице холодно, _________ я надел тёплую куртку.",
+          "options": [
+            "поэтому",
+            "потому что",
+            "что"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_13_12",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 12,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_12",
+          "questionNumber": 12,
+          "text": "9 мая в России отмечают",
+          "options": [
+            "День России",
+            "День Победы",
+            "День защитника Отечества"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_13_13",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 13,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_13",
+          "questionNumber": 13,
+          "text": "В России находится город",
+          "options": [
+            "Челябинск",
+            "Прага",
+            "Афины"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_13_14",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 14,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_14",
+          "questionNumber": 14,
+          "text": "Конституция Российской Федерации была принята в",
+          "options": [
+            "1945 г.",
+            "1961 г.",
+            "1993 г."
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_13_15",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 15,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_15",
+          "questionNumber": 15,
+          "text": "К началу XVII в. относится",
+          "options": [
+            "Крещение Руси",
+            "образование СССР",
+            "Смута и интервенция"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_13_16",
+        "variantNumber": 13,
+        "kind": "image-choice",
+        "questionNumber": 16,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_16",
+          "questionNumber": 16,
+          "text": "Укажите герб Российской Федерации.",
+          "options": [
+            "/courses/patent/media/flag13a.jpg",
+            "/courses/patent/media/flag13b.jpg",
+            "/courses/patent/media/flag13c.jpg"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_13_17",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 17,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_17",
+          "questionNumber": 17,
+          "text": "Иностранный гражданин в РФ имеет право",
+          "options": [
+            "получать все виды пособий и социальных льгот",
+            "организовывать шествия",
+            "пользоваться учреждениями культуры"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_13_18",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 18,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_18",
+          "questionNumber": 18,
+          "text": "Иностранный гражданин в РФ обязан",
+          "options": [
+            "участвовать в отправлении правосудия",
+            "сохранять природу и окружающую среду",
+            "вступить в профессиональный союз"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_13_19",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 19,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_19",
+          "questionNumber": 19,
+          "text": "В комплект документов для оформления патента иностранному гражданину в России НЕ входит",
+          "options": [
+            "паспорт и его нотариально заверенный перевод",
+            "миграционная карта с отметкой цели въезда «работа»",
+            "свидетельство о праве собственности"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_13_20",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 20,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_20",
+          "questionNumber": 20,
+          "text": "Основание для постановки на миграционный учёт –",
+          "options": [
+            "заключение брака на территории РФ",
+            "приобретение собственности на территории РФ",
+            "факт въезда иностранного гражданина в РФ"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_13_21",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 21,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_21",
+          "questionNumber": 21,
+          "text": "К наказаниям за нарушение правил миграционного учёта относят",
+          "options": [
+            "административное приостановление деятельности",
+            "административный запрет",
+            "административный штраф"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_13_22",
+        "variantNumber": 13,
+        "kind": "multiple-choice",
+        "questionNumber": 22,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_13_22",
+          "questionNumber": 22,
+          "text": "Административное выдворение за пределы РФ не может применяться к военнослужащим – иностранным гражданам. Верно ли это утверждение?",
+          "options": [
+            "верно",
+            "неверно"
+          ],
+          "correctIndex": 0
+        }
+      }
+    ]
+  },
+  {
+    "variantNumber": 14,
+    "title": "14-variant",
+    "totalQuestions": 22,
+    "blocks": [
+      {
+        "blockId": "P_14_12",
+        "variantNumber": 14,
+        "kind": "audio-double",
+        "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
+        "mediaUrl": "/courses/patent/media/audio141.mp3",
+        "subQuestions": [
+          {
+            "key": "P_14_1",
+            "questionNumber": 1,
+            "text": "Они говорят",
+            "options": [
+              "в аптеке",
+              "в банке",
+              "в поликлинике"
+            ],
+            "correctIndex": 2
+          },
+          {
+            "key": "P_14_2",
+            "questionNumber": 2,
+            "text": "Прививку от гриппа можно сделать",
+            "options": [
+              "в кабинете 15",
+              "в кабинете 5",
+              "в кабинете 50"
+            ],
+            "correctIndex": 0
+          }
+        ]
+      },
+      {
+        "blockId": "P_14_34",
+        "variantNumber": 14,
+        "kind": "audio-double",
+        "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
+        "mediaUrl": "/courses/patent/media/audio142.mp3",
+        "subQuestions": [
+          {
+            "key": "P_14_3",
+            "questionNumber": 3,
+            "text": "Вы можете услышать это объявление",
+            "options": [
+              "в торговом центре",
+              "в больнице",
+              "в спортивном зале"
+            ],
+            "correctIndex": 0
+          },
+          {
+            "key": "P_14_4",
+            "questionNumber": 4,
+            "text": "Скидки до 50 %",
+            "options": [
+              "на зимнюю одежду",
+              "на летнюю одежду",
+              "на всю одежду"
+            ],
+            "correctIndex": 0
+          }
+        ]
+      },
+      {
+        "blockId": "P_14_5",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 5,
+        "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": "Уважаемые пассажиры! Платформа № 3 закрыта на ремонт.",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_5",
+          "questionNumber": 5,
+          "text": "Такое объявление можно прочитать",
+          "options": [
+            "в магазине",
+            "на вокзале",
+            "на стройке"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_14_6",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 6,
+        "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": "У Амира самая популярная работа – он курьер. Каждый день он привозит товары из магазина людям. Он работает с понедельника по субботу, а в воскресенье он отдыхает.",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_6",
+          "questionNumber": 6,
+          "text": "У Амира выходной",
+          "options": [
+            "в понедельник",
+            "в субботу",
+            "в воскресенье"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_14_7",
+        "variantNumber": 14,
+        "kind": "written",
+        "questionNumber": 7,
+        "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": "Нодира Жураева работает в ресторане уже год. Она хочет пойти в ежегодный оплачиваемый отпуск.\nВпишите нужное слово в её заявление.\n\nЗаявление\nПрошу предоставить мне ежегодный оплачиваемый _________________ с 15 октября 2025 года по 28 октября 2025 года.",
+        "mediaUrl": null,
+        "correctAnswers": [
+          "отпуск"
+        ]
+      },
+      {
+        "blockId": "P_14_8",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 8,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_8",
+          "questionNumber": 8,
+          "text": "Мама купила ему большой _______________ для учебников.",
+          "options": [
+            "рюкзак",
+            "телевизор",
+            "дом"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_14_9",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 9,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_9",
+          "questionNumber": 9,
+          "text": "Добрый день, я хочу отправить эту _____________ в Душанбе.",
+          "options": [
+            "посылка",
+            "посылку",
+            "посылки"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_14_10",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 10,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_10",
+          "questionNumber": 10,
+          "text": "Скажи _______________, что я пошёл на перерыв.",
+          "options": [
+            "Андрей",
+            "Андрею",
+            "Андрея"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_14_11",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 11,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_11",
+          "questionNumber": 11,
+          "text": "Скажите, пожалуйста, _______________ называется эта аптека?",
+          "options": [
+            "как",
+            "какая",
+            "чья"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_14_12",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 12,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_12",
+          "questionNumber": 12,
+          "text": "23 февраля в России отмечают",
+          "options": [
+            "Международный женский день",
+            "День защитника Отечества",
+            "Рождество Христово"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_14_13",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 13,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_13",
+          "questionNumber": 13,
+          "text": "В России находится город",
+          "options": [
+            "Нижний Новгород",
+            "Амстердам",
+            "София"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_14_14",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 14,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_14",
+          "questionNumber": 14,
+          "text": "В 1917 г. началась",
+          "options": [
+            "Российская революция",
+            "Великая Отечественная война",
+            "Специальная военная операция"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_14_15",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 15,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_15",
+          "questionNumber": 15,
+          "text": "Республика Крым вошла в состав Российской Федерации в",
+          "options": [
+            "1961 г.",
+            "1991 г.",
+            "2014 г."
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_14_16",
+        "variantNumber": 14,
+        "kind": "image-choice",
+        "questionNumber": 16,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_16",
+          "questionNumber": 16,
+          "text": "Укажите флаг Российской Федерации.",
+          "options": [
+            "/courses/patent/media/flag14a.jpg",
+            "/courses/patent/media/flag14b.jpg",
+            "/courses/patent/media/flag14c.jpg"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_14_17",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 17,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_17",
+          "questionNumber": 17,
+          "text": "Иностранный гражданин в РФ имеет право",
+          "options": [
+            "организовывать пикетирование",
+            "избирать в органы государственной власти",
+            "иметь имущество в собственности"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_14_18",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 18,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_18",
+          "questionNumber": 18,
+          "text": "Работающий иностранный гражданин в РФ обязан",
+          "options": [
+            "платить законно установленные налоги и сборы",
+            "избирать в органы государственной власти",
+            "пользоваться учреждениями культуры"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_14_19",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 19,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_19",
+          "questionNumber": 19,
+          "text": "В комплект документов для оформления патента иностранному гражданину в России НЕ входит",
+          "options": [
+            "договор социального найма",
+            "дактилоскопическая карта с отпечатками пальцев",
+            "миграционная карта с отметкой цели въезда «работа»"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_14_20",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 20,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_20",
+          "questionNumber": 20,
+          "text": "Срок временного пребывания иностранного гражданина на территории РФ определяется",
+          "options": [
+            "сроком истечения трудового договора",
+            "соглашением сторон",
+            "визой"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_14_21",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 21,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_21",
+          "questionNumber": 21,
+          "text": "К наказаниям за нарушение правил миграционного учёта относят",
+          "options": [
+            "административное выдворение за пределы РФ",
+            "ограничение свободы",
+            "исправительные работы"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_14_22",
+        "variantNumber": 14,
+        "kind": "multiple-choice",
+        "questionNumber": 22,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_14_22",
+          "questionNumber": 22,
+          "text": "Иностранный гражданин не исполнил обязанности по уведомлению о подтверждении своего проживания в РФ. За такое нарушение может быть назначено наказание в виде исправительных работ. Верно ли это утверждение?",
+          "options": [
+            "верно",
+            "неверно"
+          ],
+          "correctIndex": 1
+        }
+      }
+    ]
+  },
+  {
+    "variantNumber": 15,
+    "title": "15-variant",
+    "totalQuestions": 22,
+    "blocks": [
+      {
+        "blockId": "P_15_12",
+        "variantNumber": 15,
+        "kind": "audio-double",
+        "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
+        "mediaUrl": "/courses/patent/media/audio151.mp3",
+        "subQuestions": [
+          {
+            "key": "P_15_1",
+            "questionNumber": 1,
+            "text": "Они говорят",
+            "options": [
+              "на автовокзале",
+              "в аэропорту",
+              "на железнодорожном вокзале"
+            ],
+            "correctIndex": 0
+          },
+          {
+            "key": "P_15_2",
+            "questionNumber": 2,
+            "text": "Билеты на автобус до аэропорта продаются",
+            "options": [
+              "на платформе",
+              "в автобусе",
+              "в кассе"
+            ],
+            "correctIndex": 2
+          }
+        ]
+      },
+      {
+        "blockId": "P_15_34",
+        "variantNumber": 15,
+        "kind": "audio-double",
+        "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
+        "mediaUrl": "/courses/patent/media/audio152.mp3",
+        "subQuestions": [
+          {
+            "key": "P_15_3",
+            "questionNumber": 3,
+            "text": "Вы можете услышать это объявление",
+            "options": [
+              "на железнодорожном вокзале",
+              "в банке",
+              "в торговом центре"
+            ],
+            "correctIndex": 0
+          },
+          {
+            "key": "P_15_4",
+            "questionNumber": 4,
+            "text": "Следующий поезд в аэропорт будет",
+            "options": [
+              "в 15.30",
+              "в 16.30",
+              "в 17.30"
+            ],
+            "correctIndex": 2
+          }
+        ]
+      },
+      {
+        "blockId": "P_15_5",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 5,
+        "prompt": "Прочитайте объявление. Укажите номер правильного ответа.",
+        "passage": "Уважаемые гости! У нас работает бесплатный WI-FI. Пароль можно получить у администратора.",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_5",
+          "questionNumber": 5,
+          "text": "Такое объявление можно прочитать",
+          "options": [
+            "в банке",
+            "на улице",
+            "в автобусе"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_15_6",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 6,
+        "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": "Олегу тридцать лет. В детстве он очень любил машины. Его папа работал механиком и часто брал сына на работу. Сегодня Олег машинист, и каждый день тысячи пассажиров едут в его поезде.",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_6",
+          "questionNumber": 6,
+          "text": "Олег работает",
+          "options": [
+            "на автовокзале",
+            "в метро",
+            "на стройке"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_15_7",
+        "variantNumber": 15,
+        "kind": "written",
+        "questionNumber": 7,
+        "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": "Камола Каримова родилась в Узбекистане в городе Наманган.\nВпишите нужное слово в анкету.\n\nАнкета:\nКак Вас зовут?  Каримова Камола\nСтрана рождения?  Узбекистан\nГород рождения?  ___________________",
+        "mediaUrl": null,
+        "correctAnswers": [
+          "Наманган"
+        ]
+      },
+      {
+        "blockId": "P_15_8",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 8,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_8",
+          "questionNumber": 8,
+          "text": "Летом мы поедем в Москву, это будет",
+          "options": [
+            "в конце марта",
+            "в конце августа",
+            "в конце ноября"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_15_9",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 9,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_9",
+          "questionNumber": 9,
+          "text": "Вчера в магазине я купила красивую _____.",
+          "options": [
+            "рубашки",
+            "рубашка",
+            "рубашку"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_15_10",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 10,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_10",
+          "questionNumber": 10,
+          "text": "Извините, покажите ________ билет, пожалуйста.",
+          "options": [
+            "ваша",
+            "ваши",
+            "ваш"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_15_11",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 11,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_11",
+          "questionNumber": 11,
+          "text": "Ты знаешь, _______________ едет этот автобус? На вокзал?",
+          "options": [
+            "куда",
+            "откуда",
+            "почему"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_15_12",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 12,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_12",
+          "questionNumber": 12,
+          "text": "День народного единства в России отмечают",
+          "options": [
+            "12 июня",
+            "8 марта",
+            "4 ноября"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_15_13",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 13,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_13",
+          "questionNumber": 13,
+          "text": "В России находится город",
+          "options": [
+            "Осло",
+            "Омск",
+            "Рим"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_15_14",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 14,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_14",
+          "questionNumber": 14,
+          "text": "Специальная военная операция началась в",
+          "options": [
+            "1917 г.",
+            "2014 г.",
+            "2022 г."
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_15_15",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 15,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_15",
+          "questionNumber": 15,
+          "text": "Ю.А. Гагарин совершил полёт в космос в",
+          "options": [
+            "1945 г.",
+            "1961 г.",
+            "1991 г."
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_15_16",
+        "variantNumber": 15,
+        "kind": "image-choice",
+        "questionNumber": 16,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_16",
+          "questionNumber": 16,
+          "text": "Укажите флаг Российской Федерации.",
+          "options": [
+            "/courses/patent/media/flag15a.jpg",
+            "/courses/patent/media/flag15b.jpg",
+            "/courses/patent/media/flag15c.jpg"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_15_17",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 17,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_17",
+          "questionNumber": 17,
+          "text": "Иностранный гражданин, законно находящийся на территории РФ, имеет право",
+          "options": [
+            "свободно передвигаться",
+            "участвовать в отправлении правосудия",
+            "организовывать митинги"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_15_18",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 18,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_18",
+          "questionNumber": 18,
+          "text": "Иностранный гражданин в РФ обязан",
+          "options": [
+            "заниматься научным творчеством",
+            "беречь памятники истории и культуры",
+            "поступить на государственную службу"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_15_19",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 19,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_19",
+          "questionNumber": 19,
+          "text": "В комплект документов для оформления патента иностранному гражданину в России НЕ входит",
+          "options": [
+            "миграционная карта с отметкой цели въезда «работа»",
+            "паспорт и его нотариально заверенный перевод",
+            "документ о праве собственности на жильё"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_15_20",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 20,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_20",
+          "questionNumber": 20,
+          "text": "Временно пребывающий на территории РФ иностранный гражданин должен выехать из страны",
+          "options": [
+            "в случае утери паспорта иностранного гражданина",
+            "по истечении срока действия визы",
+            "при отсутствии трудового патента"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_15_21",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 21,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_21",
+          "questionNumber": 21,
+          "text": "К наказаниям за нарушение правил миграционного учёта относят",
+          "options": [
+            "административное выдворение за пределы РФ",
+            "административное приостановление деятельности",
+            "дисквалификацию"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_15_22",
+        "variantNumber": 15,
+        "kind": "multiple-choice",
+        "questionNumber": 22,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_15_22",
+          "questionNumber": 22,
+          "text": "К нарушителям правил пребывания на территории РФ применяется ограничение свободы с привлечением к обязательным работам. Верно ли это утверждение?",
+          "options": [
+            "верно",
+            "неверно"
+          ],
+          "correctIndex": 1
+        }
+      }
+    ]
+  },
+  {
+    "variantNumber": 16,
+    "title": "16-variant",
+    "totalQuestions": 22,
+    "blocks": [
+      {
+        "blockId": "P_16_12",
+        "variantNumber": 16,
+        "kind": "audio-double",
+        "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
+        "mediaUrl": "/courses/patent/media/audio161.mp3",
+        "subQuestions": [
+          {
+            "key": "P_16_1",
+            "questionNumber": 1,
+            "text": "Они говорят",
+            "options": [
+              "в метро",
+              "в банке",
+              "в поликлинике"
+            ],
+            "correctIndex": 2
+          },
+          {
+            "key": "P_16_2",
+            "questionNumber": 2,
+            "text": "Записаться к стоматологу можно",
+            "options": [
+              "на понедельник",
+              "на вторник",
+              "на среду"
+            ],
+            "correctIndex": 1
+          }
+        ]
+      },
+      {
+        "blockId": "P_16_34",
+        "variantNumber": 16,
+        "kind": "audio-double",
+        "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
+        "mediaUrl": "/courses/patent/media/audio162.mp3",
+        "subQuestions": [
+          {
+            "key": "P_16_3",
+            "questionNumber": 3,
+            "text": "Вы можете услышать это объявление",
+            "options": [
+              "в поликлинике",
+              "в метро",
+              "в поезде"
+            ],
+            "correctIndex": 0
+          },
+          {
+            "key": "P_16_4",
+            "questionNumber": 4,
+            "text": "Для прививки нужно иметь",
+            "options": [
+              "миграционную карту",
+              "паспорт",
+              "патент"
+            ],
+            "correctIndex": 1
+          }
+        ]
+      },
+      {
+        "blockId": "P_16_5",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 5,
+        "prompt": "Прочитайте объявление и выберите правильный ответ.",
+        "passage": "Осторожно! Опасная зона! Сход снега!",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_5",
+          "questionNumber": 5,
+          "text": "Такое объявление можно прочитать",
+          "options": [
+            "в банке",
+            "на улице",
+            "в автобусе"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_16_6",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 6,
+        "prompt": "Прочитайте текст и выберите правильный ответ.",
+        "passage": "Меня зовут Лена. На прошлой неделе у меня был отпуск. Мы с друзьями были в Туле. На улице было холодно, и мы ходили в музей.",
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_6",
+          "questionNumber": 6,
+          "text": "На прошлой неделе Лена была",
+          "options": [
+            "в музее",
+            "в ресторане",
+            "в кинотеатре"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_16_7",
+        "variantNumber": 16,
+        "kind": "written",
+        "questionNumber": 7,
+        "prompt": "Прочитайте текст и вставьте пропущенное слово.",
+        "passage": "Рустам Тургунов уже пять лет работает механиком. На прошлой неделе ему предложили должность главного механика.\nВпишите нужное слово в его заявление.\n\nЗаявление\nПрошу принять меня на работу на должность ________________ механика с 20 октября 2025 года.",
+        "mediaUrl": null,
+        "correctAnswers": [
+          "главного"
+        ]
+      },
+      {
+        "blockId": "P_16_8",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 8,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_8",
+          "questionNumber": 8,
+          "text": "В магазине посуды «Магия» я купил _______________.",
+          "options": [
+            "брюки",
+            "кровать",
+            "чашку"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_16_9",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 9,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_9",
+          "questionNumber": 9,
+          "text": "_______________ покупатели! В нашем магазине сегодня скидки.",
+          "options": [
+            "Уважаемый",
+            "Уважаемые",
+            "Уважаемая"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_16_10",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 10,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_10",
+          "questionNumber": 10,
+          "text": "Спроси у ______________, когда мы пойдём на стадион.",
+          "options": [
+            "папа",
+            "папы",
+            "папе"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_16_11",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 11,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_11",
+          "questionNumber": 11,
+          "text": "Мы едем в магазин, __________ дома нет продуктов.",
+          "options": [
+            "потому что",
+            "поэтому",
+            "чтобы"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_16_12",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 12,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_12",
+          "questionNumber": 12,
+          "text": "1 мая в России отмечают",
+          "options": [
+            "Международный женский день",
+            "День защитника Отечества",
+            "Праздник Весны и Труда"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_16_13",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 13,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_13",
+          "questionNumber": 13,
+          "text": "В России находится город",
+          "options": [
+            "Стокгольм",
+            "Варшава",
+            "Екатеринбург"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_16_14",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 14,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_14",
+          "questionNumber": 14,
+          "text": "Великая Отечественная война началась",
+          "options": [
+            "22 июня 1941 г.",
+            "5 декабря 1941 г.",
+            "19 ноября 1942 г."
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_16_15",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 15,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_15",
+          "questionNumber": 15,
+          "text": "Ю.А. Гагарин – это",
+          "options": [
+            "полководец",
+            "космонавт",
+            "писатель"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_16_16",
+        "variantNumber": 16,
+        "kind": "image-choice",
+        "questionNumber": 16,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_16",
+          "questionNumber": 16,
+          "text": "Укажите флаг Российской Федерации.",
+          "options": [
+            "/courses/patent/media/flag16a.jpg",
+            "/courses/patent/media/flag16b.jpg",
+            "/courses/patent/media/flag16c.jpg"
+          ],
+          "correctIndex": 2
+        }
+      },
+      {
+        "blockId": "P_16_17",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 17,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_17",
+          "questionNumber": 17,
+          "text": "Иностранный гражданин в РФ имеет право",
+          "options": [
+            "свободно распоряжаться своими способностями к труду",
+            "поступить на государственную службу",
+            "непосредственно участвовать в управлении делами государства"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_16_18",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 18,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_18",
+          "questionNumber": 18,
+          "text": "Иностранный гражданин в РФ обязан",
+          "options": [
+            "заниматься литературным творчеством",
+            "заботиться о сохранении исторического и культурного наследия",
+            "направлять коллективные обращения в государственные органы"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_16_19",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 19,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_19",
+          "questionNumber": 19,
+          "text": "В комплект документов для оформления патента иностранному гражданину в России НЕ входит",
+          "options": [
+            "паспорт и его нотариально заверенный перевод",
+            "договор социального найма",
+            "полис добровольного медицинского страхования (ДМС)"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_16_20",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 20,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_20",
+          "questionNumber": 20,
+          "text": "Временно пребывающий на территории РФ иностранный гражданин должен выехать из страны",
+          "options": [
+            "после расторжения трудового договора",
+            "по истечении срока действия визы",
+            "при отсутствии трудового патента"
+          ],
+          "correctIndex": 1
+        }
+      },
+      {
+        "blockId": "P_16_21",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 21,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_21",
+          "questionNumber": 21,
+          "text": "К наказаниям за нарушение правил миграционного учёта относят",
+          "options": [
+            "административный штраф",
+            "административный арест",
+            "административное приостановление деятельности"
+          ],
+          "correctIndex": 0
+        }
+      },
+      {
+        "blockId": "P_16_22",
+        "variantNumber": 16,
+        "kind": "multiple-choice",
+        "questionNumber": 22,
+        "prompt": null,
+        "passage": null,
+        "mediaUrl": null,
+        "question": {
+          "key": "P_16_22",
+          "questionNumber": 22,
+          "text": "Отсутствие у иностранного гражданина документов, подтверждающих право на пребывание, влечёт административный арест и дисквалификацию. Верно ли это утверждение?",
+          "options": [
+            "верно",
+            "неверно"
+          ],
+          "correctIndex": 1
         }
       }
     ]
