@@ -49,7 +49,10 @@ import { listPatentVariantResults, persistPatentVariantResult } from './shared/p
 import { findOrCreateUserForSocial, SocialAuthError, verifyGoogleIdToken } from './server/services/socialAuth.service.ts';
 import { resolveGoogleWebClientId } from './shared/googleOAuth.ts';
 import { buildGrammarCatalogPayload } from './server/services/grammarCatalog.service.ts';
-import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.service.ts';
+import {
+  DAILY_COURSE_BUNDLE_FETCH_REV,
+  fetchDailyCourseDayBundle,
+} from './server/services/dailyCourseBundle.service.ts';
 import {
   DAILY_COURSE_DAY_MAX,
   DAILY_COURSE_DAY_MIN,
@@ -363,7 +366,11 @@ async function startServer() {
           durationMs: Date.now() - started,
         });
       }
-      return res.json({ ok: true, durationMs: Date.now() - started });
+      return res.json({
+        ok: true,
+        durationMs: Date.now() - started,
+        dailyCourseFetch: DAILY_COURSE_BUNDLE_FETCH_REV,
+      });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       return res.status(503).json({ ok: false, error: message, durationMs: Date.now() - started });

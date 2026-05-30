@@ -78,6 +78,9 @@ function parseWordBank(raw: unknown): string[] {
   return [];
 }
 
+/** Bump when changing daily-course fetch logic (visible in /api/health for deploy checks). */
+export const DAILY_COURSE_BUNDLE_FETCH_REV = 'split-reading-v2';
+
 export async function fetchDailyCourseDayBundle(
   sb: SupabaseClient,
   dayNumber: number,
@@ -88,7 +91,7 @@ export async function fetchDailyCourseDayBundle(
     grammarMatchesRes,
     grammarSentenceArrangeRes,
     vocabWordsRes,
-    readingRes,
+    readingPassageRes,
     practiceRes,
   ] = await Promise.all([
     sb.from('daily_grammar_topics').select('title, theory_text').eq('day_number', dayNumber).maybeSingle(),
@@ -109,20 +112,7 @@ export async function fetchDailyCourseDayBundle(
       .select('id, sort_order, word_uz, word_ru')
       .eq('day_number', dayNumber)
       .order('sort_order', { ascending: true }),
-    sb
-      .from('daily_reading_passages')
-      .select(
-        `title, body_ru, text_id, daily_reading_lexemes (
-          id,
-          word_ru,
-          word_ru_normalized,
-          translation_uz,
-          audio_ru,
-          text_id
-        )`,
-      )
-      .eq('day_number', dayNumber)
-      .maybeSingle(),
+    sb.from('daily_reading_passages').select('title, body_ru, text_id').eq('day_number', dayNumber).maybeSingle(),
     sb
       .from('daily_practice_prompts')
       .select('id, sort_order, uz_text, ru_correct')
@@ -136,7 +126,7 @@ export async function fetchDailyCourseDayBundle(
     { label: 'daily_grammar_matches', error: grammarMatchesRes.error },
     { label: 'daily_grammar_sentence_arrange', error: grammarSentenceArrangeRes.error },
     { label: 'daily_vocab_words', error: vocabWordsRes.error },
-    { label: 'daily_reading_passages', error: readingRes.error },
+    { label: 'daily_reading_passages', error: readingPassageRes.error },
     { label: 'daily_practice_prompts', error: practiceRes.error },
   ];
 
@@ -144,6 +134,29 @@ export async function fetchDailyCourseDayBundle(
   if (failed?.error) {
     const msg = failed.error.message ?? 'Maʼlumot yuklanmadi';
     return { ok: false, error: `${failed.label}: ${msg}` };
+  }
+
+  const passageRow = readingPassageRes.data as {
+    title?: string;
+    body_ru?: string;
+    text_id?: string;
+  } | null;
+  const passageTextId =
+    passageRow && passageRow.text_id != null ? String(passageRow.text_id).trim() : '';
+
+  let lexRaw: Array<Record<string, unknown>> = [];
+  if (passageTextId !== '') {
+    const lexRes = await sb
+      .from('daily_reading_lexemes')
+      .select('id, word_ru, word_ru_normalized, translation_uz, audio_ru, text_id')
+      .eq('text_id', passageTextId);
+    if (lexRes.error) {
+      return {
+        ok: false,
+        error: `daily_reading_lexemes: ${lexRes.error.message ?? 'Maʼlumot yuklanmadi'}`,
+      };
+    }
+    lexRaw = (lexRes.data ?? []) as Array<Record<string, unknown>>;
   }
 
   const topicRow = topicRes.data as { title?: string; theory_text?: string } | null;
@@ -193,18 +206,7 @@ export async function fetchDailyCourseDayBundle(
     })),
   };
 
-  const readingRow = readingRes.data as {
-    title?: string;
-    body_ru?: string;
-    text_id?: string;
-    daily_reading_lexemes?: Array<Record<string, unknown>> | null;
-  } | null;
-
-  const bodyRu = readingRow ? String(readingRow.body_ru ?? '').trim() : '';
-  const passageTextId =
-    readingRow && readingRow.text_id != null ? String(readingRow.text_id).trim() : '';
-
-  const lexRaw = readingRow?.daily_reading_lexemes ?? [];
+  const bodyRu = passageRow ? String(passageRow.body_ru ?? '').trim() : '';
   const lexemesSorted = [...lexRaw].sort((a, b) => Number(a.id) - Number(b.id));
 
   const lexemes: DailyReadingLexeme[] = lexemesSorted.map((row, idx) => ({
@@ -250,7 +252,7 @@ export async function fetchDailyCourseDayBundle(
   if (bodyRu !== '' || lexemes.length > 0 || passageTextId !== '') {
     reading = {
       textId: passageTextId !== '' ? passageTextId : null,
-      title: readingRow ? String(readingRow.title ?? '').trim() || null : null,
+      title: passageRow ? String(passageRow.title ?? '').trim() || null : null,
       bodyRu,
       lexemes,
     };
