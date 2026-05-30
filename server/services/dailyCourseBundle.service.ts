@@ -106,9 +106,9 @@ export async function fetchDailyCourseDayBundle(
       .order('sort_order', { ascending: true }),
     sb
       .from('daily_vocab_words')
-      .select('id, word_uz, word_ru')
+      .select('id, sort_order, word_uz, word_ru')
       .eq('day_number', dayNumber)
-      .order('id', { ascending: true }),
+      .order('sort_order', { ascending: true }),
     sb
       .from('daily_reading_passages')
       .select(
@@ -125,24 +125,25 @@ export async function fetchDailyCourseDayBundle(
       .maybeSingle(),
     sb
       .from('daily_practice_prompts')
-      .select('id, uz_text, ru_correct')
+      .select('id, sort_order, uz_text, ru_correct')
       .eq('day_number', dayNumber)
-      .order('id', { ascending: true }),
+      .order('sort_order', { ascending: true }),
   ]);
 
-  const errs = [
-    topicRes.error,
-    grammarMcqRes.error,
-    grammarMatchesRes.error,
-    grammarSentenceArrangeRes.error,
-    vocabWordsRes.error,
-    readingRes.error,
-    practiceRes.error,
-  ].filter(Boolean);
+  const labeledResults: { label: string; error: { message?: string } | null }[] = [
+    { label: 'daily_grammar_topics', error: topicRes.error },
+    { label: 'daily_grammar_mcqs', error: grammarMcqRes.error },
+    { label: 'daily_grammar_matches', error: grammarMatchesRes.error },
+    { label: 'daily_grammar_sentence_arrange', error: grammarSentenceArrangeRes.error },
+    { label: 'daily_vocab_words', error: vocabWordsRes.error },
+    { label: 'daily_reading_passages', error: readingRes.error },
+    { label: 'daily_practice_prompts', error: practiceRes.error },
+  ];
 
-  const firstErr = errs[0];
-  if (firstErr) {
-    return { ok: false, error: firstErr.message ?? 'Maʼlumot yuklanmadi' };
+  const failed = labeledResults.find((r) => r.error);
+  if (failed?.error) {
+    const msg = failed.error.message ?? 'Maʼlumot yuklanmadi';
+    return { ok: false, error: `${failed.label}: ${msg}` };
   }
 
   const topicRow = topicRes.data as { title?: string; theory_text?: string } | null;
