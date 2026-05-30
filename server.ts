@@ -299,7 +299,7 @@ async function startServer() {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-Id');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     // Prevent stale API responses (e.g. old 410 from disk cache) from being reused by browsers.
     if (String(req.originalUrl || req.url || '').startsWith('/api/')) {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -313,7 +313,7 @@ async function startServer() {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
       res.setHeader(
         'Content-Security-Policy',
-        "default-src 'self'; img-src 'self' data: https:; media-src 'self' https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; frame-ancestors 'none';"
+        "default-src 'self'; img-src 'self' data: https:; media-src 'self' https:; script-src 'self' https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src 'self' https:; frame-src https://accounts.google.com; frame-ancestors 'none';"
       );
     }
     if (req.method === 'OPTIONS') return res.sendStatus(204);
