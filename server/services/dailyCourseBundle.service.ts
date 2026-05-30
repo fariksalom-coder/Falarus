@@ -122,7 +122,6 @@ export async function fetchDailyCourseDayBundle(
         )`,
       )
       .eq('day_number', dayNumber)
-      .order('id', { foreignTable: 'daily_reading_lexemes', ascending: true })
       .maybeSingle(),
     sb
       .from('daily_practice_prompts')

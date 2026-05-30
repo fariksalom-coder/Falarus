@@ -46,6 +46,8 @@ import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassing.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
+import { findOrCreateUserForSocial, SocialAuthError, verifyGoogleIdToken } from './server/services/socialAuth.service.ts';
+import { resolveGoogleWebClientId } from './shared/googleOAuth.ts';
 import { buildGrammarCatalogPayload } from './server/services/grammarCatalog.service.ts';
 import { fetchDailyCourseDayBundle } from './server/services/dailyCourseBundle.service.ts';
 import {
@@ -574,6 +576,57 @@ async function startServer() {
         planExpiresAt: planFields.planExpiresAt,
       },
     });
+  });
+
+  // GET /api/auth/google/client-id — let the SPA discover the OAuth client id
+  // without it being baked into the build (fallback when VITE_ env is missing).
+  app.get('/api/auth/google/client-id', (_req, res) => {
+    const clientId = resolveGoogleWebClientId({
+      GOOGLE_OAUTH_WEB_CLIENT_ID: process.env.GOOGLE_OAUTH_WEB_CLIENT_ID,
+      GOOGLE_OAUTH_SERVER_CLIENT_ID: process.env.GOOGLE_OAUTH_SERVER_CLIENT_ID,
+    });
+    res.json({ clientId });
+  });
+
+  // POST /api/auth/google — verify the Google ID token, find/create the local
+  // user, return the same `{ token, user }` shape as /api/auth/login.
+  app.post('/api/auth/google', authRateLimiter, async (req, res) => {
+    const idToken = typeof req.body?.idToken === 'string' ? req.body.idToken.trim() : '';
+    if (!idToken) {
+      return res.status(400).json({ error: 'idToken kerak' });
+    }
+    try {
+      const identity = await verifyGoogleIdToken(idToken);
+      const { user } = await findOrCreateUserForSocial(supabase, identity);
+      const userId = Number((user as { id: number }).id);
+      const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
+      const sub = await getActiveSubscription(supabase, userId);
+      const planFields = mergeRussianPlanForMeResponse({
+        planName: (user.plan_name as string | null | undefined) ?? null,
+        planExpiresAt: (user.plan_expires_at as string | null | undefined) ?? null,
+        subscription: sub ? { plan_type: sub.plan_type, expires_at: sub.expires_at } : null,
+      });
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          email: user.email ?? null,
+          phone: user.phone ?? null,
+          level: user.level,
+          onboarded: user.onboarded,
+          planName: planFields.planName,
+          planExpiresAt: planFields.planExpiresAt,
+        },
+      });
+    } catch (err) {
+      if (err instanceof SocialAuthError) {
+        return res.status(err.httpStatus).json({ error: err.publicMessage });
+      }
+      console.error('[auth/google]', err);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
   });
 
   const authenticate = (req: any, res: any, next: any) => {
@@ -1788,7 +1841,10 @@ async function startServer() {
       });
     }
     const result = await fetchDailyCourseDayBundle(supabase, dayNumber);
-    if (result.ok === false) return res.status(500).json({ error: result.error });
+    if (result.ok === false) {
+      console.error('[GET /api/daily-course/day/:dayNumber]', { dayNumber, error: result.error });
+      return res.status(500).json({ error: result.error });
+    }
     res.json(result.bundle);
   });
 
