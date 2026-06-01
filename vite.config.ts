@@ -62,16 +62,11 @@ function seoInjectPlugin(): Plugin {
   };
 }
 
-/** Inlined when .env.production is missing on CI (Vercel). Must match Storage bucket layout: /courses/... */
-const DEFAULT_PROD_COURSE_MEDIA_BASE =
-  'https://nwwgwatiplergfcionyo.supabase.co/storage/v1/object/public/course-assets';
-
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   const vitePrefixed = loadEnv(mode, '.', 'VITE_');
   const courseMediaBase =
-    (vitePrefixed.VITE_COURSE_MEDIA_BASE_URL || env.VITE_COURSE_MEDIA_BASE_URL || '').trim() ||
-    (mode === 'production' ? DEFAULT_PROD_COURSE_MEDIA_BASE : '');
+    (vitePrefixed.VITE_COURSE_MEDIA_BASE_URL || env.VITE_COURSE_MEDIA_BASE_URL || '').trim();
 
   return {
     plugins: [seoInjectPlugin(), react(), tailwindcss()],
