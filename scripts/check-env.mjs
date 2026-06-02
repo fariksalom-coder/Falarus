@@ -1,6 +1,23 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 
+const GOOGLE_CLIENT_ID_RE = /^\d+-[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/;
+
+function parseGoogleClientIds(...values) {
+  const out = [];
+  const seen = new Set();
+  for (const value of values) {
+    if (!value) continue;
+    for (const raw of String(value).split(/[\s,;]+/)) {
+      const clientId = raw.trim();
+      if (!clientId || seen.has(clientId)) continue;
+      seen.add(clientId);
+      out.push(clientId);
+    }
+  }
+  return out;
+}
+
 function parseEnvFile(filePath) {
   const out = {};
   if (!existsSync(filePath)) return out;
@@ -30,6 +47,8 @@ const recommended = [
   'SUPABASE_DB_PASSWORD',
   'REDIS_URL',
   'REFERRAL_BASE_URL',
+  'GOOGLE_OAUTH_WEB_CLIENT_ID',
+  'GOOGLE_OAUTH_SERVER_CLIENT_ID',
 ];
 
 const missingRequired = required.filter((key) => !env[key]);
@@ -51,6 +70,19 @@ try {
   if (env.VITE_API_URL) {
     new URL(env.VITE_API_URL);
   }
+
+  const googleClientIds = parseGoogleClientIds(
+    env.VITE_GOOGLE_OAUTH_WEB_CLIENT_ID,
+    env.GOOGLE_OAUTH_WEB_CLIENT_ID,
+    env.GOOGLE_OAUTH_SERVER_CLIENT_ID,
+    env.GOOGLE_OAUTH_IOS_CLIENT_ID,
+    env.GOOGLE_OAUTH_ANDROID_CLIENT_ID
+  );
+  const invalidGoogleClientIds = googleClientIds.filter((id) => !GOOGLE_CLIENT_ID_RE.test(id));
+  assert(
+    invalidGoogleClientIds.length === 0,
+    `Invalid Google OAuth client ID(s): ${invalidGoogleClientIds.join(', ')}`
+  );
 
   new Intl.DateTimeFormat('en-US', { timeZone: env.APP_TIMEZONE }).format(new Date());
 

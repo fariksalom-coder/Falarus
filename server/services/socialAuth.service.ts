@@ -18,7 +18,7 @@
 import { OAuth2Client, type TokenPayload } from 'google-auth-library';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { FALARUS_GOOGLE_WEB_CLIENT_ID } from '../../shared/googleOAuth.ts';
+import { resolveGoogleAllowedAudiences } from '../../shared/googleOAuth.ts';
 
 export type SocialProvider = 'google' | 'apple';
 
@@ -59,15 +59,12 @@ function getGoogleClient(): OAuth2Client {
  * and web flows all have different `aud` values — accept any configured one.
  */
 function getGoogleAllowedAudiences(): string[] {
-  const ids = [
-    process.env.GOOGLE_OAUTH_IOS_CLIENT_ID,
-    process.env.GOOGLE_OAUTH_ANDROID_CLIENT_ID,
-    process.env.GOOGLE_OAUTH_WEB_CLIENT_ID,
-    process.env.GOOGLE_OAUTH_SERVER_CLIENT_ID,
-  ];
-  const filtered = ids.filter((v): v is string => !!v && v.length > 0);
-  if (filtered.length === 0) return [FALARUS_GOOGLE_WEB_CLIENT_ID];
-  return filtered;
+  return resolveGoogleAllowedAudiences({
+    GOOGLE_OAUTH_IOS_CLIENT_ID: process.env.GOOGLE_OAUTH_IOS_CLIENT_ID,
+    GOOGLE_OAUTH_ANDROID_CLIENT_ID: process.env.GOOGLE_OAUTH_ANDROID_CLIENT_ID,
+    GOOGLE_OAUTH_WEB_CLIENT_ID: process.env.GOOGLE_OAUTH_WEB_CLIENT_ID,
+    GOOGLE_OAUTH_SERVER_CLIENT_ID: process.env.GOOGLE_OAUTH_SERVER_CLIENT_ID,
+  });
 }
 
 export async function verifyGoogleIdToken(idToken: string): Promise<VerifiedSocialIdentity> {

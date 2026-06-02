@@ -5,16 +5,55 @@ export type RevenueByCurrency = { UZS: number; USD: number; RUB: number };
 export type ClickTodayStats = { total: number; success: number; errors: number };
 
 export type DashboardStats = {
+  total_users: number;
   users_today: number;
   users_this_week: number;
   users_this_month: number;
   active_users: number;
+  inactive_users: number;
   payments_today: RevenueByCurrency;
   payments_this_month: RevenueByCurrency;
   total_revenue: RevenueByCurrency;
+  pending_payments: number;
+  refunded_payments_this_month: number;
   active_subscriptions: number;
+  subscriptions_expiring_soon: number;
   referral_payouts_pending: number;
+  support_chats_open: number;
   click_today: ClickTodayStats;
+  payment_statuses_this_month: {
+    pending: number;
+    approved: number;
+    rejected: number;
+    refunded: number;
+  };
+  revenue_by_product_this_month: {
+    product_code: string;
+    label: string;
+    revenue: RevenueByCurrency;
+    count: number;
+  }[];
+  recent_users: {
+    id: number;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    created_at: string;
+    subscription_status: string;
+    plan_name: string | null;
+  }[];
+  recent_payments: {
+    id: number;
+    user_id: number;
+    user: string;
+    amount: number;
+    currency: keyof RevenueByCurrency;
+    status: string;
+    product_label: string;
+    payment_channel: string | null;
+    created_at: string;
+    approved_at: string | null;
+  }[];
 };
 
 export type AdminUserRow = {

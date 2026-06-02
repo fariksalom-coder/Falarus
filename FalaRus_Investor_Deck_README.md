@@ -1,0 +1,1 @@
+FalaRus_Investor_Deck.pptx tayyor.

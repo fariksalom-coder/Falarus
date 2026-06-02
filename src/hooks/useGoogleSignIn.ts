@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefCallback } from 'react';
 import { apiUrl } from '../api';
-import { FALARUS_GOOGLE_WEB_CLIENT_ID, resolveGoogleWebClientId } from '../../shared/googleOAuth';
+import { resolveGoogleWebClientId } from '../../shared/googleOAuth';
 
 type GoogleCredentialResponse = {
   credential?: string;
@@ -117,7 +117,6 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
   }, []);
 
   useEffect(() => {
-    if (clientId !== FALARUS_GOOGLE_WEB_CLIENT_ID) return;
     void fetchClientIdFromServer().then((fromServer) => {
       if (fromServer && fromServer !== clientId) setClientId(fromServer);
     });

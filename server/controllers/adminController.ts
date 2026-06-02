@@ -225,27 +225,77 @@ export function createAdminController(supabase: SupabaseClient) {
     weekStart.setDate(weekStart.getDate() - 7);
     const weekStartStr = weekStart.toISOString();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const nextWeek = new Date(now);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    type RevenueCurrency = 'UZS' | 'USD' | 'RUB';
+    type RevenueByCurrency = Record<RevenueCurrency, number>;
+
+    const emptyRevenue = (): RevenueByCurrency => ({ UZS: 0, USD: 0, RUB: 0 });
+    const normalizeCurrency = (v: unknown): RevenueCurrency => {
+      const raw = String(v ?? 'UZS').toUpperCase();
+      return raw === 'USD' || raw === 'RUB' || raw === 'UZS' ? raw : 'UZS';
+    };
+    const sumByCurrency = (arr: { amount?: unknown; currency?: unknown }[] | null | undefined): RevenueByCurrency => {
+      const out = emptyRevenue();
+      for (const row of arr ?? []) {
+        const currency = normalizeCurrency(row.currency);
+        out[currency] += Number(row.amount ?? 0) || 0;
+      }
+      return out;
+    };
 
     const [
+      totalUsers,
       usersToday,
       usersWeek,
       usersMonth,
       activeUsers,
+      inactiveUsers,
       paymentsToday,
       paymentsMonth,
       totalRevenue,
+      paymentsMonthStatusRows,
+      pendingPayments,
+      refundedMonth,
       activeSubs,
+      expiringSubs,
       pendingWithdrawals,
+      openSupportChats,
+      recentUsers,
+      recentPayments,
     ] = await Promise.all([
+      supabase.from('users').select('id', { count: 'exact', head: true }),
       supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
       supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', weekStartStr),
       supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
       supabase.from('users').select('id', { count: 'exact', head: true }).gt('plan_expires_at', now.toISOString()),
-      supabase.from('subscription_payment_requests').select('amount').eq('status', 'confirmed').gte('confirmed_at', todayStart),
-      supabase.from('subscription_payment_requests').select('amount').eq('status', 'confirmed').gte('confirmed_at', monthStart),
-      supabase.from('subscription_payment_requests').select('amount').eq('status', 'confirmed'),
+      supabase.from('users').select('id', { count: 'exact', head: true }).or(`plan_expires_at.is.null,plan_expires_at.lt.${now.toISOString()}`),
+      supabase.from('payments').select('amount, currency, product_code, tariff_type').eq('status', 'approved').gte('approved_at', todayStart),
+      supabase.from('payments').select('amount, currency, product_code, tariff_type').eq('status', 'approved').gte('approved_at', monthStart),
+      supabase.from('payments').select('amount, currency').eq('status', 'approved'),
+      supabase.from('payments').select('status, amount, currency, product_code, tariff_type, payment_channel, created_at').gte('created_at', monthStart),
+      supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'refunded').gte('created_at', monthStart),
       supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active').gt('expires_at', now.toISOString()),
+      supabase
+        .from('subscriptions')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .gt('expires_at', now.toISOString())
+        .lte('expires_at', nextWeek.toISOString()),
       supabase.from('referral_withdrawals').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('support_chats').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+      supabase
+        .from('users')
+        .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at')
+        .order('created_at', { ascending: false })
+        .limit(6),
+      supabase
+        .from('payments')
+        .select('id, user_id, amount, currency, tariff_type, product_code, status, created_at, approved_at, payment_channel')
+        .order('created_at', { ascending: false })
+        .limit(8),
     ]);
     const { data: clickTodayRows, error: clickTodayError } = await supabase
       .from('click_payment_logs')
@@ -262,23 +312,91 @@ export function createAdminController(supabase: SupabaseClient) {
     const clickTotal = clickRows.length;
     const clickSuccess = Math.max(0, clickTotal - clickErrors);
 
-    const sum = (arr: { amount?: number }[] | null) => (arr ?? []).reduce((a, r) => a + Number(r.amount ?? 0), 0);
+    const monthRows = ((paymentsMonthStatusRows as any).data ?? []) as any[];
+    const statusCounts = monthRows.reduce<Record<string, number>>((acc, row) => {
+      const status = String(row.status ?? 'unknown');
+      acc[status] = (acc[status] ?? 0) + 1;
+      return acc;
+    }, {});
+    const revenueByProduct = (((paymentsMonth as any).data ?? []) as any[]).reduce<
+      { product_code: string; label: string; revenue: RevenueByCurrency; count: number }[]
+    >((acc, row) => {
+      const productCode = resolvePaymentProductFromRow(row);
+      const label = getPaymentDisplayLabel(productCode, row.tariff_type);
+      let bucket = acc.find((item) => item.product_code === productCode && item.label === label);
+      if (!bucket) {
+        bucket = { product_code: productCode, label, revenue: emptyRevenue(), count: 0 };
+        acc.push(bucket);
+      }
+      bucket.count += 1;
+      bucket.revenue[normalizeCurrency(row.currency)] += Number(row.amount ?? 0) || 0;
+      return acc;
+    }, []);
+
+    const recentPaymentRows = ((recentPayments as any).data ?? []) as any[];
+    const paymentUserIds = [...new Set(recentPaymentRows.map((r) => Number(r.user_id)).filter((id) => Number.isFinite(id) && id > 0))];
+    const { data: paymentUsers } =
+      paymentUserIds.length > 0
+        ? await supabase.from('users').select('id, first_name, last_name, email, phone').in('id', paymentUserIds)
+        : { data: [] };
+    const paymentUserMap = new Map((paymentUsers ?? []).map((u: any) => [u.id, u]));
+
+    const formatUserName = (u: any) =>
+      u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || u.phone || `User #${u.id}` : '—';
 
     return res.json({
+      total_users: (totalUsers as any).count ?? 0,
       users_today: (usersToday as any).count ?? 0,
       users_this_week: (usersWeek as any).count ?? 0,
       users_this_month: (usersMonth as any).count ?? 0,
       active_users: (activeUsers as any).count ?? 0,
-      payments_today: sum((paymentsToday as any).data ?? []),
-      payments_this_month: sum((paymentsMonth as any).data ?? []),
-      total_revenue: sum((totalRevenue as any).data ?? []),
+      inactive_users: (inactiveUsers as any).count ?? 0,
+      payments_today: sumByCurrency((paymentsToday as any).data ?? []),
+      payments_this_month: sumByCurrency((paymentsMonth as any).data ?? []),
+      total_revenue: sumByCurrency((totalRevenue as any).data ?? []),
+      pending_payments: (pendingPayments as any).count ?? 0,
+      refunded_payments_this_month: (refundedMonth as any).count ?? 0,
       active_subscriptions: (activeSubs as any).count ?? 0,
+      subscriptions_expiring_soon: (expiringSubs as any).count ?? 0,
       referral_payouts_pending: (pendingWithdrawals as any).count ?? 0,
+      support_chats_open: openSupportChats && !(openSupportChats as any).error ? ((openSupportChats as any).count ?? 0) : 0,
       click_today: {
         total: clickTotal,
         success: clickSuccess,
         errors: clickErrors,
       },
+      payment_statuses_this_month: {
+        pending: statusCounts.pending ?? 0,
+        approved: statusCounts.approved ?? 0,
+        rejected: statusCounts.rejected ?? 0,
+        refunded: statusCounts.refunded ?? 0,
+      },
+      revenue_by_product_this_month: revenueByProduct,
+      recent_users: (((recentUsers as any).data ?? []) as any[]).map((u) => ({
+        id: u.id,
+        name: formatUserName(u),
+        email: u.email ?? null,
+        phone: u.phone ?? null,
+        created_at: u.created_at,
+        subscription_status: u.plan_expires_at && new Date(u.plan_expires_at) > now ? 'active' : 'inactive',
+        plan_name: u.plan_name ?? null,
+      })),
+      recent_payments: recentPaymentRows.map((p) => {
+        const u = paymentUserMap.get(p.user_id);
+        const productCode = resolvePaymentProductFromRow(p);
+        return {
+          id: p.id,
+          user_id: p.user_id,
+          user: formatUserName(u),
+          amount: Number(p.amount ?? 0) || 0,
+          currency: normalizeCurrency(p.currency),
+          status: p.status,
+          product_label: getPaymentDisplayLabel(productCode, p.tariff_type),
+          payment_channel: p.payment_channel ?? null,
+          created_at: p.created_at,
+          approved_at: p.approved_at ?? null,
+        };
+      }),
     });
   }
 

@@ -629,6 +629,8 @@ async function startServer() {
       });
     } catch (err) {
       if (err instanceof SocialAuthError) {
+        const causeMessage = err.cause instanceof Error ? err.cause.message : err.cause ? String(err.cause) : '';
+        console.error('[auth/google]', err.publicMessage, causeMessage ? `cause=${causeMessage}` : '');
         return res.status(err.httpStatus).json({ error: err.publicMessage });
       }
       console.error('[auth/google]', err);
