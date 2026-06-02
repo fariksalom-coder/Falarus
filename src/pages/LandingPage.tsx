@@ -381,7 +381,7 @@ const copy = {
     founder: {
       name: 'Фармон Омонов',
       role: 'Основатель и CEO',
-      bio: 'Я вырос в Гулистане, Узбекистан, и сам прошёл путь изучения русского для работы в России, сдачи экзаменов на патент и ВНЖ. Именно поэтому я создал FalaRus — структурированную платформу с 182-дневным планом, 16 вариантами для патента и ежедневной практикой. Наша цель — помочь людям из Центральной Азии уверенно говорить по-русски и успешно сдавать нужные экзамены.',
+      bio: 'Я из Самарканда. Пять лет учился в России и хорошо понимаю, с какими трудностями сталкиваются узбекские мигранты и их дети при изучении русского языка. Я обучал русскому людей, которым язык нужен для работы, учебы и жизни в России, поэтому знаю, как объяснять простыми словами и что действительно нужно на практике. FalaRus создан, чтобы помочь подготовиться к русскому языку, экзамену на патент и ВНЖ без лишней путаницы.',
     },
     support: {
       title: 'Поддержка',
@@ -479,7 +479,7 @@ const copy = {
     founder: {
       name: 'Omonov Farmon',
       role: 'Asoschi va CEO',
-      bio: 'Men Gulistonda tug‘ilib o‘sganman. O‘zim ham rus tilini Rossiyada ishlash, patent va VNZh imtihonlariga tayyorlanish uchun o‘rganganman — qiyinliklarni yaxshi bilaman. Shu tajriba asosida FalaRusni yaratdim: 182 kunlik reja, 16 ta patent varianti va har kungi amaliy darslar. Maqsadimiz — Markaziy Osiyodagi odamlarga rus tilini tushunarli, tez va imtihonga tayyor o‘rgatish.',
+      bio: 'Men Samarqanddanman. 5 yil Rossiyada o‘qiganman va o‘zbek migrantlari hamda ularning farzandlari rus tilini o‘rganishda qanday qiyinchiliklarga duch kelishini yaxshi bilaman. Men rus tilini ish, o‘qish va Rossiyadagi hayot uchun kerak bo‘lgan odamlarga o‘rgatganman. Shuning uchun nimani qanday tushuntirish kerakligini, patent va VNZh imtihonlariga tayyorlanishda nimalar muhimligini amaliy tajribadan bilaman. FalaRus shu tajriba asosida yaratilgan.',
     },
     support: {
       title: 'Qo‘llab-quvvatlash',
@@ -577,7 +577,7 @@ const copy = {
     founder: {
       name: 'Фармон Омонов',
       role: 'Муассис ва CEO',
-      bio: 'Ман дар Гулистони, Узбекистон, калон шудаам ва худам забони русиро барои кор дар Россия, имтиҳонҳои патент ва РМА омӯхтаам. Бинобар ин FalaRus-ро сохтам: нақшаи 182 рӯз, 16 варианти патент ва машқҳои ҳаррӯза. Мо ба омӯзандагони Осиёи Марказӣ кӯмак мекунем, ки забони русиро боэътимод ва барои имтиҳон омӯзанд.',
+      bio: 'Ман аз Самарқанд ҳастам. 5 сол дар Русия таҳсил кардаам ва хуб медонам, ки муҳоҷирони узбек ва фарзандони онҳо ҳангоми омӯзиши забони русӣ бо чӣ душвориҳо рӯ ба рӯ мешаванд. Ман ба одамоне русиро омӯзондаам, ки ин забон барои кор, таҳсил ва зиндагӣ дар Русия лозим буд. Аз ҳамин таҷриба медонам, ки чӣ гуна содда фаҳмондан ва барои имтиҳони патенту РМА чӣ чизҳо муҳиманд. FalaRus бар асоси ҳамин таҷриба сохта шудааст.',
     },
     support: {
       title: 'Дастгирӣ',
@@ -675,7 +675,7 @@ const copy = {
     founder: {
       name: 'Farmon Omonov',
       role: 'Founder and CEO',
-      bio: 'I grew up in Guliston, Uzbekistan, and learned Russian myself for work in Russia and for patent and residence permit exams. That experience led me to build FalaRus — a structured platform with a 182-day plan, 16 patent practice tests, and daily exercises. Our goal is to help learners across Central Asia speak Russian confidently and pass the exams they need.',
+      bio: 'I am from Samarkand. I studied in Russia for five years, so I understand the real challenges Uzbek migrants and their children face when learning Russian. I have taught Russian to people who needed it for work, study, and everyday life in Russia. That experience showed me what to explain first, how to make difficult topics simple, and what matters most when preparing for patent and residence permit exams. FalaRus was built from that practical experience.',
     },
     support: {
       title: 'Support',
@@ -753,7 +753,7 @@ const copy = {
     founder: {
       name: 'Фармон Омонов',
       role: 'Негізін қалаушы және CEO',
-      bio: 'Мен Гулистанда, Өзбекстанда өстім. Ресейде жұмыс істеу, патент және ТМК емтихандарына дайындалу үшін орыс тілін өзім үйрендім. Сол тәжірибе негізінде FalaRus құрдым: 182 күндік жоспар, 16 патент нұсқасы және күнделікті тәжірибе. Біз Орталық Азиядағы адамдарға орыс тілін сенімді және емтиханға дайын үйретеміз.',
+      bio: 'Мен Самарқандтанмын. Ресейде 5 жыл оқыдым, сондықтан өзбек мигранттары мен олардың балалары орыс тілін үйренгенде қандай қиындықтарға кездесетінін жақсы түсінемін. Мен орыс тілін жұмыс, оқу және Ресейдегі күнделікті өмір үшін қажет адамдарға үйреттім. Осы тәжірибе арқылы күрделі тақырыпты қалай қарапайым түсіндіруді және патент пен тұруға рұқсат емтихандарына дайындықта ненің маңызды екенін білемін. FalaRus осы тәжірибе негізінде жасалды.',
     },
     support: {
       title: 'Қолдау',
@@ -830,7 +830,7 @@ const copy = {
     founder: {
       name: 'Фармон Омонов',
       role: 'Негиздөөчү жана CEO',
-      bio: 'Мен Гулистанда, Өзбекстанда чоңойдум. Орус тилин Россияда иштөө, патент жана жашоо уруксаты экзамендерине даярдануу үчүн өзүм үйрөндүм. Ошол тажрыйба негизинде FalaRus түздүм: 182 күндүк план, 16 патент варианты жана күнүмдүк машыктар. Биз Борбордук Азиядагы адамдарга орус тилин ишенимдүү жана экзаменге даяр үйрөтөбүз.',
+      bio: 'Мен Самаркандданмын. Россияда 5 жыл окудум, ошондуктан өзбек мигранттары жана алардын балдары орус тилин үйрөнүүдө кандай кыйынчылыктарга туш болорун жакшы түшүнөм. Мен орус тилин жумуш, окуу жана Россиядагы күнүмдүк жашоо үчүн керек болгон адамдарга үйрөткөм. Ошол тажрыйба мага татаал темаларды жөнөкөй түшүндүрүүнү жана патент, жашоо уруксаты экзамендерине даярданууда эмнелер маанилүү экенин көрсөттү. FalaRus ушул практикалык тажрыйбанын негизинде түзүлгөн.',
     },
     support: {
       title: 'Колдоо',
@@ -1213,7 +1213,7 @@ export default function LandingPage() {
         <section className="bg-[#0F172A] px-5 py-20 text-white sm:px-10 lg:px-24 lg:py-[92px]">
           <div className="mx-auto grid max-w-[800px] items-center gap-8 md:grid-cols-[300px_1fr]">
             <img
-              src="/landing/founder.png"
+              src="/landing/фоундер.png"
               alt={t.founder.name}
               className="mx-auto h-[300px] w-[300px] rounded-[10px] object-cover object-top shadow-[0_18px_34px_rgba(15,23,42,0.2)]"
               decoding="async"

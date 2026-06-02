@@ -242,6 +242,7 @@ async function startServer() {
   app.use(
     helmet({
       contentSecurityPolicy: false,
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
     })
   );
   const globalRateLimiter = createIpRateLimitMiddleware(
