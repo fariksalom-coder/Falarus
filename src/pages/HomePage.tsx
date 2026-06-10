@@ -29,7 +29,7 @@ const QUESTS = [
     id: 'grammar',
     title: 'Grammatika',
     subtitle: 'Qoidalarni o‘rganish',
-    route: (day: number) => `/kunlik-reja/kun/${day}/grammatika/test-variantlar`,
+    route: (day: number) => `/kunlik-reja/kun/${day}/grammatika`,
     images: {
       done: '/app-mobile/images/home/block_icons/grammar_done.png',
       active: '/app-mobile/images/home/block_icons/grammar_current.png',
@@ -40,7 +40,7 @@ const QUESTS = [
     id: 'vocabulary',
     title: 'Lug‘at',
     subtitle: 'Yangi so‘zlar',
-    route: (day: number) => `/kunlik-reja/kun/${day}/lugat/tanishish`,
+    route: (day: number) => `/kunlik-reja/kun/${day}/lugat`,
     images: {
       done: '/app-mobile/images/home/block_icons/vocabulary_done.png',
       active: '/app-mobile/images/home/block_icons/vocabulary_current.png',
