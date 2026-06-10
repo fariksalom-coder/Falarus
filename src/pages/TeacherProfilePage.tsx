@@ -1,130 +1,184 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Bell, BookOpen, Clock, MapPin, Users } from 'lucide-react';
-import { TEACHERS } from './TeachersPage';
+import { ArrowLeft, BookOpen, Clock, MapPin, Users } from 'lucide-react';
+import { getTeacherPublicDetail, type TeacherProfile, type TeacherStudentReview } from '../api/teachers';
+import {
+  formatTeacherExperience,
+  formatTeachingFormat,
+  teacherDisplayName,
+  teacherInitials,
+} from '../utils/teacherDisplay';
 
-const REVIEWS = [
-  {
-    name: 'James Earl',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod',
-  },
-  {
-    name: 'James Earl',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod',
-  },
-] as const;
-
-function TopStatus() {
+function ProfileAvatar({ profile }: { profile: TeacherProfile }) {
+  if (profile.avatar_url) {
+    return (
+      <img
+        src={profile.avatar_url}
+        alt=""
+        className="h-full w-full object-cover object-[center_35%]"
+        decoding="async"
+      />
+    );
+  }
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex h-[50px] items-center gap-1.5 rounded-full bg-[#CFE4FA] py-1 pl-1.5 pr-3 text-[#0F172A]">
-        <img
-          src="/app-mobile/images/home/avatar.png"
-          alt=""
-          className="h-9 w-9 rounded-full object-cover object-[center_38%]"
-          decoding="async"
-        />
-        <span className="text-2xl font-black leading-none">1</span>
-        <span className="text-[25px] leading-none">🔥</span>
-      </div>
-      <Bell className="h-8 w-8 fill-[#24459A] text-[#24459A]" aria-hidden />
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-5xl font-black text-white">
+      {teacherInitials(profile)}
     </div>
+  );
+}
+
+function Stars({ rating }: { rating: number }) {
+  const full = Math.max(0, Math.min(5, Math.round(rating)));
+  return <span className="text-[22px] leading-none text-[#F8B719]">{'★'.repeat(full)}{'☆'.repeat(5 - full)}</span>;
+}
+
+function ReviewCard({ review }: { review: TeacherStudentReview }) {
+  const text = review.opinion?.trim() || review.what_liked?.trim() || "Fikr qoldirilgan";
+  return (
+    <article className="w-[min(88vw,380px)] shrink-0 rounded-[14px] bg-white px-5 py-4 shadow-[0_6px_10px_rgba(15,23,42,0.12)]">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base font-extrabold text-[#0F172A]">O'quvchi</h3>
+        <Stars rating={Number(review.rating)} />
+      </div>
+      <p className="mt-3 text-sm font-medium leading-relaxed text-[#4B4B4B]">{text}</p>
+    </article>
   );
 }
 
 export default function TeacherProfilePage() {
   const navigate = useNavigate();
   const { teacherId } = useParams();
-  const teacher = useMemo(
-    () => TEACHERS.find((item) => item.id === teacherId) ?? TEACHERS[0],
-    [teacherId],
-  );
+  const [profile, setProfile] = useState<TeacherProfile | null>(null);
+  const [reviews, setReviews] = useState<TeacherStudentReview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const id = Number(teacherId);
+    if (!Number.isFinite(id)) {
+      setError("O'qituvchi topilmadi");
+      setLoading(false);
+      return;
+    }
+    let mounted = true;
+    setLoading(true);
+    getTeacherPublicDetail(id)
+      .then((data) => {
+        if (!mounted) return;
+        setProfile(data.profile);
+        setReviews(data.reviews);
+      })
+      .catch((e: Error) => mounted && setError(e.message))
+      .finally(() => mounted && setLoading(false));
+    return () => {
+      mounted = false;
+    };
+  }, [teacherId]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-[#EEF4FA]">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#24459A] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="min-h-full bg-[#EEF4FA] px-4 py-8">
+        <button
+          type="button"
+          onClick={() => navigate('/teachers')}
+          className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border border-[#C8DCF3] bg-white text-[#0F172A]"
+          aria-label="Ortga"
+        >
+          <ArrowLeft className="h-6 w-6" aria-hidden />
+        </button>
+        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center text-sm font-semibold text-red-700">
+          {error || "O'qituvchi topilmadi"}
+        </p>
+      </div>
+    );
+  }
+
+  const name = teacherDisplayName(profile);
+  const location = [profile.city, profile.region].filter(Boolean).join(', ') || "Ko'rsatilmagan";
 
   return (
-    <div className="min-h-screen bg-[#EEF4FA] pb-[88px]">
-      <main className="mx-auto w-full max-w-[820px] pt-[84px]">
-        <header className="flex items-center justify-between px-9">
+    <div className="min-h-full bg-[#EEF4FA] pb-8">
+      <main className="mx-auto w-full max-w-[820px]">
+        <header className="px-4 pt-2">
           <button
             type="button"
             onClick={() => navigate('/teachers')}
-            className="flex h-16 w-16 items-center justify-center rounded-[15px] border border-[#C8DCF3] bg-white/20 text-[#0F172A]"
-            aria-label="Back"
+            className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#C8DCF3] bg-white text-[#0F172A]"
+            aria-label="Ortga"
           >
-            <ArrowLeft className="h-8 w-8" aria-hidden />
+            <ArrowLeft className="h-6 w-6" aria-hidden />
           </button>
-          <TopStatus />
         </header>
 
-        <section className="mt-[72px] grid grid-cols-[1fr_1fr] items-center gap-9 px-9">
-          <div className="overflow-hidden rounded-[15px] bg-white shadow-[0_6px_10px_rgba(15,23,42,0.22)]">
-            <img
-              src={teacher.image}
-              alt=""
-              className="h-[296px] w-full object-cover object-[center_35%]"
-              decoding="async"
-            />
+        <section className="mt-6 grid grid-cols-1 gap-6 px-4 sm:grid-cols-[1fr_1.1fr] sm:items-start">
+          <div className="overflow-hidden rounded-[15px] bg-white shadow-[0_6px_10px_rgba(15,23,42,0.15)]">
+            <div className="aspect-[3/4] sm:aspect-auto sm:h-[296px]">
+              <ProfileAvatar profile={profile} />
+            </div>
           </div>
           <div className="min-w-0">
-            <h1 className="text-[34px] font-black leading-tight text-[#0F172A]">
-              {teacher.name}
-            </h1>
-            <div className="mt-5 space-y-4 text-[18px] font-bold text-[#4B4B4B]">
+            <h1 className="text-[28px] font-black leading-tight text-[#0F172A] sm:text-[34px]">{name}</h1>
+            {profile.headline ? (
+              <p className="mt-2 text-base font-semibold text-[#64748B]">{profile.headline}</p>
+            ) : null}
+            <div className="mt-5 space-y-3 text-[16px] font-bold text-[#4B4B4B]">
               <p className="flex items-center gap-3">
-                <Users className="h-6 w-6 fill-[#24459A] text-[#24459A]" aria-hidden />
-                Experience: 2 years 3 month
+                <Users className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                Tajriba: {formatTeacherExperience(profile.experience_years, profile.experience_months)}
               </p>
               <p className="flex items-center gap-3">
-                <Clock className="h-6 w-6 fill-[#24459A] text-[#24459A]" aria-hidden />
-                Age: 37
+                <Clock className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                Yosh: {profile.age}
               </p>
               <p className="flex items-center gap-3">
-                <MapPin className="h-6 w-6 fill-[#24459A] text-[#24459A]" aria-hidden />
-                Region: Samarkand
+                <MapPin className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                Hudud: {location}
               </p>
               <p className="flex items-center gap-3">
-                <BookOpen className="h-6 w-6 fill-[#24459A] text-[#24459A]" aria-hidden />
-                Teaching: Online/Offline
+                <BookOpen className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                Dars formati: {formatTeachingFormat(profile.teaching_format)}
               </p>
             </div>
           </div>
         </section>
 
-        <div className="px-9">
+        <div className="px-4">
           <button
             type="button"
-            className="mt-[35px] flex h-20 w-full items-center justify-center rounded-full bg-[#24459A] text-[28px] font-black text-white"
+            disabled
+            className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-[#24459A]/60 text-lg font-extrabold text-white"
           >
-            Join Telegram Group
+            Sinov darsiga yozilish (tez orada)
           </button>
         </div>
 
-        <section className="mt-8 bg-[#EEF4FA] px-9 pb-8 pt-8">
-          <h2 className="text-[34px] font-black leading-none text-[#0F172A]">Student Reviews</h2>
-          <div className="-mx-1 mt-7 flex gap-5 overflow-x-auto px-1 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {REVIEWS.map((review, index) => (
-              <article
-                key={`${review.name}-${index}`}
-                className="w-[445px] shrink-0 rounded-[14px] bg-white px-6 py-5 shadow-[0_6px_10px_rgba(15,23,42,0.18)]"
-              >
-                <div className="flex items-center gap-5">
-                  <h3 className="text-[26px] font-black leading-none text-[#0F172A]">{review.name}</h3>
-                  <span className="text-[27px] leading-none text-[#F8B719]">★★★★★</span>
-                </div>
-                <p className="mt-4 text-[17px] font-semibold leading-5 text-[#4B4B4B]">{review.text}</p>
-              </article>
-            ))}
-          </div>
+        {reviews.length > 0 ? (
+          <section className="mt-8 px-4">
+            <h2 className="text-2xl font-black text-[#0F172A]">O'quvchilar fikri</h2>
+            <div className="-mx-1 mt-4 flex gap-4 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {reviews.map((review) => (
+                <ReviewCard key={review.id} review={review} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
-          <article className="mt-7 rounded-[14px] bg-white px-6 py-6 shadow-[0_6px_10px_rgba(15,23,42,0.18)]">
-            <h2 className="text-[34px] font-black leading-none text-[#0F172A]">About me</h2>
-            <p className="mt-7 text-[22px] font-medium leading-[1.32] text-[#4B4B4B]">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-              ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-              ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-              reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+        {profile.about ? (
+          <article className="mx-4 mt-6 rounded-[14px] bg-white px-5 py-5 shadow-[0_6px_10px_rgba(15,23,42,0.12)]">
+            <h2 className="text-2xl font-black text-[#0F172A]">Men haqimda</h2>
+            <p className="mt-4 whitespace-pre-wrap text-base font-medium leading-relaxed text-[#4B4B4B]">
+              {profile.about}
             </p>
           </article>
-        </section>
+        ) : null}
       </main>
     </div>
   );

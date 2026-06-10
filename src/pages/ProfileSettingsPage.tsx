@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Check, ChevronLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
-import { motion } from 'motion/react';
-import { ChevronLeft } from 'lucide-react';
 
 type MeResponse = {
   id: number;
@@ -20,19 +19,17 @@ type MeResponse = {
 };
 
 export default function ProfileSettingsPage() {
-  const { token, updateUser } = useAuth();
+  const { token, user, updateUser } = useAuth();
   const navigate = useNavigate();
+  const [fullName, setFullName] = useState('');
+  const [level, setLevel] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-
-  const [passwordCurrentPassword, setPasswordCurrentPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-
+  const [saving, setSaving] = useState(false);
   const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
-  const [savingEmail, setSavingEmail] = useState(false);
-  const [savingPhone, setSavingPhone] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
 
   const loadMe = useCallback(() => {
     if (!token) return;
@@ -40,6 +37,8 @@ export default function ProfileSettingsPage() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data: MeResponse | null) => {
         if (!data) return;
+        setFullName(`${data.firstName ?? ''} ${data.lastName ?? ''}`.trim());
+        setLevel(data.level ?? '');
         setEmail(data.email ?? '');
         setPhone(data.phone ?? '');
       })
@@ -47,10 +46,14 @@ export default function ProfileSettingsPage() {
   }, [token]);
 
   useEffect(() => {
+    setFullName(`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+    setLevel(user?.level ?? '');
+    setEmail(user?.email ?? '');
+    setPhone(user?.phone ?? '');
     loadMe();
-  }, [loadMe]);
+  }, [loadMe, user?.email, user?.firstName, user?.lastName, user?.level, user?.phone]);
 
-  const applyMeToContext = (me: MeResponse) => {
+  function applyMeToContext(me: MeResponse) {
     updateUser({
       email: me.email ?? null,
       phone: me.phone ?? null,
@@ -58,9 +61,9 @@ export default function ProfileSettingsPage() {
       planName: me.planName,
       planExpiresAt: me.planExpiresAt,
     });
-  };
+  }
 
-  const patchAccount = async (body: Record<string, string>) => {
+  async function patchAccount(body: Record<string, string>) {
     const res = await fetch(apiUrl('/api/user/account'), {
       method: 'PATCH',
       headers: {
@@ -74,219 +77,184 @@ export default function ProfileSettingsPage() {
       throw new Error(typeof data.error === 'string' ? data.error : 'Xatolik yuz berdi');
     }
     return data as MeResponse;
-  };
+  }
 
-  const handleSaveEmail = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBanner(null);
     if (!token) {
       setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
       return;
     }
-    setSavingEmail(true);
-    try {
-      const me = await patchAccount({
-        email: email.trim(),
-      });
-      applyMeToContext(me);
-      setEmail(me.email ?? '');
-      setBanner({ kind: 'ok', text: 'Email yangilandi' });
-    } catch (err) {
-      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
-    } finally {
-      setSavingEmail(false);
-    }
-  };
-
-  const handleSavePhone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBanner(null);
-    if (!token) {
-      setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
-      return;
-    }
-    setSavingPhone(true);
-    try {
-      const me = await patchAccount({
-        phone: phone.trim(),
-      });
-      applyMeToContext(me);
-      setPhone(me.phone ?? '');
-      setBanner({ kind: 'ok', text: 'Telefon raqami yangilandi' });
-    } catch (err) {
-      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
-    } finally {
-      setSavingPhone(false);
-    }
-  };
-
-  const handleSavePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBanner(null);
-    if (!token) {
-      setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
-      return;
-    }
-    if (!passwordCurrentPassword) {
-      setBanner({ kind: 'error', text: "Parolni almashtirish uchun joriy parolni kiriting" });
-      return;
-    }
-    if (newPassword !== newPasswordConfirm) {
+    if ((newPassword || newPasswordConfirm) && newPassword !== newPasswordConfirm) {
       setBanner({ kind: 'error', text: 'Yangi parollar mos kelmadi' });
       return;
     }
-    if (newPassword.length < 6) {
+    if ((newPassword || newPasswordConfirm) && newPassword.length < 6) {
       setBanner({ kind: 'error', text: "Yangi parol kamida 6 belgi bo'lsin" });
       return;
     }
-    setSavingPassword(true);
+
+    setSaving(true);
     try {
-      const me = await patchAccount({
-        currentPassword: passwordCurrentPassword,
-        newPassword,
-        newPasswordConfirm,
-      });
+      const body: Record<string, string> = {
+        email: email.trim(),
+        phone: phone.trim(),
+      };
+      if (newPassword || newPasswordConfirm) {
+        body.currentPassword = currentPassword;
+        body.newPassword = newPassword;
+        body.newPasswordConfirm = newPasswordConfirm;
+      }
+      const me = await patchAccount(body);
       applyMeToContext(me);
-      setPasswordCurrentPassword('');
+      setEmail(me.email ?? '');
+      setPhone(me.phone ?? '');
+      setCurrentPassword('');
       setNewPassword('');
       setNewPasswordConfirm('');
-      setBanner({ kind: 'ok', text: 'Parol yangilandi' });
+      setBanner({ kind: 'ok', text: 'Profil yangilandi' });
     } catch (err) {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
     } finally {
-      setSavingPassword(false);
+      setSaving(false);
     }
-  };
-
-  const cardClass =
-    'bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4';
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="max-w-2xl mx-auto p-6 space-y-6">
-        <button
-          type="button"
-          onClick={() => navigate('/profile')}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-900 text-sm font-medium"
-        >
-          <ChevronLeft className="w-5 h-5" />
-          Profilga qaytish
-        </button>
+    <div className="min-h-screen bg-[#EEF4FA] pb-[88px]">
+      <main className="mx-auto w-full max-w-[440px]">
+        <header className="flex h-[114px] items-center justify-between bg-white px-4 pt-5">
+          <button
+            type="button"
+            onClick={() => navigate('/profile')}
+            className="flex h-[44px] w-[44px] items-center justify-center rounded-[15px] border border-[#C8DCF3] bg-white text-[#0F172A]"
+            aria-label="Ortga"
+          >
+            <ChevronLeft className="h-7 w-7" aria-hidden />
+          </button>
+          <h1 className="text-[25px] font-black leading-none text-[#0F172A]">Tahrirlash</h1>
+          <button
+            type="submit"
+            form="profile-edit-form"
+            disabled={saving}
+            className="text-[15px] font-bold text-[#1D5BFF] disabled:opacity-50"
+          >
+            {saving ? '...' : 'Tayyor'}
+          </button>
+        </header>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 mb-1">Sozlamalar</h1>
-            <p className="text-slate-500 text-sm">
-              Email va telefonni sessiya orqali yangilashingiz mumkin. Parolni almashtirish uchun joriy
-              parol kerak.
-            </p>
+        <form id="profile-edit-form" onSubmit={handleSubmit} className="px-4 pt-7">
+          <div className="flex flex-col items-center pb-8">
+            <img
+              src="/app-mobile/images/home/avatar.png"
+              alt=""
+              className="h-[97px] w-[97px] rounded-full object-cover object-[center_38%]"
+              decoding="async"
+            />
+            <button type="button" className="mt-4 text-[16px] font-bold text-[#008CFF]">
+              Rasmni almashtirish
+            </button>
           </div>
 
-          {banner && (
+          {banner ? (
             <div
-              className={
-                banner.kind === 'ok'
-                  ? 'bg-emerald-50 text-emerald-700 p-3 rounded-lg text-sm'
-                  : 'bg-red-50 text-red-600 p-3 rounded-lg text-sm'
-              }
+              className={`mb-5 rounded-[8px] px-4 py-3 text-sm font-bold ${
+                banner.kind === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+              }`}
             >
               {banner.text}
             </div>
-          )}
+          ) : null}
 
-          <form onSubmit={handleSaveEmail} className={cardClass}>
-            <h2 className="text-base font-semibold text-slate-900">Email</h2>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Yangi email</label>
-              <input
-                type="email"
-                autoComplete="email"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="pochta"
-              />
+          <section className="rounded-[14px] bg-white px-5 py-6 shadow-[4px_4px_10px_rgba(0,0,0,0.18)]">
+            <h2 className="text-[24px] font-black leading-none text-[#0F172A]">Profil</h2>
+            <div className="mt-8 space-y-7">
+              <TextField label="To'liq ism" value={fullName} onChange={setFullName} readOnly />
+              <TextField label="Rus tili darajasi" value={level} onChange={setLevel} readOnly />
             </div>
-            <button
-              type="submit"
-              disabled={savingEmail}
-              className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
-            >
-              {savingEmail ? 'Saqlanmoqda…' : 'Emailni saqlash'}
-            </button>
-          </form>
+          </section>
 
-          <form onSubmit={handleSavePhone} className={cardClass}>
-            <h2 className="text-base font-semibold text-slate-900">Telefon raqami</h2>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Yangi telefon</label>
-              <input
-                type="tel"
-                autoComplete="tel"
-                inputMode="tel"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Istalgan formatda"
-              />
+          <section className="mt-7 rounded-[14px] bg-white px-5 py-6 shadow-[4px_4px_10px_rgba(0,0,0,0.18)]">
+            <h2 className="text-[24px] font-black leading-none text-[#0F172A]">Aloqa va xavfsizlik</h2>
+            <div className="mt-8 space-y-7">
+              <TextField label="Email" action="o'zgartirish" value={email} onChange={setEmail} type="email" />
+              <TextField label="Telefon raqami" action="o'zgartirish" value={phone} onChange={setPhone} type="tel" />
+              <PasswordField label="Joriy parol" value={currentPassword} onChange={setCurrentPassword} />
+              <PasswordField label="Yangi parol" value={newPassword} onChange={setNewPassword} />
+              <PasswordField label="Yangi parolni tasdiqlash" value={newPasswordConfirm} onChange={setNewPasswordConfirm} />
             </div>
-            <button
-              type="submit"
-              disabled={savingPhone}
-              className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
-            >
-              {savingPhone ? 'Saqlanmoqda…' : 'Telefonni saqlash'}
-            </button>
-          </form>
-
-          <form onSubmit={handleSavePassword} className={cardClass}>
-            <h2 className="text-base font-semibold text-slate-900">Parol</h2>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Joriy parol</label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={passwordCurrentPassword}
-                onChange={(e) => setPasswordCurrentPassword(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Yangi parol</label>
-              <input
-                type="password"
-                autoComplete="new-password"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Yangi parolni tasdiqlash
-              </label>
-              <input
-                type="password"
-                autoComplete="new-password"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                value={newPasswordConfirm}
-                onChange={(e) => setNewPasswordConfirm(e.target.value)}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={savingPassword}
-              className="w-full bg-slate-800 text-white py-2.5 rounded-xl font-semibold hover:bg-slate-900 transition-colors disabled:opacity-60"
-            >
-              {savingPassword ? 'Saqlanmoqda…' : 'Parolni almashtirish'}
-            </button>
-          </form>
-        </motion.div>
+          </section>
+        </form>
       </main>
     </div>
+  );
+}
+
+function TextField({
+  label,
+  action,
+  value,
+  onChange,
+  type = 'text',
+  readOnly = false,
+}: {
+  label: string;
+  action?: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  readOnly?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-3 flex items-center justify-between">
+        <span className="text-[16px] font-bold text-[#4B4B4B]">{label}</span>
+        {action ? <span className="text-[16px] font-medium text-[#1D5BFF]">{action}</span> : null}
+      </span>
+      <span className="relative block">
+        <input
+          type={type}
+          value={value}
+          readOnly={readOnly}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-[43px] w-full rounded-[8px] border border-[#A0A0A0] bg-white px-3 pr-10 text-[17px] font-bold text-[#0F172A] outline-none placeholder:text-[#9D9D9D] read-only:text-[#9D9D9D]"
+        />
+        {value && !readOnly ? (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-[#9D9D9D] p-0.5 text-white"
+            aria-label="Tozalash"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        ) : readOnly ? (
+          <Check className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#9D9D9D]" aria-hidden />
+        ) : null}
+      </span>
+    </label>
+  );
+}
+
+function PasswordField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-3 block text-[16px] font-bold text-[#4B4B4B]">{label}</span>
+      <input
+        type="password"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-[43px] w-full rounded-[8px] border border-[#A0A0A0] bg-white px-3 text-[17px] font-bold text-[#0F172A] outline-none"
+      />
+    </label>
   );
 }

@@ -274,7 +274,7 @@ export function createTeacherRoutes(
         .select(teacherPublicSelect())
         .eq('profile_status', 'active')
         .gt('listing_paid_until', new Date().toISOString())
-        .order('rating_avg', { ascending: false })
+        .order('created_at', { ascending: true })
         .limit(50);
       if (search) {
         query = query.ilike('display_name', `%${search}%`);

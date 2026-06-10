@@ -1,145 +1,129 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Clock, Search, Users } from 'lucide-react';
+import { Clock, Users } from 'lucide-react';
+import { listTeachers, type TeacherProfile } from '../api/teachers';
+import {
+  formatTeacherExperience,
+  formatTeacherPrice,
+  teacherDisplayName,
+  teacherInitials,
+} from '../utils/teacherDisplay';
 
-export const TEACHERS = [
-  {
-    id: 'asrorbek-xalilov',
-    name: 'Asrorbek Xalilov',
-    cardName: 'Abror Shavkatov',
-    image: '/landing/teacher.png',
-    duration: '3 Months',
-    experience: '2 years',
-  },
-  {
-    id: 'abror-shavkatov',
-    name: 'Abror Shavkatov',
-    cardName: 'Abror Shavkatov',
-    image: '/landing/teacher.png',
-    duration: '3 Months',
-    experience: '2 years',
-  },
-  {
-    id: 'aziz-rustamov',
-    name: 'Aziz Rustamov',
-    cardName: 'Abror Shavkatov',
-    image: '/landing/teacher.png',
-    duration: '3 Months',
-    experience: '2 years',
-  },
-  {
-    id: 'sardor-karimov',
-    name: 'Sardor Karimov',
-    cardName: 'Abror Shavkatov',
-    image: '/landing/teacher.png',
-    duration: '3 Months',
-    experience: '2 years',
-  },
-] as const;
-
-export type TeacherView = (typeof TEACHERS)[number];
-
-function TopStatus() {
+function TeacherAvatar({ teacher }: { teacher: TeacherProfile }) {
+  const name = teacherDisplayName(teacher);
+  if (teacher.avatar_url) {
+    return (
+      <img
+        src={teacher.avatar_url}
+        alt=""
+        className="h-full w-full object-cover object-[center_35%]"
+        decoding="async"
+      />
+    );
+  }
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex h-[50px] items-center gap-1.5 rounded-full bg-[#CFE4FA] py-1 pl-1.5 pr-3 text-[#0F172A]">
-        <img
-          src="/app-mobile/images/home/avatar.png"
-          alt=""
-          className="h-9 w-9 rounded-full object-cover object-[center_38%]"
-          decoding="async"
-        />
-        <span className="text-2xl font-black leading-none">1</span>
-        <span className="text-[25px] leading-none">🔥</span>
-      </div>
-      <Bell className="h-8 w-8 fill-[#24459A] text-[#24459A]" aria-hidden />
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl font-black text-white">
+      {teacherInitials(teacher)}
     </div>
   );
 }
 
-function TeacherCard({ teacher }: { teacher: TeacherView }) {
+function TeacherCard({ teacher }: { teacher: TeacherProfile }) {
   const navigate = useNavigate();
+  const name = teacherDisplayName(teacher);
 
   return (
-    <article className="w-[222px] shrink-0 rounded-[14px] bg-white p-2 shadow-[0_6px_10px_rgba(15,23,42,0.22)]">
-      <div className="overflow-hidden rounded-[12px] bg-[#F7F7F7]">
-        <img
-          src={teacher.image}
-          alt=""
-          className="h-[158px] w-full object-cover object-[center_35%]"
-          decoding="async"
-        />
+    <article className="flex flex-col rounded-[16px] bg-white p-2 shadow-[0_6px_16px_rgba(15,23,42,0.1)]">
+      <div className="aspect-[4/5] overflow-hidden rounded-[12px] bg-[#F1F5F9]">
+        <TeacherAvatar teacher={teacher} />
       </div>
-      <div className="px-2 pt-3">
-        <h3 className="truncate text-[21px] font-black leading-tight text-[#0F172A]">
-          {teacher.cardName}
-        </h3>
-        <p className="mt-2 flex items-center gap-1.5 text-[15px] font-black leading-none text-[#0F172A]">
-          <span className="flex h-[17px] w-[17px] items-center justify-center rounded-full bg-[#24459A] text-white">
-            <Clock className="h-[11px] w-[11px]" aria-hidden />
+      <div className="flex min-h-0 flex-1 flex-col px-1.5 pt-2.5">
+        <h3 className="line-clamp-2 text-[15px] font-extrabold leading-tight text-[#0F172A]">{name}</h3>
+        {teacher.headline ? (
+          <p className="mt-1 line-clamp-2 text-[11px] font-medium text-[#64748B]">{teacher.headline}</p>
+        ) : null}
+        <p className="mt-2 flex items-center gap-1 text-[11px] font-bold text-[#334155]">
+          <Users className="h-3.5 w-3.5 shrink-0 text-[#24459A]" aria-hidden />
+          <span className="truncate">{formatTeacherExperience(teacher.experience_years, teacher.experience_months)}</span>
+        </p>
+        <p className="mt-1 flex items-center gap-1 text-[11px] font-bold text-[#334155]">
+          <Clock className="h-3.5 w-3.5 shrink-0 text-[#24459A]" aria-hidden />
+          <span className="truncate">
+            {formatTeacherPrice(teacher.monthly_course_price_amount, teacher.monthly_course_price_currency)}
           </span>
-          Duration: {teacher.duration}
         </p>
-        <p className="mt-2 flex items-center justify-center gap-1.5 text-[12px] font-bold leading-none text-[#4B4B4B]">
-          <Users className="h-4 w-4 fill-[#24459A] text-[#24459A]" aria-hidden />
-          Experience: {teacher.experience}
-        </p>
+        <button
+          type="button"
+          onClick={() => navigate(`/teachers/${teacher.user_id}`)}
+          className="mt-3 flex h-9 w-full items-center justify-center rounded-full bg-[#24459A] text-[14px] font-extrabold text-white active:scale-[0.98]"
+        >
+          Batafsil
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={() => navigate(`/teachers/${teacher.id}`)}
-        className="mt-3 flex h-[37px] w-full items-center justify-center rounded-full bg-[#24459A] text-[17px] font-black text-white"
-      >
-        See more
-      </button>
     </article>
   );
 }
 
-function TeacherSection({ title, showMore = true }: { title: string; showMore?: boolean }) {
-  const teachers = useMemo(() => [...TEACHERS, ...TEACHERS.slice(0, 2)], []);
-
+function EmptyState() {
   return (
-    <section className="mt-8">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-[26px] font-black leading-none text-[#0F172A]">{title}</h2>
-        {showMore ? (
-          <button type="button" className="shrink-0 text-[20px] font-extrabold text-[#24459A]">
-            See more
-          </button>
-        ) : null}
+    <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EEF4FA] text-[#24459A]">
+        <Users className="h-8 w-8" aria-hidden />
       </div>
-      <div className="-mx-1 flex gap-5 overflow-x-auto px-1 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {teachers.map((teacher, index) => (
-          <TeacherCard key={`${teacher.id}-${index}`} teacher={teacher} />
-        ))}
-      </div>
-    </section>
+      <h2 className="text-lg font-extrabold text-[#0F172A]">Hozircha o'qituvchilar yo'q</h2>
+      <p className="mt-2 max-w-xs text-sm font-medium leading-relaxed text-[#64748B]">
+        Faol o'qituvchilar ro'yxatga qo'shilganda ular shu yerda ikki ustunda ko'rinadi.
+      </p>
+    </div>
   );
 }
 
 export default function TeachersPage() {
+  const [teachers, setTeachers] = useState<TeacherProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    listTeachers()
+      .then((rows) => mounted && setTeachers(rows))
+      .catch((e: Error) => mounted && setError(e.message))
+      .finally(() => mounted && setLoading(false));
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#EEF4FA] pb-[88px]">
-      <main className="mx-auto w-full max-w-[820px] px-9 pt-[118px]">
-        <header className="flex items-center justify-between gap-4">
-          <h1 className="text-[56px] font-black leading-none tracking-tight text-[#0F172A]">
-            Teachers
+    <div className="min-h-full bg-[#EEF4FA] px-4 pb-6 pt-2">
+      <main className="mx-auto w-full max-w-[820px]">
+        <header className="mb-5">
+          <h1 className="text-[32px] font-black leading-tight tracking-tight text-[#0F172A] sm:text-[40px]">
+            O'qituvchilar
           </h1>
-          <TopStatus />
+          <p className="mt-1 text-sm font-medium text-[#64748B]">
+            Rus tilini o'rgatuvchi o'qituvchilar ro'yxati
+          </p>
         </header>
 
-        <label className="mt-8 flex h-[53px] items-center gap-4 rounded-lg bg-[#DDDDE0] px-4 text-[#4B4B4B]">
-          <Search className="h-7 w-7 shrink-0" aria-hidden />
-          <input
-            type="search"
-            placeholder="Search teachers..."
-            className="min-w-0 flex-1 bg-transparent text-[18px] font-bold outline-none placeholder:text-[#4B4B4B]"
-          />
-        </label>
-
-        <TeacherSection title="TOP teachers" />
-        <TeacherSection title="Recommended Teachers" />
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#24459A] border-t-transparent" />
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center text-sm font-semibold text-red-700">
+            {error}
+          </div>
+        ) : teachers.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {teachers.map((teacher) => (
+              <TeacherCard key={teacher.user_id} teacher={teacher} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

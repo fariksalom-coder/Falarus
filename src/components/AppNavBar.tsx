@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { prefetchRoutePath } from '../routeModules';
+import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
   {
@@ -47,7 +48,9 @@ const NAV_ITEMS = [
 export default function AppNavBar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const path = location.pathname;
+  const profilePath = user?.accountType === 'teacher' ? '/teacher-cabinet' : '/profile';
 
   const isActive = (paths: string[]) =>
     paths.some((p) => (p === '/' ? path === '/' : path === p || path.startsWith(p + '/')));
@@ -58,17 +61,19 @@ export default function AppNavBar() {
     >
       <div className="mx-auto flex h-[59px] max-w-[820px] items-center justify-between">
         {NAV_ITEMS.map((item) => {
-          const active = isActive([...item.paths]);
+          const itemTo = item.to === '/profile' ? profilePath : item.to;
+          const itemPaths = item.to === '/profile' ? ['/profile', '/teacher-cabinet'] : [...item.paths];
+          const active = isActive(itemPaths);
           return (
             <button
               key={item.to}
               type="button"
               aria-label={item.label}
               aria-current={active ? 'page' : undefined}
-              onClick={() => navigate(item.to)}
-              onMouseEnter={() => prefetchRoutePath(item.to)}
-              onTouchStart={() => prefetchRoutePath(item.to)}
-              onFocus={() => prefetchRoutePath(item.to)}
+              onClick={() => navigate(itemTo)}
+              onMouseEnter={() => prefetchRoutePath(itemTo)}
+              onTouchStart={() => prefetchRoutePath(itemTo)}
+              onFocus={() => prefetchRoutePath(itemTo)}
               className="flex h-[59px] min-w-0 flex-1 items-center justify-center transition-opacity active:opacity-70"
             >
               <img

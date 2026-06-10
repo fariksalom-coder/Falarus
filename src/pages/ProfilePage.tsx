@@ -1,200 +1,142 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Copy, LockKeyhole, Mail, MapPin, Phone, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { usePaymentStatus } from '../hooks/usePaymentStatus';
-import { motion } from 'motion/react';
-import {
-  ChevronLeft,
-  LogOut,
-  User,
-  Mail,
-  Settings,
-  CreditCard,
-  UserPlus,
-  Calendar,
-  Package,
-  History,
-  Phone,
-  Contact,
-  GraduationCap,
-} from 'lucide-react';
-import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 
-const TARIFF_LABELS: Record<string, string> = {
-  month: '1 OY',
-  year: '1 YIL',
-};
-
-const PRODUCT_PENDING_LABELS: Record<string, string> = {
-  patent: 'Patent kursi',
-  vnzh: 'VNJ kursi',
-};
-
-function formatPlanTimeLeft(planExpiresAt: string | null | undefined): string {
-  if (!planExpiresAt) return '—';
-  const end = new Date(planExpiresAt);
-  const now = new Date();
-  if (end <= now) return "Muddati tugagan";
-  const days = Math.ceil((end.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-  return `${days} kun`;
+function shortUserId(id: number | undefined): string {
+  return id ? `id_${String(id).padStart(7, '0')}` : 'id_0000000';
 }
 
-function formatPaymentDateTime(createdAt: string): string {
-  const d = new Date(createdAt);
-  return d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) + ' — ' + d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-}
-
-function getPendingPaymentLabel(payment: { product_code?: string; tariff_type?: string | null }): string {
-  const productCode = String(payment.product_code ?? 'russian');
-  if (productCode === 'russian') {
-    const t = String(payment.tariff_type ?? '');
-    return TARIFF_LABELS[t] ?? "Rus tili kursi";
-  }
-  return PRODUCT_PENDING_LABELS[productCode] ?? "Kurs to'lovi";
+function profileRegion(): string {
+  return 'Samarqand';
 }
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { payments, loading: paymentsLoading } = usePaymentStatus();
-  const [contactsOpen, setContactsOpen] = useState(false);
 
-  const pendingPayment = payments.find((p) => p.status === 'pending') ?? null;
-  const hasPendingPayment = !!pendingPayment;
-  const hasActivePlan = user?.planExpiresAt && new Date(user.planExpiresAt) > new Date();
+  if (user?.accountType === 'teacher') {
+    return <Navigate to="/teacher-cabinet" replace />;
+  }
 
-  const handleLogout = () => {
-    logout();
-    navigate('/auth');
-  };
+  const userId = shortUserId(user?.id);
+  const email = user?.email || "Email qo'shilmagan";
+  const phone = user?.phone || "Telefon qo'shilmagan";
+
+  async function copyId() {
+    try {
+      await navigator.clipboard.writeText(userId);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <main className="max-w-2xl mx-auto p-6 space-y-6">
-        {/* Profile Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 text-center"
-        >
-          <div className="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-12 h-12 text-indigo-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900">{user?.firstName} {user?.lastName}</h2>
-          <div className="text-slate-500 mt-2 space-y-1 text-sm">
-            <p className="flex items-center justify-center gap-2">
-              <Mail className="w-4 h-4 shrink-0" />
-              <span>{user?.email ?? "Email qo'shilmagan"}</span>
-            </p>
-            <p className="flex items-center justify-center gap-2">
-              <Phone className="w-4 h-4 shrink-0" />
-              <span>{user?.phone ?? "Telefon qo'shilmagan"}</span>
-            </p>
-          </div>
-
-          <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <Package className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
-              <p className="text-xs text-slate-500 uppercase font-bold">Tarif</p>
-              <p className="text-lg font-bold text-slate-900">{user?.planName || "Tarif yo'q"}</p>
-            </div>
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              <Calendar className="w-6 h-6 text-green-600 mx-auto mb-2" />
-              <p className="text-xs text-slate-500 uppercase font-bold">Qolgan muddat</p>
-              <p className={`text-lg font-bold ${user?.planExpiresAt && new Date(user.planExpiresAt) <= new Date() ? 'text-red-600' : 'text-slate-900'}`}>
-                {formatPlanTimeLeft(user?.planExpiresAt)}
-              </p>
-            </div>
-          </div>
-
-          {/* To'lov holati */}
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <p className="text-xs text-slate-500 uppercase font-bold mb-2">To'lov holati</p>
-            {hasPendingPayment && pendingPayment ? (
-              <div className="text-left space-y-1">
-                <p className="text-amber-700 font-medium">Tekshirilmoqda</p>
-                <p className="text-slate-700 text-sm">
-                  To'lov: {getPendingPaymentLabel(pendingPayment)}
-                </p>
-                <p className="text-slate-600 text-sm">To'lov vaqti: {formatPaymentDateTime(pendingPayment.created_at)}</p>
-              </div>
-            ) : hasActivePlan && user?.planName ? (
-              <p className="text-slate-900 font-medium">{user.planName} — {formatPlanTimeLeft(user?.planExpiresAt)} qoldi</p>
-            ) : (
-              <p className="text-slate-500">Tarif yo'q</p>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Settings List */}
-        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
-          <button
-            onClick={() => navigate('/invite')}
-            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
-          >
-            <UserPlus className="w-5 h-5 text-slate-400" />
-            <span className="font-medium text-slate-700 flex-1 text-left">Do'stlarni taklif qiling</span>
-            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
-          </button>
-          <button
-            onClick={() => navigate('/tariflar')}
-            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
-          >
-            <CreditCard className="w-5 h-5 text-slate-400" />
-            <span className="font-medium text-slate-700 flex-1 text-left">Tariflar</span>
-            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
-          </button>
-          <button
-            onClick={() => navigate('/payment-history')}
-            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
-          >
-            <History className="w-5 h-5 text-slate-400" />
-            <span className="font-medium text-slate-700 flex-1 text-left">To'lovlar tarixi</span>
-            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
-          </button>
+    <div className="min-h-screen bg-[#EEF4FA] pb-[88px]">
+      <main className="mx-auto w-full max-w-[440px]">
+        <header className="flex h-[114px] items-center justify-between bg-white px-4 pt-5">
           <button
             type="button"
-            onClick={() => navigate('/teacher-cabinet')}
-            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+            onClick={() => navigate(-1)}
+            className="flex h-[44px] w-[44px] items-center justify-center rounded-[15px] border border-[#C8DCF3] bg-white text-[#0F172A]"
+            aria-label="Ortga"
           >
-            <GraduationCap className="w-5 h-5 text-slate-400" />
-            <span className="font-medium text-slate-700 flex-1 text-left">O'qituvchi kabineti</span>
-            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
+            <ChevronLeft className="h-7 w-7" aria-hidden />
           </button>
+          <h1 className="text-[25px] font-black leading-none text-[#0F172A]">Hisob sozlamalari</h1>
           <button
             type="button"
             onClick={() => navigate('/profile/settings')}
-            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+            className="text-[15px] font-bold text-[#1D5BFF]"
           >
-            <Settings className="w-5 h-5 text-slate-400" />
-            <span className="font-medium text-slate-700 flex-1 text-left">Sozlamalar</span>
-            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
+            Tahrirlash
           </button>
+        </header>
+
+        <section className="space-y-7 px-4 pt-7">
+          <article className="rounded-[14px] bg-white px-5 py-6 shadow-[4px_4px_10px_rgba(0,0,0,0.18)]">
+            <h2 className="text-[24px] font-black leading-none text-[#0F172A]">Profil ma'lumotlari</h2>
+
+            <div className="mt-8 space-y-3">
+              <FieldLabel>ID</FieldLabel>
+              <div className="flex h-[43px] items-center justify-between rounded-[8px] border border-[#A0A0A0] bg-[#DDDDE0] px-3">
+                <span className="min-w-0 truncate text-[18px] font-bold text-[#9D9D9D]">{userId}</span>
+                <button type="button" onClick={copyId} className="text-[#4B4B4B]" aria-label="ID nusxalash">
+                  <Copy className="h-5 w-5" aria-hidden />
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/profile/settings')}
+              className="mt-8 w-full text-left"
+            >
+              <FieldLabel>Hudud</FieldLabel>
+              <div className="mt-3 flex h-[43px] items-center justify-between rounded-[8px] border border-[#A0A0A0] bg-white px-3">
+                <span className="text-[18px] font-semibold text-[#0F172A]">{profileRegion()}</span>
+                <ChevronRight className="h-6 w-6 text-[#4B4B4B]" aria-hidden />
+              </div>
+            </button>
+          </article>
+
+          <article className="rounded-[14px] bg-white px-5 py-6 shadow-[4px_4px_10px_rgba(0,0,0,0.18)]">
+            <h2 className="text-[24px] font-black leading-none text-[#0F172A]">Aloqa va xavfsizlik</h2>
+
+            <div className="mt-8 space-y-3">
+              <div className="flex items-center justify-between">
+                <FieldLabel>Email</FieldLabel>
+                <button type="button" onClick={() => navigate('/profile/settings')} className="text-[16px] font-medium text-[#1D5BFF]">
+                  o'zgartirish
+                </button>
+              </div>
+              <ReadonlyValue icon={<Mail className="h-5 w-5" aria-hidden />} value={email} />
+            </div>
+
+            <div className="mt-8 space-y-3">
+              <div className="flex items-center justify-between">
+                <FieldLabel>Telefon raqami</FieldLabel>
+                <button type="button" onClick={() => navigate('/profile/settings')} className="text-[16px] font-medium text-[#1D5BFF]">
+                  o'zgartirish
+                </button>
+              </div>
+              <ReadonlyValue icon={<Phone className="h-5 w-5" aria-hidden />} value={phone} />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/profile/settings')}
+              className="mt-8 flex w-full items-center justify-between border-t border-[#A0A0A0] pt-5 text-left"
+            >
+              <span className="flex items-center gap-3 text-[18px] font-black text-[#0F172A]">
+                <LockKeyhole className="h-5 w-5" aria-hidden />
+                Parolni almashtirish
+              </span>
+              <ChevronRight className="h-6 w-6 text-[#4B4B4B]" aria-hidden />
+            </button>
+          </article>
+
           <button
             type="button"
-            onClick={() => setContactsOpen((v) => !v)}
-            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+            className="flex h-[43px] w-full items-center justify-center gap-2 rounded-[8px] bg-[#A22929] text-[18px] font-black text-white"
           >
-            <Contact className="w-5 h-5 text-slate-400" />
-            <span className="font-medium text-slate-700 flex-1 text-left">Kontaktlar</span>
-            <ChevronLeft
-              className={`w-5 h-5 text-slate-300 shrink-0 transition-transform ${contactsOpen ? '-rotate-90' : 'rotate-180'}`}
-            />
+            <Trash2 className="h-5 w-5" aria-hidden />
+            Hisobni o'chirish
           </button>
-          {contactsOpen && (
-            <div className="border-b border-slate-100 bg-slate-50/90 px-4 py-5">
-              <SiteLegalFooter embedded variant="compact" />
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-red-50 transition-colors text-red-600"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="font-bold flex-1 text-left">Chiqish</span>
-          </button>
-        </div>
+        </section>
       </main>
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-[16px] font-bold text-[#4B4B4B]">{children}</p>;
+}
+
+function ReadonlyValue({ icon, value }: { icon: React.ReactNode; value: string }) {
+  return (
+    <div className="flex h-[43px] items-center gap-2 rounded-[8px] border border-[#A0A0A0] bg-white px-3">
+      <span className="shrink-0 text-[#9D9D9D]">{icon}</span>
+      <span className="min-w-0 truncate text-[17px] font-bold text-[#9D9D9D]">{value}</span>
     </div>
   );
 }

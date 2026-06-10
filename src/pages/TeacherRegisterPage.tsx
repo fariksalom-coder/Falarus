@@ -48,7 +48,7 @@ export default function TeacherRegisterPage() {
           </div>
           <div>
             <p className="text-sm font-bold text-blue-700">FalaRus</p>
-            <h1 className="text-2xl font-black text-slate-950">O'qituvchi registratsiya</h1>
+            <h1 className="text-2xl font-black text-slate-950">O'qituvchi ro'yxatdan o'tishi</h1>
           </div>
         </div>
 
@@ -67,13 +67,13 @@ export default function TeacherRegisterPage() {
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-black text-white disabled:opacity-50"
         >
           <UserPlus className="h-5 w-5" />
-          {submitting ? 'Yaratilmoqda...' : "O'qituvchi akkaunt yaratish"}
+          {submitting ? 'Yaratilmoqda...' : "O'qituvchi hisobini yaratish"}
         </button>
 
         <p className="mt-5 text-center text-sm font-semibold text-slate-600">
-          Akkauntingiz bormi?{' '}
+          Hisobingiz bormi?{' '}
           <Link to="/teacher-login" className="text-blue-700">
-            Login
+            Kirish
           </Link>
         </p>
       </form>

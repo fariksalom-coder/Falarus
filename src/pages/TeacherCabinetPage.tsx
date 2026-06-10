@@ -60,6 +60,28 @@ function isActiveUntil(value: string | null | undefined): boolean {
   return !!value && new Date(value) > new Date();
 }
 
+function formatProfileStatus(value: string | null | undefined): string {
+  const statuses: Record<string, string> = {
+    active: 'Faol',
+    pending_review: 'Tekshiruvda',
+    rejected: 'Rad etilgan',
+    hidden: 'Yashirilgan',
+  };
+  return value ? statuses[value] ?? value : "Anketa yo'q";
+}
+
+function formatLessonStatus(value: string | null | undefined): string {
+  const statuses: Record<string, string> = {
+    pending_payment: "To'lov kutilmoqda",
+    paid: "To'langan",
+    scheduled: 'Rejalashtirilgan',
+    completed_by_teacher: "O'qituvchi yakunladi",
+    completed: 'Yakunlangan',
+    cancelled: 'Bekor qilingan',
+  };
+  return value ? statuses[value] ?? value : '-';
+}
+
 export default function TeacherCabinetPage() {
   const { token, user } = useAuth();
   const isTeacherAccount = user?.accountType === 'teacher';
@@ -190,7 +212,7 @@ export default function TeacherCabinetPage() {
     return (
       <TeacherAccessPrompt
         title="O'qituvchi kabineti"
-        text="Kabinetga kirish uchun o'qituvchi akkaunti bilan login qiling yoki yangi akkaunt yarating."
+        text="Kabinetga kirish uchun o'qituvchi hisobi bilan kiring yoki yangi hisob yarating."
       />
     );
   }
@@ -199,7 +221,7 @@ export default function TeacherCabinetPage() {
     return (
       <TeacherAccessPrompt
         title="Bu kabinet faqat o'qituvchilar uchun"
-        text="Siz hozir o'quvchi akkaunti bilan kirdingiz. O'qituvchi kabinetiga alohida akkaunt orqali kiring."
+        text="Siz hozir o'quvchi hisobi bilan kirdingiz. O'qituvchi kabinetiga alohida hisob orqali kiring."
       />
     );
   }
@@ -231,8 +253,8 @@ export default function TeacherCabinetPage() {
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-slate-50 p-4">
               <UserRound className="h-5 w-5 text-blue-700" />
-              <p className="mt-2 text-xs font-bold uppercase text-slate-500">Status</p>
-              <p className="font-bold text-slate-950">{profile?.profile_status ?? 'anketa yoq'}</p>
+              <p className="mt-2 text-xs font-bold uppercase text-slate-500">Holat</p>
+              <p className="font-bold text-slate-950">{formatProfileStatus(profile?.profile_status)}</p>
             </div>
             <div className="rounded-xl bg-slate-50 p-4">
               <CalendarCheck className="h-5 w-5 text-blue-700" />
@@ -333,7 +355,7 @@ export default function TeacherCabinetPage() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-bold text-slate-950">Sinov darsi #{lesson.id}</p>
-                      <p className="text-sm text-slate-500">Status: {lesson.status}</p>
+                      <p className="text-sm text-slate-500">Holat: {formatLessonStatus(lesson.status)}</p>
                       <p className="text-sm text-slate-500">Vaqt: {formatDate(lesson.requested_starts_at || lesson.scheduled_starts_at)}</p>
                       <p className="text-sm text-slate-500">Kontakt: {lesson.student_phone_e164 || lesson.student_email || '-'}</p>
                     </div>
@@ -371,7 +393,7 @@ function TeacherAccessPrompt({ title, text }: { title: string; text: string }) {
             O'qituvchi sifatida kirish
           </Link>
           <Link to="/teacher-register" className="rounded-xl bg-slate-100 px-5 py-3 font-black text-slate-950">
-            O'qituvchi registratsiya
+            O'qituvchi ro'yxatdan o'tishi
           </Link>
         </div>
       </section>

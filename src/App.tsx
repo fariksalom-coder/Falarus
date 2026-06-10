@@ -70,6 +70,8 @@ function AppRoutes() {
           <Route path="/login" element={renderLazyPage('./pages/LoginPage.tsx')} />
           <Route path="/register" element={renderLazyPage('./pages/RegisterPage.tsx')} />
           <Route path="/forgot-password" element={renderLazyPage('./pages/ForgotPasswordPage.tsx')} />
+          <Route path="/teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+          <Route path="/teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
           <Route path="*" element={<NotFoundPage />} />
         </>
       ) : (

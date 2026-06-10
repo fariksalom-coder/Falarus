@@ -41,7 +41,7 @@ export default function TeacherLoginPage() {
           </div>
           <div>
             <p className="text-sm font-bold text-blue-700">FalaRus</p>
-            <h1 className="text-2xl font-black text-slate-950">O'qituvchi login</h1>
+            <h1 className="text-2xl font-black text-slate-950">O'qituvchi kirishi</h1>
           </div>
         </div>
 
@@ -78,7 +78,7 @@ export default function TeacherLoginPage() {
         </button>
 
         <p className="mt-5 text-center text-sm font-semibold text-slate-600">
-          Akkauntingiz yo'qmi?{' '}
+          Hisobingiz yo'qmi?{' '}
           <Link to="/teacher-register" className="text-blue-700">
             Ro'yxatdan o'tish
           </Link>

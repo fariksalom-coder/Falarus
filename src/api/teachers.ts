@@ -65,6 +65,33 @@ export type TeacherCabinet = {
   listing_subscriptions: Array<Record<string, unknown>>;
 };
 
+export type TeacherStudentReview = {
+  id: number;
+  rating: number;
+  what_liked: string;
+  opinion: string;
+  created_at: string;
+};
+
+export type TeacherPublicDetail = {
+  profile: TeacherProfile;
+  reviews: TeacherStudentReview[];
+};
+
+export async function listTeachers(): Promise<TeacherProfile[]> {
+  const res = await fetch(apiUrl('/api/teachers'));
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || "O'qituvchilar yuklanmadi");
+  return data;
+}
+
+export async function getTeacherPublicDetail(teacherId: number): Promise<TeacherPublicDetail> {
+  const res = await fetch(apiUrl(`/api/teachers/${teacherId}`));
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || "O'qituvchi yuklanmadi");
+  return data;
+}
+
 export type TeacherProfilePayload = Partial<TeacherProfile> & {
   first_name: string;
   last_name: string;

@@ -91,11 +91,8 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
           onClick={onOpenAdmin}
           className="flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-3 text-left transition-colors hover:bg-slate-50 active:bg-slate-100"
         >
-          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.28)]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.28)]">
             <Headphones className="h-6 w-6" aria-hidden />
-            <span className="absolute -right-0.5 -top-0.5 rounded-full bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-blue-600 shadow">
-              pin
-            </span>
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-bold text-slate-900">Admin bilan chat</p>
