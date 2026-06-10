@@ -9,6 +9,7 @@ import {
   CircleHelp,
   Crown,
   Globe2,
+  History,
   LogOut,
   Moon,
   Pencil,
@@ -279,6 +280,7 @@ export default function ProfilePage() {
         <ProfileGroup title="Yordam">
           <ProfileRow icon={<CircleHelp />} label="Yordam" onClick={() => navigate('/help')} />
           <ProfileRow icon={<CircleDollarSign />} label="Tariflar" onClick={() => navigate('/tariflar')} />
+          <ProfileRow icon={<History />} label="To'lovlar tarixi" onClick={() => navigate('/payment-history')} />
           <ProfileRow icon={<LogOut />} label="Chiqish" danger onClick={handleLogout} />
         </ProfileGroup>
       </main>
