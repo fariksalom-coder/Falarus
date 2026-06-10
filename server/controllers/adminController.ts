@@ -1811,21 +1811,23 @@ export function createAdminController(supabase: DbClient) {
     try {
       const userId = Number(req.params.userId);
       const status = String(req.body?.status ?? req.body?.profile_status ?? '').trim();
-      const adminNote =
-        typeof req.body?.admin_note === 'string' ? req.body.admin_note.trim() || null : null;
 
       if (!Number.isFinite(userId)) return res.status(400).json({ error: 'userId noto‘g‘ri' });
       if (!TEACHER_PROFILE_STATUSES.includes(status as (typeof TEACHER_PROFILE_STATUSES)[number])) {
         return res.status(400).json({ error: 'Status noto‘g‘ri' });
       }
 
+      const updatePayload: Record<string, unknown> = {
+        profile_status: status,
+        updated_at: new Date().toISOString(),
+      };
+      if (typeof req.body?.admin_note === 'string') {
+        updatePayload.admin_note = req.body.admin_note.trim();
+      }
+
       const { data, error } = await supabase
         .from('teacher_profiles')
-        .update({
-          profile_status: status,
-          admin_note: adminNote,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('user_id', userId)
         .select('user_id, display_name, profile_status, listing_paid_until, admin_note')
         .maybeSingle();
