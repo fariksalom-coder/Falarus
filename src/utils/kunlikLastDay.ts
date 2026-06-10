@@ -12,7 +12,7 @@ export function rememberKunlikOpenedDay(dayNum: number): void {
 }
 
 /**
- * `/kunlik-reja` ga browser «назад» bilan kirganda oxirgi kunni tiklash.
+ * Bosh sahifaga (`/`) browser «назад» bilan kirganda oxirgi kunni tiklash.
  * Bir marta o‘qiladi va kalitni olib tashlaydi (keyingi tashrifda `currentDay` ishlaydi).
  */
 export function takeKunlikRestoreDay(): number | null {

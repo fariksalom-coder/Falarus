@@ -11,6 +11,7 @@ import AdminLayout from './pages/admin/AdminLayout';
 import AdminGuard from './pages/admin/AdminGuard';
 import MainLayout from './components/MainLayout';
 import NotFoundPage from './pages/NotFoundPage';
+import KunlikRejaRedirect from './components/KunlikRejaRedirect';
 import { renderLazyPage } from './routeModules';
 import { ADMIN_BASE_PATH, adminPath } from './constants/adminPath';
 
@@ -75,7 +76,7 @@ function AppRoutes() {
         <>
           <Route path="/" element={<MainLayout />}>
             <Route index element={renderLazyPage('./pages/HomePage.tsx')} />
-            <Route path="kunlik-reja" element={renderLazyPage('./pages/DailyPlanPage.tsx')} />
+            <Route path="kunlik-reja" element={<KunlikRejaRedirect />} />
             <Route
               path="kunlik-reja/kun/:dayNum/grammatika/test-variantlar"
               element={renderLazyPage('./pages/DailyGrammarRuleMcqPage.tsx')}

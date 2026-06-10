@@ -85,7 +85,6 @@ const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
   '/kurslar': ['./pages/CoursesPage.tsx'],
   '/kurslar/patent': ['./pages/PatentCoursePage.tsx'],
   '/kurslar/vnzh': ['./pages/VnzhCoursePage.tsx'],
-  '/kunlik-reja': ['./pages/DailyPlanPage.tsx'],
   '/tariflar': ['./pages/PricingPage.tsx', './pages/PaymentPage.tsx'],
   '/payment': [
     './pages/PaymentPage.tsx',

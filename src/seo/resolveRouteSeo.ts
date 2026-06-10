@@ -189,12 +189,7 @@ export function resolveRouteSeo(
       description: clipDescription(
         'Grammatika, lug\'at va matnlar bo\'yicha kunlik rejali o\'qish. Bosqichlar, haftalik bloklar va jarayon.'
       ),
-      extraJsonLd: [
-        crumbLd([
-          { name: 'Bosh sahifa', path: '/' },
-          { name: 'Kunlik reja', path: '/kunlik-reja' },
-        ]),
-      ],
+      canonicalPath: '/',
     };
   }
 

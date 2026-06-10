@@ -50,7 +50,7 @@ export function isBlockDoneLocallyForPlan(
   return Boolean(reviewVisits[day]);
 }
 
-/** Kunlik kun tartibidagi bosqichlar: reja bloklari (matnsiz) + o‘qish + gapirish (`DailyPlanPage` va statistik widget bilan bir xil). */
+/** Kunlik kun tartibidagi bosqichlar: reja bloklari (matnsiz) + o‘qish + gapirish (bosh sahifa va statistik widget bilan bir xil). */
 export type KunlikQuestSlice = {
   blocksForGrid: DayBlock[];
   readingDone: boolean;

@@ -285,7 +285,7 @@ export default function StatistikaPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => navigate('/kunlik-reja')}
+                      onClick={() => navigate('/')}
                       className="flex items-center gap-1 rounded-xl bg-white/20 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/30"
                     >
                       Davom etish

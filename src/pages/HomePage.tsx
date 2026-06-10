@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
 import { Check, ChevronLeft, ChevronRight, Crown, Edit3, FileText, RefreshCw } from 'lucide-react';
 import { fetchStreak, getCachedStreak, type StreakResponse } from '../api/activity';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +9,7 @@ import { useAccess } from '../context/AccessContext';
 import { useKunlikProgress, type KunlikDayProgress } from '../hooks/useKunlikProgress';
 import { prefetchRoutePath } from '../routeModules';
 import { TOTAL_DAYS } from '../data/dailyPlan';
+import { takeKunlikRestoreDay } from '../utils/kunlikLastDay';
 
 const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   grammar_1: false,
@@ -358,6 +360,7 @@ function QuestCard({ slot, index, day }: { slot: QuestSlot; index: number; day: 
 export default function HomePage() {
   const { token } = useAuth();
   const { access } = useAccess();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { rows, loaded, practicePromptCountByDay } = useKunlikProgress();
   const [streak, setStreak] = useState<StreakResponse>(() => getCachedStreak() ?? { streak_days: 0, last_7_days: Array(7).fill(false) });
   const currentDay = useMemo(
@@ -365,6 +368,7 @@ export default function HomePage() {
     [loaded, rows, practicePromptCountByDay],
   );
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const initialDayResolvedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -378,11 +382,37 @@ export default function HomePage() {
 
   useEffect(() => {
     if (currentDay == null) return;
+
+    if (!initialDayResolvedRef.current) {
+      initialDayResolvedRef.current = true;
+      const kunRaw = searchParams.get('kun');
+      const kunFromUrl = kunRaw != null ? Number(kunRaw) : null;
+      const restored = takeKunlikRestoreDay();
+      let day = currentDay;
+      if (restored != null && isValidDailyCourseDay(restored)) {
+        day = Math.min(restored, currentDay);
+      } else if (kunFromUrl != null && isValidDailyCourseDay(kunFromUrl)) {
+        day = Math.min(kunFromUrl, currentDay);
+      }
+      setSelectedDay(day);
+      if (kunRaw != null) {
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete('kun');
+            return next;
+          },
+          { replace: true },
+        );
+      }
+      return;
+    }
+
     setSelectedDay((day) => {
       if (day == null) return currentDay;
       return Math.min(Math.max(day, 1), currentDay);
     });
-  }, [currentDay]);
+  }, [currentDay, searchParams, setSearchParams]);
 
   const progressReady = loaded && currentDay != null && selectedDay != null;
   const displayDay = selectedDay ?? currentDay ?? 1;
