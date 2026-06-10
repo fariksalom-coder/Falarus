@@ -8,6 +8,8 @@ type Props = {
   existing?: PartnerProfile | null;
   onSaved: () => void;
   onBack?: () => void;
+  /** create = first-time anketa; edit = change existing profile */
+  variant?: 'create' | 'edit';
 };
 
 const LEVELS = [
@@ -27,7 +29,12 @@ const inputClass =
   'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[0.95rem] text-slate-900 shadow-[0_2px_8px_rgba(15,23,42,0.04)] outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 const labelClass = 'mb-1.5 block text-sm font-semibold text-slate-700';
 
-export default function PartnerProfileForm({ existing, onSaved, onBack }: Props) {
+export default function PartnerProfileForm({
+  existing,
+  onSaved,
+  onBack,
+  variant = existing ? 'edit' : 'create',
+}: Props) {
   const { token, user } = useAuth();
   const profileFullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
   const [displayName, setDisplayName] = useState(existing?.display_name ?? profileFullName);
@@ -85,11 +92,11 @@ export default function PartnerProfileForm({ existing, onSaved, onBack }: Props)
             className="mb-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            Orqaga
+            {variant === 'create' ? 'Keyinroq' : 'Orqaga'}
           </button>
         )}
         <h2 className="text-xl font-bold text-slate-900">
-          {onBack ? 'Anketani tahrirlash' : "Anketa to'ldiring"}
+          {variant === 'edit' ? 'Anketani tahrirlash' : "Anketa to'ldiring"}
         </h2>
         <p className="mt-1 text-sm text-slate-500">Sherik topish uchun ma'lumotlaringizni kiriting</p>
       </div>
