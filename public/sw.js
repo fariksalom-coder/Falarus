@@ -3,7 +3,7 @@
    - network-first for JS/CSS so new deployments reflect immediately
    - fallback to cache if network fails
 */
-const CACHE_NAME = 'falarus-pwa-v8';
+const CACHE_NAME = 'falarus-pwa-v9';
 
 const STATIC_ASSETS = [
   '/',
@@ -35,6 +35,8 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+  // User avatars and other uploads must always hit the network (avoid stale HTML/error bodies).
+  if (url.pathname.startsWith('/uploads/')) return;
 
   // Always prefer the newest JS/CSS from the network.
   // Otherwise users may keep seeing old UI logic after a deployment.

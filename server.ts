@@ -41,7 +41,8 @@ import { insertPointEvent } from './shared/pointEvents.ts';
 import { parseContactIdentifier, sanitizePhoneRaw } from './shared/authIdentifiers.ts';
 
 const AUTH_USER_SELECT =
-  'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at, account_type';
+  'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at, account_type, avatar_url, gender';
+
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassing.ts';
@@ -88,6 +89,21 @@ function toAbsolutePublicUrl(relativeUrl: string): string {
   const base = (process.env.APP_URL || process.env.PUBLIC_URL || '').replace(/\/$/, '');
   if (!base) return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   return `${base}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+}
+
+function mapAuthUserPayload(user: Record<string, unknown>) {
+  return {
+    id: user.id,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email ?? null,
+    phone: user.phone ?? null,
+    level: user.level,
+    onboarded: user.onboarded,
+    accountType: (user.account_type as string | null | undefined) ?? 'student',
+    avatarUrl: user.avatar_url ? toAbsolutePublicUrl(String(user.avatar_url)) : null,
+    gender: user.gender === 'male' || user.gender === 'female' ? user.gender : null,
+  };
 }
 
 const jwtSecretEnv = process.env.JWT_SECRET;
@@ -286,6 +302,10 @@ async function startServer() {
       return res.status(403).send('Forbidden');
     }
     return next();
+  });
+  app.use('/uploads', (req, res, next) => {
+    res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+    next();
   });
   app.use('/uploads', express.static(UPLOADS_DIR, { fallthrough: false }));
   app.use((req, res, next) => {
@@ -664,14 +684,7 @@ async function startServer() {
     res.json({
       token,
       user: {
-        id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        email: user.email ?? null,
-        phone: user.phone ?? null,
-        level: user.level,
-        onboarded: user.onboarded,
-        accountType: (user.account_type as string | null | undefined) ?? 'student',
+        ...mapAuthUserPayload(user),
         planName: planFields.planName,
         planExpiresAt: planFields.planExpiresAt,
       },
@@ -734,13 +747,7 @@ async function startServer() {
     res.json({
       token,
       user: {
-        id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        email: user.email ?? null,
-        phone: user.phone ?? null,
-        level: user.level,
-        onboarded: user.onboarded,
+        ...mapAuthUserPayload(user),
         accountType: 'teacher',
         planName: (user.plan_name as string | null | undefined) ?? null,
         planExpiresAt: (user.plan_expires_at as string | null | undefined) ?? null,
@@ -780,13 +787,7 @@ async function startServer() {
         token,
         isNewUser,
         user: {
-          id: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          email: user.email ?? null,
-          phone: user.phone ?? null,
-          level: user.level,
-          onboarded: user.onboarded,
+          ...mapAuthUserPayload(user as Record<string, unknown>),
           planName: planFields.planName,
           planExpiresAt: planFields.planExpiresAt,
         },
@@ -843,13 +844,7 @@ async function startServer() {
         token,
         isNewUser,
         user: {
-          id: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          email: user.email ?? null,
-          phone: user.phone ?? null,
-          level: user.level,
-          onboarded: user.onboarded,
+          ...mapAuthUserPayload(user as Record<string, unknown>),
           planName: planFields.planName,
           planExpiresAt: planFields.planExpiresAt,
         },

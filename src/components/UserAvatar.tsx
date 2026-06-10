@@ -43,6 +43,8 @@ export default function UserAvatar({ avatarUrl, gender = null, name, className =
         alt={name?.trim() || ''}
         className={`rounded-full object-cover ${className}`}
         decoding="async"
+        loading="eager"
+        referrerPolicy="same-origin"
         onError={() => setImageFailed(true)}
       />
     );

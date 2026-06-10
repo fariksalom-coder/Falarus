@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setFirstName(user?.firstName ?? '');
@@ -69,6 +70,8 @@ export default function ProfilePage() {
     e.target.value = '';
     if (!file || !token) return;
     setBanner(null);
+    const preview = URL.createObjectURL(file);
+    setLocalPreviewUrl(preview);
     setUploadingAvatar(true);
     try {
       const me = await uploadUserAvatar(token, file);
@@ -77,6 +80,8 @@ export default function ProfilePage() {
     } catch (err) {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm yuklanmadi' });
     } finally {
+      URL.revokeObjectURL(preview);
+      setLocalPreviewUrl(null);
       setUploadingAvatar(false);
     }
   }
@@ -137,7 +142,7 @@ export default function ProfilePage() {
             aria-label="Profil rasmini tanlash"
           >
             <UserAvatar
-              avatarUrl={avatarDisplayUrl(user?.avatarUrl)}
+              avatarUrl={localPreviewUrl ?? avatarDisplayUrl(user?.avatarUrl)}
               gender={user?.gender ?? null}
               name={fullName}
               className="h-20 w-20"

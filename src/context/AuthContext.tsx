@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { apiUrl } from '../api';
+import { bustAvatarUrl } from '../api/user';
 import { clearUserProgressCaches } from '../utils/clearUserProgressCaches';
 
 /** Persisted snapshot so an intermittent network failure during /api/user/me doesn't force a logout UI. */
@@ -94,7 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (res.ok) {
           const data = (await res.json()) as User;
-          const normalized = { ...data, totalPoints: data.totalPoints ?? 0 };
+          const normalized = {
+            ...data,
+            totalPoints: data.totalPoints ?? 0,
+            avatarUrl: data.avatarUrl ? bustAvatarUrl(data.avatarUrl) : null,
+          };
           setUser(normalized);
           writeCachedUser(normalized);
           finish();
@@ -133,7 +138,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (newToken: string, newUser: User) => {
     clearUserProgressCaches();
     localStorage.setItem('token', newToken);
-    const normalized = { ...newUser, totalPoints: newUser.totalPoints ?? 0 };
+    const normalized = {
+      ...newUser,
+      totalPoints: newUser.totalPoints ?? 0,
+      avatarUrl: newUser.avatarUrl ? bustAvatarUrl(newUser.avatarUrl) : null,
+    };
     writeCachedUser(normalized);
     setToken(newToken);
     setUser(normalized);
