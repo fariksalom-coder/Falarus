@@ -1805,6 +1805,43 @@ export function createAdminController(supabase: DbClient) {
     return res.json({ success: true });
   }
 
+  const TEACHER_PROFILE_STATUSES = ['draft', 'pending_review', 'active', 'paused', 'rejected'] as const;
+
+  async function updateTeacherStatus(req: Request, res: Response) {
+    try {
+      const userId = Number(req.params.userId);
+      const status = String(req.body?.status ?? req.body?.profile_status ?? '').trim();
+      const adminNote =
+        typeof req.body?.admin_note === 'string' ? req.body.admin_note.trim() || null : null;
+
+      if (!Number.isFinite(userId)) return res.status(400).json({ error: 'userId noto‘g‘ri' });
+      if (!TEACHER_PROFILE_STATUSES.includes(status as (typeof TEACHER_PROFILE_STATUSES)[number])) {
+        return res.status(400).json({ error: 'Status noto‘g‘ri' });
+      }
+
+      const { data, error } = await supabase
+        .from('teacher_profiles')
+        .update({
+          profile_status: status,
+          admin_note: adminNote,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .select('user_id, display_name, profile_status, listing_paid_until, admin_note')
+        .maybeSingle();
+
+      if (error) {
+        console.error('[admin/updateTeacherStatus]', error);
+        return res.status(500).json({ error: error.message });
+      }
+      if (!data) return res.status(404).json({ error: 'O‘qituvchi topilmadi' });
+      return res.json(data);
+    } catch (e: unknown) {
+      console.error('[admin/updateTeacherStatus]', e);
+      return res.status(500).json({ error: e instanceof Error ? e.message : 'Server xatosi' });
+    }
+  }
+
   return {
     login,
     getDashboard,
@@ -1841,5 +1878,6 @@ export function createAdminController(supabase: DbClient) {
     getTariffPrices,
     updateTariffPrice,
     bulkUpdateTariffPrices,
+    updateTeacherStatus,
   };
 }

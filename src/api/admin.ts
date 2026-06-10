@@ -383,6 +383,17 @@ export async function getAdminTeachers(): Promise<AdminTeacherRow[]> {
   return adminApi<AdminTeacherRow[]>('/teachers');
 }
 
+export async function updateTeacherStatus(
+  userId: number,
+  status: 'draft' | 'pending_review' | 'active' | 'paused' | 'rejected',
+  adminNote?: string | null
+): Promise<void> {
+  await adminApi(`/teachers/${userId}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ status, admin_note: adminNote ?? null }),
+  });
+}
+
 export async function getAdminTeacherTrials(): Promise<AdminTeacherTrialRow[]> {
   return adminApi<AdminTeacherTrialRow[]>('/teacher-trials');
 }

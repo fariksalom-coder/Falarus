@@ -84,6 +84,7 @@ export function createAdminRoutes(supabase: DbClient): Router {
       next(e);
     }
   });
+  router.post('/teachers/:userId/status', (req, res, next) => ctrl.updateTeacherStatus(req, res).catch(next));
   router.get('/teacher-trials', async (_req, res, next) => {
     try {
       const { data, error } = await supabase

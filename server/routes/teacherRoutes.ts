@@ -131,9 +131,30 @@ function normalizeTeacherProfilePayload(body: Record<string, unknown>, userId: n
     public_phone_e164: publicPhone,
     public_email: null,
     preferred_contact_method: preferredContact,
-    profile_status: 'pending_review',
     updated_at: new Date().toISOString(),
   };
+}
+
+function resolveProfileStatusOnSave(
+  existing: { profile_status?: string | null; listing_paid_until?: string | null } | null
+): string {
+  const listingActive =
+    !!existing?.listing_paid_until && new Date(existing.listing_paid_until).getTime() > Date.now();
+  const current = existing?.profile_status ?? 'draft';
+
+  if (current === 'paused' || current === 'rejected') {
+    return current;
+  }
+
+  if (listingActive) {
+    return 'active';
+  }
+
+  if (!existing || current === 'draft') {
+    return 'pending_review';
+  }
+
+  return current;
 }
 
 async function shareTrialContactsAndOpenChat(
@@ -372,7 +393,7 @@ export function createTeacherRoutes(
       const payload = normalizeTeacherProfilePayload(req.body ?? {}, userId);
       const { data: existing } = await supabase
         .from('teacher_profiles')
-        .select('avatar_url')
+        .select('avatar_url, profile_status, listing_paid_until')
         .eq('user_id', userId)
         .maybeSingle();
       if ((existing as { avatar_url?: string | null } | null)?.avatar_url) {
@@ -386,6 +407,9 @@ export function createTeacherRoutes(
         const userAvatar = (userRow as { avatar_url?: string | null } | null)?.avatar_url;
         if (userAvatar) (payload as Record<string, unknown>).avatar_url = userAvatar;
       }
+      (payload as Record<string, unknown>).profile_status = resolveProfileStatusOnSave(
+        existing as { profile_status?: string | null; listing_paid_until?: string | null } | null
+      );
       const { data, error } = await supabase
         .from('teacher_profiles')
         .upsert(payload, { onConflict: 'user_id' })
