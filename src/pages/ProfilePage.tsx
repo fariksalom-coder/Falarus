@@ -18,13 +18,27 @@ import {
   Volume2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 import UserAvatar from '../components/UserAvatar';
 import { resolveAssetUrl } from '../api';
 import { bustAvatarUrl, patchUserAccount, uploadUserAvatar } from '../api/user';
 
+function premiumDaysLeft(planExpiresAt: string | null | undefined): number | null {
+  if (!planExpiresAt) return null;
+  const ts = Date.parse(planExpiresAt);
+  if (!Number.isFinite(ts)) return null;
+  const diffMs = ts - Date.now();
+  if (diffMs <= 0) return 0;
+  return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+}
+
 export default function ProfilePage() {
   const { user, token, logout, updateUser } = useAuth();
+  const { access } = useAccess();
   const navigate = useNavigate();
+  const hasPremium = Boolean(access?.subscription_active);
+  const premiumDays = premiumDaysLeft(user?.planExpiresAt);
+  const showActivePremium = hasPremium && premiumDays != null && premiumDays > 0;
   const avatarInputId = useId();
   const [avatarRevision, setAvatarRevision] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -114,15 +128,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-full bg-[#EEF4FA] px-4 pb-6 pt-2">
+    <div className="min-h-full bg-[#EEF4FA] px-4 pb-6 pt-1">
       <main className="mx-auto w-full max-w-[820px]">
-        <header className="mb-5">
-          <h1 className="text-[32px] font-black leading-tight tracking-tight text-[#0F172A] sm:text-[40px]">
-            Profil
-          </h1>
-          <p className="mt-1 text-sm font-medium text-[#64748B]">Hisob va sozlamalar</p>
-        </header>
-
         {banner ? (
           <div
             className={`mb-4 rounded-xl px-4 py-3 text-sm font-semibold ${
@@ -133,7 +140,7 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
-        <section className="mb-6 flex flex-col items-center rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+        <section className="mb-5 flex flex-col items-center rounded-[24px] border border-slate-200/90 bg-white px-4 py-4 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
           <label
             htmlFor={avatarInputId}
             className={`relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full ${
@@ -218,23 +225,29 @@ export default function ProfilePage() {
             </button>
           )}
 
-          <div className="mt-4 flex items-center justify-center gap-2.5">
-            <div className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#FFC425] px-4 text-[#0F172A]">
-              <Crown className="h-4 w-4 fill-[#0F172A]" aria-hidden />
-              <span className="text-sm font-extrabold">VIP</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate('/profile/settings')}
-              className="flex h-9 items-center justify-center gap-2 rounded-full bg-[#24459A] px-4 text-white active:scale-[0.98]"
-            >
-              <span className="text-sm font-bold">Sozlamalar</span>
-            </button>
+          <div className="mt-4 flex w-full justify-center">
+            {showActivePremium ? (
+              <div className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-[#FFC425] px-4 text-[#0F172A]">
+                <Crown className="h-4 w-4 fill-[#0F172A]" aria-hidden />
+                <span className="text-sm font-extrabold">
+                  Premium · {premiumDays} kun qoldi
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/tariflar')}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-[#24459A] px-5 text-white shadow-[0_8px_20px_rgba(36,69,154,0.28)] active:scale-[0.98]"
+              >
+                <Crown className="h-4 w-4" aria-hidden />
+                <span className="text-sm font-extrabold">Premium sotib olish</span>
+              </button>
+            )}
           </div>
         </section>
 
         <ProfileGroup title="Shaxsiy">
-          <ProfileRow icon={<UserCircle />} label="Hisob" onClick={() => navigate('/profile/settings')} />
+          <ProfileRow icon={<UserCircle />} label="Profil" onClick={() => navigate('/profile/settings')} />
           <ProfileRow icon={<BookOpen />} label="Sertifikatlar" />
           <ProfileRow icon={<Users />} label="Do'stlarni taklif qilish" onClick={() => navigate('/invite')} />
         </ProfileGroup>
