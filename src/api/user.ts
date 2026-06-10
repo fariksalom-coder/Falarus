@@ -47,6 +47,39 @@ export async function uploadUserAvatar(token: string, file: File): Promise<UserM
   return data as UserMe;
 }
 
+export async function patchUserAccount(
+  token: string,
+  body: Partial<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    gender: UserGender;
+    currentPassword: string;
+    newPassword: string;
+    newPasswordConfirm: string;
+  }>
+): Promise<UserMe> {
+  const res = await fetch(apiUrl('/api/user/account'), {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof data.error === 'string' ? data.error : 'Xatolik yuz berdi');
+  }
+  return data as UserMe;
+}
+
+export function bustAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return `${url.split('?')[0]}?v=${Date.now()}`;
+}
+
 export async function removeUserAvatar(token: string): Promise<UserMe> {
   const res = await fetch(apiUrl('/api/user/avatar'), {
     method: 'DELETE',

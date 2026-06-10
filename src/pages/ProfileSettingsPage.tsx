@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
-import { removeUserAvatar, uploadUserAvatar } from '../api/user';
+import { bustAvatarUrl, patchUserAccount, removeUserAvatar, uploadUserAvatar } from '../api/user';
 import UserAvatar, { type UserGender } from '../components/UserAvatar';
 
 type MeResponse = {
@@ -25,7 +25,8 @@ type MeResponse = {
 export default function ProfileSettingsPage() {
   const { token, user, updateUser } = useAuth();
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [level, setLevel] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -46,7 +47,8 @@ export default function ProfileSettingsPage() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data: MeResponse | null) => {
         if (!data) return;
-        setFullName(`${data.firstName ?? ''} ${data.lastName ?? ''}`.trim());
+        setFirstName(data.firstName ?? '');
+        setLastName(data.lastName ?? '');
         setLevel(data.level ?? '');
         setEmail(data.email ?? '');
         setPhone(data.phone ?? '');
@@ -57,7 +59,8 @@ export default function ProfileSettingsPage() {
   }, [token]);
 
   useEffect(() => {
-    setFullName(`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim());
+    setFirstName(user?.firstName ?? '');
+    setLastName(user?.lastName ?? '');
     setLevel(user?.level ?? '');
     setEmail(user?.email ?? '');
     setPhone(user?.phone ?? '');
@@ -73,7 +76,9 @@ export default function ProfileSettingsPage() {
       totalPoints: me.totalPoints,
       planName: me.planName,
       planExpiresAt: me.planExpiresAt,
-      avatarUrl: me.avatarUrl ?? null,
+      firstName: me.firstName,
+      lastName: me.lastName,
+      avatarUrl: me.avatarUrl ? bustAvatarUrl(me.avatarUrl) : null,
       gender: me.gender ?? null,
     });
     setAvatarUrl(me.avatarUrl ?? null);
@@ -95,9 +100,6 @@ export default function ProfileSettingsPage() {
     try {
       const me = await uploadUserAvatar(token, file);
       applyMeToContext(me);
-      updateUser({
-        avatarUrl: me.avatarUrl ? `${me.avatarUrl.split('?')[0]}?v=${Date.now()}` : null,
-      });
       setBanner({ kind: 'ok', text: 'Profil rasmi yangilandi' });
     } catch (err) {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm yuklanmadi' });
@@ -113,29 +115,12 @@ export default function ProfileSettingsPage() {
     try {
       const me = await removeUserAvatar(token);
       applyMeToContext(me);
-      updateUser({ avatarUrl: null });
       setBanner({ kind: 'ok', text: 'Profil rasmi o‘chirildi' });
     } catch (err) {
       setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm o‘chirilmadi' });
     } finally {
       setUploadingAvatar(false);
     }
-  }
-
-  async function patchAccount(body: Record<string, string | null>) {
-    const res = await fetch(apiUrl('/api/user/account'), {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token!}`,
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(typeof data.error === 'string' ? data.error : 'Xatolik yuz berdi');
-    }
-    return data as MeResponse;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -156,18 +141,23 @@ export default function ProfileSettingsPage() {
 
     setSaving(true);
     try {
-      const body: Record<string, string | null> = {
+      const me = await patchUserAccount(token, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         email: email.trim(),
         phone: phone.trim(),
         gender,
-      };
-      if (newPassword || newPasswordConfirm) {
-        body.currentPassword = currentPassword;
-        body.newPassword = newPassword;
-        body.newPasswordConfirm = newPasswordConfirm;
-      }
-      const me = await patchAccount(body);
+        ...(newPassword || newPasswordConfirm
+          ? {
+              currentPassword,
+              newPassword,
+              newPasswordConfirm,
+            }
+          : {}),
+      });
       applyMeToContext(me);
+      setFirstName(me.firstName ?? '');
+      setLastName(me.lastName ?? '');
       setEmail(me.email ?? '');
       setPhone(me.phone ?? '');
       setGender(me.gender ?? null);
@@ -217,7 +207,7 @@ export default function ProfileSettingsPage() {
               <UserAvatar
                 avatarUrl={avatarPreviewUrl(avatarUrl)}
                 gender={gender}
-                name={fullName}
+                name={`${firstName} ${lastName}`.trim()}
                 className="h-20 w-20"
               />
               {uploadingAvatar ? (
@@ -270,7 +260,8 @@ export default function ProfileSettingsPage() {
           <section className="rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
             <h2 className="text-base font-extrabold text-slate-900">Profil</h2>
             <div className="mt-5 space-y-5">
-              <TextField label="To'liq ism" value={fullName} onChange={setFullName} readOnly />
+              <TextField label="Ism" value={firstName} onChange={setFirstName} />
+              <TextField label="Familiya" value={lastName} onChange={setLastName} />
               <TextField label="Rus tili darajasi" value={level} onChange={setLevel} readOnly />
               <div>
                 <span className="mb-2 block text-sm font-semibold text-slate-600">Jins</span>

@@ -158,6 +158,30 @@ export async function applyUserAccountPatch(
     phone: nextPhone,
   };
 
+  if ('firstName' in body || 'first_name' in body) {
+    const raw = body.firstName ?? body.first_name;
+    if (typeof raw !== 'string') {
+      return { ok: false, status: 400, error: "Ism noto'g'ri" };
+    }
+    const firstName = raw.trim();
+    if (!firstName || firstName.length > 80) {
+      return { ok: false, status: 400, error: "Ism 1–80 belgi bo'lishi kerak" };
+    }
+    updates.first_name = firstName;
+  }
+
+  if ('lastName' in body || 'last_name' in body) {
+    const raw = body.lastName ?? body.last_name;
+    if (typeof raw !== 'string') {
+      return { ok: false, status: 400, error: "Familiya noto'g'ri" };
+    }
+    const lastName = raw.trim();
+    if (!lastName || lastName.length > 80) {
+      return { ok: false, status: 400, error: "Familiya 1–80 belgi bo'lishi kerak" };
+    }
+    updates.last_name = lastName;
+  }
+
   if ('gender' in body) {
     const g = body.gender;
     if (g === null || g === '') {

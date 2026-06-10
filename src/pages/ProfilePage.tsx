@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   Bell,
   BookOpen,
+  Camera,
   ChevronRight,
   CircleDollarSign,
   CircleHelp,
@@ -18,18 +19,80 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserAvatar from '../components/UserAvatar';
+import { bustAvatarUrl, patchUserAccount, uploadUserAvatar } from '../api/user';
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, token, logout, updateUser } = useAuth();
   const navigate = useNavigate();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    setFirstName(user?.firstName ?? '');
+    setLastName(user?.lastName ?? '');
+  }, [user?.firstName, user?.lastName]);
 
   if (user?.accountType === 'teacher') {
     return <Navigate to="/teacher-cabinet" replace />;
   }
 
   const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Foydalanuvchi';
+
+  function applyMe(me: { firstName: string; lastName: string; avatarUrl?: string | null }) {
+    updateUser({
+      firstName: me.firstName,
+      lastName: me.lastName,
+      avatarUrl: me.avatarUrl ? bustAvatarUrl(me.avatarUrl) : null,
+    });
+    setFirstName(me.firstName);
+    setLastName(me.lastName);
+  }
+
+  async function handlePickAvatar(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !token) return;
+    setBanner(null);
+    setUploadingAvatar(true);
+    try {
+      const me = await uploadUserAvatar(token, file);
+      applyMe(me);
+      setBanner({ kind: 'ok', text: 'Profil rasmi yangilandi' });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm yuklanmadi' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function handleSaveName() {
+    if (!token) return;
+    const nextFirst = firstName.trim();
+    const nextLast = lastName.trim();
+    if (!nextFirst || !nextLast) {
+      setBanner({ kind: 'error', text: "Ism va familiya to'ldirilishi kerak" });
+      return;
+    }
+    setBanner(null);
+    setSavingName(true);
+    try {
+      const me = await patchUserAccount(token, { firstName: nextFirst, lastName: nextLast });
+      applyMe(me);
+      setEditingName(false);
+      setBanner({ kind: 'ok', text: 'Ism yangilandi' });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   function handleLogout() {
     logout();
@@ -46,14 +109,100 @@ export default function ProfilePage() {
           <p className="mt-1 text-sm font-medium text-[#64748B]">Hisob va sozlamalar</p>
         </header>
 
+        {banner ? (
+          <div
+            className={`mb-4 rounded-xl px-4 py-3 text-sm font-semibold ${
+              banner.kind === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+            }`}
+          >
+            {banner.text}
+          </div>
+        ) : null}
+
         <section className="mb-6 flex flex-col items-center rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
-          <UserAvatar
-            avatarUrl={user?.avatarUrl}
-            gender={user?.gender ?? null}
-            name={fullName}
-            className="h-20 w-20"
+          <button
+            type="button"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="relative rounded-full disabled:opacity-60"
+            aria-label="Profil rasmini tanlash"
+          >
+            <UserAvatar
+              avatarUrl={user?.avatarUrl}
+              gender={user?.gender ?? null}
+              name={fullName}
+              className="h-20 w-20"
+            />
+            <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#24459A] text-white shadow-md">
+              {uploadingAvatar ? (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <Camera className="h-3.5 w-3.5" aria-hidden />
+              )}
+            </span>
+          </button>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handlePickAvatar}
+            disabled={uploadingAvatar}
           />
-          <h2 className="mt-3 text-center text-lg font-extrabold text-[#0F172A]">{fullName}</h2>
+          <p className="mt-2 text-xs font-medium text-slate-500">Rasm uchun bosing</p>
+
+          {editingName ? (
+            <div className="mt-4 w-full max-w-sm space-y-3">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-slate-600">Ism</span>
+                <input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[15px] font-medium text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  autoComplete="given-name"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-semibold text-slate-600">Familiya</span>
+                <input
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[15px] font-medium text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  autoComplete="family-name"
+                />
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleSaveName()}
+                  disabled={savingName}
+                  className="flex h-10 flex-1 items-center justify-center rounded-xl bg-[#24459A] text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {savingName ? '...' : 'Saqlash'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingName(false);
+                    setFirstName(user?.firstName ?? '');
+                    setLastName(user?.lastName ?? '');
+                  }}
+                  className="flex h-10 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600"
+                >
+                  Bekor
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingName(true)}
+              className="mt-3 flex items-center gap-2 text-center"
+            >
+              <h2 className="text-lg font-extrabold text-[#0F172A]">{fullName}</h2>
+              <Pencil className="h-4 w-4 text-slate-400" aria-hidden />
+            </button>
+          )}
 
           <div className="mt-4 flex items-center justify-center gap-2.5">
             <div className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#FFC425] px-4 text-[#0F172A]">
@@ -65,8 +214,7 @@ export default function ProfilePage() {
               onClick={() => navigate('/profile/settings')}
               className="flex h-9 items-center justify-center gap-2 rounded-full bg-[#24459A] px-4 text-white active:scale-[0.98]"
             >
-              <span className="text-sm font-bold">Tahrirlash</span>
-              <Pencil className="h-4 w-4" aria-hidden />
+              <span className="text-sm font-bold">Sozlamalar</span>
             </button>
           </div>
         </section>
