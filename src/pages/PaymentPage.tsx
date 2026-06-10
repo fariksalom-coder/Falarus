@@ -8,10 +8,12 @@ import {
   getCourseProductPrice,
   getPaymentProductLabel,
   getTeacherListingPriceUzs,
+  getTeacherTrialPriceUzs,
   isCourseProductCode,
   isTeacherListingPlanCode,
   normalizePaymentProductCode,
   TEACHER_LISTING_PRODUCT_CODE,
+  TEACHER_TRIAL_PRODUCT_CODE,
   type PaymentProductCode,
   type TeacherListingPlanCode,
 } from '../../shared/paymentProducts';
@@ -80,6 +82,7 @@ export default function PaymentPage() {
     productCode?: PaymentProductCode;
     productLabel?: string;
     listingPlanCode?: TeacherListingPlanCode;
+    trialId?: number;
     returnTo?: string;
   } | null;
 
@@ -102,12 +105,15 @@ export default function PaymentPage() {
   const productCode = normalizePaymentProductCode(state?.productCode);
   const isRussianCourse = productCode === 'russian';
   const isTeacherListing = productCode === TEACHER_LISTING_PRODUCT_CODE;
+  const isTeacherTrial = productCode === TEACHER_TRIAL_PRODUCT_CODE;
   const listingPlanCode = isTeacherListingPlanCode(state?.listingPlanCode) ? state.listingPlanCode : null;
+  const trialId = isTeacherTrial && typeof state?.trialId === 'number' ? state.trialId : null;
   const tariffType = state?.tariffType ?? (isRussianCourse ? 'month' : undefined);
   const currency = state?.currency ?? 'UZS';
   const tariffLabel = state?.tariffLabel ?? '1 OY';
   const productLabel = state?.productLabel ?? getPaymentProductLabel(productCode);
-  const afterPayPath = state?.returnTo ?? (isTeacherListing ? '/teacher-cabinet' : '/profile');
+  const afterPayPath =
+    state?.returnTo ?? (isTeacherListing ? '/teacher-cabinet' : isTeacherTrial ? '/teachers' : '/profile');
   const backPath =
     state?.returnTo ??
     (productCode === 'patent'
@@ -116,7 +122,9 @@ export default function PaymentPage() {
         ? '/kurslar/vnzh'
         : isTeacherListing
           ? '/teacher-cabinet'
-          : '/tariflar');
+          : isTeacherTrial
+            ? '/teachers'
+            : '/tariflar');
 
   useEffect(() => {
     setHasPendingPayment(
@@ -160,6 +168,8 @@ export default function PaymentPage() {
         }
         if (isTeacherListing && listingPlanCode) {
           setPrice(getTeacherListingPriceUzs(listingPlanCode));
+        } else if (isTeacherTrial) {
+          setPrice(getTeacherTrialPriceUzs());
         } else {
           setPrice(isCourseProductCode(productCode) ? getCourseProductPrice(productCode, currency) : null);
         }
@@ -174,7 +184,7 @@ export default function PaymentPage() {
         setPrice(null);
       })
       .finally(() => setDetailsLoading(false));
-  }, [currency, isRussianCourse, isTeacherListing, listingPlanCode, productCode, tariffType, token]);
+  }, [currency, isRussianCourse, isTeacherListing, isTeacherTrial, listingPlanCode, productCode, tariffType, token]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -224,6 +234,7 @@ export default function PaymentPage() {
         currency,
         file,
         listingPlanCode: isTeacherListing ? listingPlanCode ?? undefined : undefined,
+        trialId: isTeacherTrial ? trialId ?? undefined : undefined,
       });
       await refreshPayments();
       setSuccess(true);
@@ -240,7 +251,9 @@ export default function PaymentPage() {
     ? Boolean(state?.tariffType)
     : isTeacherListing
       ? Boolean(listingPlanCode)
-      : Boolean(state?.productCode);
+      : isTeacherTrial
+        ? trialId != null
+        : Boolean(state?.productCode);
 
   if (!hasValidState && !hasPendingPayment && !paymentsLoading) {
     navigate(backPath, { replace: true });
@@ -270,7 +283,7 @@ export default function PaymentPage() {
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
             style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            {isTeacherListing ? 'Kabinetga qaytish' : "Profilga o'tish"}
+            {isTeacherListing ? 'Kabinetga qaytish' : isTeacherTrial ? "O'qituvchilarga qaytish" : "Profilga o'tish"}
           </button>
         </div>
       </div>
@@ -297,7 +310,7 @@ export default function PaymentPage() {
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
             style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            {isTeacherListing ? 'Kabinetga qaytish' : "Profilga o'tish"}
+            {isTeacherListing ? 'Kabinetga qaytish' : isTeacherTrial ? "O'qituvchilarga qaytish" : "Profilga o'tish"}
           </button>
         </div>
       </div>
@@ -333,7 +346,7 @@ export default function PaymentPage() {
               <p className="text-slate-600 text-sm mb-1">
                 {isRussianCourse
                   ? `Tarif: ${tariffLabel}`
-                  : isTeacherListing
+                  : isTeacherListing || isTeacherTrial
                     ? `Xizmat: ${productLabel}`
                     : `Kurs: ${productLabel}`}
               </p>

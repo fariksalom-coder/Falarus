@@ -48,6 +48,7 @@ export async function submitPayment(
     currency: Currency;
     file: File;
     listingPlanCode?: TeacherListingPlanCode;
+    trialId?: number;
   }
 ): Promise<{ success: true; id: number }> {
   const form = new FormData();
@@ -55,6 +56,7 @@ export async function submitPayment(
   form.append('product_code', payload.productCode);
   form.append('currency', payload.currency);
   if (payload.listingPlanCode) form.append('listing_plan_code', payload.listingPlanCode);
+  if (payload.trialId != null) form.append('trial_id', String(payload.trialId));
   form.append('payment_time', new Date().toISOString());
   form.append('upload_file', payload.file);
 

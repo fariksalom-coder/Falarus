@@ -1,19 +1,35 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Clock, MapPin, Users } from 'lucide-react';
-import { getTeacherPublicDetail, type TeacherProfile, type TeacherStudentReview } from '../api/teachers';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, BookOpen, Clock, CreditCard, MapPin, Users } from 'lucide-react';
+import { resolveAssetUrl } from '../api';
+import {
+  createTeacherTrialLesson,
+  getTeacherPublicDetail,
+  type TeacherProfile,
+  type TeacherStudentReview,
+} from '../api/teachers';
+import { useAuth } from '../context/AuthContext';
+import { RahmatCoursePayButton } from '../components/pricing/RahmatCoursePayButton';
+import { invalidatePaymentsCache } from '../api/payment';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import {
   formatTeacherExperience,
+  formatTeacherPrice,
   formatTeachingFormat,
   teacherDisplayName,
   teacherInitials,
 } from '../utils/teacherDisplay';
+import {
+  getTeacherTrialPriceUzs,
+  TEACHER_TRIAL_PRODUCT_CODE,
+} from '../../shared/paymentProducts';
 
 function ProfileAvatar({ profile }: { profile: TeacherProfile }) {
-  if (profile.avatar_url) {
+  const url = resolveAssetUrl(profile.avatar_url);
+  if (url) {
     return (
       <img
-        src={profile.avatar_url}
+        src={url}
         alt=""
         className="h-full w-full object-cover object-[center_35%]"
         decoding="async"
@@ -21,7 +37,7 @@ function ProfileAvatar({ profile }: { profile: TeacherProfile }) {
     );
   }
   return (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-5xl font-black text-white">
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-3xl font-black text-white">
       {teacherInitials(profile)}
     </div>
   );
@@ -47,11 +63,21 @@ function ReviewCard({ review }: { review: TeacherStudentReview }) {
 
 export default function TeacherProfilePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { teacherId } = useParams();
+  const { token } = useAuth();
+  const { refreshPayments } = usePaymentStatus();
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [reviews, setReviews] = useState<TeacherStudentReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [studentMessage, setStudentMessage] = useState('');
+  const [trialId, setTrialId] = useState<number | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+
+  const trialPrice = getTeacherTrialPriceUzs();
 
   useEffect(() => {
     const id = Number(teacherId);
@@ -74,6 +100,59 @@ export default function TeacherProfilePage() {
       mounted = false;
     };
   }, [teacherId]);
+
+  async function ensureTrialLesson(): Promise<number> {
+    if (trialId != null) return trialId;
+    if (!token || !profile) throw new Error('Tizimga kirish kerak');
+    const trial = await createTeacherTrialLesson(token, profile.user_id, {
+      student_message: studentMessage.trim(),
+    });
+    setTrialId(trial.id);
+    return trial.id;
+  }
+
+  async function handleStartBooking() {
+    if (!token) {
+      navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
+    setBookingError('');
+    setBookingOpen(true);
+  }
+
+  async function handleConfirmBooking() {
+    if (!token || !profile) return;
+    setBookingLoading(true);
+    setBookingError('');
+    try {
+      await ensureTrialLesson();
+    } catch (e) {
+      setBookingError(e instanceof Error ? e.message : 'Ariza yuborilmadi');
+    } finally {
+      setBookingLoading(false);
+    }
+  }
+
+  async function handlePayCard() {
+    if (!token || !profile) return;
+    setBookingLoading(true);
+    setBookingError('');
+    try {
+      const id = await ensureTrialLesson();
+      navigate('/payment', {
+        state: {
+          productCode: TEACHER_TRIAL_PRODUCT_CODE,
+          productLabel: 'Sinov darsi',
+          trialId: id,
+          currency: 'UZS',
+          returnTo: `/teachers/${profile.user_id}`,
+        },
+      });
+    } catch (e) {
+      setBookingError(e instanceof Error ? e.message : "To'lovga o'tib bo'lmadi");
+      setBookingLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -102,7 +181,11 @@ export default function TeacherProfilePage() {
   }
 
   const name = teacherDisplayName(profile);
-  const location = [profile.city, profile.region].filter(Boolean).join(', ') || "Ko'rsatilmagan";
+  const locationLabel = [profile.city, profile.region].filter(Boolean).join(', ') || "Ko'rsatilmagan";
+  const monthlyPrice = formatTeacherPrice(
+    profile.monthly_course_price_amount,
+    profile.monthly_course_price_currency,
+  );
 
   return (
     <div className="min-h-full bg-[#EEF4FA] pb-8">
@@ -118,18 +201,18 @@ export default function TeacherProfilePage() {
           </button>
         </header>
 
-        <section className="mt-6 grid grid-cols-1 gap-6 px-4 sm:grid-cols-[1fr_1.1fr] sm:items-start">
-          <div className="overflow-hidden rounded-[15px] bg-white shadow-[0_6px_10px_rgba(15,23,42,0.15)]">
-            <div className="aspect-[3/4] sm:aspect-auto sm:h-[296px]">
+        <section className="mt-4 flex flex-col gap-5 px-4 sm:flex-row sm:items-start">
+          <div className="mx-auto w-[140px] shrink-0 overflow-hidden rounded-2xl bg-white shadow-[0_6px_10px_rgba(15,23,42,0.12)] sm:mx-0">
+            <div className="aspect-square">
               <ProfileAvatar profile={profile} />
             </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-[28px] font-black leading-tight text-[#0F172A] sm:text-[34px]">{name}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[26px] font-black leading-tight text-[#0F172A] sm:text-[30px]">{name}</h1>
             {profile.headline ? (
               <p className="mt-2 text-base font-semibold text-[#64748B]">{profile.headline}</p>
             ) : null}
-            <div className="mt-5 space-y-3 text-[16px] font-bold text-[#4B4B4B]">
+            <div className="mt-4 space-y-2.5 text-[15px] font-bold text-[#4B4B4B]">
               <p className="flex items-center gap-3">
                 <Users className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
                 Tajriba: {formatTeacherExperience(profile.experience_years, profile.experience_months)}
@@ -140,24 +223,84 @@ export default function TeacherProfilePage() {
               </p>
               <p className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
-                Hudud: {location}
+                Hudud: {locationLabel}
               </p>
               <p className="flex items-center gap-3">
                 <BookOpen className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
                 Dars formati: {formatTeachingFormat(profile.teaching_format)}
+              </p>
+              <p className="flex items-center gap-3">
+                <CreditCard className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                Oylik kurs: {monthlyPrice}
               </p>
             </div>
           </div>
         </section>
 
         <div className="px-4">
-          <button
-            type="button"
-            disabled
-            className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-[#24459A]/60 text-lg font-extrabold text-white"
-          >
-            Sinov darsiga yozilish (tez orada)
-          </button>
+          {!bookingOpen ? (
+            <button
+              type="button"
+              onClick={() => void handleStartBooking()}
+              className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-[#24459A] text-lg font-extrabold text-white active:scale-[0.99]"
+            >
+              Sinov darsiga yozilish
+            </button>
+          ) : (
+            <section className="mt-6 rounded-2xl border border-[#C8DCF3] bg-white p-4 shadow-sm">
+              <h2 className="text-lg font-extrabold text-[#0F172A]">Sinov darsi arizasi</h2>
+              <p className="mt-2 text-sm font-medium text-slate-600">
+                Qisqa xabar qoldiring (ixtiyoriy). Keyin to'lovni amalga oshirasiz — shundan so'ng o'qituvchi bilan chat ochiladi.
+              </p>
+              <textarea
+                value={studentMessage}
+                onChange={(e) => setStudentMessage(e.target.value)}
+                rows={3}
+                placeholder="Masalan: Kechki vaqtda dars olishni xohlayman..."
+                className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-900 outline-none focus:border-blue-500"
+              />
+              {bookingError ? (
+                <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{bookingError}</p>
+              ) : null}
+              {trialId == null ? (
+                <button
+                  type="button"
+                  onClick={() => void handleConfirmBooking()}
+                  disabled={bookingLoading}
+                  className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-[#24459A] text-base font-extrabold text-white disabled:opacity-60"
+                >
+                  {bookingLoading ? 'Yuborilmoqda...' : 'Arizani yuborish'}
+                </button>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+                    Ariza qabul qilindi. To'lov: {trialPrice.toLocaleString('uz-UZ')} so'm
+                  </p>
+                  <RahmatCoursePayButton
+                    token={token}
+                    productCode={TEACHER_TRIAL_PRODUCT_CODE}
+                    trialId={trialId}
+                    disabled={bookingLoading}
+                    onSuccess={() => {
+                      if (token) invalidatePaymentsCache(token);
+                      void refreshPayments();
+                    }}
+                    onError={(text) => setBookingError(text)}
+                    label="Rahmat orqali to'lash"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handlePayCard()}
+                    disabled={bookingLoading}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#24459A] bg-white text-base font-bold text-[#24459A] disabled:opacity-60"
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    Karta orqali o'tkazish
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
         </div>
 
         {reviews.length > 0 ? (

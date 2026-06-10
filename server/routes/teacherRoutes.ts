@@ -92,7 +92,7 @@ function normalizeTeacherProfilePayload(body: Record<string, unknown>, userId: n
   const experienceYears = asNumber(body.experience_years ?? body.experienceYears) ?? 0;
   const experienceMonths = asNumber(body.experience_months ?? body.experienceMonths) ?? 0;
   const monthlyPrice = asNumber(body.monthly_course_price_amount ?? body.monthlyCoursePriceAmount) ?? 0;
-  const monthlyCurrency = asString(body.monthly_course_price_currency ?? body.monthlyCoursePriceCurrency, 'RUB');
+  const monthlyCurrency = asString(body.monthly_course_price_currency ?? body.monthlyCoursePriceCurrency, 'UZS');
   const telegramUsername = normalizeTelegramUsername(asString(body.telegram_username ?? body.telegramUsername));
   const publicPhone = asString(body.public_phone_e164 ?? body.publicPhoneE164) || null;
 

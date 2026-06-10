@@ -4,6 +4,7 @@ import type { DbClient } from '../types/dbClient';
 import {
   getCourseProductPrice,
   getTeacherListingPriceUzs,
+  getTeacherTrialPriceUzs,
   isCourseProductCode,
   isCurrencyCode,
   isPaymentProductCode,
@@ -45,7 +46,9 @@ import { confirmStorePurchase } from '../services/storePurchasePayment.service.j
 import {
   activateTeacherMarketplacePayment,
   ensureTeacherListingSubscription,
+  linkTeacherTrialPayment,
   parseTeacherListingPlanCode,
+  parseTeacherTrialId,
 } from '../services/teacherMarketplace.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
@@ -302,8 +305,8 @@ export function createPaymentRoutes(
       if (!isCurrencyCode(currency)) {
         return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
       }
-      if (productCode === 'teacher_listing' && currency !== 'UZS') {
-        return res.status(400).json({ error: "O'qituvchi ro'yxati uchun faqat UZS" });
+      if ((productCode === 'teacher_listing' || productCode === 'teacher_trial') && currency !== 'UZS') {
+        return res.status(400).json({ error: "Bu to'lov uchun faqat UZS" });
       }
       if (!file || !file.buffer) {
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
@@ -311,8 +314,12 @@ export function createPaymentRoutes(
 
       const listingPlanCode =
         productCode === 'teacher_listing' ? parseTeacherListingPlanCode(req.body ?? {}) : null;
+      const trialId = productCode === 'teacher_trial' ? parseTeacherTrialId(req.body ?? {}) : null;
       if (productCode === 'teacher_listing' && !listingPlanCode) {
         return res.status(400).json({ error: 'listing_plan_code kerak' });
+      }
+      if (productCode === 'teacher_trial' && !trialId) {
+        return res.status(400).json({ error: 'trial_id kerak' });
       }
       if (productCode === 'teacher_listing') {
         const { data: account } = await supabase
@@ -387,6 +394,10 @@ export function createPaymentRoutes(
         amount = getTeacherListingPriceUzs(listingPlanCode);
         baseAmount = amount;
         discountMeta = { listing_plan_code: listingPlanCode };
+      } else if (productCode === 'teacher_trial') {
+        amount = getTeacherTrialPriceUzs();
+        baseAmount = amount;
+        discountMeta = { trial_id: trialId };
       }
 
       try {
@@ -457,6 +468,15 @@ export function createPaymentRoutes(
           } catch (subErr) {
             await supabase.from('payments').delete().eq('id', paymentId);
             const message = subErr instanceof Error ? subErr.message : 'Obuna yaratilmadi';
+            return res.status(400).json({ error: message });
+          }
+        }
+        if (productCode === 'teacher_trial' && trialId) {
+          try {
+            await linkTeacherTrialPayment(supabase, userId, trialId, paymentId, currency);
+          } catch (subErr) {
+            await supabase.from('payments').delete().eq('id', paymentId);
+            const message = subErr instanceof Error ? subErr.message : "Sinov darsi bog'lanmadi";
             return res.status(400).json({ error: message });
           }
         }

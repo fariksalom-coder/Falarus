@@ -21,13 +21,20 @@ export function formatTeachingFormat(format: TeacherProfile['teaching_format']):
   return 'Onlayn / oflayn';
 }
 
-export function formatTeacherPrice(amount: number, currency: string): string {
+const LEGACY_RUB_TO_UZS = 150;
+
+export function normalizeTeacherMonthlyPriceUzs(amount: number, currency: string): number {
   const value = Number(amount);
-  if (!Number.isFinite(value) || value <= 0) return 'Narx kelishiladi';
-  const formatted = value.toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
-  if (currency === 'UZS') return `${formatted} so'm/oy`;
-  if (currency === 'USD') return `$${formatted}/oy`;
-  return `${formatted} ₽/oy`;
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  if (currency === 'UZS') return value;
+  if (currency === 'RUB') return Math.round(value * LEGACY_RUB_TO_UZS);
+  return value;
+}
+
+export function formatTeacherPrice(amount: number, currency: string): string {
+  const uzs = normalizeTeacherMonthlyPriceUzs(amount, currency);
+  if (uzs <= 0) return 'Narx kelishiladi';
+  return `${uzs.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })} so'm/oy`;
 }
 
 export function teacherInitials(profile: Pick<TeacherProfile, 'first_name' | 'last_name' | 'display_name'>): string {

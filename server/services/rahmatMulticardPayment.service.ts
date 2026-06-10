@@ -21,10 +21,12 @@ import {
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
-import { getTeacherListingPriceUzs } from '../../shared/paymentProducts.js';
+import { getTeacherListingPriceUzs, getTeacherTrialPriceUzs } from '../../shared/paymentProducts.js';
 import {
   ensureTeacherListingSubscription,
+  linkTeacherTrialPayment,
   parseTeacherListingPlanCode,
+  parseTeacherTrialId,
 } from './teacherMarketplace.service.js';
 import {
   embedFalarusProductInProofUrl,
@@ -102,8 +104,12 @@ export async function createRahmatMulticardPayment(
   }
   const listingPlanCode =
     productCode === 'teacher_listing' ? parseTeacherListingPlanCode(body as Record<string, unknown>) : null;
+  const trialId = productCode === 'teacher_trial' ? parseTeacherTrialId(body as Record<string, unknown>) : null;
   if (productCode === 'teacher_listing' && !listingPlanCode) {
     return { status: 400, json: { error: 'listing_plan_code kerak' } };
+  }
+  if (productCode === 'teacher_trial' && !trialId) {
+    return { status: 400, json: { error: 'trial_id kerak' } };
   }
   if (productCode === 'teacher_listing') {
     const { data: account } = await supabase
@@ -191,6 +197,10 @@ export async function createRahmatMulticardPayment(
     amount = getTeacherListingPriceUzs(listingPlanCode);
     baseAmount = amount;
     discountMeta = { listing_plan_code: listingPlanCode };
+  } else if (productCode === 'teacher_trial') {
+    amount = getTeacherTrialPriceUzs();
+    baseAmount = amount;
+    discountMeta = { trial_id: trialId };
   } else {
     amount = getClickAmountForProduct({
       productCode,
@@ -246,6 +256,15 @@ export async function createRahmatMulticardPayment(
     } catch (subErr) {
       await supabase.from('payments').delete().eq('id', paymentId);
       const message = subErr instanceof Error ? subErr.message : 'Obuna yaratilmadi';
+      return { status: 400, json: { error: message } };
+    }
+  }
+  if (productCode === 'teacher_trial' && trialId) {
+    try {
+      await linkTeacherTrialPayment(supabase, userId, trialId, paymentId, 'UZS');
+    } catch (subErr) {
+      await supabase.from('payments').delete().eq('id', paymentId);
+      const message = subErr instanceof Error ? subErr.message : "Sinov darsi bog'lanmadi";
       return { status: 400, json: { error: message } };
     }
   }

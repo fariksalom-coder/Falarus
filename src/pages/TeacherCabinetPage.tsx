@@ -33,6 +33,7 @@ import {
   TEACHER_LISTING_PRODUCT_CODE,
 } from '../../shared/paymentProducts';
 import { invalidatePaymentsCache } from '../api/payment';
+import { formatTeacherPrice } from '../utils/teacherDisplay';
 
 const LISTING_BENEFITS = [
   "FalaRus'dagi «O'qituvchilar» ro'yxatida ko'rinish",
@@ -43,10 +44,10 @@ const LISTING_BENEFITS = [
 ];
 
 const TRIAL_LESSON_INFO = [
-  "O'quvchi sinov darsi uchun 490 ₽ (~73 500 so'm) to'laydi",
-  "To'lovdan keyin sizga o'quvchi kontakti va chat ochiladi",
-  "Darsni yakunlaganingizdan so'ng o'quvchi fikr qoldiradi",
-  'Sinov darslari shu kabinetda ko\'rinadi',
+  "O'quvchi sinov darsiga ariza qoldiradi",
+  "Arizadan keyin siz bilan o'quvchi o'rtasida chat ochiladi",
+  "Chatda dars vaqtini kelishasiz",
+  "Darsdan keyin ikkalangiz ham bir-biringiz haqida fikr qoldira olasiz",
 ];
 
 const emptyForm: TeacherProfilePayload = {
@@ -60,7 +61,7 @@ const emptyForm: TeacherProfilePayload = {
   teaching_format: 'online',
   about: '',
   monthly_course_price_amount: 0,
-  monthly_course_price_currency: 'RUB',
+  monthly_course_price_currency: 'UZS',
   telegram_username: '',
   public_phone_e164: '',
 };
@@ -153,7 +154,7 @@ export default function TeacherCabinetPage() {
           experience_months: Number(p.experience_months ?? 0),
           about: p.about ?? '',
           monthly_course_price_amount: Number(p.monthly_course_price_amount ?? 0),
-          monthly_course_price_currency: p.monthly_course_price_currency ?? 'RUB',
+          monthly_course_price_currency: 'UZS',
           telegram_username: p.telegram_username ?? '',
           public_phone_e164: p.public_phone_e164 ?? '',
         });
@@ -240,6 +241,7 @@ export default function TeacherCabinetPage() {
         experience_years: Number(form.experience_years ?? 0),
         experience_months: Number(form.experience_months ?? 0),
         monthly_course_price_amount: Number(form.monthly_course_price_amount ?? 0),
+        monthly_course_price_currency: 'UZS',
         teaching_format: 'online',
       });
       setAvatarUrl(saved.avatar_url ?? avatarUrl);
@@ -413,7 +415,7 @@ export default function TeacherCabinetPage() {
             <Field label="Tajriba yili" type="number" value={String(form.experience_years ?? 0)} onChange={(v) => update('experience_years', Number(v))} />
             <Field label="Tajriba oyi" type="number" value={String(form.experience_months ?? 0)} onChange={(v) => update('experience_months', Number(v))} />
             <Field
-              label="Oylik kurs narxi (RUB)"
+              label="Oylik kurs narxi (so'm)"
               type="number"
               value={String(form.monthly_course_price_amount ?? 0)}
               onChange={(v) => update('monthly_course_price_amount', Number(v))}
@@ -648,7 +650,10 @@ function ProfileSummary({
           <div className="rounded-xl bg-slate-50 px-3 py-2.5">
             <p className="text-xs font-bold uppercase text-slate-500">Oylik kurs</p>
             <p className="mt-0.5 font-semibold text-slate-900">
-              {Number(form.monthly_course_price_amount ?? 0).toLocaleString('ru-RU')} {form.monthly_course_price_currency ?? 'RUB'}
+              {formatTeacherPrice(
+                Number(form.monthly_course_price_amount ?? 0),
+                form.monthly_course_price_currency ?? 'UZS',
+              )}
             </p>
           </div>
           <div className="rounded-xl bg-slate-50 px-3 py-2.5">

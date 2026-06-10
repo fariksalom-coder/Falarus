@@ -132,6 +132,26 @@ export async function createTeacherListingPayment(
   return data;
 }
 
+export async function createTeacherTrialLesson(
+  token: string,
+  teacherId: number,
+  body: {
+    student_message?: string;
+    requested_starts_at?: string;
+    student_phone_e164?: string;
+    student_email?: string;
+  } = {},
+): Promise<TeacherTrialLesson> {
+  const res = await fetch(apiUrl(`/api/teachers/${teacherId}/trial-lessons`), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Sinov darsi yaratilmadi');
+  return data;
+}
+
 export async function completeTeacherTrial(token: string, trialId: number): Promise<void> {
   const res = await fetch(apiUrl(`/api/teacher/me/trial-lessons/${trialId}/complete`), {
     method: 'PATCH',

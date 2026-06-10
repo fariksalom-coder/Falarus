@@ -12,6 +12,7 @@ type Props = {
   productCode: PaymentProductCode;
   tariffType?: SubscriptionTariffType;
   listingPlanCode?: TeacherListingPlanCode;
+  trialId?: number;
   disabled?: boolean;
   compact?: boolean;
   onSuccess?: () => void | Promise<void>;
@@ -25,6 +26,7 @@ export function RahmatCoursePayButton({
   productCode,
   tariffType,
   listingPlanCode,
+  trialId,
   disabled,
   compact = false,
   onSuccess,
@@ -47,6 +49,10 @@ export function RahmatCoursePayButton({
       onError('To‘lov rejasi topilmadi. Sahifani yangilang.');
       return;
     }
+    if (productCode === 'teacher_trial' && trialId == null) {
+      onError('Sinov darsi topilmadi. Qayta urinib ko‘ring.');
+      return;
+    }
     setLoading(true);
     onStarted?.();
     try {
@@ -55,6 +61,7 @@ export function RahmatCoursePayButton({
         productCode,
         tariffType: productCode === 'russian' ? tariffType : null,
         listingPlanCode,
+        trialId,
         afterCreate: onSuccess,
       });
     } catch (e) {

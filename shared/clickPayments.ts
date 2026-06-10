@@ -3,6 +3,7 @@ import {
   getCourseProductPrice,
   getPaymentProductLabel,
   getTeacherListingPriceUzs,
+  getTeacherTrialPriceUzs,
   isCourseProductCode,
   isSubscriptionTariffType,
   isTeacherListingPlanCode,
@@ -180,6 +181,9 @@ export function getClickAmountForProduct(params: {
   }
   if (params.productCode === 'teacher_listing' && isTeacherListingPlanCode(params.listingPlanCode)) {
     return getTeacherListingPriceUzs(params.listingPlanCode);
+  }
+  if (params.productCode === 'teacher_trial') {
+    return getTeacherTrialPriceUzs();
   }
   return 0;
 }

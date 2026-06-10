@@ -40,6 +40,40 @@ export function parseTeacherListingPlanCode(body: Record<string, unknown>): Teac
   return isTeacherListingPlanCode(raw) ? raw : null;
 }
 
+export function parseTeacherTrialId(body: Record<string, unknown>): number | null {
+  const raw = body.trial_id ?? body.trialId;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export async function linkTeacherTrialPayment(
+  supabase: DbClient,
+  studentUserId: number,
+  trialId: number,
+  paymentId: number,
+  currency: string
+): Promise<void> {
+  const { data: trial } = await supabase
+    .from('teacher_trial_lessons')
+    .select('id, student_user_id, payment_id, status')
+    .eq('id', trialId)
+    .eq('student_user_id', studentUserId)
+    .maybeSingle();
+  if (!trial) throw new Error('Sinov darsi topilmadi');
+  if ((trial as { payment_id?: number | null }).payment_id) {
+    throw new Error("Bu dars uchun to'lov allaqachon yaratilgan");
+  }
+  const { error } = await supabase
+    .from('teacher_trial_lessons')
+    .update({
+      payment_id: paymentId,
+      paid_currency: currency,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', trialId);
+  if (error) throw error;
+}
+
 async function shareTrialContactsAndOpenChat(
   supabase: DbClient,
   trial: {
