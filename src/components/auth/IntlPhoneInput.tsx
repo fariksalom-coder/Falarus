@@ -24,6 +24,11 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
 ) {
   const inputRef = useRef<HTMLInputElement>(null);
   const itiRef = useRef<ReturnType<typeof intlTelInput> | null>(null);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useImperativeHandle(ref, () => ({
     async getE164() {
@@ -56,7 +61,7 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
     });
     itiRef.current = iti;
 
-    const handleInput = () => onChange?.();
+    const handleInput = () => onChangeRef.current?.();
     input.addEventListener('input', handleInput);
     input.addEventListener('countrychange', handleInput);
 
@@ -66,7 +71,7 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
       iti.destroy();
       itiRef.current = null;
     };
-  }, [onChange]);
+  }, []);
 
   return (
     <div className={['intl-phone-field w-full', className].filter(Boolean).join(' ')}>

@@ -12,6 +12,7 @@ export type AuthUser = {
   totalPoints?: number;
   planName?: string | null;
   planExpiresAt?: string | null;
+  accountType?: string | null;
 };
 
 type AuthResponse = {
@@ -55,6 +56,35 @@ export async function registerAccount(payload: {
   ref?: string;
 }): Promise<AuthResponse> {
   const res = await fetch(apiUrl('/api/auth/register'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseAuthResponse(res);
+  if (!res.ok) throw new Error(data.error || 'Xatolik yuz berdi');
+  if (!data.token || !data.user) throw new Error('Xatolik yuz berdi');
+  return { ...data, isNewUser: true };
+}
+
+export async function loginTeacherWithPassword(identifier: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(apiUrl('/api/auth/teacher/login'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier, password }),
+  });
+  const data = await parseAuthResponse(res);
+  if (!res.ok) throw new Error(data.error || 'Xatolik yuz berdi');
+  if (!data.token || !data.user) throw new Error('Xatolik yuz berdi');
+  return data;
+}
+
+export async function registerTeacherAccount(payload: {
+  firstName: string;
+  lastName: string;
+  identifier: string;
+  password: string;
+}): Promise<AuthResponse> {
+  const res = await fetch(apiUrl('/api/auth/teacher/register'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

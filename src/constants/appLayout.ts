@@ -1,5 +1,5 @@
-/** Inner row height in AppNavBar (matches h-[78px]). */
-export const APP_NAV_INNER_HEIGHT_PX = 78;
+/** Inner row height in AppNavBar (matches the mobile app footer). */
+export const APP_NAV_INNER_HEIGHT_PX = 59;
 /** Border thickness on nav (border-b / border-t). */
 export const APP_NAV_BORDER_PX = 1;
 

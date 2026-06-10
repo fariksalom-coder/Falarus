@@ -1,6 +1,6 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from './dbClient';
 
-export type Supabase = SupabaseClient;
+export type DatabaseClient = DbClient;
 
 export type ReferralStatus = 'registered' | 'paid' | 'rewarded';
 export type WithdrawalStatus = 'pending' | 'approved' | 'rejected';

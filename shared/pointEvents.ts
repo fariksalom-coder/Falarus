@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../server/types/dbClient';
 import { getWeekStartDateString } from './leaderboardPeriods.js';
 
 export type PointEventType = 'award' | 'daily_snapshot' | 'weekly_snapshot';
@@ -60,7 +60,7 @@ export function buildPointEventInsert({
 }
 
 export async function insertPointEvent(
-  supabase: Pick<SupabaseClient, 'from'>,
+  supabase: Pick<DbClient, 'from'>,
   input: PointEventInsertInput
 ): Promise<PointEventInsertStatus> {
   if (input.points <= 0) return 'skipped';

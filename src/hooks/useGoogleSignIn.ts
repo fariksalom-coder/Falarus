@@ -28,6 +28,13 @@ type GoogleIdApi = {
   prompt: (momentListener?: (notification: { isNotDisplayed: () => boolean; isSkippedMoment: () => boolean }) => void) => void;
 };
 
+export class GoogleSignInSetupError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GoogleSignInSetupError';
+  }
+}
+
 declare global {
   interface Window {
     google?: {
@@ -86,6 +93,13 @@ function ensureInitialized(clientId: string, onCredential: (token: string) => vo
   });
 }
 
+function googleSetupMessage(clientId: string): string {
+  return [
+    'Google orqali kirish sozlanmagan.',
+    `Google Cloud Console OAuth Web client (${clientId}) uchun Authorized JavaScript origins ro‘yxatiga ${window.location.origin} ni qo‘shing.`,
+  ].join(' ');
+}
+
 /** Dev helper: log the exact origin to whitelist in Google Cloud Console. */
 export function logGoogleOriginHint(): void {
   if (!import.meta.env.DEV) return;
@@ -141,6 +155,7 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
     void loadGoogleScript()
       .then(() => {
         if (cancelled || !window.google?.accounts?.id) return;
+        logGoogleOriginHint();
         ensureInitialized(clientId, (token) => {
           pendingRef.current?.resolve();
           pendingRef.current = null;
@@ -158,7 +173,14 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
         });
         setButtonReady(true);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (import.meta.env.DEV) {
+          console.warn('[Google Sign-In] Button render failed.', {
+            origin: window.location.origin,
+            clientId,
+            error: err,
+          });
+        }
         if (!cancelled) setButtonReady(false);
       });
 
@@ -172,6 +194,9 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
 
     await loadGoogleScript();
     if (!window.google?.accounts?.id) throw new Error('Google SDK yuklanmadi');
+    if (import.meta.env.DEV && window.location.hostname === 'localhost' && !buttonReady) {
+      throw new GoogleSignInSetupError(googleSetupMessage(clientId));
+    }
 
     ensureInitialized(clientId, (token) => {
       pendingRef.current?.resolve();

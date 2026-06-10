@@ -96,7 +96,7 @@ const cronSec = env.CRON_SECRET?.trim() || env.CLICK_CRON_SECRET?.trim();
 if (cronSec && cronSec.length >= 16) ok('CRON_SECRET / CLICK_CRON_SECRET — для вызова cron с продакшена');
 else warn('Для автопродления подписки на проде нужен CRON_SECRET в Vercel + расписание cron');
 
-console.log('\n--- Миграции БД (Supabase) ---');
+console.log('\n--- Миграции PostgreSQL ---');
 console.log('  Убедитесь, что применены миграции с card_tokens / click_payment_logs / fiscal (033, 034, 035).');
 
 console.log('\n--- URL для регистрации в кабинете Click (Merchant API / колбеки) ---');

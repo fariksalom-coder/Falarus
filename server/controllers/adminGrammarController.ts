@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import { validateGrammarQuestionPayload } from '../../shared/grammarQuestionContent.js';
 
-export function createAdminGrammarController(supabase: SupabaseClient) {
+export function createAdminGrammarController(supabase: DbClient) {
   async function listLessons(_req: Request, res: Response) {
     const { data, error } = await supabase
       .from('lessons')

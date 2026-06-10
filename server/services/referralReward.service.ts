@@ -1,4 +1,4 @@
-import type { Supabase } from '../types/referral';
+import type { DatabaseClient } from '../types/referral';
 import { REFERRAL_REWARD_PERCENT } from '../types/referral';
 import { logError } from '../lib/logger.js';
 
@@ -10,7 +10,7 @@ import { logError } from '../lib/logger.js';
  * Call after the payment row is recorded; paymentAmount = actual amount paid (after discount).
  */
 export async function processReferralReward(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referredUserId: number,
   paymentId: number,
   paymentAmount: number

@@ -1,4 +1,4 @@
-import type { Supabase } from '../types/progress';
+import type { DatabaseClient } from '../types/progress';
 
 const USERS = 'users';
 
@@ -12,7 +12,7 @@ export type LeaderboardEntry = {
  * Get leaderboard: users ordered by total_points DESC.
  */
 export async function getLeaderboard(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   limit: number = 100
 ): Promise<LeaderboardEntry[]> {
   const { data: rows, error } = await supabase

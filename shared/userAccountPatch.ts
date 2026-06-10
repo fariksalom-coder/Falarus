@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../server/types/dbClient';
 import bcrypt from 'bcryptjs';
 import {
   isValidNormalizedEmail,
@@ -18,7 +18,7 @@ export type AccountPatchResult =
  * Empty string for email/phone clears the field if the other contact remains.
  */
 export async function applyUserAccountPatch(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   body: Record<string, unknown>
 ): Promise<AccountPatchResult> {

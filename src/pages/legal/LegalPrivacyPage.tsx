@@ -15,7 +15,7 @@ export default function LegalPrivacyPage() {
 
       <section>
         <h2 className="text-base font-bold text-slate-900">2. To‘lov ma’lumotlari</h2>
-        <p className="mt-2">To‘lovlar Click orqali amalga oshiriladi.</p>
+        <p className="mt-2">To‘lovlar Rahmat to‘lov servisi orqali amalga oshiriladi.</p>
         <p className="mt-2">Karta ma’lumotlari bizda saqlanmaydi.</p>
       </section>
 

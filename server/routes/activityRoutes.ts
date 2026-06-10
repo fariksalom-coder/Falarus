@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import type { Supabase } from '../types/progress';
+import type { DatabaseClient } from '../types/progress';
 import * as streakService from '../services/streakService';
 
 export function createActivityRoutes(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   authenticate: (req: any, res: any, next: any) => void
 ): Router {
   const router = Router();

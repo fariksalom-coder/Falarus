@@ -1,4 +1,4 @@
-import type { Supabase } from '../types/referral';
+import type { DatabaseClient } from '../types/referral';
 import { REFERRAL_DISCOUNT_PERCENT } from '../types/referral';
 import * as repo from '../repositories/referralRepository';
 
@@ -14,7 +14,7 @@ export type DiscountEligibility = {
  * Check if user is eligible for 10% referral discount (first payment only).
  */
 export async function getReferralDiscountEligibility(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   originalAmount: number
 ): Promise<DiscountEligibility> {
@@ -42,7 +42,7 @@ export async function getReferralDiscountEligibility(
  * Mark referral discount as used (call after payment is completed).
  */
 export async function markReferralDiscountUsed(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referralId: number
 ): Promise<void> {
   await repo.updateReferralDiscountUsed(supabase, referralId);

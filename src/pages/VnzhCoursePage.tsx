@@ -3,7 +3,6 @@ import { ArrowLeft, BookOpen, Headphones, Landmark, Languages, MessageSquareText
 import { useNavigate } from 'react-router-dom';
 import { VNZH_COURSE_SECTIONS } from '../data/vnzhCourseData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
-import UzsPaymentMethodModal from '../components/pricing/UzsPaymentMethodModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
@@ -52,12 +51,13 @@ export default function VnzhCoursePage() {
   const { refreshPayments } = usePaymentStatus();
   const { access } = useAccess();
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
-  const [uzsMethodModalOpen, setUzsMethodModalOpen] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const handlePurchase = (currency: Currency) => {
+    setPaymentError(null);
     if (currency === 'UZS') {
       if (!token) {
-        setUzsMethodModalOpen(true);
+        navigate('/login');
         return;
       }
       void (async () => {
@@ -67,8 +67,8 @@ export default function VnzhCoursePage() {
             productCode: 'vnzh',
             afterCreate: refreshPayments,
           });
-        } catch {
-          setUzsMethodModalOpen(true);
+        } catch (e) {
+          setPaymentError(e instanceof Error ? e.message : 'Rahmat to‘lovi boshlanmadi. Keyinroq urinib ko‘ring.');
         }
       })();
       return;
@@ -81,30 +81,6 @@ export default function VnzhCoursePage() {
         returnTo: '/kurslar/vnzh',
       },
     });
-  };
-
-  const handleManualTransfer = () => {
-    navigate('/payment', {
-      state: {
-        productCode: 'vnzh',
-        productLabel: vnzhMeta.label,
-        currency: 'UZS' as const,
-        returnTo: '/kurslar/vnzh',
-      },
-    });
-    setUzsMethodModalOpen(false);
-  };
-
-  const handleClickCardSms = () => {
-    navigate('/payment/click', {
-      state: {
-        productCode: 'vnzh',
-        productLabel: vnzhMeta.label,
-        returnTo: '/kurslar/vnzh',
-        clickMode: 'card_sms',
-      },
-    });
-    setUzsMethodModalOpen(false);
   };
 
   return (
@@ -140,6 +116,11 @@ export default function VnzhCoursePage() {
             </div>
           </div>
         </section>
+        {paymentError ? (
+          <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+            {paymentError}
+          </p>
+        ) : null}
 
         {access?.vnzh_course_active !== true ? (
           <section className="mb-5 rounded-[28px] border border-[#D9E7F7] bg-white/88 p-5 shadow-[0_18px_44px_rgba(148,163,184,0.12)]">
@@ -200,18 +181,6 @@ export default function VnzhCoursePage() {
         />
       ) : null}
 
-      {uzsMethodModalOpen ? (
-        <UzsPaymentMethodModal
-          onClose={() => setUzsMethodModalOpen(false)}
-          onManualTransfer={handleManualTransfer}
-          onClickCardSms={handleClickCardSms}
-          clickButtonConfig={{
-            token,
-            productCode: 'vnzh',
-            refreshPayments,
-          }}
-        />
-      ) : null}
     </div>
   );
 }

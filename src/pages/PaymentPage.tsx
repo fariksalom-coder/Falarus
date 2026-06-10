@@ -7,6 +7,7 @@ import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import {
   getCourseProductPrice,
   getPaymentProductLabel,
+  isCourseProductCode,
   normalizePaymentProductCode,
   type PaymentProductCode,
 } from '../../shared/paymentProducts';
@@ -147,9 +148,7 @@ export default function PaymentPage() {
           });
           return;
         }
-        setPrice(
-          productCode === 'russian' ? null : getCourseProductPrice(productCode, currency)
-        );
+        setPrice(isCourseProductCode(productCode) ? getCourseProductPrice(productCode, currency) : null);
         setPromoMeta(null);
       })
       .catch(() => {

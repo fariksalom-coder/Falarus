@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import * as subscriptionService from '../services/subscription.service';
 import * as accessControlService from '../services/accessControl.service';
 
 export function createAccessRoutes(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   authenticate: (req: any, res: any, next: any) => void
 ): Router {
   const router = Router();
@@ -33,7 +33,7 @@ export function createAccessRoutes(
 }
 
 export async function getAccessForRequest(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<subscriptionService.AccessInfo> {
   return subscriptionService.getAccessInfo(supabase, userId);

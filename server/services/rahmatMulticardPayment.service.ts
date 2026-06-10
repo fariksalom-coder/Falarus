@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import { getMulticardConfig } from '../../shared/multicardConfig.js';
 import {
   getClickAmountForProduct,
@@ -62,7 +62,7 @@ function userHintForRahmatInvoiceFailure(technicalMessage: string, publicApiBase
 }
 
 export async function createRahmatMulticardPayment(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   body: RahmatCreateBody
 ): Promise<{ status: number; json: RahmatCreateJson }> {
@@ -275,7 +275,7 @@ export async function createRahmatMulticardPayment(
 }
 
 export async function handleRahmatMulticardCallback(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   req: { body?: unknown; headers?: Record<string, unknown>; ip?: string; socket?: { remoteAddress?: string } }
 ): Promise<{ status: number; json: Record<string, unknown> }> {
   const cfg = getMulticardConfig();

@@ -1,4 +1,4 @@
-import type { Supabase } from '../types/progress';
+import type { DatabaseClient } from '../types/progress';
 import * as leaderboardService from './leaderboard.service';
 import * as leaderboardCache from './leaderboardCache.service';
 
@@ -15,7 +15,7 @@ export function calculatePoints(correctAnswers: number): number {
  * Add points to user's total_points and sync leaderboard table + invalidate cache.
  */
 export async function updateUserTotalPoints(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   pointsToAdd: number
 ): Promise<void> {

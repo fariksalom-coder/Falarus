@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../server/types/dbClient';
 import {
   isSubscriptionTariffType,
   type PaymentProductCode,
@@ -9,10 +9,11 @@ export type RussianSubscriptionExtras = {
   auto_payment_enabled?: boolean;
   next_payment_date?: string | null;
   card_token_id?: number | null;
+  exact_expires_at?: string | null;
 };
 
 export async function activateRussianSubscription(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   params: {
     userId: number;
     tariffType: SubscriptionTariffType;
@@ -24,6 +25,9 @@ export async function activateRussianSubscription(
   const daysToAdd = tariffType === 'year' ? 365 : 30;
   const planType = tariffType === 'year' ? 'yearly' : 'monthly';
   const planName = tariffType === 'year' ? '1 YIL' : '1 OY';
+  const exactExpiresAt = params.extras?.exact_expires_at
+    ? new Date(params.extras.exact_expires_at)
+    : null;
 
   const { data: current, error: currentErr } = await supabase
     .from('users')
@@ -34,8 +38,13 @@ export async function activateRussianSubscription(
 
   const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
   const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
-  const expiresAt = new Date(startFrom);
-  expiresAt.setDate(expiresAt.getDate() + daysToAdd);
+  const expiresAt =
+    exactExpiresAt && Number.isFinite(exactExpiresAt.getTime()) && exactExpiresAt > now
+      ? exactExpiresAt
+      : new Date(startFrom);
+  if (!(exactExpiresAt && Number.isFinite(exactExpiresAt.getTime()) && exactExpiresAt > now)) {
+    expiresAt.setDate(expiresAt.getDate() + daysToAdd);
+  }
 
   const { error: updateUserErr } = await supabase
     .from('users')
@@ -76,11 +85,12 @@ export async function activateRussianSubscription(
 }
 
 export async function activateApprovedPayment(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   params: {
     userId: number;
     productCode: PaymentProductCode;
     tariffType?: string | null;
+    exactExpiresAt?: string | null;
   }
 ): Promise<void> {
   if (params.productCode !== 'russian') return;
@@ -89,6 +99,6 @@ export async function activateApprovedPayment(
   await activateRussianSubscription(supabase, {
     userId: params.userId,
     tariffType: params.tariffType as SubscriptionTariffType,
-    extras: undefined,
+    extras: { exact_expires_at: params.exactExpiresAt ?? null },
   });
 }

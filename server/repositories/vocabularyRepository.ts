@@ -1,7 +1,7 @@
-import type { Supabase } from '../types/vocabulary';
+import type { DatabaseClient } from '../types/vocabulary';
 import { formatDateInAppTimezone, getRecentAppDateStrings } from '../lib/appDate.js';
 
-export async function getTopics(supabase: Supabase) {
+export async function getTopics(supabase: DatabaseClient) {
   const { data, error } = await supabase
     .from('vocabulary_topics')
     .select('id, title')
@@ -10,7 +10,7 @@ export async function getTopics(supabase: Supabase) {
   return (data ?? []) as { id: string; title: string }[];
 }
 
-export async function getTopicTotalWords(supabase: Supabase, topicId: string): Promise<number> {
+export async function getTopicTotalWords(supabase: DatabaseClient, topicId: string): Promise<number> {
   const subtopics = await getSubtopicsByTopic(supabase, topicId);
   let total = 0;
   for (const s of subtopics) {
@@ -20,14 +20,14 @@ export async function getTopicTotalWords(supabase: Supabase, topicId: string): P
   return total;
 }
 
-export async function getSubtopicTotalWords(supabase: Supabase, subtopicId: string): Promise<number> {
+export async function getSubtopicTotalWords(supabase: DatabaseClient, subtopicId: string): Promise<number> {
   const groups = await getWordGroupsBySubtopic(supabase, subtopicId);
   return groups.reduce((sum, g) => sum + g.total_words, 0);
 }
 
 /** Get total_words per subtopic in one query (avoids N+1). */
 export async function getTotalWordsBySubtopicIds(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   subtopicIds: string[]
 ): Promise<Record<string, number>> {
   if (subtopicIds.length === 0) return {};
@@ -45,7 +45,7 @@ export async function getTotalWordsBySubtopicIds(
   return out;
 }
 
-export async function getSubtopicsByTopic(supabase: Supabase, topicId: string) {
+export async function getSubtopicsByTopic(supabase: DatabaseClient, topicId: string) {
   const { data, error } = await supabase
     .from('vocabulary_subtopics')
     .select('id, topic_id, title, slug')
@@ -66,7 +66,7 @@ export function normalizeVocabularySubtopicParam(raw: string): string {
 
 /** Path param may be `slug` or legacy subtopic `id`. */
 export async function resolveSubtopicFromPathParam(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   rawParam: string
 ): Promise<{ id: string; topic_id: string } | null> {
   const subtopicSlug = normalizeVocabularySubtopicParam(rawParam);
@@ -89,7 +89,7 @@ export async function resolveSubtopicFromPathParam(
   return (byId as { id: string; topic_id: string } | null) ?? null;
 }
 
-export async function getWordGroupsBySubtopic(supabase: Supabase, subtopicId: string) {
+export async function getWordGroupsBySubtopic(supabase: DatabaseClient, subtopicId: string) {
   const { data, error } = await supabase
     .from('vocabulary_word_groups')
     .select('id, subtopic_id, part_id, title, total_words')
@@ -99,7 +99,7 @@ export async function getWordGroupsBySubtopic(supabase: Supabase, subtopicId: st
   return (data ?? []) as { id: number; subtopic_id: string; part_id: string; title: string; total_words: number }[];
 }
 
-export async function getWordsByWordGroup(supabase: Supabase, wordGroupId: number) {
+export async function getWordsByWordGroup(supabase: DatabaseClient, wordGroupId: number) {
   const { data, error } = await supabase
     .from('vocabulary_words')
     .select('id, word_group_id, word, translation')
@@ -109,7 +109,7 @@ export async function getWordsByWordGroup(supabase: Supabase, wordGroupId: numbe
   return (data ?? []) as { id: number; word_group_id: number; word: string; translation: string }[];
 }
 
-export async function getWordGroupById(supabase: Supabase, wordGroupId: number) {
+export async function getWordGroupById(supabase: DatabaseClient, wordGroupId: number) {
   const { data, error } = await supabase
     .from('vocabulary_word_groups')
     .select('id, subtopic_id, part_id, title, total_words')
@@ -119,7 +119,7 @@ export async function getWordGroupById(supabase: Supabase, wordGroupId: number) 
   return data as { id: number; subtopic_id: string; part_id: string; title: string; total_words: number };
 }
 
-export async function getTopicIdBySubtopicId(supabase: Supabase, subtopicId: string): Promise<string | null> {
+export async function getTopicIdBySubtopicId(supabase: DatabaseClient, subtopicId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from('vocabulary_subtopics')
     .select('topic_id')
@@ -137,7 +137,7 @@ type VocabWordGroupRow = {
   total_words: number;
 };
 
-async function loadVocabularyWordGroupProgressIndex(supabase: Supabase, userId: number) {
+async function loadVocabularyWordGroupProgressIndex(supabase: DatabaseClient, userId: number) {
   const { data: groups, error: gErr } = await supabase
     .from('vocabulary_word_groups')
     .select('id, subtopic_id, total_words');
@@ -216,7 +216,7 @@ function accumulateVocabularyProgress(
   return { topicAgg, subtopicAgg };
 }
 
-export async function getUserTopicProgress(supabase: Supabase, userId: number) {
+export async function getUserTopicProgress(supabase: DatabaseClient, userId: number) {
   const { groups, progressByWg, subtopicToTopic } =
     await loadVocabularyWordGroupProgressIndex(supabase, userId);
   const { topicAgg } = accumulateVocabularyProgress(
@@ -235,7 +235,7 @@ export async function getUserTopicProgress(supabase: Supabase, userId: number) {
 }
 
 export async function getUserSubtopicProgress(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   topicId: string
 ) {
@@ -263,7 +263,7 @@ export async function getUserSubtopicProgress(
   });
 }
 
-export async function getUserWordGroupProgress(supabase: Supabase, userId: number, subtopicId: string) {
+export async function getUserWordGroupProgress(supabase: DatabaseClient, userId: number, subtopicId: string) {
   const groups = await getWordGroupsBySubtopic(supabase, subtopicId);
   if (groups.length === 0) return { groups: [], progressByGroup: {} as Record<number, { word_group_id: number; learned_words: number; total_words: number; flashcards_completed: boolean; test_best_correct: number; match_completed: boolean; progress_percent: number; updated_at: string }> };
   const groupIds = groups.map((g) => g.id);
@@ -296,7 +296,7 @@ export async function getUserWordGroupProgress(supabase: Supabase, userId: numbe
 }
 
 export async function getOrCreateUserWordGroupProgress(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   wordGroupId: number,
   totalWords: number
@@ -336,7 +336,7 @@ export async function getOrCreateUserWordGroupProgress(
 }
 
 export async function upsertUserWordGroupProgress(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   wordGroupId: number,
   patch: {
@@ -366,7 +366,7 @@ export async function upsertUserWordGroupProgress(
   if (error) throw error;
 }
 
-export async function getProgressRowForWordGroup(supabase: Supabase, userId: number, wordGroupId: number) {
+export async function getProgressRowForWordGroup(supabase: DatabaseClient, userId: number, wordGroupId: number) {
   const { data, error } = await supabase
     .from('user_word_group_progress')
     .select('*')
@@ -378,7 +378,7 @@ export async function getProgressRowForWordGroup(supabase: Supabase, userId: num
 }
 
 export async function getSubtopicProgressRows(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   subtopicId: string
 ): Promise<{ learned_words: number; total_words: number }[]> {
@@ -395,7 +395,7 @@ export async function getSubtopicProgressRows(
 }
 
 export async function getTopicProgressRows(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   topicId: string
 ): Promise<{ learned_words: number; total_words: number }[]> {
@@ -409,7 +409,7 @@ export async function getTopicProgressRows(
 }
 
 export async function insertUserVocabularyStep2Attempt(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   wordGroupId: number,
   activityDate: string,
@@ -464,7 +464,7 @@ export function aggregateVocabularyStep2Stats(
   };
 }
 
-export async function getTotalLearnedWordsSum(supabase: Supabase, userId: number): Promise<number> {
+export async function getTotalLearnedWordsSum(supabase: DatabaseClient, userId: number): Promise<number> {
   const { data, error } = await supabase
     .from('user_word_group_progress')
     .select('learned_words')
@@ -477,7 +477,7 @@ export async function getTotalLearnedWordsSum(supabase: Supabase, userId: number
 }
 
 export async function getUserVocabularyStep2DailyStats(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number
 ): Promise<{ todayWords: number; weekWords: number }> {
   const recentDates = getRecentAppDateStrings(7);

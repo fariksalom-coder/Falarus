@@ -16,8 +16,8 @@ process.emitWarning = function (
 import express from 'express';
 import helmet from 'helmet';
 import { createServer as createViteServer } from 'vite';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { createSupabaseServer, isSupabaseTimeoutError } from './server/lib/createSupabaseServer.ts';
+import type { DbClient } from './server/types/dbClient.ts';
+import { createDatabaseClient, isDatabaseTimeoutError } from './server/lib/createDatabaseClient.ts';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Busboy from 'busboy';
@@ -40,13 +40,18 @@ import { insertPointEvent } from './shared/pointEvents.ts';
 import { parseContactIdentifier, sanitizePhoneRaw } from './shared/authIdentifiers.ts';
 
 const AUTH_USER_SELECT =
-  'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at';
+  'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at, account_type';
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassing.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
-import { findOrCreateUserForSocial, SocialAuthError, verifyGoogleIdToken } from './server/services/socialAuth.service.ts';
+import {
+  findOrCreateUserForSocial,
+  SocialAuthError,
+  verifyAppleIdentityToken,
+  verifyGoogleIdToken,
+} from './server/services/socialAuth.service.ts';
 import { resolveGoogleWebClientId } from './shared/googleOAuth.ts';
 import { buildGrammarCatalogPayload } from './server/services/grammarCatalog.service.ts';
 import {
@@ -71,15 +76,7 @@ import { resolveRussianTariffQuote } from './server/services/promoPricing.servic
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env');
-  process.exit(1);
-}
-
-const supabase: SupabaseClient = createSupabaseServer(supabaseUrl, supabaseServiceKey);
+const supabase: DbClient = createDatabaseClient();
 
 const jwtSecretEnv = process.env.JWT_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
@@ -99,7 +96,7 @@ const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
 const USER_PROFILE_SELECT_FULL =
-  'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz';
+  'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz, account_type';
 const USER_PROFILE_SELECT_LEGACY =
   'id, first_name, last_name, email, phone, level, onboarded, progress';
 
@@ -111,7 +108,7 @@ function isUserProfileSchemaError(error: unknown): boolean {
   return typeof message === 'string' && message.toLowerCase().includes('schema cache');
 }
 
-function isSupabaseNoRowsError(error: unknown): boolean {
+function isDatabaseNoRowsError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const code = 'code' in error ? (error as { code?: unknown }).code : null;
   return code === 'PGRST116';
@@ -132,7 +129,7 @@ function isLessonTaskResultsSchemaError(error: unknown): boolean {
 
 async function fetchUserProfileById(userId: number) {
   let { data: user, error } = await supabase.from('users').select(USER_PROFILE_SELECT_FULL).eq('id', userId).maybeSingle();
-  if (error && (isUserProfileSchemaError(error) || !isSupabaseNoRowsError(error))) {
+  if (error && (isUserProfileSchemaError(error) || !isDatabaseNoRowsError(error))) {
     const legacy = await supabase.from('users').select(USER_PROFILE_SELECT_LEGACY).eq('id', userId).maybeSingle();
     user = legacy.data as typeof user;
     error = legacy.error;
@@ -154,6 +151,7 @@ function mapUserProfile(user: Record<string, any>) {
     planName: user.plan_name ?? null,
     planExpiresAt: user.plan_expires_at ?? null,
     billingNoticeUz: user.billing_notice_uz ?? null,
+    accountType: user.account_type ?? 'student',
   };
 }
 
@@ -466,6 +464,7 @@ async function startServer() {
         phone: parsed.phone,
         password: hashedPassword,
         onboarded: 1,
+        account_type: 'student',
       };
       if (parsed.phone) {
         insertRow.phone_raw = sanitizePhoneRaw(contactRaw);
@@ -477,7 +476,7 @@ async function startServer() {
       const { data: user, error } = await supabase
         .from('users')
         .insert(insertRow)
-        .select('id, first_name, last_name, email, phone, level, onboarded')
+        .select('id, first_name, last_name, email, phone, level, onboarded, account_type')
         .single();
       if (error) {
         if (error.code === '23505') {
@@ -496,6 +495,7 @@ async function startServer() {
       const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       res.json({
         token,
+        isNewUser: false,
         user: {
           id: user.id,
           firstName: user.first_name,
@@ -504,12 +504,85 @@ async function startServer() {
           phone: user.phone ?? null,
           level: user.level ?? 'A0',
           onboarded: 1,
+          accountType: user.account_type ?? 'student',
           planName: null,
           planExpiresAt: null,
         },
       });
     } catch (e) {
       console.error(e);
+      res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  });
+
+  app.post('/api/auth/teacher/register', authRateLimiter, async (req, res) => {
+    const { firstName, lastName, password, identifier, email: legacyEmail } = req.body ?? {};
+    const contactRaw =
+      typeof identifier === 'string' && identifier.trim()
+        ? identifier.trim()
+        : typeof legacyEmail === 'string' && legacyEmail.trim()
+          ? legacyEmail.trim()
+          : '';
+    const parsed = parseContactIdentifier(contactRaw);
+    if (parsed.ok === false) {
+      return res.status(400).json({ error: parsed.error });
+    }
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Parol kiritilishi shart' });
+    }
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const insertRow: Record<string, unknown> = {
+        first_name: firstName ?? '',
+        last_name: lastName ?? '',
+        email: parsed.email,
+        phone: parsed.phone,
+        password: hashedPassword,
+        onboarded: 1,
+        account_type: 'teacher',
+      };
+      if (parsed.phone) {
+        insertRow.phone_raw = sanitizePhoneRaw(contactRaw);
+        insertRow.phone_normalized = parsed.phone;
+        insertRow.country_code = parsed.phoneCountryIso ?? null;
+        insertRow.phone_verified = false;
+        insertRow.phone_invalid = false;
+      }
+      const { data: user, error } = await supabase
+        .from('users')
+        .insert(insertRow)
+        .select('id, first_name, last_name, email, phone, level, onboarded, account_type')
+        .single();
+      if (error) {
+        if (error.code === '23505') {
+          return res.status(400).json({ error: "Bu email yoki telefon allaqachon ro'yxatdan o'tgan" });
+        }
+        throw error;
+      }
+      const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
+      res.json({
+        token,
+        isNewUser: true,
+        user: {
+          id: user.id,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          email: user.email ?? null,
+          phone: user.phone ?? null,
+          level: user.level ?? 'A0',
+          onboarded: 1,
+          accountType: user.account_type ?? 'teacher',
+          planName: null,
+          planExpiresAt: null,
+        },
+      });
+    } catch (e) {
+      console.error('[teacher/register]', e);
+      if (isDatabaseTimeoutError(e)) {
+        return res.status(503).json({
+          error: 'Baza bilan aloqa yo‘q. Lokal kompyuterdan serverdagi DB porti ochilmagan.',
+        });
+      }
       res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
   });
@@ -552,7 +625,7 @@ async function startServer() {
 
     if (lookupErr) {
       console.error('[login]', lookupErr.message);
-      if (isSupabaseTimeoutError(lookupErr)) {
+      if (isDatabaseTimeoutError(lookupErr)) {
         return res.status(503).json({
           error: 'Server vaqtincha band. Bir necha soniyadan keyin qayta urinib ko‘ring.',
         });
@@ -562,6 +635,9 @@ async function startServer() {
 
     if (!user || !(await bcrypt.compare(password, user.password as string))) {
       return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
+    }
+    if ((user.account_type as string | null | undefined) === 'teacher') {
+      return res.status(403).json({ error: "O'qituvchi kabinetiga alohida login orqali kiring" });
     }
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
     const sub = await getActiveSubscription(supabase, Number(user.id));
@@ -580,8 +656,79 @@ async function startServer() {
         phone: user.phone ?? null,
         level: user.level,
         onboarded: user.onboarded,
+        accountType: (user.account_type as string | null | undefined) ?? 'student',
         planName: planFields.planName,
         planExpiresAt: planFields.planExpiresAt,
+      },
+    });
+  });
+
+  app.post('/api/auth/teacher/login', authRateLimiter, async (req, res) => {
+    const { password, identifier, email: legacyEmail } = req.body ?? {};
+    const idRaw =
+      typeof identifier === 'string' && identifier.trim()
+        ? identifier.trim()
+        : typeof legacyEmail === 'string' && legacyEmail.trim()
+          ? legacyEmail.trim()
+          : '';
+    if (!idRaw || !password) {
+      return res.status(400).json({ error: "Email/telefon va parol kiritilishi shart" });
+    }
+    const parsed = parseContactIdentifier(idRaw);
+    if (parsed.ok === false) {
+      return res.status(400).json({ error: parsed.error });
+    }
+    let user: Record<string, unknown> | null = null;
+    let lookupErr: { message: string } | null = null;
+
+    if (parsed.email) {
+      const r = await supabase.from('users').select(AUTH_USER_SELECT).eq('email', parsed.email).maybeSingle();
+      lookupErr = r.error ?? null;
+      user = (r.data as Record<string, unknown>) ?? null;
+    } else {
+      const ph = parsed.phone!;
+      const first = await supabase.from('users').select(AUTH_USER_SELECT).eq('phone_normalized', ph).maybeSingle();
+      if (first.error) {
+        lookupErr = first.error;
+      } else if (first.data) {
+        user = first.data as Record<string, unknown>;
+      } else {
+        const second = await supabase.from('users').select(AUTH_USER_SELECT).eq('phone', ph).maybeSingle();
+        lookupErr = second.error ?? null;
+        user = (second.data as Record<string, unknown>) ?? null;
+      }
+    }
+
+    if (lookupErr) {
+      console.error('[teacher/login]', lookupErr.message);
+      if (isDatabaseTimeoutError(lookupErr)) {
+        return res.status(503).json({
+          error: 'Server vaqtincha band. Bir necha soniyadan keyin qayta urinib ko‘ring.',
+        });
+      }
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+
+    if (!user || !(await bcrypt.compare(password, user.password as string))) {
+      return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
+    }
+    if ((user.account_type as string | null | undefined) !== 'teacher') {
+      return res.status(403).json({ error: "Bu login faqat o'qituvchilar uchun" });
+    }
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email ?? null,
+        phone: user.phone ?? null,
+        level: user.level,
+        onboarded: user.onboarded,
+        accountType: 'teacher',
+        planName: (user.plan_name as string | null | undefined) ?? null,
+        planExpiresAt: (user.plan_expires_at as string | null | undefined) ?? null,
       },
     });
   });
@@ -605,7 +752,7 @@ async function startServer() {
     }
     try {
       const identity = await verifyGoogleIdToken(idToken);
-      const { user } = await findOrCreateUserForSocial(supabase, identity);
+      const { user, isNewUser } = await findOrCreateUserForSocial(supabase, identity);
       const userId = Number((user as { id: number }).id);
       const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       const sub = await getActiveSubscription(supabase, userId);
@@ -616,6 +763,7 @@ async function startServer() {
       });
       res.json({
         token,
+        isNewUser,
         user: {
           id: user.id,
           firstName: user.first_name,
@@ -635,6 +783,78 @@ async function startServer() {
         return res.status(err.httpStatus).json({ error: err.publicMessage });
       }
       console.error('[auth/google]', err);
+      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  });
+
+  // POST /api/auth/apple — verify Apple identity token, find/create local user,
+  // return the same social auth shape as /api/auth/google.
+  app.post('/api/auth/apple', authRateLimiter, async (req, res) => {
+    const identityToken =
+      typeof req.body?.identityToken === 'string'
+        ? req.body.identityToken.trim()
+        : '';
+    const nonce =
+      typeof req.body?.nonce === 'string' ? req.body.nonce.trim() : '';
+    if (!identityToken) {
+      return res.status(400).json({ error: 'identityToken kerak' });
+    }
+    try {
+      const identity = await verifyAppleIdentityToken(identityToken, {
+        nonce: nonce || null,
+        firstName:
+          typeof req.body?.firstName === 'string' ? req.body.firstName : null,
+        lastName:
+          typeof req.body?.lastName === 'string' ? req.body.lastName : null,
+      });
+      const { user, isNewUser } = await findOrCreateUserForSocial(
+        supabase,
+        identity
+      );
+      const userId = Number((user as { id: number }).id);
+      const token = jwt.sign({ id: userId }, JWT_SECRET, {
+        expiresIn: TOKEN_TTL_SECONDS,
+      });
+      const sub = await getActiveSubscription(supabase, userId);
+      const planFields = mergeRussianPlanForMeResponse({
+        planName: (user.plan_name as string | null | undefined) ?? null,
+        planExpiresAt:
+          (user.plan_expires_at as string | null | undefined) ?? null,
+        subscription: sub
+          ? { plan_type: sub.plan_type, expires_at: sub.expires_at }
+          : null,
+      });
+      res.json({
+        token,
+        isNewUser,
+        user: {
+          id: user.id,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          email: user.email ?? null,
+          phone: user.phone ?? null,
+          level: user.level,
+          onboarded: user.onboarded,
+          planName: planFields.planName,
+          planExpiresAt: planFields.planExpiresAt,
+        },
+      });
+    } catch (err) {
+      if (err instanceof SocialAuthError) {
+        const causeMessage =
+          err.cause instanceof Error
+            ? err.cause.message
+            : err.cause
+              ? String(err.cause)
+              : '';
+        console.error(
+          '[auth/apple]',
+          err.publicMessage,
+          causeMessage ? `cause=${causeMessage}` : ''
+        );
+        return res.status(err.httpStatus).json({ error: err.publicMessage });
+      }
+      console.error('[auth/apple]', err);
       return res.status(500).json({ error: 'Xatolik yuz berdi' });
     }
   });
@@ -763,11 +983,15 @@ async function startServer() {
   const { createAccessRoutes } = await import('./server/routes/accessRoutes');
   app.use('/api', createAccessRoutes(supabase, authenticate));
 
+  // Teacher marketplace (public list, teacher cabinet, trial lessons, chat, reviews)
+  const { createTeacherRoutes } = await import('./server/routes/teacherRoutes');
+  app.use('/api', createTeacherRoutes(supabase, authenticate));
+
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
     const { user, error } = await fetchUserProfileById(req.userId);
     if (error || !user) {
-      if (error && !isSupabaseNoRowsError(error)) {
+      if (error && !isDatabaseNoRowsError(error)) {
         return res.status(500).json({ error: 'Profilni yuklab bo‘lmadi' });
       }
       return res.status(404).json({ error: 'User topilmadi' });
@@ -783,7 +1007,7 @@ async function startServer() {
     }
     const { user, error } = await fetchUserProfileById(req.userId);
     if (error || !user) {
-      if (error && !isSupabaseNoRowsError(error)) {
+      if (error && !isDatabaseNoRowsError(error)) {
         return res.status(500).json({ error: 'Profilni yuklab bo‘lmadi' });
       }
       return res.status(404).json({ error: 'User topilmadi' });

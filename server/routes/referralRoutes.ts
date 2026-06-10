@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import type { Supabase } from '../types/referral';
+import type { DatabaseClient } from '../types/referral';
 import * as referralController from '../controllers/referralController';
 import * as referralPaymentService from '../services/referralPayment.service';
 
 export function createReferralRoutes(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   authenticate: (req: any, res: any, next: any) => void
 ): Router {
   const router = Router();

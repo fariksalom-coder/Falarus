@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express';
-import type { Supabase } from '../types/referral';
+import type { DatabaseClient } from '../types/referral';
 import { MIN_WITHDRAWAL_AMOUNT } from '../types/referral';
 import * as referralService from '../services/referral.service';
 import * as referralStatsService from '../services/referralStats.service';
 import * as referralDiscountService from '../services/referralDiscount.service';
 import * as repo from '../repositories/referralRepository';
 
-export function getLink(supabase: Supabase) {
+export function getLink(supabase: DatabaseClient) {
   return async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId as number;
@@ -27,7 +27,7 @@ export function getLink(supabase: Supabase) {
   };
 }
 
-export function getStats(supabase: Supabase) {
+export function getStats(supabase: DatabaseClient) {
   return async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId as number;
@@ -40,7 +40,7 @@ export function getStats(supabase: Supabase) {
   };
 }
 
-export function getList(supabase: Supabase) {
+export function getList(supabase: DatabaseClient) {
   return async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId as number;
@@ -59,7 +59,7 @@ export function getList(supabase: Supabase) {
 }
 
 /** Single response: link + stats + list (for fast invite page load). */
-export function getPage(supabase: Supabase) {
+export function getPage(supabase: DatabaseClient) {
   return async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId as number;
@@ -89,7 +89,7 @@ export function getPage(supabase: Supabase) {
   };
 }
 
-export function postWithdraw(supabase: Supabase) {
+export function postWithdraw(supabase: DatabaseClient) {
   return async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId as number;
@@ -132,7 +132,7 @@ export function postWithdraw(supabase: Supabase) {
   };
 }
 
-export function getDiscountEligibility(supabase: Supabase) {
+export function getDiscountEligibility(supabase: DatabaseClient) {
   return async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId as number;

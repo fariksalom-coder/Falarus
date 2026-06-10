@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import {
   getCourseProductPrice,
   getPaymentProductLabel,
+  isCourseProductCode,
   isSubscriptionTariffType,
   type PaymentProductCode,
   type PaymentProvider,
@@ -170,7 +171,10 @@ export function getClickAmountForProduct(params: {
     if (params.tariffType === 'year') return Number(params.tariffPrices.year);
     return Number(params.tariffPrices.month);
   }
-  return getCourseProductPrice(params.productCode, 'UZS');
+  if (isCourseProductCode(params.productCode)) {
+    return getCourseProductPrice(params.productCode, 'UZS');
+  }
+  return 0;
 }
 
 function md5(value: string): string {

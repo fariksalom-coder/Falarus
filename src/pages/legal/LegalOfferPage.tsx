@@ -30,7 +30,7 @@ export default function LegalOfferPage() {
           <li>1 oy</li>
           <li>1 yil</li>
         </ul>
-        <p className="mt-2">To‘lov Click orqali amalga oshiriladi.</p>
+        <p className="mt-2">To‘lov Rahmat to‘lov servisi orqali amalga oshiriladi.</p>
       </section>
 
       <section id="avtomatik-tolov" className="scroll-mt-24">

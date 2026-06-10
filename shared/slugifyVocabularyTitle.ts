@@ -1,6 +1,6 @@
 /**
  * Kebab-case slug from a vocabulary subtopic title (Latin letters, digits, spaces, hyphens).
- * Keep in sync with SQL backfill in `supabase/migrations/025_vocabulary_subtopics_slug.sql`.
+ * Keep in sync with SQL backfill in `db/migrations/025_vocabulary_subtopics_slug.sql`.
  */
 export function slugifyVocabularyTitle(text: string): string {
   return text

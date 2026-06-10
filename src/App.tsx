@@ -30,6 +30,9 @@ function AppRoutes() {
       <Route path="/huquqiy/ommaviy-oferta" element={renderLazyPage('./pages/legal/LegalOfferPage.tsx')} />
       <Route path="/huquqiy/maxfiylik" element={renderLazyPage('./pages/legal/LegalPrivacyPage.tsx')} />
       <Route path="/huquqiy/qaytarish" element={renderLazyPage('./pages/legal/LegalRefundPage.tsx')} />
+      <Route path="/teacher-login" element={renderLazyPage('./pages/TeacherLoginPage.tsx')} />
+      <Route path="/teacher-register" element={renderLazyPage('./pages/TeacherRegisterPage.tsx')} />
+      <Route path="/teacher-cabinet" element={renderLazyPage('./pages/TeacherCabinetPage.tsx')} />
       <Route
         path={ADMIN_BASE_PATH}
         element={
@@ -52,6 +55,8 @@ function AppRoutes() {
             <Route path="support" element={renderLazyPage('./pages/admin/AdminSupportPage.tsx')} />
             <Route path="payment-methods" element={renderLazyPage('./pages/admin/AdminPaymentMethodsPage.tsx')} />
             <Route path="tariff-pricing" element={renderLazyPage('./pages/admin/AdminTariffPricingPage.tsx')} />
+            <Route path="teachers" element={renderLazyPage('./pages/admin/AdminTeachersPage.tsx')} />
+            <Route path="teacher-trials" element={renderLazyPage('./pages/admin/AdminTeacherTrialsPage.tsx')} />
           </Route>
         </Route>
       </Route>
@@ -91,6 +96,8 @@ function AppRoutes() {
             <Route path="kunlik-reja/kun/:dayNum/lugat/juftlik" element={renderLazyPage('./pages/DailyVocabPairsPage.tsx')} />
             <Route path="kunlik-reja/kun/:dayNum/:section" element={renderLazyPage('./pages/DailyKunSectionPage.tsx')} />
             <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
+            <Route path="teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+            <Route path="teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
             <Route path="help" element={renderLazyPage('./pages/HelpPage.tsx')} />
             <Route path="help/:chatId" element={renderLazyPage('./pages/HelpPage.tsx')} />
             <Route path="profile" element={renderLazyPage('./pages/ProfilePage.tsx')} />
@@ -106,7 +113,6 @@ function AppRoutes() {
             <Route path="tariflar" element={renderLazyPage('./pages/PricingPage.tsx')} />
             <Route path="pricing" element={renderLazyPage('./pages/PricingPage.tsx')} />
             <Route path="payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
-            <Route path="payment/click" element={renderLazyPage('./pages/ClickPaymentPage.tsx')} />
             <Route path="payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
             <Route path="payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
             <Route path="reyting" element={<Navigate to="/statistika" replace />} />

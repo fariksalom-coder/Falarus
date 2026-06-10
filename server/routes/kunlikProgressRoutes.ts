@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Supabase } from '../types/progress';
+import type { DatabaseClient } from '../types/progress';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
 import { applyKunlikDayCompletionSideEffects } from '../lib/kunlikCompletionSideEffects.js';
 
@@ -16,7 +16,7 @@ export type KunlikDayRow = {
 };
 
 export function createKunlikProgressRoutes(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   authenticate: (req: any, res: any, next: any) => void
 ): Router {
   const router = Router();

@@ -4,19 +4,10 @@
  */
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/dbFacadeClient';
 
-const url = process.env.SUPABASE_URL!;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const email = process.env.ADMIN_EMAIL || 'admin@falarus.uz';
 const password = process.env.ADMIN_PASSWORD || 'admin123';
-
-if (!url || !key) {
-  console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
-  process.exit(1);
-}
-
-const supabase = createClient(url, key);
 
 async function main() {
   const hash = await bcrypt.hash(password, 10);

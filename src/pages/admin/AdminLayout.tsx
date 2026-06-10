@@ -13,6 +13,8 @@ import {
   DollarSign,
   LogOut,
   ScrollText,
+  GraduationCap,
+  ClipboardList,
 } from 'lucide-react';
 import { getAdminHelpChats } from '../../api/admin';
 
@@ -21,6 +23,8 @@ const nav = [
   { to: adminPath('/users'), label: 'Users', icon: Users },
   { to: adminPath('/users/create'), label: 'Yangi foydalanuvchi', icon: UserPlus },
   { to: adminPath('/payments'), label: 'Payments', icon: CreditCard },
+  { to: adminPath('/teachers'), label: "O'qituvchilar", icon: GraduationCap },
+  { to: adminPath('/teacher-trials'), label: 'Sinov darslari', icon: ClipboardList },
   { to: adminPath('/click-logs'), label: 'Click logs', icon: ScrollText },
   { to: adminPath('/referrals'), label: 'Referrals', icon: Wallet },
   { to: adminPath('/support'), label: 'Yozishmalar', icon: MessageSquare },

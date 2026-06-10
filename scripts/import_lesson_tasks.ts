@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createClient } from '@supabase/supabase-js';
+import { supabase as dbClient } from '../server/lib/dbFacadeClient';
 import { LESSONS } from '../src/data/lessonsList';
 
 type Inventory = {
@@ -28,12 +28,6 @@ function argValue(prefix: string): string | null {
   return raw.slice(prefix.length) || null;
 }
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing env ${name}`);
-  return value;
-}
-
 function lessonIdFromPath(lessonPath: string): number | null {
   const m = lessonPath.match(/\/lesson-(\d+)/);
   return m ? Number(m[1]) : null;
@@ -44,11 +38,7 @@ async function main() {
   const text = await fs.readFile(invPath, 'utf8');
   const inventory: Inventory = JSON.parse(text);
 
-  const supabase = DRY_RUN
-    ? null
-    : createClient(requireEnv('SUPABASE_URL'), requireEnv('SUPABASE_SERVICE_ROLE_KEY'), {
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-      });
+  const supabase = DRY_RUN ? null : dbClient;
 
   const lessonPathFilter = argValue('--lesson=');
   const taskFilterRaw = argValue('--task=');

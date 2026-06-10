@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { PATENT_EXAM_VARIANTS } from '../data/patentExamData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
-import UzsPaymentMethodModal from '../components/pricing/UzsPaymentMethodModal';
 import PaywallModal from '../components/PaywallModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
@@ -34,9 +33,9 @@ export default function PatentCoursePage() {
   const { access } = useAccess();
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
-  const [uzsMethodModalOpen, setUzsMethodModalOpen] = useState(false);
   const [results, setResults] = useState<PatentVariantResult[]>([]);
   const [resultsError, setResultsError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -66,9 +65,10 @@ export default function PatentCoursePage() {
   );
 
   const handlePurchase = (currency: Currency) => {
+    setPaymentError(null);
     if (currency === 'UZS') {
       if (!token) {
-        setUzsMethodModalOpen(true);
+        navigate('/login');
         return;
       }
       void (async () => {
@@ -78,8 +78,8 @@ export default function PatentCoursePage() {
             productCode: 'patent',
             afterCreate: refreshPayments,
           });
-        } catch {
-          setUzsMethodModalOpen(true);
+        } catch (e) {
+          setPaymentError(e instanceof Error ? e.message : 'Rahmat to‘lovi boshlanmadi. Keyinroq urinib ko‘ring.');
         }
       })();
       return;
@@ -92,30 +92,6 @@ export default function PatentCoursePage() {
         returnTo: '/kurslar/patent',
       },
     });
-  };
-
-  const handleManualTransfer = () => {
-    navigate('/payment', {
-      state: {
-        productCode: 'patent',
-        productLabel: patentMeta.label,
-        currency: 'UZS' as const,
-        returnTo: '/kurslar/patent',
-      },
-    });
-    setUzsMethodModalOpen(false);
-  };
-
-  const handleClickCardSms = () => {
-    navigate('/payment/click', {
-      state: {
-        productCode: 'patent',
-        productLabel: patentMeta.label,
-        returnTo: '/kurslar/patent',
-        clickMode: 'card_sms',
-      },
-    });
-    setUzsMethodModalOpen(false);
   };
 
   return (
@@ -138,6 +114,11 @@ export default function PatentCoursePage() {
         {resultsError ? (
           <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             {resultsError}
+          </p>
+        ) : null}
+        {paymentError ? (
+          <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+            {paymentError}
           </p>
         ) : null}
 
@@ -256,18 +237,6 @@ export default function PatentCoursePage() {
         />
       ) : null}
 
-      {uzsMethodModalOpen ? (
-        <UzsPaymentMethodModal
-          onClose={() => setUzsMethodModalOpen(false)}
-          onManualTransfer={handleManualTransfer}
-          onClickCardSms={handleClickCardSms}
-          clickButtonConfig={{
-            token,
-            productCode: 'patent',
-            refreshPayments,
-          }}
-        />
-      ) : null}
     </div>
   );
 }

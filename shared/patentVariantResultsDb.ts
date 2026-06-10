@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../server/types/dbClient';
 
 const PATENT_SELECT =
   'variant_number, correct_count, total_count, score_percent, passed, completed_at';
@@ -13,7 +13,7 @@ export type PatentVariantResultRow = {
 };
 
 /** List saved patent exam rows for a user (GET /api/patent/results). */
-export function listPatentVariantResults(supabase: SupabaseClient, userId: number) {
+export function listPatentVariantResults(supabase: DbClient, userId: number) {
   const uid = Number(userId);
   return supabase
     .from('patent_variant_results')
@@ -27,7 +27,7 @@ export function listPatentVariantResults(supabase: SupabaseClient, userId: numbe
  * PostgREST upsert + .single() (which can return PGRST116 when no row is echoed).
  */
 export async function persistPatentVariantResult(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   variantNumber: number,
   correctCount: number,

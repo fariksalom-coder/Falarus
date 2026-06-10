@@ -1,12 +1,12 @@
 /**
  * Exact paths that participate in main layout section index + horizontal swipe (mobile).
- * Order matches `AppNavBar` tabs. `/kurslar` is not a bottom tab — omit from swipe ring.
+ * Order matches `AppNavBar` tabs.
  */
 export const MAIN_SECTION_PATHS = [
   '/',
   '/partner',
+  '/teachers',
   '/statistika',
-  '/help',
   '/profile',
 ] as const;
 

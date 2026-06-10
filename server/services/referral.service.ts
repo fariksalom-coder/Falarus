@@ -1,4 +1,4 @@
-import type { Supabase } from '../types/referral';
+import type { DatabaseClient } from '../types/referral';
 import * as repo from '../repositories/referralRepository';
 
 const BASE_URL = process.env.REFERRAL_BASE_URL || 'https://www.falarus.uz';
@@ -7,7 +7,7 @@ const BASE_URL = process.env.REFERRAL_BASE_URL || 'https://www.falarus.uz';
  * Get or create user's referral code and return full referral link.
  */
 export async function getReferralLink(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number
 ): Promise<{ referral_link: string }> {
   const code = await repo.getOrCreateReferralCode(supabase, userId);
@@ -20,7 +20,7 @@ export async function getReferralLink(
  * Rejects if referrer_id === referred_user_id (self-referral).
  */
 export async function resolveReferrerFromCode(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referralCode: string,
   referredUserId?: number
 ): Promise<number | null> {
@@ -36,7 +36,7 @@ export async function resolveReferrerFromCode(
  * Call only when ref was valid and user was just created.
  */
 export async function attachReferralOnRegister(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referrerId: number,
   referredUserId: number
 ): Promise<void> {

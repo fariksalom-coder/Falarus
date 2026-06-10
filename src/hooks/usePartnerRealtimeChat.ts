@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { supabaseClient } from '../lib/supabaseClient';
+import { dbFacadeClient } from '../lib/dbFacadeClient';
 import type { ChatMessage } from '../api/partner';
 
 export function usePartnerRealtimeChat(matchId: number | null) {
@@ -7,11 +7,11 @@ export function usePartnerRealtimeChat(matchId: number | null) {
   const seenIds = useRef(new Set<number>());
 
   useEffect(() => {
-    if (!matchId || !supabaseClient) return;
+    if (!matchId || !dbFacadeClient) return;
     seenIds.current.clear();
     setRealtimeMessages([]);
 
-    const channel = supabaseClient
+    const channel = dbFacadeClient
       .channel(`chat:${matchId}`)
       .on(
         'postgres_changes',
@@ -31,7 +31,7 @@ export function usePartnerRealtimeChat(matchId: number | null) {
       .subscribe();
 
     return () => {
-      void supabaseClient.removeChannel(channel);
+      void dbFacadeClient.removeChannel(channel);
     };
   }, [matchId]);
 

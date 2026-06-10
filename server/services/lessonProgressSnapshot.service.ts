@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import { LESSONS } from '../../src/data/lessonsList.js';
 
 export const LESSON_PASS_THRESHOLD = 0.7;
@@ -100,7 +100,7 @@ export function mergeCompletedLessonPathSets(
 }
 
 export async function getUserCompletedLessonPaths(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<Set<string>> {
   const { data, error } = await supabase
@@ -118,7 +118,7 @@ export async function getUserCompletedLessonPaths(
  * (replaces removed user_progress row).
  */
 export async function recordFullLessonPassInTaskResults(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   lessonId: number
 ): Promise<void> {
@@ -144,7 +144,7 @@ export async function recordFullLessonPassInTaskResults(
 }
 
 export async function getUserCompletedLessonsCount(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<number> {
   const paths = await getUserCompletedLessonPaths(supabase, userId);
@@ -152,7 +152,7 @@ export async function getUserCompletedLessonsCount(
 }
 
 export async function syncUserLessonProgressPercent(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<number> {
   const completedCount = await getUserCompletedLessonsCount(supabase, userId);

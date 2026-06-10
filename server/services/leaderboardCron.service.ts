@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import * as leaderboardService from './leaderboard.service';
 import * as leaderboardCache from './leaderboardCache.service';
 
@@ -9,7 +9,7 @@ let cronTimer: ReturnType<typeof setInterval> | null = null;
 /**
  * Start cron: every 5 minutes recalculate leaderboard ranks and invalidate cache.
  */
-export function startLeaderboardCron(supabase: SupabaseClient): void {
+export function startLeaderboardCron(supabase: DbClient): void {
   if (cronTimer != null) return;
   async function tick() {
     try {

@@ -1,11 +1,47 @@
 import { Router } from 'express';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import multer from 'multer';
 import { adminAuthMiddleware } from '../middleware/adminAuth';
 import { createAdminController } from '../controllers/adminController';
 import { createAdminGrammarController } from '../controllers/adminGrammarController';
 
-export function createAdminRoutes(supabase: SupabaseClient): Router {
+const TEACHER_OWNER_SELECT = [
+  'user_id',
+  'first_name',
+  'last_name',
+  'display_name',
+  'age',
+  'avatar_url',
+  'region',
+  'city',
+  'experience_years',
+  'experience_months',
+  'teaching_format',
+  'headline',
+  'about',
+  'subjects',
+  'teaching_levels',
+  'languages',
+  'monthly_course_price_amount',
+  'monthly_course_price_currency',
+  'rating_avg',
+  'rating_count',
+  'listing_paid_until',
+  'telegram_username',
+  'telegram_url',
+  'whatsapp_phone_e164',
+  'max_contact',
+  'public_phone_e164',
+  'public_email',
+  'preferred_contact_method',
+  'profile_status',
+  'admin_note',
+  'first_listing_discount_used',
+  'created_at',
+  'updated_at',
+].join(', ');
+
+export function createAdminRoutes(supabase: DbClient): Router {
   const router = Router();
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -35,6 +71,32 @@ export function createAdminRoutes(supabase: SupabaseClient): Router {
   router.post('/payments/:id/reject', (req, res, next) => ctrl.rejectPayment(req, res).catch(next));
   router.post('/payments/:id/refund', (req, res, next) => ctrl.refundPayment(req, res).catch(next));
   router.get('/subscriptions', (req, res, next) => ctrl.getSubscriptions(req, res).catch(next));
+  router.get('/teachers', async (_req, res, next) => {
+    try {
+      const { data, error } = await supabase
+        .from('teacher_profiles')
+        .select(TEACHER_OWNER_SELECT)
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      res.json(data ?? []);
+    } catch (e) {
+      next(e);
+    }
+  });
+  router.get('/teacher-trials', async (_req, res, next) => {
+    try {
+      const { data, error } = await supabase
+        .from('teacher_trial_lessons')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      res.json(data ?? []);
+    } catch (e) {
+      next(e);
+    }
+  });
   router.get('/card-tokens', (req, res, next) => ctrl.getCardTokens(req, res).catch(next));
   router.get('/click-payment-logs', (req, res, next) => ctrl.getClickPaymentLogs(req, res).catch(next));
   router.get('/referrals/withdrawals', (req, res, next) => ctrl.getWithdrawals(req, res).catch(next));

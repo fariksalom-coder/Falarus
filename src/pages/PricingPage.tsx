@@ -4,7 +4,6 @@ import { ArrowLeft, Info } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
 import CurrencyModal from '../components/pricing/CurrencyModal';
-import UzsPaymentMethodModal from '../components/pricing/UzsPaymentMethodModal';
 import { getTariffPricesByCurrency, getUserTariffPricesByCurrency, type UserTariffPricesPayload } from '../api/publicPricing';
 import type { Currency } from '../components/pricing/CurrencyModal';
 import { openRahmatCheckout } from '../api/rahmat';
@@ -175,7 +174,7 @@ export default function PricingPage() {
     Partial<Record<Currency, { month: { final: number; base: number; discount: number }; year: { final: number; base: number; discount: number } }>>
   >({});
   const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | 'year'; tariffLabel: string } | null>(null);
-  const [uzsMethodModal, setUzsMethodModal] = useState<{ tariffType: 'month' | 'year'; tariffLabel: string } | null>(null);
+  const [paymentError, setPaymentError] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -283,11 +282,12 @@ export default function PricingPage() {
 
   const handleCurrencySelect = (currency: Currency) => {
     if (!currencyModal) return;
+    setPaymentError('');
     if (currency === 'UZS') {
-      const { tariffType, tariffLabel } = currencyModal;
+      const { tariffType } = currencyModal;
       setCurrencyModal(null);
       if (!token) {
-        setUzsMethodModal({ tariffType, tariffLabel });
+        navigate('/login');
         return;
       }
       void (async () => {
@@ -298,8 +298,8 @@ export default function PricingPage() {
             tariffType,
             afterCreate: refreshPayments,
           });
-        } catch {
-          setUzsMethodModal({ tariffType, tariffLabel });
+        } catch (e) {
+          setPaymentError(e instanceof Error ? e.message : 'Rahmat to‘lovi boshlanmadi. Keyinroq urinib ko‘ring.');
         }
       })();
       return;
@@ -308,36 +308,6 @@ export default function PricingPage() {
       state: { tariffType: currencyModal.tariffType, currency, tariffLabel: currencyModal.tariffLabel },
     });
     setCurrencyModal(null);
-  };
-
-  const handleManualTransfer = () => {
-    if (!uzsMethodModal) return;
-    navigate('/payment', {
-      state: {
-        tariffType: uzsMethodModal.tariffType,
-        tariffLabel: uzsMethodModal.tariffLabel,
-        currency: 'UZS' as const,
-        productCode: 'russian',
-        productLabel: 'Курс русского языка',
-        returnTo: '/tariflar',
-      },
-    });
-    setUzsMethodModal(null);
-  };
-
-  const handleClickCardSms = () => {
-    if (!uzsMethodModal) return;
-    navigate('/payment/click', {
-      state: {
-        tariffType: uzsMethodModal.tariffType,
-        tariffLabel: uzsMethodModal.tariffLabel,
-        productCode: 'russian',
-        productLabel: 'Курс русского языка',
-        returnTo: '/tariflar',
-        clickMode: 'card_sms',
-      },
-    });
-    setUzsMethodModal(null);
   };
 
   const scrollToTariffs = () => {
@@ -405,6 +375,11 @@ export default function PricingPage() {
               </p>
             </div>
           )}
+          {paymentError ? (
+            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+              {paymentError}
+            </div>
+          ) : null}
           {loading ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:max-w-4xl md:mx-auto md:gap-8">
               {[1, 2].map((i) => (
@@ -554,18 +529,6 @@ export default function PricingPage() {
         />
       )}
 
-      {uzsMethodModal ? (
-        <UzsPaymentMethodModal
-          onClose={() => setUzsMethodModal(null)}
-          onManualTransfer={handleManualTransfer}
-          onClickCardSms={handleClickCardSms}
-          clickButtonConfig={{
-            token,
-            productCode: 'russian',
-            tariffType: uzsMethodModal.tariffType,
-          }}
-        />
-      ) : null}
     </div>
   );
 }

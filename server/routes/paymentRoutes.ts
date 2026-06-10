@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import {
   getCourseProductPrice,
   isCourseProductCode,
@@ -40,6 +40,8 @@ import {
   createRahmatMulticardPayment,
   handleRahmatMulticardCallback,
 } from '../services/rahmatMulticardPayment.service.js';
+import { confirmStorePurchase } from '../services/storePurchasePayment.service.js';
+import { activateTeacherMarketplacePayment } from '../services/teacherMarketplace.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const ALLOWED_MIMES = [
@@ -65,7 +67,7 @@ const upload = multer({
 });
 
 export function createPaymentRoutes(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   authenticate: (req: Request, res: Response, next: () => void) => void
 ): Router {
   const router = Router();
@@ -438,11 +440,16 @@ export function createPaymentRoutes(
     return res.status(out.status).json(out.json);
   });
 
+  router.post('/store/confirm', authenticate, async (req: any, res: Response) => {
+    const out = await confirmStorePurchase(supabase, req.userId, req.body ?? {});
+    return res.status(out.status).json(out.json);
+  });
+
   return router;
 }
 
 export function createClickMerchantRoutes(
-  supabase: SupabaseClient
+  supabase: DbClient
 ): Router {
   const router = Router();
 
@@ -673,7 +680,7 @@ export function createClickMerchantRoutes(
           });
 
     // Atomic transition: only ONE concurrent webhook can flip pending→approved.
-    // The .select() forces Supabase to return the row IFF the WHERE matched —
+    // The .select() forces DatabaseClient to return the row IFF the WHERE matched —
     // so an empty result tells us a parallel request already approved (or the
     // row was rejected in between). In that case we DO NOT activate again.
     const { data: flipped, error: approveErr } = await supabase
@@ -722,6 +729,11 @@ export function createClickMerchantRoutes(
         userId: Number((payment as any).user_id),
         productCode,
         tariffType: (payment as any).tariff_type,
+      });
+      await activateTeacherMarketplacePayment(supabase, {
+        paymentId: paymentIdSafe,
+        userId: Number((payment as any).user_id),
+        productCode,
       });
       invalidateAccessCache(Number((payment as any).user_id));
     } catch (activationErr) {

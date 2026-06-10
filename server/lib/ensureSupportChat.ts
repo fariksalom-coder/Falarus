@@ -1,7 +1,7 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 
 /** Foydalanuvchi uchun `support_chats` qatorini kafolatlaydi (mavjud bo‘lsa id qaytaradi). */
-export async function ensureSupportChatForUser(supabase: SupabaseClient, userId: number): Promise<number> {
+export async function ensureSupportChatForUser(supabase: DbClient, userId: number): Promise<number> {
   const { data: existing, error: existingErr } = await supabase
     .from('support_chats')
     .select('id')

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 
 const LEADERBOARD = 'leaderboard';
 const USERS = 'users';
@@ -30,7 +30,7 @@ export type MyPosition = {
  * Ensure user has a row in leaderboard (e.g. new user). Idempotent.
  */
 export async function ensureUserInLeaderboard(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<void> {
   const { error } = await supabase.from(LEADERBOARD).upsert(
@@ -50,7 +50,7 @@ export async function ensureUserInLeaderboard(
  * Call after updating users.total_points.
  */
 export async function updateUserPoints(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   totalPoints: number
 ): Promise<void> {
@@ -74,7 +74,7 @@ export async function updateUserPoints(
 /**
  * Get top 100 from leaderboard with user names. Used by cache miss.
  */
-export async function getTop100(supabase: SupabaseClient): Promise<LeaderboardEntry[]> {
+export async function getTop100(supabase: DbClient): Promise<LeaderboardEntry[]> {
   const { data: lbRows, error: lbErr } = await supabase
     .from(LEADERBOARD)
     .select('user_id, total_points, rank')
@@ -113,7 +113,7 @@ export async function getTop100(supabase: SupabaseClient): Promise<LeaderboardEn
  * Get current user's rank and points from leaderboard.
  */
 export async function getMyPosition(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<MyPosition | null> {
   const { data, error } = await supabase
@@ -133,7 +133,7 @@ export async function getMyPosition(
  * Recalculate rank for all rows: RANK() OVER (ORDER BY total_points DESC).
  * Call from cron every 5 minutes.
  */
-export async function recalculateRanks(supabase: SupabaseClient): Promise<void> {
+export async function recalculateRanks(supabase: DbClient): Promise<void> {
   const { data: rows, error: fetchErr } = await supabase
     .from(LEADERBOARD)
     .select('user_id, total_points')

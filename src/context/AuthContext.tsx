@@ -18,6 +18,7 @@ interface User {
   planName?: string | null;
   planExpiresAt?: string | null;
   billingNoticeUz?: string | null;
+  accountType?: string | null;
 }
 
 interface AuthContextType {

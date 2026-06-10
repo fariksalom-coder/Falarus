@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import type {
   DailyCourseDayBundle,
   DailyCourseMcq,
@@ -82,7 +82,7 @@ function parseWordBank(raw: unknown): string[] {
 export const DAILY_COURSE_BUNDLE_FETCH_REV = 'split-reading-v2';
 
 export async function fetchDailyCourseDayBundle(
-  sb: SupabaseClient,
+  sb: DbClient,
   dayNumber: number,
 ): Promise<{ ok: true; bundle: DailyCourseDayBundle } | { ok: false; error: string }> {
   const [

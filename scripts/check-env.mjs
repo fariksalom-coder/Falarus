@@ -36,15 +36,12 @@ const envFromFile = parseEnvFile(resolve(process.cwd(), '.env'));
 const env = { ...envFromFile, ...process.env };
 
 const required = [
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
+  'DATABASE_URL',
   'JWT_SECRET',
   'APP_TIMEZONE',
 ];
 
 const recommended = [
-  'SUPABASE_DB_URL',
-  'SUPABASE_DB_PASSWORD',
   'REDIS_URL',
   'REFERRAL_BASE_URL',
   'GOOGLE_OAUTH_WEB_CLIENT_ID',
@@ -63,8 +60,8 @@ function assert(condition, message) {
 try {
   assert(!missingRequired.length, `Missing required variables: ${missingRequired.join(', ')}`);
   assert(
-    /^https:\/\/.+/.test(env.SUPABASE_URL),
-    'SUPABASE_URL must start with https://'
+    /^postgres(ql)?:\/\//.test(env.DATABASE_URL),
+    'DATABASE_URL must start with postgres:// or postgresql://'
   );
 
   if (env.VITE_API_URL) {

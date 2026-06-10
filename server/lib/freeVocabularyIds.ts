@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 
 /**
  * Must match the first topic + its first subtopic in `src/data/vocabularyTopics.ts`.
@@ -17,7 +17,7 @@ export type FreeVocabularyIds = {
  * Prefers canonical app slugs when present in DB; otherwise first topic/subtopic by id (legacy).
  */
 export async function resolveFreeVocabularyIds(
-  supabase: SupabaseClient
+  supabase: DbClient
 ): Promise<FreeVocabularyIds> {
   const { data: preferredSub } = await supabase
     .from('vocabulary_subtopics')

@@ -1,4 +1,4 @@
-import type { Supabase } from '../types/referral';
+import type { DatabaseClient } from '../types/referral';
 import * as referralDiscount from './referralDiscount.service';
 import * as referralReward from './referralReward.service';
 import * as repo from '../repositories/referralRepository';
@@ -24,7 +24,7 @@ export type RecordPaymentResult = {
  * Record a payment: apply 10% discount if eligible, then reward referrer 25% of final amount (once).
  */
 export async function recordPayment(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   input: RecordPaymentInput
 ): Promise<RecordPaymentResult> {
   const { userId, originalAmount } = input;

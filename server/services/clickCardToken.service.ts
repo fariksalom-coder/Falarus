@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import {
   clickCardTokenDelete,
   clickCardTokenPayment,
@@ -30,6 +30,7 @@ import {
 } from '../../shared/paymentActivation.js';
 import {
   getCourseProductPrice,
+  isCourseProductCode,
   isPaymentProductCode,
   isSubscriptionTariffType,
   type PaymentProductCode,
@@ -57,7 +58,7 @@ function tariffToDbTariffKey(t: SubscriptionTariffType): 'month' | 'year' {
 }
 
 async function logClickSafe(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   row: {
     user_id?: number | null;
     subscription_id?: number | null;
@@ -88,7 +89,7 @@ async function logClickSafe(
 }
 
 async function fetchUzAmountForTariff(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   tariffType: SubscriptionTariffType
 ): Promise<number> {
   const key = tariffToDbTariffKey(tariffType);
@@ -102,7 +103,7 @@ async function fetchUzAmountForTariff(
 }
 
 async function userHasPendingPaymentForProduct(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   productCode: PaymentProductCode
 ): Promise<boolean> {
@@ -137,7 +138,7 @@ async function userHasPendingPaymentForProduct(
 }
 
 async function chargeCardTokenWithRetries(params: {
-  supabase: SupabaseClient;
+  supabase: DbClient;
   userId: number;
   serviceId: number;
   merchantUserId: string;
@@ -208,7 +209,7 @@ function lastPaymentIdFromJson(json: ClickMerchantJson): string | null {
 }
 
 async function insertClickTokenPaymentPending(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   params: {
     userId: number;
     productCode: PaymentProductCode;
@@ -259,7 +260,7 @@ async function insertClickTokenPaymentPending(
 }
 
 export async function handleClickCardTokenRequest(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   body: Record<string, unknown>
 ): Promise<{ status: number; json: Record<string, unknown> }> {
@@ -343,7 +344,7 @@ export async function handleClickCardTokenRequest(
 }
 
 export async function handleClickCardTokenVerify(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   body: Record<string, unknown>
 ): Promise<{ status: number; json: Record<string, unknown> }> {
@@ -459,7 +460,7 @@ export async function handleClickCardTokenVerify(
 }
 
 export async function handleClickCardTokenPayment(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   body: Record<string, unknown>
 ): Promise<{ status: number; json: Record<string, unknown> }> {
@@ -550,9 +551,11 @@ export async function handleClickCardTokenPayment(
           tariff_type: quote.tariffType,
         }
       : null;
-  } else {
+  } else if (isCourseProductCode(productCode)) {
     amount = getCourseProductPrice(productCode, 'UZS');
     baseAmount = amount;
+  } else {
+    return { status: 400, json: { error: "Mahsulot uchun Click to'lovi hali sozlanmagan" } };
   }
   if (!amount || amount <= 0) {
     return { status: 400, json: { error: "Tarif narxi topilmadi" } };
@@ -693,7 +696,7 @@ export async function handleClickCardTokenPayment(
 }
 
 export async function handleClickCardTokenDelete(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<{ status: number; json: Record<string, unknown> }> {
   const cfg = getClickConfig();
@@ -766,7 +769,7 @@ export async function handleClickCardTokenDelete(
 }
 
 export async function runClickAutoRenewalCron(
-  supabase: SupabaseClient
+  supabase: DbClient
 ): Promise<{ scanned: number; renewed: number; failed: number }> {
   const cfg = getClickConfig();
   const serviceId = Number(cfg.serviceId);

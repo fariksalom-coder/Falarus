@@ -1,4 +1,4 @@
--- Run this in Supabase SQL Editor to create the table for streak tracking.
+-- Run this in PostgreSQL to create the table for streak tracking.
 -- Table: one row per (user_id, activity_date) when user had activity that day.
 CREATE TABLE IF NOT EXISTS user_activity_dates (
   user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,

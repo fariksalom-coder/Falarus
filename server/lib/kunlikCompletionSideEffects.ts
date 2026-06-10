@@ -1,10 +1,10 @@
-import type { Supabase } from '../types/progress';
+import type { DatabaseClient } from '../types/progress';
 import { formatDateInAppTimezone } from './appDate.js';
 import * as streakService from '../services/streakService.js';
 
 /** Bir kunlik kun birinchi marta to‘liq tugaganda: streak sanasi + kunlik kurs hisobi (+1). */
 export async function applyKunlikDayCompletionSideEffects(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   wasFullyComplete: boolean,
   nowFullyComplete: boolean,

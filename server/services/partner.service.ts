@@ -10,7 +10,7 @@ type RouterReq = {
 };
 type RouterRes = { status: (code: number) => { json: (body: unknown) => unknown } };
 
-import { supabase } from '../lib/supabaseClient.js';
+import { supabase } from '../lib/dbFacadeClient.js';
 import { parseBody } from '../lib/request.js';
 import { buildRequestLogContext, logError } from '../lib/logger.js';
 

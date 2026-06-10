@@ -16,6 +16,7 @@ import {
   History,
   Phone,
   Contact,
+  GraduationCap,
 } from 'lucide-react';
 import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 
@@ -149,6 +150,15 @@ export default function ProfilePage() {
           >
             <History className="w-5 h-5 text-slate-400" />
             <span className="font-medium text-slate-700 flex-1 text-left">To'lovlar tarixi</span>
+            <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/teacher-cabinet')}
+            className="w-full px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors border-b border-slate-100"
+          >
+            <GraduationCap className="w-5 h-5 text-slate-400" />
+            <span className="font-medium text-slate-700 flex-1 text-left">O'qituvchi kabineti</span>
             <ChevronLeft className="w-5 h-5 text-slate-300 rotate-180" />
           </button>
           <button

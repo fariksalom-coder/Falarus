@@ -1,6 +1,6 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from './dbClient';
 
-export type Supabase = SupabaseClient;
+export type DatabaseClient = DbClient;
 
 export type VocabularyTopicRow = {
   id: string;

@@ -1,12 +1,6 @@
 /**
- * Локальный PostgreSQL клиент через Kysely. Активируется, когда задан DATABASE_URL.
- * Когда DATABASE_URL не задан — экспорты `db` и `pool` равны `null`, и весь код
- * продолжает работать через `supabaseClient.ts` (старый путь).
- *
- * Это намеренный feature-flag на время миграции Supabase → локальная PG:
- *   - На проде сначала добавляем DATABASE_URL в .env, но шим ещё не задействован → ничего не меняется.
- *   - На следующем шаге пишем shim, который проверяет `hasLocalDb` и маршрутизирует запросы сюда.
- *   - После проверки — удаляем supabase-js полностью.
+ * PostgreSQL клиент через Kysely/node-postgres. Backend работает только через
+ * DATABASE_URL вашей БД.
  *
  * Типы таблиц генерируем через kysely-codegen (см. README ниже в файле).
  */
@@ -14,7 +8,7 @@ import { Kysely, PostgresDialect } from 'kysely';
 import { Pool, types as pgTypes } from 'pg';
 
 /**
- * Подстраиваем pg parsers под форму данных, которую возвращал supabase-js:
+ * Подстраиваем pg parsers под форму данных, которую ожидает текущий API facade:
  *   • TIMESTAMP / TIMESTAMPTZ → строки (ISO), а не Date — иначе сломаются
  *     лексические сравнения вида `row.created_at > now.toISOString()`.
  *   • BIGINT (int8) → number — иначе сломаются `user1_id === userId`.
@@ -64,7 +58,7 @@ export const hasLocalDb = db !== null;
 if (hasLocalDb) {
   console.log('[db] Local PostgreSQL pool initialized via DATABASE_URL');
 } else {
-  console.log('[db] DATABASE_URL not set — local DB disabled, using Supabase only');
+  console.error('[db] DATABASE_URL not set — PostgreSQL connection is disabled');
 }
 
 async function shutdown() {

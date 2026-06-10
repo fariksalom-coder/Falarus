@@ -4,10 +4,10 @@
  * answer the provider even if our DB is degraded — so all writes are
  * fire-and-forget with caught errors.
  *
- * Migration: supabase/migrations/116_payment_events_audit.sql
+ * Migration: db/migrations/116_payment_events_audit.sql
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import { logError } from './logger.js';
 
 export type PaymentEventOutcome =
@@ -40,7 +40,7 @@ export type RecordPaymentEventInput = {
 };
 
 export async function recordPaymentEvent(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   input: RecordPaymentEventInput
 ): Promise<void> {
   try {

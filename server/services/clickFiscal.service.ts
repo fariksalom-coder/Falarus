@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import {
   clickFetchOfdReceipt,
   clickSubmitOfdItems,
@@ -110,7 +110,7 @@ export type FiscalPaymentRow = {
  * Fiscalize approved Click payment (non-blocking for callers — catch internally).
  * Never throws. Payment success must never depend on fiscal outcome.
  */
-export async function fiscalizePayment(supabase: SupabaseClient, paymentId: number): Promise<void> {
+export async function fiscalizePayment(supabase: DbClient, paymentId: number): Promise<void> {
   try {
     await fiscalizePaymentInner(supabase, paymentId);
   } catch (e) {
@@ -118,7 +118,7 @@ export async function fiscalizePayment(supabase: SupabaseClient, paymentId: numb
   }
 }
 
-async function fiscalizePaymentInner(supabase: SupabaseClient, paymentId: number): Promise<void> {
+async function fiscalizePaymentInner(supabase: DbClient, paymentId: number): Promise<void> {
   const fiscalEnv = readFiscalEnv();
   const fiscalGate = fiscalConfigReady(fiscalEnv);
   const merchantCfg = getClickConfig();
@@ -303,7 +303,7 @@ async function fiscalizePaymentInner(supabase: SupabaseClient, paymentId: number
 }
 
 async function markFiscalFailed(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   paymentId: number,
   message: string,
   partial?: Record<string, unknown>
@@ -324,7 +324,7 @@ async function markFiscalFailed(
 }
 
 export async function runClickFiscalRetryCron(
-  supabase: SupabaseClient
+  supabase: DbClient
 ): Promise<{ scanned: number; processed: number }> {
   const { data: rows, error } = await supabase
     .from('payments')

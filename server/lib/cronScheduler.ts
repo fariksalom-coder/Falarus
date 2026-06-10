@@ -19,7 +19,7 @@
  */
 
 import cron from 'node-cron';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import { getRedis } from './redis.js';
 import { logError, logInfo } from './logger.js';
 import { runClickAutoRenewalCron } from '../services/clickCardToken.service.js';
@@ -71,7 +71,7 @@ async function runJobSafely(
  * server bootstrap. Returns `true` if scheduling was activated, `false`
  * if disabled by env (so caller can log it).
  */
-export function startInternalCron(supabase: SupabaseClient): boolean {
+export function startInternalCron(supabase: DbClient): boolean {
   if (process.env.ENABLE_INTERNAL_CRON !== '1') return false;
 
   // Click auto-renewal — every 15 minutes (matches the old vercel.json

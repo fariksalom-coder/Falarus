@@ -4,20 +4,10 @@
  * Run from project root: npx tsx server/scripts/seedVocabulary.ts
  */
 import 'dotenv/config';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/dbFacadeClient';
 import { VOCABULARY_TOPICS } from '../../src/data/vocabularyTopics';
 import { VOCABULARY_CONTENT } from '../../src/data/vocabularyContent';
 import { slugifyVocabularyTitle } from '../../shared/slugifyVocabularyTitle';
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env');
-  process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function insertWithRetry<T>(
   fn: () => PromiseLike<{ error: any; data?: T }>,

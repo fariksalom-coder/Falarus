@@ -1,6 +1,6 @@
-import { readFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-import { createClient } from '@supabase/supabase-js';
+import pg from 'pg';
 
 function parseEnvFile(filePath) {
   const out = {};
@@ -16,82 +16,41 @@ function parseEnvFile(filePath) {
   return out;
 }
 
-const envFromFile = parseEnvFile(resolve(process.cwd(), '.env'));
-const env = { ...envFromFile, ...process.env };
-const url = env.SUPABASE_URL;
-const key = env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!url || !key) {
-  console.error('db:verify requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+const env = { ...parseEnvFile(resolve(process.cwd(), '.env')), ...process.env };
+if (!env.DATABASE_URL) {
+  console.error('db:verify requires DATABASE_URL');
   process.exit(1);
 }
-
-const supabase = createClient(url, key, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-  },
-});
 
 const checks = [
-  { label: 'users', table: 'users', select: 'id,progress,total_points' },
-  {
-    label: 'lesson_task_results',
-    table: 'lesson_task_results',
-    select: 'user_id,lesson_path,task_number,correct,total',
-  },
-  { label: 'vocabulary_topics', table: 'vocabulary_topics', select: 'id,title' },
-  {
-    label: 'vocabulary_subtopics',
-    table: 'vocabulary_subtopics',
-    select: 'id,topic_id,title,slug',
-  },
-  {
-    label: 'vocabulary_word_groups',
-    table: 'vocabulary_word_groups',
-    select: 'id,subtopic_id,part_id,total_words',
-  },
-  {
-    label: 'user_word_group_progress',
-    table: 'user_word_group_progress',
-    select:
-      'user_id,word_group_id,learned_words,total_words,flashcards_known,flashcards_unknown,test_last_correct,test_last_incorrect,test_last_percentage,test_passed,test_best_correct,match_completed,progress_percent',
-  },
-  {
-    label: 'user_vocabulary_step2_attempts',
-    table: 'user_vocabulary_step2_attempts',
-    select:
-      'user_id,word_group_id,activity_date,correct_answers,incorrect_answers,total_questions,percentage',
-  },
-  { label: 'subscriptions', table: 'subscriptions', select: 'user_id,plan_type,expires_at,status' },
-  { label: 'leaderboard', table: 'leaderboard', select: 'user_id,total_points,rank' },
-  {
-    label: 'subscription_payment_requests',
-    table: 'subscription_payment_requests',
-    select: 'user_id,plan_type,amount,status',
-  },
-  {
-    label: 'payments',
-    table: 'payments',
-    select: 'user_id,tariff_type,currency,status,created_at',
-  },
+  'users',
+  'lesson_task_results',
+  'vocabulary_topics',
+  'vocabulary_subtopics',
+  'vocabulary_word_groups',
+  'user_word_group_progress',
+  'subscriptions',
+  'leaderboard',
+  'payments',
+  'teacher_profiles',
+  'teacher_trial_lessons',
 ];
 
-let failed = false;
+const pool = new pg.Pool({ connectionString: env.DATABASE_URL });
 
-for (const check of checks) {
-  const { error } = await supabase.from(check.table).select(check.select).limit(1);
-  if (error) {
-    failed = true;
-    console.error(`[FAIL] ${check.label}: ${error.message}`);
-    continue;
+try {
+  for (const table of checks) {
+    const result = await pool.query('select to_regclass($1) as name', [`public.${table}`]);
+    if (!result.rows[0]?.name) {
+      console.error(`Missing table: ${table}`);
+      process.exitCode = 1;
+    } else {
+      console.log(`OK ${table}`);
+    }
   }
-  console.log(`[OK] ${check.label}`);
+} finally {
+  await pool.end();
 }
 
-if (failed) {
-  process.exit(1);
-}
-
-console.log('Supabase schema verification passed.');
+if (process.exitCode) process.exit(process.exitCode);
+console.log('PostgreSQL schema verification passed.');

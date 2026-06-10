@@ -150,6 +150,63 @@ export type AdminClickPaymentLogRow = {
   created_at: string;
 };
 
+export type AdminTeacherRow = {
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  age: number;
+  avatar_url: string | null;
+  region: string;
+  city: string;
+  experience_years: number;
+  experience_months: number;
+  teaching_format: string;
+  headline: string;
+  about: string;
+  subjects: string[];
+  teaching_levels: string[];
+  languages: string[];
+  monthly_course_price_amount: number;
+  monthly_course_price_currency: string;
+  rating_avg: number;
+  rating_count: number;
+  listing_paid_until: string | null;
+  telegram_username: string | null;
+  telegram_url: string | null;
+  whatsapp_phone_e164: string | null;
+  max_contact: string | null;
+  public_phone_e164: string | null;
+  public_email: string | null;
+  preferred_contact_method: string | null;
+  profile_status: string;
+  admin_note: string | null;
+  first_listing_discount_used: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminTeacherTrialRow = {
+  id: number;
+  teacher_user_id: number;
+  student_user_id: number;
+  payment_id: number | null;
+  requested_starts_at: string | null;
+  scheduled_starts_at: string | null;
+  status: string;
+  student_phone_e164: string | null;
+  student_email: string | null;
+  student_message: string;
+  price_rub_snapshot: number;
+  price_uzs_snapshot: number;
+  paid_currency: string | null;
+  contact_shared_at: string | null;
+  teacher_notified_at: string | null;
+  completed_by_teacher_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AdminWithdrawalRow = {
   id: number;
   user_id: number;
@@ -320,6 +377,14 @@ export async function getCardTokens(): Promise<AdminCardTokenRow[]> {
 
 export async function getClickPaymentLogs(): Promise<AdminClickPaymentLogRow[]> {
   return adminApi<AdminClickPaymentLogRow[]>('/click-payment-logs');
+}
+
+export async function getAdminTeachers(): Promise<AdminTeacherRow[]> {
+  return adminApi<AdminTeacherRow[]>('/teachers');
+}
+
+export async function getAdminTeacherTrials(): Promise<AdminTeacherTrialRow[]> {
+  return adminApi<AdminTeacherTrialRow[]>('/teacher-trials');
 }
 
 export async function getWithdrawals(): Promise<AdminWithdrawalRow[]> {

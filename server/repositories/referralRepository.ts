@@ -1,7 +1,7 @@
-import type { Supabase } from '../types/referral';
+import type { DatabaseClient } from '../types/referral';
 
 export async function getUserByReferralCode(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referralCode: string
 ): Promise<{ id: number } | null> {
   const { data, error } = await supabase
@@ -14,7 +14,7 @@ export async function getUserByReferralCode(
 }
 
 export async function getOrCreateReferralCode(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number
 ): Promise<string> {
   const { data: user, error: fetchErr } = await supabase
@@ -47,7 +47,7 @@ function generateReferralCode(): string {
 }
 
 export async function createReferral(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referrerId: number,
   referredUserId: number
 ) {
@@ -61,7 +61,7 @@ export async function createReferral(
 }
 
 export async function getReferralByReferredUser(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referredUserId: number
 ): Promise<{ id: number; referrer_id: number; discount_used: boolean; status: string } | null> {
   const { data, error } = await supabase
@@ -74,7 +74,7 @@ export async function getReferralByReferredUser(
 }
 
 export async function getReferralsByReferrer(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referrerId: number
 ): Promise<Array<{ referred_user_id: number; status: string; name?: string }>> {
   const { data, error } = await supabase
@@ -106,7 +106,7 @@ export async function getReferralsByReferrer(
 // process_referral_reward() Postgres function — see referralReward.service.ts.
 
 export async function updateReferralDiscountUsed(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   referralId: number
 ) {
   const { error } = await supabase
@@ -117,7 +117,7 @@ export async function updateReferralDiscountUsed(
 }
 
 export async function getUserReferralBalance(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number
 ): Promise<{ referral_balance: number; total_referral_earned: number } | null> {
   const { data, error } = await supabase
@@ -137,7 +137,7 @@ export async function getUserReferralBalance(
 // process_referral_reward() Postgres function (migration 117).
 
 export async function createWithdrawal(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number,
   amount: number,
   details?: { card_number?: string; phone?: string; full_name?: string }

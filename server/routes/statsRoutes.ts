@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import type { Supabase } from '../types/progress';
+import type { DatabaseClient } from '../types/progress';
 import { formatDateInAppTimezone } from '../lib/appDate.js';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
 
 const TOTAL_COURSE_DAYS = 182;
 
 export function createStatsRoutes(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   authenticate: (req: any, res: any, next: any) => void
 ): Router {
   const router = Router();

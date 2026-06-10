@@ -17,7 +17,7 @@
 
 import { OAuth2Client, type TokenPayload } from 'google-auth-library';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import { resolveGoogleAllowedAudiences } from '../../shared/googleOAuth.ts';
 
 export type SocialProvider = 'google' | 'apple';
@@ -182,7 +182,7 @@ const AUTH_USER_COLUMNS =
  * Always returns a row with the selected AUTH_USER_COLUMNS.
  */
 export async function findOrCreateUserForSocial(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   identity: VerifiedSocialIdentity,
 ): Promise<ResolvedSocialUser> {
   // 1) Existing link? Fast path.
@@ -267,7 +267,7 @@ export async function findOrCreateUserForSocial(
 }
 
 async function insertIdentity(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   identity: VerifiedSocialIdentity,
 ): Promise<void> {

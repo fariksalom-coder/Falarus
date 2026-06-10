@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import type { AccessInfo } from './subscription.service';
 import * as vocabRepo from '../repositories/vocabularyRepository';
 import { FREE_VOCAB_SUBTOPIC_ID, FREE_VOCAB_TOPIC_ID } from '../lib/freeVocabularyIds';
@@ -108,7 +108,7 @@ export type LessonPreview = {
  * Get lesson preview (title, description, 2 words sample, 1 task preview).
  */
 export async function getLessonPreview(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   lessonId: number
 ): Promise<LessonPreview | null> {
   const { data: lesson, error: le } = await supabase
@@ -141,7 +141,7 @@ export type SubtopicPreview = {
  * Get subtopic preview: title + 3 words from first word group.
  */
 export async function getSubtopicPreview(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   subtopicId: string
 ): Promise<SubtopicPreview | null> {
   const { data: subtopic } = await supabase

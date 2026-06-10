@@ -20,6 +20,7 @@ import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
+import { openRahmatCheckout } from '../api/rahmat';
 
 const BG = '#EEF6FF';
 const CARD_BG = 'rgba(255,255,255,0.96)';
@@ -57,10 +58,30 @@ export default function VnzhCourseSectionPage() {
   const { access } = useAccess();
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const hasFullVnzh = access?.vnzh_course_active === true;
 
   const handlePurchase = (currency: Currency) => {
+    setPaymentError(null);
+    if (currency === 'UZS') {
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      void (async () => {
+        try {
+          await openRahmatCheckout({
+            token,
+            productCode: 'vnzh',
+            afterCreate: refreshPayments,
+          });
+        } catch (e) {
+          setPaymentError(e instanceof Error ? e.message : 'Rahmat to‘lovi boshlanmadi. Keyinroq urinib ko‘ring.');
+        }
+      })();
+      return;
+    }
     navigate('/payment', {
       state: {
         productCode: 'vnzh',
@@ -117,6 +138,11 @@ export default function VnzhCourseSectionPage() {
               Sotib olish: {vnzhMeta.prices.RUB} ₽
             </button>
           </section>
+        ) : null}
+        {paymentError ? (
+          <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+            {paymentError}
+          </p>
         ) : null}
 
         <section
@@ -213,12 +239,6 @@ export default function VnzhCourseSectionPage() {
         <CurrencyModal
           onClose={() => setCurrencyModalOpen(false)}
           onSelect={handlePurchase}
-          clickLabel={`Click bilan ${vnzhMeta.prices.UZS.toLocaleString('uz-UZ')} so'm`}
-          directClickCourse={{
-            token,
-            productCode: 'vnzh',
-            refreshPayments,
-          }}
         />
       ) : null}
     </div>

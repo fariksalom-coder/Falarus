@@ -11,7 +11,7 @@ import {
 } from '../../api/partner';
 import { useAuth } from '../../context/AuthContext';
 import { usePartnerRealtimeChat } from '../../hooks/usePartnerRealtimeChat';
-import { isRealtimeEnabled } from '../../lib/supabaseClient';
+import { isRealtimeEnabled } from '../../lib/dbFacadeClient';
 
 type Props = {
   match: PartnerMatch;

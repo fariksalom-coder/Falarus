@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import bcrypt from 'bcryptjs';
 import { parseContactIdentifier, sanitizePhoneRaw } from '../../shared/authIdentifiers.js';
 import {
@@ -49,7 +49,7 @@ function isCurrencyCode(v: string): v is 'UZS' | 'USD' | 'RUB' {
 }
 
 async function insertApprovedPayment(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   opts: {
     userId: number;
     adminId: number;
@@ -99,7 +99,7 @@ async function insertApprovedPayment(
 }
 
 async function grantRussianAccess(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   tariffType: 'month' | 'year',
   adminId: number,
@@ -142,7 +142,7 @@ async function grantRussianAccess(
 }
 
 async function grantCourseAccess(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   productCode: 'patent' | 'vnzh',
   adminId: number,
@@ -163,7 +163,7 @@ async function grantCourseAccess(
  * Admin panel: yangi foydalanuvchi yaratish va naqd / boshqa kanal orqali to‘langan tariflarni yozish.
  */
 export async function adminCreateUserWithAccess(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   input: AdminCreateUserInput
 ): Promise<AdminCreateUserResult> {
   const {

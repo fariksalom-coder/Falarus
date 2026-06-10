@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import type { SubscriptionTariffType } from '../../shared/paymentProducts.js';
 
 export const RUSSIAN_PROMO_DURATION_MS = 30 * 60 * 1000;
@@ -42,7 +42,7 @@ function computeRemainingSec(expiresAt: string | null): number {
 }
 
 async function getTariffPrice(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   currency: Currency,
   tariffType: SubscriptionTariffType
 ): Promise<number> {
@@ -56,7 +56,7 @@ async function getTariffPrice(
   return data != null ? Number((data as { price: number }).price) : 0;
 }
 
-async function getUserPromoWindow(supabase: SupabaseClient, userId: number): Promise<RussianPromoWindow> {
+async function getUserPromoWindow(supabase: DbClient, userId: number): Promise<RussianPromoWindow> {
   const { data } = await supabase
     .from('users')
     .select('russian_promo_started_at, russian_promo_expires_at')
@@ -74,7 +74,7 @@ async function getUserPromoWindow(supabase: SupabaseClient, userId: number): Pro
   };
 }
 
-export async function ensureRussianPromoWindow(supabase: SupabaseClient, userId: number): Promise<RussianPromoWindow> {
+export async function ensureRussianPromoWindow(supabase: DbClient, userId: number): Promise<RussianPromoWindow> {
   const current = await getUserPromoWindow(supabase, userId);
   if (current.startedAt || current.expiresAt) return current;
 
@@ -113,14 +113,14 @@ export async function ensureRussianPromoWindow(supabase: SupabaseClient, userId:
 }
 
 export async function getRussianPromoWindow(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<RussianPromoWindow> {
   return getUserPromoWindow(supabase, userId);
 }
 
 export async function resolveRussianTariffQuote(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   params: {
     userId: number;
     currency: Currency;

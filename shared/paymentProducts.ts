@@ -1,15 +1,25 @@
 export type CurrencyCode = 'UZS' | 'RUB' | 'USD';
 export type SubscriptionTariffType = 'month' | 'year';
 export type CourseProductCode = 'patent' | 'vnzh';
-export type PaymentProductCode = 'russian' | CourseProductCode;
+export type TeacherListingProductCode = 'teacher_listing';
+export type TeacherTrialProductCode = 'teacher_trial';
+export type TeacherProductCode = TeacherListingProductCode | TeacherTrialProductCode;
+export type PaymentProductCode = 'russian' | CourseProductCode | TeacherProductCode;
 export type PaymentProvider = 'manual' | 'click' | 'rahmat';
 
 export const SUBSCRIPTION_PRODUCT_CODE = 'russian' as const;
+export const TEACHER_LISTING_PRODUCT_CODE = 'teacher_listing' as const;
+export const TEACHER_TRIAL_PRODUCT_CODE = 'teacher_trial' as const;
 
 export const COURSE_PRODUCT_CODES: readonly CourseProductCode[] = ['patent', 'vnzh'] as const;
+export const TEACHER_PRODUCT_CODES: readonly TeacherProductCode[] = [
+  TEACHER_LISTING_PRODUCT_CODE,
+  TEACHER_TRIAL_PRODUCT_CODE,
+] as const;
 export const PAYMENT_PRODUCT_CODES: readonly PaymentProductCode[] = [
   SUBSCRIPTION_PRODUCT_CODE,
   ...COURSE_PRODUCT_CODES,
+  ...TEACHER_PRODUCT_CODES,
 ] as const;
 
 type CourseProductMeta = {
@@ -62,8 +72,12 @@ export function isCourseProductCode(value: unknown): value is CourseProductCode 
   return value === 'patent' || value === 'vnzh';
 }
 
+export function isTeacherProductCode(value: unknown): value is TeacherProductCode {
+  return value === TEACHER_LISTING_PRODUCT_CODE || value === TEACHER_TRIAL_PRODUCT_CODE;
+}
+
 export function isPaymentProductCode(value: unknown): value is PaymentProductCode {
-  return value === SUBSCRIPTION_PRODUCT_CODE || isCourseProductCode(value);
+  return value === SUBSCRIPTION_PRODUCT_CODE || isCourseProductCode(value) || isTeacherProductCode(value);
 }
 
 export function normalizePaymentProductCode(value: unknown): PaymentProductCode {
@@ -79,6 +93,8 @@ export function getCourseProductPrice(
 
 export function getPaymentProductLabel(productCode: PaymentProductCode): string {
   if (productCode === SUBSCRIPTION_PRODUCT_CODE) return 'Курс русского языка';
+  if (productCode === TEACHER_LISTING_PRODUCT_CODE) return 'O‘qituvchi ro‘yxati';
+  if (productCode === TEACHER_TRIAL_PRODUCT_CODE) return 'O‘qituvchi bilan sinov darsi';
   return COURSE_PRODUCT_META[productCode].label;
 }
 

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../server/types/dbClient';
 import { isMissingPointEventsError } from './pointEvents.js';
 
 export type PeriodLeaderboardKind = 'daily' | 'weekly';
@@ -39,7 +39,7 @@ function mapLeaderboardRow(row: PeriodLeaderboardRow | null | undefined): Period
 }
 
 export async function fetchPeriodLeaderboardFromEvents(
-  supabase: Pick<SupabaseClient, 'rpc'>,
+  supabase: Pick<DbClient, 'rpc'>,
   userId: number,
   period: PeriodLeaderboardKind,
   periodValue: string

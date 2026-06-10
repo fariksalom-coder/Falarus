@@ -1,5 +1,5 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabaseClient.js';
+import type { DbClient } from '../types/dbClient';
+import { supabase } from '../lib/dbFacadeClient.js';
 import { getAccessInfo } from './subscription.service.js';
 import { LESSONS } from '../../src/data/lessonsList.js';
 import { applyLessonsLock } from './accessControl.service.js';
@@ -19,7 +19,7 @@ export type GrammarCatalogPayload = {
 };
 
 export async function buildGrammarCatalogPayload(
-  sb: SupabaseClient,
+  sb: DbClient,
   userId: number,
 ): Promise<{ ok: true; payload: GrammarCatalogPayload } | { ok: false; error: string }> {
   const access = await getAccessInfo(sb, userId);

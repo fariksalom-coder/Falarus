@@ -25,7 +25,7 @@ const CONTENT_FILES = [
 ];
 
 function readMigration(name: string): string {
-  return fs.readFileSync(path.join(ROOT, 'supabase/migrations', name), 'utf8');
+  return fs.readFileSync(path.join(ROOT, 'db/migrations', name), 'utf8');
 }
 
 function extractRuWordTokens(text: string): string[] {
@@ -199,7 +199,7 @@ function main() {
   }
 
   let allSql = '';
-  const migDir = path.join(ROOT, 'supabase/migrations');
+  const migDir = path.join(ROOT, 'db/migrations');
   for (const name of fs.readdirSync(migDir).sort()) {
     if (!name.endsWith('.sql')) continue;
     allSql += fs.readFileSync(path.join(migDir, name), 'utf8') + '\n';

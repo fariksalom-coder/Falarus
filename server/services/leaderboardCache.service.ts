@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import { getCached, setCached, getRedis, LEADERBOARD_CACHE_KEY, LEADERBOARD_CACHE_TTL_SEC } from '../lib/redis.js';
 import * as leaderboardService from './leaderboard.service.js';
 
@@ -6,7 +6,7 @@ import * as leaderboardService from './leaderboard.service.js';
  * Get top 100 leaderboard: from Redis if present, else from PostgreSQL and cache 60s.
  */
 export async function getTop100Cached(
-  supabase: SupabaseClient
+  supabase: DbClient
 ): Promise<leaderboardService.LeaderboardEntry[]> {
   const cached = await getCached<leaderboardService.LeaderboardEntry[]>(LEADERBOARD_CACHE_KEY);
   if (cached != null) return cached;

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from './dbClient';
 
 export type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'PASSED';
 export type LessonStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
@@ -44,4 +44,4 @@ export type LessonProgressResponse = {
   >;
 };
 
-export type Supabase = SupabaseClient;
+export type DatabaseClient = DbClient;

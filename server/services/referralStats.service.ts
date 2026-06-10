@@ -1,4 +1,4 @@
-import type { Supabase } from '../types/referral';
+import type { DatabaseClient } from '../types/referral';
 import * as repo from '../repositories/referralRepository';
 
 export type ReferralStats = {
@@ -10,7 +10,7 @@ export type ReferralStats = {
 };
 
 export async function getReferralStats(
-  supabase: Supabase,
+  supabase: DatabaseClient,
   userId: number
 ): Promise<ReferralStats> {
   const [list, balanceRow] = await Promise.all([

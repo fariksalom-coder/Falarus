@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import { resolveFreeVocabularyIds } from '../lib/freeVocabularyIds';
 import {
   normalizePaymentProductCode,
@@ -73,7 +73,7 @@ function setCachedAccess(userId: number, access: AccessInfo): void {
  * Accepts status in any case (active, Active, ACTIVE).
  */
 export async function getActiveSubscription(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<SubscriptionRow | null> {
   const now = new Date().toISOString();
@@ -98,7 +98,7 @@ export async function getActiveSubscription(
  * Last resort: if user has any approved payment, grant access (in case plan_expires_at update failed).
  */
 export async function hasActiveAccess(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<boolean> {
   const uid = Number(userId);
@@ -142,7 +142,7 @@ export async function hasActiveAccess(
 }
 
 export async function hasApprovedCourseAccess(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   productCode: CourseProductCode
 ): Promise<boolean> {
@@ -178,7 +178,7 @@ export async function hasApprovedCourseAccess(
  * Uses in-memory cache (90s TTL) to avoid repeated DB queries on every page/request.
  */
 export async function getAccessInfo(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number
 ): Promise<AccessInfo> {
   const uid = Number(userId);
@@ -231,7 +231,7 @@ export async function getAccessInfo(
 }
 
 export async function createOrExtendSubscription(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   userId: number,
   planType: PlanType,
   expiresAt: Date

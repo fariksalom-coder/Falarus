@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { DbClient } from '../types/dbClient';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../middleware/adminAuth';
@@ -18,6 +18,7 @@ import { getClickConfig } from '../../shared/clickConfig.js';
 import { adminCreateUserWithAccess } from '../services/adminCreateUser.service.js';
 import { ensureSupportChatForUser } from '../lib/ensureSupportChat.js';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
+import { activateTeacherMarketplacePayment } from '../services/teacherMarketplace.service.js';
 
 const BROADCAST_FILTERS = [
   'subscription_active',
@@ -38,7 +39,7 @@ function isBroadcastFilter(f: string): f is BroadcastFilter {
 const MAX_BROADCAST_RECIPIENTS = 8000;
 
 async function collectBroadcastRecipientIds(
-  supabase: SupabaseClient,
+  supabase: DbClient,
   filter: BroadcastFilter
 ): Promise<{ ids: number[]; error?: string }> {
   const nowIso = new Date().toISOString();
@@ -153,7 +154,7 @@ async function collectBroadcastRecipientIds(
   return { ids: [] };
 }
 
-export function createAdminController(supabase: SupabaseClient) {
+export function createAdminController(supabase: DbClient) {
   /** Default 7 days (same order of magnitude as user JWT) — override via ADMIN_JWT_EXPIRES_SECONDS. */
   const tokenTtlSeconds = Number(process.env.ADMIN_JWT_EXPIRES_SECONDS || 60 * 60 * 24 * 7);
   const SUPPORT_ADMIN_NOTE_MARKER = '[ADMIN_NOTE]';
@@ -784,6 +785,7 @@ export function createAdminController(supabase: SupabaseClient) {
           ext
         );
       }
+      await activateTeacherMarketplacePayment(supabase, { paymentId: id, userId, productCode });
       subscriptionService.invalidateAccessCache(userId);
       try {
         const { invalidateLessonsCache } = await import('../cache/lessonsCache');
