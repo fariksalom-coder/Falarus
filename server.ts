@@ -125,16 +125,17 @@ const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
 const USER_PROFILE_SELECT_FULL =
-  'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz, account_type, avatar_url, gender';
+  'id, first_name, last_name, email, phone, level, onboarded, progress, plan_name, plan_expires_at, billing_notice_uz, account_type, avatar_url, gender';
 const USER_PROFILE_SELECT_LEGACY =
-  'id, first_name, last_name, email, phone, level, onboarded, progress';
+  'id, first_name, last_name, email, phone, level, onboarded, progress, avatar_url, gender';
 
 function isUserProfileSchemaError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
-  const code = 'code' in error ? (error as { code?: unknown }).code : null;
-  const message = 'message' in error ? (error as { message?: unknown }).message : '';
-  if (typeof code === 'string' && (code === 'PGRST204' || code === 'PGRST205')) return true;
-  return typeof message === 'string' && message.toLowerCase().includes('schema cache');
+  const code = 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+  const message = 'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
+  if (code === 'PGRST204' || code === 'PGRST205' || code === '42703') return true;
+  const lower = message.toLowerCase();
+  return lower.includes('schema cache') || lower.includes('does not exist');
 }
 
 function isDatabaseNoRowsError(error: unknown): boolean {
@@ -157,9 +158,17 @@ function isLessonTaskResultsSchemaError(error: unknown): boolean {
 }
 
 async function fetchUserProfileById(userId: number) {
-  let { data: user, error } = await supabase.from('users').select(USER_PROFILE_SELECT_FULL).eq('id', userId).maybeSingle();
-  if (error && (isUserProfileSchemaError(error) || !isDatabaseNoRowsError(error))) {
-    const legacy = await supabase.from('users').select(USER_PROFILE_SELECT_LEGACY).eq('id', userId).maybeSingle();
+  let { data: user, error } = await supabase
+    .from('users')
+    .select(USER_PROFILE_SELECT_FULL)
+    .eq('id', userId)
+    .maybeSingle();
+  if (error && isUserProfileSchemaError(error)) {
+    const legacy = await supabase
+      .from('users')
+      .select(USER_PROFILE_SELECT_LEGACY)
+      .eq('id', userId)
+      .maybeSingle();
     user = legacy.data as typeof user;
     error = legacy.error;
   }
