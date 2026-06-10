@@ -79,9 +79,9 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
         new Date(adminChat.last_message.created_at).getTime() > helpLastSeenMs));
 
   return (
-    <section className="mt-6">
-      <div className="mb-3 flex items-center justify-between px-1">
-        <h2 className="text-lg font-extrabold text-slate-900">Chatlar</h2>
+    <section className="mt-3">
+      <div className="mb-2 flex items-center justify-between px-0.5">
+        <h2 className="text-base font-extrabold text-slate-900">Chatlar</h2>
         {loading ? <span className="text-xs font-medium text-slate-400">Yuklanmoqda…</span> : null}
       </div>
 
@@ -89,9 +89,9 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
         <button
           type="button"
           onClick={onOpenAdmin}
-          className="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3.5 text-left transition-colors hover:bg-slate-50 active:bg-slate-100"
+          className="flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-3 text-left transition-colors hover:bg-slate-50 active:bg-slate-100"
         >
-          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.28)]">
+          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.28)]">
             <Headphones className="h-6 w-6" aria-hidden />
             <span className="absolute -right-0.5 -top-0.5 rounded-full bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-blue-600 shadow">
               pin
@@ -118,9 +118,9 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
         <button
           type="button"
           onClick={onOpenGroup}
-          className="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3.5 text-left transition-colors hover:bg-slate-50 active:bg-slate-100"
+          className="flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-3 text-left transition-colors hover:bg-slate-50 active:bg-slate-100"
         >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-[0_8px_20px_rgba(124,58,237,0.28)]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-[0_8px_20px_rgba(124,58,237,0.28)]">
             <Users className="h-6 w-6" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
@@ -154,9 +154,9 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
               key={match.id}
               type="button"
               onClick={() => onOpenPartner(match.id)}
-              className="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3.5 text-left transition-colors last:border-b-0 hover:bg-slate-50 active:bg-slate-100"
+              className="flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-3 text-left transition-colors last:border-b-0 hover:bg-slate-50 active:bg-slate-100"
             >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-bold text-white">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-bold text-white">
                 {initials(name)}
               </div>
               <div className="min-w-0 flex-1">
