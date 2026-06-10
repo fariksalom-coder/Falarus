@@ -3,6 +3,7 @@ import multer from 'multer';
 import type { DbClient } from '../types/dbClient';
 import {
   getCourseProductPrice,
+  getTeacherListingPriceUzs,
   isCourseProductCode,
   isCurrencyCode,
   isPaymentProductCode,
@@ -41,7 +42,11 @@ import {
   handleRahmatMulticardCallback,
 } from '../services/rahmatMulticardPayment.service.js';
 import { confirmStorePurchase } from '../services/storePurchasePayment.service.js';
-import { activateTeacherMarketplacePayment } from '../services/teacherMarketplace.service.js';
+import {
+  activateTeacherMarketplacePayment,
+  ensureTeacherListingSubscription,
+  parseTeacherListingPlanCode,
+} from '../services/teacherMarketplace.service.js';
 
 const PAYMENT_PROOFS_BUCKET = 'payment-proofs';
 const ALLOWED_MIMES = [
@@ -297,8 +302,27 @@ export function createPaymentRoutes(
       if (!isCurrencyCode(currency)) {
         return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
       }
+      if (productCode === 'teacher_listing' && currency !== 'UZS') {
+        return res.status(400).json({ error: "O'qituvchi ro'yxati uchun faqat UZS" });
+      }
       if (!file || !file.buffer) {
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
+      }
+
+      const listingPlanCode =
+        productCode === 'teacher_listing' ? parseTeacherListingPlanCode(req.body ?? {}) : null;
+      if (productCode === 'teacher_listing' && !listingPlanCode) {
+        return res.status(400).json({ error: 'listing_plan_code kerak' });
+      }
+      if (productCode === 'teacher_listing') {
+        const { data: account } = await supabase
+          .from('users')
+          .select('account_type')
+          .eq('id', userId)
+          .maybeSingle();
+        if ((account as { account_type?: string } | null)?.account_type !== 'teacher') {
+          return res.status(403).json({ error: "Bu to'lov faqat o'qituvchilar uchun" });
+        }
       }
 
       let { data: pending, error: pendingErr } = await supabase
@@ -359,6 +383,10 @@ export function createPaymentRoutes(
       } else if (isCourseProductCode(productCode)) {
         amount = getCourseProductPrice(productCode, currency);
         baseAmount = amount;
+      } else if (productCode === 'teacher_listing' && listingPlanCode) {
+        amount = getTeacherListingPriceUzs(listingPlanCode);
+        baseAmount = amount;
+        discountMeta = { listing_plan_code: listingPlanCode };
       }
 
       try {
@@ -422,7 +450,17 @@ export function createPaymentRoutes(
           console.error('[payments insert]', insertErr);
           return res.status(500).json({ error: insertErr.message });
         }
-        return res.json({ success: true, id: (row as any).id });
+        const paymentId = Number((row as any).id);
+        if (productCode === 'teacher_listing' && listingPlanCode) {
+          try {
+            await ensureTeacherListingSubscription(supabase, userId, paymentId, listingPlanCode);
+          } catch (subErr) {
+            await supabase.from('payments').delete().eq('id', paymentId);
+            const message = subErr instanceof Error ? subErr.message : 'Obuna yaratilmadi';
+            return res.status(400).json({ error: message });
+          }
+        }
+        return res.json({ success: true, id: paymentId });
       } catch (e) {
         console.error('[POST /api/payments]', e);
         return res.status(500).json({ error: 'Xatolik yuz berdi' });

@@ -1,18 +1,53 @@
 import { useEffect, useId, useMemo, useState, type ChangeEvent } from 'react';
-import { Bell, CalendarCheck, Camera, CheckCircle2, CreditCard, GraduationCap, Save, UserRound } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import {
+  Bell,
+  CalendarCheck,
+  Camera,
+  CheckCircle2,
+  CreditCard,
+  GraduationCap,
+  Pencil,
+  Save,
+  UserRound,
+} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { resolveAssetUrl } from '../api';
 import { bustAvatarUrl, uploadUserAvatar } from '../api/user';
 import UserAvatar from '../components/UserAvatar';
+import { RahmatCoursePayButton } from '../components/pricing/RahmatCoursePayButton';
 import { useAuth } from '../context/AuthContext';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import {
   completeTeacherTrial,
-  createTeacherListingPayment,
   getTeacherCabinet,
   saveTeacherProfile,
   type TeacherCabinet,
+  type TeacherProfile,
   type TeacherProfilePayload,
 } from '../api/teachers';
+import {
+  resolveTeacherListingPlanCode,
+  TEACHER_LISTING_PLAN_MONTH,
+  TEACHER_LISTING_PLAN_FIRST,
+  TEACHER_LISTING_PRICES_UZS,
+  TEACHER_LISTING_PRODUCT_CODE,
+} from '../../shared/paymentProducts';
+import { invalidatePaymentsCache } from '../api/payment';
+
+const LISTING_BENEFITS = [
+  "FalaRus'dagi «O'qituvchilar» ro'yxatida ko'rinish",
+  "O'quvchilar sizning anketangiz, tajribangiz va narxni ko'radi",
+  'Sinov darsi yozilganda bildirishnoma va ichki chat',
+  "To'lovdan keyin profil 1 oy davomida faol bo'ladi",
+  "Keyingi oylar uchun ro'yxatni uzaytirish mumkin",
+];
+
+const TRIAL_LESSON_INFO = [
+  "O'quvchi sinov darsi uchun 490 ₽ (~73 500 so'm) to'laydi",
+  "To'lovdan keyin sizga o'quvchi kontakti va chat ochiladi",
+  "Darsni yakunlaganingizdan so'ng o'quvchi fikr qoldiradi",
+  'Sinov darslari shu kabinetda ko\'rinadi',
+];
 
 const emptyForm: TeacherProfilePayload = {
   first_name: '',
@@ -68,7 +103,9 @@ function formatLessonStatus(value: string | null | undefined): string {
 }
 
 export default function TeacherCabinetPage() {
+  const navigate = useNavigate();
   const { token, user, updateUser } = useAuth();
+  const { payments, refreshPayments } = usePaymentStatus();
   const isTeacherAccount = user?.accountType === 'teacher';
   const avatarInputId = useId();
   const [cabinet, setCabinet] = useState<TeacherCabinet | null>(null);
@@ -79,12 +116,17 @@ export default function TeacherCabinetPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   const profile = cabinet?.profile ?? null;
   const listingActive = isActiveUntil(profile?.listing_paid_until);
+  const listingPlanCode = resolveTeacherListingPlanCode(Boolean(profile?.first_listing_discount_used));
+  const listingPrice = TEACHER_LISTING_PRICES_UZS[listingPlanCode];
+  const hasPendingListingPayment = payments.some(
+    (p) => p.status === 'pending' && p.product_code === TEACHER_LISTING_PRODUCT_CODE,
+  );
 
   const completedLessons = useMemo(
     () => (cabinet?.trial_lessons ?? []).filter((lesson) => String(lesson.status).includes('completed')).length,
@@ -116,6 +158,7 @@ export default function TeacherCabinetPage() {
           public_phone_e164: p.public_phone_e164 ?? '',
         });
         setAvatarUrl(p.avatar_url ?? user?.avatarUrl ?? null);
+        setEditingProfile(false);
       } else {
         setForm({
           ...emptyForm,
@@ -124,6 +167,7 @@ export default function TeacherCabinetPage() {
           public_phone_e164: user?.phone ?? '',
         });
         setAvatarUrl(user?.avatarUrl ?? null);
+        setEditingProfile(true);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Kabinet yuklanmadi");
@@ -200,7 +244,8 @@ export default function TeacherCabinetPage() {
       });
       setAvatarUrl(saved.avatar_url ?? avatarUrl);
       setCabinet((prev) => ({ ...(prev ?? { trial_lessons: [], notifications: [], listing_subscriptions: [] }), profile: saved }));
-      setMessage("Anketa saqlandi. Admin tekshirgandan keyin ro'yxatda ko'rinadi.");
+      setEditingProfile(false);
+      setMessage("Anketa saqlandi. Endi ro'yxat uchun to'lovni amalga oshiring.");
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Anketa saqlanmadi');
     } finally {
@@ -208,23 +253,16 @@ export default function TeacherCabinetPage() {
     }
   }
 
-  async function handleListingPayment() {
-    if (!token) return;
-    setPaymentLoading(true);
-    setError('');
-    setMessage('');
-    try {
-      const out = await createTeacherListingPayment(
-        token,
-        profile?.first_listing_discount_used ? 'teacher_listing_month_uzs' : 'teacher_listing_first_month_uzs',
-      );
-      setMessage(`To'lov yaratildi: #${out.payment.id}. Admin tasdiqlagandan keyin profil faollashadi.`);
-      await loadCabinet();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "To'lov yaratilmadi");
-    } finally {
-      setPaymentLoading(false);
-    }
+  function goToCardTransfer() {
+    navigate('/payment', {
+      state: {
+        productCode: TEACHER_LISTING_PRODUCT_CODE,
+        productLabel: "O'qituvchi ro'yxati · 1 oy",
+        listingPlanCode,
+        currency: 'UZS',
+        returnTo: '/teacher-cabinet',
+      },
+    });
   }
 
   async function handleCompleteTrial(id: number) {
@@ -303,10 +341,35 @@ export default function TeacherCabinetPage() {
         {error ? <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div> : null}
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-4 flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-blue-700" />
-            <h2 className="text-lg font-bold text-slate-950">O'quvchilar uchun anketa</h2>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-blue-700" />
+              <h2 className="text-lg font-bold text-slate-950">O'quvchilar uchun anketa</h2>
+            </div>
+            {profile && !editingProfile ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProfile(true);
+                  setMessage('');
+                  setError('');
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50"
+              >
+                <Pencil className="h-4 w-4" />
+                Tahrirlash
+              </button>
+            ) : null}
           </div>
+
+          {profile && !editingProfile ? (
+            <ProfileSummary
+              profile={profile}
+              avatarUrl={avatarDisplayUrl(avatarUrl)}
+              form={form}
+            />
+          ) : (
+            <>
           <div className="mb-5 flex flex-col items-center gap-3 sm:flex-row sm:items-start">
             <label
               htmlFor={avatarInputId}
@@ -394,22 +457,127 @@ export default function TeacherCabinetPage() {
               <Save className="h-5 w-5" />
               {saving ? 'Saqlanmoqda...' : 'Anketani saqlash'}
             </button>
-            <button
-              type="button"
-              onClick={handleListingPayment}
-              disabled={paymentLoading || !profile}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 font-bold text-white disabled:opacity-40"
-            >
-              <CreditCard className="h-5 w-5" />
-              {profile?.first_listing_discount_used ? "299 000 so'm to'lov yaratish" : "69 000 so'm to'lov yaratish"}
-            </button>
+            {profile && editingProfile ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProfile(false);
+                  setError('');
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 font-bold text-slate-700"
+              >
+                Bekor qilish
+              </button>
+            ) : null}
           </div>
+            </>
+          )}
         </section>
+
+        {profile ? (
+          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div className="mb-4 flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-blue-700" />
+              <h2 className="text-lg font-bold text-slate-950">Ro'yxat uchun oylik to'lov</h2>
+            </div>
+
+            {listingActive ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+                <p className="font-bold text-emerald-800">Profil faol</p>
+                <p className="mt-1 text-sm text-emerald-900/80">
+                  Ro'yxat muddati: {formatDate(profile.listing_paid_until)}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-4">
+                  <p className="text-sm font-bold text-slate-900">To'lov qilgandan keyin nima olasiz:</p>
+                  <ul className="mt-3 space-y-2">
+                    {LISTING_BENEFITS.map((item) => (
+                      <li key={item} className="flex gap-2 text-sm font-medium text-slate-700">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" aria-hidden />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <p className="text-sm font-bold text-slate-900">Narxlar</p>
+                  <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
+                    <li>
+                      <span className="font-bold text-blue-700">
+                        {TEACHER_LISTING_PRICES_UZS[TEACHER_LISTING_PLAN_FIRST].toLocaleString('uz-UZ')} so'm
+                      </span>
+                      {' '}
+                      — birinchi oy (promo)
+                    </li>
+                    <li>
+                      <span className="font-bold text-slate-900">
+                        {TEACHER_LISTING_PRICES_UZS[TEACHER_LISTING_PLAN_MONTH].toLocaleString('uz-UZ')} so'm
+                      </span>
+                      {' '}
+                      — keyingi har bir oy
+                    </li>
+                  </ul>
+                  <p className="mt-3 text-sm font-semibold text-slate-800">
+                    Hozir to'lanadi:{' '}
+                    <span className="text-lg text-blue-700">
+                      {listingPrice.toLocaleString('uz-UZ')} so'm
+                    </span>
+                  </p>
+                </div>
+
+                {hasPendingListingPayment ? (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                    To'lovingiz tekshirilmoqda. Admin tasdiqlagach profil faollashadi.
+                  </div>
+                ) : (
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                    <RahmatCoursePayButton
+                      token={token}
+                      productCode={TEACHER_LISTING_PRODUCT_CODE}
+                      listingPlanCode={listingPlanCode}
+                      disabled={!profile}
+                      onSuccess={() => {
+                        if (token) invalidatePaymentsCache(token);
+                        void refreshPayments();
+                        setMessage("Rahmat to'lovi yaratildi. To'lovni yakunlang.");
+                      }}
+                      onError={(text) => setError(text)}
+                      label="Rahmat orqali to'lash"
+                    />
+                    <button
+                      type="button"
+                      onClick={goToCardTransfer}
+                      disabled={!profile}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-blue-600 bg-white px-5 py-3 text-base font-semibold text-blue-700 disabled:opacity-40"
+                    >
+                      <CreditCard className="h-5 w-5" />
+                      Karta orqali o'tkazish
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        ) : null}
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex items-center gap-2">
             <Bell className="h-5 w-5 text-blue-700" />
             <h2 className="text-lg font-bold text-slate-950">Sinov darslari</h2>
+          </div>
+          <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
+            <p className="text-sm font-bold text-slate-900">Sinov darsi qanday ishlaydi</p>
+            <ul className="mt-3 space-y-2">
+              {TRIAL_LESSON_INFO.map((item) => (
+                <li key={item} className="flex gap-2 text-sm font-medium text-slate-700">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="space-y-3">
             {(cabinet?.trial_lessons ?? []).length === 0 ? (
@@ -440,6 +608,58 @@ export default function TeacherCabinetPage() {
           </div>
         </section>
       </main>
+    </div>
+  );
+}
+
+function ProfileSummary({
+  profile,
+  avatarUrl,
+  form,
+}: {
+  profile: TeacherProfile;
+  avatarUrl: string | null;
+  form: TeacherProfilePayload;
+}) {
+  const contact = profile.telegram_username
+    ? `@${String(profile.telegram_username).replace(/^@+/, '')}`
+    : profile.public_phone_e164 || '—';
+
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+      <UserAvatar
+        avatarUrl={avatarUrl}
+        name={`${form.first_name} ${form.last_name}`.trim()}
+        className="h-20 w-20 shrink-0 ring-4 ring-white shadow-md"
+      />
+      <div className="min-w-0 flex-1 space-y-3">
+        <div>
+          <p className="text-xl font-bold text-slate-950">
+            {form.first_name} {form.last_name}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            {form.age} yosh · {form.experience_years} yil {form.experience_months} oy tajriba
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            {[form.region, form.city].filter(Boolean).join(', ') || 'Joylashuv kiritilmagan'}
+          </p>
+        </div>
+        <div className="grid gap-2 text-sm sm:grid-cols-2">
+          <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+            <p className="text-xs font-bold uppercase text-slate-500">Oylik kurs</p>
+            <p className="mt-0.5 font-semibold text-slate-900">
+              {Number(form.monthly_course_price_amount ?? 0).toLocaleString('ru-RU')} {form.monthly_course_price_currency ?? 'RUB'}
+            </p>
+          </div>
+          <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+            <p className="text-xs font-bold uppercase text-slate-500">Bog'lanish</p>
+            <p className="mt-0.5 font-semibold text-slate-900">{contact}</p>
+          </div>
+        </div>
+        {form.about ? (
+          <p className="rounded-xl bg-slate-50 px-3 py-2.5 text-sm leading-relaxed text-slate-700">{form.about}</p>
+        ) : null}
+      </div>
     </div>
   );
 }

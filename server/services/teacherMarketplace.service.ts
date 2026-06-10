@@ -1,4 +1,44 @@
 import type { DbClient } from '../types/dbClient';
+import {
+  isTeacherListingPlanCode,
+  type TeacherListingPlanCode,
+} from '../../shared/paymentProducts.js';
+
+export async function ensureTeacherListingSubscription(
+  supabase: DbClient,
+  teacherUserId: number,
+  paymentId: number,
+  planCode: TeacherListingPlanCode
+): Promise<void> {
+  const { data: profile } = await supabase
+    .from('teacher_profiles')
+    .select('user_id')
+    .eq('user_id', teacherUserId)
+    .maybeSingle();
+  if (!profile) {
+    throw new Error("Avval o'qituvchi anketasini to'ldiring");
+  }
+
+  const { data: existing } = await supabase
+    .from('teacher_listing_subscriptions')
+    .select('id')
+    .eq('payment_id', paymentId)
+    .maybeSingle();
+  if (existing) return;
+
+  const { error } = await supabase.from('teacher_listing_subscriptions').insert({
+    teacher_user_id: teacherUserId,
+    payment_id: paymentId,
+    plan_code: planCode,
+    status: 'pending',
+  });
+  if (error) throw error;
+}
+
+export function parseTeacherListingPlanCode(body: Record<string, unknown>): TeacherListingPlanCode | null {
+  const raw = body.listing_plan_code ?? body.listingPlanCode ?? body.plan_code ?? body.planCode;
+  return isTeacherListingPlanCode(raw) ? raw : null;
+}
 
 async function shareTrialContactsAndOpenChat(
   supabase: DbClient,

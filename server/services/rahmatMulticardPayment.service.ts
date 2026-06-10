@@ -21,6 +21,11 @@ import {
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
+import { getTeacherListingPriceUzs } from '../../shared/paymentProducts.js';
+import {
+  ensureTeacherListingSubscription,
+  parseTeacherListingPlanCode,
+} from './teacherMarketplace.service.js';
 import {
   embedFalarusProductInProofUrl,
   inferCourseProductFromPaymentAmount,
@@ -95,6 +100,21 @@ export async function createRahmatMulticardPayment(
   if (productCode === 'russian' && !russianTariffType) {
     return { status: 400, json: { error: 'tariff_type kerak: month, year' } };
   }
+  const listingPlanCode =
+    productCode === 'teacher_listing' ? parseTeacherListingPlanCode(body as Record<string, unknown>) : null;
+  if (productCode === 'teacher_listing' && !listingPlanCode) {
+    return { status: 400, json: { error: 'listing_plan_code kerak' } };
+  }
+  if (productCode === 'teacher_listing') {
+    const { data: account } = await supabase
+      .from('users')
+      .select('account_type')
+      .eq('id', userId)
+      .maybeSingle();
+    if ((account as { account_type?: string } | null)?.account_type !== 'teacher') {
+      return { status: 403, json: { error: "Bu to'lov faqat o'qituvchilar uchun" } };
+    }
+  }
 
   let { data: pending, error: pendingErr } = await supabase
     .from('payments')
@@ -167,6 +187,10 @@ export async function createRahmatMulticardPayment(
             tariff_type: quote.tariffType,
           }
         : null;
+  } else if (productCode === 'teacher_listing' && listingPlanCode) {
+    amount = getTeacherListingPriceUzs(listingPlanCode);
+    baseAmount = amount;
+    discountMeta = { listing_plan_code: listingPlanCode };
   } else {
     amount = getClickAmountForProduct({
       productCode,
@@ -216,6 +240,15 @@ export async function createRahmatMulticardPayment(
   }
 
   const paymentId = Number((row as { id: number }).id);
+  if (productCode === 'teacher_listing' && listingPlanCode) {
+    try {
+      await ensureTeacherListingSubscription(supabase, userId, paymentId, listingPlanCode);
+    } catch (subErr) {
+      await supabase.from('payments').delete().eq('id', paymentId);
+      const message = subErr instanceof Error ? subErr.message : 'Obuna yaratilmadi';
+      return { status: 400, json: { error: message } };
+    }
+  }
   const invoiceId = String(paymentId);
   const amountTiyin = soumToTiyin(amount);
   const ofdName = getPaymentDisplayLabel(productCode, productCode === 'russian' ? russianTariffType : null);

@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { openRahmatCheckout } from '../../api/rahmat';
-import type { PaymentProductCode, SubscriptionTariffType } from '../../../shared/paymentProducts';
+import type {
+  PaymentProductCode,
+  SubscriptionTariffType,
+  TeacherListingPlanCode,
+} from '../../../shared/paymentProducts';
 
 type Props = {
   token: string | null;
   productCode: PaymentProductCode;
   tariffType?: SubscriptionTariffType;
+  listingPlanCode?: TeacherListingPlanCode;
   disabled?: boolean;
   compact?: boolean;
   onSuccess?: () => void | Promise<void>;
@@ -19,6 +24,7 @@ export function RahmatCoursePayButton({
   token,
   productCode,
   tariffType,
+  listingPlanCode,
   disabled,
   compact = false,
   onSuccess,
@@ -37,6 +43,10 @@ export function RahmatCoursePayButton({
       onError('Tarif turi topilmadi. Sahifani yangilang.');
       return;
     }
+    if (productCode === 'teacher_listing' && !listingPlanCode) {
+      onError('To‘lov rejasi topilmadi. Sahifani yangilang.');
+      return;
+    }
     setLoading(true);
     onStarted?.();
     try {
@@ -44,6 +54,7 @@ export function RahmatCoursePayButton({
         token,
         productCode,
         tariffType: productCode === 'russian' ? tariffType : null,
+        listingPlanCode,
         afterCreate: onSuccess,
       });
     } catch (e) {

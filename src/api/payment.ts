@@ -4,6 +4,7 @@ import {
   normalizePaymentProductCode,
   type PaymentProductCode,
   type SubscriptionTariffType,
+  type TeacherListingPlanCode,
 } from '../../shared/paymentProducts';
 
 export type TariffType = SubscriptionTariffType;
@@ -46,12 +47,14 @@ export async function submitPayment(
     productCode: PaymentProductCode;
     currency: Currency;
     file: File;
+    listingPlanCode?: TeacherListingPlanCode;
   }
 ): Promise<{ success: true; id: number }> {
   const form = new FormData();
   if (payload.tariffType) form.append('tariff_type', payload.tariffType);
   form.append('product_code', payload.productCode);
   form.append('currency', payload.currency);
+  if (payload.listingPlanCode) form.append('listing_plan_code', payload.listingPlanCode);
   form.append('payment_time', new Date().toISOString());
   form.append('upload_file', payload.file);
 

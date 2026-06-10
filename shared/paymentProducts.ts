@@ -11,6 +11,30 @@ export const SUBSCRIPTION_PRODUCT_CODE = 'russian' as const;
 export const TEACHER_LISTING_PRODUCT_CODE = 'teacher_listing' as const;
 export const TEACHER_TRIAL_PRODUCT_CODE = 'teacher_trial' as const;
 
+export const TEACHER_LISTING_PLAN_FIRST = 'teacher_listing_first_month_uzs' as const;
+export const TEACHER_LISTING_PLAN_MONTH = 'teacher_listing_month_uzs' as const;
+
+export type TeacherListingPlanCode =
+  | typeof TEACHER_LISTING_PLAN_FIRST
+  | typeof TEACHER_LISTING_PLAN_MONTH;
+
+export const TEACHER_LISTING_PRICES_UZS: Record<TeacherListingPlanCode, number> = {
+  [TEACHER_LISTING_PLAN_FIRST]: 69_000,
+  [TEACHER_LISTING_PLAN_MONTH]: 299_000,
+};
+
+export function isTeacherListingPlanCode(value: unknown): value is TeacherListingPlanCode {
+  return value === TEACHER_LISTING_PLAN_FIRST || value === TEACHER_LISTING_PLAN_MONTH;
+}
+
+export function resolveTeacherListingPlanCode(firstDiscountUsed: boolean): TeacherListingPlanCode {
+  return firstDiscountUsed ? TEACHER_LISTING_PLAN_MONTH : TEACHER_LISTING_PLAN_FIRST;
+}
+
+export function getTeacherListingPriceUzs(planCode: TeacherListingPlanCode): number {
+  return TEACHER_LISTING_PRICES_UZS[planCode];
+}
+
 export const COURSE_PRODUCT_CODES: readonly CourseProductCode[] = ['patent', 'vnzh'] as const;
 export const TEACHER_PRODUCT_CODES: readonly TeacherProductCode[] = [
   TEACHER_LISTING_PRODUCT_CODE,

@@ -2,11 +2,14 @@ import { createHash } from 'node:crypto';
 import {
   getCourseProductPrice,
   getPaymentProductLabel,
+  getTeacherListingPriceUzs,
   isCourseProductCode,
   isSubscriptionTariffType,
+  isTeacherListingPlanCode,
   type PaymentProductCode,
   type PaymentProvider,
   type SubscriptionTariffType,
+  type TeacherListingPlanCode,
 } from './paymentProducts.js';
 
 export type ClickCallbackPayload = {
@@ -164,6 +167,7 @@ export function getClickAmountForProduct(params: {
   productCode: PaymentProductCode;
   tariffType?: SubscriptionTariffType | null;
   tariffPrices?: { month: number; year: number } | null;
+  listingPlanCode?: TeacherListingPlanCode | null;
 }): number {
   if (params.productCode === 'russian') {
     if (!params.tariffType) return 0;
@@ -173,6 +177,9 @@ export function getClickAmountForProduct(params: {
   }
   if (isCourseProductCode(params.productCode)) {
     return getCourseProductPrice(params.productCode, 'UZS');
+  }
+  if (params.productCode === 'teacher_listing' && isTeacherListingPlanCode(params.listingPlanCode)) {
+    return getTeacherListingPriceUzs(params.listingPlanCode);
   }
   return 0;
 }

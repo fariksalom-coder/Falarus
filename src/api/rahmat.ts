@@ -1,5 +1,9 @@
 import { apiUrl } from '../api';
-import type { PaymentProductCode, SubscriptionTariffType } from '../../shared/paymentProducts';
+import type {
+  PaymentProductCode,
+  SubscriptionTariffType,
+  TeacherListingPlanCode,
+} from '../../shared/paymentProducts';
 
 export type RahmatPaymentCreateResponse = {
   success: true;
@@ -14,6 +18,7 @@ export async function createRahmatPayment(
   payload: {
     tariffType?: SubscriptionTariffType | null;
     productCode: PaymentProductCode;
+    listingPlanCode?: TeacherListingPlanCode;
   }
 ): Promise<RahmatPaymentCreateResponse> {
   const res = await fetch(apiUrl('/api/payments/rahmat/create'), {
@@ -25,6 +30,7 @@ export async function createRahmatPayment(
     body: JSON.stringify({
       tariff_type: payload.tariffType ?? null,
       product_code: payload.productCode,
+      listing_plan_code: payload.listingPlanCode ?? null,
     }),
   });
   const raw = await res.text();
@@ -66,17 +72,22 @@ export async function openRahmatCheckout(params: {
   token: string;
   productCode: PaymentProductCode;
   tariffType?: SubscriptionTariffType | null;
+  listingPlanCode?: TeacherListingPlanCode;
   /** To‘lov yaratilgach, redirectdan oldin (masalan, modal yopish / cache yangilash) */
   afterCreate?: () => void | Promise<void>;
 }): Promise<void> {
   if (params.productCode === 'russian' && !params.tariffType) {
     throw new Error('Tarif turi topilmadi. Sahifani yangilang.');
   }
+  if (params.productCode === 'teacher_listing' && !params.listingPlanCode) {
+    throw new Error('To‘lov rejasi topilmadi. Sahifani yangilang.');
+  }
   const popup = window.open('', '_blank');
   try {
     const result = await createRahmatPayment(params.token, {
       tariffType: params.productCode === 'russian' ? params.tariffType ?? null : null,
       productCode: params.productCode,
+      listingPlanCode: params.listingPlanCode,
     });
     await params.afterCreate?.();
     const url = result.payment_url;

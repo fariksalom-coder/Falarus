@@ -7,9 +7,13 @@ import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import {
   getCourseProductPrice,
   getPaymentProductLabel,
+  getTeacherListingPriceUzs,
   isCourseProductCode,
+  isTeacherListingPlanCode,
   normalizePaymentProductCode,
+  TEACHER_LISTING_PRODUCT_CODE,
   type PaymentProductCode,
+  type TeacherListingPlanCode,
 } from '../../shared/paymentProducts';
 import {
   Copy,
@@ -75,6 +79,7 @@ export default function PaymentPage() {
     tariffLabel?: string;
     productCode?: PaymentProductCode;
     productLabel?: string;
+    listingPlanCode?: TeacherListingPlanCode;
     returnTo?: string;
   } | null;
 
@@ -96,17 +101,22 @@ export default function PaymentPage() {
 
   const productCode = normalizePaymentProductCode(state?.productCode);
   const isRussianCourse = productCode === 'russian';
+  const isTeacherListing = productCode === TEACHER_LISTING_PRODUCT_CODE;
+  const listingPlanCode = isTeacherListingPlanCode(state?.listingPlanCode) ? state.listingPlanCode : null;
   const tariffType = state?.tariffType ?? (isRussianCourse ? 'month' : undefined);
   const currency = state?.currency ?? 'UZS';
   const tariffLabel = state?.tariffLabel ?? '1 OY';
   const productLabel = state?.productLabel ?? getPaymentProductLabel(productCode);
+  const afterPayPath = state?.returnTo ?? (isTeacherListing ? '/teacher-cabinet' : '/profile');
   const backPath =
     state?.returnTo ??
     (productCode === 'patent'
       ? '/kurslar/patent'
       : productCode === 'vnzh'
         ? '/kurslar/vnzh'
-        : '/tariflar');
+        : isTeacherListing
+          ? '/teacher-cabinet'
+          : '/tariflar');
 
   useEffect(() => {
     setHasPendingPayment(
@@ -148,7 +158,11 @@ export default function PaymentPage() {
           });
           return;
         }
-        setPrice(isCourseProductCode(productCode) ? getCourseProductPrice(productCode, currency) : null);
+        if (isTeacherListing && listingPlanCode) {
+          setPrice(getTeacherListingPriceUzs(listingPlanCode));
+        } else {
+          setPrice(isCourseProductCode(productCode) ? getCourseProductPrice(productCode, currency) : null);
+        }
         setPromoMeta(null);
       })
       .catch(() => {
@@ -160,7 +174,7 @@ export default function PaymentPage() {
         setPrice(null);
       })
       .finally(() => setDetailsLoading(false));
-  }, [currency, isRussianCourse, productCode, tariffType, token]);
+  }, [currency, isRussianCourse, isTeacherListing, listingPlanCode, productCode, tariffType, token]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -209,6 +223,7 @@ export default function PaymentPage() {
         productCode,
         currency,
         file,
+        listingPlanCode: isTeacherListing ? listingPlanCode ?? undefined : undefined,
       });
       await refreshPayments();
       setSuccess(true);
@@ -221,7 +236,11 @@ export default function PaymentPage() {
     }
   };
 
-  const hasValidState = isRussianCourse ? Boolean(state?.tariffType) : Boolean(state?.productCode);
+  const hasValidState = isRussianCourse
+    ? Boolean(state?.tariffType)
+    : isTeacherListing
+      ? Boolean(listingPlanCode)
+      : Boolean(state?.productCode);
 
   if (!hasValidState && !hasPendingPayment && !paymentsLoading) {
     navigate(backPath, { replace: true });
@@ -247,11 +266,11 @@ export default function PaymentPage() {
           </p>
           <button
             type="button"
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate(afterPayPath)}
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
             style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            Profilga o'tish
+            {isTeacherListing ? 'Kabinetga qaytish' : "Profilga o'tish"}
           </button>
         </div>
       </div>
@@ -274,11 +293,11 @@ export default function PaymentPage() {
           </p>
           <button
             type="button"
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate(afterPayPath)}
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
             style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            Profilga o'tish
+            {isTeacherListing ? 'Kabinetga qaytish' : "Profilga o'tish"}
           </button>
         </div>
       </div>
@@ -312,7 +331,11 @@ export default function PaymentPage() {
             <div>
               <h2 className="text-lg font-bold text-slate-900 mb-1">To'lov summasi</h2>
               <p className="text-slate-600 text-sm mb-1">
-                {isRussianCourse ? `Tarif: ${tariffLabel}` : `Kurs: ${productLabel}`}
+                {isRussianCourse
+                  ? `Tarif: ${tariffLabel}`
+                  : isTeacherListing
+                    ? `Xizmat: ${productLabel}`
+                    : `Kurs: ${productLabel}`}
               </p>
               <p className="text-slate-600 text-sm">Iltimos, aynan shu summani o'tkazing.</p>
             </div>
