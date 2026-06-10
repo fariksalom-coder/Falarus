@@ -3,7 +3,6 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import {
   Bell,
   BookOpen,
-  ChevronLeft,
   ChevronRight,
   CircleDollarSign,
   CircleHelp,
@@ -38,31 +37,36 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#EEF4FA] pb-[88px]">
-      <main className="mx-auto w-full max-w-[440px] px-4 pt-[76px]">
-        <h1 className="text-[55px] font-black leading-none tracking-tight text-[#0F172A]">Profil</h1>
+    <div className="min-h-full bg-[#EEF4FA] px-4 pb-6 pt-2">
+      <main className="mx-auto w-full max-w-[820px]">
+        <header className="mb-5">
+          <h1 className="text-[32px] font-black leading-tight tracking-tight text-[#0F172A] sm:text-[40px]">
+            Profil
+          </h1>
+          <p className="mt-1 text-sm font-medium text-[#64748B]">Hisob va sozlamalar</p>
+        </header>
 
-        <section className="mt-[52px] flex flex-col items-center">
+        <section className="mb-6 flex flex-col items-center rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
           <UserAvatar
             avatarUrl={user?.avatarUrl}
             gender={user?.gender ?? null}
             name={fullName}
-            className="h-[97px] w-[97px]"
+            className="h-20 w-20"
           />
-          <h2 className="mt-5 text-[29px] font-black leading-none text-[#0F172A]">{fullName}</h2>
+          <h2 className="mt-3 text-center text-lg font-extrabold text-[#0F172A]">{fullName}</h2>
 
-          <div className="mt-6 flex items-center justify-center gap-5">
-            <div className="flex h-10 min-w-[122px] items-center justify-center gap-2 rounded-full bg-[#FFC425] px-5 text-[#0F172A]">
-              <Crown className="h-5 w-5 fill-[#0F172A]" aria-hidden />
-              <span className="text-[18px] font-black">VIP</span>
+          <div className="mt-4 flex items-center justify-center gap-2.5">
+            <div className="flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#FFC425] px-4 text-[#0F172A]">
+              <Crown className="h-4 w-4 fill-[#0F172A]" aria-hidden />
+              <span className="text-sm font-extrabold">VIP</span>
             </div>
             <button
               type="button"
               onClick={() => navigate('/profile/settings')}
-              className="flex h-10 min-w-[122px] items-center justify-center gap-3 rounded-full bg-[#24459A] px-5 text-white"
+              className="flex h-9 items-center justify-center gap-2 rounded-full bg-[#24459A] px-4 text-white active:scale-[0.98]"
             >
-              <span className="text-[16px] font-bold">Tahrirlash</span>
-              <Pencil className="h-5 w-5" aria-hidden />
+              <span className="text-sm font-bold">Tahrirlash</span>
+              <Pencil className="h-4 w-4" aria-hidden />
             </button>
           </div>
         </section>
@@ -78,10 +82,8 @@ export default function ProfilePage() {
             icon={<Type />}
             label="Matn hajmi"
             trailing={
-              <div className="flex h-9 min-w-[112px] items-center justify-center gap-3 rounded-full bg-[#0F4598] px-3 text-white">
-                <ChevronLeft className="h-5 w-5" aria-hidden />
-                <span className="text-[16px] font-bold">1.0 x</span>
-                <ChevronRight className="h-5 w-5" aria-hidden />
+              <div className="flex h-8 min-w-[96px] items-center justify-center gap-2 rounded-full bg-[#2563EB] px-2.5 text-white">
+                <span className="text-xs font-bold">1.0 x</span>
               </div>
             }
           />
@@ -100,7 +102,7 @@ export default function ProfilePage() {
         </ProfileGroup>
 
         <ProfileGroup title="Yordam">
-          <ProfileRow icon={<CircleHelp />} label="Yordam" />
+          <ProfileRow icon={<CircleHelp />} label="Yordam" onClick={() => navigate('/help')} />
           <ProfileRow icon={<CircleDollarSign />} label="Tariflar" onClick={() => navigate('/tariflar')} />
           <ProfileRow icon={<LogOut />} label="Chiqish" danger onClick={handleLogout} />
         </ProfileGroup>
@@ -111,9 +113,9 @@ export default function ProfilePage() {
 
 function ProfileGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-6">
-      <h3 className="mb-3 text-[20px] font-bold leading-none text-[#4B4B4B]">{title}</h3>
-      <div className="overflow-hidden rounded-[14px] bg-white px-5 shadow-[4px_4px_10px_rgba(0,0,0,0.16)]">
+    <section className="mt-4">
+      <h3 className="mb-2 px-0.5 text-base font-extrabold text-slate-900">{title}</h3>
+      <div className="overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
         {children}
       </div>
     </section>
@@ -137,15 +139,19 @@ function ProfileRow({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-[73px] w-full items-center gap-6 border-b border-[#C8DCF3] text-left last:border-b-0 ${
-        danger ? 'text-[#A22929]' : 'text-[#0F172A]'
+      className={`flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-3.5 text-left transition-colors last:border-b-0 hover:bg-slate-50 active:bg-slate-100 ${
+        danger ? 'text-red-600' : 'text-slate-900'
       }`}
     >
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[2.8]">
+      <span
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+          danger ? 'bg-red-50 text-red-600' : 'bg-[#EEF4FA] text-[#24459A]'
+        } [&>svg]:h-5 [&>svg]:w-5`}
+      >
         {icon}
       </span>
-      <span className="min-w-0 flex-1 truncate text-[24px] font-medium leading-none">{label}</span>
-      {trailing ?? <ChevronRight className="h-8 w-8 shrink-0 text-[#9D9D9D]" aria-hidden />}
+      <span className="min-w-0 flex-1 truncate text-base font-semibold">{label}</span>
+      {trailing ?? <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />}
     </button>
   );
 }
@@ -167,13 +173,13 @@ function Switch({
         e.stopPropagation();
         onChange();
       }}
-      className={`relative h-8 w-[60px] shrink-0 rounded-full transition-colors ${
-        checked ? 'bg-[#37C963]' : dark ? 'bg-[#4B4B4B]' : 'bg-[#9D9D9D]'
+      className={`relative h-7 w-11 shrink-0 rounded-full transition-colors ${
+        checked ? 'bg-emerald-500' : dark ? 'bg-slate-600' : 'bg-slate-300'
       }`}
     >
       <span
-        className={`absolute top-0.5 h-7 w-7 rounded-full bg-white shadow-sm transition-transform ${
-          checked ? 'translate-x-[30px]' : 'translate-x-0.5'
+        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? 'translate-x-[18px]' : 'translate-x-0.5'
         }`}
       />
     </span>

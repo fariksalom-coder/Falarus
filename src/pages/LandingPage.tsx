@@ -46,9 +46,7 @@ const navItems: { key: NavKey; href: string }[] = [
 
 const LANDING_CONTACTS = {
   telegramUrl: 'https://t.me/falarus',
-  telegramLabel: '@falarus',
   instagramUrl: 'https://www.instagram.com/fala_rus',
-  instagramLabel: '@fala_rus',
 } as const;
 
 type FaqItem = { question: string; answer: string };
@@ -909,7 +907,7 @@ function Brand({ light = false }: { light?: boolean }) {
 export default function LandingPage() {
   const { user } = useAuth();
   const [activeNav, setActiveNav] = useState<NavKey>('home');
-  const [languageCode, setLanguageCode] = useState<LanguageCode>('en');
+  const [languageCode, setLanguageCode] = useState<LanguageCode>('uz');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -1339,13 +1337,13 @@ export default function LandingPage() {
               <li className="flex items-center gap-4">
                 <Send className="h-5 w-5 shrink-0 text-[#1E3A8A]" />
                 <a className="transition hover:underline" href={LANDING_CONTACTS.telegramUrl} target="_blank" rel="noreferrer">
-                  Telegram {LANDING_CONTACTS.telegramLabel}
+                  Telegram
                 </a>
               </li>
               <li className="flex items-center gap-4">
                 <Star className="h-5 w-5 shrink-0 text-[#1E3A8A]" />
                 <a className="transition hover:underline" href={LANDING_CONTACTS.instagramUrl} target="_blank" rel="noreferrer">
-                  Instagram {LANDING_CONTACTS.instagramLabel}
+                  Instagram
                 </a>
               </li>
             </ul>

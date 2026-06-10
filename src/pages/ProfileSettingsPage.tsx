@@ -132,42 +132,42 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#EEF4FA] pb-[88px]">
-      <main className="mx-auto w-full max-w-[440px]">
-        <header className="flex h-[114px] items-center justify-between bg-white px-4 pt-5">
+    <div className="min-h-full bg-[#EEF4FA] pb-6">
+      <main className="mx-auto w-full max-w-[820px]">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/80 bg-[#EEF4FA]/95 px-4 py-3 backdrop-blur-sm">
           <button
             type="button"
             onClick={() => navigate('/profile')}
-            className="flex h-[44px] w-[44px] items-center justify-center rounded-[15px] border border-[#C8DCF3] bg-white text-[#0F172A]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-900"
             aria-label="Ortga"
           >
-            <ChevronLeft className="h-7 w-7" aria-hidden />
+            <ChevronLeft className="h-5 w-5" aria-hidden />
           </button>
-          <h1 className="text-[25px] font-black leading-none text-[#0F172A]">Tahrirlash</h1>
+          <h1 className="text-base font-extrabold text-slate-900">Tahrirlash</h1>
           <button
             type="submit"
             form="profile-edit-form"
             disabled={saving}
-            className="text-[15px] font-bold text-[#1D5BFF] disabled:opacity-50"
+            className="text-sm font-bold text-blue-600 disabled:opacity-50"
           >
             {saving ? '...' : 'Tayyor'}
           </button>
         </header>
 
-        <form id="profile-edit-form" onSubmit={handleSubmit} className="px-4 pt-7">
-          <div className="flex flex-col items-center pb-8">
+        <form id="profile-edit-form" onSubmit={handleSubmit} className="px-4 pt-5">
+          <div className="flex flex-col items-center pb-5">
             <UserAvatar
               avatarUrl={user?.avatarUrl}
               gender={gender}
               name={fullName}
-              className="h-[97px] w-[97px]"
+              className="h-20 w-20"
             />
-            <p className="mt-4 text-[14px] font-medium text-[#64748B]">Rasm yuklash tez orada qo‘shiladi</p>
+            <p className="mt-3 text-xs font-medium text-slate-500">Rasm yuklash tez orada qo‘shiladi</p>
           </div>
 
           {banner ? (
             <div
-              className={`mb-5 rounded-[8px] px-4 py-3 text-sm font-bold ${
+              className={`mb-4 rounded-xl px-4 py-3 text-sm font-semibold ${
                 banner.kind === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
               }`}
             >
@@ -175,37 +175,33 @@ export default function ProfileSettingsPage() {
             </div>
           ) : null}
 
-          <section className="rounded-[14px] bg-white px-5 py-6 shadow-[4px_4px_10px_rgba(0,0,0,0.18)]">
-            <h2 className="text-[24px] font-black leading-none text-[#0F172A]">Profil</h2>
-            <div className="mt-8 space-y-7">
+          <section className="rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+            <h2 className="text-base font-extrabold text-slate-900">Profil</h2>
+            <div className="mt-5 space-y-5">
               <TextField label="To'liq ism" value={fullName} onChange={setFullName} readOnly />
               <TextField label="Rus tili darajasi" value={level} onChange={setLevel} readOnly />
               <div>
-                <span className="mb-3 block text-[16px] font-bold text-[#4B4B4B]">Jins</span>
-                <div className="grid grid-cols-2 gap-3">
-                  <GenderOption
-                    label="Erkak"
-                    selected={gender === 'male'}
-                    onSelect={() => setGender('male')}
-                  />
-                  <GenderOption
-                    label="Ayol"
-                    selected={gender === 'female'}
-                    onSelect={() => setGender('female')}
-                  />
+                <span className="mb-2 block text-sm font-semibold text-slate-600">Jins</span>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <GenderOption label="Erkak" selected={gender === 'male'} onSelect={() => setGender('male')} />
+                  <GenderOption label="Ayol" selected={gender === 'female'} onSelect={() => setGender('female')} />
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="mt-7 rounded-[14px] bg-white px-5 py-6 shadow-[4px_4px_10px_rgba(0,0,0,0.18)]">
-            <h2 className="text-[24px] font-black leading-none text-[#0F172A]">Aloqa va xavfsizlik</h2>
-            <div className="mt-8 space-y-7">
+          <section className="mt-4 rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+            <h2 className="text-base font-extrabold text-slate-900">Aloqa va xavfsizlik</h2>
+            <div className="mt-5 space-y-5">
               <TextField label="Email" action="o'zgartirish" value={email} onChange={setEmail} type="email" />
               <TextField label="Telefon raqami" action="o'zgartirish" value={phone} onChange={setPhone} type="tel" />
               <PasswordField label="Joriy parol" value={currentPassword} onChange={setCurrentPassword} />
               <PasswordField label="Yangi parol" value={newPassword} onChange={setNewPassword} />
-              <PasswordField label="Yangi parolni tasdiqlash" value={newPasswordConfirm} onChange={setNewPasswordConfirm} />
+              <PasswordField
+                label="Yangi parolni tasdiqlash"
+                value={newPasswordConfirm}
+                onChange={setNewPasswordConfirm}
+              />
             </div>
           </section>
         </form>
@@ -227,10 +223,10 @@ function GenderOption({
     <button
       type="button"
       onClick={onSelect}
-      className={`h-[43px] rounded-[8px] border text-[17px] font-bold transition-colors ${
+      className={`h-11 rounded-xl border text-sm font-bold transition-colors ${
         selected
           ? 'border-[#24459A] bg-[#EEF4FA] text-[#24459A]'
-          : 'border-[#A0A0A0] bg-white text-[#4B4B4B]'
+          : 'border-slate-200 bg-white text-slate-600'
       }`}
     >
       {label}
@@ -255,9 +251,9 @@ function TextField({
 }) {
   return (
     <label className="block">
-      <span className="mb-3 flex items-center justify-between">
-        <span className="text-[16px] font-bold text-[#4B4B4B]">{label}</span>
-        {action ? <span className="text-[16px] font-medium text-[#1D5BFF]">{action}</span> : null}
+      <span className="mb-2 flex items-center justify-between">
+        <span className="text-sm font-semibold text-slate-600">{label}</span>
+        {action ? <span className="text-xs font-semibold text-blue-600">{action}</span> : null}
       </span>
       <span className="relative block">
         <input
@@ -265,19 +261,19 @@ function TextField({
           value={value}
           readOnly={readOnly}
           onChange={(e) => onChange(e.target.value)}
-          className="h-[43px] w-full rounded-[8px] border border-[#A0A0A0] bg-white px-3 pr-10 text-[17px] font-bold text-[#0F172A] outline-none placeholder:text-[#9D9D9D] read-only:text-[#9D9D9D]"
+          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 pr-10 text-[15px] font-medium text-slate-900 outline-none placeholder:text-slate-400 read-only:bg-slate-50 read-only:text-slate-500"
         />
         {value && !readOnly ? (
           <button
             type="button"
             onClick={() => onChange('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-[#9D9D9D] p-0.5 text-white"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-400 p-0.5 text-white"
             aria-label="Tozalash"
           >
-            <X className="h-4 w-4" aria-hidden />
+            <X className="h-3.5 w-3.5" aria-hidden />
           </button>
         ) : readOnly ? (
-          <Check className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#9D9D9D]" aria-hidden />
+          <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
         ) : null}
       </span>
     </label>
@@ -295,12 +291,12 @@ function PasswordField({
 }) {
   return (
     <label className="block">
-      <span className="mb-3 block text-[16px] font-bold text-[#4B4B4B]">{label}</span>
+      <span className="mb-2 block text-sm font-semibold text-slate-600">{label}</span>
       <input
         type="password"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-[43px] w-full rounded-[8px] border border-[#A0A0A0] bg-white px-3 text-[17px] font-bold text-[#0F172A] outline-none"
+        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[15px] font-medium text-slate-900 outline-none"
       />
     </label>
   );
