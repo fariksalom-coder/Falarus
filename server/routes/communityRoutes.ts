@@ -4,18 +4,73 @@ import type { DbClient } from '../types/dbClient';
 const GROUP_CODE = 'savol_javob';
 const MAX_CONTENT = 2000;
 const DEFAULT_LIMIT = 80;
+const ONLINE_WINDOW_MS = 90_000;
+const TYPING_WINDOW_MS = 8_000;
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function displayNameFromRow(row: Record<string, unknown>): string {
-  const partner = asString(row.partner_display_name);
-  if (partner) return partner;
+/** Ism va familiya — guruh chatida doim shu ko‘rinadi. */
+function fullNameFromUser(row: Record<string, unknown>): string {
   const first = asString(row.first_name);
   const last = asString(row.last_name);
   const full = `${first} ${last}`.trim();
   return full || 'Foydalanuvchi';
+}
+
+function onlineSinceIso(): string {
+  return new Date(Date.now() - ONLINE_WINDOW_MS).toISOString();
+}
+
+function typingSinceIso(): string {
+  return new Date(Date.now() - TYPING_WINDOW_MS).toISOString();
+}
+
+async function touchPresence(supabase: DbClient, userId: number): Promise<void> {
+  const now = new Date().toISOString();
+  await supabase.from('community_group_presence').upsert(
+    { user_id: userId, group_code: GROUP_CODE, last_seen_at: now },
+    { onConflict: 'user_id,group_code' }
+  );
+}
+
+async function fetchGroupStats(supabase: DbClient) {
+  const sinceOnline = onlineSinceIso();
+  const [{ count: memberCount }, { count: onlineCount }] = await Promise.all([
+    supabase.from('users').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('community_group_presence')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_code', GROUP_CODE)
+      .gt('last_seen_at', sinceOnline),
+  ]);
+  return {
+    member_count: Number(memberCount ?? 0),
+    online_count: Number(onlineCount ?? 0),
+  };
+}
+
+async function fetchTypingUsers(supabase: DbClient, excludeUserId: number) {
+  const sinceTyping = typingSinceIso();
+  const { data: typingRows, error } = await supabase
+    .from('community_group_typing')
+    .select('user_id, updated_at')
+    .eq('group_code', GROUP_CODE)
+    .gt('updated_at', sinceTyping)
+    .neq('user_id', excludeUserId);
+  if (error) throw error;
+  const ids = [...new Set((typingRows ?? []).map((r) => Number((r as any).user_id)).filter(Number.isFinite))];
+  if (!ids.length) return [];
+
+  const { data: users } = await supabase.from('users').select('id, first_name, last_name').in('id', ids);
+  const byId = new Map<number, Record<string, unknown>>();
+  for (const u of users ?? []) byId.set(Number((u as any).id), u as Record<string, unknown>);
+
+  return ids.map((id) => ({
+    user_id: id,
+    full_name: fullNameFromUser(byId.get(id) ?? {}),
+  }));
 }
 
 async function fetchMessagesWithSenders(
@@ -38,14 +93,9 @@ async function fetchMessagesWithSenders(
   if (!messages.length) return [];
 
   const senderIds = [...new Set(messages.map((m) => Number(m.sender_user_id)).filter(Number.isFinite))];
-  const [{ data: users }, { data: profiles }] = await Promise.all([
-    supabase.from('users').select('id, first_name, last_name').in('id', senderIds),
-    supabase.from('partner_profiles').select('user_id, display_name').in('user_id', senderIds),
-  ]);
+  const { data: users } = await supabase.from('users').select('id, first_name, last_name').in('id', senderIds);
   const userById = new Map<number, Record<string, unknown>>();
   for (const u of users ?? []) userById.set(Number((u as any).id), u as Record<string, unknown>);
-  const profileById = new Map<number, string>();
-  for (const p of profiles ?? []) profileById.set(Number((p as any).user_id), asString((p as any).display_name));
 
   return messages
     .map((m) => {
@@ -55,10 +105,7 @@ async function fetchMessagesWithSenders(
         id: Number(m.id),
         group_code: String(m.group_code),
         sender_user_id: senderId,
-        sender_name: displayNameFromRow({
-          ...user,
-          partner_display_name: profileById.get(senderId) ?? '',
-        }),
+        sender_name: fullNameFromUser(user),
         content: String(m.content),
         created_at: String(m.created_at),
       };
@@ -75,7 +122,8 @@ export function createCommunityRoutes(
   router.get('/community/savol-javob/summary', authenticate, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
-      const [{ data: lastRows, error: lastErr }, { data: readRow }] = await Promise.all([
+      await touchPresence(supabase, userId);
+      const [{ data: lastRows, error: lastErr }, { data: readRow }, stats] = await Promise.all([
         supabase
           .from('community_group_messages')
           .select('id, content, sender_user_id, created_at')
@@ -88,6 +136,7 @@ export function createCommunityRoutes(
           .eq('user_id', userId)
           .eq('group_code', GROUP_CODE)
           .maybeSingle(),
+        fetchGroupStats(supabase),
       ]);
       if (lastErr) throw lastErr;
       const last = (lastRows?.[0] as Record<string, unknown> | undefined) ?? null;
@@ -114,6 +163,8 @@ export function createCommunityRoutes(
       res.json({
         group_code: GROUP_CODE,
         title: 'SAVOL-JAVOB',
+        member_count: stats.member_count,
+        online_count: stats.online_count,
         last_message: last
           ? {
               id: Number(last.id),
@@ -130,8 +181,66 @@ export function createCommunityRoutes(
     }
   });
 
+  router.get('/community/savol-javob/live', authenticate, async (req: any, res) => {
+    try {
+      const userId = Number(req.userId);
+      await touchPresence(supabase, userId);
+      const [stats, typingUsers] = await Promise.all([
+        fetchGroupStats(supabase),
+        fetchTypingUsers(supabase, userId),
+      ]);
+      res.json({
+        member_count: stats.member_count,
+        online_count: stats.online_count,
+        typing_users: typingUsers,
+      });
+    } catch (e) {
+      console.error('[GET /api/community/savol-javob/live]', e);
+      res.status(500).json({ error: 'Guruh holati yuklanmadi' });
+    }
+  });
+
+  router.post('/community/savol-javob/presence', authenticate, async (req: any, res) => {
+    try {
+      const userId = Number(req.userId);
+      await touchPresence(supabase, userId);
+      res.json({ success: true });
+    } catch (e) {
+      console.error('[POST /api/community/savol-javob/presence]', e);
+      res.status(500).json({ error: 'Onlayn holat saqlanmadi' });
+    }
+  });
+
+  router.post('/community/savol-javob/typing', authenticate, async (req: any, res) => {
+    try {
+      const userId = Number(req.userId);
+      const typing = req.body?.typing === true;
+      const now = new Date().toISOString();
+      if (typing) {
+        const { error } = await supabase.from('community_group_typing').upsert(
+          { user_id: userId, group_code: GROUP_CODE, updated_at: now },
+          { onConflict: 'user_id,group_code' }
+        );
+        if (error) throw error;
+      } else {
+        await supabase
+          .from('community_group_typing')
+          .delete()
+          .eq('user_id', userId)
+          .eq('group_code', GROUP_CODE);
+      }
+      await touchPresence(supabase, userId);
+      res.json({ success: true });
+    } catch (e) {
+      console.error('[POST /api/community/savol-javob/typing]', e);
+      res.status(500).json({ error: 'Yozish holati saqlanmadi' });
+    }
+  });
+
   router.get('/community/savol-javob/messages', authenticate, async (req: any, res) => {
     try {
+      const userId = Number(req.userId);
+      await touchPresence(supabase, userId);
       const beforeId = req.query.before_id != null ? Number(req.query.before_id) : undefined;
       const messages = await fetchMessagesWithSenders(supabase, { beforeId });
       res.json(messages);
@@ -155,24 +264,22 @@ export function createCommunityRoutes(
         .select('id, group_code, sender_user_id, content, created_at')
         .single();
       if (error) throw error;
+      await supabase
+        .from('community_group_typing')
+        .delete()
+        .eq('user_id', userId)
+        .eq('group_code', GROUP_CODE);
+      await touchPresence(supabase, userId);
       const { data: user } = await supabase
         .from('users')
         .select('id, first_name, last_name')
         .eq('id', userId)
         .maybeSingle();
-      const { data: profile } = await supabase
-        .from('partner_profiles')
-        .select('display_name')
-        .eq('user_id', userId)
-        .maybeSingle();
       res.status(201).json({
         id: Number((data as any).id),
         group_code: GROUP_CODE,
         sender_user_id: userId,
-        sender_name: displayNameFromRow({
-          ...(user ?? {}),
-          partner_display_name: (profile as any)?.display_name ?? '',
-        }),
+        sender_name: fullNameFromUser((user ?? {}) as Record<string, unknown>),
         content: String((data as any).content),
         created_at: String((data as any).created_at),
       });
@@ -191,6 +298,7 @@ export function createCommunityRoutes(
         { onConflict: 'user_id,group_code' }
       );
       if (error) throw error;
+      await touchPresence(supabase, userId);
       res.json({ success: true });
     } catch (e) {
       console.error('[POST /api/community/savol-javob/read]', e);

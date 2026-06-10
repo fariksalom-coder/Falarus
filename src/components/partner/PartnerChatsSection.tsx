@@ -126,7 +126,9 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-bold text-slate-900">SAVOL-JAVOB</p>
             <p className="truncate text-sm text-slate-500">
-              {groupSummary?.last_message?.content ?? 'Umumiy guruh — savol va javoblar'}
+              {groupSummary
+                ? `${groupSummary.member_count.toLocaleString('uz-UZ')} a'zo · ${groupSummary.online_count.toLocaleString('uz-UZ')} onlayn`
+                : 'Umumiy guruh — savol va javoblar'}
             </p>
           </div>
           <div className="flex flex-col items-end gap-1">

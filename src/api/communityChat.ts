@@ -16,9 +16,16 @@ export type SavolJavobMessage = {
   created_at: string;
 };
 
+export type SavolJavobTypingUser = {
+  user_id: number;
+  full_name: string;
+};
+
 export type SavolJavobSummary = {
   group_code: string;
   title: string;
+  member_count: number;
+  online_count: number;
   last_message: {
     id: number;
     content: string;
@@ -28,6 +35,12 @@ export type SavolJavobSummary = {
   unread_count: number;
 };
 
+export type SavolJavobLiveState = {
+  member_count: number;
+  online_count: number;
+  typing_users: SavolJavobTypingUser[];
+};
+
 export async function getSavolJavobSummary(token: string): Promise<SavolJavobSummary> {
   const res = await fetch(apiUrl('/api/community/savol-javob/summary'), {
     headers: { Authorization: `Bearer ${token}` },
@@ -35,6 +48,39 @@ export async function getSavolJavobSummary(token: string): Promise<SavolJavobSum
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || 'Guruh yuklanmadi');
   return data;
+}
+
+export async function getSavolJavobLiveState(token: string): Promise<SavolJavobLiveState> {
+  const res = await fetch(apiUrl('/api/community/savol-javob/live'), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Guruh holati yuklanmadi');
+  return data;
+}
+
+export async function pingSavolJavobPresence(token: string): Promise<void> {
+  const res = await fetch(apiUrl('/api/community/savol-javob/presence'), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || 'Onlayn holat saqlanmadi');
+  }
+}
+
+export async function setSavolJavobTyping(token: string, typing: boolean): Promise<void> {
+  const res = await fetch(apiUrl('/api/community/savol-javob/typing'), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ typing }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || 'Yozish holati saqlanmadi');
+  }
 }
 
 export async function getSavolJavobMessages(token: string, beforeId?: number): Promise<SavolJavobMessage[]> {

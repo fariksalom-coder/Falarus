@@ -2,9 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, Send, Users } from 'lucide-react';
 import {
+  getSavolJavobLiveState,
   getSavolJavobMessages,
   markSavolJavobRead,
+  pingSavolJavobPresence,
   sendSavolJavobMessage,
+  setSavolJavobTyping,
+  type SavolJavobLiveState,
   type SavolJavobMessage,
 } from '../../api/communityChat';
 import { useAuth } from '../../context/AuthContext';
@@ -17,55 +21,130 @@ function formatTime(date: string): string {
   return new Date(date).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' });
 }
 
+function formatMembersLine(memberCount: number, onlineCount: number): string {
+  return `${memberCount.toLocaleString('uz-UZ')} a'zo · ${onlineCount.toLocaleString('uz-UZ')} onlayn`;
+}
+
+function formatTypingLine(names: string[]): string {
+  if (names.length === 0) return '';
+  if (names.length === 1) return `${names[0]} yozmoqda…`;
+  if (names.length === 2) return `${names[0]} va ${names[1]} yozmoqdalar…`;
+  return `${names[0]}, ${names[1]} va boshqalar yozmoqdalar…`;
+}
+
 export default function SavolJavobChat({ onBack }: Props) {
   const { token, user } = useAuth();
   const [messages, setMessages] = useState<SavolJavobMessage[]>([]);
+  const [live, setLive] = useState<SavolJavobLiveState>({
+    member_count: 0,
+    online_count: 0,
+    typing_users: [],
+  });
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
+  const typingStopTimerRef = useRef<number | null>(null);
+  const isTypingRef = useRef(false);
 
   const scrollToEnd = useCallback(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  const refreshLive = useCallback(async () => {
+    if (!token) return;
+    try {
+      const state = await getSavolJavobLiveState(token);
+      setLive(state);
+    } catch {
+      /* ignore polling errors */
+    }
+  }, [token]);
+
+  const setTyping = useCallback(
+    async (typing: boolean) => {
+      if (!token) return;
+      if (isTypingRef.current === typing) return;
+      isTypingRef.current = typing;
+      try {
+        await setSavolJavobTyping(token, typing);
+      } catch {
+        /* ignore */
+      }
+    },
+    [token]
+  );
+
   useEffect(() => {
     if (!token) return;
     let mounted = true;
     setLoading(true);
-    getSavolJavobMessages(token)
-      .then((rows) => mounted && setMessages(rows))
+    Promise.all([getSavolJavobMessages(token), getSavolJavobLiveState(token)])
+      .then(([rows, state]) => {
+        if (!mounted) return;
+        setMessages(rows);
+        setLive(state);
+      })
       .catch((e: Error) => mounted && setError(e.message))
       .finally(() => mounted && setLoading(false));
     void markSavolJavobRead(token).catch(() => {});
+    void pingSavolJavobPresence(token).catch(() => {});
 
-    const timer = window.setInterval(() => {
+    const msgTimer = window.setInterval(() => {
       void getSavolJavobMessages(token)
         .then((rows) => mounted && setMessages(rows))
         .catch(() => {});
     }, 4000);
 
+    const liveTimer = window.setInterval(() => {
+      void refreshLive();
+    }, 2500);
+
+    const presenceTimer = window.setInterval(() => {
+      void pingSavolJavobPresence(token).catch(() => {});
+    }, 25_000);
+
     return () => {
       mounted = false;
-      window.clearInterval(timer);
+      window.clearInterval(msgTimer);
+      window.clearInterval(liveTimer);
+      window.clearInterval(presenceTimer);
+      if (typingStopTimerRef.current) window.clearTimeout(typingStopTimerRef.current);
+      void setSavolJavobTyping(token, false).catch(() => {});
     };
-  }, [token]);
+  }, [token, refreshLive]);
 
   useEffect(() => {
     scrollToEnd();
-  }, [messages, scrollToEnd]);
+  }, [messages, live.typing_users.length, scrollToEnd]);
+
+  function handleTextChange(value: string) {
+    setText(value);
+    if (!token) return;
+    if (value.trim()) {
+      void setTyping(true);
+      if (typingStopTimerRef.current) window.clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = window.setTimeout(() => {
+        void setTyping(false);
+      }, 3500);
+    } else {
+      void setTyping(false);
+    }
+  }
 
   async function handleSend() {
     if (!token || !text.trim() || sending) return;
     const content = text.trim();
     setText('');
+    void setTyping(false);
     setSending(true);
     setError('');
     try {
       const created = await sendSavolJavobMessage(token, content);
       setMessages((prev) => [...prev, created]);
       void markSavolJavobRead(token).catch(() => {});
+      void refreshLive();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Xatolik');
       setText(content);
@@ -73,6 +152,8 @@ export default function SavolJavobChat({ onBack }: Props) {
       setSending(false);
     }
   }
+
+  const typingLine = formatTypingLine(live.typing_users.map((u) => u.full_name));
 
   const content = (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[#EEF2FF]">
@@ -90,7 +171,14 @@ export default function SavolJavobChat({ onBack }: Props) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-extrabold text-slate-900">SAVOL-JAVOB</p>
-          <p className="text-xs font-medium text-violet-600">Umumiy guruh · hammaga ochiq</p>
+          <p className="text-xs font-semibold text-violet-600">
+            {formatMembersLine(live.member_count, live.online_count)}
+          </p>
+          {typingLine ? (
+            <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">{typingLine}</p>
+          ) : (
+            <p className="mt-0.5 text-[11px] text-slate-400">Umumiy savol-javob guruhi</p>
+          )}
         </div>
       </header>
 
@@ -117,9 +205,11 @@ export default function SavolJavobChat({ onBack }: Props) {
                         : 'rounded-bl-md border border-slate-200/80 bg-white text-slate-900'
                     }`}
                   >
-                    {!mine ? (
-                      <p className="mb-1 text-[11px] font-bold text-violet-600">{msg.sender_name}</p>
-                    ) : null}
+                    <p
+                      className={`mb-1 text-[11px] font-bold ${mine ? 'text-blue-100' : 'text-violet-600'}`}
+                    >
+                      {msg.sender_name}
+                    </p>
                     <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">{msg.content}</p>
                     <p className={`mt-1 text-[10px] ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
                       {formatTime(msg.created_at)}
@@ -128,6 +218,13 @@ export default function SavolJavobChat({ onBack }: Props) {
                 </div>
               );
             })}
+            {typingLine ? (
+              <div className="flex justify-start">
+                <div className="rounded-2xl rounded-bl-md border border-violet-100 bg-white px-3.5 py-2 text-xs font-medium text-slate-600 shadow-sm">
+                  <span className="text-violet-600">{typingLine}</span>
+                </div>
+              </div>
+            ) : null}
             <div ref={endRef} />
           </div>
         )}
@@ -139,7 +236,8 @@ export default function SavolJavobChat({ onBack }: Props) {
         <div className="mx-auto flex max-w-lg items-end gap-2">
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => handleTextChange(e.target.value)}
+            onBlur={() => void setTyping(false)}
             rows={1}
             placeholder="Savolingizni yozing..."
             className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
