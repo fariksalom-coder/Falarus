@@ -60,8 +60,20 @@ export async function linkTeacherTrialPayment(
     .eq('student_user_id', studentUserId)
     .maybeSingle();
   if (!trial) throw new Error('Sinov darsi topilmadi');
-  if ((trial as { payment_id?: number | null }).payment_id) {
-    throw new Error("Bu dars uchun to'lov allaqachon yaratilgan");
+  const existingPaymentId = (trial as { payment_id?: number | null }).payment_id;
+  if (existingPaymentId) {
+    const { data: existingPay } = await supabase
+      .from('payments')
+      .select('id, status')
+      .eq('id', Number(existingPaymentId))
+      .maybeSingle();
+    const payStatus = String((existingPay as { status?: string } | null)?.status ?? '');
+    if (payStatus === 'approved') {
+      throw new Error("Bu dars uchun to'lov allaqachon tasdiqlangan");
+    }
+    if (payStatus === 'pending') {
+      await supabase.from('payments').update({ status: 'rejected' }).eq('id', Number(existingPaymentId));
+    }
   }
   const { error } = await supabase
     .from('teacher_trial_lessons')

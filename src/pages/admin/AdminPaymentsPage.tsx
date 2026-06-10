@@ -199,13 +199,19 @@ export default function AdminPaymentsPage() {
                     <td className="py-3 px-4 text-right">
                       {p.status === 'pending' && (
                         <span className="flex flex-col items-end gap-2">
-                          {(p.payment_channel === 'click_button' || p.payment_channel === 'rahmat') && (
+                          {(p.payment_channel === 'click_button' ||
+                            (p.payment_channel === 'rahmat' &&
+                              p.product_code !== 'teacher_trial' &&
+                              p.product_code !== 'teacher_listing')) && (
                             <span className="text-xs text-slate-500">
-                              {p.payment_channel === 'rahmat' ? 'Rahmat' : 'Click'} — toʻlov yakunlanganda avtomatik
+                              {p.payment_channel === 'rahmat' ? 'Rahmat' : 'Click'} — toʻlov yakunlangacha kuting
                             </span>
                           )}
                           <span className="flex items-center justify-end gap-2">
-                            {p.payment_channel !== 'click_button' && p.payment_channel !== 'rahmat' && (
+                            {(p.payment_channel !== 'click_button' &&
+                              (p.payment_channel !== 'rahmat' ||
+                                p.product_code === 'teacher_trial' ||
+                                p.product_code === 'teacher_listing')) && (
                               <button
                                 type="button"
                                 onClick={() => handleConfirm(p.id)}

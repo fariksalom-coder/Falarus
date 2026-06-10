@@ -132,6 +132,32 @@ export async function createTeacherListingPayment(
   return data;
 }
 
+export type MyTeacherTrialLessonResponse = {
+  trial: TeacherTrialLesson | null;
+  payment: {
+    id: number;
+    status: string;
+    currency: string;
+    amount: number;
+    payment_channel: string | null;
+    created_at: string;
+    product_code?: string;
+    payment_proof_url?: string | null;
+  } | null;
+};
+
+export async function getMyTeacherTrialLesson(
+  token: string,
+  teacherId: number,
+): Promise<MyTeacherTrialLessonResponse> {
+  const res = await fetch(apiUrl(`/api/teachers/${teacherId}/my-trial-lesson`), {
+    headers: authHeaders(token),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Sinov darsi yuklanmadi');
+  return data;
+}
+
 export async function createTeacherTrialLesson(
   token: string,
   teacherId: number,

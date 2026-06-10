@@ -362,10 +362,21 @@ export function createPaymentRoutes(
         pending = null;
       }
       if (pending) {
-        return res.status(400).json({
-          error: 'PENDING_PAYMENT',
-          message: "To'lovingiz tekshirilmoqda. Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi.",
-        });
+        const pendingId = Number((pending as { id?: number }).id);
+        const pendingChannel = String((pending as { payment_channel?: string | null }).payment_channel ?? '');
+        const canSupersedePending =
+          productCode === 'teacher_trial' &&
+          file &&
+          (pendingChannel === 'rahmat' || pendingChannel === 'click_button');
+        if (canSupersedePending && Number.isFinite(pendingId)) {
+          await supabase.from('payments').update({ status: 'rejected' }).eq('id', pendingId);
+          pending = null;
+        } else {
+          return res.status(400).json({
+            error: 'PENDING_PAYMENT',
+            message: "To'lovingiz tekshirilmoqda. Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi.",
+          });
+        }
       }
 
       let amount = 0;
@@ -439,6 +450,7 @@ export function createPaymentRoutes(
           discount_meta: discountMeta,
           payment_proof_url: paymentProofUrl,
           payment_time: new Date().toISOString(),
+          payment_channel: 'manual',
           status: 'pending' as const,
         };
         let { data: row, error: insertErr } = await supabase

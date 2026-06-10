@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Clock, CreditCard, MapPin, Users } from 'lucide-react';
 import { resolveAssetUrl } from '../api';
 import {
   createTeacherTrialLesson,
+  getMyTeacherTrialLesson,
   getTeacherPublicDetail,
+  type MyTeacherTrialLessonResponse,
   type TeacherProfile,
   type TeacherStudentReview,
 } from '../api/teachers';
 import { useAuth } from '../context/AuthContext';
 import { openRahmatCheckout } from '../api/rahmat';
+import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { invalidatePaymentsCache } from '../api/payment';
 import {
   formatTeacherExperience,
   formatTeacherPrice,
@@ -65,7 +69,9 @@ export default function TeacherProfilePage() {
   const location = useLocation();
   const { teacherId } = useParams();
   const { token } = useAuth();
+  const { payments, refreshPayments } = usePaymentStatus();
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
+  const [myTrial, setMyTrial] = useState<MyTeacherTrialLessonResponse | null>(null);
   const [reviews, setReviews] = useState<TeacherStudentReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -77,6 +83,23 @@ export default function TeacherProfilePage() {
 
   const trialPriceRub = getTeacherTrialPriceRub();
   const trialPriceUzs = getTeacherTrialPriceUzs();
+  const pendingTrialPayment = payments.find(
+    (payment) => payment.product_code === TEACHER_TRIAL_PRODUCT_CODE && payment.status === 'pending',
+  );
+  const awaitingPaymentConfirmation =
+    myTrial?.trial?.status === 'pending_payment' &&
+    (pendingTrialPayment != null || myTrial.payment?.status === 'pending');
+
+  async function loadMyTrial() {
+    if (!token || !teacherId) return;
+    try {
+      const data = await getMyTeacherTrialLesson(token, Number(teacherId));
+      setMyTrial(data);
+      if (data.trial?.id) setTrialId(data.trial.id);
+    } catch {
+      setMyTrial(null);
+    }
+  }
 
   useEffect(() => {
     const id = Number(teacherId);
@@ -99,6 +122,11 @@ export default function TeacherProfilePage() {
       mounted = false;
     };
   }, [teacherId]);
+
+  useEffect(() => {
+    void loadMyTrial();
+    void refreshPayments();
+  }, [token, teacherId]);
 
   async function ensureTrialLesson(): Promise<number> {
     if (trialId != null) return trialId;
@@ -129,6 +157,11 @@ export default function TeacherProfilePage() {
         token,
         productCode: TEACHER_TRIAL_PRODUCT_CODE,
         trialId: id,
+        afterCreate: async () => {
+          if (token) invalidatePaymentsCache(token);
+          await refreshPayments();
+          await loadMyTrial();
+        },
       });
     } catch (e) {
       const err = e as Error & { code?: string };
@@ -247,7 +280,21 @@ export default function TeacherProfilePage() {
         </section>
 
         <div className="px-4">
-          {!bookingOpen ? (
+          {awaitingPaymentConfirmation ? (
+            <section className="mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 shadow-sm">
+              <h2 className="text-lg font-extrabold text-amber-950">To'lovingiz tekshirilmoqda</h2>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-amber-900/90">
+                Administrator to'lovni tasdiqlagach o'qituvchi bilan chat ochiladi va dars vaqtini kelishasiz.
+                Bu xabar to'lov tasdiqlanguncha shu yerda qoladi.
+              </p>
+              <Link
+                to="/payment-history"
+                className="mt-4 inline-flex text-sm font-bold text-[#24459A] hover:underline"
+              >
+                To'lovlar tarixi
+              </Link>
+            </section>
+          ) : !bookingOpen ? (
             <button
               type="button"
               onClick={handleStartBooking}

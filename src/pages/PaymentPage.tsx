@@ -274,9 +274,11 @@ export default function PaymentPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">To'lovingiz tekshirilmoqda</h1>
           <p className="text-slate-600 mb-8">
-            Administrator tez orada to'lovni tasdiqlaydi.
-            <br />
-            Tasdiqlangandan so'ng sizga kursga kirish ochiladi.
+            {isTeacherTrial
+              ? "Administrator to'lovni tasdiqlagach o'qituvchi bilan chat ochiladi va dars vaqtini kelishasiz."
+              : isTeacherListing
+                ? "Administrator tasdiqlagach profilingiz o'quvchilar ro'yxatida faollashadi."
+                : "Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi."}
           </p>
           <button
             type="button"
@@ -284,7 +286,7 @@ export default function PaymentPage() {
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
             style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            {isTeacherListing ? 'Kabinetga qaytish' : isTeacherTrial ? "O'qituvchilarga qaytish" : "Profilga o'tish"}
+            {isTeacherListing ? 'Kabinetga qaytish' : isTeacherTrial ? "O'qituvchiga qaytish" : "Profilga o'tish"}
           </button>
         </div>
       </div>
@@ -303,7 +305,9 @@ export default function PaymentPage() {
           <p className="text-slate-600 mb-8">
             Sizning to'lovingiz qabul qilindi va tekshiruvga yuborildi.
             <br />
-            Administrator tez orada to'lovni tasdiqlaydi.
+            {isTeacherTrial
+              ? "Tasdiqlanguncha o'qituvchi profilida kutish holati ko'rinadi."
+              : 'Administrator tez orada to\'lovni tasdiqlaydi.'}
           </p>
           <button
             type="button"
@@ -311,7 +315,7 @@ export default function PaymentPage() {
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
             style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            {isTeacherListing ? 'Kabinetga qaytish' : isTeacherTrial ? "O'qituvchilarga qaytish" : "Profilga o'tish"}
+            {isTeacherListing ? 'Kabinetga qaytish' : isTeacherTrial ? "O'qituvchiga qaytish" : "Profilga o'tish"}
           </button>
         </div>
       </div>

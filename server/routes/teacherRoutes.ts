@@ -484,6 +484,42 @@ export function createTeacherRoutes(
     }
   });
 
+  router.get('/teachers/:teacherId/my-trial-lesson', authenticate, async (req: any, res) => {
+    try {
+      const teacherId = Number(req.params.teacherId);
+      const studentId = Number(req.userId);
+      if (!Number.isFinite(teacherId)) return res.status(400).json({ error: 'teacherId noto‘g‘ri' });
+
+      const { data: trial, error } = await supabase
+        .from('teacher_trial_lessons')
+        .select('*')
+        .eq('teacher_user_id', teacherId)
+        .eq('student_user_id', studentId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!trial) return res.json({ trial: null, payment: null });
+
+      let payment: Record<string, unknown> | null = null;
+      const paymentId = (trial as { payment_id?: number | null }).payment_id;
+      if (paymentId) {
+        const payRes = await supabase
+          .from('payments')
+          .select('id, status, currency, amount, payment_channel, created_at, product_code, payment_proof_url')
+          .eq('id', Number(paymentId))
+          .maybeSingle();
+        if (payRes.error) throw payRes.error;
+        payment = (payRes.data as Record<string, unknown> | null) ?? null;
+      }
+
+      res.json({ trial, payment });
+    } catch (e) {
+      console.error('[GET /api/teachers/:teacherId/my-trial-lesson]', e);
+      res.status(500).json({ error: 'Sinov darsi yuklanmadi' });
+    }
+  });
+
   router.post('/teachers/:teacherId/trial-lessons', authenticate, async (req: any, res) => {
     try {
       const teacherId = Number(req.params.teacherId);
@@ -507,6 +543,28 @@ export function createTeacherRoutes(
         return res.status(403).json({ error: 'O‘qituvchi hozir ro‘yxatda faol emas' });
       }
 
+      const { data: existingTrial } = await supabase
+        .from('teacher_trial_lessons')
+        .select('*')
+        .eq('teacher_user_id', teacherId)
+        .eq('student_user_id', studentId)
+        .eq('status', 'pending_payment')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const studentMessage = asString(req.body?.student_message || req.body?.studentMessage);
+      if (existingTrial) {
+        if (studentMessage) {
+          await supabase
+            .from('teacher_trial_lessons')
+            .update({ student_message: studentMessage, updated_at: new Date().toISOString() })
+            .eq('id', Number((existingTrial as { id: number }).id));
+          (existingTrial as { student_message?: string }).student_message = studentMessage;
+        }
+        return res.status(200).json(existingTrial);
+      }
+
       const { data, error } = await supabase
         .from('teacher_trial_lessons')
         .insert({
@@ -515,7 +573,7 @@ export function createTeacherRoutes(
           requested_starts_at: asString(req.body?.requested_starts_at || req.body?.requestedStartsAt) || null,
           student_phone_e164: asString(req.body?.student_phone_e164 || req.body?.studentPhoneE164) || null,
           student_email: asString(req.body?.student_email || req.body?.studentEmail) || null,
-          student_message: asString(req.body?.student_message || req.body?.studentMessage),
+          student_message: studentMessage,
           price_rub_snapshot: TRIAL_PRICE_RUB,
           rub_to_uzs_rate_snapshot: RUB_TO_UZS_RATE,
           price_uzs_snapshot: TRIAL_PRICE_UZS,
