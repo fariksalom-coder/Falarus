@@ -9,6 +9,7 @@ import {
   type TeacherStudentReview,
 } from '../api/teachers';
 import { useAuth } from '../context/AuthContext';
+import { openRahmatCheckout } from '../api/rahmat';
 import {
   formatTeacherExperience,
   formatTeacherPrice,
@@ -70,6 +71,7 @@ export default function TeacherProfilePage() {
   const [error, setError] = useState('');
   const [bookingOpen, setBookingOpen] = useState(false);
   const [studentMessage, setStudentMessage] = useState('');
+  const [trialId, setTrialId] = useState<number | null>(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
@@ -99,10 +101,12 @@ export default function TeacherProfilePage() {
   }, [teacherId]);
 
   async function ensureTrialLesson(): Promise<number> {
+    if (trialId != null) return trialId;
     if (!token || !profile) throw new Error('Tizimga kirish kerak');
     const trial = await createTeacherTrialLesson(token, profile.user_id, {
       student_message: studentMessage.trim(),
     });
+    setTrialId(trial.id);
     return trial.id;
   }
 
@@ -115,7 +119,30 @@ export default function TeacherProfilePage() {
     setBookingOpen(true);
   }
 
-  async function handlePay(currency: 'UZS' | 'RUB') {
+  async function handlePayRahmat() {
+    if (!token || !profile) return;
+    setBookingLoading(true);
+    setBookingError('');
+    try {
+      const id = await ensureTrialLesson();
+      await openRahmatCheckout({
+        token,
+        productCode: TEACHER_TRIAL_PRODUCT_CODE,
+        trialId: id,
+      });
+    } catch (e) {
+      const err = e as Error & { code?: string };
+      setBookingError(
+        err.code === 'PENDING_PAYMENT'
+          ? "To'lovingiz allaqachon kutilmoqda."
+          : err.message || "Rahmat to'lovi boshlanmadi",
+      );
+    } finally {
+      setBookingLoading(false);
+    }
+  }
+
+  async function handlePayRub() {
     if (!token || !profile) return;
     setBookingLoading(true);
     setBookingError('');
@@ -126,7 +153,7 @@ export default function TeacherProfilePage() {
           productCode: TEACHER_TRIAL_PRODUCT_CODE,
           productLabel: 'Sinov darsi',
           trialId: id,
-          currency,
+          currency: 'RUB',
           returnTo: `/teachers/${profile.user_id}`,
         },
       });
@@ -249,18 +276,18 @@ export default function TeacherProfilePage() {
               <div className="mt-4 space-y-3">
                 <button
                   type="button"
-                  onClick={() => void handlePay('UZS')}
+                  onClick={() => void handlePayRahmat()}
                   disabled={bookingLoading}
                   className="flex h-12 w-full items-center justify-center rounded-full bg-[#24459A] text-base font-extrabold text-white disabled:opacity-60"
                 >
                   {bookingLoading ? 'Yuklanmoqda...' : "To'lash — Click / Payme / boshqa"}
                 </button>
                 <p className="text-center text-xs font-medium text-slate-500">
-                  {trialPriceUzs.toLocaleString('uz-UZ')} so'm · chek yuklash kerak
+                  {trialPriceUzs.toLocaleString('uz-UZ')} so'm · Rahmat orqali (Click, Payme, Uzum va boshqalar)
                 </p>
                 <button
                   type="button"
-                  onClick={() => void handlePay('RUB')}
+                  onClick={() => void handlePayRub()}
                   disabled={bookingLoading}
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#24459A] bg-white text-base font-bold text-[#24459A] disabled:opacity-60"
                 >
