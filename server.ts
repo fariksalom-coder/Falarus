@@ -92,6 +92,7 @@ if (!jwtSecretEnv || jwtSecretEnv.length < 32) {
 }
 const JWT_SECRET = jwtSecretEnv;
 const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
+const USER_AVATAR_BUCKET = 'user-avatars';
 const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
@@ -1019,6 +1020,79 @@ async function startServer() {
     }
     const profile = mapUserProfile(user);
     res.json(await mergeProfileWithActiveSubscription(req.userId, profile));
+  });
+
+  async function ensurePublicStorageBucket(bucket: string) {
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const hasBucket = (buckets ?? []).some((b: any) => b.name === bucket);
+    if (!hasBucket) await supabase.storage.createBucket(bucket, { public: true });
+  }
+
+  async function uploadUserAvatarFile(
+    userId: number,
+    file: { buffer: Buffer; mimetype: string }
+  ): Promise<string> {
+    const ext = file.mimetype === 'image/png' ? 'png' : file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+    const objectPath = `${userId}/avatar.${ext}`;
+    await ensurePublicStorageBucket(USER_AVATAR_BUCKET);
+    const { error: uploadErr } = await supabase.storage
+      .from(USER_AVATAR_BUCKET)
+      .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: true });
+    if (uploadErr) throw new Error(uploadErr.message);
+    const { data: publicData } = supabase.storage.from(USER_AVATAR_BUCKET).getPublicUrl(objectPath);
+    const avatarUrl = publicData?.publicUrl;
+    if (!avatarUrl) throw new Error('Rasm URL olinmadi');
+    return avatarUrl;
+  }
+
+  app.post('/api/user/avatar', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    try {
+      const { file } = await parseHelpChatMultipartImage(req);
+      if (!file) return res.status(400).json({ error: 'Rasm yuklanmadi' });
+      const avatarUrl = await uploadUserAvatarFile(userId, file);
+      const { error: updateErr } = await supabase
+        .from('users')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', userId);
+      if (updateErr) {
+        console.error('[POST /api/user/avatar] update', updateErr);
+        return res.status(500).json({ error: 'Profil rasmi saqlanmadi' });
+      }
+      const { user, error } = await fetchUserProfileById(userId);
+      if (error || !user) {
+        return res.status(500).json({ error: 'Profilni yuklab bo‘lmadi' });
+      }
+      const profile = mapUserProfile(user);
+      res.json(await mergeProfileWithActiveSubscription(userId, profile));
+    } catch (e) {
+      console.error('[POST /api/user/avatar]', e);
+      const message = e instanceof Error ? e.message : 'Rasm yuklanmadi';
+      res.status(400).json({ error: message });
+    }
+  });
+
+  app.delete('/api/user/avatar', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    try {
+      const { error: updateErr } = await supabase
+        .from('users')
+        .update({ avatar_url: null })
+        .eq('id', userId);
+      if (updateErr) {
+        console.error('[DELETE /api/user/avatar]', updateErr);
+        return res.status(500).json({ error: 'Rasm o‘chirilmadi' });
+      }
+      const { user, error } = await fetchUserProfileById(userId);
+      if (error || !user) {
+        return res.status(500).json({ error: 'Profilni yuklab bo‘lmadi' });
+      }
+      const profile = mapUserProfile(user);
+      res.json(await mergeProfileWithActiveSubscription(userId, profile));
+    } catch (e) {
+      console.error('[DELETE /api/user/avatar]', e);
+      res.status(500).json({ error: 'Rasm o‘chirilmadi' });
+    }
   });
 
   app.post('/api/user/onboard', authenticate, async (req: any, res) => {

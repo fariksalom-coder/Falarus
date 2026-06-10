@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
+import { removeUserAvatar, uploadUserAvatar } from '../api/user';
 import UserAvatar, { type UserGender } from '../components/UserAvatar';
 
 type MeResponse = {
@@ -33,7 +34,11 @@ export default function ProfileSettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarCacheKey, setAvatarCacheKey] = useState(0);
   const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const loadMe = useCallback(() => {
     if (!token) return;
@@ -46,6 +51,7 @@ export default function ProfileSettingsPage() {
         setEmail(data.email ?? '');
         setPhone(data.phone ?? '');
         setGender(data.gender ?? null);
+        setAvatarUrl(data.avatarUrl ?? null);
       })
       .catch(() => {});
   }, [token]);
@@ -56,8 +62,9 @@ export default function ProfileSettingsPage() {
     setEmail(user?.email ?? '');
     setPhone(user?.phone ?? '');
     setGender(user?.gender ?? null);
+    setAvatarUrl(user?.avatarUrl ?? null);
     loadMe();
-  }, [loadMe, user?.email, user?.firstName, user?.gender, user?.lastName, user?.level, user?.phone]);
+  }, [loadMe, user?.avatarUrl, user?.email, user?.firstName, user?.gender, user?.lastName, user?.level, user?.phone]);
 
   function applyMeToContext(me: MeResponse) {
     updateUser({
@@ -69,6 +76,50 @@ export default function ProfileSettingsPage() {
       avatarUrl: me.avatarUrl ?? null,
       gender: me.gender ?? null,
     });
+    setAvatarUrl(me.avatarUrl ?? null);
+    setAvatarCacheKey((v) => v + 1);
+  }
+
+  function avatarPreviewUrl(url: string | null): string | null {
+    if (!url) return null;
+    const base = url.split('?')[0];
+    return `${base}?v=${avatarCacheKey}`;
+  }
+
+  async function handlePickAvatar(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !token) return;
+    setBanner(null);
+    setUploadingAvatar(true);
+    try {
+      const me = await uploadUserAvatar(token, file);
+      applyMeToContext(me);
+      updateUser({
+        avatarUrl: me.avatarUrl ? `${me.avatarUrl.split('?')[0]}?v=${Date.now()}` : null,
+      });
+      setBanner({ kind: 'ok', text: 'Profil rasmi yangilandi' });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm yuklanmadi' });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function handleRemoveAvatar() {
+    if (!token || !avatarUrl) return;
+    setBanner(null);
+    setUploadingAvatar(true);
+    try {
+      const me = await removeUserAvatar(token);
+      applyMeToContext(me);
+      updateUser({ avatarUrl: null });
+      setBanner({ kind: 'ok', text: 'Profil rasmi o‘chirildi' });
+    } catch (err) {
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm o‘chirilmadi' });
+    } finally {
+      setUploadingAvatar(false);
+    }
   }
 
   async function patchAccount(body: Record<string, string | null>) {
@@ -156,13 +207,54 @@ export default function ProfileSettingsPage() {
 
         <form id="profile-edit-form" onSubmit={handleSubmit} className="px-4 pt-5">
           <div className="flex flex-col items-center pb-5">
-            <UserAvatar
-              avatarUrl={user?.avatarUrl}
-              gender={gender}
-              name={fullName}
-              className="h-20 w-20"
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="relative rounded-full disabled:opacity-60"
+              aria-label="Profil rasmini almashtirish"
+            >
+              <UserAvatar
+                avatarUrl={avatarPreviewUrl(avatarUrl)}
+                gender={gender}
+                name={fullName}
+                className="h-20 w-20"
+              />
+              {uploadingAvatar ? (
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/35">
+                  <span className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                </span>
+              ) : null}
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handlePickAvatar}
+              disabled={uploadingAvatar}
             />
-            <p className="mt-3 text-xs font-medium text-slate-500">Rasm yuklash tez orada qo‘shiladi</p>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="text-sm font-bold text-blue-600 disabled:opacity-50"
+              >
+                Rasmni almashtirish
+              </button>
+              {avatarUrl ? (
+                <button
+                  type="button"
+                  onClick={() => void handleRemoveAvatar()}
+                  disabled={uploadingAvatar}
+                  className="text-sm font-semibold text-red-600 disabled:opacity-50"
+                >
+                  O‘chirish
+                </button>
+              ) : null}
+            </div>
+            <p className="mt-2 text-center text-xs font-medium text-slate-500">JPG, PNG yoki WEBP · 4 MB gacha</p>
           </div>
 
           {banner ? (
