@@ -35,6 +35,13 @@ export function getTeacherListingPriceUzs(planCode: TeacherListingPlanCode): num
   return TEACHER_LISTING_PRICES_UZS[planCode];
 }
 
+export function getTeacherListingPlanLabel(planCode: TeacherListingPlanCode): string {
+  if (planCode === TEACHER_LISTING_PLAN_FIRST) {
+    return "O'qituvchi ro'yxati · 1 oy (birinchi oy)";
+  }
+  return "O'qituvchi ro'yxati · 1 oy";
+}
+
 /** Sinov darsi — 490 ₽, UZS hisobida (150 kurs). */
 export const TEACHER_TRIAL_PRICE_RUB = 490;
 export const TEACHER_TRIAL_PRICE_UZS = 73_500;

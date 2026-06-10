@@ -355,6 +355,7 @@ export function createTeacherRoutes(
           .from('teacher_trial_lessons')
           .select('*')
           .eq('teacher_user_id', userId)
+          .neq('status', 'pending_payment')
           .order('created_at', { ascending: false })
           .limit(50),
         supabase
@@ -687,6 +688,9 @@ export function createTeacherRoutes(
         .eq('teacher_user_id', userId)
         .maybeSingle();
       if (!trial) return res.status(404).json({ error: 'Dars topilmadi' });
+      if (String((trial as { status?: string }).status) === 'pending_payment') {
+        return res.status(400).json({ error: "To'lov tasdiqlangach darsni yakunlash mumkin" });
+      }
       await supabase
         .from('teacher_trial_lessons')
         .update({ status: 'completed_by_teacher', completed_by_teacher_at: now, updated_at: now })

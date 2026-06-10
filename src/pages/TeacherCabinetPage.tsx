@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   CreditCard,
   GraduationCap,
+  History,
   Pencil,
   Save,
   UserRound,
@@ -26,12 +27,14 @@ import {
   type TeacherProfilePayload,
 } from '../api/teachers';
 import {
+  getTeacherListingPlanLabel,
   resolveTeacherListingPlanCode,
   TEACHER_LISTING_PLAN_MONTH,
   TEACHER_LISTING_PLAN_FIRST,
   TEACHER_LISTING_PRICES_UZS,
   TEACHER_LISTING_PRODUCT_CODE,
 } from '../../shared/paymentProducts';
+import type { PaymentStatus } from '../api/payment';
 import { invalidatePaymentsCache } from '../api/payment';
 import { formatTeacherPrice } from '../utils/teacherDisplay';
 
@@ -44,11 +47,17 @@ const LISTING_BENEFITS = [
 ];
 
 const TRIAL_LESSON_INFO = [
-  "O'quvchi sinov darsiga ariza qoldiradi",
-  "Arizadan keyin siz bilan o'quvchi o'rtasida chat ochiladi",
+  "O'quvchi sinov darsi uchun to'lovni amalga oshiradi",
+  "To'lov tasdiqlangach (Rahmat yoki admin) siz bilan chat ochiladi",
   "Chatda dars vaqtini kelishasiz",
   "Darsdan keyin ikkalangiz ham bir-biringiz haqida fikr qoldira olasiz",
 ];
+
+const PAYMENT_STATUS_LABELS: Record<PaymentStatus, { label: string; className: string }> = {
+  pending: { label: 'Tekshirilmoqda', className: 'bg-amber-100 text-amber-800' },
+  approved: { label: 'Tasdiqlandi', className: 'bg-emerald-100 text-emerald-800' },
+  rejected: { label: 'Rad etildi', className: 'bg-red-100 text-red-800' },
+};
 
 const emptyForm: TeacherProfilePayload = {
   first_name: '',
@@ -125,9 +134,15 @@ export default function TeacherCabinetPage() {
   const listingActive = isActiveUntil(profile?.listing_paid_until);
   const listingPlanCode = resolveTeacherListingPlanCode(Boolean(profile?.first_listing_discount_used));
   const listingPrice = TEACHER_LISTING_PRICES_UZS[listingPlanCode];
-  const hasPendingListingPayment = payments.some(
-    (p) => p.status === 'pending' && p.product_code === TEACHER_LISTING_PRODUCT_CODE,
+  const listingPayments = useMemo(
+    () =>
+      payments
+        .filter((p) => p.product_code === TEACHER_LISTING_PRODUCT_CODE)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+    [payments],
   );
+  const hasPendingListingPayment = listingPayments.some((p) => p.status === 'pending');
+  const listingTariffLabel = getTeacherListingPlanLabel(listingPlanCode);
 
   const completedLessons = useMemo(
     () => (cabinet?.trial_lessons ?? []).filter((lesson) => String(lesson.status).includes('completed')).length,
@@ -477,14 +492,38 @@ export default function TeacherCabinetPage() {
         </section>
 
         {profile ? (
+          <>
           <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <div className="mb-4 flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-blue-700" />
-              <h2 className="text-lg font-bold text-slate-950">Ro'yxat uchun oylik to'lov</h2>
+              <h2 className="text-lg font-bold text-slate-950">Ro'yxat tarifi</h2>
+            </div>
+
+            <div className="rounded-2xl border-2 border-blue-600 bg-gradient-to-br from-blue-50 to-indigo-50 px-5 py-5 shadow-[0_14px_34px_rgba(37,99,235,0.12)]">
+              <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Sizning tarif</p>
+              <p className="mt-2 text-xl font-black text-slate-950">{listingTariffLabel}</p>
+              <p className="mt-3 text-3xl font-black text-blue-700">
+                {listingPrice.toLocaleString('uz-UZ')}{' '}
+                <span className="text-lg font-bold text-slate-600">so'm / oy</span>
+              </p>
+              {listingActive ? (
+                <p className="mt-3 text-sm font-semibold text-emerald-800">
+                  Faol muddati: {formatDate(profile.listing_paid_until)}
+                </p>
+              ) : (
+                <p className="mt-3 text-sm font-medium text-slate-600">
+                  To'lovdan keyin profil 1 oy davomida o'quvchilar ro'yxatida ko'rinadi.
+                </p>
+              )}
+              {!profile?.first_listing_discount_used && !listingActive ? (
+                <p className="mt-2 text-xs font-semibold text-blue-800">
+                  Keyingi uzaytirish: {TEACHER_LISTING_PRICES_UZS[TEACHER_LISTING_PLAN_MONTH].toLocaleString('uz-UZ')} so'm / oy
+                </p>
+              ) : null}
             </div>
 
             {listingActive ? (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
                 <p className="font-bold text-emerald-800">Profil faol</p>
                 <p className="mt-1 text-sm text-emerald-900/80">
                   Ro'yxat muddati: {formatDate(profile.listing_paid_until)}
@@ -492,7 +531,7 @@ export default function TeacherCabinetPage() {
               </div>
             ) : (
               <>
-                <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-4">
+                <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-4">
                   <p className="text-sm font-bold text-slate-900">To'lov qilgandan keyin nima olasiz:</p>
                   <ul className="mt-3 space-y-2">
                     {LISTING_BENEFITS.map((item) => (
@@ -502,32 +541,6 @@ export default function TeacherCabinetPage() {
                       </li>
                     ))}
                   </ul>
-                </div>
-
-                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <p className="text-sm font-bold text-slate-900">Narxlar</p>
-                  <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
-                    <li>
-                      <span className="font-bold text-blue-700">
-                        {TEACHER_LISTING_PRICES_UZS[TEACHER_LISTING_PLAN_FIRST].toLocaleString('uz-UZ')} so'm
-                      </span>
-                      {' '}
-                      — birinchi oy (promo)
-                    </li>
-                    <li>
-                      <span className="font-bold text-slate-900">
-                        {TEACHER_LISTING_PRICES_UZS[TEACHER_LISTING_PLAN_MONTH].toLocaleString('uz-UZ')} so'm
-                      </span>
-                      {' '}
-                      — keyingi har bir oy
-                    </li>
-                  </ul>
-                  <p className="mt-3 text-sm font-semibold text-slate-800">
-                    Hozir to'lanadi:{' '}
-                    <span className="text-lg text-blue-700">
-                      {listingPrice.toLocaleString('uz-UZ')} so'm
-                    </span>
-                  </p>
                 </div>
 
                 {hasPendingListingPayment ? (
@@ -563,6 +576,54 @@ export default function TeacherCabinetPage() {
               </>
             )}
           </section>
+
+          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <History className="h-5 w-5 text-blue-700" />
+                <h2 className="text-lg font-bold text-slate-950">To'lovlar tarixi</h2>
+              </div>
+              {listingPayments.length > 3 ? (
+                <Link
+                  to="/payment-history"
+                  className="text-sm font-bold text-blue-700 hover:text-blue-800"
+                >
+                  Barchasi
+                </Link>
+              ) : null}
+            </div>
+            {listingPayments.length === 0 ? (
+              <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                Hozircha ro'yxat to'lovlari yo'q.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {listingPayments.slice(0, 5).map((payment) => {
+                  const statusMeta = PAYMENT_STATUS_LABELS[payment.status] ?? {
+                    label: payment.status,
+                    className: 'bg-slate-100 text-slate-700',
+                  };
+                  return (
+                    <div key={payment.id} className="rounded-xl border border-slate-200 px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-slate-900">{listingTariffLabel}</p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {Number(payment.amount).toLocaleString('uz-UZ')} {payment.currency}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">{formatDate(payment.created_at)}</p>
+                        </div>
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusMeta.className}`}>
+                          {statusMeta.label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+          </>
         ) : null}
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -583,13 +644,18 @@ export default function TeacherCabinetPage() {
           </div>
           <div className="space-y-3">
             {(cabinet?.trial_lessons ?? []).length === 0 ? (
-              <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Hozircha yozilgan o'quvchilar yo'q.</p>
+              <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                To'lov tasdiqlangan sinov darslari shu yerda ko'rinadi.
+              </p>
             ) : (
               cabinet!.trial_lessons.map((lesson) => (
                 <div key={lesson.id} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="font-bold text-slate-950">Sinov darsi #{lesson.id}</p>
+                      {lesson.student_message ? (
+                        <p className="mt-1 text-sm text-slate-700">{lesson.student_message}</p>
+                      ) : null}
                       <p className="text-sm text-slate-500">Holat: {formatLessonStatus(lesson.status)}</p>
                       <p className="text-sm text-slate-500">Vaqt: {formatDate(lesson.requested_starts_at || lesson.scheduled_starts_at)}</p>
                       <p className="text-sm text-slate-500">Kontakt: {lesson.student_phone_e164 || lesson.student_email || '-'}</p>

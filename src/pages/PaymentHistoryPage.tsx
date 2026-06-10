@@ -35,10 +35,15 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
 }
 
 export default function PaymentHistoryPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { refreshAccess } = useAccess();
   const navigate = useNavigate();
   const { payments, loading } = usePaymentStatus();
+  const isTeacher = user?.accountType === 'teacher';
+  const backPath = isTeacher ? '/teacher-cabinet' : '/profile';
+  const visiblePayments = isTeacher
+    ? payments.filter((p) => p.product_code === 'teacher_listing')
+    : payments;
 
   useEffect(() => {
     if (!token) return;
@@ -50,7 +55,7 @@ export default function PaymentHistoryPage() {
       <div className="max-w-2xl mx-auto p-6">
         <button
           type="button"
-          onClick={() => navigate('/profile')}
+          onClick={() => navigate(backPath)}
           className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-6"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -64,13 +69,13 @@ export default function PaymentHistoryPage() {
 
         {loading ? (
           <p className="text-slate-500 py-8">Yuklanmoqda...</p>
-        ) : payments.length === 0 ? (
+        ) : visiblePayments.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500">
             To'lovlar yo'q.
           </div>
         ) : (
           <div className="space-y-4">
-            {payments.map((p) => (
+            {visiblePayments.map((p) => (
               <div
                 key={p.id}
                 className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow"
