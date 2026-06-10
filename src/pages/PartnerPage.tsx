@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, LogIn, MessageCircle } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
   getPartnerStatus,
@@ -14,14 +14,19 @@ import PartnerPeopleList from '../components/partner/PartnerPeopleList';
 import PartnerIncomingRequests from '../components/partner/PartnerIncomingRequests';
 import PartnerOutgoingRequests from '../components/partner/PartnerOutgoingRequests';
 import PartnerChat from '../components/partner/PartnerChat';
+import PartnerChatsSection from '../components/partner/PartnerChatsSection';
+import PartnerAdminChat from '../components/partner/PartnerAdminChat';
+import SavolJavobChat from '../components/partner/SavolJavobChat';
 
-type View = 'loading' | 'guest' | 'profile-form' | 'chat-list' | 'chat' | 'browse' | 'incoming' | 'outgoing';
+type HubTab = 'anketas' | 'incoming' | 'outgoing';
+type View = 'loading' | 'guest' | 'profile-form' | 'hub' | 'admin-chat' | 'group-chat' | 'partner-chat';
 
 export default function PartnerPage() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
 
   const [view, setView] = useState<View>('loading');
+  const [hubTab, setHubTab] = useState<HubTab>('anketas');
   const [status, setStatus] = useState<PartnerStatus | null>(null);
   const [activeMatchId, setActiveMatchId] = useState<number | null>(null);
   const loadingStatusRef = useRef(false);
@@ -47,15 +52,11 @@ export default function PartnerPage() {
       if (prev && normalized.matches.some((m) => m.id === prev)) return prev;
       return normalized.matches[0].id;
     });
-    if (!forceViewTransition) {
-      return;
-    }
+    if (!forceViewTransition) return;
     if (!normalized.hasProfile) {
       setView('profile-form');
-    } else if (normalized.matches.length > 0) {
-      setView('chat-list');
     } else {
-      setView('browse');
+      setView('hub');
     }
   }, [normalizeStatus]);
 
@@ -83,7 +84,7 @@ export default function PartnerPage() {
     }
     if (user?.id) {
       const cached = getCachedPartnerStatus(user.id);
-      if (cached) applyStatusToView(cached);
+      if (cached) applyStatusToView(cached, false);
     }
     loadStatus(true);
   }, [token, user?.id, loadStatus, applyStatusToView]);
@@ -97,27 +98,12 @@ export default function PartnerPage() {
     return () => window.clearInterval(interval);
   }, [token, loadStatus]);
 
-  const handleProfileSaved = () => {
-    loadStatus();
-  };
-
-  const handleRequestSent = () => {
-    loadStatus();
-  };
-
-  const handleAccepted = () => {
-    loadStatus();
-  };
-
-  const handlePartnershipEnded = () => {
-    loadStatus();
-  };
-
   const outgoingReceiverIds = status?.outgoingRequests?.map((r) => r.receiver_id) ?? [];
+
   const shouldHideGlobalNav =
-    view === 'incoming' ||
-    view === 'outgoing' ||
-    (view === 'browse' && Boolean(status?.matches.length)) ||
+    view === 'admin-chat' ||
+    view === 'group-chat' ||
+    view === 'partner-chat' ||
     (view === 'profile-form' && Boolean(status?.hasProfile));
 
   useEffect(() => {
@@ -135,19 +121,22 @@ export default function PartnerPage() {
     };
   }, [shouldHideGlobalNav]);
 
+  const incomingCount = status?.incomingRequestsCount ?? 0;
+  const outgoingCount = status?.outgoingRequestsCount ?? 0;
+
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen pb-24"
       style={{
         backgroundColor: '#F8FAFC',
-        backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
+        backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 55%, #F1F5F9 100%)',
       }}
     >
       <main
         className={
-          view === 'chat'
-            ? 'mx-auto max-w-4xl px-0 py-0 sm:px-0 sm:py-0'
-            : 'mx-auto max-w-4xl px-4 py-6 sm:px-5 sm:py-8'
+          view === 'partner-chat'
+            ? 'mx-auto max-w-4xl px-0 py-0'
+            : 'mx-auto max-w-lg px-4 py-5 sm:px-5 sm:py-6'
         }
       >
         <AnimatePresence mode="wait">
@@ -169,20 +158,19 @@ export default function PartnerPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="mx-auto max-w-md"
             >
               <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
                   <LogIn className="h-8 w-8 text-blue-600" />
                 </div>
-                <h2 className="mt-5 text-xl font-bold text-slate-900">Sherik bilan o‘rganish</h2>
+                <h2 className="mt-5 text-xl font-bold text-slate-900">Suhbat va sheriklar</h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Sherik topish va chat uchun akkauntingizga kiring
+                  Chatlar, guruh va sherik topish uchun kiring
                 </p>
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
-                  className="mt-6 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(37,99,235,0.3)] transition-all hover:shadow-[0_12px_32px_rgba(37,99,235,0.4)]"
+                  className="mt-6 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(37,99,235,0.3)]"
                 >
                   Kirish
                 </button>
@@ -191,181 +179,112 @@ export default function PartnerPage() {
           )}
 
           {view === 'profile-form' && (
-            <motion.div
-              key="profile-form"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-            >
+            <motion.div key="profile-form" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <PartnerProfileForm
-                onSaved={handleProfileSaved}
-                onBack={status?.hasProfile ? () => {
-                  if (status?.matches.length) setView('chat-list');
-                  else setView('browse');
-                } : undefined}
+                onSaved={() => loadStatus()}
+                onBack={status?.hasProfile ? () => setView('hub') : undefined}
               />
             </motion.div>
           )}
 
-          {view === 'browse' && (
-            <motion.div
-              key="browse"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-            >
-              <div className="mx-auto mb-4 flex max-w-lg items-center justify-between gap-3">
-                {status?.matches.length ? (
-                  <button
-                    type="button"
-                    onClick={() => setView('chat-list')}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Orqaga
-                  </button>
-                ) : (
-                  <div />
-                )}
+          {view === 'hub' && status && (
+            <motion.div key="hub" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Suhbat</h1>
+                  <p className="mt-0.5 text-sm text-slate-500">Sheriklar, guruh va admin</p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setView('profile-form')}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                  className="shrink-0 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 shadow-sm"
                 >
-                  Anketani tahrirlash
+                  Anketa
                 </button>
               </div>
-              <PartnerPeopleList
-                onRequestSent={handleRequestSent}
-                incomingCount={status?.incomingRequestsCount ?? 0}
-                outgoingCount={status?.outgoingRequestsCount ?? 0}
-                initiallyRequestedIds={outgoingReceiverIds}
-                onShowIncoming={() => setView('incoming')}
-                onShowOutgoing={() => setView('outgoing')}
-                showRequestNav={!status?.matches.length}
-                canSendRequests={true}
-              />
-            </motion.div>
-          )}
 
-          {view === 'chat-list' && status && status.matches.length > 0 && (
-            <motion.div
-              key="chat-list"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="mx-auto max-w-lg"
-            >
-              <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
-                <h2 className="text-xl font-bold text-slate-900">Chatlar</h2>
-                <p className="mt-1 text-sm text-slate-500">Sheriklaringiz bilan yozishmalar</p>
-                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <button
-                    type="button"
-                    onClick={() => setView('browse')}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100"
-                  >
-                    Anketalar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setView('incoming')}
-                    className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
-                  >
-                    Kiruvchi ({status.incomingRequestsCount})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setView('outgoing')}
-                    className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
-                  >
-                    Chiquvchi ({status.outgoingRequestsCount})
-                  </button>
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  {status.matches.map((match) => (
+              <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-sm">
+                {(
+                  [
+                    { id: 'anketas' as const, label: 'Anketalar' },
+                    { id: 'incoming' as const, label: `Kiruvchi (${incomingCount})` },
+                    { id: 'outgoing' as const, label: `Chiquvchi (${outgoingCount})` },
+                  ] as const
+                ).map((tab) => {
+                  const active = hubTab === tab.id;
+                  return (
                     <button
-                      key={match.id}
+                      key={tab.id}
                       type="button"
-                      onClick={() => {
-                        setActiveMatchId(match.id);
-                        setView('chat');
-                      }}
-                      className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100"
+                      onClick={() => setHubTab(tab.id)}
+                      className={`rounded-xl px-2 py-2.5 text-center text-[12px] font-bold leading-tight transition-colors sm:text-[13px] ${
+                        active
+                          ? 'bg-blue-600 text-white shadow-[0_6px_16px_rgba(37,99,235,0.28)]'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
                     >
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-bold text-white">
-                        {(match.partner_profile?.display_name ?? 'S')
-                          .split(' ')
-                          .map((w) => w[0])
-                          .join('')
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-base font-semibold text-slate-900">
-                          {match.partner_profile?.display_name ?? 'Sherik'}
-                        </p>
-                        <p className="truncate text-sm text-slate-500">Chatni ochish</p>
-                      </div>
-                      <MessageCircle className="h-5 w-5 text-blue-600" />
+                      {tab.label}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            </motion.div>
-          )}
 
-          {view === 'incoming' && (
-            <motion.div
-              key="incoming"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-            >
-              <PartnerIncomingRequests
-                onBack={() => {
-                  if (status?.matches.length) setView('chat-list');
-                  else setView('browse');
+              <div className="mt-4">
+                {hubTab === 'anketas' ? (
+                  <PartnerPeopleList
+                    onRequestSent={() => loadStatus()}
+                    incomingCount={incomingCount}
+                    outgoingCount={outgoingCount}
+                    initiallyRequestedIds={outgoingReceiverIds}
+                    onShowIncoming={() => setHubTab('incoming')}
+                    onShowOutgoing={() => setHubTab('outgoing')}
+                    showRequestNav={false}
+                    canSendRequests
+                    embedded
+                  />
+                ) : null}
+                {hubTab === 'incoming' ? (
+                  <PartnerIncomingRequests
+                    embedded
+                    onBack={() => setHubTab('anketas')}
+                    onAccepted={() => loadStatus()}
+                  />
+                ) : null}
+                {hubTab === 'outgoing' ? (
+                  <PartnerOutgoingRequests
+                    embedded
+                    onBack={() => setHubTab('anketas')}
+                    onUpdated={() => loadStatus()}
+                  />
+                ) : null}
+              </div>
+
+              <PartnerChatsSection
+                matches={status.matches}
+                onOpenAdmin={() => setView('admin-chat')}
+                onOpenGroup={() => setView('group-chat')}
+                onOpenPartner={(matchId) => {
+                  setActiveMatchId(matchId);
+                  setView('partner-chat');
                 }}
-                onAccepted={handleAccepted}
               />
             </motion.div>
           )}
 
-          {view === 'outgoing' && (
-            <motion.div
-              key="outgoing"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-            >
-              <PartnerOutgoingRequests
-                onBack={() => {
-                  if (status?.matches.length) setView('chat-list');
-                  else setView('browse');
-                }}
-                onUpdated={loadStatus}
-              />
-            </motion.div>
-          )}
-
-          {view === 'chat' && status && activeMatchId && (
-            <motion.div
-              key="chat"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+          {view === 'partner-chat' && status && activeMatchId && (
+            <motion.div key="partner-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <PartnerChat
                 match={status.matches.find((m) => m.id === activeMatchId) ?? status.matches[0]}
-                onEnded={handlePartnershipEnded}
-                onBack={() => setView('chat-list')}
+                onEnded={() => loadStatus()}
+                onBack={() => setView('hub')}
               />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {view === 'admin-chat' ? <PartnerAdminChat onBack={() => setView('hub')} /> : null}
+      {view === 'group-chat' ? <SavolJavobChat onBack={() => setView('hub')} /> : null}
     </div>
   );
 }

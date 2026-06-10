@@ -7,9 +7,10 @@ import { useAuth } from '../../context/AuthContext';
 type Props = {
   onBack: () => void;
   onUpdated: () => void;
+  embedded?: boolean;
 };
 
-export default function PartnerOutgoingRequests({ onBack, onUpdated }: Props) {
+export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = false }: Props) {
   const { token } = useAuth();
   const [requests, setRequests] = useState<PartnerRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,19 +44,26 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated }: Props) {
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Chiquvchi so'rovlar</h2>
-          <p className="mt-0.5 text-sm text-slate-500">Siz yuborgan sheriklik so'rovlari</p>
+      {embedded ? (
+        <div className="mb-1">
+          <h2 className="text-lg font-bold text-slate-900">Chiquvchi so&apos;rovlar</h2>
+          <p className="mt-0.5 text-sm text-slate-500">Siz yuborgan kutilayotgan so&apos;rovlar</p>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Chiquvchi so&apos;rovlar</h2>
+            <p className="mt-0.5 text-sm text-slate-500">Siz yuborgan sheriklik so&apos;rovlari</p>
+          </div>
+        </div>
+      )}
 
       {error && (
         <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600">{error}</p>

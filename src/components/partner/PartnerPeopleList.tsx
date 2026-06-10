@@ -14,6 +14,7 @@ type Props = {
   onShowOutgoing: () => void;
   showRequestNav?: boolean;
   canSendRequests?: boolean;
+  embedded?: boolean;
 };
 
 export default function PartnerPeopleList({
@@ -25,6 +26,7 @@ export default function PartnerPeopleList({
   onShowOutgoing,
   showRequestNav = true,
   canSendRequests = true,
+  embedded = false,
 }: Props) {
   const { token } = useAuth();
   const [people, setPeople] = useState<PartnerPerson[]>([]);
@@ -68,10 +70,17 @@ export default function PartnerPeopleList({
   return (
     <div className="mx-auto max-w-lg space-y-5">
       <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Odamlar</h2>
-          <p className="mt-0.5 text-sm text-slate-500">Sherik tanlang</p>
-        </div>
+        {!embedded ? (
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Odamlar</h2>
+            <p className="mt-0.5 text-sm text-slate-500">Sherik tanlang</p>
+          </div>
+        ) : (
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Anketalar</h2>
+            <p className="mt-0.5 text-sm text-slate-500">Sherik tanlang</p>
+          </div>
+        )}
         {showRequestNav && (
           <div className="flex items-center gap-2">
             <button

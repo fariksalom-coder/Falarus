@@ -987,6 +987,9 @@ async function startServer() {
   const { createTeacherRoutes } = await import('./server/routes/teacherRoutes');
   app.use('/api', createTeacherRoutes(supabase, authenticate));
 
+  const { createCommunityRoutes } = await import('./server/routes/communityRoutes');
+  app.use('/api', createCommunityRoutes(supabase, authenticate));
+
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
     const { user, error } = await fetchUserProfileById(req.userId);
