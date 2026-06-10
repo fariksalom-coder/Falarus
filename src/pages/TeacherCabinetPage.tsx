@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Bell, CalendarCheck, CheckCircle2, CreditCard, GraduationCap, Save, UserRound } from 'lucide-react';
+import { useEffect, useId, useMemo, useState, type ChangeEvent } from 'react';
+import { Bell, CalendarCheck, Camera, CheckCircle2, CreditCard, GraduationCap, Save, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { resolveAssetUrl } from '../api';
+import { bustAvatarUrl, uploadUserAvatar } from '../api/user';
+import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import {
   completeTeacherTrial,
@@ -15,35 +18,17 @@ const emptyForm: TeacherProfilePayload = {
   first_name: '',
   last_name: '',
   age: 25,
-  avatar_url: '',
   region: '',
   city: '',
   experience_years: 0,
   experience_months: 0,
   teaching_format: 'online',
-  headline: '',
   about: '',
-  subjects: ['Rus tili'],
-  teaching_levels: ['Boshlangich', "O'rta"],
-  languages: ['uz', 'ru'],
   monthly_course_price_amount: 0,
   monthly_course_price_currency: 'RUB',
   telegram_username: '',
-  telegram_url: '',
-  whatsapp_phone_e164: '',
-  max_contact: '',
   public_phone_e164: '',
-  public_email: '',
-  preferred_contact_method: 'telegram',
 };
-
-function csvToArray(value: string): string[] {
-  return value.split(',').map((item) => item.trim()).filter(Boolean);
-}
-
-function arrayToCsv(value: unknown): string {
-  return Array.isArray(value) ? value.join(', ') : '';
-}
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return '-';
@@ -83,13 +68,15 @@ function formatLessonStatus(value: string | null | undefined): string {
 }
 
 export default function TeacherCabinetPage() {
-  const { token, user } = useAuth();
+  const { token, user, updateUser } = useAuth();
   const isTeacherAccount = user?.accountType === 'teacher';
+  const avatarInputId = useId();
   const [cabinet, setCabinet] = useState<TeacherCabinet | null>(null);
   const [form, setForm] = useState<TeacherProfilePayload>(emptyForm);
-  const [subjectsText, setSubjectsText] = useState(arrayToCsv(emptyForm.subjects));
-  const [levelsText, setLevelsText] = useState(arrayToCsv(emptyForm.teaching_levels));
-  const [languagesText, setLanguagesText] = useState(arrayToCsv(emptyForm.languages));
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarRevision, setAvatarRevision] = useState(0);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -115,23 +102,28 @@ export default function TeacherCabinetPage() {
         const p = next.profile;
         setForm({
           ...emptyForm,
-          ...p,
           first_name: p.first_name ?? '',
           last_name: p.last_name ?? '',
           age: Number(p.age ?? 25),
+          region: p.region ?? '',
+          city: p.city ?? '',
+          experience_years: Number(p.experience_years ?? 0),
+          experience_months: Number(p.experience_months ?? 0),
+          about: p.about ?? '',
           monthly_course_price_amount: Number(p.monthly_course_price_amount ?? 0),
+          monthly_course_price_currency: p.monthly_course_price_currency ?? 'RUB',
+          telegram_username: p.telegram_username ?? '',
+          public_phone_e164: p.public_phone_e164 ?? '',
         });
-        setSubjectsText(arrayToCsv(p.subjects));
-        setLevelsText(arrayToCsv(p.teaching_levels));
-        setLanguagesText(arrayToCsv(p.languages));
+        setAvatarUrl(p.avatar_url ?? user?.avatarUrl ?? null);
       } else {
         setForm({
           ...emptyForm,
           first_name: user?.firstName ?? '',
           last_name: user?.lastName ?? '',
-          public_email: user?.email ?? '',
           public_phone_e164: user?.phone ?? '',
         });
+        setAvatarUrl(user?.avatarUrl ?? null);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Kabinet yuklanmadi");
@@ -153,6 +145,45 @@ export default function TeacherCabinetPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  function avatarDisplayUrl(url: string | null | undefined): string | null {
+    const resolved = resolveAssetUrl(url);
+    if (!resolved) return null;
+    return `${resolved.split('?')[0]}?v=${avatarRevision}`;
+  }
+
+  async function handlePickAvatar(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !token) return;
+    setError('');
+    const preview = URL.createObjectURL(file);
+    setLocalPreviewUrl(preview);
+    setUploadingAvatar(true);
+    try {
+      const me = await uploadUserAvatar(token, file);
+      const nextUrl = me.avatarUrl ? bustAvatarUrl(me.avatarUrl) : null;
+      setAvatarUrl(nextUrl);
+      setAvatarRevision((v) => v + 1);
+      updateUser({
+        firstName: me.firstName,
+        lastName: me.lastName,
+        avatarUrl: nextUrl,
+      });
+      setCabinet((prev) =>
+        prev?.profile
+          ? { ...prev, profile: { ...prev.profile, avatar_url: nextUrl } }
+          : prev,
+      );
+      setMessage('Profil rasmi yangilandi');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Rasm yuklanmadi');
+    } finally {
+      URL.revokeObjectURL(preview);
+      setLocalPreviewUrl(null);
+      setUploadingAvatar(false);
+    }
+  }
+
   async function handleSave() {
     if (!token) return;
     setSaving(true);
@@ -165,10 +196,9 @@ export default function TeacherCabinetPage() {
         experience_years: Number(form.experience_years ?? 0),
         experience_months: Number(form.experience_months ?? 0),
         monthly_course_price_amount: Number(form.monthly_course_price_amount ?? 0),
-        subjects: csvToArray(subjectsText),
-        teaching_levels: csvToArray(levelsText),
-        languages: csvToArray(languagesText),
+        teaching_format: 'online',
       });
+      setAvatarUrl(saved.avatar_url ?? avatarUrl);
       setCabinet((prev) => ({ ...(prev ?? { trial_lessons: [], notifications: [], listing_subscriptions: [] }), profile: saved }));
       setMessage("Anketa saqlandi. Admin tekshirgandan keyin ro'yxatda ko'rinadi.");
     } catch (e) {
@@ -277,48 +307,83 @@ export default function TeacherCabinetPage() {
             <GraduationCap className="h-5 w-5 text-blue-700" />
             <h2 className="text-lg font-bold text-slate-950">O'quvchilar uchun anketa</h2>
           </div>
+          <div className="mb-5 flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+            <label
+              htmlFor={avatarInputId}
+              className={`relative shrink-0 cursor-pointer ${uploadingAvatar ? 'pointer-events-none opacity-60' : ''}`}
+            >
+              <UserAvatar
+                avatarUrl={localPreviewUrl ?? avatarDisplayUrl(avatarUrl)}
+                name={`${form.first_name} ${form.last_name}`.trim()}
+                className="h-24 w-24 ring-4 ring-white shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
+              />
+              <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 text-white shadow-md">
+                {uploadingAvatar ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <Camera className="h-4 w-4" aria-hidden />
+                )}
+              </span>
+              <input
+                id={avatarInputId}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                className="sr-only"
+                disabled={uploadingAvatar}
+                onChange={(e) => void handlePickAvatar(e)}
+              />
+            </label>
+            <div className="text-center sm:text-left">
+              <p className="text-sm font-bold text-slate-950">Profil rasmi</p>
+              <p className="mt-1 max-w-xs text-xs font-medium leading-relaxed text-slate-500">
+                Rasmni yuklash uchun ustiga bosing. O'quvchilar ro'yxatda shu rasmni ko'radi.
+              </p>
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Ism" value={form.first_name} onChange={(v) => update('first_name', v)} />
             <Field label="Familiya" value={form.last_name} onChange={(v) => update('last_name', v)} />
             <Field label="Yosh" type="number" value={String(form.age)} onChange={(v) => update('age', Number(v))} />
-            <Field label="Rasm URL" value={String(form.avatar_url ?? '')} onChange={(v) => update('avatar_url', v)} />
             <Field label="Viloyat" value={String(form.region ?? '')} onChange={(v) => update('region', v)} />
             <Field label="Shahar" value={String(form.city ?? '')} onChange={(v) => update('city', v)} />
             <Field label="Tajriba yili" type="number" value={String(form.experience_years ?? 0)} onChange={(v) => update('experience_years', Number(v))} />
             <Field label="Tajriba oyi" type="number" value={String(form.experience_months ?? 0)} onChange={(v) => update('experience_months', Number(v))} />
-            <label className="space-y-1 text-sm font-semibold text-slate-700">
-              Dars formati
-              <select
-                value={form.teaching_format}
-                onChange={(e) => update('teaching_format', e.target.value as TeacherProfilePayload['teaching_format'])}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-950 outline-none focus:border-blue-500"
-              >
-                <option value="online">Online</option>
-                <option value="offline">Offline</option>
-                <option value="online_offline">Online/Offline</option>
-              </select>
-            </label>
-            <Field label="Oylik kurs narxi" type="number" value={String(form.monthly_course_price_amount ?? 0)} onChange={(v) => update('monthly_course_price_amount', Number(v))} />
-            <Field label="Sarlavha" value={String(form.headline ?? '')} onChange={(v) => update('headline', v)} className="sm:col-span-2" />
-            <Field label="Fanlar (vergul bilan)" value={subjectsText} onChange={setSubjectsText} />
-            <Field label="Darajalar (vergul bilan)" value={levelsText} onChange={setLevelsText} />
-            <Field label="Tillar (vergul bilan)" value={languagesText} onChange={setLanguagesText} />
-            <Field label="Telegram username" value={String(form.telegram_username ?? '')} onChange={(v) => update('telegram_username', v)} />
-            <Field label="Telegram URL" value={String(form.telegram_url ?? '')} onChange={(v) => update('telegram_url', v)} />
-            <Field label="WhatsApp raqam" value={String(form.whatsapp_phone_e164 ?? '')} onChange={(v) => update('whatsapp_phone_e164', v)} />
-            <Field label="MAX kontakt" value={String(form.max_contact ?? '')} onChange={(v) => update('max_contact', v)} />
-            <Field label="Ochiq telefon" value={String(form.public_phone_e164 ?? '')} onChange={(v) => update('public_phone_e164', v)} />
-            <Field label="Ochiq email" value={String(form.public_email ?? '')} onChange={(v) => update('public_email', v)} />
+            <Field
+              label="Oylik kurs narxi (RUB)"
+              type="number"
+              value={String(form.monthly_course_price_amount ?? 0)}
+              onChange={(v) => update('monthly_course_price_amount', Number(v))}
+            />
+            <Field
+              label="Telegram (@username)"
+              value={String(form.telegram_username ?? '')}
+              onChange={(v) => update('telegram_username', v)}
+              placeholder="@username"
+            />
+            <Field
+              label="Telefon raqami"
+              value={String(form.public_phone_e164 ?? '')}
+              onChange={(v) => update('public_phone_e164', v)}
+              placeholder="+998901234567"
+            />
             <label className="space-y-1 text-sm font-semibold text-slate-700 sm:col-span-2">
-              Men haqimda
+              O'zingiz haqingizda
+              <span className="block text-xs font-medium text-slate-500">
+                Tajribangiz, kimlar uchun dars berishingiz va dars uslubingizni yozing. O'quvchilar buni ko'radi.
+              </span>
               <textarea
                 value={String(form.about ?? '')}
                 onChange={(e) => update('about', e.target.value)}
                 rows={5}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-950 outline-none focus:border-blue-500"
+                placeholder="Masalan: 5 yillik tajribaga ega rus tili o'qituvchisiman. Boshlang'ich va o'rta darajadagi o'quvchilar bilan ishlayman..."
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-950 outline-none focus:border-blue-500"
               />
             </label>
           </div>
+          <p className="mt-3 text-xs font-medium text-slate-500">
+            Bog'lanish uchun Telegram yoki telefon raqamidan kamida bittasini kiriting.
+          </p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
@@ -406,12 +471,14 @@ function Field({
   value,
   onChange,
   type = 'text',
+  placeholder,
   className = '',
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
+  placeholder?: string;
   className?: string;
 }) {
   return (
@@ -420,6 +487,7 @@ function Field({
       <input
         type={type}
         value={value}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-950 outline-none focus:border-blue-500"
       />

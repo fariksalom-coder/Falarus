@@ -1082,6 +1082,17 @@ async function startServer() {
         console.error('[POST /api/user/avatar] update', updateErr);
         return res.status(500).json({ error: 'Profil rasmi saqlanmadi' });
       }
+      const { data: accountRow } = await supabase
+        .from('users')
+        .select('account_type')
+        .eq('id', userId)
+        .maybeSingle();
+      if ((accountRow as { account_type?: string } | null)?.account_type === 'teacher') {
+        await supabase
+          .from('teacher_profiles')
+          .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+          .eq('user_id', userId);
+      }
       const { user, error } = await fetchUserProfileById(userId);
       if (error || !user) {
         return res.status(500).json({ error: 'Profilni yuklab bo‘lmadi' });
@@ -1105,6 +1116,17 @@ async function startServer() {
       if (updateErr) {
         console.error('[DELETE /api/user/avatar]', updateErr);
         return res.status(500).json({ error: 'Rasm o‘chirilmadi' });
+      }
+      const { data: accountRow } = await supabase
+        .from('users')
+        .select('account_type')
+        .eq('id', userId)
+        .maybeSingle();
+      if ((accountRow as { account_type?: string } | null)?.account_type === 'teacher') {
+        await supabase
+          .from('teacher_profiles')
+          .update({ avatar_url: null, updated_at: new Date().toISOString() })
+          .eq('user_id', userId);
       }
       const { user, error } = await fetchUserProfileById(userId);
       if (error || !user) {

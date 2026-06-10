@@ -78,6 +78,13 @@ async function ensureTeacherAccount(supabase: DbClient, userId: number, res: Res
   return true;
 }
 
+function normalizeTelegramUsername(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const username = raw.replace(/^@+/, '').replace(/\s+/g, '');
+  return username || null;
+}
+
 function normalizeTeacherProfilePayload(body: Record<string, unknown>, userId: number): Record<string, unknown> {
   const firstName = asString(body.first_name || body.firstName);
   const lastName = asString(body.last_name || body.lastName);
@@ -86,41 +93,44 @@ function normalizeTeacherProfilePayload(body: Record<string, unknown>, userId: n
   const experienceMonths = asNumber(body.experience_months ?? body.experienceMonths) ?? 0;
   const monthlyPrice = asNumber(body.monthly_course_price_amount ?? body.monthlyCoursePriceAmount) ?? 0;
   const monthlyCurrency = asString(body.monthly_course_price_currency ?? body.monthlyCoursePriceCurrency, 'RUB');
-  const teachingFormat = asString(body.teaching_format ?? body.teachingFormat, 'online');
+  const telegramUsername = normalizeTelegramUsername(asString(body.telegram_username ?? body.telegramUsername));
+  const publicPhone = asString(body.public_phone_e164 ?? body.publicPhoneE164) || null;
 
   if (!firstName) throw new Error('Ism kiritilishi shart');
   if (!lastName) throw new Error('Familiya kiritilishi shart');
   if (!age || age < 16 || age > 99) throw new Error('Yosh 16–99 oralig‘ida bo‘lishi kerak');
-  if (!['online', 'offline', 'online_offline'].includes(teachingFormat)) {
-    throw new Error('Dars formati noto‘g‘ri');
-  }
   if (!isCurrencyCode(monthlyCurrency)) throw new Error('Valyuta noto‘g‘ri');
+  if (!telegramUsername && !publicPhone) {
+    throw new Error('Telegram username yoki telefon raqamini kiriting');
+  }
+
+  const preferredContact = telegramUsername ? 'telegram' : 'phone';
+  const telegramUrl = telegramUsername ? `https://t.me/${telegramUsername}` : null;
 
   return {
     user_id: userId,
     first_name: firstName,
     last_name: lastName,
     age,
-    avatar_url: asString(body.avatar_url ?? body.avatarUrl) || null,
     region: asString(body.region),
     city: asString(body.city),
     experience_years: Math.max(0, experienceYears),
     experience_months: Math.min(11, Math.max(0, experienceMonths)),
-    teaching_format: teachingFormat,
-    headline: asString(body.headline),
+    teaching_format: 'online',
+    headline: '',
     about: asString(body.about),
-    subjects: asStringArray(body.subjects),
-    teaching_levels: asStringArray(body.teaching_levels ?? body.teachingLevels),
-    languages: asStringArray(body.languages).length ? asStringArray(body.languages) : ['uz', 'ru'],
+    subjects: ['Rus tili'],
+    teaching_levels: [],
+    languages: ['uz', 'ru'],
     monthly_course_price_amount: Math.max(0, monthlyPrice),
     monthly_course_price_currency: monthlyCurrency,
-    telegram_username: asString(body.telegram_username ?? body.telegramUsername) || null,
-    telegram_url: asString(body.telegram_url ?? body.telegramUrl) || null,
-    whatsapp_phone_e164: asString(body.whatsapp_phone_e164 ?? body.whatsappPhoneE164) || null,
-    max_contact: asString(body.max_contact ?? body.maxContact) || null,
-    public_phone_e164: asString(body.public_phone_e164 ?? body.publicPhoneE164) || null,
-    public_email: asString(body.public_email ?? body.publicEmail) || null,
-    preferred_contact_method: asString(body.preferred_contact_method ?? body.preferredContactMethod) || null,
+    telegram_username: telegramUsername,
+    telegram_url: telegramUrl,
+    whatsapp_phone_e164: null,
+    max_contact: null,
+    public_phone_e164: publicPhone,
+    public_email: null,
+    preferred_contact_method: preferredContact,
     profile_status: 'pending_review',
     updated_at: new Date().toISOString(),
   };
@@ -360,6 +370,22 @@ export function createTeacherRoutes(
       const userId = Number(req.userId);
       if (!(await ensureTeacherAccount(supabase, userId, res))) return;
       const payload = normalizeTeacherProfilePayload(req.body ?? {}, userId);
+      const { data: existing } = await supabase
+        .from('teacher_profiles')
+        .select('avatar_url')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if ((existing as { avatar_url?: string | null } | null)?.avatar_url) {
+        (payload as Record<string, unknown>).avatar_url = (existing as { avatar_url: string }).avatar_url;
+      } else {
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('avatar_url')
+          .eq('id', userId)
+          .maybeSingle();
+        const userAvatar = (userRow as { avatar_url?: string | null } | null)?.avatar_url;
+        if (userAvatar) (payload as Record<string, unknown>).avatar_url = userAvatar;
+      }
       const { data, error } = await supabase
         .from('teacher_profiles')
         .upsert(payload, { onConflict: 'user_id' })
