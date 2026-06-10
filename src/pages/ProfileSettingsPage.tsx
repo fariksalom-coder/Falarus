@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../api';
+import UserAvatar, { type UserGender } from '../components/UserAvatar';
 
 type MeResponse = {
   id: number;
@@ -16,6 +17,8 @@ type MeResponse = {
   totalPoints?: number;
   planName?: string | null;
   planExpiresAt?: string | null;
+  avatarUrl?: string | null;
+  gender?: UserGender;
 };
 
 export default function ProfileSettingsPage() {
@@ -25,6 +28,7 @@ export default function ProfileSettingsPage() {
   const [level, setLevel] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState<UserGender>(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
@@ -41,6 +45,7 @@ export default function ProfileSettingsPage() {
         setLevel(data.level ?? '');
         setEmail(data.email ?? '');
         setPhone(data.phone ?? '');
+        setGender(data.gender ?? null);
       })
       .catch(() => {});
   }, [token]);
@@ -50,8 +55,9 @@ export default function ProfileSettingsPage() {
     setLevel(user?.level ?? '');
     setEmail(user?.email ?? '');
     setPhone(user?.phone ?? '');
+    setGender(user?.gender ?? null);
     loadMe();
-  }, [loadMe, user?.email, user?.firstName, user?.lastName, user?.level, user?.phone]);
+  }, [loadMe, user?.email, user?.firstName, user?.gender, user?.lastName, user?.level, user?.phone]);
 
   function applyMeToContext(me: MeResponse) {
     updateUser({
@@ -60,10 +66,12 @@ export default function ProfileSettingsPage() {
       totalPoints: me.totalPoints,
       planName: me.planName,
       planExpiresAt: me.planExpiresAt,
+      avatarUrl: me.avatarUrl ?? null,
+      gender: me.gender ?? null,
     });
   }
 
-  async function patchAccount(body: Record<string, string>) {
+  async function patchAccount(body: Record<string, string | null>) {
     const res = await fetch(apiUrl('/api/user/account'), {
       method: 'PATCH',
       headers: {
@@ -97,9 +105,10 @@ export default function ProfileSettingsPage() {
 
     setSaving(true);
     try {
-      const body: Record<string, string> = {
+      const body: Record<string, string | null> = {
         email: email.trim(),
         phone: phone.trim(),
+        gender,
       };
       if (newPassword || newPasswordConfirm) {
         body.currentPassword = currentPassword;
@@ -110,6 +119,7 @@ export default function ProfileSettingsPage() {
       applyMeToContext(me);
       setEmail(me.email ?? '');
       setPhone(me.phone ?? '');
+      setGender(me.gender ?? null);
       setCurrentPassword('');
       setNewPassword('');
       setNewPasswordConfirm('');
@@ -146,15 +156,13 @@ export default function ProfileSettingsPage() {
 
         <form id="profile-edit-form" onSubmit={handleSubmit} className="px-4 pt-7">
           <div className="flex flex-col items-center pb-8">
-            <img
-              src="/app-mobile/images/home/avatar.png"
-              alt=""
-              className="h-[97px] w-[97px] rounded-full object-cover object-[center_38%]"
-              decoding="async"
+            <UserAvatar
+              avatarUrl={user?.avatarUrl}
+              gender={gender}
+              name={fullName}
+              className="h-[97px] w-[97px]"
             />
-            <button type="button" className="mt-4 text-[16px] font-bold text-[#008CFF]">
-              Rasmni almashtirish
-            </button>
+            <p className="mt-4 text-[14px] font-medium text-[#64748B]">Rasm yuklash tez orada qo‘shiladi</p>
           </div>
 
           {banner ? (
@@ -172,6 +180,21 @@ export default function ProfileSettingsPage() {
             <div className="mt-8 space-y-7">
               <TextField label="To'liq ism" value={fullName} onChange={setFullName} readOnly />
               <TextField label="Rus tili darajasi" value={level} onChange={setLevel} readOnly />
+              <div>
+                <span className="mb-3 block text-[16px] font-bold text-[#4B4B4B]">Jins</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <GenderOption
+                    label="Erkak"
+                    selected={gender === 'male'}
+                    onSelect={() => setGender('male')}
+                  />
+                  <GenderOption
+                    label="Ayol"
+                    selected={gender === 'female'}
+                    onSelect={() => setGender('female')}
+                  />
+                </div>
+              </div>
             </div>
           </section>
 
@@ -188,6 +211,30 @@ export default function ProfileSettingsPage() {
         </form>
       </main>
     </div>
+  );
+}
+
+function GenderOption({
+  label,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`h-[43px] rounded-[8px] border text-[17px] font-bold transition-colors ${
+        selected
+          ? 'border-[#24459A] bg-[#EEF4FA] text-[#24459A]'
+          : 'border-[#A0A0A0] bg-white text-[#4B4B4B]'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 

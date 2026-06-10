@@ -19,6 +19,8 @@ interface User {
   planExpiresAt?: string | null;
   billingNoticeUz?: string | null;
   accountType?: string | null;
+  avatarUrl?: string | null;
+  gender?: 'male' | 'female' | null;
 }
 
 interface AuthContextType {

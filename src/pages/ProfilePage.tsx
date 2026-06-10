@@ -18,6 +18,7 @@ import {
   Volume2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import UserAvatar from '../components/UserAvatar';
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
@@ -42,11 +43,11 @@ export default function ProfilePage() {
         <h1 className="text-[55px] font-black leading-none tracking-tight text-[#0F172A]">Profil</h1>
 
         <section className="mt-[52px] flex flex-col items-center">
-          <img
-            src="/app-mobile/images/home/avatar.png"
-            alt=""
-            className="h-[97px] w-[97px] rounded-full object-cover object-[center_38%]"
-            decoding="async"
+          <UserAvatar
+            avatarUrl={user?.avatarUrl}
+            gender={user?.gender ?? null}
+            name={fullName}
+            className="h-[97px] w-[97px]"
           />
           <h2 className="mt-5 text-[29px] font-black leading-none text-[#0F172A]">{fullName}</h2>
 

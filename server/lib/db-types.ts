@@ -318,6 +318,7 @@ export interface UserKunlikDayProgress {
 
 export interface Users {
   avatar_url: string | null;
+  gender: string | null;
   billing_notice_uz: string | null;
   /**
    * ISO 3166-1 alpha-2 country derived from normalized number.

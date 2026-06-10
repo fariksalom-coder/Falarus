@@ -96,7 +96,7 @@ const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
 const USER_PROFILE_SELECT_FULL =
-  'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz, account_type';
+  'id, first_name, last_name, email, phone, level, onboarded, progress, total_points, plan_name, plan_expires_at, billing_notice_uz, account_type, avatar_url, gender';
 const USER_PROFILE_SELECT_LEGACY =
   'id, first_name, last_name, email, phone, level, onboarded, progress';
 
@@ -152,6 +152,8 @@ function mapUserProfile(user: Record<string, any>) {
     planExpiresAt: user.plan_expires_at ?? null,
     billingNoticeUz: user.billing_notice_uz ?? null,
     accountType: user.account_type ?? 'student',
+    avatarUrl: user.avatar_url ?? null,
+    gender: user.gender === 'male' || user.gender === 'female' ? user.gender : null,
   };
 }
 

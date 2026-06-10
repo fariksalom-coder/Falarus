@@ -10,6 +10,8 @@ import { useKunlikProgress, type KunlikDayProgress } from '../hooks/useKunlikPro
 import { prefetchRoutePath } from '../routeModules';
 import { TOTAL_DAYS } from '../data/dailyPlan';
 import { takeKunlikRestoreDay } from '../utils/kunlikLastDay';
+import UserAvatar from '../components/UserAvatar';
+import type { UserGender } from '../components/UserAvatar';
 
 const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   grammar_1: false,
@@ -137,7 +139,19 @@ function findCurrentDay(rows: Map<number, KunlikDayProgress>, promptCounts: Map<
   return TOTAL_DAYS;
 }
 
-function HomeHeader({ streak, premium }: { streak: StreakResponse; premium: boolean }) {
+function HomeHeader({
+  streak,
+  premium,
+  avatarUrl,
+  gender,
+  userName,
+}: {
+  streak: StreakResponse;
+  premium: boolean;
+  avatarUrl?: string | null;
+  gender?: UserGender;
+  userName?: string;
+}) {
   const navigate = useNavigate();
 
   return (
@@ -150,12 +164,7 @@ function HomeHeader({ streak, premium }: { streak: StreakResponse; premium: bool
       </div>
 
       <div className="flex h-11 w-[88px] items-center rounded-full bg-[#F8FBFF] py-1 pl-1 pr-2 shadow-[0_8px_24px_rgba(15,23,42,0.09)]">
-        <img
-          src="/app-mobile/images/home/avatar.png"
-          alt=""
-          className="h-9 w-9 rounded-full object-cover object-[center_38%]"
-          decoding="async"
-        />
+        <UserAvatar avatarUrl={avatarUrl} gender={gender ?? null} name={userName} className="h-9 w-9" />
         <span className="ml-2 min-w-0 flex-1 text-center text-[20px] font-extrabold leading-none text-[#0F172A]">
           {streak.streak_days}
         </span>
@@ -358,7 +367,7 @@ function QuestCard({ slot, index, day }: { slot: QuestSlot; index: number; day: 
 }
 
 export default function HomePage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { access } = useAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const { rows, loaded, practicePromptCountByDay } = useKunlikProgress();
@@ -425,7 +434,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#F4F9FF] pb-[84px]">
       <main className="mx-auto w-full max-w-[820px]">
-        <HomeHeader streak={streak} premium={premium} />
+        <HomeHeader
+          streak={streak}
+          premium={premium}
+          avatarUrl={user?.avatarUrl}
+          gender={user?.gender ?? null}
+          userName={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || undefined}
+        />
         <ExamShortcuts />
         {progressReady ? (
           <>

@@ -158,6 +158,17 @@ export async function applyUserAccountPatch(
     phone: nextPhone,
   };
 
+  if ('gender' in body) {
+    const g = body.gender;
+    if (g === null || g === '') {
+      updates.gender = null;
+    } else if (g === 'male' || g === 'female') {
+      updates.gender = g;
+    } else {
+      return { ok: false, status: 400, error: "Jins noto'g'ri" };
+    }
+  }
+
   if ('phone' in body) {
     updates.phone_normalized = nextPhone;
     updates.phone_raw = nextPhoneRaw;

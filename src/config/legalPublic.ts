@@ -20,9 +20,9 @@ export function getLegalEntityMeta(): LegalEntityMeta {
   const inn =
     import.meta.env.VITE_LEGAL_INN?.trim() ||
     '[STIR / INN — .env da VITE_LEGAL_INN]';
-  const email = import.meta.env.VITE_LEGAL_SUPPORT_EMAIL?.trim() || 'support@falarus.uz';
+  const email = import.meta.env.VITE_LEGAL_SUPPORT_EMAIL?.trim() || 'farmonomonov1@gmail.com';
   const phone =
-    import.meta.env.VITE_LEGAL_SUPPORT_PHONE?.trim() || '+998 __ ___ __ __';
+    import.meta.env.VITE_LEGAL_SUPPORT_PHONE?.trim() || '+998 77 133 24 74';
   return {
     proprietorLabel: proprietor,
     innLabel: inn,

@@ -44,6 +44,13 @@ const navItems: { key: NavKey; href: string }[] = [
   { key: 'contact', href: '#support' },
 ];
 
+const LANDING_CONTACTS = {
+  telegramUrl: 'https://t.me/falarus',
+  telegramLabel: '@falarus',
+  instagramUrl: 'https://www.instagram.com/fala_rus',
+  instagramLabel: '@fala_rus',
+} as const;
+
 type FaqItem = { question: string; answer: string };
 
 const FAQ_ITEMS_UZ: readonly FaqItem[] = [
@@ -1331,14 +1338,14 @@ export default function LandingPage() {
               </li>
               <li className="flex items-center gap-4">
                 <Send className="h-5 w-5 shrink-0 text-[#1E3A8A]" />
-                <a className="transition hover:underline" href="https://t.me/falarusuz" target="_blank" rel="noreferrer">
-                  Telegram
+                <a className="transition hover:underline" href={LANDING_CONTACTS.telegramUrl} target="_blank" rel="noreferrer">
+                  Telegram {LANDING_CONTACTS.telegramLabel}
                 </a>
               </li>
               <li className="flex items-center gap-4">
                 <Star className="h-5 w-5 shrink-0 text-[#1E3A8A]" />
-                <a className="transition hover:underline" href="https://falarus.uz">
-                  falarus.uz
+                <a className="transition hover:underline" href={LANDING_CONTACTS.instagramUrl} target="_blank" rel="noreferrer">
+                  Instagram {LANDING_CONTACTS.instagramLabel}
                 </a>
               </li>
             </ul>
