@@ -4,7 +4,7 @@ import type { DbClient } from '../types/dbClient';
 import {
   getCourseProductPrice,
   getTeacherListingPriceUzs,
-  getTeacherTrialPriceUzs,
+  getTeacherTrialPrice,
   isCourseProductCode,
   isCurrencyCode,
   isPaymentProductCode,
@@ -305,8 +305,11 @@ export function createPaymentRoutes(
       if (!isCurrencyCode(currency)) {
         return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
       }
-      if ((productCode === 'teacher_listing' || productCode === 'teacher_trial') && currency !== 'UZS') {
+      if (productCode === 'teacher_listing' && currency !== 'UZS') {
         return res.status(400).json({ error: "Bu to'lov uchun faqat UZS" });
+      }
+      if (productCode === 'teacher_trial' && currency !== 'UZS' && currency !== 'RUB') {
+        return res.status(400).json({ error: "Sinov darsi uchun faqat UZS yoki RUB" });
       }
       if (!file || !file.buffer) {
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
@@ -395,7 +398,7 @@ export function createPaymentRoutes(
         baseAmount = amount;
         discountMeta = { listing_plan_code: listingPlanCode };
       } else if (productCode === 'teacher_trial') {
-        amount = getTeacherTrialPriceUzs();
+        amount = getTeacherTrialPrice(currency);
         baseAmount = amount;
         discountMeta = { trial_id: trialId };
       }

@@ -36,9 +36,19 @@ export function getTeacherListingPriceUzs(planCode: TeacherListingPlanCode): num
 }
 
 /** Sinov darsi — 490 ₽, UZS hisobida (150 kurs). */
+export const TEACHER_TRIAL_PRICE_RUB = 490;
 export const TEACHER_TRIAL_PRICE_UZS = 73_500;
 
+export function getTeacherTrialPriceRub(): number {
+  return TEACHER_TRIAL_PRICE_RUB;
+}
+
 export function getTeacherTrialPriceUzs(): number {
+  return TEACHER_TRIAL_PRICE_UZS;
+}
+
+export function getTeacherTrialPrice(currency: CurrencyCode): number {
+  if (currency === 'RUB') return TEACHER_TRIAL_PRICE_RUB;
   return TEACHER_TRIAL_PRICE_UZS;
 }
 

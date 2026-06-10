@@ -8,6 +8,7 @@ import {
   getCourseProductPrice,
   getPaymentProductLabel,
   getTeacherListingPriceUzs,
+  getTeacherTrialPrice,
   getTeacherTrialPriceUzs,
   isCourseProductCode,
   isTeacherListingPlanCode,
@@ -169,7 +170,7 @@ export default function PaymentPage() {
         if (isTeacherListing && listingPlanCode) {
           setPrice(getTeacherListingPriceUzs(listingPlanCode));
         } else if (isTeacherTrial) {
-          setPrice(getTeacherTrialPriceUzs());
+          setPrice(getTeacherTrialPrice(currency));
         } else {
           setPrice(isCourseProductCode(productCode) ? getCourseProductPrice(productCode, currency) : null);
         }
@@ -368,6 +369,14 @@ export default function PaymentPage() {
             </div>
           </div>
         </section>
+
+        {isTeacherTrial ? (
+          <p className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900">
+            {currency === 'RUB'
+              ? "Quyidagi Rossiya kartasiga 490 ₽ o'tkazing va chekni yuklang."
+              : `Click, Payme yoki boshqa ilova orqali ${getTeacherTrialPriceUzs().toLocaleString('uz-UZ')} so'm o'tkazing va chekni yuklang.`}
+          </p>
+        ) : null}
 
         {/* 3. Payment details card with icons */}
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
