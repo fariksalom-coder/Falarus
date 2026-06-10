@@ -79,12 +79,7 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
         new Date(adminChat.last_message.created_at).getTime() > helpLastSeenMs));
 
   return (
-    <section className="mt-3">
-      <div className="mb-2 flex items-center justify-between px-0.5">
-        <h2 className="text-base font-extrabold text-slate-900">Chatlar</h2>
-        {loading ? <span className="text-xs font-medium text-slate-400">Yuklanmoqda…</span> : null}
-      </div>
-
+    <section>
       <div className="overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
         <button
           type="button"
@@ -139,12 +134,6 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
             ) : null}
           </div>
         </button>
-
-        {matches.length > 0 ? (
-          <div className="border-b border-slate-100 px-4 py-2">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Sheriklar</p>
-          </div>
-        ) : null}
 
         {matches.map((match) => {
           const name = match.partner_profile?.display_name ?? 'Sherik';

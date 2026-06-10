@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, LogIn } from 'lucide-react';
+import { ArrowLeft, Inbox, LogIn, Send, UserRound, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
   getPartnerStatus,
@@ -147,44 +147,6 @@ export default function PartnerPage() {
   const incomingCount = status?.incomingRequestsCount ?? 0;
   const outgoingCount = status?.outgoingRequestsCount ?? 0;
 
-  const hubActionButtons = status ? (
-    <div className="grid grid-cols-3 gap-2">
-      {(
-        [
-          { id: 'browse' as const, label: 'Anketalar', count: null, onClick: openAnketalar },
-          {
-            id: 'incoming' as const,
-            label: 'Kiruvchi',
-            count: incomingCount,
-            onClick: () => setOverlay('incoming'),
-          },
-          {
-            id: 'outgoing' as const,
-            label: 'Chiquvchi',
-            count: outgoingCount,
-            onClick: () => setOverlay('outgoing'),
-          },
-        ] as const
-      ).map((action) => (
-        <button
-          key={action.id}
-          type="button"
-          onClick={action.onClick}
-          className="rounded-2xl border border-slate-200/90 bg-white px-2 py-3 text-center shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.98]"
-        >
-          <span className="block text-[12px] font-bold leading-tight text-slate-800 sm:text-[13px]">
-            {action.label}
-          </span>
-          {action.count != null && action.count > 0 ? (
-            <span className="mt-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white">
-              {action.count}
-            </span>
-          ) : null}
-        </button>
-      ))}
-    </div>
-  ) : null;
-
   const pageBackground = {
     backgroundColor: '#F8FAFC',
     backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 40%, #F1F5F9 100%)',
@@ -233,24 +195,58 @@ export default function PartnerPage() {
 
           {view === 'hub' && status && (
             <motion.div key="hub" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Suhbat</h1>
-                  <p className="mt-0.5 text-sm text-slate-500">Chatlar va sheriklar</p>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Suhbat</h1>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={openAnketalar}
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.97]"
+                    aria-label="Anketalar"
+                  >
+                    <Users className="h-5 w-5" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverlay('incoming')}
+                    className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.97]"
+                    aria-label="Kiruvchi so'rovlar"
+                  >
+                    <Inbox className="h-5 w-5" aria-hidden />
+                    {incomingCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
+                        {incomingCount > 9 ? '9+' : incomingCount}
+                      </span>
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverlay('outgoing')}
+                    className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.97]"
+                    aria-label="Chiquvchi so'rovlar"
+                  >
+                    <Send className="h-5 w-5" aria-hidden />
+                    {outgoingCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
+                        {outgoingCount > 9 ? '9+' : outgoingCount}
+                      </span>
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (status.hasProfile) {
+                        setOverlay('profile-form');
+                        return;
+                      }
+                      scrollToInlineForm();
+                    }}
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.97]"
+                    aria-label="Anketa"
+                  >
+                    <UserRound className="h-5 w-5" aria-hidden />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (status.hasProfile) {
-                      setOverlay('profile-form');
-                      return;
-                    }
-                    scrollToInlineForm();
-                  }}
-                  className="shrink-0 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 shadow-sm"
-                >
-                  Anketa
-                </button>
               </div>
 
               <PartnerChatsSection
@@ -262,8 +258,6 @@ export default function PartnerPage() {
                   setOverlay('partner-chat');
                 }}
               />
-
-              {hubActionButtons}
 
               {!status.hasProfile ? (
                 <div
