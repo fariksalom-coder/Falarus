@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserAvatar from '../components/UserAvatar';
+import { resolveAssetUrl } from '../api';
 import { bustAvatarUrl, patchUserAccount, uploadUserAvatar } from '../api/user';
 
 export default function ProfilePage() {
   const { user, token, logout, updateUser } = useAuth();
   const navigate = useNavigate();
-  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputId = useId();
+  const [avatarRevision, setAvatarRevision] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -45,6 +47,12 @@ export default function ProfilePage() {
 
   const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Foydalanuvchi';
 
+  function avatarDisplayUrl(url: string | null | undefined): string | null {
+    const resolved = resolveAssetUrl(url);
+    if (!resolved) return null;
+    return `${resolved.split('?')[0]}?v=${avatarRevision}`;
+  }
+
   function applyMe(me: { firstName: string; lastName: string; avatarUrl?: string | null }) {
     updateUser({
       firstName: me.firstName,
@@ -53,6 +61,7 @@ export default function ProfilePage() {
     });
     setFirstName(me.firstName);
     setLastName(me.lastName);
+    if (me.avatarUrl) setAvatarRevision((v) => v + 1);
   }
 
   async function handlePickAvatar(e: ChangeEvent<HTMLInputElement>) {
@@ -120,35 +129,35 @@ export default function ProfilePage() {
         ) : null}
 
         <section className="mb-6 flex flex-col items-center rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
-          <button
-            type="button"
-            onClick={() => avatarInputRef.current?.click()}
-            disabled={uploadingAvatar}
-            className="relative rounded-full disabled:opacity-60"
+          <label
+            htmlFor={avatarInputId}
+            className={`relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full ${
+              uploadingAvatar ? 'pointer-events-none opacity-60' : ''
+            }`}
             aria-label="Profil rasmini tanlash"
           >
             <UserAvatar
-              avatarUrl={user?.avatarUrl}
+              avatarUrl={avatarDisplayUrl(user?.avatarUrl)}
               gender={user?.gender ?? null}
               name={fullName}
               className="h-20 w-20"
             />
-            <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#24459A] text-white shadow-md">
+            <span className="pointer-events-none absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#24459A] text-white shadow-md">
               {uploadingAvatar ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
                 <Camera className="h-3.5 w-3.5" aria-hidden />
               )}
             </span>
-          </button>
-          <input
-            ref={avatarInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={handlePickAvatar}
-            disabled={uploadingAvatar}
-          />
+            <input
+              id={avatarInputId}
+              type="file"
+              accept="image/*"
+              className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+              onChange={handlePickAvatar}
+              disabled={uploadingAvatar}
+            />
+          </label>
           <p className="mt-2 text-xs font-medium text-slate-500">Rasm uchun bosing</p>
 
           {editingName ? (

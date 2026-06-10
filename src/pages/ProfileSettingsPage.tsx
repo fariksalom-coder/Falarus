@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { apiUrl } from '../api';
+import { apiUrl, resolveAssetUrl } from '../api';
 import { bustAvatarUrl, patchUserAccount, removeUserAvatar, uploadUserAvatar } from '../api/user';
 import UserAvatar, { type UserGender } from '../components/UserAvatar';
 
@@ -39,7 +39,7 @@ export default function ProfileSettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarCacheKey, setAvatarCacheKey] = useState(0);
   const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputId = useId();
 
   const loadMe = useCallback(() => {
     if (!token) return;
@@ -86,9 +86,9 @@ export default function ProfileSettingsPage() {
   }
 
   function avatarPreviewUrl(url: string | null): string | null {
-    if (!url) return null;
-    const base = url.split('?')[0];
-    return `${base}?v=${avatarCacheKey}`;
+    const resolved = resolveAssetUrl(url);
+    if (!resolved) return null;
+    return `${resolved.split('?')[0]}?v=${avatarCacheKey}`;
   }
 
   async function handlePickAvatar(e: ChangeEvent<HTMLInputElement>) {
@@ -197,11 +197,11 @@ export default function ProfileSettingsPage() {
 
         <form id="profile-edit-form" onSubmit={handleSubmit} className="px-4 pt-5">
           <div className="flex flex-col items-center pb-5">
-            <button
-              type="button"
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              className="relative rounded-full disabled:opacity-60"
+            <label
+              htmlFor={avatarInputId}
+              className={`relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full ${
+                uploadingAvatar ? 'pointer-events-none opacity-60' : ''
+              }`}
               aria-label="Profil rasmini almashtirish"
             >
               <UserAvatar
@@ -211,28 +211,26 @@ export default function ProfileSettingsPage() {
                 className="h-20 w-20"
               />
               {uploadingAvatar ? (
-                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/35">
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/35">
                   <span className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 </span>
               ) : null}
-            </button>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={handlePickAvatar}
-              disabled={uploadingAvatar}
-            />
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
+              <input
+                id={avatarInputId}
+                type="file"
+                accept="image/*"
+                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                onChange={handlePickAvatar}
                 disabled={uploadingAvatar}
-                className="text-sm font-bold text-blue-600 disabled:opacity-50"
+              />
+            </label>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+              <label
+                htmlFor={avatarInputId}
+                className={`text-sm font-bold text-blue-600 ${uploadingAvatar ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
               >
                 Rasmni almashtirish
-              </button>
+              </label>
               {avatarUrl ? (
                 <button
                   type="button"

@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { User, UserRound } from 'lucide-react';
+import { resolveAssetUrl } from '../api';
 
 export type UserGender = 'male' | 'female' | null;
 
@@ -27,15 +29,21 @@ function genderClasses(gender: UserGender): string {
 }
 
 export default function UserAvatar({ avatarUrl, gender = null, name, className = 'h-10 w-10' }: Props) {
-  const trimmedUrl = avatarUrl?.trim();
+  const resolvedUrl = resolveAssetUrl(avatarUrl);
+  const [imageFailed, setImageFailed] = useState(false);
 
-  if (trimmedUrl) {
+  useEffect(() => {
+    setImageFailed(false);
+  }, [resolvedUrl]);
+
+  if (resolvedUrl && !imageFailed) {
     return (
       <img
-        src={trimmedUrl}
+        src={resolvedUrl}
         alt={name?.trim() || ''}
         className={`rounded-full object-cover ${className}`}
         decoding="async"
+        onError={() => setImageFailed(true)}
       />
     );
   }

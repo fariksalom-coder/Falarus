@@ -18,6 +18,7 @@ import helmet from 'helmet';
 import { createServer as createViteServer } from 'vite';
 import type { DbClient } from './server/types/dbClient.ts';
 import { createDatabaseClient, isDatabaseTimeoutError } from './server/lib/createDatabaseClient.ts';
+import { configureLocalStorageRoot } from './server/lib/postgresFacade.ts';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Busboy from 'busboy';
@@ -75,8 +76,19 @@ import { runClickFiscalRetryCron } from './server/services/clickFiscal.service.t
 import { resolveRussianTariffQuote } from './server/services/promoPricing.service.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+
+configureLocalStorageRoot(path.join(UPLOADS_DIR, 'storage'));
 
 const supabase: DbClient = createDatabaseClient();
+
+function toAbsolutePublicUrl(relativeUrl: string): string {
+  const trimmed = relativeUrl.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  const base = (process.env.APP_URL || process.env.PUBLIC_URL || '').replace(/\/$/, '');
+  if (!base) return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${base}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+}
 
 const jwtSecretEnv = process.env.JWT_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
@@ -93,7 +105,7 @@ if (!jwtSecretEnv || jwtSecretEnv.length < 32) {
 const JWT_SECRET = jwtSecretEnv;
 const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
 const USER_AVATAR_BUCKET = 'user-avatars';
-const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
 const USER_PROFILE_SELECT_FULL =
@@ -153,7 +165,7 @@ function mapUserProfile(user: Record<string, any>) {
     planExpiresAt: user.plan_expires_at ?? null,
     billingNoticeUz: user.billing_notice_uz ?? null,
     accountType: user.account_type ?? 'student',
-    avatarUrl: user.avatar_url ?? null,
+    avatarUrl: user.avatar_url ? toAbsolutePublicUrl(String(user.avatar_url)) : null,
     gender: user.gender === 'male' || user.gender === 'female' ? user.gender : null,
   };
 }
@@ -275,7 +287,7 @@ async function startServer() {
     }
     return next();
   });
-  app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
+  app.use('/uploads', express.static(UPLOADS_DIR, { fallthrough: false }));
   app.use((req, res, next) => {
     const url = String(req.originalUrl || req.url || '');
     // Apply rate limits only for API calls.
@@ -1032,7 +1044,14 @@ async function startServer() {
     userId: number,
     file: { buffer: Buffer; mimetype: string }
   ): Promise<string> {
-    const ext = file.mimetype === 'image/png' ? 'png' : file.mimetype === 'image/webp' ? 'webp' : 'jpg';
+    const ext =
+      file.mimetype === 'image/png'
+        ? 'png'
+        : file.mimetype === 'image/webp'
+          ? 'webp'
+          : file.mimetype === 'image/heic' || file.mimetype === 'image/heif'
+            ? 'heic'
+            : 'jpg';
     const objectPath = `${userId}/avatar.${ext}`;
     await ensurePublicStorageBucket(USER_AVATAR_BUCKET);
     const { error: uploadErr } = await supabase.storage
@@ -1042,7 +1061,7 @@ async function startServer() {
     const { data: publicData } = supabase.storage.from(USER_AVATAR_BUCKET).getPublicUrl(objectPath);
     const avatarUrl = publicData?.publicUrl;
     if (!avatarUrl) throw new Error('Rasm URL olinmadi');
-    return avatarUrl;
+    return toAbsolutePublicUrl(avatarUrl);
   }
 
   app.post('/api/user/avatar', authenticate, async (req: any, res) => {
@@ -2699,8 +2718,12 @@ async function startServer() {
   } else {
     app.use(express.static('dist'));
     app.get('*', (req, res) => {
-      if (String(req.path || '').startsWith('/api/')) {
+      const p = String(req.path || '');
+      if (p.startsWith('/api/')) {
         return res.status(404).json({ error: 'API endpoint topilmadi' });
+      }
+      if (p.startsWith('/uploads/')) {
+        return res.status(404).type('text/plain').send('Not found');
       }
       res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
     });

@@ -19,7 +19,7 @@ export type UserMe = {
   gender?: UserGender;
 };
 
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 const MAX_AVATAR_BYTES = 4 * 1024 * 1024;
 
 function validateAvatarFile(file: File): void {

@@ -33,3 +33,16 @@ export function apiUrl(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`;
   return `${API_BASE}${p}`;
 }
+
+/** Turn API-relative asset paths (/uploads/...) into a browser-loadable URL. */
+export function resolveAssetUrl(url: string | null | undefined): string | null {
+  const trimmed = url?.trim();
+  if (!trimmed) return null;
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) return trimmed;
+  if (typeof window === 'undefined') return trimmed;
+  try {
+    return new URL(trimmed.startsWith('/') ? trimmed : `/${trimmed}`, window.location.origin).href;
+  } catch {
+    return trimmed;
+  }
+}

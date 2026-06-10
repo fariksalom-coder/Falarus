@@ -717,6 +717,13 @@ class LocalStorageApi {
   }
 }
 
+let localStorageRootOverride: string | null = null;
+
+/** Align file storage with express.static uploads dir (project root, not process.cwd()). */
+export function configureLocalStorageRoot(root: string): void {
+  localStorageRootOverride = root;
+}
+
 class PostgresFacade {
   private localStorage: LocalStorageApi | null = null;
 
@@ -759,7 +766,9 @@ class PostgresFacade {
 
   get storage() {
     if (!this.localStorage) {
-      this.localStorage = new LocalStorageApi(path.resolve(process.cwd(), 'uploads', 'storage'));
+      const root =
+        localStorageRootOverride ?? path.resolve(process.cwd(), 'uploads', 'storage');
+      this.localStorage = new LocalStorageApi(root);
     }
     return this.localStorage;
   }
