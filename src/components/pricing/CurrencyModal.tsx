@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { useLocale } from '../context/LocaleContext';
+import { useLocale } from '../../context/LocaleContext';
 
 export type Currency = 'UZS' | 'RUB' | 'USD';
 
