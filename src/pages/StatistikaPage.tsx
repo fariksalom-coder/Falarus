@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import {
   fetchCourseProgress,
   fetchActivityCalendar,
@@ -21,12 +22,13 @@ import {
   Star,
   Zap,
 } from 'lucide-react';
+import { appMainBottomOffsetCss } from '../constants/appLayout';
 
-const BG = '#F8FAFC';
-const BORDER = '#E2E8F0';
-const PRIMARY = '#2563EB';
-const TEXT = '#0F172A';
-const TEXT_SECONDARY = '#64748B';
+const BG = 'var(--app-bg)';
+const BORDER = 'var(--app-border)';
+const PRIMARY = 'var(--app-primary)';
+const TEXT = 'var(--app-text)';
+const TEXT_SECONDARY = 'var(--app-text-muted)';
 const EMPTY_STREAK: StreakResponse = {
   streak_days: 0,
   last_7_days: [false, false, false, false, false, false, false],
@@ -45,32 +47,34 @@ const DAY_LABEL_BY_WEEKDAY: Record<number, string> = {
 
 // Milestone badges (streak days)
 const MILESTONES = [
-  { days: 3,   label: '3 kun',   icon: Flame,   color: '#F97316', bg: '#FFF7ED' },
-  { days: 10,  label: '10 kun',  icon: Zap,     color: '#EAB308', bg: '#FEFCE8' },
-  { days: 30,  label: '30 kun',  icon: Star,    color: '#8B5CF6', bg: '#F5F3FF' },
-  { days: 45,  label: '45 kun',  icon: Award,   color: '#EC4899', bg: '#FDF2F8' },
-  { days: 60,  label: '60 kun',  icon: Trophy,  color: '#0EA5E9', bg: '#F0F9FF' },
-  { days: 100, label: '100 kun', icon: Star,    color: '#2563EB', bg: '#EFF6FF' },
-  { days: 182, label: '182 kun', icon: Trophy,  color: '#059669', bg: '#ECFDF5' },
+  { days: 3, icon: Flame, color: '#F97316', bg: '#FFF7ED' },
+  { days: 10, icon: Zap, color: '#EAB308', bg: '#FEFCE8' },
+  { days: 30, icon: Star, color: '#8B5CF6', bg: '#F5F3FF' },
+  { days: 45, icon: Award, color: '#EC4899', bg: '#FDF2F8' },
+  { days: 60, icon: Trophy, color: '#0EA5E9', bg: '#F0F9FF' },
+  { days: 100, icon: Star, color: '#2563EB', bg: '#EFF6FF' },
+  { days: 182, icon: Trophy, color: '#059669', bg: '#ECFDF5' },
 ];
 
-function MilestoneAchievements({ streakDays }: { streakDays: number }) {
+function MilestoneAchievements({
+  streakDays,
+  t,
+}: {
+  streakDays: number;
+  t: (key: string, values?: Record<string, string | number>) => string;
+}) {
   return (
     <div
-      className="rounded-[20px] border bg-white p-4 shadow-[0_12px_26px_rgba(15,23,42,0.06)] md:rounded-[22px] md:p-5"
+      className="rounded-[20px] border bg-app-surface p-4 shadow-app-soft md:rounded-[22px] md:p-5"
       style={{ borderColor: BORDER }}
     >
       <div className="mb-4 flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600 md:h-9 md:w-9">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300 md:h-9 md:w-9">
           <Trophy className="h-4 w-4 md:h-[18px] md:w-[18px]" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold md:text-[15px]" style={{ color: TEXT }}>
-            Yutuqlar
-          </h2>
-          <p className="text-[11px] md:text-xs" style={{ color: TEXT_SECONDARY }}>
-            Ketma-ket kunlar yutug'i
-          </p>
+          <h2 className="text-sm font-semibold text-app-text md:text-[15px]">{t('stats.milestonesTitle')}</h2>
+          <p className="text-[12px] text-app-text-muted md:text-xs">{t('stats.milestonesSub')}</p>
         </div>
       </div>
 
@@ -81,25 +85,26 @@ function MilestoneAchievements({ streakDays }: { streakDays: number }) {
           return (
             <div
               key={m.days}
-              className="flex flex-col items-center gap-1.5 rounded-[14px] p-2.5 text-center transition-opacity"
-              style={{
-                background: earned ? m.bg : '#F8FAFC',
-                opacity: earned ? 1 : 0.45,
-              }}
+              className={`flex flex-col items-center gap-1.5 rounded-[14px] p-2.5 text-center ${
+                earned ? '' : 'bg-app-bg-subtle dark:bg-white/5'
+              }`}
+              style={earned ? { background: m.bg } : undefined}
             >
               <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl"
-                style={{
-                  background: earned ? m.color : '#E2E8F0',
-                }}
+                className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                  earned ? '' : 'bg-app-border dark:bg-white/10'
+                }`}
+                style={earned ? { background: m.color } : undefined}
               >
-                <Icon className="h-4 w-4 text-white" />
+                <Icon className={`h-4 w-4 ${earned ? 'text-white' : 'text-app-icon-fg'}`} />
               </div>
               <span
-                className="text-[10px] font-bold leading-tight"
-                style={{ color: earned ? m.color : '#94A3B8' }}
+                className={`text-[11px] font-bold leading-tight ${
+                  earned ? '' : 'text-app-icon-fg'
+                }`}
+                style={earned ? { color: m.color } : undefined}
               >
-                {m.label}
+                {t('stats.kunlikDay', { day: m.days })}
               </span>
             </div>
           );
@@ -112,6 +117,7 @@ function MilestoneAchievements({ streakDays }: { streakDays: number }) {
 export default function StatistikaPage() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { t } = useLocale();
 
   // --- Streak ---
   const [streak, setStreak] = useState<StreakResponse>(() => getCachedStreak() ?? EMPTY_STREAK);
@@ -183,11 +189,9 @@ export default function StatistikaPage() {
   }, [streak.last_7_days]);
 
   return (
-    <div className="min-h-screen pb-12" style={{ backgroundColor: BG }}>
+    <div className="min-h-screen bg-app-bg" style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}>
       <main className="mx-auto max-w-4xl px-3 py-4 md:px-5 md:py-5">
-        <h1 className="mb-4 text-[22px] font-bold md:text-[26px]" style={{ color: TEXT }}>
-          Statistika
-        </h1>
+        <h1 className="mb-4 text-[22px] font-bold text-app-text md:text-[26px]">{t('stats.title')}</h1>
 
         <div className="space-y-4">
           <>
@@ -199,7 +203,7 @@ export default function StatistikaPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[13px] font-semibold tracking-tight text-white/95 md:text-[15px]">
-                      Ketma-ket kunlar
+                      {t('stats.streakTitle')}
                     </p>
                     <div className="mt-2 flex items-end gap-2.5">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm md:h-11 md:w-11">
@@ -210,17 +214,17 @@ export default function StatistikaPage() {
                           {streakLoaded ? streak.streak_days : '—'}
                         </div>
                         <div className="mt-0.5 text-[10px] font-medium text-white/80 md:text-xs">
-                          kun ketma-ket
+                          {t('stats.streakDays', { days: streak.streak_days })}
                         </div>
                       </div>
                     </div>
                   </div>
                   <div className="pt-0.5 text-right">
                     <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-white/60 md:text-[10px]">
-                      Oxirgi hafta
+                      {t('stats.lastWeek')}
                     </p>
                     <p className="mt-1 text-[10px] font-medium text-white/90 md:text-[12px]">
-                      Oxirgi 7 kun faoliyati
+                      {t('stats.last7Days')}
                     </p>
                   </div>
                 </div>
@@ -266,7 +270,7 @@ export default function StatistikaPage() {
 
               {/* Course progress card */}
               <div
-                className="overflow-hidden rounded-[22px] border bg-white shadow-[0_12px_26px_rgba(15,23,42,0.06)] md:rounded-[24px]"
+                className="overflow-hidden rounded-[22px] border bg-app-surface shadow-app-soft md:rounded-[24px]"
                 style={{ borderColor: BORDER }}
               >
                 <div
@@ -279,8 +283,8 @@ export default function StatistikaPage() {
                         <BookOpen className="h-4 w-4 text-white" />
                       </div>
                       <div>
-                        <p className="text-[13px] font-bold text-white">Kunlik Reja</p>
-                        <p className="text-[11px] text-blue-100">Rus tili kursi · 182 kun</p>
+                        <p className="text-[13px] font-bold text-white">{t('stats.courseTitle')}</p>
+                        <p className="text-[11px] text-blue-100">{t('stats.courseSubtitle')}</p>
                       </div>
                     </div>
                     <button
@@ -288,7 +292,7 @@ export default function StatistikaPage() {
                       onClick={() => navigate('/')}
                       className="flex items-center gap-1 rounded-xl bg-white/20 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/30"
                     >
-                      Davom etish
+                      {t('stats.courseContinue')}
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -300,20 +304,20 @@ export default function StatistikaPage() {
                         {courseLoaded ? (courseProgress?.completed_days ?? 0) : '—'}
                       </span>
                       <span className="ml-1 text-[14px] font-medium" style={{ color: TEXT_SECONDARY }}>
-                        / 182 kun
+                        {t('stats.courseTotalDays')}
                       </span>
                     </div>
                     <div
                       className="rounded-full px-3 py-1 text-[12px] font-bold"
                       style={{
-                        background: '#EFF6FF',
+                        background: 'var(--app-icon-bg)',
                         color: PRIMARY,
                       }}
                     >
                       {courseLoaded ? `${courseProgress?.pct ?? 0}%` : '—'}
                     </div>
                   </div>
-                  <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-app-bg-subtle">
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
@@ -322,16 +326,16 @@ export default function StatistikaPage() {
                       }}
                     />
                   </div>
-                  <p className="mt-1.5 text-[11px]" style={{ color: TEXT_SECONDARY }}>
+                  <p className="mt-2 text-[13px] font-medium text-app-icon-fg">
                     {courseLoaded && courseProgress && courseProgress.completed_days > 0
-                      ? `${182 - Math.min(courseProgress.completed_days, 182)} kun qoldi`
-                      : "Hali boshlanmagan — Kunlik Rejani boshlang"}
+                      ? t('stats.courseDaysLeft', { days: 182 - Math.min(courseProgress.completed_days, 182) })
+                      : t('stats.courseNotStarted')}
                   </p>
                 </div>
               </div>
 
               {/* Milestone achievements */}
-              <MilestoneAchievements streakDays={streak.streak_days} />
+              <MilestoneAchievements streakDays={streak.streak_days} t={t} />
 
           </>
         </div>

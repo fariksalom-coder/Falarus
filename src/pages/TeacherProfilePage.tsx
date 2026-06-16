@@ -26,6 +26,7 @@ import {
   getTeacherTrialPriceUzs,
   TEACHER_TRIAL_PRODUCT_CODE,
 } from '../../shared/paymentProducts';
+import { useLocale } from '../context/LocaleContext';
 
 function ProfileAvatar({ profile }: { profile: TeacherProfile }) {
   const url = resolveAssetUrl(profile.avatar_url);
@@ -52,11 +53,12 @@ function Stars({ rating }: { rating: number }) {
 }
 
 function ReviewCard({ review }: { review: TeacherStudentReview }) {
-  const text = review.opinion?.trim() || review.what_liked?.trim() || "Fikr qoldirilgan";
+  const { t } = useLocale();
+  const text = review.opinion?.trim() || review.what_liked?.trim() || t('teachers.reviewPlaceholder');
   return (
     <article className="w-[min(88vw,380px)] shrink-0 rounded-[14px] bg-white px-5 py-4 shadow-[0_6px_10px_rgba(15,23,42,0.12)]">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-extrabold text-[#0F172A]">O'quvchi</h3>
+        <h3 className="text-base font-extrabold text-[#0F172A]">{t('teachers.student')}</h3>
         <Stars rating={Number(review.rating)} />
       </div>
       <p className="mt-3 text-sm font-medium leading-relaxed text-[#4B4B4B]">{text}</p>
@@ -69,6 +71,7 @@ export default function TeacherProfilePage() {
   const location = useLocation();
   const { teacherId } = useParams();
   const { token } = useAuth();
+  const { t } = useLocale();
   const { payments, refreshPayments } = usePaymentStatus();
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [myTrial, setMyTrial] = useState<MyTeacherTrialLessonResponse | null>(null);
@@ -104,7 +107,7 @@ export default function TeacherProfilePage() {
   useEffect(() => {
     const id = Number(teacherId);
     if (!Number.isFinite(id)) {
-      setError("O'qituvchi topilmadi");
+      setError(t('teachers.notFound'));
       setLoading(false);
       return;
     }
@@ -167,8 +170,8 @@ export default function TeacherProfilePage() {
       const err = e as Error & { code?: string };
       setBookingError(
         err.code === 'PENDING_PAYMENT'
-          ? "To'lovingiz allaqachon kutilmoqda."
-          : err.message || "Rahmat to'lovi boshlanmadi",
+          ? t('teachers.trialPaymentPending')
+          : err.message || t('teachers.trialRahmatStartError'),
       );
     } finally {
       setBookingLoading(false);
@@ -191,7 +194,7 @@ export default function TeacherProfilePage() {
         },
       });
     } catch (e) {
-      setBookingError(e instanceof Error ? e.message : "To'lovga o'tib bo'lmadi");
+      setBookingError(e instanceof Error ? e.message : t('teachers.trialPaymentNavError'));
       setBookingLoading(false);
     }
   }
@@ -211,19 +214,19 @@ export default function TeacherProfilePage() {
           type="button"
           onClick={() => navigate('/teachers')}
           className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl border border-[#C8DCF3] bg-white text-[#0F172A]"
-          aria-label="Ortga"
+          aria-label={t('common.back')}
         >
           <ArrowLeft className="h-6 w-6" aria-hidden />
         </button>
         <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center text-sm font-semibold text-red-700">
-          {error || "O'qituvchi topilmadi"}
+          {error || t('teachers.notFound')}
         </p>
       </div>
     );
   }
 
   const name = teacherDisplayName(profile);
-  const locationLabel = [profile.city, profile.region].filter(Boolean).join(', ') || "Ko'rsatilmagan";
+  const locationLabel = [profile.city, profile.region].filter(Boolean).join(', ') || t('teachers.notSpecified');
   const monthlyPrice = formatTeacherPrice(
     profile.monthly_course_price_amount,
     profile.monthly_course_price_currency,
@@ -237,7 +240,7 @@ export default function TeacherProfilePage() {
             type="button"
             onClick={() => navigate('/teachers')}
             className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#C8DCF3] bg-white text-[#0F172A]"
-            aria-label="Ortga"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="h-6 w-6" aria-hidden />
           </button>
@@ -257,23 +260,23 @@ export default function TeacherProfilePage() {
             <div className="mt-4 space-y-2.5 text-[15px] font-bold text-[#4B4B4B]">
               <p className="flex items-center gap-3">
                 <Users className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
-                Tajriba: {formatTeacherExperience(profile.experience_years, profile.experience_months)}
+                {t('teachers.experience')} {formatTeacherExperience(profile.experience_years, profile.experience_months)}
               </p>
               <p className="flex items-center gap-3">
                 <Clock className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
-                Yosh: {profile.age}
+                {t('teachers.age')}: {profile.age}
               </p>
               <p className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
-                Hudud: {locationLabel}
+                {t('teachers.region')}: {locationLabel}
               </p>
               <p className="flex items-center gap-3">
                 <BookOpen className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
-                Dars formati: {formatTeachingFormat(profile.teaching_format)}
+                {t('teachers.lessonFormat')}: {formatTeachingFormat(profile.teaching_format)}
               </p>
               <p className="flex items-center gap-3">
                 <CreditCard className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
-                Oylik kurs: {monthlyPrice}
+                {t('teachers.price')} {monthlyPrice}
               </p>
             </div>
           </div>
@@ -282,16 +285,15 @@ export default function TeacherProfilePage() {
         <div className="px-4">
           {awaitingPaymentConfirmation ? (
             <section className="mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 shadow-sm">
-              <h2 className="text-lg font-extrabold text-amber-950">To'lovingiz tekshirilmoqda</h2>
+              <h2 className="text-lg font-extrabold text-amber-950">{t('teachers.trialPending')}</h2>
               <p className="mt-2 text-sm font-medium leading-relaxed text-amber-900/90">
-                Administrator to'lovni tasdiqlagach o'qituvchi bilan chat ochiladi va dars vaqtini kelishasiz.
-                Bu xabar to'lov tasdiqlanguncha shu yerda qoladi.
+                {t('teachers.trialPendingBody')}
               </p>
               <Link
                 to="/payment-history"
                 className="mt-4 inline-flex text-sm font-bold text-[#24459A] hover:underline"
               >
-                To'lovlar tarixi
+                {t('payment.historyTitle')}
               </Link>
             </section>
           ) : !bookingOpen ? (
@@ -300,21 +302,21 @@ export default function TeacherProfilePage() {
               onClick={handleStartBooking}
               className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-[#24459A] text-lg font-extrabold text-white active:scale-[0.99]"
             >
-              Sinov darsiga yozilish — {trialPriceRub} ₽
+              {t('teachers.trialBook')} — {trialPriceRub} ₽
             </button>
           ) : (
             <section className="mt-6 rounded-2xl border border-[#C8DCF3] bg-white p-4 shadow-sm">
               <h2 className="text-lg font-extrabold text-[#0F172A]">
-                Sinov darsiga yozilish — {trialPriceRub} ₽
+                {t('teachers.trialBook')} — {trialPriceRub} ₽
               </h2>
               <p className="mt-2 text-sm font-medium text-slate-600">
-                Qisqa xabar qoldiring (ixtiyoriy). To'lovdan keyin o'qituvchi bilan chat ochiladi va vaqtni kelishasiz.
+                {t('teachers.trialMessageHint')}
               </p>
               <textarea
                 value={studentMessage}
                 onChange={(e) => setStudentMessage(e.target.value)}
                 rows={3}
-                placeholder="Masalan: Kechki vaqtda dars olishni xohlayman..."
+                placeholder={t('teachers.trialMessagePlaceholder')}
                 className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-slate-900 outline-none focus:border-blue-500"
               />
               {bookingError ? (
@@ -327,7 +329,7 @@ export default function TeacherProfilePage() {
                   disabled={bookingLoading}
                   className="flex h-12 w-full items-center justify-center rounded-full bg-[#24459A] text-base font-extrabold text-white disabled:opacity-60"
                 >
-                  {bookingLoading ? 'Yuklanmoqda...' : "To'lash — Click / Payme / boshqa"}
+                  {bookingLoading ? t('common.loading') : t('teachers.trialPayUzs')}
                 </button>
                 <p className="text-center text-xs font-medium text-slate-500">
                   {trialPriceUzs.toLocaleString('uz-UZ')} so'm · Rahmat orqali (Click, Payme, Uzum va boshqalar)
@@ -339,10 +341,10 @@ export default function TeacherProfilePage() {
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#24459A] bg-white text-base font-bold text-[#24459A] disabled:opacity-60"
                 >
                   <CreditCard className="h-5 w-5" />
-                  Rublda to'lash — {trialPriceRub} ₽
+                  {t('teachers.trialPayRub')} — {trialPriceRub} ₽
                 </button>
                 <p className="text-center text-xs font-medium text-slate-500">
-                  Rossiya kartasiga o'tkazish va chek yuklash
+                  {t('teachers.trialRubHint')}
                 </p>
               </div>
             </section>
@@ -351,7 +353,7 @@ export default function TeacherProfilePage() {
 
         {reviews.length > 0 ? (
           <section className="mt-8 px-4">
-            <h2 className="text-2xl font-black text-[#0F172A]">O'quvchilar fikri</h2>
+            <h2 className="text-2xl font-black text-[#0F172A]">{t('teachers.reviews')}</h2>
             <div className="-mx-1 mt-4 flex gap-4 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {reviews.map((review) => (
                 <ReviewCard key={review.id} review={review} />
@@ -362,7 +364,7 @@ export default function TeacherProfilePage() {
 
         {profile.about ? (
           <article className="mx-4 mt-6 rounded-[14px] bg-white px-5 py-5 shadow-[0_6px_10px_rgba(15,23,42,0.12)]">
-            <h2 className="text-2xl font-black text-[#0F172A]">Men haqimda</h2>
+            <h2 className="text-2xl font-black text-[#0F172A]">{t('teachers.about')}</h2>
             <p className="mt-4 whitespace-pre-wrap text-base font-medium leading-relaxed text-[#4B4B4B]">
               {profile.about}
             </p>

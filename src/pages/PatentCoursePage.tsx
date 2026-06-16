@@ -12,6 +12,7 @@ import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModa
 import PaywallModal from '../components/PaywallModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { getPatentVariantResults, type PatentVariantResult } from '../api/patentResults';
 import { openRahmatCheckout } from '../api/rahmat';
@@ -28,6 +29,7 @@ const patentMeta = COURSE_PRODUCT_META.patent;
 export default function PatentCoursePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLocale();
   const { token } = useAuth();
   const { refreshPayments } = usePaymentStatus();
   const { access } = useAccess();
@@ -52,7 +54,7 @@ export default function PatentCoursePage() {
       .catch((e) => {
         if (cancelled) return;
         setResults([]);
-        setResultsError(e instanceof Error ? e.message : 'Natijalar yuklanmadi');
+        setResultsError(e instanceof Error ? e.message : t('patent.resultsLoadError'));
       });
     return () => {
       cancelled = true;
@@ -79,7 +81,7 @@ export default function PatentCoursePage() {
             afterCreate: refreshPayments,
           });
         } catch (e) {
-          setPaymentError(e instanceof Error ? e.message : 'Rahmat to‘lovi boshlanmadi. Keyinroq urinib ko‘ring.');
+          setPaymentError(e instanceof Error ? e.message : t('patent.rahmatStartError'));
         }
       })();
       return;
@@ -105,7 +107,7 @@ export default function PatentCoursePage() {
             type="button"
             onClick={() => navigate('/')}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-[#2563EB] shadow-[0_10px_24px_rgba(37,99,235,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5"
-            aria-label="Orqaga"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="h-6 w-6" />
           </button>
@@ -130,7 +132,7 @@ export default function PatentCoursePage() {
               onClick={() => setCurrencyModalOpen(true)}
               className="mt-4 inline-flex w-full items-center justify-center rounded-[18px] bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_14px_28px_rgba(37,99,235,0.2)] transition hover:-translate-y-0.5 sm:w-auto"
             >
-              Sotib olish: {patentMeta.prices.RUB} ₽
+              {t('patent.buyPriceRub', { price: patentMeta.prices.RUB })}
             </button>
           </section>
         ) : null}
@@ -174,7 +176,7 @@ export default function PatentCoursePage() {
               >
                 <div className="mt-1">
                   <p className="text-[13px] font-bold sm:text-[15px]" style={{ color: TEXT }}>
-                    Variant {variant.variantNumber}
+                    {t('patent.variantLabel', { number: variant.variantNumber })}
                   </p>
                   <p
                     className="mt-1 text-[12px] font-medium"
@@ -189,12 +191,12 @@ export default function PatentCoursePage() {
                     }}
                   >
                     {isPassed
-                      ? 'Сдан'
+                      ? t('patent.statusPassed')
                       : isFailed
-                        ? 'Не сдан'
+                        ? t('patent.statusFailed')
                         : isLocked
-                          ? 'Yopiq'
-                          : 'Ochiq'}
+                          ? t('kunlik.locked')
+                          : t('patent.statusOpen')}
                   </p>
                 </div>
 
@@ -212,7 +214,7 @@ export default function PatentCoursePage() {
                   ) : (
                     <ShieldCheck className="h-3.5 w-3.5" />
                   )}
-                  {variantResult ? `${variantResult.score_percent}%` : '22 savol'}
+                  {variantResult ? `${variantResult.score_percent}%` : t('patent.questionsCount', { count: 22 })}
                 </div>
               </button>
             );
@@ -224,9 +226,9 @@ export default function PatentCoursePage() {
         <PaywallModal
           onClose={() => setPaywallOpen(false)}
           onAction={() => setCurrencyModalOpen(true)}
-          title="Курс закрыт"
+          title={t('patent.paywallTitle')}
           description={`${patentMeta.paywallDescription}\n${patentMeta.freeDescription}`}
-          buttonText="Купить"
+          buttonText={t('patent.paywallBuy')}
         />
       ) : null}
 

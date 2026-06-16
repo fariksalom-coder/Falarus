@@ -19,6 +19,7 @@ import type {
 import { evaluatePatentVariant, isImageAssetOption, type PatentExamAnswerMap } from '../utils/patentExam';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { savePatentVariantResult, type PatentVariantResult } from '../api/patentResults';
 
 const BG = '#EEF6FF';
@@ -204,7 +205,7 @@ function WrittenCard({
         type="text"
         value={currentValue}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Javobni yozing"
+        placeholder={t('patent.writeAnswerPlaceholder')}
         className="mt-4 w-full rounded-[20px] border bg-white px-4 py-3 text-[16px] outline-none transition focus:ring-4 focus:ring-[#DBEAFF] sm:text-[17px]"
         style={{
           borderColor: !hasValue ? '#C4D6EC' : correct ? '#1D4ED8' : '#EF4444',
@@ -239,6 +240,7 @@ function AudioPlayerCard({ mediaUrl }: { mediaUrl: string }) {
 
 export default function PatentCourseVariantPage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const { token } = useAuth();
   const params = useParams();
   const variantNumber = Number(params.variantNumber);
@@ -256,7 +258,7 @@ export default function PatentCourseVariantPage() {
       })
       .catch(() => {
         if (cancelled) return;
-        setVariantsError("Ma'lumotlar yuklanmadi");
+        setVariantsError(t('common.loadError'));
       })
       .finally(() => {
         if (!cancelled) setVariantsLoading(false);
@@ -349,7 +351,7 @@ export default function PatentCourseVariantPage() {
           className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700"
         >
           <ArrowLeft className="h-4 w-4" />
-          Orqaga
+          {t('common.back')}
         </button>
         <p className="mt-6 text-lg font-semibold text-red-600">{variantsError}</p>
       </div>
@@ -365,10 +367,10 @@ export default function PatentCourseVariantPage() {
           className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700"
         >
           <ArrowLeft className="h-4 w-4" />
-          Orqaga
+          {t('common.back')}
         </button>
         <p className="mt-6 text-lg font-semibold" style={{ color: TEXT }}>
-          Variant topilmadi
+          {t('patent.variantNotFound')}
         </p>
       </div>
     );
@@ -408,7 +410,7 @@ export default function PatentCourseVariantPage() {
             type="button"
             onClick={() => navigate('/kurslar/patent')}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-[#2563EB] shadow-[0_10px_24px_rgba(37,99,235,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5"
-            aria-label="Orqaga"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="h-6 w-6" />
           </button>

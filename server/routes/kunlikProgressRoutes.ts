@@ -2,6 +2,8 @@ import { Router } from 'express';
 import type { DatabaseClient } from '../types/progress';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
 import { applyKunlikDayCompletionSideEffects } from '../lib/kunlikCompletionSideEffects.js';
+import { getAccessForRequest } from './accessRoutes.js';
+import * as accessControlService from '../services/accessControl.service.js';
 
 export type KunlikDayRow = {
   day_number:    number;
@@ -73,6 +75,15 @@ export function createKunlikProgressRoutes(
       const dayNumber = parseInt(req.params.dayNumber);
       if (!Number.isFinite(dayNumber) || dayNumber < 1 || dayNumber > 182) {
         return res.status(400).json({ error: 'Invalid day_number' });
+      }
+
+      const userId = Number(req.userId);
+      if (!Number.isFinite(userId)) {
+        return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+      }
+      const access = await getAccessForRequest(supabase, userId);
+      if (!accessControlService.canAccessKunlikDay(dayNumber, access)) {
+        return res.status(403).json({ error: 'Obuna kerak' });
       }
 
       const allowed: (keyof KunlikDayRow)[] = [

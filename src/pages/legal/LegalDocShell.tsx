@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { useLocale } from '../../context/LocaleContext';
 
 export function LegalDocShell({ title, children }: { title: string; children: ReactNode }) {
   const navigate = useNavigate();
+  const { t } = useLocale();
   return (
     <div className="flex min-h-screen flex-col bg-[#F8FAFC]">
       <header className="sticky top-0 z-10 border-b border-slate-200/90 bg-white/95 px-4 py-3 backdrop-blur-sm">
@@ -14,7 +16,7 @@ export function LegalDocShell({ title, children }: { title: string; children: Re
             className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900"
           >
             <ArrowLeft className="h-4 w-4 shrink-0" />
-            Orqaga
+            {t('common.back')}
           </button>
           <Link to="/" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
             FalaRus

@@ -10,6 +10,7 @@ import {
   type HelpChatMessage,
 } from '../../api/help';
 import { useAuth } from '../../context/AuthContext';
+import { useLocale } from '../../context/LocaleContext';
 import { parseHelpImageMessage } from '../../utils/helpMessageContent';
 
 type Props = {
@@ -22,6 +23,7 @@ function formatTime(date: string): string {
 
 export default function PartnerAdminChat({ onBack }: Props) {
   const { token, user } = useAuth();
+  const { t } = useLocale();
   const [chatId, setChatId] = useState<number | null>(null);
   const [messages, setMessages] = useState<HelpChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +90,7 @@ export default function PartnerAdminChat({ onBack }: Props) {
       const created = await sendHelpChatMessage(token, chatId, content);
       setMessages((prev) => [...prev, created]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Xatolik');
+      setError(e instanceof Error ? e.message : t('common.loadError'));
       setText(content);
     } finally {
       setSending(false);
@@ -104,7 +106,7 @@ export default function PartnerAdminChat({ onBack }: Props) {
       const created = await sendHelpChatImage(token, chatId, file);
       setMessages((prev) => [...prev, created]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Rasm yuborilmadi');
+      setError(err instanceof Error ? err.message : t('help.uploadError'));
     } finally {
       setUploadingImage(false);
     }
@@ -124,8 +126,8 @@ export default function PartnerAdminChat({ onBack }: Props) {
           <Headphones className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-base font-bold text-slate-900">Admin</p>
-          <p className="text-xs text-slate-500">Qo‘llab-quvvatlash</p>
+          <p className="text-base font-bold text-slate-900">{t('help.admin')}</p>
+          <p className="text-xs text-slate-500">{t('partner.support')}</p>
         </div>
       </header>
 
@@ -175,7 +177,7 @@ export default function PartnerAdminChat({ onBack }: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={1}
-            placeholder="Admin uchun xabar..."
+            placeholder={t('partner.adminMessagePlaceholder')}
             className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] outline-none focus:border-blue-400"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {

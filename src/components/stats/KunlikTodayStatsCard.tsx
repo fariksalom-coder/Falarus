@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpen, Brain, CheckCircle2, ChevronRight, FileText, Mic } from 'lucide-react';
 import { getDailyCourseDay } from '../../api/dailyCourse';
 import { DAILY_PLAN, TOTAL_DAYS } from '../../data/dailyPlan';
+import { useLocale } from '../../context/LocaleContext';
 import { useSequentialLesson } from '../../context/SequentialLessonContext';
 import { useKunlikProgress } from '../../hooks/useKunlikProgress';
 import { loadDailyVocabProgress } from '../../utils/dailyVocabProgress';
@@ -15,125 +16,6 @@ import {
 } from '../../utils/kunlikPlanDayProgress';
 import { kunlikRejaPath } from '../../utils/kunlikNavigation';
 
-const STATS_LANG_KEY = 'falarus:kunlikStatsCardLang';
-
-type Lang = 'uz' | 'ru';
-
-type Copy = {
-  titleToday: string;
-  dayLabel: (n: number) => string;
-  prevDaysChip: (from: number, to: number) => string;
-  grammar: string;
-  vocab: string;
-  reading: string;
-  speaking: string;
-  none: string;
-  grammarFmt: (done: number, total: number) => string;
-  vocabFmt: (done: number, total: number) => string;
-  readingDone: string;
-  readingTodo: string;
-  speakingFmt: (done: number, total: number | null) => string;
-  speakingNoTasks: string;
-  /** Kunlik kursidan API tekshiruvi: matn/leksemalar yo‘q */
-  readingNoContent: string;
-  blocksSummary: (done: number, total: number) => string;
-  completedTitle: string;
-  completedSubtitle: string;
-  allDoneTitle: string;
-  allDoneSubtitle: string;
-  start: string;
-  continue: string;
-  nextDay: string;
-  openPlan: string;
-  langUz: string;
-  langRu: string;
-  loading: string;
-  /** Ikkinchi qator — bosh sarlavha ostidagi qisqa nom */
-  planSubtitlePrefix: string;
-};
-
-const COPY: Record<Lang, Copy> = {
-  uz: {
-    titleToday: 'Bugun',
-    dayLabel: (n) => `${n}-kun`,
-    prevDaysChip: (from, to) =>
-      from === to ? `${from}-kun yakunlandi` : `${from}–${to}-kunlar yakunlandi`,
-    grammar: 'Grammatika (ПЗЗ)',
-    vocab: "Lug‘at",
-    reading: 'O‘qish',
-    speaking: 'Gapirish',
-    none: 'Hali boshlanmagan',
-    grammarFmt: (d, t) => `${d}/${t} mashq`,
-    vocabFmt: (d, t) => `${d}/${t} bosqich`,
-    readingDone: 'Bajarildi',
-    readingTodo: 'Qilinmagan',
-    speakingFmt: (d, t) => (t != null && t > 0 ? `${d}/${t} topshiruv` : `${d} topshiruv`),
-    speakingNoTasks: 'Bu kun uchun topshiruv yo‘q',
-    readingNoContent: 'Bu kun uchun o‘qish materiallari yo‘q',
-    blocksSummary: (done, total) => `Bloklar: ${done}/${total}`,
-    completedTitle: 'Kun yakunlandi',
-    completedSubtitle: 'Reja bloklari va gapirish bo‘yicha bu kun tugallandi',
-    allDoneTitle: 'Tabriklaymiz!',
-    allDoneSubtitle: '182 kunlik reja bo‘yicha barcha bloklar yakunlandi.',
-    start: 'Boshlash',
-    continue: 'Davom etish',
-    nextDay: 'Keyingi kunga o‘tish',
-    openPlan: 'Kunlik rejaga o‘tish',
-    langUz: 'O‘zb',
-    langRu: 'Rus',
-    loading: 'Yuklanmoqda…',
-    planSubtitlePrefix: 'Kunlik Reja',
-  },
-  ru: {
-    titleToday: 'Сегодня',
-    dayLabel: (n) => `День ${n}`,
-    prevDaysChip: (from, to) =>
-      from === to ? `День ${from} завершён` : `Дни ${from}–${to} завершены`,
-    grammar: 'Грамматика (ПЗЗ)',
-    vocab: 'Словарь',
-    reading: 'Чтение',
-    speaking: 'Говорение',
-    none: 'Ещё не начато',
-    grammarFmt: (d, t) => `${d}/${t} заданий`,
-    vocabFmt: (d, t) => `${d}/${t} этапов`,
-    readingDone: 'Выполнено',
-    readingTodo: 'Не выполнено',
-    speakingFmt: (d, t) => (t != null && t > 0 ? `${d}/${t} упражнений` : `${d} упражнений`),
-    speakingNoTasks: 'Нет упражнений на этот день',
-    readingNoContent: 'На этот день нет материалов для чтения',
-    blocksSummary: (done, total) => `Блоки: ${done}/${total}`,
-    completedTitle: 'Завершено',
-    completedSubtitle: 'На этот день выполнены блоки плана и говорение',
-    allDoneTitle: 'Поздравляем!',
-    allDoneSubtitle: 'Вы завершили все блоки 182-дневного плана.',
-    start: 'Начать',
-    continue: 'Продолжить',
-    nextDay: 'Перейти к следующему дню',
-    openPlan: 'Открыть курс',
-    langUz: 'Узб',
-    langRu: 'Рус',
-    loading: 'Загрузка…',
-    planSubtitlePrefix: 'Дневной план',
-  },
-};
-
-function defaultLang(): Lang {
-  try {
-    const v = localStorage.getItem(STATS_LANG_KEY);
-    return v === 'ru' ? 'ru' : 'uz';
-  } catch {
-    return 'uz';
-  }
-}
-
-function persistLang(lang: Lang) {
-  try {
-    localStorage.setItem(STATS_LANG_KEY, lang);
-  } catch {
-    /* ignore */
-  }
-}
-
 type RowStatProps = {
   icon: typeof Brain;
   label: string;
@@ -143,15 +25,19 @@ type RowStatProps = {
 
 function RowStat({ icon: Icon, label, value, doneVisual }: RowStatProps) {
   const valueColor =
-    doneVisual === true ? 'text-emerald-700' : doneVisual === 'partial' ? 'text-blue-700' : 'text-slate-500';
+    doneVisual === true
+      ? 'text-emerald-700 dark:text-emerald-300'
+      : doneVisual === 'partial'
+        ? 'text-blue-700 dark:text-blue-300'
+        : 'text-slate-600 dark:text-slate-300';
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-100">
+    <div className="flex items-start gap-3 rounded-2xl border border-app-border bg-app-surface-elevated px-3 py-2.5">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-app-icon-bg text-app-primary">
         <Icon className="h-4 w-4" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-semibold text-slate-800">{label}</p>
-        <p className={`mt-0.5 text-[13px] font-medium ${valueColor}`}>{value}</p>
+        <p className="text-[12px] font-semibold text-app-text">{label}</p>
+        <p className={`mt-0.5 text-[13px] font-medium leading-snug ${valueColor}`}>{value}</p>
       </div>
     </div>
   );
@@ -163,9 +49,9 @@ export type KunlikTodayStatsCardProps = {
 
 export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const { results, isReady } = useSequentialLesson();
   const { rows: kunlikRows, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
-  const [lang, setLang] = useState<Lang>(defaultLang);
   const [reviewVisits, setReviewVisits] = useState<Record<number, true>>(readPlanReviewVisits);
   const [vocabTick, setVocabTick] = useState(0);
   /** Kunlik kun paketi: gapirish soni + o‘qish bor-yo‘qligi (statik rejadan emas) */
@@ -173,8 +59,6 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
     practiceLen: number;
     hasReading: boolean;
   } | null>(null);
-
-  const t = COPY[lang];
 
   useEffect(() => {
     const onVisits = () => setReviewVisits(readPlanReviewVisits());
@@ -266,28 +150,31 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
   const fullDayDone = questProg.total > 0 && questProg.done >= questProg.total;
 
   const grammarLabel =
-    gDone === 0 ? t.none : gDone >= 3 ? t.grammarFmt(3, 3) : t.grammarFmt(gDone, 3);
+    gDone === 0
+      ? t('stats.kunlikNone')
+      : t('stats.kunlikGrammarFmt', { done: Math.min(gDone, 3), total: 3 });
   const grammarVisual: RowStatProps['doneVisual'] =
     gDone >= 3 ? true : gDone > 0 ? 'partial' : false;
 
   const vocabLabel =
-    vSteps === 0 ? t.none : vSteps >= 3 ? t.vocabFmt(3, 3) : t.vocabFmt(vSteps, 3);
+    vSteps === 0
+      ? t('stats.kunlikNone')
+      : t('stats.kunlikVocabFmt', { done: Math.min(vSteps, 3), total: 3 });
   const vocabVisual: RowStatProps['doneVisual'] =
     vSteps >= 3 ? true : vSteps > 0 ? 'partial' : false;
 
   const readingLabel =
     readingDone
-      ? t.readingDone
+      ? t('stats.kunlikReadingDone')
       : token && bundleMeta !== null && !bundleMeta.hasReading
-        ? t.readingNoContent
-        : t.readingTodo;
+        ? t('stats.kunlikReadingNoContent')
+        : t('stats.kunlikReadingTodo');
   const readingVisual: RowStatProps['doneVisual'] = readingDone ? true : false;
 
   let speakingLabel: string;
-  if (pt === 0) speakingLabel = t.speakingNoTasks;
+  if (pt === 0) speakingLabel = t('stats.kunlikSpeakingNoTasks');
   else {
-    speakingLabel =
-      speak <= 0 ? t.none : speak >= pt ? t.speakingFmt(pt, pt) : t.speakingFmt(speak, pt);
+    speakingLabel = speak <= 0 ? t('stats.kunlikNone') : t('stats.kunlikSpeakingFmt', { done: Math.min(speak, pt), total: pt });
   }
   const speakingVisual: RowStatProps['doneVisual'] =
     pt === 0 ? false : speak >= pt ? true : speak > 0 ? 'partial' : false;
@@ -298,21 +185,20 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
 
   let primaryAction: { label: string; onClick: () => void };
   if (allDone) {
-    primaryAction = { label: t.openPlan, onClick: () => goPlan() };
+    primaryAction = { label: t('stats.kunlikOpenPlan'), onClick: () => goPlan() };
   } else if (fullDayDone && focusDay < TOTAL_DAYS) {
-    primaryAction = { label: t.nextDay, onClick: () => goPlan(focusDay + 1) };
+    primaryAction = { label: t('home.nextDay'), onClick: () => goPlan(focusDay + 1) };
   } else if (!started) {
-    primaryAction = { label: t.start, onClick: () => goPlan(focusDay) };
+    primaryAction = { label: t('stats.kunlikStart'), onClick: () => goPlan(focusDay) };
   } else {
-    primaryAction = { label: t.continue, onClick: () => goPlan(focusDay) };
+    primaryAction = { label: t('stats.kunlikContinue'), onClick: () => goPlan(focusDay) };
   }
 
   const loadingCard = !isReady || !kunlikLoaded;
 
   return (
     <div
-      className="overflow-hidden rounded-[22px] border bg-white shadow-[0_12px_26px_rgba(15,23,42,0.06)] md:rounded-[24px]"
-      style={{ borderColor: '#E2E8F0' }}
+      className="overflow-hidden rounded-[22px] border border-app-border bg-app-surface shadow-app-soft md:rounded-[24px]"
     >
       <div
         className="flex items-start justify-between gap-3 px-4 py-3.5"
@@ -322,79 +208,54 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
       >
         <div className="min-w-0">
           <p className="text-[13px] font-bold text-white">
-            {t.titleToday}
+            {t('stats.kunlikToday')}
             {!loadingCard && planDay ? (
               <>
-                {' '}
-                <span className="text-white/90">·</span> {t.dayLabel(focusDay)}
+                {' '}<span className="text-white/90">·</span> {t('stats.kunlikDay', { day: focusDay })}
               </>
             ) : null}
           </p>
           <p className="mt-0.5 text-[11px] text-indigo-100">
-            {t.planSubtitlePrefix}
-            {loadingCard ? ' · …' : <> · {t.blocksSummary(questProg.done, questProg.total)}</>}
+            {t('stats.kunlikPlanSubtitlePrefix')}
+            {loadingCard ? ' · …' : <> · {t('stats.kunlikBlocksSummary', { done: questProg.done, total: questProg.total })}</>}
           </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1 rounded-xl bg-white/15 p-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              setLang('uz');
-              persistLang('uz');
-            }}
-            className={`rounded-[10px] px-2 py-1 text-[11px] font-semibold transition-colors ${
-              lang === 'uz' ? 'bg-white text-indigo-700' : 'text-white/85 hover:bg-white/10'
-            }`}
-          >
-            {t.langUz}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setLang('ru');
-              persistLang('ru');
-            }}
-            className={`rounded-[10px] px-2 py-1 text-[11px] font-semibold transition-colors ${
-              lang === 'ru' ? 'bg-white text-indigo-700' : 'text-white/85 hover:bg-white/10'
-            }`}
-          >
-            {t.langRu}
-          </button>
         </div>
       </div>
 
       <div className="space-y-3 px-4 py-4">
         {loadingCard ? (
-          <p className="py-6 text-center text-sm text-slate-500">{t.loading}</p>
+          <p className="py-6 text-center text-sm text-app-text-muted">{t('common.loading')}</p>
         ) : (
           <>
             {showPrevChip ? (
-              <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-3 py-2 text-[12px] font-medium text-emerald-800 ring-1 ring-emerald-100">
+              <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-3 py-2 text-[12px] font-medium text-emerald-800 ring-1 ring-emerald-100 dark:bg-emerald-500/12 dark:text-emerald-300 dark:ring-emerald-500/20">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
-                {t.prevDaysChip(1, focusDay - 1)}
+                {focusDay - 1 === 1
+                  ? t('stats.kunlikPrevDaysSingle', { day: 1 })
+                  : t('stats.kunlikPrevDaysRange', { from: 1, to: focusDay - 1 })}
               </div>
             ) : null}
 
             {allDone ? (
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-4 text-center">
-                <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" aria-hidden />
-                <p className="mt-2 text-lg font-bold text-emerald-800">{t.allDoneTitle}</p>
-                <p className="mt-1 text-[13px] text-emerald-900/80">{t.allDoneSubtitle}</p>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-4 text-center dark:border-emerald-500/25 dark:bg-emerald-500/10">
+                <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                <p className="mt-2 text-lg font-bold text-emerald-800 dark:text-emerald-300">{t('stats.kunlikAllDone')}</p>
+                <p className="mt-1 text-[13px] text-emerald-900/80 dark:text-emerald-200/80">{t('stats.kunlikAllDoneSub')}</p>
               </div>
             ) : fullDayDone ? (
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-4 text-center">
-                <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" aria-hidden />
-                <p className="mt-2 text-lg font-bold text-emerald-800">{t.completedTitle}</p>
-                <p className="mt-1 text-[13px] text-emerald-900/80">{t.completedSubtitle}</p>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-4 text-center dark:border-emerald-500/25 dark:bg-emerald-500/10">
+                <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                <p className="mt-2 text-lg font-bold text-emerald-800 dark:text-emerald-300">{t('stats.kunlikCompleted')}</p>
+                <p className="mt-1 text-[13px] text-emerald-900/80 dark:text-emerald-200/80">{t('stats.kunlikCompletedSub')}</p>
               </div>
             ) : null}
 
             {!allDone && !fullDayDone ? (
               <div className="grid gap-2 sm:grid-cols-2">
-                <RowStat icon={Brain} label={t.grammar} value={grammarLabel} doneVisual={grammarVisual} />
-                <RowStat icon={BookOpen} label={t.vocab} value={vocabLabel} doneVisual={vocabVisual} />
-                <RowStat icon={FileText} label={t.reading} value={readingLabel} doneVisual={readingVisual} />
-                <RowStat icon={Mic} label={t.speaking} value={speakingLabel} doneVisual={speakingVisual} />
+                <RowStat icon={Brain} label={t('stats.kunlikGrammar')} value={grammarLabel} doneVisual={grammarVisual} />
+                <RowStat icon={BookOpen} label={t('stats.kunlikVocab')} value={vocabLabel} doneVisual={vocabVisual} />
+                <RowStat icon={FileText} label={t('stats.kunlikReading')} value={readingLabel} doneVisual={readingVisual} />
+                <RowStat icon={Mic} label={t('stats.kunlikSpeaking')} value={speakingLabel} doneVisual={speakingVisual} />
               </div>
             ) : null}
 

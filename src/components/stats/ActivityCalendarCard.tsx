@@ -1,11 +1,12 @@
 import { useMemo, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check, Minus } from 'lucide-react';
 import type { ActivityCalendar } from '../../api/stats';
+import { useLocale } from '../../context/LocaleContext';
 
-const BORDER = '#E2E8F0';
-const TEXT = '#0F172A';
-const TEXT_SECONDARY = '#64748B';
-const PRIMARY = '#2563EB';
+const BORDER = 'var(--app-border)';
+const TEXT = 'var(--app-text)';
+const TEXT_SECONDARY = 'var(--app-text-muted)';
+const PRIMARY = 'var(--app-primary)';
 
 const MONTH_NAMES_UZ = [
   'Yanvar',
@@ -63,6 +64,7 @@ export default function ActivityCalendarCard({
   onNext,
   onMonthChange,
 }: ActivityCalendarCardProps) {
+  const { t } = useLocale();
   const today = new Date().toISOString().split('T')[0];
   const now = useMemo(() => new Date(), []);
   const monthOptions = useMemo(() => monthSelectOptions(now), [now]);
@@ -83,17 +85,17 @@ export default function ActivityCalendarCard({
 
   return (
     <div
-      className="overflow-hidden rounded-[24px] border bg-white shadow-[0_14px_34px_rgba(148,163,184,0.12)] md:rounded-[24px]"
+      className="overflow-hidden rounded-[24px] border bg-app-surface shadow-app-card md:rounded-[24px]"
       style={{ borderColor: BORDER }}
     >
       {/* Header — mock: title left, month + arrows right */}
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3.5 md:px-5" style={{ borderColor: BORDER }}>
         <h2 className="text-[17px] font-bold tracking-tight md:text-lg" style={{ color: TEXT }}>
-          Faollik taqvimi
+          {t('stats.calendarTitle')}
         </h2>
         <div className="flex shrink-0 items-center gap-1.5">
           <label htmlFor="stats-cal-month" className="sr-only">
-            Oy tanlash
+            {t('stats.calendarTitle')}
           </label>
           <select
             id="stats-cal-month"
@@ -103,7 +105,7 @@ export default function ActivityCalendarCard({
               const [yy, mm] = e.target.value.split('-').map(Number);
               if (Number.isFinite(yy) && Number.isFinite(mm)) onMonthChange(yy, mm);
             }}
-            className="max-w-[10.5rem] cursor-pointer truncate rounded-xl border bg-white py-2 pl-3 pr-8 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-500/40 md:max-w-[12rem] md:text-sm"
+            className="max-w-[10.5rem] cursor-pointer truncate rounded-xl border bg-app-surface py-2 pl-3 pr-8 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-app-primary/40 md:max-w-[12rem] md:text-sm"
             style={{ borderColor: BORDER, color: PRIMARY }}
           >
             {monthOptions.map((opt) => (
@@ -116,9 +118,9 @@ export default function ActivityCalendarCard({
             type="button"
             onClick={onPrev}
             disabled={loading}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border bg-slate-50 text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface-elevated text-app-text-muted transition-colors hover:bg-[var(--app-row-hover)] disabled:opacity-40"
             style={{ borderColor: BORDER }}
-            aria-label="Oldingi oy"
+            aria-label={t('stats.calendarPrevMonth')}
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={2.25} />
           </button>
@@ -126,9 +128,9 @@ export default function ActivityCalendarCard({
             type="button"
             onClick={onNext}
             disabled={loading || (year === now.getFullYear() && month === now.getMonth() + 1)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border bg-slate-50 text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-35"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface-elevated text-app-text-muted transition-colors hover:bg-[var(--app-row-hover)] disabled:opacity-35"
             style={{ borderColor: BORDER }}
-            aria-label="Keyingi oy"
+            aria-label={t('stats.calendarNextMonth')}
           >
             <ArrowRight className="h-4 w-4" strokeWidth={2.25} />
           </button>
@@ -137,7 +139,7 @@ export default function ActivityCalendarCard({
 
       {/* Weekday row */}
       <div
-        className="grid grid-cols-7 border-b bg-slate-50/90 px-0 py-2 md:py-2.5"
+        className="grid grid-cols-7 border-b border-app-border bg-app-bg-subtle px-0 py-2 md:py-2.5"
         style={{ borderColor: BORDER }}
       >
         {WEEKDAY_LABELS.map((d) => (
@@ -166,7 +168,7 @@ export default function ActivityCalendarCard({
               return (
                 <div
                   key={`empty-${idx}`}
-                  className="min-h-[56px] border-r border-b bg-slate-50/40 md:min-h-[64px]"
+                  className="min-h-[56px] border-r border-b border-app-border bg-app-bg-subtle/50 md:min-h-[64px]"
                   style={{ borderColor: BORDER }}
                 />
               );
@@ -195,10 +197,10 @@ export default function ActivityCalendarCard({
             } else if (status === 'missed') {
               inner = (
                 <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-slate-300 bg-slate-50 md:h-8 md:w-8"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-app-border bg-app-bg-subtle md:h-8 md:w-8"
                   aria-hidden
                 >
-                  <Minus className="h-3.5 w-3.5 text-slate-400 md:h-4 md:w-4" strokeWidth={2.5} aria-hidden />
+                  <Minus className="h-3.5 w-3.5 text-app-text-muted md:h-4 md:w-4" strokeWidth={2.5} aria-hidden />
                 </span>
               );
             }
@@ -218,18 +220,15 @@ export default function ActivityCalendarCard({
             return (
               <div
                 key={date}
-                className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 border-r border-b px-0.5 py-1 md:min-h-[64px] md:gap-1 md:py-1.5 ${cellRing}`}
-                style={{
-                  borderColor: BORDER,
-                  backgroundColor:
-                    status === 'done'
-                      ? 'rgba(240,253,244,0.45)'
-                      : status === 'extra'
-                        ? 'rgba(239,246,255,0.55)'
-                        : status === 'missed'
-                          ? 'rgba(248,250,252,0.85)'
-                          : 'transparent',
-                }}
+                className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 border-r border-b border-app-border px-0.5 py-1 md:min-h-[64px] md:gap-1 md:py-1.5 ${cellRing} ${
+                  status === 'done'
+                    ? 'bg-emerald-500/10 dark:bg-emerald-500/15'
+                    : status === 'extra'
+                      ? 'bg-blue-500/10 dark:bg-blue-500/15'
+                      : status === 'missed'
+                        ? 'bg-app-bg-subtle'
+                        : 'bg-transparent'
+                }`}
                 title={date}
               >
                 <span
@@ -247,26 +246,25 @@ export default function ActivityCalendarCard({
 
       {/* Legend */}
       <div
-        className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-4 py-3 md:gap-x-6 md:px-5 md:py-3.5"
-        style={{ borderColor: BORDER, background: 'linear-gradient(180deg, #F8FAFC 0%, #fff 100%)' }}
+        className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-app-border bg-app-bg-subtle px-4 py-3 md:gap-x-6 md:px-5 md:py-3.5"
       >
         <span className="flex items-center gap-2 text-[11px] font-medium md:text-xs" style={{ color: TEXT_SECONDARY }}>
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500">
             <Check className="h-3 w-3 text-white" strokeWidth={3} aria-hidden />
           </span>
-          1 kun
+          {t('stats.calendarLegendOnce')}
         </span>
         <span className="flex items-center gap-2 text-[11px] font-medium md:text-xs" style={{ color: TEXT_SECONDARY }}>
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
             +2
           </span>
-          Bir necha kun
+          {t('stats.calendarLegendMulti')}
         </span>
         <span className="flex items-center gap-2 text-[11px] font-medium md:text-xs" style={{ color: TEXT_SECONDARY }}>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-slate-300 bg-slate-50">
-            <Minus className="h-3 w-3 text-slate-400" strokeWidth={2.5} aria-hidden />
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-app-border bg-app-bg-subtle">
+            <Minus className="h-3 w-3 text-app-text-muted" strokeWidth={2.5} aria-hidden />
           </span>
-          O&apos;tkazilgan kun
+          {t('stats.calendarLegendMissed')}
         </span>
       </div>
     </div>

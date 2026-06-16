@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { authStrings } from '../../constants/authStrings';
+import { useLocale } from '../../context/LocaleContext';
 
 type Props = {
   checked: boolean;
@@ -7,6 +7,8 @@ type Props = {
 };
 
 export function TermsCheckbox({ checked, onChange }: Props) {
+  const { t } = useLocale();
+
   return (
     <label className="flex cursor-pointer items-start gap-2.5">
       <input
@@ -16,15 +18,15 @@ export function TermsCheckbox({ checked, onChange }: Props) {
         className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#C8DCF3] text-[#1E3A8A] focus:ring-[#2563EB]"
       />
       <span className="text-[13px] leading-snug text-[#0F172A]">
-        {authStrings.termsPrefix}
+        {t('auth.termsPrefix')}
         <Link to="/huquqiy/ommaviy-oferta" className="font-semibold underline">
-          {authStrings.termsOfUse}
+          {t('auth.termsOfUse')}
         </Link>
-        {authStrings.termsAnd}
+        {t('auth.termsAnd')}
         <Link to="/huquqiy/maxfiylik" className="font-semibold underline">
-          {authStrings.privacyPolicy}
+          {t('auth.privacyPolicy')}
         </Link>
-        {authStrings.termsSuffix}
+        {t('auth.termsSuffix')}
       </span>
     </label>
   );

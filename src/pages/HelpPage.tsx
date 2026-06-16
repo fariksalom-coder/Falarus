@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { ArrowLeft, ImagePlus, MessageCircle, Send } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import {
   getHelpChats,
   getHelpChatMessages,
@@ -17,7 +18,7 @@ function formatTime(date: string): string {
   return new Date(date).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatListTime(date: string | null): string {
+function formatListTime(date: string | null, todayLabel: string): string {
   if (!date) return '';
   const msgDate = new Date(date);
   const now = new Date();
@@ -25,11 +26,12 @@ function formatListTime(date: string | null): string {
     msgDate.getFullYear() === now.getFullYear() &&
     msgDate.getMonth() === now.getMonth() &&
     msgDate.getDate() === now.getDate();
-  return sameDay ? 'Bugun' : msgDate.toLocaleDateString('uz');
+  return sameDay ? todayLabel : msgDate.toLocaleDateString('uz');
 }
 
 export default function HelpPage() {
   const { token, user } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const { chatId: chatIdParam } = useParams<{ chatId?: string }>();
   const [loading, setLoading] = useState(true);
@@ -130,7 +132,7 @@ export default function HelpPage() {
         )
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Xatolik');
+      setError(e instanceof Error ? e.message : t('common.loadError'));
     } finally {
       setSending(false);
     }
@@ -142,11 +144,11 @@ export default function HelpPage() {
     const targetChatId = openedChatId ?? activeChatId;
     if (!file || !token || !targetChatId) return;
     if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
-      setError('Faqat JPG, PNG yoki WEBP ruxsat etiladi');
+      setError(t('help.uploadError'));
       return;
     }
     if (file.size > 4 * 1024 * 1024) {
-      setError('Rasm hajmi 4 MB dan oshmasligi kerak');
+      setError(t('help.uploadError'));
       return;
     }
     setUploadingImage(true);
@@ -161,7 +163,7 @@ export default function HelpPage() {
                 last_message_at: created.created_at,
                 last_message: {
                   id: created.id,
-                  content: 'Rasm',
+                  content: t('help.image'),
                   sender_type: created.sender_type,
                   created_at: created.created_at,
                 },
@@ -170,7 +172,7 @@ export default function HelpPage() {
         )
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Rasm yuborilmadi');
+      setError(err instanceof Error ? err.message : t('help.uploadError'));
     } finally {
       setUploadingImage(false);
     }
@@ -182,10 +184,10 @@ export default function HelpPage() {
         {!openedChatId ? (
           <section className="min-h-[calc(100dvh-86px)] bg-[#F3F4F8]">
             <div className="border-b border-slate-200 bg-white px-5 pb-4 pt-5">
-              <h1 className="text-[35px] font-bold tracking-tight text-slate-900">Yozishmalar</h1>
+              <h1 className="text-[35px] font-bold tracking-tight text-slate-900">{t('help.title')}</h1>
             </div>
             {loading ? (
-              <div className="px-5 py-6 text-sm text-slate-500">Yuklanmoqda...</div>
+              <div className="px-5 py-6 text-sm text-slate-500">{t('common.loading')}</div>
             ) : (
               <div className="divide-y divide-slate-200 border-b border-slate-200 bg-white">
                 {chats.map((chat) => {
@@ -209,13 +211,15 @@ export default function HelpPage() {
                         <MessageCircle className="h-6 w-6" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[22px] font-semibold text-slate-900">Admin</p>
+                        <p className="truncate text-[22px] font-semibold text-slate-900">{t('help.admin')}</p>
                         <p className="truncate text-[17px] text-slate-500">
-                          {previewMedia.isImage ? 'Rasm' : (chat.last_message?.content ?? '')}
+                          {previewMedia.isImage ? t('help.image') : (chat.last_message?.content ?? '')}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-[17px] font-medium text-slate-500">{formatListTime(chat.last_message_at)}</span>
+                        <span className="text-[17px] font-medium text-slate-500">
+                          {formatListTime(chat.last_message_at, t('common.today'))}
+                        </span>
                         {showUnread ? (
                           <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-[11px] font-bold text-white">
                             {chat.unread_count > 0 ? chat.unread_count : 1}
@@ -225,7 +229,7 @@ export default function HelpPage() {
                     </button>
                   );
                 })}
-                {!chats.length && <p className="px-5 py-8 text-center text-sm text-slate-500">Hozircha chat yo‘q</p>}
+                {!chats.length && <p className="px-5 py-8 text-center text-sm text-slate-500">{t('help.noChats')}</p>}
               </div>
             )}
             {error ? <p className="px-5 py-2 text-xs text-red-600">{error}</p> : null}
@@ -244,14 +248,14 @@ export default function HelpPage() {
                 <MessageCircle className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-base font-bold text-slate-900">Admin</p>
-                <p className="text-xs text-slate-500">{activeChat?.status === 'open' ? 'Onlayn' : 'Yopiq'}</p>
+                <p className="text-base font-bold text-slate-900">{t('help.admin')}</p>
+                <p className="text-xs text-slate-500">{activeChat?.status === 'open' ? t('help.online') : t('help.offline')}</p>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto overscroll-y-contain px-4 py-3">
               {messagesLoading ? (
-                <div className="py-8 text-center text-sm text-slate-500">Xabarlar yuklanmoqda...</div>
+                <div className="py-8 text-center text-sm text-slate-500">{t('help.messagesLoading')}</div>
               ) : (
                 <div className="mx-auto max-w-2xl space-y-2.5">
                   {messages.map((msg) => {
@@ -269,7 +273,7 @@ export default function HelpPage() {
                           {media.isImage && media.imageUrl ? (
                             <img
                               src={media.imageUrl}
-                              alt="Chat image"
+                              alt={t('help.image')}
                               className="max-h-64 w-full rounded-xl object-cover"
                               loading="lazy"
                             />
@@ -284,7 +288,7 @@ export default function HelpPage() {
                     );
                   })}
                   {!messages.length && (
-                    <p className="py-12 text-center text-sm text-slate-500">Muammoingizni yozing, admin javob beradi.</p>
+                    <p className="py-12 text-center text-sm text-slate-500">{t('help.noMessages')}</p>
                   )}
                 </div>
               )}
@@ -314,7 +318,7 @@ export default function HelpPage() {
                       void handleSend();
                     }
                   }}
-                  placeholder="Muammo yoki savolingizni yozing..."
+                  placeholder={t('help.placeholder')}
                   className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
                 <button

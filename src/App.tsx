@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-
 import { AnalyticsScripts } from './components/AnalyticsScripts';
 import { GlobalSeo } from './components/GlobalSeo';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LocaleProvider } from './context/LocaleContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { TextScaleProvider } from './context/TextScaleContext';
 import { AccessProvider } from './context/AccessContext';
 import { PaymentStatusProvider } from './context/PaymentStatusContext';
 import { SequentialLessonProvider } from './context/SequentialLessonContext';
@@ -20,7 +23,7 @@ function AppRoutes() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
+      <div className="flex min-h-screen items-center justify-center bg-app-bg">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-blue-600" />
       </div>
     );
@@ -130,7 +133,10 @@ function AppRoutes() {
 export default function App() {
   return (
     <HelmetProvider>
-      <AuthProvider>
+      <LocaleProvider>
+      <ThemeProvider>
+        <TextScaleProvider>
+        <AuthProvider>
         <Router>
           <GlobalSeo />
           <AnalyticsScripts />
@@ -142,7 +148,10 @@ export default function App() {
             </PaymentStatusProvider>
           </AccessProvider>
         </Router>
-      </AuthProvider>
+        </AuthProvider>
+        </TextScaleProvider>
+      </ThemeProvider>
+      </LocaleProvider>
     </HelmetProvider>
   );
 }

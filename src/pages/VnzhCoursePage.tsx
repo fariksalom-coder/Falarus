@@ -5,6 +5,7 @@ import { VNZH_COURSE_SECTIONS } from '../data/vnzhCourseData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { openRahmatCheckout } from '../api/rahmat';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
@@ -47,6 +48,7 @@ function getSectionRangeLabel(tasks: (typeof VNZH_COURSE_SECTIONS)[number]['task
 
 export default function VnzhCoursePage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const { token } = useAuth();
   const { refreshPayments } = usePaymentStatus();
   const { access } = useAccess();
@@ -68,7 +70,7 @@ export default function VnzhCoursePage() {
             afterCreate: refreshPayments,
           });
         } catch (e) {
-          setPaymentError(e instanceof Error ? e.message : 'Rahmat to‘lovi boshlanmadi. Keyinroq urinib ko‘ring.');
+          setPaymentError(e instanceof Error ? e.message : t('vnzh.rahmatStartError'));
         }
       })();
       return;
@@ -93,7 +95,7 @@ export default function VnzhCoursePage() {
           style={{ borderColor: BORDER }}
         >
           <ArrowLeft className="h-4 w-4" />
-          Orqaga
+          {t('common.back')}
         </button>
 
         <section
@@ -106,12 +108,12 @@ export default function VnzhCoursePage() {
           <div className="flex items-start gap-4">
             <img
               src={courseAssetUrl('/courses/course-vnzh-badge.svg')}
-              alt="ВНЖ imtihoni"
+              alt={t('vnzh.title')}
               className="h-16 w-16 shrink-0 rounded-full object-cover shadow-[0_14px_28px_rgba(37,99,235,0.18)]"
             />
             <div className="min-w-0">
               <h1 className="text-[24px] font-bold sm:text-[28px]" style={{ color: TEXT }}>
-                ВНЖ imtihoni
+                {t('vnzh.title')}
               </h1>
             </div>
           </div>
@@ -130,7 +132,7 @@ export default function VnzhCoursePage() {
               onClick={() => setCurrencyModalOpen(true)}
               className="mt-4 inline-flex w-full items-center justify-center rounded-[18px] bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_14px_28px_rgba(37,99,235,0.2)] transition hover:-translate-y-0.5 sm:w-auto"
             >
-              Sotib olish: {vnzhMeta.prices.RUB} ₽
+              {t('patent.buyPriceRub', { price: vnzhMeta.prices.RUB })}
             </button>
           </section>
         ) : null}

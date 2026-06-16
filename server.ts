@@ -63,7 +63,7 @@ import {
 import {
   DAILY_COURSE_DAY_MAX,
   DAILY_COURSE_DAY_MIN,
-  isFreeKunlikSpeakingDay,
+  isFreeKunlikDay,
   isValidDailyCourseDay,
 } from './shared/dailyCourseDay.ts';
 import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
@@ -2198,6 +2198,14 @@ async function startServer() {
         error: `Kun raqami ${DAILY_COURSE_DAY_MIN}–${DAILY_COURSE_DAY_MAX} oralig‘ida bo‘lishi kerak`,
       });
     }
+    const userId = Number(req.userId);
+    if (!Number.isFinite(userId)) {
+      return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+    }
+    const access = await getAccessInfo(supabase, userId);
+    if (!access.subscription_active && !isFreeKunlikDay(dayNumber)) {
+      return res.status(403).json({ error: 'Obuna kerak' });
+    }
     const result = await fetchDailyCourseDayBundle(supabase, dayNumber);
     if (result.ok === false) {
       console.error('[GET /api/daily-course/day/:dayNumber]', { dayNumber, error: result.error });
@@ -2482,7 +2490,7 @@ async function startServer() {
       const kunlikAiRoute =
         (s0 === 'check' || s0 === 'transcribe') && req.method === 'POST';
       const freeKunlikDay =
-        kunlikDayNumber != null && isFreeKunlikSpeakingDay(kunlikDayNumber);
+        kunlikDayNumber != null && isFreeKunlikDay(kunlikDayNumber);
       if (!kunlikAiRoute || !freeKunlikDay) {
         return res.status(403).json({ error: 'Obuna kerak' });
       }

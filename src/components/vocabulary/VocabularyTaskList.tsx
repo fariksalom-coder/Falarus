@@ -1,6 +1,5 @@
 import { Check, ClipboardList, Layers, Lock, Puzzle } from 'lucide-react';
-const HINT_STEP2_LOCKED = 'Avval tanishish bosqichini tugating';
-const HINT_STEP3_LOCKED = 'Testdan kamida 80% bilan o‘ting — keyin juftlik ochiladi';
+import { useLocale } from '../../context/LocaleContext';
 
 /** Kunlik grammatika kartochkalari bilan mos ranglar */
 const shellLocked =
@@ -54,6 +53,7 @@ export function VocabularyTaskList({
   onOpenStep2,
   onOpenStep3,
 }: VocabularyTaskListProps) {
+  const { t } = useLocale();
   const step2Locked = !step1Completed;
   const step3Locked = !step3Unlocked;
 
@@ -69,9 +69,9 @@ export function VocabularyTaskList({
     <>
       <h2 className="mb-1 text-lg font-semibold text-slate-900">{partTitle}</h2>
       <p className="mb-4 text-sm text-slate-600">
-        O‘rganilgan so‘zlar:{' '}
+        {t('kunlik.learnedWords')}{' '}
         <span className="font-semibold text-slate-900">
-          {hasServerSnapshot ? `${learnedWords} / ${totalWords}` : 'Yuklanmoqda...'}
+          {hasServerSnapshot ? `${learnedWords} / ${totalWords}` : t('common.loading')}
         </span>
       </p>
 
@@ -87,19 +87,19 @@ export function VocabularyTaskList({
             <Layers className="h-5 w-5" strokeWidth={1.8} />
           </div>
           <p className={`mt-2 text-sm font-semibold ${step1Completed ? 'text-emerald-950/90' : 'text-[#0F172A]'}`}>
-            1. Tanishish
+            {`1. ${t('kunlik.stepLearn')}`}
           </p>
           <p className={`mt-1 text-xs ${step1Completed ? 'text-emerald-900/75' : 'text-blue-950/85'}`}>
             {step1Completed
-              ? `Biladi ${step1KnownDisplay} / Bilmaydi ${step1UnknownDisplay}`
-              : 'Bilaman / bilmayman'}
+              ? t('kunlik.knowDontKnow', { known: step1KnownDisplay, unknown: step1UnknownDisplay })
+              : t('kunlik.knowDontKnowShort')}
           </p>
           {step1Current ? (
-            <span className={footerPrimary}>Boshlash</span>
+            <span className={footerPrimary}>{t('common.start')}</span>
           ) : (
             <span className={footerSuccess}>
               <Check className="h-4 w-4 shrink-0" strokeWidth={3} aria-hidden />
-              Tugagan
+              {t('kunlik.completed')}
             </span>
           )}
         </button>
@@ -124,7 +124,7 @@ export function VocabularyTaskList({
               step2Locked ? 'text-slate-500' : step2Passed ? 'text-emerald-950/90' : 'text-[#0F172A]'
             }`}
           >
-            2. Test
+            {`2. ${t('kunlik.stepTest')}`}
           </p>
           <p
             className={`mt-1 text-xs ${
@@ -134,19 +134,19 @@ export function VocabularyTaskList({
             {step2Completed
               ? `${step2CorrectDisplay} / ${step2CorrectDisplay + step2IncorrectDisplay} (${Math.round(step2PercentageDisplay)}%)`
               : step2Locked
-                ? HINT_STEP2_LOCKED
-                : 'Variantlarni tanlang'}
+                ? t('kunlik.step2LockedHint')
+                : t('kunlik.testHint')}
           </p>
           {step2Locked ? (
             <span className="pointer-events-none mt-3 inline-flex w-full justify-center rounded-xl bg-slate-200/90 py-2 text-center text-[11px] font-bold text-slate-600 ring-1 ring-slate-300/60">
-              Qulflangan
+              {t('kunlik.locked')}
             </span>
           ) : step2Current ? (
-            <span className={footerPrimary}>{step2Completed && !step2Passed ? 'Qayta urinish' : 'Boshlash'}</span>
+            <span className={footerPrimary}>{step2Completed && !step2Passed ? t('kunlik.retry') : t('common.start')}</span>
           ) : (
             <span className={footerSuccess}>
               <Check className="h-4 w-4 shrink-0" strokeWidth={3} aria-hidden />
-              O‘tgan
+              {t('kunlik.passed')}
             </span>
           )}
         </button>
@@ -171,25 +171,25 @@ export function VocabularyTaskList({
               step3Locked ? 'text-slate-500' : step3Completed ? 'text-emerald-950/90' : 'text-[#0F172A]'
             }`}
           >
-            3. Juftini topish
+            {`3. ${t('kunlik.stepPairs')}`}
           </p>
           <p
             className={`mt-1 text-xs ${
               step3Locked ? 'text-slate-500' : step3Completed ? 'text-emerald-900/75' : 'text-blue-950/85'
             }`}
           >
-            {step3Locked ? HINT_STEP3_LOCKED : step3Completed ? 'Barcha juftlar topildi' : 'Rus va o‘zbek juftlari'}
+            {step3Locked ? t('kunlik.step3LockedHint') : step3Completed ? t('kunlik.allPairsFound') : t('kunlik.ruUzPairs')}
           </p>
           {step3Locked ? (
             <span className="pointer-events-none mt-3 inline-flex w-full justify-center rounded-xl bg-slate-200/90 py-2 text-center text-[11px] font-bold text-slate-600 ring-1 ring-slate-300/60">
-              Qulflangan
+              {t('kunlik.locked')}
             </span>
           ) : step3Current ? (
-            <span className={footerPrimary}>Boshlash</span>
+            <span className={footerPrimary}>{t('common.start')}</span>
           ) : (
             <span className={footerSuccess}>
               <Check className="h-4 w-4 shrink-0" strokeWidth={3} aria-hidden />
-              Tugagan
+              {t('kunlik.completed')}
             </span>
           )}
         </button>

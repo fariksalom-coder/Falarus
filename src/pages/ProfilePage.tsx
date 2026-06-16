@@ -19,10 +19,16 @@ import {
   Volume2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useTextScale } from '../context/TextScaleContext';
 import { useAccess } from '../context/AccessContext';
+import { useLocale } from '../context/LocaleContext';
+import LanguagePickerModal from '../components/LanguagePickerModal';
+import { languageMeta } from '../../shared/i18n/languages';
 import UserAvatar from '../components/UserAvatar';
 import { resolveAssetUrl } from '../api';
 import { bustAvatarUrl, patchUserAccount, uploadUserAvatar } from '../api/user';
+import { appMainBottomOffsetCss } from '../constants/appLayout';
 
 function premiumDaysLeft(planExpiresAt: string | null | undefined): number | null {
   if (!planExpiresAt) return null;
@@ -36,6 +42,7 @@ function premiumDaysLeft(planExpiresAt: string | null | undefined): number | nul
 export default function ProfilePage() {
   const { user, token, logout, updateUser } = useAuth();
   const { access } = useAccess();
+  const { locale, t } = useLocale();
   const navigate = useNavigate();
   const hasPremium = Boolean(access?.subscription_active);
   const premiumDays = premiumDaysLeft(user?.planExpiresAt);
@@ -43,7 +50,8 @@ export default function ProfilePage() {
   const avatarInputId = useId();
   const [avatarRevision, setAvatarRevision] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
+  const { label: textScaleLabel, cycleTextScale } = useTextScale();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [editingName, setEditingName] = useState(false);
@@ -51,6 +59,7 @@ export default function ProfilePage() {
   const [lastName, setLastName] = useState('');
   const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
 
   useEffect(() => {
     setFirstName(user?.firstName ?? '');
@@ -61,7 +70,8 @@ export default function ProfilePage() {
     return <Navigate to="/teacher-cabinet" replace />;
   }
 
-  const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Foydalanuvchi';
+  const fullName =
+    `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || t('common.user');
 
   function avatarDisplayUrl(url: string | null | undefined): string | null {
     const resolved = resolveAssetUrl(url);
@@ -91,9 +101,9 @@ export default function ProfilePage() {
     try {
       const me = await uploadUserAvatar(token, file);
       applyMe(me);
-      setBanner({ kind: 'ok', text: 'Profil rasmi yangilandi' });
+      setBanner({ kind: 'ok', text: t('profile.avatarUpdated') });
     } catch (err) {
-      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm yuklanmadi' });
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : t('profile.avatarUploadFailed') });
     } finally {
       URL.revokeObjectURL(preview);
       setLocalPreviewUrl(null);
@@ -106,7 +116,7 @@ export default function ProfilePage() {
     const nextFirst = firstName.trim();
     const nextLast = lastName.trim();
     if (!nextFirst || !nextLast) {
-      setBanner({ kind: 'error', text: "Ism va familiya to'ldirilishi kerak" });
+      setBanner({ kind: 'error', text: t('profile.nameRequired') });
       return;
     }
     setBanner(null);
@@ -115,9 +125,9 @@ export default function ProfilePage() {
       const me = await patchUserAccount(token, { firstName: nextFirst, lastName: nextLast });
       applyMe(me);
       setEditingName(false);
-      setBanner({ kind: 'ok', text: 'Ism yangilandi' });
+      setBanner({ kind: 'ok', text: t('profile.nameUpdated') });
     } catch (err) {
-      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : t('common.loadError') });
     } finally {
       setSavingName(false);
     }
@@ -129,22 +139,31 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-full bg-[#EEF4FA] px-4 pb-6 pt-1">
+    <div
+      className="min-h-full bg-app-bg px-4 pt-2"
+      style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}
+    >
       <main className="mx-auto w-full max-w-[820px]">
+        <header className="mb-4 px-0.5">
+          <h1 className="text-[28px] font-extrabold tracking-tight text-app-text">{t('nav.profile')}</h1>
+        </header>
+
         {banner ? (
           <div
             className={`mb-4 rounded-xl px-4 py-3 text-sm font-semibold ${
-              banner.kind === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+              banner.kind === 'ok'
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                : 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300'
             }`}
           >
             {banner.text}
           </div>
         ) : null}
 
-        <section className="mb-5 flex flex-col items-center rounded-[24px] border border-slate-200/90 bg-white px-4 py-4 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+        <section className="mb-6 flex flex-col items-center rounded-[24px] border border-app-border bg-app-surface px-5 py-6 shadow-app-card">
           <label
             htmlFor={avatarInputId}
-            className={`relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full ${
+            className={`relative flex h-[88px] w-[88px] cursor-pointer items-center justify-center rounded-full ring-2 ring-app-border ring-offset-2 ring-offset-app-surface ${
               uploadingAvatar ? 'pointer-events-none opacity-60' : ''
             }`}
             aria-label="Profil rasmini tanlash"
@@ -153,9 +172,9 @@ export default function ProfilePage() {
               avatarUrl={localPreviewUrl ?? avatarDisplayUrl(user?.avatarUrl)}
               gender={user?.gender ?? null}
               name={fullName}
-              className="h-20 w-20"
+              className="h-[88px] w-[88px]"
             />
-            <span className="pointer-events-none absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#24459A] text-white shadow-md">
+            <span className="pointer-events-none absolute bottom-0.5 right-0.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-app-surface bg-app-primary text-white shadow-md">
               {uploadingAvatar ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
@@ -171,25 +190,25 @@ export default function ProfilePage() {
               disabled={uploadingAvatar}
             />
           </label>
-          <p className="mt-2 text-xs font-medium text-slate-500">Rasm uchun bosing</p>
+          <p className="mt-3 text-[13px] font-medium text-app-icon-fg">{t('profile.tapPhoto')}</p>
 
           {editingName ? (
             <div className="mt-4 w-full max-w-sm space-y-3">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-600">Ism</span>
+                <span className="mb-1.5 block text-xs font-semibold text-app-text-muted">{t('profile.firstName')}</span>
                 <input
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[15px] font-medium text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 text-[15px] font-medium text-app-text outline-none focus:border-app-primary focus:ring-2 focus:ring-app-primary/20"
                   autoComplete="given-name"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-600">Familiya</span>
+                <span className="mb-1.5 block text-xs font-semibold text-app-text-muted">{t('profile.lastName')}</span>
                 <input
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[15px] font-medium text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 text-[15px] font-medium text-app-text outline-none focus:border-app-primary focus:ring-2 focus:ring-app-primary/20"
                   autoComplete="family-name"
                 />
               </label>
@@ -198,9 +217,9 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => void handleSaveName()}
                   disabled={savingName}
-                  className="flex h-10 flex-1 items-center justify-center rounded-xl bg-[#24459A] text-sm font-bold text-white disabled:opacity-50"
+                  className="flex h-10 flex-1 items-center justify-center rounded-xl bg-app-primary text-sm font-bold text-white disabled:opacity-50"
                 >
-                  {savingName ? '...' : 'Saqlash'}
+                  {savingName ? '...' : t('profile.save')}
                 </button>
                 <button
                   type="button"
@@ -209,9 +228,9 @@ export default function ProfilePage() {
                     setFirstName(user?.firstName ?? '');
                     setLastName(user?.lastName ?? '');
                   }}
-                  className="flex h-10 items-center justify-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-600"
+                  className="flex h-10 items-center justify-center rounded-xl border border-app-border px-4 text-sm font-semibold text-app-text-muted"
                 >
-                  Bekor
+                  {t('profile.cancel')}
                 </button>
               </div>
             </div>
@@ -221,78 +240,95 @@ export default function ProfilePage() {
               onClick={() => setEditingName(true)}
               className="mt-3 flex items-center gap-2 text-center"
             >
-              <h2 className="text-lg font-extrabold text-[#0F172A]">{fullName}</h2>
-              <Pencil className="h-4 w-4 text-slate-400" aria-hidden />
+              <h2 className="text-[20px] font-extrabold text-app-text">{fullName}</h2>
+              <Pencil className="h-4 w-4 text-app-text-muted" aria-hidden />
             </button>
           )}
 
-          <div className="mt-4 flex w-full justify-center">
+          <div className="mt-5 flex w-full justify-center">
             {showActivePremium ? (
-              <div className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-[#FFC425] px-4 text-[#0F172A]">
+              <div className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#FFC425] px-5 text-[#0F172A]">
                 <Crown className="h-4 w-4 fill-[#0F172A]" aria-hidden />
                 <span className="text-sm font-extrabold">
-                  Premium · {premiumDays} kun qoldi
+                  {t('profile.premiumDaysLeft', { days: premiumDays })}
                 </span>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => navigate('/tariflar')}
-                className="flex h-10 items-center justify-center gap-1.5 rounded-full bg-[#24459A] px-5 text-white shadow-[0_8px_20px_rgba(36,69,154,0.28)] active:scale-[0.98]"
+                className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-app-primary px-6 text-white shadow-[0_8px_24px_rgba(37,99,235,0.28)] active:scale-[0.98]"
               >
                 <Crown className="h-4 w-4" aria-hidden />
-                <span className="text-sm font-extrabold">Premium sotib olish</span>
+                <span className="text-sm font-extrabold">{t('profile.premiumBuy')}</span>
               </button>
             )}
           </div>
         </section>
 
-        <ProfileGroup title="Shaxsiy">
-          <ProfileRow icon={<UserCircle />} label="Profil" onClick={() => navigate('/profile/settings')} />
-          <ProfileRow icon={<BookOpen />} label="Sertifikatlar" />
-          <ProfileRow icon={<Users />} label="Do'stlarni taklif qilish" onClick={() => navigate('/invite')} />
+        <ProfileGroup title={t('profile.groups.personal')}>
+          <ProfileRow icon={<UserCircle />} label={t('profile.rows.profile')} onClick={() => navigate('/profile/settings')} />
+          <ProfileRow icon={<BookOpen />} label={t('profile.rows.certificates')} />
+          <ProfileRow icon={<Users />} label={t('profile.rows.invite')} onClick={() => navigate('/invite')} />
         </ProfileGroup>
 
-        <ProfileGroup title="Sozlamalar">
+        <ProfileGroup title={t('profile.groups.settings')}>
           <ProfileRow
             icon={<Type />}
-            label="Matn hajmi"
+            label={t('profile.rows.textSize')}
+            ariaLabel={t('profile.textSizeAria', { size: textScaleLabel })}
+            onClick={cycleTextScale}
             trailing={
-              <div className="flex h-8 min-w-[96px] items-center justify-center gap-2 rounded-full bg-[#2563EB] px-2.5 text-white">
-                <span className="text-xs font-bold">1.0 x</span>
+              <div
+                className="flex h-8 min-w-[52px] items-center justify-center rounded-full border border-app-primary/25 bg-app-primary/10 px-3"
+                aria-hidden
+              >
+                <span className="text-xs font-bold text-app-primary">{textScaleLabel}</span>
               </div>
             }
           />
           <ProfileRow
             icon={<Bell />}
-            label="Bildirishnomalar"
+            label={t('profile.rows.notifications')}
             trailing={<Switch checked={notificationsEnabled} onChange={() => setNotificationsEnabled((v) => !v)} />}
           />
           <ProfileRow
             icon={<Moon />}
-            label="Tungi rejim"
-            trailing={<Switch checked={darkModeEnabled} dark onChange={() => setDarkModeEnabled((v) => !v)} />}
+            label={t('profile.rows.darkMode')}
+            trailing={<Switch checked={isDark} onChange={toggleTheme} />}
           />
-          <ProfileRow icon={<Globe2 />} label="Til" />
-          <ProfileRow icon={<Volume2 />} label="Ovoz va tebranish" />
+          <ProfileRow
+            icon={<Globe2 />}
+            label={t('profile.rows.language')}
+            trailing={
+              <span className="text-sm font-semibold text-app-text-muted">
+                {languageMeta(locale).label}
+              </span>
+            }
+            onClick={() => setLanguagePickerOpen(true)}
+          />
+          <ProfileRow icon={<Volume2 />} label={t('profile.rows.sound')} />
         </ProfileGroup>
 
-        <ProfileGroup title="Yordam">
-          <ProfileRow icon={<CircleHelp />} label="Yordam" onClick={() => navigate('/help')} />
-          <ProfileRow icon={<CircleDollarSign />} label="Tariflar" onClick={() => navigate('/tariflar')} />
-          <ProfileRow icon={<History />} label="To'lovlar tarixi" onClick={() => navigate('/payment-history')} />
-          <ProfileRow icon={<LogOut />} label="Chiqish" danger onClick={handleLogout} />
+        <ProfileGroup title={t('profile.groups.help')}>
+          <ProfileRow icon={<CircleHelp />} label={t('profile.rows.help')} onClick={() => navigate('/help')} />
+          <ProfileRow icon={<CircleDollarSign />} label={t('profile.rows.pricing')} onClick={() => navigate('/tariflar')} />
+          <ProfileRow icon={<History />} label={t('profile.rows.paymentHistory')} onClick={() => navigate('/payment-history')} />
+          <ProfileRow icon={<LogOut />} label={t('profile.rows.logout')} danger onClick={handleLogout} />
         </ProfileGroup>
       </main>
+      <LanguagePickerModal open={languagePickerOpen} onClose={() => setLanguagePickerOpen(false)} />
     </div>
   );
 }
 
 function ProfileGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-4">
-      <h3 className="mb-2 px-0.5 text-base font-extrabold text-slate-900">{title}</h3>
-      <div className="overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+    <section className="mt-6">
+      <h3 className="mb-2 px-2 text-[11px] font-bold uppercase tracking-[0.14em] text-app-icon-fg">
+        {title}
+      </h3>
+      <div className="overflow-hidden rounded-[24px] border border-app-border bg-app-surface shadow-app-card">
         {children}
       </div>
     </section>
@@ -305,43 +341,40 @@ function ProfileRow({
   trailing,
   danger = false,
   onClick,
+  ariaLabel,
 }: {
   icon: ReactNode;
   label: string;
   trailing?: ReactNode;
   danger?: boolean;
   onClick?: () => void;
+  ariaLabel?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-3.5 text-left transition-colors last:border-b-0 hover:bg-slate-50 active:bg-slate-100 ${
-        danger ? 'text-red-600' : 'text-slate-900'
+      aria-label={ariaLabel}
+      className={`relative w-full text-left transition-colors hover:bg-[var(--app-row-hover)] active:bg-[var(--app-row-active)] after:absolute after:bottom-0 after:left-5 after:right-5 after:h-px after:bg-app-border-row last:after:hidden ${
+        danger ? 'text-red-600 dark:text-red-400' : 'text-app-text'
       }`}
     >
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
-          danger ? 'bg-red-50 text-red-600' : 'bg-[#EEF4FA] text-[#24459A]'
-        } [&>svg]:h-5 [&>svg]:w-5`}
-      >
-        {icon}
+      <span className="flex min-h-[64px] w-full items-center gap-3.5 px-5 py-2">
+        <span
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+            danger ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400' : 'bg-app-icon-bg text-app-icon-fg'
+          } [&>svg]:h-5 [&>svg]:w-5`}
+        >
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[15px] font-semibold leading-tight">{label}</span>
+        {trailing ?? <ChevronRight className="h-5 w-5 shrink-0 text-app-text-muted" aria-hidden />}
       </span>
-      <span className="min-w-0 flex-1 truncate text-base font-semibold">{label}</span>
-      {trailing ?? <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />}
     </button>
   );
 }
 
-function Switch({
-  checked,
-  dark = false,
-  onChange,
-}: {
-  checked: boolean;
-  dark?: boolean;
-  onChange: () => void;
-}) {
+function Switch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <span
       role="switch"
@@ -350,8 +383,8 @@ function Switch({
         e.stopPropagation();
         onChange();
       }}
-      className={`relative h-7 w-11 shrink-0 rounded-full transition-colors ${
-        checked ? 'bg-emerald-500' : dark ? 'bg-slate-600' : 'bg-slate-300'
+      className={`relative h-7 w-[46px] shrink-0 rounded-full transition-colors ${
+        checked ? 'bg-app-primary' : 'bg-[var(--app-switch-off)]'
       }`}
     >
       <span

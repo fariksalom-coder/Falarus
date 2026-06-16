@@ -31,6 +31,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { PaymentLegalConsentCheckbox } from '../components/legal/PaymentLegalConsent';
+import { useLocale } from '../context/LocaleContext';
 
 const FALLBACK_CARD = 'XXXX XXXX XXXX XXXX';
 const FALLBACK_PHONE = '+7 XXX XXX XX XX';
@@ -43,6 +44,7 @@ function formatCardDisplay(card: string): string {
 }
 
 function CopyButton({ text, label }: { text: string; label: string }) {
+  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(text.replace(/\s/g, ''));
@@ -57,7 +59,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
     >
       <Copy className="h-4 w-4 shrink-0" />
-      {copied ? 'Nusxalandi' : 'Nusxalash'}
+      {copied ? t('common.copied') : t('common.copy')}
     </button>
   );
 }
@@ -74,6 +76,7 @@ function formatAmount(price: number, currency: Currency): string {
 export default function PaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLocale();
   const { token } = useAuth();
   const { payments, loading: paymentsLoading, refreshPayments } = usePaymentStatus();
   const state = location.state as {
@@ -111,7 +114,7 @@ export default function PaymentPage() {
   const trialId = isTeacherTrial && typeof state?.trialId === 'number' ? state.trialId : null;
   const tariffType = state?.tariffType ?? (isRussianCourse ? 'month' : undefined);
   const currency = state?.currency ?? 'UZS';
-  const tariffLabel = state?.tariffLabel ?? '1 OY';
+  const tariffLabel = state?.tariffLabel ?? t('payment.buyMonth');
   const productLabel = state?.productLabel ?? getPaymentProductLabel(productCode);
   const afterPayPath =
     state?.returnTo ?? (isTeacherListing ? '/teacher-cabinet' : isTeacherTrial ? '/teachers' : '/profile');
@@ -200,15 +203,15 @@ export default function PaymentPage() {
       setFile(f);
       setError('');
     } else {
-      setError('Faqat JPG, PNG, WEBP yoki PDF (max 10 MB)');
+      setError(t('payment.fileTypes'));
     }
-  }, []);
+  }, [t]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (f) {
       if (f.size > MAX_SIZE) {
-        setError("Fayl 10 MB dan oshmasin");
+        setError(t('payment.fileSizeMax'));
         return;
       }
       setFile(f);
@@ -223,7 +226,7 @@ export default function PaymentPage() {
 
   const handleSubmit = async () => {
     if (!file || !token) {
-      setError(file ? 'Tizimga kirish kerak' : "Chek yoki skrinshotni yuklang");
+      setError(file ? t('payment.needLogin') : t('payment.uploadReceipt'));
       return;
     }
     setSubmitting(true);
@@ -242,7 +245,7 @@ export default function PaymentPage() {
     } catch (e: unknown) {
       const err = e as Error & { code?: string };
       if (err.code === 'PENDING_PAYMENT') setHasPendingPayment(true);
-      else setError(err.message || 'Xatolik yuz berdi');
+      else setError(err.message || t('common.loadError'));
     } finally {
       setSubmitting(false);
     }
@@ -272,13 +275,13 @@ export default function PaymentPage() {
           <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="h-10 w-10 text-amber-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">To'lovingiz tekshirilmoqda</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">{t('payment.pendingTitle')}</h1>
           <p className="text-slate-600 mb-8">
             {isTeacherTrial
-              ? "Administrator to'lovni tasdiqlagach o'qituvchi bilan chat ochiladi va dars vaqtini kelishasiz."
+              ? t('payment.pendingTeacherTrial')
               : isTeacherListing
-                ? "Administrator tasdiqlagach profilingiz o'quvchilar ro'yxatida faollashadi."
-                : "Administrator tez orada to'lovni tasdiqlaydi. Tasdiqlangandan so'ng sizga kursga kirish ochiladi."}
+                ? t('payment.pendingTeacherListing')
+                : t('payment.pendingDefault')}
           </p>
           <button
             type="button"
@@ -286,7 +289,7 @@ export default function PaymentPage() {
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
             style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            {isTeacherListing ? 'Kabinetga qaytish' : isTeacherTrial ? "O'qituvchiga qaytish" : "Profilga o'tish"}
+            {isTeacherListing ? t('payment.backCabinet') : isTeacherTrial ? t('payment.backTeacher') : t('payment.backProfile')}
           </button>
         </div>
       </div>
@@ -301,13 +304,13 @@ export default function PaymentPage() {
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="h-10 w-10 text-emerald-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">To'lov qabul qilindi</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">{t('payment.acceptedTitle')}</h1>
           <p className="text-slate-600 mb-8">
-            Sizning to'lovingiz qabul qilindi va tekshiruvga yuborildi.
+            {t('payment.acceptedBody')}
             <br />
             {isTeacherTrial
-              ? "Tasdiqlanguncha o'qituvchi profilida kutish holati ko'rinadi."
-              : 'Administrator tez orada to\'lovni tasdiqlaydi.'}
+              ? t('payment.acceptedTeacherTrial')
+              : t('payment.acceptedDefault')}
           </p>
           <button
             type="button"
@@ -315,7 +318,7 @@ export default function PaymentPage() {
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
             style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
           >
-            {isTeacherListing ? 'Kabinetga qaytish' : isTeacherTrial ? "O'qituvchiga qaytish" : "Profilga o'tish"}
+            {isTeacherListing ? t('payment.backCabinet') : isTeacherTrial ? t('payment.backTeacher') : t('payment.backProfile')}
           </button>
         </div>
       </div>
@@ -332,7 +335,7 @@ export default function PaymentPage() {
           className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-8"
         >
           <ArrowLeft className="h-5 w-5" />
-          Orqaga
+          {t('common.back')}
         </button>
 
         {/* Payment amount — light blue block */}
@@ -342,20 +345,20 @@ export default function PaymentPage() {
         >
           {promoMeta?.isActive ? (
             <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
-              Aktsiya narxi faol. To‘lovni taymer tugashidan oldin yakunlang.
+              {t('payment.promoHint')}
             </div>
           ) : null}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 mb-1">To'lov summasi</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t('payment.amountTitle')}</h2>
               <p className="text-slate-600 text-sm mb-1">
                 {isRussianCourse
-                  ? `Tarif: ${tariffLabel}`
+                  ? `${t('payment.tariff')}: ${tariffLabel}`
                   : isTeacherListing || isTeacherTrial
-                    ? `Xizmat: ${productLabel}`
-                    : `Kurs: ${productLabel}`}
+                    ? `${t('payment.service')}: ${productLabel}`
+                    : `${t('payment.course')}: ${productLabel}`}
               </p>
-              <p className="text-slate-600 text-sm">Iltimos, aynan shu summani o'tkazing.</p>
+              <p className="text-slate-600 text-sm">{t('payment.payExact')}</p>
             </div>
             <div className="sm:text-right">
               {detailsLoading ? (
@@ -377,14 +380,14 @@ export default function PaymentPage() {
         {isTeacherTrial ? (
           <p className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900">
             {currency === 'RUB'
-              ? "Quyidagi Rossiya kartasiga 490 ₽ o'tkazing va chekni yuklang."
-              : `Click, Payme yoki boshqa ilova orqali ${getTeacherTrialPriceUzs().toLocaleString('uz-UZ')} so'm o'tkazing va chekni yuklang.`}
+              ? t('payment.teacherTrialRubHint')
+              : t('payment.teacherTrialUzsHint', { amount: getTeacherTrialPriceUzs().toLocaleString('uz-UZ') })}
           </p>
         ) : null}
 
         {/* 3. Payment details card with icons */}
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-5">To'lov ma'lumotlari</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-5">{t('payment.detailsTitle')}</h2>
           {detailsLoading ? (
             <div className="space-y-5 animate-pulse">
               {[1, 2, 3].map((i) => (
@@ -400,7 +403,7 @@ export default function PaymentPage() {
                 <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
                   <div className="flex items-center gap-2 text-slate-600 mb-2">
                     <CreditCard className="h-4 w-4" />
-                    <span className="text-sm font-medium">Karta raqami</span>
+                    <span className="text-sm font-medium">{t('payment.cardNumber')}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-slate-900 text-lg">
@@ -408,32 +411,32 @@ export default function PaymentPage() {
                     </span>
                     <CopyButton
                       text={paymentMethod.card_number.replace(/\s/g, '')}
-                      label="Karta"
+                      label={t('payment.cardCopy')}
                     />
                   </div>
                 </div>
                 <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
                   <div className="flex items-center gap-2 text-slate-600 mb-2">
                     <Smartphone className="h-4 w-4" />
-                    <span className="text-sm font-medium">Telefon raqami</span>
+                    <span className="text-sm font-medium">{t('payment.phoneNumber')}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-slate-900">
                       {paymentMethod.phone_number || '—'}
                     </span>
                     {paymentMethod.phone_number && (
-                      <CopyButton text={paymentMethod.phone_number} label="Telefon" />
+                      <CopyButton text={paymentMethod.phone_number} label={t('payment.phoneCopy')} />
                     )}
                   </div>
                 </div>
                 <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
                   <div className="flex items-center gap-2 text-slate-600 mb-2">
                     <User className="h-4 w-4" />
-                    <span className="text-sm font-medium">Karta egasi</span>
+                    <span className="text-sm font-medium">{t('payment.cardHolder')}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-slate-900">{paymentMethod.card_holder_name}</span>
-                    <CopyButton text={paymentMethod.card_holder_name} label="Ism" />
+                    <CopyButton text={paymentMethod.card_holder_name} label={t('payment.nameCopy')} />
                   </div>
                 </div>
               </div>
@@ -445,10 +448,10 @@ export default function PaymentPage() {
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-2 text-slate-800 mb-1">
             <Paperclip className="h-5 w-5 text-slate-500" />
-            <h2 className="text-lg font-semibold">Chek yoki to'lov skrinshotini yuklang</h2>
+            <h2 className="text-lg font-semibold">{t('payment.uploadTitle')}</h2>
           </div>
           <p className="text-sm text-slate-500 mb-4">
-            Ruxsat etilgan formatlar: JPG, PNG, WEBP yoki PDF (Maks 10 MB)
+            {t('payment.uploadFormats')}
           </p>
           <div
             onDragOver={(e) => {
@@ -475,7 +478,7 @@ export default function PaymentPage() {
                   <CheckCircle className="h-8 w-8 text-emerald-600 shrink-0" />
                   <div className="text-left">
                     <p className="font-medium text-emerald-800">
-                      ✓ {file.name} yuklandi
+                      ✓ {file.name} {t('payment.uploaded')}
                     </p>
                     <p className="text-xs text-emerald-600">
                       {(file.size / 1024).toFixed(1)} KB
@@ -488,14 +491,14 @@ export default function PaymentPage() {
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                 >
                   <X className="h-4 w-4" />
-                  Boshqa fayl tanlash
+                  {t('payment.chooseAnotherFile')}
                 </button>
               </div>
             ) : (
               <label htmlFor="payment-file" className="cursor-pointer block">
                 <Upload className="h-12 w-12 text-slate-400 mx-auto mb-3" />
                 <p className="text-slate-600 font-medium">
-                  Faylni tanlang yoki kengashni tortib tashlang
+                  {t('payment.selectOrDrop')}
                 </p>
               </label>
             )}
@@ -521,7 +524,7 @@ export default function PaymentPage() {
           className="w-full rounded-xl py-4 text-lg font-semibold border-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.99] hover:opacity-90"
           style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
         >
-          {submitting ? 'Yuborilmoqda...' : "To'lovni yuborish"}
+          {submitting ? t('payment.submitting') : t('payment.submit')}
         </button>
 
         <button
@@ -530,7 +533,7 @@ export default function PaymentPage() {
           className="w-full mt-4 text-slate-500 hover:text-slate-700 text-sm font-medium flex items-center justify-center gap-1"
         >
           <ChevronRight className="h-4 w-4 rotate-180" />
-          Orqaga qaytish
+          {t('payment.back')}
         </button>
       </div>
     </div>

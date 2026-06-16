@@ -2,6 +2,7 @@ import type { DbClient } from '../types/dbClient';
 import type { AccessInfo } from './subscription.service';
 import * as vocabRepo from '../repositories/vocabularyRepository';
 import { FREE_VOCAB_SUBTOPIC_ID, FREE_VOCAB_TOPIC_ID } from '../lib/freeVocabularyIds';
+import { isFreeKunlikDay } from '../../shared/dailyCourseDay';
 
 export type LessonWithLock = {
   id: number;
@@ -62,6 +63,15 @@ export function applySubtopicsLock(
     const locked = !(salomAlwaysFree || matchesAccessPair);
     return { ...s, locked };
   });
+}
+
+/**
+ * Check if user can access a kunlik reja day (grammar, vocab, reading, speaking).
+ * Free tier: days 1–FREE_KUNLIK_DAY_LIMIT only.
+ */
+export function canAccessKunlikDay(dayNumber: number, access: AccessInfo): boolean {
+  if (access.subscription_active) return true;
+  return isFreeKunlikDay(dayNumber);
 }
 
 /**

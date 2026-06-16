@@ -7,6 +7,7 @@ import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { adminContact } from '../config/adminContact';
 import { ArrowLeft, History, MessageCircle } from 'lucide-react';
 import { getPaymentDisplayLabel } from '../../shared/paymentProducts';
+import { useLocale } from '../context/LocaleContext';
 
 function formatPaymentAmount(amount: number, currency: string): string {
   if (currency === 'UZS') return `${Number(amount).toLocaleString('uz-UZ')} so'm`;
@@ -19,14 +20,15 @@ function formatPaymentDate(createdAt: string): string {
   return d.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' }) + ' — ' + d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
 }
 
-const STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }> = {
-  pending: { label: 'Tekshirilmoqda', className: 'bg-amber-100 text-amber-800' },
-  approved: { label: 'Tasdiqlandi', className: 'bg-emerald-100 text-emerald-800' },
-  rejected: { label: 'Rad etildi', className: 'bg-red-100 text-red-800' },
-};
-
-function StatusBadge({ status }: { status: PaymentStatus }) {
-  const { label, className } = STATUS_CONFIG[status] ?? { label: status, className: 'bg-slate-100 text-slate-700' };
+function StatusBadge({ status, label }: { status: PaymentStatus; label: string }) {
+  const className =
+    status === 'pending'
+      ? 'bg-amber-100 text-amber-800'
+      : status === 'approved'
+        ? 'bg-emerald-100 text-emerald-800'
+        : status === 'rejected'
+          ? 'bg-red-100 text-red-800'
+          : 'bg-slate-100 text-slate-700';
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}>
       {label}
@@ -36,6 +38,7 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
 
 export default function PaymentHistoryPage() {
   const { token, user } = useAuth();
+  const { t } = useLocale();
   const { refreshAccess } = useAccess();
   const navigate = useNavigate();
   const { payments, loading } = usePaymentStatus();
@@ -59,19 +62,19 @@ export default function PaymentHistoryPage() {
           className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-6"
         >
           <ArrowLeft className="h-5 w-5" />
-          Orqaga
+          {t('common.back')}
         </button>
 
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900 mb-6">
           <History className="w-7 h-7 text-indigo-600" />
-          To'lovlar tarixi
+          {t('payment.historyTitle')}
         </h1>
 
         {loading ? (
-          <p className="text-slate-500 py-8">Yuklanmoqda...</p>
+          <p className="text-slate-500 py-8">{t('common.loading')}</p>
         ) : visiblePayments.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500">
-            To'lovlar yo'q.
+            {t('payment.empty')}
           </div>
         ) : (
           <div className="space-y-4">
@@ -84,13 +87,24 @@ export default function PaymentHistoryPage() {
                   <span className="text-lg font-semibold text-slate-900">
                     {getPaymentDisplayLabel(p.product_code, p.tariff_type)}
                   </span>
-                  <StatusBadge status={p.status} />
+                  <StatusBadge
+                    status={p.status}
+                    label={
+                      p.status === 'pending'
+                        ? t('payment.statusPending')
+                        : p.status === 'approved'
+                          ? t('payment.statusApproved')
+                          : p.status === 'rejected'
+                            ? t('payment.statusRejected')
+                            : p.status
+                    }
+                  />
                 </div>
                 <p className="text-slate-700">
-                  Summa: {formatPaymentAmount(p.amount, p.currency)}
+                  {t('payment.amount')} {formatPaymentAmount(p.amount, p.currency)}
                 </p>
                 <p className="text-slate-500 text-sm mt-1">
-                  Sana: {formatPaymentDate(p.created_at)}
+                  {t('payment.date')} {formatPaymentDate(p.created_at)}
                 </p>
                 <a
                   href={adminContact.telegram}
@@ -99,7 +113,7 @@ export default function PaymentHistoryPage() {
                   className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  Administrator bilan bog'lanish
+                  {t('payment.contactAdmin')}
                 </a>
               </div>
             ))}
@@ -108,7 +122,7 @@ export default function PaymentHistoryPage() {
 
         {/* Administrator bilan bog'lanish */}
         <div className="mt-8 bg-white rounded-2xl border border-slate-200 p-6">
-          <p className="text-xs text-slate-500 uppercase font-bold mb-3">Administrator bilan bog'lanish</p>
+          <p className="text-xs text-slate-500 uppercase font-bold mb-3">{t('payment.contactAdmin')}</p>
           <div className="flex flex-wrap gap-2">
             {adminContact.telegram && (
               <a

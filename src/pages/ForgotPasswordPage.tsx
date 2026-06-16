@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authStrings } from '../constants/authStrings';
 import { AuthButton } from '../components/auth/AuthButton';
 import { AuthGap, AuthPageScaffold, AuthScrollBody } from '../components/auth/AuthPageScaffold';
 import { AuthPasswordField } from '../components/auth/AuthPasswordField';
@@ -8,12 +7,14 @@ import { AuthSectionTitle } from '../components/auth/AuthSectionTitle';
 import { AuthSegmentedTabs } from '../components/auth/AuthSegmentedTabs';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { IntlPhoneInput } from '../components/auth/IntlPhoneInput';
+import { useLocale } from '../context/LocaleContext';
 
 type Phase = 0 | 1 | 2;
 type ContactMode = 'phone' | 'email';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [phase, setPhase] = useState<Phase>(0);
   const [mode, setMode] = useState<ContactMode>('phone');
   const [email, setEmail] = useState('');
@@ -22,7 +23,7 @@ export default function ForgotPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleSave = () => {
-    window.alert(authStrings.comingSoon);
+    window.alert(t('auth.comingSoon'));
     navigate('/login');
   };
 
@@ -33,16 +34,16 @@ export default function ForgotPasswordPage() {
           <AuthSectionTitle
             title={
               phase === 0
-                ? authStrings.resetTitle
+                ? t('auth.resetTitle')
                 : phase === 1
-                  ? authStrings.enterCodeTitle
-                  : authStrings.newPasswordTitle
+                  ? t('auth.enterCodeTitle')
+                  : t('auth.newPasswordTitle')
             }
             subtitle={
               phase === 0
-                ? authStrings.resetSubtitle
+                ? t('auth.resetSubtitle')
                 : phase === 1
-                  ? authStrings.enterCodeSubtitle
+                  ? t('auth.enterCodeSubtitle')
                   : undefined
             }
             onBack={() => (phase === 0 ? navigate('/login') : setPhase((p) => (p - 1) as Phase))}
@@ -53,8 +54,8 @@ export default function ForgotPasswordPage() {
               <AuthSegmentedTabs
                 value={mode}
                 options={[
-                  { value: 'phone', label: authStrings.phone },
-                  { value: 'email', label: authStrings.email },
+                  { value: 'phone', label: t('auth.phone') },
+                  { value: 'email', label: t('auth.email') },
                 ]}
                 onChange={(value: ContactMode) => setMode(value)}
               />
@@ -64,13 +65,13 @@ export default function ForgotPasswordPage() {
               ) : (
                 <AuthTextField
                   type="email"
-                  placeholder={authStrings.emailHint}
+                  placeholder={t('auth.emailHint')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               )}
               <AuthGap />
-              <AuthButton label={authStrings.sendCode} onClick={() => setPhase(1)} />
+              <AuthButton label={t('auth.sendCode')} onClick={() => setPhase(1)} />
             </>
           ) : null}
 
@@ -97,28 +98,28 @@ export default function ForgotPasswordPage() {
                 type="button"
                 className="text-sm font-medium text-[#1E3A8A] underline underline-offset-2"
               >
-                {authStrings.resendCode}
+                {t('auth.resendCode')}
               </button>
               <AuthGap />
-              <AuthButton label={authStrings.continueBtn} onClick={() => setPhase(2)} />
+              <AuthButton label={t('auth.continueBtn')} onClick={() => setPhase(2)} />
             </>
           ) : null}
 
           {phase === 2 ? (
             <>
               <AuthPasswordField
-                label={authStrings.createPassword}
+                label={t('auth.createPassword')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
               <AuthGap />
               <AuthPasswordField
-                label={authStrings.rewritePassword}
+                label={t('auth.rewritePassword')}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
               <AuthGap />
-              <AuthButton label={authStrings.savePassword} onClick={handleSave} />
+              <AuthButton label={t('auth.savePassword')} onClick={handleSave} />
             </>
           ) : null}
         </div>

@@ -20,13 +20,13 @@ function getPageLoader(modulePath: string): PageLoader {
 
 function RouteFallback() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] px-5">
-      <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white/95 p-5 shadow-[0_16px_50px_rgba(148,163,184,0.14)]">
-        <div className="h-3 w-28 animate-pulse rounded-full bg-slate-200" />
+    <div className="flex min-h-screen items-center justify-center bg-app-bg px-5">
+      <div className="w-full max-w-md rounded-[28px] border border-app-border bg-app-surface/95 p-5 shadow-app-card">
+        <div className="h-3 w-28 animate-pulse rounded-full bg-app-border" />
         <div className="mt-5 space-y-3">
-          <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
-          <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
-          <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
+          <div className="h-14 animate-pulse rounded-2xl bg-app-bg-subtle" />
+          <div className="h-14 animate-pulse rounded-2xl bg-app-bg-subtle" />
+          <div className="h-14 animate-pulse rounded-2xl bg-app-bg-subtle" />
         </div>
       </div>
     </div>

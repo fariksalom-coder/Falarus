@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
+import { isValidDailyCourseDay, FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
 import { Check, ChevronLeft, ChevronRight, Crown, Edit3, FileText, RefreshCw } from 'lucide-react';
 import { fetchStreak, getCachedStreak, type StreakResponse } from '../api/activity';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
+import { useLocale } from '../context/LocaleContext';
 import { useKunlikProgress, type KunlikDayProgress } from '../hooks/useKunlikProgress';
 import { prefetchRoutePath } from '../routeModules';
 import { TOTAL_DAYS } from '../data/dailyPlan';
@@ -27,8 +28,8 @@ const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
 const QUESTS = [
   {
     id: 'grammar',
-    title: 'Grammatika',
-    subtitle: 'Qoidalarni o‘rganish',
+    titleKey: 'home.questGrammar',
+    subtitleKey: 'home.questGrammarSub',
     route: (day: number) => `/kunlik-reja/kun/${day}/grammatika`,
     images: {
       done: '/app-mobile/images/home/block_icons/grammar_done.png',
@@ -38,8 +39,8 @@ const QUESTS = [
   },
   {
     id: 'vocabulary',
-    title: 'Lug‘at',
-    subtitle: 'Yangi so‘zlar',
+    titleKey: 'home.questVocab',
+    subtitleKey: 'home.questVocabSub',
     route: (day: number) => `/kunlik-reja/kun/${day}/lugat`,
     images: {
       done: '/app-mobile/images/home/block_icons/vocabulary_done.png',
@@ -49,8 +50,8 @@ const QUESTS = [
   },
   {
     id: 'reading',
-    title: 'O‘qish',
-    subtitle: 'Matnni tushunish',
+    titleKey: 'home.questReading',
+    subtitleKey: 'home.questReadingSub',
     route: (day: number) => `/kunlik-reja/kun/${day}/oqish`,
     images: {
       done: '/app-mobile/images/home/block_icons/reading_done.png',
@@ -60,8 +61,8 @@ const QUESTS = [
   },
   {
     id: 'speaking',
-    title: 'Gapirish',
-    subtitle: 'Suhbat mashqi',
+    titleKey: 'home.questSpeaking',
+    subtitleKey: 'home.questSpeakingSub',
     route: (day: number) => `/kunlik-reja/kun/${day}/gapirish`,
     images: {
       done: '/app-mobile/images/home/block_icons/speaking_done.png',
@@ -77,6 +78,8 @@ type QuestSlot = (typeof QUESTS)[number] & {
   state: QuestState;
   canOpen: boolean;
 };
+
+type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
 
 function getRow(rows: Map<number, KunlikDayProgress>, day: number): KunlikDayProgress {
   return rows.get(day) ?? { day_number: day, ...DEFAULT_ROW };
@@ -145,12 +148,14 @@ function HomeHeader({
   avatarUrl,
   gender,
   userName,
+  t,
 }: {
   streak: StreakResponse;
   premium: boolean;
   avatarUrl?: string | null;
   gender?: UserGender;
   userName?: string;
+  t: TranslateFn;
 }) {
   const navigate = useNavigate();
 
@@ -158,14 +163,14 @@ function HomeHeader({
     <header className="flex items-center gap-2 px-4 pt-3">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <img src="/app-mobile/logo/logo_mark.svg" alt="" className="h-[34px] w-[34px] shrink-0" decoding="async" />
-        <h1 className="min-w-0 truncate text-[26px] font-extrabold leading-none text-[#0B3CCB]">
+        <h1 className="min-w-0 truncate text-[26px] font-extrabold leading-none text-app-brand">
           FalaRus
         </h1>
       </div>
 
-      <div className="flex h-11 w-[88px] items-center rounded-full bg-[#F8FBFF] py-1 pl-1 pr-2 shadow-[0_8px_24px_rgba(15,23,42,0.09)]">
+      <div className="flex h-11 w-[88px] items-center rounded-full bg-app-surface-elevated py-1 pl-1 pr-2 shadow-app-soft">
         <UserAvatar avatarUrl={avatarUrl} gender={gender ?? null} name={userName} className="h-9 w-9" />
-        <span className="ml-2 min-w-0 flex-1 text-center text-[20px] font-extrabold leading-none text-[#0F172A]">
+        <span className="ml-2 min-w-0 flex-1 text-center text-[20px] font-extrabold leading-none text-app-text">
           {streak.streak_days}
         </span>
       </div>
@@ -177,30 +182,30 @@ function HomeHeader({
           onMouseEnter={() => prefetchRoutePath('/tariflar')}
           onTouchStart={() => prefetchRoutePath('/tariflar')}
           onFocus={() => prefetchRoutePath('/tariflar')}
-          className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-[#0B3CCB] px-3 text-[13px] font-black text-white shadow-[0_8px_24px_rgba(15,23,42,0.12)] active:scale-[0.98]"
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-app-brand px-3 text-[13px] font-black text-white shadow-app-soft active:scale-[0.98]"
         >
           <Crown className="h-[18px] w-[18px]" aria-hidden />
-          Premium
+          {t('home.premium')}
         </button>
       ) : null}
     </header>
   );
 }
 
-function ExamShortcuts() {
+function ExamShortcuts({ t }: { t: TranslateFn }) {
   const navigate = useNavigate();
   const cards = [
     {
       href: '/kurslar/patent',
-      title: 'Patent',
-      subtitle: 'Patentga tayyorgarlik',
+      title: t('home.patentTitle'),
+      subtitle: t('home.patentSubtitle'),
       dark: true,
       Icon: Edit3,
     },
     {
       href: '/kurslar/vnzh',
-      title: 'ВНЖ',
-      subtitle: 'ВНЖga tayyorgarlik',
+      title: t('home.vnzhTitle'),
+      subtitle: t('home.vnzhSubtitle'),
       dark: false,
       Icon: FileText,
     },
@@ -227,7 +232,11 @@ function ExamShortcuts() {
           </span>
           <span className="ml-2.5 min-w-0 flex-1">
             <span className="block truncate text-[15px] font-extrabold leading-none">{title}</span>
-            <span className={`mt-1.5 block truncate text-[10px] font-semibold leading-none ${dark ? 'text-white/95' : 'text-[#0F172A]'}`}>
+            <span
+              className={`mt-1.5 block truncate text-[11px] font-semibold leading-snug ${
+                dark ? 'text-white/90' : 'text-[#1E293B]/85'
+              }`}
+            >
               {subtitle}
             </span>
           </span>
@@ -245,6 +254,7 @@ function DayNavigator({
   total,
   onPrevious,
   onNext,
+  t,
 }: {
   selectedDay: number;
   currentDay: number;
@@ -252,36 +262,41 @@ function DayNavigator({
   total: number;
   onPrevious: () => void;
   onNext: () => void;
+  t: TranslateFn;
 }) {
   const currentStep = done >= total ? total : done + 1;
 
   return (
     <section className="px-4 pt-3">
-      <div className="h-[114px] rounded-2xl bg-white px-[22px] py-3 shadow-[0_8px_24px_rgba(15,23,42,0.09)]">
+      <div className="h-[114px] rounded-2xl bg-app-surface px-[22px] py-3 shadow-app-soft">
         <div className="flex items-center justify-center gap-[18px]">
           <button
             type="button"
             onClick={onPrevious}
             disabled={selectedDay <= 1}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E2E8F0] bg-white text-[#0F172A] disabled:opacity-45"
-            aria-label="Oldingi kun"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-app-border bg-app-surface text-app-text disabled:opacity-45"
+            aria-label={t('home.prevDay')}
           >
             <ChevronLeft className="h-[21px] w-[21px]" aria-hidden />
           </button>
-          <div className="text-[24px] font-extrabold leading-none text-[#0F172A]">Kun {selectedDay}</div>
+          <div className="text-[24px] font-extrabold leading-none text-app-text">
+            {t('home.dayLabel', { day: selectedDay })}
+          </div>
           <button
             type="button"
             onClick={onNext}
             disabled={selectedDay >= currentDay}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E2E8F0] bg-white text-[#0F172A] disabled:opacity-45"
-            aria-label="Keyingi kun"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-app-border bg-app-surface text-app-text disabled:opacity-45"
+            aria-label={t('home.nextDay')}
           >
             <ChevronRight className="h-[21px] w-[21px]" aria-hidden />
           </button>
         </div>
 
-        <p className="mt-[9px] text-center text-xs font-semibold leading-none text-[#6B7280]">
-          Qadam {currentStep} / {total}  •  ~25 daqiqa
+        <p className="mt-[9px] text-center text-[13px] font-semibold leading-snug text-app-icon-fg">
+          {t('home.stepLabel', { current: currentStep, total })}
+          <span className="mx-1.5 text-app-text-muted">•</span>
+          {t('home.minutesLabel', { minutes: 25 })}
         </p>
 
         <div className="mt-[9px] flex h-6 items-center">
@@ -296,14 +311,14 @@ function DayNavigator({
                     completed
                       ? 'border-[#7C3AED] bg-[#7C3AED] text-white'
                       : active
-                        ? 'border-[#7C3AED] bg-white text-[#7C3AED]'
-                        : 'border-[#E2E8F0] bg-white text-[#94A3B8]'
+                        ? 'border-[#7C3AED] bg-app-surface text-[#7C3AED]'
+                        : 'border-app-border bg-app-surface text-app-text-muted'
                   }`}
                 >
                   {completed ? <Check className="h-[15px] w-[15px]" aria-hidden /> : step}
                 </div>
                 {step < total ? (
-                  <div className={`mx-1 h-0.5 flex-1 ${step <= done ? 'bg-[#7C3AED]' : 'bg-[#E2E8F0]'}`} />
+                  <div className={`mx-1 h-0.5 flex-1 ${step <= done ? 'bg-[#7C3AED]' : 'bg-app-border'}`} />
                 ) : null}
               </div>
             );
@@ -314,13 +329,37 @@ function DayNavigator({
   );
 }
 
-function QuestCard({ slot, index, day }: { slot: QuestSlot; index: number; day: number }) {
+function QuestCard({
+  slot,
+  index,
+  day,
+  t,
+}: {
+  slot: QuestSlot;
+  index: number;
+  day: number;
+  t: TranslateFn;
+}) {
   const navigate = useNavigate();
   const done = slot.state === 'done';
   const active = slot.state === 'active';
   const locked = slot.state === 'locked';
   const accent = done ? '#0EAD4F' : active ? '#0D55F5' : '#6B7898';
   const image = slot.images[done ? 'done' : active ? 'active' : 'locked'];
+
+  const cardSurface = done
+    ? 'border-[#ACEBC8] bg-[#F0FFF5] dark:border-emerald-500/35 dark:bg-emerald-500/12'
+    : active
+      ? 'border-[#B7CEFF] bg-[#F4F8FF] dark:border-app-primary/40 dark:bg-app-primary/12'
+      : 'border-app-border bg-[#F9FBFF] dark:bg-app-surface-elevated';
+
+  const subtitleClass = done
+    ? 'text-emerald-700 dark:text-emerald-300'
+    : active
+      ? 'text-[#1D4ED8] dark:text-blue-300'
+      : 'text-[#475569] dark:text-slate-300';
+
+  const actionLabel = done ? t('home.questRepeat') : t('home.questStart');
 
   return (
     <button
@@ -330,35 +369,50 @@ function QuestCard({ slot, index, day }: { slot: QuestSlot; index: number; day: 
       onMouseEnter={() => prefetchRoutePath(slot.route(day))}
       onTouchStart={() => prefetchRoutePath(slot.route(day))}
       onFocus={() => prefetchRoutePath(slot.route(day))}
-      className={`relative h-[198px] min-w-0 rounded-[18px] border p-2.5 text-center shadow-[0_8px_24px_rgba(15,23,42,0.09)] transition-transform active:scale-[0.99] disabled:cursor-default ${
-        done
-          ? 'border-[#ACEBC8] bg-[#F0FFF5]'
-          : active
-            ? 'border-[#B7CEFF] bg-[#F4F8FF]'
-            : 'border-[#E2E8F0] bg-[#F9FBFF]'
-      }`}
+      className={`relative flex min-h-[198px] min-w-0 flex-col rounded-[18px] border p-2.5 text-center shadow-app-soft transition-transform active:scale-[0.99] disabled:cursor-default ${cardSurface}`}
     >
-      <span className="absolute left-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-[15px] font-black leading-none text-white" style={{ backgroundColor: accent }}>
+      <span
+        className="absolute left-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-[15px] font-black leading-none text-white"
+        style={{ backgroundColor: accent }}
+      >
         {index}
       </span>
-      <span className={`absolute right-[13px] top-[13px] flex h-[30px] w-[30px] items-center justify-center rounded-full ${done ? 'bg-white/70' : 'bg-[#F2F6FF]'}`}>
-        <Check className="h-5 w-5" color={done ? accent : '#C7D1E6'} aria-hidden />
-      </span>
-      <img src={image} alt="" className="mx-auto h-[82px] w-[104px] object-contain" decoding="async" />
-      <span className="mt-1 block truncate text-lg font-black leading-none text-[#070D32]">{slot.title}</span>
-      <span className="mt-[6px] block truncate px-1 text-[11px] font-bold leading-none text-[#667195]">{slot.subtitle}</span>
       <span
-        className={`absolute bottom-2.5 left-2.5 right-2.5 flex h-[38px] items-center justify-center rounded-full pl-[18px] pr-2 text-[17px] font-black leading-none shadow-[0_12px_28px_rgba(15,23,42,0.14)] ${
-          locked ? 'bg-[#E9EEF8] text-[#0F172A] shadow-none' : 'text-white'
+        className={`absolute right-2.5 top-2.5 flex h-[30px] w-[30px] items-center justify-center rounded-full ${
+          done ? 'bg-white/80 dark:bg-white/15' : 'bg-white/90 dark:bg-white/10'
+        }`}
+      >
+        <Check className="h-5 w-5" color={done ? accent : locked ? '#94A3B8' : '#C7D1E6'} aria-hidden />
+      </span>
+
+      <div className="flex flex-1 flex-col items-center justify-center px-1 pt-7 pb-2">
+        <img src={image} alt="" className="h-[72px] w-[96px] object-contain" decoding="async" />
+        <span className="mt-2 block w-full truncate text-[17px] font-black leading-tight text-app-text">
+          {t(slot.titleKey)}
+        </span>
+        <span className={`mt-1.5 block w-full truncate px-0.5 text-[12px] font-semibold leading-snug ${subtitleClass}`}>
+          {t(slot.subtitleKey)}
+        </span>
+      </div>
+
+      <span
+        className={`mt-auto flex min-h-[38px] w-full items-center rounded-full py-2 pl-[18px] pr-2 text-[16px] font-black leading-none ${
+          locked
+            ? 'border border-slate-300/80 bg-slate-100 text-slate-600 shadow-none dark:border-white/14 dark:bg-white/10 dark:text-slate-200'
+            : 'text-white shadow-[0_12px_28px_rgba(15,23,42,0.14)]'
         }`}
         style={{ backgroundColor: locked ? undefined : accent }}
       >
-        <span className="min-w-0 flex-1 truncate">{done ? 'Takrorlash' : 'Boshlash'}</span>
-        <span className="ml-2.5 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-white">
+        <span className="min-w-0 flex-1 truncate text-left">{actionLabel}</span>
+        <span
+          className={`ml-2 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full ${
+            locked ? 'bg-white dark:bg-white/15' : 'bg-white'
+          }`}
+        >
           {done ? (
-            <RefreshCw className="h-5 w-5" color={locked ? '#0F172A' : accent} aria-hidden />
+            <RefreshCw className="h-5 w-5" color={locked ? '#64748B' : accent} aria-hidden />
           ) : (
-            <ChevronRight className="h-6 w-6" color={locked ? '#0F172A' : accent} aria-hidden />
+            <ChevronRight className="h-6 w-6" color={locked ? '#64748B' : accent} aria-hidden />
           )}
         </span>
       </span>
@@ -369,13 +423,17 @@ function QuestCard({ slot, index, day }: { slot: QuestSlot; index: number; day: 
 export default function HomePage() {
   const { token, user } = useAuth();
   const { access } = useAccess();
+  const { t } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const { rows, loaded, practicePromptCountByDay } = useKunlikProgress();
+  const premium = Boolean(access?.subscription_active);
   const [streak, setStreak] = useState<StreakResponse>(() => getCachedStreak() ?? { streak_days: 0, last_7_days: Array(7).fill(false) });
-  const currentDay = useMemo(
-    () => (loaded ? findCurrentDay(rows, practicePromptCountByDay) : null),
-    [loaded, rows, practicePromptCountByDay],
-  );
+  const currentDay = useMemo(() => {
+    if (!loaded) return null;
+    const day = findCurrentDay(rows, practicePromptCountByDay);
+    if (premium) return day;
+    return Math.min(day, FREE_KUNLIK_DAY_LIMIT);
+  }, [loaded, rows, practicePromptCountByDay, premium]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const initialDayResolvedRef = useRef(false);
 
@@ -429,10 +487,9 @@ export default function HomePage() {
   const promptCount = progressReady ? practicePromptCountByDay.get(displayDay) ?? 0 : 0;
   const slots = row ? buildQuestSlots(row, promptCount) : [];
   const done = slots.filter((slot) => slot.state === 'done').length;
-  const premium = Boolean(access?.subscription_active);
 
   return (
-    <div className="min-h-screen bg-[#F4F9FF] pb-[84px]">
+    <div className="min-h-screen bg-app-bg-muted pb-[84px]">
       <main className="mx-auto w-full max-w-[820px]">
         <HomeHeader
           streak={streak}
@@ -440,8 +497,9 @@ export default function HomePage() {
           avatarUrl={user?.avatarUrl}
           gender={user?.gender ?? null}
           userName={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || undefined}
+          t={t}
         />
-        <ExamShortcuts />
+        <ExamShortcuts t={t} />
         {progressReady ? (
           <>
             <DayNavigator
@@ -451,6 +509,7 @@ export default function HomePage() {
               total={slots.length}
               onPrevious={() => setSelectedDay((day) => Math.max(1, (day ?? displayDay) - 1))}
               onNext={() => setSelectedDay((day) => Math.min(currentDay, (day ?? displayDay) + 1))}
+              t={t}
             />
 
             <motion.section
@@ -460,14 +519,14 @@ export default function HomePage() {
               className="grid grid-cols-2 gap-2.5 px-4 pt-3.5"
             >
               {slots.map((slot, index) => (
-                <QuestCard key={slot.id} slot={slot} index={index + 1} day={displayDay} />
+                <QuestCard key={slot.id} slot={slot} index={index + 1} day={displayDay} t={t} />
               ))}
             </motion.section>
           </>
         ) : (
           <div className="px-4 pt-6">
-            <div className="flex h-[114px] items-center justify-center rounded-2xl bg-white text-sm font-bold text-slate-500 shadow-[0_8px_24px_rgba(15,23,42,0.09)]">
-              Reja yuklanmoqda...
+            <div className="flex h-[114px] items-center justify-center rounded-2xl bg-app-surface text-sm font-bold text-app-text-muted shadow-app-soft">
+              {t('home.loadingPlan')}
             </div>
           </div>
         )}

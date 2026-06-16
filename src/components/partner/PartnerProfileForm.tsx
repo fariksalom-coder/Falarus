@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { savePartnerProfile, type PartnerProfile } from '../../api/partner';
 import { useAuth } from '../../context/AuthContext';
+import { useLocale } from '../../context/LocaleContext';
 
 type Props = {
   existing?: PartnerProfile | null;
@@ -21,13 +22,13 @@ const LEVELS = [
 ];
 
 const GOALS = [
-  { value: 'work', label: 'Ish uchun' },
-  { value: 'conversation', label: 'Suhbat uchun' },
+  { value: 'work', labelKey: 'partner.goalWork' },
+  { value: 'conversation', labelKey: 'partner.goalConversation' },
 ];
 
 const inputClass =
-  'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[0.95rem] text-slate-900 shadow-[0_2px_8px_rgba(15,23,42,0.04)] outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
-const labelClass = 'mb-1.5 block text-sm font-semibold text-slate-700';
+  'w-full rounded-2xl border border-app-border bg-app-surface-elevated px-4 py-3 text-[0.95rem] text-app-text shadow-app-soft outline-none transition-colors focus:border-app-primary focus:ring-2 focus:ring-app-primary/20';
+const labelClass = 'mb-1.5 block text-sm font-semibold text-app-text';
 
 export default function PartnerProfileForm({
   existing,
@@ -36,6 +37,7 @@ export default function PartnerProfileForm({
   variant = existing ? 'edit' : 'create',
 }: Props) {
   const { token, user } = useAuth();
+  const { t } = useLocale();
   const profileFullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
   const [displayName, setDisplayName] = useState(existing?.display_name ?? profileFullName);
   const [age, setAge] = useState(existing?.age?.toString() ?? '');
@@ -70,7 +72,7 @@ export default function PartnerProfileForm({
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
+      setError(err instanceof Error ? err.message : t('common.loadError'));
     } finally {
       setSaving(false);
     }
@@ -89,25 +91,25 @@ export default function PartnerProfileForm({
           <button
             type="button"
             onClick={onBack}
-            className="mb-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+            className="mb-3 inline-flex items-center gap-1.5 rounded-xl border border-app-border px-3 py-2 text-sm font-medium text-app-text-muted transition-colors hover:bg-[var(--app-row-hover)]"
           >
             <ArrowLeft className="h-4 w-4" />
-            {variant === 'create' ? 'Keyinroq' : 'Orqaga'}
+            {variant === 'create' ? t('partner.later') : t('common.back')}
           </button>
         )}
-        <h2 className="text-xl font-bold text-slate-900">
-          {variant === 'edit' ? 'Anketani tahrirlash' : "Anketa to'ldiring"}
+        <h2 className="text-xl font-bold text-app-text">
+          {variant === 'edit' ? t('partner.formEditTitle') : t('partner.formCreateTitle')}
         </h2>
-        <p className="mt-1 text-sm text-slate-500">Sherik topish uchun ma'lumotlaringizni kiriting</p>
+        <p className="mt-1 text-sm text-app-text-muted">{t('partner.formSubtitle')}</p>
       </div>
 
       <div>
-        <label className={labelClass}>Ism</label>
+        <label className={labelClass}>{t('partner.formName')}</label>
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="Ismingiz"
+          placeholder={t('partner.formNamePlaceholder')}
           required
           className={inputClass}
         />
@@ -115,45 +117,57 @@ export default function PartnerProfileForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>Yosh</label>
+          <label className={labelClass}>{t('partner.formAge')}</label>
           <input
             type="number"
             min={10}
             max={99}
             value={age}
             onChange={(e) => setAge(e.target.value)}
-            placeholder="25"
+            placeholder={t('partner.formAgePlaceholder')}
             required
             className={inputClass}
           />
         </div>
         <div>
-          <label className={labelClass}>Jins</label>
+          <label className={labelClass}>{t('partner.formGender')}</label>
           <select
             value={gender}
             onChange={(e) => setGender(e.target.value)}
             required
             className={inputClass}
           >
-            <option value="">Tanlang</option>
-            <option value="male">Erkak</option>
-            <option value="female">Ayol</option>
+            <option value="">{t('partner.formSelect')}</option>
+            <option value="male">{t('partner.male')}</option>
+            <option value="female">{t('partner.female')}</option>
           </select>
         </div>
       </div>
 
       <div>
-        <label className={labelClass}>Til darajasi</label>
+        <label className={labelClass}>{t('partner.formLanguageLevel')}</label>
         <select value={level} onChange={(e) => setLevel(e.target.value)} required className={inputClass}>
-          <option value="">Tanlang</option>
+          <option value="">{t('partner.formSelect')}</option>
           {LEVELS.map((l) => (
-            <option key={l.value} value={l.value}>{l.label}</option>
+            <option key={l.value} value={l.value}>
+              {l.value === 'beginner'
+                ? t('partner.levelBeginner')
+                : l.value === 'elementary'
+                  ? t('partner.levelElementary')
+                  : l.value === 'intermediate'
+                    ? t('partner.levelIntermediate')
+                    : l.value === 'upper'
+                      ? t('partner.levelUpper')
+                      : l.value === 'advanced'
+                        ? t('partner.levelAdvanced')
+                        : l.label}
+            </option>
           ))}
         </select>
       </div>
 
       <div>
-        <label className={labelClass}>Maqsad</label>
+        <label className={labelClass}>{t('partner.formGoal')}</label>
         <div className="flex gap-3">
           {GOALS.map((g) => (
             <button
@@ -162,29 +176,31 @@ export default function PartnerProfileForm({
               onClick={() => setGoal(g.value)}
               className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition-all ${
                 goal === g.value
-                  ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-[0_2px_12px_rgba(37,99,235,0.15)]'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  ? 'border-app-primary bg-app-primary/12 text-app-primary shadow-[0_2px_12px_rgba(37,99,235,0.15)]'
+                  : 'border-app-border bg-app-surface-elevated text-app-text-muted hover:border-app-primary/35'
               }`}
             >
-              {g.label}
+              {t(g.labelKey)}
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <label className={labelClass}>O'zingiz haqida</label>
+        <label className={labelClass}>{t('partner.formAbout')}</label>
         <textarea
           value={about}
           onChange={(e) => setAbout(e.target.value)}
-          placeholder="Qisqacha o'zingiz haqida yozing..."
+          placeholder={t('partner.formAboutPlaceholder')}
           rows={3}
           className={inputClass + ' resize-none'}
         />
       </div>
 
       {error && (
-        <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600">{error}</p>
+        <p className="rounded-xl bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 dark:bg-red-500/15 dark:text-red-300">
+          {error}
+        </p>
       )}
 
       <button
@@ -192,7 +208,7 @@ export default function PartnerProfileForm({
         disabled={saving || !displayName.trim() || !age || !gender || !level || !goal}
         className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(37,99,235,0.3)] transition-all hover:shadow-[0_12px_32px_rgba(37,99,235,0.4)] disabled:opacity-50 disabled:shadow-none"
       >
-        {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+        {saving ? t('common.saving') : t('common.save')}
       </button>
     </motion.form>
   );

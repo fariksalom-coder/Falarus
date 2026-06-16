@@ -1,5 +1,6 @@
 import { Flame } from 'lucide-react';
 import type { LeaderboardUser } from '../../api/leaderboard';
+import { useLocale } from '../../context/LocaleContext';
 import {
   getLeaderboardDisplayName,
   getLeaderboardInitial,
@@ -17,6 +18,7 @@ type UserRankCardProps = {
 };
 
 export default function UserRankCard({ rank, user, isCurrentUser, caption }: UserRankCardProps) {
+  const { t } = useLocale();
   const name = getLeaderboardDisplayName(user);
 
   return (
@@ -45,7 +47,7 @@ export default function UserRankCard({ rank, user, isCurrentUser, caption }: Use
           {name}
         </p>
         <p className="mt-1 text-sm font-medium sm:text-base" style={{ color: TEXT_SECONDARY }}>
-          {caption ?? `${rank}-o‘rin`}
+          {caption ?? t('stats.rankCaption', { rank })}
         </p>
       </div>
 

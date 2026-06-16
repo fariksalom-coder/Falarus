@@ -18,6 +18,7 @@ import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModa
 import PaywallModal from '../components/PaywallModal';
 import { useAccess } from '../context/AccessContext';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
 import { openRahmatCheckout } from '../api/rahmat';
@@ -51,6 +52,7 @@ function getSectionIcon(icon: ReturnType<typeof getVnzhSection> extends infer T 
 
 export default function VnzhCourseSectionPage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const { token } = useAuth();
   const { refreshPayments } = usePaymentStatus();
   const { sectionSlug } = useParams();
@@ -77,7 +79,7 @@ export default function VnzhCourseSectionPage() {
             afterCreate: refreshPayments,
           });
         } catch (e) {
-          setPaymentError(e instanceof Error ? e.message : 'Rahmat to‘lovi boshlanmadi. Keyinroq urinib ko‘ring.');
+          setPaymentError(e instanceof Error ? e.message : t('vnzh.rahmatStartError'));
         }
       })();
       return;
@@ -101,9 +103,9 @@ export default function VnzhCourseSectionPage() {
           className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_10px_24px_rgba(148,163,184,0.12)]"
         >
           <ArrowLeft className="h-4 w-4" />
-          Назад
+          {t('common.back')}
         </button>
-        <p className="mt-6 text-lg font-semibold text-slate-800">Раздел не найден</p>
+        <p className="mt-6 text-lg font-semibold text-slate-800">{t('vnzh.sectionNotFound')}</p>
       </div>
     );
   }
@@ -121,7 +123,7 @@ export default function VnzhCourseSectionPage() {
             type="button"
             onClick={() => navigate('/kurslar/vnzh')}
             className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-[#2563EB] shadow-[0_10px_24px_rgba(37,99,235,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5"
-            aria-label="Назад"
+            aria-label={t('vnzh.backAria')}
           >
             <ArrowLeft className="h-6 w-6" />
           </button>
@@ -135,7 +137,7 @@ export default function VnzhCourseSectionPage() {
               onClick={() => setCurrencyModalOpen(true)}
               className="mt-4 inline-flex w-full items-center justify-center rounded-[18px] bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_14px_28px_rgba(37,99,235,0.2)] transition hover:-translate-y-0.5 sm:w-auto"
             >
-              Sotib olish: {vnzhMeta.prices.RUB} ₽
+              {t('patent.buyPriceRub', { price: vnzhMeta.prices.RUB })}
             </button>
           </section>
         ) : null}
@@ -207,7 +209,7 @@ export default function VnzhCourseSectionPage() {
                       color: isLocked ? '#94A3B8' : '#5B85B6',
                     }}
                   >
-                    {isLocked ? 'Yopiq' : 'Ochiq'}
+                    {isLocked ? t('kunlik.locked') : t('patent.statusOpen')}
                   </p>
                 </div>
 
@@ -229,9 +231,9 @@ export default function VnzhCourseSectionPage() {
         <PaywallModal
           onClose={() => setPaywallOpen(false)}
           onAction={() => setCurrencyModalOpen(true)}
-          title="Курс закрыт"
+          title={t('patent.paywallTitle')}
           description={`${vnzhMeta.paywallDescription}\n${vnzhMeta.freeDescription}`}
-          buttonText="Купить"
+          buttonText={t('patent.paywallBuy')}
         />
       ) : null}
 

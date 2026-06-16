@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { X, Clock } from 'lucide-react';
+import { useLocale } from '../context/LocaleContext';
 
 type PendingPaymentModalProps = {
   onClose: () => void;
@@ -7,6 +8,7 @@ type PendingPaymentModalProps = {
 
 export default function PendingPaymentModal({ onClose }: PendingPaymentModalProps) {
   const navigate = useNavigate();
+  const { t } = useLocale();
 
   const handleGoToProfile = () => {
     onClose();
@@ -23,7 +25,7 @@ export default function PendingPaymentModal({ onClose }: PendingPaymentModalProp
           type="button"
           onClick={onClose}
           className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-100 text-slate-500"
-          aria-label="Yopish"
+          aria-label={t('common.close')}
         >
           <X className="w-5 h-5" />
         </button>
@@ -31,19 +33,17 @@ export default function PendingPaymentModal({ onClose }: PendingPaymentModalProp
           <div className="p-2 bg-amber-100 rounded-xl">
             <Clock className="w-6 h-6 text-amber-600" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">To'lov tekshirilmoqda</h2>
+          <h2 className="text-xl font-bold text-slate-900">{t('payment.pendingModalTitle')}</h2>
         </div>
         <p className="text-slate-600 mb-6 whitespace-pre-line">
-          Sizning to'lovingiz qabul qilindi va administrator tomonidan tekshirilmoqda.
-          {'\n\n'}
-          Tasdiqlangandan so'ng sizga barcha darslar va lug'at ochiladi.
+          {t('payment.pendingModalBody')}
         </p>
         <button
           type="button"
           onClick={handleGoToProfile}
           className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
         >
-          Profilga o'tish
+          {t('payment.pendingModalCta')}
         </button>
       </div>
     </div>

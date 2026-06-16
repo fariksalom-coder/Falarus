@@ -3,6 +3,7 @@ import { GraduationCap, LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginTeacherWithPassword, type AuthUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 
 function normalizeAuthUser(user: AuthUser) {
   return { ...user, progress: user.progress ?? 0, totalPoints: user.totalPoints ?? 0 };
@@ -11,6 +12,7 @@ function normalizeAuthUser(user: AuthUser) {
 export default function TeacherLoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t } = useLocale();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -26,7 +28,7 @@ export default function TeacherLoginPage() {
       login(data.token!, normalizeAuthUser(data.user!));
       navigate('/teacher-cabinet', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kirishda xatolik yuz berdi');
+      setError(err instanceof Error ? err.message : t('teachers.loginError'));
     } finally {
       setSubmitting(false);
     }
@@ -41,14 +43,14 @@ export default function TeacherLoginPage() {
           </div>
           <div>
             <p className="text-sm font-bold text-blue-700">FalaRus</p>
-            <h1 className="text-2xl font-black text-slate-950">O'qituvchi kirishi</h1>
+            <h1 className="text-2xl font-black text-slate-950">{t('teachers.loginTitle')}</h1>
           </div>
         </div>
 
         {error ? <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div> : null}
 
         <label className="block text-sm font-bold text-slate-700">
-          Email yoki telefon
+          {t('teachers.identifierLabel')}
           <input
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
@@ -58,7 +60,7 @@ export default function TeacherLoginPage() {
         </label>
 
         <label className="mt-4 block text-sm font-bold text-slate-700">
-          Parol
+          {t('auth.password')}
           <input
             type="password"
             value={password}
@@ -74,13 +76,13 @@ export default function TeacherLoginPage() {
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-black text-white disabled:opacity-50"
         >
           <LogIn className="h-5 w-5" />
-          {submitting ? 'Kirilmoqda...' : 'Kabinetga kirish'}
+          {submitting ? t('teachers.loggingIn') : t('teachers.cabinetLogin')}
         </button>
 
         <p className="mt-5 text-center text-sm font-semibold text-slate-600">
-          Hisobingiz yo'qmi?{' '}
+          {t('auth.noAccount')}
           <Link to="/teacher-register" className="text-blue-700">
-            Ro'yxatdan o'tish
+            {t('auth.signUp')}
           </Link>
         </p>
       </form>

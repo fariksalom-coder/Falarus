@@ -1,9 +1,5 @@
 import { Check } from 'lucide-react';
 
-const TEXT = '#0F172A';
-const TEXT_SECONDARY = '#64748B';
-const PRIMARY = '#6366F1';
-
 export type PricingCardProps = {
   duration: string;
   price: string;
@@ -49,15 +45,13 @@ export default function PricingCard({
   return (
     <div
       className={`
-        relative flex flex-col rounded-2xl border p-6
-        transition-all duration-300 hover:-translate-y-1 hover:shadow-xl
+        relative flex flex-col rounded-2xl border p-7 transition-all duration-300 hover:-translate-y-1
         ${
           highlighted
-            ? 'border-emerald-400/90 bg-gradient-to-b from-emerald-50/[0.97] via-white to-white shadow-lg shadow-emerald-200/45 ring-2 ring-emerald-400/30 md:scale-[1.03] md:hover:shadow-emerald-300/50'
-            : 'border-slate-200 bg-white shadow-sm hover:shadow-lg'
+            ? 'border-emerald-400/90 bg-gradient-to-b from-emerald-50/[0.97] via-white to-white shadow-lg shadow-emerald-200/45 ring-2 ring-emerald-400/30 dark:border-emerald-500/40 dark:from-emerald-500/15 dark:via-app-surface dark:to-app-surface dark:shadow-app-card dark:ring-emerald-500/25 md:scale-[1.03] md:hover:shadow-emerald-300/50'
+            : 'border-app-border bg-app-surface shadow-app-soft hover:shadow-app-card'
         }
       `}
-      style={{ padding: '28px' }}
     >
       {badge && (
         <div
@@ -72,8 +66,9 @@ export default function PricingCard({
       )}
 
       <h3
-        className={`text-center text-xl font-bold ${highlighted ? 'text-emerald-950' : ''}`}
-        style={highlighted ? undefined : { color: TEXT }}
+        className={`text-center text-xl font-bold ${
+          highlighted ? 'text-emerald-950 dark:text-emerald-200' : 'text-app-text'
+        }`}
       >
         {duration}
       </h3>
@@ -82,12 +77,15 @@ export default function PricingCard({
         {features.map((f, i) => (
           <li
             key={i}
-            className={`flex items-center gap-2.5 text-sm ${highlighted ? 'text-emerald-950' : ''}`}
-            style={highlighted ? undefined : { color: TEXT }}
+            className={`flex items-center gap-2.5 text-sm ${
+              highlighted ? 'text-emerald-950 dark:text-emerald-100' : 'text-app-text'
+            }`}
           >
             <span
               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                highlighted ? 'bg-emerald-200/80 text-emerald-800' : 'bg-emerald-100 text-emerald-600'
+                highlighted
+                  ? 'bg-emerald-200/80 text-emerald-800 dark:bg-emerald-500/25 dark:text-emerald-300'
+                  : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'
               }`}
             >
               <Check className="h-3 w-3" strokeWidth={3} />
@@ -99,15 +97,17 @@ export default function PricingCard({
 
       {useNewStructure ? (
         <div
-          className={`mb-5 mt-1 border-t pt-5 ${highlighted ? 'border-emerald-100/90' : 'border-slate-100'}`}
+          className={`mb-5 mt-1 border-t pt-5 ${
+            highlighted ? 'border-emerald-100/90 dark:border-emerald-500/20' : 'border-app-border-row'
+          }`}
         >
           {topCompareAtPrice ? (
-            <p className="text-center text-lg font-semibold text-slate-400 line-through decoration-slate-400 decoration-2">
+            <p className="text-center text-lg font-semibold text-slate-400 line-through decoration-slate-400 decoration-2 dark:text-slate-500">
               {topCompareAtPrice}
             </p>
           ) : null}
           {compareAtPrice ? (
-            <p className="text-center text-lg font-semibold text-slate-400 line-through decoration-slate-400 decoration-2">
+            <p className="text-center text-lg font-semibold text-slate-400 line-through decoration-slate-400 decoration-2 dark:text-slate-500">
               {compareAtPrice}
             </p>
           ) : null}
@@ -116,8 +116,8 @@ export default function PricingCard({
               <span
                 className={`inline-flex rounded-full px-3 py-1 text-sm font-bold tabular-nums ${
                   highlighted
-                    ? 'bg-emerald-200/90 text-emerald-950 ring-1 ring-emerald-400/40'
-                    : 'bg-blue-50 text-blue-800 ring-1 ring-blue-200/80'
+                    ? 'bg-emerald-200/90 text-emerald-950 ring-1 ring-emerald-400/40 dark:bg-emerald-500/20 dark:text-emerald-300'
+                    : 'bg-blue-50 text-blue-800 ring-1 ring-blue-200/80 dark:bg-app-primary/15 dark:text-blue-300 dark:ring-app-primary/25'
                 }`}
               >
                 −{discountPercent}% chegirma
@@ -131,14 +131,16 @@ export default function PricingCard({
           >
             <span
               className={`text-3xl font-extrabold tracking-tight ${
-                highlighted ? 'text-emerald-900' : 'text-slate-900'
+                highlighted ? 'text-emerald-900 dark:text-emerald-200' : 'text-app-text'
               }`}
             >
               {pricePerMonth}
             </span>
             {pricePerMonthUnit && (
               <span
-                className={`text-lg font-semibold ${highlighted ? 'text-emerald-700/90' : 'text-slate-600'}`}
+                className={`text-lg font-semibold ${
+                  highlighted ? 'text-emerald-700/90 dark:text-emerald-300/90' : 'text-app-text-muted'
+                }`}
               >
                 {pricePerMonthUnit}
               </span>
@@ -146,15 +148,9 @@ export default function PricingCard({
           </div>
         </div>
       ) : (
-        <div className="mb-5 mt-1 border-t border-slate-100 pt-5">
-          <p className="text-center text-3xl font-extrabold tracking-tight" style={{ color: TEXT }}>
-            {price}
-          </p>
-          {description && (
-            <p className="mt-1 text-center text-sm" style={{ color: TEXT_SECONDARY }}>
-              {description}
-            </p>
-          )}
+        <div className="mb-5 mt-1 border-t border-app-border-row pt-5">
+          <p className="text-center text-3xl font-extrabold tracking-tight text-app-text">{price}</p>
+          {description && <p className="mt-1 text-center text-sm text-app-text-muted">{description}</p>}
         </div>
       )}
 
@@ -165,18 +161,11 @@ export default function PricingCard({
         aria-label={useNewStructure ? `${buttonLabel}, ${price}` : undefined}
         className={`w-full rounded-xl py-3.5 text-base font-semibold transition-all duration-200 ${
           purchaseDisabled
-            ? 'cursor-not-allowed bg-slate-300 text-slate-600'
+            ? 'cursor-not-allowed bg-app-bg-subtle text-app-text-muted'
             : highlighted
-              ? 'bg-gradient-to-r from-emerald-600 to-green-600 py-4 text-lg font-bold text-white shadow-lg shadow-emerald-600/35 ring-2 ring-white/25 hover:from-emerald-500 hover:to-green-500 hover:shadow-xl hover:shadow-emerald-600/40 hover:scale-[1.02] active:scale-[0.98]'
-              : 'text-white hover:opacity-90 active:scale-[0.98]'
+              ? 'bg-gradient-to-r from-emerald-600 to-green-600 py-4 text-lg font-bold text-white shadow-lg shadow-emerald-600/35 ring-2 ring-white/25 hover:scale-[1.02] hover:from-emerald-500 hover:to-green-500 hover:shadow-xl hover:shadow-emerald-600/40 active:scale-[0.98]'
+              : 'bg-app-primary text-white hover:opacity-90 active:scale-[0.98]'
         }`}
-        style={
-          purchaseDisabled
-            ? {}
-            : highlighted
-              ? {}
-              : { backgroundColor: PRIMARY }
-        }
       >
         {purchaseDisabled ? purchaseDisabledLabel : buttonLabel}
       </button>

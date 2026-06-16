@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loginWithGoogle, loginWithPassword, type AuthUser } from '../api/auth';
-import { authStrings, EMAIL_REGEX } from '../constants/authStrings';
+import { EMAIL_REGEX } from '../constants/authStrings';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { logGoogleOriginHint, useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { AuthButton } from '../components/auth/AuthButton';
 import { AuthFormBanner } from '../components/auth/AuthFormBanner';
@@ -27,6 +28,7 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const refFromUrl = searchParams.get('ref') ?? '';
   const { login } = useAuth();
+  const { t } = useLocale();
 
   const [mode, setMode] = useState<ContactMode>('phone');
   const [email, setEmail] = useState('');
@@ -49,12 +51,12 @@ export default function LoginPage() {
         login(data.token!, normalizeAuthUser(data.user!));
         navigate('/');
       } catch (err) {
-        setFormError(err instanceof Error ? err.message : authStrings.genericError);
+        setFormError(err instanceof Error ? err.message : t('auth.genericError'));
       } finally {
         setSocialLoading(false);
       }
     },
-    [refFromUrl, login, navigate],
+    [refFromUrl, login, navigate, t],
   );
 
   const { triggerSignIn, googleButtonRef, googleButtonReady } = useGoogleSignIn(handleGoogleCredential);
@@ -69,7 +71,7 @@ export default function LoginPage() {
     try {
       await triggerSignIn();
     } catch (err) {
-      const message = err instanceof Error ? err.message : authStrings.genericError;
+      const message = err instanceof Error ? err.message : t('auth.genericError');
       if (!message.includes('bekor') && !message.includes('cancel')) {
         setFormError(message);
       }
@@ -86,10 +88,10 @@ export default function LoginPage() {
     if (mode === 'email') {
       const trimmed = email.trim();
       if (!trimmed) {
-        setIdentifierError(authStrings.emailRequired);
+        setIdentifierError(t('auth.emailRequired'));
         hasError = true;
       } else if (!EMAIL_REGEX.test(trimmed)) {
-        setIdentifierError(authStrings.emailInvalid);
+        setIdentifierError(t('auth.emailInvalid'));
         hasError = true;
       } else {
         identifier = trimmed;
@@ -97,7 +99,7 @@ export default function LoginPage() {
     } else {
       const e164 = await phoneRef.current?.getE164();
       if (!e164) {
-        setIdentifierError(authStrings.phoneInvalid);
+        setIdentifierError(t('auth.phoneInvalid'));
         hasError = true;
       } else {
         identifier = e164;
@@ -105,7 +107,7 @@ export default function LoginPage() {
     }
 
     if (!password) {
-      setPasswordError(authStrings.passwordRequired);
+      setPasswordError(t('auth.passwordRequired'));
       hasError = true;
     }
 
@@ -129,7 +131,7 @@ export default function LoginPage() {
       login(data.token!, normalizeAuthUser(data.user!));
       navigate('/');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : authStrings.genericError);
+      setFormError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {
       setSubmitting(false);
     }
@@ -139,13 +141,13 @@ export default function LoginPage() {
     <AuthPageScaffold>
       <AuthScrollBody>
         <form onSubmit={handleSubmit} className="flex flex-col pb-6">
-          <AuthSectionTitle title={authStrings.logInTitle} onBack={() => navigate('/')} />
+          <AuthSectionTitle title={t('auth.logInTitle')} onBack={() => navigate('/')} />
 
           <AuthSegmentedTabs
             value={mode}
             options={[
-              { value: 'phone', label: authStrings.phone },
-              { value: 'email', label: authStrings.email },
+              { value: 'phone', label: t('auth.phone') },
+              { value: 'email', label: t('auth.email') },
             ]}
             onChange={(value) => {
               setMode(value);
@@ -169,7 +171,7 @@ export default function LoginPage() {
             <AuthTextField
               type="email"
               autoComplete="username"
-              placeholder={authStrings.emailHint}
+              placeholder={t('auth.emailHint')}
               value={email}
               error={identifierError ?? undefined}
               onChange={(e) => {
@@ -182,7 +184,7 @@ export default function LoginPage() {
           <AuthGap />
 
           <AuthPasswordField
-            label={authStrings.password}
+            label={t('auth.password')}
             autoComplete="current-password"
             value={password}
             error={passwordError ?? undefined}
@@ -198,7 +200,7 @@ export default function LoginPage() {
               onClick={() => navigate('/forgot-password')}
               className="px-1 py-1 text-sm font-medium text-[#1E3A8A]"
             >
-              {authStrings.forgotPassword}
+              {t('auth.forgotPassword')}
             </button>
           </div>
 
@@ -211,14 +213,14 @@ export default function LoginPage() {
 
           <AuthGap />
 
-          <AuthButton type="submit" label={authStrings.logIn} loading={submitting} disabled={!canSubmit} />
+          <AuthButton type="submit" label={t('auth.logIn')} loading={submitting} disabled={!canSubmit} />
 
           <AuthGap />
           <OrDivider />
           <AuthGap />
 
           <SocialAuthButton
-            label={authStrings.continueWithGoogle}
+            label={t('auth.continueWithGoogle')}
             loading={socialLoading}
             disabled={submitting}
             onClick={handleGoogleClick}
@@ -229,8 +231,8 @@ export default function LoginPage() {
           <AuthGap />
 
           <AuthSwitchLink
-            prefix={authStrings.noAccount}
-            action={authStrings.signUp}
+            prefix={t('auth.noAccount')}
+            action={t('auth.signUp')}
             onAction={() => navigate('/register')}
           />
         </form>

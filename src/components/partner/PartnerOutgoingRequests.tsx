@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, SendHorizontal, X } from 'lucide-react';
 import { cancelPartnerRequest, getOutgoingRequests, type PartnerRequest } from '../../api/partner';
 import { useAuth } from '../../context/AuthContext';
+import { useLocale } from '../../context/LocaleContext';
 
 type Props = {
   onBack: () => void;
@@ -12,6 +13,7 @@ type Props = {
 
 export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = false }: Props) {
   const { token } = useAuth();
+  const { t } = useLocale();
   const [requests, setRequests] = useState<PartnerRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelingId, setCancelingId] = useState<number | null>(null);
@@ -23,9 +25,9 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = 
     setError('');
     getOutgoingRequests(token)
       .then(setRequests)
-      .catch(() => setError('Chiquvchi so\'rovlarni yuklab bo\'lmadi'))
+      .catch(() => setError(t('common.loadError')))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, t]);
 
   const handleCancel = async (requestId: number) => {
     if (!token) return;
@@ -36,7 +38,7 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = 
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
       onUpdated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
+      setError(err instanceof Error ? err.message : t('common.loadError'));
     } finally {
       setCancelingId(null);
     }
@@ -46,21 +48,21 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = 
     <div className="mx-auto max-w-lg space-y-5">
       {embedded ? (
         <div className="mb-1">
-          <h2 className="text-lg font-bold text-slate-900">Chiquvchi so&apos;rovlar</h2>
-          <p className="mt-0.5 text-sm text-slate-500">Siz yuborgan kutilayotgan so&apos;rovlar</p>
+          <h2 className="text-lg font-bold text-app-text">{t('partner.outgoing')}</h2>
+          <p className="mt-0.5 text-sm text-app-text-muted">{t('partner.outgoingSub')}</p>
         </div>
       ) : (
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onBack}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text-muted transition-colors hover:bg-[var(--app-row-hover)]"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Chiquvchi so&apos;rovlar</h2>
-            <p className="mt-0.5 text-sm text-slate-500">Siz yuborgan sheriklik so&apos;rovlari</p>
+            <h2 className="text-xl font-bold text-app-text">{t('partner.outgoing')}</h2>
+            <p className="mt-0.5 text-sm text-app-text-muted">{t('partner.outgoingSub')}</p>
           </div>
         </div>
       )}
@@ -82,7 +84,7 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = 
           className="flex flex-col items-center py-16 text-center"
         >
           <SendHorizontal className="h-12 w-12 text-slate-300" />
-          <p className="mt-3 text-base font-semibold text-slate-500">Chiquvchi so'rovlar yo'q</p>
+          <p className="mt-3 text-base font-semibold text-slate-500">{t('partner.noRequests')}</p>
         </motion.div>
       )}
 
@@ -102,19 +104,19 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = 
               key={req.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[24px] border border-slate-200/90 bg-white p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]"
+              className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card"
             >
               <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-lg font-bold text-white">
                   {initials}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-base font-bold text-slate-900">
+                  <h3 className="truncate text-base font-bold text-app-text">
                     {profile?.display_name ?? `ID: ${req.receiver_id}`}
                   </h3>
-                  <p className="mt-1 text-xs text-slate-500">Javob kutilmoqda</p>
+                  <p className="mt-1 text-xs text-app-text-muted">{t('partner.pending')}</p>
                   {profile?.about && (
-                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600">{profile.about}</p>
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-app-text-muted">{profile.about}</p>
                   )}
                 </div>
               </div>
@@ -126,7 +128,7 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = 
                 className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100 disabled:opacity-50"
               >
                 <X className="h-4 w-4" />
-                {isCanceling ? 'Bekor qilinmoqda...' : 'So\'rovni bekor qilish'}
+                {isCanceling ? t('partner.cancelingRequest') : t('partner.cancelRequest')}
               </button>
             </motion.div>
           );

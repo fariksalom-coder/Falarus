@@ -8,6 +8,7 @@ import {
   type PartnerRequest,
 } from '../../api/partner';
 import { useAuth } from '../../context/AuthContext';
+import { useLocale } from '../../context/LocaleContext';
 
 const LEVEL_LABELS: Record<string, string> = {
   beginner: 'A1',
@@ -25,6 +26,7 @@ type Props = {
 
 export default function PartnerIncomingRequests({ onBack, onAccepted, embedded = false }: Props) {
   const { token } = useAuth();
+  const { t } = useLocale();
   const [requests, setRequests] = useState<PartnerRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
@@ -47,7 +49,7 @@ export default function PartnerIncomingRequests({ onBack, onAccepted, embedded =
       await acceptRequest(token, id);
       onAccepted();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Qabul qilishda xatolik';
+      const message = err instanceof Error ? err.message : t('common.loadError');
       if (message.toLowerCase().includes('allaqachon javob berilgan')) {
         onAccepted();
         return;
@@ -71,21 +73,21 @@ export default function PartnerIncomingRequests({ onBack, onAccepted, embedded =
     <div className="mx-auto max-w-lg space-y-5">
       {embedded ? (
         <div className="mb-1">
-          <h2 className="text-lg font-bold text-slate-900">Kiruvchi so&apos;rovlar</h2>
-          <p className="mt-0.5 text-sm text-slate-500">Sizga yuborilgan sheriklik so&apos;rovlari</p>
+          <h2 className="text-lg font-bold text-app-text">{t('partner.incoming')}</h2>
+          <p className="mt-0.5 text-sm text-app-text-muted">{t('partner.incomingSub')}</p>
         </div>
       ) : (
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onBack}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text-muted transition-colors hover:bg-[var(--app-row-hover)]"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Kiruvchi so&apos;rovlar</h2>
-            <p className="mt-0.5 text-sm text-slate-500">Sizga yuborilgan sheriklik so&apos;rovlari</p>
+            <h2 className="text-xl font-bold text-app-text">{t('partner.incoming')}</h2>
+            <p className="mt-0.5 text-sm text-app-text-muted">{t('partner.incomingSub')}</p>
           </div>
         </div>
       )}
@@ -107,7 +109,7 @@ export default function PartnerIncomingRequests({ onBack, onAccepted, embedded =
           className="flex flex-col items-center py-16 text-center"
         >
           <Inbox className="h-12 w-12 text-slate-300" />
-          <p className="mt-3 text-base font-semibold text-slate-500">Hozircha so'rovlar yo'q</p>
+          <p className="mt-3 text-base font-semibold text-slate-500">{t('partner.noRequests')}</p>
         </motion.div>
       )}
 
@@ -127,20 +129,20 @@ export default function PartnerIncomingRequests({ onBack, onAccepted, embedded =
               key={req.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[24px] border border-slate-200/90 bg-white p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]"
+              className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card"
             >
               <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-lg font-bold text-white">
                   {initials}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-base font-bold text-slate-900">
-                    {profile?.display_name ?? 'Noma\'lum'}
+                  <h3 className="truncate text-base font-bold text-app-text">
+                    {profile?.display_name ?? t('common.unknown')}
                   </h3>
                   {profile && (
                     <div className="mt-1.5 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                        {profile.age} yosh
+                      <span className="rounded-full bg-app-icon-bg px-2.5 py-0.5 text-xs font-medium text-app-text-muted">
+                        {t('partner.yearsOld', { age: profile.age })}
                       </span>
                       <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
                         {LEVEL_LABELS[profile.language_level] ?? profile.language_level}
@@ -148,7 +150,7 @@ export default function PartnerIncomingRequests({ onBack, onAccepted, embedded =
                     </div>
                   )}
                   {profile?.about && (
-                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600">
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-app-text-muted">
                       {profile.about}
                     </p>
                   )}
@@ -163,16 +165,16 @@ export default function PartnerIncomingRequests({ onBack, onAccepted, embedded =
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-[0_6px_20px_rgba(34,165,82,0.25)] transition-all hover:bg-emerald-600 disabled:opacity-50"
                 >
                   <Check className="h-4 w-4" />
-                  Qabul qilish
+                  {t('partner.acceptRequest')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleReject(req.id)}
                   disabled={isProcessing}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm font-bold text-app-text-muted transition-all hover:bg-[var(--app-row-hover)] disabled:opacity-50"
                 >
                   <X className="h-4 w-4" />
-                  Rad etish
+                  {t('partner.rejectRequest')}
                 </button>
               </div>
             </motion.div>

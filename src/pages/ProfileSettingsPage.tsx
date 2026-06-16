@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useState, type ChangeEvent } from 'react
 import { useNavigate } from 'react-router-dom';
 import { Check, ChevronLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { apiUrl, resolveAssetUrl } from '../api';
 import { bustAvatarUrl, patchUserAccount, removeUserAvatar, uploadUserAvatar } from '../api/user';
 import UserAvatar, { type UserGender } from '../components/UserAvatar';
@@ -24,6 +25,7 @@ type MeResponse = {
 
 export default function ProfileSettingsPage() {
   const { token, user, updateUser } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -100,9 +102,9 @@ export default function ProfileSettingsPage() {
     try {
       const me = await uploadUserAvatar(token, file);
       applyMeToContext(me);
-      setBanner({ kind: 'ok', text: 'Profil rasmi yangilandi' });
+      setBanner({ kind: 'ok', text: t('profile.avatarUpdated') });
     } catch (err) {
-      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm yuklanmadi' });
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : t('profile.avatarUploadFailed') });
     } finally {
       setUploadingAvatar(false);
     }
@@ -115,9 +117,9 @@ export default function ProfileSettingsPage() {
     try {
       const me = await removeUserAvatar(token);
       applyMeToContext(me);
-      setBanner({ kind: 'ok', text: 'Profil rasmi o‘chirildi' });
+      setBanner({ kind: 'ok', text: t('profile.avatarUpdated') });
     } catch (err) {
-      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Rasm o‘chirilmadi' });
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : t('profile.avatarUploadFailed') });
     } finally {
       setUploadingAvatar(false);
     }
@@ -127,15 +129,15 @@ export default function ProfileSettingsPage() {
     e.preventDefault();
     setBanner(null);
     if (!token) {
-      setBanner({ kind: 'error', text: 'Sessiya topilmadi' });
+      setBanner({ kind: 'error', text: t('common.loadError') });
       return;
     }
     if ((newPassword || newPasswordConfirm) && newPassword !== newPasswordConfirm) {
-      setBanner({ kind: 'error', text: 'Yangi parollar mos kelmadi' });
+      setBanner({ kind: 'error', text: t('auth.passwordsMismatch') });
       return;
     }
     if ((newPassword || newPasswordConfirm) && newPassword.length < 6) {
-      setBanner({ kind: 'error', text: "Yangi parol kamida 6 belgi bo'lsin" });
+      setBanner({ kind: 'error', text: t('auth.passwordMinLength') });
       return;
     }
 
@@ -164,34 +166,34 @@ export default function ProfileSettingsPage() {
       setCurrentPassword('');
       setNewPassword('');
       setNewPasswordConfirm('');
-      setBanner({ kind: 'ok', text: 'Profil yangilandi' });
+      setBanner({ kind: 'ok', text: t('profile.profileUpdated') });
     } catch (err) {
-      setBanner({ kind: 'error', text: err instanceof Error ? err.message : 'Xatolik' });
+      setBanner({ kind: 'error', text: err instanceof Error ? err.message : t('auth.genericError') });
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="min-h-full bg-[#EEF4FA] pb-6">
+    <div className="min-h-full bg-app-bg-subtle pb-6">
       <main className="mx-auto w-full max-w-[820px]">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/80 bg-[#EEF4FA]/95 px-4 py-3 backdrop-blur-sm">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-app-border bg-app-bg-subtle/95 px-4 py-3 backdrop-blur-sm">
           <button
             type="button"
             onClick={() => navigate('/profile')}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-900"
-            aria-label="Ortga"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text"
+            aria-label={t('common.back')}
           >
             <ChevronLeft className="h-5 w-5" aria-hidden />
           </button>
-          <h1 className="text-base font-extrabold text-slate-900">Tahrirlash</h1>
+          <h1 className="text-base font-extrabold text-app-text">{t('profile.edit')}</h1>
           <button
             type="submit"
             form="profile-edit-form"
             disabled={saving}
             className="text-sm font-bold text-blue-600 disabled:opacity-50"
           >
-            {saving ? '...' : 'Tayyor'}
+            {saving ? t('common.saving') : t('profile.done')}
           </button>
         </header>
 
@@ -202,7 +204,7 @@ export default function ProfileSettingsPage() {
               className={`relative flex h-20 w-20 cursor-pointer items-center justify-center rounded-full ${
                 uploadingAvatar ? 'pointer-events-none opacity-60' : ''
               }`}
-              aria-label="Profil rasmini almashtirish"
+              aria-label={t('profile.tapPhoto')}
             >
               <UserAvatar
                 avatarUrl={avatarPreviewUrl(avatarUrl)}
@@ -229,7 +231,7 @@ export default function ProfileSettingsPage() {
                 htmlFor={avatarInputId}
                 className={`text-sm font-bold text-blue-600 ${uploadingAvatar ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
               >
-                Rasmni almashtirish
+                {t('profile.tapPhoto')}
               </label>
               {avatarUrl ? (
                 <button
@@ -238,7 +240,7 @@ export default function ProfileSettingsPage() {
                   disabled={uploadingAvatar}
                   className="text-sm font-semibold text-red-600 disabled:opacity-50"
                 >
-                  O‘chirish
+                  {t('common.cancel')}
                 </button>
               ) : null}
             </div>
@@ -255,31 +257,31 @@ export default function ProfileSettingsPage() {
             </div>
           ) : null}
 
-          <section className="rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
-            <h2 className="text-base font-extrabold text-slate-900">Profil</h2>
+          <section className="rounded-[24px] border border-app-border bg-app-surface px-4 py-5 shadow-app-card">
+            <h2 className="text-base font-extrabold text-app-text">{t('profile.rows.profile')}</h2>
             <div className="mt-5 space-y-5">
-              <TextField label="Ism" value={firstName} onChange={setFirstName} />
-              <TextField label="Familiya" value={lastName} onChange={setLastName} />
-              <TextField label="Rus tili darajasi" value={level} onChange={setLevel} readOnly />
+              <TextField label={t('profile.firstName')} value={firstName} onChange={setFirstName} clearLabel={t('kunlik.clear')} />
+              <TextField label={t('profile.lastName')} value={lastName} onChange={setLastName} clearLabel={t('kunlik.clear')} />
+              <TextField label={t('profile.russianLevel')} value={level} onChange={setLevel} readOnly clearLabel={t('kunlik.clear')} />
               <div>
-                <span className="mb-2 block text-sm font-semibold text-slate-600">Jins</span>
+                <span className="mb-2 block text-sm font-semibold text-slate-600">{t('profile.gender')}</span>
                 <div className="grid grid-cols-2 gap-2.5">
-                  <GenderOption label="Erkak" selected={gender === 'male'} onSelect={() => setGender('male')} />
-                  <GenderOption label="Ayol" selected={gender === 'female'} onSelect={() => setGender('female')} />
+                  <GenderOption label={t('profile.genderMale')} selected={gender === 'male'} onSelect={() => setGender('male')} />
+                  <GenderOption label={t('profile.genderFemale')} selected={gender === 'female'} onSelect={() => setGender('female')} />
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="mt-4 rounded-[24px] border border-slate-200/90 bg-white px-4 py-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
-            <h2 className="text-base font-extrabold text-slate-900">Aloqa va xavfsizlik</h2>
+          <section className="mt-4 rounded-[24px] border border-app-border bg-app-surface px-4 py-5 shadow-app-card">
+            <h2 className="text-base font-extrabold text-app-text">{t('profile.contactSecurity')}</h2>
             <div className="mt-5 space-y-5">
-              <TextField label="Email" action="o'zgartirish" value={email} onChange={setEmail} type="email" />
-              <TextField label="Telefon raqami" action="o'zgartirish" value={phone} onChange={setPhone} type="tel" />
-              <PasswordField label="Joriy parol" value={currentPassword} onChange={setCurrentPassword} />
-              <PasswordField label="Yangi parol" value={newPassword} onChange={setNewPassword} />
+              <TextField label={t('auth.email')} action={t('profile.edit')} value={email} onChange={setEmail} type="email" clearLabel={t('kunlik.clear')} />
+              <TextField label={t('auth.phone')} action={t('profile.edit')} value={phone} onChange={setPhone} type="tel" clearLabel={t('kunlik.clear')} />
+              <PasswordField label={t('profile.currentPassword')} value={currentPassword} onChange={setCurrentPassword} />
+              <PasswordField label={t('profile.newPassword')} value={newPassword} onChange={setNewPassword} />
               <PasswordField
-                label="Yangi parolni tasdiqlash"
+                label={t('auth.rewritePassword')}
                 value={newPasswordConfirm}
                 onChange={setNewPasswordConfirm}
               />
@@ -306,8 +308,8 @@ function GenderOption({
       onClick={onSelect}
       className={`h-11 rounded-xl border text-sm font-bold transition-colors ${
         selected
-          ? 'border-[#24459A] bg-[#EEF4FA] text-[#24459A]'
-          : 'border-slate-200 bg-white text-slate-600'
+          ? 'border-app-primary-deep bg-app-icon-bg text-app-primary-deep'
+          : 'border-app-border bg-app-surface text-app-text-muted'
       }`}
     >
       {label}
@@ -322,6 +324,7 @@ function TextField({
   onChange,
   type = 'text',
   readOnly = false,
+  clearLabel,
 }: {
   label: string;
   action?: string;
@@ -329,11 +332,12 @@ function TextField({
   onChange: (value: string) => void;
   type?: string;
   readOnly?: boolean;
+  clearLabel: string;
 }) {
   return (
     <label className="block">
       <span className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-semibold text-slate-600">{label}</span>
+        <span className="text-sm font-semibold text-app-text-muted">{label}</span>
         {action ? <span className="text-xs font-semibold text-blue-600">{action}</span> : null}
       </span>
       <span className="relative block">
@@ -342,14 +346,14 @@ function TextField({
           value={value}
           readOnly={readOnly}
           onChange={(e) => onChange(e.target.value)}
-          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 pr-10 text-[15px] font-medium text-slate-900 outline-none placeholder:text-slate-400 read-only:bg-slate-50 read-only:text-slate-500"
+          className="h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 pr-10 text-[15px] font-medium text-app-text outline-none placeholder:text-app-text-muted read-only:bg-app-bg-subtle read-only:text-app-text-muted"
         />
         {value && !readOnly ? (
           <button
             type="button"
             onClick={() => onChange('')}
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-400 p-0.5 text-white"
-            aria-label="Tozalash"
+            aria-label={clearLabel}
           >
             <X className="h-3.5 w-3.5" aria-hidden />
           </button>
@@ -372,12 +376,12 @@ function PasswordField({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-600">{label}</span>
+      <span className="mb-2 block text-sm font-semibold text-app-text-muted">{label}</span>
       <input
         type="password"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[15px] font-medium text-slate-900 outline-none"
+        className="h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 text-[15px] font-medium text-app-text outline-none"
       />
     </label>
   );

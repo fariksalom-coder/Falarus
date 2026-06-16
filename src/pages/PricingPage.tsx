@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Info } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
@@ -10,22 +10,19 @@ import { openRahmatCheckout } from '../api/rahmat';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
+import { useLocale } from '../context/LocaleContext';
 
-const BG = '#F8FAFC';
-const TEXT = '#0F172A';
-const TEXT_SECONDARY = '#64748B';
-const PRIMARY = '#6366F1';
-
-const BENEFITS = [
-  'Barcha grammatika darslari',
-  "2600+ so'zli lug'at",
-  'Interaktiv mashqlar',
-  "Testlar va o'yinlar",
-  'Shaxsiy statistika',
-  'Reyting tizimi',
-];
+const BENEFIT_KEYS = [
+  'pricing.benefitGrammar',
+  'pricing.benefitVocab',
+  'pricing.benefitInteractive',
+  'pricing.benefitGames',
+  'pricing.benefitStats',
+  'pricing.benefitLeaderboard',
+] as const;
 
 type PlanCard = {
+  tariffType: 'month' | 'year';
   duration: string;
   price: string;
   pricePerMonth: string;
@@ -59,38 +56,62 @@ function discountPercentFromWas(was: number, sale: number): number | undefined {
 }
 
 /** Kartochkalar: joriy `tariff_prices` UZS. Ilgari narxlari dizayn konstantalari. */
-function buildPlansFromTariffPrices(prices: { month: number; year: number }): PlanCard[] {
+function buildPlansFromTariffPrices(
+  prices: { month: number; year: number },
+  copy: {
+    monthLabel: string;
+    yearLabel: string;
+    monthBuy: string;
+    yearBuy: string;
+    popular: string;
+    currency: string;
+  },
+  features: string[],
+): PlanCard[] {
   const { month, year } = prices;
   return [
     {
-      duration: '1 OY',
-      price: `${formatPrice(month)} so'm`,
+      tariffType: 'month',
+      duration: copy.monthLabel,
+      price: `${formatPrice(month)} ${copy.currency}`,
       pricePerMonth: formatPrice(month),
-      pricePerMonthUnit: "so'm",
-      compareAtPrice: `${formatPrice(WAS_UZS.month)} so'm`,
+      pricePerMonthUnit: copy.currency,
+      compareAtPrice: `${formatPrice(WAS_UZS.month)} ${copy.currency}`,
       discountPercent: discountPercentFromWas(WAS_UZS.month, month),
       promoActive: false,
-      features: BENEFITS,
-      buttonLabel: "1 oyga sotib olish",
+      features,
+      buttonLabel: copy.monthBuy,
       highlighted: false,
     },
     {
-      duration: '1 YIL',
-      price: `${formatPrice(year)} so'm`,
+      tariffType: 'year',
+      duration: copy.yearLabel,
+      price: `${formatPrice(year)} ${copy.currency}`,
       pricePerMonth: formatPrice(year),
-      pricePerMonthUnit: "so'm",
-      compareAtPrice: `${formatPrice(WAS_UZS.year)} so'm`,
+      pricePerMonthUnit: copy.currency,
+      compareAtPrice: `${formatPrice(WAS_UZS.year)} ${copy.currency}`,
       discountPercent: discountPercentFromWas(WAS_UZS.year, year),
       promoActive: false,
-      features: BENEFITS,
-      buttonLabel: "Bir yilga sotib olish",
+      features,
+      buttonLabel: copy.yearBuy,
       highlighted: true,
-      badge: 'Eng mashhur ⭐',
+      badge: `${copy.popular} ⭐`,
     },
   ];
 }
 
-function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[] {
+function buildPlansFromUserPricing(
+  payload: UserTariffPricesPayload,
+  copy: {
+    monthLabel: string;
+    yearLabel: string;
+    monthBuy: string;
+    yearBuy: string;
+    popular: string;
+    currency: string;
+  },
+  features: string[],
+): PlanCard[] {
   const monthFinal = Number(payload.quotes?.month?.final_amount ?? payload.month ?? 0);
   const yearFinal = Number(payload.quotes?.year?.final_amount ?? payload.year ?? 0);
   const promoActive = Boolean(payload.promo?.is_active);
@@ -98,29 +119,31 @@ function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[]
   const yearDiscountPct = discountPercentFromWas(WAS_UZS.year, yearFinal);
   return [
     {
-      duration: '1 OY',
-      price: `${formatPrice(monthFinal)} so'm`,
+      tariffType: 'month',
+      duration: copy.monthLabel,
+      price: `${formatPrice(monthFinal)} ${copy.currency}`,
       pricePerMonth: formatPrice(monthFinal),
-      pricePerMonthUnit: "so'm",
-      compareAtPrice: `${formatPrice(WAS_UZS.month)} so'm`,
+      pricePerMonthUnit: copy.currency,
+      compareAtPrice: `${formatPrice(WAS_UZS.month)} ${copy.currency}`,
       discountPercent: monthDiscountPct,
       promoActive,
-      features: BENEFITS,
-      buttonLabel: "1 oyga sotib olish",
+      features,
+      buttonLabel: copy.monthBuy,
       highlighted: false,
     },
     {
-      duration: '1 YIL',
-      price: `${formatPrice(yearFinal)} so'm`,
+      tariffType: 'year',
+      duration: copy.yearLabel,
+      price: `${formatPrice(yearFinal)} ${copy.currency}`,
       pricePerMonth: formatPrice(yearFinal),
-      pricePerMonthUnit: "so'm",
-      compareAtPrice: `${formatPrice(WAS_UZS.year)} so'm`,
+      pricePerMonthUnit: copy.currency,
+      compareAtPrice: `${formatPrice(WAS_UZS.year)} ${copy.currency}`,
       discountPercent: yearDiscountPct,
       promoActive,
-      features: BENEFITS,
-      buttonLabel: "Bir yilga sotib olish",
+      features,
+      buttonLabel: copy.yearBuy,
       highlighted: true,
-      badge: 'Eng mashhur ⭐',
+      badge: `${copy.popular} ⭐`,
     },
   ];
 }
@@ -128,39 +151,35 @@ function buildPlansFromUserPricing(payload: UserTariffPricesPayload): PlanCard[]
 const WHY_COURSE = [
   {
     icon: '🧠',
-    title: "Aqlli o'rganish tizimi",
-    description: "So'zlarni 3 bosqich orqali tez yodlaysiz",
+    titleKey: 'pricing.whySmartTitle',
+    descriptionKey: 'pricing.whySmartDesc',
   },
   {
     icon: '🎮',
-    title: "O'yin orqali o'rganish",
-    description: "Mashqlar o'yin shaklida",
+    titleKey: 'pricing.whyGameTitle',
+    descriptionKey: 'pricing.whyGameDesc',
   },
   {
     icon: '📊',
-    title: 'Shaxsiy statistika',
-    description: "O'z natijalaringizni kuzatib boring",
+    titleKey: 'pricing.whyStatsTitle',
+    descriptionKey: 'pricing.whyStatsDesc',
   },
   {
     icon: '🏆',
-    title: 'Reyting tizimi',
-    description: "Boshqa o'quvchilar bilan raqobat qiling",
+    titleKey: 'pricing.whyLeaderboardTitle',
+    descriptionKey: 'pricing.whyLeaderboardDesc',
   },
-];
+  ] as const;
 
 const VOCAB_STEPS = [
-  { num: '1', title: 'Tanishuv', desc: "So'zlarni ko'rasiz va eslab qolasiz" },
-  { num: '2', title: 'Test', desc: "Har bir so'z bo'yicha savollar" },
-  { num: '3', title: "Juftini topish", desc: "So'z va tarjimani moslashtirish" },
-];
-
-function durationToTariffType(duration: string): 'month' | 'year' {
-  if (duration === '1 YIL') return 'year';
-  return 'month';
-}
+  { num: '1', titleKey: 'kunlik.stepLearn', descKey: 'pricing.vocabStepLearnDesc' },
+  { num: '2', titleKey: 'kunlik.stepTest', descKey: 'pricing.vocabStepTestDesc' },
+  { num: '3', titleKey: 'kunlik.stepPairs', descKey: 'pricing.vocabStepPairsDesc' },
+] as const;
 
 export default function PricingPage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const { token } = useAuth();
   const { access } = useAccess();
   const { hasPendingPayment, refreshPayments } = usePaymentStatus();
@@ -175,6 +194,18 @@ export default function PricingPage() {
   >({});
   const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | 'year'; tariffLabel: string } | null>(null);
   const [paymentError, setPaymentError] = useState('');
+  const planCopy = useMemo(
+    () => ({
+      monthLabel: t('payment.buyMonth'),
+      yearLabel: t('payment.buyYear'),
+      monthBuy: t('payment.buyMonthAction'),
+      yearBuy: t('payment.buyYearAction'),
+      popular: t('payment.popular'),
+      currency: t('payment.currency'),
+    }),
+    [t],
+  );
+  const benefits = useMemo(() => BENEFIT_KEYS.map((key) => t(key)), [t]);
 
   useEffect(() => {
     setLoading(true);
@@ -185,18 +216,18 @@ export default function PricingPage() {
         const data = shouldStartPromo
           ? await getUserTariffPricesByCurrency(token, 'UZS', { startPromo: true })
           : current;
-        setPlans(buildPlansFromUserPricing(data));
+        setPlans(buildPlansFromUserPricing(data, planCopy, benefits));
         setPromoExpiresAt(data.promo?.expires_at ?? null);
         setPromoRemainingSec(Number(data.promo?.remaining_sec ?? 0));
         return;
       }
       const prices = await getTariffPricesByCurrency('UZS');
-      setPlans(buildPlansFromTariffPrices(prices));
+      setPlans(buildPlansFromTariffPrices(prices, planCopy, benefits));
     };
     load()
       .catch(() => setPlans([]))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, planCopy, benefits]);
 
   useEffect(() => {
     if (!promoExpiresAt) return;
@@ -223,7 +254,7 @@ export default function PricingPage() {
   const handleSelectPlan = (plan: PlanCard) => {
     setCurrencyModal({
       open: true,
-      tariffType: durationToTariffType(plan.duration),
+      tariffType: plan.tariffType,
       tariffLabel: plan.duration,
     });
     if (!token) return;
@@ -299,7 +330,7 @@ export default function PricingPage() {
             afterCreate: refreshPayments,
           });
         } catch (e) {
-          setPaymentError(e instanceof Error ? e.message : 'Rahmat to‘lovi boshlanmadi. Keyinroq urinib ko‘ring.');
+          setPaymentError(e instanceof Error ? e.message : t('payment.rahmatStartError'));
         }
       })();
       return;
@@ -319,34 +350,34 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen pb-20" style={{ backgroundColor: BG }}>
+    <div className="min-h-screen bg-app-bg pb-20">
       <div className="mx-auto max-w-6xl px-4 pt-10 md:pt-14">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-6"
+          className="mb-6 inline-flex items-center gap-2 font-medium text-app-text-muted transition-colors hover:text-app-text"
         >
           <ArrowLeft className="h-5 w-5" />
-          Orqaga
+          {t('common.back')}
         </button>
         {/* 1. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
         <section id="tariflar" className="mb-20">
           {promoRemainingSec > 0 && (
             <div
-              className={`mb-6 overflow-hidden rounded-[24px] border border-amber-300/70 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-5 shadow-[0_18px_38px_rgba(245,158,11,0.18)] transition-all duration-500 ${
-                promoSpotlight ? 'scale-[1.02] ring-4 ring-amber-300/50' : 'scale-100'
+              className={`mb-6 overflow-hidden rounded-[24px] border border-amber-300/70 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-5 shadow-[0_18px_38px_rgba(245,158,11,0.18)] transition-all duration-500 dark:border-amber-500/35 dark:from-amber-500/15 dark:via-amber-500/10 dark:to-orange-500/10 dark:shadow-app-card ${
+                promoSpotlight ? 'scale-[1.02] ring-4 ring-amber-300/50 dark:ring-amber-500/30' : 'scale-100'
               }`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div className="w-full">
-                  <p className="text-center text-sm font-extrabold uppercase tracking-wide text-amber-800">
-                    Narx oshishiga oz qoldi
+                  <p className="text-center text-sm font-extrabold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+                    {t('pricing.promoTitle')}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-white/85 px-4 py-3 shadow-sm ring-1 ring-amber-200">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Qolgan vaqt</p>
+                <div className="rounded-2xl bg-white/85 px-4 py-3 shadow-sm ring-1 ring-amber-200 dark:bg-app-surface/90 dark:ring-amber-500/25">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">{t('pricing.timeLeft')}</p>
                   <p
-                    className={`mt-1 text-4xl font-black tabular-nums leading-none text-amber-950 ${
+                    className={`mt-1 text-4xl font-black tabular-nums leading-none text-amber-950 dark:text-amber-100 ${
                       promoRemainingSec <= 300 ? 'animate-pulse' : ''
                     }`}
                   >
@@ -354,7 +385,7 @@ export default function PricingPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-100">
+              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-100 dark:bg-amber-500/20">
                 <div
                   className={`h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 transition-all duration-1000 ${
                     promoRemainingSec <= 300 ? 'animate-pulse' : ''
@@ -362,21 +393,21 @@ export default function PricingPage() {
                   style={{ width: `${promoProgressPct}%` }}
                 />
               </div>
-              <p className="mt-3 text-[13px] font-semibold text-amber-900">
-                Hoziroq xarid qiling
+              <p className="mt-3 text-[13px] font-semibold text-amber-900 dark:text-amber-200">
+                {t('pricing.buyNow')}
               </p>
             </div>
           )}
           {token && hasPendingPayment && (
-            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/12 dark:text-amber-200">
               <Info className="h-5 w-5 shrink-0" />
               <p className="text-sm font-medium">
-                Sizning to'lovingiz tekshirilmoqda. Administrator tasdiqlashini kuting.
+                {t('pricing.pendingNotice')}
               </p>
             </div>
           )}
           {paymentError ? (
-            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/12 dark:text-red-300">
               {paymentError}
             </div>
           ) : null}
@@ -385,19 +416,19 @@ export default function PricingPage() {
               {[1, 2].map((i) => (
                 <div
                   key={i}
-                  className={`rounded-2xl border border-slate-200 bg-white p-6 animate-pulse ${
+                  className={`animate-pulse rounded-2xl border border-app-border bg-app-surface p-6 ${
                     i === 2 ? 'order-1 md:order-2' : 'order-2 md:order-1'
                   }`}
                 >
-                  <div className="h-6 bg-slate-200 rounded w-16 mb-4" />
-                  <div className="h-8 bg-slate-200 rounded w-24 mb-2" />
-                  <div className="h-6 bg-slate-100 rounded w-32 mb-6" />
+                  <div className="mb-4 h-6 w-16 rounded bg-app-bg-subtle" />
+                  <div className="mb-2 h-8 w-24 rounded bg-app-bg-subtle" />
+                  <div className="mb-6 h-6 w-32 rounded bg-app-bg-subtle" />
                   <div className="space-y-3">
                     {[1, 2, 3, 4].map((j) => (
-                      <div key={j} className="h-4 bg-slate-100 rounded w-full" />
+                      <div key={j} className="h-4 w-full rounded bg-app-bg-subtle" />
                     ))}
                   </div>
-                  <div className="mt-6 h-12 bg-slate-200 rounded-xl" />
+                  <div className="mt-6 h-12 rounded-xl bg-app-bg-subtle" />
                 </div>
               ))}
             </div>
@@ -424,31 +455,28 @@ export default function PricingPage() {
                     discountPercent={plan.discountPercent}
                     onSelect={hasPendingPayment || hasActivePremium ? undefined : () => handleSelectPlan(plan)}
                     purchaseDisabled={(!!token && hasPendingPayment) || hasActivePremium}
-                    purchaseDisabledLabel={hasActivePremium ? 'Premium allaqachon faol' : "To'lov tekshirilmoqda"}
+                    purchaseDisabledLabel={hasActivePremium ? t('pricing.alreadyActive') : t('payment.statusPending')}
                   />
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-center text-slate-500 py-8">Narxlar yuklanmadi. Sahifani yangilab ko‘ring.</p>
+            <p className="py-8 text-center text-app-text-muted">{t('pricing.loadError')}</p>
           )}
         </section>
 
         {/* 3. Why this course */}
         <section className="mb-20">
-          <h2
-            className="mb-10 text-center text-2xl font-bold md:text-3xl"
-            style={{ color: TEXT }}
-          >
-            Nima uchun bu kurs samarali?
+          <h2 className="mb-10 text-center text-2xl font-bold text-app-text md:text-3xl">
+            {t('pricing.whyTitle')}
           </h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {WHY_COURSE.map((f) => (
               <FeatureCard
-                key={f.title}
+                key={f.titleKey}
                 icon={f.icon}
-                title={f.title}
-                description={f.description}
+                title={t(f.titleKey)}
+                description={t(f.descriptionKey)}
               />
             ))}
           </div>
@@ -456,35 +484,31 @@ export default function PricingPage() {
             <button
               type="button"
               onClick={scrollToTariffs}
-              className="rounded-2xl px-8 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:opacity-95 hover:shadow-lg active:scale-[0.98]"
-              style={{ backgroundColor: PRIMARY }}
+              className="rounded-2xl bg-app-primary px-8 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:opacity-95 hover:shadow-lg active:scale-[0.98]"
             >
-              Kursga yozilish
+              {t('pricing.ctaEnroll')}
             </button>
           </div>
         </section>
 
         {/* 4. Vocabulary 3-step */}
         <section className="mb-20">
-          <h2
-            className="mb-10 text-center text-2xl font-bold md:text-3xl"
-            style={{ color: TEXT }}
-          >
-            2600+ rus so‘zlarini oson yodlang
+          <h2 className="mb-10 text-center text-2xl font-bold text-app-text md:text-3xl">
+            {t('pricing.vocabTitle')}
           </h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {VOCAB_STEPS.map((step, i) => (
               <div
                 key={step.num}
-                className="relative flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm transition-all hover:shadow-md"
+                className="relative flex flex-col items-center rounded-2xl border border-app-border bg-app-surface p-8 text-center shadow-app-soft transition-all hover:shadow-app-card"
               >
-                <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 text-2xl font-bold text-indigo-600">
+                <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-app-primary/12 text-2xl font-bold text-app-primary">
                   {step.num}
                 </span>
-                <h3 className="text-lg font-bold text-slate-900">{step.title}</h3>
-                <p className="mt-2 text-sm text-slate-600">{step.desc}</p>
+                <h3 className="text-lg font-bold text-app-text">{t(step.titleKey)}</h3>
+                <p className="mt-2 text-sm text-app-text-muted">{t(step.descKey)}</p>
                 {i < VOCAB_STEPS.length - 1 && (
-                  <span className="absolute -right-4 top-1/2 hidden -translate-y-1/2 text-slate-300 md:inline" aria-hidden>
+                  <span className="absolute -right-4 top-1/2 hidden -translate-y-1/2 text-app-text-muted md:inline" aria-hidden>
                     →
                   </span>
                 )}
@@ -495,10 +519,9 @@ export default function PricingPage() {
             <button
               type="button"
               onClick={scrollToTariffs}
-              className="rounded-2xl px-8 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:opacity-95 hover:shadow-lg active:scale-[0.98]"
-              style={{ backgroundColor: PRIMARY }}
+              className="rounded-2xl bg-app-primary px-8 py-3.5 text-base font-semibold text-white shadow-md transition-all duration-200 hover:opacity-95 hover:shadow-lg active:scale-[0.98]"
             >
-              Kursga yozilish
+              {t('pricing.ctaEnroll')}
             </button>
           </div>
         </section>

@@ -10,6 +10,7 @@ import {
   type ChatMessage,
 } from '../../api/partner';
 import { useAuth } from '../../context/AuthContext';
+import { useLocale } from '../../context/LocaleContext';
 import { usePartnerRealtimeChat } from '../../hooks/usePartnerRealtimeChat';
 import { isRealtimeEnabled } from '../../lib/dbFacadeClient';
 
@@ -67,6 +68,7 @@ function useChatLayout() {
 
 export default function PartnerChat({ match, onEnded, onBack }: Props) {
   const { token, user } = useAuth();
+  const { t } = useLocale();
   const userId = user?.id;
   const partner = match.partner_profile;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -173,8 +175,8 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
           {initials}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-bold text-slate-900">{partner?.display_name ?? 'Sherik'}</p>
-          <p className="text-xs text-slate-500">Sherigingiz</p>
+          <p className="truncate text-base font-bold text-slate-900">{partner?.display_name ?? t('common.user')}</p>
+          <p className="text-xs text-slate-500">{t('partner.partnerLabel')}</p>
         </div>
         <button
           type="button"
@@ -182,7 +184,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
           className="flex h-9 items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100"
         >
           <LogOut className="h-3.5 w-3.5" />
-          Tugatish
+          {t('partner.endPartnership')}
         </button>
       </div>
 
@@ -198,7 +200,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
         )}
         {!loading && allMessages.length === 0 && (
           <div className="flex flex-col items-center py-16 text-center">
-            <p className="text-sm text-slate-400">Birinchi xabarni yuboring!</p>
+            <p className="text-sm text-slate-400">{t('partner.firstMessage')}</p>
           </div>
         )}
         <div className="mx-auto max-w-lg space-y-2.5">
@@ -244,7 +246,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             onFocus={scrollToBottom}
-            placeholder="Xabar yozing..."
+            placeholder={t('partner.messagePlaceholder')}
             className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100 sm:text-[0.95rem]"
           />
           <button
@@ -266,9 +268,9 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
           >
-            <h3 className="text-lg font-bold text-slate-900">Sheriklikni tugatish</h3>
+            <h3 className="text-lg font-bold text-slate-900">{t('partner.endConfirmTitle')}</h3>
             <p className="mt-2 text-sm text-slate-600">
-              Haqiqatan ham sheriklikni tugatmoqchimisiz? Chat tarixi saqlanadi, lekin siz yangi sherik qidirishingiz mumkin.
+              {t('partner.endConfirmBody')}
             </p>
             <div className="mt-5 flex gap-3">
               <button
@@ -276,7 +278,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
                 onClick={() => setShowEndConfirm(false)}
                 className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
               >
-                Bekor qilish
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -284,7 +286,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
                 disabled={ending}
                 className="flex-1 rounded-2xl bg-red-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
               >
-                {ending ? 'Tugatilmoqda...' : 'Tugatish'}
+                {ending ? t('partner.ending') : t('partner.endPartnership')}
               </button>
             </div>
           </motion.div>

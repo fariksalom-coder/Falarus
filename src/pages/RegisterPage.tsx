@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loginWithGoogle, registerAccount, type AuthUser } from '../api/auth';
-import { authStrings, EMAIL_REGEX } from '../constants/authStrings';
+import { EMAIL_REGEX } from '../constants/authStrings';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { useAuthLayoutMetrics } from '../hooks/useAuthLayoutMetrics';
 import { logGoogleOriginHint, useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { AuthButton } from '../components/auth/AuthButton';
@@ -30,6 +31,7 @@ export default function RegisterPage() {
   const refFromUrl = searchParams.get('ref') ?? '';
   const metrics = useAuthLayoutMetrics();
   const { login } = useAuth();
+  const { t } = useLocale();
   const [socialLoading, setSocialLoading] = useState(false);
 
   const handleGoogleCredential = useCallback(
@@ -41,12 +43,12 @@ export default function RegisterPage() {
         login(data.token!, normalizeAuthUser(data.user!));
         navigate('/');
       } catch (err) {
-        setFormError(err instanceof Error ? err.message : authStrings.genericError);
+        setFormError(err instanceof Error ? err.message : t('auth.genericError'));
       } finally {
         setSocialLoading(false);
       }
     },
-    [refFromUrl, login, navigate],
+    [refFromUrl, login, navigate, t],
   );
 
   const { triggerSignIn, googleButtonRef, googleButtonReady } = useGoogleSignIn(handleGoogleCredential);
@@ -61,7 +63,7 @@ export default function RegisterPage() {
     try {
       await triggerSignIn();
     } catch (err) {
-      const message = err instanceof Error ? err.message : authStrings.genericError;
+      const message = err instanceof Error ? err.message : t('auth.genericError');
       if (!message.includes('bekor') && !message.includes('cancel')) {
         setFormError(message);
       }
@@ -88,7 +90,7 @@ export default function RegisterPage() {
 
   const confirmMismatch =
     confirmPassword.length > 0 && confirmPassword !== password
-      ? authStrings.passwordsMismatch
+      ? t('auth.passwordsMismatch')
       : null;
 
   const hasRequiredFields =
@@ -109,21 +111,21 @@ export default function RegisterPage() {
     let identifier: string | null = null;
 
     if (!firstName.trim()) {
-      setFirstNameError(authStrings.nameRequired);
+      setFirstNameError(t('auth.nameRequired'));
       hasError = true;
     }
     if (!lastName.trim()) {
-      setLastNameError(authStrings.surnameRequired);
+      setLastNameError(t('auth.surnameRequired'));
       hasError = true;
     }
 
     if (mode === 'email') {
       const trimmed = email.trim();
       if (!trimmed) {
-        setIdentifierError(authStrings.emailRequired);
+        setIdentifierError(t('auth.emailRequired'));
         hasError = true;
       } else if (!EMAIL_REGEX.test(trimmed)) {
-        setIdentifierError(authStrings.emailInvalid);
+        setIdentifierError(t('auth.emailInvalid'));
         hasError = true;
       } else {
         identifier = trimmed;
@@ -131,7 +133,7 @@ export default function RegisterPage() {
     } else {
       const e164 = await phoneRef.current?.getE164();
       if (!e164) {
-        setIdentifierError(authStrings.phoneInvalid);
+        setIdentifierError(t('auth.phoneInvalid'));
         hasError = true;
       } else {
         identifier = e164;
@@ -139,7 +141,7 @@ export default function RegisterPage() {
     }
 
     if (password.length < 6) {
-      setPasswordError(authStrings.passwordMinLength);
+      setPasswordError(t('auth.passwordMinLength'));
       hasError = true;
     }
     if (confirmMismatch) {
@@ -177,7 +179,7 @@ export default function RegisterPage() {
       login(data.token!, normalizeAuthUser(data.user!));
       navigate('/');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : authStrings.genericError);
+      setFormError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {
       setSubmitting(false);
     }
@@ -188,13 +190,13 @@ export default function RegisterPage() {
       <AuthScrollBody>
         <form onSubmit={handleSubmit} className="flex flex-col pb-6">
           <AuthSectionTitle
-            title={authStrings.createAccountTitle}
+            title={t('auth.createAccountTitle')}
             onBack={() => navigate('/')}
           />
 
           <div className="grid grid-cols-2 gap-3">
             <AuthTextField
-              label={authStrings.name}
+              label={t('auth.name')}
               value={firstName}
               error={firstNameError ?? undefined}
               onChange={(e) => {
@@ -203,7 +205,7 @@ export default function RegisterPage() {
               }}
             />
             <AuthTextField
-              label={authStrings.surname}
+              label={t('auth.surname')}
               value={lastName}
               error={lastNameError ?? undefined}
               onChange={(e) => {
@@ -218,8 +220,8 @@ export default function RegisterPage() {
           <AuthSegmentedTabs
             value={mode}
             options={[
-              { value: 'phone', label: authStrings.phone },
-              { value: 'email', label: authStrings.email },
+              { value: 'phone', label: t('auth.phone') },
+              { value: 'email', label: t('auth.email') },
             ]}
             onChange={(value) => {
               setMode(value);
@@ -243,7 +245,7 @@ export default function RegisterPage() {
             <AuthTextField
               type="email"
               autoComplete="email"
-              placeholder={authStrings.emailHint}
+              placeholder={t('auth.emailHint')}
               value={email}
               error={identifierError ?? undefined}
               onChange={(e) => {
@@ -256,7 +258,7 @@ export default function RegisterPage() {
           <AuthGap />
 
           <AuthPasswordField
-            label={authStrings.createPassword}
+            label={t('auth.createPassword')}
             autoComplete="new-password"
             value={password}
             error={passwordError ?? undefined}
@@ -271,7 +273,7 @@ export default function RegisterPage() {
           <AuthGap />
 
           <AuthPasswordField
-            label={authStrings.rewritePassword}
+            label={t('auth.rewritePassword')}
             autoComplete="new-password"
             value={confirmPassword}
             error={confirmMismatch ?? undefined}
@@ -295,7 +297,7 @@ export default function RegisterPage() {
 
           <AuthButton
             type="submit"
-            label={authStrings.register}
+            label={t('auth.register')}
             loading={submitting}
             disabled={!canSubmit}
           />
@@ -305,7 +307,7 @@ export default function RegisterPage() {
           <AuthGap />
 
           <SocialAuthButton
-            label={authStrings.continueWithGoogle}
+            label={t('auth.continueWithGoogle')}
             loading={socialLoading}
             disabled={submitting}
             onClick={handleGoogleClick}
@@ -316,8 +318,8 @@ export default function RegisterPage() {
           <AuthGap />
 
           <AuthSwitchLink
-            prefix={authStrings.haveAccount}
-            action={authStrings.logIn}
+            prefix={t('auth.haveAccount')}
+            action={t('auth.logIn')}
             onAction={() => navigate('/login')}
           />
         </form>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
 import type { VocabularyEntry } from '../data/vocabularyContent';
@@ -18,6 +19,7 @@ export default function DailyVocabTanishishPage() {
   const { dayNum } = useParams<{ dayNum: string }>();
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { t } = useLocale();
   const dayNumber = Number(dayNum ?? '');
   useRememberKunlikDay(dayNumber);
   const gateEnabled = isValidDailyCourseDay(dayNumber);
@@ -38,7 +40,7 @@ export default function DailyVocabTanishishPage() {
   const load = useCallback(async () => {
     if (!token || !isValidDailyCourseDay(dayNumber)) {
       setLoading(false);
-      setError(!token ? 'Kirish kerak' : 'Kun raqami noto‘g‘ri');
+      setError(!token ? t('auth.loginRequired') : t('kunlik.invalidDay'));
       return;
     }
     setLoading(true);
@@ -49,10 +51,10 @@ export default function DailyVocabTanishishPage() {
       const mapped = dailyWordsToEntries(words);
       setEntries(mapped);
       if (mapped.length === 0) {
-        setError(words.length === 0 ? 'Bu kun uchun lug‘at bo‘sh.' : 'So‘zlar shakli noto‘g‘ri.');
+        setError(words.length === 0 ? t('kunlik.noVocabRows') : t('kunlik.wordsShapeInvalid'));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Yuklashda xato');
+      setError(e instanceof Error ? e.message : t('common.loadError'));
       setEntries([]);
     } finally {
       setLoading(false);
@@ -108,13 +110,13 @@ export default function DailyVocabTanishishPage() {
     return (
       <div className="min-h-screen bg-[#F8FAFC] p-6">
         <main className="mx-auto max-w-lg rounded-[24px] border border-amber-200 bg-amber-50 p-5">
-          <p className="text-sm text-amber-950">{error ?? 'Maʼlumot yo‘q.'}</p>
+          <p className="text-sm text-amber-950">{error ?? t('common.noData')}</p>
           <button
             type="button"
             onClick={handleBack}
             className="mt-4 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800"
           >
-            Orqaga
+            {t('common.back')}
           </button>
         </main>
       </div>
@@ -135,7 +137,7 @@ export default function DailyVocabTanishishPage() {
           onClick={handleBack}
           className="mb-6 inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50"
         >
-          ← Orqaga
+          ← {t('common.back')}
         </button>
 
         <VocabularyFlashcardExercise

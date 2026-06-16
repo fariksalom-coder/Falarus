@@ -15,6 +15,7 @@ import type { KunlikDayPatch } from '../api/kunlikProgress';
 import { loadDailyVocabProgress } from '../utils/dailyVocabProgress';
 import { kunlikRejaPath } from '../utils/kunlikNavigation';
 import { useRememberKunlikDay } from '../hooks/useRememberKunlikDay';
+import { useLocale } from '../context/LocaleContext';
 import {
   KunlikSequentialGateSpinner,
   useKunlikSequentialGate,
@@ -28,6 +29,7 @@ export default function DailyKunSectionPage() {
   const { dayNum, section } = useParams<{ dayNum: string; section: string }>();
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { t } = useLocale();
   const dayNumber = Number(dayNum ?? '');
   const sec = section as KunlikSection;
   useRememberKunlikDay(dayNumber);
@@ -53,7 +55,7 @@ export default function DailyKunSectionPage() {
         if (!cancelled) setBundle(b);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setErr(e instanceof Error ? e.message : 'Xatolik');
+        if (!cancelled) setErr(e instanceof Error ? e.message : t('common.loadError'));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -61,7 +63,7 @@ export default function DailyKunSectionPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, dayNumber, validSection]);
+  }, [token, dayNumber, validSection, t]);
 
   if (!isValidDailyCourseDay(dayNumber) || !validSection) {
     return (
@@ -72,9 +74,9 @@ export default function DailyKunSectionPage() {
           className="mb-6 flex items-center gap-2 text-sm font-medium text-gray-600"
         >
           <ArrowLeft className="h-4 w-4" />
-          Orqaga
+          {t('common.back')}
         </button>
-        <p className="text-center text-gray-600">Sahifa topilmadi.</p>
+        <p className="text-center text-gray-600">{t('common.pageNotFound')}</p>
       </div>
     );
   }
@@ -92,7 +94,7 @@ export default function DailyKunSectionPage() {
           className="flex min-h-[44px] items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
         >
           <ArrowLeft className="h-4 w-4 shrink-0" />
-          Orqaga
+          {t('common.back')}
         </button>
         {loading && (
           <div className="flex justify-center py-16">
@@ -264,9 +266,6 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
   );
 }
 
-const GRAMMAR_SEQ_HINT_2 = 'Avval 1-vazifani tugating';
-const GRAMMAR_SEQ_HINT_3 = 'Avval 2-vazifani tugating';
-
 function DailyGrammarMashqlarGrid({
   kunlikLoaded,
   grammar1Done,
@@ -292,6 +291,7 @@ function DailyGrammarMashqlarGrid({
   onOpenMatch?: () => void;
   onOpenSentence?: () => void;
 }) {
+  const { t } = useLocale();
   type Row = {
     vazifaNum: number;
     hint: string;
@@ -309,39 +309,39 @@ function DailyGrammarMashqlarGrid({
   const rows: Row[] = [
     {
       vazifaNum: 1,
-      hint: "To'g'ri javobni tanlang",
+      hint: t('kunlik.selectAnswer'),
       Icon: ListChecks,
       count: ruleMcqsCount,
       onPress: onOpenTest,
-      emptyHint: 'Savollar yo‘q',
+      emptyHint: t('kunlik.noQuestions'),
       sequentialLocked: false,
       seqHint: null,
     },
     {
       vazifaNum: 2,
-      hint: 'Juftini toping',
+      hint: t('kunlik.stepPairs'),
       Icon: Link2,
       count: matchSetsCount,
       onPress: onOpenMatch,
-      emptyHint: 'Juftliklar yo‘q',
+      emptyHint: t('kunlik.noMatchPairs'),
       sequentialLocked: matchSetsCount > 0 && !unlock2,
-      seqHint: GRAMMAR_SEQ_HINT_2,
+      seqHint: t('kunlik.seqHint2'),
     },
     {
       vazifaNum: 3,
-      hint: 'Gapni tuzing',
+      hint: t('kunlik.arrangeSentence'),
       Icon: Puzzle,
       count: sentenceArrangeCount,
       onPress: onOpenSentence,
-      emptyHint: 'Topshiriqlar yo‘q',
+      emptyHint: t('kunlik.noTasks'),
       sequentialLocked: sentenceArrangeCount > 0 && !unlock3,
-      seqHint: GRAMMAR_SEQ_HINT_3,
+      seqHint: t('kunlik.seqHint3'),
     },
   ];
 
   return (
     <div className="mt-2">
-      <p className="mb-3 text-sm font-semibold text-slate-600">Mashqlar</p>
+      <p className="mb-3 text-sm font-semibold text-slate-600">{t('kunlik.exercises')}</p>
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {rows.map(({ vazifaNum, hint, Icon, count, onPress, emptyHint, sequentialLocked, seqHint }) => {
           const empty = count === 0;
@@ -433,7 +433,7 @@ function DailyGrammarMashqlarGrid({
               </div>
               <div className="flex h-5 items-center justify-center">
                 <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold tabular-nums ring-1 sm:text-[10px] ${badgeBg}`}>
-                  {count > 0 ? `${count} ta` : '—'}
+                  {count > 0 ? t('kunlik.countItems', { count }) : '—'}
                 </span>
               </div>
               <div className="flex min-h-[2.25rem] flex-1 items-start justify-center overflow-hidden pt-0.5">
@@ -445,13 +445,13 @@ function DailyGrammarMashqlarGrid({
                 <span className="mt-1 line-clamp-2 text-center text-[8px] font-medium text-slate-400 sm:text-[9px]">{emptyHint}</span>
               ) : comingSoon ? (
                 <span className="mt-1 line-clamp-2 text-center text-[8px] font-medium text-emerald-700/80 sm:text-[9px]">
-                  Tez orada
+                  {t('kunlik.soon')}
                 </span>
               ) : null}
               {isCurrentTask ? (
                 <span className="pointer-events-none mt-2 flex w-full shrink-0 justify-center px-0.5">
                   <span className="w-full max-w-[7.5rem] rounded-xl bg-[#2563EB] py-2 text-center text-[10px] font-extrabold tracking-wide text-white shadow-[0_8px_20px_rgba(37,99,235,0.35)] sm:max-w-none sm:text-[11px]">
-                    Boshlash
+                    {t('common.start')}
                   </span>
                 </span>
               ) : null}
@@ -476,7 +476,7 @@ function DailyGrammarMashqlarGrid({
       </div>
       {sentenceMcqsCount > 0 ? (
         <p className="mt-3 text-center text-xs text-slate-500">
-          Gap bilan test (variantlar): {sentenceMcqsCount} ta — tez orada ochiladi.
+          {t('kunlik.sentenceTestSoon', { count: sentenceMcqsCount })}
         </p>
       ) : null}
     </div>
@@ -484,6 +484,7 @@ function DailyGrammarMashqlarGrid({
 }
 
 function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: DailyCourseDayBundle }) {
+  const { t } = useLocale();
   const navigate = useNavigate();
   const { getDay } = useKunlikProgress();
   const w = bundle.vocabulary;
@@ -501,7 +502,7 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
   if (!w?.words?.length) {
     return (
       <p className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
-        Bu kun uchun lug‘at qatorlari hali qo‘shilmagan.
+        {t('kunlik.noVocabRows')}
       </p>
     );
   }
@@ -526,7 +527,7 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
 
   return (
     <VocabularyTaskList
-      partTitle="Lug'at so'zlari"
+      partTitle={t('kunlik.vocabWords')}
       learnedWords={learnedWords}
       totalWords={totalWords}
       hasServerSnapshot={totalWords > 0}
@@ -548,6 +549,7 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
 }
 
 function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle; dayNumber: number }) {
+  const { t } = useLocale();
   const navigate = useNavigate();
   const { patchDay, getDay } = useKunlikProgress();
   const r = bundle.reading;
@@ -567,7 +569,7 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
   if (!r?.bodyRu && !(r?.lexemes?.length)) {
     return (
       <p className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
-        Bu kun uchun o‘qish matni yoki lug‘ati hali qo‘shilmagan.
+        {t('kunlik.noReadingContent')}
       </p>
     );
   }
@@ -584,7 +586,7 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
       <div className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 shadow-sm">
         {oqishDone ? (
           <p className="text-center text-sm font-semibold text-emerald-700">
-            O‘qish topshirig‘i allaqachon bajarilgan.
+            {t('kunlik.readingDoneAlready')}
           </p>
         ) : finishReady ? (
           <button
@@ -592,13 +594,11 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
             onClick={finishReading}
             className="flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-4 py-3.5 text-[15px] font-bold text-white shadow-[0_14px_28px_rgba(79,70,229,0.28)] transition hover:brightness-[1.03] active:scale-[0.99]"
           >
-            Yakunlash
+            {t('common.finish')}
           </button>
         ) : (
           <p className="text-center text-[13px] leading-relaxed text-slate-500">
-            Matn bilan tanishib chiqing.{' '}
-            <span className="font-semibold text-slate-700">Yakunlash</span> tugmasi{' '}
-            <span className="tabular-nums text-slate-800">10</span> soniyadan keyin paydo bo‘ladi.
+            {t('kunlik.readingFinishDelay', { seconds: 10 })}
           </p>
         )}
       </div>
@@ -607,6 +607,7 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
 }
 
 function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle; dayNumber: number }) {
+  const { t } = useLocale();
   const navigate = useNavigate();
   const { patchDay, getDay, loaded: kunlikLoaded } = useKunlikProgress();
   const p = bundle.practice;
@@ -630,7 +631,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
   if (!p?.length) {
     return (
       <p className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
-        Bu kun uchun gapirish topshiriqlari hali qo‘shilmagan.
+        {t('kunlik.noSpeakingTasks')}
       </p>
     );
   }
@@ -649,13 +650,13 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
   if (allSpeakingDone) {
     return (
       <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-5 text-center shadow-sm">
-        <p className="text-sm font-semibold text-emerald-800">Gapirish topshirig‘i allaqachon bajarilgan.</p>
+        <p className="text-sm font-semibold text-emerald-800">{t('kunlik.speakingDoneAlready')}</p>
         <button
           type="button"
           onClick={() => navigate(kunlikRejaPath(dayNumber))}
           className="mt-4 min-h-[44px] w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700"
         >
-          Kunlik rejaga qaytish
+          {t('kunlik.backToPlan')}
         </button>
       </div>
     );
@@ -666,7 +667,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
   return (
     <SpeakingExercise
       tasks={tasks}
-      topicLabel={`Kun ${dayNumber} · Gapirish`}
+      topicLabel={t('kunlik.daySpeaking', { day: dayNumber })}
       useInlineCheck={true}
       kunlikDayNumber={dayNumber}
       embedded

@@ -12,6 +12,7 @@ import {
   type SavolJavobMessage,
 } from '../../api/communityChat';
 import { useAuth } from '../../context/AuthContext';
+import { useLocale } from '../../context/LocaleContext';
 
 type Props = {
   onBack: () => void;
@@ -21,19 +22,27 @@ function formatTime(date: string): string {
   return new Date(date).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatMembersLine(memberCount: number, onlineCount: number): string {
-  return `${memberCount.toLocaleString('uz-UZ')} a'zo · ${onlineCount.toLocaleString('uz-UZ')} onlayn`;
+function formatMembersLine(
+  memberCount: number,
+  onlineCount: number,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
+  return t('partner.membersOnline', { members: memberCount, online: onlineCount });
 }
 
-function formatTypingLine(names: string[]): string {
+function formatTypingLine(
+  names: string[],
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
   if (names.length === 0) return '';
-  if (names.length === 1) return `${names[0]} yozmoqda…`;
-  if (names.length === 2) return `${names[0]} va ${names[1]} yozmoqdalar…`;
-  return `${names[0]}, ${names[1]} va boshqalar yozmoqdalar…`;
+  if (names.length === 1) return t('partner.typingOne', { name: names[0] });
+  if (names.length === 2) return t('partner.typingTwo', { first: names[0], second: names[1] });
+  return t('partner.typingMany', { first: names[0], second: names[1] });
 }
 
 export default function SavolJavobChat({ onBack }: Props) {
   const { token, user } = useAuth();
+  const { t } = useLocale();
   const [messages, setMessages] = useState<SavolJavobMessage[]>([]);
   const [live, setLive] = useState<SavolJavobLiveState>({
     member_count: 0,
@@ -146,14 +155,14 @@ export default function SavolJavobChat({ onBack }: Props) {
       void markSavolJavobRead(token).catch(() => {});
       void refreshLive();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Xatolik');
+      setError(e instanceof Error ? e.message : t('common.loadError'));
       setText(content);
     } finally {
       setSending(false);
     }
   }
 
-  const typingLine = formatTypingLine(live.typing_users.map((u) => u.full_name));
+  const typingLine = formatTypingLine(live.typing_users.map((u) => u.full_name), t);
 
   const content = (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[#EEF2FF]">
@@ -162,7 +171,7 @@ export default function SavolJavobChat({ onBack }: Props) {
           type="button"
           onClick={onBack}
           className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600"
-          aria-label="Orqaga"
+          aria-label={t('common.back')}
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -170,14 +179,14 @@ export default function SavolJavobChat({ onBack }: Props) {
           <Users className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-extrabold text-slate-900">SAVOL-JAVOB</p>
+          <p className="truncate text-lg font-extrabold text-slate-900">{t('partner.groupChat')}</p>
           <p className="text-xs font-semibold text-violet-600">
-            {formatMembersLine(live.member_count, live.online_count)}
+            {formatMembersLine(live.member_count, live.online_count, t)}
           </p>
           {typingLine ? (
             <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">{typingLine}</p>
           ) : (
-            <p className="mt-0.5 text-[11px] text-slate-400">Umumiy savol-javob guruhi</p>
+            <p className="mt-0.5 text-[11px] text-slate-400">{t('partner.groupFallback')}</p>
           )}
         </div>
       </header>
@@ -191,7 +200,7 @@ export default function SavolJavobChat({ onBack }: Props) {
           <div className="mx-auto max-w-lg space-y-3">
             {messages.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-500">
-                Birinchi savolni yozing — barcha foydalanuvchilar ko‘radi
+                {t('partner.groupFirstQuestion')}
               </p>
             ) : null}
             {messages.map((msg) => {
@@ -239,7 +248,7 @@ export default function SavolJavobChat({ onBack }: Props) {
             onChange={(e) => handleTextChange(e.target.value)}
             onBlur={() => void setTyping(false)}
             rows={1}
-            placeholder="Savolingizni yozing..."
+            placeholder={t('partner.groupQuestionPlaceholder')}
             className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -253,7 +262,7 @@ export default function SavolJavobChat({ onBack }: Props) {
             onClick={() => void handleSend()}
             disabled={!text.trim() || sending}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-md disabled:opacity-50"
-            aria-label="Yuborish"
+            aria-label={t('common.send')}
           >
             <Send className="h-5 w-5" />
           </button>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
 import type { VocabularyEntry } from '../data/vocabularyContent';
@@ -20,6 +21,7 @@ export default function DailyVocabTestPage() {
   const { dayNum } = useParams<{ dayNum: string }>();
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { t } = useLocale();
   const dayNumber = Number(dayNum ?? '');
   useRememberKunlikDay(dayNumber);
   const gateEnabled = isValidDailyCourseDay(dayNumber);
@@ -49,7 +51,7 @@ export default function DailyVocabTestPage() {
   const load = useCallback(async () => {
     if (!token || !isValidDailyCourseDay(dayNumber)) {
       setLoading(false);
-      setError(!token ? 'Kirish kerak' : 'Kun raqami noto‘g‘ri');
+      setError(!token ? t('auth.loginRequired') : t('kunlik.invalidDay'));
       return;
     }
     setLoading(true);
@@ -59,10 +61,10 @@ export default function DailyVocabTestPage() {
       const mapped = dailyWordsToEntries(bundle.vocabulary?.words ?? []);
       setEntries(mapped);
       if (mapped.length === 0) {
-        setError('Bu kun uchun lug‘at bo‘sh.');
+        setError(t('kunlik.noVocabRows'));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Yuklashda xato');
+      setError(e instanceof Error ? e.message : t('common.loadError'));
       setEntries([]);
     } finally {
       setLoading(false);
@@ -123,9 +125,9 @@ export default function DailyVocabTestPage() {
     return (
       <div className="min-h-screen bg-[#F8FAFC] p-6">
         <main className="mx-auto max-w-lg rounded-[24px] border border-amber-200 bg-amber-50 p-5">
-          <p className="text-sm text-amber-950">{error ?? 'Maʼlumot yo‘q.'}</p>
+          <p className="text-sm text-amber-950">{error ?? t('common.noData')}</p>
           <button type="button" onClick={handleBack} className="mt-4 rounded-xl border bg-white px-4 py-2 text-sm font-semibold">
-            Orqaga
+            {t('common.back')}
           </button>
         </main>
       </div>
@@ -139,20 +141,20 @@ export default function DailyVocabTestPage() {
       <div className="min-h-screen bg-[#F8FAFC]">
         <main className="mx-auto max-w-[720px] px-4 py-8 pt-[max(1rem,env(safe-area-inset-top))]">
           <button type="button" onClick={handleBack} className="mb-6 text-sm font-medium text-slate-600">
-            ← Orqaga
+            ← {t('common.back')}
           </button>
           <div className="rounded-[20px] border border-slate-200 bg-white p-12 text-center shadow-sm">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
               <Lock className="h-7 w-7 text-slate-400" />
             </div>
-            <p className="mt-4 text-xl font-semibold text-slate-900">Test qulflangan</p>
-            <p className="mt-2 text-sm text-slate-600">Testni boshlash uchun avval tanishishni tugating.</p>
+            <p className="mt-4 text-xl font-semibold text-slate-900">{t('kunlik.testLocked')}</p>
+            <p className="mt-2 text-sm text-slate-600">{t('kunlik.step2LockedHint')}</p>
             <button
               type="button"
               onClick={() => navigate(`/kunlik-reja/kun/${dayNumber}/lugat/tanishish`)}
               className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md hover:bg-indigo-700"
             >
-              Tanishishga o‘tish
+              {t('kunlik.goToLearn')}
             </button>
           </div>
         </main>
@@ -174,7 +176,7 @@ export default function DailyVocabTestPage() {
           onClick={handleBack}
           className="mb-6 inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50"
         >
-          ← Orqaga
+          ← {t('common.back')}
         </button>
 
         <VocabularyTestExercise

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
 import type { DailyCourseMatchSet } from '../../shared/dailyCourseDay';
@@ -57,6 +58,7 @@ export default function DailyGrammarMatchPage() {
   const { dayNum } = useParams<{ dayNum: string }>();
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { t } = useLocale();
   const dayNumber = Number(dayNum ?? '');
   useRememberKunlikDay(dayNumber);
   const gateEnabled = isValidDailyCourseDay(dayNumber);
@@ -85,7 +87,7 @@ export default function DailyGrammarMatchPage() {
   const load = useCallback(async () => {
     if (!token || !isValidDailyCourseDay(dayNumber)) {
       setLoading(false);
-      setError(!token ? 'Kirish kerak' : 'Kun raqami noto‘g‘ri');
+      setError(!token ? t('auth.loginRequired') : t('kunlik.invalidDay'));
       return;
     }
     setLoading(true);
@@ -261,9 +263,9 @@ export default function DailyGrammarMatchPage() {
   if (!isValidDailyCourseDay(dayNumber)) {
     return (
       <div className="min-h-screen bg-[#F5F7FA] p-6">
-        <p className="text-gray-700">Sahifa topilmadi.</p>
+        <p className="text-gray-700">{t('common.pageNotFound')}</p>
         <button type="button" className="mt-4 text-blue-600 underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
-          Kunlik rejaga qaytish
+          {t('kunlik.backToPlan')}
         </button>
       </div>
     );
@@ -291,7 +293,7 @@ export default function DailyGrammarMatchPage() {
             onClick={handleBack}
             className="mt-4 min-h-[44px] rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800"
           >
-            Orqaga
+            {t('common.back')}
           </button>
         </main>
       </div>
@@ -306,7 +308,7 @@ export default function DailyGrammarMatchPage() {
           onClick={handleBack}
           className="min-h-[44px] rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
         >
-          Orqaga
+          {t('common.back')}
         </button>
 
         {!finished && (

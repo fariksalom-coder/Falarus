@@ -75,7 +75,7 @@ export default function MainLayout() {
               animate="center"
               exit="exit"
               transition={transition}
-              className={`absolute inset-0 w-full min-w-0 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] overscroll-y-contain${showNavBar ? ' nav-scroll-pad' : ''}`}
+              className={`absolute inset-0 w-full min-w-0 overflow-y-auto overflow-x-hidden bg-app-bg overscroll-y-contain${showNavBar ? ' nav-scroll-pad' : ''}`}
             >
               <div className="flex min-h-full flex-col">
                 <div className="flex-1">

@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { DAILY_PLAN_PROGRESS_MODE } from '../config/dailyPlanProgress';
 import { useSequentialLesson } from '../context/SequentialLessonContext';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 import { findFirstIncompletePlanDay, readPlanReviewVisits } from '../utils/kunlikPlanDayProgress';
 import { kunlikRejaPath } from '../utils/kunlikNavigation';
 import { useKunlikProgress } from './useKunlikProgress';
+import { FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
 
 /** Kunlik sahifalarida bir xil kutish ko‘rinishi */
 export function KunlikSequentialGateSpinner() {
@@ -19,10 +21,12 @@ export function KunlikSequentialGateSpinner() {
 
 /**
  * Ketma-ket ochilish: oldingi kun 100% tugamagan bo‘lsa, keyingi kun URL bilan ham ochilmaydi.
+ * Obunasiz foydalanuvchi faqat 1–FREE_KUNLIK_DAY_LIMIT kunlarga kira oladi.
  * `enabled=false` — noto‘g‘ri parametrlar (hook har doim chaqiriladi).
  */
 export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
   const { token } = useAuth();
+  const { access, accessLoaded } = useAccess();
   const navigate = useNavigate();
   const { results, isReady } = useSequentialLesson();
   const { rows: kunlikRows, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
@@ -49,18 +53,31 @@ export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
 
   void vocabTick;
 
+  const premium = Boolean(access?.subscription_active);
+
   const firstIncompleteDay = useMemo(
     () => findFirstIncompletePlanDay(results, reviewVisits, kunlikRows, practicePromptCountByDay),
     [results, reviewVisits, kunlikRows, practicePromptCountByDay, vocabTick],
   );
 
-  const bootstrapReady = Boolean(token && isReady && kunlikLoaded);
-  const dayAllowed = dayNumber <= firstIncompleteDay;
+  const maxAllowedDay = premium
+    ? firstIncompleteDay
+    : Math.min(firstIncompleteDay, FREE_KUNLIK_DAY_LIMIT);
+
+  const bootstrapReady = Boolean(token && isReady && kunlikLoaded && accessLoaded);
+  const dayAllowed = dayNumber <= maxAllowedDay;
 
   useEffect(() => {
     if (!enabled || !bootstrapReady) return;
-    if (!dayAllowed) navigate(kunlikRejaPath(firstIncompleteDay), { replace: true });
-  }, [enabled, bootstrapReady, dayAllowed, firstIncompleteDay, navigate]);
+    if (dayAllowed) return;
+
+    if (!premium && dayNumber > FREE_KUNLIK_DAY_LIMIT) {
+      navigate('/tariflar', { replace: true });
+      return;
+    }
+
+    navigate(kunlikRejaPath(maxAllowedDay), { replace: true });
+  }, [enabled, bootstrapReady, dayAllowed, dayNumber, maxAllowedDay, navigate, premium]);
 
   const gatePending = Boolean(enabled && token && (!bootstrapReady || !dayAllowed));
 

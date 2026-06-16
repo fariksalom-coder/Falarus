@@ -1,6 +1,18 @@
 <!doctype html>
 <html lang="uz">
   <head>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('falarus-theme');
+          if (stored === 'dark') document.documentElement.classList.add('dark');
+          var scale = localStorage.getItem('falarus-text-scale');
+          var mult = scale === '2' ? 1.25 : scale === '3' ? 1.5 : 1;
+          document.documentElement.style.setProperty('--app-text-scale', String(mult));
+          if (scale === '2' || scale === '3') document.documentElement.dataset.textScale = scale;
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="canonical" href="https://www.falarus.uz/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />

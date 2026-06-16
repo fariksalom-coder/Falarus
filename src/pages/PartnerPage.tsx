@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Inbox, LogIn, Send, UserRound, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import {
   getPartnerStatus,
   getCachedPartnerStatus,
@@ -32,6 +33,7 @@ type OverlayView =
 
 export default function PartnerPage() {
   const { token, user } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
 
   const [view, setView] = useState<PageView>('loading');
@@ -147,13 +149,8 @@ export default function PartnerPage() {
   const incomingCount = status?.incomingRequestsCount ?? 0;
   const outgoingCount = status?.outgoingRequestsCount ?? 0;
 
-  const pageBackground = {
-    backgroundColor: '#F8FAFC',
-    backgroundImage: 'linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 40%, #F1F5F9 100%)',
-  };
-
   return (
-    <div className="min-h-screen pb-24" style={pageBackground}>
+    <div className="min-h-screen bg-app-bg pb-24">
       <main
         className={
           overlay === 'partner-chat'
@@ -176,18 +173,18 @@ export default function PartnerPage() {
 
           {view === 'guest' && (
             <motion.div key="guest" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
-                  <LogIn className="h-8 w-8 text-blue-600" />
+              <div className="rounded-[28px] border border-app-border bg-app-surface p-8 text-center shadow-app-card">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-app-icon-bg">
+                  <LogIn className="h-8 w-8 text-app-primary" />
                 </div>
-                <h2 className="mt-5 text-xl font-bold text-slate-900">Suhbat va sheriklar</h2>
-                <p className="mt-2 text-sm text-slate-500">Chatlar, guruh va sherik topish uchun kiring</p>
+                <h2 className="mt-5 text-xl font-bold text-app-text">{t('partner.guestTitle')}</h2>
+                <p className="mt-2 text-sm text-app-text-muted">{t('partner.guestSubtitle')}</p>
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
                   className="mt-6 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(37,99,235,0.3)]"
                 >
-                  Kirish
+                  {t('partner.guestLogin')}
                 </button>
               </div>
             </motion.div>
@@ -196,21 +193,21 @@ export default function PartnerPage() {
           {view === 'hub' && status && (
             <motion.div key="hub" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Suhbat</h1>
+                <h1 className="text-2xl font-extrabold tracking-tight text-app-text">{t('partner.title')}</h1>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={openAnketalar}
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.97]"
-                    aria-label="Anketalar"
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text shadow-sm transition-colors hover:bg-[var(--app-row-hover)] active:scale-[0.97]"
+                    aria-label={t('partner.profiles')}
                   >
                     <Users className="h-5 w-5" aria-hidden />
                   </button>
                   <button
                     type="button"
                     onClick={() => setOverlay('incoming')}
-                    className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.97]"
-                    aria-label="Kiruvchi so'rovlar"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text shadow-sm transition-colors hover:bg-[var(--app-row-hover)] active:scale-[0.97]"
+                    aria-label={t('partner.incoming')}
                   >
                     <Inbox className="h-5 w-5" aria-hidden />
                     {incomingCount > 0 ? (
@@ -222,8 +219,8 @@ export default function PartnerPage() {
                   <button
                     type="button"
                     onClick={() => setOverlay('outgoing')}
-                    className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.97]"
-                    aria-label="Chiquvchi so'rovlar"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text shadow-sm transition-colors hover:bg-[var(--app-row-hover)] active:scale-[0.97]"
+                    aria-label={t('partner.outgoing')}
                   >
                     <Send className="h-5 w-5" aria-hidden />
                     {outgoingCount > 0 ? (
@@ -241,8 +238,8 @@ export default function PartnerPage() {
                       }
                       scrollToInlineForm();
                     }}
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:bg-slate-50 active:scale-[0.97]"
-                    aria-label="Anketa"
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text shadow-sm transition-colors hover:bg-[var(--app-row-hover)] active:scale-[0.97]"
+                    aria-label={t('partner.profiles')}
                   >
                     <UserRound className="h-5 w-5" aria-hidden />
                   </button>
@@ -262,7 +259,7 @@ export default function PartnerPage() {
               {!status.hasProfile ? (
                 <div
                   ref={inlineFormRef}
-                  className="mt-5 rounded-[24px] border border-blue-100 bg-white p-4 shadow-[0_14px_34px_rgba(148,163,184,0.12)] sm:p-5"
+                  className="mt-5 rounded-[24px] border border-app-border bg-app-surface p-4 shadow-app-card sm:p-5"
                 >
                   <PartnerProfileForm
                     variant="create"
@@ -276,7 +273,7 @@ export default function PartnerPage() {
       </main>
 
       {overlay === 'profile-form' && status?.hasProfile ? (
-        <div className="fixed inset-0 z-40 overflow-y-auto pb-24" style={pageBackground}>
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">
           <div className="mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5">
             <PartnerProfileForm
               variant="edit"
@@ -290,20 +287,20 @@ export default function PartnerPage() {
       ) : null}
 
       {overlay === 'browse' && status ? (
-        <div className="fixed inset-0 z-40 overflow-y-auto pb-24" style={pageBackground}>
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">
           <div className="mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5">
             <div className="mb-4 flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setOverlay(null)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm"
-                aria-label="Orqaga"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text-muted shadow-sm"
+                aria-label={t('common.back')}
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">Anketalar</h1>
-                <p className="text-sm text-slate-500">Sherik tanlang</p>
+                <h1 className="text-xl font-bold text-app-text">{t('partner.profiles')}</h1>
+                <p className="text-sm text-app-text-muted">{t('partner.profilesSub')}</p>
               </div>
             </div>
             <PartnerPeopleList
@@ -321,7 +318,7 @@ export default function PartnerPage() {
       ) : null}
 
       {overlay === 'incoming' ? (
-        <div className="fixed inset-0 z-40 overflow-y-auto pb-24" style={pageBackground}>
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">
           <div className="mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5">
             <PartnerIncomingRequests
               onBack={() => setOverlay(null)}
@@ -332,7 +329,7 @@ export default function PartnerPage() {
       ) : null}
 
       {overlay === 'outgoing' ? (
-        <div className="fixed inset-0 z-40 overflow-y-auto pb-24" style={pageBackground}>
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">
           <div className="mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5">
             <PartnerOutgoingRequests
               onBack={() => setOverlay(null)}
@@ -343,7 +340,7 @@ export default function PartnerPage() {
       ) : null}
 
       {overlay === 'partner-chat' && status && activeMatchId ? (
-        <div className="fixed inset-0 z-40 bg-[#F8FAFC]">
+        <div className="fixed inset-0 z-40 bg-app-bg">
           <PartnerChat
             match={status.matches.find((m) => m.id === activeMatchId) ?? status.matches[0]}
             onEnded={() => loadStatus()}

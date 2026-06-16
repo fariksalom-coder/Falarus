@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { useTextScale } from '../../context/TextScaleContext';
+import { useLocale } from '../../context/LocaleContext';
 import { useAuthLayoutMetrics } from '../../hooks/useAuthLayoutMetrics';
 
 type Props = {
@@ -10,6 +12,9 @@ type Props = {
 
 export function AuthSectionTitle({ title, subtitle, onBack, trailing }: Props) {
   const metrics = useAuthLayoutMetrics();
+  const { t } = useLocale();
+  const { multiplier: textScale } = useTextScale();
+  const titleFontSize = metrics.titleFontSize * textScale;
 
   return (
     <div className="mb-0" style={{ marginBottom: metrics.afterHeader }}>
@@ -18,14 +23,14 @@ export function AuthSectionTitle({ title, subtitle, onBack, trailing }: Props) {
           <button
             type="button"
             onClick={onBack}
-            aria-label="Orqaga"
+            aria-label={t('common.back')}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition hover:bg-slate-50"
           >
             <img src="/auth/back.svg" alt="" width={24} height={24} className="text-[#1E3A8A]" />
           </button>
           <h1
             className="pointer-events-none absolute inset-x-0 text-center font-semibold text-[#0F172A]"
-            style={{ fontSize: metrics.titleFontSize, lineHeight: 1.2 }}
+            style={{ fontSize: titleFontSize, lineHeight: 1.2 }}
           >
             {title}
           </h1>
@@ -34,7 +39,7 @@ export function AuthSectionTitle({ title, subtitle, onBack, trailing }: Props) {
       ) : (
         <h1
           className="text-center font-semibold text-[#0F172A]"
-          style={{ fontSize: metrics.titleFontSize, lineHeight: 1.2 }}
+          style={{ fontSize: titleFontSize, lineHeight: 1.2 }}
         >
           {title}
         </h1>

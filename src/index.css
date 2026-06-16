@@ -1,8 +1,108 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --app-text-scale: 1;
+  --app-bg: #f8fafc;
+  --app-bg-muted: #f4f9ff;
+  --app-bg-subtle: #eef4fa;
+  --app-surface: #ffffff;
+  --app-surface-elevated: #f8fbff;
+  --app-border: #e2e8f0;
+  --app-border-soft: rgb(226 232 240 / 0.9);
+  --app-border-row: #f1f5f9;
+  --app-text: #0f172a;
+  --app-text-muted: #64748b;
+  --app-text-secondary: #6b7280;
+  --app-primary: #2563eb;
+  --app-primary-deep: #24459a;
+  --app-brand: #0b3ccb;
+  --app-nav-bg: #ffffff;
+  --app-row-hover: #f8fafc;
+  --app-row-active: #f1f5f9;
+  --app-icon-bg: #eef4fa;
+  --app-icon-fg: #64748b;
+  --app-switch-off: #cbd5e1;
+  --app-shadow-card: 0 14px 34px rgba(148, 163, 184, 0.12);
+  --app-shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.09);
+  --app-shadow-elevated: 0 12px 28px rgba(15, 23, 42, 0.14);
+  color-scheme: light;
+}
+
+.dark {
+  --app-bg: #0b1220;
+  --app-bg-muted: #0b1220;
+  --app-bg-subtle: #0f1729;
+  --app-surface: #131d33;
+  --app-surface-elevated: #18243d;
+  --app-border: #1e2d5c;
+  --app-border-soft: rgb(30 45 92 / 0.9);
+  --app-border-row: rgb(255 255 255 / 0.06);
+  --app-text: #f1f5f9;
+  --app-text-muted: #94a3b8;
+  --app-text-secondary: #94a3b8;
+  --app-primary: #3b82f6;
+  --app-primary-deep: #3b82f6;
+  --app-brand: #60a5fa;
+  --app-nav-bg: #111a2e;
+  --app-row-hover: rgb(255 255 255 / 0.04);
+  --app-row-active: rgb(255 255 255 / 0.06);
+  --app-icon-bg: rgb(255 255 255 / 0.06);
+  --app-icon-fg: #cbd5e1;
+  --app-switch-off: #334155;
+  --app-shadow-card: 0 0 0 1px rgb(255 255 255 / 0.08);
+  --app-shadow-soft: 0 0 0 1px rgb(255 255 255 / 0.06);
+  --app-shadow-elevated: 0 0 0 1px rgb(255 255 255 / 0.08);
+  color-scheme: dark;
+}
+
+@theme {
+  --color-app-bg: var(--app-bg);
+  --color-app-bg-muted: var(--app-bg-muted);
+  --color-app-bg-subtle: var(--app-bg-subtle);
+  --color-app-surface: var(--app-surface);
+  --color-app-surface-elevated: var(--app-surface-elevated);
+  --color-app-border: var(--app-border);
+  --color-app-text: var(--app-text);
+  --color-app-text-muted: var(--app-text-muted);
+  --color-app-text-secondary: var(--app-text-secondary);
+  --color-app-primary: var(--app-primary);
+  --color-app-primary-deep: var(--app-primary-deep);
+  --color-app-brand: var(--app-brand);
+  --color-app-nav: var(--app-nav-bg);
+  --color-app-icon-bg: var(--app-icon-bg);
+  --color-app-icon-fg: var(--app-icon-fg);
+  --shadow-app-card: var(--app-shadow-card);
+  --shadow-app-soft: var(--app-shadow-soft);
+  --shadow-app-elevated: var(--app-shadow-elevated);
+}
+
 html {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+  /*
+    Base rem for Tailwind (text-sm, text-xs, …).
+    Fixed px utilities are scaled in text-scale-overrides.css.
+  */
+  font-size: calc(16px * var(--app-text-scale));
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+}
+
+/* Bottom nav: light SVGs are invisible on dark surfaces */
+.dark .nav-icon {
+  filter: brightness(0) invert(1);
+  opacity: 0.38;
+}
+
+.dark .nav-icon-active {
+  filter: brightness(0) saturate(100%) invert(56%) sepia(91%) saturate(1200%) hue-rotate(199deg)
+    brightness(103%) contrast(97%);
+  opacity: 1;
 }
 
 /*
@@ -13,7 +113,7 @@ html {
   input,
   textarea,
   select {
-    font-size: 16px;
+    font-size: max(16px, calc(1rem * var(--app-text-scale)));
   }
 }
 
