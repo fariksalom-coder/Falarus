@@ -95,9 +95,13 @@ export default function SpeakingExercise({
           setVoiceDraft(normalized);
           setIsVoiceEditing(false);
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          setError("Ovozni tanib bo'lmadi. Qayta urinib ko'ring.");
+          setError(
+            err instanceof Error && err.message
+              ? err.message
+              : "Ovozni tanib bo'lmadi. Qayta urinib ko'ring.",
+          );
         }
       } finally {
         if (!cancelled) {
@@ -132,8 +136,12 @@ export default function SpeakingExercise({
           : await checkSpeakingAnswer(token, task.id, text.trim(), mode, nextAttempt);
         setResult(r);
         setAttempts(nextAttempt);
-      } catch {
-        setError("Tekshirishda xatolik yuz berdi. Qayta urinib ko'ring.");
+      } catch (err) {
+        setError(
+          err instanceof Error && err.message
+            ? err.message
+            : "Tekshirishda xatolik yuz berdi. Qayta urinib ko'ring.",
+        );
       } finally {
         setChecking(false);
       }

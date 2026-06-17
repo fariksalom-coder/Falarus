@@ -67,6 +67,16 @@ export async function getSpeakingTasks(
   return res.json();
 }
 
+async function parseApiError(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (body?.error && typeof body.error === 'string') return body.error;
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+
 export async function checkSpeakingAnswer(
   token: string,
   taskId: number,
@@ -79,7 +89,7 @@ export async function checkSpeakingAnswer(
     headers: authHeaders(token),
     body: JSON.stringify({ task_id: taskId, user_answer: userAnswer, mode, attempt }),
   });
-  if (!res.ok) throw new Error('Tekshirishda xatolik');
+  if (!res.ok) throw new Error(await parseApiError(res, 'Tekshirishda xatolik'));
   return res.json();
 }
 
@@ -104,7 +114,7 @@ export async function checkSpeakingPromptAnswer(
       ...(kunlikDayNumber != null ? { day_number: kunlikDayNumber } : {}),
     }),
   });
-  if (!res.ok) throw new Error('Tekshirishda xatolik');
+  if (!res.ok) throw new Error(await parseApiError(res, 'Tekshirishda xatolik'));
   return res.json();
 }
 
@@ -121,7 +131,7 @@ export async function transcribeSpeakingAudio(
       ...(kunlikDayNumber != null ? { day_number: kunlikDayNumber } : {}),
     }),
   });
-  if (!res.ok) throw new Error('Ovozni tanib bo\'lmadi');
+  if (!res.ok) throw new Error(await parseApiError(res, "Ovozni tanib bo'lmadi"));
   const data = await res.json();
   return data.text;
 }

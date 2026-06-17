@@ -73,6 +73,57 @@ export type TranslationCheckResult = {
   mistakes: MistakeDetail[];
 };
 
+/** Normalize Russian answers for cheap exact-match before OpenAI. */
+export function normalizeRuAnswer(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[.!?,…«»""''\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Skip OpenAI when the answer clearly matches the reference (saves quota + works offline).
+ */
+export function tryExactTranslationMatch(
+  ruCorrect: string,
+  userAnswer: string,
+): TranslationCheckResult | null {
+  const ref = normalizeRuAnswer(ruCorrect);
+  const user = normalizeRuAnswer(userAnswer);
+  if (!ref || !user) return null;
+  if (ref === user) {
+    return {
+      status: 'correct',
+      feedback: "Ajoyib! Javobingiz to'g'ri.",
+      hint: '',
+      correct_answer: '',
+      mistakes: [],
+    };
+  }
+  return null;
+}
+
+export function isOpenAIQuotaError(err: unknown): boolean {
+  const e = err as { status?: number; message?: string; error?: { message?: string } };
+  const msg = String(e?.message ?? e?.error?.message ?? '').toLowerCase();
+  return e?.status === 429 && (msg.includes('quota') || msg.includes('billing'));
+}
+
+export function openAIUserFacingError(err: unknown): string {
+  if (isOpenAIQuotaError(err)) {
+    return "AI tekshiruv vaqtincha ishlamayapti. Birozdan keyin qayta urinib ko'ring yoki matn bilan javob bering.";
+  }
+  const e = err as { status?: number; name?: string };
+  if (e?.name === 'AbortError' || e?.status === 408) {
+    return "Tekshirish vaqti tugadi. Qayta urinib ko'ring.";
+  }
+  if (e?.status === 429) {
+    return "Juda ko'p so'rov. Biroz kutib, qayta urinib ko'ring.";
+  }
+  return "Tekshirishda xatolik yuz berdi. Qayta urinib ko'ring.";
+}
+
 function tokenCount(s: string): number {
   return s
     .trim()
@@ -110,6 +161,9 @@ export async function checkTranslation(
   userAnswer: string,
   attempt: number = 1
 ): Promise<TranslationCheckResult> {
+  const exact = tryExactTranslationMatch(ruCorrect, userAnswer);
+  if (exact) return exact;
+
   const client = getClient();
 
   const systemPrompt = `Ты — преподаватель русского для узбекских студентов. Студент перевёл узбекскую фразу на русский. Твоя задача — оценить, передан ли смысл. Цель — поддержать ученика, не придираться к мелочам.
@@ -194,7 +248,12 @@ Attempt: ${attempt}
   );
 
   const raw = response.choices[0]?.message?.content ?? '{}';
-  const parsed = JSON.parse(raw);
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    throw new Error('AI javobini o‘qib bo‘lmadi');
+  }
 
   const rawStatus = (parsed.status ?? 'wrong') as TranslationCheckResult['status'];
   const status = downgradeOverlenientCorrect(uzText, ruCorrect, userAnswer, rawStatus);

@@ -2623,7 +2623,10 @@ async function startServer() {
       return res.status(404).json({ error: 'Not found' });
     } catch (e) {
       console.error('[speaking]', e);
-      return res.status(500).json({ error: 'Xatolik yuz berdi' });
+      const { openAIUserFacingError, isOpenAIQuotaError } = await import('./server/lib/openai.js');
+      const message = openAIUserFacingError(e);
+      const status = isOpenAIQuotaError(e) ? 503 : 500;
+      return res.status(status).json({ error: message });
     }
   });
 
