@@ -65,6 +65,7 @@ export default function WordSwipeGamePage() {
   const [stageSaved, setStageSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedStageKeyRef = useRef<string | null>(null);
+  const saveInFlightRef = useRef(false);
 
   const completionKey = `${levelNumber}-${stageNumber}`;
 
@@ -250,37 +251,46 @@ export default function WordSwipeGamePage() {
   };
 
   useEffect(() => {
-    if (!allDone || !token || saving) return;
+    if (!allDone || !token) return;
     if (savedStageKeyRef.current === completionKey) return;
+    if (saveInFlightRef.current) return;
 
     let cancelled = false;
+    saveInFlightRef.current = true;
     setSaving(true);
     setSaveError(null);
 
     (async () => {
-      const saved = await saveWordSwipeProgress(token, {
-        levelNumber,
-        stageNumber,
-        completed: true,
-      });
+      try {
+        const saved = await saveWordSwipeProgress(token, {
+          levelNumber,
+          stageNumber,
+          completed: true,
+        });
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      setSaving(false);
-
-      if (saved) {
-        savedStageKeyRef.current = completionKey;
-        setProgress(saved);
-        setStageSaved(true);
-      } else {
-        setSaveError(t('games.saveProgressFailed'));
+        if (saved) {
+          savedStageKeyRef.current = completionKey;
+          setProgress(saved);
+          setStageSaved(true);
+        } else {
+          setSaveError(t('games.saveProgressFailed'));
+        }
+      } finally {
+        if (!cancelled) {
+          saveInFlightRef.current = false;
+          setSaving(false);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
+      saveInFlightRef.current = false;
+      setSaving(false);
     };
-  }, [allDone, completionKey, levelNumber, saving, stageNumber, t, token]);
+  }, [allDone, completionKey, levelNumber, stageNumber, t, token]);
 
   const nextTarget = useMemo(() => {
     if (progress && !progress.completedAvailableStages) {
@@ -432,7 +442,22 @@ export default function WordSwipeGamePage() {
                           : t('games.completedTitle')}
                     </p>
                     {saveError ? (
-                      <p className="mt-2 text-xs font-semibold text-rose-600">{saveError}</p>
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs font-semibold text-rose-600">{saveError}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            savedStageKeyRef.current = null;
+                            saveInFlightRef.current = false;
+                            setStageSaved(false);
+                            setSaveError(null);
+                            setSaving(false);
+                          }}
+                          className="inline-flex min-h-9 w-full items-center justify-center rounded-xl bg-rose-100 px-3 text-xs font-bold text-rose-700"
+                        >
+                          {t('common.retry')}
+                        </button>
+                      </div>
                     ) : null}
                     {hasNextStage ? (
                       <button
