@@ -29,8 +29,12 @@ export default function WordSwipeAnswerList({
           return (
             <div
               key={idKey}
-              className={`rounded-2xl px-3 py-3 transition-colors duration-300 ${
-                found ? 'bg-emerald-100' : hinted ? 'bg-amber-50' : 'bg-white/92'
+              className={`rounded-2xl border px-3 py-3 transition-colors duration-300 ${
+                found
+                  ? 'border-emerald-200 bg-emerald-100'
+                  : hinted
+                    ? 'border-amber-200 bg-amber-50'
+                    : 'border-slate-200/90 bg-slate-100/95'
               }`}
             >
               <div className="mb-2 flex items-center justify-between gap-3">
@@ -43,7 +47,11 @@ export default function WordSwipeAnswerList({
                 </p>
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${
-                    found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
+                    found
+                      ? 'bg-emerald-500 text-white'
+                      : hinted
+                        ? 'bg-amber-400 text-white'
+                        : 'bg-white text-slate-500 shadow-sm'
                   }`}
                 >
                   {ru.length}
@@ -59,10 +67,10 @@ export default function WordSwipeAnswerList({
                       key={`${idKey}-${idx}`}
                       className={`flex h-8 w-8 items-center justify-center rounded-lg text-[13px] font-black sm:h-9 sm:w-9 ${
                         found
-                          ? 'bg-emerald-500 text-white'
+                          ? 'bg-emerald-500 text-white shadow-sm'
                           : hinted && idx === 0
-                            ? 'bg-amber-400 text-white'
-                            : 'border border-slate-200 bg-white text-slate-300'
+                            ? 'bg-amber-400 text-white shadow-sm'
+                            : 'border-2 border-slate-300 bg-white text-slate-400 shadow-[0_1px_3px_rgba(15,23,42,0.08)]'
                       }`}
                     >
                       {cellLetter ?? '·'}

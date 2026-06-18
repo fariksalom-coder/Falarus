@@ -1,0 +1,1355 @@
+{
+  "levelNumber": 1,
+  "stages": [
+    {
+      "stageNumber": 1,
+      "themeUz": "Ishga joylashish",
+      "themeRu": "Поиск работы",
+      "words": [
+        {
+          "uz": "rezyume",
+          "ru": "РЕЗЮМЕ"
+        },
+        {
+          "uz": "ish o'rni",
+          "ru": "ВАКАНСИЯ"
+        },
+        {
+          "uz": "lavozim",
+          "ru": "ДОЛЖНОСТЬ"
+        },
+        {
+          "uz": "tajriba",
+          "ru": "ОПЫТ"
+        },
+        {
+          "uz": "staj",
+          "ru": "СТАЖ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 2,
+      "themeUz": "Suhbat",
+      "themeRu": "Собеседование",
+      "words": [
+        {
+          "uz": "savol",
+          "ru": "ВОПРОС"
+        },
+        {
+          "uz": "javob",
+          "ru": "ОТВЕТ"
+        },
+        {
+          "uz": "malaka",
+          "ru": "НАВЫК"
+        },
+        {
+          "uz": "anketa",
+          "ru": "АНКЕТА"
+        },
+        {
+          "uz": "kontakt",
+          "ru": "КОНТАКТ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 3,
+      "themeUz": "Hujjatlar",
+      "themeRu": "Документы",
+      "words": [
+        {
+          "uz": "ariza",
+          "ru": "ЗАЯВЛЕНИЕ"
+        },
+        {
+          "uz": "imzo",
+          "ru": "ПОДПИСЬ"
+        },
+        {
+          "uz": "nusxa",
+          "ru": "КОПИЯ"
+        },
+        {
+          "uz": "asl nusxa",
+          "ru": "ОРИГИНАЛ"
+        },
+        {
+          "uz": "blank",
+          "ru": "БЛАНК"
+        }
+      ]
+    },
+    {
+      "stageNumber": 4,
+      "themeUz": "Maosh",
+      "themeRu": "Зарплата",
+      "words": [
+        {
+          "uz": "maosh",
+          "ru": "ЗАРПЛАТА"
+        },
+        {
+          "uz": "avans",
+          "ru": "АВАНС"
+        },
+        {
+          "uz": "bonus",
+          "ru": "БОНУС"
+        },
+        {
+          "uz": "soliq",
+          "ru": "НАЛОГ"
+        },
+        {
+          "uz": "chegirma",
+          "ru": "ВЫЧЕТ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 5,
+      "themeUz": "Bank",
+      "themeRu": "Банк",
+      "words": [
+        {
+          "uz": "karta",
+          "ru": "КАРТА"
+        },
+        {
+          "uz": "hisob",
+          "ru": "СЧЕТ"
+        },
+        {
+          "uz": "kredit",
+          "ru": "КРЕДИТ"
+        },
+        {
+          "uz": "omonat",
+          "ru": "ВКЛАД"
+        },
+        {
+          "uz": "o'tkazma",
+          "ru": "ПЕРЕВОД"
+        }
+      ]
+    },
+    {
+      "stageNumber": 6,
+      "themeUz": "To'lovlar",
+      "themeRu": "Платежи",
+      "words": [
+        {
+          "uz": "to'lov",
+          "ru": "ОПЛАТА"
+        },
+        {
+          "uz": "komissiya",
+          "ru": "КОМИССИЯ"
+        },
+        {
+          "uz": "rekvizit",
+          "ru": "РЕКВИЗИТ"
+        },
+        {
+          "uz": "to'lov hujjati",
+          "ru": "ПЛАТЕЖ"
+        },
+        {
+          "uz": "kvitansiya",
+          "ru": "КВИТАНЦИЯ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 7,
+      "themeUz": "Ijara",
+      "themeRu": "Аренда",
+      "words": [
+        {
+          "uz": "shartnoma",
+          "ru": "ДОГОВОР"
+        },
+        {
+          "uz": "garov",
+          "ru": "ЗАЛОГ"
+        },
+        {
+          "uz": "ijara",
+          "ru": "АРЕНДА"
+        },
+        {
+          "uz": "kvartira",
+          "ru": "КВАРТИРА"
+        },
+        {
+          "uz": "qo'shni",
+          "ru": "СОСЕД"
+        }
+      ]
+    },
+    {
+      "stageNumber": 8,
+      "themeUz": "Kommunal xizmatlar",
+      "themeRu": "Коммуналка",
+      "words": [
+        {
+          "uz": "tarif",
+          "ru": "ТАРИФ"
+        },
+        {
+          "uz": "penya",
+          "ru": "ПЕНЯ"
+        },
+        {
+          "uz": "sarflar",
+          "ru": "РАСХОД"
+        },
+        {
+          "uz": "me'yor",
+          "ru": "НОРМА"
+        },
+        {
+          "uz": "subsidya",
+          "ru": "СУБСИДИЯ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 9,
+      "themeUz": "Do'kon",
+      "themeRu": "Магазин",
+      "words": [
+        {
+          "uz": "narx yorlig‘i",
+          "ru": "ЦЕННИК"
+        },
+        {
+          "uz": "chegirma",
+          "ru": "СКИДКА"
+        },
+        {
+          "uz": "kassa",
+          "ru": "КАССА"
+        },
+        {
+          "uz": "qaytim",
+          "ru": "СДАЧА"
+        },
+        {
+          "uz": "muddati",
+          "ru": "СРОК"
+        }
+      ]
+    },
+    {
+      "stageNumber": 10,
+      "themeUz": "Kiyim",
+      "themeRu": "Одежда",
+      "words": [
+        {
+          "uz": "o'lcham",
+          "ru": "РАЗМЕР"
+        },
+        {
+          "uz": "kiyib ko'rish",
+          "ru": "ПРИМЕРКА"
+        },
+        {
+          "uz": "narx",
+          "ru": "ЦЕНА"
+        },
+        {
+          "uz": "fason",
+          "ru": "ФАСОН"
+        },
+        {
+          "uz": "gazlama",
+          "ru": "ТКАНЬ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 11,
+      "themeUz": "Texnika",
+      "themeRu": "Техника",
+      "words": [
+        {
+          "uz": "kafolat",
+          "ru": "ГАРАНТИЯ"
+        },
+        {
+          "uz": "ta'mirlash",
+          "ru": "РЕМОНТ"
+        },
+        {
+          "uz": "servis",
+          "ru": "СЕРВИС"
+        },
+        {
+          "uz": "buzilish",
+          "ru": "ПОЛОМКА"
+        },
+        {
+          "uz": "almashtirish",
+          "ru": "ЗАМЕНА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 12,
+      "themeUz": "Qaytarish",
+      "themeRu": "Возврат",
+      "words": [
+        {
+          "uz": "qaytarish",
+          "ru": "ВОЗВРАТ"
+        },
+        {
+          "uz": "da'vo",
+          "ru": "ПРЕТЕНЗИЯ"
+        },
+        {
+          "uz": "sifat",
+          "ru": "КАЧЕСТВО"
+        },
+        {
+          "uz": "nuqson",
+          "ru": "БРАК"
+        },
+        {
+          "uz": "almashish",
+          "ru": "ОБМЕН"
+        }
+      ]
+    },
+    {
+      "stageNumber": 13,
+      "themeUz": "Dorixona",
+      "themeRu": "Аптека",
+      "words": [
+        {
+          "uz": "retsept",
+          "ru": "РЕЦЕПТ"
+        },
+        {
+          "uz": "tabletka",
+          "ru": "ТАБЛЕТКА"
+        },
+        {
+          "uz": "ukol",
+          "ru": "УКОЛ"
+        },
+        {
+          "uz": "maz",
+          "ru": "МАЗЬ"
+        },
+        {
+          "uz": "tomchi",
+          "ru": "КАПЛИ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 14,
+      "themeUz": "Poliklinika",
+      "themeRu": "Поликлиника",
+      "words": [
+        {
+          "uz": "yozilish",
+          "ru": "ЗАПИСЬ"
+        },
+        {
+          "uz": "talyon",
+          "ru": "ТАЛОН"
+        },
+        {
+          "uz": "sug'urta",
+          "ru": "СТРАХОВКА"
+        },
+        {
+          "uz": "navbat",
+          "ru": "ОЧЕРЕДЬ"
+        },
+        {
+          "uz": "shifokor",
+          "ru": "ВРАЧ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 15,
+      "themeUz": "Tahlillar",
+      "themeRu": "Анализы",
+      "words": [
+        {
+          "uz": "tahlil",
+          "ru": "АНАЛИЗ"
+        },
+        {
+          "uz": "qon",
+          "ru": "КРОВЬ"
+        },
+        {
+          "uz": "siydik",
+          "ru": "МОЧА"
+        },
+        {
+          "uz": "natija",
+          "ru": "РЕЗУЛЬТАТ"
+        },
+        {
+          "uz": "tashxis",
+          "ru": "ДИАГНОЗ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 16,
+      "themeUz": "Tez yordam",
+      "themeRu": "Скорая",
+      "words": [
+        {
+          "uz": "tez yordam",
+          "ru": "СКОРАЯ"
+        },
+        {
+          "uz": "jarohat",
+          "ru": "ТРАВМА"
+        },
+        {
+          "uz": "ko'karish",
+          "ru": "УШИБ"
+        },
+        {
+          "uz": "kuyish",
+          "ru": "ОЖОГ"
+        },
+        {
+          "uz": "tutqanoq",
+          "ru": "ПРИСТУП"
+        }
+      ]
+    },
+    {
+      "stageNumber": 17,
+      "themeUz": "Sug'urta",
+      "themeRu": "Страхование",
+      "words": [
+        {
+          "uz": "polis",
+          "ru": "ПОЛИС"
+        },
+        {
+          "uz": "badal",
+          "ru": "ВЗНОС"
+        },
+        {
+          "uz": "to'lov",
+          "ru": "ВЫПЛАТА"
+        },
+        {
+          "uz": "hodisa",
+          "ru": "СЛУЧАЙ"
+        },
+        {
+          "uz": "xavf",
+          "ru": "РИСК"
+        }
+      ]
+    },
+    {
+      "stageNumber": 18,
+      "themeUz": "Transport",
+      "themeRu": "Транспорт",
+      "words": [
+        {
+          "uz": "bilet",
+          "ru": "БИЛЕТ"
+        },
+        {
+          "uz": "marshrut",
+          "ru": "МАРШРУТ"
+        },
+        {
+          "uz": "bekat",
+          "ru": "ОСТАНОВКА"
+        },
+        {
+          "uz": "haydovchi",
+          "ru": "ВОДИТЕЛЬ"
+        },
+        {
+          "uz": "kondiktor",
+          "ru": "КОНДУКТОР"
+        }
+      ]
+    },
+    {
+      "stageNumber": 19,
+      "themeUz": "Taksi",
+      "themeRu": "Такси",
+      "words": [
+        {
+          "uz": "buyurtma",
+          "ru": "ЗАКАЗ"
+        },
+        {
+          "uz": "sayohat",
+          "ru": "ПОЕЗДКА"
+        },
+        {
+          "uz": "choy puli",
+          "ru": "ЧАЕВЫЕ"
+        },
+        {
+          "uz": "yuk",
+          "ru": "БАГАЖ"
+        },
+        {
+          "uz": "manzil",
+          "ru": "АДРЕС"
+        }
+      ]
+    },
+    {
+      "stageNumber": 20,
+      "themeUz": "Avtomobil",
+      "themeRu": "Авто",
+      "words": [
+        {
+          "uz": "haydovchilik guvohnomasi",
+          "ru": "ПРАВА"
+        },
+        {
+          "uz": "dvigatel",
+          "ru": "ДВИГАТЕЛЬ"
+        },
+        {
+          "uz": "benzin",
+          "ru": "БЕНЗИН"
+        },
+        {
+          "uz": "rul",
+          "ru": "РУЛЬ"
+        },
+        {
+          "uz": "tormoz",
+          "ru": "ТОРМОЗ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 21,
+      "themeUz": "Avtota'mir",
+      "themeRu": "Ремонт авто",
+      "words": [
+        {
+          "uz": "usta",
+          "ru": "МАСТЕР"
+        },
+        {
+          "uz": "ehtiyot qism",
+          "ru": "ЗАПЧАСТЬ"
+        },
+        {
+          "uz": "shina",
+          "ru": "ШИНА"
+        },
+        {
+          "uz": "moy",
+          "ru": "МАСЛО"
+        },
+        {
+          "uz": "filtr",
+          "ru": "ФИЛЬТР"
+        }
+      ]
+    },
+    {
+      "stageNumber": 22,
+      "themeUz": "Jarimalar",
+      "themeRu": "Штрафы",
+      "words": [
+        {
+          "uz": "jarima",
+          "ru": "ШТРАФ"
+        },
+        {
+          "uz": "bayonnoma",
+          "ru": "ПРОТОКОЛ"
+        },
+        {
+          "uz": "inspektor",
+          "ru": "ИНСПЕКТОР"
+        },
+        {
+          "uz": "qoidabuzarlik",
+          "ru": "НАРУШЕНИЕ"
+        },
+        {
+          "uz": "summa",
+          "ru": "СУММА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 23,
+      "themeUz": "Pochta",
+      "themeRu": "Почта",
+      "words": [
+        {
+          "uz": "xat",
+          "ru": "ПИСЬМО"
+        },
+        {
+          "uz": "posilka",
+          "ru": "ПОСЫЛКА"
+        },
+        {
+          "uz": "xabarnoma",
+          "ru": "ИЗВЕЩЕНИЕ"
+        },
+        {
+          "uz": "marka",
+          "ru": "МАРКА"
+        },
+        {
+          "uz": "indeks",
+          "ru": "ИНДЕКС"
+        }
+      ]
+    },
+    {
+      "stageNumber": 24,
+      "themeUz": "Yetkazib berish",
+      "themeRu": "Доставка",
+      "words": [
+        {
+          "uz": "yetkazib berish",
+          "ru": "ДОСТАВКА"
+        },
+        {
+          "uz": "buyurtmachi",
+          "ru": "ЗАКАЗЧИК"
+        },
+        {
+          "uz": "o'ram",
+          "ru": "УПАКОВКА"
+        },
+        {
+          "uz": "trek",
+          "ru": "ТРЕК"
+        },
+        {
+          "uz": "yuk",
+          "ru": "ГРУЗ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 25,
+      "themeUz": "Internet",
+      "themeRu": "Интернет",
+      "words": [
+        {
+          "uz": "parol",
+          "ru": "ПАРОЛЬ"
+        },
+        {
+          "uz": "sayt",
+          "ru": "САЙТ"
+        },
+        {
+          "uz": "sahifa",
+          "ru": "СТРАНИЦА"
+        },
+        {
+          "uz": "fayl",
+          "ru": "ФАЙЛ"
+        },
+        {
+          "uz": "papka",
+          "ru": "ПАПКА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 26,
+      "themeUz": "Aloqa",
+      "themeRu": "Связь",
+      "words": [
+        {
+          "uz": "qo'ng'iroq",
+          "ru": "ЗВОНОК"
+        },
+        {
+          "uz": "abonent",
+          "ru": "АБОНЕНТ"
+        },
+        {
+          "uz": "operator",
+          "ru": "ОПЕРАТОР"
+        },
+        {
+          "uz": "rouming",
+          "ru": "РОУМИНГ"
+        },
+        {
+          "uz": "balans",
+          "ru": "БАЛАНС"
+        }
+      ]
+    },
+    {
+      "stageNumber": 27,
+      "themeUz": "Maktab",
+      "themeRu": "Школа",
+      "words": [
+        {
+          "uz": "o'qituvchi",
+          "ru": "УЧИТЕЛЬ"
+        },
+        {
+          "uz": "dars",
+          "ru": "УРОК"
+        },
+        {
+          "uz": "baholash",
+          "ru": "ОЦЕНКА"
+        },
+        {
+          "uz": "topshiriq",
+          "ru": "ЗАДАНИЕ"
+        },
+        {
+          "uz": "ta'til",
+          "ru": "КАНИКУЛЫ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 28,
+      "themeUz": "Kurslar",
+      "themeRu": "Курсы",
+      "words": [
+        {
+          "uz": "o'qish",
+          "ru": "ОБУЧЕНИЕ"
+        },
+        {
+          "uz": "dastur",
+          "ru": "ПРОГРАММА"
+        },
+        {
+          "uz": "guruh",
+          "ru": "ГРУППА"
+        },
+        {
+          "uz": "ma'ruza",
+          "ru": "ЛЕКЦИЯ"
+        },
+        {
+          "uz": "seminar",
+          "ru": "СЕМИНАР"
+        }
+      ]
+    },
+    {
+      "stageNumber": 29,
+      "themeUz": "Sinf",
+      "themeRu": "Класс",
+      "words": [
+        {
+          "uz": "parta",
+          "ru": "ПАРТА"
+        },
+        {
+          "uz": "o'zgarish",
+          "ru": "ПЕРЕМЕНА"
+        },
+        {
+          "uz": "direktor",
+          "ru": "ДИРЕКТОР"
+        },
+        {
+          "uz": "daftar",
+          "ru": "ТЕТРАДЬ"
+        },
+        {
+          "uz": "doska",
+          "ru": "ДОСКА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 30,
+      "themeUz": "Mehmonxona",
+      "themeRu": "Гостиница",
+      "words": [
+        {
+          "uz": "bron",
+          "ru": "БРОНЬ"
+        },
+        {
+          "uz": "xona raqami",
+          "ru": "НОМЕР"
+        },
+        {
+          "uz": "kalit",
+          "ru": "КЛЮЧ"
+        },
+        {
+          "uz": "nonushta",
+          "ru": "ЗАВТРАК"
+        },
+        {
+          "uz": "xona",
+          "ru": "КОМНАТА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 31,
+      "themeUz": "Oriyentir",
+      "themeRu": "Ориентирование",
+      "words": [
+        {
+          "uz": "ko'cha",
+          "ru": "УЛИЦА"
+        },
+        {
+          "uz": "burilish",
+          "ru": "ПОВОРОТ"
+        },
+        {
+          "uz": "svetofor",
+          "ru": "СВЕТОФОР"
+        },
+        {
+          "uz": "o'tish",
+          "ru": "ПЕРЕХОД"
+        },
+        {
+          "uz": "metro",
+          "ru": "МЕТРО"
+        }
+      ]
+    },
+    {
+      "stageNumber": 32,
+      "themeUz": "Restoran",
+      "themeRu": "Ресторан",
+      "words": [
+        {
+          "uz": "menu",
+          "ru": "МЕНЮ"
+        },
+        {
+          "uz": "ofitsiant",
+          "ru": "ОФИЦИАНТ"
+        },
+        {
+          "uz": "taom",
+          "ru": "БЛЮДО"
+        },
+        {
+          "uz": "asbob",
+          "ru": "ПРИБОР"
+        },
+        {
+          "uz": "shirinlik",
+          "ru": "ДЕСЕРТ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 33,
+      "themeUz": "Qahvaxona",
+      "themeRu": "Кафе",
+      "words": [
+        {
+          "uz": "kofe",
+          "ru": "КОФЕ"
+        },
+        {
+          "uz": "pirojnoe",
+          "ru": "ПИРОЖНОЕ"
+        },
+        {
+          "uz": "shakar",
+          "ru": "САХАР"
+        },
+        {
+          "uz": "sut",
+          "ru": "МОЛОКО"
+        },
+        {
+          "uz": "kruassan",
+          "ru": "КРУАССАН"
+        }
+      ]
+    },
+    {
+      "stageNumber": 34,
+      "themeUz": "Tozalash",
+      "themeRu": "Уборка",
+      "words": [
+        {
+          "uz": "chang",
+          "ru": "ПЫЛЬ"
+        },
+        {
+          "uz": "axlat",
+          "ru": "МУСОР"
+        },
+        {
+          "uz": "latta",
+          "ru": "ТРЯПКА"
+        },
+        {
+          "uz": "chelak",
+          "ru": "ВЕДРО"
+        },
+        {
+          "uz": "yuvish",
+          "ru": "МЫТЬЕ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 35,
+      "themeUz": "Ta'mirlash",
+      "themeRu": "Ремонт",
+      "words": [
+        {
+          "uz": "gulpi",
+          "ru": "ОБОИ"
+        },
+        {
+          "uz": "bo'yoq",
+          "ru": "КРАСКА"
+        },
+        {
+          "uz": "burg'u",
+          "ru": "ДРЕЛЬ"
+        },
+        {
+          "uz": "bolg'a",
+          "ru": "МОЛОТОК"
+        },
+        {
+          "uz": "shurup",
+          "ru": "ШУРУП"
+        }
+      ]
+    },
+    {
+      "stageNumber": 36,
+      "themeUz": "Asboblar",
+      "themeRu": "Инструменты",
+      "words": [
+        {
+          "uz": "mix",
+          "ru": "ГВОЗДЬ"
+        },
+        {
+          "uz": "ochqich",
+          "ru": "ОТВЕРТКА"
+        },
+        {
+          "uz": "passatizhlar",
+          "ru": "ПАССАТИЖИ"
+        },
+        {
+          "uz": "arra",
+          "ru": "ПИЛА"
+        },
+        {
+          "uz": "bolta",
+          "ru": "ТОПОР"
+        }
+      ]
+    },
+    {
+      "stageNumber": 37,
+      "themeUz": "Yo'qotish",
+      "themeRu": "Потеря",
+      "words": [
+        {
+          "uz": "yo'qotish",
+          "ru": "ПОТЕРЯ"
+        },
+        {
+          "uz": "topilma",
+          "ru": "НАХОДКА"
+        },
+        {
+          "uz": "byuro",
+          "ru": "БЮРО"
+        },
+        {
+          "uz": "narsa",
+          "ru": "ВЕЩЬ"
+        },
+        {
+          "uz": "yo'qolish",
+          "ru": "УТЕРЯ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 38,
+      "themeUz": "Migratsiya",
+      "themeRu": "Миграция",
+      "words": [
+        {
+          "uz": "viza",
+          "ru": "ВИЗА"
+        },
+        {
+          "uz": "patent",
+          "ru": "ПАТЕНТ"
+        },
+        {
+          "uz": "hujjat",
+          "ru": "ДОКУМЕНТ"
+        },
+        {
+          "uz": "foto",
+          "ru": "ФОТО"
+        },
+        {
+          "uz": "chiqish",
+          "ru": "ВЫЕЗД"
+        }
+      ]
+    },
+    {
+      "stageNumber": 39,
+      "themeUz": "Pasport",
+      "themeRu": "Паспорт",
+      "words": [
+        {
+          "uz": "pasport",
+          "ru": "ПАСПОРТ"
+        },
+        {
+          "uz": "propiska",
+          "ru": "ПРОПИСКА"
+        },
+        {
+          "uz": "fuqaro",
+          "ru": "ГРАЖДАНИН"
+        },
+        {
+          "uz": "zagran",
+          "ru": "ЗАГРАН"
+        },
+        {
+          "uz": "belgi",
+          "ru": "ОТМЕТКА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 40,
+      "themeUz": "Politsiya",
+      "themeRu": "Полиция",
+      "words": [
+        {
+          "uz": "uchastka",
+          "ru": "УЧАСТОК"
+        },
+        {
+          "uz": "navbatchi",
+          "ru": "ДЕЖУРНЫЙ"
+        },
+        {
+          "uz": "so'roq",
+          "ru": "ДОЗНАНИЕ"
+        },
+        {
+          "uz": "chaqiruv",
+          "ru": "ВЫЗОВ"
+        },
+        {
+          "uz": "so'rov",
+          "ru": "ОПРОС"
+        }
+      ]
+    },
+    {
+      "stageNumber": 41,
+      "themeUz": "Shikoyatlar",
+      "themeRu": "Жалобы",
+      "words": [
+        {
+          "uz": "shikoyat",
+          "ru": "ЖАЛОБА"
+        },
+        {
+          "uz": "janjal",
+          "ru": "СПОР"
+        },
+        {
+          "uz": "muammo",
+          "ru": "ПРОБЛЕМА"
+        },
+        {
+          "uz": "yechim",
+          "ru": "РЕШЕНИЕ"
+        },
+        {
+          "uz": "mojaro",
+          "ru": "КОНФЛИКТ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 42,
+      "themeUz": "Tabriklar",
+      "themeRu": "Поздравления",
+      "words": [
+        {
+          "uz": "bayram",
+          "ru": "ПРАЗДНИК"
+        },
+        {
+          "uz": "sovg'a",
+          "ru": "ПОДАРОК"
+        },
+        {
+          "uz": "tost",
+          "ru": "ТОСТ"
+        },
+        {
+          "uz": "otkritka",
+          "ru": "ОТКРЫТКА"
+        },
+        {
+          "uz": "gullar",
+          "ru": "ЦВЕТЫ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 43,
+      "themeUz": "Sovg'alar",
+      "themeRu": "Подарки",
+      "words": [
+        {
+          "uz": "tanlov",
+          "ru": "ВЫБОР"
+        },
+        {
+          "uz": "syurpriz",
+          "ru": "СЮРПРИЗ"
+        },
+        {
+          "uz": "tilak",
+          "ru": "ПОЖЕЛАНИЕ"
+        },
+        {
+          "uz": "e'tibor",
+          "ru": "ВНИМАНИЕ"
+        },
+        {
+          "uz": "suvenir",
+          "ru": "СУВЕНИР"
+        }
+      ]
+    },
+    {
+      "stageNumber": 44,
+      "themeUz": "Davolanish",
+      "themeRu": "Лечение",
+      "words": [
+        {
+          "uz": "ko'rik",
+          "ru": "ОСМОТР"
+        },
+        {
+          "uz": "muolaja",
+          "ru": "ПРОЦЕДУРА"
+        },
+        {
+          "uz": "rentgen",
+          "ru": "РЕНТГЕН"
+        },
+        {
+          "uz": "emlash",
+          "ru": "ПРИВИВКА"
+        },
+        {
+          "uz": "bog'lash",
+          "ru": "ПЕРЕВЯЗКА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 45,
+      "themeUz": "Uchrashuvlar",
+      "themeRu": "Встречи",
+      "words": [
+        {
+          "uz": "uchrashuv",
+          "ru": "ВСТРЕЧА"
+        },
+        {
+          "uz": "vaqt",
+          "ru": "ВРЕМЯ"
+        },
+        {
+          "uz": "sana",
+          "ru": "ДАТА"
+        },
+        {
+          "uz": "joy",
+          "ru": "МЕСТО"
+        },
+        {
+          "uz": "kechikish",
+          "ru": "ОПОЗДАНИЕ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 46,
+      "themeUz": "Munosabatlar",
+      "themeRu": "Отношения",
+      "words": [
+        {
+          "uz": "do'stlik",
+          "ru": "ДРУЖБА"
+        },
+        {
+          "uz": "muhabbat",
+          "ru": "ЛЮБОВЬ"
+        },
+        {
+          "uz": "hurmat",
+          "ru": "УВАЖЕНИЕ"
+        },
+        {
+          "uz": "ishonch",
+          "ru": "ДОВЕРИЕ"
+        },
+        {
+          "uz": "g'amxo'rlik",
+          "ru": "ЗАБОТА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 47,
+      "themeUz": "Qiziqishlar",
+      "themeRu": "Хобби",
+      "words": [
+        {
+          "uz": "qiziqish",
+          "ru": "УВЛЕЧЕНИЕ"
+        },
+        {
+          "uz": "kolleksiya",
+          "ru": "КОЛЛЕКЦИЯ"
+        },
+        {
+          "uz": "rasm chizish",
+          "ru": "РИСОВАНИЕ"
+        },
+        {
+          "uz": "kashta",
+          "ru": "ВЫШИВКА"
+        },
+        {
+          "uz": "sport",
+          "ru": "СПОРТ"
+        }
+      ]
+    },
+    {
+      "stageNumber": 48,
+      "themeUz": "Xavfsizlik",
+      "themeRu": "Безопасность",
+      "words": [
+        {
+          "uz": "qulf",
+          "ru": "ЗАМОК"
+        },
+        {
+          "uz": "seyf",
+          "ru": "СЕЙФ"
+        },
+        {
+          "uz": "qo'riqchi",
+          "ru": "ОХРАННИК"
+        },
+        {
+          "uz": "tashvish",
+          "ru": "ТРЕВОГА"
+        },
+        {
+          "uz": "yong'in",
+          "ru": "ПОЖАР"
+        }
+      ]
+    },
+    {
+      "stageNumber": 49,
+      "themeUz": "Xizmatlar",
+      "themeRu": "Услуги",
+      "words": [
+        {
+          "uz": "kir yuvish",
+          "ru": "СТИРКА"
+        },
+        {
+          "uz": "kimyoviy tozalash",
+          "ru": "ХИМЧИСТКА"
+        },
+        {
+          "uz": "kirxona",
+          "ru": "ПРАЧЕЧНАЯ"
+        },
+        {
+          "uz": "dazmollash",
+          "ru": "ГЛАЖКА"
+        },
+        {
+          "uz": "tozalash",
+          "ru": "ЧИСТКА"
+        }
+      ]
+    },
+    {
+      "stageNumber": 50,
+      "themeUz": "Ob-havo",
+      "themeRu": "Погода",
+      "words": [
+        {
+          "uz": "yomg'ir",
+          "ru": "ДОЖДЬ"
+        },
+        {
+          "uz": "qor",
+          "ru": "СНЕГ"
+        },
+        {
+          "uz": "shamol",
+          "ru": "ВЕТЕР"
+        },
+        {
+          "uz": "bulut",
+          "ru": "ОБЛАКО"
+        },
+        {
+          "uz": "ayoz",
+          "ru": "МОРОЗ"
+        }
+      ]
+    }
+  ]
+}
