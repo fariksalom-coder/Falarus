@@ -479,6 +479,10 @@ export type MessageCatalog = {
     retry: string;
     sentenceTestSoon: string;
     speakingDoneAlready: string;
+    freeLimitTitle: string;
+    freeLimitBody: string;
+    chooseTariff: string;
+    continueCta: string;
     testHint: string;
     vocabWords: string;
     invalidDay: string;
@@ -512,6 +516,7 @@ export type MessageCatalog = {
     statusFailed: string;
     variantNotFound: string;
     writeAnswerPlaceholder: string;
+  };
   vnzh: {
     title: string;
     subtitle: string;

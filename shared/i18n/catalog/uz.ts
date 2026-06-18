@@ -475,6 +475,11 @@ const uz: MessageCatalog = {
     retry: 'Qayta urinish',
     sentenceTestSoon: 'Gap tuzish testi tez orada ({{count}} savol)',
     speakingDoneAlready: 'Gapirish bo‘limi bajarilgan',
+    freeLimitTitle: 'Bepul kunlar tugadi!',
+    freeLimitBody:
+      '2-kunni muvaffaqiyatli yakunladingiz. Davom etish uchun kursni sotib oling — 3-kun va keyingi darslar Premium bilan ochiladi.',
+    chooseTariff: 'Tarifni tanlash',
+    continueCta: 'Davom etish uchun bosing',
     testHint: 'Kamida 80% bilan o‘ting',
     vocabWords: "So'zlar",
     invalidDay: 'Kun raqami noto‘g‘ri',

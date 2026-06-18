@@ -354,6 +354,11 @@ const en: DeepPartial<MessageCatalog> = {
     seqHint2: 'Complete task 1 first',
     seqHint3: 'Complete task 2 first',
     soon: 'Coming soon',
+    freeLimitTitle: 'Free days are over!',
+    freeLimitBody:
+      'You completed day 2. To continue, buy the course — day 3 and beyond unlock with Premium.',
+    chooseTariff: 'Choose a plan',
+    continueCta: 'Tap to continue',
   },
   common: {
     comingSoon: '{{feature}} — coming soon',

@@ -5,7 +5,7 @@ import { ArrowLeft, Link2, ListChecks, Lock, Puzzle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import type { DailyCourseDayBundle } from '../../shared/dailyCourseDay';
-import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
+import { isValidDailyCourseDay, FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
 import { LessonTheoryCollapsible } from '../components/lesson/LessonTheoryCollapsible';
 import { VocabularyTaskList } from '../components/vocabulary/VocabularyTaskList';
 import { InteractiveDailyReading } from '../components/daily/InteractiveDailyReading';
@@ -21,6 +21,8 @@ import {
   useKunlikSequentialGate,
 } from '../hooks/useKunlikSequentialGate';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
+import { useAccess } from '../context/AccessContext';
+import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
 
 const SECTIONS = ['grammatika', 'lugat', 'oqish', 'gapirish'] as const;
 export type KunlikSection = (typeof SECTIONS)[number];
@@ -609,7 +611,10 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
 function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle; dayNumber: number }) {
   const { t } = useLocale();
   const navigate = useNavigate();
+  const { access } = useAccess();
+  const premium = Boolean(access?.subscription_active);
   const { patchDay, getDay, loaded: kunlikLoaded } = useKunlikProgress();
+  const [showFreeLimitModal, setShowFreeLimitModal] = useState(false);
   const p = bundle.practice;
 
   const tasks: SpeakingTask[] = useMemo(
@@ -664,20 +669,36 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
 
   const resumeIdx = Math.min(savedSpeaking, tasks.length - 1);
 
+  const finishSpeaking = () => {
+    patchDay(dayNumber, { speaking_level: tasks.length });
+    if (!premium && dayNumber === FREE_KUNLIK_DAY_LIMIT) {
+      setShowFreeLimitModal(true);
+      return;
+    }
+    navigate(kunlikRejaPath(dayNumber));
+  };
+
   return (
-    <SpeakingExercise
-      tasks={tasks}
-      topicLabel={t('kunlik.daySpeaking', { day: dayNumber })}
-      useInlineCheck={true}
-      kunlikDayNumber={dayNumber}
-      embedded
-      initialResumeIndex={resumeIdx}
-      onCheckpoint={(completed) => patchDay(dayNumber, { speaking_level: completed })}
-      onFinish={() => {
-        patchDay(dayNumber, { speaking_level: tasks.length });
-        navigate(kunlikRejaPath(dayNumber));
-      }}
-      onBack={() => navigate(kunlikRejaPath(dayNumber))}
-    />
+    <>
+      {showFreeLimitModal ? (
+        <KunlikFreeLimitModal
+          onClose={() => {
+            setShowFreeLimitModal(false);
+            navigate(kunlikRejaPath(dayNumber));
+          }}
+        />
+      ) : null}
+      <SpeakingExercise
+        tasks={tasks}
+        topicLabel={t('kunlik.daySpeaking', { day: dayNumber })}
+        useInlineCheck={true}
+        kunlikDayNumber={dayNumber}
+        embedded
+        initialResumeIndex={resumeIdx}
+        onCheckpoint={(completed) => patchDay(dayNumber, { speaking_level: completed })}
+        onFinish={finishSpeaking}
+        onBack={() => navigate(kunlikRejaPath(dayNumber))}
+      />
+    </>
   );
 }

@@ -354,6 +354,11 @@ const ru: DeepPartial<MessageCatalog> = {
     seqHint2: 'Сначала завершите задание 1',
     seqHint3: 'Сначала завершите задание 2',
     soon: 'Скоро',
+    freeLimitTitle: 'Бесплатные дни закончились!',
+    freeLimitBody:
+      'Вы успешно завершили 2-й день. Чтобы продолжить, купите курс — 3-й день и далее открываются с Premium.',
+    chooseTariff: 'Выбрать тариф',
+    continueCta: 'Нажмите, чтобы продолжить',
   },
   common: {
     comingSoon: '{{feature}} — скоро добавим',

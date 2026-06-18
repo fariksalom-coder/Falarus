@@ -13,6 +13,7 @@ import { TOTAL_DAYS } from '../data/dailyPlan';
 import { takeKunlikRestoreDay } from '../utils/kunlikLastDay';
 import UserAvatar from '../components/UserAvatar';
 import type { UserGender } from '../components/UserAvatar';
+import KunlikFreeLimitCta from '../components/KunlikFreeLimitCta';
 
 const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   grammar_1: false,
@@ -487,6 +488,9 @@ export default function HomePage() {
   const promptCount = progressReady ? practicePromptCountByDay.get(displayDay) ?? 0 : 0;
   const slots = row ? buildQuestSlots(row, promptCount) : [];
   const done = slots.filter((slot) => slot.state === 'done').length;
+  const dayFullyComplete = row ? isDayComplete(row, promptCount) : false;
+  const showFreeLimitCta =
+    !premium && displayDay === FREE_KUNLIK_DAY_LIMIT && dayFullyComplete;
 
   return (
     <div className="min-h-screen bg-app-bg-muted pb-[84px]">
@@ -522,6 +526,7 @@ export default function HomePage() {
                 <QuestCard key={slot.id} slot={slot} index={index + 1} day={displayDay} t={t} />
               ))}
             </motion.section>
+            {showFreeLimitCta ? <KunlikFreeLimitCta /> : null}
           </>
         ) : (
           <div className="px-4 pt-6">
