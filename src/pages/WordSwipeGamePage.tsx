@@ -351,7 +351,7 @@ export default function WordSwipeGamePage() {
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-3 py-3 md:flex-row md:items-center md:justify-center md:gap-8 sm:px-4">
+      <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-2 overflow-hidden px-3 py-2 sm:gap-3 sm:py-3 md:flex-row md:items-center md:justify-center md:gap-8 md:overflow-visible sm:px-4">
         {loadState.status === 'loading' ? (
           <div className="flex flex-1 items-center justify-center">
             <p className="text-sm font-semibold text-white/80">{t('common.loading')}</p>
@@ -400,7 +400,7 @@ export default function WordSwipeGamePage() {
 
         {loadState.status === 'ready' ? (
           <>
-            <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center md:max-w-[38rem] lg:max-w-[42rem]">
+            <div className="flex w-full shrink-0 justify-center md:min-h-0 md:max-w-[38rem] md:flex-1 md:items-center lg:max-w-[42rem]">
               <WordSwipeBoard
                 grid={loadState.grid}
                 gridRows={loadState.gridRows}
@@ -409,21 +409,21 @@ export default function WordSwipeGamePage() {
                 foundIds={foundIds}
                 foundCellKeys={foundCellKeys}
                 onWordFound={handleWordFound}
-                className="w-[min(100%,calc(52dvh*6/5),26rem)] md:w-[min(100%,calc(72dvh*6/5),34rem)]"
+                className="w-[min(100%,calc(34dvh*6/5),20.5rem)] md:w-[min(100%,calc(72dvh*6/5),34rem)]"
               />
             </div>
 
-            <div className="flex min-h-0 w-full shrink-0 pb-[max(0.25rem,env(safe-area-inset-bottom))] md:w-[22rem] md:pb-0 lg:w-[24rem]">
-              <div className="flex w-full flex-col gap-3">
+            <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden pb-[max(0.25rem,env(safe-area-inset-bottom))] md:w-[22rem] md:flex-none md:overflow-visible md:pb-0 lg:w-[24rem]">
+              <div className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
                 <WordSwipeAnswerList
                   words={loadState.words}
                   foundIds={foundIds}
                   hintedId={hintedId}
-                  className="min-h-0"
+                  className="min-h-0 flex-1"
                 />
 
                 {allDone ? (
-                  <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50 px-4 py-3 text-center">
+                  <div className="shrink-0 rounded-2xl border border-emerald-200/80 bg-emerald-50 px-4 py-3 text-center">
                     <p className="text-sm font-extrabold text-emerald-800">
                       {saving
                         ? t('common.saving')

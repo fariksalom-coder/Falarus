@@ -113,13 +113,13 @@ export default function WordSwipeBoard({
 
   return (
     <div
-      className={`relative w-full select-none touch-none rounded-[22px] border border-white/20 bg-white/10 p-2.5 shadow-[0_16px_40px_rgba(15,23,42,0.2)] backdrop-blur-md transition-[box-shadow] sm:rounded-[26px] sm:p-3 ${
+      className={`relative w-full select-none touch-none rounded-[18px] border border-white/20 bg-white/10 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.2)] backdrop-blur-md transition-[box-shadow] sm:rounded-[26px] sm:p-3 ${
         flash === 'ok' ? 'ring-2 ring-emerald-300/80' : flash === 'miss' ? 'ring-2 ring-rose-300/70' : ''
       } ${className}`}
     >
       <div
         ref={gridRef}
-        className="relative grid w-full gap-[5px] sm:gap-1.5"
+        className="relative grid w-full gap-1 sm:gap-1.5"
         style={{
           aspectRatio: `${gridCols} / ${gridRows}`,
           gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
@@ -155,7 +155,7 @@ export default function WordSwipeBoard({
                 data-row={rowIdx}
                 data-col={colIdx}
                 onPointerDown={(e) => handlePointerDown(rowIdx, colIdx, e)}
-                className={`relative z-20 flex aspect-square min-h-0 min-w-0 items-center justify-center rounded-[10px] border text-[clamp(0.8rem,3.8vw,1.15rem)] font-extrabold leading-none transition-[transform,background-color,border-color,box-shadow] active:scale-[0.96] sm:rounded-xl ${
+                className={`relative z-20 flex aspect-square min-h-0 min-w-0 items-center justify-center rounded-[8px] border text-[clamp(0.7rem,3.2vw,1.15rem)] font-extrabold leading-none transition-[transform,background-color,border-color,box-shadow] active:scale-[0.96] sm:rounded-xl ${
                   active
                     ? 'border-blue-400 bg-[#2563EB] text-white shadow-[0_6px_16px_rgba(37,99,235,0.4)]'
                     : found
