@@ -1009,6 +1009,9 @@ async function startServer() {
   const { createCommunityRoutes } = await import('./server/routes/communityRoutes');
   app.use('/api', createCommunityRoutes(supabase, authenticate));
 
+  const { createWordSwipeGameRoutes } = await import('./server/routes/wordSwipeGameRoutes');
+  app.use('/api', createWordSwipeGameRoutes(supabase, authenticate));
+
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
     const { user, error } = await fetchUserProfileById(req.userId);

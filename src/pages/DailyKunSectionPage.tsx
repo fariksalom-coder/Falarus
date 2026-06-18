@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import { ArrowLeft, Link2, ListChecks, Lock, Puzzle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -611,10 +611,14 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
 function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle; dayNumber: number }) {
   const { t } = useLocale();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { access } = useAccess();
   const premium = Boolean(access?.subscription_active);
   const { patchDay, getDay, loaded: kunlikLoaded } = useKunlikProgress();
   const [showFreeLimitModal, setShowFreeLimitModal] = useState(false);
+  const [forceRetry, setForceRetry] = useState(() => searchParams.get('retry') === '1');
+  const isRepeatSessionRef = useRef(searchParams.get('retry') === '1');
+  const autoRetryStartedRef = useRef(false);
   const p = bundle.practice;
 
   const tasks: SpeakingTask[] = useMemo(
@@ -633,6 +637,51 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
     [p],
   );
 
+  const savedSpeaking = kunlikLoaded ? (getDay(dayNumber).speaking_level ?? 0) : 0;
+  const allSpeakingDone =
+    kunlikLoaded && tasks.length > 0 && savedSpeaking >= tasks.length && !forceRetry;
+
+  useEffect(() => {
+    if (!kunlikLoaded || isRepeatSessionRef.current) return;
+    if (savedSpeaking >= tasks.length) {
+      isRepeatSessionRef.current = true;
+    }
+  }, [kunlikLoaded, savedSpeaking, tasks.length]);
+
+  useEffect(() => {
+    if (!kunlikLoaded || autoRetryStartedRef.current) return;
+    if (searchParams.get('retry') !== '1') return;
+    if (savedSpeaking < tasks.length) return;
+
+    autoRetryStartedRef.current = true;
+    isRepeatSessionRef.current = true;
+    setForceRetry(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('retry');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [kunlikLoaded, savedSpeaking, tasks.length, searchParams, setSearchParams]);
+
+  const startSpeakingRetry = () => {
+    isRepeatSessionRef.current = true;
+    setForceRetry(true);
+  };
+
+  const finishSpeaking = () => {
+    if (!forceRetry) {
+      patchDay(dayNumber, { speaking_level: tasks.length });
+    }
+    if (!premium && dayNumber === FREE_KUNLIK_DAY_LIMIT && !isRepeatSessionRef.current) {
+      setShowFreeLimitModal(true);
+      return;
+    }
+    navigate(kunlikRejaPath(dayNumber));
+  };
+
   if (!p?.length) {
     return (
       <p className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
@@ -649,9 +698,6 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
     );
   }
 
-  const savedSpeaking = getDay(dayNumber).speaking_level ?? 0;
-  const allSpeakingDone = tasks.length > 0 && savedSpeaking >= tasks.length;
-
   if (allSpeakingDone) {
     return (
       <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-5 text-center shadow-sm">
@@ -659,24 +705,23 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
         <button
           type="button"
           onClick={() => navigate(kunlikRejaPath(dayNumber))}
-          className="mt-4 min-h-[44px] w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700"
+          className="mt-4 min-h-[44px] w-full rounded-2xl border border-emerald-300 bg-white px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm hover:bg-emerald-50"
         >
           {t('kunlik.backToPlan')}
+        </button>
+        <button
+          type="button"
+          onClick={startSpeakingRetry}
+          className="mt-3 min-h-[44px] w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700"
+        >
+          {t('home.questRepeat')}
         </button>
       </div>
     );
   }
 
-  const resumeIdx = Math.min(savedSpeaking, tasks.length - 1);
-
-  const finishSpeaking = () => {
-    patchDay(dayNumber, { speaking_level: tasks.length });
-    if (!premium && dayNumber === FREE_KUNLIK_DAY_LIMIT) {
-      setShowFreeLimitModal(true);
-      return;
-    }
-    navigate(kunlikRejaPath(dayNumber));
-  };
+  const resumeIdx = forceRetry ? 0 : Math.min(savedSpeaking, tasks.length - 1);
+  const exerciseKey = `speaking-${dayNumber}-${forceRetry ? 'retry' : savedSpeaking}`;
 
   return (
     <>
@@ -689,13 +734,16 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
         />
       ) : null}
       <SpeakingExercise
+        key={exerciseKey}
         tasks={tasks}
         topicLabel={t('kunlik.daySpeaking', { day: dayNumber })}
         useInlineCheck={true}
         kunlikDayNumber={dayNumber}
         embedded
         initialResumeIndex={resumeIdx}
-        onCheckpoint={(completed) => patchDay(dayNumber, { speaking_level: completed })}
+        onCheckpoint={(completed) => {
+          if (!forceRetry) patchDay(dayNumber, { speaking_level: completed });
+        }}
         onFinish={finishSpeaking}
         onBack={() => navigate(kunlikRejaPath(dayNumber))}
       />

@@ -7,6 +7,7 @@ export type DeepPartial<T> = T extends object
 export type MessageCatalog = {
   nav: {
     home: string;
+    games: string;
     partner: string;
     teachers: string;
     stats: string;
@@ -234,6 +235,30 @@ export type MessageCatalog = {
     patentSubtitle: string;
     vnzhTitle: string;
     vnzhSubtitle: string;
+  };
+  games: {
+    title: string;
+    wordSwipeTitle: string;
+    wordSwipeSubtitle: string;
+    howToPlay: string;
+    howToPlayText: string;
+    reset: string;
+    hint: string;
+    foundProgress: string;
+    completedTitle: string;
+    stageProgress: string;
+    levelLabel: string;
+    nextStage: string;
+    levelCompleted: string;
+    availableStagesEnded: string;
+    stageLocked: string;
+    stageEmpty: string;
+    gridGenerationFailed: string;
+    loginRequired: string;
+    continue: string;
+    currentProgress: string;
+    loginToPlay: string;
+    saveProgressFailed: string;
   };
   invite: {
     title: string;

@@ -20,6 +20,7 @@
     "deploy:vps": "bash scripts/vps-deploy.sh",
     "seed:vocabulary": "tsx server/scripts/seedVocabulary.ts",
     "seed:admin": "tsx server/scripts/seedAdmin.ts",
+    "seed:word-swipe": "tsx server/scripts/seedWordSwipeGame.ts",
     "import:patent": "python3 scripts/import_patent_exam.py",
     "db:codegen": "kysely-codegen --dialect postgres --out-file server/lib/db-types.ts",
     "test:smoke": "node scripts/smoke-api.mjs",

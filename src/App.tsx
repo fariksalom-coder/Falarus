@@ -102,6 +102,12 @@ function AppRoutes() {
             <Route path="kunlik-reja/kun/:dayNum/lugat/juftlik" element={renderLazyPage('./pages/DailyVocabPairsPage.tsx')} />
             <Route path="kunlik-reja/kun/:dayNum/:section" element={renderLazyPage('./pages/DailyKunSectionPage.tsx')} />
             <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
+            <Route path="games" element={renderLazyPage('./pages/GamesPage.tsx')} />
+            <Route path="games/word-swipe" element={renderLazyPage('./pages/WordSwipeRedirectPage.tsx')} />
+            <Route
+              path="games/word-swipe/:levelNumber/:stageNumber"
+              element={renderLazyPage('./pages/WordSwipeGamePage.tsx')}
+            />
             <Route path="teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
             <Route path="teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
             <Route path="help" element={renderLazyPage('./pages/HelpPage.tsx')} />

@@ -4,6 +4,7 @@
  */
 export const MAIN_SECTION_PATHS = [
   '/',
+  '/games',
   '/partner',
   '/teachers',
   '/statistika',

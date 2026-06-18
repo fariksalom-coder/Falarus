@@ -361,15 +361,17 @@ function QuestCard({
       : 'text-[#475569] dark:text-slate-300';
 
   const actionLabel = done ? t('home.questRepeat') : t('home.questStart');
+  const questPath =
+    done && slot.id === 'speaking' ? `${slot.route(day)}?retry=1` : slot.route(day);
 
   return (
     <button
       type="button"
       disabled={!slot.canOpen}
-      onClick={() => navigate(slot.route(day))}
-      onMouseEnter={() => prefetchRoutePath(slot.route(day))}
-      onTouchStart={() => prefetchRoutePath(slot.route(day))}
-      onFocus={() => prefetchRoutePath(slot.route(day))}
+      onClick={() => navigate(questPath)}
+      onMouseEnter={() => prefetchRoutePath(questPath)}
+      onTouchStart={() => prefetchRoutePath(questPath)}
+      onFocus={() => prefetchRoutePath(questPath)}
       className={`relative flex min-h-[198px] min-w-0 flex-col rounded-[18px] border p-2.5 text-center shadow-app-soft transition-transform active:scale-[0.99] disabled:cursor-default ${cardSurface}`}
     >
       <span

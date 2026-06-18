@@ -1,9 +1,18 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Gamepad2, type LucideIcon } from 'lucide-react';
 import { prefetchRoutePath } from '../routeModules';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 
-const NAV_ITEMS = [
+const NAV_ITEMS: Array<{
+  to: string;
+  paths: string[];
+  labelKey: string;
+  inactive: string;
+  active: string;
+  className: string;
+  lucideIcon?: LucideIcon;
+}> = [
   {
     to: '/',
     paths: ['/', '/russian'],
@@ -11,6 +20,15 @@ const NAV_ITEMS = [
     inactive: '/app-mobile/icons/nav/nav_home.svg',
     active: '/app-mobile/icons/nav/nav_home_active.svg',
     className: 'h-[22px] w-6',
+  },
+  {
+    to: '/games',
+    paths: ['/games'],
+    labelKey: 'nav.games',
+    inactive: '',
+    active: '',
+    className: 'h-6 w-6',
+    lucideIcon: Gamepad2,
   },
   {
     to: '/partner',
@@ -44,7 +62,7 @@ const NAV_ITEMS = [
     active: '/app-mobile/icons/nav/nav_profil_active.svg',
     className: 'h-6 w-6',
   },
-] as const;
+];
 
 export default function AppNavBar() {
   const navigate = useNavigate();
@@ -66,6 +84,7 @@ export default function AppNavBar() {
           const itemTo = item.to === '/profile' ? profilePath : item.to;
           const itemPaths = item.to === '/profile' ? ['/profile', '/teacher-cabinet'] : [...item.paths];
           const active = isActive(itemPaths);
+          const Lucide = item.lucideIcon;
           return (
             <button
               key={item.to}
@@ -83,13 +102,20 @@ export default function AppNavBar() {
                   active ? 'bg-app-primary/12' : ''
                 }`}
               >
-                <img
-                  src={active ? item.active : item.inactive}
-                  alt=""
-                  aria-hidden
-                  className={`${item.className} ${active ? 'nav-icon-active' : 'nav-icon'}`}
-                  decoding="async"
-                />
+                {Lucide ? (
+                  <Lucide
+                    className={`h-6 w-6 ${active ? 'text-app-primary' : 'text-app-icon-fg'}`}
+                    aria-hidden
+                  />
+                ) : (
+                  <img
+                    src={active ? item.active : item.inactive}
+                    alt=""
+                    aria-hidden
+                    className={`${item.className} ${active ? 'nav-icon-active' : 'nav-icon'}`}
+                    decoding="async"
+                  />
+                )}
               </span>
             </button>
           );
