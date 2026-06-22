@@ -11,6 +11,7 @@ import * as subscriptionService from './subscription.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
 
 const MIN_PASSWORD_LEN = 8;
+const ADMIN_WEEK_TRIAL_DAYS = 7;
 
 export type AdminCreateUserInput = {
   firstName: string;
@@ -18,7 +19,7 @@ export type AdminCreateUserInput = {
   identifier: string;
   password: string;
   adminId: number;
-  russianTariff: 'month' | 'year' | null;
+  russianTariff: 'month' | 'year' | 'week' | null;
   grantPatent: boolean;
   grantVnzh: boolean;
   /** To‘lov summalari (ixtiyoriy). Kiritilmasa — joriy narxlar ishlatiladi. */
@@ -41,7 +42,8 @@ export type AdminCreateUserResult = {
   };
   login_identifier: string;
   password: string;
-  grants: { russian: boolean; patent: boolean; vnzh: boolean };
+  grants: { russian: boolean; patent: boolean; vnzh: boolean; week_trial: boolean };
+  access_expires_at: string | null;
 };
 
 function isCurrencyCode(v: string): v is 'UZS' | 'USD' | 'RUB' {
@@ -96,6 +98,22 @@ async function insertApprovedPayment(
   if (second.error) {
     throw new Error(second.error.message || "To'lov yozilmadi (legacy)");
   }
+}
+
+/** Admin: 7 kunlik bepul sinov — to‘lov yozilmaydi (aks holda doimiy kirish qoladi). */
+async function grantRussianWeekTrial(supabase: DbClient, userId: number): Promise<string> {
+  const now = new Date();
+  const expiresAt = new Date(now);
+  expiresAt.setDate(expiresAt.getDate() + ADMIN_WEEK_TRIAL_DAYS);
+
+  const { error: updateUserErr } = await supabase
+    .from('users')
+    .update({ plan_name: '1 HAFTA', plan_expires_at: expiresAt.toISOString() })
+    .eq('id', userId);
+  if (updateUserErr) throw new Error(updateUserErr.message);
+
+  await subscriptionService.createOrExtendSubscription(supabase, userId, 'monthly', expiresAt);
+  return expiresAt.toISOString();
 }
 
 async function grantRussianAccess(
@@ -185,6 +203,12 @@ export async function adminCreateUserWithAccess(
   if (!password || typeof password !== 'string' || password.length < MIN_PASSWORD_LEN) {
     throw new Error(`Parol kamida ${MIN_PASSWORD_LEN} belgi bo‘lishi kerak`);
   }
+  if (russianTariff === 'week' && !parsed.phone) {
+    throw new Error("1 haftalik bepul sinov uchun telefon raqami kiritilishi kerak");
+  }
+  if (russianTariff === 'week' && (grantPatent || grantVnzh)) {
+    throw new Error('1 haftalik sinov bilan Patent yoki VNJ bir vaqtda berilmaydi');
+  }
 
   const ccRaw = String(input.courseCurrency ?? 'UZS');
   const courseCurrency: 'UZS' | 'USD' | 'RUB' = isCurrencyCode(ccRaw) ? ccRaw : 'UZS';
@@ -223,8 +247,12 @@ export async function adminCreateUserWithAccess(
   const { ensureUserInLeaderboard } = await import('./leaderboard.service.js');
   await ensureUserInLeaderboard(supabase, userId).catch(() => {});
 
+  let accessExpiresAt: string | null = null;
+
   try {
-    if (russianTariff) {
+    if (russianTariff === 'week') {
+      accessExpiresAt = await grantRussianWeekTrial(supabase, userId);
+    } else if (russianTariff) {
       let amount =
         input.amountRussian != null && Number.isFinite(Number(input.amountRussian))
           ? Number(input.amountRussian)
@@ -289,6 +317,8 @@ export async function adminCreateUserWithAccess(
       russian: Boolean(russianTariff),
       patent: grantPatent,
       vnzh: grantVnzh,
+      week_trial: russianTariff === 'week',
     },
+    access_expires_at: accessExpiresAt,
   };
 }

@@ -9,7 +9,7 @@ export default function AdminCreateUserPage() {
   const [lastName, setLastName] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [russianTariff, setRussianTariff] = useState<'none' | 'month' | 'year'>('none');
+  const [russianTariff, setRussianTariff] = useState<'none' | 'month' | 'year' | 'week'>('none');
   const [grantPatent, setGrantPatent] = useState(false);
   const [grantVnzh, setGrantVnzh] = useState(false);
   const [courseCurrency, setCourseCurrency] = useState<'UZS' | 'USD' | 'RUB'>('UZS');
@@ -20,6 +20,17 @@ export default function AdminCreateUserPage() {
   const [error, setError] = useState('');
   const [created, setCreated] = useState<AdminCreateUserResponse | null>(null);
   const [copiedField, setCopiedField] = useState<'login' | 'password' | null>(null);
+
+  const isWeekTrial = russianTariff === 'week';
+
+  function onRussianTariffChange(value: 'none' | 'month' | 'year' | 'week') {
+    setRussianTariff(value);
+    if (value === 'week') {
+      setGrantPatent(false);
+      setGrantVnzh(false);
+      setAmountRussian('');
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,9 +125,11 @@ export default function AdminCreateUserPage() {
           </div>
           <p className="text-xs text-slate-500 mt-4">
             ID: {created.user.id} ·{' '}
-            {[created.grants.russian && 'Rus tili', created.grants.patent && 'Patent', created.grants.vnzh && 'VNJ']
-              .filter(Boolean)
-              .join(', ')}
+            {created.grants.week_trial
+              ? `1 hafta bepul sinov${created.access_expires_at ? ` — ${new Date(created.access_expires_at).toLocaleString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} gacha` : ''}`
+              : [created.grants.russian && 'Rus tili', created.grants.patent && 'Patent', created.grants.vnzh && 'VNJ']
+                  .filter(Boolean)
+                  .join(', ')}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
@@ -160,7 +173,7 @@ export default function AdminCreateUserPage() {
       </Link>
       <h1 className="text-2xl font-semibold text-slate-900 mb-1">Yangi foydalanuvchi</h1>
       <p className="text-sm text-slate-600 mb-6">
-        Naqd yoki boshqa kanal orqali to‘langan mijoz uchun akkaunt yarating va kirishni darhol oching.
+        To‘langan mijoz yoki 1 haftalik bepul sinov uchun telefon raqami bilan akkaunt yarating.
       </p>
 
       {error && (
@@ -195,15 +208,22 @@ export default function AdminCreateUserPage() {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Telefon yoki email</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            {isWeekTrial ? 'Telefon raqami' : 'Telefon yoki email'}
+          </label>
           <input
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            placeholder="+998… yoki name@mail.com"
+            placeholder={isWeekTrial ? '+998 90 123 45 67' : '+998… yoki name@mail.com'}
             className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
             autoComplete="off"
             required
           />
+          {isWeekTrial && (
+            <p className="mt-1.5 text-xs text-slate-500">
+              Sinov rejimida faqat telefon raqami qabul qilinadi. 7 kundan keyin kirish avtomatik yopiladi.
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Parol (kamida 8 belgi)</label>
@@ -223,15 +243,22 @@ export default function AdminCreateUserPage() {
             <label className="block text-sm font-medium text-slate-700 mb-1">Rus tili kursi</label>
             <select
               value={russianTariff}
-              onChange={(e) => setRussianTariff(e.target.value as 'none' | 'month' | 'year')}
+              onChange={(e) => onRussianTariffChange(e.target.value as 'none' | 'month' | 'year' | 'week')}
               className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
             >
               <option value="none">Tanlanmagan</option>
+              <option value="week">1 hafta — bepul sinov</option>
               <option value="month">1 oy</option>
               <option value="year">1 yil</option>
             </select>
+            {isWeekTrial && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+                Foydalanuvchi 7 kun davomida Rus tili kursiga to‘liq kirish oladi. Muddat tugagach, obuna
+                bepul rejimga qaytadi.
+              </div>
+            )}
           </div>
-          {russianTariff !== 'none' && (
+          {russianTariff !== 'none' && russianTariff !== 'week' && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Rus tili — to‘lov summasi (UZS, ixtiyoriy)
@@ -246,11 +273,12 @@ export default function AdminCreateUserPage() {
             </div>
           )}
 
-          <div className="flex flex-col gap-3">
+          <div className={`flex flex-col gap-3 ${isWeekTrial ? 'opacity-50 pointer-events-none' : ''}`}>
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={grantPatent}
+                disabled={isWeekTrial}
                 onChange={(e) => setGrantPatent(e.target.checked)}
                 className="rounded border-slate-300 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
               />
@@ -260,6 +288,7 @@ export default function AdminCreateUserPage() {
               <input
                 type="checkbox"
                 checked={grantVnzh}
+                disabled={isWeekTrial}
                 onChange={(e) => setGrantVnzh(e.target.checked)}
                 className="rounded border-slate-300 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
               />
@@ -317,7 +346,7 @@ export default function AdminCreateUserPage() {
           className="w-full flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-white font-medium py-3 text-sm hover:bg-indigo-700 disabled:opacity-60 min-h-[48px]"
         >
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-          Saqlash va kirishni ochish
+          {isWeekTrial ? 'Sinov akkauntini yaratish' : 'Saqlash va kirishni ochish'}
         </button>
       </form>
     </div>

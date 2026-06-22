@@ -95,6 +95,22 @@ export async function registerTeacherAccount(payload: {
   return { ...data, isNewUser: true };
 }
 
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const res = await fetch(apiUrl('/api/auth/forgot-password'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const contentType = res.headers.get('content-type');
+  if (!contentType?.includes('application/json')) {
+    throw new Error(res.ok ? 'Xatolik yuz berdi' : 'Server xatosi. Keyinroq urinib ko‘ring.');
+  }
+  const data = (await res.json()) as { message?: string; error?: string };
+  if (!res.ok) throw new Error(data.error || 'Xatolik yuz berdi');
+  if (!data.message) throw new Error('Xatolik yuz berdi');
+  return { message: data.message };
+}
+
 export async function loginWithGoogle(idToken: string, ref?: string): Promise<AuthResponse> {
   const res = await fetch(apiUrl('/api/auth/google'), {
     method: 'POST',

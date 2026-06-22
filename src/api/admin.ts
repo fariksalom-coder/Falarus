@@ -316,7 +316,8 @@ export type AdminCreateUserResponse = {
   };
   login_identifier: string;
   password: string;
-  grants: { russian: boolean; patent: boolean; vnzh: boolean };
+  grants: { russian: boolean; patent: boolean; vnzh: boolean; week_trial: boolean };
+  access_expires_at: string | null;
 };
 
 export async function createAdminUser(body: {
@@ -324,7 +325,7 @@ export async function createAdminUser(body: {
   lastName: string;
   identifier: string;
   password: string;
-  russianTariff: 'month' | 'year' | null;
+  russianTariff: 'month' | 'year' | 'week' | null;
   grantPatent: boolean;
   grantVnzh: boolean;
   courseCurrency?: 'UZS' | 'USD' | 'RUB';

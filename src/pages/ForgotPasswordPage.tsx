@@ -1,30 +1,54 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { requestPasswordReset } from '../api/auth';
 import { AuthButton } from '../components/auth/AuthButton';
+import { AuthFormBanner } from '../components/auth/AuthFormBanner';
 import { AuthGap, AuthPageScaffold, AuthScrollBody } from '../components/auth/AuthPageScaffold';
-import { AuthPasswordField } from '../components/auth/AuthPasswordField';
 import { AuthSectionTitle } from '../components/auth/AuthSectionTitle';
-import { AuthSegmentedTabs } from '../components/auth/AuthSegmentedTabs';
 import { AuthTextField } from '../components/auth/AuthTextField';
-import { IntlPhoneInput } from '../components/auth/IntlPhoneInput';
+import { EMAIL_REGEX } from '../constants/authStrings';
 import { useLocale } from '../context/LocaleContext';
 
-type Phase = 0 | 1 | 2;
-type ContactMode = 'phone' | 'email';
+type Phase = 'form' | 'success';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
   const { t } = useLocale();
-  const [phase, setPhase] = useState<Phase>(0);
-  const [mode, setMode] = useState<ContactMode>('phone');
+  const [phase, setPhase] = useState<Phase>('form');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSave = () => {
-    window.alert(t('auth.comingSoon'));
-    navigate('/login');
+  const handleSubmit = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setEmailError(t('auth.emailRequired'));
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmed)) {
+      setEmailError(t('auth.emailInvalid'));
+      return;
+    }
+
+    setSubmitting(true);
+    setEmailError(null);
+    setFormError(null);
+    try {
+      const result = await requestPasswordReset(trimmed);
+      setSuccessMessage(result.message);
+      setPhase('success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('auth.genericError');
+      if (message.toLowerCase().includes('fetch') || message.toLowerCase().includes('network')) {
+        setFormError(t('auth.networkError'));
+      } else {
+        setFormError(message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -32,96 +56,49 @@ export default function ForgotPasswordPage() {
       <AuthScrollBody>
         <div className="flex flex-col pb-6">
           <AuthSectionTitle
-            title={
-              phase === 0
-                ? t('auth.resetTitle')
-                : phase === 1
-                  ? t('auth.enterCodeTitle')
-                  : t('auth.newPasswordTitle')
-            }
-            subtitle={
-              phase === 0
-                ? t('auth.resetSubtitle')
-                : phase === 1
-                  ? t('auth.enterCodeSubtitle')
-                  : undefined
-            }
-            onBack={() => (phase === 0 ? navigate('/login') : setPhase((p) => (p - 1) as Phase))}
+            title={phase === 'form' ? t('auth.resetTitle') : t('auth.resetSuccessTitle')}
+            subtitle={phase === 'form' ? t('auth.resetSubtitle') : t('auth.resetSuccessSubtitle')}
+            onBack={() => (phase === 'form' ? navigate('/login') : setPhase('form'))}
           />
 
-          {phase === 0 ? (
+          {phase === 'form' ? (
             <>
-              <AuthSegmentedTabs
-                value={mode}
-                options={[
-                  { value: 'phone', label: t('auth.phone') },
-                  { value: 'email', label: t('auth.email') },
-                ]}
-                onChange={(value: ContactMode) => setMode(value)}
+              <AuthTextField
+                type="email"
+                autoComplete="email"
+                placeholder={t('auth.emailHint')}
+                value={email}
+                error={emailError ?? undefined}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError(null);
+                  setFormError(null);
+                }}
               />
               <AuthGap />
-              {mode === 'phone' ? (
-                <IntlPhoneInput />
-              ) : (
-                <AuthTextField
-                  type="email"
-                  placeholder={t('auth.emailHint')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              )}
-              <AuthGap />
-              <AuthButton label={t('auth.sendCode')} onClick={() => setPhase(1)} />
-            </>
-          ) : null}
-
-          {phase === 1 ? (
-            <>
-              <div className="flex justify-center gap-2">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => {
-                      const next = [...otp];
-                      next[index] = e.target.value.replace(/\D/g, '').slice(-1);
-                      setOtp(next);
-                    }}
-                    className="h-12 w-10 rounded-xl border border-[#C8DCF3] bg-white text-center text-lg font-semibold outline-none focus:border-[#2563EB] focus:ring-[1.2px] focus:ring-[#2563EB] sm:w-11"
-                  />
-                ))}
-              </div>
-              <AuthGap />
-              <button
-                type="button"
-                className="text-sm font-medium text-[#1E3A8A] underline underline-offset-2"
-              >
-                {t('auth.resendCode')}
-              </button>
-              <AuthGap />
-              <AuthButton label={t('auth.continueBtn')} onClick={() => setPhase(2)} />
-            </>
-          ) : null}
-
-          {phase === 2 ? (
-            <>
-              <AuthPasswordField
-                label={t('auth.createPassword')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+              {formError ? (
+                <>
+                  <AuthFormBanner message={formError} />
+                  <AuthGap />
+                </>
+              ) : null}
+              <AuthButton
+                label={t('auth.resetSendPassword')}
+                loading={submitting}
+                onClick={() => void handleSubmit()}
               />
-              <AuthGap />
-              <AuthPasswordField
-                label={t('auth.rewritePassword')}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              <AuthGap />
-              <AuthButton label={t('auth.savePassword')} onClick={handleSave} />
             </>
-          ) : null}
+          ) : (
+            <>
+              {successMessage ? (
+                <>
+                  <AuthFormBanner message={successMessage} variant="success" />
+                  <AuthGap />
+                </>
+              ) : null}
+              <AuthButton label={t('auth.logInTitle')} onClick={() => navigate('/login')} />
+            </>
+          )}
         </div>
       </AuthScrollBody>
     </AuthPageScaffold>

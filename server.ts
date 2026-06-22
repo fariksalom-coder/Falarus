@@ -700,6 +700,24 @@ async function startServer() {
     });
   });
 
+  app.post('/api/auth/forgot-password', authRateLimiter, async (req, res) => {
+    const emailRaw = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+    if (!emailRaw) {
+      return res.status(400).json({ error: 'Email kiritilishi shart' });
+    }
+    try {
+      const { requestPasswordResetByEmail } = await import('./server/services/passwordReset.service.ts');
+      const result = await requestPasswordResetByEmail(supabase, emailRaw);
+      if (result.ok === false) {
+        return res.status(result.status).json({ error: result.error });
+      }
+      res.json({ message: result.message });
+    } catch (e) {
+      console.error('[auth/forgot-password]', e);
+      res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  });
+
   app.post('/api/auth/teacher/login', authRateLimiter, async (req, res) => {
     const { password, identifier, email: legacyEmail } = req.body ?? {};
     const idRaw =

@@ -642,6 +642,9 @@ export type MessageCatalog = {
     termsSuffix: string;
     resetTitle: string;
     resetSubtitle: string;
+    resetSendPassword: string;
+    resetSuccessTitle: string;
+    resetSuccessSubtitle: string;
     sendCode: string;
     enterCodeTitle: string;
     enterCodeSubtitle: string;

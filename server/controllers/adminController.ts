@@ -537,7 +537,11 @@ export function createAdminController(supabase: DbClient) {
       const identifier = typeof body.identifier === 'string' ? body.identifier.trim() : '';
       const password = typeof body.password === 'string' ? body.password : '';
       const russianTariff =
-        body.russianTariff === 'month' || body.russianTariff === 'year' ? body.russianTariff : null;
+        body.russianTariff === 'month' ||
+        body.russianTariff === 'year' ||
+        body.russianTariff === 'week'
+          ? body.russianTariff
+          : null;
       const grantPatent = Boolean(body.grantPatent);
       const grantVnzh = Boolean(body.grantVnzh);
       const courseCurrency =
