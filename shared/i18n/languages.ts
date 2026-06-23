@@ -4,6 +4,7 @@
  */
 export const APP_LOCALES = [
   'uz',
+  'uzc',
   'ru',
   'en',
   'tg',
@@ -26,7 +27,8 @@ export type AppLanguageMeta = {
 };
 
 export const APP_LANGUAGES: AppLanguageMeta[] = [
-  { code: 'uz', label: "O'zbek", bcp47: 'uz' },
+  { code: 'uz', label: "O'zbek (lotin)", bcp47: 'uz' },
+  { code: 'uzc', label: "O'zbek (kirill)", bcp47: 'uz-Cyrl' },
   { code: 'ru', label: 'Русский', bcp47: 'ru' },
   { code: 'en', label: 'English', bcp47: 'en' },
   { code: 'tg', label: 'Тоҷикӣ', bcp47: 'tg' },
@@ -39,6 +41,8 @@ export const APP_LANGUAGES: AppLanguageMeta[] = [
 const LEGACY_LOCALE_MAP: Record<string, AppLocale> = {
   tj: 'tg',
   kg: 'ky',
+  'uz-cyrl': 'uzc',
+  uz_cyrl: 'uzc',
 };
 
 export function normalizeAppLocale(raw: string | null | undefined): AppLocale {

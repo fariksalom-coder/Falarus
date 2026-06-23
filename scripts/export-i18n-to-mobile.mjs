@@ -9,9 +9,10 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
-const locales = ['uz', 'ru', 'en', 'tg', 'ky', 'kk', 'tk', 'hi'];
+const locales = ['uz', 'uzc', 'ru', 'en', 'tg', 'ky', 'kk', 'tk', 'hi'];
 const localeToEnum = {
   uz: 'AppLocale.uz',
+  uzc: 'AppLocale.uzc',
   ru: 'AppLocale.ru',
   en: 'AppLocale.en',
   tg: 'AppLocale.tg',

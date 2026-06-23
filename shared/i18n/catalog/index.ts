@@ -7,6 +7,7 @@ import ky from './ky';
 import ru from './ru';
 import tg from './tg';
 import tk from './tk';
+import uzc from './uzc';
 import type { DeepPartial, MessageCatalog } from './types';
 import uz from './uz';
 
@@ -16,6 +17,7 @@ function mergeCatalog(overrides: DeepPartial<MessageCatalog>): MessageCatalog {
 
 export const MESSAGE_CATALOGS: Record<AppLocale, MessageCatalog> = {
   uz,
+  uzc,
   ru: mergeCatalog(ru),
   en: mergeCatalog(en),
   tg: mergeCatalog(tg),
