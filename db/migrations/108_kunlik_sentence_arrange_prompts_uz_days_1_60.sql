@@ -25,7 +25,7 @@ UPDATE public.daily_grammar_sentence_arrange SET prompt_text = '2 talaba va 3 ta
 UPDATE public.daily_grammar_sentence_arrange SET prompt_text = 'Men universitet talabasiman' WHERE day_number = 5 AND sort_order = 0 AND answer_ru = 'Я студентка университета';
 UPDATE public.daily_grammar_sentence_arrange SET prompt_text = 'Mening akam muhandis bo‘lib ishlaydi' WHERE day_number = 5 AND sort_order = 1 AND answer_ru = 'Мой брат работает инженером';
 UPDATE public.daily_grammar_sentence_arrange SET prompt_text = 'Kasbingiz nima?' WHERE day_number = 5 AND sort_order = 2 AND answer_ru = 'Кто вы по профессии?';
-UPDATE public.daily_grammar_sentence_arrange SET prompt_text = 'U shifokor, kasalxonada ishlaydi' WHERE day_number = 5 AND sort_order = 3 AND answer_ru = 'Она врач, работает в больнице';
+UPDATE public.daily_grammar_sentence_arrange SET prompt_text = 'U shifokor, kasalxonada ishlaydi' WHERE day_number = 5 AND sort_order = 3 AND answer_ru = 'Она врач работает в больнице';
 UPDATE public.daily_grammar_sentence_arrange SET prompt_text = 'Biz rus tili o‘qituvchilarimiz' WHERE day_number = 5 AND sort_order = 4 AND answer_ru = 'Мы преподаватели русского языка';
 UPDATE public.daily_grammar_sentence_arrange SET prompt_text = 'Otang qayerda ishlaydi?' WHERE day_number = 5 AND sort_order = 5 AND answer_ru = 'Где работает твой отец?';
 UPDATE public.daily_grammar_sentence_arrange SET prompt_text = 'Uning onasi – sotuvchi' WHERE day_number = 5 AND sort_order = 6 AND answer_ru = 'Его мама – продавщица';

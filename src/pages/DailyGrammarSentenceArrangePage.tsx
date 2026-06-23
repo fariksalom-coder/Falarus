@@ -13,6 +13,7 @@ import {
 } from '../hooks/useKunlikSequentialGate';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { getSentenceArrangeDisplayPrompt } from '../utils/sentenceArrangeDisplayPrompt';
+import { normSentenceArrangeAnswer } from '../../shared/sentenceArrangeAnswer';
 
 type PoolItem = { id: string; word: string; used: boolean };
 
@@ -24,10 +25,6 @@ const shuffle = <T,>(items: T[]): T[] => {
   }
   return arr;
 };
-
-function normSentence(s: string): string {
-  return s.trim().toLowerCase().replace(/\s+/g, ' ');
-}
 
 export default function DailyGrammarSentenceArrangePage() {
   const { dayNum } = useParams<{ dayNum: string }>();
@@ -168,8 +165,8 @@ export default function DailyGrammarSentenceArrangePage() {
       setCheckStatus('wrong');
       return;
     }
-    const built = normSentence(sentenceAnswer.join(' '));
-    const ok = built === normSentence(current.answerRu);
+    const built = normSentenceArrangeAnswer(sentenceAnswer.join(' '));
+    const ok = built === normSentenceArrangeAnswer(current.answerRu);
     if (ok) {
       setCheckStatus('correct');
       setFeedback("To'g'ri!");
