@@ -29,7 +29,7 @@ export default function DailyVocabPairsPage() {
   useRememberKunlikDay(dayNumber);
   const gateEnabled = isValidDailyCourseDay(dayNumber);
   const { gatePending } = useKunlikSequentialGate(dayNumber, gateEnabled);
-  const { patchDay } = useKunlikProgress();
+  const { patchDay, getDay } = useKunlikProgress();
   const hubPath = `/kunlik-reja/kun/${dayNumber}/lugat`;
 
   const [loading, setLoading] = useState(true);
@@ -175,7 +175,9 @@ export default function DailyVocabPairsPage() {
     );
   }
 
-  if (!progress.step2Passed) {
+  const serverRow = getDay(dayNumber);
+  const canOpenPairs = progress.step2Passed || serverRow.words_match || serverRow.words_correct > 0;
+  if (!canOpenPairs) {
     return (
       <div className="min-h-screen bg-[#F8FAFC]">
         <main className="mx-auto max-w-[720px] px-4 py-8 pt-[max(1rem,env(safe-area-inset-top))]">

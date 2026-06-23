@@ -6,6 +6,7 @@ import {
   type KunlikDayProgress,
   type KunlikDayPatch,
 } from '../api/kunlikProgress';
+import { mergeKunlikDayPatch } from '../../shared/kunlikProgressMerge';
 import { TOTAL_DAYS } from '../data/dailyPlan';
 
 export type { KunlikDayProgress };
@@ -84,18 +85,7 @@ export function useKunlikProgress() {
   const patchDay = useCallback(
     (dayNumber: number, patch: KunlikDayPatch) => {
       const prev = sentRef.current.get(dayNumber) ?? { ...DEFAULT_ROW };
-      const diff: KunlikDayPatch = {};
-
-      for (const k of Object.keys(patch) as (keyof KunlikDayPatch)[]) {
-        let nextVal = patch[k];
-        if (k === 'speaking_level' && typeof nextVal === 'number') {
-          nextVal = Math.max(prev.speaking_level ?? 0, nextVal) as typeof nextVal;
-          if (nextVal === prev.speaking_level) continue;
-        }
-        if ((nextVal as unknown) !== (prev[k] as unknown)) {
-          (diff as Record<string, unknown>)[k] = nextVal;
-        }
-      }
+      const diff = mergeKunlikDayPatch(prev, patch);
 
       if (Object.keys(diff).length === 0) return;
 

@@ -12,6 +12,7 @@ import {
   useKunlikSequentialGate,
 } from '../hooks/useKunlikSequentialGate';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
+import { isKunlikGrammarFullyDone } from '../../shared/kunlikProgressMerge';
 import { getSentenceArrangeDisplayPrompt } from '../utils/sentenceArrangeDisplayPrompt';
 import { normSentenceArrangeAnswer } from '../../shared/sentenceArrangeAnswer';
 
@@ -97,6 +98,7 @@ export default function DailyGrammarSentenceArrangePage() {
   useEffect(() => {
     if (!kunlikLoaded || loading || error || tasks.length === 0) return;
     const row = getDay(dayNumber);
+    if (isKunlikGrammarFullyDone(row)) return;
     if (ruleMcqsCount > 0 && !row.grammar_1) {
       navigate(backPath, { replace: true });
       return;

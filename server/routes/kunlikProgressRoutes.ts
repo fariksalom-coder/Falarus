@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { DatabaseClient } from '../types/progress';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
+import { mergeKunlikDayPatch } from '../../shared/kunlikProgressMerge.js';
 import { applyKunlikDayCompletionSideEffects } from '../lib/kunlikCompletionSideEffects.js';
 import { getAccessForRequest } from './accessRoutes.js';
 import * as accessControlService from '../services/accessControl.service.js';
@@ -128,9 +129,14 @@ export function createKunlikProgressRoutes(
         ? ({ ...defaults, ...existing, day_number: dayNumber } satisfies KunlikDayRow)
         : defaults;
 
+      const diff = mergeKunlikDayPatch(prevRow, patch);
+      if (Object.keys(diff).length === 0) {
+        return res.json({ success: true, noop: true });
+      }
+
       const merged: KunlikDayRow = {
         ...prevRow,
-        ...patch,
+        ...diff,
         day_number: dayNumber,
       };
 

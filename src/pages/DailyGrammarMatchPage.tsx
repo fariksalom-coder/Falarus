@@ -12,6 +12,7 @@ import {
   useKunlikSequentialGate,
 } from '../hooks/useKunlikSequentialGate';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
+import { isKunlikGrammarFullyDone } from '../../shared/kunlikProgressMerge';
 
 type MatchCard = { id: string; text: string; pairId: number; side: 'left' | 'right' };
 
@@ -125,6 +126,7 @@ export default function DailyGrammarMatchPage() {
   useEffect(() => {
     if (!kunlikLoaded || loading || error || matchSets.length === 0) return;
     const row = getDay(dayNumber);
+    if (isKunlikGrammarFullyDone(row)) return;
     if (ruleMcqsCount > 0 && !row.grammar_1) {
       navigate(backPath, { replace: true });
     }

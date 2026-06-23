@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { isValidDailyCourseDay, FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
+import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
 import { Check, ChevronLeft, ChevronRight, Crown, Edit3, FileText, RefreshCw } from 'lucide-react';
 import { fetchStreak, getCachedStreak, type StreakResponse } from '../api/activity';
 import { useAuth } from '../context/AuthContext';
@@ -91,7 +92,7 @@ function isGrammarDone(row: KunlikDayProgress): boolean {
 }
 
 function isVocabularyDone(row: KunlikDayProgress): boolean {
-  return row.words_learned > 0 && row.words_correct > 0 && row.words_match;
+  return row.words_match;
 }
 
 function isSpeakingDone(row: KunlikDayProgress, promptCount: number): boolean {
@@ -133,7 +134,8 @@ function buildQuestSlots(row: KunlikDayProgress, promptCount: number): QuestSlot
 }
 
 function isDayComplete(row: KunlikDayProgress, promptCount: number): boolean {
-  return buildQuestSlots(row, promptCount).every((slot) => slot.state === 'done');
+  const counts = new Map<number, number>([[row.day_number, promptCount]]);
+  return isKunlikDayRowFullyComplete(row, counts);
 }
 
 function findCurrentDay(rows: Map<number, KunlikDayProgress>, promptCounts: Map<number, number>): number {

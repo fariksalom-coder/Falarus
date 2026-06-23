@@ -26,7 +26,7 @@ export default function DailyVocabTestPage() {
   useRememberKunlikDay(dayNumber);
   const gateEnabled = isValidDailyCourseDay(dayNumber);
   const { gatePending } = useKunlikSequentialGate(dayNumber, gateEnabled);
-  const { patchDay } = useKunlikProgress();
+  const { patchDay, getDay } = useKunlikProgress();
   const hubPath = `/kunlik-reja/kun/${dayNumber}/lugat`;
 
   const [loading, setLoading] = useState(true);
@@ -134,7 +134,8 @@ export default function DailyVocabTestPage() {
     );
   }
 
-  const step1Done = progress.step1Completed;
+  const kunlikRow = getDay(dayNumber);
+  const step1Done = progress.step1Completed || kunlikRow.words_learned > 0 || kunlikRow.words_match;
 
   if (!step1Done) {
     return (

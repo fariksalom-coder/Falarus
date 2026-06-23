@@ -305,8 +305,13 @@ function DailyGrammarMashqlarGrid({
     seqHint: string | null;
   };
 
-  const unlock2 = kunlikLoaded && (ruleMcqsCount === 0 || grammar1Done);
-  const unlock3 = kunlikLoaded && unlock2 && (matchSetsCount === 0 || grammar2Done);
+  const unlock2 =
+    kunlikLoaded &&
+    (ruleMcqsCount === 0 || grammar1Done || grammar2Done || grammar3Done);
+  const unlock3 =
+    kunlikLoaded &&
+    (matchSetsCount === 0 || grammar2Done || grammar3Done) &&
+    unlock2;
 
   const rows: Row[] = [
     {
@@ -511,13 +516,16 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
 
   const p = loadDailyVocabProgress(dayNumber);
   const kp = getDay(dayNumber);
-  const step3CompletedUi = p.step3Completed || kp.words_match;
-  const learnedWords = p.step2Passed
+  const vocabDoneOnServer = kp.words_match;
+  const step1CompletedUi = p.step1Completed || kp.words_learned > 0 || vocabDoneOnServer;
+  const step2PassedUi = p.step2Passed || vocabDoneOnServer;
+  const step3CompletedUi = p.step3Completed || vocabDoneOnServer;
+  const learnedWords = step2PassedUi
     ? totalWords
     : p.step2Completed
       ? p.step2Correct
-      : p.step1Completed
-        ? p.step1Known
+      : step1CompletedUi
+        ? Math.max(p.step1Known, kp.words_learned)
         : 0;
 
   const step2Pct =
@@ -533,15 +541,15 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
       learnedWords={learnedWords}
       totalWords={totalWords}
       hasServerSnapshot={totalWords > 0}
-      step1Completed={p.step1Completed}
-      step1KnownDisplay={p.step1Known}
+      step1Completed={step1CompletedUi}
+      step1KnownDisplay={Math.max(p.step1Known, kp.words_learned)}
       step1UnknownDisplay={p.step1Unknown}
-      step2Completed={p.step2Completed}
-      step2Passed={p.step2Passed}
-      step2CorrectDisplay={p.step2Correct}
+      step2Completed={p.step2Completed || vocabDoneOnServer}
+      step2Passed={step2PassedUi}
+      step2CorrectDisplay={Math.max(p.step2Correct, kp.words_correct)}
       step2IncorrectDisplay={p.step2Incorrect}
       step2PercentageDisplay={step2Pct}
-      step3Unlocked={p.step2Passed}
+      step3Unlocked={step2PassedUi}
       step3Completed={step3CompletedUi}
       onOpenStep1={() => navigate(`${base}/tanishish`)}
       onOpenStep2={() => navigate(`${base}/test`)}
