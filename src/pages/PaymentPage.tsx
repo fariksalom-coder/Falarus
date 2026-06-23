@@ -104,7 +104,6 @@ export default function PaymentPage() {
   const [detailsLoading, setDetailsLoading] = useState(true);
   const [hasPendingPayment, setHasPendingPayment] = useState(false);
   const [legalAccepted, setLegalAccepted] = useState(false);
-  const [promoMeta, setPromoMeta] = useState<{ isActive: boolean; expiresAt: string | null } | null>(null);
 
   const productCode = normalizePaymentProductCode(state?.productCode);
   const isRussianCourse = productCode === 'russian';
@@ -158,16 +157,8 @@ export default function PaymentPage() {
         );
         if (isRussianCourse && tariffType) {
           const key = tariffType === 'year' ? 'year' : 'month';
-          const payload = prices as
-            | ({ month: number; year: number } & {
-                promo?: { is_active: boolean; expires_at: string | null };
-              })
-            | null;
+          const payload = prices as { month: number; year: number } | null;
           setPrice(payload?.[key] ?? null);
-          setPromoMeta({
-            isActive: Boolean(payload?.promo?.is_active),
-            expiresAt: payload?.promo?.expires_at ?? null,
-          });
           return;
         }
         if (isTeacherListing && listingPlanCode) {
@@ -177,7 +168,6 @@ export default function PaymentPage() {
         } else {
           setPrice(isCourseProductCode(productCode) ? getCourseProductPrice(productCode, currency) : null);
         }
-        setPromoMeta(null);
       })
       .catch(() => {
         setPaymentMethod({
@@ -343,11 +333,6 @@ export default function PaymentPage() {
           className="rounded-2xl border-2 shadow-sm p-6 mb-6"
           style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF' }}
         >
-          {promoMeta?.isActive ? (
-            <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
-              {t('payment.promoHint')}
-            </div>
-          ) : null}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900 mb-1">{t('payment.amountTitle')}</h2>

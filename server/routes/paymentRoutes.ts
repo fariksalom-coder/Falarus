@@ -156,19 +156,9 @@ export function createPaymentRoutes(
           userId,
           currency: 'UZS',
           tariffType: russianTariffType,
-          startPromoIfMissing: false,
         });
         amount = quote.finalAmount;
         baseAmount = quote.baseAmount;
-        discountAmount = quote.discountAmount;
-        discountMeta = quote.discountAmount > 0
-          ? {
-              campaign: 'russian-first-tariffs-30m',
-              expires_at: quote.promo.expiresAt,
-              currency: quote.currency,
-              tariff_type: quote.tariffType,
-            }
-          : null;
       } else {
         amount = getClickAmountForProduct({
           productCode,
@@ -388,19 +378,9 @@ export function createPaymentRoutes(
           userId,
           currency,
           tariffType: tariff_type === 'year' ? 'year' : 'month',
-          startPromoIfMissing: false,
         });
         amount = quote.finalAmount;
         baseAmount = quote.baseAmount;
-        discountAmount = quote.discountAmount;
-        discountMeta = quote.discountAmount > 0
-          ? {
-              campaign: 'russian-first-tariffs-30m',
-              expires_at: quote.promo.expiresAt,
-              currency: quote.currency,
-              tariff_type: quote.tariffType,
-            }
-          : null;
       } else if (isCourseProductCode(productCode)) {
         amount = getCourseProductPrice(productCode, currency);
         baseAmount = amount;

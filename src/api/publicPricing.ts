@@ -8,24 +8,8 @@ export type TariffPricesByCurrency = {
   year: number;
 };
 
-export type PromoQuote = {
-  base_amount: number;
-  final_amount: number;
-  discount_amount: number;
-};
-
 export type UserTariffPricesPayload = TariffPricesByCurrency & {
   currency: Currency;
-  quotes?: {
-    month: PromoQuote;
-    year: PromoQuote;
-  };
-  promo?: {
-    started_at: string | null;
-    expires_at: string | null;
-    is_active: boolean;
-    remaining_sec: number;
-  };
 };
 
 const PRICING_TTL_MS = 60_000;
@@ -47,11 +31,9 @@ export async function getTariffPricesByCurrency(
 
 export async function getUserTariffPricesByCurrency(
   token: string,
-  currency: Currency,
-  opts?: { startPromo?: boolean }
+  currency: Currency
 ): Promise<UserTariffPricesPayload> {
-  const sp = opts?.startPromo ? '&start_promo=1' : '';
-  const res = await fetch(apiUrl(`/api/user/tariff-prices?currency=${currency}${sp}`), {
+  const res = await fetch(apiUrl(`/api/user/tariff-prices?currency=${currency}`), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Narxlar yuklanmadi');
@@ -60,8 +42,6 @@ export async function getUserTariffPricesByCurrency(
     currency,
     month: Number(data.month) || 0,
     year: Number(data.year) || 0,
-    quotes: data.quotes,
-    promo: data.promo,
   };
 }
 

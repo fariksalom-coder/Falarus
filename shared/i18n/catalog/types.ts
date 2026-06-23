@@ -361,7 +361,6 @@ export type MessageCatalog = {
     pendingTitle: string;
     phoneCopy: string;
     phoneNumber: string;
-    promoHint: string;
     rahmatStartError: string;
     selectOrDrop: string;
     service: string;
@@ -380,15 +379,11 @@ export type MessageCatalog = {
     currencyUzs: string;
     currencyRub: string;
     currencyUsd: string;
-    promoCurrencyHint: string;
     pendingModalTitle: string;
     pendingModalBody: string;
     pendingModalCta: string;
   };
   pricing: {
-    promoTitle: string;
-    timeLeft: string;
-    buyNow: string;
     pendingNotice: string;
     alreadyActive: string;
     loadError: string;

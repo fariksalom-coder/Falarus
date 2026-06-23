@@ -13,15 +13,15 @@ const OPTIONS: { value: Currency; labelKey: 'payment.currencyUzs' | 'payment.cur
 type CurrencyModalProps = {
   onClose: () => void;
   onSelect: (currency: Currency) => void;
-  currencyPriceMeta?: Partial<Record<Currency, { final: number; base?: number; discount?: number }>>;
-  showPromoHint?: boolean;
+  tariffType: 'month' | 'year';
+  currencyPrices?: Partial<Record<Currency, { month: number; year: number }>>;
 };
 
 export default function CurrencyModal({
   onClose,
   onSelect,
-  currencyPriceMeta,
-  showPromoHint = false,
+  tariffType,
+  currencyPrices,
 }: CurrencyModalProps) {
   const { t } = useLocale();
   /** Portal + high z-index: escape MainLayout motion/transform overflow so the modal stays visible above bottom nav. */
@@ -51,50 +51,35 @@ export default function CurrencyModal({
         </h2>
         <p className="mb-6 text-sm text-app-text-muted">{t('payment.currencySubtitle')}</p>
         <div className="flex flex-col gap-3">
-          {OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onSelect(opt.value);
-                onClose();
-              }}
-              className="flex w-full items-center gap-4 rounded-xl border-2 border-app-border p-4 text-left transition-colors hover:border-app-primary hover:bg-app-primary/8"
-            >
-              <span className="text-2xl">
-                {opt.value === 'UZS' ? '🇺🇿' : opt.value === 'RUB' ? '🇷🇺' : '🇺🇸'}
-              </span>
-              <div>
-                <span className="block font-semibold text-app-text">
-                  {opt.value} — {t(opt.labelKey)}
+          {OPTIONS.map((opt) => {
+            const amount = currencyPrices?.[opt.value]?.[tariffType];
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onSelect(opt.value);
+                  onClose();
+                }}
+                className="flex w-full items-center gap-4 rounded-xl border-2 border-app-border p-4 text-left transition-colors hover:border-app-primary hover:bg-app-primary/8"
+              >
+                <span className="text-2xl">
+                  {opt.value === 'UZS' ? '🇺🇿' : opt.value === 'RUB' ? '🇷🇺' : '🇺🇸'}
                 </span>
-                <span className="text-sm text-app-text-muted">{opt.sub}</span>
-                {currencyPriceMeta?.[opt.value] && Number.isFinite(currencyPriceMeta[opt.value]?.final) ? (
-                  <span className="mt-1 block text-xs text-app-text-muted">
-                    {currencyPriceMeta[opt.value]?.discount ? (
-                      <>
-                        <span className="mr-1 line-through text-app-text-muted/70">
-                          {currencyPriceMeta[opt.value]?.base?.toLocaleString('ru-RU')}
-                        </span>
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                          {currencyPriceMeta[opt.value]?.final?.toLocaleString('ru-RU')}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="font-semibold text-app-text">
-                        {currencyPriceMeta[opt.value]?.final?.toLocaleString('ru-RU')}
-                      </span>
-                    )}
+                <div>
+                  <span className="block font-semibold text-app-text">
+                    {opt.value} — {t(opt.labelKey)}
                   </span>
-                ) : null}
-              </div>
-            </button>
-          ))}
-          {showPromoHint ? (
-            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-amber-500/12 dark:text-amber-200">
-              {t('payment.promoCurrencyHint')}
-            </p>
-          ) : null}
+                  <span className="text-sm text-app-text-muted">{opt.sub}</span>
+                  {amount != null && Number.isFinite(amount) && amount > 0 ? (
+                    <span className="mt-1 block text-xs font-semibold text-app-text">
+                      {amount.toLocaleString('ru-RU')}
+                    </span>
+                  ) : null}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

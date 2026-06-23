@@ -179,20 +179,9 @@ export async function createRahmatMulticardPayment(
       userId,
       currency: 'UZS',
       tariffType: russianTariffType,
-      startPromoIfMissing: false,
     });
     amount = quote.finalAmount;
     baseAmount = quote.baseAmount;
-    discountAmount = quote.discountAmount;
-    discountMeta =
-      quote.discountAmount > 0
-        ? {
-            campaign: 'russian-first-tariffs-30m',
-            expires_at: quote.promo.expiresAt,
-            currency: quote.currency,
-            tariff_type: quote.tariffType,
-          }
-        : null;
   } else if (productCode === 'teacher_listing' && listingPlanCode) {
     amount = getTeacherListingPriceUzs(listingPlanCode);
     baseAmount = amount;

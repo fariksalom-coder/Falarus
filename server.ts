@@ -917,42 +917,21 @@ async function startServer() {
     if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
       return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
     }
-    const startPromo = String(req.query.start_promo ?? '') === '1';
     try {
       const month = await resolveRussianTariffQuote(supabase, {
         userId: req.userId,
         currency: currency as 'UZS' | 'RUB' | 'USD',
         tariffType: 'month',
-        startPromoIfMissing: startPromo,
       });
       const year = await resolveRussianTariffQuote(supabase, {
         userId: req.userId,
         currency: currency as 'UZS' | 'RUB' | 'USD',
         tariffType: 'year',
-        startPromoIfMissing: startPromo,
       });
       return res.json({
         currency,
         month: month.finalAmount,
         year: year.finalAmount,
-        quotes: {
-          month: {
-            base_amount: month.baseAmount,
-            final_amount: month.finalAmount,
-            discount_amount: month.discountAmount,
-          },
-          year: {
-            base_amount: year.baseAmount,
-            final_amount: year.finalAmount,
-            discount_amount: year.discountAmount,
-          },
-        },
-        promo: {
-          started_at: month.promo.startedAt,
-          expires_at: month.promo.expiresAt,
-          is_active: month.promo.isActive,
-          remaining_sec: month.promo.remainingSec,
-        },
       });
     } catch (e) {
       console.error('[GET /api/user/tariff-prices]', e);

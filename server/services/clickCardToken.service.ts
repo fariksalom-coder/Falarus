@@ -538,19 +538,9 @@ export async function handleClickCardTokenPayment(
       userId,
       currency: 'UZS',
       tariffType: (tariffType ?? 'month'),
-      startPromoIfMissing: false,
     });
     amount = quote.finalAmount;
     baseAmount = quote.baseAmount;
-    discountAmount = quote.discountAmount;
-    discountMeta = quote.discountAmount > 0
-      ? {
-          campaign: 'russian-first-tariffs-30m',
-          expires_at: quote.promo.expiresAt,
-          currency: 'UZS',
-          tariff_type: quote.tariffType,
-        }
-      : null;
   } else if (isCourseProductCode(productCode)) {
     amount = getCourseProductPrice(productCode, 'UZS');
     baseAmount = amount;

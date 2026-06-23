@@ -105,12 +105,11 @@ async function applyAdminAccessGrants(
         ? Number(input.amountRussian)
         : 0;
     if (amount <= 0) {
-      const quote = await resolveRussianTariffQuote(supabase, {
-        userId,
-        currency: 'UZS',
-        tariffType: russianTariff,
-        startPromoIfMissing: false,
-      });
+        const quote = await resolveRussianTariffQuote(supabase, {
+          userId,
+          currency: 'UZS',
+          tariffType: russianTariff,
+        });
       amount = quote.finalAmount;
     }
     await grantRussianAccess(supabase, userId, russianTariff, adminId, amount);
