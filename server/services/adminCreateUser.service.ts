@@ -44,7 +44,143 @@ export type AdminCreateUserResult = {
   password: string;
   grants: { russian: boolean; patent: boolean; vnzh: boolean; week_trial: boolean };
   access_expires_at: string | null;
+  /** true when an existing account was updated instead of creating a new one */
+  updated_existing: boolean;
 };
+
+type ExistingUserRow = {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+async function findUserByIdentifier(
+  supabase: DbClient,
+  parsed: Extract<ReturnType<typeof parseContactIdentifier>, { ok: true }>
+): Promise<ExistingUserRow | null> {
+  const select = 'id, first_name, last_name, email, phone';
+
+  if (parsed.email) {
+    const { data, error } = await supabase
+      .from('users')
+      .select(select)
+      .eq('email', parsed.email)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as ExistingUserRow | null) ?? null;
+  }
+
+  const ph = parsed.phone!;
+  const byNormalized = await supabase
+    .from('users')
+    .select(select)
+    .eq('phone_normalized', ph)
+    .maybeSingle();
+  if (byNormalized.error) throw new Error(byNormalized.error.message);
+  if (byNormalized.data) return byNormalized.data as ExistingUserRow;
+
+  const byPhone = await supabase.from('users').select(select).eq('phone', ph).maybeSingle();
+  if (byPhone.error) throw new Error(byPhone.error.message);
+  return (byPhone.data as ExistingUserRow | null) ?? null;
+}
+
+async function applyAdminAccessGrants(
+  supabase: DbClient,
+  userId: number,
+  input: AdminCreateUserInput
+): Promise<string | null> {
+  const { adminId, russianTariff, grantPatent, grantVnzh } = input;
+  const ccRaw = String(input.courseCurrency ?? 'UZS');
+  const courseCurrency: 'UZS' | 'USD' | 'RUB' = isCurrencyCode(ccRaw) ? ccRaw : 'UZS';
+
+  let accessExpiresAt: string | null = null;
+
+  if (russianTariff === 'week') {
+    accessExpiresAt = await grantRussianWeekTrial(supabase, userId);
+  } else if (russianTariff) {
+    let amount =
+      input.amountRussian != null && Number.isFinite(Number(input.amountRussian))
+        ? Number(input.amountRussian)
+        : 0;
+    if (amount <= 0) {
+      const quote = await resolveRussianTariffQuote(supabase, {
+        userId,
+        currency: 'UZS',
+        tariffType: russianTariff,
+        startPromoIfMissing: false,
+      });
+      amount = quote.finalAmount;
+    }
+    await grantRussianAccess(supabase, userId, russianTariff, adminId, amount);
+  }
+
+  if (grantPatent) {
+    let amount =
+      input.amountPatent != null && Number.isFinite(Number(input.amountPatent))
+        ? Number(input.amountPatent)
+        : 0;
+    if (amount <= 0) {
+      amount = getCourseProductPrice('patent', courseCurrency);
+    }
+    await grantCourseAccess(supabase, userId, 'patent', adminId, amount, courseCurrency);
+  }
+
+  if (grantVnzh) {
+    let amount =
+      input.amountVnzh != null && Number.isFinite(Number(input.amountVnzh))
+        ? Number(input.amountVnzh)
+        : 0;
+    if (amount <= 0) {
+      amount = getCourseProductPrice('vnzh', courseCurrency);
+    }
+    await grantCourseAccess(supabase, userId, 'vnzh', adminId, amount, courseCurrency);
+  }
+
+  return accessExpiresAt;
+}
+
+function buildAdminUserResult(
+  user: ExistingUserRow,
+  identifier: string,
+  password: string,
+  russianTariff: AdminCreateUserInput['russianTariff'],
+  grantPatent: boolean,
+  grantVnzh: boolean,
+  accessExpiresAt: string | null,
+  updatedExisting: boolean
+): AdminCreateUserResult {
+  return {
+    user: {
+      id: Number(user.id),
+      firstName: user.first_name ?? '',
+      lastName: user.last_name ?? '',
+      email: user.email ?? null,
+      phone: user.phone ?? null,
+    },
+    login_identifier: identifier,
+    password,
+    grants: {
+      russian: Boolean(russianTariff),
+      patent: grantPatent,
+      vnzh: grantVnzh,
+      week_trial: russianTariff === 'week',
+    },
+    access_expires_at: accessExpiresAt,
+    updated_existing: updatedExisting,
+  };
+}
+
+async function invalidateUserAccessCaches(userId: number): Promise<void> {
+  subscriptionService.invalidateAccessCache(userId);
+  try {
+    const { invalidateLessonsCache } = await import('../cache/lessonsCache.js');
+    invalidateLessonsCache(userId);
+  } catch {
+    /* optional */
+  }
+}
 
 function isCurrencyCode(v: string): v is 'UZS' | 'USD' | 'RUB' {
   return v === 'UZS' || v === 'USD' || v === 'RUB';
@@ -178,7 +314,7 @@ async function grantCourseAccess(
 }
 
 /**
- * Admin panel: yangi foydalanuvchi yaratish va naqd / boshqa kanal orqali to‘langan tariflarni yozish.
+ * Admin panel: yangi foydalanuvchi yaratish yoki mavjud akkauntni yangilash (parol + kirish).
  */
 export async function adminCreateUserWithAccess(
   supabase: DbClient,
@@ -189,7 +325,6 @@ export async function adminCreateUserWithAccess(
     lastName,
     identifier: idRaw,
     password,
-    adminId,
     russianTariff,
     grantPatent,
     grantVnzh,
@@ -210,10 +345,50 @@ export async function adminCreateUserWithAccess(
     throw new Error('1 haftalik sinov bilan Patent yoki VNJ bir vaqtda berilmaydi');
   }
 
-  const ccRaw = String(input.courseCurrency ?? 'UZS');
-  const courseCurrency: 'UZS' | 'USD' | 'RUB' = isCurrencyCode(ccRaw) ? ccRaw : 'UZS';
-
   const hashedPassword = await bcrypt.hash(password, 10);
+  const existing = await findUserByIdentifier(supabase, parsed);
+
+  if (existing) {
+    const updateRow: Record<string, unknown> = {
+      first_name: firstName ?? '',
+      last_name: lastName ?? '',
+      password: hashedPassword,
+      onboarded: 1,
+    };
+    if (parsed.phone) {
+      updateRow.phone_raw = sanitizePhoneRaw(identifier);
+      updateRow.phone_normalized = parsed.phone;
+      updateRow.country_code = parsed.phoneCountryIso ?? null;
+      updateRow.phone = parsed.phone;
+    }
+
+    const { data: updated, error: updateErr } = await supabase
+      .from('users')
+      .update(updateRow)
+      .eq('id', existing.id)
+      .select('id, first_name, last_name, email, phone')
+      .single();
+
+    if (updateErr) {
+      throw new Error(updateErr.message || 'Foydalanuvchi yangilanmadi');
+    }
+
+    const userId = Number(updated.id);
+    const accessExpiresAt = await applyAdminAccessGrants(supabase, userId, input);
+    await invalidateUserAccessCaches(userId);
+
+    return buildAdminUserResult(
+      updated as ExistingUserRow,
+      identifier,
+      password,
+      russianTariff,
+      grantPatent,
+      grantVnzh,
+      accessExpiresAt,
+      true
+    );
+  }
+
   const insertRow: Record<string, unknown> = {
     first_name: firstName ?? '',
     last_name: lastName ?? '',
@@ -250,75 +425,22 @@ export async function adminCreateUserWithAccess(
   let accessExpiresAt: string | null = null;
 
   try {
-    if (russianTariff === 'week') {
-      accessExpiresAt = await grantRussianWeekTrial(supabase, userId);
-    } else if (russianTariff) {
-      let amount =
-        input.amountRussian != null && Number.isFinite(Number(input.amountRussian))
-          ? Number(input.amountRussian)
-          : 0;
-      if (amount <= 0) {
-        const quote = await resolveRussianTariffQuote(supabase, {
-          userId,
-          currency: 'UZS',
-          tariffType: russianTariff,
-          startPromoIfMissing: false,
-        });
-        amount = quote.finalAmount;
-      }
-      await grantRussianAccess(supabase, userId, russianTariff, adminId, amount);
-    }
-
-    if (grantPatent) {
-      let amount =
-        input.amountPatent != null && Number.isFinite(Number(input.amountPatent))
-          ? Number(input.amountPatent)
-          : 0;
-      if (amount <= 0) {
-        amount = getCourseProductPrice('patent', courseCurrency);
-      }
-      await grantCourseAccess(supabase, userId, 'patent', adminId, amount, courseCurrency);
-    }
-
-    if (grantVnzh) {
-      let amount =
-        input.amountVnzh != null && Number.isFinite(Number(input.amountVnzh))
-          ? Number(input.amountVnzh)
-          : 0;
-      if (amount <= 0) {
-        amount = getCourseProductPrice('vnzh', courseCurrency);
-      }
-      await grantCourseAccess(supabase, userId, 'vnzh', adminId, amount, courseCurrency);
-    }
+    accessExpiresAt = await applyAdminAccessGrants(supabase, userId, input);
   } catch (e) {
     await supabase.from('users').delete().eq('id', userId);
     throw e;
   }
 
-  subscriptionService.invalidateAccessCache(userId);
-  try {
-    const { invalidateLessonsCache } = await import('../cache/lessonsCache.js');
-    invalidateLessonsCache(userId);
-  } catch {
-    /* optional */
-  }
+  await invalidateUserAccessCaches(userId);
 
-  return {
-    user: {
-      id: userId,
-      firstName: user.first_name ?? '',
-      lastName: user.last_name ?? '',
-      email: user.email ?? null,
-      phone: user.phone ?? null,
-    },
-    login_identifier: identifier,
+  return buildAdminUserResult(
+    user as ExistingUserRow,
+    identifier,
     password,
-    grants: {
-      russian: Boolean(russianTariff),
-      patent: grantPatent,
-      vnzh: grantVnzh,
-      week_trial: russianTariff === 'week',
-    },
-    access_expires_at: accessExpiresAt,
-  };
+    russianTariff,
+    grantPatent,
+    grantVnzh,
+    accessExpiresAt,
+    false
+  );
 }

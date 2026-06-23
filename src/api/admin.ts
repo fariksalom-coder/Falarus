@@ -318,6 +318,7 @@ export type AdminCreateUserResponse = {
   password: string;
   grants: { russian: boolean; patent: boolean; vnzh: boolean; week_trial: boolean };
   access_expires_at: string | null;
+  updated_existing: boolean;
 };
 
 export async function createAdminUser(body: {

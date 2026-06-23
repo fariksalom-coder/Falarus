@@ -83,11 +83,12 @@ export default function AdminCreateUserPage() {
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-6 shadow-sm">
           <div className="flex items-center gap-2 text-emerald-800 font-semibold mb-4">
             <Check className="h-5 w-5" />
-            Foydalanuvchi yaratildi
+            {created.updated_existing ? 'Foydalanuvchi yangilandi' : 'Foydalanuvchi yaratildi'}
           </div>
           <p className="text-sm text-slate-700 mb-4">
-            Quyidagi login va parolni foydalanuvchiga bering. Parol boshqa ko‘rinmaydi — kerak bo‘lsa hozir
-            nusxalang.
+            {created.updated_existing
+              ? 'Mavjud akkaunt yangilandi: yangi parol o‘rnatildi va tanlangan kurslar uchun kirish ochildi.'
+              : 'Quyidagi login va parolni foydalanuvchiga bering. Parol boshqa ko‘rinmaydi — kerak bo‘lsa hozir nusxalang.'}
           </p>
           <div className="space-y-3 rounded-xl bg-white border border-slate-200 p-4">
             <div>
@@ -173,7 +174,8 @@ export default function AdminCreateUserPage() {
       </Link>
       <h1 className="text-2xl font-semibold text-slate-900 mb-1">Yangi foydalanuvchi</h1>
       <p className="text-sm text-slate-600 mb-6">
-        To‘langan mijoz yoki 1 haftalik bepul sinov uchun telefon raqami bilan akkaunt yarating.
+        Yangi akkaunt yarating yoki mavjud foydalanuvchini faollashtiring — telefon/email bo‘yicha topilsa,
+        parol va tarif yangilanadi.
       </p>
 
       {error && (
