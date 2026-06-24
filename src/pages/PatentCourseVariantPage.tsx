@@ -88,10 +88,12 @@ function ChoiceCard({
   question,
   answer,
   onSelect,
+  showQuestionNumber = true,
 }: {
   question: PatentExamChoiceQuestion;
   answer: string | number | undefined;
   onSelect: (value: number) => void;
+  showQuestionNumber?: boolean;
 }) {
   const answered = typeof answer === 'number';
   const keywords = getPatentQuestionKeywords(question);
@@ -99,7 +101,7 @@ function ChoiceCard({
   return (
     <div className="rounded-[24px] bg-white p-4 shadow-[0_14px_28px_rgba(96,132,184,0.12)] sm:p-5">
       <h2 className="text-[18px] font-bold leading-tight sm:text-[21px]" style={{ color: TEXT }}>
-        {question.questionNumber}.{' '}
+        {showQuestionNumber ? `${question.questionNumber}. ` : null}
         <HighlightKeywordText text={question.text} keyword={keywords.textKeyword} />
       </h2>
 
@@ -550,6 +552,7 @@ export default function PatentCourseVariantPage() {
                   question={currentChoiceBlock.question}
                   answer={answers[currentChoiceBlock.question.key]}
                   onSelect={(value) => setChoiceAnswer(currentChoiceBlock.question.key, value)}
+                  showQuestionNumber={!currentChoiceBlock.prompt}
                 />
               </div>
             ) : null}
