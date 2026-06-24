@@ -17,6 +17,8 @@ import type {
   PatentExamWrittenBlock,
 } from '../data/patentExamData';
 import { evaluatePatentVariant, isImageAssetOption, type PatentExamAnswerMap } from '../utils/patentExam';
+import { HighlightKeywordText } from '../utils/highlightKeywordText';
+import { getPatentQuestionKeywords } from '../utils/patentQuestionKeywords';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
@@ -92,11 +94,13 @@ function ChoiceCard({
   onSelect: (value: number) => void;
 }) {
   const answered = typeof answer === 'number';
+  const keywords = getPatentQuestionKeywords(question);
 
   return (
     <div className="rounded-[24px] bg-white p-4 shadow-[0_14px_28px_rgba(96,132,184,0.12)] sm:p-5">
       <h2 className="text-[18px] font-bold leading-tight sm:text-[21px]" style={{ color: TEXT }}>
-        {question.questionNumber}. {question.text}
+        {question.questionNumber}.{' '}
+        <HighlightKeywordText text={question.text} keyword={keywords.textKeyword} />
       </h2>
 
       <div className="mt-4 space-y-2.5">
@@ -160,7 +164,10 @@ function ChoiceCard({
                 <div className="flex items-center gap-3">
                   <div className="shrink-0">{icon}</div>
                   <div className="min-w-0 text-[16px] sm:text-[17px]" style={{ color: TEXT }}>
-                    {option}
+                    <HighlightKeywordText
+                      text={option}
+                      keyword={keywords.optionKeywords?.[optionIndex] ?? null}
+                    />
                   </div>
                 </div>
               )}

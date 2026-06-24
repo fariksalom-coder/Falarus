@@ -22,6 +22,7 @@
     "seed:admin": "tsx server/scripts/seedAdmin.ts",
     "seed:word-swipe": "tsx server/scripts/seedWordSwipeGame.ts",
     "import:patent": "python3 scripts/import_patent_exam.py",
+    "generate:patent-keywords": "tsx scripts/generate_patent_keywords.ts",
     "db:codegen": "kysely-codegen --dialect postgres --out-file server/lib/db-types.ts",
     "test:smoke": "node scripts/smoke-api.mjs",
     "test:smoke:full": "cross-env SMOKE_INCLUDE_LESSONS=1 node scripts/smoke-api.mjs",

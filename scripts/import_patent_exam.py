@@ -180,6 +180,27 @@ def normalize_option_media(option: str) -> str:
     return public_media_url(option) if MEDIA_NAME_RE.search(option) else option
 
 
+def choice_question_payload(
+    key: str,
+    question_number: int,
+    question: dict[str, Any],
+    options: list[str] | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "key": key,
+        "questionNumber": question_number,
+        "text": question["text"],
+        "options": options if options is not None else question["options"],
+        "correctIndex": question["correct"],
+    }
+    if question.get("textKeyword"):
+        payload["textKeyword"] = question["textKeyword"]
+    option_keywords = question.get("optionKeywords")
+    if isinstance(option_keywords, list) and any(option_keywords):
+        payload["optionKeywords"] = option_keywords
+    return payload
+
+
 def make_block(item: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
     source_id = str(item["id"])
     _, variant_part, question_part = source_id.split("_")
@@ -214,13 +235,7 @@ def make_block(item: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
             "mediaUrl": media_url,
             "transcript": transcript,
             "subQuestions": [
-                {
-                    "key": f"P_{variant_number}_{number}",
-                    "questionNumber": number,
-                    "text": question["text"],
-                    "options": question["options"],
-                    "correctIndex": question["correct"],
-                }
+                choice_question_payload(f"P_{variant_number}_{number}", number, question)
                 for number, question in zip(question_numbers, sub_questions)
             ],
         }
@@ -256,13 +271,16 @@ def make_block(item: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
         "prompt": prompt,
         "passage": passage,
         "mediaUrl": media_url,
-        "question": {
-            "key": source_id,
-            "questionNumber": question_number,
-            "text": question_payload.get("text") or "",
-            "options": normalized_options,
-            "correctIndex": question_payload.get("correct"),
-        },
+        "question": choice_question_payload(
+            source_id,
+            question_number,
+            {
+                **question_payload,
+                "text": question_payload.get("text") or "",
+                "correct": question_payload.get("correct"),
+            },
+            normalized_options,
+        ),
     }
     return block, copied_names
 
@@ -329,6 +347,8 @@ export type PatentExamChoiceQuestion = {{
   text: string;
   options: string[];
   correctIndex: number;
+  textKeyword?: string | null;
+  optionKeywords?: (string | null)[] | null;
 }};
 
 export type PatentExamAudioDoubleBlock = {{
