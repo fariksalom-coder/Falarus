@@ -164,10 +164,7 @@ function ChoiceCard({
                 <div className="flex items-center gap-3">
                   <div className="shrink-0">{icon}</div>
                   <div className="min-w-0 text-[16px] sm:text-[17px]" style={{ color: TEXT }}>
-                    <HighlightKeywordText
-                      text={option}
-                      keyword={keywords.optionKeywords?.[optionIndex] ?? null}
-                    />
+                    {option}
                   </div>
                 </div>
               )}
@@ -188,6 +185,7 @@ function WrittenCard({
   answer: string | number | undefined;
   onChange: (value: string) => void;
 }) {
+  const { t } = useLocale();
   const currentValue = typeof answer === 'string' ? answer : '';
   const hasValue = currentValue.trim().length > 0;
   const correct = hasValue

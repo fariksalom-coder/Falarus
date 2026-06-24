@@ -3,2102 +3,1006 @@
 
 export type PatentQuestionKeywordHints = {
   textKeyword?: string | null;
-  optionKeywords?: (string | null)[] | null;
 };
 
 export const PATENT_QUESTION_KEYWORDS: Record<string, PatentQuestionKeywordHints> = {
   "P_1_1": {
-    "optionKeywords": [
-      null,
-      null,
-      "в центре тестирования"
-    ]
+    "textKeyword": "говорят"
   },
   "P_1_2": {
-    "optionKeywords": [
-      "миграционную карту",
-      null,
-      null
-    ]
+    "textKeyword": "необходимо"
   },
   "P_1_3": {
-    "optionKeywords": [
-      "в торговом центре",
-      null,
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_1_4": {
-    "optionKeywords": [
-      null,
-      "у администратора",
-      null
-    ]
+    "textKeyword": "можно"
   },
   "P_1_5": {
-    "optionKeywords": [
-      null,
-      "в автобусе",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_1_6": {
-    "optionKeywords": [
-      "в 10 часов",
-      null,
-      null
-    ]
+    "textKeyword": "Экскурсия"
   },
   "P_1_8": {
-    "optionKeywords": [
-      null,
-      "в пятницу",
-      null
-    ]
+    "textKeyword": "приехала"
   },
   "P_1_9": {
-    "optionKeywords": [
-      null,
-      null,
-      "телефон"
-    ]
+    "textKeyword": "сотовой"
   },
   "P_1_10": {
-    "optionKeywords": [
-      null,
-      "Меня",
-      null
-    ]
+    "textKeyword": "зовут"
   },
   "P_1_11": {
-    "optionKeywords": [
-      "потому что",
-      null,
-      null
-    ]
+    "textKeyword": "приехали"
   },
   "P_1_12": {
-    "optionKeywords": [
-      null,
-      "День народного единства",
-      null
-    ]
+    "textKeyword": "празднуют"
   },
   "P_1_13": {
-    "optionKeywords": [
-      "Москва",
-      null,
-      null
-    ]
+    "textKeyword": "Российской"
   },
   "P_1_14": {
-    "optionKeywords": [
-      null,
-      "в 1945 г",
-      null
-    ]
+    "textKeyword": "Отечественная"
   },
   "P_1_15": {
-    "optionKeywords": [
-      "распада СССР в 1991 г",
-      null,
-      null
-    ]
+    "textKeyword": "Содружество"
+  },
+  "P_1_16": {
+    "textKeyword": "Российской"
   },
   "P_1_17": {
-    "textKeyword": "Российской",
-    "optionKeywords": [
-      null,
-      "иностранные граждане пользуются правами и несут обязанности наравне с гражданами Российской Федерации",
-      null
-    ]
+    "textKeyword": "Конституции"
   },
   "P_1_18": {
-    "optionKeywords": [
-      null,
-      "записи актов гражданского состояния",
-      null
-    ]
+    "textKeyword": "регистрация"
   },
   "P_1_19": {
-    "optionKeywords": [
-      "в полицию",
-      null,
-      null
-    ]
+    "textKeyword": "иностранного"
   },
   "P_1_20": {
-    "optionKeywords": [
-      null,
-      null,
-      "паспорт и миграционную карту"
-    ]
+    "textKeyword": "иметь"
   },
   "P_1_21": {
-    "optionKeywords": [
-      null,
-      null,
-      "административной"
-    ]
+    "textKeyword": "ответственности"
   },
   "P_1_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "законодательством"
   },
   "P_2_1": {
-    "optionKeywords": [
-      null,
-      null,
-      "в автобусе"
-    ]
+    "textKeyword": "говорят"
   },
   "P_2_2": {
-    "optionKeywords": [
-      "через одну остановку",
-      null,
-      null
-    ]
+    "textKeyword": "выходит"
   },
   "P_2_3": {
-    "optionKeywords": [
-      "в торговом центре",
-      null,
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_2_4": {
-    "optionKeywords": [
-      "взять свой потерянный телефон",
-      null,
-      null
-    ]
+    "textKeyword": "можно"
   },
   "P_2_5": {
-    "optionKeywords": [
-      null,
-      "о спорте",
-      null
-    ]
+    "textKeyword": "Новый"
   },
   "P_2_6": {
-    "optionKeywords": [
-      "в парке",
-      null,
-      null
-    ]
+    "textKeyword": "Вчера"
   },
   "P_2_8": {
-    "optionKeywords": [
-      null,
-      null,
-      "стол"
-    ]
+    "textKeyword": "магазине"
   },
   "P_2_9": {
-    "optionKeywords": [
-      null,
-      null,
-      "работает"
-    ]
+    "textKeyword": "магазине"
   },
   "P_2_10": {
-    "optionKeywords": [
-      null,
-      "тебе",
-      null
-    ]
+    "textKeyword": "Сколько"
+  },
+  "P_2_11": {
+    "textKeyword": "чувствуете"
   },
   "P_2_12": {
-    "optionKeywords": [
-      null,
-      null,
-      "Рождество Христово"
-    ]
+    "textKeyword": "празднуют"
   },
   "P_2_13": {
-    "optionKeywords": [
-      null,
-      "Владивосток",
-      null
-    ]
+    "textKeyword": "Российской"
   },
   "P_2_14": {
-    "optionKeywords": [
-      null,
-      null,
-      "Великобритания"
-    ]
+    "textKeyword": "Отечественной"
   },
   "P_2_15": {
-    "optionKeywords": [
-      null,
-      "Жуков",
-      null
-    ]
+    "textKeyword": "Прославленный"
+  },
+  "P_2_16": {
+    "textKeyword": "Российской"
   },
   "P_2_17": {
-    "optionKeywords": [
-      null,
-      null,
-      "пользоваться родным языком"
-    ]
+    "textKeyword": "иностранному"
   },
   "P_2_18": {
-    "optionKeywords": [
-      "только в письменной",
-      null,
-      null
-    ]
+    "textKeyword": "заключается"
   },
   "P_2_19": {
-    "optionKeywords": [
-      "в полицию и консульство своей страны",
-      null,
-      null
-    ]
+    "textKeyword": "обратиться"
   },
   "P_2_20": {
-    "optionKeywords": [
-      null,
-      "7 рабочих дней",
-      null
-    ]
+    "textKeyword": "иностранного"
   },
   "P_2_21": {
-    "optionKeywords": [
-      null,
-      "Кодекс Российской Федерации об административных правонарушениях",
-      null
-    ]
+    "textKeyword": "устанавливает"
   },
   "P_2_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "законодательством"
   },
   "P_3_1": {
-    "optionKeywords": [
-      null,
-      null,
-      "в гостинице"
-    ]
+    "textKeyword": "говорят"
   },
   "P_3_2": {
-    "optionKeywords": [
-      null,
-      "нет свободных номеров",
-      null
-    ]
-  },
-  "P_3_3": {
-    "optionKeywords": [
-      null,
-      null,
-      "изменил часы работы"
-    ]
+    "textKeyword": "услышали"
   },
   "P_3_4": {
-    "optionKeywords": [
-      "до 9 часов вечера",
-      null,
-      null
-    ]
+    "textKeyword": "работать"
   },
   "P_3_5": {
-    "optionKeywords": [
-      null,
-      "на стройке",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_3_6": {
-    "optionKeywords": [
-      "вечером",
-      null,
-      null
-    ]
+    "textKeyword": "вернулась"
   },
   "P_3_8": {
-    "optionKeywords": [
-      "6 июня",
-      null,
-      null
-    ]
+    "textKeyword": "родился"
   },
   "P_3_9": {
-    "optionKeywords": [
-      null,
-      "слушать",
-      null
-    ]
+    "textKeyword": "хорошую"
   },
   "P_3_10": {
-    "optionKeywords": [
-      null,
-      null,
-      "у вас"
-    ]
+    "textKeyword": "Скажите"
   },
   "P_3_11": {
-    "optionKeywords": [
-      null,
-      "потому что",
-      null
-    ]
+    "textKeyword": "разрешение"
   },
   "P_3_12": {
-    "optionKeywords": [
-      null,
-      "День защитника Отечества",
-      null
-    ]
+    "textKeyword": "отмечают"
   },
   "P_3_13": {
-    "optionKeywords": [
-      null,
-      null,
-      "Санкт-Петербург"
-    ]
+    "textKeyword": "Российской"
   },
   "P_3_14": {
-    "optionKeywords": [
-      null,
-      null,
-      "в 1945 г"
-    ]
+    "textKeyword": "Отечественная"
   },
   "P_3_15": {
-    "optionKeywords": [
-      null,
-      null,
-      "в 1991 г"
-    ]
+    "textKeyword": "Содружество"
+  },
+  "P_3_16": {
+    "textKeyword": "Российской"
   },
   "P_3_17": {
-    "optionKeywords": [
-      null,
-      "выбирать род занятий",
-      null
-    ]
+    "textKeyword": "иностранному"
   },
   "P_3_18": {
-    "textKeyword": "Имеет"
+    "textKeyword": "иностранный"
+  },
+  "P_3_19": {
+    "textKeyword": "иностранный"
   },
   "P_3_20": {
-    "optionKeywords": [
-      null,
-      "Работа",
-      null
-    ]
+    "textKeyword": "миграционной"
   },
   "P_3_21": {
-    "optionKeywords": [
-      "30 календарных дней",
-      null,
-      null
-    ]
+    "textKeyword": "уполномоченную"
   },
   "P_3_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "установленный"
   },
   "P_4_1": {
-    "optionKeywords": [
-      "друзей",
-      null,
-      null
-    ]
+    "textKeyword": "разговор"
   },
   "P_4_2": {
-    "optionKeywords": [
-      null,
-      null,
-      "Он дал мобильный телефон"
-    ]
+    "textKeyword": "сделал"
   },
   "P_4_3": {
-    "optionKeywords": [
-      null,
-      "в магазине",
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_4_4": {
-    "optionKeywords": [
-      null,
-      null,
-      "принимают только наличные деньги"
-    ]
+    "textKeyword": "Кассы"
   },
   "P_4_5": {
-    "optionKeywords": [
-      "в транспорте",
-      null,
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_4_6": {
-    "optionKeywords": [
-      null,
-      "строителем",
-      null
-    ]
+    "textKeyword": "работать"
+  },
+  "P_4_8": {
+    "textKeyword": "находится"
   },
   "P_4_9": {
-    "optionKeywords": [
-      null,
-      "врачом",
-      null
-    ]
+    "textKeyword": "работает"
   },
   "P_4_10": {
-    "optionKeywords": [
-      null,
-      null,
-      "ваши"
-    ]
+    "textKeyword": "документы"
+  },
+  "P_4_11": {
+    "textKeyword": "поликлиника"
   },
   "P_4_12": {
-    "optionKeywords": [
-      null,
-      "9 мая",
-      null
-    ]
+    "textKeyword": "отмечают"
   },
   "P_4_13": {
-    "optionKeywords": [
-      null,
-      null,
-      "Новосибирск"
-    ]
+    "textKeyword": "находится"
   },
   "P_4_14": {
-    "optionKeywords": [
-      null,
-      "Путин",
-      null
-    ]
+    "textKeyword": "Севастополя"
   },
   "P_4_15": {
-    "optionKeywords": [
-      null,
-      "Борис Ельцин",
-      null
-    ]
+    "textKeyword": "Содружества"
+  },
+  "P_4_16": {
+    "textKeyword": "Российской"
   },
   "P_4_17": {
-    "optionKeywords": [
-      null,
-      null,
-      "говорить на родном языке"
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_4_18": {
-    "optionKeywords": [
-      "однократно пройти дактилоскопическую регистрацию и фотографирование при получении разрешения на работу",
-      null,
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_4_19": {
-    "optionKeywords": [
-      "В полицию",
-      null,
-      null
-    ]
+    "textKeyword": "обратиться"
   },
   "P_4_20": {
-    "optionKeywords": [
-      null,
-      "миграционную карту",
-      null
-    ]
+    "textKeyword": "необходимо"
   },
   "P_4_21": {
-    "textKeyword": "Российской",
-    "optionKeywords": [
-      "Уголовным кодексом Российской Федерации",
-      null,
-      null
-    ]
+    "textKeyword": "ответственность"
   },
   "P_4_22": {
-    "textKeyword": "Верно",
-    "optionKeywords": [
-      null,
-      "Неверно"
-    ]
+    "textKeyword": "депортирован"
   },
   "P_5_1": {
-    "optionKeywords": [
-      "в магазине",
-      null,
-      null
-    ]
+    "textKeyword": "говорят"
   },
   "P_5_2": {
-    "optionKeywords": [
-      null,
-      null,
-      "овощи"
-    ]
+    "textKeyword": "купить"
   },
   "P_5_3": {
-    "optionKeywords": [
-      "в магазине",
-      null,
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_5_4": {
-    "optionKeywords": [
-      null,
-      "5 этаже",
-      null
-    ]
+    "textKeyword": "можно"
   },
   "P_5_5": {
-    "optionKeywords": [
-      null,
-      "на вокзале",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_5_6": {
-    "optionKeywords": [
-      "недавно",
-      null,
-      null
-    ]
+    "textKeyword": "работает"
   },
   "P_5_8": {
-    "optionKeywords": [
-      null,
-      "яблоки",
-      null
-    ]
+    "textKeyword": "магазине"
   },
   "P_5_9": {
-    "optionKeywords": [
-      null,
-      null,
-      "отдыхали"
-    ]
+    "textKeyword": "Вчера"
   },
   "P_5_10": {
-    "optionKeywords": [
-      null,
-      null,
-      "поваром"
-    ]
+    "textKeyword": "подруга"
   },
   "P_5_11": {
-    "optionKeywords": [
-      "какая",
-      null,
-      null
-    ]
+    "textKeyword": "смотрел"
   },
   "P_5_12": {
-    "optionKeywords": [
-      null,
-      null,
-      "12 июня"
-    ]
+    "textKeyword": "отмечают"
   },
   "P_5_13": {
-    "optionKeywords": [
-      "Самара",
-      null,
-      null
-    ]
-  },
-  "P_5_14": {
-    "optionKeywords": [
-      "советские войска взяли Берлин",
-      null,
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_5_15": {
-    "optionKeywords": [
-      "Гагарин",
-      null,
-      null
-    ]
+    "textKeyword": "совершил"
+  },
+  "P_5_16": {
+    "textKeyword": "Российской"
   },
   "P_5_17": {
-    "optionKeywords": [
-      "непосредственно затрагивающими его права и свободы",
-      null,
-      null
-    ]
+    "textKeyword": "иностранному"
   },
   "P_5_18": {
-    "optionKeywords": [
-      null,
-      null,
-      "обеспечивается законодательством Российской Федерации"
-    ]
+    "textKeyword": "медицинскую"
+  },
+  "P_5_19": {
+    "textKeyword": "Иностранному"
   },
   "P_5_20": {
-    "textKeyword": "временно",
-    "optionKeywords": [
-      null,
-      null,
-      "по истечении срока временного пребывания"
-    ]
+    "textKeyword": "пребывающий"
   },
   "P_5_21": {
-    "optionKeywords": [
-      null,
-      null,
-      "административной"
-    ]
+    "textKeyword": "ответственности"
   },
   "P_5_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "административного"
   },
   "P_6_1": {
-    "optionKeywords": [
-      null,
-      null,
-      "в банке"
-    ]
+    "textKeyword": "говорят"
   },
   "P_6_2": {
-    "optionKeywords": [
-      "миграционную карту",
-      null,
-      null
-    ]
+    "textKeyword": "иметь"
   },
   "P_6_3": {
-    "optionKeywords": [
-      "для мужчин",
-      null,
-      null
-    ]
+    "textKeyword": "купить"
   },
   "P_6_4": {
-    "optionKeywords": [
-      "в торговом центре",
-      null,
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_6_5": {
-    "optionKeywords": [
-      null,
-      "в гостинице",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_6_6": {
-    "optionKeywords": [
-      "днём",
-      null,
-      null
-    ]
+    "textKeyword": "Прослушивание"
+  },
+  "P_6_8": {
+    "textKeyword": "велосипед"
+  },
+  "P_6_9": {
+    "textKeyword": "Вчера"
   },
   "P_6_10": {
-    "optionKeywords": [
-      null,
-      "в поликлинике",
-      null
-    ]
+    "textKeyword": "Утром"
   },
   "P_6_11": {
-    "optionKeywords": [
-      "потому что",
-      null,
-      null
-    ]
+    "textKeyword": "воскресенье"
   },
   "P_6_12": {
-    "optionKeywords": [
-      null,
-      "День защитника Отечества",
-      null
-    ]
+    "textKeyword": "празднуют"
   },
   "P_6_13": {
-    "optionKeywords": [
-      null,
-      null,
-      "Екатеринбург"
-    ]
+    "textKeyword": "находится"
   },
   "P_6_14": {
-    "optionKeywords": [
-      null,
-      null,
-      "в 1993 г"
-    ]
+    "textKeyword": "Конституция"
   },
   "P_6_15": {
-    "optionKeywords": [
-      "Берлин",
-      null,
-      null
-    ]
+    "textKeyword": "советские"
+  },
+  "P_6_16": {
+    "textKeyword": "Российской"
   },
   "P_6_17": {
-    "optionKeywords": [
-      "заключение брака",
-      null,
-      null
-    ]
+    "textKeyword": "иностранного"
   },
   "P_6_18": {
-    "optionKeywords": [
-      null,
-      null,
-      "не является правом"
-    ]
+    "textKeyword": "государственные"
   },
   "P_6_19": {
-    "optionKeywords": [
-      null,
-      "в полицию",
-      null
-    ]
+    "textKeyword": "правоохранительный"
   },
   "P_6_20": {
-    "optionKeywords": [
-      null,
-      null,
-      "90 дней"
-    ]
+    "textKeyword": "иностранный"
   },
   "P_6_21": {
-    "optionKeywords": [
-      "Депортация",
-      null,
-      null
-    ]
+    "textKeyword": "Принудительная"
   },
   "P_6_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "освидетельствования"
   },
   "P_7_1": {
-    "optionKeywords": [
-      "в аптеке",
-      null,
-      null
-    ]
+    "textKeyword": "говорят"
   },
   "P_7_2": {
-    "optionKeywords": [
-      "сто пятьдесят рублей",
-      null,
-      null
-    ]
+    "textKeyword": "стоит"
   },
   "P_7_3": {
-    "optionKeywords": [
-      "о работе",
-      null,
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_7_4": {
-    "optionKeywords": [
-      null,
-      "молодым людям",
-      null
-    ]
+    "textKeyword": "предлагает"
   },
   "P_7_5": {
-    "optionKeywords": [
-      null,
-      "в детском саду",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_7_6": {
-    "optionKeywords": [
-      "петь",
-      null,
-      null
-    ]
+    "textKeyword": "концерте"
   },
   "P_7_8": {
-    "optionKeywords": [
-      null,
-      null,
-      "пятница"
-    ]
+    "textKeyword": "Сегодня"
   },
   "P_7_9": {
-    "optionKeywords": [
-      "адрес",
-      null,
-      null
-    ]
+    "textKeyword": "пожалуйста"
+  },
+  "P_7_10": {
+    "textKeyword": "Познакомьтесь"
   },
   "P_7_11": {
-    "optionKeywords": [
-      "поэтому",
-      null,
-      null
-    ]
+    "textKeyword": "работали"
   },
   "P_7_12": {
-    "optionKeywords": [
-      "Международный женский день",
-      null,
-      null
-    ]
+    "textKeyword": "отмечают"
   },
   "P_7_13": {
-    "optionKeywords": [
-      null,
-      "Ростов-на-Дону",
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_7_14": {
-    "optionKeywords": [
-      null,
-      null,
-      "в 2014 г"
-    ]
+    "textKeyword": "Севастополя"
   },
   "P_7_15": {
-    "optionKeywords": [
-      "Германии",
-      null,
-      null
-    ]
+    "textKeyword": "напали"
+  },
+  "P_7_16": {
+    "textKeyword": "Российской"
   },
   "P_7_17": {
-    "optionKeywords": [
-      null,
-      "свободный труд",
-      null
-    ]
+    "textKeyword": "иностранного"
   },
   "P_7_18": {
-    "optionKeywords": [
-      "Обязанность",
-      null,
-      null
-    ]
+    "textKeyword": "дактилоскопической"
+  },
+  "P_7_19": {
+    "textKeyword": "Иностранному"
   },
   "P_7_20": {
-    "optionKeywords": [
-      null,
-      null,
-      "при выдаче разрешения на работу"
-    ]
+    "textKeyword": "продлевается"
   },
   "P_7_21": {
-    "optionKeywords": [
-      null,
-      null,
-      "при сообщении заведомо ложных сведений о себе"
-    ]
+    "textKeyword": "иностранному"
   },
   "P_7_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "административного"
   },
   "P_8_1": {
-    "optionKeywords": [
-      null,
-      "в магазине",
-      null
-    ]
+    "textKeyword": "говорят"
   },
   "P_8_2": {
-    "optionKeywords": [
-      null,
-      "триста рублей",
-      null
-    ]
+    "textKeyword": "Продукты"
   },
   "P_8_3": {
-    "optionKeywords": [
-      null,
-      "из Екатеринбурга",
-      null
-    ]
+    "textKeyword": "Самолёт"
   },
   "P_8_4": {
-    "optionKeywords": [
-      "в 17 часов",
-      null,
-      null
-    ]
+    "textKeyword": "прилетает"
   },
   "P_8_5": {
-    "optionKeywords": [
-      null,
-      "на вокзале",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_8_6": {
-    "optionKeywords": [
-      "поваром",
-      null,
-      null
-    ]
+    "textKeyword": "работает"
   },
   "P_8_8": {
-    "optionKeywords": [
-      "по-русски",
-      null,
-      null
-    ]
+    "textKeyword": "говорит"
   },
   "P_8_9": {
-    "optionKeywords": [
-      null,
-      null,
-      "часы"
-    ]
+    "textKeyword": "Можно"
   },
   "P_8_10": {
-    "optionKeywords": [
-      "на работу",
-      null,
-      null
-    ]
+    "textKeyword": "Завтра"
   },
   "P_8_11": {
-    "optionKeywords": [
-      "сколько",
-      null,
-      null
-    ]
+    "textKeyword": "стоит"
   },
   "P_8_12": {
-    "optionKeywords": [
-      null,
-      null,
-      "4 ноября"
-    ]
+    "textKeyword": "народного"
   },
   "P_8_13": {
-    "optionKeywords": [
-      null,
-      "Омск",
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_8_14": {
-    "optionKeywords": [
-      null,
-      null,
-      "в 2014 г"
-    ]
+    "textKeyword": "Севастополя"
   },
   "P_8_15": {
-    "optionKeywords": [
-      "военачальник",
-      null,
-      null
-    ]
+    "textKeyword": "Жуков"
+  },
+  "P_8_16": {
+    "textKeyword": "Российской"
   },
   "P_8_17": {
-    "optionKeywords": [
-      null,
-      null,
-      "равенство прав мужчин и женщин"
-    ]
+    "textKeyword": "устанавливает"
   },
   "P_8_18": {
-    "optionKeywords": [
-      null,
-      "могут поступить на военную службу по контракту",
-      null
-    ]
+    "textKeyword": "Иностранные"
   },
   "P_8_19": {
-    "textKeyword": "работу",
-    "optionKeywords": [
-      "при наличии патента или разрешения на работу",
-      null,
-      null
-    ]
+    "textKeyword": "Иностранному"
   },
   "P_8_20": {
-    "optionKeywords": [
-      null,
-      "Визой",
-      null
-    ]
+    "textKeyword": "определяется"
   },
   "P_8_21": {
-    "optionKeywords": [
-      null,
-      null,
-      "задержание по подозрению в преступлении"
-    ]
+    "textKeyword": "иностранному"
   },
   "P_8_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "административные"
   },
   "P_9_1": {
-    "optionKeywords": [
-      null,
-      null,
-      "на улице"
-    ]
+    "textKeyword": "говорят"
   },
   "P_9_2": {
-    "optionKeywords": [
-      "справа от белого здания",
-      null,
-      null
-    ]
+    "textKeyword": "метро"
   },
   "P_9_3": {
-    "optionKeywords": [
-      "из Казани",
-      null,
-      null
-    ]
+    "textKeyword": "едет"
   },
   "P_9_4": {
-    "optionKeywords": [
-      "в час дня",
-      null,
-      null
-    ]
+    "textKeyword": "приезжает"
   },
   "P_9_5": {
-    "optionKeywords": [
-      null,
-      "в автобусе",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_9_6": {
-    "optionKeywords": [
-      "в поликлинике",
-      null,
-      null
-    ]
+    "textKeyword": "работает"
   },
   "P_9_8": {
-    "optionKeywords": [
-      null,
-      "смотреть",
-      null
-    ]
+    "textKeyword": "телевизору"
   },
   "P_9_9": {
-    "optionKeywords": [
-      null,
-      null,
-      "какой"
-    ]
+    "textKeyword": "помнишь"
   },
   "P_9_10": {
-    "optionKeywords": [
-      null,
-      "в марте",
-      null
-    ]
+    "textKeyword": "приехали"
+  },
+  "P_9_11": {
+    "textKeyword": "настоящее"
   },
   "P_9_12": {
-    "optionKeywords": [
-      null,
-      "8 марта",
-      null
-    ]
+    "textKeyword": "Международный"
   },
   "P_9_13": {
-    "optionKeywords": [
-      null,
-      "Красноярск",
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_9_14": {
-    "optionKeywords": [
-      null,
-      "в 1991 г",
-      null
-    ]
+    "textKeyword": "Содружество"
   },
   "P_9_15": {
-    "optionKeywords": [
-      "первый космонавт",
-      null,
-      null
-    ]
+    "textKeyword": "Гагарин"
+  },
+  "P_9_16": {
+    "textKeyword": "Российской"
   },
   "P_9_17": {
-    "textKeyword": "осуществивших въезд в Российскую Федерацию",
-    "optionKeywords": [
-      null,
-      null,
-      "осуществивших въезд в Российскую Федерацию"
-    ]
+    "textKeyword": "распространяются"
   },
   "P_9_18": {
-    "optionKeywords": [
-      "законно находящихся на территории Российской Федерации",
-      null,
-      null
-    ]
+    "textKeyword": "распространяется"
   },
   "P_9_19": {
-    "optionKeywords": [
-      null,
-      "на бесплатную медицинскую помощь",
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_9_20": {
-    "textKeyword": "Российской",
-    "optionKeywords": [
-      null,
-      "срок сокращается в случае неразрешения въезда на территорию Российской Федерации",
-      null
-    ]
+    "textKeyword": "иностранного"
   },
   "P_9_21": {
-    "optionKeywords": [
-      null,
-      null,
-      "предъявить действительные документы"
-    ]
+    "textKeyword": "Государственной"
   },
   "P_9_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "административной"
   },
   "P_10_1": {
-    "optionKeywords": [
-      "в торговом центре",
-      null,
-      null
-    ]
+    "textKeyword": "говорят"
   },
   "P_10_2": {
-    "optionKeywords": [
-      null,
-      "получить деньги",
-      null
-    ]
+    "textKeyword": "хочет"
   },
   "P_10_3": {
-    "optionKeywords": [
-      "в торговом центре",
-      null,
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_10_4": {
-    "optionKeywords": [
-      null,
-      null,
-      "для детей"
-    ]
+    "textKeyword": "магазин"
   },
   "P_10_5": {
-    "optionKeywords": [
-      null,
-      "в школе",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_10_6": {
-    "optionKeywords": [
-      "на велосипеде",
-      null,
-      null
-    ]
+    "textKeyword": "продукты"
   },
   "P_10_8": {
-    "optionKeywords": [
-      "телефон",
-      null,
-      null
-    ]
+    "textKeyword": "купить"
   },
   "P_10_9": {
-    "optionKeywords": [
-      null,
-      null,
-      "гуляли"
-    ]
+    "textKeyword": "друзьями"
+  },
+  "P_10_10": {
+    "textKeyword": "двадцать"
   },
   "P_10_11": {
-    "optionKeywords": [
-      "куда",
-      null,
-      null
-    ]
+    "textKeyword": "Извините"
   },
   "P_10_12": {
-    "optionKeywords": [
-      null,
-      "1 мая",
-      null
-    ]
+    "textKeyword": "Праздник"
   },
   "P_10_13": {
-    "optionKeywords": [
-      null,
-      null,
-      "Пермь"
-    ]
-  },
-  "P_10_14": {
-    "optionKeywords": [
-      null,
-      "состоялся первый в мире полёт человека в космос",
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_10_15": {
-    "optionKeywords": [
-      "Крым",
-      null,
-      null
-    ]
+    "textKeyword": "состав"
+  },
+  "P_10_16": {
+    "textKeyword": "Российской"
   },
   "P_10_17": {
-    "optionKeywords": [
-      null,
-      null,
-      "обеспечивающие достойную жизнь и свободное развитие человека"
-    ]
+    "textKeyword": "государство"
   },
   "P_10_18": {
-    "optionKeywords": [
-      null,
-      "сохранять культурное наследие",
-      null
-    ]
+    "textKeyword": "устанавливает"
   },
   "P_10_19": {
-    "textKeyword": "документ",
-    "optionKeywords": [
-      null,
-      "документ о медицинском освидетельствовании",
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_10_20": {
-    "optionKeywords": [
-      null,
-      null,
-      "выдаче патента"
-    ]
+    "textKeyword": "иностранного"
   },
   "P_10_21": {
-    "optionKeywords": [
-      null,
-      null,
-      "административный штраф"
-    ]
+    "textKeyword": "Осуществление"
   },
   "P_10_22": {
-    "textKeyword": "Верно",
-    "optionKeywords": [
-      null,
-      "Неверно"
-    ]
+    "textKeyword": "непогашенную"
   },
   "P_11_1": {
-    "optionKeywords": [
-      null,
-      "на улице",
-      null
-    ]
+    "textKeyword": "говорят"
   },
   "P_11_2": {
-    "optionKeywords": [
-      "лекарство",
-      null,
-      null
-    ]
+    "textKeyword": "купить"
   },
   "P_11_3": {
-    "optionKeywords": [
-      null,
-      null,
-      "в субботу"
-    ]
+    "textKeyword": "праздник"
   },
   "P_11_4": {
-    "optionKeywords": [
-      "праздник для детей",
-      null,
-      null
-    ]
+    "textKeyword": "центральной"
   },
   "P_11_5": {
-    "optionKeywords": [
-      null,
-      "в поликлинике",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_11_6": {
-    "optionKeywords": [
-      "была в зоопарке",
-      null,
-      null
-    ]
+    "textKeyword": "Вчера"
   },
   "P_11_8": {
-    "optionKeywords": [
-      "делаешь",
-      null,
-      null
-    ]
+    "textKeyword": "воскресенье"
   },
   "P_11_9": {
-    "optionKeywords": [
-      "работала",
-      null,
-      null
-    ]
+    "textKeyword": "Раньше"
+  },
+  "P_11_10": {
+    "textKeyword": "пожалуйста"
+  },
+  "P_11_11": {
+    "textKeyword": "называется"
   },
   "P_11_12": {
-    "textKeyword": "России",
-    "optionKeywords": [
-      null,
-      null,
-      "День России"
-    ]
+    "textKeyword": "отмечают"
   },
   "P_11_13": {
-    "optionKeywords": [
-      null,
-      "Севастополь",
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_11_14": {
-    "optionKeywords": [
-      "военачальник",
-      null,
-      null
-    ]
+    "textKeyword": "Жуков"
   },
   "P_11_15": {
-    "optionKeywords": [
-      null,
-      null,
-      "в 1993 г"
-    ]
+    "textKeyword": "Конституция"
+  },
+  "P_11_16": {
+    "textKeyword": "Российской"
   },
   "P_11_17": {
-    "optionKeywords": [
-      null,
-      "свободно передвигаться по территории страны",
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_11_18": {
-    "optionKeywords": [
-      null,
-      "уплачивать налоги",
-      null
-    ]
+    "textKeyword": "иностранный"
   },
   "P_11_19": {
-    "optionKeywords": [
-      "Трудовой",
-      null,
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_11_20": {
-    "optionKeywords": [
-      null,
-      null,
-      "фамилию и имя"
-    ]
+    "textKeyword": "миграционном"
   },
   "P_11_21": {
-    "optionKeywords": [
-      "административный штраф",
-      null,
-      null
-    ]
+    "textKeyword": "миграционного"
   },
   "P_11_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "административное"
   },
   "P_12_1": {
-    "optionKeywords": [
-      "друзей",
-      null,
-      null
-    ]
+    "textKeyword": "разговор"
   },
   "P_12_2": {
-    "optionKeywords": [
-      null,
-      null,
-      "осенью"
-    ]
+    "textKeyword": "хотят"
   },
   "P_12_3": {
-    "optionKeywords": [
-      null,
-      null,
-      "в метро"
-    ]
+    "textKeyword": "услышать"
   },
   "P_12_4": {
-    "optionKeywords": [
-      "Театральная",
-      null,
-      null
-    ]
+    "textKeyword": "едет"
   },
   "P_12_5": {
-    "optionKeywords": [
-      null,
-      "в кафе",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_12_6": {
-    "optionKeywords": [
-      "в кафе",
-      null,
-      null
-    ]
+    "textKeyword": "работает"
   },
   "P_12_8": {
-    "optionKeywords": [
-      "бесплатно",
-      null,
-      null
-    ]
+    "textKeyword": "можно"
   },
   "P_12_9": {
-    "optionKeywords": [
-      null,
-      "семейное",
-      null
-    ]
+    "textKeyword": "положение"
   },
   "P_12_10": {
-    "optionKeywords": [
-      null,
-      null,
-      "у тебя"
-    ]
+    "textKeyword": "братья"
   },
   "P_12_11": {
-    "optionKeywords": [
-      null,
-      "потому что",
-      null
-    ]
+    "textKeyword": "говорят"
   },
   "P_12_12": {
-    "textKeyword": "России",
-    "optionKeywords": [
-      null,
-      null,
-      "День России"
-    ]
+    "textKeyword": "отмечают"
   },
   "P_12_13": {
-    "optionKeywords": [
-      "Севастополь",
-      null,
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_12_14": {
-    "optionKeywords": [
-      null,
-      "Германии",
-      null
-    ]
+    "textKeyword": "напали"
   },
   "P_12_15": {
-    "optionKeywords": [
-      null,
-      "1612 г",
-      null
-    ]
+    "textKeyword": "польско-литовских"
+  },
+  "P_12_16": {
+    "textKeyword": "Российской"
   },
   "P_12_17": {
-    "optionKeywords": [
-      null,
-      "выбирать место пребывания",
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_12_18": {
-    "optionKeywords": [
-      null,
-      null,
-      "платить законно установленные налоги и сборы"
-    ]
+    "textKeyword": "иностранный"
   },
   "P_12_19": {
-    "optionKeywords": [
-      "свидетельство о рождении детей",
-      null,
-      null
-    ]
+    "textKeyword": "иностранному"
   },
   "P_12_20": {
-    "optionKeywords": [
-      null,
-      "факт въезда иностранного гражданина в РФ",
-      null
-    ]
+    "textKeyword": "миграционный"
   },
   "P_12_21": {
-    "optionKeywords": [
-      null,
-      null,
-      "административное выдворение за пределы РФ"
-    ]
+    "textKeyword": "миграционного"
   },
   "P_12_22": {
-    "textKeyword": "Верно",
-    "optionKeywords": [
-      null,
-      "неверно"
-    ]
+    "textKeyword": "дисциплинарного"
   },
   "P_13_1": {
-    "optionKeywords": [
-      null,
-      null,
-      "на железнодорожном вокзале"
-    ]
+    "textKeyword": "говорят"
   },
   "P_13_2": {
-    "optionKeywords": [
-      null,
-      null,
-      "в 3 часа"
-    ]
+    "textKeyword": "Отправление"
   },
   "P_13_3": {
-    "optionKeywords": [
-      null,
-      "в торговом центре",
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_13_4": {
-    "optionKeywords": [
-      null,
-      null,
-      "осенью"
-    ]
+    "textKeyword": "можно"
   },
   "P_13_5": {
-    "optionKeywords": [
-      null,
-      "в поликлинике",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_13_6": {
-    "optionKeywords": [
-      "на почте",
-      null,
-      null
-    ]
+    "textKeyword": "работы"
   },
   "P_13_8": {
-    "optionKeywords": [
-      "кроссовки",
-      null,
-      null
-    ]
+    "textKeyword": "бесплатно"
   },
   "P_13_9": {
-    "optionKeywords": [
-      null,
-      null,
-      "приглашаю"
-    ]
+    "textKeyword": "рождения"
   },
   "P_13_10": {
-    "optionKeywords": [
-      null,
-      "кассиром",
-      null
-    ]
+    "textKeyword": "работаешь"
   },
   "P_13_11": {
-    "optionKeywords": [
-      "поэтому",
-      null,
-      null
-    ]
+    "textKeyword": "холодно"
   },
   "P_13_12": {
-    "optionKeywords": [
-      null,
-      "День Победы",
-      null
-    ]
+    "textKeyword": "отмечают"
   },
   "P_13_13": {
-    "optionKeywords": [
-      "Челябинск",
-      null,
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_13_14": {
-    "optionKeywords": [
-      null,
-      null,
-      "1993 г"
-    ]
+    "textKeyword": "Конституция"
   },
   "P_13_15": {
-    "optionKeywords": [
-      null,
-      null,
-      "Смута и интервенция"
-    ]
+    "textKeyword": "относится"
+  },
+  "P_13_16": {
+    "textKeyword": "Российской"
   },
   "P_13_17": {
-    "optionKeywords": [
-      null,
-      null,
-      "пользоваться учреждениями культуры"
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_13_18": {
-    "optionKeywords": [
-      null,
-      "сохранять природу и окружающую среду",
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_13_19": {
-    "optionKeywords": [
-      null,
-      null,
-      "свидетельство о праве собственности"
-    ]
+    "textKeyword": "иностранному"
   },
   "P_13_20": {
-    "optionKeywords": [
-      null,
-      null,
-      "факт въезда иностранного гражданина в РФ"
-    ]
+    "textKeyword": "миграционный"
   },
   "P_13_21": {
-    "optionKeywords": [
-      null,
-      null,
-      "административный штраф"
-    ]
+    "textKeyword": "миграционного"
   },
   "P_13_22": {
-    "textKeyword": "Верно"
+    "textKeyword": "Административное"
   },
   "P_14_1": {
-    "optionKeywords": [
-      null,
-      null,
-      "в поликлинике"
-    ]
+    "textKeyword": "говорят"
   },
   "P_14_2": {
-    "optionKeywords": [
-      "в кабинете 15",
-      null,
-      null
-    ]
+    "textKeyword": "можно"
   },
   "P_14_3": {
-    "optionKeywords": [
-      "в торговом центре",
-      null,
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_14_4": {
-    "optionKeywords": [
-      "на зимнюю одежду",
-      null,
-      null
-    ]
+    "textKeyword": "Скидки"
   },
   "P_14_5": {
-    "optionKeywords": [
-      null,
-      "на вокзале",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_14_6": {
-    "optionKeywords": [
-      null,
-      null,
-      "в воскресенье"
-    ]
+    "textKeyword": "выходной"
   },
   "P_14_8": {
-    "optionKeywords": [
-      "рюкзак",
-      null,
-      null
-    ]
+    "textKeyword": "учебников"
   },
   "P_14_9": {
-    "optionKeywords": [
-      null,
-      "посылку",
-      null
-    ]
+    "textKeyword": "отправить"
   },
   "P_14_10": {
-    "optionKeywords": [
-      null,
-      "Андрею",
-      null
-    ]
+    "textKeyword": "перерыв"
+  },
+  "P_14_11": {
+    "textKeyword": "пожалуйста"
   },
   "P_14_12": {
-    "optionKeywords": [
-      null,
-      "День защитника Отечества",
-      null
-    ]
+    "textKeyword": "отмечают"
   },
   "P_14_13": {
-    "textKeyword": "город",
-    "optionKeywords": [
-      "Нижний Новгород",
-      null,
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_14_14": {
-    "optionKeywords": [
-      "Российская революция",
-      null,
-      null
-    ]
+    "textKeyword": "началась"
   },
   "P_14_15": {
-    "optionKeywords": [
-      null,
-      null,
-      "2014 г"
-    ]
+    "textKeyword": "Республика"
+  },
+  "P_14_16": {
+    "textKeyword": "Российской"
   },
   "P_14_17": {
-    "optionKeywords": [
-      null,
-      null,
-      "иметь имущество в собственности"
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_14_18": {
-    "optionKeywords": [
-      "платить законно установленные налоги и сборы",
-      null,
-      null
-    ]
+    "textKeyword": "иностранный"
   },
   "P_14_19": {
-    "optionKeywords": [
-      "договор социального найма",
-      null,
-      null
-    ]
+    "textKeyword": "иностранному"
   },
   "P_14_20": {
-    "optionKeywords": [
-      null,
-      null,
-      "визой"
-    ]
+    "textKeyword": "иностранного"
   },
   "P_14_21": {
-    "optionKeywords": [
-      "административное выдворение за пределы РФ",
-      null,
-      null
-    ]
+    "textKeyword": "миграционного"
   },
   "P_14_22": {
-    "textKeyword": "Верно",
-    "optionKeywords": [
-      null,
-      "неверно"
-    ]
+    "textKeyword": "исправительных"
   },
   "P_15_1": {
-    "optionKeywords": [
-      "на автовокзале",
-      null,
-      null
-    ]
+    "textKeyword": "говорят"
   },
   "P_15_2": {
-    "optionKeywords": [
-      null,
-      null,
-      "в кассе"
-    ]
+    "textKeyword": "продаются"
   },
   "P_15_3": {
-    "optionKeywords": [
-      "на железнодорожном вокзале",
-      null,
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_15_4": {
-    "optionKeywords": [
-      null,
-      null,
-      "в 17"
-    ]
+    "textKeyword": "Следующий"
   },
   "P_15_5": {
-    "optionKeywords": [
-      "в банке",
-      null,
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_15_6": {
-    "optionKeywords": [
-      null,
-      "в метро",
-      null
-    ]
+    "textKeyword": "работает"
   },
   "P_15_8": {
-    "optionKeywords": [
-      null,
-      "в конце августа",
-      null
-    ]
+    "textKeyword": "поедем"
   },
   "P_15_9": {
-    "optionKeywords": [
-      null,
-      null,
-      "рубашку"
-    ]
+    "textKeyword": "магазине"
+  },
+  "P_15_10": {
+    "textKeyword": "пожалуйста"
+  },
+  "P_15_11": {
+    "textKeyword": "едет"
   },
   "P_15_12": {
-    "optionKeywords": [
-      null,
-      null,
-      "4 ноября"
-    ]
+    "textKeyword": "народного"
   },
   "P_15_13": {
-    "optionKeywords": [
-      null,
-      "Омск",
-      null
-    ]
+    "textKeyword": "находится"
   },
   "P_15_14": {
-    "optionKeywords": [
-      null,
-      null,
-      "2022 г"
-    ]
+    "textKeyword": "Специальная"
   },
   "P_15_15": {
-    "optionKeywords": [
-      null,
-      "1961 г",
-      null
-    ]
+    "textKeyword": "совершил"
+  },
+  "P_15_16": {
+    "textKeyword": "Российской"
   },
   "P_15_17": {
-    "optionKeywords": [
-      "свободно передвигаться",
-      null,
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_15_18": {
-    "optionKeywords": [
-      null,
-      "беречь памятники истории и культуры",
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_15_19": {
-    "optionKeywords": [
-      null,
-      null,
-      "документ о праве собственности на жильё"
-    ]
+    "textKeyword": "иностранному"
   },
   "P_15_20": {
-    "optionKeywords": [
-      null,
-      "по истечении срока действия визы",
-      null
-    ]
+    "textKeyword": "пребывающий"
   },
   "P_15_21": {
-    "optionKeywords": [
-      "административное выдворение за пределы РФ",
-      null,
-      null
-    ]
+    "textKeyword": "миграционного"
   },
   "P_15_22": {
-    "textKeyword": "Верно",
-    "optionKeywords": [
-      null,
-      "неверно"
-    ]
+    "textKeyword": "привлечением"
   },
   "P_16_1": {
-    "optionKeywords": [
-      null,
-      null,
-      "в поликлинике"
-    ]
+    "textKeyword": "говорят"
   },
   "P_16_2": {
-    "optionKeywords": [
-      null,
-      "на вторник",
-      null
-    ]
+    "textKeyword": "Записаться"
   },
   "P_16_3": {
-    "optionKeywords": [
-      "в поликлинике",
-      null,
-      null
-    ]
+    "textKeyword": "услышать"
   },
   "P_16_4": {
-    "optionKeywords": [
-      null,
-      "паспорт",
-      null
-    ]
+    "textKeyword": "иметь"
   },
   "P_16_5": {
-    "optionKeywords": [
-      null,
-      "на улице",
-      null
-    ]
+    "textKeyword": "объявление"
   },
   "P_16_6": {
-    "optionKeywords": [
-      "в музее",
-      null,
-      null
-    ]
+    "textKeyword": "прошлой"
   },
   "P_16_8": {
-    "optionKeywords": [
-      null,
-      null,
-      "чашку"
-    ]
+    "textKeyword": "магазине"
   },
   "P_16_9": {
-    "optionKeywords": [
-      null,
-      "Уважаемые",
-      null
-    ]
+    "textKeyword": "покупатели"
   },
   "P_16_10": {
-    "optionKeywords": [
-      null,
-      "папы",
-      null
-    ]
+    "textKeyword": "стадион"
   },
   "P_16_11": {
-    "optionKeywords": [
-      "потому что",
-      null,
-      null
-    ]
+    "textKeyword": "продуктов"
   },
   "P_16_12": {
-    "optionKeywords": [
-      null,
-      null,
-      "Праздник Весны и Труда"
-    ]
+    "textKeyword": "отмечают"
   },
   "P_16_13": {
-    "optionKeywords": [
-      null,
-      null,
-      "Екатеринбург"
-    ]
+    "textKeyword": "находится"
   },
   "P_16_14": {
-    "optionKeywords": [
-      "22 июня 1941 г",
-      null,
-      null
-    ]
+    "textKeyword": "Отечественная"
   },
   "P_16_15": {
-    "optionKeywords": [
-      null,
-      "космонавт",
-      null
-    ]
+    "textKeyword": "Гагарин"
+  },
+  "P_16_16": {
+    "textKeyword": "Российской"
   },
   "P_16_17": {
-    "optionKeywords": [
-      "свободно распоряжаться своими способностями к труду",
-      null,
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_16_18": {
-    "optionKeywords": [
-      null,
-      "заботиться о сохранении исторического и культурного наследия",
-      null
-    ]
+    "textKeyword": "Иностранный"
   },
   "P_16_19": {
-    "optionKeywords": [
-      null,
-      "договор социального найма",
-      null
-    ]
+    "textKeyword": "иностранному"
   },
   "P_16_20": {
-    "optionKeywords": [
-      null,
-      "по истечении срока действия визы",
-      null
-    ]
+    "textKeyword": "пребывающий"
   },
   "P_16_21": {
-    "optionKeywords": [
-      "административный штраф",
-      null,
-      null
-    ]
+    "textKeyword": "миграционного"
   },
   "P_16_22": {
-    "textKeyword": "Верно",
-    "optionKeywords": [
-      null,
-      "неверно"
-    ]
+    "textKeyword": "административный"
   }
 };

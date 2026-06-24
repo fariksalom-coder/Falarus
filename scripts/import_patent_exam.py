@@ -195,9 +195,6 @@ def choice_question_payload(
     }
     if question.get("textKeyword"):
         payload["textKeyword"] = question["textKeyword"]
-    option_keywords = question.get("optionKeywords")
-    if isinstance(option_keywords, list) and any(option_keywords):
-        payload["optionKeywords"] = option_keywords
     return payload
 
 
@@ -348,7 +345,6 @@ export type PatentExamChoiceQuestion = {{
   options: string[];
   correctIndex: number;
   textKeyword?: string | null;
-  optionKeywords?: (string | null)[] | null;
 }};
 
 export type PatentExamAudioDoubleBlock = {{

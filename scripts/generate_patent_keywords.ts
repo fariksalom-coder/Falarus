@@ -1,6 +1,6 @@
 /**
  * Generate optional memory keywords for patent choice questions.
- * Highlights distinctive words in the correct option (and question text when found there).
+ * Highlights key words in the question text only (not in answer options).
  *
  * Run: npx tsx scripts/generate_patent_keywords.ts
  */
@@ -10,7 +10,6 @@ import { PATENT_EXAM_VARIANTS, type PatentExamChoiceQuestion } from '../src/data
 
 export type PatentQuestionKeywordHints = {
   textKeyword?: string | null;
-  optionKeywords?: (string | null)[] | null;
 };
 
 const STOP_WORDS = new Set([
@@ -62,7 +61,41 @@ const STOP_WORDS = new Set([
   'будут',
   'только',
   'лишь',
+  'такое',
+  'такой',
+  'такая',
+  'такие',
 ]);
+
+const QUESTION_TRIGGERS = [
+  'услышать',
+  'объявление',
+  'говорят',
+  'прочитать',
+  'продаются',
+  'продается',
+  'необходимо',
+  'разговор',
+  'приезжает',
+  'едет',
+  'стоит',
+  'записаться',
+  'работает',
+  'открыть',
+  'купить',
+  'иметь',
+  'сделал',
+  'хотят',
+  'можно',
+  'услышали',
+  'слышите',
+  'потерянных',
+  'прививку',
+  'билеты',
+  'отправление',
+  'экскурсия',
+  'начинается',
+];
 
 function normalize(value: string): string {
   return value.toLocaleLowerCase('ru-RU').replace(/ё/g, 'е');
@@ -72,71 +105,37 @@ function tokenize(value: string): string[] {
   return value.match(/[\p{L}\p{N}-]+/gu) ?? [];
 }
 
-function uniqueKeywordInOption(option: string, allOptions: string[]): string | null {
-  const others = allOptions.filter((item) => item !== option).map(normalize).join(' ');
-  const words = tokenize(option);
-
-  for (let length = words.length; length >= 1; length -= 1) {
-    for (let start = 0; start <= words.length - length; start += 1) {
-      const phraseWords = words.slice(start, start + length);
-      const phrase = phraseWords.join(' ');
-      if (phrase.length < 4) continue;
-      if (phraseWords.every((word) => STOP_WORDS.has(normalize(word)))) continue;
-      if (!normalize(option).includes(normalize(phrase))) continue;
-      if (others.includes(normalize(phrase))) continue;
-      return phrase;
-    }
-  }
-
-  return null;
+function sliceFromNormalized(text: string, normalizedNeedle: string): string | null {
+  const normalizedText = normalize(text);
+  const matchIndex = normalizedText.indexOf(normalizedNeedle);
+  if (matchIndex === -1) return null;
+  return text.slice(matchIndex, matchIndex + normalizedNeedle.length);
 }
 
-function questionTextKeyword(text: string, correctOption: string, optionKeyword: string | null): string | null {
-  const candidates = new Set<string>();
-  if (optionKeyword) candidates.add(optionKeyword);
-  for (const word of tokenize(text)) {
-    if (word.length >= 5 && !STOP_WORDS.has(normalize(word))) {
-      candidates.add(word);
+function questionTextKeyword(text: string): string | null {
+  const normalized = normalize(text);
+
+  for (const trigger of QUESTION_TRIGGERS) {
+    const match = sliceFromNormalized(text, trigger);
+    if (match) return match;
+  }
+
+  const words = tokenize(text);
+  let best: string | null = null;
+  for (const word of words) {
+    const normalizedWord = normalize(word);
+    if (word.length < 5 || STOP_WORDS.has(normalizedWord)) continue;
+    if (!best || word.length > best.length) {
+      best = word;
     }
   }
 
-  const normalizedText = normalize(text);
-  const normalizedCorrect = normalize(correctOption);
-
-  for (const candidate of candidates) {
-    const normalizedCandidate = normalize(candidate);
-    if (normalizedText.includes(normalizedCandidate) && normalizedCorrect.includes(normalizedCandidate)) {
-      const matchIndex = normalizedText.indexOf(normalizedCandidate);
-      return text.slice(matchIndex, matchIndex + candidate.length);
-    }
-  }
-
-  return null;
+  return best;
 }
 
 function buildHints(question: PatentExamChoiceQuestion): PatentQuestionKeywordHints | null {
-  const correctOption = question.options[question.correctIndex];
-  if (!correctOption || question.options.every((option) => /\/courses\/patent\/media\/.+\.(png|jpg|jpeg)$/i.test(option))) {
-    return null;
-  }
-
-  const optionKeywords = question.options.map((option, index) => {
-    if (index !== question.correctIndex) return null;
-    return uniqueKeywordInOption(option, question.options);
-  });
-
-  const correctOptionKeyword = optionKeywords[question.correctIndex];
-  const textKeyword = questionTextKeyword(question.text, correctOption, correctOptionKeyword);
-
-  const hasOptionKeywords = optionKeywords.some((item) => item);
-  if (!hasOptionKeywords && !textKeyword) {
-    return null;
-  }
-
-  return {
-    ...(textKeyword ? { textKeyword } : {}),
-    ...(hasOptionKeywords ? { optionKeywords } : {}),
-  };
+  const textKeyword = questionTextKeyword(question.text);
+  return textKeyword ? { textKeyword } : null;
 }
 
 function collectQuestions(): PatentExamChoiceQuestion[] {
@@ -172,7 +171,6 @@ function main(): void {
 
 export type PatentQuestionKeywordHints = {
   textKeyword?: string | null;
-  optionKeywords?: (string | null)[] | null;
 };
 
 export const PATENT_QUESTION_KEYWORDS: Record<string, PatentQuestionKeywordHints> = ${payload};
