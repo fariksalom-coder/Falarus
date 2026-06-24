@@ -7,7 +7,6 @@ export type PatentExamChoiceQuestion = {
   text: string;
   options: string[];
   correctIndex: number;
-  textKeyword?: string | null;
 };
 
 export type PatentExamAudioDoubleBlock = {

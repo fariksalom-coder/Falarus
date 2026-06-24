@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
+  Lightbulb,
   X,
 } from 'lucide-react';
 import type {
@@ -17,8 +18,7 @@ import type {
   PatentExamWrittenBlock,
 } from '../data/patentExamData';
 import { evaluatePatentVariant, isImageAssetOption, type PatentExamAnswerMap } from '../utils/patentExam';
-import { HighlightKeywordText } from '../utils/highlightKeywordText';
-import { getPatentQuestionKeywords } from '../utils/patentQuestionKeywords';
+import { getPatentQuestionHint } from '../utils/patentQuestionHints';
 import { courseAssetUrl } from '../utils/courseAssetUrl';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
@@ -42,6 +42,31 @@ function PassageBlock({ passage }: { passage: string }) {
   return (
     <div className="my-3 whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base leading-relaxed text-slate-800">
       {passage}
+    </div>
+  );
+}
+
+function QuestionHintButton({ hintKey }: { hintKey: string }) {
+  const [open, setOpen] = useState(false);
+  const hint = getPatentQuestionHint(hintKey);
+
+  if (!hint) return null;
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-[#BFDBFE] bg-[#EFF6FF] px-3.5 py-2.5 text-sm font-semibold text-[#1D4ED8] transition hover:bg-[#DBEAFE]"
+      >
+        <Lightbulb className="h-4 w-4" />
+        {open ? "Ko'rsatmani yashirish" : "Ko'rsatma"}
+      </button>
+      {open ? (
+        <p className="mt-2.5 whitespace-pre-line rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-[16px] leading-relaxed text-slate-800">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -96,14 +121,15 @@ function ChoiceCard({
   showQuestionNumber?: boolean;
 }) {
   const answered = typeof answer === 'number';
-  const keywords = getPatentQuestionKeywords(question);
 
   return (
     <div className="rounded-[24px] bg-white p-4 shadow-[0_14px_28px_rgba(96,132,184,0.12)] sm:p-5">
       <h2 className="text-[18px] font-bold leading-tight sm:text-[21px]" style={{ color: TEXT }}>
         {showQuestionNumber ? `${question.questionNumber}. ` : null}
-        <HighlightKeywordText text={question.text} keyword={keywords.textKeyword} />
+        {question.text}
       </h2>
+
+      <QuestionHintButton hintKey={question.key} />
 
       <div className="mt-4 space-y-2.5">
         {question.options.map((option, optionIndex) => {
@@ -199,6 +225,8 @@ function WrittenCard({
       <h2 className="text-[18px] font-bold leading-tight sm:text-[21px]" style={{ color: TEXT }}>
         {block.questionNumber}. {block.prompt ?? "To'g'ri javobni yozing"}
       </h2>
+
+      <QuestionHintButton hintKey={block.blockId} />
 
       {block.passage ? <PassageBlock passage={block.passage} /> : null}
 

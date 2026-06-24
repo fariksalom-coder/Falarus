@@ -193,8 +193,6 @@ def choice_question_payload(
         "options": options if options is not None else question["options"],
         "correctIndex": question["correct"],
     }
-    if question.get("textKeyword"):
-        payload["textKeyword"] = question["textKeyword"]
     return payload
 
 
@@ -344,7 +342,6 @@ export type PatentExamChoiceQuestion = {{
   text: string;
   options: string[];
   correctIndex: number;
-  textKeyword?: string | null;
 }};
 
 export type PatentExamAudioDoubleBlock = {{
