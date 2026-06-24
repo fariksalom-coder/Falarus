@@ -62,8 +62,13 @@ export default function SpeakingFeedback({ result, attempts, onNext, onRetry }: 
           {result.mistakes.map((m, i) => (
             <div key={i} className="rounded-xl bg-white/60 px-4 py-3">
               <p className="text-sm text-slate-800">
-                <span className={`font-semibold ${result.status === 'partial' ? 'text-amber-600' : 'text-red-600'}`}>«{m.part}»</span>
-                {' — '}{m.issue}
+                {m.part ? (
+                  <>
+                    <span className={`font-semibold ${result.status === 'partial' ? 'text-amber-600' : 'text-red-600'}`}>«{m.part}»</span>
+                    {' — '}
+                  </>
+                ) : null}
+                {m.issue}
               </p>
               {m.hint_uz && (
                 <p className="mt-1 text-sm text-blue-700">💡 {m.hint_uz}</p>
