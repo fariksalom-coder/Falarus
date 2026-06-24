@@ -230,10 +230,15 @@ function WrittenCard({
   );
 }
 
-function AudioPlayerCard({ mediaUrl }: { mediaUrl: string }) {
+function AudioPlayerCard({ mediaUrl, transcript }: { mediaUrl: string; transcript?: string | null }) {
   return (
-    <div className="rounded-[24px] bg-white p-4 shadow-[0_14px_28px_rgba(96,132,184,0.12)]">
+    <div className="rounded-[24px] bg-white p-4 shadow-[0_14px_28px_rgba(96,132,184,0.12)] sm:p-5">
       <audio controls preload="none" className="w-full" src={courseAssetUrl(mediaUrl)} />
+      {transcript ? (
+        <div className="mt-4 whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base leading-relaxed text-slate-800">
+          {transcript}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -489,7 +494,10 @@ export default function PatentCourseVariantPage() {
         {currentStep ? (
           <section className="mt-3 space-y-3">
             {currentStep.block.kind === 'audio-double' && currentStep.block.mediaUrl ? (
-              <AudioPlayerCard mediaUrl={currentStep.block.mediaUrl} />
+              <AudioPlayerCard
+                mediaUrl={currentStep.block.mediaUrl}
+                transcript={currentStep.block.transcript}
+              />
             ) : null}
 
             {currentStep.block.kind === 'audio-double' ? (

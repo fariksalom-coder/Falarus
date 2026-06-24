@@ -186,8 +186,11 @@ def make_block(item: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
     variant_number = int(variant_part)
     prompt = item.get("descriptionText")
     passage = item.get("passage")
+    transcript = item.get("transcript")
     if isinstance(passage, str):
         passage = passage.strip() or None
+    if isinstance(transcript, str):
+        transcript = transcript.strip() or None
     media_name = normalize_media_name(item.get("mediaUrl"))
     copied_names: set[str] = set()
     media_url = None
@@ -209,6 +212,7 @@ def make_block(item: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
             "kind": "audio-double",
             "prompt": prompt,
             "mediaUrl": media_url,
+            "transcript": transcript,
             "subQuestions": [
                 {
                     "key": f"P_{variant_number}_{number}",
@@ -333,6 +337,7 @@ export type PatentExamAudioDoubleBlock = {{
   kind: 'audio-double';
   prompt: string | null;
   mediaUrl: string | null;
+  transcript: string | null;
   subQuestions: PatentExamChoiceQuestion[];
 }};
 

@@ -15,6 +15,7 @@ export type PatentExamAudioDoubleBlock = {
   kind: 'audio-double';
   prompt: string | null;
   mediaUrl: string | null;
+  transcript: string | null;
   subQuestions: PatentExamChoiceQuestion[];
 };
 
@@ -64,6 +65,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio11.mp3",
+        "transcript": "– Здравствуйте, я хочу сдать экзамен для получения патента.\n- Добрый день! Вы можете сдать экзамен во вторник, с собой необходимо иметь паспорт и миграционную карту.",
         "subQuestions": [
           {
             "key": "P_1_1",
@@ -95,6 +97,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio12.mp3",
+        "transcript": "Уважаемые покупатели!\nЕсли вы потеряли свои вещи в нашем магазине, обратитесь к администратору.",
         "subQuestions": [
           {
             "key": "P_1_3",
@@ -484,6 +487,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio21.mp3",
+        "transcript": "– Извините, вы выходите на следующей остановке?\n- Нет, я выхожу через одну остановку.",
         "subQuestions": [
           {
             "key": "P_2_1",
@@ -515,6 +519,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio22.mp3",
+        "transcript": "Внимание! Кто потерял свой телефон в магазине «Цветы», может взять его у администратора магазина.",
         "subQuestions": [
           {
             "key": "P_2_3",
@@ -904,6 +909,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio31.mp3",
+        "transcript": "– Здравствуйте, мне нужен одноместный на три дня.\n- К сожалению, свободных мест нет.",
         "subQuestions": [
           {
             "key": "P_3_1",
@@ -935,6 +941,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio32.mp3",
+        "transcript": "Внимание! Наш банк изменил время работы. Теперь банк работает до 21 часов.",
         "subQuestions": [
           {
             "key": "P_3_3",
@@ -1324,6 +1331,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio41.mp3",
+        "transcript": "Антон! Дай мне, пожалуйста, телефон. Мне нужно  срочно позвонить в больницу.\n- Конечно, возьми.  А где твой телефон?\n- Вчера потеряла его.",
         "subQuestions": [
           {
             "key": "P_4_1",
@@ -1355,6 +1363,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio42.mp3",
+        "transcript": "Уважаемые покупатели! Кассы номер 3 и 5 временно не принимают к оплате банковские карты. Приносим извинения за причинённые неудобства.",
         "subQuestions": [
           {
             "key": "P_4_3",
@@ -1744,6 +1753,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio51.mp3",
+        "transcript": "– Скажите пожалуйста, где лежат овощи?\n- Идите туда, овощи справа, рядом соки.",
         "subQuestions": [
           {
             "key": "P_5_1",
@@ -1775,6 +1785,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio52.mp3",
+        "transcript": "Уважаемые посетители! На пятом этаже нашего торгового центра работают кафе и детская комната. Есть Wi-Fi.",
         "subQuestions": [
           {
             "key": "P_5_3",
@@ -2164,6 +2175,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio61.mp3",
+        "transcript": "– Здравствуйте, я могу сегодня открыть счет?\n- Пожалуйста, паспорт и миграционную карту.",
         "subQuestions": [
           {
             "key": "P_6_1",
@@ -2195,6 +2207,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio62.mp3",
+        "transcript": "На втором этаже нашего торгового центра открылся новый магазин мужской одежды. Сегодня скидка 20%.",
         "subQuestions": [
           {
             "key": "P_6_3",
@@ -2584,6 +2597,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio71.mp3",
+        "transcript": "- Здравствуйте, у вас есть это лекарство?\n- Да, есть. Стоит сто пятьдесят рублей.",
         "subQuestions": [
           {
             "key": "P_7_1",
@@ -2615,6 +2629,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio72.mp3",
+        "transcript": "Хорошая работа для студентов! В компании «Вест» нужны курьеры подайте заявление, заполните анкету и работа ваша.",
         "subQuestions": [
           {
             "key": "P_7_3",
@@ -3004,6 +3019,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio81.mp3",
+        "transcript": "- Дайте пожалуйста белый хлеб, сахар, чай и пакет.\n-  Пожалуйста, с вас триста рублей.",
         "subQuestions": [
           {
             "key": "P_8_1",
@@ -3035,6 +3051,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio82.mp3",
+        "transcript": "– Внимание! Самолёт Екатеринбург — Москва опаздывает на 2 часа и будет в Москве в 17 часов.",
         "subQuestions": [
           {
             "key": "P_8_3",
@@ -3424,6 +3441,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio91.mp3",
+        "transcript": "– Извините, где здесь вход в метро?\n- Видите белое здание, справа от него.",
         "subQuestions": [
           {
             "key": "P_9_1",
@@ -3455,6 +3473,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio92.mp3",
+        "transcript": "Внимание! Поезд из Казани в Самару опаздывает на 2 часа и будет в Самаре в час дня.",
         "subQuestions": [
           {
             "key": "P_9_3",
@@ -3844,6 +3863,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio101.mp3",
+        "transcript": "– Скажите, здесь есть банкомат?\n- Вот магазин «Сумки» а справа от него банкомат.",
         "subQuestions": [
           {
             "key": "P_10_1",
@@ -3875,6 +3895,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio102.mp3",
+        "transcript": "Уважаемые посетители! В магазин детской одежды на третьем этаже нашего торгового центра нужен кассир.",
         "subQuestions": [
           {
             "key": "P_10_3",
@@ -4264,6 +4285,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio111.mp3",
+        "transcript": "- Извините, здесь рядом есть аптека?\n- Идите прямо аптека в торговом центре.",
         "subQuestions": [
           {
             "key": "P_11_1",
@@ -4295,6 +4317,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio112.mp3",
+        "transcript": "В субботу в пять часов на центральной площади большой детский праздник будут танцы, конкурсы, подарки.",
         "subQuestions": [
           {
             "key": "P_11_3",
@@ -4684,6 +4707,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio121.mp3",
+        "transcript": "– Таня, мы с сестрой хотим поехать отдыхать в сентябре на Камчатку. Хочешь с нами?\n– К сожалению, в это время у меня много работы.",
         "subQuestions": [
           {
             "key": "P_12_1",
@@ -4715,6 +4739,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio122.mp3",
+        "transcript": "Внимание! На поезд до станции Театральная посадки нет. Отойдите от края платформы.",
         "subQuestions": [
           {
             "key": "P_12_3",
@@ -5104,6 +5129,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio131.mp3",
+        "transcript": "– Здравствуйте. Мне нужен билет на ближайший поезд до Казани.\n– Пожалуйста. Отправление поезда будет в три часа.",
         "subQuestions": [
           {
             "key": "P_13_1",
@@ -5135,6 +5161,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio132.mp3",
+        "transcript": "Уважаемые посетители, весь сентябрь в магазине «Мой дом» на первом этаже нашего торгового центра можно сделать бесплатно копию ключей.",
         "subQuestions": [
           {
             "key": "P_13_3",
@@ -5524,6 +5551,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio141.mp3",
+        "transcript": "– Здравствуйте. Я хочу сделать прививку от гриппа.\n– Добрый день. Идите в кабинет 15.\n– Хайрли кун. 15-хонага боринг.",
         "subQuestions": [
           {
             "key": "P_14_1",
@@ -5555,6 +5583,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio142.mp3",
+        "transcript": "Уважаемые покупатели, в магазине «Спорттовары» — распродажа зимней одежды. Скидки до 50 %.",
         "subQuestions": [
           {
             "key": "P_14_3",
@@ -5944,6 +5973,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio151.mp3",
+        "transcript": "– Извините, в вашей кассе можно купить билет на автобус до аэропорта?\n– Билеты на автобус до аэропорта продаются только в кассе номер два.",
         "subQuestions": [
           {
             "key": "P_15_1",
@@ -5975,6 +6005,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio152.mp3",
+        "transcript": "Внимание! По технической причине поезда до аэропорта Шереметьево отменены. Движение поездов начнётся с 17:30.",
         "subQuestions": [
           {
             "key": "P_15_3",
@@ -6364,6 +6395,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте диалог и выберите правильный ответ в заданиях 1 и 2.",
         "mediaUrl": "/courses/patent/media/audio161.mp3",
+        "transcript": "– Здравствуйте. Я хотел бы записаться к стоматологу на завтра.\n– Добрый день! К сожалению, мест нет. Могу записать вас на вторник.",
         "subQuestions": [
           {
             "key": "P_16_1",
@@ -6395,6 +6427,7 @@ export const PATENT_EXAM_VARIANTS: PatentExamVariant[] = [
         "kind": "audio-double",
         "prompt": "Прослушайте объявление и выберите правильный ответ в заданиях 3 и 4.",
         "mediaUrl": "/courses/patent/media/audio162.mp3",
+        "transcript": "Внимание! Прививку от гриппа можно сделать на втором этаже в кабинете 12. При себе иметь паспорт и полис.",
         "subQuestions": [
           {
             "key": "P_16_3",
