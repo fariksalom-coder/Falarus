@@ -20,6 +20,36 @@ export function areAdjacent(a: GridCoord, b: GridCoord): boolean {
   return dr <= 1 && dc <= 1 && !(dr === 0 && dc === 0);
 }
 
+/** Neighbor cell in the swipe direction from the last selected cell. */
+export function neighborTowardPointer(
+  last: GridCoord,
+  clientX: number,
+  clientY: number,
+  gridRect: DOMRect,
+  rows: number,
+  cols: number,
+): GridCoord | null {
+  const cellW = gridRect.width / cols;
+  const cellH = gridRect.height / rows;
+  const cx = gridRect.left + (last.col + 0.5) * cellW;
+  const cy = gridRect.top + (last.row + 0.5) * cellH;
+  const dx = clientX - cx;
+  const dy = clientY - cy;
+  const threshold = Math.min(cellW, cellH) * 0.22;
+  if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return null;
+
+  let dc = 0;
+  let dr = 0;
+  if (Math.abs(dx) > threshold) dc = dx > 0 ? 1 : -1;
+  if (Math.abs(dy) > threshold) dr = dy > 0 ? 1 : -1;
+  if (dc === 0 && dr === 0) return null;
+
+  const row = last.row + dr;
+  const col = last.col + dc;
+  if (row < 0 || row >= rows || col < 0 || col >= cols) return null;
+  return { row, col };
+}
+
 export function lettersFromPath(path: GridCoord[], grid: string[][]): string {
   return path.map(({ row, col }) => grid[row]?.[col] ?? '').join('');
 }

@@ -4,6 +4,7 @@ import {
   coordKey,
   lettersFromPath,
   matchWordFromLetters,
+  neighborTowardPointer,
   wordEntryIdKey,
   type GridCoord,
   type WordSwipeEntry,
@@ -41,16 +42,6 @@ export default function WordSwipeBoard({
 
   const pathKeys = useMemo(() => new Set(path.map((p) => coordKey(p.row, p.col))), [path]);
 
-  const tryAddCell = useCallback((row: number, col: number) => {
-    setPath((prev) => {
-      if (pathHasCoord(prev, row, col)) return prev;
-      if (prev.length === 0) return [{ row, col }];
-      const last = prev[prev.length - 1];
-      if (!areAdjacent(last, { row, col })) return prev;
-      return [...prev, { row, col }];
-    });
-  }, []);
-
   const resolveSelection = useCallback(
     (currentPath: GridCoord[]) => {
       if (currentPath.length === 0) return;
@@ -75,14 +66,28 @@ export default function WordSwipeBoard({
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isSelecting) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const cell = el?.closest<HTMLElement>('[data-ws-cell]');
-    if (!cell) return;
-    const row = Number(cell.dataset.row);
-    const col = Number(cell.dataset.col);
-    if (!Number.isFinite(row) || !Number.isFinite(col)) return;
-    tryAddCell(row, col);
+    if (!isSelecting || !gridRef.current) return;
+
+    setPath((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      const rect = gridRef.current!.getBoundingClientRect();
+
+      const directed = neighborTowardPointer(last, e.clientX, e.clientY, rect, gridRows, gridCols);
+      if (directed && !pathHasCoord(prev, directed.row, directed.col) && areAdjacent(last, directed)) {
+        return [...prev, directed];
+      }
+
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cell = el?.closest<HTMLElement>('[data-ws-cell]');
+      if (!cell) return prev;
+      const row = Number(cell.dataset.row);
+      const col = Number(cell.dataset.col);
+      if (!Number.isFinite(row) || !Number.isFinite(col)) return prev;
+      if (pathHasCoord(prev, row, col)) return prev;
+      if (!areAdjacent(last, { row, col })) return prev;
+      return [...prev, { row, col }];
+    });
   };
 
   const finishSelection = (e: React.PointerEvent) => {
@@ -119,7 +124,7 @@ export default function WordSwipeBoard({
     >
       <div
         ref={gridRef}
-        className="relative grid w-full gap-1 sm:gap-1.5"
+        className="relative grid w-full place-items-center gap-2.5 sm:gap-3"
         style={{
           aspectRatio: `${gridCols} / ${gridRows}`,
           gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
@@ -155,7 +160,7 @@ export default function WordSwipeBoard({
                 data-row={rowIdx}
                 data-col={colIdx}
                 onPointerDown={(e) => handlePointerDown(rowIdx, colIdx, e)}
-                className={`relative z-20 flex aspect-square min-h-0 min-w-0 items-center justify-center rounded-[8px] border text-[clamp(0.7rem,3.2vw,1.15rem)] font-extrabold leading-none transition-[transform,background-color,border-color,box-shadow] active:scale-[0.96] sm:rounded-xl ${
+                className={`relative z-20 flex aspect-square h-[72%] w-[72%] max-h-full max-w-full items-center justify-center rounded-[8px] border text-[clamp(0.65rem,2.8vw,1.05rem)] font-extrabold leading-none transition-[transform,background-color,border-color,box-shadow] active:scale-[0.96] sm:h-[76%] sm:w-[76%] sm:rounded-xl ${
                   active
                     ? 'border-blue-400 bg-[#2563EB] text-white shadow-[0_6px_16px_rgba(37,99,235,0.4)]'
                     : found
