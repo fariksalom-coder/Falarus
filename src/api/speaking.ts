@@ -31,6 +31,7 @@ export type MistakeDetail = {
 export type CheckResult = {
   status: 'correct' | 'partial' | 'wrong';
   feedback: string;
+  error_explanation?: string;
   hint: string;
   correct_answer: string;
   mistakes: MistakeDetail[];

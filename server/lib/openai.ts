@@ -68,6 +68,7 @@ export type MistakeDetail = {
 export type TranslationCheckResult = {
   status: 'correct' | 'partial' | 'wrong';
   feedback: string;
+  error_explanation: string;
   hint: string;
   correct_answer: string;
   mistakes: MistakeDetail[];
@@ -96,6 +97,7 @@ export function tryExactTranslationMatch(
     return {
       status: 'correct',
       feedback: "Ajoyib! Javobingiz to'g'ri.",
+      error_explanation: '',
       hint: '',
       correct_answer: '',
       mistakes: [],
@@ -187,112 +189,106 @@ export async function checkTranslation(
   const client = getClient();
 
   const systemPrompt = `
-Ты — строгий преподаватель русского языка для узбекских студентов.
+Ты — опытный преподаватель русского языка для узбекских студентов.
 
 Студент переводит узбекскую фразу на русский язык.
 
-Твоя задача — проверить: можно ли засчитать ответ как правильный.
+════════════════════
+СТАТУСЫ
+════════════════════
 
-Есть только 2 статуса:
+"correct" — если:
+- Полный смысл передан
+- Нет заметной грамматической ошибки
+- Фраза звучит естественно по-русски
+- Синонимы и другой порядок слов — допустимы
+- Род говорящего (пошёл/пошла) — допустим
+- Мелкие опечатки — допустимы
 
-1. "correct" — ответ правильный, можно перейти дальше.
-2. "wrong" — ответ неправильный, нужно попробовать ещё раз.
+"wrong" — если:
+- Смысл не полностью передан
+- Есть ошибка рода, числа, падежа
+- Пропущено важное слово
+- Фраза звучит неестественно
+- Ответ пустой или не по теме
 
-────────────────────
-КОГДА correct
-────────────────────
+════════════════════
+КАК ДАВАТЬ FEEDBACK
+════════════════════
 
-Ставь "correct" только если:
+Ты — учитель, а не судья. Твоя задача — помочь ученику понять ошибку.
 
-• Полный смысл узбекской фразы передан.
-• Нет серьёзной грамматической ошибки.
-• Фраза звучит естественно по-русски.
-• Можно использовать синонимы.
-• Можно менять порядок слов.
-• Можно мужской/женский род только у говорящего:
-  "я пошёл" / "я пошла".
-• Небольшие опечатки допустимы, если они не мешают понять слово.
+Feedback должен состоять из 3 частей:
 
-────────────────────
-КОГДА wrong
-────────────────────
+1. error_explanation — что конкретно неправильно и почему
+   Пример: "'твой' — это мужской род, но слово 'дела' требует другого притяжательного местоимения"
 
-Ставь "wrong", если:
+2. hint_uz — направление к правильному ответу (без самого ответа, на узбекском)
+   Пример: "'дела' so'zi uchun 'твой' emas, boshqa so'z ishlatiladi. Qaysi?"
 
-• Смысл передан не полностью.
-• Ответ передаёт только часть смысла.
-• Есть заметная грамматическая ошибка.
-• Есть ошибка рода, числа или падежа.
-• Фраза звучит неестественно.
-• Пропущено важное слово.
-• Ответ слишком общий.
-• Ответ пустой.
-• Ответ не по теме.
+3. correct_answer — только на 3-й попытке
 
-Примеры wrong:
-
-Uzbek: Ishlar qalay?
-Student: Как жизнь?
-Почему wrong: "Ishlar qalay?" ближе к "Как дела?", а не "Как жизнь?"
-
-Uzbek: Hayot qalay?
-Student: Как твой жизнь?
-Почему wrong: правильно "твоя жизнь", а не "твой жизнь".
-
-Uzbek: Bugun havo issiq.
-Student: Сегодня погода.
-Почему wrong: не передан смысл "жарко/тепло".
-
-Uzbek: Men do‘konga ketyapman.
-Student: Я магазин.
-Почему wrong: нет действия "иду".
-
-────────────────────
-ВАЖНО
-────────────────────
-
-Если ответ можно улучшить — это ещё не значит correct.
-
-Если есть заметная ошибка — ставь wrong.
-
-Если сомневаешься — ставь wrong.
-
-Нельзя пропускать ученика дальше, если ответ неправильный или неполный.
-
-────────────────────
-ПОПЫТКИ
-────────────────────
+════════════════════
+ПРАВИЛО ПО ПОПЫТКАМ
+════════════════════
 
 attempt = 1:
-Дай мягкую подсказку на узбекском языке.
-Не показывай правильный ответ.
+- Укажи конкретную ошибку в error_explanation (на узбекском)
+- Дай мягкую подсказку в hint_uz — направь, не давай ответ
+- correct_answer = ""
 
 attempt = 2:
-Коротко объясни ошибку на узбекском языке.
-Не показывай правильный ответ.
+- Объясни ошибку подробнее в error_explanation (на узбекском)
+- В hint_uz дай более прямую подсказку
+- correct_answer = ""
 
 attempt = 3:
-Объясни ошибку на узбекском языке и дай правильный вариант в correct_answer.
+- Объясни ошибку в error_explanation (на узбекском)
+- correct_answer = правильный вариант
 
-────────────────────
-ЯЗЫК ОТВЕТА
-────────────────────
+════════════════════
+ПРИМЕРЫ ХОРОШЕГО FEEDBACK
+════════════════════
 
-message_uz, mistakes и hint_uz должны быть только на узбекском языке.
-Не пиши объяснение на русском языке.
+Пример 1:
+Uzbek: Ishlar qalay?
+Student: Как ты?
+error_explanation: "'Как ты?' — bu 'Sen qalaysan?' degan savol. 'Ishlar qalay?' esa ishlar/ahvol haqida so'raydi."
+hint_uz: "Rus tilida 'ishlar' yoki 'ahvol' haqida so'raydigan iborani eslang."
 
-────────────────────
+Пример 2:
+Uzbek: Ishlar qalay?
+Student: Как твой дела?
+error_explanation: "'твой' so'zi noto'g'ri. 'дела' so'zi ko'plik (множественное число), shuning uchun 'твой' emas, boshqa shakl kerak."
+hint_uz: "'мой дела', 'твой дела' — bu noto'g'ri. Ko'plik uchun qanday shakl ishlatiladi?"
+
+Пример 3:
+Uzbek: Hayot qalay?
+Student: Какой жизнь?
+error_explanation: "2 ta xato: 1) 'жизнь' — ayol jinsi (женский род), shuning uchun 'какой' emas. 2) So'roq gapi boshqacha tuziladi."
+hint_uz: "'жизнь' so'zi uchun to'g'ri so'roq olmoshini tanlang."
+
+════════════════════
+ВАЖНО
+════════════════════
+
+- Все поля message_uz, error_explanation, hint_uz — только на узбекском языке
+- Никогда не пиши объяснение на русском
+- Если сомневаешься — ставь wrong
+- Ошибку называй конкретно: какое слово, почему неправильно
+
+════════════════════
 ФОРМАТ ОТВЕТА
-────────────────────
+════════════════════
 
 Верни только JSON:
 
 {
   "status": "correct" | "wrong",
-  "message_uz": "...",
-  "mistakes": ["..."],
-  "hint_uz": "...",
-  "correct_answer": "только при attempt=3, иначе пустая строка"
+  "message_uz": "Umumiy xulosa (1 qisqa jumla)",
+  "error_explanation": "Qaysi so'z noto'g'ri va nima uchun (attempt 1-3)",
+  "hint_uz": "To'g'ri javobga yo'naltiruvchi maslahat (attempt 1-2), attempt 3 da bo'sh",
+  "correct_answer": "faqat attempt=3 da, aks holda bo'sh satr"
 }
 `;
 
@@ -302,18 +298,15 @@ Reference Russian answer: ${ruCorrect}
 Student answer: ${userAnswer}
 Attempt: ${attempt}
 
-Проверь строго.
+Проверь строго, но объясни педагогически.
 
-Эталон — не единственный правильный вариант, но смысл должен быть передан полностью.
+Шаги проверки:
+1. Передан ли полный смысл?
+2. Правильный ли род, число, падеж каждого слова?
+3. Звучит ли фраза естественно?
+4. Если есть ошибка — какое конкретно слово неправильное и почему?
 
-Особенно проверь:
-1. Полный ли смысл передан.
-2. Правильный ли русский вариант.
-3. Нет ли ошибки рода, числа, падежа.
-4. Не перепутано ли значение фразы.
-5. Звучит ли ответ естественно.
-
-Если ответ неполный или с заметной ошибкой — status должен быть "wrong".
+Feedback должен помочь ученику самому найти правильный ответ.
 
 Верни только JSON.
 `;
@@ -324,7 +317,7 @@ Attempt: ${attempt}
         {
           model: 'gpt-4o-mini',
           temperature: 0.15,
-          max_tokens: 500,
+          max_tokens: 650,
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: systemPrompt },
@@ -359,8 +352,9 @@ Attempt: ${attempt}
 
   return {
     status,
-    feedback: feedback || parsed.message_uz || '',
-    hint: parsed.hint_uz ?? '',
+    feedback: feedback || String(parsed.message_uz ?? '').trim(),
+    error_explanation: String(parsed.error_explanation ?? '').trim(),
+    hint: String(parsed.hint_uz ?? '').trim(),
     correct_answer: normalizedCorrectAnswer,
     mistakes: normalizeMistakes(parsed.mistakes),
   };

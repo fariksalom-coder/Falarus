@@ -57,6 +57,13 @@ export default function SpeakingFeedback({ result, attempts, onNext, onRetry }: 
         <p className="mt-3 text-sm leading-relaxed text-slate-700">{result.feedback}</p>
       )}
 
+      {result.error_explanation && result.status !== 'correct' && (
+        <div className="mt-3 rounded-xl bg-white/60 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Xato</p>
+          <p className="mt-1 text-sm leading-relaxed text-slate-800">{result.error_explanation}</p>
+        </div>
+      )}
+
       {result.mistakes?.length > 0 && result.status !== 'correct' && (
         <div className="mt-3 space-y-2">
           {result.mistakes.map((m, i) => (
@@ -78,14 +85,23 @@ export default function SpeakingFeedback({ result, attempts, onNext, onRetry }: 
         </div>
       )}
 
-      {result.hint && result.status !== 'correct' && !result.mistakes?.length && (
+      {result.hint && result.status !== 'correct' && (
         <div className="mt-3 rounded-xl bg-white/60 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Maslahat</p>
           <p className="mt-1 text-sm text-slate-700">{result.hint}</p>
         </div>
       )}
 
-      {result.status === 'wrong' && attempts >= 2 && (
+      {result.status === 'wrong' && result.correct_answer && (
+        <div className="mt-3 rounded-xl bg-white/60 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            To'g'ri javob
+          </p>
+          <p className="mt-1 text-sm font-medium text-slate-900">{result.correct_answer}</p>
+        </div>
+      )}
+
+      {result.status === 'wrong' && !result.correct_answer && attempts >= 2 && (
         <div className="mt-3">
           {!showAnswer ? (
             <button
