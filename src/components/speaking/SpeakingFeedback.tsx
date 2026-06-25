@@ -6,6 +6,7 @@ import { isPassingStatus, type CheckResult } from '../../api/speaking';
 type Props = {
   result: CheckResult;
   attempts: number;
+  referenceAnswer: string;
   onNext: () => void;
   onRetry: () => void;
 };
@@ -37,10 +38,13 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function SpeakingFeedback({ result, attempts, onNext, onRetry }: Props) {
+export default function SpeakingFeedback({ result, attempts, referenceAnswer, onNext, onRetry }: Props) {
   const [showAnswer, setShowAnswer] = useState(false);
   const config = STATUS_CONFIG[result.status];
   const { Icon } = config;
+  const correctAnswer = result.correct_answer.trim() || referenceAnswer.trim();
+  const shouldRevealAnswer = result.status === 'wrong' && Boolean(correctAnswer);
+  const answerVisible = shouldRevealAnswer && (showAnswer || Boolean(result.correct_answer.trim()));
 
   return (
     <motion.div
@@ -92,34 +96,25 @@ export default function SpeakingFeedback({ result, attempts, onNext, onRetry }: 
         </div>
       )}
 
-      {result.status === 'wrong' && result.correct_answer && (
+      {shouldRevealAnswer && answerVisible && (
         <div className="mt-3 rounded-xl bg-white/60 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             To'g'ri javob
           </p>
-          <p className="mt-1 text-sm font-medium text-slate-900">{result.correct_answer}</p>
+          <p className="mt-1 text-sm font-medium text-slate-900">{correctAnswer}</p>
         </div>
       )}
 
-      {result.status === 'wrong' && !result.correct_answer && attempts >= 2 && (
+      {shouldRevealAnswer && !answerVisible && attempts >= 2 && (
         <div className="mt-3">
-          {!showAnswer ? (
-            <button
-              type="button"
-              onClick={() => setShowAnswer(true)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
-            >
-              <Eye className="h-4 w-4" />
-              Javobni ko'rish
-            </button>
-          ) : (
-            <div className="rounded-xl bg-white/60 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                To'g'ri javob
-              </p>
-              <p className="mt-1 text-sm font-medium text-slate-900">{result.correct_answer}</p>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowAnswer(true)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
+          >
+            <Eye className="h-4 w-4" />
+            Javobni ko'rish
+          </button>
         </div>
       )}
 

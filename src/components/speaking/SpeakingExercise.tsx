@@ -495,6 +495,7 @@ export default function SpeakingExercise({
             <SpeakingFeedback
               result={result}
               attempts={attempts}
+              referenceAnswer={task.ru_correct}
               onNext={handleNext}
               onRetry={handleRetry}
             />

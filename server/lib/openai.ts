@@ -347,8 +347,8 @@ Feedback должен помочь ученику самому найти пра
       ? "Javobingiz butun gap tarjimasi emas — barcha qismlarni ruscha ifodalang."
       : (parsed.message_uz ?? '');
 
-  const normalizedCorrectAnswer =
-    attempt >= 3 ? (parsed.correct_answer ?? ruCorrect) : '';
+  const aiCorrectAnswer = String(parsed.correct_answer ?? '').trim();
+  const normalizedCorrectAnswer = attempt >= 3 ? aiCorrectAnswer || ruCorrect.trim() : '';
 
   return {
     status,
