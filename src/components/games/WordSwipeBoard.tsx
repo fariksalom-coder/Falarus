@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  areAdjacent,
+  backtrackPath,
   coordKey,
   lettersFromPath,
   matchWordFromLetters,
+  closestCellAtPointer,
   neighborTowardPointer,
   wordEntryIdKey,
   type GridCoord,
@@ -58,11 +59,16 @@ export default function WordSwipeBoard({
     [foundIds, grid, onWordFound, words],
   );
 
-  const handlePointerDown = (row: number, col: number, e: React.PointerEvent) => {
+  const handleGridPointerDown = (e: React.PointerEvent) => {
+    if (!gridRef.current) return;
+    const rect = gridRef.current.getBoundingClientRect();
+    const cell = closestCellAtPointer(e.clientX, e.clientY, rect, gridRows, gridCols);
+    if (!cell) return;
+
     e.preventDefault();
-    gridRef.current?.setPointerCapture(e.pointerId);
+    gridRef.current.setPointerCapture(e.pointerId);
     setIsSelecting(true);
-    setPath([{ row, col }]);
+    setPath([cell]);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -70,23 +76,24 @@ export default function WordSwipeBoard({
 
     setPath((prev) => {
       if (prev.length === 0) return prev;
-      const last = prev[prev.length - 1];
       const rect = gridRef.current!.getBoundingClientRect();
 
-      const directed = neighborTowardPointer(last, e.clientX, e.clientY, rect, gridRows, gridCols);
-      if (directed && !pathHasCoord(prev, directed.row, directed.col) && areAdjacent(last, directed)) {
-        return [...prev, directed];
+      let next = backtrackPath(prev, e.clientX, e.clientY, rect, gridRows, gridCols);
+
+      for (let step = 0; step < 3; step += 1) {
+        const last = next[next.length - 1];
+        const directed = neighborTowardPointer(last, e.clientX, e.clientY, rect, gridRows, gridCols);
+        if (
+          !directed ||
+          pathHasCoord(next, directed.row, directed.col) ||
+          (directed.row === last.row && directed.col === last.col)
+        ) {
+          break;
+        }
+        next = [...next, directed];
       }
 
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      const cell = el?.closest<HTMLElement>('[data-ws-cell]');
-      if (!cell) return prev;
-      const row = Number(cell.dataset.row);
-      const col = Number(cell.dataset.col);
-      if (!Number.isFinite(row) || !Number.isFinite(col)) return prev;
-      if (pathHasCoord(prev, row, col)) return prev;
-      if (!areAdjacent(last, { row, col })) return prev;
-      return [...prev, { row, col }];
+      return next;
     });
   };
 
@@ -130,6 +137,7 @@ export default function WordSwipeBoard({
           gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
           gridTemplateRows: `repeat(${gridRows}, minmax(0, 1fr))`,
         }}
+        onPointerDown={handleGridPointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishSelection}
         onPointerCancel={finishSelection}
@@ -153,23 +161,25 @@ export default function WordSwipeBoard({
             const active = pathKeys.has(key);
             const found = foundCellKeys.has(key);
             return (
-              <button
+              <div
                 key={key}
-                type="button"
                 data-ws-cell
                 data-row={rowIdx}
                 data-col={colIdx}
-                onPointerDown={(e) => handlePointerDown(rowIdx, colIdx, e)}
-                className={`relative z-20 flex aspect-square h-[72%] w-[72%] max-h-full max-w-full items-center justify-center rounded-[8px] border text-[clamp(0.65rem,2.8vw,1.05rem)] font-extrabold leading-none transition-[transform,background-color,border-color,box-shadow] active:scale-[0.96] sm:h-[76%] sm:w-[76%] sm:rounded-xl ${
-                  active
-                    ? 'border-blue-400 bg-[#2563EB] text-white shadow-[0_6px_16px_rgba(37,99,235,0.4)]'
-                    : found
-                      ? 'border-emerald-400 bg-emerald-500 text-white shadow-[0_4px_12px_rgba(34,197,94,0.35)]'
-                      : 'border-slate-200/80 bg-white text-slate-800 shadow-[0_2px_8px_rgba(15,23,42,0.06)]'
-                }`}
+                className="flex h-full w-full items-center justify-center"
               >
-                {letter}
-              </button>
+                <span
+                  className={`pointer-events-none relative z-20 flex aspect-square h-[68%] w-[68%] items-center justify-center rounded-[8px] border text-[clamp(0.65rem,2.8vw,1.05rem)] font-extrabold leading-none transition-[transform,background-color,border-color,box-shadow] sm:h-[72%] sm:w-[72%] sm:rounded-xl ${
+                    active
+                      ? 'border-blue-400 bg-[#2563EB] text-white shadow-[0_6px_16px_rgba(37,99,235,0.4)]'
+                      : found
+                        ? 'border-emerald-400 bg-emerald-500 text-white shadow-[0_4px_12px_rgba(34,197,94,0.35)]'
+                        : 'border-slate-200/80 bg-white text-slate-800 shadow-[0_2px_8px_rgba(15,23,42,0.06)]'
+                  } ${isSelecting && active ? 'scale-[0.96]' : ''}`}
+                >
+                  {letter}
+                </span>
+              </div>
             );
           }),
         )}
