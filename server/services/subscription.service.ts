@@ -10,6 +10,7 @@ import {
   resolveApprovedCourseProduct,
 } from '../../shared/paymentsProofUrl.js';
 import { LruTtlCache } from '../lib/lruCache.js';
+import { PATENT_COURSE_FREE_FOR_ALL } from '../../shared/courseAccess.js';
 
 const PLAN_TYPES = ['monthly', 'yearly'] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
@@ -188,7 +189,7 @@ export async function getAccessInfo(
       vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
       vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
       subscription_active: false,
-      patent_course_active: false,
+      patent_course_active: PATENT_COURSE_FREE_FOR_ALL,
       vnzh_course_active: false,
     };
   }
@@ -221,7 +222,7 @@ export async function getAccessInfo(
     vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
     vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
     subscription_active: subscriptionActive,
-    patent_course_active: patentCourseActive,
+    patent_course_active: PATENT_COURSE_FREE_FOR_ALL ? true : patentCourseActive,
     vnzh_course_active: vnzhCourseActive,
     vocabulary_free_topic_id: vocabulary_free_topic_id ?? undefined,
     vocabulary_free_subtopic_id: vocabulary_free_subtopic_id ?? undefined,

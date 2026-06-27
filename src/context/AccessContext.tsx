@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getAccess, getCachedAccess, setCachedAccess, type AccessInfo } from '../api/access';
+import { PATENT_COURSE_FREE_FOR_ALL } from '../../shared/courseAccess';
 import { useAuth } from './AuthContext';
 
 const defaultAccess: AccessInfo = {
@@ -39,7 +40,7 @@ function normalizeAccessForExpiredPlan(
   return {
     ...access,
     subscription_active: false,
-    patent_course_active: false,
+    patent_course_active: PATENT_COURSE_FREE_FOR_ALL ? true : false,
     vnzh_course_active: false,
   };
 }
