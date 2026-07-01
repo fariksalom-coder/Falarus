@@ -15,6 +15,8 @@ import { takeKunlikRestoreDay } from '../utils/kunlikLastDay';
 import UserAvatar from '../components/UserAvatar';
 import type { UserGender } from '../components/UserAvatar';
 import KunlikFreeLimitCta from '../components/KunlikFreeLimitCta';
+import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
+import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 
 const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   grammar_1: false,
@@ -336,11 +338,15 @@ function QuestCard({
   slot,
   index,
   day,
+  premium,
+  onPurchaseRequired,
   t,
 }: {
   slot: QuestSlot;
   index: number;
   day: number;
+  premium: boolean;
+  onPurchaseRequired: () => void;
   t: TranslateFn;
 }) {
   const navigate = useNavigate();
@@ -349,6 +355,7 @@ function QuestCard({
   const locked = slot.state === 'locked';
   const accent = done ? '#0EAD4F' : active ? '#0D55F5' : '#6B7898';
   const image = slot.images[done ? 'done' : active ? 'active' : 'locked'];
+  const requiresPurchase = !canEnterKunlikDayContent(day, premium);
 
   const cardSurface = done
     ? 'border-[#ACEBC8] bg-[#F0FFF5] dark:border-emerald-500/35 dark:bg-emerald-500/12'
@@ -366,14 +373,28 @@ function QuestCard({
   const questPath =
     done && slot.id === 'speaking' ? `${slot.route(day)}?retry=1` : slot.route(day);
 
+  const handleQuestClick = () => {
+    if (requiresPurchase) {
+      onPurchaseRequired();
+      return;
+    }
+    navigate(questPath);
+  };
+
   return (
     <button
       type="button"
       disabled={!slot.canOpen}
-      onClick={() => navigate(questPath)}
-      onMouseEnter={() => prefetchRoutePath(questPath)}
-      onTouchStart={() => prefetchRoutePath(questPath)}
-      onFocus={() => prefetchRoutePath(questPath)}
+      onClick={handleQuestClick}
+      onMouseEnter={() => {
+        if (!requiresPurchase) prefetchRoutePath(questPath);
+      }}
+      onTouchStart={() => {
+        if (!requiresPurchase) prefetchRoutePath(questPath);
+      }}
+      onFocus={() => {
+        if (!requiresPurchase) prefetchRoutePath(questPath);
+      }}
       className={`relative flex min-h-[198px] min-w-0 flex-col rounded-[18px] border p-2.5 text-center shadow-app-soft transition-transform active:scale-[0.99] disabled:cursor-default ${cardSurface}`}
     >
       <span
@@ -435,11 +456,10 @@ export default function HomePage() {
   const [streak, setStreak] = useState<StreakResponse>(() => getCachedStreak() ?? { streak_days: 0, last_7_days: Array(7).fill(false) });
   const currentDay = useMemo(() => {
     if (!loaded) return null;
-    const day = findCurrentDay(rows, practicePromptCountByDay);
-    if (premium) return day;
-    return Math.min(day, FREE_KUNLIK_DAY_LIMIT);
-  }, [loaded, rows, practicePromptCountByDay, premium]);
+    return findCurrentDay(rows, practicePromptCountByDay);
+  }, [loaded, rows, practicePromptCountByDay]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [freeLimitModalOpen, setFreeLimitModalOpen] = useState(false);
   const initialDayResolvedRef = useRef(false);
 
   useEffect(() => {
@@ -492,9 +512,8 @@ export default function HomePage() {
   const promptCount = progressReady ? practicePromptCountByDay.get(displayDay) ?? 0 : 0;
   const slots = row ? buildQuestSlots(row, promptCount) : [];
   const done = slots.filter((slot) => slot.state === 'done').length;
-  const dayFullyComplete = row ? isDayComplete(row, promptCount) : false;
   const showFreeLimitCta =
-    !premium && displayDay === FREE_KUNLIK_DAY_LIMIT && dayFullyComplete;
+    !premium && displayDay > FREE_KUNLIK_DAY_LIMIT;
 
   return (
     <div className="min-h-screen bg-app-bg-muted pb-[84px]">
@@ -527,10 +546,21 @@ export default function HomePage() {
               className="grid grid-cols-2 gap-2.5 px-4 pt-3.5"
             >
               {slots.map((slot, index) => (
-                <QuestCard key={slot.id} slot={slot} index={index + 1} day={displayDay} t={t} />
+                <QuestCard
+                  key={slot.id}
+                  slot={slot}
+                  index={index + 1}
+                  day={displayDay}
+                  premium={premium}
+                  onPurchaseRequired={() => setFreeLimitModalOpen(true)}
+                  t={t}
+                />
               ))}
             </motion.section>
             {showFreeLimitCta ? <KunlikFreeLimitCta /> : null}
+            {freeLimitModalOpen ? (
+              <KunlikFreeLimitModal onClose={() => setFreeLimitModalOpen(false)} />
+            ) : null}
           </>
         ) : (
           <div className="px-4 pt-6">

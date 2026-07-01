@@ -377,7 +377,7 @@ const en: DeepPartial<MessageCatalog> = {
     soon: 'Coming soon',
     freeLimitTitle: 'Free days are over!',
     freeLimitBody:
-      'You completed day 2. To continue, buy the course — day 3 and beyond unlock with Premium.',
+      'You completed day 1. To keep learning, buy the full course — day 2 and beyond unlock with Premium.',
     chooseTariff: 'Choose a plan',
     continueCta: 'Tap to continue',
   },

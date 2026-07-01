@@ -7,7 +7,7 @@ import { useAccess } from '../context/AccessContext';
 import { findFirstIncompletePlanDay, readPlanReviewVisits } from '../utils/kunlikPlanDayProgress';
 import { kunlikRejaPath } from '../utils/kunlikNavigation';
 import { useKunlikProgress } from './useKunlikProgress';
-import { FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
+import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 
 /** Kunlik sahifalarida bir xil kutish ko‘rinishi */
 export function KunlikSequentialGateSpinner() {
@@ -21,7 +21,7 @@ export function KunlikSequentialGateSpinner() {
 
 /**
  * Ketma-ket ochilish: oldingi kun 100% tugamagan bo‘lsa, keyingi kun URL bilan ham ochilmaydi.
- * Obunasiz foydalanuvchi faqat 1–FREE_KUNLIK_DAY_LIMIT kunlarga kira oladi.
+ * Obunasiz foydalanuvchi keyingi kunlarni bosh sahifada ko‘ra oladi, lekin dars kontentiga kira olmaydi.
  * `enabled=false` — noto‘g‘ri parametrlar (hook har doim chaqiriladi).
  */
 export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
@@ -55,29 +55,28 @@ export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
 
   const premium = Boolean(access?.subscription_active);
 
-  const firstIncompleteDay = useMemo(
+  const maxSequentialDay = useMemo(
     () => findFirstIncompletePlanDay(results, reviewVisits, kunlikRows, practicePromptCountByDay),
     [results, reviewVisits, kunlikRows, practicePromptCountByDay, vocabTick],
   );
 
-  const maxAllowedDay = premium
-    ? firstIncompleteDay
-    : Math.min(firstIncompleteDay, FREE_KUNLIK_DAY_LIMIT);
+  const sequentiallyAllowed = dayNumber <= maxSequentialDay;
+  const contentAllowed = canEnterKunlikDayContent(dayNumber, premium);
+  const dayAllowed = sequentiallyAllowed && contentAllowed;
 
   const bootstrapReady = Boolean(token && isReady && kunlikLoaded && accessLoaded);
-  const dayAllowed = dayNumber <= maxAllowedDay;
 
   useEffect(() => {
     if (!enabled || !bootstrapReady) return;
     if (dayAllowed) return;
 
-    if (!premium && dayNumber > FREE_KUNLIK_DAY_LIMIT) {
-      navigate('/tariflar', { replace: true });
+    if (!sequentiallyAllowed) {
+      navigate(kunlikRejaPath(maxSequentialDay), { replace: true });
       return;
     }
 
-    navigate(kunlikRejaPath(maxAllowedDay), { replace: true });
-  }, [enabled, bootstrapReady, dayAllowed, dayNumber, maxAllowedDay, navigate, premium]);
+    navigate(kunlikRejaPath(dayNumber), { replace: true });
+  }, [enabled, bootstrapReady, dayAllowed, dayNumber, maxSequentialDay, navigate, sequentiallyAllowed]);
 
   const gatePending = Boolean(enabled && token && (!bootstrapReady || !dayAllowed));
 

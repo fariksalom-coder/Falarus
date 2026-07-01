@@ -20,7 +20,9 @@ describe('kunlik free day access', () => {
     }
   });
 
-  it('blocks day 3+ without subscription', () => {
+  it('blocks day 2+ without subscription', () => {
+    expect(isFreeKunlikDay(2)).toBe(false);
+    expect(canAccessKunlikDay(2, freeAccess)).toBe(false);
     expect(isFreeKunlikDay(3)).toBe(false);
     expect(canAccessKunlikDay(3, freeAccess)).toBe(false);
     expect(canAccessKunlikDay(182, freeAccess)).toBe(false);
@@ -28,6 +30,7 @@ describe('kunlik free day access', () => {
 
   it('allows any day with active subscription', () => {
     const premium = { ...freeAccess, subscription_active: true };
+    expect(canAccessKunlikDay(2, premium)).toBe(true);
     expect(canAccessKunlikDay(3, premium)).toBe(true);
     expect(canAccessKunlikDay(182, premium)).toBe(true);
   });
