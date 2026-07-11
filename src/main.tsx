@@ -17,10 +17,9 @@ if ('serviceWorker' in navigator) {
     });
   } else {
     window.addEventListener('load', () => {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((reg) => console.log('SW registered', reg.scope))
-        .catch((err) => console.log('SW registration failed', err));
+      void navigator.serviceWorker.register('/sw.js').catch(() => {
+        /* SW registration failed — offline mode simply unavailable */
+      });
     });
   }
 }

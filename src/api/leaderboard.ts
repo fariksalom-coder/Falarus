@@ -50,13 +50,3 @@ export async function fetchLeaderboard(
   }
 }
 
-export async function addUserPoints(
-  token: string | null,
-  amount: number
-): Promise<{ points: number; weekly_points: number; total_points?: number } | null> {
-  // Deprecated: points are now awarded through server-side lesson/vocabulary progress endpoints
-  // to keep scoring idempotent and avoid double-counting on retries.
-  void token;
-  void amount;
-  return null;
-}
