@@ -29,3 +29,7 @@ scripts/oneoff/generate_fariksalom_full_progress.ts
 # Sensitive user uploads/payment artifacts
 uploads/
 data/fossils-payments.json
+
+# Worktree-local symlinks — never track (paths are absolute to dev host)
+public/courses/patent
+public/courses/vnzh
