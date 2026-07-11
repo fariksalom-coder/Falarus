@@ -11,7 +11,6 @@ import {
 } from '../utils/teacherDisplay';
 
 function TeacherAvatar({ teacher }: { teacher: TeacherProfile }) {
-  const name = teacherDisplayName(teacher);
   if (teacher.avatar_url) {
     return (
       <img

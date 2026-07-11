@@ -191,7 +191,6 @@ export default function DailyCourseMapPage() {
                     const isPast = day < currentDay;
                     const isFuture = day > currentDay;
                     const freeLocked = !premium && day > FREE_KUNLIK_DAY_LIMIT;
-                    const locked = isFuture || (freeLocked && !isToday);
                     // Alternate left / right offset from vertical center — Duolingo-style path.
                     // Today marker + milestones stay centered; done + locked days zig-zag.
                     const sideShift = day % 2 === 1 ? '-36px' : '36px';

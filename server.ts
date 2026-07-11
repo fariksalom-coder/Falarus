@@ -312,7 +312,7 @@ async function startServer() {
     }
     return next();
   });
-  app.use('/uploads', (req, res, next) => {
+  app.use('/uploads', (_req, res, next) => {
     res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
     next();
   });

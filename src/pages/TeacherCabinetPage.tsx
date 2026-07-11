@@ -30,7 +30,6 @@ import {
   getTeacherListingPlanLabel,
   resolveTeacherListingPlanCode,
   TEACHER_LISTING_PLAN_MONTH,
-  TEACHER_LISTING_PLAN_FIRST,
   TEACHER_LISTING_PRICES_UZS,
   TEACHER_LISTING_PRODUCT_CODE,
 } from '../../shared/paymentProducts';

@@ -359,8 +359,6 @@ function QuestCard({
   const done = slot.state === 'done';
   const active = slot.state === 'active';
   const locked = slot.state === 'locked';
-  const accent = done ? '#35C06E' : active ? '#4E7EF0' : '#7A8AAE';
-  const image = slot.images[done ? 'done' : active ? 'active' : 'locked'];
   const requiresPurchase = !canEnterKunlikDayContent(day, premium);
 
   const emoji = slot.id === 'grammar'

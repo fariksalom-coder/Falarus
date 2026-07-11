@@ -93,13 +93,6 @@ function formatFullDayLabel(dateStr: string): string {
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', weekday: 'short' });
 }
 
-function niceCeil(value: number): number {
-  if (value <= 0) return 1;
-  const pow = Math.pow(10, Math.floor(Math.log10(value)));
-  const mantissa = value / pow;
-  const nice = mantissa <= 1 ? 1 : mantissa <= 2 ? 2 : mantissa <= 5 ? 5 : 10;
-  return nice * pow;
-}
 
 /** Currency conversion — 1 RUB = 150 UZS; USD approximated at 90 RUB. */
 const UZS_PER_RUB = 150;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Brain, CheckCircle2, ChevronRight, FileText, Mic } from 'lucide-react';
+import { Brain, CheckCircle2, ChevronRight } from 'lucide-react';
 import { getDailyCourseDay } from '../../api/dailyCourse';
 import { DAILY_PLAN, TOTAL_DAYS } from '../../data/dailyPlan';
 import { useLocale } from '../../context/LocaleContext';
@@ -22,26 +22,6 @@ type RowStatProps = {
   value: string;
   doneVisual: boolean | 'partial';
 };
-
-function RowStat({ icon: Icon, label, value, doneVisual }: RowStatProps) {
-  const valueColor =
-    doneVisual === true
-      ? 'text-emerald-700 dark:text-emerald-300'
-      : doneVisual === 'partial'
-        ? 'text-[#071B5E] dark:text-blue-300'
-        : 'text-slate-600 dark:text-slate-300';
-  return (
-    <div className="flex items-start gap-3 rounded-2xl border border-app-border bg-app-surface-elevated px-3 py-2.5">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-app-icon-bg text-app-primary">
-        <Icon className="h-4 w-4" aria-hidden />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-semibold text-app-text">{label}</p>
-        <p className={`mt-0.5 text-[13px] font-medium leading-snug ${valueColor}`}>{value}</p>
-      </div>
-    </div>
-  );
-}
 
 export type KunlikTodayStatsCardProps = {
   token: string | null;

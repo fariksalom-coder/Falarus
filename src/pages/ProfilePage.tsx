@@ -7,7 +7,6 @@ import {
   ChevronRight,
   CircleDollarSign,
   CircleHelp,
-  Crown,
   Globe2,
   History,
   LogOut,

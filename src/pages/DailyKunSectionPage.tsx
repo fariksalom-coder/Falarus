@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowLeft, Link2, ListChecks, Lock, Puzzle } from 'lucide-react';
+import { ArrowLeft, Link2, ListChecks, Puzzle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import type { DailyCourseDayBundle } from '../../shared/dailyCourseDay';

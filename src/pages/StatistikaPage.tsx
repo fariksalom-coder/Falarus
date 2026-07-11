@@ -4,11 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { resolveAssetUrl } from '../api';
 import {
-  fetchCourseProgress,
   fetchActivityCalendar,
   fetchWeeklyActivity,
   type ActivityCalendar,
-  type CourseProgress,
   type WeeklyActivityDay,
 } from '../api/stats';
 import { fetchStreak, getCachedStreak, type StreakResponse } from '../api/activity';
@@ -20,10 +18,6 @@ import AchievementsSection from '../components/achievements/AchievementsSection'
 import { Flame } from 'lucide-react';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
 
-const BORDER = 'var(--app-border)';
-const PRIMARY = 'var(--app-primary)';
-const TEXT = 'var(--app-text)';
-const TEXT_SECONDARY = 'var(--app-text-muted)';
 const EMPTY_STREAK: StreakResponse = {
   streak_days: 0,
   last_7_days: [false, false, false, false, false, false, false],
@@ -130,16 +124,6 @@ function WeeklyActivityChart({
 }) {
   const FALLBACK_H = [30, 44, 22, 60, 40, 46, 55];
   const useServer = serverDays != null && serverDays.length === last7.length;
-  const totalMinutes = useServer ? serverDays!.reduce((a, d) => a + d.minutes, 0) : 0;
-  const totalLabel = (() => {
-    if (!useServer || totalMinutes <= 0) return 'daqiqa / kun';
-    if (totalMinutes >= 60) {
-      const h = Math.floor(totalMinutes / 60);
-      const rem = totalMinutes % 60;
-      return rem > 0 ? `${h}s ${rem}m` : `${h} soat`;
-    }
-    return `${totalMinutes} min`;
-  })();
   // When we use server data (dates come in oldest → today order), derive labels
   // straight from those dates so bars align with day-of-week columns.
   const rows: Array<{ label: string; active: boolean; height: number; isToday: boolean; minutes: number }> =
@@ -523,17 +507,6 @@ export default function StatistikaPage() {
     fetchStreak(token).then((data) => {
       if (data) setStreak(data);
       setStreakLoaded(true);
-    });
-  }, [token]);
-
-  // --- Course progress ---
-  const [courseProgress, setCourseProgress] = useState<CourseProgress | null>(null);
-  const [courseLoaded, setCourseLoaded] = useState(false);
-  useEffect(() => {
-    if (!token) { setCourseLoaded(true); return; }
-    fetchCourseProgress(token).then((data) => {
-      if (data) setCourseProgress(data);
-      setCourseLoaded(true);
     });
   }, [token]);
 

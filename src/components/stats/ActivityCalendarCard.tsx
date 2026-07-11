@@ -56,8 +56,6 @@ export default function ActivityCalendarCard({
     return grid;
   }, [calendar, year, month]);
 
-  const monthLabel = MONTH_NAMES_UZ[month - 1] ?? '';
-
   return (
     <div className="rounded-[24px] bg-pmn-card p-4 shadow-[0_14px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border sm:p-5">
       {/* Header: serif title + Iyul pill + arrows */}

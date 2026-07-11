@@ -20,7 +20,6 @@ import {
 } from '../../shared/paymentProducts';
 import {
   Copy,
-  Upload,
   X,
   ArrowLeft,
   CreditCard,

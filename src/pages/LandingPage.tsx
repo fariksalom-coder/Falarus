@@ -4,7 +4,6 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import {
   Apple,
   Award,
-  BadgeCheck,
   BarChart3,
   BookOpenCheck,
   ChevronDown,
@@ -307,27 +306,6 @@ const featureCards = [
   { key: 'certificates', icon: Award, tone: 'bg-[#F1F5F9] text-[#0F172A]' },
   { key: 'community', icon: MessageSquare, tone: 'bg-[#9483E8] text-[#0F172A]' },
 ] as const satisfies readonly { key: FeatureKey; icon: typeof UserRoundCheck; tone: string }[];
-
-const planCards = [
-  {
-    key: 'free',
-    recommended: false,
-    className: 'bg-white text-[#121827]',
-    buttonClass: 'border border-[#121827] text-[#121827]',
-  },
-  {
-    key: 'pro',
-    recommended: true,
-    className: 'bg-[#0F172A] text-white shadow-[16px_18px_22px_rgba(15,23,42,0.12)]',
-    buttonClass: 'bg-[#C9DDF4] text-[#121827]',
-  },
-  {
-    key: 'elite',
-    recommended: false,
-    className: 'bg-gradient-to-br from-[#AE9AEF] to-[#F4D7C8] text-[#121827]',
-    buttonClass: 'border border-[#121827] text-[#121827]',
-  },
-] as const satisfies readonly { key: PlanKey; recommended: boolean; className: string; buttonClass: string }[];
 
 const copy = {
   ru: {

@@ -5,7 +5,7 @@ import * as referralPaymentService from '../services/referralPayment.service';
 
 export function createReferralRoutes(
   supabase: DatabaseClient,
-  authenticate: (req: any, res: any, next: any) => void
+  authenticate: (req: any, res: any, _next: any) => void
 ): Router {
   const router = Router();
 
@@ -27,7 +27,7 @@ export function createReferralRoutes(
   router.get('/referral/stats', authenticate, referralController.getStats(supabase));
   router.get('/referral/list', authenticate, referralController.getList(supabase));
   router.post('/referral/withdraw', authenticate, referralController.postWithdraw(supabase));
-  router.post('/referral', authenticate, (req: any, res, next) => {
+  router.post('/referral', authenticate, (req: any, res) => {
     return referralController.postWithdraw(supabase)(req, res);
   });
   router.get(

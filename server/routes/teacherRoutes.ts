@@ -15,11 +15,6 @@ function asNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((item) => asString(item)).filter(Boolean);
-}
-
 function teacherPublicSelect(): string {
   return [
     'user_id',

@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import type { DbClient } from '../types/dbClient';
 import * as subscriptionService from '../services/subscription.service';
-import * as accessControlService from '../services/accessControl.service';
 
 export function createAccessRoutes(
   supabase: DbClient,

@@ -222,10 +222,6 @@ export default function WordSwipeGamePage() {
     return t('games.stageProgress', { stage: stageNumber, total: availableStagesTotal });
   }, [availableStagesTotal, loadState.status, stageNumber, t]);
 
-  const foundWordsLabel = useMemo(
-    () => t('games.foundProgress', { found: foundCount, total: totalCount }),
-    [foundCount, t, totalCount],
-  );
 
   const handleWordFound = (word: WordSwipeEntry, path: GridCoord[]) => {
     const idKey = wordEntryIdKey(word.id);

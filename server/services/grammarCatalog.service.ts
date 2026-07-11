@@ -1,5 +1,4 @@
 import type { DbClient } from '../types/dbClient';
-import { supabase } from '../lib/dbFacadeClient.js';
 import { getAccessInfo } from './subscription.service.js';
 import { LESSONS } from '../../src/data/lessonsList.js';
 import { applyLessonsLock } from './accessControl.service.js';

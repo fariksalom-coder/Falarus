@@ -6,14 +6,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
-  Lightbulb,
   X,
 } from 'lucide-react';
 import type {
-  PatentExamAudioDoubleBlock,
   PatentExamBlock,
   PatentExamChoiceQuestion,
-  PatentExamMultipleChoiceBlock,
   PatentExamVariant,
   PatentExamWrittenBlock,
 } from '../data/patentExamData';
@@ -28,7 +25,6 @@ import { playCorrectSound, playWrongSound } from '../utils/sound';
 const BG = '#F7F1E4';
 const BORDER = '#D7E5F5';
 const TEXT = '#16324F';
-const TEXT_SECONDARY = '#6B7F99';
 
 type PatentVariantStep = {
   block: PatentExamBlock;
