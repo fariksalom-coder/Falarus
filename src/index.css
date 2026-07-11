@@ -4,56 +4,176 @@
 
 :root {
   --app-text-scale: 1;
-  --app-bg: #f8fafc;
-  --app-bg-muted: #f4f9ff;
-  --app-bg-subtle: #eef4fa;
-  --app-surface: #ffffff;
-  --app-surface-elevated: #f8fbff;
-  --app-border: #e2e8f0;
-  --app-border-soft: rgb(226 232 240 / 0.9);
-  --app-border-row: #f1f5f9;
-  --app-text: #0f172a;
-  --app-text-muted: #64748b;
-  --app-text-secondary: #6b7280;
-  --app-primary: #2563eb;
-  --app-primary-deep: #24459a;
-  --app-brand: #0b3ccb;
-  --app-nav-bg: #ffffff;
-  --app-row-hover: #f8fafc;
-  --app-row-active: #f1f5f9;
-  --app-icon-bg: #eef4fa;
-  --app-icon-fg: #64748b;
+
+  /* Surfaces — 1A navy premium light theme */
+  --app-bg: #FFFFFF;
+  --app-bg-muted: #F7F7F5;
+  --app-bg-subtle: #F0EFEB;
+  --app-surface: #FFFFFF;
+  --app-surface-elevated: #F7F9FD;
+
+  /* Borders */
+  --app-border: #E7ECF5;
+  --app-border-soft: rgb(231 236 245 / 0.9);
+  --app-border-row: #F0F3FA;
+  --app-border-strong: #DCE6F3;
+
+  /* Text — navy hierarchy */
+  --app-text: #0C1A3A;
+  --app-text-muted: #5B678A;
+  --app-text-secondary: #8794AC;
+
+  /* Brand — navy premium */
+  --app-primary: #0B2A6B;
+  --app-primary-deep: #071B5E;
+  --app-primary-mid: #123A8F;
+  --app-brand: #0B2A6B;
+  --app-brand-gradient: linear-gradient(150deg, #123A8F 0%, #0B2A6B 55%, #071B5E 100%);
+
+  /* Nav */
+  --app-nav-bg: #FFFFFF;
+  --app-row-hover: #F5F7FB;
+  --app-row-active: #EDF1F8;
+
+  /* Icons */
+  --app-icon-bg: #EEF3FF;
+  --app-icon-fg: #5B678A;
   --app-switch-off: #cbd5e1;
-  --app-shadow-card: 0 14px 34px rgba(148, 163, 184, 0.12);
-  --app-shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.09);
-  --app-shadow-elevated: 0 12px 28px rgba(15, 23, 42, 0.14);
+
+  /* Accent (gold — премиум / сертификат / оплата) */
+  --app-accent: #C08A2D;
+  --app-accent-strong: #A9791C;
+  --app-accent-bg: #FBF3E2;
+  --app-accent-text: #B0894A;
+  --app-accent-light: #E7C578;
+
+  /* Status */
+  --app-success: #12A150;
+  --app-success-deep: #0F8A44;
+  --app-success-bg: #E6F7EC;
+  --app-success-text: #0A6B36;
+  --app-warning: #B7791F;
+  --app-warning-bg: #FEF3C7;
+  --app-danger: #D64545;
+  --app-danger-bg: #FDE5E5;
+
+  /* Extra brand accents */
+  --app-teal: #0EA5A5;
+  --app-purple: #7C3AED;
+
+  /* Shadows */
+  --app-shadow-card: 0 12px 28px -10px rgba(15, 23, 42, 0.10);
+  --app-shadow-soft: 0 6px 16px rgba(15, 23, 42, 0.05);
+  --app-shadow-elevated: 0 12px 26px rgba(96, 132, 184, 0.12);
+  --app-shadow-nav-btn: 0 14px 28px -10px rgba(11, 42, 107, 0.5);
+
+  /* Premium palette (Statistika / Profile / Pricing / Payment / Courses).
+     Every recently-redesigned card should reach for these tokens instead of
+     hardcoding #131F44 / #F1F0EB / #E5E7EB so that dark mode auto-adapts. */
+  --pmn-card-bg: #FFFFFF;
+  --pmn-card-border: #E5E7EB;
+  --pmn-card-shadow: 0 14px 28px -16px rgba(15, 27, 59, 0.18);
+  --pmn-text: #131F44;                 /* serif heading */
+  --pmn-text-muted: #7A756B;           /* cream-tinted caption */
+  --pmn-text-soft: #9E9787;            /* subtle caption / weekday labels */
+  --pmn-fill-inset: #F8F9FB;           /* rest-of-list row bg */
+  --pmn-fill-inset-border: #EEF1F6;
+  --pmn-fill-cream: #F5F3EC;           /* cream chip / stripe */
+  --pmn-fill-cream-strong: #F1F0EB;
+  --pmn-fill-cream-border: #E7E5DC;
+  --pmn-pill-bg: #F1F4F9;              /* light pill / tab background */
+  --pmn-navy: #0F1B3B;                 /* dark passport surface (stays dark in both themes) */
+  --pmn-navy-deep: #0A1638;
+  --pmn-gold: #D4AC5C;
+  --pmn-gold-light: #F5D48F;
+  --pmn-gold-deep: #B0894A;
+  --pmn-gold-tint: rgba(212, 172, 92, 0.14);
+
   color-scheme: light;
 }
 
 .dark {
-  --app-bg: #0b1220;
-  --app-bg-muted: #0b1220;
-  --app-bg-subtle: #0f1729;
-  --app-surface: #131d33;
-  --app-surface-elevated: #18243d;
-  --app-border: #1e2d5c;
-  --app-border-soft: rgb(30 45 92 / 0.9);
+  /* Surfaces — deep navy */
+  --app-bg: #0A1122;
+  --app-bg-muted: #0A1122;
+  --app-bg-subtle: #0F1A31;
+  --app-surface: #142139;
+  --app-surface-elevated: #182645;
+
+  /* Borders */
+  --app-border: #23335A;
+  --app-border-soft: rgb(35 51 90 / 0.9);
   --app-border-row: rgb(255 255 255 / 0.06);
-  --app-text: #f1f5f9;
-  --app-text-muted: #94a3b8;
-  --app-text-secondary: #94a3b8;
-  --app-primary: #3b82f6;
-  --app-primary-deep: #3b82f6;
-  --app-brand: #60a5fa;
-  --app-nav-bg: #111a2e;
+  --app-border-strong: #2A3B63;
+
+  /* Text */
+  --app-text: #EAF0FA;
+  --app-text-muted: #93A2C2;
+  --app-text-secondary: #6E86BE;
+
+  /* Brand — bright blue for contrast on navy */
+  --app-primary: #4E7EF0;
+  --app-primary-deep: #2F6BFF;
+  --app-primary-mid: #3B6FE0;
+  --app-brand: #7FA8FF;
+  --app-brand-gradient: linear-gradient(150deg, #3A6BE0 0%, #1E3E9E 100%);
+
+  /* Nav — deeper than surface */
+  --app-nav-bg: #0E1A31;
   --app-row-hover: rgb(255 255 255 / 0.04);
   --app-row-active: rgb(255 255 255 / 0.06);
-  --app-icon-bg: rgb(255 255 255 / 0.06);
-  --app-icon-fg: #cbd5e1;
-  --app-switch-off: #334155;
-  --app-shadow-card: 0 0 0 1px rgb(255 255 255 / 0.08);
-  --app-shadow-soft: 0 0 0 1px rgb(255 255 255 / 0.06);
-  --app-shadow-elevated: 0 0 0 1px rgb(255 255 255 / 0.08);
+
+  /* Icons */
+  --app-icon-bg: rgba(78, 126, 240, 0.14);
+  --app-icon-fg: #7FA8FF;
+  --app-switch-off: #2A3B63;
+
+  /* Accent gold — brighter on dark */
+  --app-accent: #E7C578;
+  --app-accent-strong: #C79A3E;
+  --app-accent-bg: rgba(231, 197, 120, 0.14);
+  --app-accent-text: #E7C578;
+  --app-accent-light: #F2DAA1;
+
+  /* Status */
+  --app-success: #35C06E;
+  --app-success-bg: rgba(53, 192, 110, 0.14);
+  --app-warning: #F5B94A;
+  --app-warning-bg: rgba(245, 185, 74, 0.14);
+  --app-danger: #F0656A;
+  --app-danger-bg: rgba(240, 101, 106, 0.15);
+
+  --app-teal: #2DD4BF;
+  --app-purple: #A78BFA;
+
+  /* Shadows — combine glow + soft outline for navy surface */
+  --app-shadow-card: 0 12px 24px -12px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255,255,255,0.02);
+  --app-shadow-soft: 0 6px 16px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255,255,255,0.02);
+  --app-shadow-elevated: 0 20px 40px -16px rgba(0, 0, 0, 0.6);
+  --app-shadow-nav-btn: 0 8px 20px -6px rgba(78, 126, 240, 0.4);
+
+  /* Premium palette — dark theme overrides.
+     Navy/gold stay the same; the "cream" and inset fills shift to deep-navy
+     so cards feel intentional (not floating white) on the dark bg. */
+  --pmn-card-bg: #142139;
+  --pmn-card-border: rgb(255 255 255 / 0.08);
+  --pmn-card-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --pmn-text: #F0E6CE;                 /* serif heading — warm cream, echoes gold */
+  --pmn-text-muted: #B4AFA0;
+  --pmn-text-soft: #8A8574;
+  --pmn-fill-inset: #182645;
+  --pmn-fill-inset-border: rgb(255 255 255 / 0.06);
+  --pmn-fill-cream: #1A2949;
+  --pmn-fill-cream-strong: #17253F;
+  --pmn-fill-cream-border: rgb(255 255 255 / 0.06);
+  --pmn-pill-bg: #1A2949;
+  --pmn-navy: #0F1B3B;
+  --pmn-navy-deep: #0A1638;
+  --pmn-gold: #E7C578;
+  --pmn-gold-light: #F5D48F;
+  --pmn-gold-deep: #C79A3E;
+  --pmn-gold-tint: rgba(231, 197, 120, 0.14);
+
   color-scheme: dark;
 }
 
@@ -64,18 +184,53 @@
   --color-app-surface: var(--app-surface);
   --color-app-surface-elevated: var(--app-surface-elevated);
   --color-app-border: var(--app-border);
+  --color-app-border-strong: var(--app-border-strong);
   --color-app-text: var(--app-text);
   --color-app-text-muted: var(--app-text-muted);
   --color-app-text-secondary: var(--app-text-secondary);
   --color-app-primary: var(--app-primary);
   --color-app-primary-deep: var(--app-primary-deep);
+  --color-app-primary-mid: var(--app-primary-mid);
   --color-app-brand: var(--app-brand);
   --color-app-nav: var(--app-nav-bg);
   --color-app-icon-bg: var(--app-icon-bg);
   --color-app-icon-fg: var(--app-icon-fg);
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-strong: var(--app-accent-strong);
+  --color-app-accent-bg: var(--app-accent-bg);
+  --color-app-accent-text: var(--app-accent-text);
+  --color-app-accent-light: var(--app-accent-light);
+  --color-app-success: var(--app-success);
+  --color-app-success-bg: var(--app-success-bg);
+  --color-app-warning: var(--app-warning);
+  --color-app-warning-bg: var(--app-warning-bg);
+  --color-app-danger: var(--app-danger);
+  --color-app-danger-bg: var(--app-danger-bg);
+  --color-app-teal: var(--app-teal);
+  --color-app-purple: var(--app-purple);
   --shadow-app-card: var(--app-shadow-card);
   --shadow-app-soft: var(--app-shadow-soft);
   --shadow-app-elevated: var(--app-shadow-elevated);
+  --shadow-app-nav-btn: var(--app-shadow-nav-btn);
+
+  /* Premium palette — Tailwind theme mapping */
+  --color-pmn-card: var(--pmn-card-bg);
+  --color-pmn-border: var(--pmn-card-border);
+  --color-pmn-text: var(--pmn-text);
+  --color-pmn-text-muted: var(--pmn-text-muted);
+  --color-pmn-text-soft: var(--pmn-text-soft);
+  --color-pmn-inset: var(--pmn-fill-inset);
+  --color-pmn-inset-border: var(--pmn-fill-inset-border);
+  --color-pmn-cream: var(--pmn-fill-cream);
+  --color-pmn-cream-strong: var(--pmn-fill-cream-strong);
+  --color-pmn-cream-border: var(--pmn-fill-cream-border);
+  --color-pmn-pill: var(--pmn-pill-bg);
+  --color-pmn-navy: var(--pmn-navy);
+  --color-pmn-navy-deep: var(--pmn-navy-deep);
+  --color-pmn-gold: var(--pmn-gold);
+  --color-pmn-gold-light: var(--pmn-gold-light);
+  --color-pmn-gold-deep: var(--pmn-gold-deep);
+  --shadow-pmn-card: var(--pmn-card-shadow);
 }
 
 html {
@@ -91,17 +246,33 @@ html {
 body {
   background-color: var(--app-bg);
   color: var(--app-text);
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 600;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* Auth pages use Nunito (1B theme) */
+.auth-theme,
+.auth-theme * {
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
 }
 
 /* Bottom nav: light SVGs are invisible on dark surfaces */
 .dark .nav-icon {
   filter: brightness(0) invert(1);
-  opacity: 0.38;
+  opacity: 0.36;
 }
 
 .dark .nav-icon-active {
-  filter: brightness(0) saturate(100%) invert(56%) sepia(91%) saturate(1200%) hue-rotate(199deg)
-    brightness(103%) contrast(97%);
+  /* Recolor icon to #7FA8FF (bright brand blue) via matrix */
+  filter: brightness(0) saturate(100%) invert(71%) sepia(14%) saturate(1855%) hue-rotate(191deg)
+    brightness(101%) contrast(101%);
   opacity: 1;
 }
 
@@ -117,20 +288,391 @@ body {
   }
 }
 
-/* intl-tel-input: match auth field styling */
+/* intl-tel-input: match auth field styling (LIGHT V2) */
 .intl-phone-field .iti {
   width: 100%;
 }
 .intl-phone-field .iti__country-container .iti__selected-flag {
-  border-radius: 0.75rem 0 0 0.75rem;
+  border-radius: 1rem 0 0 1rem;
+  background: transparent;
+}
+.intl-phone-field .iti__country-container .iti__selected-flag:hover,
+.intl-phone-field .iti__country-container .iti__selected-flag:focus {
+  background: rgba(47, 107, 255, 0.06);
 }
 .intl-phone-field .iti input {
-  min-height: 3rem;
-  border-radius: 0.75rem;
-  border-color: #c8dcf3;
-  font-weight: 600;
+  min-height: 3.5rem;
+  border-radius: 1rem;
+  border-color: #E1E7F1;
+  border-width: 2px;
+  background: #FFFFFF;
+  color: #17224A;
+  font-weight: 800;
 }
 .intl-phone-field .iti input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 1.2px #2563eb;
+  border-color: #2F6BFF;
+  box-shadow: 0 0 0 4px rgba(47, 107, 255, 0.1);
+}
+.intl-phone-field .iti__country-list {
+  background: #FFFFFF;
+  border: 1px solid #E1E7F1;
+  color: #17224A;
+}
+.intl-phone-field .iti__country:hover,
+.intl-phone-field .iti__country.iti__highlight {
+  background: rgba(47, 107, 255, 0.08);
+}
+.intl-phone-field .iti__divider {
+  border-bottom-color: #E1E7F1;
+}
+.intl-phone-field .iti__dial-code {
+  color: #B4BFD3;
+}
+/* Force country dropdown to open BELOW the phone field, not above. */
+.intl-phone-field .iti__dropdown-content,
+.intl-phone-field .iti__country-list {
+  top: 100% !important;
+  bottom: auto !important;
+  margin-top: 6px;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Pulse ring around active quest CTA — subtle, ~2s cadence. */
+@keyframes quest-cta-pulse {
+  0%, 100% {
+    box-shadow: 0 10px 22px -10px rgba(11, 42, 107, 0.55), 0 0 0 0 rgba(11, 42, 107, 0.4);
+  }
+  50% {
+    box-shadow: 0 12px 26px -10px rgba(11, 42, 107, 0.6), 0 0 0 8px rgba(11, 42, 107, 0);
+  }
+}
+.quest-cta-active {
+  animation: quest-cta-pulse 2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+/* Sparkle sweep across the button every ~3.5s. */
+.quest-cta-active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.42) 50%, transparent 80%);
+  transform: skewX(-18deg);
+  animation: quest-cta-sweep 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes quest-cta-sweep {
+  0%, 60% { left: -60%; }
+  75% { left: 120%; }
+  100% { left: 120%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quest-cta-active,
+  .quest-cta-active::after {
+    animation: none;
+  }
+}
+
+/* Patent Premium theme — serif titles, cream palette, guilloché motif. */
+.font-serif-display {
+  font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  font-feature-settings: 'lnum';
+  letter-spacing: -0.01em;
+}
+.patent-premium {
+  background: #FFFFFF;
+}
+.patent-gold-text {
+  background: linear-gradient(135deg, #F6E2A8 0%, #D9B45A 45%, #B8892F 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.patent-gold-cta {
+  background: linear-gradient(135deg, #F6E2A8 0%, #D9B45A 45%, #B8892F 100%);
+  color: #0A1E48;
+  box-shadow: 0 10px 24px -10px rgba(217, 180, 90, 0.6);
+}
+/* Guilloché — layered concentric radial rings for premium hero background. */
+.patent-guilloche {
+  background-image:
+    radial-gradient(circle at 82% 30%, rgba(217, 180, 90, 0.10) 0, rgba(217, 180, 90, 0.10) 1px, transparent 1px, transparent 12px),
+    radial-gradient(circle at 82% 30%, rgba(217, 180, 90, 0.06) 0, rgba(217, 180, 90, 0.06) 1px, transparent 1px, transparent 26px),
+    radial-gradient(circle at 18% 78%, rgba(217, 180, 90, 0.05) 0, rgba(217, 180, 90, 0.05) 1px, transparent 1px, transparent 18px);
+}
+
+/* Profile — passport-document: cream bg + deep navy card + champagne gold accents. */
+.profile-premium {
+  --pf-bg: #FFFFFF;
+  --pf-bg-alt: #F7F7F5;
+  --pf-navy: #0F1B3B;
+  --pf-navy-deep: #0A1638;
+  --pf-navy-soft: #16244A;
+  --pf-gold: #D4AC5C;
+  --pf-gold-light: #F5D48F;
+  --pf-gold-pale: #F1E5C0;
+  --pf-gold-bg: rgba(212, 172, 92, 0.14);
+  --pf-cream-tile: #FCF8EC;
+  --pf-cream-tile-warm: #F8F0DB;
+  --pf-text: #131F44;
+  --pf-text-muted: #7A756B;
+  --pf-text-faint: #9E9787;
+  --pf-border: #E4DBBE;
+  background: var(--pf-bg);
+}
+.profile-heading {
+  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.profile-guilloche {
+  background-color: #0F1B3B;
+  background-image:
+    radial-gradient(circle at 78% 30%, rgba(212, 172, 92, 0.18) 0, rgba(212, 172, 92, 0.18) 1px, transparent 1px, transparent 12px),
+    radial-gradient(circle at 78% 30%, rgba(212, 172, 92, 0.10) 0, rgba(212, 172, 92, 0.10) 1px, transparent 1px, transparent 24px),
+    radial-gradient(circle at 18% 78%, rgba(212, 172, 92, 0.08) 0, rgba(212, 172, 92, 0.08) 1px, transparent 1px, transparent 18px),
+    linear-gradient(155deg, #16244A 0%, #0F1B3B 55%, #0A1638 100%);
+}
+.profile-gold-pill {
+  background: linear-gradient(135deg, #F5D48F 0%, #D4AC5C 55%, #B8873A 100%);
+  color: #0A1638;
+  box-shadow: 0 8px 18px -8px rgba(184, 135, 58, 0.55);
+}
+.profile-gold-text {
+  background: linear-gradient(135deg, #F5D48F 0%, #D4AC5C 45%, #B8873A 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* VNZH course — deep forest green + champagne gold + cream theme (premium). */
+.vnzh-premium {
+  --vz-bg: #FFFFFF;
+  --vz-bg-warm: #F7F7F5;
+  --vz-card: #FFFDF8;
+  --vz-card-cream: #F6F1E5;
+  --vz-forest: #123A32;
+  --vz-forest-deep: #0B2926;
+  --vz-forest-soft: #22412E;
+  --vz-mint: #2E7D57;
+  --vz-mint-bg: #E6F2EA;
+  --vz-gold: #CBA35A;
+  --vz-gold-light: #E4C88A;
+  --vz-gold-pale: #EBD199;
+  --vz-gold-deep: #B0894A;
+  --vz-gold-bg: rgba(203, 163, 90, 0.16);
+  --vz-text: #123A32;
+  --vz-text-muted: #5C5646;
+  --vz-text-faint: #9A947F;
+  --vz-border: #E2D9C4;
+  --vz-divider: #E6DECB;
+  background: var(--vz-bg);
+}
+.vnzh-heading {
+  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.vnzh-serif-italic {
+  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  color: var(--vz-gold-deep);
+}
+.vnzh-gold-cta {
+  background: linear-gradient(135deg, #EBD199 0%, #CBA35A 50%, #B0894A 100%);
+  color: var(--vz-forest-deep);
+  box-shadow: 0 12px 26px -10px rgba(203, 163, 90, 0.55);
+}
+.vnzh-forest-panel {
+  background-color: #123A32;
+  background-image:
+    radial-gradient(circle at 82% 25%, rgba(203, 163, 90, 0.14) 0, rgba(203, 163, 90, 0.14) 1px, transparent 1px, transparent 14px),
+    radial-gradient(circle at 82% 25%, rgba(203, 163, 90, 0.08) 0, rgba(203, 163, 90, 0.08) 1px, transparent 1px, transparent 28px),
+    linear-gradient(155deg, #22412E 0%, #123A32 55%, #0B2926 100%);
+}
+.vnzh-guilloche {
+  background-image:
+    radial-gradient(circle at 82% 30%, rgba(203, 163, 90, 0.14) 0, rgba(203, 163, 90, 0.14) 1px, transparent 1px, transparent 14px),
+    radial-gradient(circle at 82% 30%, rgba(203, 163, 90, 0.08) 0, rgba(203, 163, 90, 0.08) 1px, transparent 1px, transparent 28px);
+}
+
+/* Reading block — mint / teal warm cream theme. */
+.reading-theme {
+  --rd-bg: #FFFFFF;
+  --rd-bg-warm: #F7F7F5;
+  --rd-primary: #0FA598;
+  --rd-primary-dark: #0E8A80;
+  --rd-primary-deeper: #0B7167;
+  --rd-primary-tint: rgba(15, 165, 152, 0.13);
+  --rd-mint: #25D19A;
+  --rd-mint-soft: #BFF0E8;
+  --rd-mint-panel: #E1F5F1;
+  --rd-gold: #FFB43D;
+  --rd-gold-deep: #E8912A;
+  --rd-gold-bg: #FFF0D2;
+  --rd-card: #F4FAF8;
+  --rd-white: #FFFFFF;
+  --rd-text: #0B2926;
+  --rd-text-secondary: #123B36;
+  --rd-text-muted: #5A726E;
+  --rd-text-faint: #8AA6A0;
+  --rd-border: #DCEBE7;
+  --rd-underline: #B0C4BF;
+  background: var(--rd-bg);
+}
+.reading-heading {
+  font-family: 'Fredoka', 'Nunito', 'Manrope', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.reading-serif {
+  font-family: 'Fredoka', 'Nunito', 'Manrope', sans-serif;
+  font-weight: 600;
+}
+.reading-cta {
+  background: linear-gradient(135deg, #25D19A 0%, #0FA598 55%, #0E8A80 100%);
+  color: #fff;
+  box-shadow: 0 14px 30px -12px rgba(15, 165, 152, 0.55);
+}
+.reading-word-btn {
+  position: relative;
+  display: inline;
+  padding: 0 2px;
+  font-weight: 500;
+  color: var(--rd-text);
+  background-image: linear-gradient(to right, var(--rd-underline) 0, var(--rd-underline) 4px, transparent 4px, transparent 8px);
+  background-repeat: repeat-x;
+  background-size: 8px 1px;
+  background-position: 0 100%;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  border-radius: 4px;
+}
+.reading-word-btn:hover {
+  color: var(--rd-primary-deeper);
+  background-color: rgba(15, 165, 152, 0.08);
+}
+.reading-word-btn-active {
+  color: var(--rd-primary-deeper);
+  background-color: rgba(15, 165, 152, 0.14);
+  box-shadow: inset 0 0 0 1.5px var(--rd-primary);
+}
+
+/* Grammar block — lavender / purple / mint playful theme. */
+.grammar-theme {
+  --gr-bg: #FFFFFF;
+  --gr-primary: #5B4CE0;
+  --gr-primary-soft: #8B7AF7;
+  --gr-primary-light: #E3DEF9;
+  --gr-text: #2D1B69;
+  --gr-text-muted: #8B7FAB;
+  --gr-success: #22C55E;
+  --gr-mint: #82E5B8;
+  --gr-mint-bg: #DCFCE7;
+  --gr-warm: #FFCEB0;
+  --gr-warm-bg: #FFEEDD;
+  --gr-border: #DDD7F5;
+  --gr-card: #FFFFFF;
+  background: var(--gr-bg);
+}
+.grammar-heading {
+  font-family: 'Nunito', 'Manrope', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+/* Dark-mode overrides for the per-course "premium" themes.
+   Each theme sets --xx-bg/--xx-text/etc. hardcoded to a bright value at :root
+   scope; in dark we remap them so the whole course page becomes navy without
+   touching every JSX file. */
+.dark .patent-premium { background: var(--app-bg); }
+.dark .profile-premium {
+  --pf-bg: var(--app-bg);
+  --pf-bg-alt: var(--app-bg-subtle);
+  --pf-cream-tile: var(--pmn-fill-cream);
+  --pf-cream-tile-warm: var(--pmn-fill-cream-strong);
+  --pf-text: var(--pmn-text);
+  --pf-text-muted: var(--pmn-text-muted);
+  --pf-text-faint: var(--pmn-text-soft);
+  --pf-border: var(--pmn-card-border);
+  background: var(--pf-bg);
+}
+.dark .vnzh-premium {
+  --vz-bg: var(--app-bg);
+  --vz-bg-warm: var(--app-bg-subtle);
+  --vz-card: var(--pmn-card-bg);
+  --vz-card-cream: var(--pmn-fill-cream);
+  --vz-text: var(--pmn-text);
+  --vz-text-muted: var(--pmn-text-muted);
+  --vz-text-faint: var(--pmn-text-soft);
+  --vz-border: var(--pmn-card-border);
+  --vz-divider: var(--pmn-card-border);
+  background: var(--vz-bg);
+}
+.dark .reading-theme {
+  --rd-bg: var(--app-bg);
+  --rd-bg-warm: var(--app-bg-subtle);
+  --rd-card: var(--pmn-card-bg);
+  --rd-white: var(--pmn-card-bg);
+  --rd-text: var(--pmn-text);
+  --rd-text-secondary: var(--pmn-text);
+  --rd-text-muted: var(--pmn-text-muted);
+  --rd-text-faint: var(--pmn-text-soft);
+  --rd-border: var(--pmn-card-border);
+  --rd-underline: rgba(255, 255, 255, 0.32);
+  background: var(--rd-bg);
+}
+.dark .grammar-theme {
+  --gr-bg: var(--app-bg);
+  --gr-primary-light: rgba(139, 122, 247, 0.18);
+  --gr-text: var(--pmn-text);
+  --gr-text-muted: var(--pmn-text-muted);
+  --gr-border: var(--pmn-card-border);
+  --gr-card: var(--pmn-card-bg);
+  --gr-mint-bg: rgba(34, 197, 94, 0.18);
+  --gr-warm-bg: rgba(255, 206, 176, 0.14);
+  background: var(--gr-bg);
+}
+
+/* Feedback pop-in — small bounce + fade for correct/wrong messages. */
+@keyframes msg-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.msg-pop {
+  animation: msg-pop-in 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  display: inline-block;
+}
+/* Shake for wrong feedback — subtle 6px horizontal jitter. */
+@keyframes msg-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.msg-shake {
+  animation: msg-pop-in 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+             msg-shake 0.4s ease-in-out 0.35s both;
+  display: inline-block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .msg-pop,
+  .msg-shake {
+    animation: none;
+  }
 }

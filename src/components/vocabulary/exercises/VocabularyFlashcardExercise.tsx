@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'motion/react';
 import type { VocabularyEntry } from '../../../data/vocabularyContent';
 
 type Props = {
@@ -30,92 +31,117 @@ export function VocabularyFlashcardExercise({
 
   if (current) {
     return (
-      <div className="mx-auto max-w-[720px]" style={{ backgroundColor: '#F8FAFC' }}>
-        <p className="text-center text-sm font-medium" style={{ color: '#64748B' }}>
-          {cardIndex + 1} / {total} so&apos;z
-        </p>
-        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
-          <div
-            className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{
-              width: `${((cardIndex + 1) / total) * 100}%`,
-              backgroundColor: '#6366F1',
-            }}
-          />
+      <div className="mx-auto max-w-[720px]">
+        {/* Purple gradient progress bar */}
+        <div className="flex items-center gap-3">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#DDD7F5]">
+            <div
+              className="h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: `${((cardIndex + 1) / total) * 100}%`,
+                background: 'linear-gradient(90deg, #8B7AF7, #5B4CE0)',
+              }}
+            />
+          </div>
+          <span className="grammar-heading text-[13px] text-[#5B4CE0]">
+            {cardIndex + 1}/{total}
+          </span>
         </div>
 
-        <div className="mt-4" style={{ perspective: '1000px' }}>
-          <button
-            type="button"
-            onClick={onToggleFlip}
-            className="relative h-64 w-full cursor-pointer overflow-hidden rounded-[20px]"
-            style={{ transformStyle: 'preserve-3d' }}
-          >
+        <p className="mt-3 text-[11px] font-black uppercase tracking-[0.16em] text-[#8B7FAB]">
+          VAZIFA 1 · TANISHISH
+        </p>
+
+        {/* Counters — mint + rose pill cards */}
+        <div className="mt-3 flex gap-2.5">
+          <div className="flex-1 rounded-[16px] border-[1.5px] border-[#82E5B8] bg-[#DCFCE7] p-3 text-center shadow-[0_6px_14px_-8px_rgba(34,197,94,0.25)]">
+            <p className="text-[10.5px] font-black uppercase tracking-[0.14em] text-[#0F7C3A]">BILAMAN</p>
+            <p className="grammar-heading mt-0.5 text-[24px] leading-none text-[#0F7C3A]">{knownCount}</p>
+          </div>
+          <div className="flex-1 rounded-[16px] border-[1.5px] border-[#F5B5B5] bg-[#FEEBEB] p-3 text-center shadow-[0_6px_14px_-8px_rgba(180,40,46,0.20)]">
+            <p className="text-[10.5px] font-black uppercase tracking-[0.14em] text-[#B4282E]">BILMAYMAN</p>
+            <p className="grammar-heading mt-0.5 text-[24px] leading-none text-[#B4282E]">{unknownCount}</p>
+          </div>
+        </div>
+
+        {/* Purple flashcard — slide-in on new word, flip on tap */}
+        <div className="relative mt-4 h-[300px]" style={{ perspective: '1400px' }}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.button
+              key={cardIndex}
+              type="button"
+              onClick={onToggleFlip}
+              className="absolute inset-0 w-full cursor-pointer overflow-hidden rounded-[28px]"
+              style={{ transformStyle: 'preserve-3d' }}
+              initial={{ x: 90, opacity: 0, rotateY: -14, scale: 0.94 }}
+              animate={{ x: 0, opacity: 1, rotateY: 0, scale: 1 }}
+              exit={{ x: -90, opacity: 0, rotateY: 14, scale: 0.94 }}
+              transition={{ duration: 0.42, ease: [0.32, 0.72, 0, 1] }}
+            >
+            {/* Front face — purple gradient (Ruscha) */}
             <div
-              className="absolute inset-0 flex flex-col items-center justify-center rounded-[20px] border bg-white p-10 shadow-lg transition-transform duration-500 ease-out"
+              className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden rounded-[28px] p-8 text-white transition-transform duration-500 ease-out"
               style={{
-                borderColor: '#E2E8F0',
+                background: 'linear-gradient(155deg, #7B6BEE 0%, #5B4CE0 60%, #4C3EC7 100%)',
+                boxShadow: '0 24px 44px -14px rgba(91, 76, 224, 0.55)',
                 transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                 backfaceVisibility: 'hidden',
               }}
             >
-              <p className="text-xs font-medium uppercase tracking-wider" style={{ color: '#64748B' }}>
-                <span className="mr-1.5 text-base" aria-hidden>
-                  🇺🇿
-                </span>
-                O&apos;zbekcha
+              <div
+                className="pointer-events-none absolute -right-10 -top-10 h-[140px] w-[140px] rounded-full"
+                style={{ background: 'rgba(255,255,255,0.14)' }}
+              />
+              <div
+                className="pointer-events-none absolute -left-6 -bottom-6 h-[100px] w-[100px] rounded-full"
+                style={{ background: 'rgba(255,255,255,0.08)' }}
+              />
+              <span className="text-[11px] font-black uppercase tracking-[0.28em] text-white/75">
+                RUSCHA
+              </span>
+              <p className="grammar-heading mt-3 text-center text-[44px] leading-none tracking-[-0.02em]">
+                {current.russian}
               </p>
-              <p className="mt-4 text-center text-3xl font-bold" style={{ color: '#0F172A' }}>
-                {current.uzbek}
-              </p>
+              <span className="absolute bottom-4 text-[12px] font-bold text-white/70">
+                👆 aylantirish uchun bosing
+              </span>
             </div>
+            {/* Back face — white card (O'zbekcha) */}
             <div
-              className="absolute inset-0 flex flex-col items-center justify-center rounded-[20px] border bg-white p-10 shadow-lg transition-transform duration-500 ease-out"
+              className="absolute inset-0 flex flex-col items-center justify-center rounded-[28px] border-[1.5px] border-[#DDD7F5] bg-white p-8 transition-transform duration-500 ease-out"
               style={{
-                borderColor: '#E2E8F0',
+                boxShadow: '0 24px 44px -14px rgba(45,27,105,0.14)',
                 transform: cardFlipped ? 'rotateY(0deg)' : 'rotateY(-180deg)',
                 backfaceVisibility: 'hidden',
               }}
             >
-              <p className="text-xs font-medium uppercase tracking-wider" style={{ color: '#64748B' }}>
-                <span className="mr-1.5 text-base" aria-hidden>
-                  🇷🇺
-                </span>
-                Ruscha
+              <span className="text-[11px] font-black uppercase tracking-[0.28em] text-[#8B7FAB]">
+                O'ZBEKCHA
+              </span>
+              <p className="grammar-heading mt-3 text-center text-[36px] leading-tight text-[#2D1B69]">
+                {current.uzbek}
               </p>
-              <p className="mt-4 text-center text-3xl font-bold" style={{ color: '#0F172A' }}>
-                {current.russian}
-              </p>
+              <span className="absolute bottom-4 text-[12px] font-bold text-[#8B7FAB]">
+                👆 orqaga aylantirish
+              </span>
             </div>
-          </button>
+            </motion.button>
+          </AnimatePresence>
         </div>
 
-        <p className="mt-4 text-center text-xs" style={{ color: '#64748B' }}>
-          Kartochkani aylantirish uchun bosing
-        </p>
-
-        <div className="mt-8 grid grid-cols-2 gap-4">
+        {/* Buttons — rose outline + mint solid */}
+        <div className="mt-5 flex gap-3">
           <button
             type="button"
             onClick={onUnknown}
-            className="rounded-[14px] border-2 py-5 text-lg font-semibold shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-            style={{
-              borderColor: '#FECACA',
-              backgroundColor: '#FEF2F2',
-              color: '#EF4444',
-            }}
+            className="grammar-heading flex-1 rounded-full border-[1.5px] border-[#F5B5B5] bg-[#FEEBEB] py-4 text-[16px] text-[#B4282E] shadow-[0_12px_24px_-10px_rgba(180,40,46,0.35)] transition-transform active:scale-[0.98]"
           >
             Bilmayman
           </button>
           <button
             type="button"
             onClick={onKnow}
-            className="rounded-[14px] border-2 py-5 text-lg font-semibold shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-            style={{
-              borderColor: '#BBF7D0',
-              backgroundColor: '#F0FDF4',
-              color: '#22C55E',
-            }}
+            className="grammar-heading flex-1 rounded-full bg-[#22C55E] py-4 text-[16px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)] transition-transform active:scale-[0.98]"
           >
             Bilaman
           </button>
@@ -125,41 +151,31 @@ export function VocabularyFlashcardExercise({
   }
 
   return (
-    <div className="mx-auto max-w-[720px]" style={{ backgroundColor: '#F8FAFC' }}>
-      <div className="rounded-[20px] border bg-white p-12 text-center shadow-sm" style={{ borderColor: '#E2E8F0' }}>
-        <p className="text-xl font-semibold" style={{ color: '#0F172A' }}>
-          Tanishish yakunlandi
-        </p>
-        <p className="mt-2 text-sm" style={{ color: '#64748B' }}>
+    <div className="mx-auto max-w-[720px]">
+      <div className="rounded-[24px] border-[1.5px] border-[#DDD7F5] bg-white p-8 text-center shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)]">
+        <p className="grammar-heading text-[22px] text-[#2D1B69]">Tanishish yakunlandi 🎉</p>
+        <p className="mt-2 text-sm font-black text-[#8B7FAB]">
           Natija saqlandi. Keyingi bosqich — test.
         </p>
-        <div className="mt-4 flex flex-col items-center gap-3">
-          <div
-            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
-            style={{ borderColor: '#BBF7D0', backgroundColor: '#F0FDF4', color: '#166534' }}
-          >
-            <span>🟢</span>
-            Biladi: {knownCount}
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#DCFCE7] px-4 py-2 text-sm font-black text-[#0F7C3A]">
+            ✓ Biladi: {knownCount}
           </div>
-          <div
-            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold"
-            style={{ borderColor: '#FECACA', backgroundColor: '#FEF2F2', color: '#B91C1C' }}
-          >
-            <span>🔴</span>
-            Bilmaydi: {unknownCount}
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#FEEBEB] px-4 py-2 text-sm font-black text-[#B4282E]">
+            ✕ Bilmaydi: {unknownCount}
           </div>
           {step1SaveError ? (
-            <p className="max-w-sm text-center text-sm text-red-600">
-              {step1SaveError}. Internet yoki serverni tekshirib, sahifani yangilab qayta urinib ko‘ring.
+            <p className="max-w-sm text-center text-sm text-[#B4282E]">
+              {step1SaveError}
             </p>
           ) : null}
         </div>
         <button
           type="button"
           onClick={onContinueToTest}
-          className="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700"
+          className="grammar-heading mt-6 w-full rounded-full bg-[#5B4CE0] px-5 py-3.5 text-[15px] text-white shadow-[0_14px_28px_-12px_rgba(91,76,224,0.55)]"
         >
-          2-bosqichga o‘tish (test)
+          2-bosqichga o'tish (test) →
         </button>
       </div>
     </div>

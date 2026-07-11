@@ -23,7 +23,7 @@ function TeacherAvatar({ teacher }: { teacher: TeacherProfile }) {
     );
   }
   return (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl font-black text-white">
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#123A8F] to-[#0B2A6B] text-2xl font-black text-white">
       {teacherInitials(teacher)}
     </div>
   );

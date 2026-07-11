@@ -991,6 +991,14 @@ async function startServer() {
   const { createStatsRoutes } = await import('./server/routes/statsRoutes');
   app.use('/api', createStatsRoutes(supabase, authenticate));
 
+  // Achievements (streak + words medals + unlock modal)
+  const { createAchievementRoutes } = await import('./server/routes/achievementRoutes');
+  app.use('/api', createAchievementRoutes(supabase, authenticate));
+
+  // Public user profile (Reyting → click user)
+  const { createPublicProfileRoutes } = await import('./server/routes/publicProfileRoutes');
+  app.use('/api', createPublicProfileRoutes(supabase, authenticate));
+
   // Referral (referral link, stats, list, withdraw, discount, payments)
   const { createReferralRoutes } = await import('./server/routes/referralRoutes');
   app.use('/api', createReferralRoutes(supabase, authenticate));
@@ -1619,7 +1627,9 @@ async function startServer() {
     return res.json({ success: true });
   });
 
-  // Leaderboard: "all" = cached top 100 from leaderboard table + Redis; daily/weekly = period-aware user counters
+  // Leaderboard: "all" = cached top 100 from leaderboard table + Redis; daily/weekly = period-aware user counters.
+  // Exclude the platform owner test account (id=1 = Farmon Omonov) from public rankings.
+  const LEADERBOARD_EXCLUDED_USER_ID = 1;
   const leaderboardService = await import('./server/services/leaderboard.service');
   app.get('/api/leaderboard', authenticate, async (req: any, res) => {
     const requestedPeriod = (req.query.period as string) || 'weekly';
@@ -1634,20 +1644,30 @@ async function startServer() {
         const { data: topRows, error: topErr } = await supabase
           .from('users')
           .select('id, first_name, last_name, avatar_url, total_points')
+          .neq('id', LEADERBOARD_EXCLUDED_USER_ID)
+          .gt('total_points', 0)
           .order('total_points', { ascending: false })
           .order('id', { ascending: true })
-          .limit(100);
+          .limit(2000);
         if (topErr) throw topErr;
-        const { data: me } = await supabase
-          .from('users')
-          .select('id, first_name, last_name, avatar_url, total_points')
-          .eq('id', req.userId)
-          .single();
+        // If the caller *is* the excluded user, we still need to answer with
+        // something reasonable — return an empty myRank so the UI hides the pill.
+        const isExcludedCaller = Number(req.userId) === LEADERBOARD_EXCLUDED_USER_ID;
+        const { data: me } = isExcludedCaller
+          ? { data: null }
+          : await supabase
+              .from('users')
+              .select('id, first_name, last_name, avatar_url, total_points')
+              .eq('id', req.userId)
+              .single();
         const myPoints = Number(me?.total_points ?? 0);
-        const { count, error: countErr } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-          .gt('total_points', myPoints);
+        const { count, error: countErr } = isExcludedCaller
+          ? { count: null, error: null }
+          : await supabase
+              .from('users')
+              .select('*', { count: 'exact', head: true })
+              .neq('id', LEADERBOARD_EXCLUDED_USER_ID)
+              .gt('total_points', myPoints);
         res.json({
           top: assignCompetitionRanks((topRows ?? []).map((u: any) => ({
             id: u.id,

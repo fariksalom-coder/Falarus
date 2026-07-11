@@ -54,8 +54,9 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
       strictMode: true,
       nationalMode: false,
       formatAsYouType: true,
-      countrySearch: true,
+      countrySearch: false,
       fixDropdownWidth: true,
+      useFullscreenPopup: false,
       containerClass: 'w-full',
       loadUtils: () => import('intl-tel-input/utils'),
     });
@@ -82,16 +83,16 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
         autoComplete="tel"
         disabled={disabled}
         className={[
-          'block w-full min-h-12 px-4 py-3.5 rounded-xl border bg-white text-base font-semibold text-[#0F172A] outline-none transition',
+          'block w-full min-h-[56px] px-4 py-3.5 rounded-[16px] border-[2px] bg-white text-base font-bold text-[#17224A] outline-none transition placeholder:text-[#B4BFD3]',
           error
-            ? 'border-[#EF4444] focus:border-[#EF4444] focus:ring-[1.2px] focus:ring-[#EF4444]'
-            : 'border-[#C8DCF3] focus:border-[#2563EB] focus:ring-[1.2px] focus:ring-[#2563EB]',
+            ? 'border-[#E5484D] focus:border-[#E5484D]'
+            : 'border-[#E1E7F1] focus:border-[#2F6BFF] focus:shadow-[0_0_0_4px_rgba(47,107,255,0.1)]',
           inputClassName,
         ]
           .filter(Boolean)
           .join(' ')}
       />
-      {error ? <p className="mt-1.5 text-sm text-[#EF4444]">{error}</p> : null}
+      {error ? <p className="mt-1.5 text-sm font-semibold text-[#E5484D]">{error}</p> : null}
     </div>
   );
 });

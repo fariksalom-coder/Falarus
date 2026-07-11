@@ -313,7 +313,7 @@ export default function TeacherCabinetPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-5">
+      <div className="min-h-screen bg-app-bg p-5">
         <div className="mx-auto max-w-4xl space-y-4">
           <div className="h-24 animate-pulse rounded-2xl bg-white" />
           <div className="h-96 animate-pulse rounded-2xl bg-white" />
@@ -323,12 +323,12 @@ export default function TeacherCabinetPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-app-bg pb-24">
       <main className="mx-auto max-w-4xl space-y-5 p-5">
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-blue-700">O'qituvchi kabineti</p>
+              <p className="text-sm font-semibold text-[#071B5E]">O'qituvchi kabineti</p>
               <h1 className="mt-1 text-2xl font-bold text-slate-950">Anketa va darslar</h1>
             </div>
             <div className={`rounded-full px-4 py-2 text-sm font-bold ${listingActive ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -337,17 +337,17 @@ export default function TeacherCabinetPage() {
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-slate-50 p-4">
-              <UserRound className="h-5 w-5 text-blue-700" />
+              <UserRound className="h-5 w-5 text-[#071B5E]" />
               <p className="mt-2 text-xs font-bold uppercase text-slate-500">Holat</p>
               <p className="font-bold text-slate-950">{formatProfileStatus(profile?.profile_status)}</p>
             </div>
             <div className="rounded-xl bg-slate-50 p-4">
-              <CalendarCheck className="h-5 w-5 text-blue-700" />
+              <CalendarCheck className="h-5 w-5 text-[#071B5E]" />
               <p className="mt-2 text-xs font-bold uppercase text-slate-500">Sinov darslari</p>
               <p className="font-bold text-slate-950">{cabinet?.trial_lessons.length ?? 0} ta</p>
             </div>
             <div className="rounded-xl bg-slate-50 p-4">
-              <CheckCircle2 className="h-5 w-5 text-blue-700" />
+              <CheckCircle2 className="h-5 w-5 text-[#071B5E]" />
               <p className="mt-2 text-xs font-bold uppercase text-slate-500">Yakunlangan</p>
               <p className="font-bold text-slate-950">{completedLessons} ta</p>
             </div>
@@ -360,7 +360,7 @@ export default function TeacherCabinetPage() {
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-blue-700" />
+              <GraduationCap className="h-5 w-5 text-[#071B5E]" />
               <h2 className="text-lg font-bold text-slate-950">O'quvchilar uchun anketa</h2>
             </div>
             {profile && !editingProfile ? (
@@ -397,7 +397,7 @@ export default function TeacherCabinetPage() {
                 name={`${form.first_name} ${form.last_name}`.trim()}
                 className="h-24 w-24 ring-4 ring-white shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
               />
-              <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 text-white shadow-md">
+              <span className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-[#071B5E] text-white shadow-md">
                 {uploadingAvatar ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
@@ -469,7 +469,7 @@ export default function TeacherCabinetPage() {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-bold text-white disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#071B5E] px-5 py-3 font-bold text-white disabled:opacity-60"
             >
               <Save className="h-5 w-5" />
               {saving ? 'Saqlanmoqda...' : 'Anketani saqlash'}
@@ -495,14 +495,14 @@ export default function TeacherCabinetPage() {
           <>
           <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <div className="mb-4 flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-blue-700" />
+              <CreditCard className="h-5 w-5 text-[#071B5E]" />
               <h2 className="text-lg font-bold text-slate-950">Ro'yxat tarifi</h2>
             </div>
 
-            <div className="rounded-2xl border-2 border-blue-600 bg-gradient-to-br from-blue-50 to-indigo-50 px-5 py-5 shadow-[0_14px_34px_rgba(37,99,235,0.12)]">
-              <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Sizning tarif</p>
+            <div className="rounded-2xl border-2 border-[#0B2A6B] bg-gradient-to-br from-[#EEF3FF] to-[#EDF1F8] px-5 py-5 shadow-[0_14px_34px_rgba(11,42,107,0.12)]">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#071B5E]">Sizning tarif</p>
               <p className="mt-2 text-xl font-black text-slate-950">{listingTariffLabel}</p>
-              <p className="mt-3 text-3xl font-black text-blue-700">
+              <p className="mt-3 text-3xl font-black text-[#071B5E]">
                 {listingPrice.toLocaleString('uz-UZ')}{' '}
                 <span className="text-lg font-bold text-slate-600">so'm / oy</span>
               </p>
@@ -536,7 +536,7 @@ export default function TeacherCabinetPage() {
                   <ul className="mt-3 space-y-2">
                     {LISTING_BENEFITS.map((item) => (
                       <li key={item} className="flex gap-2 text-sm font-medium text-slate-700">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" aria-hidden />
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#0B2A6B]" aria-hidden />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -566,7 +566,7 @@ export default function TeacherCabinetPage() {
                       type="button"
                       onClick={goToCardTransfer}
                       disabled={!profile}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-blue-600 bg-white px-5 py-3 text-base font-semibold text-blue-700 disabled:opacity-40"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-[#0B2A6B] bg-white px-5 py-3 text-base font-semibold text-[#071B5E] disabled:opacity-40"
                     >
                       <CreditCard className="h-5 w-5" />
                       Karta orqali o'tkazish
@@ -580,13 +580,13 @@ export default function TeacherCabinetPage() {
           <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <History className="h-5 w-5 text-blue-700" />
+                <History className="h-5 w-5 text-[#071B5E]" />
                 <h2 className="text-lg font-bold text-slate-950">To'lovlar tarixi</h2>
               </div>
               {listingPayments.length > 3 ? (
                 <Link
                   to="/payment-history"
-                  className="text-sm font-bold text-blue-700 hover:text-blue-800"
+                  className="text-sm font-bold text-[#071B5E] hover:text-blue-800"
                 >
                   Barchasi
                 </Link>
@@ -628,7 +628,7 @@ export default function TeacherCabinetPage() {
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex items-center gap-2">
-            <Bell className="h-5 w-5 text-blue-700" />
+            <Bell className="h-5 w-5 text-[#071B5E]" />
             <h2 className="text-lg font-bold text-slate-950">Sinov darslari</h2>
           </div>
           <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
@@ -739,13 +739,13 @@ function TeacherAccessPrompt({ title, text }: { title: string; text: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10">
       <section className="w-full max-w-md rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-slate-200">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-blue-700 text-white">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-[#071B5E] text-white">
           <GraduationCap className="h-7 w-7" />
         </div>
         <h1 className="mt-4 text-2xl font-black text-slate-950">{title}</h1>
         <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{text}</p>
         <div className="mt-5 grid gap-3">
-          <Link to="/teacher-login" className="rounded-xl bg-blue-700 px-5 py-3 font-black text-white">
+          <Link to="/teacher-login" className="rounded-xl bg-[#071B5E] px-5 py-3 font-black text-white">
             O'qituvchi sifatida kirish
           </Link>
           <Link to="/teacher-register" className="rounded-xl bg-slate-100 px-5 py-3 font-black text-slate-950">

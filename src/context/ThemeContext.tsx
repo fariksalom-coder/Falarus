@@ -30,7 +30,7 @@ function applyThemeToDocument(mode: ThemeMode) {
 
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (meta) {
-    meta.content = mode === 'dark' ? '#0B1220' : '#2563eb';
+    meta.content = mode === 'dark' ? '#0A1122' : '#0B2A6B';
   }
 }
 

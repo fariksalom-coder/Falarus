@@ -226,6 +226,7 @@ export function createAdminController(supabase: DbClient) {
     weekStart.setDate(weekStart.getDate() - 7);
     const weekStartStr = weekStart.toISOString();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const last30Start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29).toISOString();
     const nextWeek = new Date(now);
     nextWeek.setDate(nextWeek.getDate() + 7);
 
@@ -265,6 +266,7 @@ export function createAdminController(supabase: DbClient) {
       openSupportChats,
       recentUsers,
       recentPayments,
+      paymentsLast30Rows,
     ] = await Promise.all([
       supabase.from('users').select('id', { count: 'exact', head: true }),
       supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
@@ -297,6 +299,11 @@ export function createAdminController(supabase: DbClient) {
         .select('id, user_id, amount, currency, tariff_type, product_code, status, created_at, approved_at, payment_channel')
         .order('created_at', { ascending: false })
         .limit(8),
+      supabase
+        .from('payments')
+        .select('amount, currency, approved_at, created_at')
+        .eq('status', 'approved')
+        .gte('created_at', last30Start),
     ]);
     const { data: clickTodayRows, error: clickTodayError } = await supabase
       .from('click_payment_logs')
@@ -333,6 +340,29 @@ export function createAdminController(supabase: DbClient) {
       bucket.revenue[normalizeCurrency(row.currency)] += Number(row.amount ?? 0) || 0;
       return acc;
     }, []);
+
+    const dailyBuckets = new Map<string, { count: number; revenue: RevenueByCurrency }>();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      dailyBuckets.set(key, { count: 0, revenue: emptyRevenue() });
+    }
+    const paymentsLast30Data = (((paymentsLast30Rows as any).data ?? []) as any[]);
+    for (const row of paymentsLast30Data) {
+      const raw = row?.approved_at ?? row?.created_at;
+      const when = raw ? new Date(raw) : null;
+      if (!when || Number.isNaN(when.getTime())) continue;
+      const key = `${when.getFullYear()}-${String(when.getMonth() + 1).padStart(2, '0')}-${String(when.getDate()).padStart(2, '0')}`;
+      const bucket = dailyBuckets.get(key);
+      if (!bucket) continue;
+      bucket.count += 1;
+      bucket.revenue[normalizeCurrency(row.currency)] += Number(row.amount ?? 0) || 0;
+    }
+    const paymentsDailyLast30 = Array.from(dailyBuckets.entries()).map(([date, v]) => ({
+      date,
+      count: v.count,
+      revenue: v.revenue,
+    }));
 
     const recentPaymentRows = ((recentPayments as any).data ?? []) as any[];
     const paymentUserIds = [...new Set(recentPaymentRows.map((r) => Number(r.user_id)).filter((id) => Number.isFinite(id) && id > 0))];
@@ -373,6 +403,7 @@ export function createAdminController(supabase: DbClient) {
         refunded: statusCounts.refunded ?? 0,
       },
       revenue_by_product_this_month: revenueByProduct,
+      payments_daily_last_30: paymentsDailyLast30,
       recent_users: (((recentUsers as any).data ?? []) as any[]).map((u) => ({
         id: u.id,
         name: formatUserName(u),

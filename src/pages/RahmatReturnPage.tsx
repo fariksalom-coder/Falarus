@@ -18,7 +18,7 @@ export default function RahmatReturnPage() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             to="/profile"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-[#0B2A6B] px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-[#071B5E]"
           >
             {t('rahmat.goProfile')}
           </Link>

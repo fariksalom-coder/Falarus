@@ -63,6 +63,30 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.use(adminAuthMiddleware);
 
   router.get('/dashboard', (req, res, next) => ctrl.getDashboard(req, res).catch(next));
+
+  // One-shot XP backfill — iterates all users, recomputes total_points from
+  // user_kunlik_day_progress + streak + time. Safe to re-run.
+  router.post('/recompute-xp', async (_req, res, next) => {
+    try {
+      const { recomputeUserXp } = await import('../services/xpService.js');
+      const { data: users, error } = await supabase.from('users').select('id');
+      if (error) throw error;
+      let ok = 0, fail = 0;
+      const failures: Array<{ id: number; message: string }> = [];
+      for (const row of users ?? []) {
+        try {
+          await recomputeUserXp(supabase, (row as { id: number }).id);
+          ok += 1;
+        } catch (err) {
+          fail += 1;
+          failures.push({ id: (row as { id: number }).id, message: err instanceof Error ? err.message : String(err) });
+        }
+      }
+      res.json({ processed: (users ?? []).length, ok, fail, failures });
+    } catch (e) {
+      next(e);
+    }
+  });
   router.get('/users', (req, res, next) => ctrl.getUsers(req, res).catch(next));
   router.post('/users', (req, res, next) => ctrl.createUser(req, res).catch(next));
   router.get('/users/:id', (req, res, next) => ctrl.getUserProfile(req, res).catch(next));

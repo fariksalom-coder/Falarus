@@ -26,7 +26,7 @@ const TEXT_SECONDARY = '#6B7F99';
 
 function MediaLabel({ icon, label }: { icon: ReactNode; label: string }) {
   return (
-    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#EEF5FF] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#2563EB]">
+    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#EEF5FF] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#0B2A6B]">
       {icon}
       {label}
     </div>
@@ -538,7 +538,7 @@ function BlockTabs({
             boxShadow = '0 10px 24px rgba(239,68,68,0.16)';
           } else if (active) {
             background = '#DBEAFE';
-            color = '#2563EB';
+            color = '#0B2A6B';
             border = '2px solid #93C5FD';
             boxShadow = '0 8px 20px rgba(147,197,253,0.28)';
           }
@@ -658,7 +658,7 @@ function TaskPager({
         type="button"
         onClick={() => onSelect(Math.min(total, currentIndex + 1))}
         disabled={currentIndex === total}
-        className="inline-flex items-center gap-2 rounded-[16px] bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(37,99,235,0.22)] disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-[16px] bg-[#0B2A6B] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(11,42,107,0.22)] disabled:opacity-50"
       >
         Keyingi
         <ChevronRight className="h-4 w-4" />
@@ -791,7 +791,7 @@ function SpeakingTaskFourContent({ currentIndex }: { currentIndex: number }) {
             <div className="space-y-4">
               {item.textEntries.map((entry, index) => (
                 <div key={`${item.index}-${index}`} className="rounded-[20px] bg-white px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-                  <p className="text-sm font-semibold leading-6 text-[#2563EB]">
+                  <p className="text-sm font-semibold leading-6 text-[#0B2A6B]">
                     {entry.prompt}
                   </p>
                   <p className="mt-2 whitespace-pre-line text-[15px] leading-7" style={{ color: TEXT }}>
@@ -894,7 +894,7 @@ export default function VnzhCourseTaskPage() {
 
   if (!section || !task) {
     return (
-      <div className="min-h-screen bg-[#F8FBFF] px-4 py-6">
+      <div className="min-h-screen bg-app-bg px-4 py-6">
         <button
           type="button"
           onClick={() => navigate('/kurslar/vnzh')}
@@ -915,7 +915,7 @@ export default function VnzhCourseTaskPage() {
   if (vnzhLoading || !vnzhData) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F8FBFF] p-6">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
       </div>
     );
   }
@@ -1136,7 +1136,7 @@ export default function VnzhCourseTaskPage() {
               className="rounded-[28px] border bg-white px-5 py-10 text-center shadow-[0_18px_44px_rgba(148,163,184,0.12)]"
               style={{ borderColor: BORDER }}
             >
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EEF4FF] text-[#2563EB]">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EEF4FF] text-[#0B2A6B]">
                 <FileText className="h-8 w-8" />
               </div>
               <h2 className="mt-4 text-[22px] font-bold" style={{ color: TEXT }}>

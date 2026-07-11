@@ -20,6 +20,10 @@ pgTypes.setTypeParser(pgTypes.builtins.INT8, (val: string) => parseInt(val, 10))
 pgTypes.setTypeParser(pgTypes.builtins.TIMESTAMP, (val: string) => val);
 pgTypes.setTypeParser(pgTypes.builtins.TIMESTAMPTZ, (val: string) => val);
 pgTypes.setTypeParser(pgTypes.builtins.NUMERIC, (val: string) => parseFloat(val));
+// DATE (1082) — return the raw YYYY-MM-DD string. Default pg parser wraps it in
+// a JS Date and applies local-TZ offset, which breaks Set<string> lookups in
+// streak calculation and calendar rendering.
+pgTypes.setTypeParser(pgTypes.builtins.DATE, (val: string) => val);
 
 /**
  * Интерфейс схемы БД. Пока — placeholder. Сгенерировать актуальные типы:

@@ -1,25 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Volume2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { Volume2, X } from 'lucide-react';
 import type { DailyReadingLexeme } from '../../../shared/dailyCourseDay';
 import { normalizeRuWord } from '../../../shared/russianLexemeNormalize';
 
-type WordTooltipState = {
-  token: string;
+type WordSheetState = {
+  wordKey: string;
+  surface: string;
   lexeme: DailyReadingLexeme | null;
-  x: number;
-  y: number;
-  width: number;
 };
 
 type TextToken =
   | { type: 'word'; value: string }
   | { type: 'space'; value: string }
   | { type: 'punct'; value: string };
-
-const TOOLTIP_SIDE_PADDING = 12;
-const TOOLTIP_VERTICAL_GAP = 10;
-const TOOLTIP_APPROX_HEIGHT = 56;
-const TOOLTIP_MIN_WIDTH = 180;
 
 function tokenizeText(text: string): TextToken[] {
   const chunks = text.match(/([А-Яа-яЁё-]+|\s+|[^\sА-Яа-яЁё-]+)/g) ?? [];
@@ -47,31 +41,6 @@ function buildLexemeLookup(lexemes: DailyReadingLexeme[]): Map<string, DailyRead
     if (normSurface && normSurface !== normFromDb) map.set(normSurface, L);
   }
   return map;
-}
-
-function estimateTooltipWidth(uzbekLine: string) {
-  const viewportWidth = window.innerWidth;
-  const maxWidth = viewportWidth - TOOLTIP_SIDE_PADDING * 2;
-  const chars = uzbekLine.length;
-  const estimated = 88 + chars * 11;
-  return Math.max(TOOLTIP_MIN_WIDTH, Math.min(maxWidth, estimated));
-}
-
-function getTooltipPosition(rect: DOMRect, bubbleWidth: number) {
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const safeWidth = Math.min(bubbleWidth, viewportWidth - TOOLTIP_SIDE_PADDING * 2);
-  const minCenterX = TOOLTIP_SIDE_PADDING + bubbleWidth / 2;
-  const maxCenterX = viewportWidth - TOOLTIP_SIDE_PADDING - bubbleWidth / 2;
-  const centerX = rect.left + rect.width / 2;
-  const x = Math.min(Math.max(centerX, minCenterX), maxCenterX);
-
-  const canShowBelow = rect.bottom + TOOLTIP_VERTICAL_GAP + TOOLTIP_APPROX_HEIGHT <= viewportHeight - TOOLTIP_SIDE_PADDING;
-  const y = canShowBelow
-    ? rect.bottom + TOOLTIP_VERTICAL_GAP
-    : Math.max(TOOLTIP_SIDE_PADDING, rect.top - TOOLTIP_VERTICAL_GAP - TOOLTIP_APPROX_HEIGHT);
-
-  return { x, y, width: safeWidth };
 }
 
 function speakRussian(audioRu: string | null | undefined, wordRu: string) {
@@ -114,23 +83,19 @@ export function InteractiveDailyReading({
   levelBadge,
   sectionLabel,
 }: InteractiveDailyReadingProps) {
-  const [tooltip, setTooltip] = useState<WordTooltipState | null>(null);
-  const [activeWordKey, setActiveWordKey] = useState<string | null>(null);
-  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const [sheet, setSheet] = useState<WordSheetState | null>(null);
 
   const tokens = useMemo(() => tokenizeText(bodyRu), [bodyRu]);
   const lookup = useMemo(() => buildLexemeLookup(lexemes), [lexemes]);
 
   useEffect(() => {
-    const onClickOutside = (event: MouseEvent) => {
-      if (!tooltipRef.current) return;
-      if (tooltipRef.current.contains(event.target as Node)) return;
-      setTooltip(null);
-      setActiveWordKey(null);
+    if (!sheet) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSheet(null);
     };
-    if (tooltip) document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, [tooltip]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sheet]);
 
   const handleSpeak = (lexeme: DailyReadingLexeme | null, surfaceWord: string) => {
     if (lexeme?.audioRu?.trim()) speakRussian(lexeme.audioRu, surfaceWord);
@@ -141,25 +106,41 @@ export function InteractiveDailyReading({
 
   return (
     <div className="relative">
-      <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-        {title ? <h2 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">{title}</h2> : null}
-
-        {levelBadge || sectionLabel ? (
-          <div className={`flex flex-wrap items-center gap-2 ${title ? 'mt-3' : ''}`}>
-            {levelBadge ? (
-              <span className="inline-flex rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-700">
-                {levelBadge}
-              </span>
+      <div className="rounded-[24px] bg-[color:var(--rd-white)] p-5 shadow-[0_18px_36px_-20px_rgba(11,113,103,0.28)] ring-1 ring-[color:var(--rd-border)] md:p-6">
+        {/* Book badge + optional title/label header */}
+        <div className="mb-4 flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[18px]"
+            style={{ background: 'linear-gradient(140deg, #E1F5F1 0%, #BFF0E8 100%)' }}
+          >
+            📖
+          </span>
+          <div className="min-w-0 flex-1">
+            {title ? (
+              <h2 className="text-[17px] font-bold uppercase tracking-[0.08em] text-[#0B2926] md:text-[18px]">
+                {title}
+              </h2>
             ) : null}
             {sectionLabel ? (
-              <span className="border-b border-dotted border-slate-400 pb-0.5 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--rd-text-muted)]">
                 {sectionLabel}
-              </span>
+              </p>
+            ) : null}
+            {!title && !sectionLabel ? (
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color:var(--rd-text-muted)]">
+                Matn
+              </p>
             ) : null}
           </div>
-        ) : null}
+          {levelBadge ? (
+            <span className="inline-flex shrink-0 rounded-full bg-[#E1F5F1] px-2.5 py-1 text-[11px] font-bold text-[#0B7167] ring-1 ring-[#BFF0E8]">
+              {levelBadge}
+            </span>
+          ) : null}
+        </div>
 
-        <div className={`whitespace-pre-wrap text-[17px] leading-8 text-slate-800 ${showMeta ? 'mt-6' : ''}`}>
+        <div className={`whitespace-pre-wrap text-[17px] leading-[2.1] text-[#0B2926] ${showMeta ? 'mt-3' : ''}`}>
           {tokens.map((token, index) => {
             if (token.type !== 'word') {
               return <span key={`t-${index}-${token.type}`}>{token.value}</span>;
@@ -168,58 +149,102 @@ export function InteractiveDailyReading({
             const wordKey = `w-${index}-${token.value}`;
             const normalized = normalizeRuWord(token.value);
             const lexeme = lookup.get(normalized) ?? null;
-            const isActive = activeWordKey === wordKey && tooltip?.token === token.value;
+            const isActive = sheet?.wordKey === wordKey;
 
             return (
               <button
                 key={wordKey}
                 type="button"
-                onClick={(event) => {
-                  const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();
-                  const translation = lexeme?.translationUz?.trim() || 'Tarjima topilmadi';
-                  const width = estimateTooltipWidth(translation);
-                  const position = getTooltipPosition(rect, width);
-                  setActiveWordKey(wordKey);
-                  setTooltip({
-                    token: token.value,
-                    lexeme,
-                    x: position.x,
-                    y: position.y,
-                    width: position.width,
-                  });
-                }}
-                className={`rounded px-0.5 text-left font-medium text-slate-900 underline decoration-dotted decoration-slate-400 underline-offset-[5px] transition hover:bg-blue-50 hover:text-blue-800 ${
-                  isActive ? 'ring-2 ring-blue-500 ring-offset-1' : ''
-                }`}
+                onClick={() => setSheet({ wordKey, surface: token.value, lexeme })}
+                className={`reading-word-btn ${isActive ? 'reading-word-btn-active' : ''}`}
               >
                 {token.value}
               </button>
             );
           })}
         </div>
+
+        {/* Tip footer inside card */}
+        <div className="mt-5 flex items-start gap-2 border-t border-dashed border-[#DCEBE7] pt-3.5 text-[12.5px] leading-snug text-[color:var(--rd-text-muted)]">
+          <span aria-hidden className="text-[15px] leading-none">👆</span>
+          <span className="font-medium">Har qanday so'zga bosing — tarjimasi pastda chiqadi</span>
+        </div>
       </div>
 
-      {tooltip ? (
-        <div
-          ref={tooltipRef}
-          className="fixed z-50 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-[0_20px_45px_rgba(15,23,42,0.18)]"
-          style={{ left: tooltip.x, top: tooltip.y, width: tooltip.width }}
-        >
-          <div className="flex items-center gap-2">
-            <p className="min-w-0 flex-1 text-base font-semibold leading-snug text-slate-900 sm:text-lg">
-              {tooltip.lexeme?.translationUz?.trim() ? tooltip.lexeme.translationUz : 'Tarjima topilmadi'}
-            </p>
-            <button
-              type="button"
-              onClick={() => handleSpeak(tooltip.lexeme, tooltip.token)}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm hover:bg-emerald-600"
-              aria-label="Eshitish"
+      {/* Bottom sheet: word + translation + audio */}
+      <AnimatePresence>
+        {sheet ? (
+          <>
+            <motion.div
+              key="sheet-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setSheet(null)}
+              className="fixed inset-0 z-40 bg-[#0B2926]/25 backdrop-blur-[2px]"
+            />
+            <motion.div
+              key="sheet"
+              initial={{ y: 320, opacity: 0.6 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 320, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 34, mass: 0.7 }}
+              className="fixed inset-x-0 bottom-0 z-50 rounded-t-[28px] bg-[color:var(--rd-white)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-24px_60px_-20px_rgba(11,113,103,0.35)]"
+              role="dialog"
+              aria-label="So'z tarjimasi"
             >
-              <Volume2 className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      ) : null}
+              {/* Drag handle */}
+              <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-[#DCEBE7]" />
+
+              {/* Close button */}
+              <button
+                type="button"
+                onClick={() => setSheet(null)}
+                aria-label="Yopish"
+                className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--rd-card)] text-[color:var(--rd-text-muted)] ring-1 ring-[color:var(--rd-border)] transition hover:bg-[#E1F5F1] active:scale-95"
+              >
+                <X className="h-4 w-4" strokeWidth={2.4} />
+              </button>
+
+              <p className="text-[10.5px] font-bold uppercase tracking-[0.24em] text-[color:var(--rd-text-muted)]">
+                So'z tarjimasi
+              </p>
+
+              <div className="mt-2 flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[24px] font-bold leading-tight text-[#0B2926]">
+                    {sheet.surface}
+                  </p>
+                  <p className="mt-2 text-[16px] font-semibold leading-snug text-[#0B7167]">
+                    {sheet.lexeme?.translationUz?.trim() || 'Tarjima topilmadi'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSpeak(sheet.lexeme, sheet.surface)}
+                  className="mt-1 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white shadow-[0_12px_24px_-8px_rgba(15,165,152,0.55)] transition hover:brightness-[1.05] active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #25D19A 0%, #0FA598 60%, #0E8A80 100%)' }}
+                  aria-label="Eshitish"
+                >
+                  <Volume2 className="h-5 w-5" />
+                </button>
+              </div>
+
+              {sheet.lexeme?.wordRu && sheet.lexeme.wordRu.trim().toLowerCase() !== sheet.surface.trim().toLowerCase() ? (
+                <div className="mt-3 rounded-2xl bg-[color:var(--rd-card)] px-3.5 py-2.5 ring-1 ring-[color:var(--rd-mint-panel)]">
+                  <p className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-[color:var(--rd-text-muted)]">
+                    So'z shakli
+                  </p>
+                  <p className="mt-0.5 text-[15px] font-semibold text-[#123B36]">
+                    {sheet.lexeme.wordRu}
+                  </p>
+                </div>
+              ) : null}
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

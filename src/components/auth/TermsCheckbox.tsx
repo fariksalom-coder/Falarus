@@ -15,9 +15,9 @@ export function TermsCheckbox({ checked, onChange }: Props) {
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#C8DCF3] text-[#1E3A8A] focus:ring-[#2563EB]"
+        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#E1E7F1] bg-white text-[#2F6BFF] focus:ring-[#2F6BFF]"
       />
-      <span className="text-[13px] leading-snug text-[#0F172A]">
+      <span className="text-[13px] leading-snug text-[#6B7BA8]">
         {t('auth.termsPrefix')}
         <Link to="/huquqiy/ommaviy-oferta" className="font-semibold underline">
           {t('auth.termsOfUse')}

@@ -223,16 +223,21 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-app-bg pb-20">
-      <div className="mx-auto max-w-6xl px-4 pt-10 md:pt-14">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="mb-6 inline-flex items-center gap-2 font-medium text-app-text-muted transition-colors hover:text-app-text"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          {t('common.back')}
-        </button>
+    <div className="profile-premium min-h-screen pb-20">
+      <div className="mx-auto max-w-6xl px-4 pt-6 md:pt-8">
+        <div className="mb-5 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-pmn-card text-pmn-text shadow-[0_6px_16px_-6px_rgba(15,27,59,0.28)] ring-1 ring-pmn-border transition active:scale-95"
+            aria-label={t('common.back')}
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
+          </button>
+          <h1 className="profile-heading text-[26px] leading-tight text-pmn-text">
+            Tariflar
+          </h1>
+        </div>
         {/* 1. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
         <section id="tariflar" className="mb-20">
           {token && hasPendingPayment && (

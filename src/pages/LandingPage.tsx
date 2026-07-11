@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import {
   Apple,
   Award,
@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
+import PricingCard from '../components/pricing/PricingCard';
 import { getLegalEntityMeta, LEGAL_PATHS } from '../config/legalPublic';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,14 +28,27 @@ type NavKey = 'home' | 'about' | 'certificates' | 'pricing' | 'contact';
 type FeatureKey = 'teachers' | 'exercises' | 'speaking' | 'progress' | 'certificates' | 'community';
 type PlanKey = 'free' | 'pro' | 'elite';
 
-const languages: { code: LanguageCode; short: string; label: string; flag: string }[] = [
-  { code: 'en', short: 'Eng', label: 'English', flag: '🇬🇧' },
-  { code: 'uz', short: 'Uzb', label: 'O‘zbekcha', flag: '🇺🇿' },
-  { code: 'ru', short: 'Rus', label: 'Русский', flag: '🇷🇺' },
-  { code: 'kk', short: 'Kaz', label: 'Қазақша', flag: '🇰🇿' },
-  { code: 'tg', short: 'Tjk', label: 'Тоҷикӣ', flag: '🇹🇯' },
-  { code: 'ky', short: 'Kyr', label: 'Кыргызча', flag: '🇰🇬' },
+const languages: { code: LanguageCode; short: string; label: string; badge: string }[] = [
+  { code: 'en', short: 'Eng', label: 'English', badge: 'EN' },
+  { code: 'uz', short: 'Uzb', label: 'O‘zbekcha', badge: 'UZ' },
+  { code: 'ru', short: 'Rus', label: 'Русский', badge: 'RU' },
+  { code: 'kk', short: 'Kaz', label: 'Қазақша', badge: 'KZ' },
+  { code: 'tg', short: 'Tjk', label: 'Тоҷикӣ', badge: 'TJ' },
+  { code: 'ky', short: 'Kyr', label: 'Кыргызча', badge: 'KG' },
 ];
+
+/** Compact 2-letter language pill — reliable across platforms (emoji flags fail on Windows Chrome). */
+function LangBadge({ code, dark = false }: { code: string; dark?: boolean }) {
+  return (
+    <span
+      className={`inline-flex h-[22px] min-w-[30px] items-center justify-center rounded-[6px] px-1.5 text-[10px] font-black uppercase tracking-[0.06em] ${
+        dark ? 'bg-white/20 text-white ring-1 ring-white/25' : 'bg-[#0B2A6B] text-white'
+      }`}
+    >
+      {code}
+    </span>
+  );
+}
 
 const navItems: { key: NavKey; href: string }[] = [
   { key: 'home', href: '#home' },
@@ -413,6 +427,23 @@ const copy = {
       contacts: 'Связаться',
       copyright: '© 2026 Voyage Inc. Все права защищены.',
     },
+    mobile: {
+      badge: 'Учись через интересные игры',
+      titleTop: 'Изучайте',
+      titleMiddle: 'русский',
+      titleAccent: 'легко',
+      subtitle: '182-дневный план, живые преподаватели и официальный сертификат.',
+      register: 'Регистрация',
+      safePayment: '— безопасная оплата',
+      tiles: {
+        games: 'Учись через игры',
+        speak: 'Говори с первого урока',
+        lessons: 'Короткие, понятные уроки',
+        daily: 'Новые задания каждый день',
+      },
+      certificateCaption: 'ОФИЦИАЛЬНЫЙ СЕРТИФИКАТ',
+      certificateTitle: 'После курса — документ на ваше имя',
+    },
   },
   uz: {
     nav: { home: 'Bosh sahifa', about: 'Biz haqimizda', certificates: 'Sertifikatlar', pricing: 'Tariflar', contact: 'Bog‘lanish' },
@@ -510,6 +541,23 @@ const copy = {
       privacyLinks: ['Shartlar', 'Sayt xaritasi', 'Kompaniya ma’lumotlari', 'Qoidalar va shartlar'],
       contacts: 'Aloqa',
       copyright: '© 2026 Voyage Inc. Barcha huquqlar himoyalangan.',
+    },
+    mobile: {
+      badge: 'Qiziqarli o‘yinlar bilan o‘rganing',
+      titleTop: 'Rus tilini',
+      titleMiddle: 'ishonch bilan',
+      titleAccent: 'o‘rganing',
+      subtitle: '182 kunlik aniq reja, jonli o‘qituvchilar va rasmiy sertifikat.',
+      register: 'Ro‘yxatdan o‘tish',
+      safePayment: 'bilan xavfsiz to‘lov',
+      tiles: {
+        games: 'O‘yinlar orqali o‘rganing',
+        speak: 'Birinchi darsdan gapiring',
+        lessons: 'Qisqa, tushunarli darslar',
+        daily: 'Har kuni yangi mashqlar',
+      },
+      certificateCaption: 'RASMIY SERTIFIKAT',
+      certificateTitle: 'Kursni tugatgach — nomingizga hujjat',
     },
   },
   tg: {
@@ -609,6 +657,23 @@ const copy = {
       contacts: 'Тамос',
       copyright: '© 2026 Voyage Inc. Ҳама ҳуқуқҳо ҳифз шудаанд.',
     },
+    mobile: {
+      badge: 'Бо бозиҳои шавқовар омӯзед',
+      titleTop: 'Русиро',
+      titleMiddle: 'бо боварӣ',
+      titleAccent: 'омӯзед',
+      subtitle: 'Барномаи 182-рӯза, омӯзгорони зинда ва сертификати расмӣ.',
+      register: 'Сабти ном',
+      safePayment: '— пардохти бехатар',
+      tiles: {
+        games: 'Тавассути бозиҳо омӯзед',
+        speak: 'Аз дарси якум гап занед',
+        lessons: 'Дарсҳои кӯтоҳ, равшан',
+        daily: 'Ҳар рӯз машқи нав',
+      },
+      certificateCaption: 'СЕРТИФИКАТИ РАСМӢ',
+      certificateTitle: 'Пас аз курс — ҳуҷҷат ба номи шумо',
+    },
   },
   en: {
     nav: { home: 'Home', about: 'About us', certificates: 'Certificates', pricing: 'Pricing', contact: 'Contact us' },
@@ -707,6 +772,23 @@ const copy = {
       contacts: 'Contact us',
       copyright: '© 2026 Voyage Inc. All rights reserved.',
     },
+    mobile: {
+      badge: 'Learn with fun games',
+      titleTop: 'Master',
+      titleMiddle: 'Russian',
+      titleAccent: 'the fun way',
+      subtitle: '182-day plan, live teachers and an official certificate.',
+      register: 'Sign up',
+      safePayment: '— secure payment',
+      tiles: {
+        games: 'Learn through games',
+        speak: 'Speak from day one',
+        lessons: 'Short, clear lessons',
+        daily: 'New exercises every day',
+      },
+      certificateCaption: 'OFFICIAL CERTIFICATE',
+      certificateTitle: 'Finish the course, get a signed certificate',
+    },
   },
   kk: {
     nav: { home: 'Басты', about: 'Біз туралы', certificates: 'Сертификаттар', pricing: 'Тарифтер', contact: 'Байланыс' },
@@ -783,6 +865,23 @@ const copy = {
       privacyLinks: ['Шарттар', 'Сайт картасы', 'Компания', 'Ережелер'],
       contacts: 'Байланыс',
       copyright: '© 2026 Voyage Inc. Барлық құқықтар қорғалған.',
+    },
+    mobile: {
+      badge: 'Қызықты ойындармен үйреніңіз',
+      titleTop: 'Орыс тілін',
+      titleMiddle: 'сеніммен',
+      titleAccent: 'үйреніңіз',
+      subtitle: '182 күндік жоспар, тірі мұғалімдер және ресми сертификат.',
+      register: 'Тіркелу',
+      safePayment: '— қауіпсіз төлем',
+      tiles: {
+        games: 'Ойын арқылы үйреніңіз',
+        speak: 'Бірінші сабақтан сөйлеңіз',
+        lessons: 'Қысқа, түсінікті сабақтар',
+        daily: 'Күн сайын жаңа тапсырма',
+      },
+      certificateCaption: 'РЕСМИ СЕРТИФИКАТ',
+      certificateTitle: 'Курс аяқталғанда — атыңызға құжат',
     },
   },
   ky: {
@@ -861,6 +960,23 @@ const copy = {
       contacts: 'Байланыш',
       copyright: '© 2026 Voyage Inc. Бардык укуктар корголгон.',
     },
+    mobile: {
+      badge: 'Кызыктуу оюндар менен үйрөнүңүз',
+      titleTop: 'Орус тилин',
+      titleMiddle: 'ишенимдүү',
+      titleAccent: 'үйрөнүңүз',
+      subtitle: '182 күндүк план, түз эфирдеги мугалимдер жана расмий сертификат.',
+      register: 'Катталуу',
+      safePayment: '— коопсуз төлөм',
+      tiles: {
+        games: 'Оюндар аркылуу үйрөнүңүз',
+        speak: 'Биринчи сабактан сүйлөңүз',
+        lessons: 'Кыска, түшүнүктүү сабактар',
+        daily: 'Күн сайын жаңы машыгуу',
+      },
+      certificateCaption: 'РАСМИЙ СЕРТИФИКАТ',
+      certificateTitle: 'Курстан кийин — атыңызга документ',
+    },
   },
 } satisfies Record<LanguageCode, {
   nav: Record<NavKey, string>;
@@ -893,19 +1009,32 @@ const copy = {
     teacherText: string;
   };
   footer: { address: ReactNode; about: string; aboutLinks: string[]; privacy: string; privacyLinks: string[]; contacts: string; copyright: string };
+  mobile: {
+    badge: string;
+    titleTop: string;
+    titleMiddle: string;
+    titleAccent: string;
+    subtitle: string;
+    register: string;
+    safePayment: string;
+    tiles: { games: string; speak: string; lessons: string; daily: string };
+    certificateCaption: string;
+    certificateTitle: string;
+  };
 }>;
 
 function Brand({ light = false }: { light?: boolean }) {
   return (
     <Link to="/" className="inline-flex items-center gap-5">
       <img src="/landing/falarus-mark.svg" alt="" className="h-9 w-12 shrink-0" />
-      <span className={`text-2xl font-medium leading-none ${light ? 'text-white' : 'text-[#1E3A8A]'}`}>Falarus</span>
+      <span className={`text-2xl font-medium leading-none ${light ? 'text-white' : 'text-[#0B2A6B]'}`}>Falarus</span>
     </Link>
   );
 }
 
 export default function LandingPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState<NavKey>('home');
   const [languageCode, setLanguageCode] = useState<LanguageCode>('uz');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
@@ -930,8 +1059,8 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF8F2] font-sans text-[#121827]">
-      <header className="sticky top-0 z-30 h-[76px] bg-white">
+    <div className="min-h-screen bg-app-bg font-sans text-app-text lg:bg-[#FDF8F2] lg:text-[#121827]">
+      <header className="sticky top-0 z-30 hidden h-[76px] bg-white lg:block">
         <div className="mx-auto flex h-full max-w-[1728px] items-center justify-between px-5 sm:px-10 lg:px-24">
           <Brand />
           <nav className="hidden items-center gap-10 text-base font-semibold text-[#4D4D4D] lg:flex">
@@ -954,7 +1083,7 @@ export default function LandingPage() {
                 aria-expanded={languageMenuOpen}
                 onClick={() => setLanguageMenuOpen((open) => !open)}
               >
-                <span className="text-xl leading-none">{language.flag}</span>
+                <LangBadge code={language.badge} />
                 {language.short}
                 <ChevronDown className={`h-5 w-5 transition ${languageMenuOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -963,11 +1092,11 @@ export default function LandingPage() {
                   {languages.map((item) => (
                     <button
                       key={item.code}
-                      className={`flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-left text-sm transition hover:bg-[#F2F4F8] ${language.code === item.code ? 'bg-[#F1F5F9] text-[#1E3A8A]' : 'text-[#121827]'}`}
+                      className={`flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-left text-sm transition hover:bg-[#F2F4F8] ${language.code === item.code ? 'bg-[#F1F5F9] text-[#0B2A6B]' : 'text-[#121827]'}`}
                       type="button"
                       onClick={() => selectLanguage(item.code)}
                     >
-                      <span className="text-lg">{item.flag}</span>
+                      <LangBadge code={item.badge} />
                       <span>{item.label}</span>
                     </button>
                   ))}
@@ -982,7 +1111,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 lg:hidden">
             <div className="relative">
               <button
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] border border-[#C8DCF3] bg-[#F1F5F9] px-3 py-2 text-sm font-semibold text-[#1E3A8A]"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-[10px] border border-[#C8DCF3] bg-[#F1F5F9] px-3 py-2 text-sm font-semibold text-[#0B2A6B]"
                 type="button"
                 aria-expanded={languageMenuOpen}
                 aria-label="Tilni tanlash"
@@ -991,7 +1120,7 @@ export default function LandingPage() {
                   setLanguageMenuOpen((open) => !open);
                 }}
               >
-                <span className="text-lg leading-none">{language.flag}</span>
+                <LangBadge code={language.badge} />
                 {language.short}
                 <ChevronDown className={`h-4 w-4 transition ${languageMenuOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -1000,11 +1129,11 @@ export default function LandingPage() {
                   {languages.map((item) => (
                     <button
                       key={item.code}
-                      className={`flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-left text-sm transition hover:bg-[#F2F4F8] ${language.code === item.code ? 'bg-[#F1F5F9] text-[#1E3A8A]' : 'text-[#121827]'}`}
+                      className={`flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-left text-sm transition hover:bg-[#F2F4F8] ${language.code === item.code ? 'bg-[#F1F5F9] text-[#0B2A6B]' : 'text-[#121827]'}`}
                       type="button"
                       onClick={() => selectLanguage(item.code)}
                     >
-                      <span className="text-lg">{item.flag}</span>
+                      <LangBadge code={item.badge} />
                       <span>{item.label}</span>
                     </button>
                   ))}
@@ -1031,7 +1160,7 @@ export default function LandingPage() {
               {navItems.map((item) => (
                 <a
                   key={item.key}
-                  className={`rounded-[10px] px-3 py-3 ${activeNav === item.key ? 'bg-[#F1F5F9] text-[#1E3A8A]' : 'text-[#4D4D4D]'}`}
+                  className={`rounded-[10px] px-3 py-3 ${activeNav === item.key ? 'bg-[#F1F5F9] text-[#0B2A6B]' : 'text-[#4D4D4D]'}`}
                   href={item.href}
                   onClick={() => selectNav(item.key)}
                 >
@@ -1052,43 +1181,220 @@ export default function LandingPage() {
       </header>
 
       <main>
-        <section id="home" className="relative min-h-[707px] overflow-hidden bg-gradient-to-br from-[#A8D0FA] via-[#C8E0FA] to-[#EFF7FF]">
+        {/* Mobile hero (< lg) */}
+        <section
+          id="home-mobile"
+          className="relative overflow-hidden pb-[130px] text-white lg:hidden"
+          style={{ background: 'linear-gradient(160deg, #0B2A6B 0%, #123A8F 60%, #0B2A6B 100%)' }}
+        >
+          <div
+            className="pointer-events-none absolute -right-10 -top-10 h-[180px] w-[180px] rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(199,154,62,0.35), transparent 70%)' }}
+          />
+          {/* Mobile header on hero */}
+          <div className="relative z-10 flex items-center justify-between px-5 pb-2 pt-5">
+            <Link to="/" className="inline-flex items-center gap-2.5">
+              <img
+                src="/landing/falarus-mark.svg"
+                alt=""
+                className="h-8 w-9 shrink-0"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
+              <span className="text-[19px] font-extrabold leading-none text-white">FalaRus</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <button
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-white/12 px-3 py-1.5 text-[12px] font-bold text-white ring-1 ring-white/20 backdrop-blur"
+                  type="button"
+                  aria-expanded={languageMenuOpen}
+                  aria-label="Tilni tanlash"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setLanguageMenuOpen((open) => !open);
+                  }}
+                >
+                  {language.label}
+                  <ChevronDown className={`h-3.5 w-3.5 transition ${languageMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {languageMenuOpen && (
+                  <div className="absolute right-0 top-11 z-50 w-44 rounded-[10px] border border-[#DDE1E6] bg-white p-2 shadow-[0_18px_34px_rgba(15,23,42,0.12)]">
+                    {languages.map((item) => (
+                      <button
+                        key={item.code}
+                        className={`flex w-full items-center gap-3 rounded-[8px] px-3 py-2 text-left text-sm transition hover:bg-[#F2F4F8] ${language.code === item.code ? 'bg-[#F1F5F9] text-[#0B2A6B]' : 'text-[#121827]'}`}
+                        type="button"
+                        onClick={() => selectLanguage(item.code)}
+                      >
+                        <LangBadge code={item.badge} />
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white ring-1 ring-white/20 backdrop-blur"
+                type="button"
+                aria-label="Menu"
+                aria-expanded={mobileMenuOpen}
+                onClick={() => {
+                  setLanguageMenuOpen(false);
+                  setMobileMenuOpen((open) => !open);
+                }}
+              >
+                {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Copy */}
+          <div className="relative z-[2] px-[22px] pt-[22px]">
+            <div
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-extrabold text-[#E7C578]"
+              style={{
+                borderColor: 'rgba(199,154,62,0.4)',
+                background: 'rgba(199,154,62,0.16)',
+              }}
+            >
+              <Star className="h-3.5 w-3.5 fill-[#E7C578] text-[#E7C578]" />
+              {t.mobile.badge}
+            </div>
+            <h1 className="mt-4 text-[30px] font-extrabold leading-[1.12] tracking-[-0.02em] text-white">
+              {t.mobile.titleTop}<br />{t.mobile.titleMiddle}<br />
+              <span className="text-[#E7C578]">{t.mobile.titleAccent}</span>
+            </h1>
+            <p className="mt-2.5 max-w-[250px] text-[13.5px] font-semibold leading-[1.5] text-[#C6D2EE]">
+              {t.mobile.subtitle}
+            </p>
+          </div>
+
+          {/* Students */}
+          <img
+            src="/landing/hero-students.png"
+            alt=""
+            aria-hidden
+            className="pointer-events-none relative z-[2] mx-auto mt-1.5 w-full max-h-[40dvh] object-contain object-bottom"
+            style={{ filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.35))' }}
+            decoding="async"
+          />
+        </section>
+
+        {/* Floating CTA card — overlaps hero (LIGHT 1A) */}
+        <div className="relative z-[5] -mt-[170px] px-[22px] lg:hidden">
+          <div className="rounded-[22px] bg-white p-[18px] shadow-[0_24px_50px_-20px_rgba(11,42,107,0.4)]">
+            <Link
+              to="/register"
+              className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[15px] bg-[#0B2A6B] text-[16px] font-extrabold text-white shadow-[0_14px_28px_-10px_rgba(11,42,107,0.5)] active:translate-y-0.5"
+            >
+              {t.mobile.register}
+              <span aria-hidden>→</span>
+            </Link>
+            <Link
+              to="/login"
+              className="mt-2.5 flex h-[50px] w-full items-center justify-center rounded-[15px] border-[1.4px] border-[#DCE3F0] bg-white text-[15px] font-extrabold text-[#0B2A6B] active:bg-[#F5F7FB]"
+            >
+              {t.auth.login}
+            </Link>
+            <div className="mt-3.5 flex items-center justify-center gap-2 text-[11px] font-semibold text-[#8794AC]">
+              <img src="/payment-logos/click-logo-new.png" alt="Click" className="h-4 w-auto" />
+              <span aria-hidden className="text-[#C6CEDD]">·</span>
+              <img src="/payment-logos/rahmat-logo.png" alt="Rahmat" className="h-[15px] w-auto" />
+              <span>{t.mobile.safePayment}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile feature tiles + certificate (only < lg) */}
+        <section className="bg-app-bg px-[22px] pb-8 pt-6 lg:hidden">
+          <div className="grid grid-cols-2 gap-[10px]">
+            {[
+              { icon: '🎮', label: t.mobile.tiles.games, tone: 'blue' as const },
+              { icon: '🗣️', label: t.mobile.tiles.speak, tone: 'gold' as const },
+              { icon: '📘', label: t.mobile.tiles.lessons, tone: 'blue' as const },
+              { icon: '🔥', label: t.mobile.tiles.daily, tone: 'gold' as const },
+            ].map((tile) => (
+              <div
+                key={tile.label}
+                className="rounded-[16px] border border-[#EAEFF7] bg-white p-[14px]"
+              >
+                <div
+                  className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] text-[17px]"
+                  style={{
+                    background: tile.tone === 'blue' ? '#EEF3FF' : '#FBF3E2',
+                  }}
+                >
+                  {tile.icon}
+                </div>
+                <p className="mt-[10px] text-[13px] font-extrabold leading-[1.3] text-[#0C1A3A]">
+                  {tile.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Certificate card (navy solid) */}
+          <div className="mt-[14px] overflow-hidden rounded-[20px] bg-[#0B2A6B] p-[18px]">
+            <p className="text-[12px] font-bold uppercase tracking-[0.05em] text-[#E7C578]">
+              {t.mobile.certificateCaption}
+            </p>
+            <p className="mt-1 text-[15px] font-extrabold leading-[1.35] text-white">
+              {t.mobile.certificateTitle}
+            </p>
+            <img
+              src="/landing/certificate-full.png"
+              alt="Sertifikat"
+              className="mt-3 w-full rounded-[10px] shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
+              decoding="async"
+            />
+          </div>
+        </section>
+
+        {/* Desktop hero (>= lg) */}
+        <section
+          id="home"
+          className="relative hidden min-h-[707px] overflow-hidden text-white lg:block"
+          style={{ background: 'linear-gradient(150deg, #123A8F 0%, #0B2A6B 55%, #071B5E 100%)' }}
+        >
+          {/* Decorative glow */}
+          <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-white/8 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 top-1/3 h-96 w-96 rounded-full bg-[#E7C578]/12 blur-3xl" />
           <div className="mx-auto grid min-h-[707px] max-w-[1728px] items-center px-5 py-16 sm:px-10 lg:grid-cols-[620px_1fr] lg:px-24 lg:py-0">
             <div className="relative z-10 max-w-[550px]">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/35 px-5 py-3 text-xs font-medium text-[#121827]">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/12 px-5 py-3 text-xs font-bold text-[#E7C578] ring-1 ring-white/15 backdrop-blur">
                 <Award className="h-4 w-4" />
                 {t.hero.badge}
               </div>
-              <h1 className="text-[42px] font-extrabold leading-[1.16] text-[#183064] sm:text-[50px] sm:leading-[1.25]">
+              <h1 className="text-[42px] font-extrabold leading-[1.16] text-white sm:text-[50px] sm:leading-[1.25]">
                 {t.hero.title}
               </h1>
-              <p className="mt-5 text-lg leading-[1.25] text-[#3F4850] sm:text-xl">{t.hero.description}</p>
-              <div className="mt-5 grid max-w-[490px] gap-3 sm:grid-cols-2">
-                <Link to="/register" className="relative inline-flex h-10 items-center justify-center gap-3 rounded-[10px] bg-white px-5 text-sm font-medium">
-                  <span className="h-0 w-0 border-y-[8px] border-l-[13px] border-y-transparent border-l-[#27A844]" />
+              <p className="mt-5 text-lg leading-[1.35] text-white/85 sm:text-xl">{t.hero.description}</p>
+              <div className="mt-6 grid max-w-[490px] gap-3 sm:grid-cols-2">
+                <Link to="/register" className="relative inline-flex h-11 items-center justify-center gap-3 rounded-[12px] bg-white px-5 text-sm font-extrabold text-[#0C1A3A] shadow-[0_14px_28px_-10px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5">
+                  <span className="h-0 w-0 border-y-[8px] border-l-[13px] border-y-transparent border-l-[#12A150]" />
                   {t.hero.google}
-                  <span className="absolute -right-2 -top-2 rounded-full bg-[#0F62FE] px-2 py-0.5 text-[10px] font-bold uppercase leading-none text-white shadow-sm">
+                  <span className="absolute -right-2 -top-2 rounded-full bg-[#C08A2D] px-2 py-0.5 text-[10px] font-bold uppercase leading-none text-white shadow-sm">
                     {t.hero.soon}
                   </span>
                 </Link>
-                <Link to="/register" className="relative inline-flex h-10 items-center justify-center gap-3 rounded-[10px] bg-[#0F172A] px-5 text-sm font-medium text-white">
+                <Link to="/register" className="relative inline-flex h-11 items-center justify-center gap-3 rounded-[12px] bg-[#0C1A3A] px-5 text-sm font-extrabold text-white ring-1 ring-white/15 transition hover:-translate-y-0.5">
                   <Apple className="h-5 w-5 fill-white" />
                   {t.hero.appStore}
-                  <span className="absolute -right-2 -top-2 rounded-full bg-[#0F62FE] px-2 py-0.5 text-[10px] font-bold uppercase leading-none text-white shadow-sm">
+                  <span className="absolute -right-2 -top-2 rounded-full bg-[#C08A2D] px-2 py-0.5 text-[10px] font-bold uppercase leading-none text-white shadow-sm">
                     {t.hero.soon}
                   </span>
                 </Link>
               </div>
               <Link
                 to="/login"
-                className="mt-4 inline-flex h-[44px] min-w-[150px] items-center justify-center rounded-[10px] bg-[#1E3A8A] px-8 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(30,58,138,0.28)] transition hover:bg-[#183462]"
+                className="mt-4 inline-flex h-11 min-w-[150px] items-center justify-center rounded-[12px] bg-[#C08A2D] px-8 text-sm font-extrabold text-white shadow-[0_14px_28px_-10px_rgba(169,121,28,0.55)] transition hover:bg-[#A9791C] hover:-translate-y-0.5"
               >
                 {t.auth.login}
               </Link>
-              <div className="mt-4 flex items-center gap-3 text-xs font-medium">
+              <div className="mt-5 flex items-center gap-3 text-xs font-semibold text-white/85">
                 <div className="flex -space-x-2">
                   {['A', 'D', 'G'].map((item, index) => (
-                    <span key={item} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white ${index === 0 ? 'bg-[#A6C8FF]' : index === 1 ? 'bg-[#1E3A8A]' : 'bg-[#9483E8]'}`}>
+                    <span key={item} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#0B2A6B] text-[10px] font-bold text-white ${index === 0 ? 'bg-[#E7C578] text-[#0C1A3A]' : index === 1 ? 'bg-white text-[#0C1A3A]' : 'bg-[#123A8F] text-white'}`}>
                       {item}
                     </span>
                   ))}
@@ -1105,21 +1411,21 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="bg-[#FDF8F2] px-5 py-[84px] sm:px-10 lg:px-24">
+        <section className="bg-[#FDF8F2] px-5 pb-14 pt-14 sm:px-10 lg:px-24 lg:pb-[84px] lg:pt-[84px]">
           <div className="mx-auto max-w-[1308px] text-center">
-            <h2 className="text-[32px] font-semibold leading-tight">{t.featuresIntro.title}</h2>
-            <p className="mx-auto mt-3 max-w-[632px] text-base font-semibold leading-tight text-[#4D4D4D]">{t.featuresIntro.description}</p>
-            <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-x-[60px] xl:gap-y-6">
+            <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.featuresIntro.title}</h2>
+            <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.featuresIntro.description}</p>
+            <div className="mt-8 grid gap-4 sm:mt-12 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-x-[60px] xl:gap-y-6">
               {featureCards.map((feature) => {
                 const Icon = feature.icon;
                 const [title, description] = t.features[feature.key];
                 return (
-                  <article key={feature.key} className="rounded-[20px] bg-white p-8 text-left shadow-[0_18px_34px_rgba(15,23,42,0.04)] sm:p-8">
-                    <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-[10px] ${feature.tone}`}>
-                      <Icon className="h-6 w-6" />
+                  <article key={feature.key} className="rounded-[20px] bg-white p-6 text-left shadow-[0_18px_34px_rgba(15,23,42,0.04)] sm:p-8">
+                    <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] sm:mb-5 sm:h-12 sm:w-12 ${feature.tone}`}>
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
-                    <h3 className="text-2xl font-semibold leading-[1.4] text-[#06254B]">{title}</h3>
-                    <p className="mt-4 max-w-[356px] text-base leading-[1.6] text-[#4D5358]">{description}</p>
+                    <h3 className="text-lg font-semibold leading-[1.35] text-[#06254B] sm:text-2xl sm:leading-[1.4]">{title}</h3>
+                    <p className="mt-3 max-w-[356px] text-sm leading-[1.55] text-[#4D5358] sm:mt-4 sm:text-base sm:leading-[1.6]">{description}</p>
                   </article>
                 );
               })}
@@ -1127,7 +1433,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="certificates" className="overflow-hidden bg-[#0F172A] px-5 py-20 text-white sm:px-10 lg:px-24 lg:py-[126px]">
+        <section id="certificates" className="hidden overflow-hidden bg-[#0F172A] px-5 py-20 text-white sm:px-10 lg:block lg:px-24 lg:py-[126px]">
           <div className="mx-auto grid max-w-[1728px] items-center gap-16 lg:grid-cols-[1fr_560px]">
             <div>
               <div className="mb-10 flex h-[52px] w-[64px] items-center justify-center rounded-[10px] bg-[#EDF5FF] text-[#0F172A]">
@@ -1140,50 +1446,41 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="pricing" className="bg-[#FDF8F2] px-5 py-20 sm:px-10 lg:px-24 lg:py-[120px]">
-          <div className="mx-auto max-w-[1248px] text-center">
-            <h2 className="text-[32px] font-semibold leading-tight">{t.pricingIntro.title}</h2>
-            <p className="mx-auto mt-3 max-w-[632px] text-base font-semibold leading-tight text-[#4D4D4D]">{t.pricingIntro.description}</p>
-            <div className="mt-12 grid items-center gap-8 lg:grid-cols-3">
-            {planCards.map((plan) => {
-              const planCopy = t.pricing[plan.key];
-              return (
-                <article key={plan.key} className={`min-h-[370px] p-8 text-left ${plan.className}`}>
-                  {plan.recommended && (
-                    <span className="mb-6 inline-flex bg-[#0F62FE] px-3 py-1.5 text-xs font-medium text-white">{t.pricing.recommended}</span>
-                  )}
-                  <h3 className="text-2xl font-medium leading-tight">{planCopy.name}</h3>
-                  <div className="mt-7 flex items-end">
-                    <span className="text-[50px] font-extrabold leading-none">{planCopy.price}</span>
-                    <span className="pb-1 pl-1 text-base font-semibold">{t.pricing.currency}{planCopy.period}</span>
-                  </div>
-                  <ul className="mt-8 space-y-3 text-base leading-[1.6]">
-                    {planCopy.items.map((item) => (
-                      <li key={item} className="flex items-center gap-3">
-                        <BadgeCheck className="h-4 w-4 shrink-0 text-[#5F49FF]" />
-                        {item}
-                      </li>
-                    ))}
-                    {planCopy.muted.map((item) => (
-                      <li key={item} className="flex items-center gap-3 text-[#A2A9B0]">
-                        <X className="h-4 w-4 shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link to="/register" className={`mt-8 flex h-10 items-center justify-center text-sm font-medium ${plan.buttonClass}`}>
-                    {planCopy.button}
-                  </Link>
-                </article>
-              );
-            })}
+        <section id="pricing" className="bg-[#FDF8F2] px-5 py-14 sm:px-10 lg:px-24 lg:py-[120px]">
+          <div className="mx-auto max-w-[1000px] text-center">
+            <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.pricingIntro.title}</h2>
+            <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.pricingIntro.description}</p>
+            <div className="mx-auto mt-10 grid max-w-[720px] items-stretch gap-6 pt-4 sm:mt-12 sm:grid-cols-2 sm:gap-8">
+              <PricingCard
+                duration={t.pricing.elite.name}
+                price={`${t.pricing.elite.price}${t.pricing.currency}${t.pricing.elite.period}`}
+                pricePerMonth={t.pricing.elite.price}
+                pricePerMonthUnit={`${t.pricing.currency.trim()} ${t.pricing.elite.period}`}
+                compareAtPrice={`250 000${t.pricing.currency}`}
+                discountPercent={60}
+                features={t.pricing.elite.items}
+                buttonLabel={t.pricing.elite.button}
+                onSelect={() => navigate('/register')}
+              />
+              <PricingCard
+                duration={t.pricing.pro.name}
+                price={`${t.pricing.pro.price}${t.pricing.currency}${t.pricing.pro.period}`}
+                pricePerMonth={t.pricing.pro.price}
+                pricePerMonthUnit={`${t.pricing.currency.trim()} ${t.pricing.pro.period}`}
+                compareAtPrice={`3 000 000${t.pricing.currency}`}
+                discountPercent={90}
+                features={t.pricing.pro.items}
+                buttonLabel={t.pricing.pro.button}
+                highlighted
+                badge={`${t.pricing.recommended} ⭐`}
+              />
             </div>
           </div>
         </section>
 
-        <section id="faq" className="bg-white px-5 py-20 sm:px-10 lg:px-24">
+        <section id="faq" className="bg-white px-5 py-14 sm:px-10 lg:px-24 lg:py-20">
           <div className="mx-auto max-w-[800px]">
-            <h2 className="text-center text-[32px] font-semibold leading-tight">{t.faq.title}</h2>
+            <h2 className="text-center text-[24px] font-semibold leading-tight sm:text-[32px]">{t.faq.title}</h2>
             <div className="mt-10 space-y-3">
               {faqItems.map((item, index) => {
                 const isOpen = openFaq === index;
@@ -1196,9 +1493,9 @@ export default function LandingPage() {
                       onClick={() => setOpenFaq(isOpen ? null : index)}
                     >
                       <span className="pr-2">
-                        <span className="text-[#1E3A8A]">{index + 1}.</span> {item.question}
+                        <span className="text-[#0B2A6B]">{index + 1}.</span> {item.question}
                       </span>
-                      <ChevronDown className={`h-5 w-5 shrink-0 text-[#1E3A8A] transition ${isOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`h-5 w-5 shrink-0 text-[#0B2A6B] transition ${isOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {isOpen && (
                       <p className="border-t border-[#C8DCF3] px-5 py-4 text-sm leading-relaxed text-[#4D5358]">{item.answer}</p>
@@ -1210,9 +1507,9 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="about" className="bg-[#FDF8F2] px-5 pb-[108px] text-center sm:px-10 lg:px-24">
-          <h2 className="text-[32px] font-semibold leading-tight">{t.about.title}</h2>
-          <p className="mx-auto mt-6 max-w-[550px] text-xl leading-tight text-[#4D4D4D]">{t.about.description}</p>
+        <section id="about" className="bg-[#FDF8F2] px-5 pb-14 pt-4 text-center sm:px-10 lg:px-24 lg:pb-[108px]">
+          <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.about.title}</h2>
+          <p className="mx-auto mt-4 max-w-[550px] text-base leading-snug text-[#4D4D4D] sm:mt-6 sm:text-xl sm:leading-tight">{t.about.description}</p>
         </section>
 
         <section className="bg-[#0F172A] px-5 py-20 text-white sm:px-10 lg:px-24 lg:py-[92px]">
@@ -1231,10 +1528,10 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="support" className="bg-gradient-to-b from-[#FAF7F2] to-[#FDF8F2] px-5 py-20 sm:px-10 lg:px-24 lg:py-[108px]">
-          <div className="mx-auto grid max-w-[815px] items-center gap-20 lg:max-w-[815px] lg:grid-cols-[400px_314px]">
-            <form className="rounded-[10px] bg-white px-10 py-12 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
-              <h2 className="text-center text-[30px] font-semibold leading-tight">{t.support.title}</h2>
+        <section id="support" className="bg-gradient-to-b from-[#FAF7F2] to-[#FDF8F2] px-5 py-14 sm:px-10 lg:px-24 lg:py-[108px]">
+          <div className="mx-auto grid max-w-[815px] items-center gap-10 lg:max-w-[815px] lg:grid-cols-[400px_314px] lg:gap-20">
+            <form className="rounded-[10px] bg-white px-5 py-8 shadow-[0_1px_0_rgba(0,0,0,0.03)] sm:px-10 sm:py-12">
+              <h2 className="text-center text-[22px] font-semibold leading-tight sm:text-[30px]">{t.support.title}</h2>
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
                 <label className="text-sm font-medium">
                   {t.support.name}
@@ -1245,14 +1542,14 @@ export default function LandingPage() {
                   <input className="mt-3 h-[38px] w-full rounded-[10px] border border-[#C8DCF3] px-3 outline-none" />
                 </label>
               </div>
-              <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-[8px] bg-[#F1F5F9] p-1 text-base font-semibold text-[#1E3A8A]">
+              <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-[8px] bg-[#F1F5F9] p-1 text-base font-semibold text-[#0B2A6B]">
                 <button type="button" className="rounded-[7px] bg-[#1E3A8A] py-2 text-white">{t.support.phone}</button>
                 <button type="button" className="py-2">{t.support.email}</button>
               </div>
               <label className="mt-4 block text-sm font-medium">
                 {t.support.phone}
                 <div className="mt-3 flex h-10 items-center rounded-[10px] border border-[#C8DCF3] px-5 text-sm">
-                  <span className="mr-2 text-base">🇺🇿</span>
+                  <span className="mr-2 inline-flex h-5 min-w-[26px] items-center justify-center rounded-[5px] bg-[#0B2A6B] px-1 text-[10px] font-black uppercase text-white">UZ</span>
                   <ChevronDown className="mr-3 h-4 w-4" />
                   <span className="font-medium">+998</span>
                   <span className="ml-3 text-[#A2A9B0]">XX XXX-XX-XX</span>
@@ -1263,40 +1560,40 @@ export default function LandingPage() {
                 <input className="mt-3 h-10 w-full rounded-[10px] border border-[#C8DCF3] px-5 outline-none placeholder:text-[#A2A9B0]" placeholder={t.support.placeholder} />
               </label>
               <label className="mt-4 flex items-start gap-3 text-xs leading-relaxed text-[#4D4D4D]">
-                <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-[#C8DCF3] text-[#1E3A8A]" />
+                <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-[#C8DCF3] text-[#0B2A6B]" />
                 <span>{t.support.termsAgree}</span>
               </label>
               <button type="button" className="mt-4 h-10 w-full rounded-[20px] bg-[#1E3A8A] text-base font-semibold text-white">{t.support.send}</button>
               <p className="mt-4 text-center text-sm text-[#4D4D4D]">
                 {t.support.haveAccount}{' '}
-                <Link className="font-semibold text-[#1E3A8A] underline-offset-2 hover:underline" to="/login">
+                <Link className="font-semibold text-[#0B2A6B] underline-offset-2 hover:underline" to="/login">
                   {t.support.loginLink}
                 </Link>
               </p>
             </form>
             <div className="text-center">
-              <img src="/landing/teacher.png" alt="Russian language teacher" className="mx-auto h-[303px] w-[193px] object-contain" decoding="async" />
-              <h2 className="mt-4 text-[32px] font-semibold leading-tight text-black">{t.support.teacherTitle}</h2>
-              <p className="mt-6 text-base leading-[1.6] text-black">{t.support.teacherText}</p>
+              <img src="/landing/teacher.png" alt="Russian language teacher" className="mx-auto h-[220px] w-[140px] object-contain sm:h-[303px] sm:w-[193px]" decoding="async" />
+              <h2 className="mt-4 text-[22px] font-semibold leading-tight text-black sm:text-[32px]">{t.support.teacherTitle}</h2>
+              <p className="mt-4 text-sm leading-[1.55] text-black sm:mt-6 sm:text-base sm:leading-[1.6]">{t.support.teacherText}</p>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="bg-white px-5 pt-20 sm:px-10 lg:px-24">
-        <div className="mx-auto grid max-w-[1728px] gap-10 border-b border-[#121827] pb-8 md:grid-cols-2 xl:grid-cols-[360px_220px_260px_280px] xl:justify-between">
+      <footer className="bg-white px-5 pt-12 sm:px-10 lg:px-24 lg:pt-20">
+        <div className="mx-auto grid max-w-[1728px] gap-8 border-b border-[#121827] pb-8 sm:gap-10 md:grid-cols-2 xl:grid-cols-[360px_220px_260px_280px] xl:justify-between">
           <div>
             <Brand />
             <p className="mt-6 max-w-[190px] text-xs font-medium leading-tight">{t.footer.address}</p>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-[#1E3A8A]">{t.footer.about}</h3>
+            <h3 className="text-lg font-semibold text-[#0B2A6B]">{t.footer.about}</h3>
             <ul className="mt-5 space-y-4 text-sm font-medium">
               {t.footer.aboutLinks.map((item) => <li key={item}>{item}</li>)}
             </ul>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-[#1E3A8A]">{t.footer.privacy}</h3>
+            <h3 className="text-lg font-semibold text-[#0B2A6B]">{t.footer.privacy}</h3>
             <ul className="mt-5 space-y-4 text-sm font-medium">
               <li>
                 <Link className="transition hover:underline" to={LEGAL_PATHS.offer}>
@@ -1316,10 +1613,10 @@ export default function LandingPage() {
             </ul>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-[#1E3A8A]">{t.footer.contacts}</h3>
+            <h3 className="text-lg font-semibold text-[#0B2A6B]">{t.footer.contacts}</h3>
             <ul className="mt-5 space-y-4 text-sm font-medium">
               <li className="flex items-center gap-4">
-                <Phone className="h-5 w-5 shrink-0 text-[#1E3A8A]" />
+                <Phone className="h-5 w-5 shrink-0 text-[#0B2A6B]" />
                 {telHref ? (
                   <a className="transition hover:underline" href={`tel:${telHref}`}>
                     {legalMeta.phone}
@@ -1329,19 +1626,19 @@ export default function LandingPage() {
                 )}
               </li>
               <li className="flex items-center gap-4">
-                <Mail className="h-5 w-5 shrink-0 text-[#1E3A8A]" />
+                <Mail className="h-5 w-5 shrink-0 text-[#0B2A6B]" />
                 <a className="transition hover:underline" href={`mailto:${legalMeta.email}`}>
                   {legalMeta.email}
                 </a>
               </li>
               <li className="flex items-center gap-4">
-                <Send className="h-5 w-5 shrink-0 text-[#1E3A8A]" />
+                <Send className="h-5 w-5 shrink-0 text-[#0B2A6B]" />
                 <a className="transition hover:underline" href={LANDING_CONTACTS.telegramUrl} target="_blank" rel="noreferrer">
                   Telegram
                 </a>
               </li>
               <li className="flex items-center gap-4">
-                <Star className="h-5 w-5 shrink-0 text-[#1E3A8A]" />
+                <Star className="h-5 w-5 shrink-0 text-[#0B2A6B]" />
                 <a className="transition hover:underline" href={LANDING_CONTACTS.instagramUrl} target="_blank" rel="noreferrer">
                   Instagram
                 </a>

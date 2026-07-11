@@ -17,7 +17,7 @@ export function PaymentLegalConsentCheckbox({ checked, onChange, idPrefix = 'pay
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-[#0B2A6B] focus:ring-[#123A8F]"
         />
         <span className="text-sm leading-snug text-slate-700">
           Men{' '}
@@ -25,7 +25,7 @@ export function PaymentLegalConsentCheckbox({ checked, onChange, idPrefix = 'pay
             to={LEGAL_PATHS.offer}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-blue-600 underline decoration-blue-600/30 underline-offset-2 hover:text-blue-700"
+            className="font-semibold text-[#0B2A6B] underline decoration-blue-600/30 underline-offset-2 hover:text-[#071B5E]"
             onClick={(e) => e.stopPropagation()}
           >
             ommaviy oferta
@@ -35,7 +35,7 @@ export function PaymentLegalConsentCheckbox({ checked, onChange, idPrefix = 'pay
             to={`${LEGAL_PATHS.offer}#avtomatik-tolov`}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-blue-600 underline decoration-blue-600/30 underline-offset-2 hover:text-blue-700"
+            className="font-semibold text-[#0B2A6B] underline decoration-blue-600/30 underline-offset-2 hover:text-[#071B5E]"
             onClick={(e) => e.stopPropagation()}
           >
             avtomatik to‘lovga

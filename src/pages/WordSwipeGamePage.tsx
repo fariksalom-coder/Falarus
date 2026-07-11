@@ -25,6 +25,7 @@ import {
   type GridCoord,
   type WordSwipeEntry,
 } from '../../shared/wordSwipeUtils';
+import { playCorrectSound } from '../utils/sound';
 
 type LoadState =
   | { status: 'loading' }
@@ -57,7 +58,7 @@ export default function WordSwipeGamePage() {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
   const [foundIds, setFoundIds] = useState<Set<string>>(() => new Set());
   const [foundCellKeys, setFoundCellKeys] = useState<Set<string>>(() => new Set());
-  const [hintedId, setHintedId] = useState<string | null>(null);
+  const [hintCounts, setHintCounts] = useState<Record<string, number>>({});
   const [showHelp, setShowHelp] = useState(false);
   const [progress, setProgress] = useState<WordSwipeProgressResponse | null>(null);
   const [availableStagesTotal, setAvailableStagesTotal] = useState(5);
@@ -72,7 +73,7 @@ export default function WordSwipeGamePage() {
   const resetRound = useCallback(() => {
     setFoundIds(new Set());
     setFoundCellKeys(new Set());
-    setHintedId(null);
+    setHintCounts({});
   }, []);
 
   useEffect(() => {
@@ -228,6 +229,7 @@ export default function WordSwipeGamePage() {
 
   const handleWordFound = (word: WordSwipeEntry, path: GridCoord[]) => {
     const idKey = wordEntryIdKey(word.id);
+    if (!foundIds.has(idKey)) playCorrectSound();
     setFoundIds((prev) => {
       if (prev.has(idKey)) return prev;
       const next = new Set(prev);
@@ -241,13 +243,29 @@ export default function WordSwipeGamePage() {
       }
       return next;
     });
-    setHintedId((current) => (current === idKey ? null : current));
+    // Word solved — no need to clear individual hint counts, they simply become irrelevant.
   };
 
   const handleHint = () => {
-    const remaining = words.find((w) => !foundIds.has(wordEntryIdKey(w.id)));
-    if (!remaining) return;
-    setHintedId(wordEntryIdKey(remaining.id));
+    const unfound = words.filter((w) => !foundIds.has(wordEntryIdKey(w.id)));
+    if (unfound.length === 0) return;
+    // Prefer a word that's already partially hinted but not yet fully revealed —
+    // that way each Lightbulb tap reveals the NEXT letter of the same word.
+    const inProgress = unfound.find((w) => {
+      const idKey = wordEntryIdKey(w.id);
+      const shown = hintCounts[idKey] ?? 0;
+      return shown > 0 && shown < w.ru.length - 1;
+    });
+    const target = inProgress ?? unfound[0];
+    if (!target) return;
+    const idKey = wordEntryIdKey(target.id);
+    setHintCounts((prev) => {
+      const current = prev[idKey] ?? 0;
+      const max = Math.max(0, target.ru.length - 1); // never fully solve the word
+      const next = Math.min(current + 1, max);
+      if (next === current) return prev;
+      return { ...prev, [idKey]: next };
+    });
   };
 
   useEffect(() => {
@@ -308,55 +326,68 @@ export default function WordSwipeGamePage() {
   };
 
   return (
-    <div className="fixed inset-0 z-[5] flex flex-col overflow-hidden bg-[linear-gradient(165deg,#1D4ED8_0%,#2563EB_42%,#6D28D9_100%)]">
-      <header className="shrink-0 border-b border-white/10 bg-[#1e40af]/50 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-md">
+    <div
+      className="fixed inset-0 z-[5] flex flex-col overflow-hidden"
+      style={{ background: 'linear-gradient(160deg, #3E63FF 0%, #3A54E8 45%, #5B3BE0 100%)' }}
+    >
+      <header className="shrink-0 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex max-w-6xl items-center gap-1.5 sm:gap-2">
           <button
             type="button"
-            onClick={() => navigate('/games')}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white sm:h-10 sm:w-10"
+            onClick={() => navigate('/games/word-swipe/xarita')}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white/16 text-white ring-1 ring-white/22 backdrop-blur transition hover:bg-white/22 active:scale-95 sm:h-11 sm:w-11"
             aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.4} />
           </button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-[15px] font-extrabold text-white sm:text-lg">
-              {t('games.wordSwipeTitle')}
+              So'zni yig'ing
             </h1>
-            <p className="truncate text-[10px] font-semibold text-white/70 sm:text-xs">
+            <p className="truncate text-[11px] font-semibold text-white/75 sm:text-xs">
               {loadState.status === 'ready'
-                ? `${t('games.levelLabel', { level: levelNumber })} · ${progressLabel} · ${foundWordsLabel}`
+                ? `${t('games.levelLabel', { level: levelNumber })} · ${progressLabel}`
                 : progressLabel}
             </p>
           </div>
+          {/* Score pill (diamond + points) */}
+          {loadState.status === 'ready' ? (
+            <span className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-white/16 pl-2.5 pr-3 text-white ring-1 ring-white/22 backdrop-blur">
+              <span aria-hidden className="text-[15px] leading-none">💎</span>
+              <span className="text-[13px] font-black tracking-tight text-[#FFE9B0]">
+                {foundCount * 20}
+              </span>
+            </span>
+          ) : null}
           {loadState.status === 'ready' ? (
             <>
               <button
                 type="button"
                 onClick={resetRound}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white sm:h-10 sm:w-10"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white/16 text-white ring-1 ring-white/22 backdrop-blur transition hover:bg-white/22 active:scale-95 sm:h-11 sm:w-11"
                 aria-label={t('games.reset')}
               >
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="h-4 w-4" strokeWidth={2.4} />
               </button>
               <button
                 type="button"
                 onClick={handleHint}
                 disabled={allDone}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white disabled:opacity-40 sm:h-10 sm:w-10"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-[#22306B] shadow-[0_6px_14px_-6px_rgba(255,197,61,0.6)] transition hover:brightness-105 active:scale-95 disabled:opacity-40 sm:h-11 sm:w-11"
+                style={{ background: 'linear-gradient(150deg, #FFE9B0 0%, #FFC53D 100%)' }}
                 aria-label={t('games.hint')}
               >
-                <Lightbulb className="h-4 w-4" />
+                <Lightbulb className="h-4 w-4" strokeWidth={2.4} />
               </button>
             </>
           ) : null}
           <button
             type="button"
             onClick={() => setShowHelp(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white sm:h-10 sm:w-10"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white/16 text-white ring-1 ring-white/22 backdrop-blur transition hover:bg-white/22 active:scale-95 sm:h-11 sm:w-11"
             aria-label={t('games.howToPlay')}
           >
-            <HelpCircle className="h-4 w-4" />
+            <HelpCircle className="h-4 w-4" strokeWidth={2.4} />
           </button>
         </div>
       </header>
@@ -379,7 +410,7 @@ export default function WordSwipeGamePage() {
                   return;
                 }
                 if (loadState.locked) {
-                  navigate('/games');
+                  navigate('/games/word-swipe/xarita');
                   return;
                 }
                 window.location.reload();
@@ -400,7 +431,7 @@ export default function WordSwipeGamePage() {
             <p className="max-w-sm text-sm font-semibold text-white">{t('games.stageEmpty')}</p>
             <button
               type="button"
-              onClick={() => navigate('/games')}
+              onClick={() => navigate('/games/word-swipe/xarita')}
               className="rounded-2xl bg-white px-5 py-2.5 text-sm font-bold text-slate-800"
             >
               {t('common.back')}
@@ -428,62 +459,100 @@ export default function WordSwipeGamePage() {
                 <WordSwipeAnswerList
                   words={loadState.words}
                   foundIds={foundIds}
-                  hintedId={hintedId}
+                  hintCounts={hintCounts}
                   className="min-h-0 flex-1"
                 />
 
-                {allDone ? (
-                  <div className="shrink-0 rounded-2xl border border-emerald-200/80 bg-emerald-50 px-4 py-3 text-center">
-                    <p className="text-sm font-extrabold text-emerald-800">
-                      {saving
-                        ? t('common.saving')
-                        : availableStagesEnded
-                          ? t('games.availableStagesEnded')
-                          : t('games.completedTitle')}
-                    </p>
-                    {saveError ? (
-                      <div className="mt-2 space-y-2">
-                        <p className="text-xs font-semibold text-rose-600">{saveError}</p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            savedStageKeyRef.current = null;
-                            saveInFlightRef.current = false;
-                            setStageSaved(false);
-                            setSaveError(null);
-                            setSaving(false);
-                          }}
-                          className="inline-flex min-h-9 w-full items-center justify-center rounded-xl bg-rose-100 px-3 text-xs font-bold text-rose-700"
-                        >
-                          {t('common.retry')}
-                        </button>
-                      </div>
-                    ) : null}
-                    {hasNextStage ? (
-                      <button
-                        type="button"
-                        onClick={goNextStage}
-                        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#2563EB] px-4 text-sm font-bold text-white"
-                      >
-                        {t('games.nextStage')}
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
-                    ) : !saving ? (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/games')}
-                        className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#2563EB] px-4 text-sm font-bold text-white"
-                      >
-                        {t('common.back')}
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
+                {allDone ? null : null}
               </div>
             </div>
           </>
         ) : null}
       </main>
+
+      {/* Ajoyib! full-screen win overlay */}
+      {allDone ? (
+        <div
+          className="pointer-events-auto absolute inset-0 z-40 flex flex-col items-center justify-center px-6 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+          style={{ background: 'linear-gradient(160deg, #3E63FF 0%, #3A54E8 45%, #5B3BE0 100%)' }}
+          role="dialog"
+          aria-label="Bosqich yakunlandi"
+        >
+          {/* Party emoji in soft circle */}
+          <div className="relative flex h-[168px] w-[168px] items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-white/10 blur-[2px]" />
+            <div className="absolute inset-6 rounded-full bg-white/12" />
+            <span aria-hidden className="relative text-[64px] leading-none">🎉</span>
+          </div>
+
+          <h2 className="mt-4 text-[36px] font-black leading-tight text-white">Ajoyib!</h2>
+          <p className="mt-1 text-[15px] font-semibold text-white/80">Barcha so'zlar topildi</p>
+
+          <div className="mt-6 grid w-full max-w-sm grid-cols-3 gap-2.5">
+            <div className="rounded-[16px] bg-white/16 px-3 py-3.5 text-center ring-1 ring-white/20 backdrop-blur">
+              <p className="text-[22px] font-black leading-none text-white">{totalCount}</p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">So'z</p>
+            </div>
+            <div className="rounded-[16px] bg-white/16 px-3 py-3.5 text-center ring-1 ring-white/20 backdrop-blur">
+              <p className="text-[22px] font-black leading-none text-[#FFE9B0]">+{totalCount * 20}</p>
+              <p className="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
+                Ball <span aria-hidden>💎</span>
+              </p>
+            </div>
+            <div className="rounded-[16px] bg-white/16 px-3 py-3.5 text-center ring-1 ring-white/20 backdrop-blur">
+              <p className="text-[22px] font-black leading-none text-white">
+                {saving ? '…' : stageSaved ? '✓' : '—'}
+              </p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">Saqlash</p>
+            </div>
+          </div>
+
+          {saveError ? (
+            <div className="mt-4 w-full max-w-sm space-y-2 rounded-2xl bg-rose-500/20 p-3 text-center ring-1 ring-rose-300/40">
+              <p className="text-xs font-semibold text-white">{saveError}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  savedStageKeyRef.current = null;
+                  saveInFlightRef.current = false;
+                  setStageSaved(false);
+                  setSaveError(null);
+                  setSaving(false);
+                }}
+                className="inline-flex min-h-9 w-full items-center justify-center rounded-xl bg-white/20 px-3 text-xs font-bold text-white"
+              >
+                {t('common.retry')}
+              </button>
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex w-full max-w-sm flex-col gap-2.5">
+            {hasNextStage ? (
+              <button
+                type="button"
+                onClick={goNextStage}
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-[15px] font-black text-[#3E63FF] shadow-[0_14px_28px_-10px_rgba(15,22,66,0.35)] transition hover:brightness-[0.98] active:scale-[0.99]"
+              >
+                {t('games.nextStage')}
+                <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => navigate('/games/word-swipe/xarita')}
+              className="flex min-h-[52px] w-full items-center justify-center rounded-full bg-transparent px-4 text-[14px] font-bold text-white ring-1.5 ring-white/50 transition hover:bg-white/10 active:scale-[0.99]"
+            >
+              O'yinlarga qaytish
+            </button>
+          </div>
+
+          {availableStagesEnded ? (
+            <p className="mt-4 max-w-sm text-center text-[12px] font-semibold text-white/70">
+              {t('games.availableStagesEnded')}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {showHelp ? (
         <div

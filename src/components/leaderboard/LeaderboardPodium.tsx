@@ -46,7 +46,7 @@ function PodiumAvatar({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }
         {user.avatarUrl ? (
           <img src={user.avatarUrl} alt={name} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[#DBECFF] text-3xl font-bold text-[#2563EB] sm:text-5xl">
+          <div className="flex h-full w-full items-center justify-center bg-[#DBECFF] text-3xl font-bold text-[#0B2A6B] sm:text-5xl">
             {getLeaderboardInitial(user)}
           </div>
         )}

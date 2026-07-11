@@ -81,92 +81,123 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
         new Date(adminChat.last_message.created_at).getTime() > helpLastSeenMs));
 
   return (
-    <section>
-      <div className="overflow-hidden rounded-[24px] border border-app-border bg-app-surface shadow-app-card">
-        <button
-          type="button"
-          onClick={onOpenAdmin}
-          className="flex w-full items-center gap-3 border-b border-app-border-row px-3.5 py-3 text-left transition-colors hover:bg-[var(--app-row-hover)] active:bg-[var(--app-row-active)]"
+    <section className="flex flex-col gap-[11px]">
+      {/* Admin chat */}
+      <button
+        type="button"
+        onClick={onOpenAdmin}
+        className="flex items-center gap-[13px] rounded-[18px] bg-app-surface px-[14px] py-[13px] text-left shadow-[0_6px_14px_rgba(23,34,74,0.05)] transition hover:-translate-y-0.5 active:scale-[0.99]"
+      >
+        <div
+          className="relative flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[16px] text-white"
+          style={{ background: 'linear-gradient(145deg, #0B2A6B, #071B5E)' }}
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.28)]">
-            <Headphones className="h-6 w-6" aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-bold text-app-text">{t('partner.adminChat')}</p>
-            <p className="truncate text-sm text-app-text-muted">
-              {adminChat?.last_message?.content ?? t('partner.adminPrompt')}
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-xs font-medium text-app-icon-fg">
+          <Headphones className="h-5 w-5" aria-hidden />
+          <span
+            className="absolute bottom-[1px] right-[1px] h-3 w-3 rounded-full border-2 border-white"
+            style={{ background: '#18B45C' }}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between">
+            <p className="truncate text-[15px] font-black text-app-text">{t('partner.adminChat')}</p>
+            <span className="ml-2 shrink-0 text-[11px] font-bold text-[#A7B1C6]">
               {formatListTime(adminChat?.last_message_at ?? null, t('common.today'))}
             </span>
-            {adminUnread ? (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-bold text-white">
-                {adminChat?.unread_count ? adminChat.unread_count : 1}
-              </span>
-            ) : null}
           </div>
-        </button>
+          <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
+            {adminChat?.last_message?.content ?? t('partner.adminPrompt')}
+          </p>
+        </div>
+        {adminUnread ? (
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0B2A6B] px-1.5 text-[11px] font-black text-white">
+            {adminChat?.unread_count ? adminChat.unread_count : 1}
+          </span>
+        ) : null}
+      </button>
 
-        <button
-          type="button"
-          onClick={onOpenGroup}
-          className="flex w-full items-center gap-3 border-b border-app-border-row px-3.5 py-3 text-left transition-colors hover:bg-[var(--app-row-hover)] active:bg-[var(--app-row-active)]"
+      {/* Group chat */}
+      <button
+        type="button"
+        onClick={onOpenGroup}
+        className="flex items-center gap-[13px] rounded-[18px] bg-app-surface px-[14px] py-[13px] text-left shadow-[0_6px_14px_rgba(23,34,74,0.05)] transition hover:-translate-y-0.5 active:scale-[0.99]"
+      >
+        <div
+          className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[16px] text-white"
+          style={{ background: 'linear-gradient(145deg, #0EA5A5, #0C7A7A)' }}
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-[0_8px_20px_rgba(124,58,237,0.28)]">
-            <Users className="h-6 w-6" aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-bold text-app-text">{t('partner.groupChat')}</p>
-            <p className="truncate text-sm text-app-text-muted">
-              {groupSummary
-                ? t('partner.membersOnline', {
-                    members: groupSummary.member_count,
-                    online: groupSummary.online_count,
-                  })
-                : t('partner.groupFallback')}
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-xs font-medium text-app-icon-fg">
+          <Users className="h-5 w-5" aria-hidden />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between">
+            <p className="truncate text-[15px] font-black text-app-text">{t('partner.groupChat')}</p>
+            <span className="ml-2 shrink-0 text-[11px] font-bold text-[#A7B1C6]">
               {formatListTime(groupSummary?.last_message?.created_at ?? null, t('common.today'))}
             </span>
-            {Number(groupSummary?.unread_count ?? 0) > 0 ? (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-600 px-1.5 text-[11px] font-bold text-white">
-                {groupSummary!.unread_count}
-              </span>
-            ) : null}
           </div>
-        </button>
-
-        {matches.map((match) => {
-          const name = match.partner_profile?.display_name ?? t('common.user');
-          return (
-            <button
-              key={match.id}
-              type="button"
-              onClick={() => onOpenPartner(match.id)}
-              className="flex w-full items-center gap-3 border-b border-app-border-row px-3.5 py-3 text-left transition-colors last:border-b-0 hover:bg-[var(--app-row-hover)] active:bg-[var(--app-row-active)]"
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-bold text-white">
-                {initials(name)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-bold text-app-text">{name}</p>
-                <p className="truncate text-sm text-app-text-muted">{t('partner.partnerChat')}</p>
-              </div>
-              <MessageCircle className="h-5 w-5 shrink-0 text-app-primary" aria-hidden />
-            </button>
-          );
-        })}
-
-        {!matches.length && !loading ? (
-          <p className="px-4 py-4 text-center text-sm font-medium text-app-text-muted">
-            {t('partner.chatSoon')}
+          <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
+            {groupSummary
+              ? t('partner.membersOnline', {
+                  members: groupSummary.member_count,
+                  online: groupSummary.online_count,
+                })
+              : t('partner.groupFallback')}
           </p>
+        </div>
+        {Number(groupSummary?.unread_count ?? 0) > 0 ? (
+          <span
+            className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
+            style={{ background: '#0EA5A5' }}
+          >
+            {groupSummary!.unread_count}
+          </span>
         ) : null}
-      </div>
+      </button>
+
+      {/* Partners heading */}
+      {matches.length > 0 ? (
+        <p className="mx-1 mt-2 text-[12px] font-black uppercase tracking-[0.04em] text-app-text-muted">
+          {t('partner.partnersLabel') || 'SHERIKLAR'}
+        </p>
+      ) : null}
+
+      {matches.map((match, idx) => {
+        const name = match.partner_profile?.display_name ?? t('common.user');
+        const gradients = [
+          'linear-gradient(145deg, #8B5CF6, #6D28D9)',
+          'linear-gradient(145deg, #F59E0B, #D97706)',
+          'linear-gradient(145deg, #0EA5A5, #0C7A7A)',
+          'linear-gradient(145deg, #0B2A6B, #071B5E)',
+        ];
+        return (
+          <button
+            key={match.id}
+            type="button"
+            onClick={() => onOpenPartner(match.id)}
+            className="flex items-center gap-[13px] rounded-[18px] bg-app-surface px-[14px] py-[13px] text-left shadow-[0_6px_14px_rgba(23,34,74,0.05)] transition hover:-translate-y-0.5 active:scale-[0.99]"
+          >
+            <div
+              className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[16px] text-[15px] font-black text-white"
+              style={{ background: gradients[idx % gradients.length] }}
+            >
+              {initials(name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[15px] font-black text-app-text">{name}</p>
+              <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
+                {t('partner.partnerChat')}
+              </p>
+            </div>
+            <MessageCircle className="h-5 w-5 shrink-0 text-app-primary" aria-hidden />
+          </button>
+        );
+      })}
+
+      {!matches.length && !loading ? (
+        <p className="rounded-[18px] bg-app-surface px-4 py-4 text-center text-sm font-medium text-app-text-muted shadow-[0_6px_14px_rgba(23,34,74,0.05)]">
+          {t('partner.chatSoon')}
+        </p>
+      ) : null}
     </section>
   );
 }

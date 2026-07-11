@@ -28,7 +28,7 @@ function RowStat({ icon: Icon, label, value, doneVisual }: RowStatProps) {
     doneVisual === true
       ? 'text-emerald-700 dark:text-emerald-300'
       : doneVisual === 'partial'
-        ? 'text-blue-700 dark:text-blue-300'
+        ? 'text-[#071B5E] dark:text-blue-300'
         : 'text-slate-600 dark:text-slate-300';
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-app-border bg-app-surface-elevated px-3 py-2.5">
@@ -196,80 +196,199 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
 
   const loadingCard = !isReady || !kunlikLoaded;
 
+  const blocks = [
+    { key: 'grammar', label: t('stats.kunlikGrammar'), value: grammarLabel, done: grammarVisual, emoji: '🧠' },
+    { key: 'lugat', label: t('stats.kunlikVocab'), value: vocabLabel, done: vocabVisual, emoji: '📖' },
+    { key: 'oqish', label: t('stats.kunlikReading'), value: readingLabel, done: readingVisual, emoji: '📄' },
+    { key: 'gapirish', label: t('stats.kunlikSpeaking'), value: speakingLabel, done: speakingVisual, emoji: '🎤' },
+  ];
+  const doneCount = blocks.filter((b) => b.done === true).length;
+  const totalBlocks = blocks.length;
+  const currentIdx = blocks.findIndex((b) => b.done !== true);
+  const pct = Math.round((doneCount / totalBlocks) * 100);
+  const remainingMin = Math.max(0, (totalBlocks - doneCount) * 6);
+  const gaugeRadius = 30;
+  const gaugeC = 2 * Math.PI * gaugeRadius;
+
   return (
-    <div
-      className="overflow-hidden rounded-[22px] border border-app-border bg-app-surface shadow-app-soft md:rounded-[24px]"
-    >
-      <div
-        className="flex items-start justify-between gap-3 px-4 py-3.5"
-        style={{
-          background: 'linear-gradient(135deg, #2563EB 0%, #4F46E5 52%, #6366F1 100%)',
-        }}
-      >
-        <div className="min-w-0">
-          <p className="text-[13px] font-bold text-white">
-            {t('stats.kunlikToday')}
-            {!loadingCard && planDay ? (
-              <>
-                {' '}<span className="text-white/90">·</span> {t('stats.kunlikDay', { day: focusDay })}
-              </>
-            ) : null}
-          </p>
-          <p className="mt-0.5 text-[11px] text-indigo-100">
-            {t('stats.kunlikPlanSubtitlePrefix')}
-            {loadingCard ? ' · …' : <> · {t('stats.kunlikBlocksSummary', { done: questProg.done, total: questProg.total })}</>}
-          </p>
+    <div className="overflow-hidden rounded-[26px] bg-pmn-card shadow-[0_18px_36px_-18px_rgba(15,27,59,0.28)] ring-1 ring-pmn-border">
+      {/* Navy hero with gold guilloche + circular progress */}
+      <div className="profile-guilloche relative overflow-hidden px-5 pt-5 pb-5 text-white">
+        <div className="relative z-[2] flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="profile-gold-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.18em]">
+              Bugun · {focusDay}-kun
+            </span>
+            <h3 className="profile-heading mt-3 text-[26px] leading-none text-white">Kunlik reja</h3>
+            <p className="mt-2 text-[12.5px] font-bold text-[#D4AC5C]">
+              {doneCount} / {totalBlocks} blok bajarildi{remainingMin > 0 ? ` · ~${remainingMin} daqiqa qoldi` : ''}
+            </p>
+          </div>
+          {/* Circular progress */}
+          <div className="relative flex h-[76px] w-[76px] shrink-0 items-center justify-center">
+            <svg viewBox="0 0 72 72" className="absolute inset-0 h-full w-full -rotate-90">
+              <circle cx="36" cy="36" r={gaugeRadius} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="6" />
+              <circle
+                cx="36"
+                cy="36"
+                r={gaugeRadius}
+                fill="none"
+                stroke="#D4AC5C"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={gaugeC}
+                strokeDashoffset={gaugeC * (1 - pct / 100)}
+              />
+            </svg>
+            <div className="relative text-center leading-none">
+              <p className="profile-heading text-[18px] text-white">
+                {pct}<span className="text-[11px] font-bold text-white/70">%</span>
+              </p>
+              <p className="mt-1 text-[8.5px] font-bold uppercase tracking-[0.2em] text-[#D4AC5C]">Bugun</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-3 px-4 py-4">
-        {loadingCard ? (
-          <p className="py-6 text-center text-sm text-app-text-muted">{t('common.loading')}</p>
-        ) : (
-          <>
-            {showPrevChip ? (
-              <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-3 py-2 text-[12px] font-medium text-emerald-800 ring-1 ring-emerald-100 dark:bg-emerald-500/12 dark:text-emerald-300 dark:ring-emerald-500/20">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
-                {focusDay - 1 === 1
-                  ? t('stats.kunlikPrevDaysSingle', { day: 1 })
-                  : t('stats.kunlikPrevDaysRange', { from: 1, to: focusDay - 1 })}
-              </div>
-            ) : null}
-
-            {allDone ? (
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-4 text-center dark:border-emerald-500/25 dark:bg-emerald-500/10">
-                <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" aria-hidden />
-                <p className="mt-2 text-lg font-bold text-emerald-800 dark:text-emerald-300">{t('stats.kunlikAllDone')}</p>
-                <p className="mt-1 text-[13px] text-emerald-900/80 dark:text-emerald-200/80">{t('stats.kunlikAllDoneSub')}</p>
-              </div>
-            ) : fullDayDone ? (
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-4 text-center dark:border-emerald-500/25 dark:bg-emerald-500/10">
-                <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" aria-hidden />
-                <p className="mt-2 text-lg font-bold text-emerald-800 dark:text-emerald-300">{t('stats.kunlikCompleted')}</p>
-                <p className="mt-1 text-[13px] text-emerald-900/80 dark:text-emerald-200/80">{t('stats.kunlikCompletedSub')}</p>
-              </div>
-            ) : null}
-
-            {!allDone && !fullDayDone ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                <RowStat icon={Brain} label={t('stats.kunlikGrammar')} value={grammarLabel} doneVisual={grammarVisual} />
-                <RowStat icon={BookOpen} label={t('stats.kunlikVocab')} value={vocabLabel} doneVisual={vocabVisual} />
-                <RowStat icon={FileText} label={t('stats.kunlikReading')} value={readingLabel} doneVisual={readingVisual} />
-                <RowStat icon={Mic} label={t('stats.kunlikSpeaking')} value={speakingLabel} doneVisual={speakingVisual} />
-              </div>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={primaryAction.onClick}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 py-3.5 text-[14px] font-semibold text-white shadow-[0_14px_28px_rgba(79,70,229,0.28)] transition hover:brightness-[1.03] active:scale-[0.99]"
+      {loadingCard ? (
+        <p className="py-8 text-center text-sm text-app-text-muted">{t('common.loading')}</p>
+      ) : (
+        <div className="px-4 pt-4 pb-4">
+          {/* Prev days chip — cream */}
+          {showPrevChip ? (
+            <div
+              className="mb-3 flex items-center justify-between rounded-[16px] px-4 py-3 ring-1 ring-[#F1E5C0]"
+              style={{ background: 'linear-gradient(90deg, rgba(245,212,143,0.16), rgba(212,172,92,0.10))' }}
             >
-              {primaryAction.label}
-              <ChevronRight className="h-4 w-4 opacity-90" aria-hidden />
-            </button>
-          </>
-        )}
-      </div>
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#0A1638]"
+                  style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+                >
+                  <CheckCircle2 className="h-4 w-4" strokeWidth={2.6} aria-hidden />
+                </span>
+                <p className="text-[13px] font-black text-pmn-text">
+                  {focusDay - 1 === 1
+                    ? t('stats.kunlikPrevDaysSingle', { day: 1 })
+                    : t('stats.kunlikPrevDaysRange', { from: 1, to: focusDay - 1 })}
+                </p>
+              </div>
+              <span className="text-[11px] font-black text-pmn-gold-deep">{focusDay - 1}/{focusDay - 1}</span>
+            </div>
+          ) : null}
+
+          {/* Vertical timeline */}
+          <div className="relative">
+            <div
+              aria-hidden
+              className="absolute left-[15px] top-4 bottom-4 w-px"
+              style={{
+                background: 'linear-gradient(to bottom, transparent, #E5E7EB 12px, #E5E7EB calc(100% - 12px), transparent)',
+              }}
+            />
+            <div className="space-y-2.5">
+              {blocks.map((b, i) => {
+                const isDone = b.done === true;
+                const isCurrent = i === currentIdx;
+                const isLocked = !isDone && !isCurrent;
+                return (
+                  <div key={b.key} className="relative flex items-center gap-3">
+                    {/* Timeline node */}
+                    <div className="relative z-[2] flex h-8 w-8 shrink-0 items-center justify-center">
+                      {isDone ? (
+                        <div
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-[#0A1638] shadow-[0_6px_14px_-6px_rgba(212,172,92,0.55)]"
+                          style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+                        >
+                          <CheckCircle2 className="h-4 w-4" strokeWidth={2.8} aria-hidden />
+                        </div>
+                      ) : isCurrent ? (
+                        <div
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-white text-[12px] font-black shadow-[0_6px_14px_-6px_rgba(15,27,59,0.55)]"
+                          style={{ background: '#0F1B3B' }}
+                        >
+                          {i + 1}
+                        </div>
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-[#D8D6CE] text-[12px] font-black text-pmn-text-soft">
+                          {i + 1}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Block card */}
+                    <div
+                      className={`flex flex-1 items-center gap-3 rounded-[16px] px-3 py-3 ring-1 ${
+                        isCurrent
+                          ? 'bg-pmn-pill ring-[#0F1B3B]/25'
+                          : isDone
+                            ? 'bg-pmn-card ring-pmn-border'
+                            : 'bg-[#FAF9F5] ring-dashed ring-pmn-border'
+                      }`}
+                    >
+                      <span
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] text-[18px]"
+                        style={{
+                          background: isDone
+                            ? 'linear-gradient(150deg, #F5D48F 0%, #F1E5C0 100%)'
+                            : isCurrent
+                              ? '#EEF3FF'
+                              : '#F0EEE6',
+                        }}
+                      >
+                        {b.emoji}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className={`flex items-center gap-2 text-[14px] font-black ${isLocked ? 'text-pmn-text-soft' : 'text-pmn-text'}`}>
+                          <span>{b.label}</span>
+                          {isCurrent ? (
+                            <span
+                              className="rounded-full px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.14em] text-[#0A1638]"
+                              style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+                            >
+                              Hozir
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className={`mt-0.5 truncate text-[11.5px] font-semibold ${
+                          isLocked ? 'text-[#B5AE97]' : isDone ? 'text-pmn-gold-deep' : 'text-[#5C5646]'
+                        }`}>
+                          {b.value}
+                        </p>
+                      </div>
+                      {isDone ? (
+                        <span className="shrink-0 rounded-full bg-[#F1E5C0]/60 px-3 py-1 text-[11px] font-black text-pmn-gold-deep ring-1 ring-[#E4DBBE]">
+                          Bajarildi
+                        </span>
+                      ) : isCurrent ? (
+                        <span
+                          className="shrink-0 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#0A1638] ring-1 ring-[#E4C88A]"
+                          style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #E4C88A 100%)' }}
+                        >
+                          Sizning navbat
+                        </span>
+                      ) : (
+                        <span aria-hidden className="text-[15px] text-[#B5AE97]">🔒</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom CTA */}
+          <button
+            type="button"
+            onClick={primaryAction.onClick}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[14.5px] font-black text-white shadow-[0_14px_28px_-12px_rgba(15,27,59,0.45)] transition hover:brightness-[1.03] active:scale-[0.99]"
+            style={{ background: 'linear-gradient(155deg, #16244A 0%, #0F1B3B 55%, #0A1638 100%)' }}
+          >
+            {primaryAction.label}
+            <ChevronRight className="h-4 w-4 opacity-90" aria-hidden />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

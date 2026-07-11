@@ -167,7 +167,7 @@ export default function PartnerPage() {
               exit={{ opacity: 0 }}
               className="flex items-center justify-center py-20"
             >
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
             </motion.div>
           )}
 
@@ -182,7 +182,7 @@ export default function PartnerPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
-                  className="mt-6 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(37,99,235,0.3)]"
+                  className="mt-6 w-full rounded-2xl bg-gradient-to-r from-[#123A8F] to-[#0B2A6B] px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(11,42,107,0.3)]"
                 >
                   {t('partner.guestLogin')}
                 </button>
@@ -198,7 +198,7 @@ export default function PartnerPage() {
                   <button
                     type="button"
                     onClick={openAnketalar}
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text shadow-sm transition-colors hover:bg-[var(--app-row-hover)] active:scale-[0.97]"
+                    className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
                     aria-label={t('partner.profiles')}
                   >
                     <Users className="h-5 w-5" aria-hidden />
@@ -206,12 +206,12 @@ export default function PartnerPage() {
                   <button
                     type="button"
                     onClick={() => setOverlay('incoming')}
-                    className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text shadow-sm transition-colors hover:bg-[var(--app-row-hover)] active:scale-[0.97]"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
                     aria-label={t('partner.incoming')}
                   >
                     <Inbox className="h-5 w-5" aria-hidden />
                     {incomingCount > 0 ? (
-                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
+                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0B2A6B] px-1 text-[10px] font-bold text-white">
                         {incomingCount > 9 ? '9+' : incomingCount}
                       </span>
                     ) : null}
@@ -219,12 +219,12 @@ export default function PartnerPage() {
                   <button
                     type="button"
                     onClick={() => setOverlay('outgoing')}
-                    className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text shadow-sm transition-colors hover:bg-[var(--app-row-hover)] active:scale-[0.97]"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
                     aria-label={t('partner.outgoing')}
                   >
                     <Send className="h-5 w-5" aria-hidden />
                     {outgoingCount > 0 ? (
-                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white">
+                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0B2A6B] px-1 text-[10px] font-bold text-white">
                         {outgoingCount > 9 ? '9+' : outgoingCount}
                       </span>
                     ) : null}
@@ -238,7 +238,7 @@ export default function PartnerPage() {
                       }
                       scrollToInlineForm();
                     }}
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text shadow-sm transition-colors hover:bg-[var(--app-row-hover)] active:scale-[0.97]"
+                    className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
                     aria-label={t('partner.profiles')}
                   >
                     <UserRound className="h-5 w-5" aria-hidden />

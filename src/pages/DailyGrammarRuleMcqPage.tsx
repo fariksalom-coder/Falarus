@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
@@ -12,6 +12,7 @@ import {
   useKunlikSequentialGate,
 } from '../hooks/useKunlikSequentialGate';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
+import { playCorrectSound, playWrongSound } from '../utils/sound';
 
 const shuffle = <T,>(items: T[]): T[] => {
   const arr = [...items];
@@ -127,9 +128,9 @@ export default function DailyGrammarRuleMcqPage() {
 
   if (!isValidDailyCourseDay(dayNumber)) {
     return (
-      <div className="min-h-screen bg-[#F5F7FA] p-6">
+      <div className="min-h-screen bg-app-bg p-6">
         <p className="text-gray-700">Sahifa topilmadi.</p>
-        <button type="button" className="mt-4 text-blue-600 underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
+        <button type="button" className="mt-4 text-[#0B2A6B] underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
           {t('kunlik.backToPlan')}
         </button>
       </div>
@@ -143,14 +144,14 @@ export default function DailyGrammarRuleMcqPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F5F7FA]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
       </div>
     );
   }
 
   if (error || tasks.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F5F7FA] p-6">
+      <div className="min-h-screen bg-app-bg p-6">
         <main className="mx-auto max-w-lg rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-amber-950 shadow-sm">
           <p className="mt-2 text-sm">{error ?? 'Savollar yo‘q.'}</p>
           <button
@@ -166,38 +167,104 @@ export default function DailyGrammarRuleMcqPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] text-slate-900 pb-28">
-      <main className="mx-auto w-full max-w-lg px-4 py-6">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="min-h-[44px] rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-        >
-          {t('common.back')}
-        </button>
+    <div className="grammar-theme min-h-screen pb-32">
+      <main className="mx-auto w-full max-w-lg px-4 pt-2">
+        {/* Header */}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex h-10 w-10 items-center justify-center rounded-[13px] border border-[#DDD7F5] bg-white text-[#2D1B69] shadow-[0_4px_10px_rgba(91,76,224,0.08)]"
+            aria-label={t('common.back')}
+          >
+            ‹
+          </button>
+          <p className="grammar-heading flex-1 text-[16px] leading-none text-[#2D1B69]">
+            Grammatika · Test
+          </p>
+          <span className="rounded-full bg-white px-3 py-1.5 text-[12px] font-black text-[#5B4CE0] shadow-[0_4px_10px_rgba(91,76,224,0.08)]">
+            {Math.min(currentIndex + 1, tasks.length)}/{tasks.length}
+          </span>
+        </div>
 
+        {/* Purple progress bar */}
         {!finished && (
-          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-gray-200">
-            <div className="h-full rounded-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[#DDD7F5]">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, #8B7AF7, #5B4CE0)',
+              }}
+            />
           </div>
         )}
 
         {!finished && currentTask && (
-          <div className="mt-6 rounded-[24px] border border-gray-100 bg-white p-4 shadow-[0_14px_34px_rgba(148,163,184,0.12)] sm:p-5">
-            <p className="text-base font-bold text-gray-900">{currentTask.prompt}</p>
+          <>
+            <p className="mt-5 text-[11px] font-black uppercase tracking-[0.16em] text-[#8B7FAB]">
+              VAZIFA 1 · TEST · {Math.min(currentIndex + 1, tasks.length)}/{tasks.length}
+            </p>
 
-            <div className="mt-4 space-y-2">
+            {/* Question card with peach decor */}
+            <div className="relative mt-3 overflow-hidden rounded-[22px] border border-[#DDD7F5] bg-white px-5 py-6 text-center shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)]">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full"
+                style={{ background: 'rgba(255,206,176,0.35)' }}
+              />
+              <p className="grammar-heading relative z-[2] text-[22px] leading-tight text-[#2D1B69]">
+                {currentTask.prompt}
+              </p>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-[10px]">
               {choiceOptions.map((option, optionIndex) => {
                 const isSelected = selectedOptionIndex === optionIndex;
                 const showCorrect = status === 'correct' && isSelected;
                 const showWrong = status === 'wrong' && isSelected;
-                const className = showCorrect
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
-                  : showWrong
-                    ? 'border-red-500 bg-red-50 text-red-800'
-                    : isSelected
-                      ? 'border-blue-500 bg-blue-50 text-blue-800'
-                      : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-blue-300';
+
+                let cardStyle: CSSProperties = {
+                  background: '#FFFFFF',
+                  border: '1.5px solid #DDD7F5',
+                  color: '#2D1B69',
+                  boxShadow: '0 6px 14px -8px rgba(45,27,105,0.12)',
+                };
+                let icon: ReactNode = null;
+
+                if (showCorrect) {
+                  cardStyle = {
+                    background: '#DCFCE7',
+                    border: '1.5px solid #82E5B8',
+                    color: '#0F7C3A',
+                    boxShadow: '0 10px 22px -10px rgba(34,197,94,0.35)',
+                  };
+                  icon = (
+                    <span className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-[#22C55E] text-[14px] font-black text-white">
+                      ✓
+                    </span>
+                  );
+                } else if (showWrong) {
+                  cardStyle = {
+                    background: '#FEEBEB',
+                    border: '1.5px solid #F5B5B5',
+                    color: '#B4282E',
+                    boxShadow: '0 10px 22px -10px rgba(180,40,46,0.28)',
+                  };
+                  icon = (
+                    <span className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-[#F0656A] text-[14px] font-black text-white">
+                      ✕
+                    </span>
+                  );
+                } else if (isSelected) {
+                  cardStyle = {
+                    background: '#EDE9FB',
+                    border: '2px solid #5B4CE0',
+                    color: '#2D1B69',
+                    boxShadow: '0 10px 24px -10px rgba(91,76,224,0.4), 0 0 0 4px rgba(91,76,224,0.14)',
+                  };
+                }
+
                 return (
                   <button
                     key={`${currentIndex}-${optionIndex}`}
@@ -208,60 +275,80 @@ export default function DailyGrammarRuleMcqPage() {
                       const ok = option === currentTask.correct;
                       if (ok) {
                         setStatus('correct');
-                        setMessage('To‘g‘ri!');
+                        setMessage("To'g'ri! 🎉");
+                        playCorrectSound();
                       } else {
                         setStatus('wrong');
-                        setMessage('Noto‘g‘ri. Yana urinib ko‘ring.');
+                        setMessage("Noto'g'ri. Yana urinib ko'ring.");
+                        playWrongSound();
                       }
                     }}
-                    className={`min-h-[48px] w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-all active:scale-[0.98] ${className}`}
+                    className="grammar-heading flex min-h-[54px] w-full items-center justify-between rounded-[16px] px-5 py-3 text-left text-[17px] transition-all active:scale-[0.98]"
+                    style={cardStyle}
                   >
-                    {option}
+                    <span>{option}</span>
+                    {icon}
                   </button>
                 );
               })}
             </div>
 
-            {message ? (
-              <p
-                className={`mt-4 text-center text-sm font-medium ${
-                  status === 'wrong' ? 'text-red-600' : status === 'correct' ? 'text-emerald-700' : 'text-gray-600'
-                }`}
-              >
-                {message}
-              </p>
-            ) : null}
-
-            {status === 'correct' && (
-              <div className="mt-5 flex justify-center">
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="min-h-[48px] rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700"
+            {status === 'wrong' && message ? (
+              <div className="mt-4 flex justify-center">
+                <span
+                  key={`${currentIndex}-wrong-${message}`}
+                  className="msg-shake rounded-full bg-[#FEEBEB] px-4 py-2 text-sm font-black text-[#B4282E] shadow-[0_6px_14px_-8px_rgba(180,40,46,0.35)]"
                 >
-                  {currentIndex < tasks.length - 1 ? 'Keyingisi' : 'Yakunlash'}
-                </button>
+                  ✕ {message}
+                </span>
               </div>
-            )}
-          </div>
+            ) : null}
+          </>
         )}
 
         {finished ? (
-          <div className="mt-8 rounded-[24px] border border-emerald-200 bg-emerald-50 p-6 text-center shadow-sm">
-            <p className="text-lg font-bold text-emerald-900">Tabriklaymiz!</p>
-            <p className="mt-2 text-sm text-emerald-800">
+          <div className="mt-8 rounded-[24px] border-[1.5px] border-[#82E5B8] bg-[#DCFCE7] p-6 text-center shadow-[0_14px_30px_-14px_rgba(34,197,94,0.25)]">
+            <p className="grammar-heading text-[22px] text-[#0F7C3A]">Tabriklaymiz! 🎉</p>
+            <p className="mt-2 text-sm font-black text-[#0F7C3A]">
               Natija: {correctCount} / {tasks.length}
             </p>
             <button
               type="button"
               onClick={handleBack}
-              className="mt-4 min-h-[48px] rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white"
+              className="mt-4 min-h-[54px] w-full rounded-[16px] bg-[#22C55E] px-6 py-3 text-[16px] font-black text-white shadow-[0_10px_22px_-10px_rgba(34,197,94,0.5)]"
             >
               Grammatikaga qaytish
             </button>
           </div>
         ) : null}
       </main>
+
+      {/* Sticky "Keyingisi" bar when correct */}
+      {status === 'correct' && !finished ? (
+        <div
+          className="fixed inset-x-0 bottom-0 border-t px-[18px] pt-4 pb-6"
+          style={{
+            background: '#DCFCE7',
+            borderTopColor: '#82E5B8',
+          }}
+        >
+          <div className="mx-auto max-w-lg">
+            <div key={`ok-${currentIndex}`} className="msg-pop mb-3 flex items-center gap-2.5">
+              <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#22C55E] text-[17px] text-white">
+                ✓
+              </div>
+              <span className="grammar-heading text-[18px] text-[#0F7C3A]">To'g'ri! 🎉</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="grammar-heading h-[54px] w-full rounded-[16px] bg-[#22C55E] text-[16px] text-white shadow-[0_14px_28px_-12px_rgba(34,197,94,0.55)]"
+            >
+              Keyingisi →
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

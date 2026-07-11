@@ -125,13 +125,16 @@ export default function WordSwipeBoard({
 
   return (
     <div
-      className={`relative w-full select-none touch-none rounded-[18px] border border-white/20 bg-white/10 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.2)] backdrop-blur-md transition-[box-shadow] sm:rounded-[26px] sm:p-3 ${
-        flash === 'ok' ? 'ring-2 ring-emerald-300/80' : flash === 'miss' ? 'ring-2 ring-rose-300/70' : ''
+      className={`relative w-full select-none touch-none rounded-[24px] p-3 shadow-[0_20px_50px_-16px_rgba(15,22,66,0.4)] backdrop-blur-md transition-[box-shadow] sm:rounded-[28px] sm:p-4 ${
+        flash === 'ok' ? 'ring-2 ring-[#4CE3B2]/80' : flash === 'miss' ? 'ring-2 ring-rose-300/70' : 'ring-1 ring-white/22'
       } ${className}`}
+      style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.10) 100%)',
+      }}
     >
       <div
         ref={gridRef}
-        className="relative grid w-full place-items-center gap-2.5 sm:gap-3"
+        className="relative grid w-full place-items-center gap-2 sm:gap-2.5"
         style={{
           aspectRatio: `${gridCols} / ${gridRows}`,
           gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
@@ -144,13 +147,20 @@ export default function WordSwipeBoard({
       >
         {path.length >= 2 ? (
           <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" aria-hidden>
+            <defs>
+              <linearGradient id="ws-line" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#4CE3B2" />
+                <stop offset="1" stopColor="#25D19A" />
+              </linearGradient>
+            </defs>
             <polyline
               points={linePoints}
               fill="none"
-              stroke="rgba(255,255,255,0.95)"
-              strokeWidth="4"
+              stroke="url(#ws-line)"
+              strokeWidth="6"
               strokeLinecap="round"
               strokeLinejoin="round"
+              opacity="0.85"
             />
           </svg>
         ) : null}
@@ -169,13 +179,20 @@ export default function WordSwipeBoard({
                 className="flex h-full w-full items-center justify-center"
               >
                 <span
-                  className={`pointer-events-none relative z-20 flex aspect-square h-[68%] w-[68%] items-center justify-center rounded-[8px] border text-[clamp(0.65rem,2.8vw,1.05rem)] font-extrabold leading-none transition-[transform,background-color,border-color,box-shadow] sm:h-[72%] sm:w-[72%] sm:rounded-xl ${
+                  className={`pointer-events-none relative z-20 flex aspect-square h-[86%] w-[86%] items-center justify-center rounded-[14px] text-[clamp(1rem,4vw,1.4rem)] font-bold leading-none transition-[transform,background-color,box-shadow] sm:h-[88%] sm:w-[88%] sm:rounded-[16px] ${
                     active
-                      ? 'border-blue-400 bg-[#2563EB] text-white shadow-[0_6px_16px_rgba(37,99,235,0.4)]'
+                      ? 'text-white shadow-[0_10px_22px_-6px_rgba(37,209,154,0.55)] scale-[0.94]'
                       : found
-                        ? 'border-emerald-400 bg-emerald-500 text-white shadow-[0_4px_12px_rgba(34,197,94,0.35)]'
-                        : 'border-slate-200/80 bg-white text-slate-800 shadow-[0_2px_8px_rgba(15,23,42,0.06)]'
-                  } ${isSelecting && active ? 'scale-[0.96]' : ''}`}
+                        ? 'text-white shadow-[0_8px_18px_-6px_rgba(37,209,154,0.45)]'
+                        : 'bg-white text-[#1B2456] shadow-[0_4px_10px_-3px_rgba(15,22,66,0.15)]'
+                  }`}
+                  style={
+                    active
+                      ? { background: 'linear-gradient(150deg, #4CE3B2 0%, #25D19A 55%, #1FC48C 100%)' }
+                      : found
+                        ? { background: 'linear-gradient(150deg, #4CE3B2 0%, #25D19A 55%, #1FC48C 100%)' }
+                        : undefined
+                  }
                 >
                   {letter}
                 </span>
@@ -186,10 +203,14 @@ export default function WordSwipeBoard({
       </div>
 
       {path.length > 0 ? (
-        <p className="mt-2 text-center text-xs font-bold tracking-[0.2em] text-white sm:text-sm">
+        <p className="mt-2.5 text-center text-[13px] font-bold tracking-[0.24em] text-white sm:text-sm">
           {lettersFromPath(path, grid)}
         </p>
-      ) : null}
+      ) : (
+        <p className="mt-2.5 text-center text-[12px] font-semibold tracking-[0.02em] text-white/70">
+          Harflarni ketma-ket bosing
+        </p>
+      )}
     </div>
   );
 }

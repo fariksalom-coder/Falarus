@@ -10,7 +10,7 @@ import { AuthButton } from '../components/auth/AuthButton';
 import { AuthFormBanner } from '../components/auth/AuthFormBanner';
 import { AuthGap, AuthPageScaffold, AuthScrollBody } from '../components/auth/AuthPageScaffold';
 import { AuthPasswordField } from '../components/auth/AuthPasswordField';
-import { AuthSectionTitle } from '../components/auth/AuthSectionTitle';
+import { AuthHero } from '../components/auth/AuthHero';
 import { AuthSegmentedTabs } from '../components/auth/AuthSegmentedTabs';
 import { AuthSwitchLink } from '../components/auth/AuthSwitchLink';
 import { AuthTextField } from '../components/auth/AuthTextField';
@@ -189,8 +189,9 @@ export default function RegisterPage() {
     <AuthPageScaffold>
       <AuthScrollBody>
         <form onSubmit={handleSubmit} className="flex flex-col pb-6">
-          <AuthSectionTitle
-            title={t('auth.createAccountTitle')}
+          <AuthHero
+            title={`${t('auth.createAccountTitle')} ✨`}
+            subtitle="Bepul boshlash uchun ma'lumotlarni to'ldiring"
             onBack={() => navigate('/')}
           />
 
@@ -300,6 +301,7 @@ export default function RegisterPage() {
             label={t('auth.register')}
             loading={submitting}
             disabled={!canSubmit}
+            variant="success"
           />
 
           <AuthGap />

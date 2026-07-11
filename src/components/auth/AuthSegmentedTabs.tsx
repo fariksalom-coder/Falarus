@@ -18,13 +18,13 @@ export function AuthSegmentedTabs<T extends string>({ value, options, onChange }
   );
 
   return (
-    <div className="relative h-[34px] rounded-xl bg-[#F1F5F9] p-[3px]">
-      <motion.div
-        className="absolute bottom-[3px] top-[3px] rounded-[9px] bg-white shadow-[0_2px_10px_rgba(30,58,138,0.1),0_1px_4px_rgba(0,0,0,0.05)]"
+    <div className="relative h-[54px] rounded-[16px] bg-[#F1F4FA] p-[5px]">
+<motion.div
+        className="absolute bottom-[5px] top-[5px] rounded-[12px] bg-white shadow-[0_3px_8px_rgba(23,34,74,0.1)]"
         initial={false}
         animate={{
-          left: `calc(${selectedIndex} * (100% / ${options.length}) + 3px)`,
-          width: `calc(100% / ${options.length} - 6px)`,
+          left: `calc(${selectedIndex} * (100% / ${options.length}) + 5px)`,
+          width: `calc(100% / ${options.length} - 10px)`,
         }}
         transition={{ duration: 0.22, ease: [0.33, 1, 0.68, 1] }}
       />
@@ -37,8 +37,8 @@ export function AuthSegmentedTabs<T extends string>({ value, options, onChange }
               type="button"
               onClick={() => onChange(option.value)}
               className={[
-                'flex-1 rounded-[9px] text-sm transition-colors duration-180',
-                selected ? 'font-semibold text-[#1E3A8A]' : 'font-medium text-[#4B4B4B]',
+                'flex-1 rounded-[12px] text-[14px] transition-colors duration-180',
+                selected ? 'font-black text-[#2F6BFF]' : 'font-extrabold text-[#8794AC]',
               ].join(' ')}
             >
               {option.label}

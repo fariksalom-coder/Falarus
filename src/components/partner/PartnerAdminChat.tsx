@@ -113,28 +113,28 @@ export default function PartnerAdminChat({ onBack }: Props) {
   }
 
   const content = (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#F3F4F8]">
-      <header className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 pb-3 pt-[max(env(safe-area-inset-top,0px),12px)]">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-app-bg">
+      <header className="flex shrink-0 items-center gap-3 border-b border-app-border bg-app-surface px-4 pb-3 pt-[max(env(safe-area-inset-top,0px),12px)]">
         <button
           type="button"
           onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border text-app-text-muted"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 via-blue-400 to-indigo-500 text-white">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#123A8F] via-[#0B2A6B] to-[#071B5E] text-white">
           <Headphones className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-base font-bold text-slate-900">{t('help.admin')}</p>
-          <p className="text-xs text-slate-500">{t('partner.support')}</p>
+          <p className="text-base font-bold text-app-text">{t('help.admin')}</p>
+          <p className="text-xs text-app-text-muted">{t('partner.support')}</p>
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="h-9 w-9 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
           </div>
         ) : (
           <div className="mx-auto max-w-lg space-y-3">
@@ -145,7 +145,9 @@ export default function PartnerAdminChat({ onBack }: Props) {
                 <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                   <div
                     className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
-                      mine ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-white text-slate-900'
+                      mine
+                        ? 'bg-[#0B2A6B] text-white dark:bg-[color:var(--app-primary-mid)]'
+                        : 'border border-app-border bg-app-surface text-app-text'
                     }`}
                   >
                     {media.isImage ? (
@@ -153,7 +155,11 @@ export default function PartnerAdminChat({ onBack }: Props) {
                     ) : (
                       <p className="whitespace-pre-wrap break-words text-[15px]">{msg.content}</p>
                     )}
-                    <p className={`mt-1 text-[10px] ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
+                    <p
+                      className={`mt-1 text-[10px] ${
+                        mine ? 'text-blue-100' : 'text-app-text-muted'
+                      }`}
+                    >
                       {formatTime(msg.created_at)}
                     </p>
                   </div>
@@ -167,9 +173,9 @@ export default function PartnerAdminChat({ onBack }: Props) {
 
       {error ? <p className="px-4 text-center text-xs text-red-600">{error}</p> : null}
 
-      <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-3 pb-[max(env(safe-area-inset-bottom,0px),12px)]">
+      <div className="shrink-0 border-t border-app-border bg-app-surface px-3 py-3 pb-[max(env(safe-area-inset-bottom,0px),12px)]">
         <div className="mx-auto flex max-w-lg items-end gap-2">
-          <label className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 text-slate-500">
+          <label className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-app-border text-app-text-muted">
             <ImagePlus className="h-5 w-5" />
             <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePickImage} disabled={uploadingImage} />
           </label>
@@ -178,7 +184,7 @@ export default function PartnerAdminChat({ onBack }: Props) {
             onChange={(e) => setText(e.target.value)}
             rows={1}
             placeholder={t('partner.adminMessagePlaceholder')}
-            className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] outline-none focus:border-blue-400"
+            className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-app-border bg-app-bg-subtle text-app-text placeholder:text-app-text-muted px-4 py-3 text-[15px] outline-none focus:border-blue-400"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -190,7 +196,7 @@ export default function PartnerAdminChat({ onBack }: Props) {
             type="button"
             onClick={() => void handleSend()}
             disabled={!text.trim() || sending}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#0B2A6B] text-white disabled:opacity-50"
           >
             <Send className="h-5 w-5" />
           </button>

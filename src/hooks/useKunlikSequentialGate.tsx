@@ -13,7 +13,7 @@ import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 export function KunlikSequentialGateSpinner() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F8FAFC] px-4">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#2563EB] border-t-transparent" />
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
       <p className="text-center text-sm font-medium text-slate-500">Reja yuklanmoqda…</p>
     </div>
   );

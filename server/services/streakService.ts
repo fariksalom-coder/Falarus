@@ -16,6 +16,7 @@ export async function recordActivity(supabase: DatabaseClient, userId: number): 
 export type StreakResult = {
   streak_days: number;
   last_7_days: boolean[];
+  best_streak_days: number;
 };
 
 /**
@@ -31,7 +32,7 @@ export async function getStreak(supabase: DatabaseClient, userId: number): Promi
     .limit(365);
   if (error) {
     console.error('[streakService.getStreak]', error.message);
-    return { streak_days: 0, last_7_days: [false, false, false, false, false, false, false] };
+    return { streak_days: 0, last_7_days: [false, false, false, false, false, false, false], best_streak_days: 0 };
   }
   const dates = new Set((rows ?? []).map((r: { activity_date: string }) => r.activity_date));
   return computeActivityStreakFromDateSet(dates, formatDateInAppTimezone, new Date());

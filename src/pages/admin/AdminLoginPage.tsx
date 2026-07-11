@@ -30,39 +30,53 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-xl bg-slate-800 p-8 shadow-xl">
-        <h1 className="text-xl font-semibold text-white mb-1">FalaRus Admin</h1>
-        <p className="text-slate-400 text-sm mb-6">Super-admin kirish</p>
+    <div className="min-h-screen bg-[#0C1526] flex items-center justify-center p-4">
+      <div
+        className="w-[360px] max-w-full rounded-[18px] border p-[34px]"
+        style={{ background: '#151F35', borderColor: '#24304C' }}
+      >
+        {/* Logo mark + title */}
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/landing/falarus-mark.svg"
+            alt=""
+            className="h-[23px] w-[30px]"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
+          <span className="text-[19px] font-extrabold text-white">FalaRus Admin</span>
+        </div>
+        <p className="mt-2 mb-[26px] text-[13px] font-semibold text-[#7C89A3]">Super-admin kirish</p>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
+            <label className="mb-[7px] block text-[13px] font-bold text-[#AEB9CE]">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="h-[46px] w-full rounded-[11px] border px-[14px] text-[14px] font-semibold text-white outline-none transition"
+              style={{ background: '#0E1728', borderColor: '#2C3A5A' }}
               placeholder="admin@falarus.uz"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Parol</label>
+            <label className="mb-[7px] block text-[13px] font-bold text-[#AEB9CE]">Parol</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="h-[46px] w-full rounded-[11px] border px-[14px] text-[14px] font-semibold tracking-[3px] text-white outline-none transition"
+              style={{ background: '#0E1728', borderColor: '#2C3A5A' }}
+              placeholder="••••••••"
               required
             />
           </div>
-          {error && (
-            <p className="text-sm text-red-400">{error}</p>
-          )}
+          {error && <p className="text-sm font-semibold text-[#F0656A]">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-indigo-600 py-2.5 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="h-[48px] w-full rounded-[12px] bg-[#0B2A6B] text-[15px] font-extrabold text-white hover:bg-[#071B5E] disabled:opacity-50"
           >
             {loading ? 'Kirish...' : 'Kirish'}
           </button>

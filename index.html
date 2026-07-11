@@ -5,6 +5,7 @@
       (function () {
         try {
           var stored = localStorage.getItem('falarus-theme');
+          // Light is the default (V2 redesign). Opt into dark explicitly.
           if (stored === 'dark') document.documentElement.classList.add('dark');
           var scale = localStorage.getItem('falarus-text-scale');
           var mult = scale === '2' ? 1.25 : scale === '3' ? 1.5 : 1;
@@ -18,7 +19,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="__SEO_SITE_DESCRIPTION_ESCAPED__" />
     <meta name="keywords" content="__SEO_META_KEYWORDS_ESCAPED__" />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="theme-color" content="#0B2A6B" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="FalaRus" />
@@ -34,6 +35,12 @@
     <meta name="twitter:title" content="__SEO_SITE_TITLE_ESCAPED__" />
     <meta name="twitter:description" content="__SEO_SITE_DESCRIPTION_ESCAPED__" />
     <meta name="twitter:image" content="__OG_IMAGE_ESCAPED__" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400;1,600&display=swap"
+    />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" type="image/png" />
     <link rel="shortcut icon" href="/icons/icon-192.png" type="image/png" />

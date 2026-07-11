@@ -13,6 +13,7 @@ import {
 } from '../hooks/useKunlikSequentialGate';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { isKunlikGrammarFullyDone } from '../../shared/kunlikProgressMerge';
+import { playCorrectSound, playWrongSound } from '../utils/sound';
 
 type MatchCard = { id: string; text: string; pairId: number; side: 'left' | 'right' };
 
@@ -203,12 +204,14 @@ export default function DailyGrammarMatchPage() {
       setMatchedPairIds(nextMatched);
       setMatchSelected(null);
       setHint("To'g'ri!");
+      playCorrectSound();
       if (nextMatched.length === matchLeft.length) {
         setBlockComplete(true);
       }
       return;
     }
     setHint("Noto'g'ri. Boshqa juftni tanlang.");
+    playWrongSound();
     setMatchWrongIds([matchSelected.id, card.id]);
     setMatchLocked(true);
     setTimeout(() => {
@@ -253,20 +256,20 @@ export default function DailyGrammarMatchPage() {
     const isWrong = matchWrongIds.includes(card.id);
     const isMatched = matchedPairIds.includes(card.pairId);
     const base =
-      'min-h-[48px] w-full rounded-full border px-4 py-3 text-center text-sm font-bold transition-all active:scale-[0.98]';
-    if (isMatched) return `${base} border-emerald-400 bg-emerald-50 text-emerald-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]`;
-    if (isWrong) return `${base} border-red-300 bg-red-50 text-red-900`;
-    if (isSelected) return `${base} border-blue-500 bg-blue-50/80 text-blue-950 ring-2 ring-blue-400/35`;
-    return `${base} border-slate-200 bg-white text-slate-900 shadow-sm hover:border-slate-300 hover:bg-slate-50/80`;
+      'grammar-heading min-h-[50px] w-full rounded-full border-[1.5px] px-4 py-3 text-center text-[15px] transition-all active:scale-[0.98]';
+    if (isMatched) return `${base} border-[#82E5B8] bg-[#DCFCE7] text-[#0F7C3A] shadow-[0_6px_14px_-8px_rgba(34,197,94,0.35)]`;
+    if (isWrong) return `${base} border-[#F5B5B5] bg-[#FEEBEB] text-[#B4282E]`;
+    if (isSelected) return `${base} border-[#5B4CE0] bg-[#EDE9FB] text-[#2D1B69] shadow-[0_0_0_4px_rgba(91,76,224,0.14)]`;
+    return `${base} border-[#DDD7F5] bg-white text-[#2D1B69] shadow-[0_4px_10px_-6px_rgba(45,27,105,0.08)]`;
   };
 
   const handleBack = () => navigate(backPath);
 
   if (!isValidDailyCourseDay(dayNumber)) {
     return (
-      <div className="min-h-screen bg-[#F5F7FA] p-6">
+      <div className="min-h-screen bg-app-bg p-6">
         <p className="text-gray-700">{t('common.pageNotFound')}</p>
-        <button type="button" className="mt-4 text-blue-600 underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
+        <button type="button" className="mt-4 text-[#0B2A6B] underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
           {t('kunlik.backToPlan')}
         </button>
       </div>
@@ -280,14 +283,14 @@ export default function DailyGrammarMatchPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F5F7FA]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
       </div>
     );
   }
 
   if (error || matchSets.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F5F7FA] p-6">
+      <div className="min-h-screen bg-app-bg p-6">
         <main className="mx-auto max-w-lg rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-amber-950 shadow-sm">
           <p className="text-sm">{error ?? 'Maʼlumot yo‘q.'}</p>
           <button
@@ -303,28 +306,43 @@ export default function DailyGrammarMatchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] pb-28 text-slate-900">
+    <div className="grammar-theme min-h-screen pb-28">
       <main className="mx-auto w-full max-w-lg px-4 pb-6 pt-[max(1rem,env(safe-area-inset-top))]">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="min-h-[44px] rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-        >
-          {t('common.back')}
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex h-10 w-10 items-center justify-center rounded-[13px] border border-[#DDD7F5] bg-white text-[#2D1B69] shadow-[0_4px_10px_rgba(91,76,224,0.08)]"
+            aria-label={t('common.back')}
+          >
+            ‹
+          </button>
+          <p className="grammar-heading flex-1 text-[16px] leading-none text-[#2D1B69]">
+            Grammatika · Juftini toping
+          </p>
+        </div>
 
         {!finished && (
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/90">
-            <div className="h-full rounded-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[#DDD7F5]">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, #8B7AF7, #5B4CE0)',
+              }}
+            />
           </div>
         )}
 
         {!finished ? (
-          <div className="mt-5 rounded-[24px] border border-slate-100 bg-white p-4 shadow-[0_14px_34px_rgba(148,163,184,0.14)] sm:p-5">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-lg font-bold tracking-tight text-slate-900">Juftini toping</h2>
+          <div className="mt-5 rounded-[24px] border border-[#DDD7F5] bg-white p-4 shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)] sm:p-5">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8B7FAB]">
+              VAZIFA 2 · JUFTINI TOPING
+            </p>
+            <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="grammar-heading text-[22px] leading-tight text-[#2D1B69]">Mos juftni tanlang</h2>
               {chunkPositionLabel ? (
-                <span className="text-xs font-semibold tabular-nums text-slate-500">{chunkPositionLabel}</span>
+                <span className="text-xs font-black tabular-nums text-[#8B7FAB]">{chunkPositionLabel}</span>
               ) : null}
             </div>
 
@@ -360,13 +378,20 @@ export default function DailyGrammarMatchPage() {
             </div>
 
             {hint ? (
-              <p
-                className={`mt-4 text-center text-sm font-medium ${
-                  blockComplete ? 'text-emerald-700' : matchLocked || matchWrongIds.length ? 'text-red-600' : 'text-slate-600'
-                }`}
-              >
-                {hint}
-              </p>
+              <div className="mt-4 flex justify-center">
+                <span
+                  key={`hint-${hint}-${matchedPairIds.length}`}
+                  className={`${matchLocked || matchWrongIds.length ? 'msg-shake' : 'msg-pop'} rounded-full px-4 py-2 text-sm font-black ${
+                    blockComplete
+                      ? 'bg-[#DCFCE7] text-[#0F7C3A] shadow-[0_6px_14px_-8px_rgba(34,197,94,0.35)]'
+                      : matchLocked || matchWrongIds.length
+                        ? 'bg-[#FEEBEB] text-[#B4282E] shadow-[0_6px_14px_-8px_rgba(180,40,46,0.35)]'
+                        : 'bg-[#EDE9FB] text-[#5B4CE0]'
+                  }`}
+                >
+                  {blockComplete ? '✓' : matchLocked || matchWrongIds.length ? '✕' : '👆'} {hint}
+                </span>
+              </div>
             ) : null}
 
             {blockComplete ? (
@@ -374,7 +399,7 @@ export default function DailyGrammarMatchPage() {
                 <button
                   type="button"
                   onClick={handleNextChunkOrBlock}
-                  className="min-h-[48px] rounded-full bg-emerald-600 px-8 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700"
+                  className="grammar-heading min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)]"
                 >
                   {nextButtonLabel}
                 </button>
@@ -382,13 +407,13 @@ export default function DailyGrammarMatchPage() {
             ) : null}
           </div>
         ) : (
-          <div className="mt-6 rounded-[24px] border border-emerald-200 bg-emerald-50 p-6 text-center shadow-sm">
-            <p className="text-lg font-bold text-emerald-900">Yaxshi!</p>
-            <p className="mt-2 text-sm text-emerald-800">Barcha juftliklar topildi.</p>
+          <div className="mt-6 rounded-[24px] border-[1.5px] border-[#82E5B8] bg-[#DCFCE7] p-6 text-center shadow-[0_14px_30px_-14px_rgba(34,197,94,0.25)]">
+            <p className="grammar-heading text-[22px] text-[#0F7C3A]">Yaxshi! 🎉</p>
+            <p className="mt-2 text-sm font-black text-[#0F7C3A]">Barcha juftliklar topildi.</p>
             <button
               type="button"
               onClick={handleBack}
-              className="mt-5 min-h-[48px] rounded-full bg-emerald-600 px-8 py-3 text-sm font-bold text-white"
+              className="grammar-heading mt-5 min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)]"
             >
               Grammatikaga qaytish
             </button>

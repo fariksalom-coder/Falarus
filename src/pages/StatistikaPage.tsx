@@ -2,29 +2,24 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
+import { resolveAssetUrl } from '../api';
 import {
   fetchCourseProgress,
   fetchActivityCalendar,
+  fetchWeeklyActivity,
   type ActivityCalendar,
   type CourseProgress,
+  type WeeklyActivityDay,
 } from '../api/stats';
 import { fetchStreak, getCachedStreak, type StreakResponse } from '../api/activity';
-import LeaderboardList from '../components/leaderboard/LeaderboardList';
-import UserRankCard from '../components/leaderboard/UserRankCard';
+import { fetchLeaderboard, type LeaderboardResponse, type LeaderboardUser } from '../api/leaderboard';
+import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { KunlikTodayStatsCard } from '../components/stats/KunlikTodayStatsCard';
 import ActivityCalendarCard from '../components/stats/ActivityCalendarCard';
-import {
-  BookOpen,
-  ChevronRight,
-  Flame,
-  Award,
-  Trophy,
-  Star,
-  Zap,
-} from 'lucide-react';
+import AchievementsSection from '../components/achievements/AchievementsSection';
+import { Flame } from 'lucide-react';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
 
-const BG = 'var(--app-bg)';
 const BORDER = 'var(--app-border)';
 const PRIMARY = 'var(--app-primary)';
 const TEXT = 'var(--app-text)';
@@ -32,8 +27,187 @@ const TEXT_SECONDARY = 'var(--app-text-muted)';
 const EMPTY_STREAK: StreakResponse = {
   streak_days: 0,
   last_7_days: [false, false, false, false, false, false, false],
+  best_streak_days: 0,
 };
-const TAB_TRACK_BG = 'linear-gradient(180deg, #EFF6FF 0%, #EAF2FF 100%)';
+
+const POINTS_PER_LEVEL = 500;
+
+function levelFromPoints(points: number): { level: number; toNext: number; pctInLevel: number } {
+  const level = Math.floor(points / POINTS_PER_LEVEL) + 1;
+  const inLevel = points % POINTS_PER_LEVEL;
+  const toNext = POINTS_PER_LEVEL - inLevel;
+  const pctInLevel = Math.round((inLevel / POINTS_PER_LEVEL) * 100);
+  return { level, toNext, pctInLevel };
+}
+
+function LevelXpCard({
+  points,
+  loaded,
+}: {
+  points: number;
+  loaded: boolean;
+}) {
+  const { level, toNext, pctInLevel } = levelFromPoints(points);
+  const roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][level - 1] ?? String(level);
+  return (
+    <div className="rounded-[22px] bg-pmn-card p-4 shadow-[0_12px_24px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border">
+      <div className="flex items-center gap-3">
+        <div
+          className="profile-heading flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[14px] text-[20px] text-[#0A1638] shadow-[0_10px_20px_-8px_rgba(212,172,92,0.5)]"
+          style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 55%, #B8873A 100%)' }}
+        >
+          {roman}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="profile-heading text-[19px] leading-tight text-pmn-text">
+            {loaded ? `${level}-daraja` : '—'}
+          </p>
+          <p className="mt-0.5 text-[12px] font-bold text-pmn-text-muted">
+            {loaded ? `Keyingi darajaga ${toNext} XP` : ''}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="profile-heading text-[22px] leading-none tabular-nums text-pmn-text">
+            {loaded ? points.toLocaleString('ru-RU').replace(/,/g, ' ') : '—'}
+          </p>
+          <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-pmn-gold-deep">
+            <span aria-hidden>💎</span> Ball
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#F1E5C0]/40">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${loaded ? pctInLevel : 0}%`,
+            background: 'linear-gradient(90deg, #EBD199 0%, #D4AC5C 100%)',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MetricTile({
+  emoji,
+  label,
+  value,
+  valueSuffix,
+  valueColor,
+}: {
+  emoji: string;
+  label: string;
+  value: string;
+  valueSuffix?: string;
+  valueColor?: string;
+}) {
+  return (
+    <div className="rounded-[18px] bg-pmn-card p-[14px] shadow-[0_10px_20px_-14px_rgba(15,27,59,0.15)] ring-1 ring-pmn-border">
+      <div className="flex items-center gap-2">
+        <span className="text-[16px] leading-none">{emoji}</span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-pmn-text-muted">{label}</span>
+      </div>
+      <p
+        className="profile-heading mt-2 text-[26px] leading-none text-pmn-text"
+        style={valueColor ? { color: valueColor } : undefined}
+      >
+        {value}
+        {valueSuffix ? (
+          <span className="text-[15px] font-bold text-pmn-text-soft">{valueSuffix}</span>
+        ) : null}
+      </p>
+    </div>
+  );
+}
+
+function WeeklyActivityChart({
+  last7,
+  serverDays,
+}: {
+  last7: Array<{ label: string; active: boolean }>;
+  /** Real per-day activity from backend, oldest → today. If null, falls back to boolean `active`. */
+  serverDays: WeeklyActivityDay[] | null;
+}) {
+  const FALLBACK_H = [30, 44, 22, 60, 40, 46, 55];
+  const useServer = serverDays != null && serverDays.length === last7.length;
+  const totalMinutes = useServer ? serverDays!.reduce((a, d) => a + d.minutes, 0) : 0;
+  const totalLabel = (() => {
+    if (!useServer || totalMinutes <= 0) return 'daqiqa / kun';
+    if (totalMinutes >= 60) {
+      const h = Math.floor(totalMinutes / 60);
+      const rem = totalMinutes % 60;
+      return rem > 0 ? `${h}s ${rem}m` : `${h} soat`;
+    }
+    return `${totalMinutes} min`;
+  })();
+  // When we use server data (dates come in oldest → today order), derive labels
+  // straight from those dates so bars align with day-of-week columns.
+  const rows: Array<{ label: string; active: boolean; height: number; isToday: boolean; minutes: number }> =
+    useServer
+      ? serverDays!.map((s, i) => ({
+          label: DAY_LABEL_BY_WEEKDAY[new Date(`${s.date}T00:00:00`).getDay()] ?? '',
+          active: s.active,
+          height: s.height_pct,
+          isToday: s.is_today || i === serverDays!.length - 1,
+          minutes: s.minutes,
+        }))
+      : last7.map((d, i) => ({
+          label: d.label,
+          active: d.active,
+          height: d.active ? (i === last7.length - 1 ? 92 : FALLBACK_H[i % FALLBACK_H.length]) : 8,
+          isToday: i === last7.length - 1,
+          minutes: 0,
+        }));
+
+  return (
+    <div className="rounded-[20px] bg-pmn-card p-4 shadow-[0_10px_24px_-14px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border">
+      <div className="mb-[14px] flex items-center justify-between">
+        <p className="profile-heading text-[15px] leading-none text-pmn-text">Haftalik faollik</p>
+      </div>
+      <div className="flex h-[130px] items-end justify-between gap-2">
+        {rows.map(({ label, active, height, isToday, minutes }, i) => {
+          const bg =
+            isToday && active
+              ? 'linear-gradient(180deg, #D4AC5C, #B8873A)'
+              : active
+                ? 'linear-gradient(180deg, #F5D48F, #E4C88A)'
+                : '#F1E5C0';
+          const labelColor = isToday && active ? '#B0894A' : active ? '#7A756B' : '#B5AE97';
+          const labelWeight = isToday && active ? '900' : '800';
+          const minuteText = minutes > 0 ? `${minutes}m` : '';
+          const minuteColor = isToday && active ? '#0F1B3B' : active ? '#B0894A' : 'transparent';
+          return (
+            <div key={`${label}-${i}`} className="flex h-full flex-1 flex-col items-center gap-1">
+              {/* Bar container fills the vertical space; bar sits at the bottom and the
+                  minute label rides on top of the bar so it moves up/down with height. */}
+              <div className="relative flex h-full w-full items-end">
+                <div
+                  className="relative w-full rounded-t-[8px] rounded-b-[4px]"
+                  style={{ height: `${height}%`, background: bg }}
+                >
+                  {minuteText ? (
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2 -top-3 text-[10px] font-black leading-none tabular-nums whitespace-nowrap"
+                      style={{ color: minuteColor }}
+                    >
+                      {minuteText}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              <span
+                className="text-[10px] leading-none"
+                style={{ color: labelColor, fontWeight: labelWeight }}
+              >
+                {label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const DAY_LABEL_BY_WEEKDAY: Record<number, string> = {
   0: 'Ya',
@@ -45,79 +219,298 @@ const DAY_LABEL_BY_WEEKDAY: Record<number, string> = {
   6: 'Sh',
 };
 
-// Milestone badges (streak days)
-const MILESTONES = [
-  { days: 3, icon: Flame, color: '#F97316', bg: '#FFF7ED' },
-  { days: 10, icon: Zap, color: '#EAB308', bg: '#FEFCE8' },
-  { days: 30, icon: Star, color: '#8B5CF6', bg: '#F5F3FF' },
-  { days: 45, icon: Award, color: '#EC4899', bg: '#FDF2F8' },
-  { days: 60, icon: Trophy, color: '#0EA5E9', bg: '#F0F9FF' },
-  { days: 100, icon: Star, color: '#2563EB', bg: '#EFF6FF' },
-  { days: 182, icon: Trophy, color: '#059669', bg: '#ECFDF5' },
-];
 
-function MilestoneAchievements({
-  streakDays,
-  t,
+function initialsFrom(user: Pick<LeaderboardUser, 'firstName' | 'lastName'>): string {
+  const f = (user.firstName ?? '').trim();
+  const l = (user.lastName ?? '').trim();
+  const two = ((f[0] ?? '') + (l[0] ?? '')).toUpperCase();
+  return two || (f[0] ?? '?').toUpperCase();
+}
+
+function displayNameFrom(user: Pick<LeaderboardUser, 'firstName' | 'lastName'>): string {
+  const f = (user.firstName ?? '').trim();
+  const l = (user.lastName ?? '').trim();
+  return `${f} ${l}`.trim() || 'Foydalanuvchi';
+}
+
+function LeaderboardAvatar({
+  avatarUrl,
+  initials,
+  className,
+  goldFallback = false,
+  ringGold = false,
 }: {
-  streakDays: number;
-  t: (key: string, values?: Record<string, string | number>) => string;
+  avatarUrl: string | null;
+  initials: string;
+  className: string;
+  /** Use gold gradient for the initials fallback (my-rank row). */
+  goldFallback?: boolean;
+  /** Wrap the image with a gold ring like the podium winner. */
+  ringGold?: boolean;
 }) {
+  const [broken, setBroken] = useState(false);
+  const resolved = resolveAssetUrl(avatarUrl);
+  const ringClass = ringGold ? ' ring-[3px] ring-[#D4AC5C]' : '';
+  if (resolved && !broken) {
+    return (
+      <img
+        src={resolved}
+        alt={initials}
+        onError={() => setBroken(true)}
+        className={`rounded-full object-cover shadow-[0_10px_24px_-10px_rgba(15,27,59,0.5)] ${className}${ringClass}`}
+        decoding="async"
+        loading="lazy"
+        referrerPolicy="same-origin"
+      />
+    );
+  }
   return (
     <div
-      className="rounded-[20px] border bg-app-surface p-4 shadow-app-soft md:rounded-[22px] md:p-5"
-      style={{ borderColor: BORDER }}
+      className={`flex items-center justify-center rounded-full shadow-[0_10px_24px_-10px_rgba(15,27,59,0.5)] ${className}${ringClass}`}
+      style={
+        goldFallback
+          ? { background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)', color: '#0A1638' }
+          : { background: 'linear-gradient(150deg, #16244A 0%, #0F1B3B 55%, #0A1638 100%)', color: '#fff' }
+      }
     >
-      <div className="mb-4 flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300 md:h-9 md:w-9">
-          <Trophy className="h-4 w-4 md:h-[18px] md:w-[18px]" />
+      <span className="profile-heading tracking-tight">{initials}</span>
+    </div>
+  );
+}
+
+function PodiumSlot({
+  user,
+  rank,
+  size,
+  onClick,
+}: {
+  user: LeaderboardUser | null;
+  rank: 1 | 2 | 3;
+  size: 'md' | 'lg';
+  onClick?: (userId: number) => void;
+}) {
+  const isBig = size === 'lg';
+  const diameter = isBig ? 'h-[86px] w-[86px] text-[22px]' : 'h-[64px] w-[64px] text-[18px]';
+  const initials = user ? initialsFrom(user) : '—';
+  const name = user ? displayNameFrom(user) : '';
+  const points = user?.points ?? 0;
+  const clickable = user != null && onClick != null;
+  return (
+    <div
+      className={`flex flex-col items-center ${clickable ? 'cursor-pointer active:scale-[0.97] transition-transform' : ''}`}
+      onClick={clickable ? () => onClick(user.id) : undefined}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick(user.id);
+              }
+            }
+          : undefined
+      }
+    >
+      <div className="relative">
+        {rank === 1 ? (
+          <span aria-hidden className="absolute -top-4 left-1/2 -translate-x-1/2 text-[18px]">
+            👑
+          </span>
+        ) : null}
+        <LeaderboardAvatar
+          avatarUrl={user?.avatarUrl ?? null}
+          initials={initials}
+          className={diameter}
+          ringGold={isBig}
+        />
+        <span
+          className={`absolute -bottom-2 left-1/2 flex h-6 min-w-6 -translate-x-1/2 items-center justify-center rounded-full px-1.5 text-[11px] font-black ring-2 ring-white ${
+            rank === 1 ? 'text-[#0A1638]' : rank === 2 ? 'text-white' : 'text-white'
+          }`}
+          style={{
+            background:
+              rank === 1
+                ? 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)'
+                : rank === 2
+                  ? 'linear-gradient(150deg, #B0B8C7 0%, #8892A6 100%)'
+                  : 'linear-gradient(150deg, #D8A264 0%, #B0894A 100%)',
+          }}
+        >
+          {rank}
+        </span>
+      </div>
+      <p className="mt-3 max-w-[92px] truncate text-center text-[13px] font-black text-pmn-text">
+        {name || ' '}
+      </p>
+      <p className="mt-0.5 text-[12px] font-bold text-pmn-gold-deep">
+        <span aria-hidden>🔥</span> {points.toLocaleString('ru-RU').replace(/,/g, ' ')}
+      </p>
+    </div>
+  );
+}
+
+function ReytingSection({
+  data,
+  loading,
+  onUserClick,
+}: {
+  data: LeaderboardResponse | null;
+  loading: boolean;
+  onUserClick: (userId: number) => void;
+}) {
+  const top = data?.top ?? [];
+  const first = top[0] ?? null;
+  const second = top[1] ?? null;
+  const third = top[2] ?? null;
+  // Show the top 10 always (podium + 4-10). Ranks 11+ live inside a bounded
+  // scroll container below so the Statistika page stays a fixed length.
+  const rest = top.slice(3, 10);
+  const overflow = top.slice(10);
+  const myRank = data?.myRank ?? null;
+  const meInTop10 = myRank ? myRank.rank <= 10 : false;
+  // If the user is ranked below top 10 but shows up somewhere in the overflow
+  // slice, we hide the inline duplicate — their sticky row already represents
+  // them at the bottom.
+  const overflowFiltered = myRank
+    ? overflow.filter((u) => u.id !== myRank.id)
+    : overflow;
+
+  return (
+    <section className="rounded-[22px] bg-pmn-card p-5 shadow-[0_12px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="profile-heading text-[22px] leading-tight text-pmn-text">Reyting</h2>
+        <span
+          className="rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em]"
+          style={{
+            background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)',
+            color: '#3B2A0A',
+            boxShadow: '0 6px 14px -6px rgba(212,172,92,0.55)',
+          }}
+        >
+          Umumiy
+        </span>
+      </div>
+
+      {/* Podium */}
+      <div className="mt-6 grid grid-cols-3 items-end gap-2 pb-2">
+        <div className="flex justify-center pt-3">
+          <PodiumSlot user={second} rank={2} size="md" onClick={onUserClick} />
         </div>
-        <div>
-          <h2 className="text-sm font-semibold text-app-text md:text-[15px]">{t('stats.milestonesTitle')}</h2>
-          <p className="text-[12px] text-app-text-muted md:text-xs">{t('stats.milestonesSub')}</p>
+        <div className="flex justify-center">
+          <PodiumSlot user={first} rank={1} size="lg" onClick={onUserClick} />
+        </div>
+        <div className="flex justify-center pt-3">
+          <PodiumSlot user={third} rank={3} size="md" onClick={onUserClick} />
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
-        {MILESTONES.map((m) => {
-          const earned = streakDays >= m.days;
-          const Icon = m.icon;
-          return (
-            <div
-              key={m.days}
-              className={`flex flex-col items-center gap-1.5 rounded-[14px] p-2.5 text-center ${
-                earned ? '' : 'bg-app-bg-subtle dark:bg-white/5'
-              }`}
-              style={earned ? { background: m.bg } : undefined}
+      {/* Rest of list — every remaining user with points */}
+      {rest.length > 0 ? (
+        <div className="mt-5 space-y-2">
+          {rest.map((u, i) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => onUserClick(u.id)}
+              className="flex w-full items-center gap-3 rounded-[14px] bg-pmn-inset px-3 py-2.5 text-left ring-1 ring-pmn-inset-border transition-transform active:scale-[0.99]"
             >
-              <div
-                className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                  earned ? '' : 'bg-app-border dark:bg-white/10'
-                }`}
-                style={earned ? { background: m.color } : undefined}
-              >
-                <Icon className={`h-4 w-4 ${earned ? 'text-white' : 'text-app-icon-fg'}`} />
-              </div>
-              <span
-                className={`text-[11px] font-bold leading-tight ${
-                  earned ? '' : 'text-app-icon-fg'
-                }`}
-                style={earned ? { color: m.color } : undefined}
-              >
-                {t('stats.kunlikDay', { day: m.days })}
+              <span className="w-6 shrink-0 text-center text-[13px] font-black text-pmn-text-soft">
+                {u.rank ?? i + 4}
               </span>
+              <LeaderboardAvatar
+                avatarUrl={u.avatarUrl ?? null}
+                initials={initialsFrom(u)}
+                className="h-9 w-9 text-[12px]"
+              />
+              <p className="min-w-0 flex-1 truncate text-[13.5px] font-bold text-pmn-text">
+                {displayNameFrom(u)}
+              </p>
+              <p className="shrink-0 text-[13px] font-black text-pmn-gold-deep">
+                <span aria-hidden>🔥</span> {u.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
+              </p>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Overflow (ranks 11+) scrolls inside a bounded container.
+          The current user's row is sticky-pinned to the bottom so it stays
+          visible while the user scrolls through everyone else. */}
+      {overflowFiltered.length > 0 || (myRank && !meInTop10) ? (
+        <div
+          className="mt-3 max-h-[320px] space-y-2 overflow-y-auto rounded-[14px] border border-[#EEF1F6] bg-[#FBFCFE] p-2"
+          style={{ scrollbarWidth: 'thin' }}
+        >
+          {overflowFiltered.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => onUserClick(u.id)}
+              className="flex w-full items-center gap-3 rounded-[12px] bg-pmn-card px-3 py-2.5 text-left ring-1 ring-pmn-inset-border transition-transform active:scale-[0.99]"
+            >
+              <span className="w-8 shrink-0 text-center text-[13px] font-black text-pmn-text-soft">
+                {u.rank}
+              </span>
+              <LeaderboardAvatar
+                avatarUrl={u.avatarUrl ?? null}
+                initials={initialsFrom(u)}
+                className="h-9 w-9 text-[12px]"
+              />
+              <p className="min-w-0 flex-1 truncate text-[13.5px] font-bold text-pmn-text">
+                {displayNameFrom(u)}
+              </p>
+              <p className="shrink-0 text-[13px] font-black text-pmn-gold-deep">
+                <span aria-hidden>🔥</span> {u.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
+              </p>
+            </button>
+          ))}
+
+          {myRank && !meInTop10 ? (
+            <div
+              className="sticky bottom-0 flex items-center gap-3 rounded-[12px] px-3 py-2.5 ring-1 ring-[#D4AC5C]/50"
+              style={{
+                background: 'linear-gradient(90deg, #F5D48F, #E9C078)',
+                boxShadow: '0 -8px 18px -10px rgba(212,172,92,0.55)',
+              }}
+            >
+              <span className="w-8 shrink-0 text-center text-[13px] font-black text-[#3B2A0A]">
+                {myRank.rank}
+              </span>
+              <LeaderboardAvatar
+                avatarUrl={myRank.avatarUrl ?? null}
+                initials={initialsFrom(myRank)}
+                className="h-9 w-9 text-[12px]"
+                goldFallback
+              />
+              <p className="min-w-0 flex-1 truncate text-[13.5px] font-black text-[#3B2A0A]">
+                Siz · {displayNameFrom(myRank)}
+              </p>
+              <p className="shrink-0 text-[13px] font-black text-[#3B2A0A]">
+                <span aria-hidden>🔥</span> {myRank.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
+              </p>
             </div>
-          );
-        })}
-      </div>
-    </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {loading && top.length === 0 ? (
+        <p className="mt-4 text-center text-[12.5px] font-semibold text-pmn-text-soft">Yuklanmoqda…</p>
+      ) : null}
+      {!loading && top.length === 0 ? (
+        <p className="mt-4 text-center text-[12.5px] font-semibold text-pmn-text-soft">
+          Reyting bo'sh
+        </p>
+      ) : null}
+    </section>
   );
 }
 
 export default function StatistikaPage() {
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const { t } = useLocale();
+  const { rows } = useKunlikProgress();
 
   // --- Streak ---
   const [streak, setStreak] = useState<StreakResponse>(() => getCachedStreak() ?? EMPTY_STREAK);
@@ -128,7 +521,7 @@ export default function StatistikaPage() {
     if (cached) { setStreak(cached); setStreakLoaded(true); }
     else setStreakLoaded(false);
     fetchStreak(token).then((data) => {
-      if (data) setStreak({ streak_days: data.streak_days, last_7_days: data.last_7_days });
+      if (data) setStreak(data);
       setStreakLoaded(true);
     });
   }, [token]);
@@ -169,6 +562,75 @@ export default function StatistikaPage() {
     else setCalMonth((m) => m + 1);
   };
 
+  // --- Points / level (all-time leaderboard) ---
+  const [points, setPoints] = useState(0);
+  const [pointsLoaded, setPointsLoaded] = useState(false);
+  useEffect(() => {
+    if (!token) { setPointsLoaded(true); return; }
+    fetchLeaderboard(token, 'all')
+      .then((res) => {
+        setPoints(res.myRank?.points ?? 0);
+      })
+      .finally(() => setPointsLoaded(true));
+  }, [token]);
+
+  // --- Weekly activity (real per-day points) ---
+  const [weeklyActivity, setWeeklyActivity] = useState<WeeklyActivityDay[] | null>(null);
+  useEffect(() => {
+    if (!token) { setWeeklyActivity(null); return; }
+    fetchWeeklyActivity(token).then((res) => {
+      if (res?.days?.length === 7) setWeeklyActivity(res.days);
+      else setWeeklyActivity(null);
+    });
+  }, [token]);
+
+  // --- Reyting (Umumiy leaderboard) ---
+  const [reyting, setReyting] = useState<LeaderboardResponse | null>(null);
+  const [reytingLoading, setReytingLoading] = useState(false);
+  useEffect(() => {
+    if (!token) { setReyting({ top: [], myRank: null }); return; }
+    setReytingLoading(true);
+    fetchLeaderboard(token, 'all')
+      .then((res) => setReyting(res))
+      .finally(() => setReytingLoading(false));
+  }, [token]);
+
+  // --- Derived metric tiles ---
+  const kunlikMetrics = useMemo(() => {
+    let wordsLearned = 0;
+    let wordsCorrect = 0;
+    let readingDoneDays = 0;
+    rows.forEach((row) => {
+      wordsLearned += row.words_learned ?? 0;
+      wordsCorrect += row.words_correct ?? 0;
+      if (row.oqish_done) readingDoneDays += 1;
+    });
+    // words_correct is a running tally across re-tests, so it can exceed
+    // words_learned. Clamp to 100 % so accuracy stays semantically valid.
+    const rawAccuracy = wordsLearned > 0 ? Math.round((wordsCorrect / wordsLearned) * 100) : 0;
+    const accuracy = Math.min(100, rawAccuracy);
+    // Reading time estimate: ~5 min per completed reading. Format compact: "6s 20d" for hours+minutes.
+    const readingMinutes = readingDoneDays * 5;
+    return { wordsLearned, accuracy, readingMinutes };
+  }, [rows]);
+
+  // Total time on the platform since registration (users.total_time_seconds).
+  // Falls back to an estimate derived from oqish_done days if the migrated
+  // backend hasn't returned real seconds yet.
+  const readingTimeLabel = useMemo(() => {
+    const seconds = streak.total_seconds ?? 0;
+    const useReal = seconds > 0;
+    const m = useReal ? Math.floor(seconds / 60) : kunlikMetrics.readingMinutes;
+    if (m <= 0) return '0 min';
+    const days = Math.floor(m / (60 * 24));
+    const remAfterDays = m - days * 60 * 24;
+    const h = Math.floor(remAfterDays / 60);
+    const rem = remAfterDays % 60;
+    if (days > 0) return `${days}k ${h}s`;
+    if (h > 0) return `${h}s ${rem}m`;
+    return `${rem} min`;
+  }, [streak.total_seconds, kunlikMetrics.readingMinutes]);
+
   // Monday-first 7-day streak rotation
   const last7Rotated = useMemo(() => {
     const today = new Date();
@@ -189,65 +651,82 @@ export default function StatistikaPage() {
   }, [streak.last_7_days]);
 
   return (
-    <div className="min-h-screen bg-app-bg" style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}>
-      <main className="mx-auto max-w-4xl px-3 py-4 md:px-5 md:py-5">
-        <h1 className="mb-4 text-[22px] font-bold text-app-text md:text-[26px]">{t('stats.title')}</h1>
+    <div className="profile-premium min-h-screen" style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}>
+      <main className="mx-auto max-w-4xl px-4 py-4 md:px-5 md:py-5">
+        <h1 className="profile-heading mb-4 text-[28px] leading-none text-pmn-text md:text-[32px]">
+          {t('stats.title')}
+        </h1>
 
         <div className="space-y-4">
           <>
-              {/* Streak card */}
-              <div
-                className="overflow-hidden rounded-[22px] px-3.5 py-3.5 text-white shadow-[0_16px_34px_rgba(255,98,54,0.2)] md:rounded-[24px] md:px-4.5 md:py-4.5"
-                style={{ background: 'linear-gradient(135deg, #FF8A1E 0%, #FF6A1A 36%, #FF5538 72%, #FF2E52 100%)' }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[13px] font-semibold tracking-tight text-white/95 md:text-[15px]">
-                      {t('stats.streakTitle')}
+              {/* Streak card — navy passport style with gold guilloche + gold flame chips */}
+              <div className="profile-guilloche relative overflow-hidden rounded-[24px] px-5 py-5 text-white shadow-[0_22px_44px_-18px_rgba(15,27,59,0.55)]">
+                <div className="relative z-[2] flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10.5px] font-bold uppercase tracking-[0.24em] text-[#D4AC5C]">
+                      Bu hafta <span aria-hidden>🔥</span>
                     </p>
-                    <div className="mt-2 flex items-end gap-2.5">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm md:h-11 md:w-11">
-                        <Flame className="h-5 w-5 text-white md:h-6 md:w-6" />
-                      </div>
-                      <div className="leading-none">
-                        <div className="text-[28px] font-black tracking-tight md:text-[36px]">
-                          {streakLoaded ? streak.streak_days : '—'}
-                        </div>
-                        <div className="mt-0.5 text-[10px] font-medium text-white/80 md:text-xs">
-                          {t('stats.streakDays', { days: streak.streak_days })}
-                        </div>
-                      </div>
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <span className="profile-heading text-[42px] leading-none text-white sm:text-[46px]">
+                        {streakLoaded ? streak.last_7_days.filter(Boolean).length : '—'}
+                      </span>
+                      <span className="text-[13px] font-bold text-white/70">/ 7 kun kirdingiz</span>
                     </div>
                   </div>
-                  <div className="pt-0.5 text-right">
-                    <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-white/60 md:text-[10px]">
-                      {t('stats.lastWeek')}
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#D4AC5C]">
+                      Eng yaxshi
                     </p>
-                    <p className="mt-1 text-[10px] font-medium text-white/90 md:text-[12px]">
-                      {t('stats.last7Days')}
+                    <p className="profile-heading mt-1 text-[22px] leading-none text-white">
+                      {Math.max(streak.streak_days ?? 0, streak.best_streak_days ?? 0)} kun
                     </p>
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-7 gap-1.5 md:mt-5 md:gap-2">
+
+                <div className="relative z-[2] mt-4 grid grid-cols-7 gap-1.5">
                   {last7Rotated.map(({ label: d, active }, i) => (
                     <div key={`${d}-${i}`} className="flex min-w-0 flex-col items-center gap-1.5">
                       <div
-                        className="flex h-12 w-full items-center justify-center rounded-[14px] backdrop-blur-sm transition-all duration-300 md:h-14 md:rounded-[16px]"
-                        style={{
-                          backgroundColor: active ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.12)',
-                          boxShadow: active ? 'inset 0 1px 0 rgba(255,255,255,0.15)' : 'inset 0 1px 0 rgba(255,255,255,0.05)',
-                        }}
-                      >
-                        {active
-                          ? <Flame className="h-4 w-4 text-white md:h-5 md:w-5" />
-                          : <span className="h-1.5 w-1.5 rounded-full bg-white/35 md:h-2 md:w-2" />
+                        className={`flex h-12 w-full items-center justify-center rounded-[13px] transition-all ${
+                          active
+                            ? 'text-[#0A1638] shadow-[0_10px_20px_-8px_rgba(212,172,92,0.5)]'
+                            : 'bg-pmn-card/10 text-white/40 ring-1 ring-white/15'
+                        }`}
+                        style={
+                          active
+                            ? { background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }
+                            : undefined
                         }
+                      >
+                        {active ? (
+                          <span aria-hidden className="text-[18px]">🔥</span>
+                        ) : (
+                          <Flame className="h-5 w-5 text-white/30" strokeWidth={2} aria-hidden />
+                        )}
                       </div>
-                      <div className="truncate text-[11px] font-medium text-white/92 md:text-[12px]">{d}</div>
+                      <div className={`truncate text-[11px] font-black uppercase tracking-[0.06em] ${active ? 'text-[#D4AC5C]' : 'text-white/50'}`}>
+                        {d}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* Level + XP */}
+              <LevelXpCard points={points} loaded={pointsLoaded} />
+
+              {/* Metric tiles */}
+              <div className="grid grid-cols-2 gap-[11px]">
+                <MetricTile emoji="📚" label="So'zlar" value={kunlikMetrics.wordsLearned.toString()} />
+                <MetricTile
+                  emoji="⏱️"
+                  label="O'qish vaqti"
+                  value={readingTimeLabel}
+                />
+              </div>
+
+              {/* Weekly activity chart */}
+              <WeeklyActivityChart last7={last7Rotated} serverDays={weeklyActivity} />
 
               <ActivityCalendarCard
                 calendar={calendar}
@@ -268,74 +747,15 @@ export default function StatistikaPage() {
 
               <KunlikTodayStatsCard token={token} />
 
-              {/* Course progress card */}
-              <div
-                className="overflow-hidden rounded-[22px] border bg-app-surface shadow-app-soft md:rounded-[24px]"
-                style={{ borderColor: BORDER }}
-              >
-                <div
-                  className="px-4 py-3.5"
-                  style={{ background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 60%, #60A5FA 100%)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
-                        <BookOpen className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-bold text-white">{t('stats.courseTitle')}</p>
-                        <p className="text-[11px] text-blue-100">{t('stats.courseSubtitle')}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => navigate('/')}
-                      className="flex items-center gap-1 rounded-xl bg-white/20 px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/30"
-                    >
-                      {t('stats.courseContinue')}
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="px-4 py-3.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[28px] font-black" style={{ color: TEXT }}>
-                        {courseLoaded ? (courseProgress?.completed_days ?? 0) : '—'}
-                      </span>
-                      <span className="ml-1 text-[14px] font-medium" style={{ color: TEXT_SECONDARY }}>
-                        {t('stats.courseTotalDays')}
-                      </span>
-                    </div>
-                    <div
-                      className="rounded-full px-3 py-1 text-[12px] font-bold"
-                      style={{
-                        background: 'var(--app-icon-bg)',
-                        color: PRIMARY,
-                      }}
-                    >
-                      {courseLoaded ? `${courseProgress?.pct ?? 0}%` : '—'}
-                    </div>
-                  </div>
-                  <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-app-bg-subtle">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: courseLoaded ? `${Math.max(courseProgress?.pct ?? 0, courseProgress && courseProgress.completed_days > 0 ? 1 : 0)}%` : '0%',
-                        background: 'linear-gradient(90deg, #2563EB 0%, #60A5FA 100%)',
-                      }}
-                    />
-                  </div>
-                  <p className="mt-2 text-[13px] font-medium text-app-icon-fg">
-                    {courseLoaded && courseProgress && courseProgress.completed_days > 0
-                      ? t('stats.courseDaysLeft', { days: 182 - Math.min(courseProgress.completed_days, 182) })
-                      : t('stats.courseNotStarted')}
-                  </p>
-                </div>
-              </div>
+              {/* Yutuqlar — streak + words medals */}
+              <AchievementsSection token={token} />
 
-              {/* Milestone achievements */}
-              <MilestoneAchievements streakDays={streak.streak_days} t={t} />
+              {/* Reyting — Umumiy */}
+              <ReytingSection
+                data={reyting}
+                loading={reytingLoading}
+                onUserClick={(id) => navigate(`/u/${id}`)}
+              />
 
           </>
         </div>

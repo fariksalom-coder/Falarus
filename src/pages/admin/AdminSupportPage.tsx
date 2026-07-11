@@ -282,7 +282,7 @@ export default function AdminSupportPage() {
 
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-          <Megaphone className="h-4 w-4 text-blue-600" />
+          <Megaphone className="h-4 w-4 text-[#0B2A6B]" />
           Guruhga xabar (admin nomidan)
         </div>
         <p className="mb-3 text-xs text-slate-500">
@@ -342,7 +342,7 @@ export default function AdminSupportPage() {
             type="button"
             onClick={() => void handleBroadcastSend()}
             disabled={broadcastSending || !broadcastText.trim()}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#0B2A6B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#071B5E] disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
             {broadcastSending ? 'Yuborilmoqda...' : 'Guruhga yuborish'}
@@ -370,7 +370,7 @@ export default function AdminSupportPage() {
                       activeChatId === chat.id ? 'bg-blue-50/70' : 'bg-white hover:bg-slate-50'
                     }`}
                   >
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 via-blue-300 to-indigo-400 text-[12px] font-bold text-white">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3B6FE0] via-[#123A8F] to-[#0B2A6B] text-[12px] font-bold text-white">
                       {chat.user.name === '—' ? <MessageCircle className="h-5 w-5" /> : initialsFromName(chat.user.name)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -427,7 +427,7 @@ export default function AdminSupportPage() {
                       const media = parseHelpImageMessage(msg.content);
                       return (
                         <div key={msg.id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm ${isAdmin ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-slate-50 text-slate-900'}`}>
+                          <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm ${isAdmin ? 'bg-[#0B2A6B] text-white' : 'border border-slate-200 bg-slate-50 text-slate-900'}`}>
                             {media.isImage && media.imageUrl ? (
                               <img
                                 src={media.imageUrl}
@@ -476,7 +476,7 @@ export default function AdminSupportPage() {
                     type="button"
                     onClick={() => void handleSend()}
                     disabled={sending || uploadingImage || !text.trim() || !activeChatId}
-                    className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-xl bg-[#0B2A6B] px-3 py-2 text-sm font-semibold text-white hover:bg-[#071B5E] disabled:opacity-50"
                   >
                     <Send className="h-4 w-4" />
                     Yuborish
@@ -537,7 +537,7 @@ export default function AdminSupportPage() {
                 type="button"
                 onClick={() => void handleComposeSend()}
                 disabled={composeSending || !composeText.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#0B2A6B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#071B5E] disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
                 {composeSending ? 'Yuborilmoqda...' : 'Yuborish'}

@@ -23,7 +23,7 @@ function genderClasses(gender: UserGender): string {
     return 'bg-gradient-to-br from-[#EC4899] to-[#DB2777] text-white';
   }
   if (gender === 'male') {
-    return 'bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] text-white';
+    return 'bg-gradient-to-br from-[#123A8F] to-[#071B5E] text-white';
   }
   return 'bg-gradient-to-br from-[#94A3B8] to-[#64748B] text-white';
 }

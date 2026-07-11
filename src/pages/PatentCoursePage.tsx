@@ -1,20 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  ShieldCheck,
-  XCircle,
-} from 'lucide-react';
+import { ArrowLeft, Check, X } from 'lucide-react';
 import { PATENT_EXAM_VARIANTS } from '../data/patentExamData';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { getPatentVariantResults, type PatentVariantResult } from '../api/patentResults';
-
-const BG = '#EEF6FF';
-const CARD_BG = '#E8F1FB';
-const BORDER = 'rgba(71, 85, 105, 0.28)';
-const TEXT = '#0F172A';
 
 export default function PatentCoursePage() {
   const navigate = useNavigate();
@@ -51,77 +41,188 @@ export default function PatentCoursePage() {
     [results]
   );
 
-  return (
-    <div className="relative min-h-screen overflow-hidden pb-16" style={{ backgroundColor: BG }}>
-      <div className="pointer-events-none absolute -left-16 bottom-[-3rem] h-52 w-52 rounded-full bg-[#DCEBFF]" />
-      <div className="pointer-events-none absolute -right-10 top-[-2rem] h-64 w-64 rounded-full bg-[#E6F1FF]" />
+  const total = PATENT_EXAM_VARIANTS.length;
+  const doneCount = results.filter((r) => r.passed === true).length;
 
-      <main className="relative mx-auto max-w-4xl px-4 py-5 sm:px-5">
-        <div className="mb-6 flex items-center">
+  return (
+    <div className="patent-premium min-h-screen pb-16">
+      <main className="mx-auto max-w-4xl px-4 pb-6 pt-3 sm:px-5">
+        {/* Back button */}
+        <div className="mb-4">
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-[#2563EB] shadow-[0_10px_24px_rgba(37,99,235,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5"
+            className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-[#E5DDCB] bg-white/80 text-[#0A1E48] shadow-[0_6px_16px_-8px_rgba(10,30,72,0.2)] transition hover:-translate-y-0.5"
             aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-6 w-6" />
+            <ArrowLeft className="h-5 w-5" />
           </button>
         </div>
 
+        {/* Premium navy hero with guilloché + gold seal */}
+        <section
+          className="patent-guilloche relative mb-5 overflow-hidden rounded-[28px] p-6 text-white shadow-[0_28px_60px_-24px_rgba(10,30,72,0.55)]"
+          style={{ background: '#0A1E48' }}
+        >
+          {/* Guilloché radial rings decor (SVG for crispness) */}
+          <svg
+            className="pointer-events-none absolute -right-16 -top-16 h-[220px] w-[220px] opacity-[0.28]"
+            viewBox="0 0 240 240"
+            aria-hidden
+          >
+            {[110, 92, 74, 56, 38].map((r, i) => (
+              <circle
+                key={r}
+                cx="120"
+                cy="120"
+                r={r}
+                fill="none"
+                stroke="#D9B45A"
+                strokeWidth={i === 0 ? 1.4 : 0.7}
+                opacity={0.55 - i * 0.08}
+              />
+            ))}
+          </svg>
+
+          {/* Gold seal top-right */}
+          <div className="pointer-events-none absolute right-5 top-5">
+            <div
+              className="flex h-[52px] w-[52px] items-center justify-center rounded-full"
+              style={{
+                background: 'radial-gradient(circle, #0F2A5E 40%, #0A1E48 100%)',
+                boxShadow: 'inset 0 0 0 1.5px #D9B45A, 0 0 0 4px rgba(217,180,90,0.14)',
+              }}
+            >
+              <span className="font-serif-display text-[22px] font-bold text-[#E4C270]">П</span>
+            </div>
+          </div>
+
+          <div className="relative z-[2] max-w-[75%]">
+            <p className="text-[10.5px] font-black uppercase tracking-[0.24em] text-[#D9B45A]">
+              Rasmiy imtihon
+            </p>
+            <h1 className="font-serif-display mt-2 text-[32px] font-bold leading-[1.05] text-white">
+              {t('patent.title')}
+            </h1>
+            <p className="mt-3 text-[13px] leading-[1.55] text-[#C5CFE4]">
+              Ish patenti uchun to'liq tayyorgarlik. Har variant — 22 savol: audio, rasm va yozma javoblar.
+            </p>
+          </div>
+
+          {/* Divider gold */}
+          <div className="relative z-[2] my-5 h-px w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(217,180,90,0.55), transparent)' }} />
+
+          {/* Stats row */}
+          <div className="relative z-[2] grid grid-cols-3 gap-3">
+            {[
+              { value: String(total), label: 'Variant' },
+              { value: String(total * 22), label: 'Savol' },
+              { value: '4', label: 'Savol turi' },
+            ].map((stat, i) => (
+              <div key={stat.label} className={`text-left ${i > 0 ? 'border-l border-white/10 pl-3' : ''}`}>
+                <p className="font-serif-display text-[24px] font-bold leading-none text-[#E4C270]">
+                  {stat.value}
+                </p>
+                <p className="mt-1.5 text-[9.5px] font-black uppercase tracking-[0.18em] text-[#8E9DC2]">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {resultsError ? (
-          <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="mb-4 rounded-2xl border border-[#F0656A]/50 bg-[#F0656A]/10 px-4 py-3 text-sm font-semibold text-[#B4282E]">
             {resultsError}
           </p>
         ) : null}
 
-        <section className="mb-5 rounded-[28px] border border-[#D9E7F7] bg-white/88 p-5 shadow-[0_18px_44px_rgba(148,163,184,0.12)]">
-          <p className="text-sm font-medium text-[#5B85B6]">{t('patent.allOpen')}</p>
-        </section>
+        {/* "VARIANTLAR" caption + hint */}
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[10.5px] font-black uppercase tracking-[0.24em] text-[#B8892F]">
+            Variantlar
+          </p>
+          <p className="text-[11px] font-bold text-[#8A8172]">
+            {doneCount} / {total}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 md:grid-cols-4">
+        {/* 2-col grid of premium variant cards */}
+        <div className="grid grid-cols-2 gap-3">
           {PATENT_EXAM_VARIANTS.map((variant) => {
             const variantResult = resultMap.get(variant.variantNumber);
             const isPassed = variantResult?.passed === true;
             const isFailed = variantResult?.passed === false;
+            const isCurrent = !isPassed && !isFailed && variant.variantNumber === (doneCount + 1);
+            const numStr = String(variant.variantNumber).padStart(2, '0');
+            const ordinalName = ORDINAL_UZ[variant.variantNumber - 1] ?? `Variant ${variant.variantNumber}`;
+            const percent = variantResult?.score_percent;
+
+            // Current variant keeps the navy hero look in both themes.
+            // Non-current variants pick surface + text from theme tokens so
+            // dark mode gets a proper navy card instead of a floating white one.
+            const cardStyle: CSSProperties = isCurrent
+              ? {
+                  background: '#0A1E48',
+                  boxShadow: '0 18px 34px -12px rgba(10,30,72,0.5)',
+                  border: 'none',
+                }
+              : {
+                  background: 'var(--pmn-card-bg)',
+                  border: '1px solid var(--pmn-card-border)',
+                  boxShadow: '0 10px 22px -12px rgba(10,30,72,0.14)',
+                };
+            const captionColor = isCurrent ? '#D9B45A' : 'var(--pmn-gold-deep)';
+            const nameColor = isCurrent ? '#FFFFFF' : 'var(--pmn-text)';
+            const ghostColor = isCurrent
+              ? 'rgba(217,180,90,0.28)'
+              : 'color-mix(in oklab, var(--pmn-text) 10%, transparent)';
+            const footerColor = isCurrent ? '#8E9DC2' : 'var(--pmn-text-muted)';
 
             return (
               <button
                 key={variant.variantNumber}
                 type="button"
                 onClick={() => navigate(`/kurslar/patent/${variant.variantNumber}`)}
-                className="group relative min-h-[158px] overflow-hidden rounded-[28px] border px-3 py-4 text-center shadow-[0_18px_40px_rgba(51,65,85,0.14)] transition-all duration-200 hover:-translate-y-1"
-                style={{
-                  backgroundColor: isPassed ? '#F0FDF4' : isFailed ? '#FEF2F2' : CARD_BG,
-                  borderColor: isPassed ? '#86EFAC' : isFailed ? '#FECACA' : BORDER,
-                }}
+                className="relative flex flex-col items-start overflow-hidden rounded-[18px] p-4 text-left transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
+                style={cardStyle}
               >
-                <div className="mt-1">
-                  <p className="text-[13px] font-bold sm:text-[15px]" style={{ color: TEXT }}>
-                    {t('patent.variantLabel', { number: variant.variantNumber })}
-                  </p>
-                  <p
-                    className="mt-1 text-[12px] font-medium"
-                    style={{
-                      color: isPassed ? '#15803D' : isFailed ? '#DC2626' : '#1E3A5F',
-                    }}
-                  >
-                    {isPassed
-                      ? t('patent.statusPassed')
-                      : isFailed
-                        ? t('patent.statusFailed')
-                        : t('patent.statusOpen')}
-                  </p>
-                </div>
+                {/* Big ghost serif number */}
+                <span
+                  aria-hidden
+                  className="font-serif-display pointer-events-none absolute -right-1 top-3 text-[52px] font-bold leading-none"
+                  style={{ color: ghostColor, letterSpacing: '-0.04em' }}
+                >
+                  {numStr}
+                </span>
 
-                <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-[#DBEAFE] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1E3A5F]">
+                <span className="text-[9.5px] font-black uppercase tracking-[0.24em]" style={{ color: captionColor }}>
+                  Variant
+                </span>
+                <span className="font-serif-display mt-1 text-[20px] font-bold leading-tight" style={{ color: nameColor }}>
+                  {ordinalName}
+                </span>
+
+                <div className="mt-3 w-full">
                   {isPassed ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-[#15803D]" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EBF5E5] px-3 py-1 text-[11px] font-black text-[#3F7B41]">
+                      <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
+                      O'tdi · {percent}%
+                    </span>
                   ) : isFailed ? (
-                    <XCircle className="h-3.5 w-3.5 text-[#DC2626]" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FBE6E6] px-3 py-1 text-[11px] font-black text-[#B4282E]">
+                      <X className="h-3 w-3" strokeWidth={3} aria-hidden />
+                      O'tmadi · {percent}%
+                    </span>
+                  ) : isCurrent ? (
+                    <span className="patent-gold-cta inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-black">
+                      Boshlash <span aria-hidden>›</span>
+                    </span>
                   ) : (
-                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span className="text-[11px] font-bold" style={{ color: footerColor }}>
+                      22 savol · ochiq
+                    </span>
                   )}
-                  {variantResult ? `${variantResult.score_percent}%` : t('patent.questionsCount', { count: 22 })}
                 </div>
               </button>
             );
@@ -131,3 +232,11 @@ export default function PatentCoursePage() {
     </div>
   );
 }
+
+const ORDINAL_UZ = [
+  'Birinchi', 'Ikkinchi', 'Uchinchi', "To'rtinchi", 'Beshinchi', 'Oltinchi',
+  'Yettinchi', 'Sakkizinchi', "To'qqizinchi", 'Oʻninchi',
+  "O'n birinchi", "O'n ikkinchi", "O'n uchinchi", "O'n to'rtinchi",
+  "O'n beshinchi", "O'n oltinchi", "O'n yettinchi", "O'n sakkizinchi",
+  "O'n to'qqizinchi", 'Yigirmanchi',
+];

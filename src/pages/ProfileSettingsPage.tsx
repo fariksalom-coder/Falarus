@@ -191,7 +191,7 @@ export default function ProfileSettingsPage() {
             type="submit"
             form="profile-edit-form"
             disabled={saving}
-            className="text-sm font-bold text-blue-600 disabled:opacity-50"
+            className="text-sm font-bold text-[#0B2A6B] disabled:opacity-50"
           >
             {saving ? t('common.saving') : t('profile.done')}
           </button>
@@ -229,7 +229,7 @@ export default function ProfileSettingsPage() {
             <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
               <label
                 htmlFor={avatarInputId}
-                className={`text-sm font-bold text-blue-600 ${uploadingAvatar ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
+                className={`text-sm font-bold text-[#0B2A6B] ${uploadingAvatar ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
               >
                 {t('profile.tapPhoto')}
               </label>
@@ -244,7 +244,7 @@ export default function ProfileSettingsPage() {
                 </button>
               ) : null}
             </div>
-            <p className="mt-2 text-center text-xs font-medium text-slate-500">JPG, PNG yoki WEBP · 4 MB gacha</p>
+            <p className="mt-2 text-center text-xs font-medium text-app-text-muted">JPG, PNG yoki WEBP · 4 MB gacha</p>
           </div>
 
           {banner ? (
@@ -264,7 +264,7 @@ export default function ProfileSettingsPage() {
               <TextField label={t('profile.lastName')} value={lastName} onChange={setLastName} clearLabel={t('kunlik.clear')} />
               <TextField label={t('profile.russianLevel')} value={level} onChange={setLevel} readOnly clearLabel={t('kunlik.clear')} />
               <div>
-                <span className="mb-2 block text-sm font-semibold text-slate-600">{t('profile.gender')}</span>
+                <span className="mb-2 block text-sm font-semibold text-app-text-muted">{t('profile.gender')}</span>
                 <div className="grid grid-cols-2 gap-2.5">
                   <GenderOption label={t('profile.genderMale')} selected={gender === 'male'} onSelect={() => setGender('male')} />
                   <GenderOption label={t('profile.genderFemale')} selected={gender === 'female'} onSelect={() => setGender('female')} />
@@ -338,7 +338,7 @@ function TextField({
     <label className="block">
       <span className="mb-2 flex items-center justify-between">
         <span className="text-sm font-semibold text-app-text-muted">{label}</span>
-        {action ? <span className="text-xs font-semibold text-blue-600">{action}</span> : null}
+        {action ? <span className="text-xs font-semibold text-[#0B2A6B]">{action}</span> : null}
       </span>
       <span className="relative block">
         <input
@@ -358,7 +358,7 @@ function TextField({
             <X className="h-3.5 w-3.5" aria-hidden />
           </button>
         ) : readOnly ? (
-          <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+          <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted" aria-hidden />
         ) : null}
       </span>
     </label>

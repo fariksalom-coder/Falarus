@@ -2,6 +2,8 @@ import { useState } from 'react';
 import {
   ArrowLeft,
   BookOpen,
+  Check,
+  ChevronRight,
   Headphones,
   Landmark,
   Languages,
@@ -10,10 +12,9 @@ import {
   Mic,
   PenSquare,
   Scale,
-  ShieldCheck,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getVnzhSection, isVnzhFreeTask } from '../data/vnzhCourseData';
+import { getVnzhSection, isVnzhFreeTask, VNZH_COURSE_SECTIONS } from '../data/vnzhCourseData';
 import CurrencyModal, { type Currency } from '../components/pricing/CurrencyModal';
 import PaywallModal from '../components/PaywallModal';
 import { useAccess } from '../context/AccessContext';
@@ -23,11 +24,9 @@ import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
 import { openRahmatCheckout } from '../api/rahmat';
 
-const BG = '#EEF6FF';
-const CARD_BG = 'rgba(255,255,255,0.96)';
-const BORDER = 'rgba(191,219,254,0.9)';
-const TEXT = '#16324F';
 const vnzhMeta = COURSE_PRODUCT_META.vnzh;
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
 function getSectionIcon(icon: ReturnType<typeof getVnzhSection> extends infer T ? T extends { icon: infer U } ? U : never : never) {
   switch (icon) {
@@ -96,136 +95,242 @@ export default function VnzhCourseSectionPage() {
 
   if (!section) {
     return (
-      <div className="min-h-screen bg-[#F8FBFF] px-4 py-6">
+      <div className="vnzh-premium min-h-screen px-4 py-6">
         <button
           type="button"
           onClick={() => navigate('/kurslar/vnzh')}
-          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_10px_24px_rgba(148,163,184,0.12)]"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-[13px] bg-pmn-card text-[#123A32] shadow-[0_6px_16px_-6px_rgba(18,58,50,0.25)] ring-1 ring-pmn-border"
+          aria-label={t('common.back')}
         >
-          <ArrowLeft className="h-4 w-4" />
-          {t('common.back')}
+          <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
         </button>
-        <p className="mt-6 text-lg font-semibold text-slate-800">{t('vnzh.sectionNotFound')}</p>
+        <p className="mt-6 text-lg font-semibold text-[#123A32]">{t('vnzh.sectionNotFound')}</p>
       </div>
     );
   }
 
   const Icon = getSectionIcon(section.icon);
+  const sectionIndex = VNZH_COURSE_SECTIONS.findIndex((s) => s.slug === section.slug);
+  const romanNumeral = ROMAN[sectionIndex] ?? String(sectionIndex + 1);
+  const freeCount = section.tasks.filter((t) => isVnzhFreeTask(section.slug, t.slug)).length;
+  const total = section.tasks.length;
+  const doneCount = 0; // no persistent per-task completion yet — placeholder for future.
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-16" style={{ backgroundColor: BG }}>
-      <div className="pointer-events-none absolute -left-16 bottom-[-3rem] h-52 w-52 rounded-full bg-[#DCEBFF]" />
-      <div className="pointer-events-none absolute -right-10 top-[-2rem] h-64 w-64 rounded-full bg-[#E6F1FF]" />
-
-      <main className="relative mx-auto max-w-4xl px-4 py-5 sm:px-5">
-        <div className="mb-6 flex items-center">
+    <div className={`vnzh-premium relative min-h-screen overflow-hidden ${!hasFullVnzh ? 'pb-[104px]' : 'pb-16'}`}>
+      <main className="relative mx-auto max-w-2xl px-4 py-5 sm:px-5">
+        {/* Header: back tile + BO'LIM caption + serif title */}
+        <div className="mb-4 flex items-start gap-3">
           <button
             type="button"
             onClick={() => navigate('/kurslar/vnzh')}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/85 text-[#2563EB] shadow-[0_10px_24px_rgba(37,99,235,0.12)] backdrop-blur-sm transition hover:-translate-y-0.5"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-pmn-card text-[#123A32] shadow-[0_6px_16px_-6px_rgba(18,58,50,0.25)] ring-1 ring-pmn-border transition active:scale-95"
             aria-label={t('vnzh.backAria')}
           >
-            <ArrowLeft className="h-6 w-6" />
+            <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
           </button>
+          <div className="min-w-0 flex-1 pt-1">
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.28em] text-[#9A947F]">
+              Bo'lim {romanNumeral}
+            </p>
+            <h1 className="vnzh-heading mt-1 text-[22px] leading-tight text-[#123A32] sm:text-[24px]">
+              {section.title}
+            </h1>
+          </div>
         </div>
 
-        {!hasFullVnzh ? (
-          <section className="mb-5 rounded-[28px] border border-[#D9E7F7] bg-white/88 p-5 shadow-[0_18px_44px_rgba(148,163,184,0.12)]">
-            <p className="text-sm font-medium text-[#5B85B6]">{vnzhMeta.freeDescription}</p>
-            <button
-              type="button"
-              onClick={() => setCurrencyModalOpen(true)}
-              className="mt-4 inline-flex w-full items-center justify-center rounded-[18px] bg-[#2563EB] px-4 py-3 text-base font-semibold text-white shadow-[0_14px_28px_rgba(37,99,235,0.2)] transition hover:-translate-y-0.5 sm:w-auto"
-            >
-              {t('patent.buyPriceRub', { price: vnzhMeta.prices.RUB })}
-            </button>
-          </section>
-        ) : null}
+        {/* Forest hero: big icon + section title + progress + count */}
+        <section className="vnzh-forest-panel relative mb-5 overflow-hidden rounded-[24px] px-5 py-5 text-white shadow-[0_22px_44px_-16px_rgba(11,41,38,0.55)]">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[16px] bg-white/10 ring-1 ring-white/20 backdrop-blur">
+              <Icon className="h-6 w-6 text-[#E4C88A]" strokeWidth={2} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="vnzh-heading text-[24px] leading-tight text-white sm:text-[26px]">
+                {section.title}
+              </h2>
+              <p className="mt-0.5 text-[12.5px] font-semibold text-white/75">
+                {total} topshiriq{freeCount > 0 ? ` · ${freeCount} tasi bepul` : ''}
+              </p>
+            </div>
+          </div>
+
+          {/* Progress bar (gold) */}
+          <div className="mt-4">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-white/12">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${(doneCount / Math.max(1, total)) * 100}%`,
+                  background: 'linear-gradient(90deg, #EBD199 0%, #CBA35A 100%)',
+                }}
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] font-bold text-[#CBA35A]">
+              {doneCount} / {total} topshiriq bajarildi
+            </p>
+          </div>
+        </section>
+
         {paymentError ? (
-          <p className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+          <p className="mb-4 rounded-[16px] border border-[#F5B6B6] bg-[#FDE5E5] px-4 py-3 text-sm font-medium text-[#8A1F1F]">
             {paymentError}
           </p>
         ) : null}
 
-        <section
-          className="mb-5 rounded-[28px] border px-5 py-5 shadow-[0_18px_44px_rgba(148,163,184,0.14)]"
-          style={{ borderColor: '#D9E7F7', background: section.accent }}
-        >
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#60A5FA_0%,#2563EB_100%)] text-white shadow-[0_14px_28px_rgba(37,99,235,0.22)]">
-              <Icon className="h-7 w-7" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-[24px] font-bold leading-tight sm:text-[28px]" style={{ color: TEXT }}>
-                {section.title}
-              </h1>
-            </div>
-          </div>
-        </section>
-
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
-          {section.tasks.map((task) => {
-            const isFree = isVnzhFreeTask(section.slug, task.slug);
-            const isLocked = !hasFullVnzh && !isFree;
-
-            return (
-              <button
-                key={task.slug}
-                type="button"
-                onClick={() => {
-                  if (isLocked) {
-                    setPaywallOpen(true);
-                    return;
-                  }
-                  navigate(`/kurslar/vnzh/${section.slug}/${task.slug}`);
-                }}
-                className="group relative min-h-[150px] overflow-hidden rounded-[28px] border px-3 py-4 text-center shadow-[0_16px_34px_rgba(120,148,184,0.12)] transition-all duration-200 hover:-translate-y-1"
-                style={{
-                  borderColor: isLocked ? '#CBD5E1' : BORDER,
-                  backgroundColor: isLocked ? 'rgba(241,245,249,0.96)' : CARD_BG,
-                  boxShadow: isLocked
-                    ? '0 8px 20px rgba(148,163,184,0.1)'
-                    : '0 18px 34px rgba(120,148,184,0.14), inset 0 1px 0 rgba(255,255,255,0.9)',
-                }}
+        {!hasFullVnzh && section.slug !== 'govorenie' ? (
+          <section className="mb-5 rounded-[22px] bg-pmn-card p-5 shadow-[0_14px_28px_-14px_rgba(18,58,50,0.18)] ring-1 ring-pmn-border">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#0B2926]"
+                style={{ background: 'linear-gradient(150deg, #EBD199 0%, #CBA35A 100%)' }}
               >
-                <div
-                  className={`pointer-events-none absolute bottom-1 right-3 font-black leading-none ${
-                    isLocked ? 'text-slate-200' : 'text-[#F1F7FF]'
-                  } ${String(task.shortLabel).length > 2 ? 'text-[42px]' : 'text-[56px]'}`}
-                >
-                  {task.shortLabel}
-                </div>
+                <Lock className="h-4 w-4" strokeWidth={2.6} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-pmn-gold-deep">
+                  Premium bo'lim
+                </p>
+                <p className="mt-0.5 text-[12.5px] font-semibold text-[#5C5646]">
+                  Ochilishi uchun kursni sotib oling
+                </p>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
-                <div className="mt-2">
-                  <p
-                    className="text-[14px] font-bold sm:text-[15px]"
-                    style={{ color: isLocked ? '#94A3B8' : TEXT }}
-                  >
-                    {task.title}
-                  </p>
-                  <p
-                    className="mt-1 text-[12px] font-medium"
-                    style={{
-                      color: isLocked ? '#94A3B8' : '#5B85B6',
+        {/* Timeline of tasks */}
+        <div className="relative">
+          {/* Vertical connector line behind nodes */}
+          <div
+            aria-hidden
+            className="absolute left-[19px] top-4 bottom-4 w-px"
+            style={{ background: 'linear-gradient(to bottom, transparent, #E2D9C4 12px, #E2D9C4 calc(100% - 12px), transparent)' }}
+          />
+
+          <div className="space-y-2.5">
+            {section.tasks.map((task, idx) => {
+              const isFree = isVnzhFreeTask(section.slug, task.slug);
+              const isLocked = !hasFullVnzh && !isFree;
+              const isDone = idx < doneCount;
+              const isCurrent = idx === doneCount && !isLocked;
+
+              return (
+                <div key={task.slug} className="relative flex items-center gap-3">
+                  {/* Timeline node */}
+                  <div className="relative z-[2] flex h-10 w-10 shrink-0 items-center justify-center">
+                    {isDone ? (
+                      <div
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-white shadow-[0_6px_14px_-4px_rgba(46,125,87,0.55)]"
+                        style={{ background: 'linear-gradient(150deg, #4CC490 0%, #2E7D57 100%)' }}
+                      >
+                        <Check className="h-4 w-4" strokeWidth={3} />
+                      </div>
+                    ) : isLocked ? (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F0EADB] text-[#9A947F] ring-1 ring-pmn-border">
+                        <Lock className="h-3.5 w-3.5" strokeWidth={2.4} />
+                      </div>
+                    ) : (
+                      <div
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-[#0B2926] shadow-[0_6px_14px_-4px_rgba(203,163,90,0.55)]"
+                        style={{ background: 'linear-gradient(150deg, #EBD199 0%, #CBA35A 100%)' }}
+                      >
+                        <span className="text-[13px] font-black">{idx + 1}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Task card */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isLocked) {
+                        setPaywallOpen(true);
+                        return;
+                      }
+                      navigate(`/kurslar/vnzh/${section.slug}/${task.slug}`);
                     }}
+                    className={`flex min-h-[62px] flex-1 items-center justify-between rounded-[18px] px-4 py-3 text-left transition active:scale-[0.995] ${
+                      isCurrent
+                        ? 'vnzh-forest-panel text-white shadow-[0_14px_28px_-14px_rgba(11,41,38,0.5)]'
+                        : isLocked
+                          ? 'bg-transparent text-[#9A947F] ring-1 ring-dashed ring-pmn-border'
+                          : 'bg-pmn-card shadow-[0_10px_24px_-14px_rgba(18,58,50,0.18)] ring-1 ring-pmn-border'
+                    }`}
                   >
-                    {isLocked ? t('kunlik.locked') : t('patent.statusOpen')}
-                  </p>
-                </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`vnzh-heading text-[15px] font-bold leading-tight sm:text-[16px] ${
+                          isCurrent ? 'text-white' : isLocked ? 'text-[#8A8577]' : 'text-[#123A32]'
+                        }`}
+                      >
+                        {task.title}
+                      </p>
+                      <p
+                        className={`mt-0.5 text-[11.5px] font-semibold ${
+                          isCurrent ? 'text-[#E4C88A]' : isLocked ? 'text-[#9A947F]' : 'text-[#8A8577]'
+                        }`}
+                      >
+                        {isDone
+                          ? 'Bajarildi · 100%'
+                          : isCurrent
+                            ? 'Davom eting'
+                            : isLocked
+                              ? "Sotib olgandan so'ng ochiladi"
+                              : t('patent.statusOpen')}
+                      </p>
+                    </div>
 
-                <div
-                  className={`mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
-                    isLocked ? 'bg-slate-100 text-slate-500' : 'bg-[#F4F9FF] text-[#6D88A9]'
-                  }`}
-                >
-                  {isLocked ? <Lock className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                  Topshiriq
+                    {/* Right status pill */}
+                    {isDone ? (
+                      <span className="ml-3 shrink-0 rounded-full bg-[#E6F2EA] px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#2E7D57] ring-1 ring-[#B7DCC4]">
+                        Bepul
+                      </span>
+                    ) : isCurrent ? (
+                      <span
+                        className="ml-3 inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black text-[#0B2926]"
+                        style={{ background: 'linear-gradient(150deg, #EBD199 0%, #CBA35A 100%)' }}
+                      >
+                        Boshlash
+                        <ChevronRight className="h-3 w-3" strokeWidth={2.6} />
+                      </span>
+                    ) : isLocked ? null : isFree ? (
+                      <span className="ml-3 shrink-0 rounded-full bg-[#E6F2EA] px-3 py-1 text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#2E7D57] ring-1 ring-[#B7DCC4]">
+                        Bepul
+                      </span>
+                    ) : null}
+                  </button>
                 </div>
-              </button>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </main>
+
+      {/* Sticky premium purchase bar — cream + gold CTA */}
+      {!hasFullVnzh ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E2D9C4] bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md shadow-[0_-14px_28px_-14px_rgba(18,58,50,0.18)]">
+          <div className="mx-auto flex max-w-2xl items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-pmn-gold-deep">
+                Premium
+              </p>
+              <p className="vnzh-heading truncate text-[16px] font-bold text-[#123A32]">
+                {vnzhMeta.prices.RUB}&nbsp;<span className="text-[12px] font-semibold text-[#8A8577]">₽</span>
+                <span className="ml-1.5 text-[11px] font-semibold text-[#8A8577]">· to'liq kurs</span>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrencyModalOpen(true)}
+              className="vnzh-gold-cta flex h-[46px] shrink-0 items-center justify-center gap-1 rounded-full px-5 text-[14px] font-black transition hover:brightness-[1.03] active:scale-[0.99]"
+            >
+              <span>Sotib olish</span>
+              <ChevronRight className="h-4 w-4" strokeWidth={2.6} />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {paywallOpen ? (
         <PaywallModal

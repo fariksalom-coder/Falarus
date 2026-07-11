@@ -151,6 +151,13 @@ export default defineConfig(({mode}) => {
             .map((h) => h.trim())
             .filter(Boolean)
         : true,
+      fs: {
+        // Worktrees hoist node_modules to the main repo root — allow serving asset files (flag sprites etc.) from there.
+        allow: [
+          path.resolve(__dirname),
+          path.resolve(__dirname, '../../..'),
+        ],
+      },
     },
   };
 });

@@ -156,6 +156,7 @@ function HomeHeader({
   t,
 }: {
   streak: StreakResponse;
+  points: number;
   premium: boolean;
   avatarUrl?: string | null;
   gender?: UserGender;
@@ -204,21 +205,21 @@ function ExamShortcuts({ t }: { t: TranslateFn }) {
       href: '/kurslar/patent',
       title: t('home.patentTitle'),
       subtitle: t('home.patentSubtitle'),
-      dark: true,
+      solid: true,
       Icon: Edit3,
     },
     {
       href: '/kurslar/vnzh',
       title: t('home.vnzhTitle'),
       subtitle: t('home.vnzhSubtitle'),
-      dark: false,
+      solid: false,
       Icon: FileText,
     },
   ] as const;
 
   return (
-    <section className="grid grid-cols-2 gap-2.5 px-4 pt-3.5 min-[408px]:gap-3.5">
-      {cards.map(({ href, title, subtitle, dark, Icon }) => (
+    <section className="grid grid-cols-2 gap-2.5 px-4 pt-2 min-[408px]:gap-3.5">
+      {cards.map(({ href, title, subtitle, solid, Icon }) => (
         <button
           key={href}
           type="button"
@@ -226,26 +227,27 @@ function ExamShortcuts({ t }: { t: TranslateFn }) {
           onMouseEnter={() => prefetchRoutePath(href)}
           onTouchStart={() => prefetchRoutePath(href)}
           onFocus={() => prefetchRoutePath(href)}
-          className={`flex h-[58px] min-w-0 items-center rounded-[18px] px-2.5 py-2 text-left shadow-[0_12px_28px_rgba(15,23,42,0.14)] active:scale-[0.99] ${
-            dark
-              ? 'bg-gradient-to-br from-[#1439A7] to-[#071B5E] text-white'
-              : 'bg-gradient-to-br from-[#FFD43B] to-[#FFA000] text-[#0F172A]'
+          className={`flex min-h-[92px] min-w-0 flex-col items-start rounded-[22px] p-[14px] text-left shadow-[0_12px_28px_-10px_rgba(15,23,42,0.16)] active:scale-[0.99] ${
+            solid
+              ? 'bg-[#0B2A6B] text-white'
+              : 'bg-[#C89935] text-white'
           }`}
         >
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${dark ? 'border-white/25 bg-white/10' : 'border-white/30 bg-white/25'}`}>
-            <Icon className={`h-6 w-6 ${dark ? 'text-white' : 'text-[#0A3B9A]'}`} aria-hidden />
+          <span
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] ${
+              solid ? 'bg-white/12 ring-1 ring-white/20' : 'bg-white/22 ring-1 ring-white/30'
+            }`}
+          >
+            <Icon className="h-5 w-5 text-white" aria-hidden />
           </span>
-          <span className="ml-2.5 min-w-0 flex-1">
-            <span className="block truncate text-[15px] font-extrabold leading-none">{title}</span>
-            <span
-              className={`mt-1.5 block truncate text-[11px] font-semibold leading-snug ${
-                dark ? 'text-white/90' : 'text-[#1E293B]/85'
-              }`}
-            >
-              {subtitle}
-            </span>
+          <span className="mt-3 block truncate text-[19px] font-extrabold leading-none">{title}</span>
+          <span
+            className={`mt-1.5 block truncate text-[12px] font-semibold leading-snug ${
+              solid ? 'text-white/85' : 'text-white/90'
+            }`}
+          >
+            {subtitle}
           </span>
-          <ChevronRight className="h-6 w-6 shrink-0 text-white" aria-hidden />
         </button>
       ))}
     </section>
@@ -267,13 +269,17 @@ function DayNavigator({
   total: number;
   onPrevious: () => void;
   onNext: () => void;
+  slots: QuestSlot[];
+  day: number;
+  premium: boolean;
+  onPurchaseRequired: () => void;
   t: TranslateFn;
 }) {
   const currentStep = done >= total ? total : done + 1;
 
   return (
-    <section className="px-4 pt-3">
-      <div className="h-[114px] rounded-2xl bg-app-surface px-[22px] py-3 shadow-app-soft">
+    <section className="px-4 pt-2">
+      <div className="rounded-[22px] bg-app-surface px-[22px] py-3 shadow-[0_10px_28px_-16px_rgba(15,23,42,0.18)] ring-1 ring-app-border/70">
         <div className="flex items-center justify-center gap-[18px]">
           <button
             type="button"
@@ -284,7 +290,7 @@ function DayNavigator({
           >
             <ChevronLeft className="h-[21px] w-[21px]" aria-hidden />
           </button>
-          <div className="text-[24px] font-extrabold leading-none text-app-text">
+          <div className="text-[26px] font-extrabold leading-none text-app-text">
             {t('home.dayLabel', { day: selectedDay })}
           </div>
           <button
@@ -298,13 +304,13 @@ function DayNavigator({
           </button>
         </div>
 
-        <p className="mt-[9px] text-center text-[13px] font-semibold leading-snug text-app-icon-fg">
+        <p className="mt-2 text-center text-[13px] font-semibold leading-snug text-app-text-muted">
           {t('home.stepLabel', { current: currentStep, total })}
-          <span className="mx-1.5 text-app-text-muted">•</span>
+          <span className="mx-1.5 text-app-text-secondary">•</span>
           {t('home.minutesLabel', { minutes: 25 })}
         </p>
 
-        <div className="mt-[9px] flex h-6 items-center">
+        <div className="mt-3 flex h-6 items-center">
           {Array.from({ length: total }).map((_, idx) => {
             const step = idx + 1;
             const completed = step <= done;
@@ -312,18 +318,18 @@ function DayNavigator({
             return (
               <div key={step} className="contents">
                 <div
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold leading-none ${
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-extrabold leading-none ${
                     completed
-                      ? 'border-[#7C3AED] bg-[#7C3AED] text-white'
+                      ? 'border-[#0B2A6B] bg-[#0B2A6B] text-white'
                       : active
-                        ? 'border-[#7C3AED] bg-app-surface text-[#7C3AED]'
+                        ? 'border-[#C08A2D] bg-app-surface text-[#C08A2D]'
                         : 'border-app-border bg-app-surface text-app-text-muted'
                   }`}
                 >
                   {completed ? <Check className="h-[15px] w-[15px]" aria-hidden /> : step}
                 </div>
                 {step < total ? (
-                  <div className={`mx-1 h-0.5 flex-1 ${step <= done ? 'bg-[#7C3AED]' : 'bg-app-border'}`} />
+                  <div className={`mx-1 h-[3px] flex-1 rounded-full ${step <= done ? 'bg-[#0B2A6B]' : 'bg-app-border'}`} />
                 ) : null}
               </div>
             );
@@ -353,27 +359,44 @@ function QuestCard({
   const done = slot.state === 'done';
   const active = slot.state === 'active';
   const locked = slot.state === 'locked';
-  const accent = done ? '#0EAD4F' : active ? '#0D55F5' : '#6B7898';
+  const accent = done ? '#35C06E' : active ? '#4E7EF0' : '#7A8AAE';
   const image = slot.images[done ? 'done' : active ? 'active' : 'locked'];
   const requiresPurchase = !canEnterKunlikDayContent(day, premium);
 
+  const emoji = slot.id === 'grammar'
+    ? '📖'
+    : slot.id === 'vocabulary'
+      ? '🗂️'
+      : slot.id === 'reading'
+        ? '📕'
+        : '🎤';
+
+  const numberBg = done ? '#12A150' : active ? '#0B2A6B' : '#94A3B8';
+  // Surfaces use app-* tokens so light/dark themes are handled automatically;
+  // the done/active accents are ring-only so the card body remains readable.
   const cardSurface = done
-    ? 'border-[#ACEBC8] bg-[#F0FFF5] dark:border-emerald-500/35 dark:bg-emerald-500/12'
+    ? 'bg-app-success-bg ring-1 ring-[#B7E8C7] dark:ring-[color:var(--app-success)]/40'
     : active
-      ? 'border-[#B7CEFF] bg-[#F4F8FF] dark:border-app-primary/40 dark:bg-app-primary/12'
-      : 'border-app-border bg-[#F9FBFF] dark:bg-app-surface-elevated';
+      ? 'bg-app-icon-bg ring-1 ring-[#B7CCEF] dark:ring-[color:var(--app-primary)]/40'
+      : 'bg-app-surface ring-1 ring-app-border';
 
   const subtitleClass = done
-    ? 'text-emerald-700 dark:text-emerald-300'
+    ? 'text-app-success-text dark:text-[color:var(--app-success)]'
     : active
-      ? 'text-[#1D4ED8] dark:text-blue-300'
-      : 'text-[#475569] dark:text-slate-300';
+      ? 'text-app-primary dark:text-[color:var(--app-brand)]'
+      : 'text-app-text-muted';
 
-  const actionLabel = done ? t('home.questRepeat') : t('home.questStart');
+  const actionLabel = done
+    ? t('home.questRepeat') || 'Takrorlash'
+    : active
+      ? t('home.questStart') || 'Boshlash'
+      : 'Yopiq';
+
   const questPath =
     done && slot.id === 'speaking' ? `${slot.route(day)}?retry=1` : slot.route(day);
 
   const handleQuestClick = () => {
+    if (locked) return;
     if (requiresPurchase) {
       onPurchaseRequired();
       return;
@@ -384,63 +407,63 @@ function QuestCard({
   return (
     <button
       type="button"
-      disabled={!slot.canOpen}
+      disabled={locked}
       onClick={handleQuestClick}
       onMouseEnter={() => {
-        if (!requiresPurchase) prefetchRoutePath(questPath);
+        if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
       }}
       onTouchStart={() => {
-        if (!requiresPurchase) prefetchRoutePath(questPath);
+        if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
       }}
       onFocus={() => {
-        if (!requiresPurchase) prefetchRoutePath(questPath);
+        if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
       }}
-      className={`relative flex min-h-[198px] min-w-0 flex-col rounded-[18px] border p-2.5 text-center shadow-app-soft transition-transform active:scale-[0.99] disabled:cursor-default ${cardSurface}`}
+      className={`relative flex min-h-[188px] min-w-0 flex-col items-center rounded-[22px] p-4 text-center transition-transform active:scale-[0.99] disabled:cursor-default ${cardSurface} ${
+        locked ? 'opacity-70' : ''
+      }`}
     >
       <span
-        className="absolute left-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-[15px] font-black leading-none text-white"
-        style={{ backgroundColor: accent }}
+        className="absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-black leading-none text-white"
+        style={{ background: numberBg }}
       >
         {index}
       </span>
-      <span
-        className={`absolute right-2.5 top-2.5 flex h-[30px] w-[30px] items-center justify-center rounded-full ${
-          done ? 'bg-white/80 dark:bg-white/15' : 'bg-white/90 dark:bg-white/10'
-        }`}
-      >
-        <Check className="h-5 w-5" color={done ? accent : locked ? '#94A3B8' : '#C7D1E6'} aria-hidden />
+      <span className="absolute right-3 top-3">
+        <Check
+          className="h-5 w-5"
+          color={done ? '#12A150' : active ? '#0B2A6B' : '#CBD5E1'}
+          aria-hidden
+        />
       </span>
 
-      <div className="flex flex-1 flex-col items-center justify-center px-1 pt-7 pb-2">
-        <img src={image} alt="" className="h-[72px] w-[96px] object-contain" decoding="async" />
-        <span className="mt-2 block w-full truncate text-[17px] font-black leading-tight text-app-text">
+      <div className="flex flex-1 flex-col items-center justify-center gap-1 pb-3 pt-2">
+        <span className={`flex h-[52px] w-full items-center justify-center text-[42px] leading-none ${locked ? 'grayscale' : ''}`}>
+          {emoji}
+        </span>
+        <span className={`block truncate text-[19px] font-extrabold leading-tight ${locked ? 'text-app-text-muted' : 'text-app-text'}`}>
           {t(slot.titleKey)}
         </span>
-        <span className={`mt-1.5 block w-full truncate px-0.5 text-[12px] font-semibold leading-snug ${subtitleClass}`}>
+        <span className={`block truncate text-[12px] font-semibold leading-snug ${subtitleClass}`}>
           {t(slot.subtitleKey)}
         </span>
       </div>
 
       <span
-        className={`mt-auto flex min-h-[38px] w-full items-center rounded-full py-2 pl-[18px] pr-2 text-[16px] font-black leading-none ${
-          locked
-            ? 'border border-slate-300/80 bg-slate-100 text-slate-600 shadow-none dark:border-white/14 dark:bg-white/10 dark:text-slate-200'
-            : 'text-white shadow-[0_12px_28px_rgba(15,23,42,0.14)]'
+        className={`flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-full text-[14px] font-black leading-none ${
+          done
+            ? 'bg-[#12A150] text-white shadow-[0_8px_18px_-8px_rgba(18,161,80,0.45)]'
+            : active
+              ? 'quest-cta-active bg-[#0B2A6B] text-white'
+              : 'bg-[#EEF1F6] text-app-text-muted'
         }`}
-        style={{ backgroundColor: locked ? undefined : accent }}
       >
-        <span className="min-w-0 flex-1 truncate text-left">{actionLabel}</span>
-        <span
-          className={`ml-2 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full ${
-            locked ? 'bg-white dark:bg-white/15' : 'bg-white'
-          }`}
-        >
-          {done ? (
-            <RefreshCw className="h-5 w-5" color={locked ? '#64748B' : accent} aria-hidden />
-          ) : (
-            <ChevronRight className="h-6 w-6" color={locked ? '#64748B' : accent} aria-hidden />
-          )}
-        </span>
+        {locked ? '🔒' : null}
+        <span className="truncate">{actionLabel}</span>
+        {done ? (
+          <RefreshCw className="h-4 w-4" aria-hidden />
+        ) : active ? (
+          <ChevronRight className="h-4 w-4" aria-hidden />
+        ) : null}
       </span>
     </button>
   );
@@ -450,6 +473,7 @@ export default function HomePage() {
   const { token, user } = useAuth();
   const { access } = useAccess();
   const { t } = useLocale();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { rows, loaded, practicePromptCountByDay } = useKunlikProgress();
   const premium = Boolean(access?.subscription_active);
@@ -472,39 +496,49 @@ export default function HomePage() {
     };
   }, [token]);
 
+  // Effect 1: `?kun=N` deep link (from course map or elsewhere) — ALWAYS wins.
+  // Reads `kun` synchronously from window.location so React Router state can't lie about it.
+  const kunParam = searchParams.get('kun');
   useEffect(() => {
     if (currentDay == null) return;
+    if (kunParam == null) return;
+    const kun = Number(kunParam);
+    if (!isValidDailyCourseDay(kun)) return;
+    initialDayResolvedRef.current = true;
+    takeKunlikRestoreDay();
+    setSelectedDay(Math.min(kun, currentDay));
+    // Clear ?kun= from URL so subsequent day-navigator swipes are clean.
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('kun');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [currentDay, kunParam, setSearchParams]);
 
-    if (!initialDayResolvedRef.current) {
-      initialDayResolvedRef.current = true;
-      const kunRaw = searchParams.get('kun');
-      const kunFromUrl = kunRaw != null ? Number(kunRaw) : null;
-      const restored = takeKunlikRestoreDay();
-      let day = currentDay;
-      if (restored != null && isValidDailyCourseDay(restored)) {
-        day = Math.min(restored, currentDay);
-      } else if (kunFromUrl != null && isValidDailyCourseDay(kunFromUrl)) {
-        day = Math.min(kunFromUrl, currentDay);
-      }
-      setSelectedDay(day);
-      if (kunRaw != null) {
-        setSearchParams(
-          (prev) => {
-            const next = new URLSearchParams(prev);
-            next.delete('kun');
-            return next;
-          },
-          { replace: true },
-        );
-      }
-      return;
+  // Effect 2: initial resolution when no URL param — restore from sessionStorage,
+  // otherwise land on currentDay. Runs exactly once per HomePage instance.
+  useEffect(() => {
+    if (currentDay == null) return;
+    if (initialDayResolvedRef.current) return;
+    // If a URL kun is present, Effect 1 handles it — don't race here.
+    if (kunParam != null) return;
+    initialDayResolvedRef.current = true;
+    const restored = takeKunlikRestoreDay();
+    if (restored != null && isValidDailyCourseDay(restored)) {
+      setSelectedDay(Math.min(restored, currentDay));
+    } else {
+      setSelectedDay(currentDay);
     }
+  }, [currentDay, kunParam]);
 
-    setSelectedDay((day) => {
-      if (day == null) return currentDay;
-      return Math.min(Math.max(day, 1), currentDay);
-    });
-  }, [currentDay, searchParams, setSearchParams]);
+  // Effect 3: clamp selectedDay if currentDay shrinks (defensive).
+  useEffect(() => {
+    if (currentDay == null) return;
+    setSelectedDay((day) => (day == null ? day : Math.min(Math.max(day, 1), currentDay)));
+  }, [currentDay]);
 
   const progressReady = loaded && currentDay != null && selectedDay != null;
   const displayDay = selectedDay ?? currentDay ?? 1;
@@ -515,11 +549,14 @@ export default function HomePage() {
   const showFreeLimitCta =
     !premium && displayDay > FREE_KUNLIK_DAY_LIMIT;
 
+  const userPoints = user?.totalPoints ?? 0;
+
   return (
-    <div className="min-h-screen bg-app-bg-muted pb-[84px]">
+    <div className="bg-app-bg">
       <main className="mx-auto w-full max-w-[820px]">
         <HomeHeader
           streak={streak}
+          points={userPoints}
           premium={premium}
           avatarUrl={user?.avatarUrl}
           gender={user?.gender ?? null}
@@ -527,6 +564,21 @@ export default function HomePage() {
           t={t}
         />
         <ExamShortcuts t={t} />
+
+        <div className="px-4 pt-2">
+          <button
+            type="button"
+            onClick={() => navigate('/kunlik-reja/xarita')}
+            className="flex w-full items-center justify-between rounded-[22px] bg-app-surface px-[18px] py-[13px] shadow-[0_10px_28px_-16px_rgba(15,23,42,0.18)] ring-1 ring-app-border/70 transition-transform active:scale-[0.99]"
+          >
+            <span className="flex items-center gap-2.5">
+              <span aria-hidden className="text-[19px] leading-none">🗺</span>
+              <span className="text-[14px] font-black text-app-text">Butun xarita · {TOTAL_DAYS} kun</span>
+            </span>
+            <ChevronRight className="h-4 w-4 text-app-text-muted" />
+          </button>
+        </div>
+
         {progressReady ? (
           <>
             <DayNavigator
@@ -536,6 +588,10 @@ export default function HomePage() {
               total={slots.length}
               onPrevious={() => setSelectedDay((day) => Math.max(1, (day ?? displayDay) - 1))}
               onNext={() => setSelectedDay((day) => Math.min(currentDay, (day ?? displayDay) + 1))}
+              slots={slots}
+              day={displayDay}
+              premium={premium}
+              onPurchaseRequired={() => setFreeLimitModalOpen(true)}
               t={t}
             />
 
@@ -543,7 +599,7 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-              className="grid grid-cols-2 gap-2.5 px-4 pt-3.5"
+              className="grid grid-cols-2 gap-3 px-4 pt-2"
             >
               {slots.map((slot, index) => (
                 <QuestCard

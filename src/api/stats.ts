@@ -37,6 +37,35 @@ export async function fetchCourseProgress(token: string | null): Promise<CourseP
   }
 }
 
+export type WeeklyActivityDay = {
+  date: string;
+  minutes: number;
+  active: boolean;
+  is_today: boolean;
+  height_pct: number;
+};
+
+export type WeeklyActivityResponse = {
+  source: 'daily_time' | 'activity_dates';
+  days: WeeklyActivityDay[];
+  max_minutes: number;
+};
+
+export async function fetchWeeklyActivity(
+  token: string | null,
+): Promise<WeeklyActivityResponse | null> {
+  if (!token) return null;
+  try {
+    const res = await fetch(apiUrl('/api/stats/weekly-activity'), {
+      headers: authHeaders(token),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchActivityCalendar(
   token: string | null,
   year: number,

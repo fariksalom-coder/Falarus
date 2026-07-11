@@ -113,7 +113,8 @@ export function getVnzhTask(sectionSlug?: string | null, taskSlug?: string | nul
   return section.tasks.find((task) => task.slug === taskSlug) ?? null;
 }
 
-/** Бесплатно только задание 4 (раздел «Говорение»). */
+/** Только 4 бесплатных задания — весь раздел «Говорение» (Задания 1-4). */
 export function isVnzhFreeTask(sectionSlug: string, taskSlug: string): boolean {
-  return sectionSlug === 'govorenie' && taskSlug === '4';
+  if (sectionSlug !== 'govorenie') return false;
+  return ['1', '2', '3', '4'].includes(taskSlug);
 }

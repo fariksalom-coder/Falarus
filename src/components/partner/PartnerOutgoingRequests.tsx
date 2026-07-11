@@ -73,7 +73,7 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = 
 
       {loading && (
         <div className="flex items-center justify-center py-16">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
         </div>
       )}
 
@@ -107,7 +107,7 @@ export default function PartnerOutgoingRequests({ onBack, onUpdated, embedded = 
               className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card"
             >
               <div className="flex items-start gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-lg font-bold text-white">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#123A8F] to-[#0B2A6B] text-lg font-bold text-white">
                   {initials}
                 </div>
                 <div className="min-w-0 flex-1">

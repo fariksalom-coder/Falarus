@@ -33,6 +33,11 @@ export type DashboardStats = {
     revenue: RevenueByCurrency;
     count: number;
   }[];
+  payments_daily_last_30: {
+    date: string;
+    count: number;
+    revenue: RevenueByCurrency;
+  }[];
   recent_users: {
     id: number;
     name: string;

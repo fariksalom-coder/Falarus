@@ -38,7 +38,7 @@ export default function KunlikFreeLimitModal({ onClose }: KunlikFreeLimitModalPr
         </button>
         <div className="mb-4 flex items-center gap-3">
           <div className="rounded-xl bg-blue-100 p-2">
-            <Crown className="h-6 w-6 text-blue-600" />
+            <Crown className="h-6 w-6 text-[#0B2A6B]" />
           </div>
           <h2 id="kunlik-free-limit-title" className="text-xl font-bold text-slate-900">
             {t('kunlik.freeLimitTitle')}
@@ -48,7 +48,7 @@ export default function KunlikFreeLimitModal({ onClose }: KunlikFreeLimitModalPr
         <button
           type="button"
           onClick={openPricing}
-          className="w-full rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(37,99,235,0.28)] transition-colors hover:bg-blue-700"
+          className="w-full rounded-2xl bg-[#0B2A6B] px-4 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_rgba(11,42,107,0.28)] transition-colors hover:bg-[#071B5E]"
         >
           {t('kunlik.chooseTariff')}
         </button>

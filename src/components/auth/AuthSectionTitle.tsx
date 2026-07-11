@@ -26,7 +26,7 @@ export function AuthSectionTitle({ title, subtitle, onBack, trailing }: Props) {
             aria-label={t('common.back')}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition hover:bg-slate-50"
           >
-            <img src="/auth/back.svg" alt="" width={24} height={24} className="text-[#1E3A8A]" />
+            <img src="/auth/back.svg" alt="" width={24} height={24} className="text-[#2F6BFF]" />
           </button>
           <h1
             className="pointer-events-none absolute inset-x-0 text-center font-semibold text-[#0F172A]"

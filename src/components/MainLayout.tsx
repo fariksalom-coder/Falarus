@@ -4,8 +4,10 @@ import AppNavBar from './AppNavBar';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
+import { useAuth } from '../context/AuthContext';
+import { useHeartbeat } from '../hooks/useHeartbeat';
 
-/** Routes where we hide the global bottom nav (payment = fullscreen, vocabulary nested = back only, invite = has back button). */
+/** Routes where we hide the global bottom nav — focus mode for lesson/exercise/game/course/payment drill-ins. */
 function hideNavBar(path: string): boolean {
   if (path === '/payment' || path.startsWith('/payment')) return true;
   if (path === '/tariflar' || path === '/pricing') return true;
@@ -13,8 +15,18 @@ function hideNavBar(path: string): boolean {
   if (path === '/invite') return true;
   if (path.startsWith('/kurslar/patent')) return true;
   if (path.startsWith('/kurslar/vnzh')) return true;
+  if (path.startsWith('/kurslar/')) return true;
   if (path.startsWith('/help/')) return true;
   if (path.startsWith('/games/')) return true;
+  // Kunlik reja: hide on any drilled-in lesson (grammar, lug'at, o'qish, gapirish).
+  if (/^\/kunlik-reja\/kun\/\d+\/.+/.test(path)) return true;
+  if (path === '/kunlik-reja/xarita') return true;
+  if (path === '/games/word-swipe/xarita') return true;
+  if (path.startsWith('/profile/')) return true;
+  if (path.startsWith('/u/')) return true;
+  if (path.startsWith('/teachers/')) return true;
+  if (path.startsWith('/help/') || path === '/help') return true;
+  if (path.startsWith('/huquqiy')) return true;
   return false;
 }
 
@@ -22,6 +34,8 @@ const zoomTransition = { duration: 0.22, ease: [0.32, 0.72, 0, 1] as const };
 
 export default function MainLayout() {
   const { pathname } = useLocation();
+  const { token } = useAuth();
+  useHeartbeat(token);
   const showNavBar = !hideNavBar(pathname);
   const reduceMotion = useReducedMotion();
   const sectionIdx = mainSectionIndex(pathname);
@@ -47,11 +61,11 @@ export default function MainLayout() {
     <>
       <style>{`
         .app-layout-safe-pad {
-          padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+          padding-top: env(safe-area-inset-top, 0px);
           padding-bottom: 0;
         }
         .app-content-safe-min-h {
-          min-height: calc(100dvh - (env(safe-area-inset-top, 0px) + 8px));
+          min-height: calc(100dvh - env(safe-area-inset-top, 0px));
         }
         .nav-scroll-pad {
           padding-bottom: ${bottomOffset};

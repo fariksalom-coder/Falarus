@@ -15,6 +15,7 @@ import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { isKunlikGrammarFullyDone } from '../../shared/kunlikProgressMerge';
 import { getSentenceArrangeDisplayPrompt } from '../utils/sentenceArrangeDisplayPrompt';
 import { normSentenceArrangeAnswer } from '../../shared/sentenceArrangeAnswer';
+import { playCorrectSound, playWrongSound } from '../utils/sound';
 
 type PoolItem = { id: string; word: string; used: boolean };
 
@@ -172,9 +173,11 @@ export default function DailyGrammarSentenceArrangePage() {
     if (ok) {
       setCheckStatus('correct');
       setFeedback("To'g'ri!");
+      playCorrectSound();
     } else {
       setCheckStatus('wrong');
       setFeedback("Noto'g'ri. Yana urinib ko‘ring yoki «Tozalash» bilan boshidan.");
+      playWrongSound();
     }
   };
 
@@ -194,9 +197,9 @@ export default function DailyGrammarSentenceArrangePage() {
 
   if (!isValidDailyCourseDay(dayNumber)) {
     return (
-      <div className="min-h-screen bg-[#F5F7FA] p-6">
+      <div className="min-h-screen bg-app-bg p-6">
         <p className="text-gray-700">Sahifa topilmadi.</p>
-        <button type="button" className="mt-4 text-blue-600 underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
+        <button type="button" className="mt-4 text-[#0B2A6B] underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
           {t('kunlik.backToPlan')}
         </button>
       </div>
@@ -210,14 +213,14 @@ export default function DailyGrammarSentenceArrangePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F5F7FA]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
       </div>
     );
   }
 
   if (error || tasks.length === 0 || !current) {
     return (
-      <div className="min-h-screen bg-[#F5F7FA] p-6">
+      <div className="min-h-screen bg-app-bg p-6">
         <main className="mx-auto max-w-lg rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-amber-950 shadow-sm">
           <p className="text-sm">{error ?? 'Maʼlumot yo‘q.'}</p>
           <button
@@ -233,30 +236,44 @@ export default function DailyGrammarSentenceArrangePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] pb-28 text-slate-900">
+    <div className="grammar-theme min-h-screen pb-28">
       <main className="mx-auto w-full max-w-lg px-4 pb-6 pt-[max(1rem,env(safe-area-inset-top))]">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="min-h-[44px] rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-        >
-          {t('common.back')}
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex h-10 w-10 items-center justify-center rounded-[13px] border border-[#DDD7F5] bg-white text-[#2D1B69] shadow-[0_4px_10px_rgba(91,76,224,0.08)]"
+            aria-label={t('common.back')}
+          >
+            ‹
+          </button>
+          <p className="grammar-heading flex-1 text-[16px] leading-none text-[#2D1B69]">
+            Grammatika · Gap tuzish
+          </p>
+        </div>
 
         {!finished && (
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/90">
-            <div className="h-full rounded-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[#DDD7F5]">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, #8B7AF7, #5B4CE0)',
+              }}
+            />
           </div>
         )}
 
         {!finished ? (
-          <div className="mt-5 rounded-[24px] border border-slate-100 bg-white p-5 shadow-[0_14px_34px_rgba(148,163,184,0.14)] sm:p-6">
-            <p className="text-center text-sm font-medium text-slate-500">Gapni tuzing</p>
-            <p className="mt-3 text-center text-lg font-bold leading-snug tracking-tight text-slate-900 sm:text-xl">
+          <div className="mt-5 rounded-[24px] border border-[#DDD7F5] bg-white p-5 shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)] sm:p-6">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#8B7FAB]">
+              VAZIFA 3 · GAP TUZISH
+            </p>
+            <p className="grammar-heading mt-3 text-center text-[22px] leading-tight text-[#2D1B69]">
               {getSentenceArrangeDisplayPrompt(current.promptText, current.promptLang)}
             </p>
 
-            <div className="mt-6 min-h-[3.25rem] rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/90 px-4 py-3 text-center text-lg font-semibold leading-snug text-slate-900">
+            <div className="mt-6 min-h-[3.25rem] rounded-2xl border-2 border-dashed border-[#C7BFEE] bg-[#F5F2FE] px-4 py-3 text-center text-[18px] font-black leading-snug text-[#2D1B69]">
               {sentenceAnswer.length ? sentenceAnswer.join(' ') : '—'}
             </div>
 
@@ -267,10 +284,10 @@ export default function DailyGrammarSentenceArrangePage() {
                   type="button"
                   disabled={item.used || checkStatus === 'correct'}
                   onClick={() => moveWordToAnswer(item, idx)}
-                  className={`flex min-h-[48px] w-full items-center justify-center rounded-2xl border px-3 py-2.5 text-center text-sm font-semibold leading-snug transition-all active:scale-[0.98] ${
+                  className={`grammar-heading flex min-h-[50px] w-full items-center justify-center rounded-full border-[1.5px] px-3 py-2.5 text-center text-[15px] transition-all active:scale-[0.98] ${
                     item.used
-                      ? 'cursor-not-allowed border-slate-200/80 bg-slate-50 text-slate-400 opacity-40'
-                      : 'border-blue-200 bg-white text-blue-900 shadow-[0_2px_10px_rgba(37,99,235,0.06)] hover:border-blue-300 hover:bg-blue-50/90'
+                      ? 'cursor-not-allowed border-[#E7E1F8] bg-[#F5F2FE] text-[#B0A8CE] opacity-50'
+                      : 'border-[#DDD7F5] bg-white text-[#2D1B69] shadow-[0_4px_10px_-6px_rgba(45,27,105,0.1)]'
                   }`}
                 >
                   {item.word}
@@ -283,7 +300,7 @@ export default function DailyGrammarSentenceArrangePage() {
                 type="button"
                 onClick={clearSentence}
                 disabled={checkStatus === 'correct'}
-                className="min-h-[48px] rounded-2xl border border-slate-300 bg-white py-3 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+                className="grammar-heading min-h-[50px] rounded-full border-[1.5px] border-[#DDD7F5] bg-white py-3 text-[14px] text-[#5B4CE0] shadow-[0_8px_18px_-10px_rgba(91,76,224,0.28)] disabled:opacity-50"
               >
                 Tozalash
               </button>
@@ -291,20 +308,27 @@ export default function DailyGrammarSentenceArrangePage() {
                 type="button"
                 onClick={handleCheck}
                 disabled={checkStatus === 'correct'}
-                className="min-h-[48px] rounded-2xl bg-[#2563EB] py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-blue-700 disabled:opacity-50"
+                className="grammar-heading min-h-[50px] rounded-full bg-[#5B4CE0] py-3 text-[14px] text-white shadow-[0_14px_28px_-12px_rgba(91,76,224,0.55)] disabled:opacity-50"
               >
                 Tekshirish
               </button>
             </div>
 
             {feedback ? (
-              <p
-                className={`mt-4 text-center text-sm font-medium ${
-                  checkStatus === 'correct' ? 'text-emerald-600' : checkStatus === 'wrong' ? 'text-red-600' : 'text-slate-600'
-                }`}
-              >
-                {feedback}
-              </p>
+              <div className="mt-4 flex justify-center">
+                <span
+                  key={`fb-${taskIndex}-${feedback}-${checkStatus}`}
+                  className={`${checkStatus === 'wrong' ? 'msg-shake' : 'msg-pop'} rounded-full px-4 py-2 text-sm font-black ${
+                    checkStatus === 'correct'
+                      ? 'bg-[#DCFCE7] text-[#0F7C3A] shadow-[0_6px_14px_-8px_rgba(34,197,94,0.35)]'
+                      : checkStatus === 'wrong'
+                        ? 'bg-[#FEEBEB] text-[#B4282E] shadow-[0_6px_14px_-8px_rgba(180,40,46,0.35)]'
+                        : 'bg-[#EDE9FB] text-[#5B4CE0]'
+                  }`}
+                >
+                  {checkStatus === 'correct' ? '✓' : checkStatus === 'wrong' ? '✕' : '💡'} {feedback}
+                </span>
+              </div>
             ) : null}
 
             {checkStatus === 'correct' ? (
@@ -312,21 +336,21 @@ export default function DailyGrammarSentenceArrangePage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="min-h-[48px] rounded-full bg-emerald-600 px-8 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700"
+                  className="grammar-heading min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)]"
                 >
-                  {taskIndex < tasks.length - 1 ? 'Keyingisi' : 'Yakunlash'}
+                  {taskIndex < tasks.length - 1 ? 'Keyingisi →' : 'Yakunlash'}
                 </button>
               </div>
             ) : null}
           </div>
         ) : (
-          <div className="mt-6 rounded-[24px] border border-emerald-200 bg-emerald-50 p-6 text-center shadow-sm">
-            <p className="text-lg font-bold text-emerald-900">Yaxshi!</p>
-            <p className="mt-2 text-sm text-emerald-800">Barcha gaplar tuzildi.</p>
+          <div className="mt-6 rounded-[24px] border-[1.5px] border-[#82E5B8] bg-[#DCFCE7] p-6 text-center shadow-[0_14px_30px_-14px_rgba(34,197,94,0.25)]">
+            <p className="grammar-heading text-[22px] text-[#0F7C3A]">Yaxshi! 🎉</p>
+            <p className="mt-2 text-sm font-black text-[#0F7C3A]">Barcha gaplar tuzildi.</p>
             <button
               type="button"
               onClick={handleBack}
-              className="mt-5 min-h-[48px] rounded-full bg-emerald-600 px-8 py-3 text-sm font-bold text-white"
+              className="grammar-heading mt-5 min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)]"
             >
               Grammatikaga qaytish
             </button>

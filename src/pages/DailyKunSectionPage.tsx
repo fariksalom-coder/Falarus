@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import { ArrowLeft, Link2, ListChecks, Lock, Puzzle } from 'lucide-react';
@@ -87,20 +87,31 @@ export default function DailyKunSectionPage() {
     return <KunlikSequentialGateSpinner />;
   }
 
+  const isGrammar = sec === 'grammatika';
+  const isLugat = sec === 'lugat';
+  const isOqish = sec === 'oqish';
+  const usePurpleTheme = isGrammar || isLugat;
+  const themeClass = usePurpleTheme ? 'grammar-theme' : isOqish ? 'reading-theme' : 'bg-[#F5F7FA]';
   return (
-    <div className="min-h-screen bg-[#F5F7FA] pb-28">
+    <div className={`min-h-screen pb-28 ${themeClass}`}>
       <main className="mx-auto max-w-md space-y-4 px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))]">
-        <button
-          type="button"
-          onClick={() => navigate(kunlikRejaPath(dayNumber))}
-          className="flex min-h-[44px] items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
-        >
-          <ArrowLeft className="h-4 w-4 shrink-0" />
-          {t('common.back')}
-        </button>
+        {isOqish ? null : (
+          <button
+            type="button"
+            onClick={() => navigate(kunlikRejaPath(dayNumber))}
+            className={`flex min-h-[44px] items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition-colors ${
+              usePurpleTheme
+                ? 'border border-[#DDD7F5] bg-[color:var(--rd-white)] text-[#2D1B69] shadow-[0_4px_10px_rgba(91,76,224,0.08)]'
+                : 'border border-gray-200 bg-[color:var(--rd-white)] text-gray-700 shadow-sm hover:bg-gray-50'
+            }`}
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" />
+            {t('common.back')}
+          </button>
+        )}
         {loading && (
           <div className="flex justify-center py-16">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
           </div>
         )}
         {!loading && err && (
@@ -158,7 +169,7 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
   if (!g) {
     return (
       <div className="space-y-6">
-        <div className="rounded-[24px] border border-slate-200/90 bg-white p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+        <div className="rounded-[24px] border border-slate-200/90 bg-[color:var(--rd-white)] p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
           <div className="mb-4 flex items-center gap-3">
             <div className="h-10 w-10 shrink-0 rounded-xl bg-slate-200/90 animate-pulse" />
             <div className="min-w-0 flex-1 space-y-2">
@@ -190,12 +201,14 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
   const theoryBody =
     g.topic && (g.topic.title || g.topic.theoryText) ? (
       <div className="space-y-3">
-        {g.topic.title ? <p className="text-base font-bold text-slate-900">{g.topic.title}</p> : null}
-        <div className="max-h-[min(52vh,28rem)] overflow-y-auto whitespace-pre-wrap text-[15px] leading-relaxed text-slate-800">
+        {g.topic.title ? <p className="text-base font-bold text-[#2D1B69]">{g.topic.title}</p> : null}
+        <div className="max-h-[min(52vh,28rem)] overflow-y-auto whitespace-pre-wrap text-[15px] leading-relaxed text-[#463578]">
           {g.topic.theoryText}
         </div>
       </div>
     ) : null;
+
+  const dayCaption = g.topic?.title ? `KUN ${dayNumber} · GRAMMATIKA` : '';
 
   if (!kunlikLoaded) {
     return (
@@ -210,7 +223,7 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
             {theoryBody}
           </LessonTheoryCollapsible>
         ) : null}
-        <div className="rounded-[24px] border border-slate-200/90 bg-white p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+        <div className="rounded-[24px] border border-slate-200/90 bg-[color:var(--rd-white)] p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
           <p className="mb-3 text-sm font-semibold text-slate-600">Mashqlar</p>
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {Array.from({ length: 3 }).map((_, idx) => (
@@ -227,16 +240,23 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Day topic header — purple caption + big rounded title */}
+      {g.topic?.title ? (
+        <div className="mb-1">
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8B7FAB]">
+            {dayCaption}
+          </p>
+          <h1 className="grammar-heading mt-1.5 text-[26px] leading-[1.1] text-[#2D1B69]">
+            {g.topic.title}
+          </h1>
+        </div>
+      ) : null}
+
       {theoryBody ? (
-        <LessonTheoryCollapsible
-          surface="white"
-          defaultExpanded={false}
-          showToggleText={false}
-          bodyClassName="mt-4 space-y-4 text-sm leading-relaxed text-slate-800"
-        >
+        <GrammarTheoryCard title={g.topic?.title ?? ''}>
           {theoryBody}
-        </LessonTheoryCollapsible>
+        </GrammarTheoryCard>
       ) : null}
 
       <DailyGrammarMashqlarGrid
@@ -264,6 +284,57 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
             : undefined
         }
       />
+    </div>
+  );
+}
+
+function GrammarTheoryCard({ title, children }: { title: string; children: ReactNode }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="relative overflow-hidden rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] p-4 shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)] sm:p-5">
+      {/* Peach circle decor */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full"
+        style={{ background: 'rgba(255,206,176,0.35)' }}
+      />
+
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="relative z-[2] flex w-full items-center gap-3 text-left"
+        aria-expanded={expanded}
+      >
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] text-[22px]"
+          style={{ background: '#5B4CE0' }}
+          aria-hidden
+        >
+          📘
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[10.5px] font-black uppercase tracking-[0.18em] text-[#8B7FAB]">
+            Nazariya
+          </span>
+          <span className="grammar-heading mt-0.5 block truncate text-[17px] leading-none text-[#2D1B69]">
+            {title || "Qoidani o'qing"}
+          </span>
+        </span>
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F0EDFB] text-[#5B4CE0] transition-transform ${
+            expanded ? 'rotate-180' : ''
+          }`}
+          aria-hidden
+        >
+          ⌄
+        </span>
+      </button>
+
+      {expanded ? (
+        <div className="relative z-[2] mt-4 space-y-4 text-[15px] leading-relaxed text-[#463578]">
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -346,143 +417,155 @@ function DailyGrammarMashqlarGrid({
     },
   ];
 
+  const emojiFor = (n: number) => (n === 1 ? '✅' : n === 2 ? '🔗' : '🧩');
+  const shortTitleFor = (n: number) =>
+    n === 1 ? "To'g'ri variant" : n === 2 ? 'Juftini toping' : 'Gap tuzish';
+  const captionFor = (n: number, isActive: boolean, isDone: boolean) => {
+    const num = `VAZIFA ${n}`;
+    if (isDone) return `${num} · BAJARILDI`;
+    if (isActive) return `${num} · HOZIR`;
+    return num;
+  };
+
+  const doneCount = [grammar1Done, grammar2Done, grammar3Done].filter(Boolean).length;
+  const pct = Math.round((doneCount / 3) * 100);
+
   return (
     <div className="mt-2">
-      <p className="mb-3 text-sm font-semibold text-slate-600">{t('kunlik.exercises')}</p>
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        {rows.map(({ vazifaNum, hint, Icon, count, onPress, emptyHint, sequentialLocked, seqHint }) => {
+      {/* Header row: "3 ta vazifa" + progress */}
+      <div className="mb-3 flex items-center gap-3">
+        <p className="grammar-heading text-[18px] leading-none text-[#2D1B69]">
+          3 ta vazifa
+        </p>
+        <div className="flex flex-1 items-center gap-2">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#DDD7F5]">
+            <div
+              className="h-full rounded-full bg-[#22C55E] transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="text-[12px] font-black text-[#8B7FAB]">
+            {doneCount}/3
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {rows.map(({ vazifaNum, hint, count, onPress, emptyHint, sequentialLocked, seqHint }) => {
           const empty = count === 0;
           const actionable = count > 0 && !!onPress && !sequentialLocked;
           const comingSoon = count > 0 && !onPress && !sequentialLocked;
 
           const slotDone =
             vazifaNum === 1 ? grammar1Done : vazifaNum === 2 ? grammar2Done : grammar3Done;
-          const showCompleted = count > 0 && slotDone && !sequentialLocked;
-          const isCurrentTask = actionable && !slotDone;
+          const done = count > 0 && slotDone && !sequentialLocked;
+          const active = actionable && !slotDone;
+          const locked = sequentialLocked || comingSoon || (!actionable && !done && !empty);
+          const disabled = empty || sequentialLocked || comingSoon;
 
-          const cardInteractive = actionable
-            ? isCurrentTask
-              ? 'cursor-pointer hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-[0_14px_36px_rgba(37,99,235,0.22)] active:scale-[0.98]'
-              : 'cursor-pointer hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-[0_14px_36px_rgba(16,185,129,0.14)] active:scale-[0.98]'
-            : sequentialLocked || comingSoon
-              ? 'cursor-not-allowed opacity-[0.88]'
-              : 'cursor-not-allowed opacity-[0.72] grayscale-[0.35]';
+          const emoji = emojiFor(vazifaNum);
+          const shortTitle = shortTitleFor(vazifaNum);
+          const caption = captionFor(vazifaNum, active, done);
 
-          const shell = empty
-            ? 'border-slate-200/90 bg-gradient-to-b from-slate-100/90 to-white'
-            : sequentialLocked
-              ? 'border-slate-200/95 bg-gradient-to-b from-slate-100 to-slate-50/90 shadow-sm'
-              : comingSoon
-                ? 'border-slate-200/95 bg-gradient-to-b from-slate-50 to-white shadow-sm'
-                : isCurrentTask
-                  ? 'border-[#2563EB]/45 bg-gradient-to-b from-blue-50 via-blue-50/70 to-white shadow-[0_10px_30px_rgba(37,99,235,0.14)] ring-1 ring-[#2563EB]/20'
-                  : showCompleted
-                    ? 'border-emerald-200/95 bg-gradient-to-b from-emerald-50 via-emerald-50/50 to-white shadow-[0_10px_30px_rgba(16,185,129,0.1)]'
-                    : 'border-emerald-200/95 bg-gradient-to-b from-emerald-50 via-emerald-50/50 to-white shadow-[0_10px_30px_rgba(16,185,129,0.12)]';
+          const subtitleMuted = sequentialLocked && seqHint
+            ? seqHint
+            : empty
+              ? emptyHint
+              : locked
+                ? "Avval oldingi vazifani tugating"
+                : hint;
 
-          const iconBg = empty
-            ? 'bg-slate-200/90 text-slate-500 ring-slate-200/80'
-            : sequentialLocked
-              ? 'bg-slate-200/90 text-slate-500 ring-slate-300/80'
-              : comingSoon
-                ? 'bg-slate-100 text-slate-500 ring-slate-200'
-                : isCurrentTask
-                  ? 'bg-blue-100 text-[#2563EB] ring-blue-200/90'
-                  : showCompleted
-                    ? 'bg-emerald-100 text-emerald-700 ring-emerald-200/90'
-                    : 'bg-emerald-100 text-emerald-700 ring-emerald-200/90';
+          // Card style based on state
+          const cardStyle: React.CSSProperties = done
+            ? {
+                background: '#DCFCE7',
+                border: '1.5px solid #82E5B8',
+                boxShadow: '0 8px 18px -8px rgba(34,197,94,0.24)',
+              }
+            : active
+              ? {
+                  background: '#5B4CE0',
+                  border: 'none',
+                  boxShadow: '0 14px 30px -12px rgba(91,76,224,0.55)',
+                }
+              : {
+                  background: '#FFFFFF',
+                  border: '1.5px solid #DDD7F5',
+                  boxShadow: '0 6px 14px -8px rgba(45,27,105,0.06)',
+                };
 
-          const badgeBg = empty
-            ? 'bg-slate-200/80 text-slate-500 ring-slate-200'
-            : sequentialLocked
-              ? 'bg-slate-200/90 text-slate-600 ring-slate-300/60'
-              : comingSoon
-                ? 'bg-slate-100 text-slate-600 ring-slate-200'
-                : isCurrentTask
-                  ? 'bg-blue-100 text-blue-900 ring-blue-300/50'
-                  : showCompleted
-                    ? 'bg-emerald-100/95 text-emerald-900 ring-emerald-300/40'
-                    : 'bg-emerald-100/95 text-emerald-900 ring-emerald-300/40';
-
-          const titleCls = empty
-            ? 'text-slate-500'
-            : sequentialLocked || comingSoon
-              ? 'text-slate-600'
-              : isCurrentTask
-                ? 'text-[#0F172A]'
-                : 'text-slate-800';
-
-          const hintCls = empty
-            ? 'text-slate-400'
-            : sequentialLocked || comingSoon
-              ? 'text-slate-500'
-              : isCurrentTask
-                ? 'text-blue-950/90'
-                : showCompleted
-                  ? 'text-emerald-950/85'
-                  : 'text-emerald-950/85';
-
-          const inner = (
-            <>
-              <div className="flex h-9 w-full shrink-0 items-center justify-center sm:h-11">
-                <span className={`flex h-9 w-9 items-center justify-center rounded-full shadow-inner ring-1 sm:h-10 sm:w-10 ${iconBg}`}>
-                  {sequentialLocked ? (
-                    <Lock className="h-4 w-4 sm:h-[18px] sm:w-[18px]" strokeWidth={2} aria-hidden />
-                  ) : (
-                    <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" strokeWidth={2} aria-hidden />
-                  )}
-                </span>
-              </div>
-              <div className="flex min-h-[2rem] items-center justify-center px-0.5">
-                <span className={`text-center text-[10px] font-bold uppercase tracking-wide sm:text-[11px] ${titleCls}`}>
-                  Vazifa {vazifaNum}
-                </span>
-              </div>
-              <div className="flex h-5 items-center justify-center">
-                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold tabular-nums ring-1 sm:text-[10px] ${badgeBg}`}>
-                  {count > 0 ? t('kunlik.countItems', { count }) : '—'}
-                </span>
-              </div>
-              <div className="flex min-h-[2.25rem] flex-1 items-start justify-center overflow-hidden pt-0.5">
-                <span className={`line-clamp-3 text-center text-[9px] font-medium leading-snug sm:text-[10px] ${hintCls}`}>
-                  {sequentialLocked && seqHint ? seqHint : hint}
-                </span>
-              </div>
-              {empty ? (
-                <span className="mt-1 line-clamp-2 text-center text-[8px] font-medium text-slate-400 sm:text-[9px]">{emptyHint}</span>
-              ) : comingSoon ? (
-                <span className="mt-1 line-clamp-2 text-center text-[8px] font-medium text-emerald-700/80 sm:text-[9px]">
-                  {t('kunlik.soon')}
-                </span>
-              ) : null}
-              {isCurrentTask ? (
-                <span className="pointer-events-none mt-2 flex w-full shrink-0 justify-center px-0.5">
-                  <span className="w-full max-w-[7.5rem] rounded-xl bg-[#2563EB] py-2 text-center text-[10px] font-extrabold tracking-wide text-white shadow-[0_8px_20px_rgba(37,99,235,0.35)] sm:max-w-none sm:text-[11px]">
-                    {t('common.start')}
-                  </span>
-                </span>
-              ) : null}
-            </>
-          );
+          const iconBg = done ? '#22C55E' : active ? 'rgba(255,255,255,0.16)' : '#F0EDFB';
+          const iconTextColor = done ? '#FFFFFF' : active ? '#FFFFFF' : '#8B7FAB';
+          const captionColor = done ? '#0F7C3A' : active ? 'rgba(255,255,255,0.7)' : '#8B7FAB';
+          const titleColor = done ? '#0F7C3A' : active ? '#FFFFFF' : locked ? '#8B7FAB' : '#2D1B69';
 
           return (
             <button
               key={vazifaNum}
               type="button"
-              disabled={empty || sequentialLocked}
-              aria-disabled={empty || sequentialLocked || comingSoon}
+              disabled={disabled}
+              aria-disabled={disabled}
               onClick={() => {
                 if (actionable) onPress?.();
               }}
-              className={`relative box-border flex min-h-[9rem] w-full shrink-0 flex-col items-stretch rounded-[20px] border-2 p-2 text-center transition-all sm:min-h-[10.5rem] sm:rounded-[24px] sm:p-3 ${shell} ${cardInteractive}`}
+              className="w-full rounded-[20px] p-4 text-left transition-transform active:scale-[0.99] disabled:cursor-default"
+              style={cardStyle}
             >
-              {inner}
+              <div className="flex items-center gap-3">
+                <span
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] text-[22px] leading-none ${locked ? 'grayscale' : ''}`}
+                  style={{ background: iconBg, color: iconTextColor }}
+                >
+                  {done ? '✓' : locked ? '🔒' : emoji}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="text-[10px] font-black uppercase tracking-[0.16em]"
+                    style={{ color: captionColor }}
+                  >
+                    {caption}
+                  </p>
+                  <p
+                    className="grammar-heading mt-0.5 truncate text-[18px] leading-tight"
+                    style={{ color: titleColor }}
+                  >
+                    {shortTitle}
+                  </p>
+                  {!done && !active && (
+                    <p
+                      className="mt-0.5 truncate text-[12px] font-semibold"
+                      style={{ color: locked ? '#8B7FAB' : '#8B7FAB' }}
+                    >
+                      {count > 0 ? `${count} ta topshiriq` : subtitleMuted}
+                    </p>
+                  )}
+                  {done && (
+                    <p className="mt-0.5 text-[12px] font-black text-[#0F7C3A]">
+                      ✓ TUGADI · {count} ta
+                    </p>
+                  )}
+                </div>
+
+                {done ? null : active ? null : (
+                  <span className="grammar-heading shrink-0 text-[14px] text-[#8B7FAB]">
+                    {locked ? '' : ''}
+                  </span>
+                )}
+              </div>
+
+              {active && (
+                <div className="mt-3">
+                  <span className="flex items-center justify-center rounded-[14px] bg-[color:var(--rd-white)] px-4 py-3 text-[14px] font-black text-[#5B4CE0] shadow-[0_4px_10px_rgba(45,27,105,0.12)]">
+                    Davom etish →
+                  </span>
+                </div>
+              )}
             </button>
           );
         })}
       </div>
       {sentenceMcqsCount > 0 ? (
-        <p className="mt-3 text-center text-xs text-slate-500">
+        <p className="mt-3 text-center text-xs text-[#8B7FAB]">
           {t('kunlik.sentenceTestSoon', { count: sentenceMcqsCount })}
         </p>
       ) : null}
@@ -508,7 +591,7 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
 
   if (!w?.words?.length) {
     return (
-      <p className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
+      <p className="rounded-2xl border border-gray-200 bg-[color:var(--rd-white)] px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
         {t('kunlik.noVocabRows')}
       </p>
     );
@@ -554,6 +637,7 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
       onOpenStep1={() => navigate(`${base}/tanishish`)}
       onOpenStep2={() => navigate(`${base}/test`)}
       onOpenStep3={() => navigate(`${base}/juftlik`)}
+      wordPreviews={w?.words?.map((row) => row.wordRu).filter(Boolean) ?? []}
     />
   );
 }
@@ -578,7 +662,7 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
 
   if (!r?.bodyRu && !(r?.lexemes?.length)) {
     return (
-      <p className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
+      <p className="rounded-2xl border border-[#DCEBE7] bg-[color:var(--rd-white)] px-4 py-6 text-center text-sm text-[color:var(--rd-text-muted)] shadow-sm">
         {t('kunlik.noReadingContent')}
       </p>
     );
@@ -589,29 +673,54 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
     navigate(kunlikRejaPath(dayNumber));
   };
 
+  const title = r.title?.trim() || 'Matn';
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {/* Premium header: back tile + pill + serif title + streak badge */}
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={() => navigate(kunlikRejaPath(dayNumber))}
+          aria-label={t('common.back')}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[color:var(--rd-white)] text-[color:var(--rd-text)] shadow-[0_6px_16px_-6px_rgba(15,165,152,0.28)] ring-1 ring-[#DCEBE7] transition active:scale-[0.97]"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-[color:var(--rd-text-muted)]">
+            Kun {dayNumber} · O'qish
+          </p>
+          <h1 className="reading-heading mt-1 text-[22px] leading-tight text-[color:var(--rd-text)]">
+            {title}
+          </h1>
+        </div>
+        <span className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-[#FFF0D2] px-3 text-[13px] font-bold text-[#E08600] ring-1 ring-[#FBD48A]">
+          <span aria-hidden>🔥</span>
+          <span>{dayNumber}</span>
+        </span>
+      </div>
+
       <InteractiveDailyReading title={null} bodyRu={r.bodyRu || ''} lexemes={r.lexemes} />
 
-      <div className="rounded-[22px] border border-slate-200 bg-white px-4 py-4 shadow-sm">
-        {oqishDone ? (
-          <p className="text-center text-sm font-semibold text-emerald-700">
-            {t('kunlik.readingDoneAlready')}
-          </p>
-        ) : finishReady ? (
-          <button
-            type="button"
-            onClick={finishReading}
-            className="flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 px-4 py-3.5 text-[15px] font-bold text-white shadow-[0_14px_28px_rgba(79,70,229,0.28)] transition hover:brightness-[1.03] active:scale-[0.99]"
-          >
-            {t('common.finish')}
-          </button>
-        ) : (
-          <p className="text-center text-[13px] leading-relaxed text-slate-500">
-            {t('kunlik.readingFinishDelay', { seconds: 10 })}
-          </p>
-        )}
-      </div>
+      {oqishDone ? (
+        <div className="rounded-[22px] bg-[#E1F5F1] px-4 py-3.5 text-center text-sm font-bold text-[#0B7167] ring-1 ring-[#BFF0E8]">
+          {t('kunlik.readingDoneAlready')}
+        </div>
+      ) : finishReady ? (
+        <button
+          type="button"
+          onClick={finishReading}
+          className="reading-cta flex min-h-[54px] w-full items-center justify-center gap-2 rounded-[18px] px-4 py-3.5 text-[15px] font-bold transition hover:brightness-[1.03] active:scale-[0.99]"
+        >
+          <span>{t('common.finish')}</span>
+          <span aria-hidden className="text-[16px]">✓</span>
+        </button>
+      ) : (
+        <div className="rounded-[22px] bg-white/70 px-4 py-3.5 text-center text-[13px] leading-relaxed text-[color:var(--rd-text-muted)] ring-1 ring-[#DCEBE7] backdrop-blur">
+          {t('kunlik.readingFinishDelay', { seconds: 10 })}
+        </div>
+      )}
     </div>
   );
 }
@@ -692,7 +801,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
 
   if (!p?.length) {
     return (
-      <p className="rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
+      <p className="rounded-2xl border border-gray-200 bg-[color:var(--rd-white)] px-4 py-6 text-center text-sm text-gray-600 shadow-sm">
         {t('kunlik.noSpeakingTasks')}
       </p>
     );
@@ -701,7 +810,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
   if (!kunlikLoaded) {
     return (
       <div className="flex justify-center py-16">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
       </div>
     );
   }
@@ -713,14 +822,14 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
         <button
           type="button"
           onClick={() => navigate(kunlikRejaPath(dayNumber))}
-          className="mt-4 min-h-[44px] w-full rounded-2xl border border-emerald-300 bg-white px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm hover:bg-emerald-50"
+          className="mt-4 min-h-[44px] w-full rounded-2xl border border-emerald-300 bg-[color:var(--rd-white)] px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm hover:bg-emerald-50"
         >
           {t('kunlik.backToPlan')}
         </button>
         <button
           type="button"
           onClick={startSpeakingRetry}
-          className="mt-3 min-h-[44px] w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700"
+          className="mt-3 min-h-[44px] w-full rounded-2xl bg-[#12A150] px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-[#0F8A44]"
         >
           {t('home.questRepeat')}
         </button>

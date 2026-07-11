@@ -41,7 +41,7 @@ function ProfileAvatar({ profile }: { profile: TeacherProfile }) {
     );
   }
   return (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-3xl font-black text-white">
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#123A8F] to-[#0B2A6B] text-3xl font-black text-white">
       {teacherInitials(profile)}
     </div>
   );
@@ -202,7 +202,7 @@ export default function TeacherProfilePage() {
   if (loading) {
     return (
       <div className="flex min-h-full items-center justify-center bg-[#EEF4FA]">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#24459A] border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
       </div>
     );
   }
@@ -259,23 +259,23 @@ export default function TeacherProfilePage() {
             ) : null}
             <div className="mt-4 space-y-2.5 text-[15px] font-bold text-[#4B4B4B]">
               <p className="flex items-center gap-3">
-                <Users className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                <Users className="h-5 w-5 shrink-0 text-[#0B2A6B]" aria-hidden />
                 {t('teachers.experience')} {formatTeacherExperience(profile.experience_years, profile.experience_months)}
               </p>
               <p className="flex items-center gap-3">
-                <Clock className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                <Clock className="h-5 w-5 shrink-0 text-[#0B2A6B]" aria-hidden />
                 {t('teachers.age')}: {profile.age}
               </p>
               <p className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                <MapPin className="h-5 w-5 shrink-0 text-[#0B2A6B]" aria-hidden />
                 {t('teachers.region')}: {locationLabel}
               </p>
               <p className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                <BookOpen className="h-5 w-5 shrink-0 text-[#0B2A6B]" aria-hidden />
                 {t('teachers.lessonFormat')}: {formatTeachingFormat(profile.teaching_format)}
               </p>
               <p className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 shrink-0 text-[#24459A]" aria-hidden />
+                <CreditCard className="h-5 w-5 shrink-0 text-[#0B2A6B]" aria-hidden />
                 {t('teachers.price')} {monthlyPrice}
               </p>
             </div>
@@ -291,7 +291,7 @@ export default function TeacherProfilePage() {
               </p>
               <Link
                 to="/payment-history"
-                className="mt-4 inline-flex text-sm font-bold text-[#24459A] hover:underline"
+                className="mt-4 inline-flex text-sm font-bold text-[#0B2A6B] hover:underline"
               >
                 {t('payment.historyTitle')}
               </Link>
@@ -300,7 +300,7 @@ export default function TeacherProfilePage() {
             <button
               type="button"
               onClick={handleStartBooking}
-              className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-[#24459A] text-lg font-extrabold text-white active:scale-[0.99]"
+              className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-[#0B2A6B] text-lg font-extrabold text-white active:scale-[0.99]"
             >
               {t('teachers.trialBook')} — {trialPriceRub} ₽
             </button>
@@ -327,7 +327,7 @@ export default function TeacherProfilePage() {
                   type="button"
                   onClick={() => void handlePayRahmat()}
                   disabled={bookingLoading}
-                  className="flex h-12 w-full items-center justify-center rounded-full bg-[#24459A] text-base font-extrabold text-white disabled:opacity-60"
+                  className="flex h-12 w-full items-center justify-center rounded-full bg-[#0B2A6B] text-base font-extrabold text-white disabled:opacity-60"
                 >
                   {bookingLoading ? t('common.loading') : t('teachers.trialPayUzs')}
                 </button>
@@ -338,7 +338,7 @@ export default function TeacherProfilePage() {
                   type="button"
                   onClick={() => void handlePayRub()}
                   disabled={bookingLoading}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#24459A] bg-white text-base font-bold text-[#24459A] disabled:opacity-60"
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#0B2A6B] bg-white text-base font-bold text-[#0B2A6B] disabled:opacity-60"
                 >
                   <CreditCard className="h-5 w-5" />
                   {t('teachers.trialPayRub')} — {trialPriceRub} ₽

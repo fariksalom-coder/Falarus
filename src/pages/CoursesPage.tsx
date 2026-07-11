@@ -63,7 +63,7 @@ export default function CoursesPage() {
                     alt={title}
                     loading="lazy"
                     decoding="async"
-                    className="h-16 w-16 shrink-0 rounded-full object-contain shadow-[0_12px_24px_rgba(37,99,235,0.18)] sm:h-[72px] sm:w-[72px]"
+                    className="h-16 w-16 shrink-0 rounded-full object-contain shadow-[0_12px_24px_rgba(11,42,107,0.18)] sm:h-[72px] sm:w-[72px]"
                   />
 
                   <div className="min-w-0 flex-1">
@@ -90,19 +90,19 @@ export default function CoursesPage() {
           aria-label="Rus tili yo‘nalishlari"
         >
           <p className="text-[13px] leading-relaxed" style={{ color: TEXT_SECONDARY }}>
-            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/russian">
+            <Link className="font-semibold text-[#0B2A6B] underline-offset-2 hover:underline" to="/russian">
               Rus tili kursi
             </Link>
             {' · '}
-            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/kurslar/patent">
+            <Link className="font-semibold text-[#0B2A6B] underline-offset-2 hover:underline" to="/kurslar/patent">
               rus tili patent uchun
             </Link>
             {' · '}
-            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/kurslar/vnzh">
+            <Link className="font-semibold text-[#0B2A6B] underline-offset-2 hover:underline" to="/kurslar/vnzh">
               ВНЖ uchun rus tili
             </Link>
             {' · '}
-            <Link className="font-semibold text-blue-600 underline-offset-2 hover:underline" to="/tariflar">
+            <Link className="font-semibold text-[#0B2A6B] underline-offset-2 hover:underline" to="/tariflar">
               Tariflar
             </Link>
           </p>

@@ -9,7 +9,7 @@ import { AuthButton } from '../components/auth/AuthButton';
 import { AuthFormBanner } from '../components/auth/AuthFormBanner';
 import { AuthGap, AuthPageScaffold, AuthScrollBody } from '../components/auth/AuthPageScaffold';
 import { AuthPasswordField } from '../components/auth/AuthPasswordField';
-import { AuthSectionTitle } from '../components/auth/AuthSectionTitle';
+import { AuthHero } from '../components/auth/AuthHero';
 import { AuthSegmentedTabs } from '../components/auth/AuthSegmentedTabs';
 import { AuthSwitchLink } from '../components/auth/AuthSwitchLink';
 import { AuthTextField } from '../components/auth/AuthTextField';
@@ -141,7 +141,11 @@ export default function LoginPage() {
     <AuthPageScaffold>
       <AuthScrollBody>
         <form onSubmit={handleSubmit} className="flex flex-col pb-6">
-          <AuthSectionTitle title={t('auth.logInTitle')} onBack={() => navigate('/')} />
+          <AuthHero
+            title={t('auth.logInTitle')}
+            subtitle="Hisobingizga kirib, davom eting"
+            onBack={() => navigate('/')}
+          />
 
           <AuthSegmentedTabs
             value={mode}
@@ -198,7 +202,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => navigate('/forgot-password')}
-              className="px-1 py-1 text-sm font-medium text-[#1E3A8A]"
+              className="px-1 py-1 text-sm font-bold text-[#2F6BFF]"
             >
               {t('auth.forgotPassword')}
             </button>

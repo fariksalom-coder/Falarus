@@ -160,5 +160,102 @@ export function createStatsRoutes(
     }
   });
 
+  // GET /api/stats/weekly-activity — last 7 days (oldest → today) with per-day minutes.
+  // Data source: user_daily_time.seconds (converted to minutes).
+  // Fallback: user_activity_dates.active flag → estimate ~30 min per active day so
+  // the chart shows visible bars even before heartbeat has accumulated any data.
+  router.get('/stats/weekly-activity', authenticate, async (req: any, res: any) => {
+    try {
+      const now = new Date();
+      const today = formatDateInAppTimezone(now);
+      // Build last 7 dates in app TZ (YYYY-MM-DD strings)
+      const dates: string[] = [];
+      for (let i = 6; i >= 0; i -= 1) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        dates.push(formatDateInAppTimezone(d));
+      }
+      const startDate = dates[0];
+      const endDate = dates[dates.length - 1];
+
+      // Per-day minutes from user_daily_time (populated by heartbeat).
+      const secondsByDate = new Map<string, number>();
+      let source: 'daily_time' | 'activity_dates' = 'daily_time';
+      try {
+        const { data, error } = await supabase
+          .from('user_daily_time')
+          .select('activity_date, seconds')
+          .eq('user_id', req.userId)
+          .gte('activity_date', startDate)
+          .lte('activity_date', endDate);
+        if (error) {
+          const msg = `${error.message ?? ''} ${(error as any).details ?? ''}`.toLowerCase();
+          if (msg.includes('user_daily_time')) {
+            source = 'activity_dates';
+          } else {
+            throw error;
+          }
+        } else {
+          for (const row of data ?? []) {
+            const d = String((row as any).activity_date ?? '');
+            if (!d) continue;
+            secondsByDate.set(d, Number((row as any).seconds ?? 0));
+          }
+        }
+      } catch (err) {
+        console.warn('[weekly-activity] user_daily_time unavailable, falling back', err);
+        source = 'activity_dates';
+      }
+
+      // Fallback / augment: active flag from user_activity_dates
+      const activeSet = new Set<string>();
+      {
+        const { data: actRows } = await supabase
+          .from('user_activity_dates')
+          .select('activity_date')
+          .eq('user_id', req.userId)
+          .gte('activity_date', startDate)
+          .lte('activity_date', endDate);
+        for (const row of actRows ?? []) {
+          activeSet.add(String((row as any).activity_date ?? ''));
+        }
+      }
+
+      const rawDays = dates.map((date) => {
+        const seconds = secondsByDate.get(date) ?? 0;
+        const active = seconds > 0 || activeSet.has(date);
+        return { date, seconds, active, is_today: date === today };
+      });
+
+      // If nobody recorded seconds this week, use a proxy so bars are visible:
+      // active day → 30 min, missed → 0.
+      const haveTimeData = rawDays.some((d) => d.seconds > 0);
+      const days = rawDays.map((d) => ({
+        date: d.date,
+        active: d.active,
+        is_today: d.is_today,
+        minutes: haveTimeData ? Math.round(d.seconds / 60) : d.active ? 30 : 0,
+      }));
+
+      // Normalize heights (0-100) relative to max minutes that week.
+      const maxMinutes = Math.max(...days.map((d) => d.minutes), 1);
+      const daysWithHeight = days.map((d) => ({
+        ...d,
+        // Height range: 20% (min visible bar) → 100% (max), 4% for inactive.
+        height_pct: d.minutes > 0
+          ? Math.max(20, Math.round((d.minutes / maxMinutes) * 100))
+          : 4,
+      }));
+
+      res.json({
+        source,
+        days: daysWithHeight,
+        max_minutes: maxMinutes,
+      });
+    } catch (e) {
+      console.error('[GET /api/stats/weekly-activity]', e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
   return router;
 }

@@ -179,17 +179,17 @@ export default function HelpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F8]">
+    <div className="min-h-screen bg-app-bg">
       <main className="mx-auto max-w-3xl">
         {!openedChatId ? (
-          <section className="min-h-[calc(100dvh-86px)] bg-[#F3F4F8]">
-            <div className="border-b border-slate-200 bg-white px-5 pb-4 pt-5">
-              <h1 className="text-[35px] font-bold tracking-tight text-slate-900">{t('help.title')}</h1>
+          <section className="min-h-[calc(100dvh-86px)] bg-app-bg">
+            <div className="border-b border-app-border bg-app-surface px-5 pb-4 pt-5">
+              <h1 className="text-[35px] font-bold tracking-tight text-app-text">{t('help.title')}</h1>
             </div>
             {loading ? (
-              <div className="px-5 py-6 text-sm text-slate-500">{t('common.loading')}</div>
+              <div className="px-5 py-6 text-sm text-app-text-muted">{t('common.loading')}</div>
             ) : (
-              <div className="divide-y divide-slate-200 border-b border-slate-200 bg-white">
+              <div className="divide-y divide-slate-200 border-b border-app-border bg-app-surface">
                 {chats.map((chat) => {
                   const previewMedia = parseHelpImageMessage(chat.last_message?.content ?? '');
                   const unreadByCounter = Number(chat.unread_count ?? 0) > 0;
@@ -205,19 +205,19 @@ export default function HelpPage() {
                         setActiveChatId(chat.id);
                         navigate(`/help/${chat.id}`);
                       }}
-                      className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-slate-50"
+                      className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-app-bg-subtle"
                     >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 via-blue-300 to-indigo-400 text-white shadow-[0_6px_18px_rgba(59,130,246,0.25)]">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3B6FE0] via-[#123A8F] to-[#0B2A6B] text-white shadow-[0_6px_18px_rgba(59,130,246,0.25)]">
                         <MessageCircle className="h-6 w-6" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[22px] font-semibold text-slate-900">{t('help.admin')}</p>
-                        <p className="truncate text-[17px] text-slate-500">
+                        <p className="truncate text-[22px] font-semibold text-app-text">{t('help.admin')}</p>
+                        <p className="truncate text-[17px] text-app-text-muted">
                           {previewMedia.isImage ? t('help.image') : (chat.last_message?.content ?? '')}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-[17px] font-medium text-slate-500">
+                        <span className="text-[17px] font-medium text-app-text-muted">
                           {formatListTime(chat.last_message_at, t('common.today'))}
                         </span>
                         {showUnread ? (
@@ -229,33 +229,33 @@ export default function HelpPage() {
                     </button>
                   );
                 })}
-                {!chats.length && <p className="px-5 py-8 text-center text-sm text-slate-500">{t('help.noChats')}</p>}
+                {!chats.length && <p className="px-5 py-8 text-center text-sm text-app-text-muted">{t('help.noChats')}</p>}
               </div>
             )}
             {error ? <p className="px-5 py-2 text-xs text-red-600">{error}</p> : null}
           </section>
         ) : (
-          <section className="fixed inset-0 z-50 flex min-h-screen flex-col bg-[#F3F4F8]">
-            <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 pb-3 pt-3 max-sm:pt-[max(env(safe-area-inset-top,0px),12px)]">
+          <section className="fixed inset-0 z-50 flex min-h-screen flex-col bg-app-bg">
+            <div className="flex shrink-0 items-center gap-3 border-b border-app-border bg-app-surface px-4 pb-3 pt-3 max-sm:pt-[max(env(safe-area-inset-top,0px),12px)]">
               <button
                 type="button"
                 onClick={() => navigate('/help')}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-app-border text-app-text-muted"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 via-blue-300 to-indigo-400 text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#3B6FE0] via-[#123A8F] to-[#0B2A6B] text-white">
                 <MessageCircle className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-base font-bold text-slate-900">{t('help.admin')}</p>
-                <p className="text-xs text-slate-500">{activeChat?.status === 'open' ? t('help.online') : t('help.offline')}</p>
+                <p className="text-base font-bold text-app-text">{t('help.admin')}</p>
+                <p className="text-xs text-app-text-muted">{activeChat?.status === 'open' ? t('help.online') : t('help.offline')}</p>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto overscroll-y-contain px-4 py-3">
               {messagesLoading ? (
-                <div className="py-8 text-center text-sm text-slate-500">{t('help.messagesLoading')}</div>
+                <div className="py-8 text-center text-sm text-app-text-muted">{t('help.messagesLoading')}</div>
               ) : (
                 <div className="mx-auto max-w-2xl space-y-2.5">
                   {messages.map((msg) => {
@@ -266,8 +266,8 @@ export default function HelpPage() {
                         <div
                           className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-[0.92rem] ${
                             isMine
-                              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white'
-                              : 'border border-slate-200 bg-white text-slate-900'
+                              ? 'bg-gradient-to-r from-[#123A8F] to-[#0B2A6B] text-white'
+                              : 'border border-app-border bg-app-surface text-app-text'
                           }`}
                         >
                           {media.isImage && media.imageUrl ? (
@@ -280,7 +280,7 @@ export default function HelpPage() {
                           ) : (
                             <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                           )}
-                          <p className={`mt-1 text-[10px] ${isMine ? 'text-white/70' : 'text-slate-400'}`}>
+                          <p className={`mt-1 text-[10px] ${isMine ? 'text-white/70' : 'text-app-text-muted'}`}>
                             {formatTime(msg.created_at)}
                           </p>
                         </div>
@@ -288,18 +288,18 @@ export default function HelpPage() {
                     );
                   })}
                   {!messages.length && (
-                    <p className="py-12 text-center text-sm text-slate-500">{t('help.noMessages')}</p>
+                    <p className="py-12 text-center text-sm text-app-text-muted">{t('help.noMessages')}</p>
                   )}
                 </div>
               )}
             </div>
 
             <div
-              className="shrink-0 border-t border-slate-200 bg-white px-4 pt-2"
+              className="shrink-0 border-t border-app-border bg-app-surface px-4 pt-2"
               style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))' }}
             >
               <div className="mx-auto flex max-w-2xl gap-2 pb-1">
-                <label className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50">
+                <label className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text-muted transition-colors hover:bg-app-bg-subtle">
                   <ImagePlus className="h-4 w-4" />
                   <input
                     type="file"
@@ -319,13 +319,13 @@ export default function HelpPage() {
                     }
                   }}
                   placeholder={t('help.placeholder')}
-                  className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  className="flex-1 rounded-2xl border border-app-border px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
                 <button
                   type="button"
                   onClick={() => void handleSend()}
                   disabled={sending || uploadingImage || !text.trim()}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0B2A6B] text-white transition-colors hover:bg-[#071B5E] disabled:opacity-50"
                 >
                   <Send className="h-4 w-4" />
                 </button>

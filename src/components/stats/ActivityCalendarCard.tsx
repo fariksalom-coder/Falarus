@@ -1,12 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Check, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import type { ActivityCalendar } from '../../api/stats';
 import { useLocale } from '../../context/LocaleContext';
-
-const BORDER = 'var(--app-border)';
-const TEXT = 'var(--app-text)';
-const TEXT_SECONDARY = 'var(--app-text-muted)';
-const PRIMARY = 'var(--app-primary)';
 
 const MONTH_NAMES_UZ = [
   'Yanvar',
@@ -23,7 +18,7 @@ const MONTH_NAMES_UZ = [
   'Dekabr',
 ];
 
-const WEEKDAY_LABELS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
+const WEEKDAY_LABELS = ['DU', 'SE', 'CH', 'PA', 'JU', 'SH', 'YA'];
 
 export type ActivityCalendarCardProps = {
   calendar: ActivityCalendar | null;
@@ -34,26 +29,6 @@ export type ActivityCalendarCardProps = {
   onNext: () => void;
   onMonthChange: (year: number, month: number) => void;
 };
-
-function monthSelectOptions(now: Date): { key: string; y: number; m: number; label: string }[] {
-  const list: { key: string; y: number; m: number; label: string }[] = [];
-  let y = now.getFullYear();
-  let mo = now.getMonth() + 1;
-  for (let i = 0; i < 36; i++) {
-    list.push({
-      key: `${y}-${String(mo).padStart(2, '0')}`,
-      y,
-      m: mo,
-      label: `${MONTH_NAMES_UZ[mo - 1]} ${y}`,
-    });
-    mo -= 1;
-    if (mo === 0) {
-      mo = 12;
-      y -= 1;
-    }
-  }
-  return list;
-}
 
 export default function ActivityCalendarCard({
   calendar,
@@ -67,7 +42,7 @@ export default function ActivityCalendarCard({
   const { t } = useLocale();
   const today = new Date().toISOString().split('T')[0];
   const now = useMemo(() => new Date(), []);
-  const monthOptions = useMemo(() => monthSelectOptions(now), [now]);
+  const canGoNext = !(year === now.getFullYear() && month === now.getMonth() + 1);
 
   const cells = useMemo(() => {
     if (!calendar) return [];
@@ -81,72 +56,73 @@ export default function ActivityCalendarCard({
     return grid;
   }, [calendar, year, month]);
 
-  const selectValue = `${year}-${String(month).padStart(2, '0')}`;
+  const monthLabel = MONTH_NAMES_UZ[month - 1] ?? '';
 
   return (
-    <div
-      className="overflow-hidden rounded-[24px] border bg-app-surface shadow-app-card md:rounded-[24px]"
-      style={{ borderColor: BORDER }}
-    >
-      {/* Header — mock: title left, month + arrows right */}
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-3.5 md:px-5" style={{ borderColor: BORDER }}>
-        <h2 className="text-[17px] font-bold tracking-tight md:text-lg" style={{ color: TEXT }}>
-          {t('stats.calendarTitle')}
+    <div className="rounded-[24px] bg-pmn-card p-4 shadow-[0_14px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border sm:p-5">
+      {/* Header: serif title + Iyul pill + arrows */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="profile-heading text-[20px] leading-none text-pmn-text sm:text-[22px]">
+          {t('stats.calendarTitle') || 'Faollik taqvimi'}
         </h2>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-2">
           <label htmlFor="stats-cal-month" className="sr-only">
-            {t('stats.calendarTitle')}
+            {t('stats.calendarTitle') || 'Faollik taqvimi'}
           </label>
-          <select
-            id="stats-cal-month"
-            value={selectValue}
-            disabled={loading}
-            onChange={(e) => {
-              const [yy, mm] = e.target.value.split('-').map(Number);
-              if (Number.isFinite(yy) && Number.isFinite(mm)) onMonthChange(yy, mm);
-            }}
-            className="max-w-[10.5rem] cursor-pointer truncate rounded-xl border bg-app-surface py-2 pl-3 pr-8 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-app-primary/40 md:max-w-[12rem] md:text-sm"
-            style={{ borderColor: BORDER, color: PRIMARY }}
-          >
-            {monthOptions.map((opt) => (
-              <option key={opt.key} value={opt.key}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              id="stats-cal-month"
+              value={`${year}-${String(month).padStart(2, '0')}`}
+              disabled={loading}
+              onChange={(e) => {
+                const [yy, mm] = e.target.value.split('-').map(Number);
+                if (Number.isFinite(yy) && Number.isFinite(mm)) onMonthChange(yy, mm);
+              }}
+              className="appearance-none rounded-[13px] bg-[#0F1B3B] pl-3.5 pr-7 py-1.5 text-[13px] font-black text-white outline-none shadow-[0_6px_14px_-6px_rgba(15,27,59,0.4)]"
+            >
+              {Array.from({ length: 36 }, (_, i) => {
+                let m = now.getMonth() + 1 - i;
+                let y = now.getFullYear();
+                while (m <= 0) { m += 12; y -= 1; }
+                return { key: `${y}-${String(m).padStart(2, '0')}`, y, m, label: `${MONTH_NAMES_UZ[m - 1]} ${y}` };
+              }).map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronRight
+              className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 rotate-90 text-[#D4AC5C]"
+              strokeWidth={2.4}
+            />
+          </div>
           <button
             type="button"
             onClick={onPrev}
             disabled={loading}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface-elevated text-app-text-muted transition-colors hover:bg-[var(--app-row-hover)] disabled:opacity-40"
-            style={{ borderColor: BORDER }}
-            aria-label={t('stats.calendarPrevMonth')}
+            className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-pmn-pill text-pmn-text ring-1 ring-pmn-border transition hover:bg-[#E5E7EB] disabled:opacity-40"
+            aria-label={t('stats.calendarPrevMonth') || 'Oldingi oy'}
           >
-            <ArrowLeft className="h-4 w-4" strokeWidth={2.25} />
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.4} />
           </button>
           <button
             type="button"
             onClick={onNext}
-            disabled={loading || (year === now.getFullYear() && month === now.getMonth() + 1)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface-elevated text-app-text-muted transition-colors hover:bg-[var(--app-row-hover)] disabled:opacity-35"
-            style={{ borderColor: BORDER }}
-            aria-label={t('stats.calendarNextMonth')}
+            disabled={loading || !canGoNext}
+            className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-pmn-pill text-pmn-text ring-1 ring-pmn-border transition hover:bg-[#E5E7EB] disabled:opacity-40"
+            aria-label={t('stats.calendarNextMonth') || 'Keyingi oy'}
           >
-            <ArrowRight className="h-4 w-4" strokeWidth={2.25} />
+            <ChevronRight className="h-4 w-4" strokeWidth={2.4} />
           </button>
         </div>
       </div>
 
-      {/* Weekday row */}
-      <div
-        className="grid grid-cols-7 border-b border-app-border bg-app-bg-subtle px-0 py-2 md:py-2.5"
-        style={{ borderColor: BORDER }}
-      >
+      {/* Weekday header row */}
+      <div className="mt-5 grid grid-cols-7 gap-y-3">
         {WEEKDAY_LABELS.map((d) => (
           <div
             key={d}
-            className="text-center text-[11px] font-semibold uppercase tracking-wide md:text-xs"
-            style={{ color: TEXT_SECONDARY }}
+            className="text-center text-[10.5px] font-bold uppercase tracking-[0.14em] text-pmn-text-soft"
           >
             {d}
           </div>
@@ -155,89 +131,68 @@ export default function ActivityCalendarCard({
 
       {/* Grid */}
       {loading ? (
-        <div className="flex h-40 items-center justify-center">
-          <div
-            className="h-7 w-7 animate-spin rounded-full border-2 border-t-transparent"
-            style={{ borderColor: PRIMARY }}
-          />
+        <div className="mt-4 flex h-40 items-center justify-center">
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#D4AC5C] border-t-transparent" />
         </div>
       ) : (
-        <div className="grid grid-cols-7" style={{ borderColor: BORDER }}>
+        <div className="mt-2 grid grid-cols-7 gap-y-3">
           {cells.map((cell, idx) => {
             if (!cell) {
-              return (
-                <div
-                  key={`empty-${idx}`}
-                  className="min-h-[56px] border-r border-b border-app-border bg-app-bg-subtle/50 md:min-h-[64px]"
-                  style={{ borderColor: BORDER }}
-                />
-              );
+              return <div key={`empty-${idx}`} className="flex h-[52px] items-center justify-center" />;
             }
 
             const { date, status, extra } = cell;
             const dayNum = parseInt(date.split('-')[2], 10);
             const isToday = date === today;
+            const isDone = status === 'done' || status === 'extra';
 
-            let inner: ReactNode = (
-              <span className="h-7 w-7 shrink-0 md:h-8 md:w-8" aria-hidden />
-            );
+            let bubble: ReactNode = null;
 
-            if (status === 'done') {
-              inner = (
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 shadow-sm md:h-8 md:w-8">
-                  <Check className="h-4 w-4 text-white md:h-[18px] md:w-[18px]" strokeWidth={3} aria-hidden />
-                </span>
-              );
-            } else if (status === 'extra') {
-              inner = (
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold leading-none text-white shadow-sm md:h-8 md:w-8 md:text-xs">
-                  +{extra}
-                </span>
-              );
-            } else if (status === 'missed') {
-              inner = (
+            if (isDone) {
+              bubble = (
                 <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-app-border bg-app-bg-subtle md:h-8 md:w-8"
-                  aria-hidden
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#0A1638] shadow-[0_6px_14px_-6px_rgba(212,172,92,0.55)] ${
+                    isToday ? 'ring-2 ring-[#0F1B3B] ring-offset-2 ring-offset-white' : ''
+                  }`}
+                  style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
                 >
-                  <Minus className="h-3.5 w-3.5 text-app-text-muted md:h-4 md:w-4" strokeWidth={2.5} aria-hidden />
+                  {status === 'extra' ? (
+                    <span className="text-[10.5px] font-black">+{extra}</span>
+                  ) : (
+                    <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
+                  )}
                 </span>
+              );
+            } else {
+              // Missed / future / none — dashed circle (empty ring)
+              bubble = (
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed ${
+                    isToday ? 'border-[#0F1B3B]' : 'border-[#D8D6CE]'
+                  }`}
+                  aria-hidden
+                />
               );
             }
 
-            const mutedDayNum =
-              status === 'future' || status === 'none' || status === 'today'
-                ? TEXT_SECONDARY
-                : status === 'missed'
-                  ? TEXT_SECONDARY
-                  : TEXT;
-
-            const cellRing =
-              isToday && status !== 'done' && status !== 'extra'
-                ? 'ring-2 ring-blue-500/90 ring-inset'
-                : '';
+            const dayNumColor = isDone
+              ? '#131F44'
+              : isToday
+                ? '#0F1B3B'
+                : status === 'future' || status === 'none'
+                  ? '#B5AE97'
+                  : '#B5AE97';
+            const dayNumWeight = isDone || isToday ? '900' : '700';
 
             return (
-              <div
-                key={date}
-                className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 border-r border-b border-app-border px-0.5 py-1 md:min-h-[64px] md:gap-1 md:py-1.5 ${cellRing} ${
-                  status === 'done'
-                    ? 'bg-emerald-500/10 dark:bg-emerald-500/15'
-                    : status === 'extra'
-                      ? 'bg-blue-500/10 dark:bg-blue-500/15'
-                      : status === 'missed'
-                        ? 'bg-app-bg-subtle'
-                        : 'bg-transparent'
-                }`}
-                title={date}
-              >
+              <div key={date} className="flex flex-col items-center gap-1">
                 <span
-                  className="text-[12px] font-bold tabular-nums leading-none md:text-[13px]"
-                  style={{ color: mutedDayNum }}
+                  className="text-[13px] leading-none tabular-nums"
+                  style={{ color: dayNumColor, fontWeight: dayNumWeight }}
                 >
                   {dayNum}
                 </span>
-                {inner}
+                {bubble}
               </div>
             );
           })}
@@ -245,26 +200,19 @@ export default function ActivityCalendarCard({
       )}
 
       {/* Legend */}
-      <div
-        className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-app-border bg-app-bg-subtle px-4 py-3 md:gap-x-6 md:px-5 md:py-3.5"
-      >
-        <span className="flex items-center gap-2 text-[11px] font-medium md:text-xs" style={{ color: TEXT_SECONDARY }}>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500">
-            <Check className="h-3 w-3 text-white" strokeWidth={3} aria-hidden />
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-pmn-border pt-4">
+        <span className="flex items-center gap-2 text-[11.5px] font-bold text-pmn-text">
+          <span
+            className="flex h-6 w-6 items-center justify-center rounded-full text-[#0A1638]"
+            style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+          >
+            <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
           </span>
-          {t('stats.calendarLegendOnce')}
+          Faol kun
         </span>
-        <span className="flex items-center gap-2 text-[11px] font-medium md:text-xs" style={{ color: TEXT_SECONDARY }}>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-            +2
-          </span>
-          {t('stats.calendarLegendMulti')}
-        </span>
-        <span className="flex items-center gap-2 text-[11px] font-medium md:text-xs" style={{ color: TEXT_SECONDARY }}>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-dashed border-app-border bg-app-bg-subtle">
-            <Minus className="h-3 w-3 text-app-text-muted" strokeWidth={2.5} aria-hidden />
-          </span>
-          {t('stats.calendarLegendMissed')}
+        <span className="flex items-center gap-2 text-[11.5px] font-bold text-pmn-text-soft">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-[#D8D6CE]" />
+          O'tkazilgan
         </span>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { requestPasswordReset } from '../api/auth';
 import { AuthButton } from '../components/auth/AuthButton';
 import { AuthFormBanner } from '../components/auth/AuthFormBanner';
 import { AuthGap, AuthPageScaffold, AuthScrollBody } from '../components/auth/AuthPageScaffold';
-import { AuthSectionTitle } from '../components/auth/AuthSectionTitle';
+import { AuthHero } from '../components/auth/AuthHero';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { EMAIL_REGEX } from '../constants/authStrings';
 import { useLocale } from '../context/LocaleContext';
@@ -55,8 +55,8 @@ export default function ForgotPasswordPage() {
     <AuthPageScaffold>
       <AuthScrollBody>
         <div className="flex flex-col pb-6">
-          <AuthSectionTitle
-            title={phase === 'form' ? t('auth.resetTitle') : t('auth.resetSuccessTitle')}
+          <AuthHero
+            title={phase === 'form' ? `${t('auth.resetTitle')} 🔑` : `${t('auth.resetSuccessTitle')} ✉️`}
             subtitle={phase === 'form' ? t('auth.resetSubtitle') : t('auth.resetSuccessSubtitle')}
             onBack={() => (phase === 'form' ? navigate('/login') : setPhase('form'))}
           />

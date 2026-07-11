@@ -18,7 +18,7 @@ export function LegalDocShell({ title, children }: { title: string; children: Re
             <ArrowLeft className="h-4 w-4 shrink-0" />
             {t('common.back')}
           </button>
-          <Link to="/" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+          <Link to="/" className="text-sm font-semibold text-[#0B2A6B] hover:text-[#071B5E]">
             FalaRus
           </Link>
         </div>

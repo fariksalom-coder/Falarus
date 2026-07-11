@@ -19,6 +19,8 @@ import {
   Volume2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { fetchStreak, getCachedStreak } from '../api/activity';
+import { fetchLeaderboard } from '../api/leaderboard';
 import { useTheme } from '../context/ThemeContext';
 import { useTextScale } from '../context/TextScaleContext';
 import { useAccess } from '../context/AccessContext';
@@ -60,11 +62,25 @@ export default function ProfilePage() {
   const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
+  const [streakDays, setStreakDays] = useState(() => getCachedStreak()?.streak_days ?? 0);
+  const [points, setPoints] = useState(0);
 
   useEffect(() => {
     setFirstName(user?.firstName ?? '');
     setLastName(user?.lastName ?? '');
   }, [user?.firstName, user?.lastName]);
+
+  useEffect(() => {
+    if (!token) return;
+    void fetchStreak(token).then((res) => {
+      if (res) setStreakDays(res.streak_days);
+    });
+    void fetchLeaderboard(token, 'all').then((res) => {
+      setPoints(res.myRank?.points ?? 0);
+    });
+  }, [token]);
+
+  const level = Math.floor(points / 500) + 1;
 
   if (user?.accountType === 'teacher') {
     return <Navigate to="/teacher-cabinet" replace />;
@@ -138,133 +154,208 @@ export default function ProfilePage() {
     navigate('/auth');
   }
 
+  const memberSince = new Date().getFullYear();
+  const memberInitials = (
+    (user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')
+  ).toUpperCase() || 'FR';
+  const membershipCode = `${memberInitials.slice(0, 2)} · ${memberSince}`;
+  const formattedPoints = points.toLocaleString('ru-RU').replace(/,/g, ' ');
+
   return (
     <div
-      className="min-h-full bg-app-bg px-4 pt-2"
+      className="profile-premium min-h-full px-4 pt-2"
       style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}
     >
       <main className="mx-auto w-full max-w-[820px]">
         <header className="mb-4 px-0.5">
-          <h1 className="text-[28px] font-extrabold tracking-tight text-app-text">{t('nav.profile')}</h1>
+          <h1 className="profile-heading text-[30px] leading-none text-pmn-text">
+            {t('nav.profile')}
+          </h1>
         </header>
 
         {banner ? (
           <div
-            className={`mb-4 rounded-xl px-4 py-3 text-sm font-semibold ${
+            className={`mb-4 rounded-[16px] px-4 py-3 text-sm font-semibold ring-1 ${
               banner.kind === 'ok'
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-                : 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300'
+                ? 'bg-[#E8F5EC] text-[#1F6B3F] ring-[#BFDFC8]'
+                : 'bg-[#FDECEC] text-[#8A1F1F] ring-[#F1BEBE]'
             }`}
           >
             {banner.text}
           </div>
         ) : null}
 
-        <section className="mb-6 flex flex-col items-center rounded-[24px] border border-app-border bg-app-surface px-5 py-6 shadow-app-card">
-          <label
-            htmlFor={avatarInputId}
-            className={`relative flex h-[88px] w-[88px] cursor-pointer items-center justify-center rounded-full ring-2 ring-app-border ring-offset-2 ring-offset-app-surface ${
-              uploadingAvatar ? 'pointer-events-none opacity-60' : ''
-            }`}
-            aria-label="Profil rasmini tanlash"
-          >
-            <UserAvatar
-              avatarUrl={localPreviewUrl ?? avatarDisplayUrl(user?.avatarUrl)}
-              gender={user?.gender ?? null}
-              name={fullName}
-              className="h-[88px] w-[88px]"
-            />
-            <span className="pointer-events-none absolute bottom-0.5 right-0.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-app-surface bg-app-primary text-white shadow-md">
-              {uploadingAvatar ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <Camera className="h-3.5 w-3.5" aria-hidden />
-              )}
+        {/* Passport-navy hero with gold guilloché */}
+        <section className="profile-guilloche relative mb-4 overflow-hidden rounded-[24px] px-5 py-5 text-white shadow-[0_22px_44px_-18px_rgba(15,27,59,0.55)]">
+          {/* Top row: OLTIN A'ZO pill + member code */}
+          <div className="relative z-[2] flex items-center justify-between">
+            <span className="profile-gold-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em]">
+              <span aria-hidden>✦</span>
+              <span>Oltin a'zo</span>
             </span>
-            <input
-              id={avatarInputId}
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-              onChange={handlePickAvatar}
-              disabled={uploadingAvatar}
-            />
-          </label>
-          <p className="mt-3 text-[13px] font-medium text-app-icon-fg">{t('profile.tapPhoto')}</p>
+            <span className="profile-heading text-[13px] tracking-[0.28em] text-[#D4AC5C]">
+              {membershipCode}
+            </span>
+          </div>
 
-          {editingName ? (
-            <div className="mt-4 w-full max-w-sm space-y-3">
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-app-text-muted">{t('profile.firstName')}</span>
-                <input
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 text-[15px] font-medium text-app-text outline-none focus:border-app-primary focus:ring-2 focus:ring-app-primary/20"
-                  autoComplete="given-name"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-app-text-muted">{t('profile.lastName')}</span>
-                <input
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 text-[15px] font-medium text-app-text outline-none focus:border-app-primary focus:ring-2 focus:ring-app-primary/20"
-                  autoComplete="family-name"
-                />
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleSaveName()}
-                  disabled={savingName}
-                  className="flex h-10 flex-1 items-center justify-center rounded-xl bg-app-primary text-sm font-bold text-white disabled:opacity-50"
-                >
-                  {savingName ? '...' : t('profile.save')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingName(false);
-                    setFirstName(user?.firstName ?? '');
-                    setLastName(user?.lastName ?? '');
-                  }}
-                  className="flex h-10 items-center justify-center rounded-xl border border-app-border px-4 text-sm font-semibold text-app-text-muted"
-                >
-                  {t('profile.cancel')}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setEditingName(true)}
-              className="mt-3 flex items-center gap-2 text-center"
+          {/* Avatar + name + course line */}
+          <div className="relative z-[2] mt-4 flex items-center gap-4">
+            <label
+              htmlFor={avatarInputId}
+              className={`relative flex h-[76px] w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-full ring-2 ring-[#D4AC5C] ring-offset-2 ring-offset-[#0F1B3B] ${
+                uploadingAvatar ? 'pointer-events-none opacity-60' : ''
+              }`}
+              aria-label="Profil rasmini tanlash"
             >
-              <h2 className="text-[20px] font-extrabold text-app-text">{fullName}</h2>
-              <Pencil className="h-4 w-4 text-app-text-muted" aria-hidden />
-            </button>
-          )}
+              <UserAvatar
+                avatarUrl={localPreviewUrl ?? avatarDisplayUrl(user?.avatarUrl)}
+                gender={user?.gender ?? null}
+                name={fullName}
+                className="h-[72px] w-[72px]"
+              />
+              <span className="pointer-events-none absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0F1B3B] bg-[#D4AC5C] text-[#0F1B3B] shadow-md">
+                {uploadingAvatar ? (
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#0F1B3B] border-t-transparent" />
+                ) : (
+                  <Camera className="h-3 w-3" aria-hidden strokeWidth={2.4} />
+                )}
+              </span>
+              <input
+                id={avatarInputId}
+                type="file"
+                accept="image/*"
+                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                onChange={handlePickAvatar}
+                disabled={uploadingAvatar}
+              />
+            </label>
 
-          <div className="mt-5 flex w-full justify-center">
-            {showActivePremium ? (
-              <div className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#FFC425] px-5 text-[#0F172A]">
-                <Crown className="h-4 w-4 fill-[#0F172A]" aria-hidden />
-                <span className="text-sm font-extrabold">
-                  {t('profile.premiumDaysLeft', { days: premiumDays })}
-                </span>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => navigate('/tariflar')}
-                className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-app-primary px-6 text-white shadow-[0_8px_24px_rgba(37,99,235,0.28)] active:scale-[0.98]"
-              >
-                <Crown className="h-4 w-4" aria-hidden />
-                <span className="text-sm font-extrabold">{t('profile.premiumBuy')}</span>
-              </button>
-            )}
+            <div className="min-w-0 flex-1">
+              {editingName ? (
+                <div className="space-y-2">
+                  <input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder={t('profile.firstName')}
+                    className="h-10 w-full rounded-[10px] border border-white/20 bg-white/10 px-3 text-[15px] font-bold text-white placeholder:text-white/50"
+                    autoComplete="given-name"
+                  />
+                  <input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder={t('profile.lastName')}
+                    className="h-10 w-full rounded-[10px] border border-white/20 bg-white/10 px-3 text-[15px] font-bold text-white placeholder:text-white/50"
+                    autoComplete="family-name"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveName()}
+                      disabled={savingName}
+                      className="profile-gold-pill flex h-9 flex-1 items-center justify-center rounded-full text-xs font-black disabled:opacity-50"
+                    >
+                      {savingName ? '...' : t('profile.save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingName(false);
+                        setFirstName(user?.firstName ?? '');
+                        setLastName(user?.lastName ?? '');
+                      }}
+                      className="flex h-9 items-center justify-center rounded-full border border-white/25 px-4 text-xs font-bold text-white"
+                    >
+                      {t('profile.cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setEditingName(true)}
+                    className="flex items-center gap-2 text-left"
+                  >
+                    <h2 className="profile-heading text-[24px] leading-tight text-white sm:text-[26px]">
+                      {fullName}
+                    </h2>
+                    <Pencil className="h-3.5 w-3.5 text-[#D4AC5C]/80" aria-hidden />
+                  </button>
+                  <p className="mt-1 text-[12.5px] font-bold text-[#D4AC5C]">
+                    ВНЖ kursi · B1 daraja
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Gold divider */}
+          <div className="relative z-[2] mt-5 h-px w-full bg-gradient-to-r from-transparent via-[#D4AC5C]/40 to-transparent" />
+
+          {/* 3 stats row */}
+          <div className="relative z-[2] mt-4 grid grid-cols-3 gap-3">
+            <div>
+              <p className="profile-heading text-[26px] leading-none text-white">{streakDays}</p>
+              <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#D4AC5C]">
+                Seriya
+              </p>
+            </div>
+            <div className="border-x border-[#D4AC5C]/25 px-3">
+              <p className="profile-heading text-[26px] leading-none text-white">{level}</p>
+              <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#D4AC5C]">
+                Daraja
+              </p>
+            </div>
+            <div>
+              <p className="profile-heading text-[26px] leading-none text-white">{formattedPoints}</p>
+              <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#D4AC5C]">
+                Ball
+              </p>
+            </div>
           </div>
         </section>
+
+        {/* Premium sotib olish / status tile */}
+        {showActivePremium ? (
+          <div className="mb-6 flex items-center gap-3 rounded-[20px] bg-pmn-card px-4 py-3.5 shadow-[0_12px_24px_-14px_rgba(184,135,58,0.35)] ring-1 ring-pmn-border">
+            <span
+              aria-hidden
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[20px]"
+              style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+            >
+              👑
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-black text-pmn-text">
+                {t('profile.premiumDaysLeft', { days: premiumDays })}
+              </p>
+              <p className="mt-0.5 text-[12px] font-bold text-pmn-text-muted">
+                Premium a'zolik faol
+              </p>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => navigate('/tariflar')}
+            className="mb-6 flex w-full items-center gap-3 rounded-[20px] bg-pmn-card px-4 py-3.5 text-left shadow-[0_12px_24px_-14px_rgba(184,135,58,0.35)] ring-1 ring-pmn-border transition hover:-translate-y-0.5 active:scale-[0.995]"
+          >
+            <span
+              aria-hidden
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[20px]"
+              style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+            >
+              👑
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-black text-pmn-text">Premium sotib olish</p>
+              <p className="mt-0.5 text-[12px] font-bold text-pmn-text-muted">
+                Barcha kurslar va imtihonlar
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-pmn-gold-deep" strokeWidth={2.4} />
+          </button>
+        )}
 
         <ProfileGroup title={t('profile.groups.personal')}>
           <ProfileRow icon={<UserCircle />} label={t('profile.rows.profile')} onClick={() => navigate('/profile/settings')} />
@@ -324,11 +415,11 @@ export default function ProfilePage() {
 
 function ProfileGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-6">
-      <h3 className="mb-2 px-2 text-[11px] font-bold uppercase tracking-[0.14em] text-app-icon-fg">
+    <section className="mt-5">
+      <h3 className="mb-2.5 px-1 text-[10.5px] font-bold uppercase tracking-[0.24em] text-pmn-text-soft">
         {title}
       </h3>
-      <div className="overflow-hidden rounded-[24px] border border-app-border bg-app-surface shadow-app-card">
+      <div className="overflow-hidden rounded-[22px] bg-pmn-card shadow-[0_12px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border">
         {children}
       </div>
     </section>
@@ -355,20 +446,22 @@ function ProfileRow({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className={`relative w-full text-left transition-colors hover:bg-[var(--app-row-hover)] active:bg-[var(--app-row-active)] after:absolute after:bottom-0 after:left-5 after:right-5 after:h-px after:bg-app-border-row last:after:hidden ${
-        danger ? 'text-red-600 dark:text-red-400' : 'text-app-text'
+      className={`relative w-full text-left transition-colors hover:bg-app-row-hover active:bg-app-row-active after:absolute after:bottom-0 after:left-5 after:right-5 after:h-px after:bg-pmn-cream-border last:after:hidden ${
+        danger ? 'text-[#B4282E]' : 'text-pmn-text'
       }`}
     >
-      <span className="flex min-h-[64px] w-full items-center gap-3.5 px-5 py-2">
+      <span className="flex min-h-[62px] w-full items-center gap-3.5 px-4 py-2">
         <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-            danger ? 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400' : 'bg-app-icon-bg text-app-icon-fg'
-          } [&>svg]:h-5 [&>svg]:w-5`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-pmn-pill ${
+            danger
+              ? 'bg-[#FDECEC] text-[#B4282E] ring-1 ring-[#F1BEBE]'
+              : 'text-pmn-text ring-1 ring-pmn-border'
+          } [&>svg]:h-[18px] [&>svg]:w-[18px]`}
         >
           {icon}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[15px] font-semibold leading-tight">{label}</span>
-        {trailing ?? <ChevronRight className="h-5 w-5 shrink-0 text-app-text-muted" aria-hidden />}
+        <span className="min-w-0 flex-1 truncate text-[15px] font-bold leading-tight">{label}</span>
+        {trailing ?? <ChevronRight className="h-4 w-4 shrink-0 text-pmn-text-muted" strokeWidth={2.4} aria-hidden />}
       </span>
     </button>
   );

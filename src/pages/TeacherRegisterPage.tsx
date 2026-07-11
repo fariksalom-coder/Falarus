@@ -43,11 +43,11 @@ export default function TeacherRegisterPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10">
       <form onSubmit={handleSubmit} className="w-full max-w-md rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-700 text-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#071B5E] text-white">
             <GraduationCap className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm font-bold text-blue-700">FalaRus</p>
+            <p className="text-sm font-bold text-[#071B5E]">FalaRus</p>
             <h1 className="text-2xl font-black text-slate-950">O'qituvchi ro'yxatdan o'tishi</h1>
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function TeacherRegisterPage() {
         <button
           type="submit"
           disabled={submitting || !firstName.trim() || !lastName.trim() || !identifier.trim() || password.length < 6}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-black text-white disabled:opacity-50"
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#071B5E] px-5 py-3 font-black text-white disabled:opacity-50"
         >
           <UserPlus className="h-5 w-5" />
           {submitting ? 'Yaratilmoqda...' : "O'qituvchi hisobini yaratish"}
@@ -72,7 +72,7 @@ export default function TeacherRegisterPage() {
 
         <p className="mt-5 text-center text-sm font-semibold text-slate-600">
           Hisobingiz bormi?{' '}
-          <Link to="/teacher-login" className="text-blue-700">
+          <Link to="/teacher-login" className="text-[#071B5E]">
             Kirish
           </Link>
         </p>
@@ -104,7 +104,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         autoComplete={autoComplete}
-        className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-950 outline-none focus:border-blue-600"
+        className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-950 outline-none focus:border-[#0B2A6B]"
       />
     </label>
   );

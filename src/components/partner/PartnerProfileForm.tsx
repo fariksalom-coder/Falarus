@@ -176,7 +176,7 @@ export default function PartnerProfileForm({
               onClick={() => setGoal(g.value)}
               className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition-all ${
                 goal === g.value
-                  ? 'border-app-primary bg-app-primary/12 text-app-primary shadow-[0_2px_12px_rgba(37,99,235,0.15)]'
+                  ? 'border-app-primary bg-app-primary/12 text-app-primary shadow-[0_2px_12px_rgba(11,42,107,0.15)]'
                   : 'border-app-border bg-app-surface-elevated text-app-text-muted hover:border-app-primary/35'
               }`}
             >
@@ -206,7 +206,7 @@ export default function PartnerProfileForm({
       <button
         type="submit"
         disabled={saving || !displayName.trim() || !age || !gender || !level || !goal}
-        className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(37,99,235,0.3)] transition-all hover:shadow-[0_12px_32px_rgba(37,99,235,0.4)] disabled:opacity-50 disabled:shadow-none"
+        className="w-full rounded-2xl bg-gradient-to-r from-[#123A8F] to-[#0B2A6B] px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(11,42,107,0.3)] transition-all hover:shadow-[0_12px_32px_rgba(11,42,107,0.4)] disabled:opacity-50 disabled:shadow-none"
       >
         {saving ? t('common.saving') : t('common.save')}
       </button>

@@ -10,7 +10,7 @@ export function AuthPageScaffold({ children, className = '' }: Props) {
   return (
     <div
       className={[
-        'min-h-[100dvh] bg-white text-[#0F172A]',
+        'auth-theme min-h-[100dvh] bg-white text-[#17224A]',
         'pt-[max(0px,env(safe-area-inset-top))]',
         'pb-[max(0px,env(safe-area-inset-bottom))]',
         className,
@@ -18,7 +18,7 @@ export function AuthPageScaffold({ children, className = '' }: Props) {
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-4 sm:px-5 md:max-w-md lg:max-w-lg">
+      <div className="mx-auto flex min-h-[100dvh] w-full flex-col md:max-w-md lg:max-w-lg">
         {children}
       </div>
     </div>
@@ -31,7 +31,7 @@ type ScrollProps = {
 
 export function AuthScrollBody({ children }: ScrollProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain py-2 [-webkit-overflow-scrolling:touch]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 sm:px-5 [-webkit-overflow-scrolling:touch]">
       {children}
     </div>
   );

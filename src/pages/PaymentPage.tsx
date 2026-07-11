@@ -56,10 +56,10 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       type="button"
       onClick={copy}
       aria-label={label}
-      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
+      className="inline-flex items-center gap-1.5 rounded-[9px] border border-[#DCE6F3] bg-pmn-card px-[10px] py-[5px] text-[11px] font-extrabold text-[#0B2A6B] transition hover:bg-[#EEF3FF]"
     >
-      <Copy className="h-4 w-4 shrink-0" />
-      {copied ? t('common.copied') : t('common.copy')}
+      <Copy className="h-3.5 w-3.5 shrink-0" />
+      {copied ? (t('common.copied') || 'Nusxalandi') : 'Nusxa'}
     </button>
   );
 }
@@ -260,8 +260,8 @@ export default function PaymentPage() {
   // ——— Pending payment: block duplicate ———
   if (!paymentsLoading && hasPendingPayment && !success) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 text-center">
+      <div className="min-h-screen bg-app-bg flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-pmn-card rounded-2xl shadow-xl shadow-slate-200/50 p-8 text-center">
           <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="h-10 w-10 text-amber-600" />
           </div>
@@ -277,7 +277,7 @@ export default function PaymentPage() {
             type="button"
             onClick={() => navigate(afterPayPath)}
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
-            style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
+            style={{ backgroundColor: '#EEF3FF', borderColor: '#0B2A6B', color: '#0B2A6B' }}
           >
             {isTeacherListing ? t('payment.backCabinet') : isTeacherTrial ? t('payment.backTeacher') : t('payment.backProfile')}
           </button>
@@ -289,8 +289,8 @@ export default function PaymentPage() {
   // ——— Success screen after submit ———
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 text-center">
+      <div className="min-h-screen bg-app-bg flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-pmn-card rounded-2xl shadow-xl shadow-slate-200/50 p-8 text-center">
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="h-10 w-10 text-emerald-600" />
           </div>
@@ -306,7 +306,7 @@ export default function PaymentPage() {
             type="button"
             onClick={() => navigate(afterPayPath)}
             className="w-full rounded-xl py-4 text-lg font-semibold text-white border-2 transition-colors hover:opacity-90"
-            style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
+            style={{ backgroundColor: '#EEF3FF', borderColor: '#0B2A6B', color: '#0B2A6B' }}
           >
             {isTeacherListing ? t('payment.backCabinet') : isTeacherTrial ? t('payment.backTeacher') : t('payment.backProfile')}
           </button>
@@ -317,53 +317,57 @@ export default function PaymentPage() {
 
   // ——— Main payment form ———
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
-      <div className="mx-auto max-w-xl px-4 pt-6 sm:pt-8">
-        <button
-          type="button"
-          onClick={() => navigate(backPath)}
-          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium mb-8"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          {t('common.back')}
-        </button>
+    <div className="min-h-screen bg-app-bg pb-24">
+      <div className="mx-auto max-w-xl px-[18px] pt-2 sm:pt-4">
+        {/* Header: back-tile + "To'lov" */}
+        <div className="mb-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(backPath)}
+            className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-app-border bg-app-surface text-[#7FA8FF]"
+            aria-label={t('common.back')}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-[18px] font-extrabold text-app-text">To'lov</h1>
+        </div>
 
-        {/* Payment amount — light blue block */}
+        {/* Payment amount — navy gradient block */}
         <section
-          className="rounded-2xl border-2 shadow-sm p-6 mb-6"
-          style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF' }}
+          className="mb-4 rounded-[20px] border border-app-border p-[18px] text-white shadow-[0_16px_34px_-14px_rgba(0,0,0,0.5)]"
+          style={{ background: 'linear-gradient(150deg, #12296B, #0A1738)' }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 mb-1">{t('payment.amountTitle')}</h2>
-              <p className="text-slate-600 text-sm mb-1">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[14px] font-extrabold">{t('payment.amountTitle')}</p>
+              <p className="mt-1.5 text-[12px] font-semibold text-[#AEBEE4]">
                 {isRussianCourse
                   ? `${t('payment.tariff')}: ${tariffLabel}`
                   : isTeacherListing || isTeacherTrial
                     ? `${t('payment.service')}: ${productLabel}`
                     : `${t('payment.course')}: ${productLabel}`}
               </p>
-              <p className="text-slate-600 text-sm">{t('payment.payExact')}</p>
+              <p className="mt-0.5 text-[12px] font-semibold text-[#AEBEE4]">{t('payment.payExact')}</p>
             </div>
-            <div className="sm:text-right">
+            <div className="shrink-0 text-right">
               {detailsLoading ? (
-                <div
-                  className="h-12 w-28 rounded-lg animate-pulse"
-                  style={{ backgroundColor: 'rgba(76, 111, 255, 0.2)' }}
-                />
+                <div className="h-[42px] w-24 rounded-lg animate-pulse bg-white/10" />
               ) : price != null ? (
-                <p className="text-2xl sm:text-3xl font-bold text-slate-900">
-                  {formatAmount(price, currency)}
+                <p className="text-[24px] font-extrabold leading-none">
+                  {formatAmount(price, currency).split(' ')[0]}
+                  <span className="ml-1 block mt-1 text-[13px] font-bold text-[#AEBEE4]">
+                    {formatAmount(price, currency).split(' ').slice(1).join(' ')}
+                  </span>
                 </p>
               ) : (
-                <p className="text-2xl font-bold text-slate-400">—</p>
+                <p className="text-[24px] font-extrabold text-white/50">—</p>
               )}
             </div>
           </div>
         </section>
 
         {isTeacherTrial ? (
-          <p className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900">
+          <p className="mb-4 rounded-xl border border-[#EAEFF7] bg-[#F5F7FB] px-4 py-3 text-sm font-semibold text-[#5B678A]">
             {currency === 'RUB'
               ? t('payment.teacherTrialRubHint')
               : t('payment.teacherTrialUzsHint', { amount: getTeacherTrialPriceUzs().toLocaleString('uz-UZ') })}
@@ -371,27 +375,23 @@ export default function PaymentPage() {
         ) : null}
 
         {/* 3. Payment details card with icons */}
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-5">{t('payment.detailsTitle')}</h2>
+        <section className="mb-4 rounded-[20px] border border-app-border bg-app-surface p-4">
+          <h2 className="mb-3 text-[14px] font-extrabold text-app-text">To'lov rekvizitlari</h2>
           {detailsLoading ? (
-            <div className="space-y-5 animate-pulse">
+            <div className="space-y-3 animate-pulse">
               {[1, 2, 3].map((i) => (
-                <div key={i}>
-                  <div className="h-4 bg-slate-200 rounded w-28 mb-2" />
-                  <div className="h-10 bg-slate-100 rounded-xl" />
-                </div>
+                <div key={i} className="h-14 rounded-xl bg-app-bg-subtle" />
               ))}
             </div>
           ) : (
             paymentMethod && (
-              <div className="space-y-5">
-                <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
-                  <div className="flex items-center gap-2 text-slate-600 mb-2">
-                    <CreditCard className="h-4 w-4" />
-                    <span className="text-sm font-medium">{t('payment.cardNumber')}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-slate-900 text-lg">
+              <div className="space-y-2.5">
+                <div className="rounded-[14px] border border-[#EAEFF7] bg-[#F5F7FB] p-3">
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold text-app-text-muted">
+                    <CreditCard className="h-3.5 w-3.5" /> {t('payment.cardNumber')}
+                  </p>
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <span className="font-mono text-[16px] font-bold text-app-text">
                       {formatCardDisplay(paymentMethod.card_number)}
                     </span>
                     <CopyButton
@@ -400,27 +400,27 @@ export default function PaymentPage() {
                     />
                   </div>
                 </div>
-                <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
-                  <div className="flex items-center gap-2 text-slate-600 mb-2">
-                    <Smartphone className="h-4 w-4" />
-                    <span className="text-sm font-medium">{t('payment.phoneNumber')}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-slate-900">
-                      {paymentMethod.phone_number || '—'}
-                    </span>
-                    {paymentMethod.phone_number && (
+                {paymentMethod.phone_number ? (
+                  <div className="rounded-[14px] border border-[#EAEFF7] bg-[#F5F7FB] p-3">
+                    <p className="flex items-center gap-1.5 text-[11px] font-bold text-app-text-muted">
+                      <Smartphone className="h-3.5 w-3.5" /> {t('payment.phoneNumber')}
+                    </p>
+                    <div className="mt-1.5 flex items-center justify-between gap-2">
+                      <span className="font-mono text-[14px] font-bold text-app-text">
+                        {paymentMethod.phone_number}
+                      </span>
                       <CopyButton text={paymentMethod.phone_number} label={t('payment.phoneCopy')} />
-                    )}
+                    </div>
                   </div>
-                </div>
-                <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
-                  <div className="flex items-center gap-2 text-slate-600 mb-2">
-                    <User className="h-4 w-4" />
-                    <span className="text-sm font-medium">{t('payment.cardHolder')}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-slate-900">{paymentMethod.card_holder_name}</span>
+                ) : null}
+                <div className="rounded-[14px] border border-[#EAEFF7] bg-[#F5F7FB] p-3">
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold text-app-text-muted">
+                    <User className="h-3.5 w-3.5" /> {t('payment.cardHolder')}
+                  </p>
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <span className="text-[14px] font-bold text-app-text">
+                      {paymentMethod.card_holder_name}
+                    </span>
                     <CopyButton text={paymentMethod.card_holder_name} label={t('payment.nameCopy')} />
                   </div>
                 </div>
@@ -430,12 +430,12 @@ export default function PaymentPage() {
         </section>
 
         {/* File upload */}
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <div className="flex items-center gap-2 text-slate-800 mb-1">
-            <Paperclip className="h-5 w-5 text-slate-500" />
-            <h2 className="text-lg font-semibold">{t('payment.uploadTitle')}</h2>
+        <section className="mb-4 rounded-[20px] border border-app-border bg-app-surface p-4">
+          <div className="mb-1 flex items-center gap-2 text-app-text">
+            <Paperclip className="h-4 w-4 text-app-text-muted" />
+            <h2 className="text-[14px] font-extrabold">To'lov chekini yuklash</h2>
           </div>
-          <p className="text-sm text-slate-500 mb-4">
+          <p className="mb-3 text-[12px] font-semibold text-app-text-muted">
             {t('payment.uploadFormats')}
           </p>
           <div
@@ -445,10 +445,11 @@ export default function PaymentPage() {
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
-            className={`rounded-xl border-2 border-dashed p-8 text-center transition-all ${
-              dragOver ? 'bg-[#EEF4FF]/50' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
-            }`}
-            style={dragOver ? { borderColor: '#4C6FFF' } : undefined}
+            className="rounded-[16px] border-2 border-dashed p-6 text-center transition-all"
+            style={{
+              background: '#F7F9FE',
+              borderColor: dragOver ? '#0B2A6B' : '#C4D6EC',
+            }}
           >
             <input
               type="file"
@@ -458,14 +459,14 @@ export default function PaymentPage() {
               id="payment-file"
             />
             {file ? (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <div className="flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
-                  <CheckCircle className="h-8 w-8 text-emerald-600 shrink-0" />
+              <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <div className="flex items-center gap-3 rounded-[14px] border border-[#ABEBC8] bg-[#E6F7EC] px-4 py-3">
+                  <CheckCircle className="h-7 w-7 shrink-0 text-[#12A150]" />
                   <div className="text-left">
-                    <p className="font-medium text-emerald-800">
+                    <p className="text-sm font-bold text-[#12813F]">
                       ✓ {file.name} {t('payment.uploaded')}
                     </p>
-                    <p className="text-xs text-emerald-600">
+                    <p className="text-xs font-semibold text-[#12813F]/80">
                       {(file.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
@@ -473,7 +474,7 @@ export default function PaymentPage() {
                 <button
                   type="button"
                   onClick={removeFile}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  className="inline-flex items-center gap-2 rounded-[14px] border border-[#DCE6F3] bg-pmn-card px-4 py-2 text-sm font-bold text-app-text-muted"
                 >
                   <X className="h-4 w-4" />
                   {t('payment.chooseAnotherFile')}
@@ -481,19 +482,19 @@ export default function PaymentPage() {
               </div>
             ) : (
               <label htmlFor="payment-file" className="cursor-pointer block">
-                <Upload className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                <p className="text-slate-600 font-medium">
+                <div className="text-[30px]">⬆️</div>
+                <p className="mt-2 text-[13.5px] font-bold text-app-text-muted">
                   {t('payment.selectOrDrop')}
                 </p>
               </label>
             )}
           </div>
           {error && (
-            <p className="mt-3 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+            <p className="mt-3 rounded-lg bg-[rgba(240,101,106,0.12)] px-3 py-2 text-sm font-semibold text-[#F0656A]">{error}</p>
           )}
         </section>
 
-        <section className="mb-6">
+        <section className="mb-4">
           <PaymentLegalConsentCheckbox
             idPrefix="manual-payment"
             checked={legalAccepted}
@@ -501,13 +502,12 @@ export default function PaymentPage() {
           />
         </section>
 
-        {/* Submit button — light blue bg, blue border */}
+        {/* Submit button */}
         <button
           type="button"
           onClick={handleSubmit}
           disabled={!file || submitting || !legalAccepted}
-          className="w-full rounded-xl py-4 text-lg font-semibold border-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.99] hover:opacity-90"
-          style={{ backgroundColor: '#EEF4FF', borderColor: '#4C6FFF', color: '#4C6FFF' }}
+          className="w-full rounded-[15px] bg-app-primary py-[15px] text-base font-extrabold text-white shadow-app-nav-btn disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
         >
           {submitting ? t('payment.submitting') : t('payment.submit')}
         </button>
@@ -515,7 +515,7 @@ export default function PaymentPage() {
         <button
           type="button"
           onClick={() => navigate(backPath)}
-          className="w-full mt-4 text-slate-500 hover:text-slate-700 text-sm font-medium flex items-center justify-center gap-1"
+          className="mt-4 flex w-full items-center justify-center gap-1 text-sm font-semibold text-app-text-muted"
         >
           <ChevronRight className="h-4 w-4 rotate-180" />
           {t('payment.back')}

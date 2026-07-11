@@ -23,13 +23,13 @@ export default function KunlikFreeLimitCta() {
         animate={{
           scale: [1, 1.03, 1],
           boxShadow: [
-            '0 14px 34px rgba(37,99,235,0.22)',
-            '0 18px 44px rgba(37,99,235,0.38)',
-            '0 14px 34px rgba(37,99,235,0.22)',
+            '0 14px 34px rgba(11,42,107,0.22)',
+            '0 18px 44px rgba(11,42,107,0.38)',
+            '0 14px 34px rgba(11,42,107,0.22)',
           ],
         }}
         transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-        className="min-h-[52px] w-full rounded-2xl bg-blue-600 px-4 py-3.5 text-center text-[15px] font-extrabold text-white"
+        className="min-h-[52px] w-full rounded-2xl bg-[#0B2A6B] px-4 py-3.5 text-center text-[15px] font-extrabold text-white"
       >
         {t('kunlik.continueCta')}
       </motion.button>

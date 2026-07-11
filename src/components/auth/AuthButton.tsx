@@ -1,7 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-type Variant = 'primary' | 'primaryDark' | 'secondary';
+type Variant = 'primary' | 'primaryDark' | 'secondary' | 'success';
 
 type Props = {
   label: string;
@@ -26,14 +26,16 @@ export function AuthButton({
 }: Props) {
   const isDisabled = disabled || loading || (type === 'button' && !onClick);
 
-  const bg =
-    isDisabled && (variant === 'primary' || variant === 'primaryDark')
-      ? 'bg-[#A5A8D4]'
+  const classes =
+    isDisabled && (variant === 'primary' || variant === 'primaryDark' || variant === 'success')
+      ? 'bg-[#B9C1D8] text-white shadow-none'
       : variant === 'secondary'
-        ? 'bg-white border-[1.2px] border-[#1E3A8A] text-[#1E3A8A]'
-        : 'bg-[#1E3A8A] text-white';
+        ? 'bg-white text-[#2F6BFF] border-[2px] border-[#E1E7F1]'
+        : variant === 'success'
+          ? 'bg-[#18B45C] text-white shadow-[0_8px_0_#12934A] hover:bg-[#15A053] active:translate-y-1 active:shadow-[0_2px_0_#12934A]'
+          : 'bg-[#2F6BFF] text-white shadow-[0_8px_0_#1B4FE0] hover:bg-[#2860F0] active:translate-y-1 active:shadow-[0_2px_0_#1B4FE0]';
 
-  const radius = shape === 'pill' ? 'rounded-full' : 'rounded-xl';
+  const radius = shape === 'pill' ? 'rounded-full' : 'rounded-[16px]';
 
   return (
     <button
@@ -42,10 +44,10 @@ export function AuthButton({
       disabled={isDisabled}
       aria-busy={loading}
       className={[
-        'flex h-[50px] w-full items-center justify-center gap-2 px-5 text-base font-semibold transition',
+        'flex h-[54px] w-full items-center justify-center gap-2 px-5 text-base font-extrabold transition-all',
         radius,
-        bg,
-        isDisabled ? 'cursor-not-allowed' : 'hover:opacity-95 active:scale-[0.99]',
+        classes,
+        isDisabled ? 'cursor-not-allowed' : '',
       ]
         .filter(Boolean)
         .join(' ')}

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-
 import { AnalyticsScripts } from './components/AnalyticsScripts';
 import { GlobalSeo } from './components/GlobalSeo';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AchievementCelebrationProvider } from './context/AchievementCelebrationContext';
 import { LocaleProvider } from './context/LocaleContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { TextScaleProvider } from './context/TextScaleContext';
@@ -24,7 +25,7 @@ function AppRoutes() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-app-bg">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-blue-600" />
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-[#0B2A6B]" />
       </div>
     );
   }
@@ -82,6 +83,7 @@ function AppRoutes() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={renderLazyPage('./pages/HomePage.tsx')} />
             <Route path="kunlik-reja" element={<KunlikRejaRedirect />} />
+            <Route path="kunlik-reja/xarita" element={renderLazyPage('./pages/DailyCourseMapPage.tsx')} />
             <Route
               path="kunlik-reja/kun/:dayNum/grammatika/test-variantlar"
               element={renderLazyPage('./pages/DailyGrammarRuleMcqPage.tsx')}
@@ -104,6 +106,7 @@ function AppRoutes() {
             <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
             <Route path="games" element={renderLazyPage('./pages/GamesPage.tsx')} />
             <Route path="games/word-swipe" element={renderLazyPage('./pages/WordSwipeRedirectPage.tsx')} />
+            <Route path="games/word-swipe/xarita" element={renderLazyPage('./pages/WordSwipeMapPage.tsx')} />
             <Route
               path="games/word-swipe/:levelNumber/:stageNumber"
               element={renderLazyPage('./pages/WordSwipeGamePage.tsx')}
@@ -114,6 +117,7 @@ function AppRoutes() {
             <Route path="help/:chatId" element={renderLazyPage('./pages/HelpPage.tsx')} />
             <Route path="profile" element={renderLazyPage('./pages/ProfilePage.tsx')} />
             <Route path="profile/settings" element={renderLazyPage('./pages/ProfileSettingsPage.tsx')} />
+            <Route path="u/:userId" element={renderLazyPage('./pages/PublicProfilePage.tsx')} />
             <Route path="invite" element={renderLazyPage('./pages/InvitePage.tsx')} />
             <Route path="statistika" element={renderLazyPage('./pages/StatistikaPage.tsx')} />
             <Route path="kurslar" element={renderLazyPage('./pages/CoursesPage.tsx')} />
@@ -149,7 +153,9 @@ export default function App() {
           <AccessProvider>
             <PaymentStatusProvider>
               <SequentialLessonProvider>
-                <AppRoutes />
+                <AchievementCelebrationProvider>
+                  <AppRoutes />
+                </AchievementCelebrationProvider>
               </SequentialLessonProvider>
             </PaymentStatusProvider>
           </AccessProvider>

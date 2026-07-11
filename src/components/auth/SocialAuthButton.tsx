@@ -30,8 +30,8 @@ export function SocialAuthButton({
         disabled={isDisabled}
         aria-busy={loading}
         className={[
-          'flex h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#C8DCF3] bg-white px-5 text-sm font-medium text-[#0F172A] transition',
-          isDisabled && !loading ? 'cursor-not-allowed opacity-60' : 'hover:bg-slate-50',
+          'flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[16px] border-[2px] border-[#E1E7F1] bg-white px-5 text-[15px] font-black text-[#17224A] transition',
+          isDisabled && !loading ? 'cursor-not-allowed opacity-60' : 'hover:bg-[#F5F8FF]',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -47,7 +47,7 @@ export function SocialAuthButton({
         <div
           ref={googleButtonRef}
           className={[
-            'absolute inset-0 z-10 h-11 w-full overflow-hidden rounded-full',
+            'absolute inset-0 z-10 h-[54px] w-full overflow-hidden rounded-full',
             googleButtonReady ? 'opacity-[0.01]' : 'pointer-events-none opacity-0',
           ].join(' ')}
           aria-hidden="true"

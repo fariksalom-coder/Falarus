@@ -192,6 +192,24 @@ export function createKunlikProgressRoutes(
       const nowFullyComplete = isKunlikDayRowFullyComplete(mergedSlice, practicePromptCountByDay);
       await applyKunlikDayCompletionSideEffects(supabase, req.userId, wasFullyComplete, nowFullyComplete);
 
+      // Recompute XP for this user so the leaderboard/level reflect the update.
+      try {
+        const { recomputeUserXp } = await import('../services/xpService.js');
+        await recomputeUserXp(supabase, req.userId);
+      } catch (xpErr) {
+        console.warn('[kunlik-progress] xp recompute skipped', xpErr);
+      }
+
+      // Words-learned may have crossed a threshold — check for medal unlocks.
+      try {
+        const { evaluateAndUnlockAchievements } = await import(
+          '../services/achievementService.js'
+        );
+        await evaluateAndUnlockAchievements(supabase, req.userId);
+      } catch (achErr) {
+        console.warn('[kunlik-progress] achievement check skipped', achErr);
+      }
+
       res.json({ success: true });
     } catch (e) {
       console.error('[PATCH /api/kunlik-progress/:dayNumber]', e);

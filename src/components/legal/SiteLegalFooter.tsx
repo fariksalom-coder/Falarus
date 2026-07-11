@@ -18,7 +18,7 @@ export function SiteLegalFooter({ variant = 'full', embedded = false }: Props) {
         >
           <Link
             to={LEGAL_PATHS.offer}
-            className="transition hover:text-blue-600 hover:underline underline-offset-2"
+            className="transition hover:text-[#0B2A6B] hover:underline underline-offset-2"
           >
             Ommaviy oferta
           </Link>
@@ -27,7 +27,7 @@ export function SiteLegalFooter({ variant = 'full', embedded = false }: Props) {
           </span>
           <Link
             to={LEGAL_PATHS.privacy}
-            className="transition hover:text-blue-600 hover:underline underline-offset-2"
+            className="transition hover:text-[#0B2A6B] hover:underline underline-offset-2"
           >
             Maxfiylik siyosati
           </Link>
@@ -36,7 +36,7 @@ export function SiteLegalFooter({ variant = 'full', embedded = false }: Props) {
           </span>
           <Link
             to={LEGAL_PATHS.refund}
-            className="transition hover:text-blue-600 hover:underline underline-offset-2"
+            className="transition hover:text-[#0B2A6B] hover:underline underline-offset-2"
           >
             Qaytarish siyosati
           </Link>
@@ -50,13 +50,13 @@ export function SiteLegalFooter({ variant = 'full', embedded = false }: Props) {
           <p className="mt-0.5">INN / STIR: {meta.innLabel}</p>
           <p className="mt-0.5">
             Email:{' '}
-            <a className="text-blue-600 hover:underline" href={`mailto:${meta.email}`}>
+            <a className="text-[#0B2A6B] hover:underline" href={`mailto:${meta.email}`}>
               {meta.email}
             </a>
           </p>
           <p className="mt-0.5">
             Telefon:{' '}
-            <a className="text-blue-600 hover:underline" href={telClean ? `tel:${telClean}` : undefined}>
+            <a className="text-[#0B2A6B] hover:underline" href={telClean ? `tel:${telClean}` : undefined}>
               {meta.phone}
             </a>
           </p>

@@ -171,7 +171,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             <ArrowLeft className="h-4 w-4" />
           </button>
         )}
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-bold text-white">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#123A8F] to-[#0B2A6B] text-sm font-bold text-white">
           {initials}
         </div>
         <div className="min-w-0 flex-1">
@@ -195,7 +195,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
       >
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
           </div>
         )}
         {!loading && allMessages.length === 0 && (
@@ -216,8 +216,8 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-[0.9rem] leading-relaxed ${
                     isMine
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white'
-                      : 'border border-slate-200 bg-white text-slate-900'
+                      ? 'bg-gradient-to-r from-[#123A8F] to-[#0B2A6B] text-white'
+                      : 'border border-slate-200 bg-app-surface text-slate-900'
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{msg.content}</p>
@@ -247,13 +247,13 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             onFocus={scrollToBottom}
             placeholder={t('partner.messagePlaceholder')}
-            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100 sm:text-[0.95rem]"
+            className="flex-1 rounded-2xl border border-slate-200 bg-app-surface px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100 sm:text-[0.95rem]"
           />
           <button
             type="button"
             onClick={handleSend}
             disabled={sending || !text.trim()}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_4px_16px_rgba(37,99,235,0.3)] transition-all hover:bg-blue-700 disabled:opacity-40"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B2A6B] text-white shadow-[0_4px_16px_rgba(11,42,107,0.3)] transition-all hover:bg-[#071B5E] disabled:opacity-40"
           >
             <Send className="h-5 w-5" />
           </button>
@@ -266,7 +266,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-sm rounded-3xl bg-app-surface p-6 shadow-2xl"
           >
             <h3 className="text-lg font-bold text-slate-900">{t('partner.endConfirmTitle')}</h3>
             <p className="mt-2 text-sm text-slate-600">

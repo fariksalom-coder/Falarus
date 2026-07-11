@@ -88,12 +88,12 @@ export default function PartnerPeopleList({
             <button
               type="button"
               onClick={onShowIncoming}
-              className="relative flex items-center gap-1.5 rounded-2xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+              className="relative flex items-center gap-1.5 rounded-2xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-[#071B5E] transition-colors hover:bg-blue-100"
             >
               <Inbox className="h-4 w-4" />
               {t('partner.incoming')}
               {incomingCount > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0B2A6B] text-xs font-bold text-white">
                   {incomingCount}
                 </span>
               )}
@@ -120,7 +120,7 @@ export default function PartnerPeopleList({
 
       {loading && (
         <div className="flex items-center justify-center py-16">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
         </div>
       )}
 
