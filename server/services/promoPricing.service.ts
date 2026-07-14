@@ -11,21 +11,16 @@ export type RussianTariffQuote = {
   discountAmount: number;
 };
 
-function normalizeTariffType(tariffType: SubscriptionTariffType): 'month' | 'year' {
-  return tariffType === 'year' ? 'year' : 'month';
-}
-
 async function getTariffPrice(
   supabase: DbClient,
   currency: Currency,
   tariffType: SubscriptionTariffType
 ): Promise<number> {
-  const key = normalizeTariffType(tariffType);
   const { data } = await supabase
     .from('tariff_prices')
     .select('price')
     .eq('currency', currency)
-    .eq('tariff_type', key)
+    .eq('tariff_type', tariffType)
     .maybeSingle();
   return data != null ? Number((data as { price: number }).price) : 0;
 }

@@ -4,7 +4,7 @@ import { cachedRequest } from '../utils/requestCache';
 export type Currency = 'UZS' | 'RUB' | 'USD';
 
 export type TariffPricesByCurrency = {
-  month: number;
+  three_month: number;
   year: number;
 };
 
@@ -23,7 +23,7 @@ export async function getTariffPricesByCurrency(
     if (!res.ok) throw new Error('Narxlar yuklanmadi');
     const data = (await res.json()) as Record<string, unknown>;
     return {
-      month: Number(data.month) || 0,
+      three_month: Number(data.three_month) || 0,
       year: Number(data.year) || 0,
     };
   });
@@ -40,7 +40,7 @@ export async function getUserTariffPricesByCurrency(
   const data = (await res.json()) as UserTariffPricesPayload;
   return {
     currency,
-    month: Number(data.month) || 0,
+    three_month: Number(data.three_month) || 0,
     year: Number(data.year) || 0,
   };
 }

@@ -67,7 +67,7 @@ function fiscalConfigReady(env: FiscalEnv): { ok: boolean; reason?: string } {
 
 function subscriptionItemLabel(productCode: PaymentProductCode, tariffType: string | null | undefined): string {
   if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
-    const period = tariffType === 'year' ? '1 year' : '1 month';
+    const period = tariffType === 'year' ? '1 year' : '3 months';
     return `Subscription (${period})`;
   }
   if (productCode === 'patent') return `${COURSE_PRODUCT_META.patent.label} (onlayn)`;

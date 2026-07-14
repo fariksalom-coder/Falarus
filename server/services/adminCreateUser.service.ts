@@ -19,7 +19,7 @@ export type AdminCreateUserInput = {
   identifier: string;
   password: string;
   adminId: number;
-  russianTariff: 'month' | 'year' | 'week' | null;
+  russianTariff: 'three_month' | 'year' | 'week' | null;
   grantPatent: boolean;
   grantVnzh: boolean;
   /** To‘lov summalari (ixtiyoriy). Kiritilmasa — joriy narxlar ishlatiladi. */
@@ -191,7 +191,7 @@ async function insertApprovedPayment(
     userId: number;
     adminId: number;
     productCode: PaymentProductCode;
-    tariffType: 'month' | 'year' | null;
+    tariffType: 'three_month' | 'year' | null;
     amount: number;
     currency: string;
   }
@@ -226,7 +226,7 @@ async function insertApprovedPayment(
 
   const legacy: Record<string, unknown> = {
     ...row,
-    tariff_type: opts.productCode === 'russian' ? opts.tariffType : 'month',
+    tariff_type: opts.productCode === 'russian' ? opts.tariffType : 'three_month',
   };
   delete legacy.product_code;
   const second = await supabase.from('payments').insert(legacy);
@@ -254,16 +254,16 @@ async function grantRussianWeekTrial(supabase: DbClient, userId: number): Promis
 async function grantRussianAccess(
   supabase: DbClient,
   userId: number,
-  tariffType: 'month' | 'year',
+  tariffType: 'three_month' | 'year',
   adminId: number,
   amountUzs: number
 ): Promise<void> {
   if (!isSubscriptionTariffType(tariffType)) {
-    throw new Error('russianTariff: month yoki year bo‘lishi kerak');
+    throw new Error('russianTariff: three_month yoki year bo‘lishi kerak');
   }
-  const planType = tariffType === 'year' ? 'yearly' : 'monthly';
-  const daysToAdd = tariffType === 'year' ? 365 : 30;
-  const planName = tariffType === 'year' ? '1 YIL' : '1 OY';
+  const planType = tariffType === 'year' ? 'yearly' : 'three_month';
+  const daysToAdd = tariffType === 'year' ? 365 : 90;
+  const planName = tariffType === 'year' ? '1 YIL' : '3 OY';
   const now = new Date();
 
   const { data: current } = await supabase

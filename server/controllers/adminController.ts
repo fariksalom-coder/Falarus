@@ -568,7 +568,7 @@ export function createAdminController(supabase: DbClient) {
       const identifier = typeof body.identifier === 'string' ? body.identifier.trim() : '';
       const password = typeof body.password === 'string' ? body.password : '';
       const russianTariff =
-        body.russianTariff === 'month' ||
+        body.russianTariff === 'three_month' ||
         body.russianTariff === 'year' ||
         body.russianTariff === 'week'
           ? body.russianTariff
@@ -791,9 +791,9 @@ export function createAdminController(supabase: DbClient) {
       }
 
       if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
-        const planType = tariffType === 'year' ? 'yearly' : 'monthly';
-        const daysToAdd = tariffType === 'year' ? 365 : 30;
-        const planName = tariffType === 'year' ? '1 YIL' : '1 OY';
+        const planType = tariffType === 'year' ? 'yearly' : 'three_month';
+        const daysToAdd = tariffType === 'year' ? 365 : 90;
+        const planName = tariffType === 'year' ? '1 YIL' : '3 OY';
         const { data: current } = await supabase
           .from('users')
           .select('plan_expires_at')
@@ -1799,8 +1799,8 @@ export function createAdminController(supabase: DbClient) {
   async function updateTariffPrice(req: Request, res: Response) {
     const body = req.body || {};
     const { tariff_type, currency, price } = body;
-    if (!tariff_type || !['month', 'year'].includes(tariff_type)) {
-      return res.status(400).json({ error: 'tariff_type kerak: month, year' });
+    if (!tariff_type || !['three_month', 'year'].includes(tariff_type)) {
+      return res.status(400).json({ error: 'tariff_type kerak: three_month, year' });
     }
     if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
       return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });

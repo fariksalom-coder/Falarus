@@ -1,5 +1,14 @@
 export type CurrencyCode = 'UZS' | 'RUB' | 'USD';
-export type SubscriptionTariffType = 'month' | 'year';
+/**
+ * Russian language course subscription plans.
+ *   • three_month — 3 oy (90 days) entry-level plan.
+ *   • year        — 1 yil (365 days) full plan.
+ *
+ * Legacy value 'month' (30-day plan, deprecated 2026-07) is still recognised
+ * by getSubscriptionTariffLabel so historic payment history renders correctly,
+ * but new checkouts must use 'three_month' or 'year'.
+ */
+export type SubscriptionTariffType = 'three_month' | 'year';
 export type CourseProductCode = 'patent' | 'vnzh';
 export type TeacherListingProductCode = 'teacher_listing';
 export type TeacherTrialProductCode = 'teacher_trial';
@@ -113,7 +122,7 @@ export function isCurrencyCode(value: unknown): value is CurrencyCode {
 }
 
 export function isSubscriptionTariffType(value: unknown): value is SubscriptionTariffType {
-  return value === 'month' || value === 'year';
+  return value === 'three_month' || value === 'year';
 }
 
 export function isCourseProductCode(value: unknown): value is CourseProductCode {
@@ -148,7 +157,15 @@ export function getPaymentProductLabel(productCode: PaymentProductCode): string 
 
 export function getSubscriptionTariffLabel(tariffType: SubscriptionTariffType): string {
   if (tariffType === 'year') return '1 YIL';
-  return '1 OY';
+  return '3 OY';
+}
+
+/** Historic-friendly label — accepts legacy 'month' from payment history. */
+export function getSubscriptionTariffLabelLoose(tariffType: string | null | undefined): string {
+  if (tariffType === 'year') return '1 YIL';
+  if (tariffType === 'three_month') return '3 OY';
+  if (tariffType === 'month') return '1 OY';
+  return '';
 }
 
 export function getPaymentDisplayLabel(
@@ -158,7 +175,10 @@ export function getPaymentDisplayLabel(
   if (productCode !== SUBSCRIPTION_PRODUCT_CODE) {
     return getPaymentProductLabel(productCode);
   }
-  return isSubscriptionTariffType(tariffType)
-    ? getSubscriptionTariffLabel(tariffType)
-    : getPaymentProductLabel(productCode);
+  if (isSubscriptionTariffType(tariffType)) {
+    return getSubscriptionTariffLabel(tariffType);
+  }
+  // Legacy 'month' rows in payment history still need a readable label.
+  const looseLabel = getSubscriptionTariffLabelLoose(tariffType);
+  return looseLabel || getPaymentProductLabel(productCode);
 }

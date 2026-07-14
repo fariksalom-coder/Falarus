@@ -355,15 +355,15 @@ const copy = {
       pro: {
         name: 'Pro',
         price: '299 000',
-        period: '/год',
+        period: '/3 мес',
         items: ['Официальный сертификат', 'Продвинутая программа', 'Грамматика, аудирование, письмо', 'Ежедневные задания'],
         muted: [],
         button: 'Выбрать Pro',
       },
       elite: {
         name: 'Elite',
-        price: '99 000',
-        period: '/мес',
+        price: '1 197 000',
+        period: '/год',
         items: ['Сертификация', 'Грамматика, аудирование, письмо', 'Онлайн-преподаватели', 'Групповые занятия каждую неделю'],
         muted: [],
         button: 'Выбрать Elite',
@@ -470,15 +470,15 @@ const copy = {
       pro: {
         name: 'Pro',
         price: '299 000',
-        period: '/yil',
+        period: '/3 oy',
         items: ['Rasmiy sertifikat', 'Kengaytirilgan dastur', 'Grammatika, tinglash, yozish', 'Kunlik mashqlar'],
         muted: [],
         button: 'Pro tarifini tanlash',
       },
       elite: {
         name: 'Elite',
-        price: '99 000',
-        period: '/oy',
+        price: '1 197 000',
+        period: '/yil',
         items: ['Sertifikatlash', 'Grammatika, tinglash, yozish', 'Onlayn o‘qituvchilar', 'Har hafta guruh darslari'],
         muted: [],
         button: 'Elite tarifini tanlash',
@@ -585,15 +585,15 @@ const copy = {
       pro: {
         name: 'Pro',
         price: '299 000',
-        period: '/сол',
+        period: '/3 моҳ',
         items: ['Сертификати расмӣ', 'Барномаи пешрафта', 'Грамматика, шунавоӣ, навиштан', 'Машқҳои ҳаррӯза'],
         muted: [],
         button: 'Интихоби Pro',
       },
       elite: {
         name: 'Elite',
-        price: '99 000',
-        period: '/моҳ',
+        price: '1 197 000',
+        period: '/сол',
         items: ['Сертификатсия', 'Грамматика, шунавоӣ, навиштан', 'Омӯзгорони онлайн', 'Дарсҳои гурӯҳӣ ҳар ҳафта'],
         muted: [],
         button: 'Интихоби Elite',
@@ -700,15 +700,15 @@ const copy = {
       pro: {
         name: 'Pro',
         price: '299.000',
-        period: '/year',
+        period: '/3 mo',
         items: ['Official Certification', 'Advanced Curriculum', 'Grammar, listening, writing', 'Daily Exercises'],
         muted: [],
         button: 'Select pro',
       },
       elite: {
         name: 'Elite',
-        price: '99.000',
-        period: '/mo',
+        price: '1.197.000',
+        period: '/year',
         items: ['Certification', 'Grammar, listening, writing', 'Online teachers', 'Group Sessions every week'],
         muted: [],
         button: 'Select Elite',
@@ -806,8 +806,8 @@ const copy = {
       recommended: 'ҰСЫНЫЛАДЫ',
       currency: ' сум',
       free: { name: 'Freemium', price: '0', period: '/ай', items: ['Негізгі бағдарлама', 'Грамматика кіріспесі'], muted: ['Сертификаттау'], button: 'Негізгіні таңдау' },
-      pro: { name: 'Pro', price: '299 000', period: '/жыл', items: ['Ресми сертификат', 'Кеңейтілген бағдарлама', 'Грамматика, тыңдау, жазу', 'Күнделікті тапсырмалар'], muted: [], button: 'Pro таңдау' },
-      elite: { name: 'Elite', price: '99 000', period: '/ай', items: ['Сертификаттау', 'Грамматика, тыңдау, жазу', 'Онлайн мұғалімдер', 'Апталық топ сабақтары'], muted: [], button: 'Elite таңдау' },
+      pro: { name: 'Pro', price: '299 000', period: '/3 ай', items: ['Ресми сертификат', 'Кеңейтілген бағдарлама', 'Грамматика, тыңдау, жазу', 'Күнделікті тапсырмалар'], muted: [], button: 'Pro таңдау' },
+      elite: { name: 'Elite', price: '1 197 000', period: '/жыл', items: ['Сертификаттау', 'Грамматика, тыңдау, жазу', 'Онлайн мұғалімдер', 'Апталық топ сабақтары'], muted: [], button: 'Elite таңдау' },
     },
     faq: { title: 'Жиі қойылатын сұрақтар' },
     about: {
@@ -900,8 +900,8 @@ const copy = {
       recommended: 'СУНУШТАЛАТ',
       currency: ' сум',
       free: { name: 'Freemium', price: '0', period: '/ай', items: ['Негизги программа', 'Грамматика киришүүсү'], muted: ['Сертификация'], button: 'Негизгисин тандоо' },
-      pro: { name: 'Pro', price: '299 000', period: '/жыл', items: ['Расмий сертификат', 'Кеңейтилген программа', 'Грамматика, угуу, жазуу', 'Күнүмдүк тапшырмалар'], muted: [], button: 'Pro тандоо' },
-      elite: { name: 'Elite', price: '99 000', period: '/ай', items: ['Сертификация', 'Грамматика, угуу, жазуу', 'Онлайн мугалимдер', 'Жумалык топтор'], muted: [], button: 'Elite тандоо' },
+      pro: { name: 'Pro', price: '299 000', period: '/3 ай', items: ['Расмий сертификат', 'Кеңейтилген программа', 'Грамматика, угуу, жазуу', 'Күнүмдүк тапшырмалар'], muted: [], button: 'Pro тандоо' },
+      elite: { name: 'Elite', price: '1 197 000', period: '/жыл', items: ['Сертификация', 'Грамматика, угуу, жазуу', 'Онлайн мугалимдер', 'Жумалык топтор'], muted: [], button: 'Elite тандоо' },
     },
     faq: { title: 'Көп берилген суроолор' },
     about: {
@@ -1434,8 +1434,8 @@ export default function LandingPage() {
                 price={`${t.pricing.elite.price}${t.pricing.currency}${t.pricing.elite.period}`}
                 pricePerMonth={t.pricing.elite.price}
                 pricePerMonthUnit={`${t.pricing.currency.trim()} ${t.pricing.elite.period}`}
-                compareAtPrice={`250 000${t.pricing.currency}`}
-                discountPercent={60}
+                compareAtPrice={`2 388 000${t.pricing.currency}`}
+                discountPercent={50}
                 features={t.pricing.elite.items}
                 buttonLabel={t.pricing.elite.button}
                 onSelect={() => navigate('/register')}
@@ -1445,8 +1445,8 @@ export default function LandingPage() {
                 price={`${t.pricing.pro.price}${t.pricing.currency}${t.pricing.pro.period}`}
                 pricePerMonth={t.pricing.pro.price}
                 pricePerMonthUnit={`${t.pricing.currency.trim()} ${t.pricing.pro.period}`}
-                compareAtPrice={`3 000 000${t.pricing.currency}`}
-                discountPercent={90}
+                compareAtPrice={`597 000${t.pricing.currency}`}
+                discountPercent={50}
                 features={t.pricing.pro.items}
                 buttonLabel={t.pricing.pro.button}
                 highlighted

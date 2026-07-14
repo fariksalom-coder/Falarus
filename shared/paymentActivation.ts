@@ -22,9 +22,10 @@ export async function activateRussianSubscription(
 ): Promise<{ expires_at: string }> {
   const tariffType = params.tariffType;
   const now = new Date();
-  const daysToAdd = tariffType === 'year' ? 365 : 30;
-  const planType = tariffType === 'year' ? 'yearly' : 'monthly';
-  const planName = tariffType === 'year' ? '1 YIL' : '1 OY';
+  // three_month = 3 * 30-day months (90 days). year keeps 365 as before.
+  const daysToAdd = tariffType === 'year' ? 365 : 90;
+  const planType = tariffType === 'year' ? 'yearly' : 'three_month';
+  const planName = tariffType === 'year' ? '1 YIL' : '3 OY';
   const exactExpiresAt = params.extras?.exact_expires_at
     ? new Date(params.extras.exact_expires_at)
     : null;

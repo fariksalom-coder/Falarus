@@ -22,7 +22,7 @@ const BENEFIT_KEYS = [
 ] as const;
 
 type PlanCard = {
-  tariffType: 'month' | 'year';
+  tariffType: 'three_month' | 'year';
   duration: string;
   price: string;
   pricePerMonth: string;
@@ -39,8 +39,8 @@ type PlanCard = {
 
 /** Marketing: ilgari narxlari (chiziq bilan kartochkada) */
 const WAS_UZS = {
-  month: 250_000,
-  year: 3_000_000,
+  three_month: 597_000,
+  year: 2_388_000,
 } as const;
 
 function formatPrice(n: number): string {
@@ -56,31 +56,19 @@ function discountPercentFromWas(was: number, sale: number): number | undefined {
 
 /** Kartochkalar: joriy `tariff_prices` UZS. Ilgari narxlari dizayn konstantalari. */
 function buildPlansFromTariffPrices(
-  prices: { month: number; year: number },
+  prices: { three_month: number; year: number },
   copy: {
-    monthLabel: string;
+    threeMonthLabel: string;
     yearLabel: string;
-    monthBuy: string;
+    threeMonthBuy: string;
     yearBuy: string;
     popular: string;
     currency: string;
   },
   features: string[],
 ): PlanCard[] {
-  const { month, year } = prices;
+  const { three_month, year } = prices;
   return [
-    {
-      tariffType: 'month',
-      duration: copy.monthLabel,
-      price: `${formatPrice(month)} ${copy.currency}`,
-      pricePerMonth: formatPrice(month),
-      pricePerMonthUnit: copy.currency,
-      compareAtPrice: `${formatPrice(WAS_UZS.month)} ${copy.currency}`,
-      discountPercent: discountPercentFromWas(WAS_UZS.month, month),
-      features,
-      buttonLabel: copy.monthBuy,
-      highlighted: false,
-    },
     {
       tariffType: 'year',
       duration: copy.yearLabel,
@@ -91,6 +79,18 @@ function buildPlansFromTariffPrices(
       discountPercent: discountPercentFromWas(WAS_UZS.year, year),
       features,
       buttonLabel: copy.yearBuy,
+      highlighted: false,
+    },
+    {
+      tariffType: 'three_month',
+      duration: copy.threeMonthLabel,
+      price: `${formatPrice(three_month)} ${copy.currency}`,
+      pricePerMonth: formatPrice(three_month),
+      pricePerMonthUnit: copy.currency,
+      compareAtPrice: `${formatPrice(WAS_UZS.three_month)} ${copy.currency}`,
+      discountPercent: discountPercentFromWas(WAS_UZS.three_month, three_month),
+      features,
+      buttonLabel: copy.threeMonthBuy,
       highlighted: true,
       badge: `${copy.popular} ⭐`,
     },
@@ -136,15 +136,15 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<PlanCard[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [currencyQuotes, setCurrencyQuotes] = useState<
-    Partial<Record<Currency, { month: number; year: number }>>
+    Partial<Record<Currency, { three_month: number; year: number }>>
   >({});
-  const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'month' | 'year'; tariffLabel: string } | null>(null);
+  const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'three_month' | 'year'; tariffLabel: string } | null>(null);
   const [paymentError, setPaymentError] = useState('');
   const planCopy = useMemo(
     () => ({
-      monthLabel: t('payment.buyMonth'),
+      threeMonthLabel: t('payment.buyThreeMonth'),
       yearLabel: t('payment.buyYear'),
-      monthBuy: t('payment.buyMonthAction'),
+      threeMonthBuy: t('payment.buyThreeMonthAction'),
       yearBuy: t('payment.buyYearAction'),
       popular: t('payment.popular'),
       currency: t('payment.currency'),

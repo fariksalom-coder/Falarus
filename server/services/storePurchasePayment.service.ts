@@ -10,13 +10,13 @@ import { invalidateAccessCache } from './subscription.service.js';
 
 const STORE_PRODUCT_MAP: Record<
   string,
-  { productCode: PaymentProductCode; tariffType: 'month' | 'year' | null }
+  { productCode: PaymentProductCode; tariffType: 'three_month' | 'year' | null }
 > = {
-  'falarus.premium.monthly': { productCode: 'russian', tariffType: 'month' },
+  'falarus.premium.three_month': { productCode: 'russian', tariffType: 'three_month' },
   'falarus.premium.yearly': { productCode: 'russian', tariffType: 'year' },
   'falarus.patent': { productCode: 'patent', tariffType: null },
   'falarus.vnzh': { productCode: 'vnzh', tariffType: null },
-  falarus_russian_month: { productCode: 'russian', tariffType: 'month' },
+  falarus_russian_three_month: { productCode: 'russian', tariffType: 'three_month' },
   falarus_russian_year: { productCode: 'russian', tariffType: 'year' },
   falarus_patent_access: { productCode: 'patent', tariffType: null },
   falarus_vnzh_access: { productCode: 'vnzh', tariffType: null },
@@ -299,7 +299,7 @@ export async function confirmStorePurchase(
       .from('payments')
       .insert({
         ...insertBase,
-        tariff_type: mapped.productCode === 'russian' ? tariffType : 'month',
+        tariff_type: mapped.productCode === 'russian' ? tariffType : 'three_month',
       })
       .select('id')
       .single();

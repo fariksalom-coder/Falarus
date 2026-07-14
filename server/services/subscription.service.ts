@@ -12,7 +12,9 @@ import {
 import { LruTtlCache } from '../lib/lruCache.js';
 import { PATENT_COURSE_FREE_FOR_ALL } from '../../shared/courseAccess.js';
 
-const PLAN_TYPES = ['monthly', 'yearly'] as const;
+// 'monthly' is kept for backward compatibility with historic subscriptions rows
+// (deprecated 2026-07); new activations use 'three_month' or 'yearly'.
+const PLAN_TYPES = ['monthly', 'three_month', 'yearly'] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
 
 export type SubscriptionRow = {

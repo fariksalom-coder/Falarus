@@ -436,7 +436,7 @@ async function startServer() {
     }
   });
 
-  // Public tariff prices by currency (no auth) — month, year
+  // Public tariff prices by currency (no auth) — three_month, year
   app.get('/api/tariff-prices', async (req, res) => {
     const currency = (req.query.currency as string)?.toUpperCase();
     if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
@@ -451,7 +451,7 @@ async function startServer() {
       const rows = (data ?? []) as { tariff_type: string; price: number }[];
       const out: Record<string, number> = {};
       rows.forEach((r) => { out[r.tariff_type] = Number(r.price); });
-      res.json({ month: out.month, year: out.year });
+      res.json({ three_month: out.three_month, year: out.year });
     } catch (e) {
       console.error('[GET /api/tariff-prices]', e);
       res.status(500).json({ error: 'Xatolik' });
@@ -918,10 +918,10 @@ async function startServer() {
       return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });
     }
     try {
-      const month = await resolveRussianTariffQuote(supabase, {
+      const three_month = await resolveRussianTariffQuote(supabase, {
         userId: req.userId,
         currency: currency as 'UZS' | 'RUB' | 'USD',
-        tariffType: 'month',
+        tariffType: 'three_month',
       });
       const year = await resolveRussianTariffQuote(supabase, {
         userId: req.userId,
@@ -930,7 +930,7 @@ async function startServer() {
       });
       return res.json({
         currency,
-        month: month.finalAmount,
+        three_month: three_month.finalAmount,
         year: year.finalAmount,
       });
     } catch (e) {

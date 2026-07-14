@@ -7,6 +7,8 @@
 export function planLabelFromSubscriptionPlanType(planType: string | null | undefined): string | null {
   const t = String(planType ?? '').trim().toLowerCase();
   if (t === 'yearly' || t === 'year') return '1 YIL';
+  if (t === 'three_month' || t === 'three_monthly' || t === 'quarterly') return '3 OY';
+  // Legacy 30-day plans (deprecated 2026-07) still get labelled for historic display.
   if (t === 'monthly' || t === 'month') return '1 OY';
   return null;
 }

@@ -159,7 +159,7 @@ export function buildClickPaymentTitle(params: {
 }): string {
   if (params.productCode === 'russian' && isSubscriptionTariffType(params.tariffType)) {
     if (params.tariffType === 'year') return 'Курс русского языка · 1 год';
-    return 'Курс русского языка · 1 месяц';
+    return 'Курс русского языка · 3 месяца';
   }
   return getPaymentProductLabel(params.productCode);
 }
@@ -167,14 +167,14 @@ export function buildClickPaymentTitle(params: {
 export function getClickAmountForProduct(params: {
   productCode: PaymentProductCode;
   tariffType?: SubscriptionTariffType | null;
-  tariffPrices?: { month: number; year: number } | null;
+  tariffPrices?: { three_month: number; year: number } | null;
   listingPlanCode?: TeacherListingPlanCode | null;
 }): number {
   if (params.productCode === 'russian') {
     if (!params.tariffType) return 0;
     if (!params.tariffPrices) return 0;
     if (params.tariffType === 'year') return Number(params.tariffPrices.year);
-    return Number(params.tariffPrices.month);
+    return Number(params.tariffPrices.three_month);
   }
   if (isCourseProductCode(params.productCode)) {
     return getCourseProductPrice(params.productCode, 'UZS');

@@ -18,8 +18,8 @@ const OPTIONS: Array<{
 type CurrencyModalProps = {
   onClose: () => void;
   onSelect: (currency: Currency) => void;
-  tariffType?: 'month' | 'year';
-  currencyPrices?: Partial<Record<Currency, { month: number; year: number }>>;
+  tariffType?: 'three_month' | 'year';
+  currencyPrices?: Partial<Record<Currency, { three_month: number; year: number }>>;
 };
 
 function formatAmount(amount: number, currency: Currency): string {

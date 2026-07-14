@@ -48,13 +48,11 @@ function sleep(ms: number): Promise<void> {
 }
 
 function planTypeToTariff(planType: string): SubscriptionTariffType | null {
-  if (planType === 'monthly') return 'month';
+  if (planType === 'three_month') return 'three_month';
   if (planType === 'yearly') return 'year';
+  // Historic 'monthly' auto-renewals cannot be recharged — the 30-day tariff
+  // was removed 2026-07 and the price row no longer exists.
   return null;
-}
-
-function tariffToDbTariffKey(t: SubscriptionTariffType): 'month' | 'year' {
-  return t === 'year' ? 'year' : 'month';
 }
 
 async function logClickSafe(
@@ -92,12 +90,11 @@ async function fetchUzAmountForTariff(
   supabase: DbClient,
   tariffType: SubscriptionTariffType
 ): Promise<number> {
-  const key = tariffToDbTariffKey(tariffType);
   const { data: row } = await supabase
     .from('tariff_prices')
     .select('price')
     .eq('currency', 'UZS')
-    .eq('tariff_type', key)
+    .eq('tariff_type', tariffType)
     .maybeSingle();
   return row != null ? Number((row as { price: number }).price) : 0;
 }
@@ -243,7 +240,7 @@ async function insertClickTokenPaymentPending(
       .from('payments')
       .insert({
         ...insertBase,
-        tariff_type: params.tariffType ?? 'month',
+        tariff_type: params.tariffType ?? 'three_month',
       })
       .select('id')
       .single();
@@ -289,7 +286,7 @@ export async function handleClickCardTokenRequest(
     return {
       status: 400,
       json: {
-        error: 'Rus tili uchun plan_type kerak: month | year',
+        error: 'Rus tili uchun plan_type kerak: three_month | year',
       },
     };
   }
@@ -481,7 +478,7 @@ export async function handleClickCardTokenPayment(
   if (productCode === 'russian' && !isSubscriptionTariffType(plan_type)) {
     return {
       status: 400,
-      json: { error: 'Rus tili uchun plan_type kerak: month | year' },
+      json: { error: 'Rus tili uchun plan_type kerak: three_month | year' },
     };
   }
   if (await userHasPendingPaymentForProduct(supabase, userId, productCode)) {
@@ -537,7 +534,7 @@ export async function handleClickCardTokenPayment(
     const quote = await resolveRussianTariffQuote(supabase, {
       userId,
       currency: 'UZS',
-      tariffType: (tariffType ?? 'month'),
+      tariffType: (tariffType ?? 'three_month'),
     });
     amount = quote.finalAmount;
     baseAmount = quote.baseAmount;

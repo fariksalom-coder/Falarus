@@ -110,9 +110,9 @@ export default function PaymentPage() {
   const isTeacherTrial = productCode === TEACHER_TRIAL_PRODUCT_CODE;
   const listingPlanCode = isTeacherListingPlanCode(state?.listingPlanCode) ? state.listingPlanCode : null;
   const trialId = isTeacherTrial && typeof state?.trialId === 'number' ? state.trialId : null;
-  const tariffType = state?.tariffType ?? (isRussianCourse ? 'month' : undefined);
+  const tariffType = state?.tariffType ?? (isRussianCourse ? 'three_month' : undefined);
   const currency = state?.currency ?? 'UZS';
-  const tariffLabel = state?.tariffLabel ?? t('payment.buyMonth');
+  const tariffLabel = state?.tariffLabel ?? t('payment.buyThreeMonth');
   const productLabel = state?.productLabel ?? getPaymentProductLabel(productCode);
   const afterPayPath =
     state?.returnTo ?? (isTeacherListing ? '/teacher-cabinet' : isTeacherTrial ? '/teachers' : '/profile');
@@ -155,8 +155,8 @@ export default function PaymentPage() {
               }
         );
         if (isRussianCourse && tariffType) {
-          const key = tariffType === 'year' ? 'year' : 'month';
-          const payload = prices as { month: number; year: number } | null;
+          const key = tariffType === 'year' ? 'year' : 'three_month';
+          const payload = prices as { three_month: number; year: number } | null;
           setPrice(payload?.[key] ?? null);
           return;
         }

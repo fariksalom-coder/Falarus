@@ -100,7 +100,7 @@ export async function createRahmatMulticardPayment(
   const productCode = rawProductCode;
   const russianTariffType = isSubscriptionTariffType(tariffTypeRaw) ? tariffTypeRaw : null;
   if (productCode === 'russian' && !russianTariffType) {
-    return { status: 400, json: { error: 'tariff_type kerak: month, year' } };
+    return { status: 400, json: { error: 'tariff_type kerak: three_month, year' } };
   }
   const listingPlanCode =
     productCode === 'teacher_listing' ? parseTeacherListingPlanCode(body as Record<string, unknown>) : null;
@@ -227,7 +227,7 @@ export async function createRahmatMulticardPayment(
       .from('payments')
       .insert({
         ...insertBase,
-        tariff_type: productCode === 'russian' ? russianTariffType : 'month',
+        tariff_type: productCode === 'russian' ? russianTariffType : 'three_month',
       })
       .select('id')
       .single();

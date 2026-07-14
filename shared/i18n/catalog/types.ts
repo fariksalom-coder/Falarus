@@ -309,6 +309,7 @@ export type MessageCatalog = {
     premium: string;
     popular: string;
     buyMonth: string;
+    buyThreeMonth: string;
     buyYear: string;
     currency: string;
     loadError: string;
@@ -342,6 +343,7 @@ export type MessageCatalog = {
     backProfile: string;
     backTeacher: string;
     buyMonthAction: string;
+    buyThreeMonthAction: string;
     buyYearAction: string;
     cardCopy: string;
     cardHolder: string;
