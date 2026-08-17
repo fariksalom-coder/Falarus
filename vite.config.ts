@@ -129,7 +129,9 @@ export default defineConfig(({mode}) => {
       },
     },
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      // DIQQAT: GEMINI_API_KEY bu yerga HECH QACHON qo'shilmasin — `define` qiymatni
+      // brauzer bundle'iga inline qiladi va kalit ochiq ko'rinadi. Gemini faqat
+      // serverda chaqiriladi (server/lib/gemini.ts).
       'process.env.APP_URL': JSON.stringify(env.APP_URL),
       ...(courseMediaBase
         ? {'import.meta.env.VITE_COURSE_MEDIA_BASE_URL': JSON.stringify(courseMediaBase)}
@@ -151,6 +153,17 @@ export default defineConfig(({mode}) => {
             .map((h) => h.trim())
             .filter(Boolean)
         : true,
+      // Lokal preview uchun: VITE_DEV_API_PROXY=https://falarus.uz bo'lsa, /api'ni
+      // production backend'ga proxy qiladi (haqiqiy ma'lumot bilan ko'rish). Faqat dev.
+      proxy: process.env.VITE_DEV_API_PROXY
+        ? {
+            '/api': {
+              target: process.env.VITE_DEV_API_PROXY,
+              changeOrigin: true,
+              secure: true,
+            },
+          }
+        : undefined,
       fs: {
         // Worktrees hoist node_modules to the main repo root — allow serving asset files (flag sprites etc.) from there.
         allow: [

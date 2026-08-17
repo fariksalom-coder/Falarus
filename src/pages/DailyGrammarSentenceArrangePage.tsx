@@ -51,6 +51,8 @@ export default function DailyGrammarSentenceArrangePage() {
   const [checkStatus, setCheckStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [feedback, setFeedback] = useState('');
   const [finished, setFinished] = useState(false);
+  /** Oxirgi gapdan keyin progress serverga yozilmoqda — tugma ikki marta bosilmasin. */
+  const [advancing, setAdvancing] = useState(false);
   const [ruleMcqsCount, setRuleMcqsCount] = useState(0);
   const [matchHasPairs, setMatchHasPairs] = useState(false);
 
@@ -120,11 +122,12 @@ export default function DailyGrammarSentenceArrangePage() {
     backPath,
   ]);
 
-  useEffect(() => {
-    if (!finished || grammar3PatchSent.current) return;
-    grammar3PatchSent.current = true;
-    patchDay(dayNumber, { grammar_3: true });
-  }, [finished, dayNumber, patchDay]);
+  /*
+   * grammar_3 patchi ATAYLAB effektda emas, `handleNext` ichida kutiladi:
+   * effekt fire-and-forget bo'lganda foydalanuvchi «Yaxshi!» ekranidagi
+   * qaytish tugmasini darrov bossa, grammatika ro'yxati serverdan eski
+   * progressni o'qib 3-vazifani bajarilmagan deb ko'rsatardi.
+   */
 
   const current = tasks[taskIndex];
 
@@ -181,12 +184,18 @@ export default function DailyGrammarSentenceArrangePage() {
     }
   };
 
-  const handleNext = () => {
-    if (checkStatus !== 'correct') return;
+  const handleNext = async () => {
+    if (checkStatus !== 'correct' || advancing) return;
     if (taskIndex < tasks.length - 1) {
       setTaskIndex((i) => i + 1);
       return;
     }
+    setAdvancing(true);
+    if (!grammar3PatchSent.current) {
+      grammar3PatchSent.current = true;
+      await patchDay(dayNumber, { grammar_3: true });
+    }
+    setAdvancing(false);
     setFinished(true);
   };
 
@@ -335,10 +344,15 @@ export default function DailyGrammarSentenceArrangePage() {
               <div className="mt-6 flex justify-center">
                 <button
                   type="button"
-                  onClick={handleNext}
-                  className="grammar-heading min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)]"
+                  onClick={() => void handleNext()}
+                  disabled={advancing}
+                  className="grammar-heading min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)] disabled:opacity-70"
                 >
-                  {taskIndex < tasks.length - 1 ? 'Keyingisi →' : 'Yakunlash'}
+                  {advancing
+                    ? 'Saqlanmoqda…'
+                    : taskIndex < tasks.length - 1
+                      ? 'Keyingisi →'
+                      : 'Yakunlash'}
                 </button>
               </div>
             ) : null}

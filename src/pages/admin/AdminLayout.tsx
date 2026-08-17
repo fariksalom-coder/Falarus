@@ -3,7 +3,9 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { adminPath } from '../../constants/adminPath';
 import {
+  ShieldBan,
   LayoutDashboard,
+  BookOpen,
   Users,
   UserPlus,
   CreditCard,
@@ -15,19 +17,25 @@ import {
   ScrollText,
   GraduationCap,
   ClipboardList,
+  Video,
 } from 'lucide-react';
 import { getAdminHelpChats } from '../../api/admin';
 
 const nav = [
   { to: adminPath('/dashboard'), label: 'Dashboard', icon: LayoutDashboard },
+  { to: adminPath('/content'), label: 'Kurs kontenti', icon: BookOpen },
+  { to: adminPath('/onboarding'), label: "So'rovnoma", icon: ClipboardList },
   { to: adminPath('/users'), label: 'Users', icon: Users },
   { to: adminPath('/users/create'), label: 'Yangi foydalanuvchi', icon: UserPlus },
   { to: adminPath('/payments'), label: 'Payments', icon: CreditCard },
   { to: adminPath('/teachers'), label: "O'qituvchilar", icon: GraduationCap },
   { to: adminPath('/teacher-trials'), label: 'Sinov darslari', icon: ClipboardList },
+  { to: adminPath('/meet-rooms'), label: 'Video xonalar', icon: Video },
+  { to: adminPath('/teacher-documents'), label: 'Hujjat tekshiruvi', icon: ClipboardList },
   { to: adminPath('/click-logs'), label: 'Click logs', icon: ScrollText },
   { to: adminPath('/referrals'), label: 'Referrals', icon: Wallet },
   { to: adminPath('/support'), label: 'Yozishmalar', icon: MessageSquare },
+  { to: adminPath('/chat-moderation'), label: 'Chat nazorati', icon: ShieldBan },
   { to: adminPath('/payment-methods'), label: 'Payment Methods', icon: Banknote },
   { to: adminPath('/tariff-pricing'), label: 'Tariff Pricing', icon: DollarSign },
 ] as const;
@@ -63,7 +71,10 @@ export default function AdminLayout() {
 
   function handleLogout() {
     logout();
-    navigate(adminPath('/login'), { replace: true });
+    // Admin panelidan chiqqach saytning o'ziga qaytadi: admin login sahifasida
+    // qolib ketsa, boshqa hisobga kirish uchun manzilni qo'lda yozishga to'g'ri
+    // kelardi.
+    navigate('/', { replace: true });
   }
 
   return (

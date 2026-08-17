@@ -1,0 +1,106 @@
+[
+  {
+    "id": "m05-u05-l02",
+    "unitId": "m05-u05",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Oddiy kasr. Surat va maxraj",
+    "why": "Bozorda bir kilogramm go'shtning uchdan ikki qismini so'rasangiz, sotuvchi qancha tortishini kasr yozuvi aniq belgilaydi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Dilnoza tandirdan yangi uzilgan bitta nonni uyga olib keldi. Uyda to'rt kishi bor, shuning uchun u nonni to'rtta teng bo'lakka bo'ldi va har biriga bittadan berdi. Bobur juda och edi, shuning uchun u ikkita bo'lak yedi. Endi savol: Bobur nonning qanchasini yedi? \"Ikkita bo'lak\" degan javob yetarli emas, chunki non nechta bo'lakka bo'lingani ham muhim. Aynan shuni yozib ko'rsatish uchun kasr ishlatiladi."
+      },
+      {
+        "type": "theory",
+        "title": "Kasr qanday yoziladi",
+        "text": "Kasr ikkita son va ular orasidagi chiziqdan iborat. Pastdagi son butun narsa nechta teng bo'lakka bo'linganini ko'rsatadi. Yuqoridagi son shu bo'laklardan nechtasi olinganini ko'rsatadi. Dilnozaning noni to'rtta bo'lakka bo'lingan, Bobur ikkitasini yegan. Demak Bobur yegan qism to'rtdan ikki deb o'qiladi va $\\frac{2}{4}$ ko'rinishida yoziladi.",
+        "keyPoint": "Pastdagi son bo'laklar sonini, yuqoridagi son olingan bo'laklar sonini bildiradi."
+      },
+      {
+        "type": "formula",
+        "latex": "$\\frac{a}{b}$",
+        "caption": "$a$ — surat, olingan bo'laklar soni. $b$ — maxraj, butun narsa nechta teng bo'lakka bo'lingani. Maxraj hech qachon nolga teng bo'lmaydi, chunki narsani nolta bo'lakka bo'lib bo'lmaydi."
+      },
+      {
+        "type": "theory",
+        "title": "Surat va maxrajni farqlash",
+        "text": "Maxraj so'zini bo'lish bilan bog'lab eslab qolish qulay: maxraj nechaga bo'linganini aytadi. Surat esa nechtasini olganingizni aytadi. Kasrni o'qiganda avval maxraj aytiladi: $\\frac{3}{5}$ beshdan uch deb o'qiladi. Kasr chizig'i bo'lish belgisining o'zi, ya'ni $\\frac{3}{5}$ bu 3 ni 5 ga bo'lish demakdir.",
+        "keyPoint": "Kasr chizig'i bo'lish amalini bildiradi."
+      },
+      {
+        "type": "example",
+        "task": "Nodira tandir nonni 8 ta teng bo'lakka bo'ldi va mehmonlarga 3 ta bo'lak berdi. Mehmonlar nonning qanday qismini oldi?",
+        "steps": [
+          { "text": "Non nechta teng bo'lakka bo'linganini aniqlaymiz. Bu son maxraj bo'ladi.", "latex": "$b = 8$" },
+          { "text": "Nechta bo'lak berilganini aniqlaymiz. Bu son surat bo'ladi.", "latex": "$a = 3$" },
+          { "text": "Kasrni yozamiz va o'qiymiz: sakkizdan uch.", "latex": "$\\frac{3}{8}$" }
+        ],
+        "answer": "$\\frac{3}{8}$ qism"
+      },
+      {
+        "type": "example",
+        "task": "Savatda 20 ta olma bor. Alisher olmalarning $\\frac{1}{4}$ qismini oldi. Alisher nechta olma oldi?",
+        "steps": [
+          { "text": "Maxraj 4 ga teng, demak 20 ta olmani 4 ta teng guruhga bo'lamiz.", "latex": "$20 : 4 = 5$" },
+          { "text": "Bitta guruhda 5 ta olma bor. Bu bir ulush.", "latex": "$\\frac{1}{4}$ qism $= 5$ ta" },
+          { "text": "Surat 1 ga teng, demak shunday guruhlardan bittasi olinadi.", "latex": "$5 \\cdot 1 = 5$" }
+        ],
+        "answer": "5 ta olma"
+      },
+      {
+        "type": "example",
+        "task": "Boburning cho'ntagida 24 000 so'm bor edi. U pulining $\\frac{2}{3}$ qismini avtobus chiptasi va daftarga sarfladi. Bobur qancha pul sarfladi?",
+        "steps": [
+          { "text": "Maxraj 3 ga teng: pulni 3 ta teng qismga bo'lamiz.", "latex": "$24\\,000 : 3 = 8\\,000$" },
+          { "text": "Bir qism 8 000 so'mga teng.", "latex": "$\\frac{1}{3}$ qism $= 8\\,000$ so'm" },
+          { "text": "Surat 2 ga teng, demak shunday qismdan ikkitasi olinadi.", "latex": "$8\\,000 \\cdot 2 = 16\\,000$" }
+        ],
+        "answer": "16 000 so'm"
+      },
+      {
+        "type": "mistake",
+        "wrong": "\"Nonni 5 ta bo'lakka bo'ldik, 2 tasini oldik\" degan shartga o'quvchilar ko'pincha $\\frac{5}{2}$ deb javob yozadi.",
+        "why": "Bunda bo'laklar soni yuqoriga, olingan bo'laklar soni pastga yozilgan, ya'ni surat bilan maxraj joyi almashtirilgan. $\\frac{5}{2}$ bir butundan katta son, lekin nonning bir qismi butundan katta bo'la olmaydi. Shartni tekshirishning tez usuli: agar butunning bir qismi haqida gap ketayotgan bo'lsa, surat maxrajdan kichik bo'lishi kerak.",
+        "correct": "To'g'ri javob $\\frac{2}{5}$, ya'ni beshdan ikki."
+      },
+      {
+        "type": "drill",
+        "question": "Dilnozada 12 ta daftar bor. U daftarlarning $\\frac{1}{3}$ qismini singlisiga berdi. Nechta daftar berdi?",
+        "answer": "4 ta daftar",
+        "hint": "Avval 12 ni maxrajga bo'ling, keyin natijani suratga ko'paytiring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Pitsa 6 ta teng bo'lakka bo'lingan. Bobur 2 ta bo'lak yedi. Bobur yegan qismni kasr ko'rinishida yozing va o'qing.",
+        "answer": "$\\frac{2}{6}$, oltidan ikki",
+        "hint": "Bo'laklar umumiy soni pastga, yegan bo'laklar soni yuqoriga yoziladi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Alisher Toshkentdan Samarqandga boradigan 300 km yo'lning $\\frac{2}{5}$ qismini bosib o'tdi. U necha kilometr yurdi?",
+        "answer": "120 km",
+        "hint": "$300 : 5$ ni hisoblang, so'ng natijani 2 ga ko'paytiring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "Bir kasrning maxraji 7 ga, surati 4 ga teng. Shu kasrni yozing va uni qanday o'qish kerakligini ayting.",
+        "answer": "$\\frac{4}{7}$, yettidan to'rt",
+        "hint": "Maxraj doim kasr chizig'idan pastda turadi va o'qishda birinchi aytiladi.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Kasr butun narsaning bir qismini ko'rsatadi va ikkita sondan iborat: surat va maxraj.",
+      "Maxraj butun nechta teng bo'lakka bo'linganini, surat shu bo'laklardan nechtasi olinganini bildiradi.",
+      "Sonning kasr qismini topish uchun sonni maxrajga bo'lib, chiqqan natijani suratga ko'paytiriladi."
+    ],
+    "tags": ["kasr", "surat", "maxraj", "ulush"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u05-l01"]
+  }
+]

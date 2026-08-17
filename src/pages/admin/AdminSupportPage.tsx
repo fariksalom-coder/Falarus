@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, ImagePlus, Megaphone, MessageCircle, Send, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, GraduationCap, ImagePlus, Megaphone, MessageCircle, Send, X } from 'lucide-react';
 import {
   getAdminHelpChats,
   getAdminHelpChatMessages,
@@ -65,6 +65,7 @@ export default function AdminSupportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'teacher' | 'student'>('all');
   const [messages, setMessages] = useState<AdminHelpChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [text, setText] = useState('');
@@ -270,6 +271,11 @@ export default function AdminSupportPage() {
     }
   }
 
+  const isTeacherChat = (c: AdminHelpChatListRow) => c.user.account_type === 'teacher';
+  const visibleChats = chats.filter(
+    (c) => roleFilter === 'all' || isTeacherChat(c) === (roleFilter === 'teacher'),
+  );
+
   return (
     <div>
       <h1 className="mb-4 text-2xl font-semibold text-slate-800">Yozishmalar</h1>
@@ -354,12 +360,34 @@ export default function AdminSupportPage() {
       <div className="grid min-h-[740px] overflow-hidden rounded-xl border border-slate-200 bg-white">
         {!activeChat ? (
         <aside>
-          <div className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">Yozishmalar</div>
+          <div className="border-b border-slate-200 px-4 py-3">
+            <div className="text-sm font-semibold text-slate-700">Yozishmalar</div>
+            <div className="mt-2 flex gap-1.5">
+              {([['all', 'Hammasi'], ['teacher', "O‘qituvchilar"], ['student', "O‘quvchilar"]] as const).map(
+                ([val, label]) => {
+                  const count =
+                    val === 'all' ? chats.length : chats.filter((c) => isTeacherChat(c) === (val === 'teacher')).length;
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setRoleFilter(val)}
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                        roleFilter === val ? 'bg-[#0B2A6B] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {label} ({count})
+                    </button>
+                  );
+                },
+              )}
+            </div>
+          </div>
           {loading ? (
             <div className="p-4 text-sm text-slate-500">Yuklanmoqda...</div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {chats.map((chat) => {
+              {visibleChats.map((chat) => {
                 const previewMedia = parseHelpImageMessage(chat.last_message?.content ?? '');
                 return (
                   <button
@@ -375,7 +403,14 @@ export default function AdminSupportPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-semibold text-slate-900">{chat.user.name}</p>
+                        <p className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-slate-900">
+                          {isTeacherChat(chat) ? (
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">
+                              <GraduationCap className="h-3 w-3" /> Ustoz
+                            </span>
+                          ) : null}
+                          <span className="truncate">{chat.user.name}</span>
+                        </p>
                         <span className="shrink-0 text-[11px] text-slate-400">{fmtListTime(chat.last_message_at)}</span>
                       </div>
                       <div className="mt-0.5 flex items-center justify-between gap-2">
@@ -392,7 +427,7 @@ export default function AdminSupportPage() {
                   </button>
                 );
               })}
-              {!chats.length && <p className="p-4 text-center text-sm text-slate-500">Chatlar yo‘q</p>}
+              {!visibleChats.length && <p className="p-4 text-center text-sm text-slate-500">Chatlar yo‘q</p>}
             </div>
           )}
         </aside>
@@ -411,7 +446,14 @@ export default function AdminSupportPage() {
                   <ArrowLeft className="h-4 w-4" />
                 </button>
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-slate-900">{activeChat.user.name}</p>
+                  <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-slate-900">
+                    {activeChat.user.account_type === 'teacher' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">
+                        <GraduationCap className="h-3 w-3" /> Ustoz
+                      </span>
+                    ) : null}
+                    {activeChat.user.name}
+                  </p>
                   <p className="text-xs text-slate-500">{activeChat.user.email ?? '—'}</p>
                   <p className="text-xs text-slate-500">{activeChat.user.phone ?? '—'}</p>
                 </div>

@@ -14,6 +14,8 @@ interface User {
   phone?: string | null;
   level: string;
   onboarded: number;
+  /** So'rovnoma to'ldirilganmi (eski foydalanuvchilarda `false`). */
+  onboardingCompleted?: boolean;
   progress: number;
   totalPoints?: number;
   planName?: string | null;

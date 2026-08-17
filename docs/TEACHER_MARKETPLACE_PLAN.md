@@ -23,8 +23,9 @@ Platformada `O‘qituvchilar` bo‘limi bo‘ladi. O‘quvchi o‘qituvchi karta
 
 ### O‘qituvchi ro‘yxatda chiqishi
 
-- Haqiqiy narx: `299 000 UZS / oy`.
-- Birinchi oy promo: `69 000 UZS`.
+- Narx: `300 000 UZS / oy` — hamma uchun bir xil, chegirma yo‘q.
+  Birinchi oy uchun `69 000 UZS` promosi bekor qilingan (migratsiya 157).
+  Yagona manba — `getTeacherListingPriceUzs()`; baza jadvalidan olinmaydi.
 - Payment product: `teacher_listing`.
 - To‘lov Rahmat yoki karta orqali amalga oshiriladi.
 - To‘lov tasdiqlanganda `teacher_listing_subscriptions` active bo‘ladi va `teacher_profiles.listing_paid_until` yangilanadi.

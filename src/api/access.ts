@@ -10,6 +10,8 @@ export type AccessInfo = {
   vnzh_course_active: boolean;
   vocabulary_free_topic_id?: string | null;
   vocabulary_free_subtopic_id?: string | null;
+  /** OLTIN A'ZO: hech qanday qulf yo'q — na to'lov, na ketma-ketlik. */
+  golden?: boolean;
 };
 
 function authHeaders(token: string | null): HeadersInit {

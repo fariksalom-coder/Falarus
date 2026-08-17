@@ -1,5 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { Volume2 } from 'lucide-react';
 import type { VocabularyEntry } from '../../../data/vocabularyContent';
+import { useAuth } from '../../../context/AuthContext';
+import { prefetchSpeech, speakText, stopSpeaking } from '../../../utils/speak';
 
 type Props = {
   entries: VocabularyEntry[];
@@ -28,6 +32,53 @@ export function VocabularyFlashcardExercise({
 }: Props) {
   const current = entries[cardIndex];
   const total = entries.length;
+  const { token } = useAuth();
+  const [speaking, setSpeaking] = useState(false);
+  /** Bir so'z BIR MARTA o'qiladi: kartochka aylantirilganda qayta o'qimasin. */
+  const spokenRef = useRef<string | null>(null);
+
+  /**
+   * Talaffuz tezligi — FAQAT shu bo'limda (tanishish) sekinlashtirilgan.
+   * Qolgan bo'limlar (test, juftlik, iboralar) 0.8 da qoladi.
+   *
+   * 0.6 ga tushirilganda TTS tovushlarni cho'zib, so'zni buzib o'qiy
+   * boshladi. 0.7 — odatdagidan sezilarli sekin, lekin talaffuz toza.
+   */
+  const SPEECH_SPEED = 0.7;
+  /** Kartochka chiqishi bilan emas, ko'z tushgandan keyin o'qilsin. */
+  const AUTO_SPEAK_DELAY_MS = 2000;
+
+  const say = (text: string, speed = SPEECH_SPEED) => {
+    if (!text) return;
+    setSpeaking(true);
+    void speakText(text, { token, speed }).finally(() => setSpeaking(false));
+  };
+
+  /*
+   * Yangi so'z chiqqanda talaffuz AYNAN 2 soniyadan keyin eshitiladi.
+   *
+   * Ovoz esa DARHOL yuklana boshlaydi: aks holda yuklash 2 soniyadan keyin
+   * boshlanib, server yangi so'zni generatsiya qilguncha ovoz umumiy
+   * 5–7 soniyaga kechikardi. Keyingi kartochkaning so'zi ham oldindan
+   * tayyorlanadi — u ham kechikmasin.
+   */
+  useEffect(() => {
+    const word = current?.russian?.trim();
+    if (!word || spokenRef.current === word) return;
+    spokenRef.current = word;
+
+    prefetchSpeech(word, { token, speed: SPEECH_SPEED });
+    const next = entries[cardIndex + 1]?.russian?.trim();
+    if (next) prefetchSpeech(next, { token, speed: SPEECH_SPEED });
+
+    const id = window.setTimeout(() => say(word), AUTO_SPEAK_DELAY_MS);
+    // So'z almashsa yoki sahifadan chiqilsa — kutayotgan o'qish bekor bo'ladi.
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.russian]);
+
+  // Sahifadan chiqilsa ovoz davom etmasin.
+  useEffect(() => () => stopSpeaking(), []);
 
   if (current) {
     return (
@@ -66,6 +117,24 @@ export function VocabularyFlashcardExercise({
 
         {/* Purple flashcard — slide-in on new word, flip on tap */}
         <div className="relative mt-4 h-[300px]" style={{ perspective: '1400px' }}>
+          {/*
+            Talaffuzni qayta eshitish. Kartochkaning O'ZIDAN tashqarida turadi —
+            aks holda tugma ichida tugma bo'lib qolardi (bosilganda kartochka
+            ham aylanardi va HTML ham noto'g'ri bo'lardi).
+          */}
+          <button
+            type="button"
+            onClick={() => say(current.russian)}
+            aria-label="Talaffuzni eshitish"
+            className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/18 text-white ring-1 ring-white/25 backdrop-blur transition active:scale-90"
+          >
+            <motion.span
+              animate={speaking ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+              transition={speaking ? { duration: 0.9, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
+            >
+              <Volume2 className="h-5 w-5" strokeWidth={2.4} />
+            </motion.span>
+          </button>
           <AnimatePresence mode="wait" initial={false}>
             <motion.button
               key={cardIndex}

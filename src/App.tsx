@@ -16,8 +16,10 @@ import AdminGuard from './pages/admin/AdminGuard';
 import MainLayout from './components/MainLayout';
 import NotFoundPage from './pages/NotFoundPage';
 import KunlikRejaRedirect from './components/KunlikRejaRedirect';
+import GameGate from './components/games/GameGate';
 import { renderLazyPage } from './routeModules';
 import { ADMIN_BASE_PATH, adminPath } from './constants/adminPath';
+
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -37,7 +39,7 @@ function AppRoutes() {
       <Route path="/huquqiy/qaytarish" element={renderLazyPage('./pages/legal/LegalRefundPage.tsx')} />
       <Route path="/teacher-login" element={renderLazyPage('./pages/TeacherLoginPage.tsx')} />
       <Route path="/teacher-register" element={renderLazyPage('./pages/TeacherRegisterPage.tsx')} />
-      <Route path="/teacher-cabinet" element={renderLazyPage('./pages/TeacherCabinetPage.tsx')} />
+      <Route path="/teacher-cabinet" element={renderLazyPage('./pages/TeacherPanelPage.tsx')} />
       <Route
         path={ADMIN_BASE_PATH}
         element={
@@ -62,6 +64,12 @@ function AppRoutes() {
             <Route path="tariff-pricing" element={renderLazyPage('./pages/admin/AdminTariffPricingPage.tsx')} />
             <Route path="teachers" element={renderLazyPage('./pages/admin/AdminTeachersPage.tsx')} />
             <Route path="teacher-trials" element={renderLazyPage('./pages/admin/AdminTeacherTrialsPage.tsx')} />
+            <Route path="meet-rooms" element={renderLazyPage('./pages/admin/AdminMeetRoomsPage.tsx')} />
+            <Route path="teacher-documents" element={renderLazyPage('./pages/admin/AdminTeacherDocumentsPage.tsx')} />
+            <Route path="chat-moderation" element={renderLazyPage('./pages/admin/AdminChatModerationPage.tsx')} />
+            <Route path="onboarding" element={renderLazyPage('./pages/admin/AdminOnboardingPage.tsx')} />
+            <Route path="content" element={renderLazyPage('./pages/admin/AdminContentPage.tsx')} />
+            <Route path="sql" element={renderLazyPage('./pages/admin/AdminSqlPage.tsx')} />
           </Route>
         </Route>
       </Route>
@@ -78,8 +86,27 @@ function AppRoutes() {
           <Route path="/teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
           <Route path="*" element={<NotFoundPage />} />
         </>
+      ) : user.accountType === 'teacher' ? (
+        /*
+         * O'qituvchi o'quvchi ILOVASIGA kirmaydi (darslar, kunlik reja), lekin
+         * SAYTNING ommaviy qismi unga ham ochiq: bosh sahifa va o'qituvchilar
+         * ro'yxati. Ilgari har qanday manzil kabinetga majburan qaytarilardi —
+         * o'qituvchi falarus.uz ni ocholmay qolardi.
+         */
+        <>
+          <Route path="/" element={renderLazyPage('./pages/LandingPage.tsx')} />
+          <Route path="/teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+          <Route path="/teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+          <Route path="/payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
+          <Route path="/payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
+          <Route path="/payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
+          <Route path="/dars/s/:sessionId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="*" element={<Navigate to="/teacher-cabinet" replace />} />
+        </>
       ) : (
         <>
+          <Route path="/onboarding" element={renderLazyPage('./pages/OnboardingPage.tsx')} />
           <Route path="/" element={<MainLayout />}>
             <Route index element={renderLazyPage('./pages/HomePage.tsx')} />
             <Route path="kunlik-reja" element={<KunlikRejaRedirect />} />
@@ -102,18 +129,68 @@ function AppRoutes() {
             />
             <Route path="kunlik-reja/kun/:dayNum/lugat/test" element={renderLazyPage('./pages/DailyVocabTestPage.tsx')} />
             <Route path="kunlik-reja/kun/:dayNum/lugat/juftlik" element={renderLazyPage('./pages/DailyVocabPairsPage.tsx')} />
+            <Route path="kunlik-reja/kun/:dayNum/lugat/iboralar" element={renderLazyPage('./pages/DailyVocabPhrasesPage.tsx')} />
+            <Route
+              path="kunlik-reja/kun/:dayNum/oqish/savollar"
+              element={renderLazyPage('./pages/DailyReadingQuestionsPage.tsx')}
+            />
+            <Route
+              path="kunlik-reja/kun/:dayNum/gapirish/tarjima"
+              element={renderLazyPage('./pages/DailyKunSectionPage.tsx', {
+                sectionOverride: 'gapirish',
+                speakingSub: 'tarjima',
+              })}
+            />
+            <Route
+              path="kunlik-reja/kun/:dayNum/gapirish/topshiriqlar"
+              element={renderLazyPage('./pages/DailySpeakingTasksPage.tsx')}
+            />
             <Route path="kunlik-reja/kun/:dayNum/:section" element={renderLazyPage('./pages/DailyKunSectionPage.tsx')} />
             <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
             <Route path="games" element={renderLazyPage('./pages/GamesPage.tsx')} />
+            {/*
+              O'yinlar to'lov qilmaganlar uchun 3 marta ochiladi — hisob
+              serverda yuritiladi (`GameGate`). Xarita va yo'naltirish
+              sahifalari hisobga kirmaydi: ular o'yinning o'zi emas.
+            */}
+            <Route
+              path="games/soz-zanjiri"
+              element={
+                <GameGate game="soz-zanjiri">
+                  {renderLazyPage('./pages/WordChainGamePage.tsx')}
+                </GameGate>
+              }
+            />
+            <Route
+              path="games/soz-savati"
+              element={
+                <GameGate game="soz-savati">
+                  {renderLazyPage('./pages/WordRiseGamePage.tsx')}
+                </GameGate>
+              }
+            />
+            <Route
+              path="games/fel-ustasi"
+              element={
+                <GameGate game="fel-ustasi">
+                  {renderLazyPage('./pages/VerbConjugationGamePage.tsx')}
+                </GameGate>
+              }
+            />
             <Route path="games/word-swipe" element={renderLazyPage('./pages/WordSwipeRedirectPage.tsx')} />
             <Route path="games/word-swipe/xarita" element={renderLazyPage('./pages/WordSwipeMapPage.tsx')} />
             <Route
               path="games/word-swipe/:levelNumber/:stageNumber"
-              element={renderLazyPage('./pages/WordSwipeGamePage.tsx')}
+              element={
+                <GameGate game="word-swipe">
+                  {renderLazyPage('./pages/WordSwipeGamePage.tsx')}
+                </GameGate>
+              }
             />
             <Route path="teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
             <Route path="teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
             <Route path="help" element={renderLazyPage('./pages/HelpPage.tsx')} />
+            <Route path="jonli-efir" element={renderLazyPage('./pages/LiveStreamPage.tsx')} />
             <Route path="help/:chatId" element={renderLazyPage('./pages/HelpPage.tsx')} />
             <Route path="profile" element={renderLazyPage('./pages/ProfilePage.tsx')} />
             <Route path="profile/settings" element={renderLazyPage('./pages/ProfileSettingsPage.tsx')} />
@@ -133,6 +210,9 @@ function AppRoutes() {
             <Route path="payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
             <Route path="reyting" element={<Navigate to="/statistika" replace />} />
           </Route>
+          {/* Video dars — to'liq ekran, MainLayout'siz. */}
+          <Route path="/dars/s/:sessionId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="*" element={<NotFoundPage />} />
         </>
       )}

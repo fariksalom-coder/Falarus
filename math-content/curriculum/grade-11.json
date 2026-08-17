@@ -1,0 +1,124 @@
+{
+  "grade": 11,
+  "title": "Algebra va analiz asoslari, geometriya, 11-sinf",
+  "units": [
+    {
+      "id": "m11-u01",
+      "title": "Limit va uzluksizlik",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m11-u01-l01", "title": "Ketma-ketlik limiti", "dtm": true },
+        { "id": "m11-u01-l02", "title": "Funksiya limiti", "dtm": true },
+        { "id": "m11-u01-l03", "title": "Limitlarni hisoblash usullari", "dtm": true },
+        { "id": "m11-u01-l04", "title": "Funksiyaning uzluksizligi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m11-u02",
+      "title": "Hosila",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m11-u02-l01", "title": "Hosila ta'rifi va geometrik ma'nosi", "dtm": true },
+        { "id": "m11-u02-l02", "title": "Asosiy funksiyalar hosilalari", "dtm": true },
+        { "id": "m11-u02-l03", "title": "Yig'indi, ko'paytma va bo'linma hosilasi", "dtm": true },
+        { "id": "m11-u02-l04", "title": "Murakkab funksiya hosilasi", "dtm": true },
+        { "id": "m11-u02-l05", "title": "Urinma tenglamasi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m11-u03",
+      "title": "Hosilaning tatbiqlari",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m11-u03-l01", "title": "Funksiyaning o'sish va kamayish oraliqlari", "dtm": true },
+        { "id": "m11-u03-l02", "title": "Ekstremum nuqtalari", "dtm": true },
+        { "id": "m11-u03-l03", "title": "Kesmadagi eng katta va eng kichik qiymat", "dtm": true },
+        { "id": "m11-u03-l04", "title": "Funksiyani tekshirib grafigini yasash", "dtm": true },
+        { "id": "m11-u03-l05", "title": "Optimallashtirish masalalari", "dtm": true },
+        { "id": "m11-u03-l06", "title": "Hosilaning fizik ma'nosi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m11-u04",
+      "title": "Integral",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m11-u04-l01", "title": "Boshlang'ich funksiya. Aniqmas integral", "dtm": true },
+        { "id": "m11-u04-l02", "title": "Integrallash qoidalari va jadvali", "dtm": true },
+        { "id": "m11-u04-l03", "title": "Aniq integral. Nyuton-Leybnits formulasi", "dtm": true },
+        { "id": "m11-u04-l04", "title": "Egri chiziqli trapetsiya yuzasi", "dtm": true },
+        { "id": "m11-u04-l05", "title": "Integralning amaliy tatbiqlari", "dtm": true }
+      ]
+    },
+    {
+      "id": "m11-u05",
+      "title": "Tenglama va tengsizliklar takrori",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m11-u05-l01", "title": "Parametrli chiziqli tenglamalar", "dtm": true },
+        { "id": "m11-u05-l02", "title": "Parametrli kvadrat tenglamalar", "dtm": true },
+        { "id": "m11-u05-l03", "title": "Modulli tenglama va tengsizliklar", "dtm": true },
+        { "id": "m11-u05-l04", "title": "Murakkab kasr-ratsional tenglamalar", "dtm": true },
+        { "id": "m11-u05-l05", "title": "Nostandart yechish usullari", "dtm": true }
+      ]
+    },
+    {
+      "id": "m11-u06",
+      "title": "Ehtimollar nazariyasi va statistika",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m11-u06-l01", "title": "Hodisalar ustida amallar", "dtm": true },
+        { "id": "m11-u06-l02", "title": "Ehtimollarni qo'shish va ko'paytirish", "dtm": true },
+        { "id": "m11-u06-l03", "title": "Shartli ehtimollik", "dtm": true },
+        { "id": "m11-u06-l04", "title": "Tasodifiy miqdor. Matematik kutilma", "dtm": true },
+        { "id": "m11-u06-l05", "title": "Tanlanma xarakteristikalari", "dtm": true }
+      ]
+    },
+    {
+      "id": "m11-u07",
+      "title": "Ko'pyoqliklar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m11-u07-l01", "title": "Prizma. Sirt yuzi", "dtm": true },
+        { "id": "m11-u07-l02", "title": "Parallelepiped va kub", "dtm": true },
+        { "id": "m11-u07-l03", "title": "Piramida. Sirt yuzi", "dtm": true },
+        { "id": "m11-u07-l04", "title": "Kesik piramida", "dtm": true },
+        { "id": "m11-u07-l05", "title": "Muntazam ko'pyoqliklar", "dtm": false }
+      ]
+    },
+    {
+      "id": "m11-u08",
+      "title": "Aylanma jismlar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m11-u08-l01", "title": "Silindr va uning kesimlari", "dtm": true },
+        { "id": "m11-u08-l02", "title": "Konus va kesik konus", "dtm": true },
+        { "id": "m11-u08-l03", "title": "Shar va sfera", "dtm": true },
+        { "id": "m11-u08-l04", "title": "Ichki va tashqi chizilgan jismlar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m11-u09",
+      "title": "Hajmlar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m11-u09-l01", "title": "Prizma va parallelepiped hajmi", "dtm": true },
+        { "id": "m11-u09-l02", "title": "Piramida hajmi", "dtm": true },
+        { "id": "m11-u09-l03", "title": "Silindr va konus hajmi", "dtm": true },
+        { "id": "m11-u09-l04", "title": "Shar hajmi va sfera yuzi", "dtm": true },
+        { "id": "m11-u09-l05", "title": "O'xshash jismlar hajmlari nisbati", "dtm": true }
+      ]
+    },
+    {
+      "id": "m11-u10",
+      "title": "Fazoda koordinatalar va vektorlar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m11-u10-l01", "title": "Fazoviy dekart koordinatalar", "dtm": true },
+        { "id": "m11-u10-l02", "title": "Fazoda vektorlar va amallar", "dtm": true },
+        { "id": "m11-u10-l03", "title": "Skalyar ko'paytma va burchak", "dtm": true },
+        { "id": "m11-u10-l04", "title": "Tekislik va sfera tenglamasi", "dtm": true }
+      ]
+    }
+  ]
+}

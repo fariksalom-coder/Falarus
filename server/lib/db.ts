@@ -40,10 +40,19 @@ export interface Database {
 
 const connectionString = process.env.DATABASE_URL?.trim();
 
+/**
+ * Bir vaqtdagi ulanishlar soni. Odatda 20.
+ *
+ * Lokal ishlab chiqishda PGlite (WASM Postgres) ishlatilishi mumkin — u soketda
+ * bir vaqtda BITTA ulanishni qo'llaydi, ikkinchisida ECONNRESET beradi.
+ * `PG_POOL_MAX=1` shunda parallel so'rovlarni navbatga qo'yadi.
+ */
+const POOL_MAX = Number(process.env.PG_POOL_MAX || 20);
+
 export const pool: Pool | null = connectionString
   ? new Pool({
       connectionString,
-      max: 20,
+      max: POOL_MAX,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,
     })

@@ -350,7 +350,9 @@ export default function PartnerPage() {
       ) : null}
 
       {overlay === 'admin-chat' ? <PartnerAdminChat onBack={() => setOverlay(null)} /> : null}
-      {overlay === 'group-chat' ? <SavolJavobChat onBack={() => setOverlay(null)} /> : null}
+      {overlay === 'group-chat' ? (
+        <SavolJavobChat onBack={() => setOverlay(null)} onOpenSupport={() => setOverlay('admin-chat')} />
+      ) : null}
     </div>
   );
 }

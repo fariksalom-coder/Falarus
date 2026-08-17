@@ -1,10 +1,26 @@
+import { SkeletonKarta } from '../components/ui/Skeleton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { isValidDailyCourseDay, FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
-import { Check, ChevronLeft, ChevronRight, Crown, Edit3, FileText, RefreshCw } from 'lucide-react';
-import { fetchStreak, getCachedStreak, type StreakResponse } from '../api/activity';
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  Edit3,
+  FileText,
+  RefreshCw,
+} from 'lucide-react';
+import {
+  fetchMyRank,
+  getCachedMyRank,
+  MY_RANK_EVENT,
+  type MyRankResponse,
+} from '../api/leaderboard';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { useLocale } from '../context/LocaleContext';
@@ -16,6 +32,8 @@ import UserAvatar from '../components/UserAvatar';
 import type { UserGender } from '../components/UserAvatar';
 import KunlikFreeLimitCta from '../components/KunlikFreeLimitCta';
 import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
+import InstallAppCard from '../components/InstallAppCard';
+import LiveStreamBanner from '../components/live/LiveStreamBanner';
 import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 
 const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
@@ -25,6 +43,10 @@ const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   words_learned: 0,
   words_correct: 0,
   words_match: false,
+  phrases_done: false,
+  phrases_correct: 0,
+  text_questions_correct: 0,
+  speaking_tasks_done: 0,
   oqish_done: false,
   speaking_level: 0,
 };
@@ -148,14 +170,14 @@ function findCurrentDay(rows: Map<number, KunlikDayProgress>, promptCounts: Map<
 }
 
 function HomeHeader({
-  streak,
+  myRank,
   premium,
   avatarUrl,
   gender,
   userName,
   t,
 }: {
-  streak: StreakResponse;
+  myRank: MyRankResponse | null;
   points: number;
   premium: boolean;
   avatarUrl?: string | null;
@@ -167,19 +189,53 @@ function HomeHeader({
 
   return (
     <header className="flex items-center gap-2 px-4 pt-3">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <img src="/app-mobile/logo/logo_mark.svg" alt="" className="h-[34px] w-[34px] shrink-0" decoding="async" />
-        <h1 className="min-w-0 truncate text-[26px] font-extrabold leading-none text-app-brand">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        <img src="/app-mobile/logo/logo_mark.svg" alt="" className="h-[30px] w-[30px] shrink-0" decoding="async" />
+        {/* Nom kesilib qolmasligi uchun `shrink-0`: o'rin va Premium tugmalari
+            kengaygach avval o'zi qisqarib «Fal…» bo'lib qolardi. */}
+        <h1 className="shrink-0 text-[22px] font-extrabold leading-none text-app-brand">
           FalaRus
         </h1>
       </div>
 
-      <div className="flex h-11 w-[88px] items-center rounded-full bg-app-surface-elevated py-1 pl-1 pr-2 shadow-app-soft">
-        <UserAvatar avatarUrl={avatarUrl} gender={gender ?? null} name={userName} className="h-9 w-9" />
-        <span className="ml-2 min-w-0 flex-1 text-center text-[20px] font-extrabold leading-none text-app-text">
-          {streak.streak_days}
+      {/* Platformadagi o'rin (XP emas — aynan nechanchi o'rin). Yonida bugungi
+          o'zgarish: ko'tarilgan bo'lsa yashil strelka tepaga, tushgan yoki
+          kimdir o'zib ketgan bo'lsa qizil strelka pastga. */}
+      <button
+        type="button"
+        onClick={() => navigate('/statistika')}
+        aria-label={
+          myRank?.rank
+            ? `Reytingdagi o'rningiz: ${myRank.rank}${
+                (myRank.delta ?? 0) > 0
+                  ? `, ${myRank.delta} pog'ona ko'tarildingiz`
+                  : (myRank.delta ?? 0) < 0
+                    ? `, ${Math.abs(myRank.delta)} pog'ona tushdingiz`
+                    : ''
+              }`
+            : 'Reyting'
+        }
+        className="flex h-11 shrink-0 items-center rounded-full bg-app-surface-elevated py-1 pl-2 pr-1 shadow-app-soft active:scale-[0.98]"
+      >
+        {/* Matn CHAPDA, rasm O'NGDA. Raqam katta, «-o'rindasiz» kichikroq —
+            shunda o'rin bir qarashda o'qiladi va qator ham sig'adi. */}
+        <span className="mr-1.5 flex items-center gap-[1px] leading-none text-app-text">
+          {myRank?.rank ? (
+            <>
+              <span className="text-[18px] font-extrabold tabular-nums">{myRank.rank}</span>
+              <span className="text-[11px] font-black text-app-text-muted">-o‘rindasiz</span>
+              {(myRank.delta ?? 0) > 0 ? (
+                <ArrowUp className="ml-0.5 h-4 w-4 shrink-0 text-app-success" strokeWidth={3} aria-hidden />
+              ) : (myRank.delta ?? 0) < 0 ? (
+                <ArrowDown className="ml-0.5 h-4 w-4 shrink-0 text-app-danger" strokeWidth={3} aria-hidden />
+              ) : null}
+            </>
+          ) : (
+            <span className="text-[11.5px] font-black text-app-text-muted">Reyting</span>
+          )}
         </span>
-      </div>
+        <UserAvatar avatarUrl={avatarUrl} gender={gender ?? null} name={userName} className="h-8 w-8" />
+      </button>
 
       {!premium ? (
         <button
@@ -188,9 +244,9 @@ function HomeHeader({
           onMouseEnter={() => prefetchRoutePath('/tariflar')}
           onTouchStart={() => prefetchRoutePath('/tariflar')}
           onFocus={() => prefetchRoutePath('/tariflar')}
-          className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-app-brand px-3 text-[13px] font-black text-white shadow-app-soft active:scale-[0.98]"
+          className="flex h-11 shrink-0 items-center gap-1 rounded-full bg-app-brand px-2.5 text-[12px] font-black text-white shadow-app-soft active:scale-[0.98]"
         >
-          <Crown className="h-[18px] w-[18px]" aria-hidden />
+          <Crown className="h-4 w-4" aria-hidden />
           {t('home.premium')}
         </button>
       ) : null}
@@ -475,7 +531,9 @@ export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { rows, loaded, practicePromptCountByDay } = useKunlikProgress();
   const premium = Boolean(access?.subscription_active);
-  const [streak, setStreak] = useState<StreakResponse>(() => getCachedStreak() ?? { streak_days: 0, last_7_days: Array(7).fill(false) });
+  // OLTIN A'ZO: kunlar bo'ylab oldinga ham erkin yuradi (182 kun ochiq).
+  const oltin = Boolean(access?.golden);
+  const [myRank, setMyRank] = useState<MyRankResponse | null>(() => getCachedMyRank());
   const currentDay = useMemo(() => {
     if (!loaded) return null;
     return findCurrentDay(rows, practicePromptCountByDay);
@@ -484,19 +542,51 @@ export default function HomePage() {
   const [freeLimitModalOpen, setFreeLimitModalOpen] = useState(false);
   const initialDayResolvedRef = useRef(false);
 
+  /*
+   * O'rin real vaqtda yangilanadi:
+   *  1) sahifa ochilganda;
+   *  2) XP olingan zahoti (`MY_RANK_EVENT` — masalan ibora testi yakunlangach);
+   *  3) ilovaga qaytilganda (fokus/ko'rinish) — bu paytda boshqa
+   *     foydalanuvchilar o'zib ketgan bo'lishi mumkin.
+   */
   useEffect(() => {
     let cancelled = false;
-    fetchStreak(token).then((data) => {
-      if (!cancelled && data) setStreak(data);
-    });
+    const pull = () => {
+      void fetchMyRank(token).then((data) => {
+        if (!cancelled && data) setMyRank(data);
+      });
+    };
+    pull();
+
+    const onPublished = (e: Event) => {
+      const detail = (e as CustomEvent<MyRankResponse>).detail;
+      if (detail) setMyRank(detail);
+    };
+    const onFocus = () => pull();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') pull();
+    };
+
+    window.addEventListener(MY_RANK_EVENT, onPublished as EventListener);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       cancelled = true;
+      window.removeEventListener(MY_RANK_EVENT, onPublished as EventListener);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [token]);
 
   // Effect 1: `?kun=N` deep link (from course map or elsewhere) — ALWAYS wins.
-  // Reads `kun` synchronously from window.location so React Router state can't lie about it.
-  const kunParam = searchParams.get('kun');
+  // React Router'ning searchParams'i lazy-route/Suspense'da ba'zan STALE (null) qaytaradi —
+  // shu sabab xaritadan `/?kun=N` bilan kelganda kun qo'llanmay, har doim currentDay'ga
+  // tushib qolardi. Shuning uchun window.location'dan ham o'qiymiz (ishonchli manba).
+  const kunParam =
+    searchParams.get('kun') ??
+    (typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('kun')
+      : null);
   useEffect(() => {
     if (currentDay == null) return;
     if (kunParam == null) return;
@@ -504,7 +594,13 @@ export default function HomePage() {
     if (!isValidDailyCourseDay(kun)) return;
     initialDayResolvedRef.current = true;
     takeKunlikRestoreDay();
-    setSelectedDay(Math.min(kun, currentDay));
+    // Xarita OCHIQ kunlarni yuboradi: o'tgan/bugungi (kun <= currentDay) YOKI TUGALLANGAN
+    // (currentDay'dan keyin bo'lsa ham). O'shalarga o'tishga ruxsat beramiz. Faqat
+    // qulflangan kelajak kun (masalan qo'lda URL) currentDay'ga tushiriladi.
+    const kunOchiq =
+      kun <= currentDay ||
+      isDayComplete(getRow(rows, kun), practicePromptCountByDay.get(kun) ?? 0);
+    setSelectedDay(kunOchiq ? kun : currentDay);
     // Clear ?kun= from URL so subsequent day-navigator swipes are clean.
     setSearchParams(
       (prev) => {
@@ -514,10 +610,10 @@ export default function HomePage() {
       },
       { replace: true },
     );
-  }, [currentDay, kunParam, setSearchParams]);
+  }, [currentDay, kunParam, setSearchParams, rows, practicePromptCountByDay]);
 
-  // Effect 2: initial resolution when no URL param — restore from sessionStorage,
-  // otherwise land on currentDay. Runs exactly once per HomePage instance.
+  // Effect 2: initial resolution when no URL param — restore from sessionStorage
+  // (xaritadan goDay shu yerga ham yozadi), aks holda currentDay.
   useEffect(() => {
     if (currentDay == null) return;
     if (initialDayResolvedRef.current) return;
@@ -526,17 +622,31 @@ export default function HomePage() {
     initialDayResolvedRef.current = true;
     const restored = takeKunlikRestoreDay();
     if (restored != null && isValidDailyCourseDay(restored)) {
-      setSelectedDay(Math.min(restored, currentDay));
+      // Ochiq kun (tugallangan yoki <= currentDay) bo'lsa — o'shanga o'tamiz.
+      const ochiq =
+        oltin ||
+        restored <= currentDay ||
+        isDayComplete(getRow(rows, restored), practicePromptCountByDay.get(restored) ?? 0);
+      setSelectedDay(ochiq ? restored : currentDay);
     } else {
       setSelectedDay(currentDay);
     }
-  }, [currentDay, kunParam]);
+  }, [currentDay, kunParam, rows, practicePromptCountByDay, oltin]);
 
-  // Effect 3: clamp selectedDay if currentDay shrinks (defensive).
+  // Effect 3: clamp selectedDay — faqat QULFLANGAN kelajak kunni currentDay'ga tushiradi.
+  // TUGALLANGAN kunlar (currentDay'dan keyin bo'lsa ham) OCHIQ — tegilmaydi.
   useEffect(() => {
     if (currentDay == null) return;
-    setSelectedDay((day) => (day == null ? day : Math.min(Math.max(day, 1), currentDay)));
-  }, [currentDay]);
+    setSelectedDay((day) => {
+      if (day == null) return day;
+      const d = Math.max(1, day);
+      const ochiq =
+        oltin ||
+        d <= currentDay ||
+        isDayComplete(getRow(rows, d), practicePromptCountByDay.get(d) ?? 0);
+      return ochiq ? d : currentDay;
+    });
+  }, [currentDay, rows, practicePromptCountByDay, oltin]);
 
   const progressReady = loaded && currentDay != null && selectedDay != null;
   const displayDay = selectedDay ?? currentDay ?? 1;
@@ -553,7 +663,7 @@ export default function HomePage() {
     <div className="bg-app-bg">
       <main className="mx-auto w-full max-w-[820px]">
         <HomeHeader
-          streak={streak}
+          myRank={myRank}
           points={userPoints}
           premium={premium}
           avatarUrl={user?.avatarUrl}
@@ -561,6 +671,14 @@ export default function HomePage() {
           userName={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || undefined}
           t={t}
         />
+        {/* Jonli efir ketayotgan bo'lsa — eng tepada. Efir bo'lmasa
+            komponent hech narsa chizmaydi. */}
+        <div className="px-4">
+          <LiveStreamBanner />
+        </div>
+        {/* Ilovani bosh ekranga chiqarish — eng tepada, sarlavhadan keyin.
+            O'rnatilgan bo'lsa o'zi ko'rinmaydi. */}
+        <InstallAppCard />
         <ExamShortcuts t={t} />
 
         <div className="px-4 pt-2">
@@ -581,11 +699,13 @@ export default function HomePage() {
           <>
             <DayNavigator
               selectedDay={displayDay}
-              currentDay={currentDay}
+              currentDay={oltin ? TOTAL_DAYS : currentDay}
               done={done}
               total={slots.length}
               onPrevious={() => setSelectedDay((day) => Math.max(1, (day ?? displayDay) - 1))}
-              onNext={() => setSelectedDay((day) => Math.min(currentDay, (day ?? displayDay) + 1))}
+              onNext={() =>
+                setSelectedDay((day) => Math.min(oltin ? TOTAL_DAYS : currentDay, (day ?? displayDay) + 1))
+              }
               slots={slots}
               day={displayDay}
               premium={premium}
@@ -618,9 +738,7 @@ export default function HomePage() {
           </>
         ) : (
           <div className="px-4 pt-6">
-            <div className="flex h-[114px] items-center justify-center rounded-2xl bg-app-surface text-sm font-bold text-app-text-muted shadow-app-soft">
-              {t('home.loadingPlan')}
-            </div>
+            <SkeletonKarta />
           </div>
         )}
       </main>

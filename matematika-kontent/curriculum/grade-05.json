@@ -1,0 +1,237 @@
+{
+  "subject": "matematika",
+  "grade": 5,
+  "totalLessons": 110,
+  "units": [
+    {
+      "id": "m05-u01",
+      "title": "Natural sonlar",
+      "branch": "general",
+      "objectives": [
+        "Ko'p xonali sonlarni o'qish, yozish va taqqoslash",
+        "Sonlarni koordinata nurida tasvirlash va yaxlitlash",
+        "Qo'shish va ayirish xossalarini qo'llash"
+      ],
+      "lessons": [
+        { "id": "m05-u01-l01", "title": "Natural sonlar va ularning yozilishi", "d": 1, "min": 15, "q": 5, "prereq": [], "kind": "theory" },
+        { "id": "m05-u01-l02", "title": "Xona va razryadlar; ko'p xonali sonlarni o'qish", "d": 1, "min": 20, "q": 6, "prereq": ["m05-u01-l01"], "kind": "theory" },
+        { "id": "m05-u01-l03", "title": "Natural sonlarni taqqoslash", "d": 1, "min": 15, "q": 6, "prereq": ["m05-u01-l02"], "kind": "theory" },
+        { "id": "m05-u01-l04", "title": "Koordinata nuri", "d": 2, "min": 20, "q": 5, "prereq": ["m05-u01-l03"], "kind": "theory" },
+        { "id": "m05-u01-l05", "title": "Sonlarni yaxlitlash", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u01-l03"], "kind": "theory" },
+        { "id": "m05-u01-l06", "title": "Rim raqamlari", "d": 1, "min": 15, "q": 5, "prereq": ["m05-u01-l01"], "kind": "theory" },
+        { "id": "m05-u01-l07", "title": "Natural sonlarni qo'shish", "d": 1, "min": 20, "q": 6, "prereq": ["m05-u01-l02"], "kind": "theory" },
+        { "id": "m05-u01-l08", "title": "Qo'shishning o'rin almashtirish va guruhlash xossalari", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u01-l07"], "kind": "theory" },
+        { "id": "m05-u01-l09", "title": "Natural sonlarni ayirish", "d": 1, "min": 20, "q": 6, "prereq": ["m05-u01-l07"], "kind": "theory" },
+        { "id": "m05-u01-l10", "title": "Qo'shish va ayirishga doir matnli masalalar", "d": 2, "min": 25, "q": 6, "prereq": ["m05-u01-l09"], "kind": "practice" },
+        { "id": "m05-u01-l11", "title": "Sonli va harfiy ifodalar", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u01-l09"], "kind": "theory" },
+        { "id": "m05-u01-l12", "title": "Natural sonlar — bo'lim takrorlash", "d": 2, "min": 25, "q": 10, "prereq": ["m05-u01-l11"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u02",
+      "title": "Geometriya asoslari",
+      "branch": "geometry",
+      "objectives": [
+        "Kesma, nur, burchakni farqlash va o'lchash",
+        "Transportir va chizg'ich bilan yasash",
+        "Perimetrni hisoblash"
+      ],
+      "lessons": [
+        { "id": "m05-u02-l01", "title": "Nuqta, chiziq, to'g'ri chiziq", "d": 1, "min": 15, "q": 5, "prereq": [], "kind": "theory" },
+        { "id": "m05-u02-l02", "title": "Kesma va uning uzunligi", "d": 1, "min": 20, "q": 6, "prereq": ["m05-u02-l01"], "kind": "theory" },
+        { "id": "m05-u02-l03", "title": "Nur va burchak", "d": 1, "min": 20, "q": 5, "prereq": ["m05-u02-l01"], "kind": "theory" },
+        { "id": "m05-u02-l04", "title": "Burchak turlari: o'tkir, to'g'ri, o'tmas, yoyiq", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u02-l03"], "kind": "theory" },
+        { "id": "m05-u02-l05", "title": "Burchakni transportir bilan o'lchash va yasash", "d": 2, "min": 25, "q": 6, "prereq": ["m05-u02-l04"], "kind": "practice" },
+        { "id": "m05-u02-l06", "title": "Uchburchak va uning turlari", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u02-l04"], "kind": "theory" },
+        { "id": "m05-u02-l07", "title": "To'rtburchak, kvadrat, to'g'ri to'rtburchak", "d": 1, "min": 20, "q": 6, "prereq": ["m05-u02-l06"], "kind": "theory" },
+        { "id": "m05-u02-l08", "title": "Perimetr va uni hisoblash", "d": 2, "min": 25, "q": 7, "prereq": ["m05-u02-l07"], "kind": "theory" },
+        { "id": "m05-u02-l09", "title": "Uzunlik birliklari va masshtab", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u02-l02"], "kind": "theory" },
+        { "id": "m05-u02-l10", "title": "Geometriya asoslari — bo'lim takrorlash", "d": 2, "min": 25, "q": 10, "prereq": ["m05-u02-l09"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u03",
+      "title": "Ko'paytirish va bo'lish",
+      "branch": "general",
+      "objectives": [
+        "Ko'p xonali sonlarni ko'paytirish va bo'lish",
+        "Amallar tartibini to'g'ri qo'llash",
+        "Bo'linish belgilari, EKUB va EKUK ni topish"
+      ],
+      "lessons": [
+        { "id": "m05-u03-l01", "title": "Natural sonlarni ko'paytirish", "d": 1, "min": 20, "q": 6, "prereq": ["m05-u01-l07"], "kind": "theory" },
+        { "id": "m05-u03-l02", "title": "Ko'paytirishning xossalari", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u03-l01"], "kind": "theory" },
+        { "id": "m05-u03-l03", "title": "Ko'p xonali sonlarni ustun usulida ko'paytirish", "d": 2, "min": 25, "q": 6, "prereq": ["m05-u03-l01"], "kind": "practice" },
+        { "id": "m05-u03-l04", "title": "Bo'lish; qoldiqli bo'lish", "d": 2, "min": 25, "q": 7, "prereq": ["m05-u03-l01"], "kind": "theory" },
+        { "id": "m05-u03-l05", "title": "Ko'p xonali sonlarga bo'lish", "d": 3, "min": 25, "q": 6, "prereq": ["m05-u03-l04"], "kind": "practice" },
+        { "id": "m05-u03-l06", "title": "Daraja tushunchasi: kvadrat va kub", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u03-l02"], "kind": "theory" },
+        { "id": "m05-u03-l07", "title": "Amallar tartibi", "d": 2, "min": 20, "q": 7, "prereq": ["m05-u03-l06"], "kind": "theory" },
+        { "id": "m05-u03-l08", "title": "Qavslarni ochish", "d": 3, "min": 20, "q": 6, "prereq": ["m05-u03-l07"], "kind": "theory" },
+        { "id": "m05-u03-l09", "title": "Ifodalarni soddalashtirish", "d": 3, "min": 25, "q": 6, "prereq": ["m05-u03-l08"], "kind": "practice" },
+        { "id": "m05-u03-l10", "title": "2, 5, 10 ga bo'linish belgilari", "d": 1, "min": 15, "q": 6, "prereq": ["m05-u03-l04"], "kind": "theory" },
+        { "id": "m05-u03-l11", "title": "3 va 9 ga bo'linish belgilari", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u03-l10"], "kind": "theory" },
+        { "id": "m05-u03-l12", "title": "Tub va murakkab sonlar", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u03-l11"], "kind": "theory" },
+        { "id": "m05-u03-l13", "title": "EKUB va EKUK", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u03-l12"], "kind": "theory" },
+        { "id": "m05-u03-l14", "title": "Ko'paytirish va bo'lish — bo'lim takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u03-l13"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u04",
+      "title": "Tenglama va formulalar",
+      "branch": "algebra",
+      "objectives": [
+        "Oddiy tenglamalarni yechish",
+        "Masalani tenglama tuzib yechish",
+        "Harakat va ish formulalarini qo'llash"
+      ],
+      "lessons": [
+        { "id": "m05-u04-l01", "title": "Tenglama tushunchasi va uning ildizi", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u01-l11"], "kind": "theory" },
+        { "id": "m05-u04-l02", "title": "Noma'lum qo'shiluvchi va kamayuvchini topish", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u04-l01"], "kind": "theory" },
+        { "id": "m05-u04-l03", "title": "Noma'lum ko'paytuvchi va bo'linuvchini topish", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u04-l02"], "kind": "theory" },
+        { "id": "m05-u04-l04", "title": "Tenglama yordamida masala yechish", "d": 3, "min": 25, "q": 6, "prereq": ["m05-u04-l03"], "kind": "practice" },
+        { "id": "m05-u04-l05", "title": "Tengsizlik tushunchasi", "d": 2, "min": 15, "q": 5, "prereq": ["m05-u01-l03"], "kind": "theory" },
+        { "id": "m05-u04-l06", "title": "Formula va uning qo'llanilishi", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u01-l11"], "kind": "theory" },
+        { "id": "m05-u04-l07", "title": "Harakatga doir masalalar", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u04-l06"], "kind": "practice" },
+        { "id": "m05-u04-l08", "title": "Tenglamalar — bo'lim takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u04-l07"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u05",
+      "title": "Yuza va hajm",
+      "branch": "geometry",
+      "objectives": [
+        "Yuza va hajm birliklarini bilish va o'zaro almashtirish",
+        "To'g'ri to'rtburchak, kvadrat va murakkab shakl yuzasini topish",
+        "Parallelepiped va kub hajmini hisoblash"
+      ],
+      "lessons": [
+        { "id": "m05-u05-l01", "title": "Yuza tushunchasi va birliklari", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u02-l08"], "kind": "theory" },
+        { "id": "m05-u05-l02", "title": "To'g'ri to'rtburchak yuzasi", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u05-l01"], "kind": "theory" },
+        { "id": "m05-u05-l03", "title": "Kvadrat yuzasi", "d": 1, "min": 15, "q": 5, "prereq": ["m05-u05-l02"], "kind": "theory" },
+        { "id": "m05-u05-l04", "title": "Murakkab shakl yuzasini bo'laklab topish", "d": 3, "min": 25, "q": 6, "prereq": ["m05-u05-l03"], "kind": "practice" },
+        { "id": "m05-u05-l05", "title": "To'g'ri burchakli parallelepiped", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u05-l02"], "kind": "theory" },
+        { "id": "m05-u05-l06", "title": "Hajm tushunchasi va birliklari", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u05-l05"], "kind": "theory" },
+        { "id": "m05-u05-l07", "title": "Parallelepiped hajmi", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u05-l06"], "kind": "theory" },
+        { "id": "m05-u05-l08", "title": "Kub hajmi", "d": 2, "min": 15, "q": 5, "prereq": ["m05-u05-l07"], "kind": "theory" },
+        { "id": "m05-u05-l09", "title": "Yuza va hajmga doir amaliy masalalar", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u05-l08"], "kind": "practice" },
+        { "id": "m05-u05-l10", "title": "Yuza va hajm — bo'lim takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u05-l09"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u06",
+      "title": "Oddiy kasrlar",
+      "branch": "general",
+      "objectives": [
+        "Kasr tushunchasini va uning asosiy xossasini tushunish",
+        "Kasrlarni qisqartirish va umumiy maxrajga keltirish",
+        "Har xil maxrajli kasrlarni qo'shish va ayirish"
+      ],
+      "lessons": [
+        { "id": "m05-u06-l01", "title": "Ulush va kasr tushunchasi", "d": 1, "min": 20, "q": 6, "prereq": ["m05-u03-l04"], "kind": "theory" },
+        { "id": "m05-u06-l02", "title": "Kasrni koordinata nurida tasvirlash", "d": 2, "min": 20, "q": 5, "prereq": ["m05-u06-l01"], "kind": "theory" },
+        { "id": "m05-u06-l03", "title": "To'g'ri va noto'g'ri kasrlar", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u06-l01"], "kind": "theory" },
+        { "id": "m05-u06-l04", "title": "Aralash sonlar", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u06-l03"], "kind": "theory" },
+        { "id": "m05-u06-l05", "title": "Bir xil maxrajli kasrlarni taqqoslash", "d": 1, "min": 15, "q": 6, "prereq": ["m05-u06-l03"], "kind": "theory" },
+        { "id": "m05-u06-l06", "title": "Bir xil maxrajli kasrlarni qo'shish", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u06-l05"], "kind": "theory" },
+        { "id": "m05-u06-l07", "title": "Bir xil maxrajli kasrlarni ayirish", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u06-l06"], "kind": "theory" },
+        { "id": "m05-u06-l08", "title": "Kasrning asosiy xossasi", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u06-l04"], "kind": "theory" },
+        { "id": "m05-u06-l09", "title": "Kasrni qisqartirish", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u06-l08", "m05-u03-l13"], "kind": "theory" },
+        { "id": "m05-u06-l10", "title": "Kasrlarni umumiy maxrajga keltirish", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u06-l09"], "kind": "theory" },
+        { "id": "m05-u06-l11", "title": "Har xil maxrajli kasrlarni qo'shish", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u06-l10"], "kind": "theory" },
+        { "id": "m05-u06-l12", "title": "Har xil maxrajli kasrlarni ayirish", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u06-l11"], "kind": "theory" },
+        { "id": "m05-u06-l13", "title": "Kasrlarga doir matnli masalalar", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u06-l12"], "kind": "practice" },
+        { "id": "m05-u06-l14", "title": "Oddiy kasrlar — bo'lim takrorlash", "d": 3, "min": 30, "q": 12, "prereq": ["m05-u06-l13"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u07",
+      "title": "O'nli kasrlar",
+      "branch": "general",
+      "objectives": [
+        "O'nli kasrlarni o'qish, yozish, taqqoslash va yaxlitlash",
+        "O'nli kasrlar ustida to'rt amalni bajarish",
+        "Oddiy kasrni o'nli kasrga aylantirish"
+      ],
+      "lessons": [
+        { "id": "m05-u07-l01", "title": "O'nli kasr tushunchasi va yozilishi", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u06-l09"], "kind": "theory" },
+        { "id": "m05-u07-l02", "title": "O'nli kasrlarni o'qish va xona nomlari", "d": 1, "min": 15, "q": 6, "prereq": ["m05-u07-l01"], "kind": "theory" },
+        { "id": "m05-u07-l03", "title": "O'nli kasrlarni taqqoslash", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u07-l02"], "kind": "theory" },
+        { "id": "m05-u07-l04", "title": "O'nli kasrlarni yaxlitlash", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u07-l03"], "kind": "theory" },
+        { "id": "m05-u07-l05", "title": "O'nli kasrlarni qo'shish", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u07-l03"], "kind": "theory" },
+        { "id": "m05-u07-l06", "title": "O'nli kasrlarni ayirish", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u07-l05"], "kind": "theory" },
+        { "id": "m05-u07-l07", "title": "O'nli kasrni natural songa ko'paytirish", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u07-l06"], "kind": "theory" },
+        { "id": "m05-u07-l08", "title": "O'nli kasrlarni o'zaro ko'paytirish", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u07-l07"], "kind": "theory" },
+        { "id": "m05-u07-l09", "title": "10, 100, 1000 ga ko'paytirish", "d": 1, "min": 15, "q": 6, "prereq": ["m05-u07-l07"], "kind": "theory" },
+        { "id": "m05-u07-l10", "title": "O'nli kasrni natural songa bo'lish", "d": 3, "min": 25, "q": 6, "prereq": ["m05-u07-l08"], "kind": "theory" },
+        { "id": "m05-u07-l11", "title": "O'nli kasrga bo'lish", "d": 4, "min": 25, "q": 7, "prereq": ["m05-u07-l10"], "kind": "theory" },
+        { "id": "m05-u07-l12", "title": "10, 100, 1000 ga bo'lish", "d": 1, "min": 15, "q": 6, "prereq": ["m05-u07-l10"], "kind": "theory" },
+        { "id": "m05-u07-l13", "title": "Oddiy kasrni o'nli kasrga aylantirish", "d": 3, "min": 25, "q": 6, "prereq": ["m05-u07-l11"], "kind": "theory" },
+        { "id": "m05-u07-l14", "title": "Cheksiz davriy o'nli kasr haqida tushuncha", "d": 3, "min": 20, "q": 5, "prereq": ["m05-u07-l13"], "kind": "theory" },
+        { "id": "m05-u07-l15", "title": "O'nli kasrlarga doir matnli masalalar", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u07-l14"], "kind": "practice" },
+        { "id": "m05-u07-l16", "title": "O'nli kasrlar — bo'lim takrorlash", "d": 3, "min": 30, "q": 12, "prereq": ["m05-u07-l15"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u08",
+      "title": "O'rtacha arifmetik va foiz",
+      "branch": "general",
+      "objectives": [
+        "O'rtacha arifmetikni topish va uni izohlash",
+        "Sonning foizini va foizi bo'yicha sonni topish",
+        "Chegirma, ustama va oddiy bank foiziga doir masalalarni yechish"
+      ],
+      "lessons": [
+        { "id": "m05-u08-l01", "title": "O'rtacha arifmetik", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u07-l10"], "kind": "theory" },
+        { "id": "m05-u08-l02", "title": "O'rtacha qiymatga doir masalalar", "d": 3, "min": 25, "q": 6, "prereq": ["m05-u08-l01"], "kind": "practice" },
+        { "id": "m05-u08-l03", "title": "Foiz tushunchasi", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u07-l13"], "kind": "theory" },
+        { "id": "m05-u08-l04", "title": "Sonning foizini topish", "d": 2, "min": 20, "q": 7, "prereq": ["m05-u08-l03"], "kind": "theory" },
+        { "id": "m05-u08-l05", "title": "Foizi bo'yicha sonni topish", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u08-l04"], "kind": "theory" },
+        { "id": "m05-u08-l06", "title": "Foizli nisbat: bir son ikkinchisining necha foizi", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u08-l05"], "kind": "theory" },
+        { "id": "m05-u08-l07", "title": "Chegirma va ustama masalalari", "d": 3, "min": 25, "q": 7, "prereq": ["m05-u08-l06"], "kind": "practice" },
+        { "id": "m05-u08-l08", "title": "Bank foizi haqida boshlang'ich tushuncha", "d": 3, "min": 20, "q": 6, "prereq": ["m05-u08-l07"], "kind": "theory" },
+        { "id": "m05-u08-l09", "title": "Foizga doir amaliy masalalar", "d": 4, "min": 25, "q": 7, "prereq": ["m05-u08-l08"], "kind": "practice" },
+        { "id": "m05-u08-l10", "title": "O'rtacha arifmetik va foiz — bo'lim takrorlash", "d": 3, "min": 30, "q": 12, "prereq": ["m05-u08-l09"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u09",
+      "title": "Ma'lumotlar va diagrammalar",
+      "branch": "general",
+      "objectives": [
+        "Jadval va diagrammadan ma'lumot o'qish",
+        "Ma'lumotni diagramma ko'rinishida tasvirlash",
+        "Oddiy statistik xulosa chiqarish"
+      ],
+      "lessons": [
+        { "id": "m05-u09-l01", "title": "Jadval bilan ishlash", "d": 1, "min": 15, "q": 5, "prereq": ["m05-u08-l01"], "kind": "theory" },
+        { "id": "m05-u09-l02", "title": "Ustunli diagramma", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u09-l01"], "kind": "theory" },
+        { "id": "m05-u09-l03", "title": "Doiraviy diagramma", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u09-l02", "m05-u08-l04"], "kind": "theory" },
+        { "id": "m05-u09-l04", "title": "Chiziqli diagramma va grafik o'qish", "d": 2, "min": 20, "q": 6, "prereq": ["m05-u09-l03"], "kind": "theory" },
+        { "id": "m05-u09-l05", "title": "Ma'lumot yig'ish va tahlil qilish", "d": 3, "min": 25, "q": 6, "prereq": ["m05-u09-l04"], "kind": "practice" },
+        { "id": "m05-u09-l06", "title": "Ma'lumotlar va diagrammalar — bo'lim takrorlash", "d": 2, "min": 25, "q": 10, "prereq": ["m05-u09-l05"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m05-u10",
+      "title": "Yakuniy takrorlash",
+      "branch": "general",
+      "objectives": [
+        "Yil davomida o'rganilgan barcha mavzularni tizimlashtirish",
+        "Matnli masalalarni yechish usullarini mustahkamlash",
+        "Yakuniy nazorat ishiga tayyorlanish"
+      ],
+      "lessons": [
+        { "id": "m05-u10-l01", "title": "Natural sonlar — yakuniy takrorlash", "d": 2, "min": 25, "q": 10, "prereq": ["m05-u01-l12"], "kind": "review" },
+        { "id": "m05-u10-l02", "title": "Ko'paytirish, bo'lish, bo'linuvchanlik — yakuniy takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u03-l14"], "kind": "review" },
+        { "id": "m05-u10-l03", "title": "Oddiy kasrlar — yakuniy takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u06-l14"], "kind": "review" },
+        { "id": "m05-u10-l04", "title": "O'nli kasrlar — yakuniy takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u07-l16"], "kind": "review" },
+        { "id": "m05-u10-l05", "title": "Geometriya, yuza va hajm — yakuniy takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u05-l10"], "kind": "review" },
+        { "id": "m05-u10-l06", "title": "Tenglamalar va formulalar — yakuniy takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u04-l08"], "kind": "review" },
+        { "id": "m05-u10-l07", "title": "Foiz — yakuniy takrorlash", "d": 3, "min": 25, "q": 10, "prereq": ["m05-u08-l10"], "kind": "review" },
+        { "id": "m05-u10-l08", "title": "Matnli masalalarni yechish usullari", "d": 4, "min": 30, "q": 8, "prereq": ["m05-u10-l06"], "kind": "practice" },
+        { "id": "m05-u10-l09", "title": "Mantiqiy va nostandart masalalar", "d": 4, "min": 30, "q": 8, "prereq": ["m05-u10-l08"], "kind": "practice" },
+        { "id": "m05-u10-l10", "title": "5-sinf yakuniy nazorat ishi", "d": 3, "min": 45, "q": 20, "prereq": ["m05-u10-l09"], "kind": "control" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "subject": "matematika",
+  "grade": "dtm",
+  "totalLessons": 60,
+  "units": [
+    {
+      "id": "mdtm-u01",
+      "title": "DTM formati va strategiya",
+      "branch": "exam",
+      "objectives": [
+        "Imtihon formati, vaqt va baholash tizimini bilish",
+        "Test ishlash strategiyasini shakllantirish",
+        "Vaqtni to'g'ri taqsimlash"
+      ],
+      "lessons": [
+        { "id": "mdtm-u01-l01", "title": "DTM matematika imtihoni formati", "d": 2, "min": 20, "q": 6, "prereq": ["m11-u09-l12"], "kind": "theory" },
+        { "id": "mdtm-u01-l02", "title": "Baholash tizimi va ball hisoblash", "d": 2, "min": 20, "q": 5, "prereq": ["mdtm-u01-l01"], "kind": "theory" },
+        { "id": "mdtm-u01-l03", "title": "Vaqtni taqsimlash strategiyasi", "d": 3, "min": 25, "q": 6, "prereq": ["mdtm-u01-l02"], "kind": "theory" },
+        { "id": "mdtm-u01-l04", "title": "Variantlarni chetlashtirish usuli", "d": 3, "min": 25, "q": 7, "prereq": ["mdtm-u01-l03"], "kind": "theory" },
+        { "id": "mdtm-u01-l05", "title": "Javobni tekshirish va o'rniga qo'yish", "d": 3, "min": 25, "q": 7, "prereq": ["mdtm-u01-l04"], "kind": "theory" },
+        { "id": "mdtm-u01-l06", "title": "Tez hisoblash usullari", "d": 4, "min": 30, "q": 8, "prereq": ["mdtm-u01-l05"], "kind": "practice" },
+        { "id": "mdtm-u01-l07", "title": "Eng ko'p uchraydigan xatolar", "d": 3, "min": 25, "q": 7, "prereq": ["mdtm-u01-l06"], "kind": "theory" },
+        { "id": "mdtm-u01-l08", "title": "Imtihon kunidagi psixologik tayyorgarlik", "d": 2, "min": 20, "q": 5, "prereq": ["mdtm-u01-l07"], "kind": "theory" }
+      ]
+    },
+    {
+      "id": "mdtm-u02",
+      "title": "Sonlar va ifodalar — DTM bloki",
+      "branch": "exam",
+      "objectives": [
+        "Sonlar bilan bog'liq tipik DTM savollarini tanish",
+        "Ifodalarni tez soddalashtirish",
+        "Foiz va nisbat masalalarini avtomatik yechish"
+      ],
+      "lessons": [
+        { "id": "mdtm-u02-l01", "title": "Bo'linuvchanlik va qoldiqlar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u01-l08"], "kind": "practice" },
+        { "id": "mdtm-u02-l02", "title": "Tub sonlar va ko'paytuvchilarga ajratish", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u02-l01"], "kind": "practice" },
+        { "id": "mdtm-u02-l03", "title": "Kasrlar va o'nli kasrlar", "d": 3, "min": 30, "q": 10, "prereq": ["mdtm-u02-l02"], "kind": "practice" },
+        { "id": "mdtm-u02-l04", "title": "Foiz masalalari", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u02-l03"], "kind": "practice" },
+        { "id": "mdtm-u02-l05", "title": "Nisbat, proporsiya va aralashma", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u02-l04"], "kind": "practice" },
+        { "id": "mdtm-u02-l06", "title": "Daraja va ildizli ifodalar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u02-l05"], "kind": "practice" },
+        { "id": "mdtm-u02-l07", "title": "Modul bilan bog'liq savollar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u02-l06"], "kind": "practice" },
+        { "id": "mdtm-u02-l08", "title": "Sonlar bloki — sinov testi", "d": 4, "min": 35, "q": 15, "prereq": ["mdtm-u02-l07"], "kind": "control" }
+      ]
+    },
+    {
+      "id": "mdtm-u03",
+      "title": "Tenglama va tengsizliklar — DTM bloki",
+      "branch": "exam",
+      "objectives": [
+        "Barcha tenglama turlarini tez tanib olish",
+        "Yechim usulini to'g'ri tanlash",
+        "Parametrli savollarni yechish"
+      ],
+      "lessons": [
+        { "id": "mdtm-u03-l01", "title": "Chiziqli va kvadrat tenglamalar", "d": 3, "min": 30, "q": 10, "prereq": ["mdtm-u02-l08"], "kind": "practice" },
+        { "id": "mdtm-u03-l02", "title": "Viet teoremasiga doir savollar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u03-l01"], "kind": "practice" },
+        { "id": "mdtm-u03-l03", "title": "Ratsional va irratsional tenglamalar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u03-l02"], "kind": "practice" },
+        { "id": "mdtm-u03-l04", "title": "Ko'rsatkichli tenglamalar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u03-l03"], "kind": "practice" },
+        { "id": "mdtm-u03-l05", "title": "Logarifmik tenglamalar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u03-l04"], "kind": "practice" },
+        { "id": "mdtm-u03-l06", "title": "Trigonometrik tenglamalar", "d": 5, "min": 35, "q": 10, "prereq": ["mdtm-u03-l05"], "kind": "practice" },
+        { "id": "mdtm-u03-l07", "title": "Tengsizliklar va intervallar usuli", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u03-l06"], "kind": "practice" },
+        { "id": "mdtm-u03-l08", "title": "Tenglamalar sistemasi", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u03-l07"], "kind": "practice" },
+        { "id": "mdtm-u03-l09", "title": "Parametrli savollar", "d": 5, "min": 35, "q": 8, "prereq": ["mdtm-u03-l08"], "kind": "practice" },
+        { "id": "mdtm-u03-l10", "title": "Tenglamalar bloki — sinov testi", "d": 4, "min": 40, "q": 15, "prereq": ["mdtm-u03-l09"], "kind": "control" }
+      ]
+    },
+    {
+      "id": "mdtm-u04",
+      "title": "Funksiya va analiz — DTM bloki",
+      "branch": "exam",
+      "objectives": [
+        "Grafik bo'yicha savollarni tez yechish",
+        "Hosila va integralga doir tipik masalalarni bilish",
+        "Progressiyalarni tanib olish"
+      ],
+      "lessons": [
+        { "id": "mdtm-u04-l01", "title": "Funksiya aniqlanish sohasi va qiymatlar to'plami", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u03-l10"], "kind": "practice" },
+        { "id": "mdtm-u04-l02", "title": "Grafiklarni tanib olish", "d": 3, "min": 30, "q": 10, "prereq": ["mdtm-u04-l01"], "kind": "practice" },
+        { "id": "mdtm-u04-l03", "title": "Kvadrat funksiya savollari", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u04-l02"], "kind": "practice" },
+        { "id": "mdtm-u04-l04", "title": "Arifmetik va geometrik progressiya", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u04-l03"], "kind": "practice" },
+        { "id": "mdtm-u04-l05", "title": "Hosila va urinma", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u04-l04"], "kind": "practice" },
+        { "id": "mdtm-u04-l06", "title": "Ekstremum va eng katta/kichik qiymat", "d": 5, "min": 30, "q": 10, "prereq": ["mdtm-u04-l05"], "kind": "practice" },
+        { "id": "mdtm-u04-l07", "title": "Integral va yuza", "d": 5, "min": 30, "q": 10, "prereq": ["mdtm-u04-l06"], "kind": "practice" },
+        { "id": "mdtm-u04-l08", "title": "Funksiya bloki — sinov testi", "d": 4, "min": 40, "q": 15, "prereq": ["mdtm-u04-l07"], "kind": "control" }
+      ]
+    },
+    {
+      "id": "mdtm-u05",
+      "title": "Geometriya — DTM bloki",
+      "branch": "exam",
+      "objectives": [
+        "Planimetriya va stereometriya formulalarini avtomatlashtirish",
+        "Chizmasiz masalani tasavvur qilish",
+        "Tez yechim usullarini qo'llash"
+      ],
+      "lessons": [
+        { "id": "mdtm-u05-l01", "title": "Uchburchaklar: tenglik, o'xshashlik, yuza", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u04-l08"], "kind": "practice" },
+        { "id": "mdtm-u05-l02", "title": "To'g'ri burchakli uchburchak va Pifagor", "d": 3, "min": 30, "q": 10, "prereq": ["mdtm-u05-l01"], "kind": "practice" },
+        { "id": "mdtm-u05-l03", "title": "Sinuslar va kosinuslar teoremasi", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u05-l02"], "kind": "practice" },
+        { "id": "mdtm-u05-l04", "title": "To'rtburchaklar va ularning yuzasi", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u05-l03"], "kind": "practice" },
+        { "id": "mdtm-u05-l05", "title": "Aylana va doira", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u05-l04"], "kind": "practice" },
+        { "id": "mdtm-u05-l06", "title": "Koordinatalar va vektorlar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u05-l05"], "kind": "practice" },
+        { "id": "mdtm-u05-l07", "title": "Prizma va piramida", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u05-l06"], "kind": "practice" },
+        { "id": "mdtm-u05-l08", "title": "Silindr, konus va shar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u05-l07"], "kind": "practice" },
+        { "id": "mdtm-u05-l09", "title": "Hajm va sirt — aralash masalalar", "d": 5, "min": 30, "q": 10, "prereq": ["mdtm-u05-l08"], "kind": "practice" },
+        { "id": "mdtm-u05-l10", "title": "Geometriya bloki — sinov testi", "d": 4, "min": 40, "q": 15, "prereq": ["mdtm-u05-l09"], "kind": "control" }
+      ]
+    },
+    {
+      "id": "mdtm-u06",
+      "title": "Matnli masalalar va kombinatorika — DTM bloki",
+      "branch": "exam",
+      "objectives": [
+        "Matnli masala turlarini tanib olish",
+        "Model tuzish ko'nikmasini avtomatlashtirish",
+        "Kombinatorika va ehtimollik savollarini yechish"
+      ],
+      "lessons": [
+        { "id": "mdtm-u06-l01", "title": "Harakatga doir masalalar", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u05-l10"], "kind": "practice" },
+        { "id": "mdtm-u06-l02", "title": "Birgalikdagi ish masalalari", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u06-l01"], "kind": "practice" },
+        { "id": "mdtm-u06-l03", "title": "Aralashma va qorishma masalalari", "d": 5, "min": 30, "q": 10, "prereq": ["mdtm-u06-l02"], "kind": "practice" },
+        { "id": "mdtm-u06-l04", "title": "Bank foizi va o'sish masalalari", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u06-l03"], "kind": "practice" },
+        { "id": "mdtm-u06-l05", "title": "Kombinatorika savollari", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u06-l04"], "kind": "practice" },
+        { "id": "mdtm-u06-l06", "title": "Ehtimollik savollari", "d": 4, "min": 30, "q": 10, "prereq": ["mdtm-u06-l05"], "kind": "practice" },
+        { "id": "mdtm-u06-l07", "title": "Mantiqiy va nostandart savollar", "d": 5, "min": 30, "q": 10, "prereq": ["mdtm-u06-l06"], "kind": "practice" },
+        { "id": "mdtm-u06-l08", "title": "Matnli masalalar bloki — sinov testi", "d": 4, "min": 40, "q": 15, "prereq": ["mdtm-u06-l07"], "kind": "control" }
+      ]
+    },
+    {
+      "id": "mdtm-u07",
+      "title": "To'liq sinov imtihonlari",
+      "branch": "exam",
+      "objectives": [
+        "Real imtihon sharoitida ishlash",
+        "Natijani tahlil qilib zaif joylarni yopish",
+        "Barqaror ball ko'rsatkichiga chiqish"
+      ],
+      "lessons": [
+        { "id": "mdtm-u07-l01", "title": "To'liq sinov imtihoni — variant 1", "d": 4, "min": 60, "q": 30, "prereq": ["mdtm-u06-l08"], "kind": "control" },
+        { "id": "mdtm-u07-l02", "title": "Variant 1 tahlili va xatolar ustida ishlash", "d": 4, "min": 40, "q": 10, "prereq": ["mdtm-u07-l01"], "kind": "review" },
+        { "id": "mdtm-u07-l03", "title": "To'liq sinov imtihoni — variant 2", "d": 4, "min": 60, "q": 30, "prereq": ["mdtm-u07-l02"], "kind": "control" },
+        { "id": "mdtm-u07-l04", "title": "Variant 2 tahlili", "d": 4, "min": 40, "q": 10, "prereq": ["mdtm-u07-l03"], "kind": "review" },
+        { "id": "mdtm-u07-l05", "title": "To'liq sinov imtihoni — variant 3 (murakkablashtirilgan)", "d": 5, "min": 60, "q": 30, "prereq": ["mdtm-u07-l04"], "kind": "control" },
+        { "id": "mdtm-u07-l06", "title": "Variant 3 tahlili", "d": 5, "min": 40, "q": 10, "prereq": ["mdtm-u07-l05"], "kind": "review" },
+        { "id": "mdtm-u07-l07", "title": "Yakuniy takrorlash: formulalar spravochnigi", "d": 4, "min": 40, "q": 15, "prereq": ["mdtm-u07-l06"], "kind": "review" },
+        { "id": "mdtm-u07-l08", "title": "Imtihon oldi yakuniy sinov", "d": 5, "min": 60, "q": 30, "prereq": ["mdtm-u07-l07"], "kind": "control" }
+      ]
+    }
+  ]
+}

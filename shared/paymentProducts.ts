@@ -27,27 +27,40 @@ export type TeacherListingPlanCode =
   | typeof TEACHER_LISTING_PLAN_FIRST
   | typeof TEACHER_LISTING_PLAN_MONTH;
 
+/**
+ * O'qituvchi ro'yxati narxi: 1 oy — 300 000 so'm, QAT'IY va hamma uchun bir xil.
+ *
+ * Ilgari birinchi oy 69 000 so'mlik promo edi — bekor qilingan. Eski
+ * `first_month` kodi o'chirilmadi (tarixiy to'lov va obuna yozuvlari unga
+ * bog'langan), lekin narxi oylik tarif bilan bir xil.
+ *
+ * Bu — narxning YAGONA manbasi. `teacher_listing_plans.price_amount` jadvali
+ * tarixan drift qilgan va admin SQL konsoli orqali o'zgarishi mumkin, shuning
+ * uchun server summani bazadan emas, shu yerdan oladi (migratsiya 157).
+ */
+export const TEACHER_LISTING_PRICE_UZS = 300_000;
+
 export const TEACHER_LISTING_PRICES_UZS: Record<TeacherListingPlanCode, number> = {
-  [TEACHER_LISTING_PLAN_FIRST]: 69_000,
-  [TEACHER_LISTING_PLAN_MONTH]: 299_000,
+  [TEACHER_LISTING_PLAN_FIRST]: TEACHER_LISTING_PRICE_UZS,
+  [TEACHER_LISTING_PLAN_MONTH]: TEACHER_LISTING_PRICE_UZS,
 };
 
 export function isTeacherListingPlanCode(value: unknown): value is TeacherListingPlanCode {
   return value === TEACHER_LISTING_PLAN_FIRST || value === TEACHER_LISTING_PLAN_MONTH;
 }
 
-export function resolveTeacherListingPlanCode(firstDiscountUsed: boolean): TeacherListingPlanCode {
-  return firstDiscountUsed ? TEACHER_LISTING_PLAN_MONTH : TEACHER_LISTING_PLAN_FIRST;
+export function resolveTeacherListingPlanCode(_firstDiscountUsed: boolean): TeacherListingPlanCode {
+  // Chegirmali birinchi oy bekor qilindi — hamma uchun oylik tarif.
+  return TEACHER_LISTING_PLAN_MONTH;
 }
 
 export function getTeacherListingPriceUzs(planCode: TeacherListingPlanCode): number {
-  return TEACHER_LISTING_PRICES_UZS[planCode];
+  // `?? ` — noma'lum kod tur tekshiruvidan o'tib ketsa ham arzon narx chiqmasin.
+  return TEACHER_LISTING_PRICES_UZS[planCode] ?? TEACHER_LISTING_PRICE_UZS;
 }
 
-export function getTeacherListingPlanLabel(planCode: TeacherListingPlanCode): string {
-  if (planCode === TEACHER_LISTING_PLAN_FIRST) {
-    return "O'qituvchi ro'yxati · 1 oy (birinchi oy)";
-  }
+export function getTeacherListingPlanLabel(_planCode: TeacherListingPlanCode): string {
+  // Ikkala tarif kodi ham bitta mahsulot — chegirmali birinchi oy bekor qilingan.
   return "O'qituvchi ro'yxati · 1 oy";
 }
 

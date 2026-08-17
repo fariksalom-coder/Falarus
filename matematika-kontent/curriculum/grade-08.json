@@ -1,0 +1,279 @@
+{
+  "subject": "matematika",
+  "grade": 8,
+  "totalLessons": 140,
+  "units": [
+    {
+      "id": "m08-u01",
+      "title": "Ratsional kasrlar",
+      "branch": "algebra",
+      "objectives": [
+        "Ratsional kasrlarni qisqartirish va ular ustida amallar bajarish",
+        "Kasrli ratsional tenglamalarni yechish",
+        "Teskari proporsionallik grafigini chizish"
+      ],
+      "lessons": [
+        { "id": "m08-u01-l01", "title": "Ratsional ifoda va uning aniqlanish sohasi", "d": 3, "min": 25, "q": 6, "prereq": ["m07-u04-l14"], "kind": "theory" },
+        { "id": "m08-u01-l02", "title": "Ratsional kasrning asosiy xossasi", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u01-l01"], "kind": "theory" },
+        { "id": "m08-u01-l03", "title": "Ratsional kasrni qisqartirish", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u01-l02"], "kind": "theory" },
+        { "id": "m08-u01-l04", "title": "Bir xil maxrajli kasrlarni qo'shish va ayirish", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u01-l03"], "kind": "theory" },
+        { "id": "m08-u01-l05", "title": "Har xil maxrajli kasrlarni qo'shish va ayirish", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u01-l04"], "kind": "theory" },
+        { "id": "m08-u01-l06", "title": "Ratsional kasrlarni ko'paytirish", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u01-l05"], "kind": "theory" },
+        { "id": "m08-u01-l07", "title": "Ratsional kasrlarni bo'lish", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u01-l06"], "kind": "theory" },
+        { "id": "m08-u01-l08", "title": "Kasrni darajaga ko'tarish", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u01-l07"], "kind": "theory" },
+        { "id": "m08-u01-l09", "title": "Ratsional ifodalarni ayniy almashtirish", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u01-l08"], "kind": "practice" },
+        { "id": "m08-u01-l10", "title": "Kasrli ratsional tenglamalar", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u01-l09"], "kind": "theory" },
+        { "id": "m08-u01-l11", "title": "Chetki ildizlar va tekshirish", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u01-l10"], "kind": "theory" },
+        { "id": "m08-u01-l12", "title": "Teskari proporsionallik y = k/x va giperbola", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u01-l07"], "kind": "theory" },
+        { "id": "m08-u01-l13", "title": "Ratsional tenglama bilan masala yechish", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u01-l11"], "kind": "practice" },
+        { "id": "m08-u01-l14", "title": "Ratsional kasrlar — bo'lim takrorlash", "d": 3, "min": 30, "q": 12, "prereq": ["m08-u01-l13"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u02",
+      "title": "Kvadrat ildiz",
+      "branch": "algebra",
+      "objectives": [
+        "Kvadrat ildiz tushunchasini va xossalarini o'zlashtirish",
+        "Ildizli ifodalarni soddalashtirish",
+        "Irratsional sonlar bilan ishlash"
+      ],
+      "lessons": [
+        { "id": "m08-u02-l01", "title": "Sonning kvadrat ildizi", "d": 2, "min": 20, "q": 6, "prereq": ["m07-u01-l10"], "kind": "theory" },
+        { "id": "m08-u02-l02", "title": "Arifmetik kvadrat ildiz", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u02-l01"], "kind": "theory" },
+        { "id": "m08-u02-l03", "title": "Irratsional sonlar", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u02-l02"], "kind": "theory" },
+        { "id": "m08-u02-l04", "title": "Haqiqiy sonlar to'plami", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u02-l03"], "kind": "theory" },
+        { "id": "m08-u02-l05", "title": "Funksiya y = kvadrat ildiz x va uning grafigi", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u02-l04"], "kind": "theory" },
+        { "id": "m08-u02-l06", "title": "Ko'paytmadan ildiz", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u02-l04"], "kind": "theory" },
+        { "id": "m08-u02-l07", "title": "Kasrdan ildiz", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u02-l06"], "kind": "theory" },
+        { "id": "m08-u02-l08", "title": "Ildiz belgisi ostidan ko'paytuvchini chiqarish", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u02-l07"], "kind": "theory" },
+        { "id": "m08-u02-l09", "title": "Ildiz belgisi ostiga ko'paytuvchini kiritish", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u02-l08"], "kind": "theory" },
+        { "id": "m08-u02-l10", "title": "Maxrajni irratsionallikdan qutqarish", "d": 4, "min": 25, "q": 7, "prereq": ["m08-u02-l09"], "kind": "theory" },
+        { "id": "m08-u02-l11", "title": "Ildizli ifodalarni soddalashtirish", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u02-l10"], "kind": "practice" },
+        { "id": "m08-u02-l12", "title": "Qo'sh ildizlar va murakkab radikallar", "d": 5, "min": 25, "q": 6, "prereq": ["m08-u02-l11"], "kind": "theory" },
+        { "id": "m08-u02-l13", "title": "Ildizli tenglamalar (oddiy)", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u02-l11"], "kind": "theory" },
+        { "id": "m08-u02-l14", "title": "Kvadrat ildiz — bo'lim takrorlash", "d": 3, "min": 30, "q": 12, "prereq": ["m08-u02-l13"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u03",
+      "title": "Kvadrat tenglamalar",
+      "branch": "algebra",
+      "objectives": [
+        "Kvadrat tenglamani barcha usullar bilan yechish",
+        "Diskriminant va Viet teoremasini qo'llash",
+        "Kvadrat tenglamaga keltiriladigan masalalarni yechish"
+      ],
+      "lessons": [
+        { "id": "m08-u03-l01", "title": "Kvadrat tenglama tushunchasi", "d": 2, "min": 20, "q": 6, "prereq": ["m08-u02-l14"], "kind": "theory" },
+        { "id": "m08-u03-l02", "title": "Chala kvadrat tenglamalar", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u03-l01"], "kind": "theory" },
+        { "id": "m08-u03-l03", "title": "To'liq kvadratni ajratish usuli", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u03-l02"], "kind": "theory" },
+        { "id": "m08-u03-l04", "title": "Diskriminant va ildizlar formulasi", "d": 3, "min": 30, "q": 7, "prereq": ["m08-u03-l03"], "kind": "theory" },
+        { "id": "m08-u03-l05", "title": "Diskriminantga ko'ra ildizlar soni", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u03-l04"], "kind": "theory" },
+        { "id": "m08-u03-l06", "title": "Juft ikkinchi koeffitsientli tenglama", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u03-l05"], "kind": "theory" },
+        { "id": "m08-u03-l07", "title": "Keltirilgan kvadrat tenglama", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u03-l06"], "kind": "theory" },
+        { "id": "m08-u03-l08", "title": "Viet teoremasi", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u03-l07"], "kind": "theory" },
+        { "id": "m08-u03-l09", "title": "Viet teoremasiga teskari teorema", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u03-l08"], "kind": "theory" },
+        { "id": "m08-u03-l10", "title": "Kvadrat uchhadni ko'paytuvchilarga ajratish", "d": 4, "min": 25, "q": 7, "prereq": ["m08-u03-l09"], "kind": "theory" },
+        { "id": "m08-u03-l11", "title": "Bikvadrat tenglamalar", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u03-l10"], "kind": "theory" },
+        { "id": "m08-u03-l12", "title": "Yangi o'zgaruvchi kiritish usuli", "d": 5, "min": 30, "q": 6, "prereq": ["m08-u03-l11"], "kind": "theory" },
+        { "id": "m08-u03-l13", "title": "Parametrli kvadrat tenglamalar", "d": 5, "min": 30, "q": 6, "prereq": ["m08-u03-l09"], "kind": "theory" },
+        { "id": "m08-u03-l14", "title": "Kvadrat tenglamaga keltiriladigan ratsional tenglamalar", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u03-l12"], "kind": "theory" },
+        { "id": "m08-u03-l15", "title": "Masala yechish: sonlar va geometriya", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u03-l14"], "kind": "practice" },
+        { "id": "m08-u03-l16", "title": "Masala yechish: harakat va ish", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u03-l15"], "kind": "practice" },
+        { "id": "m08-u03-l17", "title": "Kvadrat tenglamalar — nazorat mashqlari", "d": 4, "min": 35, "q": 8, "prereq": ["m08-u03-l16"], "kind": "practice" },
+        { "id": "m08-u03-l18", "title": "Kvadrat tenglamalar — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m08-u03-l17"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u04",
+      "title": "Tengsizliklar",
+      "branch": "algebra",
+      "objectives": [
+        "Sonli tengsizlik xossalarini qo'llash",
+        "Chiziqli va kvadrat tengsizliklarni yechish",
+        "Intervallar usulini qo'llash"
+      ],
+      "lessons": [
+        { "id": "m08-u04-l01", "title": "Sonli tengsizliklar", "d": 3, "min": 20, "q": 6, "prereq": ["m06-u04-l05"], "kind": "theory" },
+        { "id": "m08-u04-l02", "title": "Sonli tengsizlik xossalari", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u04-l01"], "kind": "theory" },
+        { "id": "m08-u04-l03", "title": "Tengsizliklarni qo'shish va ko'paytirish", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u04-l02"], "kind": "theory" },
+        { "id": "m08-u04-l04", "title": "Sonli oraliqlar", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u04-l03"], "kind": "theory" },
+        { "id": "m08-u04-l05", "title": "Bir noma'lumli chiziqli tengsizlik", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u04-l04"], "kind": "theory" },
+        { "id": "m08-u04-l06", "title": "Tengsizliklar sistemasi", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u04-l05"], "kind": "theory" },
+        { "id": "m08-u04-l07", "title": "Ikkilangan tengsizlik", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u04-l06"], "kind": "theory" },
+        { "id": "m08-u04-l08", "title": "Modulli tengsizliklar", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u04-l07"], "kind": "theory" },
+        { "id": "m08-u04-l09", "title": "Kvadrat tengsizlik", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u03-l10"], "kind": "theory" },
+        { "id": "m08-u04-l10", "title": "Parabola grafigi orqali kvadrat tengsizlik yechish", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u04-l09"], "kind": "theory" },
+        { "id": "m08-u04-l11", "title": "Intervallar usuli", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u04-l10"], "kind": "theory" },
+        { "id": "m08-u04-l12", "title": "Kasrli ratsional tengsizliklar", "d": 5, "min": 30, "q": 7, "prereq": ["m08-u04-l11"], "kind": "theory" },
+        { "id": "m08-u04-l13", "title": "Tengsizliklarni isbotlash", "d": 5, "min": 30, "q": 6, "prereq": ["m08-u04-l03"], "kind": "practice" },
+        { "id": "m08-u04-l14", "title": "Tengsizliklar — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m08-u04-l13"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u05",
+      "title": "Daraja va standart shakl",
+      "branch": "algebra",
+      "objectives": [
+        "Butun ko'rsatkichli daraja bilan ishlash",
+        "Katta va kichik sonlarni standart shaklda yozish",
+        "Taqribiy hisoblash va xatolikni baholash"
+      ],
+      "lessons": [
+        { "id": "m08-u05-l01", "title": "Butun manfiy ko'rsatkichli daraja", "d": 3, "min": 20, "q": 6, "prereq": ["m07-u01-l08"], "kind": "theory" },
+        { "id": "m08-u05-l02", "title": "Butun ko'rsatkichli daraja xossalari", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u05-l01"], "kind": "theory" },
+        { "id": "m08-u05-l03", "title": "Sonning standart shakli", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u05-l02"], "kind": "theory" },
+        { "id": "m08-u05-l04", "title": "Standart shakldagi sonlar ustida amallar", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u05-l03"], "kind": "practice" },
+        { "id": "m08-u05-l05", "title": "Taqribiy qiymat va yaxlitlash", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u05-l04"], "kind": "theory" },
+        { "id": "m08-u05-l06", "title": "Absolyut va nisbiy xatolik", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u05-l05"], "kind": "theory" },
+        { "id": "m08-u05-l07", "title": "Muhim raqamlar", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u05-l06"], "kind": "theory" },
+        { "id": "m08-u05-l08", "title": "Amaliy hisoblashlar va kalkulyator", "d": 2, "min": 20, "q": 6, "prereq": ["m08-u05-l07"], "kind": "practice" },
+        { "id": "m08-u05-l09", "title": "Fan va texnikada standart shakl", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u05-l08"], "kind": "practice" },
+        { "id": "m08-u05-l10", "title": "Daraja va standart shakl — bo'lim takrorlash", "d": 3, "min": 25, "q": 12, "prereq": ["m08-u05-l09"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u06",
+      "title": "Statistika elementlari",
+      "branch": "general",
+      "objectives": [
+        "Ma'lumotlarni yig'ish va guruhlash",
+        "Markaziy tendensiya va tarqoqlik ko'rsatkichlarini hisoblash",
+        "Statistik grafiklarni qurish va o'qish"
+      ],
+      "lessons": [
+        { "id": "m08-u06-l01", "title": "Statistik ma'lumot va namuna", "d": 2, "min": 20, "q": 6, "prereq": ["m06-u08-l08"], "kind": "theory" },
+        { "id": "m08-u06-l02", "title": "Chastota va nisbiy chastota", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u06-l01"], "kind": "theory" },
+        { "id": "m08-u06-l03", "title": "Ma'lumotlarni intervallarga guruhlash", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u06-l02"], "kind": "theory" },
+        { "id": "m08-u06-l04", "title": "Gistogramma va poligon", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u06-l03"], "kind": "theory" },
+        { "id": "m08-u06-l05", "title": "O'rtacha, moda, mediana — chuqurlashtirilgan", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u06-l04"], "kind": "theory" },
+        { "id": "m08-u06-l06", "title": "Variatsion kenglik va dispersiya", "d": 4, "min": 30, "q": 6, "prereq": ["m08-u06-l05"], "kind": "theory" },
+        { "id": "m08-u06-l07", "title": "O'rtacha kvadratik chetlanish", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u06-l06"], "kind": "theory" },
+        { "id": "m08-u06-l08", "title": "Statistik xulosa chiqarish", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u06-l07"], "kind": "practice" },
+        { "id": "m08-u06-l09", "title": "Statistikadan noto'g'ri foydalanish", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u06-l08"], "kind": "theory" },
+        { "id": "m08-u06-l10", "title": "Statistika — bo'lim takrorlash", "d": 3, "min": 25, "q": 12, "prereq": ["m08-u06-l09"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u07",
+      "title": "To'rtburchaklar",
+      "branch": "geometry",
+      "objectives": [
+        "To'rtburchak turlari va ularning xossalarini bilish",
+        "Parallelogramm alomatlarini qo'llash",
+        "O'rta chiziq xossalarini ishlatish"
+      ],
+      "lessons": [
+        { "id": "m08-u07-l01", "title": "Ko'pburchak va uning burchaklari yig'indisi", "d": 3, "min": 25, "q": 6, "prereq": ["m07-u11-l10"], "kind": "theory" },
+        { "id": "m08-u07-l02", "title": "Parallelogramm va uning xossalari", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u07-l01"], "kind": "theory" },
+        { "id": "m08-u07-l03", "title": "Parallelogramm alomatlari", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u07-l02"], "kind": "theory" },
+        { "id": "m08-u07-l04", "title": "To'g'ri to'rtburchak", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u07-l03"], "kind": "theory" },
+        { "id": "m08-u07-l05", "title": "Romb", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u07-l04"], "kind": "theory" },
+        { "id": "m08-u07-l06", "title": "Kvadrat", "d": 2, "min": 20, "q": 6, "prereq": ["m08-u07-l05"], "kind": "theory" },
+        { "id": "m08-u07-l07", "title": "Trapetsiya va uning turlari", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u07-l06"], "kind": "theory" },
+        { "id": "m08-u07-l08", "title": "Teng yonli trapetsiya xossalari", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u07-l07"], "kind": "theory" },
+        { "id": "m08-u07-l09", "title": "Uchburchakning o'rta chizig'i", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u07-l08"], "kind": "theory" },
+        { "id": "m08-u07-l10", "title": "Trapetsiyaning o'rta chizig'i", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u07-l09"], "kind": "theory" },
+        { "id": "m08-u07-l11", "title": "Talesning kesmalar teoremasi", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u07-l10"], "kind": "theory" },
+        { "id": "m08-u07-l12", "title": "Simmetriya: o'q va markaz", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u07-l06"], "kind": "theory" },
+        { "id": "m08-u07-l13", "title": "To'rtburchaklarga doir isbot masalalari", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u07-l11"], "kind": "practice" },
+        { "id": "m08-u07-l14", "title": "To'rtburchaklar — bo'lim takrorlash", "d": 3, "min": 30, "q": 12, "prereq": ["m08-u07-l13"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u08",
+      "title": "Ko'pburchaklar yuzasi",
+      "branch": "geometry",
+      "objectives": [
+        "Barcha asosiy shakllar yuzasi formulalarini bilish",
+        "Yuzalar nisbatini topish",
+        "Yuzaga doir masalalarni yechish"
+      ],
+      "lessons": [
+        { "id": "m08-u08-l01", "title": "Yuza tushunchasi va uning xossalari", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u07-l14"], "kind": "theory" },
+        { "id": "m08-u08-l02", "title": "To'g'ri to'rtburchak va kvadrat yuzasi", "d": 2, "min": 20, "q": 6, "prereq": ["m08-u08-l01"], "kind": "theory" },
+        { "id": "m08-u08-l03", "title": "Parallelogramm yuzasi", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u08-l02"], "kind": "theory" },
+        { "id": "m08-u08-l04", "title": "Uchburchak yuzasi", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u08-l03"], "kind": "theory" },
+        { "id": "m08-u08-l05", "title": "Ikki tomon va burchak orqali uchburchak yuzasi", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u08-l04"], "kind": "theory" },
+        { "id": "m08-u08-l06", "title": "Trapetsiya yuzasi", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u08-l05"], "kind": "theory" },
+        { "id": "m08-u08-l07", "title": "Romb yuzasi va diagonallar", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u08-l06"], "kind": "theory" },
+        { "id": "m08-u08-l08", "title": "Geron formulasi", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u08-l05"], "kind": "theory" },
+        { "id": "m08-u08-l09", "title": "Yuzalar nisbati", "d": 4, "min": 25, "q": 7, "prereq": ["m08-u08-l08"], "kind": "theory" },
+        { "id": "m08-u08-l10", "title": "Murakkab shakl yuzasi", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u08-l09"], "kind": "practice" },
+        { "id": "m08-u08-l11", "title": "Yuzaga doir amaliy masalalar", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u08-l10"], "kind": "practice" },
+        { "id": "m08-u08-l12", "title": "Yuza — bo'lim takrorlash", "d": 3, "min": 30, "q": 12, "prereq": ["m08-u08-l11"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u09",
+      "title": "O'xshashlik",
+      "branch": "geometry",
+      "objectives": [
+        "O'xshashlik alomatlarini qo'llash",
+        "O'xshash shakllar yuzalari nisbatini topish",
+        "To'g'ri burchakli uchburchakda metrik munosabatlarni ishlatish"
+      ],
+      "lessons": [
+        { "id": "m08-u09-l01", "title": "Proporsional kesmalar", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u08-l12"], "kind": "theory" },
+        { "id": "m08-u09-l02", "title": "O'xshash uchburchaklar tushunchasi", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u09-l01"], "kind": "theory" },
+        { "id": "m08-u09-l03", "title": "Birinchi o'xshashlik alomati (ikki burchak)", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u09-l02"], "kind": "theory" },
+        { "id": "m08-u09-l04", "title": "Ikkinchi o'xshashlik alomati", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u09-l03"], "kind": "theory" },
+        { "id": "m08-u09-l05", "title": "Uchinchi o'xshashlik alomati", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u09-l04"], "kind": "theory" },
+        { "id": "m08-u09-l06", "title": "Uchburchak bissektrisasi xossasi", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u09-l05"], "kind": "theory" },
+        { "id": "m08-u09-l07", "title": "O'xshash shakllar perimetri va yuzasi nisbati", "d": 4, "min": 25, "q": 7, "prereq": ["m08-u09-l06"], "kind": "theory" },
+        { "id": "m08-u09-l08", "title": "To'g'ri burchakli uchburchakda proporsional kesmalar", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u09-l07"], "kind": "theory" },
+        { "id": "m08-u09-l09", "title": "O'rta geometrik va o'rta proporsional", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u09-l08"], "kind": "theory" },
+        { "id": "m08-u09-l10", "title": "O'tkir burchak sinusi, kosinusi, tangensi", "d": 3, "min": 30, "q": 7, "prereq": ["m08-u09-l09"], "kind": "theory" },
+        { "id": "m08-u09-l11", "title": "Asosiy trigonometrik ayniyat", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u09-l10"], "kind": "theory" },
+        { "id": "m08-u09-l12", "title": "30, 45, 60 gradus qiymatlari", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u09-l11"], "kind": "theory" },
+        { "id": "m08-u09-l13", "title": "O'xshashlikning amaliy tatbiqi (balandlik o'lchash)", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u09-l12"], "kind": "practice" },
+        { "id": "m08-u09-l14", "title": "O'xshashlik — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m08-u09-l13"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u10",
+      "title": "Pifagor teoremasi",
+      "branch": "geometry",
+      "objectives": [
+        "Pifagor teoremasi va unga teskari teoremani qo'llash",
+        "Masofani hisoblash",
+        "Amaliy masalalarda ishlatish"
+      ],
+      "lessons": [
+        { "id": "m08-u10-l01", "title": "Pifagor teoremasi", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u09-l09"], "kind": "theory" },
+        { "id": "m08-u10-l02", "title": "Pifagor teoremasining isbotlari", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u10-l01"], "kind": "theory" },
+        { "id": "m08-u10-l03", "title": "Pifagor teoremasiga teskari teorema", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u10-l02"], "kind": "theory" },
+        { "id": "m08-u10-l04", "title": "Pifagor uchliklari", "d": 3, "min": 20, "q": 6, "prereq": ["m08-u10-l03"], "kind": "theory" },
+        { "id": "m08-u10-l05", "title": "Ikki nuqta orasidagi masofa", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u10-l04"], "kind": "theory" },
+        { "id": "m08-u10-l06", "title": "Teng yonli va teng tomonli uchburchakda balandlik", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u10-l05"], "kind": "theory" },
+        { "id": "m08-u10-l07", "title": "Trapetsiya va rombda Pifagor teoremasi", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u10-l06"], "kind": "practice" },
+        { "id": "m08-u10-l08", "title": "Pifagor teoremasi — amaliy masalalar", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u10-l07"], "kind": "practice" },
+        { "id": "m08-u10-l09", "title": "Aralash geometrik masalalar", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u10-l08"], "kind": "practice" },
+        { "id": "m08-u10-l10", "title": "Pifagor teoremasi — bo'lim takrorlash", "d": 3, "min": 25, "q": 12, "prereq": ["m08-u10-l09"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m08-u11",
+      "title": "Aylana",
+      "branch": "geometry",
+      "objectives": [
+        "Aylana va to'g'ri chiziq munosabatlarini bilish",
+        "Markaziy va ichki chizilgan burchaklar bilan ishlash",
+        "Ichki va tashqi chizilgan aylanalarni yasash"
+      ],
+      "lessons": [
+        { "id": "m08-u11-l01", "title": "Aylana va uning elementlari", "d": 2, "min": 20, "q": 6, "prereq": ["m08-u10-l10"], "kind": "theory" },
+        { "id": "m08-u11-l02", "title": "Aylana va to'g'ri chiziqning o'zaro joylashuvi", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u11-l01"], "kind": "theory" },
+        { "id": "m08-u11-l03", "title": "Urinma va uning xossasi", "d": 3, "min": 25, "q": 7, "prereq": ["m08-u11-l02"], "kind": "theory" },
+        { "id": "m08-u11-l04", "title": "Markaziy burchak va yoy", "d": 3, "min": 25, "q": 6, "prereq": ["m08-u11-l03"], "kind": "theory" },
+        { "id": "m08-u11-l05", "title": "Ichki chizilgan burchak teoremasi", "d": 4, "min": 30, "q": 7, "prereq": ["m08-u11-l04"], "kind": "theory" },
+        { "id": "m08-u11-l06", "title": "Vatarlar kesishishi xossasi", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u11-l05"], "kind": "theory" },
+        { "id": "m08-u11-l07", "title": "Uchburchakka ichki chizilgan aylana", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u11-l06"], "kind": "theory" },
+        { "id": "m08-u11-l08", "title": "Uchburchakka tashqi chizilgan aylana", "d": 4, "min": 25, "q": 6, "prereq": ["m08-u11-l07"], "kind": "theory" },
+        { "id": "m08-u11-l09", "title": "8-sinf geometriya — yakuniy takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m08-u11-l08"], "kind": "review" },
+        { "id": "m08-u11-l10", "title": "8-sinf yakuniy nazorat ishi", "d": 4, "min": 45, "q": 20, "prereq": ["m08-u11-l09", "m08-u04-l14"], "kind": "control" }
+      ]
+    }
+  ]
+}

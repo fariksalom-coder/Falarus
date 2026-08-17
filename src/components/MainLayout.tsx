@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import AppNavBar from './AppNavBar';
-import PWAInstallPrompt from './PWAInstallPrompt';
+import UpdateNotice from './UpdateNotice';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,17 @@ export default function MainLayout() {
   const { pathname } = useLocation();
   const { token } = useAuth();
   useHeartbeat(token);
+
+  /*
+   * So'rovnoma FAQAT RO'YXATDAN O'TISHDA so'raladi — `RegisterPage` muvaffaqiyatli
+   * ro'yxatdan o'tgach `/onboarding` ga o'zi olib boradi.
+   *
+   * Ilgari shu yerda umumiy yo'naltirish turardi: `onboardingCompleted === false`
+   * bo'lgan HAR QANDAY foydalanuvchi ilovaga kirganda so'rovnomaga tortilardi.
+   * Natijada so'rovnomani o'tkazib yuborgan (yoki u paydo bo'lishidan oldin
+   * ro'yxatdan o'tgan) odam HAR SAFAR tizimga kirganda qayta so'ralaverardi.
+   * Shu sababli yo'naltirish olib tashlandi.
+   */
   const showNavBar = !hideNavBar(pathname);
   const reduceMotion = useReducedMotion();
   const sectionIdx = mainSectionIndex(pathname);
@@ -93,6 +104,12 @@ export default function MainLayout() {
               className={`absolute inset-0 w-full min-w-0 overflow-y-auto overflow-x-hidden bg-app-bg overscroll-y-contain${showNavBar ? ' nav-scroll-pad' : ''}`}
             >
               <div className="flex min-h-full flex-col">
+                {/*
+                  Yangilanish e'loni — kontent oqimida, sahifa tepasida.
+                  Faqat asosiy ekranlarda: dars, o'yin va to'lov sahifalari
+                  "fokus rejimi" (nav yashiriladi), u yerda e'lon xalaqit beradi.
+                */}
+                {showNavBar && <UpdateNotice />}
                 <div className="flex-1">
                   <Outlet />
                 </div>
@@ -101,7 +118,6 @@ export default function MainLayout() {
           </AnimatePresence>
         </div>
       </div>
-      {showNavBar && <PWAInstallPrompt />}
     </>
   );
 }

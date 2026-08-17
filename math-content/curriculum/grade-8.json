@@ -1,0 +1,116 @@
+{
+  "grade": 8,
+  "title": "Algebra va geometriya, 8-sinf",
+  "units": [
+    {
+      "id": "m08-u01",
+      "title": "Ratsional kasrlar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m08-u01-l01", "title": "Ratsional kasr va uning aniqlanish sohasi", "dtm": true },
+        { "id": "m08-u01-l02", "title": "Kasrlarni qisqartirish", "dtm": true },
+        { "id": "m08-u01-l03", "title": "Kasrlarni qo'shish va ayirish", "dtm": true },
+        { "id": "m08-u01-l04", "title": "Kasrlarni ko'paytirish va bo'lish", "dtm": true },
+        { "id": "m08-u01-l05", "title": "Ko'p qavatli kasrlarni soddalashtirish", "dtm": true },
+        { "id": "m08-u01-l06", "title": "Teskari proporsionallik funksiyasi y = k/x", "dtm": true }
+      ]
+    },
+    {
+      "id": "m08-u02",
+      "title": "Butun ko'rsatkichli daraja",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m08-u02-l01", "title": "Manfiy ko'rsatkichli daraja", "dtm": true },
+        { "id": "m08-u02-l02", "title": "Daraja xossalarini qo'llash", "dtm": true },
+        { "id": "m08-u02-l03", "title": "Sonning standart shakli", "dtm": true }
+      ]
+    },
+    {
+      "id": "m08-u03",
+      "title": "Kvadrat ildiz",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m08-u03-l01", "title": "Irratsional sonlar. Haqiqiy sonlar", "dtm": true },
+        { "id": "m08-u03-l02", "title": "Arifmetik kvadrat ildiz", "dtm": true },
+        { "id": "m08-u03-l03", "title": "Ildizning xossalari", "dtm": true },
+        { "id": "m08-u03-l04", "title": "Ildiz belgisi ostidan ko'paytuvchi chiqarish", "dtm": true },
+        { "id": "m08-u03-l05", "title": "Maxrajni irratsionallikdan qutqarish", "dtm": true },
+        { "id": "m08-u03-l06", "title": "y = sqrt(x) funksiyasi va grafigi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m08-u04",
+      "title": "Kvadrat tenglamalar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m08-u04-l01", "title": "Kvadrat tenglama. Chala kvadrat tenglamalar", "dtm": true },
+        { "id": "m08-u04-l02", "title": "To'la kvadrat ajratish usuli", "dtm": true },
+        { "id": "m08-u04-l03", "title": "Diskriminant va ildizlar formulasi", "dtm": true },
+        { "id": "m08-u04-l04", "title": "Vietta teoremasi", "dtm": true },
+        { "id": "m08-u04-l05", "title": "Kvadrat uchhadni ko'paytuvchilarga ajratish", "dtm": true },
+        { "id": "m08-u04-l06", "title": "Kvadrat tenglamaga keltiriladigan tenglamalar", "dtm": true },
+        { "id": "m08-u04-l07", "title": "Kvadrat tenglama tuzib masala yechish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m08-u05",
+      "title": "Tengsizliklar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m08-u05-l01", "title": "Sonli tengsizliklar va ularning xossalari", "dtm": true },
+        { "id": "m08-u05-l02", "title": "Sonli oraliqlar", "dtm": true },
+        { "id": "m08-u05-l03", "title": "Bir noma'lumli chiziqli tengsizlik", "dtm": true },
+        { "id": "m08-u05-l04", "title": "Tengsizliklar sistemasi", "dtm": true },
+        { "id": "m08-u05-l05", "title": "Modulli tengsizliklar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m08-u06",
+      "title": "To'rtburchaklar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m08-u06-l01", "title": "Ko'pburchak. To'rtburchak burchaklari yig'indisi", "dtm": true },
+        { "id": "m08-u06-l02", "title": "Parallelogramm va uning xossalari", "dtm": true },
+        { "id": "m08-u06-l03", "title": "Parallelogramm alomatlari", "dtm": true },
+        { "id": "m08-u06-l04", "title": "To'g'ri to'rtburchak, romb, kvadrat", "dtm": true },
+        { "id": "m08-u06-l05", "title": "Trapetsiya. O'rta chiziq", "dtm": true },
+        { "id": "m08-u06-l06", "title": "Uchburchak o'rta chizig'i", "dtm": true }
+      ]
+    },
+    {
+      "id": "m08-u07",
+      "title": "Yuzalar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m08-u07-l01", "title": "Ko'pburchak yuzasi tushunchasi", "dtm": true },
+        { "id": "m08-u07-l02", "title": "Parallelogramm va uchburchak yuzasi", "dtm": true },
+        { "id": "m08-u07-l03", "title": "Trapetsiya yuzasi", "dtm": true },
+        { "id": "m08-u07-l04", "title": "Pifagor teoremasi", "dtm": true },
+        { "id": "m08-u07-l05", "title": "Pifagor teoremasiga teskari teorema", "dtm": true }
+      ]
+    },
+    {
+      "id": "m08-u08",
+      "title": "O'xshash uchburchaklar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m08-u08-l01", "title": "Proporsional kesmalar. Fales teoremasi", "dtm": true },
+        { "id": "m08-u08-l02", "title": "O'xshashlik alomatlari", "dtm": true },
+        { "id": "m08-u08-l03", "title": "O'xshash shakllar yuzalari nisbati", "dtm": true },
+        { "id": "m08-u08-l04", "title": "To'g'ri burchakli uchburchakda metrik munosabatlar", "dtm": true },
+        { "id": "m08-u08-l05", "title": "O'tkir burchak sinus, kosinus, tangensi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m08-u09",
+      "title": "Aylana",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m08-u09-l01", "title": "Aylanaga urinma", "dtm": true },
+        { "id": "m08-u09-l02", "title": "Markaziy va ichki chizilgan burchaklar", "dtm": true },
+        { "id": "m08-u09-l03", "title": "Ichki va tashqi chizilgan aylanalar", "dtm": true },
+        { "id": "m08-u09-l04", "title": "Uchburchakning ajoyib nuqtalari", "dtm": true }
+      ]
+    }
+  ]
+}

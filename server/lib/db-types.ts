@@ -113,7 +113,6 @@ export interface DailyPracticePrompts {
   created_at: Generated<Timestamp>;
   day_number: number;
   id: Generated<Int8>;
-  ru_correct: string;
   sort_order: Generated<number>;
   uz_text: string;
 }

@@ -18,10 +18,11 @@ export async function computeUserXp(
 ): Promise<{ total: number; streakDays: number; bestStreakDays: number; minutesToday: number }> {
   const today = formatDateInAppTimezone(new Date());
 
-  const [kunlikRes, actRes, timeRes] = await Promise.all([
+  const [kunlikRes, actRes, timeRes, userRes] = await Promise.all([
     supabase
       .from('user_kunlik_day_progress')
-      .select('grammar_1, grammar_2, grammar_3, words_learned, words_correct, words_match, oqish_done, speaking_level')
+      // Yangi XP faqat `phrases_correct` dan — boshqa ustunlar kerak emas.
+      .select('phrases_correct')
       .eq('user_id', userId),
     supabase
       .from('user_activity_dates')
@@ -35,6 +36,8 @@ export async function computeUserXp(
       .eq('user_id', userId)
       .eq('activity_date', today)
       .maybeSingle(),
+    // Eski (2026-08-01 gacha yig'ilgan) ball — reyting shu joydan davom etadi.
+    supabase.from('users').select('legacy_points').eq('id', userId).maybeSingle(),
   ]);
 
   const kunlikRows: KunlikDayRowForXp[] = (kunlikRes.data ?? []) as KunlikDayRowForXp[];
@@ -45,11 +48,17 @@ export async function computeUserXp(
   const secondsToday = Number(timeRes.data?.seconds ?? 0);
   const minutesToday = Math.floor(secondsToday / 60);
 
-  const total = calculateTotalXp({
-    kunlikRows,
-    streakDays: streak.streak_days,
-    minutesToday,
-  });
+  // Streak va vaqt endi XP bermaydi, lekin ular statistika/medallar uchun
+  // qaytariladi — shuning uchun hisoblanishi davom etadi.
+  //
+  // MUHIM: `legacy_points` — platformada 2026-08-01 gacha yig'ilgan jami ball.
+  // U MUZLATILGAN baza sifatida qo'shiladi, aks holda har qanday faoliyatdan
+  // keyin qayta hisob eski natijani nolga tushirib yuborardi.
+  const legacyPoints = Math.max(
+    0,
+    Number((userRes.data as { legacy_points?: number } | null)?.legacy_points ?? 0),
+  );
+  const total = legacyPoints + calculateTotalXp({ kunlikRows });
 
   return {
     total,

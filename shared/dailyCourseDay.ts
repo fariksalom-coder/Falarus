@@ -6,6 +6,8 @@ export type DailyCourseMcq = {
   optionC: string;
   optionD: string;
   correctIndex: number;
+  /** Nega aynan shu javob to'g'ri — bo'sh bo'lishi mumkin. */
+  explanation: string;
 };
 
 export type DailyCourseMatchPair = { left: string; right: string };
@@ -44,8 +46,26 @@ export type DailyVocabWord = {
   sortOrder: number;
 };
 
+/**
+ * Ibora testi: ruscha ibora + 4 ta variant (`daily_phrase_mcqs`).
+ * Lug'at bo'limining 4-vazifasi — juftlik topishdan keyin keladi.
+ *
+ * DIQQAT: `correctIndex` bu yerda ATAYIN YO'Q. Javob kaliti brauzerga
+ * yuborilmaydi — har bir javobni server tekshiradi
+ * (`POST /api/kunlik-progress/:day/phrases/answer`). Aks holda sahifa
+ * kodidan to'g'ri javoblarni oldindan bilib olish mumkin bo'lardi.
+ */
+export type DailyPhraseMcq = {
+  id: number;
+  phraseRu: string;
+  /** Har doim 4 ta: A, B, C, D. */
+  options: string[];
+  sortOrder: number;
+};
+
 export type DailyVocabularySection = {
   words: DailyVocabWord[];
+  phrases: DailyPhraseMcq[];
 };
 
 /** Как vocabulary_text_dictionary: словарь по тексту для кликабельных слов при чтении. */
@@ -61,17 +81,62 @@ export type DailyReadingLexeme = {
   updatedAt: string | null;
 };
 
+/**
+ * Matn savoli (`daily_text_questions`) — o'qishdan keyingi tushunish testi.
+ *
+ * DIQQAT: `correctIndex` ATAYIN yo'q — javob kaliti brauzerga yuborilmaydi,
+ * tekshiruv `POST /api/kunlik-progress/:day/text-questions/answer` da bo'ladi.
+ */
+export type DailyTextQuestion = {
+  id: number;
+  questionRu: string;
+  /** Har doim 4 ta: A, B, C, D. */
+  options: string[];
+  sortOrder: number;
+};
+
+/** O'qish blokini yakunlash uchun kerakli eng kam foiz. */
+export const READING_QUESTIONS_PASS_PERCENT = 70;
+
+/**
+ * Gapirish (4-blok): nechta xato urinishdan keyin to'g'ri javob ko'rsatilib,
+ * «O'tkazish» tugmasi chiqadi.
+ *
+ * 1-xato — izoh va maslahat. 2-xatodan keyin to'g'ri javob ko'rsatiladi va
+ * o'quvchi keyingi topshiriqqa o'tishi mumkin bo'ladi: bitta gapda tiqilib
+ * qolish o'rganishni to'xtatadi. Qayta urinish baribir ochiq qoladi.
+ */
+export const SPEAKING_ATTEMPTS_BEFORE_SKIP = 2;
+
 export type DailyReadingSection = {
   textId: string | null;
   title: string | null;
   bodyRu: string;
   lexemes: DailyReadingLexeme[];
+  /** Matndan keyingi savollar (bo'sh bo'lishi mumkin). */
+  questions: DailyTextQuestion[];
 };
 
+/**
+ * Gapirish topshirig'i. Etalon ruscha javob ATAYIN yo'q — to'g'ri yoki
+ * xatoligini AI o'zbekcha topshiriq va o'quvchi aytgan gapga qarab o'zi
+ * baholaydi (`server/lib/openai.ts` → `checkTranslation`).
+ */
 export type DailyPracticePrompt = {
   id: number;
   uzText: string;
-  ruCorrect: string;
+  sortOrder: number;
+};
+
+/**
+ * Gapirish TESTIDAN KEYIN ochiladigan qo'shimcha topshiriq
+ * (`daily_speaking_tasks`). Ruscha topshiriq beriladi, o'zbekcha izoh —
+ * ixtiyoriy. Etalon javob yo'q: baholashni to'liq AI qiladi.
+ */
+export type DailySpeakingTask = {
+  id: number;
+  promptRu: string;
+  promptUz: string | null;
   sortOrder: number;
 };
 
@@ -82,6 +147,8 @@ export type DailyCourseDayBundle = {
   vocabulary: DailyVocabularySection | null;
   reading: DailyReadingSection | null;
   practice: DailyPracticePrompt[] | null;
+  /** Gapirish testidan keyingi qo'shimcha topshiriqlar (bo'sh bo'lishi mumkin). */
+  speakingTasks: DailySpeakingTask[];
 };
 
 export const DAILY_COURSE_DAY_MIN = 1;

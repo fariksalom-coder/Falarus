@@ -13,6 +13,7 @@ type RouterRes = { status: (code: number) => { json: (body: unknown) => unknown 
 import { supabase } from '../lib/dbFacadeClient.js';
 import { parseBody } from '../lib/request.js';
 import { buildRequestLogContext, logError } from '../lib/logger.js';
+import { checkCanWrite } from './chatBlock.service.js';
 
 // ---------------------------------------------------------------------------
 // GET /api/partner/profile — current user's profile
@@ -364,6 +365,10 @@ async function handleGetMessages(userId: number, req: RouterReq, res: RouterRes)
 // POST /api/partner/messages — send message
 // ---------------------------------------------------------------------------
 async function handleSendMessage(userId: number, req: RouterReq, res: RouterRes) {
+  // O'qish rejimidagi odam sherik chatida ham yozolmaydi.
+  const ruxsat = await checkCanWrite(supabase, userId);
+  if (ruxsat.ok === false) return res.status(ruxsat.status).json(ruxsat.body);
+
   const body = parseBody(req.body);
   const matchId = Number(body.match_id);
   const content = String(body.content ?? '').trim();

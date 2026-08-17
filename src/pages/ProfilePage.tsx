@@ -12,6 +12,7 @@ import {
   LogOut,
   Moon,
   Pencil,
+  Smartphone,
   Type,
   UserCircle,
   Users,
@@ -25,6 +26,8 @@ import { useTextScale } from '../context/TextScaleContext';
 import { useAccess } from '../context/AccessContext';
 import { useLocale } from '../context/LocaleContext';
 import LanguagePickerModal from '../components/LanguagePickerModal';
+import { InstallGuideModal } from '../components/InstallAppCard';
+import { usePwaInstall } from '../hooks/usePwaInstall';
 import { languageMeta } from '../../shared/i18n/languages';
 import UserAvatar from '../components/UserAvatar';
 import { resolveAssetUrl } from '../api';
@@ -61,6 +64,8 @@ export default function ProfilePage() {
   const [banner, setBanner] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
+  const [installGuideOpen, setInstallGuideOpen] = useState(false);
+  const { isInstalled: appInstalled, promptInstall } = usePwaInstall();
   const [streakDays, setStreakDays] = useState(() => getCachedStreak()?.streak_days ?? 0);
   const [points, setPoints] = useState(0);
 
@@ -80,6 +85,9 @@ export default function ProfilePage() {
   }, [token]);
 
   const level = Math.floor(points / 500) + 1;
+  // OLTIN A'ZO: daraja ham, ball ham chegarasiz — raqam o'rniga cheksizlik belgisi.
+  const oltin = Boolean(access?.golden);
+  const CHEKSIZ = '\u221E';
 
   if (user?.accountType === 'teacher') {
     return <Navigate to="/teacher-cabinet" replace />;
@@ -300,13 +308,17 @@ export default function ProfilePage() {
               </p>
             </div>
             <div className="border-x border-[#D4AC5C]/25 px-3">
-              <p className="profile-heading text-[26px] leading-none text-white">{level}</p>
+              <p className="profile-heading text-[26px] leading-none text-white">
+                {oltin ? CHEKSIZ : level}
+              </p>
               <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#D4AC5C]">
                 Daraja
               </p>
             </div>
             <div>
-              <p className="profile-heading text-[26px] leading-none text-white">{formattedPoints}</p>
+              <p className="profile-heading text-[26px] leading-none text-white">
+                {oltin ? CHEKSIZ : formattedPoints}
+              </p>
               <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#D4AC5C]">
                 Ball
               </p>
@@ -398,6 +410,19 @@ export default function ProfilePage() {
             onClick={() => setLanguagePickerOpen(true)}
           />
           <ProfileRow icon={<Volume2 />} label={t('profile.rows.sound')} />
+          {/* Ilova o'rnatilgan bo'lsa bu qator keraksiz — yashiramiz. */}
+          {!appInstalled ? (
+            <ProfileRow
+              icon={<Smartphone />}
+              label={t('install.profileRow')}
+              onClick={() => {
+                // Avval tizim so'rovi; brauzer qo'llab-quvvatlamasa — ko'rsatma.
+                void promptInstall().then((outcome) => {
+                  if (outcome === 'unavailable') setInstallGuideOpen(true);
+                });
+              }}
+            />
+          ) : null}
         </ProfileGroup>
 
         <ProfileGroup title={t('profile.groups.help')}>
@@ -408,6 +433,7 @@ export default function ProfilePage() {
         </ProfileGroup>
       </main>
       <LanguagePickerModal open={languagePickerOpen} onClose={() => setLanguagePickerOpen(false)} />
+      <InstallGuideModal open={installGuideOpen} onClose={() => setInstallGuideOpen(false)} />
     </div>
   );
 }

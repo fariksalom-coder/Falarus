@@ -1,0 +1,113 @@
+{
+  "grade": 10,
+  "title": "Algebra va analiz asoslari, geometriya, 10-sinf",
+  "units": [
+    {
+      "id": "m10-u01",
+      "title": "Haqiqiy sonlar va ildizlar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m10-u01-l01", "title": "Haqiqiy sonlar to'plami. Modul", "dtm": true },
+        { "id": "m10-u01-l02", "title": "n-darajali ildiz va uning xossalari", "dtm": true },
+        { "id": "m10-u01-l03", "title": "Irratsional ifodalarni almashtirish", "dtm": true },
+        { "id": "m10-u01-l04", "title": "Irratsional tenglama va tengsizliklar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m10-u02",
+      "title": "Ko'rsatkichli funksiya",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m10-u02-l01", "title": "Haqiqiy ko'rsatkichli daraja", "dtm": true },
+        { "id": "m10-u02-l02", "title": "Ko'rsatkichli funksiya va grafigi", "dtm": true },
+        { "id": "m10-u02-l03", "title": "Ko'rsatkichli tenglamalar", "dtm": true },
+        { "id": "m10-u02-l04", "title": "Ko'rsatkichli tengsizliklar", "dtm": true },
+        { "id": "m10-u02-l05", "title": "Ko'rsatkichli tenglamalar sistemasi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m10-u03",
+      "title": "Logarifm",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m10-u03-l01", "title": "Logarifm ta'rifi. Asosiy ayniyat", "dtm": true },
+        { "id": "m10-u03-l02", "title": "Logarifm xossalari", "dtm": true },
+        { "id": "m10-u03-l03", "title": "Asosni almashtirish formulasi", "dtm": true },
+        { "id": "m10-u03-l04", "title": "Logarifmik funksiya va grafigi", "dtm": true },
+        { "id": "m10-u03-l05", "title": "Logarifmik tenglamalar", "dtm": true },
+        { "id": "m10-u03-l06", "title": "Logarifmik tengsizliklar", "dtm": true },
+        { "id": "m10-u03-l07", "title": "Logarifmga oid amaliy masalalar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m10-u04",
+      "title": "Trigonometrik funksiyalar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m10-u04-l01", "title": "Radian o'lchov. Birlik aylana", "dtm": true },
+        { "id": "m10-u04-l02", "title": "Ixtiyoriy burchak sinusi, kosinusi, tangensi", "dtm": true },
+        { "id": "m10-u04-l03", "title": "Asosiy trigonometrik ayniyatlar", "dtm": true },
+        { "id": "m10-u04-l04", "title": "Keltirish formulalari", "dtm": true },
+        { "id": "m10-u04-l05", "title": "y = sin x va y = cos x grafiklari", "dtm": true },
+        { "id": "m10-u04-l06", "title": "y = tg x va y = ctg x grafiklari", "dtm": true }
+      ]
+    },
+    {
+      "id": "m10-u05",
+      "title": "Trigonometrik almashtirishlar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m10-u05-l01", "title": "Yig'indi va ayirma formulalari", "dtm": true },
+        { "id": "m10-u05-l02", "title": "Ikkilangan burchak formulalari", "dtm": true },
+        { "id": "m10-u05-l03", "title": "Yarim burchak formulalari", "dtm": true },
+        { "id": "m10-u05-l04", "title": "Yig'indini ko'paytmaga aylantirish", "dtm": true },
+        { "id": "m10-u05-l05", "title": "Ko'paytmani yig'indiga aylantirish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m10-u06",
+      "title": "Trigonometrik tenglamalar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m10-u06-l01", "title": "Teskari trigonometrik funksiyalar", "dtm": true },
+        { "id": "m10-u06-l02", "title": "Sodda trigonometrik tenglamalar", "dtm": true },
+        { "id": "m10-u06-l03", "title": "Bir jinsli trigonometrik tenglamalar", "dtm": true },
+        { "id": "m10-u06-l04", "title": "Yordamchi burchak usuli", "dtm": true },
+        { "id": "m10-u06-l05", "title": "Trigonometrik tengsizliklar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m10-u07",
+      "title": "Stereometriya asoslari",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m10-u07-l01", "title": "Stereometriya aksiomalari", "dtm": true },
+        { "id": "m10-u07-l02", "title": "Fazoda to'g'ri chiziqlarning o'zaro vaziyati", "dtm": true },
+        { "id": "m10-u07-l03", "title": "Ayqash to'g'ri chiziqlar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m10-u08",
+      "title": "Fazoda parallellik",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m10-u08-l01", "title": "To'g'ri chiziq va tekislik parallelligi", "dtm": true },
+        { "id": "m10-u08-l02", "title": "Tekisliklar parallelligi", "dtm": true },
+        { "id": "m10-u08-l03", "title": "Kesimlar yasash", "dtm": true },
+        { "id": "m10-u08-l04", "title": "Parallel proyeksiya", "dtm": false }
+      ]
+    },
+    {
+      "id": "m10-u09",
+      "title": "Fazoda perpendikulyarlik",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m10-u09-l01", "title": "To'g'ri chiziq va tekislik perpendikulyarligi", "dtm": true },
+        { "id": "m10-u09-l02", "title": "Perpendikulyar va og'ma. Uch perpendikulyar teoremasi", "dtm": true },
+        { "id": "m10-u09-l03", "title": "Ikki yoqli burchak", "dtm": true },
+        { "id": "m10-u09-l04", "title": "Tekisliklar perpendikulyarligi", "dtm": true },
+        { "id": "m10-u09-l05", "title": "Fazoda masofa va burchaklarni hisoblash", "dtm": true }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "grade": 7,
+  "title": "Algebra va geometriya, 7-sinf",
+  "units": [
+    {
+      "id": "m07-u01",
+      "title": "Butun ifodalar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m07-u01-l01", "title": "Sonli va harfiy ifodalar. Ifoda qiymati", "dtm": true },
+        { "id": "m07-u01-l02", "title": "Ayniyat va ayniy almashtirishlar", "dtm": true },
+        { "id": "m07-u01-l03", "title": "Natural ko'rsatkichli daraja xossalari", "dtm": true },
+        { "id": "m07-u01-l04", "title": "Bir hadlar va ular ustida amallar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u02",
+      "title": "Ko'phadlar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m07-u02-l01", "title": "Ko'phad. Standart shakl va daraja", "dtm": true },
+        { "id": "m07-u02-l02", "title": "Ko'phadlarni qo'shish va ayirish", "dtm": true },
+        { "id": "m07-u02-l03", "title": "Bir hadni ko'phadga ko'paytirish", "dtm": true },
+        { "id": "m07-u02-l04", "title": "Ko'phadni ko'phadga ko'paytirish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u03",
+      "title": "Qisqa ko'paytirish formulalari",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m07-u03-l01", "title": "Yig'indi va ayirma kvadrati", "dtm": true },
+        { "id": "m07-u03-l02", "title": "Kvadratlar ayirmasi", "dtm": true },
+        { "id": "m07-u03-l03", "title": "Yig'indi va ayirma kubi", "dtm": true },
+        { "id": "m07-u03-l04", "title": "Kublar yig'indisi va ayirmasi", "dtm": true },
+        { "id": "m07-u03-l05", "title": "Formulalarni hisoblashda qo'llash", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u04",
+      "title": "Ko'paytuvchilarga ajratish",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m07-u04-l01", "title": "Umumiy ko'paytuvchini qavsdan chiqarish", "dtm": true },
+        { "id": "m07-u04-l02", "title": "Guruhlash usuli", "dtm": true },
+        { "id": "m07-u04-l03", "title": "Formulalar yordamida ajratish", "dtm": true },
+        { "id": "m07-u04-l04", "title": "Aralash usullar. Kasrlarni qisqartirish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u05",
+      "title": "Chiziqli tenglama",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m07-u05-l01", "title": "Bir noma'lumli chiziqli tenglama", "dtm": true },
+        { "id": "m07-u05-l02", "title": "Ildizlar soni haqidagi tahlil", "dtm": true },
+        { "id": "m07-u05-l03", "title": "Modulli oddiy tenglamalar", "dtm": true },
+        { "id": "m07-u05-l04", "title": "Tenglama tuzib masala yechish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u06",
+      "title": "Funksiya va chiziqli funksiya",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m07-u06-l01", "title": "Funksiya tushunchasi. Aniqlanish sohasi", "dtm": true },
+        { "id": "m07-u06-l02", "title": "Funksiya grafigi", "dtm": true },
+        { "id": "m07-u06-l03", "title": "Chiziqli funksiya y = kx + b", "dtm": true },
+        { "id": "m07-u06-l04", "title": "To'g'ri proporsionallik y = kx", "dtm": true },
+        { "id": "m07-u06-l05", "title": "Grafiklarning o'zaro vaziyati", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u07",
+      "title": "Chiziqli tenglamalar sistemasi",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m07-u07-l01", "title": "Ikki noma'lumli chiziqli tenglama", "dtm": true },
+        { "id": "m07-u07-l02", "title": "Sistemani grafik usulda yechish", "dtm": true },
+        { "id": "m07-u07-l03", "title": "O'rniga qo'yish usuli", "dtm": true },
+        { "id": "m07-u07-l04", "title": "Qo'shish usuli", "dtm": true },
+        { "id": "m07-u07-l05", "title": "Sistema tuzib masala yechish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u08",
+      "title": "Geometriyaning boshlang'ich tushunchalari",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m07-u08-l01", "title": "Nuqta, chiziq, tekislik. Aksiomalar", "dtm": false },
+        { "id": "m07-u08-l02", "title": "Kesma, nur, burchak", "dtm": true },
+        { "id": "m07-u08-l03", "title": "Qo'shni va vertikal burchaklar", "dtm": true },
+        { "id": "m07-u08-l04", "title": "Perpendikulyar to'g'ri chiziqlar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u09",
+      "title": "Uchburchaklar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m07-u09-l01", "title": "Uchburchak va uning elementlari", "dtm": true },
+        { "id": "m07-u09-l02", "title": "Uchburchaklar tengligining birinchi alomati", "dtm": true },
+        { "id": "m07-u09-l03", "title": "Ikkinchi va uchinchi tenglik alomatlari", "dtm": true },
+        { "id": "m07-u09-l04", "title": "Teng yonli uchburchak xossalari", "dtm": true },
+        { "id": "m07-u09-l05", "title": "Mediana, bissektrisa, balandlik", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u10",
+      "title": "Parallel to'g'ri chiziqlar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m07-u10-l01", "title": "Parallellik alomatlari", "dtm": true },
+        { "id": "m07-u10-l02", "title": "Parallellik aksiomasi va natijalari", "dtm": true },
+        { "id": "m07-u10-l03", "title": "Uchburchak burchaklari yig'indisi", "dtm": true },
+        { "id": "m07-u10-l04", "title": "Tashqi burchak. Uchburchak tengsizligi", "dtm": true },
+        { "id": "m07-u10-l05", "title": "To'g'ri burchakli uchburchak xossalari", "dtm": true }
+      ]
+    },
+    {
+      "id": "m07-u11",
+      "title": "Geometrik yasashlar va statistika",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m07-u11-l01", "title": "Sirkul va chizg'ich bilan yasashlar", "dtm": false },
+        { "id": "m07-u11-l02", "title": "Nuqtalarning geometrik o'rni", "dtm": false },
+        { "id": "m07-u11-l03", "title": "Ma'lumotlarni tahlil qilish. Diagrammalar", "dtm": true }
+      ]
+    }
+  ]
+}

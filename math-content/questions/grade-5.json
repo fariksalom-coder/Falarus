@@ -1,0 +1,1556 @@
+{
+  "grade": 5,
+  "title": "5-sinf matematika: 100 ta savol (50 test + 50 ochiq masala)",
+  "questions": [
+    {
+      "id": "q05-001",
+      "unitId": "m05-u01",
+      "topic": "Xona birliklari",
+      "type": "test",
+      "question": "$3\\,405\\,072$ sonining o'n minglar xonasida qaysi raqam turadi?",
+      "options": ["$5$", "$0$", "$4$", "$7$"],
+      "correct": "B",
+      "solution": [
+        { "text": "Xonalarni o'ngdan chapga sanaymiz: birlik, o'nlik, yuzlik, minglik, o'n minglik." },
+        { "text": "Sonni xonalarga ajratamiz.", "latex": "$3\\,|\\,405\\,|\\,072$" },
+        { "text": "Birlik 2, o'nlik 7, yuzlik 0, minglik 5, o'n minglik 0." }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-002",
+      "unitId": "m05-u01",
+      "topic": "Yaxlitlash",
+      "type": "test",
+      "question": "$47\\,892$ sonini yuzlargacha yaxlitlang.",
+      "options": ["$47\\,800$", "$48\\,000$", "$47\\,900$", "$47\\,890$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Yuzlar xonasidan keyingi raqamga qaraymiz. Bu 9 ga teng." },
+        { "text": "9 raqami 5 dan katta, demak yuzlar xonasi bittaga oshadi.", "latex": "$8 \\to 9$" },
+        { "text": "Undan keyingi barcha raqamlar nolga almashadi.", "latex": "$47\\,900$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-003",
+      "unitId": "m05-u01",
+      "topic": "Sonlarni taqqoslash",
+      "type": "test",
+      "question": "Eng katta to'rt xonali son bilan eng kichik uch xonali sonning ayirmasini toping.",
+      "options": ["$9899$", "$9900$", "$9989$", "$9799$"],
+      "correct": "A",
+      "solution": [
+        { "text": "Eng katta to'rt xonali son barcha raqamlari 9 dan iborat.", "latex": "$9999$" },
+        { "text": "Eng kichik uch xonali son 100 ga teng.", "latex": "$100$" },
+        { "text": "Ayirmani hisoblaymiz.", "latex": "$9999 - 100 = 9899$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-004",
+      "unitId": "m05-u01",
+      "topic": "Rim raqamlari",
+      "type": "test",
+      "question": "XLII rim raqami qaysi songa teng?",
+      "options": ["$62$", "$38$", "$52$", "$42$"],
+      "correct": "D",
+      "solution": [
+        { "text": "Kichik raqam katta raqamdan oldin tursa, ayiriladi.", "latex": "$XL = 50 - 10 = 40$" },
+        { "text": "Qolgan qismni qo'shamiz.", "latex": "$II = 2$" },
+        { "text": "Natijani birlashtiramiz.", "latex": "$40 + 2 = 42$" }
+      ],
+      "level": 1,
+      "dtm": false
+    },
+    {
+      "id": "q05-005",
+      "unitId": "m05-u01",
+      "topic": "Koordinata nuri",
+      "type": "test",
+      "question": "Koordinata nurida birlik kesma 1 sm ga teng. $A(6)$ va $B(11)$ nuqtalar orasidagi masofani toping.",
+      "options": ["$17$ sm", "$5$ sm", "$6$ sm", "$11$ sm"],
+      "correct": "B",
+      "solution": [
+        { "text": "Ikki nuqta orasidagi masofa koordinatalar ayirmasiga teng." },
+        { "text": "Kattasidan kichigini ayiramiz.", "latex": "$11 - 6 = 5$" },
+        { "text": "Birlik kesma 1 sm bo'lgani uchun masofa 5 sm." }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-006",
+      "unitId": "m05-u01",
+      "topic": "Xona qo'shiluvchilari",
+      "type": "open",
+      "question": "$5\\,072\\,604$ sonini xona qo'shiluvchilari yig'indisi ko'rinishida yozing.",
+      "answer": "$5\\,000\\,000 + 70\\,000 + 2\\,000 + 600 + 4$",
+      "solution": [
+        { "text": "Sonni xonalarga ajratamiz: 5 million, 0 yuz ming, 7 o'n ming, 2 ming, 6 yuz, 0 o'nlik, 4 birlik." },
+        { "text": "Nolga teng xonalar yig'indiga yozilmaydi." },
+        { "text": "Qolgan xonalarni yig'indi ko'rinishida yozamiz.", "latex": "$5\\,000\\,000 + 70\\,000 + 2\\,000 + 600 + 4$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-007",
+      "unitId": "m05-u01",
+      "topic": "Sonlarni tuzish",
+      "type": "open",
+      "question": "$3$, $0$, $7$, $5$ raqamlaridan foydalanib eng katta va eng kichik to'rt xonali sonlarni tuzing. Raqamlar takrorlanmaydi. Tuzilgan sonlarning ayirmasini toping.",
+      "answer": "$4473$",
+      "solution": [
+        { "text": "Eng katta son uchun raqamlarni kamayish tartibida joylashtiramiz.", "latex": "$7530$" },
+        { "text": "Eng kichik son uchun raqamlarni o'sish tartibida joylashtiramiz, lekin birinchi o'rinda nol tura olmaydi, shuning uchun 3 qo'yiladi.", "latex": "$3057$" },
+        { "text": "Ayirmani hisoblaymiz.", "latex": "$7530 - 3057 = 4473$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-008",
+      "unitId": "m05-u01",
+      "topic": "Yaxlitlash",
+      "type": "open",
+      "question": "Bir zavod birinchi chorakda $128\\,450$ dona, ikkinchi chorakda $96\\,780$ dona g'isht ishlab chiqardi. Jami nechta g'isht ishlab chiqarilgan va bu sonni o'n minglargacha yaxlitlang.",
+      "answer": "$225\\,230$ dona, yaxlitlangani $230\\,000$",
+      "solution": [
+        { "text": "Ikki chorak mahsulotini qo'shamiz.", "latex": "$128\\,450 + 96\\,780 = 225\\,230$" },
+        { "text": "O'n minglar xonasidan keyingi qismga qaraymiz.", "latex": "$5230$" },
+        { "text": "$5230$ yarim o'n mingdan katta, demak o'n minglar xonasi bittaga oshadi.", "latex": "$22 \\to 23$" },
+        { "text": "Yaxlitlangan son.", "latex": "$230\\,000$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-009",
+      "unitId": "m05-u01",
+      "topic": "Koordinata nuri",
+      "type": "open",
+      "question": "Koordinata nurida $A(3)$ va $B(9)$ nuqtalar berilgan. $AB$ kesmaning o'rtasidagi nuqta koordinatasini toping.",
+      "answer": "$6$",
+      "solution": [
+        { "text": "Kesma uzunligini topamiz.", "latex": "$9 - 3 = 6$" },
+        { "text": "O'rta nuqta kesmani ikkiga bo'ladi.", "latex": "$6 : 2 = 3$" },
+        { "text": "$A$ nuqtadan 3 birlik o'ngga siljiymiz.", "latex": "$3 + 3 = 6$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-010",
+      "unitId": "m05-u01",
+      "topic": "Sonlarni taqqoslash",
+      "type": "open",
+      "question": "$4\\,\\square\\,7$ va $482$ sonlarini taqqoslaganda birinchisi kichik bo'lishi uchun $\\square$ o'rniga qanday raqamlarni qo'yish mumkin?",
+      "answer": "$0, 1, 2, 3, 4, 5, 6, 7$",
+      "solution": [
+        { "text": "Ikkala son uch xonali va yuzlar xonasi bir xil, ikkalasida ham 4." },
+        { "text": "Demak taqqoslash o'nlar xonasiga bog'liq. Birinchi sonning o'nligi $\\square$, ikkinchisiniki 8." },
+        { "text": "Agar $\\square = 8$ bo'lsa, sonlar $487$ va $482$ bo'lib, birinchisi katta chiqadi. Demak $\\square < 8$." },
+        { "text": "Mos raqamlar.", "latex": "$0, 1, 2, 3, 4, 5, 6, 7$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-011",
+      "unitId": "m05-u02",
+      "topic": "Amallar tartibi",
+      "type": "test",
+      "question": "$24 + 36 \\cdot 2 - 15$ ifodaning qiymatini toping.",
+      "options": ["$105$", "$96$", "$81$", "$66$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Qavs yo'q, shuning uchun avval ko'paytirish bajariladi.", "latex": "$36 \\cdot 2 = 72$" },
+        { "text": "So'ng chapdan o'ngga qo'shish va ayirish.", "latex": "$24 + 72 = 96$" },
+        { "text": "Oxirgi amal.", "latex": "$96 - 15 = 81$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-012",
+      "unitId": "m05-u02",
+      "topic": "Daraja",
+      "type": "test",
+      "question": "$2^5$ ning qiymatini toping.",
+      "options": ["$10$", "$32$", "$25$", "$16$"],
+      "correct": "B",
+      "solution": [
+        { "text": "Daraja bir xil ko'paytuvchilarning ko'paytmasi.", "latex": "$2^5 = 2 \\cdot 2 \\cdot 2 \\cdot 2 \\cdot 2$" },
+        { "text": "Bosqichma-bosqich ko'paytiramiz.", "latex": "$2 \\cdot 2 = 4, \\ 4 \\cdot 2 = 8, \\ 8 \\cdot 2 = 16$" },
+        { "text": "Oxirgi ko'paytirish.", "latex": "$16 \\cdot 2 = 32$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-013",
+      "unitId": "m05-u02",
+      "topic": "Qoldiqli bo'lish",
+      "type": "test",
+      "question": "$137$ ni $8$ ga bo'lgandagi qoldiqni toping.",
+      "options": ["$3$", "$5$", "$7$", "$1$"],
+      "correct": "D",
+      "solution": [
+        { "text": "8 ning 137 dan oshmaydigan eng katta karralisini topamiz.", "latex": "$8 \\cdot 17 = 136$" },
+        { "text": "Qoldiqni hisoblaymiz.", "latex": "$137 - 136 = 1$" },
+        { "text": "Qoldiq bo'luvchidan kichik ekanini tekshiramiz.", "latex": "$1 < 8$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-014",
+      "unitId": "m05-u02",
+      "topic": "Qavsli ifodalar",
+      "type": "test",
+      "question": "$(45 + 55) \\cdot 4$ ifodaning qiymatini toping.",
+      "options": ["$265$", "$145$", "$400$", "$320$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Avval qavs ichidagi amal bajariladi.", "latex": "$45 + 55 = 100$" },
+        { "text": "So'ng ko'paytirish.", "latex": "$100 \\cdot 4 = 400$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-015",
+      "unitId": "m05-u02",
+      "topic": "Daraja",
+      "type": "test",
+      "question": "$3^3 - 2^4$ ifodaning qiymatini toping.",
+      "options": ["$11$", "$5$", "$19$", "$1$"],
+      "correct": "A",
+      "solution": [
+        { "text": "Birinchi darajani hisoblaymiz.", "latex": "$3^3 = 3 \\cdot 3 \\cdot 3 = 27$" },
+        { "text": "Ikkinchi darajani hisoblaymiz.", "latex": "$2^4 = 2 \\cdot 2 \\cdot 2 \\cdot 2 = 16$" },
+        { "text": "Ayirmani topamiz.", "latex": "$27 - 16 = 11$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-016",
+      "unitId": "m05-u02",
+      "topic": "Amallar tartibi",
+      "type": "open",
+      "question": "Hisoblang: $720 : (12 \\cdot 5) + 8^2$.",
+      "answer": "$76$",
+      "solution": [
+        { "text": "Avval qavs ichidagi ko'paytirishni bajaramiz.", "latex": "$12 \\cdot 5 = 60$" },
+        { "text": "Darajani hisoblaymiz.", "latex": "$8^2 = 64$" },
+        { "text": "Bo'lishni bajaramiz.", "latex": "$720 : 60 = 12$" },
+        { "text": "Oxirida qo'shamiz.", "latex": "$12 + 64 = 76$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-017",
+      "unitId": "m05-u03",
+      "topic": "Harakatga oid masala",
+      "type": "open",
+      "question": "Avtobus Toshkentdan chiqib, avval 4 soat davomida soatiga 60 km tezlik bilan, so'ng 2 soat davomida soatiga 75 km tezlik bilan yurdi. Avtobus jami necha kilometr yo'l bosdi?",
+      "answer": "$390$ km",
+      "solution": [
+        { "text": "Birinchi qismdagi masofani topamiz.", "latex": "$60 \\cdot 4 = 240$" },
+        { "text": "Ikkinchi qismdagi masofani topamiz.", "latex": "$75 \\cdot 2 = 150$" },
+        { "text": "Umumiy masofani hisoblaymiz.", "latex": "$240 + 150 = 390$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-018",
+      "unitId": "m05-u03",
+      "topic": "Narxga oid masala",
+      "type": "open",
+      "question": "5 ta bir xil daftar 42 000 so'm turadi. Shunday 8 ta daftar necha pul turadi?",
+      "answer": "$67\\,200$ so'm",
+      "solution": [
+        { "text": "Bitta daftar narxini topamiz.", "latex": "$42\\,000 : 5 = 8\\,400$" },
+        { "text": "8 ta daftar narxini hisoblaymiz.", "latex": "$8\\,400 \\cdot 8 = 67\\,200$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-019",
+      "unitId": "m05-u02",
+      "topic": "Qoldiqli bo'lish",
+      "type": "open",
+      "question": "$2348$ ni $7$ ga qoldiqli bo'ling va natijani tekshiring.",
+      "answer": "Bo'linma $335$, qoldiq $3$",
+      "solution": [
+        { "text": "7 ning 2348 dan oshmaydigan eng katta karralisini topamiz.", "latex": "$7 \\cdot 335 = 2345$" },
+        { "text": "Qoldiqni hisoblaymiz.", "latex": "$2348 - 2345 = 3$" },
+        { "text": "Tekshiramiz: bo'luvchi karra bo'linma qo'shuv qoldiq bo'linuvchiga teng bo'lishi kerak.", "latex": "$7 \\cdot 335 + 3 = 2348$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-020",
+      "unitId": "m05-u02",
+      "topic": "Noma'lumni topish",
+      "type": "open",
+      "question": "Bir sonni 24 ga ko'paytirib, natijadan 96 ni ayirsak, 456 hosil bo'ladi. Shu sonni toping.",
+      "answer": "$23$",
+      "solution": [
+        { "text": "Noma'lum sonni $x$ deb belgilaymiz va shartni yozamiz.", "latex": "$24x - 96 = 456$" },
+        { "text": "Ko'paytmani topamiz.", "latex": "$24x = 456 + 96 = 552$" },
+        { "text": "Noma'lum ko'paytuvchini topamiz.", "latex": "$x = 552 : 24 = 23$" },
+        { "text": "Tekshiramiz.", "latex": "$24 \\cdot 23 - 96 = 552 - 96 = 456$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-021",
+      "unitId": "m05-u01",
+      "topic": "Ifoda qiymati",
+      "type": "test",
+      "question": "$x = 7$ bo'lganda $5x - 12$ ifodaning qiymatini toping.",
+      "options": ["$30$", "$23$", "$19$", "$47$"],
+      "correct": "B",
+      "solution": [
+        { "text": "$x$ o'rniga 7 ni qo'yamiz.", "latex": "$5 \\cdot 7 - 12$" },
+        { "text": "Avval ko'paytirish.", "latex": "$5 \\cdot 7 = 35$" },
+        { "text": "So'ng ayirish.", "latex": "$35 - 12 = 23$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-022",
+      "unitId": "m05-u01",
+      "topic": "Tenglama",
+      "type": "test",
+      "question": "$x + 47 = 92$ tenglamani yeching.",
+      "options": ["$139$", "$55$", "$35$", "$45$"],
+      "correct": "D",
+      "solution": [
+        { "text": "Noma'lum qo'shiluvchini topish uchun yig'indidan ma'lum qo'shiluvchi ayiriladi.", "latex": "$x = 92 - 47$" },
+        { "text": "Hisoblaymiz.", "latex": "$x = 45$" },
+        { "text": "Tekshiramiz.", "latex": "$45 + 47 = 92$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-023",
+      "unitId": "m05-u02",
+      "topic": "Ifodalarni soddalashtirish",
+      "type": "test",
+      "question": "$8a + 5a - 3a$ ifodani soddalashtiring.",
+      "options": ["$16a$", "$6a$", "$10a$", "$13a$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Barcha hadlarda bir xil $a$ harfi bor, shuning uchun koeffitsiyentlar ustida amal bajariladi." },
+        { "text": "Koeffitsiyentlarni qo'shamiz va ayiramiz.", "latex": "$8 + 5 - 3 = 10$" },
+        { "text": "Natijani yozamiz.", "latex": "$10a$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-024",
+      "unitId": "m05-u02",
+      "topic": "Tenglama",
+      "type": "test",
+      "question": "$6x = 138$ tenglamani yeching.",
+      "options": ["$132$", "$828$", "$18$", "$23$"],
+      "correct": "D",
+      "solution": [
+        { "text": "Noma'lum ko'paytuvchini topish uchun ko'paytma ma'lum ko'paytuvchiga bo'linadi.", "latex": "$x = 138 : 6$" },
+        { "text": "Hisoblaymiz.", "latex": "$x = 23$" },
+        { "text": "Tekshiramiz.", "latex": "$6 \\cdot 23 = 138$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-025",
+      "unitId": "m05-u03",
+      "topic": "Formula",
+      "type": "test",
+      "question": "$s = v \\cdot t$ formulasi bo'yicha $v = 45$ km/soat va $t = 3$ soat bo'lganda $s$ ni toping.",
+      "options": ["$135$ km", "$15$ km", "$48$ km", "$90$ km"],
+      "correct": "A",
+      "solution": [
+        { "text": "Formulaga qiymatlarni qo'yamiz.", "latex": "$s = 45 \\cdot 3$" },
+        { "text": "Ko'paytirishni bajaramiz.", "latex": "$s = 135$" },
+        { "text": "Javob kilometrda o'lchanadi." }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-026",
+      "unitId": "m05-u02",
+      "topic": "Ifodalarni soddalashtirish",
+      "type": "open",
+      "question": "$4a + 9a - 5a$ ifodani soddalashtiring va $a = 6$ bo'lgandagi qiymatini toping.",
+      "answer": "$8a$, qiymati $48$",
+      "solution": [
+        { "text": "Koeffitsiyentlar ustida amal bajaramiz.", "latex": "$4 + 9 - 5 = 8$" },
+        { "text": "Soddalashtirilgan ifoda.", "latex": "$8a$" },
+        { "text": "$a = 6$ ni qo'yamiz.", "latex": "$8 \\cdot 6 = 48$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-027",
+      "unitId": "m05-u01",
+      "topic": "Tenglama",
+      "type": "open",
+      "question": "$145 - x = 68$ tenglamani yeching.",
+      "answer": "$x = 77$",
+      "solution": [
+        { "text": "Noma'lum ayriluvchini topish uchun kamayuvchidan ayirma ayiriladi.", "latex": "$x = 145 - 68$" },
+        { "text": "Hisoblaymiz.", "latex": "$x = 77$" },
+        { "text": "Tekshiramiz.", "latex": "$145 - 77 = 68$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-028",
+      "unitId": "m05-u02",
+      "topic": "Tenglama tuzib masala yechish",
+      "type": "open",
+      "question": "Alisher va Boburda jami 92 ta marka bor. Alisherda Boburdagidan 14 ta ko'p marka bor. Har birida nechtadan marka bor?",
+      "answer": "Bobur 39 ta, Alisher 53 ta",
+      "solution": [
+        { "text": "Boburdagi markalar sonini $x$ deb belgilaymiz, u holda Alisherda $x + 14$ ta bo'ladi." },
+        { "text": "Jami markalar uchun tenglama tuzamiz.", "latex": "$x + (x + 14) = 92$" },
+        { "text": "O'xshash hadlarni ixchamlaymiz.", "latex": "$2x + 14 = 92$" },
+        { "text": "Tenglamani yechamiz.", "latex": "$2x = 78, \\ x = 39$" },
+        { "text": "Alisherdagi markalar sonini topamiz.", "latex": "$39 + 14 = 53$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-029",
+      "unitId": "m05-u02",
+      "topic": "Tenglama",
+      "type": "open",
+      "question": "$7x + 12 = 96$ tenglamani yeching.",
+      "answer": "$x = 12$",
+      "solution": [
+        { "text": "Noma'lum qo'shiluvchi $7x$ ni topamiz.", "latex": "$7x = 96 - 12 = 84$" },
+        { "text": "Noma'lum ko'paytuvchini topamiz.", "latex": "$x = 84 : 7 = 12$" },
+        { "text": "Tekshiramiz.", "latex": "$7 \\cdot 12 + 12 = 84 + 12 = 96$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-030",
+      "unitId": "m05-u03",
+      "topic": "Formula",
+      "type": "open",
+      "question": "Poyezd 5 soat davomida 425 km yo'l bosdi. Poyezdning tezligini toping.",
+      "answer": "$85$ km/soat",
+      "solution": [
+        { "text": "Tezlikni topish formulasini yozamiz.", "latex": "$v = s : t$" },
+        { "text": "Qiymatlarni qo'yamiz.", "latex": "$v = 425 : 5$" },
+        { "text": "Hisoblaymiz.", "latex": "$v = 85$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-031",
+      "unitId": "m05-u04",
+      "topic": "Burchak turlari",
+      "type": "test",
+      "question": "Yoyiq burchak necha gradusga teng?",
+      "options": ["$90^\\circ$", "$360^\\circ$", "$180^\\circ$", "$270^\\circ$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Yoyiq burchakning tomonlari bir to'g'ri chiziqda yotadi va qarama-qarshi yo'nalgan." },
+        { "text": "To'g'ri burchak $90^\\circ$, yoyiq burchak esa ikkita to'g'ri burchakdan iborat.", "latex": "$90^\\circ \\cdot 2 = 180^\\circ$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-032",
+      "unitId": "m05-u04",
+      "topic": "Perimetr",
+      "type": "test",
+      "question": "Uchburchakning tomonlari 8 sm, 11 sm va 14 sm. Uning perimetrini toping.",
+      "options": ["$32$ sm", "$33$ sm", "$34$ sm", "$23$ sm"],
+      "correct": "B",
+      "solution": [
+        { "text": "Perimetr barcha tomonlar uzunliklarining yig'indisiga teng.", "latex": "$P = a + b + c$" },
+        { "text": "Qiymatlarni qo'yamiz.", "latex": "$P = 8 + 11 + 14$" },
+        { "text": "Hisoblaymiz.", "latex": "$P = 33$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-033",
+      "unitId": "m05-u04",
+      "topic": "Kvadrat perimetri",
+      "type": "test",
+      "question": "Kvadratning perimetri 36 sm. Uning tomonini toping.",
+      "options": ["$6$ sm", "$12$ sm", "$18$ sm", "$9$ sm"],
+      "correct": "D",
+      "solution": [
+        { "text": "Kvadratning to'rtta tomoni teng.", "latex": "$P = 4a$" },
+        { "text": "Tomonni topish uchun perimetrni 4 ga bo'lamiz.", "latex": "$a = 36 : 4$" },
+        { "text": "Hisoblaymiz.", "latex": "$a = 9$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-034",
+      "unitId": "m05-u04",
+      "topic": "Burchak turlari",
+      "type": "test",
+      "question": "$65^\\circ$ li burchak qanday burchak deyiladi?",
+      "options": ["To'g'ri burchak", "O'tkir burchak", "O'tmas burchak", "Yoyiq burchak"],
+      "correct": "B",
+      "solution": [
+        { "text": "Burchakni $90^\\circ$ bilan taqqoslaymiz.", "latex": "$65^\\circ < 90^\\circ$" },
+        { "text": "To'g'ri burchakdan kichik burchak o'tkir burchak deyiladi." }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-035",
+      "unitId": "m05-u04",
+      "topic": "To'g'ri to'rtburchak perimetri",
+      "type": "test",
+      "question": "To'g'ri to'rtburchakning tomonlari 7 sm va 12 sm. Perimetrini toping.",
+      "options": ["$19$ sm", "$84$ sm", "$76$ sm", "$38$ sm"],
+      "correct": "D",
+      "solution": [
+        { "text": "To'g'ri to'rtburchakda qarama-qarshi tomonlar teng.", "latex": "$P = 2(a + b)$" },
+        { "text": "Qavs ichidagi yig'indini topamiz.", "latex": "$7 + 12 = 19$" },
+        { "text": "Ikkiga ko'paytiramiz.", "latex": "$P = 2 \\cdot 19 = 38$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-036",
+      "unitId": "m05-u01",
+      "topic": "Kesmalar",
+      "type": "open",
+      "question": "$AB$ kesmaning uzunligi 15 sm. Uning ichidan $C$ nuqta olindi va $AC = 6$ sm bo'ldi. $CB$ kesmaning uzunligini toping.",
+      "answer": "$9$ sm",
+      "solution": [
+        { "text": "$C$ nuqta kesmani ikki qismga bo'ladi.", "latex": "$AC + CB = AB$" },
+        { "text": "Noma'lum qo'shiluvchini topamiz.", "latex": "$CB = 15 - 6$" },
+        { "text": "Hisoblaymiz.", "latex": "$CB = 9$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-037",
+      "unitId": "m05-u04",
+      "topic": "Perimetr",
+      "type": "open",
+      "question": "Uchburchakning perimetri 48 sm. Ikki tomoni 15 sm va 18 sm ga teng. Uchinchi tomonini toping.",
+      "answer": "$15$ sm",
+      "solution": [
+        { "text": "Ma'lum ikki tomonni qo'shamiz.", "latex": "$15 + 18 = 33$" },
+        { "text": "Perimetrdan bu yig'indini ayiramiz.", "latex": "$48 - 33 = 15$" },
+        { "text": "Uchinchi tomon 15 sm ga teng." }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-038",
+      "unitId": "m05-u04",
+      "topic": "Bissektrisa",
+      "type": "open",
+      "question": "$130^\\circ$ li burchak bissektrisa bilan ikkiga bo'lindi. Hosil bo'lgan har bir burchakni toping.",
+      "answer": "$65^\\circ$",
+      "solution": [
+        { "text": "Bissektrisa burchakni ikkita teng burchakka ajratadi." },
+        { "text": "Burchakni ikkiga bo'lamiz.", "latex": "$130^\\circ : 2 = 65^\\circ$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-039",
+      "unitId": "m05-u04",
+      "topic": "To'g'ri to'rtburchak perimetri",
+      "type": "open",
+      "question": "To'g'ri to'rtburchakning perimetri 54 sm, eni 12 sm. Bo'yini toping.",
+      "answer": "$15$ sm",
+      "solution": [
+        { "text": "Perimetr formulasidan eni va bo'yi yig'indisini topamiz.", "latex": "$a + b = P : 2 = 54 : 2 = 27$" },
+        { "text": "Yig'indidan enini ayiramiz.", "latex": "$27 - 12 = 15$" },
+        { "text": "Tekshiramiz.", "latex": "$2 \\cdot (12 + 15) = 54$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-040",
+      "unitId": "m05-u04",
+      "topic": "Uchburchak turlari",
+      "type": "open",
+      "question": "Teng tomonli uchburchakning perimetri 51 sm. Uning bir tomonini toping.",
+      "answer": "$17$ sm",
+      "solution": [
+        { "text": "Teng tomonli uchburchakning uchala tomoni teng.", "latex": "$P = 3a$" },
+        { "text": "Tomonni topamiz.", "latex": "$a = 51 : 3 = 17$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-041",
+      "unitId": "m05-u04",
+      "topic": "Kvadrat yuzasi",
+      "type": "test",
+      "question": "Kvadratning tomoni 9 sm. Uning yuzasini toping.",
+      "options": ["$36$ sm$^2$", "$18$ sm$^2$", "$81$ sm$^2$", "$72$ sm$^2$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Kvadrat yuzasi tomonning kvadratiga teng.", "latex": "$S = a^2$" },
+        { "text": "Qiymatni qo'yamiz.", "latex": "$S = 9^2 = 81$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-042",
+      "unitId": "m05-u04",
+      "topic": "Yuza birliklari",
+      "type": "test",
+      "question": "1 gektar necha kvadrat metrga teng?",
+      "options": ["$100$", "$1\\,000$", "$100\\,000$", "$10\\,000$"],
+      "correct": "D",
+      "solution": [
+        { "text": "1 gektar tomoni 100 m bo'lgan kvadratning yuzasi." },
+        { "text": "Yuzani hisoblaymiz.", "latex": "$100 \\cdot 100 = 10\\,000$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-043",
+      "unitId": "m05-u02",
+      "topic": "Kub hajmi",
+      "type": "test",
+      "question": "Kubning qirrasi 4 sm. Uning hajmini toping.",
+      "options": ["$64$ sm$^3$", "$16$ sm$^3$", "$48$ sm$^3$", "$12$ sm$^3$"],
+      "correct": "A",
+      "solution": [
+        { "text": "Kub hajmi qirraning kubiga teng.", "latex": "$V = a^3$" },
+        { "text": "Qiymatni qo'yamiz.", "latex": "$V = 4^3 = 4 \\cdot 4 \\cdot 4 = 64$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-044",
+      "unitId": "m05-u04",
+      "topic": "To'g'ri to'rtburchak yuzasi",
+      "type": "test",
+      "question": "To'g'ri to'rtburchakning yuzasi 96 sm$^2$, eni 8 sm. Bo'yini toping.",
+      "options": ["$88$ sm", "$6$ sm", "$48$ sm", "$12$ sm"],
+      "correct": "D",
+      "solution": [
+        { "text": "Yuza formulasi.", "latex": "$S = a \\cdot b$" },
+        { "text": "Noma'lum ko'paytuvchini topamiz.", "latex": "$b = 96 : 8$" },
+        { "text": "Hisoblaymiz.", "latex": "$b = 12$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-045",
+      "unitId": "m05-u04",
+      "topic": "Parallelepiped hajmi",
+      "type": "test",
+      "question": "To'g'ri burchakli parallelepipedning o'lchovlari 5 sm, 4 sm va 3 sm. Hajmini toping.",
+      "options": ["$12$ sm$^3$", "$60$ sm$^3$", "$94$ sm$^3$", "$47$ sm$^3$"],
+      "correct": "B",
+      "solution": [
+        { "text": "Hajm uchta o'lchovning ko'paytmasiga teng.", "latex": "$V = a \\cdot b \\cdot c$" },
+        { "text": "Birinchi ikkita o'lchovni ko'paytiramiz.", "latex": "$5 \\cdot 4 = 20$" },
+        { "text": "Uchinchisiga ko'paytiramiz.", "latex": "$20 \\cdot 3 = 60$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-046",
+      "unitId": "m05-u04",
+      "topic": "Yuza birliklari",
+      "type": "open",
+      "question": "To'g'ri to'rtburchak shaklidagi yer maydonining o'lchovlari 250 m va 40 m. Uning yuzasini kvadrat metrda va gektarda toping.",
+      "answer": "$10\\,000$ m$^2$, ya'ni $1$ gektar",
+      "solution": [
+        { "text": "Yuzani hisoblaymiz.", "latex": "$S = 250 \\cdot 40 = 10\\,000$" },
+        { "text": "1 gektar 10 000 kvadrat metrga teng.", "latex": "$1 \\text{ ga} = 10\\,000 \\text{ m}^2$" },
+        { "text": "Gektarga o'tkazamiz.", "latex": "$10\\,000 : 10\\,000 = 1$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-047",
+      "unitId": "m05-u04",
+      "topic": "Yuzaga oid amaliy masala",
+      "type": "open",
+      "question": "Xonaning o'lchovlari 6 m va 4 m. Bir kvadrat metr gilam 85 000 so'm turadi. Butun xona polini qoplash uchun qancha pul kerak?",
+      "answer": "$2\\,040\\,000$ so'm",
+      "solution": [
+        { "text": "Xona yuzasini topamiz.", "latex": "$S = 6 \\cdot 4 = 24$" },
+        { "text": "Yuzani bir kvadrat metr narxiga ko'paytiramiz.", "latex": "$24 \\cdot 85\\,000$" },
+        { "text": "Hisoblaymiz.", "latex": "$24 \\cdot 85\\,000 = 2\\,040\\,000$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-048",
+      "unitId": "m05-u04",
+      "topic": "Hajm",
+      "type": "open",
+      "question": "Basseynning o'lchovlari 12 m, 5 m va 2 m. Uning hajmini kubometrda va litrda toping.",
+      "answer": "$120$ m$^3$, ya'ni $120\\,000$ litr",
+      "solution": [
+        { "text": "Hajmni hisoblaymiz.", "latex": "$V = 12 \\cdot 5 \\cdot 2 = 120$" },
+        { "text": "1 kubometr 1000 litrga teng.", "latex": "$1 \\text{ m}^3 = 1000 \\text{ l}$" },
+        { "text": "Litrga o'tkazamiz.", "latex": "$120 \\cdot 1000 = 120\\,000$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-049",
+      "unitId": "m05-u04",
+      "topic": "Murakkab shakl yuzasi",
+      "type": "open",
+      "question": "O'lchovlari 10 sm va 6 sm bo'lgan to'g'ri to'rtburchakdan o'lchovlari 3 sm va 4 sm bo'lgan to'g'ri to'rtburchak kesib olindi. Qolgan shaklning yuzasini toping.",
+      "answer": "$48$ sm$^2$",
+      "solution": [
+        { "text": "Katta to'g'ri to'rtburchak yuzasini topamiz.", "latex": "$10 \\cdot 6 = 60$" },
+        { "text": "Kesib olingan qism yuzasini topamiz.", "latex": "$3 \\cdot 4 = 12$" },
+        { "text": "Ayirmani hisoblaymiz.", "latex": "$60 - 12 = 48$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-050",
+      "unitId": "m05-u02",
+      "topic": "Kub hajmi va sirti",
+      "type": "open",
+      "question": "Kubning hajmi 125 sm$^3$. Uning qirrasini va to'la sirtini toping.",
+      "answer": "Qirra $5$ sm, to'la sirt $150$ sm$^2$",
+      "solution": [
+        { "text": "Hajm qirraning kubiga teng, shuning uchun kubi 125 bo'lgan sonni izlaymiz.", "latex": "$5 \\cdot 5 \\cdot 5 = 125$" },
+        { "text": "Demak qirra 5 sm ga teng.", "latex": "$a = 5$" },
+        { "text": "Kubda oltita teng kvadrat yoq bor.", "latex": "$S = 6a^2$" },
+        { "text": "To'la sirtni hisoblaymiz.", "latex": "$S = 6 \\cdot 25 = 150$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-051",
+      "unitId": "m05-u05",
+      "topic": "Kasrlarni taqqoslash",
+      "type": "test",
+      "question": "$\\frac{5}{8}$ va $\\frac{3}{8}$ kasrlaridan qaysi biri katta?",
+      "options": ["$\\frac{3}{8}$", "$\\frac{5}{8}$", "Ular teng", "Taqqoslab bo'lmaydi"],
+      "correct": "B",
+      "solution": [
+        { "text": "Maxrajlar bir xil, demak bo'laklar kattaligi teng." },
+        { "text": "Suratlarni taqqoslaymiz.", "latex": "$5 > 3$" },
+        { "text": "Surati katta kasr katta bo'ladi.", "latex": "$\\frac{5}{8} > \\frac{3}{8}$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-052",
+      "unitId": "m05-u05",
+      "topic": "Aralash son",
+      "type": "test",
+      "question": "$\\frac{23}{6}$ noto'g'ri kasrni aralash son ko'rinishida yozing.",
+      "options": ["$4\\frac{1}{6}$", "$3\\frac{2}{6}$", "$3\\frac{5}{6}$", "$2\\frac{5}{6}$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Suratni maxrajga qoldiqli bo'lamiz.", "latex": "$23 : 6 = 3$ (qoldiq $5$)" },
+        { "text": "Bo'linma butun qism, qoldiq yangi surat bo'ladi." },
+        { "text": "Aralash sonni yozamiz.", "latex": "$3\\frac{5}{6}$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-053",
+      "unitId": "m05-u05",
+      "topic": "Kasrlarni qo'shish",
+      "type": "test",
+      "question": "$\\frac{2}{7} + \\frac{3}{7}$ ni hisoblang.",
+      "options": ["$\\frac{5}{14}$", "$\\frac{6}{7}$", "$\\frac{1}{7}$", "$\\frac{5}{7}$"],
+      "correct": "D",
+      "solution": [
+        { "text": "Maxrajlar bir xil, shuning uchun faqat suratlar qo'shiladi.", "latex": "$2 + 3 = 5$" },
+        { "text": "Maxraj o'zgarmaydi.", "latex": "$\\frac{5}{7}$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-054",
+      "unitId": "m05-u05",
+      "topic": "Sonning kasr qismi",
+      "type": "test",
+      "question": "$60$ sonining $\\frac{2}{5}$ qismini toping.",
+      "options": ["$24$", "$12$", "$30$", "$150$"],
+      "correct": "A",
+      "solution": [
+        { "text": "Sonni maxrajga bo'lamiz.", "latex": "$60 : 5 = 12$" },
+        { "text": "Natijani suratga ko'paytiramiz.", "latex": "$12 \\cdot 2 = 24$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-055",
+      "unitId": "m05-u05",
+      "topic": "To'g'ri va noto'g'ri kasrlar",
+      "type": "test",
+      "question": "Quyidagilardan qaysi biri noto'g'ri kasr?",
+      "options": ["$\\frac{3}{4}$", "$\\frac{2}{9}$", "$\\frac{7}{7}$", "$\\frac{5}{11}$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Noto'g'ri kasrda surat maxrajga teng yoki undan katta bo'ladi." },
+        { "text": "Har bir variantda suratni maxraj bilan taqqoslaymiz.", "latex": "$3 < 4, \\ 2 < 9, \\ 7 = 7, \\ 5 < 11$" },
+        { "text": "Faqat $\\frac{7}{7}$ da surat maxrajga teng." }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-056",
+      "unitId": "m05-u05",
+      "topic": "Kasrlarni ayirish",
+      "type": "open",
+      "question": "$\\frac{9}{11} - \\frac{4}{11}$ ni hisoblang.",
+      "answer": "$\\frac{5}{11}$",
+      "solution": [
+        { "text": "Maxrajlar teng, shuning uchun suratlar ayiriladi.", "latex": "$9 - 4 = 5$" },
+        { "text": "Maxraj o'zgarmaydi.", "latex": "$\\frac{5}{11}$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-057",
+      "unitId": "m05-u05",
+      "topic": "Kasrga oid matnli masala",
+      "type": "open",
+      "question": "Nodirada 84 000 so'm bor edi. U pulining $\\frac{3}{4}$ qismini sarfladi. Nodirada qancha pul qoldi?",
+      "answer": "$21\\,000$ so'm",
+      "solution": [
+        { "text": "Bir ulushni topamiz.", "latex": "$84\\,000 : 4 = 21\\,000$" },
+        { "text": "Sarflangan pulni hisoblaymiz.", "latex": "$21\\,000 \\cdot 3 = 63\\,000$" },
+        { "text": "Qolgan pulni topamiz.", "latex": "$84\\,000 - 63\\,000 = 21\\,000$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-058",
+      "unitId": "m05-u05",
+      "topic": "Aralash son",
+      "type": "open",
+      "question": "$4\\frac{2}{3}$ aralash sonni noto'g'ri kasrga aylantiring.",
+      "answer": "$\\frac{14}{3}$",
+      "solution": [
+        { "text": "Butun qismni maxrajga ko'paytiramiz.", "latex": "$4 \\cdot 3 = 12$" },
+        { "text": "Suratni qo'shamiz.", "latex": "$12 + 2 = 14$" },
+        { "text": "Maxraj o'zgarmaydi.", "latex": "$\\frac{14}{3}$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-059",
+      "unitId": "m05-u05",
+      "topic": "Kasrga oid matnli masala",
+      "type": "open",
+      "question": "Bir qopda 60 kg un bor. Uning $\\frac{5}{12}$ qismi sotildi. Necha kilogramm un sotildi va necha kilogramm qoldi?",
+      "answer": "$25$ kg sotildi, $35$ kg qoldi",
+      "solution": [
+        { "text": "Bir ulushni topamiz.", "latex": "$60 : 12 = 5$" },
+        { "text": "Sotilgan miqdorni hisoblaymiz.", "latex": "$5 \\cdot 5 = 25$" },
+        { "text": "Qolgan miqdorni topamiz.", "latex": "$60 - 25 = 35$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-060",
+      "unitId": "m05-u05",
+      "topic": "Kasrli tenglama",
+      "type": "open",
+      "question": "$\\frac{x}{9} + \\frac{4}{9} = \\frac{8}{9}$ tenglikda $x$ ni toping.",
+      "answer": "$x = 4$",
+      "solution": [
+        { "text": "Maxrajlar bir xil, shuning uchun suratlar uchun tenglama tuzamiz.", "latex": "$x + 4 = 8$" },
+        { "text": "Noma'lum qo'shiluvchini topamiz.", "latex": "$x = 8 - 4 = 4$" },
+        { "text": "Tekshiramiz.", "latex": "$\\frac{4}{9} + \\frac{4}{9} = \\frac{8}{9}$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-061",
+      "unitId": "m05-u06",
+      "topic": "O'nli kasrlarni qo'shish",
+      "type": "test",
+      "question": "$3{,}7 + 2{,}45$ ni hisoblang.",
+      "options": ["$6{,}52$", "$6{,}15$", "$5{,}15$", "$3{,}945$"],
+      "correct": "B",
+      "solution": [
+        { "text": "Kasrlardagi raqamlar sonini tenglashtiramiz.", "latex": "$3{,}7 = 3{,}70$" },
+        { "text": "Vergulni vergul ostiga qo'yib qo'shamiz.", "latex": "$3{,}70 + 2{,}45$" },
+        { "text": "Natijani hisoblaymiz.", "latex": "$6{,}15$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-062",
+      "unitId": "m05-u06",
+      "topic": "O'nli kasrni yaxlitlash",
+      "type": "test",
+      "question": "$4{,}26$ sonini o'ndan birgacha yaxlitlang.",
+      "options": ["$4{,}2$", "$4$", "$4{,}26$", "$4{,}3$"],
+      "correct": "D",
+      "solution": [
+        { "text": "O'ndan birlar xonasidan keyingi raqamga qaraymiz. Bu 6 ga teng." },
+        { "text": "6 raqami 5 dan katta, demak o'ndan birlar xonasi bittaga oshadi.", "latex": "$2 \\to 3$" },
+        { "text": "Yaxlitlangan son.", "latex": "$4{,}3$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-063",
+      "unitId": "m05-u06",
+      "topic": "O'nli kasrlarni ko'paytirish",
+      "type": "test",
+      "question": "$0{,}6 \\cdot 0{,}4$ ni hisoblang.",
+      "options": ["$2{,}4$", "$0{,}024$", "$0{,}24$", "$24$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Vergulni hisobga olmay ko'paytiramiz.", "latex": "$6 \\cdot 4 = 24$" },
+        { "text": "Ikkala ko'paytuvchida jami bitta va bitta, ya'ni ikkita o'nli raqam bor." },
+        { "text": "Natijada vergulni o'ngdan ikkita raqam ajratib qo'yamiz.", "latex": "$0{,}24$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-064",
+      "unitId": "m05-u06",
+      "topic": "O'nli kasrlarni bo'lish",
+      "type": "test",
+      "question": "$7{,}2 : 0{,}8$ ni hisoblang.",
+      "options": ["$9$", "$0{,}9$", "$90$", "$5{,}76$"],
+      "correct": "A",
+      "solution": [
+        { "text": "Bo'luvchini butun songa aylantirish uchun ikkala sonni 10 ga ko'paytiramiz.", "latex": "$72 : 8$" },
+        { "text": "Bo'lishni bajaramiz.", "latex": "$72 : 8 = 9$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-065",
+      "unitId": "m05-u06",
+      "topic": "O'nli kasrlarni taqqoslash",
+      "type": "test",
+      "question": "$0{,}58$ va $0{,}6$ sonlaridan qaysi biri katta?",
+      "options": ["$0{,}58$", "Ular teng", "$0{,}6$", "Taqqoslab bo'lmaydi"],
+      "correct": "C",
+      "solution": [
+        { "text": "Raqamlar sonini tenglashtiramiz.", "latex": "$0{,}6 = 0{,}60$" },
+        { "text": "Butun qismlar teng, o'ndan birlar xonasini taqqoslaymiz.", "latex": "$5 < 6$" },
+        { "text": "Demak ikkinchi son katta.", "latex": "$0{,}6 > 0{,}58$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-066",
+      "unitId": "m05-u06",
+      "topic": "O'nli kasrlarni ayirish",
+      "type": "open",
+      "question": "Hisoblang: $12{,}5 - 4{,}78$.",
+      "answer": "$7{,}72$",
+      "solution": [
+        { "text": "Raqamlar sonini tenglashtiramiz.", "latex": "$12{,}5 = 12{,}50$" },
+        { "text": "Vergulni vergul ostiga qo'yib ayiramiz.", "latex": "$12{,}50 - 4{,}78$" },
+        { "text": "Natijani hisoblaymiz.", "latex": "$7{,}72$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-067",
+      "unitId": "m05-u06",
+      "topic": "Kasrni o'nli kasrga aylantirish",
+      "type": "open",
+      "question": "$\\frac{3}{4}$ oddiy kasrni o'nli kasrga aylantiring.",
+      "answer": "$0{,}75$",
+      "solution": [
+        { "text": "Kasr chizig'i bo'lish amalini bildiradi.", "latex": "$3 : 4$" },
+        { "text": "Bo'lishni bajaramiz.", "latex": "$3 : 4 = 0{,}75$" },
+        { "text": "Tekshirish uchun teng kuchli kasrga keltiramiz.", "latex": "$\\frac{3}{4} = \\frac{75}{100} = 0{,}75$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-068",
+      "unitId": "m05-u06",
+      "topic": "O'nli kasrga oid amaliy masala",
+      "type": "open",
+      "question": "Bir kilogramm go'sht 92 500 so'm turadi. 2,4 kg go'sht necha pul turadi?",
+      "answer": "$222\\,000$ so'm",
+      "solution": [
+        { "text": "Narxni miqdorga ko'paytiramiz.", "latex": "$92\\,500 \\cdot 2{,}4$" },
+        { "text": "Ko'paytmani ikki qismga ajratamiz.", "latex": "$92\\,500 \\cdot 2 = 185\\,000$" },
+        { "text": "Ikkinchi qism.", "latex": "$92\\,500 \\cdot 0{,}4 = 37\\,000$" },
+        { "text": "Qismlarni qo'shamiz.", "latex": "$185\\,000 + 37\\,000 = 222\\,000$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-069",
+      "unitId": "m05-u06",
+      "topic": "Tezlik va o'nli kasr",
+      "type": "open",
+      "question": "Mashina 2,5 soatda 187,5 km yo'l bosdi. Uning tezligini toping.",
+      "answer": "$75$ km/soat",
+      "solution": [
+        { "text": "Tezlik formulasini yozamiz.", "latex": "$v = s : t = 187{,}5 : 2{,}5$" },
+        { "text": "Bo'luvchini butun songa aylantirish uchun ikkala sonni 10 ga ko'paytiramiz.", "latex": "$1875 : 25$" },
+        { "text": "Bo'lishni bajaramiz.", "latex": "$1875 : 25 = 75$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-070",
+      "unitId": "m05-u06",
+      "topic": "O'nli kasrlarni ko'paytirish",
+      "type": "open",
+      "question": "$5{,}6 \\cdot 3{,}25$ ni hisoblang.",
+      "answer": "$18{,}2$",
+      "solution": [
+        { "text": "Ko'paytmani qismlarga ajratamiz.", "latex": "$5{,}6 \\cdot 3{,}25 = 5{,}6 \\cdot 3 + 5{,}6 \\cdot 0{,}25$" },
+        { "text": "Birinchi qism.", "latex": "$5{,}6 \\cdot 3 = 16{,}8$" },
+        { "text": "Ikkinchi qism, chunki $0{,}25$ bu chorak.", "latex": "$5{,}6 : 4 = 1{,}4$" },
+        { "text": "Qismlarni qo'shamiz.", "latex": "$16{,}8 + 1{,}4 = 18{,}2$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-071",
+      "unitId": "m05-u07",
+      "topic": "O'rta arifmetik",
+      "type": "test",
+      "question": "$12$, $18$, $15$, $19$ sonlarining o'rta arifmetik qiymatini toping.",
+      "options": ["$15$", "$16$", "$17$", "$64$"],
+      "correct": "B",
+      "solution": [
+        { "text": "Barcha sonlarni qo'shamiz.", "latex": "$12 + 18 + 15 + 19 = 64$" },
+        { "text": "Yig'indini sonlar soniga bo'lamiz.", "latex": "$64 : 4 = 16$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-072",
+      "unitId": "m05-u07",
+      "topic": "Sonning foizi",
+      "type": "test",
+      "question": "$400$ sonining $25\\%$ ini toping.",
+      "options": ["$25$", "$160$", "$80$", "$100$"],
+      "correct": "D",
+      "solution": [
+        { "text": "$25\\%$ bu chorak qism.", "latex": "$25\\% = \\frac{1}{4}$" },
+        { "text": "Sonni 4 ga bo'lamiz.", "latex": "$400 : 4 = 100$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-073",
+      "unitId": "m05-u07",
+      "topic": "Foizni kasrga aylantirish",
+      "type": "test",
+      "question": "$15\\%$ ni o'nli kasr ko'rinishida yozing.",
+      "options": ["$1{,}5$", "$0{,}015$", "$0{,}15$", "$15$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Foiz butunning yuzdan bir qismini bildiradi.", "latex": "$15\\% = \\frac{15}{100}$" },
+        { "text": "Kasrni o'nli kasrga aylantiramiz.", "latex": "$\\frac{15}{100} = 0{,}15$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-074",
+      "unitId": "m05-u07",
+      "topic": "Foizi bo'yicha sonni topish",
+      "type": "test",
+      "question": "Bir sonning $20\\%$ i $36$ ga teng. Shu sonni toping.",
+      "options": ["$180$", "$72$", "$7{,}2$", "$56$"],
+      "correct": "A",
+      "solution": [
+        { "text": "$20\\%$ bu beshdan bir qism.", "latex": "$20\\% = \\frac{1}{5}$" },
+        { "text": "Butunni topish uchun qismni 5 ga ko'paytiramiz.", "latex": "$36 \\cdot 5 = 180$" },
+        { "text": "Tekshiramiz.", "latex": "$180 : 5 = 36$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-075",
+      "unitId": "m05-u07",
+      "topic": "Chegirma",
+      "type": "test",
+      "question": "60 000 so'mlik tovarga $10\\%$ chegirma e'lon qilindi. Tovarning yangi narxini toping.",
+      "options": ["$6\\,000$ so'm", "$66\\,000$ so'm", "$50\\,000$ so'm", "$54\\,000$ so'm"],
+      "correct": "D",
+      "solution": [
+        { "text": "Chegirma miqdorini topamiz.", "latex": "$60\\,000 : 10 = 6\\,000$" },
+        { "text": "Eski narxdan chegirmani ayiramiz.", "latex": "$60\\,000 - 6\\,000 = 54\\,000$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-076",
+      "unitId": "m05-u07",
+      "topic": "O'rta arifmetik",
+      "type": "open",
+      "question": "Alisher beshta nazorat ishida 4, 5, 3, 5, 3 baholarini oldi. Uning o'rtacha bahosini toping.",
+      "answer": "$4$",
+      "solution": [
+        { "text": "Baholarni qo'shamiz.", "latex": "$4 + 5 + 3 + 5 + 3 = 20$" },
+        { "text": "Yig'indini baholar soniga bo'lamiz.", "latex": "$20 : 5 = 4$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-077",
+      "unitId": "m05-u07",
+      "topic": "Sonning foizi",
+      "type": "open",
+      "question": "Maktabda 750 nafar o'quvchi bor. Ularning $48\\%$ i qizlar. Maktabda nechta qiz o'qiydi?",
+      "answer": "$360$ ta",
+      "solution": [
+        { "text": "Foizni o'nli kasrga aylantiramiz.", "latex": "$48\\% = 0{,}48$" },
+        { "text": "Sonni shu kasrga ko'paytiramiz.", "latex": "$750 \\cdot 0{,}48$" },
+        { "text": "Qismlarga ajratib hisoblaymiz.", "latex": "$750 \\cdot 0{,}5 = 375, \\ 750 \\cdot 0{,}02 = 15$" },
+        { "text": "Natijani topamiz.", "latex": "$375 - 15 = 360$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-078",
+      "unitId": "m05-u07",
+      "topic": "Narxning oshishi",
+      "type": "open",
+      "question": "Kitobning narxi 45 000 so'm edi va u $20\\%$ ga oshdi. Kitobning yangi narxini toping.",
+      "answer": "$54\\,000$ so'm",
+      "solution": [
+        { "text": "Oshgan miqdorni topamiz.", "latex": "$45\\,000 \\cdot 0{,}2 = 9\\,000$" },
+        { "text": "Eski narxga qo'shamiz.", "latex": "$45\\,000 + 9\\,000 = 54\\,000$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-079",
+      "unitId": "m05-u07",
+      "topic": "O'rtacha tezlik",
+      "type": "open",
+      "question": "Avtobus 3 soat davomida soatiga 80 km, so'ng 2 soat davomida soatiga 55 km tezlik bilan yurdi. Butun yo'ldagi o'rtacha tezligini toping.",
+      "answer": "$70$ km/soat",
+      "solution": [
+        { "text": "Birinchi qismdagi masofani topamiz.", "latex": "$80 \\cdot 3 = 240$" },
+        { "text": "Ikkinchi qismdagi masofani topamiz.", "latex": "$55 \\cdot 2 = 110$" },
+        { "text": "Umumiy masofa va umumiy vaqtni hisoblaymiz.", "latex": "$240 + 110 = 350, \\ 3 + 2 = 5$" },
+        { "text": "O'rtacha tezlik umumiy masofani umumiy vaqtga bo'lish orqali topiladi.", "latex": "$350 : 5 = 70$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-080",
+      "unitId": "m05-u07",
+      "topic": "Foizi bo'yicha sonni topish",
+      "type": "open",
+      "question": "Bir sonning $35\\%$ i $91$ ga teng. Shu sonni toping.",
+      "answer": "$260$",
+      "solution": [
+        { "text": "Foizni o'nli kasrga aylantiramiz.", "latex": "$35\\% = 0{,}35$" },
+        { "text": "Butunni topish uchun qismni shu kasrga bo'lamiz.", "latex": "$91 : 0{,}35$" },
+        { "text": "Bo'luvchini butun songa aylantiramiz.", "latex": "$9100 : 35 = 260$" },
+        { "text": "Tekshiramiz.", "latex": "$260 \\cdot 0{,}35 = 91$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-081",
+      "unitId": "m05-u02",
+      "topic": "Doiraviy diagramma",
+      "type": "test",
+      "question": "Doiraviy diagrammada butun to'plam necha gradusli burchakka mos keladi?",
+      "options": ["$180^\\circ$", "$360^\\circ$", "$100^\\circ$", "$90^\\circ$"],
+      "correct": "B",
+      "solution": [
+        { "text": "Doiraviy diagramma to'liq doirani ifodalaydi." },
+        { "text": "To'liq aylana markaziy burchagi $360^\\circ$ ga teng." }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-082",
+      "unitId": "m05-u02",
+      "topic": "Ma'lumotlar tahlili",
+      "type": "test",
+      "question": "$4$, $7$, $4$, $9$, $4$ qatorida eng ko'p uchraydigan son qaysi?",
+      "options": ["$7$", "$9$", "$5$", "$4$"],
+      "correct": "D",
+      "solution": [
+        { "text": "Har bir sonning necha marta uchrashini sanaymiz." },
+        { "text": "4 soni uch marta, 7 va 9 sonlari bir martadan uchraydi." },
+        { "text": "Eng ko'p uchraydigan son 4." }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-083",
+      "unitId": "m05-u02",
+      "topic": "Sanash qoidasi",
+      "type": "test",
+      "question": "Dilnozada 3 ta ko'ylak va 4 ta shim bor. U nechta har xil kiyim juftligini tanlashi mumkin?",
+      "options": ["$12$", "$7$", "$34$", "$24$"],
+      "correct": "A",
+      "solution": [
+        { "text": "Har bir ko'ylakka 4 xil shim mos keladi." },
+        { "text": "Ko'ylaklar soni 3 ta.", "latex": "$3 \\cdot 4 = 12$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-084",
+      "unitId": "m05-u02",
+      "topic": "Ehtimollik",
+      "type": "test",
+      "question": "O'yin kubchasi tashlandi. 6 ochko tushishi ehtimolini toping.",
+      "options": ["$\\frac{1}{2}$", "$6$", "$\\frac{1}{6}$", "$\\frac{1}{3}$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Kubchada 6 ta yoq bor, demak barcha teng imkoniyatli natijalar soni 6 ta." },
+        { "text": "Kerakli natija bitta, ya'ni 6 ochko." },
+        { "text": "Ehtimol kerakli natijalar sonini barcha natijalar soniga bo'lish orqali topiladi.", "latex": "$\\frac{1}{6}$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-085",
+      "unitId": "m05-u02",
+      "topic": "Ustunli diagramma",
+      "type": "test",
+      "question": "Ustunli diagrammada eng baland ustun nimani bildiradi?",
+      "options": ["Eng kichik qiymatni", "O'rtacha qiymatni", "Qiymatlar yig'indisini", "Eng katta qiymatni"],
+      "correct": "D",
+      "solution": [
+        { "text": "Ustunli diagrammada ustun balandligi qiymatga to'g'ri proporsional." },
+        { "text": "Demak eng baland ustun eng katta qiymatga mos keladi." }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-086",
+      "unitId": "m05-u02",
+      "topic": "Jadval bilan ishlash",
+      "type": "open",
+      "question": "Kutubxonada bir hafta davomida kitob berildi: dushanba 12 ta, seshanba 18 ta, chorshanba 15 ta, payshanba 21 ta, juma 24 ta. Jami nechta kitob berilgan va kuniga o'rtacha nechtadan berilgan?",
+      "answer": "Jami $90$ ta, o'rtacha $18$ ta",
+      "solution": [
+        { "text": "Barcha kunlardagi sonlarni qo'shamiz.", "latex": "$12 + 18 + 15 + 21 + 24 = 90$" },
+        { "text": "Kunlar soni 5 ta." },
+        { "text": "O'rtachani topamiz.", "latex": "$90 : 5 = 18$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-087",
+      "unitId": "m05-u07",
+      "topic": "Doiraviy diagramma",
+      "type": "open",
+      "question": "Doiraviy diagrammada $25\\%$ ulushga qanday markaziy burchak mos keladi?",
+      "answer": "$90^\\circ$",
+      "solution": [
+        { "text": "Butun doira $360^\\circ$ ga teng." },
+        { "text": "$25\\%$ bu chorak qism.", "latex": "$25\\% = \\frac{1}{4}$" },
+        { "text": "Burchakni hisoblaymiz.", "latex": "$360^\\circ : 4 = 90^\\circ$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-088",
+      "unitId": "m05-u07",
+      "topic": "Foizli ulush",
+      "type": "open",
+      "question": "Sinfda 30 nafar o'quvchi bor. 12 tasi futbol, 9 tasi shaxmat, qolganlari suzish to'garagiga qatnaydi. Har bir to'garakka qatnovchilar necha foizni tashkil qiladi?",
+      "answer": "Futbol $40\\%$, shaxmat $30\\%$, suzish $30\\%$",
+      "solution": [
+        { "text": "Suzish to'garagidagilar sonini topamiz.", "latex": "$30 - 12 - 9 = 9$" },
+        { "text": "Futbol ulushini hisoblaymiz.", "latex": "$12 : 30 = 0{,}4 = 40\\%$" },
+        { "text": "Shaxmat ulushini hisoblaymiz.", "latex": "$9 : 30 = 0{,}3 = 30\\%$" },
+        { "text": "Suzish ulushi ham shunday.", "latex": "$9 : 30 = 30\\%$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-089",
+      "unitId": "m05-u02",
+      "topic": "Sanash qoidasi",
+      "type": "open",
+      "question": "5 ta har xil kitobni javonga qatorlab necha xil tartibda qo'yish mumkin?",
+      "answer": "$120$ xil",
+      "solution": [
+        { "text": "Birinchi o'ringa 5 xil kitob qo'yish mumkin." },
+        { "text": "Ikkinchi o'ringa qolgan 4 tadan bittasi, uchinchisiga 3 tadan bittasi va hokazo." },
+        { "text": "Barcha imkoniyatlarni ko'paytiramiz.", "latex": "$5 \\cdot 4 \\cdot 3 \\cdot 2 \\cdot 1 = 120$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-090",
+      "unitId": "m05-u02",
+      "topic": "Ehtimollik",
+      "type": "open",
+      "question": "Qutida 7 ta oq va 3 ta qora shar bor. Tasodifan bitta shar olinganda uning oq bo'lish ehtimolini toping.",
+      "answer": "$\\frac{7}{10}$",
+      "solution": [
+        { "text": "Barcha sharlar sonini topamiz.", "latex": "$7 + 3 = 10$" },
+        { "text": "Kerakli natijalar soni oq sharlar soniga teng.", "latex": "$7$" },
+        { "text": "Ehtimolni hisoblaymiz.", "latex": "$\\frac{7}{10}$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+
+    {
+      "id": "q05-091",
+      "unitId": "m05-u08",
+      "topic": "Tezlik",
+      "type": "test",
+      "question": "Mashina 2,5 soatda 150 km yo'l bosdi. Uning tezligini toping.",
+      "options": ["$375$ km/soat", "$60$ km/soat", "$75$ km/soat", "$50$ km/soat"],
+      "correct": "B",
+      "solution": [
+        { "text": "Tezlik formulasini yozamiz.", "latex": "$v = s : t$" },
+        { "text": "Qiymatlarni qo'yamiz.", "latex": "$v = 150 : 2{,}5$" },
+        { "text": "Ikkala sonni 10 ga ko'paytirib bo'lamiz.", "latex": "$1500 : 25 = 60$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-092",
+      "unitId": "m05-u08",
+      "topic": "Kasr va o'nli kasr",
+      "type": "test",
+      "question": "$\\frac{1}{4} + 0{,}25$ ni hisoblang.",
+      "options": ["$0{,}25$", "$1$", "$0{,}5$", "$0{,}29$"],
+      "correct": "C",
+      "solution": [
+        { "text": "Oddiy kasrni o'nli kasrga aylantiramiz.", "latex": "$\\frac{1}{4} = 0{,}25$" },
+        { "text": "Ikkita o'nli kasrni qo'shamiz.", "latex": "$0{,}25 + 0{,}25 = 0{,}5$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-093",
+      "unitId": "m05-u08",
+      "topic": "Amallar tartibi",
+      "type": "test",
+      "question": "18 ta olma uch bolaga teng bo'lib berildi. So'ng har bir bola 2 tadan olma yedi. Har bir bolada nechtadan olma qoldi?",
+      "options": ["$6$", "$4$", "$12$", "$2$"],
+      "correct": "B",
+      "solution": [
+        { "text": "Olmalarni teng bo'lamiz.", "latex": "$18 : 3 = 6$" },
+        { "text": "Har biri 2 tadan yedi.", "latex": "$6 - 2 = 4$" }
+      ],
+      "level": 1,
+      "dtm": true
+    },
+    {
+      "id": "q05-094",
+      "unitId": "m05-u08",
+      "topic": "Perimetr va yuza",
+      "type": "test",
+      "question": "Kvadratning perimetri 24 sm. Uning yuzasini toping.",
+      "options": ["$24$ sm$^2$", "$144$ sm$^2$", "$48$ sm$^2$", "$36$ sm$^2$"],
+      "correct": "D",
+      "solution": [
+        { "text": "Tomonni topamiz.", "latex": "$a = 24 : 4 = 6$" },
+        { "text": "Yuzani hisoblaymiz.", "latex": "$S = 6^2 = 36$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-095",
+      "unitId": "m05-u08",
+      "topic": "Foiz",
+      "type": "test",
+      "question": "Bir sonning $30\\%$ i $45$ ga teng. Shu sonni toping.",
+      "options": ["$150$", "$13{,}5$", "$75$", "$135$"],
+      "correct": "A",
+      "solution": [
+        { "text": "Bir foizga to'g'ri keladigan miqdorni topamiz.", "latex": "$45 : 30 = 1{,}5$" },
+        { "text": "Butun son 100 foizga teng.", "latex": "$1{,}5 \\cdot 100 = 150$" },
+        { "text": "Tekshiramiz.", "latex": "$150 \\cdot 0{,}3 = 45$" }
+      ],
+      "level": 2,
+      "dtm": true
+    },
+    {
+      "id": "q05-096",
+      "unitId": "m05-u08",
+      "topic": "Qarama-qarshi harakat",
+      "type": "open",
+      "question": "Ikki shahar orasidagi masofa 480 km. Ulardan bir vaqtda bir-biriga qarab ikkita mashina yo'lga chiqdi. Birinchisining tezligi 80 km/soat, ikkinchisiniki 40 km/soat. Ular necha soatdan keyin uchrashadi?",
+      "answer": "$4$ soat",
+      "solution": [
+        { "text": "Qarama-qarshi harakatda tezliklar qo'shiladi.", "latex": "$80 + 40 = 120$" },
+        { "text": "Bu yaqinlashish tezligi, ya'ni har soatda masofa 120 km ga qisqaradi." },
+        { "text": "Vaqtni topamiz.", "latex": "$480 : 120 = 4$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-097",
+      "unitId": "m05-u08",
+      "topic": "Birgalikdagi ish",
+      "type": "open",
+      "question": "Bir usta ishni 12 kunda, ikkinchisi esa 24 kunda bajaradi. Ular birgalikda ishlasa, ish necha kunda bitadi?",
+      "answer": "$8$ kun",
+      "solution": [
+        { "text": "Butun ishni bir deb olamiz. Birinchi usta bir kunda ishning $\\frac{1}{12}$ qismini bajaradi." },
+        { "text": "Ikkinchi usta bir kunda $\\frac{1}{24}$ qismini bajaradi." },
+        { "text": "Birgalikdagi bir kunlik unumni topamiz.", "latex": "$\\frac{1}{12} + \\frac{1}{24} = \\frac{2}{24} + \\frac{1}{24} = \\frac{3}{24} = \\frac{1}{8}$" },
+        { "text": "Bir kunda ishning sakkizdan bir qismi bajarilsa, butun ish 8 kunda bitadi." }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-098",
+      "unitId": "m05-u08",
+      "topic": "Kasr va foiz aralash",
+      "type": "open",
+      "question": "Do'konga 240 ta daftar keltirildi. Birinchi kuni ularning $\\frac{1}{3}$ qismi, ikkinchi kuni esa qolganining $25\\%$ i sotildi. Do'konda nechta daftar qoldi?",
+      "answer": "$120$ ta",
+      "solution": [
+        { "text": "Birinchi kuni sotilgan miqdorni topamiz.", "latex": "$240 : 3 = 80$" },
+        { "text": "Birinchi kundan keyin qolganini hisoblaymiz.", "latex": "$240 - 80 = 160$" },
+        { "text": "Ikkinchi kuni sotilgan miqdorni topamiz.", "latex": "$160 \\cdot 0{,}25 = 40$" },
+        { "text": "Qolgan daftarlar sonini topamiz.", "latex": "$160 - 40 = 120$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-099",
+      "unitId": "m05-u08",
+      "topic": "Perimetr va narx",
+      "type": "open",
+      "question": "To'g'ri to'rtburchak shaklidagi bog'ning o'lchovlari 45 m va 28 m. Uning atrofiga devor qurilmoqda. Bir metr devor 120 000 so'm turadi. Butun devor necha pulga tushadi?",
+      "answer": "$17\\,520\\,000$ so'm",
+      "solution": [
+        { "text": "Bog' perimetrini topamiz.", "latex": "$P = 2 \\cdot (45 + 28) = 2 \\cdot 73 = 146$" },
+        { "text": "Perimetrni bir metr narxiga ko'paytiramiz.", "latex": "$146 \\cdot 120\\,000$" },
+        { "text": "Hisoblaymiz.", "latex": "$146 \\cdot 120\\,000 = 17\\,520\\,000$" }
+      ],
+      "level": 3,
+      "dtm": true
+    },
+    {
+      "id": "q05-100",
+      "unitId": "m05-u08",
+      "topic": "Kasr va foiz aralash",
+      "type": "open",
+      "question": "Bir sonning $\\frac{2}{5}$ qismi 6 ga teng. Shu sonning $75\\%$ ini toping.",
+      "answer": "$11{,}25$",
+      "solution": [
+        { "text": "Bir ulushni topamiz.", "latex": "$6 : 2 = 3$" },
+        { "text": "Butun sonni topamiz, chunki unda beshta shunday ulush bor.", "latex": "$3 \\cdot 5 = 15$" },
+        { "text": "Foizni o'nli kasrga aylantiramiz.", "latex": "$75\\% = 0{,}75$" },
+        { "text": "Sonning foizini hisoblaymiz.", "latex": "$15 \\cdot 0{,}75 = 11{,}25$" }
+      ],
+      "level": 3,
+      "dtm": true
+    }
+  ]
+}

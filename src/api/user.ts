@@ -1,4 +1,5 @@
 import { apiUrl } from '../api';
+import { prepareAvatarFile } from '../utils/imageResize';
 import type { UserGender } from '../components/UserAvatar';
 
 export type UserMe = {
@@ -9,6 +10,8 @@ export type UserMe = {
   phone: string | null;
   level: string;
   onboarded: number;
+  /** So'rovnoma to'ldirilganmi (eski foydalanuvchilarda `false`). */
+  onboardingCompleted?: boolean;
   progress: number;
   totalPoints?: number;
   planName?: string | null;
@@ -17,6 +20,8 @@ export type UserMe = {
   accountType?: string | null;
   avatarUrl?: string | null;
   gender?: UserGender;
+  /** Paroli bormi. Google/Telegram orqali kirganlarda `false` bo'ladi. */
+  hasPassword?: boolean;
 };
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
@@ -31,10 +36,23 @@ function validateAvatarFile(file: File): void {
   }
 }
 
+/** Joriy foydalanuvchi profili. */
+export async function getMe(token: string): Promise<UserMe> {
+  const res = await fetch(apiUrl('/api/user/me'), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Profil yuklanmadi');
+  return data as UserMe;
+}
+
 export async function uploadUserAvatar(token: string, file: File): Promise<UserMe> {
   validateAvatarFile(file);
+  // Yuklashdan oldin kvadrat qirqib, 512px ga keltiramiz: profilda xira
+  // ko'rinmasin va sekin internetda tez yuklansin.
+  const prepared = await prepareAvatarFile(file);
   const form = new FormData();
-  form.append('image', file);
+  form.append('image', prepared);
   const res = await fetch(apiUrl('/api/user/avatar'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },

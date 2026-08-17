@@ -23,6 +23,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Busboy from 'busboy';
 import path from 'path';
+import fs from 'fs';
+import { createHash } from 'crypto';
 import { fileURLToPath } from 'url';
 import { courseData } from './src/data/courseData.ts';
 import { buildRequestLogContext, createRequestId, logError, logInfo } from './server/lib/logger.ts';
@@ -100,9 +102,14 @@ function mapAuthUserPayload(user: Record<string, unknown>) {
     phone: user.phone ?? null,
     level: user.level,
     onboarded: user.onboarded,
+    // So'rovnoma to'ldirilganmi. `/api/user/me` har yuklanishda chaqiriladi —
+    // bayroqni shu yerda berish alohida so'rovdan arzonroq.
+    onboardingCompleted: Boolean(user.onboarding_completed),
     accountType: (user.account_type as string | null | undefined) ?? 'student',
     avatarUrl: user.avatar_url ? toAbsolutePublicUrl(String(user.avatar_url)) : null,
     gender: user.gender === 'male' || user.gender === 'female' ? user.gender : null,
+    // Paroli bormi — yo'q bo'lsa profilda "joriy parol" so'ralmaydi.
+    hasPassword: typeof user.password === 'string' && user.password.length > 0,
   };
 }
 
@@ -114,6 +121,101 @@ const AUTH_MAX_ATTEMPTS = 10;
 const GLOBAL_WINDOW_MS = 60 * 1000;
 const GLOBAL_MAX_REQUESTS = 180;
 
+// Video dars xonasi (Jitsi) boshqa manbadan yuklanadi — uning skripti va iframe'i
+// CSP'da ochiq bo'lishi shart, aks holda brauzer "Video xizmati yuklanmadi" beradi.
+const MEET_ORIGIN = `https://${(process.env.MEET_DOMAIN || 'meet.jit.si')
+  .replace(/^https?:\/\//, '')
+  .replace(/\/+$/, '')}`;
+/**
+ * `index.html` ichidagi inline skriptlarning sha256 hashlari.
+ *
+ * NEGA HISOBLANADI, qo'lda yozilmaydi: hash skript matniga bog'liq. Qo'lda
+ * yozilsa, kimdir skriptni bir belgi o'zgartirishi bilan CSP uni bloklaydi va
+ * buni faqat brauzer konsolida ko'rish mumkin bo'ladi (mavzu/matn o'lchami
+ * bootstrap skripti aynan shunday bloklangan edi).
+ */
+function inlineScriptHashes(): string[] {
+  const candidates = [
+    path.resolve(__dirname, 'dist', 'index.html'),
+    path.resolve(__dirname, 'index.html'),
+  ];
+  for (const file of candidates) {
+    try {
+      if (!fs.existsSync(file)) continue;
+      const html = fs.readFileSync(file, 'utf8');
+      const hashes: string[] = [];
+      for (const m of html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+        const body = m[1];
+        if (!body.trim()) continue;
+        hashes.push(`'sha256-${createHash('sha256').update(body, 'utf8').digest('base64')}'`);
+      }
+      if (hashes.length > 0) return hashes;
+    } catch {
+      /* fayl o'qilmasa — hashsiz davom etamiz */
+    }
+  }
+  return [];
+}
+
+const INLINE_SCRIPT_HASHES = inlineScriptHashes().join(' ');
+
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "img-src 'self' data: https:",
+  // `data:` — ovozni ochish uchun ishlatiladigan jimjit WAV (audioUnlock.ts) va
+  // o'yin tovushlari shu ko'rinishda keladi.
+  "media-src 'self' data: blob: https:",
+  `script-src 'self' ${INLINE_SCRIPT_HASHES} https://accounts.google.com https://apis.google.com ${MEET_ORIGIN}`,
+  // Google Fonts uslublar faylini yuklaydi; `font-src` bo'lmasa shriftlar
+  // `default-src 'self'` ga tushib bloklanadi.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  `connect-src 'self' https: ${MEET_ORIGIN.replace('https://', 'wss://')}`,
+  // `'self'` — o'qituvchilar lendingi (`/oqituvchilarga/`) bosh sahifadagi
+  // oynacha ichida ochiladi.
+  `frame-src 'self' https://accounts.google.com ${MEET_ORIGIN}`,
+  "frame-ancestors 'none'",
+].join('; ') + ';';
+
+/**
+ * O'QITUVCHILAR LENDINGI UCHUN ALOHIDA CSP.
+ *
+ * `/oqituvchilarga/` — dizayn to'plami sifatida kelgan STATIK sahifa: u o'zini
+ * ishga tushirish uchun inline skriptlardan va blob orqali yuklanadigan
+ * modullardan foydalanadi. Umumiy CSP faqat `index.html` ning uchta hash'iga
+ * ruxsat bergani uchun sahifa "Unpacking..." holatida qotib qolardi.
+ *
+ * Nima uchun butun sayt uchun bo'shatilmaydi: `unsafe-inline` + `unsafe-eval`
+ * ilovaning himoyasini pasaytiradi. Bu yerda esa sahifa TO'LIQ STATIK — hech
+ * qanday foydalanuvchi kiritmasi chizilmaydi, ya'ni ichiga skript qo'yish
+ * joyi yo'q. Shuning uchun yumshatish faqat SHU yo'lga tegishli.
+ */
+const lendingCsp = [
+  "default-src 'self'",
+  "img-src 'self' data: https:",
+  "media-src 'self' data: blob:",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
+  "connect-src 'self' data: blob:",
+  // Lending bosh sahifadagi «To'liq shartlar va daromad kalkulyatori»
+  // oynachasi ichida ko'rsatiladi — o'z saytimizdan ramkaga olishga ruxsat.
+  // Boshqa saytlar baribir ololmaydi.
+  "frame-ancestors 'self'",
+].join('; ') + ';';
+
+/** Shu yo'ldagi (va ichidagi) so'rovlarga yumshatilgan CSP beriladi. */
+const LENDING_YOLI = '/oqituvchilarga';
+
+// Video xonasi alohida manbada (boshqa port) — kamera/mikrofon unga delegatsiya qilinmasa,
+// iframe ichida ovoz ham, video ham ishlamaydi.
+const permissionsPolicy = [
+  `camera=(self "${MEET_ORIGIN}")`,
+  `microphone=(self "${MEET_ORIGIN}")`,
+  `display-capture=(self "${MEET_ORIGIN}")`,
+  'geolocation=()',
+].join(', ');
+
 if (!jwtSecretEnv || jwtSecretEnv.length < 32) {
   console.error('JWT_SECRET must be set to a strong value (>=32 chars)');
   process.exit(1);
@@ -121,13 +223,14 @@ if (!jwtSecretEnv || jwtSecretEnv.length < 32) {
 const JWT_SECRET = jwtSecretEnv;
 const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
 const USER_AVATAR_BUCKET = 'user-avatars';
+const TEACHER_VIDEO_BUCKET = 'teacher-videos';
 const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
 const USER_PROFILE_SELECT_FULL =
-  'id, first_name, last_name, email, phone, level, onboarded, progress, plan_name, plan_expires_at, billing_notice_uz, account_type, avatar_url, gender';
+  'id, first_name, last_name, email, phone, level, onboarded, onboarding_completed, progress, plan_name, plan_expires_at, billing_notice_uz, account_type, avatar_url, gender, password';
 const USER_PROFILE_SELECT_LEGACY =
-  'id, first_name, last_name, email, phone, level, onboarded, progress, avatar_url, gender';
+  'id, first_name, last_name, email, phone, level, onboarded, progress, avatar_url, gender, password';
 
 function isUserProfileSchemaError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
@@ -184,6 +287,9 @@ function mapUserProfile(user: Record<string, any>) {
     phone: user.phone ?? null,
     level: user.level,
     onboarded: user.onboarded,
+    // So'rovnoma to'ldirilganmi. `/api/user/me` har yuklanishda chaqiriladi —
+    // bayroqni shu yerda berish alohida so'rovdan arzonroq.
+    onboardingCompleted: Boolean(user.onboarding_completed),
     progress: user.progress,
     totalPoints: user.total_points ?? 0,
     planName: user.plan_name ?? null,
@@ -192,6 +298,8 @@ function mapUserProfile(user: Record<string, any>) {
     accountType: user.account_type ?? 'student',
     avatarUrl: user.avatar_url ? toAbsolutePublicUrl(String(user.avatar_url)) : null,
     gender: user.gender === 'male' || user.gender === 'female' ? user.gender : null,
+    // Paroli bormi — yo'q bo'lsa profilda "joriy parol" so'ralmaydi.
+    hasPassword: typeof user.password === 'string' && user.password.length > 0,
   };
 }
 
@@ -341,7 +449,13 @@ async function startServer() {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-Id');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
+    // O'qituvchilar lendingi bosh sahifadagi «To'liq shartlar va daromad
+    // kalkulyatori» oynachasi ichida ko'rsatiladi, shuning uchun faqat shu yo'l
+    // o'z saytimiz ramkasiga tushadi; qolgan hamma sahifa avvalgidek yopiq.
+    res.setHeader(
+      'X-Frame-Options',
+      String(req.path || '').startsWith(LENDING_YOLI) ? 'SAMEORIGIN' : 'DENY',
+    );
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     // Prevent stale API responses (e.g. old 410 from disk cache) from being reused by browsers.
     if (String(req.originalUrl || req.url || '').startsWith('/api/')) {
@@ -351,12 +465,13 @@ async function startServer() {
       res.setHeader('Surrogate-Control', 'no-store');
     }
     // Ovozli javob (Speaking, kunlik gapirish) uchun `microphone=(self)` kerak; `()` butunlay taqiqlaydi.
-    res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()');
+    // Video dars iframe'i boshqa manbadan bo'lgani uchun kamera/mikrofon unga ham berilishi shart.
+    res.setHeader('Permissions-Policy', permissionsPolicy);
     if (isProduction) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
       res.setHeader(
         'Content-Security-Policy',
-        "default-src 'self'; img-src 'self' data: https:; media-src 'self' https:; script-src 'self' https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; connect-src 'self' https:; frame-src https://accounts.google.com; frame-ancestors 'none';"
+        String(req.path || '').startsWith(LENDING_YOLI) ? lendingCsp : contentSecurityPolicy,
       );
     }
     if (req.method === 'OPTIONS') return res.sendStatus(204);
@@ -388,6 +503,30 @@ async function startServer() {
   try {
     const { createAdminRoutes } = await import('./server/routes/adminRoutes');
     app.use('/api/admin', createAdminRoutes(supabase));
+
+  /*
+   * BRAUZERDAGI XATO MAYOG'I.
+   *
+   * Foydalanuvchida oq ekran chiqqanda sabab faqat uning konsolida qolardi.
+   * Endi u shu yerga tushadi va `pm2 logs` da ko'rinadi. Autentifikatsiya
+   * yo'q — xato kirishdan oldin ham bo'lishi mumkin; shuning uchun hajm
+   * qat'iy cheklangan.
+   */
+  app.post('/api/client-error', (req, res) => {
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    const kes = (v: unknown, n: number) => String(v ?? '').slice(0, n).replace(/[\r\n]+/g, ' ');
+    console.error(
+      '[client-error]',
+      JSON.stringify({
+        message: kes(b.message, 500),
+        url: kes(b.url, 200),
+        ua: kes(b.ua, 200),
+        stack: kes(b.stack, 800),
+        ip: req.headers['x-forwarded-for'] ?? req.socket.remoteAddress,
+      })
+    );
+    res.status(204).end();
+  });
     console.log('Admin API: /api/admin (login, dashboard, users, payments, etc.)');
   } catch (err) {
     logError('express.admin.routes_failed_to_load', err);
@@ -987,6 +1126,10 @@ async function startServer() {
   const { createKunlikProgressRoutes } = await import('./server/routes/kunlikProgressRoutes');
   app.use('/api', createKunlikProgressRoutes(supabase, authenticate));
 
+  // Ro'yxatdan o'tgandan keyingi so'rovnoma
+  const { createOnboardingRoutes } = await import('./server/routes/onboardingRoutes');
+  app.use('/api', createOnboardingRoutes(authenticate));
+
   // Statistics (course progress, activity calendar, record-course-day)
   const { createStatsRoutes } = await import('./server/routes/statsRoutes');
   app.use('/api', createStatsRoutes(supabase, authenticate));
@@ -1007,6 +1150,10 @@ async function startServer() {
   const { createAccessRoutes } = await import('./server/routes/accessRoutes');
   app.use('/api', createAccessRoutes(supabase, authenticate));
 
+  // O'yinlar: to'lov qilmaganlar uchun 3 ta bepul ochish
+  const { createGameRoutes } = await import('./server/routes/gameRoutes');
+  app.use('/api', createGameRoutes(supabase, authenticate));
+
   // Teacher marketplace (public list, teacher cabinet, trial lessons, chat, reviews)
   const { createTeacherRoutes } = await import('./server/routes/teacherRoutes');
   app.use('/api', createTeacherRoutes(supabase, authenticate));
@@ -1016,6 +1163,10 @@ async function startServer() {
 
   const { createWordSwipeGameRoutes } = await import('./server/routes/wordSwipeGameRoutes');
   app.use('/api', createWordSwipeGameRoutes(supabase, authenticate));
+
+  // "Ustozdan so'ra" — ovozli o'qish baholash + grammatika tushuntirishi
+  const { createUstozRoutes } = await import('./server/routes/ustozRoutes');
+  app.use('/api', createUstozRoutes(authenticate));
 
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
@@ -1056,19 +1207,59 @@ async function startServer() {
     userId: number,
     file: { buffer: Buffer; mimetype: string }
   ): Promise<string> {
-    const ext =
-      file.mimetype === 'image/png'
+    /*
+     * Rasm SERVERDA 512×512 kvadratga keltiriladi — profilda xira
+     * ko'rinmasligi uchun. Klientdagi kichraytirish yagona himoya emas:
+     * eski brauzer yoki to'g'ridan-to'g'ri API so'rovi uni chetlab o'tadi.
+     * Format qo'llab-quvvatlanmasa (HEIC) — asl fayl saqlanadi.
+     */
+    const { normalizeAvatar } = await import('./server/services/avatarImage.service.js');
+    const normalized = await normalizeAvatar(file.buffer);
+    const body = normalized ? normalized.buffer : file.buffer;
+    const contentType = normalized ? normalized.mimetype : file.mimetype;
+    const ext = normalized
+      ? normalized.ext
+      : file.mimetype === 'image/png'
         ? 'png'
         : file.mimetype === 'image/webp'
           ? 'webp'
           : file.mimetype === 'image/heic' || file.mimetype === 'image/heif'
             ? 'heic'
             : 'jpg';
-    const objectPath = `${userId}/avatar.${ext}`;
+    /*
+     * FAYL NOMI HAR YUKLASHDA YANGI.
+     *
+     * Ilgari nom doim `avatar.jpg` edi: URL o'zgarmagani uchun brauzer
+     * (va PWA keshi) ESKI suratni ko'rsatib turardi — foydalanuvchiga
+     * "surat almashmadi" bo'lib tuyulardi.
+     */
+    const objectPath = `${userId}/avatar-${Date.now().toString(36)}.${ext}`;
     await ensurePublicStorageBucket(USER_AVATAR_BUCKET);
+
+    // Eski suratni o'chiramiz — papkada axlat to'planmasin.
+    const { data: oldRow } = await supabase
+      .from('users')
+      .select('avatar_url')
+      .eq('id', userId)
+      .maybeSingle();
+    const oldUrl = String((oldRow as { avatar_url?: string | null } | null)?.avatar_url ?? '');
+    const marker = `/${USER_AVATAR_BUCKET}/`;
+    const oldPath = oldUrl.includes(marker)
+      ? oldUrl.split(marker)[1]?.split('?')[0] ?? ''
+      : '';
+    if (oldPath) {
+      await supabase.storage.from(USER_AVATAR_BUCKET).remove([oldPath]).catch(() => undefined);
+    }
+    // Eski qat'iy nomlar ham qolib ketmasin (avvalgi tartibdan).
+    for (const stale of ['jpg', 'png', 'webp', 'heic']) {
+      await supabase.storage
+        .from(USER_AVATAR_BUCKET)
+        .remove([`${userId}/avatar.${stale}`])
+        .catch(() => undefined);
+    }
     const { error: uploadErr } = await supabase.storage
       .from(USER_AVATAR_BUCKET)
-      .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: true });
+      .upload(objectPath, body, { contentType, upsert: true });
     if (uploadErr) throw new Error(uploadErr.message);
     const { data: publicData } = supabase.storage.from(USER_AVATAR_BUCKET).getPublicUrl(objectPath);
     const avatarUrl = publicData?.publicUrl;
@@ -1114,6 +1305,299 @@ async function startServer() {
     }
   });
 
+  // O'qituvchi sertifikat/diplom rasmini yuklaydi → public URL qaytaradi.
+  app.post('/api/teacher/me/certificate-image', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    try {
+      const { file } = await parseHelpChatMultipartImage(req);
+      if (!file) return res.status(400).json({ error: 'Rasm yuklanmadi' });
+      const ext =
+        file.mimetype === 'image/png'
+          ? 'png'
+          : file.mimetype === 'image/webp'
+            ? 'webp'
+            : 'jpg';
+      const objectPath = `${userId}/cert-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+      await ensurePublicStorageBucket(USER_AVATAR_BUCKET);
+      const { error: uploadErr } = await supabase.storage
+        .from(USER_AVATAR_BUCKET)
+        .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: true });
+      if (uploadErr) throw new Error(uploadErr.message);
+      const { data: publicData } = supabase.storage.from(USER_AVATAR_BUCKET).getPublicUrl(objectPath);
+      const url = publicData?.publicUrl;
+      if (!url) throw new Error('Rasm URL olinmadi');
+      res.json({ url: toAbsolutePublicUrl(url) });
+    } catch (e) {
+      console.error('[POST /api/teacher/me/certificate-image]', e);
+      res.status(400).json({ error: e instanceof Error ? e.message : 'Rasm yuklanmadi' });
+    }
+  });
+
+  /*
+   * O'QITUVCHI HUJJATLARI (anketa: pasport nusxasi, diplom, sertifikat).
+   *
+   * Sertifikat rasmidan farqi: PDF ham qabul qilinadi va fayl bazaga
+   * yoziladi — moderator tekshiruvidan o'tishi kerak, o'qituvchi uni
+   * o'zi "tasdiqlangan" qila olmaydi.
+   */
+  const TEACHER_DOC_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+  const TEACHER_DOC_MAX = 8 * 1024 * 1024;
+  const TEACHER_DOC_KINDS = ['passport', 'diploma', 'certificate', 'other'];
+
+  function parseTeacherDocument(
+    req: express.Request
+  ): Promise<{ file: { buffer: Buffer; mimetype: string; name: string } | null; kind: string }> {
+    return new Promise((resolve, reject) => {
+      const contentType = req.headers['content-type'];
+      if (!contentType || !contentType.includes('multipart/form-data')) {
+        reject(new Error('Fayl multipart/form-data bilan yuborilsin'));
+        return;
+      }
+      let file: { buffer: Buffer; mimetype: string; name: string } | null = null;
+      let kind = 'other';
+      const chunks: Buffer[] = [];
+      const bb = Busboy({ headers: { 'content-type': contentType } });
+      bb.on('field', (name, value) => {
+        if (name === 'kind' && TEACHER_DOC_KINDS.includes(value)) kind = value;
+      });
+      bb.on('file', (name, stream, info) => {
+        if (name !== 'file') {
+          stream.resume();
+          return;
+        }
+        if (!TEACHER_DOC_MIMES.includes(info.mimeType)) {
+          stream.resume();
+          reject(new Error('Faqat JPG, PNG, WEBP yoki PDF ruxsat etiladi'));
+          return;
+        }
+        stream.on('data', (c: Buffer) => chunks.push(c));
+        stream.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          if (buffer.length > TEACHER_DOC_MAX) {
+            reject(new Error('Fayl hajmi 8 MB dan oshmasligi kerak'));
+            return;
+          }
+          file = { buffer, mimetype: info.mimeType, name: String(info.filename ?? '').slice(0, 120) };
+        });
+        stream.on('error', reject);
+      });
+      bb.on('error', reject);
+      bb.on('close', () => resolve({ file, kind }));
+      req.pipe(bb);
+    });
+  }
+
+  app.post('/api/teacher/me/panel/documents', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    try {
+      const { data: u } = await supabase
+        .from('users')
+        .select('id, account_type')
+        .eq('id', userId)
+        .maybeSingle();
+      if ((u as any)?.account_type !== 'teacher') {
+        return res.status(403).json({ error: "Bu bo'lim faqat o'qituvchilar uchun" });
+      }
+
+      const { file, kind } = await parseTeacherDocument(req);
+      if (!file) return res.status(400).json({ error: 'Fayl yuklanmadi' });
+
+      const ext =
+        file.mimetype === 'application/pdf'
+          ? 'pdf'
+          : file.mimetype === 'image/png'
+            ? 'png'
+            : file.mimetype === 'image/webp'
+              ? 'webp'
+              : 'jpg';
+      const objectPath = `${userId}/doc-${kind}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+      await ensurePublicStorageBucket(USER_AVATAR_BUCKET);
+      const { error: upErr } = await supabase.storage
+        .from(USER_AVATAR_BUCKET)
+        .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: true });
+      if (upErr) throw new Error(upErr.message);
+      const { data: pub } = supabase.storage.from(USER_AVATAR_BUCKET).getPublicUrl(objectPath);
+      const url = pub?.publicUrl;
+      if (!url) throw new Error('Fayl URL olinmadi');
+
+      const { data, error } = await supabase
+        .from('teacher_documents')
+        .insert({
+          teacher_user_id: userId,
+          kind,
+          file_url: toAbsolutePublicUrl(url),
+          original_name: file.name,
+          status: 'pending',
+        })
+        .select('id, kind, file_url, original_name, status, created_at')
+        .single();
+      if (error) throw error;
+      res.status(201).json(data);
+    } catch (e) {
+      console.error('[POST /api/teacher/me/panel/documents]', e);
+      res.status(400).json({ error: e instanceof Error ? e.message : 'Hujjat yuklanmadi' });
+    }
+  });
+
+  /*
+   * VIDEO-TAQDIMOT.
+   *
+   * O'qituvchi videoni QURILMASIDAN yuklaydi (havola emas). Fayl darhol
+   * ommaviy bo'lmaydi: `teacher_documents` ga `kind='video'`, `pending`
+   * holatida tushadi. Admin tasdiqlagach `teacher_profiles.video_url`
+   * to'ldiriladi va shundagina video o'quvchilarga ko'rinadi.
+   */
+  const TEACHER_VIDEO_MIMES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska'];
+  const TEACHER_VIDEO_MAX = 100 * 1024 * 1024;
+
+  function parseTeacherVideo(
+    req: express.Request
+  ): Promise<{ file: { buffer: Buffer; mimetype: string; name: string } | null }> {
+    return new Promise((resolve, reject) => {
+      const contentType = req.headers['content-type'];
+      if (!contentType || !contentType.includes('multipart/form-data')) {
+        reject(new Error('Fayl multipart/form-data bilan yuborilsin'));
+        return;
+      }
+      let file: { buffer: Buffer; mimetype: string; name: string } | null = null;
+      const chunks: Buffer[] = [];
+      let size = 0;
+      let tooBig = false;
+      const bb = Busboy({ headers: { 'content-type': contentType }, limits: { fileSize: TEACHER_VIDEO_MAX } });
+      bb.on('file', (name, stream, info) => {
+        if (name !== 'file') {
+          stream.resume();
+          return;
+        }
+        if (!TEACHER_VIDEO_MIMES.includes(info.mimeType)) {
+          stream.resume();
+          reject(new Error('Faqat MP4, MOV yoki WEBM video ruxsat etiladi'));
+          return;
+        }
+        stream.on('limit', () => {
+          tooBig = true;
+        });
+        stream.on('data', (c: Buffer) => {
+          size += c.length;
+          chunks.push(c);
+        });
+        stream.on('end', () => {
+          if (tooBig || size > TEACHER_VIDEO_MAX) {
+            reject(new Error('Video hajmi 100 MB dan oshmasligi kerak'));
+            return;
+          }
+          file = {
+            buffer: Buffer.concat(chunks),
+            mimetype: info.mimeType,
+            name: String(info.filename ?? '').slice(0, 120),
+          };
+        });
+        stream.on('error', reject);
+      });
+      bb.on('error', reject);
+      bb.on('close', () => resolve({ file }));
+      req.pipe(bb);
+    });
+  }
+
+  app.post('/api/teacher/me/panel/video', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    try {
+      const { data: u } = await supabase
+        .from('users')
+        .select('id, account_type')
+        .eq('id', userId)
+        .maybeSingle();
+      if ((u as any)?.account_type !== 'teacher') {
+        return res.status(403).json({ error: "Bu bo'lim faqat o'qituvchilar uchun" });
+      }
+
+      const { file } = await parseTeacherVideo(req);
+      if (!file) return res.status(400).json({ error: 'Video yuklanmadi' });
+
+      const ext =
+        file.mimetype === 'video/quicktime'
+          ? 'mov'
+          : file.mimetype === 'video/webm'
+            ? 'webm'
+            : file.mimetype === 'video/x-matroska'
+              ? 'mkv'
+              : 'mp4';
+      const objectPath = `${userId}/video-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+      await ensurePublicStorageBucket(TEACHER_VIDEO_BUCKET);
+      const { error: upErr } = await supabase.storage
+        .from(TEACHER_VIDEO_BUCKET)
+        .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: true });
+      if (upErr) throw new Error(upErr.message);
+      const { data: pub } = supabase.storage.from(TEACHER_VIDEO_BUCKET).getPublicUrl(objectPath);
+      const url = pub?.publicUrl;
+      if (!url) throw new Error('Video URL olinmadi');
+
+      // Bitta o'qituvchida bitta joriy video bo'ladi — eskisi tekshiruv
+      // navbatida chalkashmasligi uchun o'chiriladi.
+      await supabase
+        .from('teacher_documents')
+        .delete()
+        .eq('teacher_user_id', userId)
+        .eq('kind', 'video');
+
+      const { data, error } = await supabase
+        .from('teacher_documents')
+        .insert({
+          teacher_user_id: userId,
+          kind: 'video',
+          file_url: toAbsolutePublicUrl(url),
+          original_name: file.name,
+          status: 'pending',
+        })
+        .select('id, kind, file_url, original_name, status, admin_note, created_at')
+        .single();
+      if (error) throw error;
+      res.status(201).json(data);
+    } catch (e) {
+      console.error('[POST /api/teacher/me/panel/video]', e);
+      res.status(400).json({ error: e instanceof Error ? e.message : 'Video yuklanmadi' });
+    }
+  });
+
+  app.delete('/api/teacher/me/panel/video', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    try {
+      await supabase
+        .from('teacher_documents')
+        .delete()
+        .eq('teacher_user_id', userId)
+        .eq('kind', 'video');
+      await supabase
+        .from('teacher_profiles')
+        .update({ video_url: null, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
+      res.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/teacher/me/panel/video]', e);
+      res.status(500).json({ error: 'Oʻchirilmadi' });
+    }
+  });
+
+  app.delete('/api/teacher/me/panel/documents/:id', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    try {
+      const id = Number(req.params?.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ error: 'ID notoʻgʻri' });
+      // Faqat O'ZINING hujjati o'chadi.
+      const { error } = await supabase
+        .from('teacher_documents')
+        .delete()
+        .eq('id', id)
+        .eq('teacher_user_id', userId);
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/teacher/me/panel/documents/:id]', e);
+      res.status(500).json({ error: 'Oʻchirilmadi' });
+    }
+  });
+
   app.delete('/api/user/avatar', authenticate, async (req: any, res) => {
     const userId = Number(req.userId);
     try {
@@ -1145,6 +1629,30 @@ async function startServer() {
     } catch (e) {
       console.error('[DELETE /api/user/avatar]', e);
       res.status(500).json({ error: 'Rasm o‘chirilmadi' });
+    }
+  });
+
+  /**
+   * Hisobni butunlay o'chirish — Apple App Store talabi 5.1.1(v).
+   * Bu endpoint bo'lmasa ilovadagi "Hisobni o'chirish" tugmasi 404 qaytaradi
+   * va Apple ilovani rad etadi. Bog'liq ma'lumotlar DB darajasida
+   * ON DELETE CASCADE / SET NULL orqali o'chadi.
+   */
+  app.delete('/api/user/account', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    if (!Number.isFinite(userId)) {
+      return res.status(400).json({ error: 'Notoʻgʻri foydalanuvchi' });
+    }
+    try {
+      const { error: delErr } = await supabase.from('users').delete().eq('id', userId);
+      if (delErr) {
+        console.error('[DELETE /api/user/account]', delErr);
+        return res.status(500).json({ error: 'Hisobni oʻchirib boʻlmadi' });
+      }
+      return res.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/user/account]', e);
+      return res.status(500).json({ error: 'Hisobni oʻchirib boʻlmadi' });
     }
   });
 
@@ -1631,6 +2139,28 @@ async function startServer() {
   // Exclude the platform owner test account (id=1 = Farmon Omonov) from public rankings.
   const LEADERBOARD_EXCLUDED_USER_ID = 1;
   const leaderboardService = await import('./server/services/leaderboard.service');
+
+  /**
+   * GET /api/my-rank — foydalanuvchining XP bo'yicha platformadagi o'rni.
+   *
+   * Bosh sahifa sarlavhasi uchun alohida yengil endpoint: `/api/leaderboard`
+   * top-2000 ro'yxatni ham tortadi, bu esa faqat bitta raqamni ko'rsatish
+   * uchun ortiqcha. Bu yerda ikkita COUNT bajariladi, xolos.
+   *
+   * O'rin JONLI hisoblanadi (`total_points` dan katta foydalanuvchilar soni + 1),
+   * shuning uchun `leaderboard` jadvalidagi cron yangilagan `rank` ustuniga
+   * bog'liq emas va hech qachon eskirmaydi.
+   */
+  app.get('/api/my-rank', authenticate, async (req: any, res) => {
+    try {
+      const { getUserRank } = await import('./server/services/userRank.service.js');
+      const today = formatDateInAppTimezone(new Date());
+      res.json(await getUserRank(supabase, Number(req.userId), today));
+    } catch (e) {
+      console.error('[api/my-rank]', e);
+      res.status(500).json({ error: 'Xatolik yuz berdi' });
+    }
+  });
   app.get('/api/leaderboard', authenticate, async (req: any, res) => {
     const requestedPeriod = (req.query.period as string) || 'weekly';
     const period = ['daily', 'weekly', 'all', 'monthly'].includes(requestedPeriod)
@@ -2467,6 +2997,131 @@ async function startServer() {
   });
 
   // ---------------------------------------------------------------------------
+  // JONLI EFIR — support ochadigan vebinar.
+  //
+  // Ro'yxatdan o'tgan har qanday foydalanuvchi ko'ra oladi (obuna talab
+  // qilinmaydi). Xona nomi javobda FAQAT efir jonli bo'lganda keladi:
+  // shunda support xonaga birinchi kiradi va Jitsi'da moderator bo'lib qoladi
+  // (server `jitsi-anonymous` rejimida — birinchi kirgan moderator bo'ladi).
+  // ---------------------------------------------------------------------------
+  app.get('/api/live-streams', authenticate, async (req: any, res) => {
+    try {
+      const { getPublicState } = await import('./server/services/liveStream.service.js');
+      res.json(await getPublicState(supabase));
+    } catch (err) {
+      console.error('[GET /api/live-streams]', (err as Error).message);
+      res.status(500).json({ error: 'Efir ma\'lumoti yuklanmadi' });
+    }
+  });
+
+  /*
+   * Efirni BOSHQARISH — faqat oltin support hisobi.
+   *
+   * Admin panelida emas: efirni jonli olib boradigan odam support va u o'z
+   * hisobidan, oddiy ilova ichidan boshlaydi. Shu bilan birga u xonaga
+   * birinchi bo'lib kiradi va Jitsi'da moderator bo'lib qoladi.
+   */
+  const supportOnly = async (req: any, res: express.Response): Promise<boolean> => {
+    const ls = await import('./server/services/liveStream.service.js');
+    if (await ls.isSupportAccount(supabase, Number(req.userId))) return true;
+    res.status(403).json({ error: 'Ruxsat yo\'q' });
+    return false;
+  };
+
+  const sendLive = (res: express.Response, r: { ok: true; data: unknown } | { ok: false; status: number; error: string }) => {
+    if ('error' in r) return res.status(r.status).json({ error: r.error });
+    return res.json(r.data);
+  };
+
+  app.get('/api/live-streams/manage', authenticate, async (req: any, res) => {
+    try {
+      if (!(await supportOnly(req, res))) return;
+      const ls = await import('./server/services/liveStream.service.js');
+      res.json(await ls.listForAdmin(supabase));
+    } catch (err) {
+      console.error('[GET /api/live-streams/manage]', (err as Error).message);
+      res.status(500).json({ error: 'Yuklanmadi' });
+    }
+  });
+
+  app.post('/api/live-streams', authenticate, async (req: any, res) => {
+    try {
+      if (!(await supportOnly(req, res))) return;
+      const ls = await import('./server/services/liveStream.service.js');
+      sendLive(res, await ls.createStream(supabase, {
+        title: String(req.body?.title ?? ''),
+        description: String(req.body?.description ?? ''),
+        startsAt: req.body?.starts_at ?? null,
+        durationMinutes: Number(req.body?.duration_minutes) || 60,
+        startNow: req.body?.start_now === true,
+        adminId: null,
+      }));
+    } catch (err) {
+      console.error('[POST /api/live-streams]', (err as Error).message);
+      res.status(500).json({ error: 'Efir ochilmadi' });
+    }
+  });
+
+  for (const [amal, fn] of [['start', 'startStream'], ['end', 'endStream'], ['cancel', 'cancelStream']] as const) {
+    app.post(`/api/live-streams/:id/${amal}`, authenticate, async (req: any, res) => {
+      try {
+        if (!(await supportOnly(req, res))) return;
+        const ls = await import('./server/services/liveStream.service.js');
+        sendLive(res, await (ls[fn] as (c: typeof supabase, id: number) => Promise<any>)(supabase, Number(req.params.id)));
+      } catch (err) {
+        console.error(`[POST /api/live-streams/:id/${amal}]`, (err as Error).message);
+        res.status(500).json({ error: 'Amal bajarilmadi' });
+      }
+    });
+  }
+
+  // Support xonaga host sifatida kiradi.
+  app.get('/api/live-streams/:id/room', authenticate, async (req: any, res) => {
+    try {
+      if (!(await supportOnly(req, res))) return;
+      const ls = await import('./server/services/liveStream.service.js');
+      sendLive(res, await ls.getHostRoom(supabase, Number(req.params.id)));
+    } catch (err) {
+      console.error('[GET /api/live-streams/:id/room]', (err as Error).message);
+      res.status(500).json({ error: 'Xona olinmadi' });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // Talaffuz: qisqa matnni ovoz bilan o'qib berish (lug'at kartochkalari uchun)
+  // ---------------------------------------------------------------------------
+  app.get('/api/tts', authenticate, async (req: any, res) => {
+    try {
+      const userId = req.userId as number;
+      // Har so'z bir marta generatsiya qilinib keshlanadi, shuning uchun
+      // chegara keng: bir dars davomida ko'p so'z eshitilishi normal.
+      if (!(await enforceRateLimit(res, `tts:${userId}`, 120, 60))) return;
+
+      const text = String(req.query.text ?? '');
+      const speed = req.query.speed ? Number(req.query.speed) : undefined;
+      // `ohang=ustoz` — doskadagi dars uchun muloyimroq ovoz. Boshqa har qanday
+      // qiymatda lug'at kartochkalarining eski ovozi o'zgarishsiz qoladi.
+      const ohang = req.query.ohang === 'ustoz' ? ('ustoz' as const) : undefined;
+      const { speak } = await import('./server/services/tts.service.js');
+      // Gemini ovozi ffmpeg bo'lmagan serverda WAV bo'lib qaytadi, shuning
+      // uchun tur qat'iy yozilmaydi — xizmat qaytargani ishlatiladi.
+      const { audio, cached, mime } = await speak(text, { speed, ohang });
+
+      res.setHeader('Content-Type', mime);
+      res.setHeader('Content-Length', String(audio.length));
+      // Bir xil so'z qayta so'ralganda brauzer o'z keshidan oladi.
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader('X-TTS-Cache', cached ? 'hit' : 'miss');
+      res.end(audio);
+    } catch (err) {
+      const e = err as { message?: string; code?: string };
+      const status = e.code === 'TTS_NOT_CONFIGURED' ? 503 : 400;
+      console.error('[GET /api/tts]', e.message);
+      res.status(status).json({ error: e.message ?? 'Ovozni tayyorlab bo\'lmadi' });
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // Speaking trainer routes
   // ---------------------------------------------------------------------------
   app.use('/api/speaking', authenticate, async (req: any, res) => {
@@ -2575,20 +3230,29 @@ async function startServer() {
         const userAnswer = String(body.user_answer ?? '').trim();
         const mode = String(body.mode ?? 'text');
         const attempt = Math.max(1, Number(body.attempt) || 1);
+        // Ekranda o'quvchiga ko'rsatilgan to'g'ri javob — uni aynan qaytarsa,
+        // AI'ga bormasdan to'g'ri deb qabul qilinadi (o'z javobiga zid ketmasin).
+        const shownAnswer = String(body.shown_answer ?? '').trim().slice(0, 500);
 
         if (!userAnswer) return res.status(400).json({ error: 'Javob kiritilmagan' });
         if (mode !== 'text' && mode !== 'voice') return res.status(400).json({ error: 'mode noto\'g\'ri' });
 
+        /*
+         * Kunlik topshiriqlarda (`daily_practice_prompts`) etalon javob umuman
+         * YO'Q — migratsiya 144 uni ataylab o'chirgan, hukmni to'liq AI chiqaradi.
+         *
+         * `speaking_tasks` da esa `ru_correct` bor. U hukm CHIQARMAYDI (boshqacha
+         * aytgan o'quvchi jazolanmasin), faqat BIR TOMONLAMA QABUL uchun ishlatiladi:
+         * aynan etalon javobni aytgan bo'lsa, AI'ga umuman bormaymiz.
+         */
         const uzInline = String(body.uz_text ?? '').trim();
-        const ruInline = String(body.ru_correct ?? '').trim();
 
         let uzText: string;
-        let ruCorrect: string;
+        let referenceAnswer = '';
         let persistTaskId: number | null = null;
 
-        if (uzInline && ruInline) {
+        if (uzInline) {
           uzText = uzInline;
-          ruCorrect = ruInline;
         } else {
           const taskId = Number(body.task_id);
           if (!Number.isFinite(taskId)) return res.status(400).json({ error: 'task_id kerak' });
@@ -2598,12 +3262,24 @@ async function startServer() {
           if (!task) return res.status(404).json({ error: 'Topshiriq topilmadi' });
 
           uzText = task.uz_text;
-          ruCorrect = task.ru_correct;
+          referenceAnswer = String(task.ru_correct ?? '').trim();
           persistTaskId = task.id;
         }
 
-        const { checkTranslation } = await import('./server/lib/openai.js');
-        const result = await checkTranslation(uzText, ruCorrect, userAnswer, attempt);
+        const { checkTranslation, sameRuAnswer } = await import('./server/lib/openai.js');
+
+        // Etalon javob bilan aynan mos — AI'siz, darhol to'g'ri.
+        const result =
+          referenceAnswer && sameRuAnswer(userAnswer, referenceAnswer)
+            ? {
+                status: 'correct' as const,
+                feedback: "Barakalla, to'g'ri!",
+                error_explanation: '',
+                hint: '',
+                correct_answer: '',
+                mistakes: [],
+              }
+            : await checkTranslation(uzText, userAnswer, attempt, shownAnswer);
 
         if (persistTaskId !== null) {
           await supabase.from('speaking_results').insert({
@@ -2624,8 +3300,30 @@ async function startServer() {
         if (!audioBase64) return res.status(400).json({ error: 'audio kerak' });
         const buffer = Buffer.from(audioBase64, 'base64');
         if (buffer.length > 5 * 1024 * 1024) return res.status(400).json({ error: 'Audio juda katta (max 5MB)' });
+        // Bo'sh yoki bir lahzalik yozuv — Whisper'ga yubormaymiz, u tushunarsiz
+        // "could not be decoded" xatosini qaytaradi (prod loglarida 30 marta).
+        if (buffer.length < 1200) {
+          return res.status(400).json({ error: "Ovoz juda qisqa. Mikrofonni bosib, gapirib bo'lgach to'xtating." });
+        }
+        /*
+         * Fayl nomi klient YOZGAN formatga qarab tanlanadi. Ilgari bu yerda
+         * har doim 'recording.webm' turardi — iPhone/Safari esa `audio/mp4`
+         * yozadi, natijada Whisper "Invalid file format" deb rad qilardi va
+         * ovozli javob umuman ishlamasdi.
+         */
+        const rawMime = String(req.body.mime ?? '').split(';')[0].trim().toLowerCase();
+        const filename =
+          rawMime === 'audio/mp4' || rawMime === 'audio/m4a' || rawMime === 'audio/x-m4a'
+            ? 'recording.mp4'
+            : rawMime === 'audio/mpeg' || rawMime === 'audio/mp3'
+              ? 'recording.mp3'
+              : rawMime === 'audio/wav' || rawMime === 'audio/x-wav'
+                ? 'recording.wav'
+                : rawMime === 'audio/ogg' || rawMime === 'audio/oga'
+                  ? 'recording.ogg'
+                  : 'recording.webm';
         const { transcribeAudio } = await import('./server/lib/openai.js');
-        const text = await transcribeAudio(buffer, 'recording.webm');
+        const text = await transcribeAudio(buffer, filename);
         return res.json({ text });
       }
 
@@ -2807,9 +3505,14 @@ async function startServer() {
   }
 
   const port = Number(process.env.PORT) || 3000;
-  app.listen(port, '0.0.0.0', () => {
+  const httpServer = app.listen(port, '0.0.0.0', () => {
     console.log('Server running on http://localhost:' + port);
   });
+
+  // Doskadagi jonli ovozli suhbat — WebSocket, shuning uchun Express
+  // marshrutlari orasida emas, HTTP serverning o'ziga ulanadi.
+  const { attachUstozLive } = await import('./server/services/ustozLive.service.ts');
+  attachUstozLive(httpServer);
 }
 
 startServer().catch((err) => {

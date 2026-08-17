@@ -18,24 +18,71 @@ const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   words_learned: 0,
   words_correct: 0,
   words_match: false,
+  phrases_done: false,
+  phrases_correct: 0,
+  text_questions_correct: 0,
+  speaking_tasks_done: 0,
   oqish_done: false,
   speaking_level: 0,
 };
 
+/*
+ * BITTA SO'ROV — KO'P CHAQIRUVCHI.
+ *
+ * Bu hook bitta sahifada bir necha marta chaqiriladi: masalan
+ * `/kunlik-reja/kun/N/grammatika` da beshta komponent + ketma-ketlik
+ * darvozasi, ya'ni oltita bir xil `GET /api/kunlik-progress`. Grammatika
+ * zanjiri bo'ylab yurilganda bu o'nlab ortiqcha so'rovga aylanadi va
+ * serverdagi IP chegarasiga (180/daqiqa) urilib «So'rovlar soni oshib
+ * ketdi» xatosini chiqaradi — sahifa umuman ochilmaydi.
+ *
+ * Shuning uchun ayni paytda ketayotgan so'rov UMUMIY: bir vaqtda mount
+ * bo'lgan hamma chaqiruvchi bitta javobni bo'lishadi. Kesh QISQA (1.5 s) va
+ * har patchdan keyin bekor qilinadi — aks holda navbatdagi vazifa sahifasi
+ * eskirgan progressni o'qib foydalanuvchini ortga uloqtirardi.
+ */
+type UmumiyOqish = {
+  token: string | null;
+  vaqt: number;
+  natija: ReturnType<typeof fetchKunlikProgress>;
+};
+let umumiyOqish: UmumiyOqish | null = null;
+const UMUMIY_TTL_MS = 1_500;
+
+function progressniOqi(token: string | null): ReturnType<typeof fetchKunlikProgress> {
+  const hozir = Date.now();
+  if (umumiyOqish && umumiyOqish.token === token && hozir - umumiyOqish.vaqt < UMUMIY_TTL_MS) {
+    return umumiyOqish.natija;
+  }
+  const natija = fetchKunlikProgress(token);
+  umumiyOqish = { token, vaqt: hozir, natija };
+  return natija;
+}
+
+/** Progress o'zgardi — keyingi sahifa serverdan YANGI holatni o'qisin. */
+function umumiyKeshniTashla(): void {
+  umumiyOqish = null;
+}
+
 export function useKunlikProgress() {
   const { token } = useAuth();
   const [rows, setRows] = useState<Map<number, KunlikDayProgress>>(new Map());
+  const [speakingTaskCountByDay, setSpeakingTaskCountByDay] = useState<Map<number, number>>(
+    () => new Map(),
+  );
   const [practicePromptCountByDay, setPracticePromptCountByDay] = useState<Map<number, number>>(
     () => new Map(),
   );
   const [loaded, setLoaded] = useState(false);
-  // Track patches already sent for each day to avoid duplicate requests
-  const sentRef = useRef<Map<number, KunlikDayPatch>>(new Map());
+  // Last known full row per day (server state + patches already sent),
+  // used to avoid re-sending fields that would not change anything.
+  const sentRef = useRef<Map<number, Omit<KunlikDayProgress, 'day_number'>>>(new Map());
 
   useEffect(() => {
     if (!token) {
       setRows(new Map());
       setPracticePromptCountByDay(new Map());
+      setSpeakingTaskCountByDay(new Map());
       sentRef.current = new Map();
       setLoaded(true);
       return;
@@ -44,8 +91,8 @@ export function useKunlikProgress() {
     let cancelled = false;
     setLoaded(false);
 
-    fetchKunlikProgress(token)
-      .then(({ rows: items, practicePromptCounts }) => {
+    progressniOqi(token)
+      .then(({ rows: items, practicePromptCounts, speakingTaskCounts }) => {
         if (cancelled) return;
         const map = new Map<number, KunlikDayProgress>();
         for (const row of items) map.set(row.day_number, row);
@@ -55,6 +102,11 @@ export function useKunlikProgress() {
           mergedCounts.set(d, practicePromptCounts.get(d) ?? 0);
         }
         setPracticePromptCountByDay(mergedCounts);
+        const mergedSpeaking = new Map<number, number>();
+        for (let d = 1; d <= TOTAL_DAYS; d += 1) {
+          mergedSpeaking.set(d, speakingTaskCounts.get(d) ?? 0);
+        }
+        setSpeakingTaskCountByDay(mergedSpeaking);
         sentRef.current = new Map();
         for (const row of items) {
           const { day_number, ...rest } = row;
@@ -82,8 +134,16 @@ export function useKunlikProgress() {
    * Merge a partial update for one day into local state and persist to DB.
    * Only sends fields that changed vs. what was last sent.
    */
+  /*
+   * Promise QAYTARADI va uni kutish SHART, agar shu patchdan keyin darhol
+   * navbatdagi vazifa sahifasiga o'tilsa. Har sahifa `useKunlikProgress` ni
+   * o'zi chaqiradi (umumiy store yo'q), ya'ni yangi sahifa mount bo'lganda
+   * progressni serverdan QAYTA o'qiydi. Patch kutilmasa, o'sha GET PATCH'dan
+   * oldin yetib borib "oldingi vazifa bajarilmagan" deb ko'radi va sahifa
+   * foydalanuvchini ortga uloqtiradi — vazifa boshidan boshlanadi.
+   */
   const patchDay = useCallback(
-    (dayNumber: number, patch: KunlikDayPatch) => {
+    async (dayNumber: number, patch: KunlikDayPatch): Promise<void> => {
       const prev = sentRef.current.get(dayNumber) ?? { ...DEFAULT_ROW };
       const diff = mergeKunlikDayPatch(prev, patch);
 
@@ -99,7 +159,11 @@ export function useKunlikProgress() {
         return next;
       });
 
-      patchKunlikDayProgress(token, dayNumber, diff);
+      umumiyKeshniTashla();
+      await patchKunlikDayProgress(token, dayNumber, diff);
+      // Patchdan keyin ham tashlanadi: kesh so'rov ketgan paytda yangilangan
+      // bo'lishi mumkin, u holda eski javob qayta ishlatilib qolardi.
+      umumiyKeshniTashla();
     },
     [token]
   );
@@ -126,5 +190,15 @@ export function useKunlikProgress() {
     [rows]
   );
 
-  return { rows, loaded, practicePromptCountByDay, getDay, patchDay, isGrammarDone, isOqishDone, isMatchDone };
+  return {
+    rows,
+    loaded,
+    practicePromptCountByDay,
+    speakingTaskCountByDay,
+    getDay,
+    patchDay,
+    isGrammarDone,
+    isOqishDone,
+    isMatchDone,
+  };
 }

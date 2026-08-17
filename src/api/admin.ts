@@ -177,6 +177,7 @@ export type AdminTeacherRow = {
   rating_avg: number;
   rating_count: number;
   listing_paid_until: string | null;
+  is_recommended?: boolean;
   telegram_username: string | null;
   telegram_url: string | null;
   whatsapp_phone_e164: string | null;
@@ -258,6 +259,7 @@ export type AdminHelpChatListRow = {
     };
     total_points: number;
     referral_balance: number;
+    account_type: string | null;
   };
   last_message: {
     id: number;
@@ -398,6 +400,14 @@ export async function updateTeacherStatus(
   await adminApi(`/teachers/${userId}/status`, {
     method: 'POST',
     body: JSON.stringify({ status, admin_note: adminNote ?? null }),
+  });
+}
+
+/** FalaRus tavsiyasini yoqadi/o'chiradi. */
+export async function setTeacherRecommended(userId: number, recommended: boolean): Promise<void> {
+  await adminApi(`/teachers/${userId}/recommend`, {
+    method: 'POST',
+    body: JSON.stringify({ recommended }),
   });
 }
 
@@ -587,4 +597,187 @@ export async function updateTariffPrice(data: {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+}
+
+// ─── Video dars xonalari ("met") ────────────────────────────────────────────
+
+export type AdminMeetRoomStatus = 'free' | 'assigned' | 'paused' | 'archived';
+
+export type AdminMeetRoom = {
+  id: number;
+  room_slug: string;
+  provider: string;
+  title: string;
+  note: string;
+  teacher_user_id: number | null;
+  status: AdminMeetRoomStatus;
+  assigned_at: string | null;
+  created_at: string;
+  updated_at: string;
+  teacher_name: string | null;
+  students_count: number;
+  upcoming_sessions: number;
+};
+
+export type AdminMeetSession = {
+  id: number;
+  room_id: number;
+  teacher_user_id: number;
+  title: string;
+  starts_at: string;
+  duration_minutes: number;
+  status: 'scheduled' | 'live' | 'ended' | 'cancelled';
+  created_by: 'teacher' | 'admin';
+};
+
+export async function getAdminMeetRooms(
+  status?: AdminMeetRoomStatus | 'all'
+): Promise<{ domain: string; rooms: AdminMeetRoom[] }> {
+  const qs = status && status !== 'all' ? `?status=${status}` : '';
+  return adminApi<{ domain: string; rooms: AdminMeetRoom[] }>(`/meet-rooms${qs}`);
+}
+
+/** Bir vaqtning o'zida bir nechta xona ochish (count 1..50). */
+export async function createAdminMeetRooms(data: {
+  count?: number;
+  title?: string;
+  note?: string;
+  teacher_user_id?: number | null;
+}): Promise<{ rooms: AdminMeetRoom[] }> {
+  return adminApi<{ rooms: AdminMeetRoom[] }>('/meet-rooms', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/** Xonani o'qituvchiga yo'naltirish / nomini yoki holatini o'zgartirish. */
+export async function updateAdminMeetRoom(
+  id: number,
+  data: { teacher_user_id?: number | null; title?: string; note?: string; status?: AdminMeetRoomStatus }
+): Promise<{ room: AdminMeetRoom | null }> {
+  return adminApi<{ room: AdminMeetRoom | null }>(`/meet-rooms/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAdminMeetRoom(id: number): Promise<void> {
+  await adminApi(`/meet-rooms/${id}`, { method: 'DELETE' });
+}
+
+export async function getAdminMeetRoomSessions(id: number): Promise<{ sessions: AdminMeetSession[] }> {
+  return adminApi<{ sessions: AdminMeetSession[] }>(`/meet-rooms/${id}/sessions`);
+}
+
+/** O'qituvchi yuklagan hujjatlar — admin tekshiruvi uchun. */
+export type AdminTeacherDocument = {
+  id: number;
+  teacher_user_id: number;
+  teacher_name: string;
+  kind: string;
+  file_url: string;
+  original_name: string;
+  status: string;
+  admin_note: string;
+  created_at: string;
+};
+
+export async function getAdminTeacherDocuments(
+  status: string
+): Promise<{ status: string; counts: Record<string, number>; documents: AdminTeacherDocument[] }> {
+  return adminApi(`/teacher-documents?status=${status}`);
+}
+
+/** To'liq tekshiruv: o'qituvchining anketasi, hujjatlari, videosi va cheki. */
+export type AdminTeacherReview = {
+  user_id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  profile_status: string;
+  admin_note: string;
+  anketa_submitted_at: string | null;
+  listing_paid_until: string | null;
+  avatar_url: string | null;
+  profile: Record<string, unknown>;
+  documents: AdminTeacherDocument[];
+  payments: Array<{
+    id: number;
+    amount: number;
+    currency: string;
+    status: string;
+    proof_url: string | null;
+    created_at: string;
+    approved_at: string | null;
+  }>;
+};
+
+export async function getAdminTeacherReview(
+  status: string
+): Promise<{ status: string; teachers: AdminTeacherReview[] }> {
+  return adminApi(`/teacher-review?status=${status}`);
+}
+
+export async function setAdminTeacherDocumentStatus(
+  id: number,
+  status: 'approved' | 'rejected' | 'pending',
+  adminNote: string
+): Promise<{ success: boolean }> {
+  return adminApi(`/teacher-documents/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, admin_note: adminNote }),
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * CHAT MODERATSIYASI — bloklash o'qish rejimini yoqadi.
+ * ------------------------------------------------------------------ */
+
+export type AdminChatBlock = {
+  id: number;
+  user_id: number;
+  reason: string | null;
+  expires_at: string | null;
+  blocked_by_name: string | null;
+  created_at: string;
+  full_name: string;
+  phone: string | null;
+  active: boolean;
+};
+
+export type AdminCommunityMessage = {
+  id: number;
+  sender_user_id: number;
+  sender_name: string;
+  content: string;
+  created_at: string;
+  edited_at: string | null;
+};
+
+export async function getChatBlocks(): Promise<AdminChatBlock[]> {
+  return adminApi<AdminChatBlock[]>('/chat-blocks');
+}
+
+export async function blockChatUser(body: {
+  user_id: number;
+  reason?: string;
+  days?: number | null;
+}): Promise<AdminChatBlock> {
+  return adminApi<AdminChatBlock>('/chat-blocks', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function unblockChatUser(userId: number): Promise<void> {
+  await adminApi(`/chat-blocks/${userId}`, { method: 'DELETE' });
+}
+
+export async function getCommunityMessages(limit = 60): Promise<AdminCommunityMessage[]> {
+  return adminApi<AdminCommunityMessage[]>(`/community-messages?limit=${limit}`);
+}
+
+export async function editCommunityMessage(id: number, content: string): Promise<void> {
+  await adminApi(`/community-messages/${id}`, { method: 'PATCH', body: JSON.stringify({ content }) });
+}
+
+export async function deleteCommunityMessage(id: number): Promise<void> {
+  await adminApi(`/community-messages/${id}`, { method: 'DELETE' });
 }

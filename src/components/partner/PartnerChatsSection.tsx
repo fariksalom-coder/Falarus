@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Headphones, MessageCircle, Users } from 'lucide-react';
+import { AtSign, Headphones, MessageCircle, Users } from 'lucide-react';
 import { getHelpChats, type HelpChatListItem } from '../../api/help';
 import { getSavolJavobSummary, type SavolJavobSummary } from '../../api/communityChat';
 import { useAuth } from '../../context/AuthContext';
@@ -74,6 +74,8 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
     };
   }, [token]);
 
+  const groupMentions = Number(groupSummary?.mention_count ?? 0);
+
   const adminUnread =
     adminChat &&
     (Number(adminChat.unread_count ?? 0) > 0 ||
@@ -135,16 +137,31 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
               {formatListTime(groupSummary?.last_message?.created_at ?? null, t('common.today'))}
             </span>
           </div>
-          <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
-            {groupSummary
-              ? t('partner.membersOnline', {
-                  members: groupSummary.member_count,
-                  online: groupSummary.online_count,
-                })
-              : t('partner.groupFallback')}
-          </p>
+          {groupMentions > 0 ? (
+            <p className="mt-[2px] flex items-center gap-1 truncate text-[12.5px] font-black text-[#B45309]">
+              <AtSign className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {t('partner.mentionAlert')}
+            </p>
+          ) : (
+            <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
+              {groupSummary
+                ? t('partner.membersOnline', {
+                    members: groupSummary.member_count,
+                    online: groupSummary.online_count,
+                  })
+                : t('partner.groupFallback')}
+            </p>
+          )}
         </div>
-        {Number(groupSummary?.unread_count ?? 0) > 0 ? (
+        {groupMentions > 0 ? (
+          <span
+            className="inline-flex h-5 items-center justify-center gap-0.5 rounded-full px-1.5 text-[11px] font-black text-white"
+            style={{ background: '#F59E0B' }}
+          >
+            <AtSign className="h-3 w-3" aria-hidden />
+            {groupMentions}
+          </span>
+        ) : Number(groupSummary?.unread_count ?? 0) > 0 ? (
           <span
             className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
             style={{ background: '#0EA5A5' }}

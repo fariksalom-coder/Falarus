@@ -1,14 +1,23 @@
-import { useState } from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle, XCircle, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, SkipForward } from 'lucide-react';
 import { isPassingStatus, type CheckResult } from '../../api/speaking';
+import { SPEAKING_ATTEMPTS_BEFORE_SKIP } from '../../../shared/dailyCourseDay';
 
+/**
+ * «To'g'ri javob» endi FAQAT AI taklifi bo'lishi mumkin (2-xatodan boshlab).
+ * Bazadagi etalon javob bu yerga umuman kelmaydi — tekshiruv ham, ko'rsatish
+ * ham unga tayanmaydi.
+ *
+ * 2 marta xato bo'lgach o'quvchi tuzoqda qolmaydi: to'g'ri javob ko'rsatiladi
+ * va «O'tkazish» tugmasi chiqadi — bosilganda keyingi topshiriqqa o'tadi.
+ */
 type Props = {
   result: CheckResult;
   attempts: number;
-  referenceAnswer: string;
   onNext: () => void;
   onRetry: () => void;
+  /** Oxirgi topshiriqda tugma «Yakunlash» bo'lsin. */
+  isLast?: boolean;
 };
 
 const STATUS_CONFIG = {
@@ -38,13 +47,14 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function SpeakingFeedback({ result, attempts, referenceAnswer, onNext, onRetry }: Props) {
-  const [showAnswer, setShowAnswer] = useState(false);
+export default function SpeakingFeedback({ result, attempts, onNext, onRetry, isLast = false }: Props) {
   const config = STATUS_CONFIG[result.status];
   const { Icon } = config;
-  const correctAnswer = result.correct_answer.trim() || referenceAnswer.trim();
-  const shouldRevealAnswer = result.status === 'wrong' && Boolean(correctAnswer);
-  const answerVisible = shouldRevealAnswer && (showAnswer || Boolean(result.correct_answer.trim()));
+  const passing = isPassingStatus(result.status);
+  const correctAnswer = result.correct_answer.trim();
+  // 2 marta xato — javobni ko'rsatib, «O'tkazish» tugmasini beramiz.
+  const canSkip = !passing && attempts >= SPEAKING_ATTEMPTS_BEFORE_SKIP;
+  const attemptsLeft = Math.max(0, SPEAKING_ATTEMPTS_BEFORE_SKIP - attempts);
 
   return (
     <motion.div
@@ -55,6 +65,11 @@ export default function SpeakingFeedback({ result, attempts, referenceAnswer, on
       <div className="flex items-center gap-2.5">
         <Icon className={`h-5 w-5 ${config.iconColor}`} />
         <span className={`text-base font-bold ${config.textColor}`}>{config.label}</span>
+        {!passing && attemptsLeft > 0 && (
+          <span className="ml-auto rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-black text-slate-500">
+            Yana {attemptsLeft} urinish
+          </span>
+        )}
       </div>
 
       {result.feedback && (
@@ -96,7 +111,7 @@ export default function SpeakingFeedback({ result, attempts, referenceAnswer, on
         </div>
       )}
 
-      {shouldRevealAnswer && answerVisible && (
+      {!passing && correctAnswer && (
         <div className="mt-3 rounded-xl bg-white/60 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             To'g'ri javob
@@ -105,28 +120,21 @@ export default function SpeakingFeedback({ result, attempts, referenceAnswer, on
         </div>
       )}
 
-      {shouldRevealAnswer && !answerVisible && attempts >= 2 && (
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={() => setShowAnswer(true)}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
-          >
-            <Eye className="h-4 w-4" />
-            Javobni ko'rish
-          </button>
-        </div>
+      {canSkip && (
+        <p className="mt-3 text-sm font-semibold text-slate-600">
+          Bu gapni ovoz chiqarib takrorlang, keyin davom eting.
+        </p>
       )}
 
       <div className="mt-4 flex gap-3">
-        {isPassingStatus(result.status) ? (
+        {passing ? (
           <>
             <button
               type="button"
               onClick={onNext}
               className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(16,185,129,0.3)] transition-all hover:shadow-[0_8px_24px_rgba(16,185,129,0.4)]"
             >
-              Keyingisi
+              {isLast ? 'Yakunlash' : 'Keyingisi'}
             </button>
             {result.status === 'partial' && (
               <button
@@ -147,13 +155,14 @@ export default function SpeakingFeedback({ result, attempts, referenceAnswer, on
             >
               Qayta urinish
             </button>
-            {(attempts >= 2 || showAnswer) && (
+            {canSkip && (
               <button
                 type="button"
                 onClick={onNext}
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-[#0B2A6B] px-5 py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(11,42,107,0.3)] transition-colors hover:bg-[#071B5E]"
               >
-                O'tkazish
+                {isLast ? 'Yakunlash' : "O'tkazish"}
+                <SkipForward className="h-4 w-4" />
               </button>
             )}
           </>

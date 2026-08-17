@@ -1,0 +1,122 @@
+{
+  "grade": 9,
+  "title": "Algebra va geometriya, 9-sinf",
+  "units": [
+    {
+      "id": "m09-u01",
+      "title": "Kvadrat funksiya",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m09-u01-l01", "title": "Funksiya xossalari: o'sish, kamayish, nollar", "dtm": true },
+        { "id": "m09-u01-l02", "title": "y = ax^2 funksiyasi", "dtm": true },
+        { "id": "m09-u01-l03", "title": "Grafikni siljitish. y = a(x-m)^2 + n", "dtm": true },
+        { "id": "m09-u01-l04", "title": "Kvadrat funksiya grafigi. Parabola uchi", "dtm": true },
+        { "id": "m09-u01-l05", "title": "Funksiyaning eng katta va eng kichik qiymati", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u02",
+      "title": "Tengsizliklarni yechish",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m09-u02-l01", "title": "Kvadrat tengsizlik. Grafik usul", "dtm": true },
+        { "id": "m09-u02-l02", "title": "Intervallar usuli", "dtm": true },
+        { "id": "m09-u02-l03", "title": "Kasr-ratsional tengsizliklar", "dtm": true },
+        { "id": "m09-u02-l04", "title": "Tengsizliklar sistemasi va majmuasi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u03",
+      "title": "Tenglamalar sistemasi",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m09-u03-l01", "title": "Ikkinchi darajali tenglamalar sistemasi", "dtm": true },
+        { "id": "m09-u03-l02", "title": "Simmetrik sistemalar", "dtm": true },
+        { "id": "m09-u03-l03", "title": "Sistema tuzib masala yechish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u04",
+      "title": "Ketma-ketliklar va progressiyalar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m09-u04-l01", "title": "Sonli ketma-ketlik. Berilish usullari", "dtm": true },
+        { "id": "m09-u04-l02", "title": "Arifmetik progressiya. n-had formulasi", "dtm": true },
+        { "id": "m09-u04-l03", "title": "Arifmetik progressiya yig'indisi", "dtm": true },
+        { "id": "m09-u04-l04", "title": "Geometrik progressiya. n-had formulasi", "dtm": true },
+        { "id": "m09-u04-l05", "title": "Geometrik progressiya yig'indisi", "dtm": true },
+        { "id": "m09-u04-l06", "title": "Cheksiz kamayuvchi geometrik progressiya", "dtm": true },
+        { "id": "m09-u04-l07", "title": "Progressiyaga oid amaliy masalalar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u05",
+      "title": "Daraja va ildizlar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m09-u05-l01", "title": "n-darajali ildiz", "dtm": true },
+        { "id": "m09-u05-l02", "title": "Kasr ko'rsatkichli daraja", "dtm": true },
+        { "id": "m09-u05-l03", "title": "Irratsional tenglamalar", "dtm": true },
+        { "id": "m09-u05-l04", "title": "Darajali funksiya va grafigi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u06",
+      "title": "Kombinatorika va ehtimollik",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m09-u06-l01", "title": "Sanashning asosiy qoidalari", "dtm": true },
+        { "id": "m09-u06-l02", "title": "O'rin almashtirish va o'rinlashtirish", "dtm": true },
+        { "id": "m09-u06-l03", "title": "Gruppalashlar. Nyuton binomi", "dtm": true },
+        { "id": "m09-u06-l04", "title": "Hodisa ehtimoli. Klassik ta'rif", "dtm": true },
+        { "id": "m09-u06-l05", "title": "Statistik ma'lumotlarni tahlil qilish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u07",
+      "title": "Vektorlar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m09-u07-l01", "title": "Vektor tushunchasi. Teng vektorlar", "dtm": true },
+        { "id": "m09-u07-l02", "title": "Vektorlarni qo'shish va ayirish", "dtm": true },
+        { "id": "m09-u07-l03", "title": "Vektorni songa ko'paytirish", "dtm": true },
+        { "id": "m09-u07-l04", "title": "Vektorlarning skalyar ko'paytmasi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u08",
+      "title": "Koordinatalar usuli",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m09-u08-l01", "title": "Vektor koordinatalari", "dtm": true },
+        { "id": "m09-u08-l02", "title": "Ikki nuqta orasidagi masofa. Kesma o'rtasi", "dtm": true },
+        { "id": "m09-u08-l03", "title": "Aylana tenglamasi", "dtm": true },
+        { "id": "m09-u08-l04", "title": "To'g'ri chiziq tenglamasi", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u09",
+      "title": "Uchburchakni yechish",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m09-u09-l01", "title": "Sinus, kosinus, tangens: kengaytirilgan ta'rif", "dtm": true },
+        { "id": "m09-u09-l02", "title": "Sinuslar teoremasi", "dtm": true },
+        { "id": "m09-u09-l03", "title": "Kosinuslar teoremasi", "dtm": true },
+        { "id": "m09-u09-l04", "title": "Uchburchak yuzasining turli formulalari", "dtm": true },
+        { "id": "m09-u09-l05", "title": "Uchburchakni yechishga oid masalalar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m09-u10",
+      "title": "Muntazam ko'pburchaklar va aylana",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m09-u10-l01", "title": "Muntazam ko'pburchak. Burchaklari", "dtm": true },
+        { "id": "m09-u10-l02", "title": "Ichki va tashqi chizilgan aylana radiuslari", "dtm": true },
+        { "id": "m09-u10-l03", "title": "Aylana uzunligi va yoy uzunligi", "dtm": true },
+        { "id": "m09-u10-l04", "title": "Doira, sektor va segment yuzi", "dtm": true },
+        { "id": "m09-u10-l05", "title": "Tekislikdagi harakatlar: siljish, burish, simmetriya", "dtm": true }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1170 @@
+[
+  {
+    "id": "m05-u01-l10",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Natural sonlarni qo'shish va uning xossalari",
+    "why": "Bozorda uch-to'rt xarid summasini qo'shganda qo'shiluvchilarni qulay tartibda guruhlash hisobni og'zaki bajarish imkonini beradi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Nodira bozordan uch narsa oldi: 27 000, 45 000 va 13 000 so'mlik. Kassada u tez hisoblab ko'rmoqchi. Agar tartib bilan qo'shsa, avval 27 000 ga 45 000 ni qo'shishi kerak va bu og'zaki bajarish uchun qulay emas. Lekin Nodira 27 000 bilan 13 000 ni birga olsa, 40 000 chiqadi va unga 45 000 ni qo'shish bir qadamda bajariladi. Qo'shiluvchilarning joyini almashtirish natijani o'zgartirmaydi, bu esa hisobni ancha yengillashtiradi."
+      },
+      {
+        "type": "theory",
+        "title": "Qo'shishning komponentlari va xossalari",
+        "text": "Qo'shishda ishtirok etuvchi sonlar qo'shiluvchilar, natija esa yig'indi deyiladi. Qo'shishning uchta asosiy xossasi bor. O'rin almashtirish xossasiga ko'ra qo'shiluvchilarning o'rnini almashtirish yig'indini o'zgartirmaydi. Guruhlash xossasiga ko'ra qo'shni qo'shiluvchilarni qavsga olish natijani o'zgartirmaydi. Nol xossasiga ko'ra songa nol qo'shilsa, son o'zgarmaydi.",
+        "keyPoint": "Qo'shiluvchilarni istalgan tartibda va istalgan guruhda qo'shish mumkin."
+      },
+      {
+        "type": "formula",
+        "latex": "$a + b = b + a, \\qquad (a + b) + c = a + (b + c), \\qquad a + 0 = a$",
+        "caption": "$a$, $b$, $c$ — ixtiyoriy natural sonlar yoki nol. Birinchi tenglik o'rin almashtirish, ikkinchisi guruhlash, uchinchisi nol xossasini bildiradi."
+      },
+      {
+        "type": "example",
+        "task": "$47 + 268 + 53$ ni qulay usulda hisoblang.",
+        "steps": [
+          { "text": "Yumaloq son beradigan juftlikni qidiramiz.", "latex": "$47 + 53 = 100$" },
+          { "text": "O'rin almashtirish va guruhlash xossalaridan foydalanamiz.", "latex": "$(47 + 53) + 268$" },
+          { "text": "Hisoblaymiz.", "latex": "$100 + 268 = 368$" }
+        ],
+        "answer": "$368$"
+      },
+      {
+        "type": "example",
+        "task": "$125 + 396 + 75 + 4$ ni qulay usulda hisoblang.",
+        "steps": [
+          { "text": "Ikkita qulay juftlikni ajratamiz.", "latex": "$125 + 75$ va $396 + 4$" },
+          { "text": "Har bir juftlikni hisoblaymiz.", "latex": "$125 + 75 = 200, \\quad 396 + 4 = 400$" },
+          { "text": "Natijalarni qo'shamiz.", "latex": "$200 + 400 = 600$" }
+        ],
+        "answer": "$600$"
+      },
+      {
+        "type": "example",
+        "task": "Alisher uch kun davomida kitob o'qidi: birinchi kuni 145 bet, ikkinchi kuni 218 bet, uchinchi kuni 155 bet. U jami necha bet o'qidi?",
+        "steps": [
+          { "text": "Birinchi va uchinchi kun sonlari yumaloq son beradi.", "latex": "$145 + 155 = 300$" },
+          { "text": "Qolgan qo'shiluvchini qo'shamiz.", "latex": "$300 + 218 = 518$" }
+        ],
+        "answer": "518 bet"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$476 + 258$ ni ustunlab qo'shishda o'quvchi $634$ deb javob yozadi.",
+        "why": "Birliklar xonasida $6 + 8 = 14$ chiqadi. Bunda 4 yoziladi va 1 o'nlar xonasiga o'tkaziladi. O'quvchi shu o'tkazishni bajargan, shuning uchun o'nlar xonasida $7 + 5 + 1 = 13$ chiqqan va u 3 ni yozgan. Lekin bu yerda yana bir o'tkazish kerak bo'lganini unutgan va yuzlar xonasiga 1 ni qo'shmagan. Har bir xonada natija 9 dan katta chiqsa, o'tkazish majburiy.",
+        "correct": "$476 + 258 = 734$"
+      },
+      {
+        "type": "drill",
+        "question": "$38 + 176 + 62$ ni qulay usulda hisoblang.",
+        "answer": "$276$",
+        "hint": "$38$ va $62$ birga yumaloq son beradi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$249 + 87 + 51 + 13$ ni qulay usulda hisoblang.",
+        "answer": "$400$",
+        "hint": "Ikkita juftlik tuzing: biri 300 ni, ikkinchisi 100 ni beradi.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$476 + 258$ ni ustunlab hisoblang.",
+        "answer": "$734$",
+        "hint": "Har bir xonada natija 9 dan katta chiqsa, keyingi xonaga bir o'tkazing.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Bobur uch kun davomida 1250 so'm, 980 so'm va 750 so'm tejadi. U jami qancha pul tejadi?",
+        "answer": "$2980$ so'm",
+        "hint": "$1250$ va $750$ ni birga oling.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Qo'shishda sonlar qo'shiluvchilar, natija esa yig'indi deyiladi.",
+      "Qo'shiluvchilarning o'rnini almashtirish va ularni guruhlash yig'indini o'zgartirmaydi.",
+      "Yumaloq son beradigan juftliklarni ajratish og'zaki hisobni ancha tezlashtiradi."
+    ],
+    "tags": ["qoshish", "xossalar", "ogzaki hisob"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u01-l02"]
+  },
+  {
+    "id": "m05-u01-l11",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Natural sonlarni ayirish",
+    "why": "Kassada 50 000 so'm berib 32 400 so'mlik xarid qilganda qaytim to'g'ri berilganini tekshirish uchun ayirishni qo'shish orqali nazorat qilish kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Dilnoza do'konda 50 000 so'm berdi va 17 600 so'm qaytim oldi. Xarid summasi 32 400 so'm edi. Qaytim to'g'ri berilganmi? Buni tekshirishning eng ishonchli usuli qaytim bilan xarid summasini qo'shib ko'rish: agar berilgan pul chiqsa, hisob to'g'ri. Ayirish va qo'shish shu tariqa bir-birini tekshiradi."
+      },
+      {
+        "type": "theory",
+        "title": "Ayirishning komponentlari",
+        "text": "Ayirishda birinchi son kamayuvchi, ikkinchi son ayriluvchi, natija esa ayirma deyiladi. Ayirish qo'shishga teskari amal: ayirmaga ayriluvchini qo'shsak, kamayuvchi hosil bo'ladi. Aynan shu bog'lanish har qanday ayirishni tekshirish imkonini beradi va noma'lum komponentni topishda ishlatiladi. Songa nolni ayirsak son o'zgarmaydi, sonning o'zidan ayirsak nol qoladi.",
+        "keyPoint": "Ayirma bilan ayriluvchining yig'indisi kamayuvchiga teng."
+      },
+      {
+        "type": "formula",
+        "latex": "$a - b = c \\iff c + b = a$",
+        "caption": "$a$ — kamayuvchi, $b$ — ayriluvchi, $c$ — ayirma. Noma'lum kamayuvchi $a = c + b$, noma'lum ayriluvchi esa $b = a - c$ orqali topiladi."
+      },
+      {
+        "type": "example",
+        "task": "$803 - 476$ ni hisoblang va natijani tekshiring.",
+        "steps": [
+          { "text": "Ustunlab ayiramiz. Birliklar xonasida $3$ dan $6$ ni ayirib bo'lmaydi, shuning uchun o'nlardan bir birlik qarz olinadi." },
+          { "text": "O'nlar xonasida nol turgani uchun qarz yuzlardan olinadi va zanjir hosil bo'ladi." },
+          { "text": "Ayirmani topamiz.", "latex": "$803 - 476 = 327$" },
+          { "text": "Tekshiramiz.", "latex": "$327 + 476 = 803$" }
+        ],
+        "answer": "$327$"
+      },
+      {
+        "type": "example",
+        "task": "$x - 158 = 342$ tenglamani yeching.",
+        "steps": [
+          { "text": "Bu yerda noma'lum kamayuvchi izlanmoqda." },
+          { "text": "Kamayuvchini topish uchun ayirmaga ayriluvchini qo'shamiz.", "latex": "$x = 342 + 158$" },
+          { "text": "Hisoblaymiz.", "latex": "$x = 500$" },
+          { "text": "Tekshiramiz.", "latex": "$500 - 158 = 342$" }
+        ],
+        "answer": "$x = 500$"
+      },
+      {
+        "type": "example",
+        "task": "$154 - x = 89$ tenglamani yeching.",
+        "steps": [
+          { "text": "Bu yerda noma'lum ayriluvchi izlanmoqda." },
+          { "text": "Ayriluvchini topish uchun kamayuvchidan ayirma ayiriladi.", "latex": "$x = 154 - 89$" },
+          { "text": "Hisoblaymiz.", "latex": "$x = 65$" },
+          { "text": "Tekshiramiz.", "latex": "$154 - 65 = 89$" }
+        ],
+        "answer": "$x = 65$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$803 - 476$ ni ustunlab hisoblashda o'quvchi har bir xonada kattadan kichigini ayirib, $473$ deb javob yozadi.",
+        "why": "Ustunlab ayirishda xonalar mustaqil emas. Birliklar xonasida $3 - 6$ ni bajarib bo'lmaydi, shuning uchun keyingi xonadan qarz olinadi. O'quvchi buning o'rniga raqamlarni joyini almashtirib $6 - 3$ ni bajargan. Tekshirish darrov xatoni ochadi: $473 + 476 = 949$ chiqadi, $803$ emas.",
+        "correct": "$803 - 476 = 327$"
+      },
+      {
+        "type": "drill",
+        "question": "$602 - 385$ ni hisoblang va natijani qo'shish orqali tekshiring.",
+        "answer": "$217$, tekshiruv: $217 + 385 = 602$",
+        "hint": "Birliklar xonasida qarz olishga to'g'ri keladi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$x + 246 = 715$ tenglamani yeching.",
+        "answer": "$x = 469$",
+        "hint": "Noma'lum qo'shiluvchini topish uchun yig'indidan ma'lum qo'shiluvchi ayiriladi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$900 - x = 372$ tenglamani yeching.",
+        "answer": "$x = 528$",
+        "hint": "Noma'lum ayriluvchini topish uchun kamayuvchidan ayirma ayiriladi.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "Kitobda 320 bet bor. Bobur 145 betini o'qib bo'ldi. Unga yana necha bet qoldi?",
+        "answer": "175 bet",
+        "hint": "Butun betlar sonidan o'qilganini ayiring.",
+        "level": 1
+      }
+    ],
+    "summary": [
+      "Ayirishda sonlar kamayuvchi va ayriluvchi, natija esa ayirma deyiladi.",
+      "Ayirma bilan ayriluvchining yig'indisi kamayuvchiga teng, shu bog'lanish tekshirish uchun ishlatiladi.",
+      "Noma'lum kamayuvchi qo'shish orqali, noma'lum ayriluvchi esa ayirish orqali topiladi."
+    ],
+    "tags": ["ayirish", "tekshirish", "tenglama"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u01-l10"]
+  },
+  {
+    "id": "m05-u01-l12",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Qulay va tezkor qo'shish usullari",
+    "why": "Do'konda 1998 so'mlik va 2997 so'mlik narsani qo'shganda ularni 2000 va 3000 deb olib, so'ng ortiqchasini ayirish hisobni bir necha soniyada tugatadi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Alisher do'konda ikki narsa oldi: biri 748 so'm, ikkinchisi 199 so'm. Kassir hisoblab bo'lguncha Alisher javobni aytdi. U 199 ni 200 deb oldi, 748 ga qo'shdi va 948 chiqdi, so'ng ortiqcha qo'shilgan 1 ni ayirdi. Natija 947. Bunday usul yumaloq songa keltirish deb ataladi va u qo'shish hamda ayirishni ancha tezlashtiradi."
+      },
+      {
+        "type": "theory",
+        "title": "Yumaloq songa keltirish",
+        "text": "Agar qo'shiluvchi yumaloq songa yaqin bo'lsa, avval yumaloq son qo'shiladi, so'ng ortiqcha qo'shilgan miqdor ayiriladi. Ayirishda esa aksincha: yumaloq son ayiriladi, so'ng ortiqcha ayirilgan miqdor qaytarib qo'shiladi. Bundan tashqari, sondan ketma-ket ikki sonni ayirish o'rniga ularning yig'indisini bir marta ayirish mumkin, bu ham hisobni qisqartiradi.",
+        "keyPoint": "Ortiqcha qo'shilgan miqdor ayiriladi, ortiqcha ayirilgan miqdor qo'shiladi."
+      },
+      {
+        "type": "formula",
+        "latex": "$a - b - c = a - (b + c)$",
+        "caption": "$a$ — dastlabki son, $b$ va $c$ — ketma-ket ayirilayotgan sonlar. Ikki marta ayirish o'rniga yig'indini bir marta ayirish mumkin."
+      },
+      {
+        "type": "example",
+        "task": "$1000 - 347 - 153$ ni qulay usulda hisoblang.",
+        "steps": [
+          { "text": "Ketma-ket ayirish o'rniga ayriluvchilarning yig'indisini olamiz.", "latex": "$347 + 153 = 500$" },
+          { "text": "Bir marta ayiramiz.", "latex": "$1000 - 500 = 500$" }
+        ],
+        "answer": "$500$"
+      },
+      {
+        "type": "example",
+        "task": "$586 + 297$ ni yumaloq songa keltirish usuli bilan hisoblang.",
+        "steps": [
+          { "text": "297 ni 300 deb olamiz, ya'ni 3 ta ortiqcha qo'shamiz.", "latex": "$586 + 300 = 886$" },
+          { "text": "Ortiqcha qo'shilgan 3 ni ayiramiz.", "latex": "$886 - 3 = 883$" }
+        ],
+        "answer": "$883$"
+      },
+      {
+        "type": "example",
+        "task": "Do'konda 1250 kg un bor edi. Ertalab 380 kg, kechqurun 445 kg sotildi. Do'konda necha kilogramm un qoldi?",
+        "steps": [
+          { "text": "Sotilgan umumiy miqdorni topamiz.", "latex": "$380 + 445 = 825$" },
+          { "text": "Boshlang'ich miqdordan sotilganini ayiramiz.", "latex": "$1250 - 825 = 425$" }
+        ],
+        "answer": "425 kg"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$586 + 297$ ni hisoblashda o'quvchi $586 + 300 = 886$ deb olib, so'ng $886 + 3 = 889$ deb javob yozadi.",
+        "why": "297 o'rniga 300 qo'shilganda 3 ta ortiqcha qo'shilgan bo'ladi, demak uni ayirish kerak. O'quvchi esa yana qo'shib yubordi va xato ikki barobar bo'ldi. Tekshirish usuli: javob dastlabki qo'shiluvchilarning taxminiy yig'indisiga yaqin bo'lishi kerak, $586 + 297$ esa $900$ dan kichik.",
+        "correct": "$586 + 297 = 886 - 3 = 883$"
+      },
+      {
+        "type": "drill",
+        "question": "$748 + 199$ ni yumaloq songa keltirish usuli bilan hisoblang.",
+        "answer": "$947$",
+        "hint": "199 ni 200 deb oling, so'ng ortiqcha qo'shilgan 1 ni ayiring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$2000 - 618 - 382$ ni qulay usulda hisoblang.",
+        "answer": "$1000$",
+        "hint": "Avval ikkala ayriluvchining yig'indisini toping.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$435 + 298$ ni qulay usulda hisoblang.",
+        "answer": "$733$",
+        "hint": "298 ni 300 deb oling, so'ng 2 ni ayiring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Bir qopda 850 kg, ikkinchisida 675 kg kartoshka bor edi. Ulardan 420 kg sotildi. Necha kilogramm kartoshka qoldi?",
+        "answer": "1105 kg",
+        "hint": "Avval ikki qopdagi umumiy miqdorni toping.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Yumaloq songa keltirishda ortiqcha qo'shilgan miqdor ayiriladi, ortiqcha ayirilgani esa qo'shiladi.",
+      "Ketma-ket ikki sonni ayirish o'rniga ularning yig'indisini bir marta ayirish mumkin.",
+      "Har qanday hisobdan keyin natijani taxminiy baholab tekshirish xatoni tez ochadi."
+    ],
+    "tags": ["ogzaki hisob", "qoshish", "ayirish"],
+    "dtm": false,
+    "estimatedMinutes": 35,
+    "prerequisites": ["m05-u01-l10", "m05-u01-l11"]
+  },
+  {
+    "id": "m05-u02-l01",
+    "unitId": "m05-u02",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Natural sonlarni ko'paytirish va uning xossalari",
+    "why": "Bir qutida 25 ta non bo'lsa va 17 ta mashinaga 4 tadan quti ortilsa, umumiy sonni topishda ko'paytuvchilarni qulay guruhlash hisobni og'zaki bajarish imkonini beradi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Bir nonvoyxonada nonlar qutilarga joylanadi: har bir qutida 25 ta non. Bugun 17 ta mashina keldi va har bir mashinaga 4 tadan quti ortildi. Jami nechta non jo'natildi? Agar ketma-ket hisoblasak, avval 25 ni 17 ga ko'paytirishimiz kerak va bu og'zaki uchun qulay emas. Lekin 25 bilan 4 ni birga olsak 100 chiqadi, keyin 17 ga ko'paytirish esa bir soniyalik ish."
+      },
+      {
+        "type": "theory",
+        "title": "Ko'paytirishning komponentlari va xossalari",
+        "text": "Ko'paytirishda ishtirok etuvchi sonlar ko'paytuvchilar, natija esa ko'paytma deyiladi. O'rin almashtirish xossasiga ko'ra ko'paytuvchilarning tartibi ko'paytmani o'zgartirmaydi. Guruhlash xossasiga ko'ra ko'paytuvchilarni istalgan tarzda qavsga olish mumkin. Taqsimot xossasi esa ko'paytirishni qo'shish bilan bog'laydi: yig'indini songa ko'paytirish uchun har bir qo'shiluvchini alohida ko'paytirib, natijalarni qo'shish kifoya.",
+        "keyPoint": "Taqsimot xossasida ko'paytuvchi qavs ichidagi har bir hadga tarqatiladi."
+      },
+      {
+        "type": "formula",
+        "latex": "$a \\cdot b = b \\cdot a, \\qquad (a \\cdot b) \\cdot c = a \\cdot (b \\cdot c), \\qquad a \\cdot (b + c) = a \\cdot b + a \\cdot c$",
+        "caption": "$a$, $b$, $c$ — ixtiyoriy natural sonlar. Uchinchi tenglik taqsimot xossasi deb ataladi va og'zaki hisobda eng ko'p ishlatiladi."
+      },
+      {
+        "type": "example",
+        "task": "$25 \\cdot 17 \\cdot 4$ ni qulay usulda hisoblang.",
+        "steps": [
+          { "text": "Yumaloq son beradigan ko'paytuvchilarni ajratamiz.", "latex": "$25 \\cdot 4 = 100$" },
+          { "text": "O'rin almashtirish va guruhlash xossalaridan foydalanamiz.", "latex": "$(25 \\cdot 4) \\cdot 17$" },
+          { "text": "Hisoblaymiz.", "latex": "$100 \\cdot 17 = 1700$" }
+        ],
+        "answer": "$1700$"
+      },
+      {
+        "type": "example",
+        "task": "$8 \\cdot 125 \\cdot 6$ ni qulay usulda hisoblang.",
+        "steps": [
+          { "text": "8 va 125 birga ming beradi.", "latex": "$8 \\cdot 125 = 1000$" },
+          { "text": "Qolgan ko'paytuvchiga ko'paytiramiz.", "latex": "$1000 \\cdot 6 = 6000$" }
+        ],
+        "answer": "$6000$"
+      },
+      {
+        "type": "example",
+        "task": "$46 \\cdot 102$ ni taqsimot xossasidan foydalanib hisoblang.",
+        "steps": [
+          { "text": "102 ni qulay qo'shiluvchilarga ajratamiz.", "latex": "$102 = 100 + 2$" },
+          { "text": "Taqsimot xossasini qo'llaymiz.", "latex": "$46 \\cdot 100 + 46 \\cdot 2$" },
+          { "text": "Har bir ko'paytmani hisoblaymiz.", "latex": "$4600 + 92$" },
+          { "text": "Natijalarni qo'shamiz.", "latex": "$4692$" }
+        ],
+        "answer": "$4692$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$5 \\cdot (20 + 3)$ ni hisoblashda o'quvchi $5 \\cdot 20 + 3 = 103$ deb javob yozadi.",
+        "why": "Taqsimot xossasida ko'paytuvchi qavs ichidagi har ikkala hadga ham tarqatilishi kerak, faqat birinchisiga emas. Ikkinchi had ham 5 ga ko'paytirilishi shart. Tekshirish usuli: avval qavs ichini hisoblasak $5 \\cdot 23$ chiqadi va bu $100$ dan sezilarli katta.",
+        "correct": "$5 \\cdot (20 + 3) = 5 \\cdot 20 + 5 \\cdot 3 = 100 + 15 = 115$"
+      },
+      {
+        "type": "drill",
+        "question": "$4 \\cdot 37 \\cdot 25$ ni qulay usulda hisoblang.",
+        "answer": "$3700$",
+        "hint": "$4$ va $25$ birga yuz beradi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$2 \\cdot 96 \\cdot 50$ ni qulay usulda hisoblang.",
+        "answer": "$9600$",
+        "hint": "$2$ va $50$ ni birga oling.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$34 \\cdot 101$ ni taqsimot xossasidan foydalanib hisoblang.",
+        "answer": "$3434$",
+        "hint": "$101 = 100 + 1$ deb yozing.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$7 \\cdot (40 + 6)$ ni taqsimot xossasidan foydalanib hisoblang.",
+        "answer": "$322$",
+        "hint": "7 ni qavs ichidagi ikkala hadga ham ko'paytiring.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Ko'paytirishda sonlar ko'paytuvchilar, natija esa ko'paytma deyiladi.",
+      "Ko'paytuvchilarning tartibi va guruhlanishi ko'paytmani o'zgartirmaydi.",
+      "Taqsimot xossasida ko'paytuvchi qavs ichidagi barcha hadlarga tarqatiladi."
+    ],
+    "tags": ["kopaytirish", "xossalar", "taqsimot"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u01-l10"]
+  },
+  {
+    "id": "m05-u02-l02",
+    "unitId": "m05-u02",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Ustunlab ko'paytirish",
+    "why": "Bir qutida 24 ta daftar bo'lsa va do'konga 35 ta quti keltirilsa, jami sonni og'zaki topib bo'lmaydi va ustunlab ko'paytirish kerak bo'ladi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Do'konga 35 ta quti daftar keltirildi va har bir qutida 24 tadan daftar bor. Sotuvchi jami nechta daftar kelganini bilishi kerak. Bu sonlarni og'zaki ko'paytirish ancha mashaqqatli, chunki ikkala son ham ikki xonali. Bunday holatda ustunlab ko'paytirish ishlatiladi: katta amal bir nechta kichik amalga bo'linadi va har biri alohida bajariladi."
+      },
+      {
+        "type": "theory",
+        "title": "Ustunlab ko'paytirish tartibi",
+        "text": "Sonlar bir-birining tagiga xonalari mos keladigan qilib yoziladi. Pastdagi sonning birlar xonasi yuqoridagi sonning har bir raqamiga ketma-ket ko'paytiriladi va birinchi qator hosil bo'ladi. So'ng pastdagi sonning o'nlar xonasi bilan xuddi shunday ish bajariladi, lekin ikkinchi qator bir xona chapga suriladi. Nihoyat qatorlar qo'shiladi. Surish majburiy, chunki o'nlar xonasidagi raqam aslida o'n barobar katta qiymatni bildiradi.",
+        "keyPoint": "Har bir keyingi qator bir xona chapga suriladi."
+      },
+      {
+        "type": "example",
+        "task": "$346 \\cdot 7$ ni hisoblang.",
+        "steps": [
+          { "text": "Sonni xona qo'shiluvchilariga ajratib tekshirish qulay.", "latex": "$346 = 300 + 40 + 6$" },
+          { "text": "Har bir qismni ko'paytiramiz.", "latex": "$300 \\cdot 7 = 2100, \\ 40 \\cdot 7 = 280, \\ 6 \\cdot 7 = 42$" },
+          { "text": "Natijalarni qo'shamiz.", "latex": "$2100 + 280 + 42 = 2422$" }
+        ],
+        "answer": "$2422$"
+      },
+      {
+        "type": "example",
+        "task": "$253 \\cdot 34$ ni hisoblang.",
+        "steps": [
+          { "text": "Avval birlar xonasiga ko'paytiramiz.", "latex": "$253 \\cdot 4 = 1012$" },
+          { "text": "So'ng o'nlar xonasiga ko'paytiramiz. O'nlar xonasidagi 3 aslida 30 ni bildiradi.", "latex": "$253 \\cdot 30 = 7590$" },
+          { "text": "Ikki qatorni qo'shamiz.", "latex": "$7590 + 1012 = 8602$" }
+        ],
+        "answer": "$8602$"
+      },
+      {
+        "type": "example",
+        "task": "$420 \\cdot 300$ ni hisoblang.",
+        "steps": [
+          { "text": "Nollarni vaqtincha ajratib qo'yamiz.", "latex": "$42 \\cdot 3 = 126$" },
+          { "text": "Ajratilgan nollar sonini sanaymiz: birinchi sonda bitta, ikkinchisida ikkita, jami uchta." },
+          { "text": "Natijaga uchta nol qo'shamiz.", "latex": "$126\\,000$" }
+        ],
+        "answer": "$126\\,000$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$253 \\cdot 34$ ni ustunlab hisoblashda o'quvchi ikkinchi qatorni surmasdan yozadi: $1012$ ostiga $759$ ni to'g'ridan to'g'ri qo'yib qo'shadi va $1771$ deb javob beradi.",
+        "why": "Ikkinchi qator o'nlar xonasiga ko'paytirish natijasi, ya'ni u aslida $253 \\cdot 30 = 7590$ ga teng, $759$ ga emas. Shuning uchun qator bir xona chapga surilishi shart. Tekshirish usuli: taxminiy baho $250 \\cdot 34 = 8500$ atrofida bo'lishi kerak, $1771$ esa bundan bir necha barobar kichik.",
+        "correct": "$253 \\cdot 34 = 7590 + 1012 = 8602$"
+      },
+      {
+        "type": "drill",
+        "question": "$528 \\cdot 6$ ni hisoblang.",
+        "answer": "$3168$",
+        "hint": "Sonni $500 + 28$ ko'rinishida ajratib tekshirish mumkin.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$147 \\cdot 23$ ni hisoblang.",
+        "answer": "$3381$",
+        "hint": "Avval $147 \\cdot 3$, so'ng $147 \\cdot 20$ ni hisoblang va qo'shing.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$60 \\cdot 5000$ ni hisoblang.",
+        "answer": "$300\\,000$",
+        "hint": "Nollarni ajratib $6 \\cdot 5$ ni hisoblang, so'ng nollarni qaytaring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Do'konga 35 ta quti daftar keltirildi. Har bir qutida 24 tadan daftar bor. Jami nechta daftar keltirilgan?",
+        "answer": "840 ta",
+        "hint": "$24 \\cdot 35$ ni ustunlab hisoblang.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Ustunlab ko'paytirishda sonlar xonalari mos keladigan qilib yoziladi.",
+      "Har bir keyingi qator bir xona chapga suriladi, chunki u kattaroq xona birligiga tegishli.",
+      "Nol bilan tugagan sonlarda nollar vaqtincha ajratilib, natijaga qaytariladi."
+    ],
+    "tags": ["ustunlab kopaytirish", "kopaytma"],
+    "dtm": false,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u02-l01"]
+  },
+  {
+    "id": "m05-u02-l03",
+    "unitId": "m05-u02",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Natural sonlarni bo'lish",
+    "why": "45 000 so'mga 15 ta bir xil daftar olinsa, bittasining narxini bilish uchun bo'lish kerak, va natijani ko'paytirish bilan tekshirish mumkin.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Bobur 45 000 so'mga 15 ta bir xil daftar oldi. Uyga kelib bitta daftar qancha turganini bilmoqchi bo'ldi. Buning uchun umumiy summani daftarlar soniga bo'lish kerak. Javob 3000 so'm chiqdi. Bobur natijani tekshirdi: 3000 ni 15 ga ko'paytirsa 45 000 chiqishi kerak. Chindan ham shunday, demak hisob to'g'ri. Bo'lish va ko'paytirish bir-birini shu tariqa nazorat qiladi."
+      },
+      {
+        "type": "theory",
+        "title": "Bo'lishning komponentlari",
+        "text": "Bo'lishda birinchi son bo'linuvchi, ikkinchi son bo'luvchi, natija esa bo'linma deyiladi. Bo'lish ko'paytirishga teskari amal: bo'linmani bo'luvchiga ko'paytirsak, bo'linuvchi hosil bo'ladi. Shu bog'lanish har qanday bo'lishni tekshirish va noma'lum komponentni topish imkonini beradi. Nolni har qanday songa bo'lsak nol chiqadi, lekin hech qanday sonni nolga bo'lib bo'lmaydi.",
+        "keyPoint": "Nolga bo'lish aniqlanmagan, chunki natijani ko'paytirish bilan tiklab bo'lmaydi."
+      },
+      {
+        "type": "formula",
+        "latex": "$a : b = c \\iff c \\cdot b = a, \\qquad b \\neq 0$",
+        "caption": "$a$ — bo'linuvchi, $b$ — bo'luvchi, $c$ — bo'linma. Noma'lum bo'linuvchi $a = c \\cdot b$, noma'lum bo'luvchi esa $b = a : c$ orqali topiladi."
+      },
+      {
+        "type": "example",
+        "task": "$7344 : 8$ ni hisoblang va natijani tekshiring.",
+        "steps": [
+          { "text": "Bo'linuvchini qulay qismlarga ajratamiz.", "latex": "$7344 = 7200 + 144$" },
+          { "text": "Har bir qismni bo'lamiz.", "latex": "$7200 : 8 = 900, \\quad 144 : 8 = 18$" },
+          { "text": "Natijalarni qo'shamiz.", "latex": "$900 + 18 = 918$" },
+          { "text": "Tekshiramiz.", "latex": "$918 \\cdot 8 = 7344$" }
+        ],
+        "answer": "$918$"
+      },
+      {
+        "type": "example",
+        "task": "$x : 12 = 45$ tenglamani yeching.",
+        "steps": [
+          { "text": "Bu yerda noma'lum bo'linuvchi izlanmoqda." },
+          { "text": "Bo'linuvchini topish uchun bo'linmani bo'luvchiga ko'paytiramiz.", "latex": "$x = 45 \\cdot 12$" },
+          { "text": "Hisoblaymiz.", "latex": "$x = 540$" },
+          { "text": "Tekshiramiz.", "latex": "$540 : 12 = 45$" }
+        ],
+        "answer": "$x = 540$"
+      },
+      {
+        "type": "example",
+        "task": "$936 : x = 26$ tenglamani yeching.",
+        "steps": [
+          { "text": "Bu yerda noma'lum bo'luvchi izlanmoqda." },
+          { "text": "Bo'luvchini topish uchun bo'linuvchini bo'linmaga bo'lamiz.", "latex": "$x = 936 : 26$" },
+          { "text": "Hisoblaymiz.", "latex": "$x = 36$" },
+          { "text": "Tekshiramiz.", "latex": "$26 \\cdot 36 = 936$" }
+        ],
+        "answer": "$x = 36$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "O'quvchi $5 : 0$ ni hisoblab, javob nolga teng deb yozadi.",
+        "why": "Bo'lish natijasi ko'paytirish bilan tiklanishi kerak: agar $5 : 0 = 0$ bo'lsa, $0 \\cdot 0 = 5$ bo'lishi kerak edi, lekin nolni istalgan songa ko'paytirsak nol chiqadi. Demak bunday bo'linma umuman mavjud emas. $0 : 5$ esa boshqa masala: bu yerda javob nolga teng, chunki $0 \\cdot 5 = 0$.",
+        "correct": "$5 : 0$ aniqlanmagan, $0 : 5 = 0$."
+      },
+      {
+        "type": "drill",
+        "question": "$5292 : 9$ ni hisoblang va natijani ko'paytirish orqali tekshiring.",
+        "answer": "$588$, tekshiruv: $588 \\cdot 9 = 5292$",
+        "hint": "Bo'linuvchini $4500 + 792$ ko'rinishida ajratib ko'ring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$x : 15 = 32$ tenglamani yeching.",
+        "answer": "$x = 480$",
+        "hint": "Bo'linuvchini topish uchun bo'linmani bo'luvchiga ko'paytiring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$1080 : x = 24$ tenglamani yeching.",
+        "answer": "$x = 45$",
+        "hint": "Bo'luvchini topish uchun bo'linuvchini bo'linmaga bo'ling.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$0 : 17$ va $17 : 0$ ifodalaridan qaysi biri ma'noga ega? Javobingizni izohlang.",
+        "answer": "$0 : 17 = 0$ ma'noga ega, $17 : 0$ esa aniqlanmagan",
+        "hint": "Har bir holatda javobni ko'paytirish orqali tiklashga urinib ko'ring.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Bo'lishda sonlar bo'linuvchi va bo'luvchi, natija esa bo'linma deyiladi.",
+      "Bo'linma bilan bo'luvchining ko'paytmasi bo'linuvchiga teng, shu bog'lanish tekshirish uchun ishlatiladi.",
+      "Nolni songa bo'lish mumkin, lekin sonni nolga bo'lish aniqlanmagan."
+    ],
+    "tags": ["bolish", "tekshirish", "nolga bolish"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u02-l01"]
+  },
+  {
+    "id": "m05-u02-l05",
+    "unitId": "m05-u02",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Qoldiqli bo'lish",
+    "why": "100 ta olmani 8 talik qutilarga joylashtirganda nechta quti to'lishini va nechta olma ortib qolishini bilish uchun qoldiqli bo'lish kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Nodiraning bog'idan 100 ta olma yig'ildi. Ularni sotuvga qo'yish uchun qutilarga joylash kerak va har bir qutiga 8 tadan olma sig'adi. Nodira nechta qutini to'ldira oladi? 8 ni ketma-ket qo'shib borsak, 96 da to'xtaymiz, chunki keyingi qadam 104 ni beradi va bu 100 dan oshib ketadi. Demak 12 ta quti to'ladi va 4 ta olma ortib qoladi. Bu ortib qolgan miqdor qoldiq deb ataladi."
+      },
+      {
+        "type": "theory",
+        "title": "Qoldiqli bo'lish qanday ishlaydi",
+        "text": "Bo'linuvchi bo'luvchiga butunlay bo'linmasa, qoldiqli bo'lish bajariladi. Buning uchun bo'luvchining bo'linuvchidan oshmaydigan eng katta karralisi topiladi. Necha marta olinganini ko'rsatuvchi son to'liqsiz bo'linma, ortib qolgan miqdor esa qoldiq deyiladi. Qoldiq har doim bo'luvchidan kichik bo'lishi shart: agar u bo'luvchiga teng yoki undan katta chiqsa, bo'linmani yana oshirish mumkin edi.",
+        "keyPoint": "Qoldiq har doim bo'luvchidan qat'iy kichik bo'ladi."
+      },
+      {
+        "type": "formula",
+        "latex": "$a = b \\cdot q + r, \\qquad 0 \\le r < b$",
+        "caption": "$a$ — bo'linuvchi, $b$ — bo'luvchi, $q$ — to'liqsiz bo'linma, $r$ — qoldiq. Bu tenglik tekshirish uchun ham ishlatiladi."
+      },
+      {
+        "type": "example",
+        "task": "$47$ ni $6$ ga qoldiqli bo'ling.",
+        "steps": [
+          { "text": "6 ning 47 dan oshmaydigan eng katta karralisini topamiz.", "latex": "$6 \\cdot 7 = 42$" },
+          { "text": "Keyingi karrali oshib ketadi.", "latex": "$6 \\cdot 8 = 48 > 47$" },
+          { "text": "Qoldiqni hisoblaymiz.", "latex": "$47 - 42 = 5$" },
+          { "text": "Tekshiramiz.", "latex": "$6 \\cdot 7 + 5 = 47$" }
+        ],
+        "answer": "To'liqsiz bo'linma $7$, qoldiq $5$"
+      },
+      {
+        "type": "example",
+        "task": "$253$ ni $9$ ga qoldiqli bo'ling.",
+        "steps": [
+          { "text": "9 ning 253 dan oshmaydigan eng katta karralisini izlaymiz.", "latex": "$9 \\cdot 28 = 252$" },
+          { "text": "Keyingi karrali oshib ketadi.", "latex": "$9 \\cdot 29 = 261 > 253$" },
+          { "text": "Qoldiqni hisoblaymiz.", "latex": "$253 - 252 = 1$" },
+          { "text": "Qoldiq bo'luvchidan kichik ekanini tekshiramiz.", "latex": "$1 < 9$" }
+        ],
+        "answer": "To'liqsiz bo'linma $28$, qoldiq $1$"
+      },
+      {
+        "type": "example",
+        "task": "100 ta olma 8 talik qutilarga joylanmoqda. Nechta quti to'liq to'ladi va nechta olma ortib qoladi?",
+        "steps": [
+          { "text": "8 ning 100 dan oshmaydigan eng katta karralisini topamiz.", "latex": "$8 \\cdot 12 = 96$" },
+          { "text": "Qoldiqni hisoblaymiz.", "latex": "$100 - 96 = 4$" },
+          { "text": "Tekshiramiz.", "latex": "$8 \\cdot 12 + 4 = 100$" }
+        ],
+        "answer": "12 ta quti to'ladi, 4 ta olma ortadi"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$47$ ni $6$ ga bo'lishda o'quvchi $6 \\cdot 6 = 36$ da to'xtaydi va javobni to'liqsiz bo'linma $6$, qoldiq $11$ deb yozadi.",
+        "why": "Qoldiq bo'luvchidan kichik bo'lishi shart, bu yerda esa $11 > 6$ chiqdi. Demak qoldiqdan yana bitta bo'luvchi ajratish mumkin edi va bo'linmani bittaga oshirish kerak. Tekshirish qoidasi: agar qoldiq bo'luvchiga teng yoki undan katta chiqsa, bo'linma kam olingan.",
+        "correct": "To'g'ri javob: to'liqsiz bo'linma $7$, qoldiq $5$, chunki $6 \\cdot 7 + 5 = 47$."
+      },
+      {
+        "type": "drill",
+        "question": "$74$ ni $9$ ga qoldiqli bo'ling va natijani tekshiring.",
+        "answer": "Bo'linma $8$, qoldiq $2$, tekshiruv: $9 \\cdot 8 + 2 = 74$",
+        "hint": "9 ning 74 dan oshmaydigan eng katta karralisini toping.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$365$ ni $7$ ga qoldiqli bo'ling.",
+        "answer": "Bo'linma $52$, qoldiq $1$",
+        "hint": "$7 \\cdot 50 = 350$ dan boshlab qidiring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "Natural sonni 5 ga bo'lganda qanday qoldiqlar hosil bo'lishi mumkin? Barchasini yozing.",
+        "answer": "$0$, $1$, $2$, $3$, $4$",
+        "hint": "Qoldiq bo'luvchidan kichik bo'lishi shart.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "200 ta daftar 12 talik to'plamlarga joylanmoqda. Nechta to'liq to'plam hosil bo'ladi va nechta daftar ortadi?",
+        "answer": "16 ta to'plam, 8 ta daftar ortadi",
+        "hint": "$12 \\cdot 16 = 192$ ni hisoblang.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Bo'linuvchi butunlay bo'linmasa, qoldiqli bo'lish bajariladi.",
+      "Bo'linuvchi bo'luvchi bilan to'liqsiz bo'linmaning ko'paytmasi hamda qoldiq yig'indisiga teng.",
+      "Qoldiq har doim bo'luvchidan qat'iy kichik bo'lishi shart."
+    ],
+    "tags": ["qoldiqli bolish", "toliqsiz bolinma"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u02-l03"]
+  },
+  {
+    "id": "m05-u02-l04",
+    "unitId": "m05-u02",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Ustunlab bo'lish",
+    "why": "Fermer 8736 kg bug'doyni 24 ta bir xil qopga teng taqsimlaganda har bir qopga qancha tushishini faqat ustunlab bo'lish orqali topadi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Fermer xo'jaligida 8736 kg bug'doy yig'ildi. Uni 24 ta qopga teng taqsimlash kerak. Bunday katta sonlarni og'zaki bo'lish deyarli imkonsiz. Shu sababli ustunlab bo'lish ishlatiladi: bo'linuvchi chapdan boshlab qismlarga ajratiladi va har bir qism alohida bo'linadi. Katta amal shu tariqa bir necha kichik amalga aylanadi."
+      },
+      {
+        "type": "theory",
+        "title": "Ustunlab bo'lish tartibi",
+        "text": "Bo'linuvchidan chapdan boshlab bo'luvchidan katta bo'lgan eng kichik qism ajratiladi. Bu qism bo'luvchiga bo'linadi va bo'linmaning birinchi raqami yoziladi. So'ng ko'paytma ayirilib, qoldiqqa keyingi raqam tushiriladi va jarayon takrorlanadi. Agar biror qadamda ajratilgan qism bo'luvchidan kichik chiqsa, bo'linmaga nol yozilishi shart va keyingi raqam tushiriladi.",
+        "keyPoint": "Bo'linmada oraliq nolni tushirib qoldirmaslik kerak."
+      },
+      {
+        "type": "example",
+        "task": "$8736 : 24$ ni hisoblang.",
+        "steps": [
+          { "text": "Bo'linuvchini qulay qismlarga ajratamiz.", "latex": "$8736 = 7200 + 1536$" },
+          { "text": "Birinchi qismni bo'lamiz.", "latex": "$7200 : 24 = 300$" },
+          { "text": "Ikkinchi qismni bo'lamiz.", "latex": "$1536 : 24 = 64$" },
+          { "text": "Bo'linmalarni qo'shamiz va tekshiramiz.", "latex": "$300 + 64 = 364, \\quad 24 \\cdot 364 = 8736$" }
+        ],
+        "answer": "$364$"
+      },
+      {
+        "type": "example",
+        "task": "$12\\,075 : 25$ ni hisoblang.",
+        "steps": [
+          { "text": "Bo'linuvchini qismlarga ajratamiz.", "latex": "$12\\,075 = 12\\,000 + 75$" },
+          { "text": "Birinchi qismni bo'lamiz.", "latex": "$12\\,000 : 25 = 480$" },
+          { "text": "Ikkinchi qismni bo'lamiz.", "latex": "$75 : 25 = 3$" },
+          { "text": "Natijalarni qo'shamiz va tekshiramiz.", "latex": "$480 + 3 = 483, \\quad 25 \\cdot 483 = 12\\,075$" }
+        ],
+        "answer": "$483$"
+      },
+      {
+        "type": "example",
+        "task": "$6048 : 12$ ni hisoblang.",
+        "steps": [
+          { "text": "Chapdan 60 ni ajratamiz va bo'lamiz.", "latex": "$60 : 12 = 5$" },
+          { "text": "Qoldiq nolga teng, keyingi raqam 4 tushiriladi. 4 soni 12 dan kichik, shuning uchun bo'linmaga nol yoziladi." },
+          { "text": "Keyingi raqam tushiriladi va 48 hosil bo'ladi.", "latex": "$48 : 12 = 4$" },
+          { "text": "Bo'linmani yig'amiz va tekshiramiz.", "latex": "$504, \\quad 12 \\cdot 504 = 6048$" }
+        ],
+        "answer": "$504$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$6048 : 12$ ni hisoblashda o'quvchi oraliq nolni yozmay, javobni $54$ deb beradi.",
+        "why": "Ajratilgan qism bo'luvchidan kichik chiqqanda bo'linmaga nol yozilishi shart, aks holda qolgan raqamlar bir xona chapga siljib ketadi va natija o'n barobar kichrayadi. Tekshirish usuli: $12 \\cdot 54 = 648$ chiqadi, bu esa $6048$ dan ancha kichik.",
+        "correct": "$6048 : 12 = 504$"
+      },
+      {
+        "type": "drill",
+        "question": "$9576 : 28$ ni hisoblang.",
+        "answer": "$342$",
+        "hint": "$28 \\cdot 300 = 8400$ dan boshlang.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$20\\,300 : 35$ ni hisoblang.",
+        "answer": "$580$",
+        "hint": "$35 \\cdot 500 = 17\\,500$ ni hisoblab, qolganini bo'ling.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$4515 : 15$ ni hisoblang. Bo'linmada oraliq nol borligiga e'tibor bering.",
+        "answer": "$301$",
+        "hint": "$15 \\cdot 300 = 4500$, qolgan $15$ esa yana bir marta bo'linadi.",
+        "level": 3
+      },
+      {
+        "type": "drill",
+        "question": "45 000 so'mga 15 ta bir xil daftar olindi. Bitta daftar necha pul turadi?",
+        "answer": "3000 so'm",
+        "hint": "Umumiy summani daftarlar soniga bo'ling.",
+        "level": 1
+      }
+    ],
+    "summary": [
+      "Ustunlab bo'lishda bo'linuvchi chapdan boshlab qismlarga ajratiladi va har biri alohida bo'linadi.",
+      "Ajratilgan qism bo'luvchidan kichik chiqsa, bo'linmaga nol yozilishi shart.",
+      "Natijani bo'linmani bo'luvchiga ko'paytirish orqali tekshirish kerak."
+    ],
+    "tags": ["ustunlab bolish", "bolinma"],
+    "dtm": false,
+    "estimatedMinutes": 45,
+    "prerequisites": ["m05-u02-l03", "m05-u02-l02"]
+  },
+  {
+    "id": "m05-u02-l09",
+    "unitId": "m05-u02",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Amallar tartibi",
+    "why": "Do'konda 3 ta non 8000 so'mdan va 2 kg olma 15 000 so'mdan olinsa, umumiy summa bitta ifoda bilan yoziladi va uni to'g'ri hisoblash uchun amallar tartibini bilish kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Alisher do'konda 3 ta non oldi, har biri 8000 so'mdan, va 2 kg olma oldi, har biri 15 000 so'mdan. Umumiy summani u bitta ifoda bilan yozdi. Agar amallarni chapdan o'ngga ketma-ket bajarsa, natija butunlay boshqa chiqadi. To'g'ri javob olish uchun qaysi amal avval bajarilishi kerakligini belgilovchi qat'iy tartib mavjud va bu tartib barcha uchun bir xil."
+      },
+      {
+        "type": "theory",
+        "title": "Amallar bajarilish tartibi",
+        "text": "Ifodadagi amallar to'rt bosqichda bajariladi. Birinchi bosqich qavs ichidagi amallar. Ikkinchi bosqich darajaga ko'tarish. Uchinchi bosqich ko'paytirish va bo'lish. To'rtinchi bosqich qo'shish va ayirish. Bir xil bosqichdagi amallar chapdan o'ngga qarab ketma-ket bajariladi. Aynan shu oxirgi qoida ko'p xatolarning oldini oladi, chunki ko'paytirish bo'lishdan ustun emas.",
+        "keyPoint": "Bir xil bosqichdagi amallar chapdan o'ngga bajariladi."
+      },
+      {
+        "type": "example",
+        "task": "$36 + 4 \\cdot 15 - 20 : 5$ ifodaning qiymatini toping.",
+        "steps": [
+          { "text": "Qavs va daraja yo'q, shuning uchun ko'paytirish va bo'lishdan boshlaymiz.", "latex": "$4 \\cdot 15 = 60$" },
+          { "text": "Bo'lishni bajaramiz.", "latex": "$20 : 5 = 4$" },
+          { "text": "Ifodani soddalashtiramiz.", "latex": "$36 + 60 - 4$" },
+          { "text": "Qo'shish va ayirishni chapdan o'ngga bajaramiz.", "latex": "$96 - 4 = 92$" }
+        ],
+        "answer": "$92$"
+      },
+      {
+        "type": "example",
+        "task": "$(48 - 12) : 6 + 3^2$ ifodaning qiymatini toping.",
+        "steps": [
+          { "text": "Avval qavs ichidagi amal.", "latex": "$48 - 12 = 36$" },
+          { "text": "So'ng darajaga ko'tarish.", "latex": "$3^2 = 9$" },
+          { "text": "Keyin bo'lish.", "latex": "$36 : 6 = 6$" },
+          { "text": "Oxirida qo'shish.", "latex": "$6 + 9 = 15$" }
+        ],
+        "answer": "$15$"
+      },
+      {
+        "type": "example",
+        "task": "$120 : (2 \\cdot 3) \\cdot 4$ ifodaning qiymatini toping.",
+        "steps": [
+          { "text": "Qavs ichidagi amalni bajaramiz.", "latex": "$2 \\cdot 3 = 6$" },
+          { "text": "Qolgan bo'lish va ko'paytirish bir bosqichda, shuning uchun chapdan o'ngga bajariladi.", "latex": "$120 : 6 = 20$" },
+          { "text": "Keyingi amal.", "latex": "$20 \\cdot 4 = 80$" }
+        ],
+        "answer": "$80$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$120 : 2 \\cdot 3$ ifodani hisoblashda o'quvchi avval ko'paytirishni bajarib, $120 : 6 = 20$ deb javob yozadi.",
+        "why": "Ko'paytirish va bo'lish bir xil bosqichda turadi, shuning uchun ular chapdan o'ngga bajariladi va ko'paytirish bo'lishdan ustun emas. Bu yerda avval $120 : 2 = 60$, so'ng $60 \\cdot 3 = 180$ bo'ladi. Agar ko'paytirish avval bajarilishi kerak bo'lganda, shart qavs bilan yozilar edi.",
+        "correct": "$120 : 2 \\cdot 3 = 60 \\cdot 3 = 180$"
+      },
+      {
+        "type": "drill",
+        "question": "$25 + 6 \\cdot 8 - 30 : 3$ ifodaning qiymatini toping.",
+        "answer": "$63$",
+        "hint": "Avval ko'paytirish va bo'lishni bajaring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$(72 - 24) : 8 + 4^2$ ifodaning qiymatini toping.",
+        "answer": "$22$",
+        "hint": "Qavs, so'ng daraja, so'ng bo'lish, oxirida qo'shish.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$96 : 4 \\cdot 2$ ifodaning qiymatini toping.",
+        "answer": "$48$",
+        "hint": "Bo'lish va ko'paytirish chapdan o'ngga bajariladi.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$5^2 + (18 - 3 \\cdot 4)$ ifodaning qiymatini toping.",
+        "answer": "$31$",
+        "hint": "Qavs ichida ham amallar tartibi saqlanadi: avval ko'paytirish.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Amallar to'rt bosqichda bajariladi: qavs, daraja, ko'paytirish va bo'lish, qo'shish va ayirish.",
+      "Bir xil bosqichdagi amallar chapdan o'ngga qarab ketma-ket bajariladi.",
+      "Qavs ichida ham xuddi shu tartib saqlanadi."
+    ],
+    "tags": ["amallar tartibi", "ifoda"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u02-l01", "m05-u02-l03"]
+  },
+  {
+    "id": "m05-u02-l11",
+    "unitId": "m05-u02",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Sonning kvadrati va kubi",
+    "why": "Tomoni 7 metr bo'lgan kvadrat hovlining yuzasini yozishda 7 ni ikki marta ko'paytirish o'rniga qisqa daraja yozuvi ishlatiladi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Boburning hovlisi kvadrat shaklida va uning tomoni 7 metr. Hovli yuzasini topish uchun 7 ni 7 ga ko'paytirish kerak. Agar hovli o'rniga kub shaklidagi quti bo'lsa, hajmni topish uchun qirrani uch marta ko'paytirish kerak bo'ladi. Bir xil sonni qayta-qayta ko'paytirish tez-tez uchraydigan holat, shuning uchun matematikada buni qisqa yozadigan maxsus belgi o'ylab topilgan."
+      },
+      {
+        "type": "theory",
+        "title": "Daraja va uning qismlari",
+        "text": "Bir xil ko'paytuvchilarning ko'paytmasi daraja deb ataladi. Takrorlanayotgan son asos, uning necha marta takrorlanishini ko'rsatuvchi son esa ko'rsatkich deyiladi. Ikkinchi daraja sonning kvadrati, uchinchi daraja esa kubi deb ataladi. Bu nomlar geometriyadan kelgan: kvadrat yuzasi tomonning ikkinchi darajasiga, kub hajmi esa qirraning uchinchi darajasiga teng. Birinchi daraja sonning o'ziga teng.",
+        "keyPoint": "Ko'rsatkich asos necha marta ko'paytuvchi sifatida takrorlanishini bildiradi."
+      },
+      {
+        "type": "formula",
+        "latex": "$a^n = \\underbrace{a \\cdot a \\cdot \\ldots \\cdot a}_{n \\text{ ta}}, \\qquad a^2 = a \\cdot a, \\qquad a^3 = a \\cdot a \\cdot a$",
+        "caption": "$a$ — asos, $n$ — ko'rsatkich. $a^2$ sonning kvadrati, $a^3$ esa sonning kubi deb o'qiladi."
+      },
+      {
+        "type": "example",
+        "task": "$6^2$ va $6^3$ ni hisoblang.",
+        "steps": [
+          { "text": "Kvadratni hisoblaymiz: asos ikki marta takrorlanadi.", "latex": "$6^2 = 6 \\cdot 6 = 36$" },
+          { "text": "Kubni hisoblaymiz: asos uch marta takrorlanadi.", "latex": "$6^3 = 6 \\cdot 6 \\cdot 6$" },
+          { "text": "Bosqichma-bosqich ko'paytiramiz.", "latex": "$36 \\cdot 6 = 216$" }
+        ],
+        "answer": "$6^2 = 36$, $6^3 = 216$"
+      },
+      {
+        "type": "example",
+        "task": "$2^4 + 3^2$ ifodaning qiymatini toping.",
+        "steps": [
+          { "text": "Birinchi darajani hisoblaymiz.", "latex": "$2^4 = 2 \\cdot 2 \\cdot 2 \\cdot 2 = 16$" },
+          { "text": "Ikkinchi darajani hisoblaymiz.", "latex": "$3^2 = 9$" },
+          { "text": "Natijalarni qo'shamiz.", "latex": "$16 + 9 = 25$" }
+        ],
+        "answer": "$25$"
+      },
+      {
+        "type": "example",
+        "task": "Kvadratning tomoni 7 m, kubning qirrasi esa 4 sm. Kvadrat yuzasini va kub hajmini toping.",
+        "steps": [
+          { "text": "Kvadrat yuzasi tomonning ikkinchi darajasiga teng.", "latex": "$S = 7^2 = 49$" },
+          { "text": "Kub hajmi qirraning uchinchi darajasiga teng.", "latex": "$V = 4^3 = 4 \\cdot 4 \\cdot 4$" },
+          { "text": "Hisoblaymiz.", "latex": "$V = 64$" }
+        ],
+        "answer": "Yuza $49$ m$^2$, hajm $64$ sm$^3$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$3^4$ ni hisoblashda o'quvchi asosni ko'rsatkichga ko'paytirib, $3 \\cdot 4 = 12$ deb javob yozadi.",
+        "why": "Ko'rsatkich ko'paytuvchi emas, u faqat asos necha marta takrorlanishini bildiradi. $3^4$ da uchta emas, to'rtta uchlik ko'paytiriladi. Farq juda katta bo'lib chiqadi: to'g'ri javob $81$, xato javob esa $12$.",
+        "correct": "$3^4 = 3 \\cdot 3 \\cdot 3 \\cdot 3 = 81$"
+      },
+      {
+        "type": "drill",
+        "question": "$9^2$ ni hisoblang.",
+        "answer": "$81$",
+        "hint": "Asosni ikki marta ko'paytiring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$5^3$ ni hisoblang.",
+        "answer": "$125$",
+        "hint": "Avval $5 \\cdot 5$ ni, so'ng natijani yana 5 ga ko'paytiring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$10^4$ ni hisoblang va natijada nechta nol borligini ayting.",
+        "answer": "$10\\,000$, to'rtta nol",
+        "hint": "O'n sonining darajasida ko'rsatkich nollar soniga teng bo'ladi.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$4^2 + 2^3$ ifodaning qiymatini toping.",
+        "answer": "$24$",
+        "hint": "Har bir darajani alohida hisoblang, so'ng qo'shing.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Bir xil ko'paytuvchilarning ko'paytmasi daraja deb ataladi.",
+      "Asos takrorlanayotgan sonni, ko'rsatkich esa uning necha marta takrorlanishini bildiradi.",
+      "Ikkinchi daraja sonning kvadrati, uchinchi daraja esa kubi deb ataladi."
+    ],
+    "tags": ["daraja", "kvadrat", "kub"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u02-l01"]
+  },
+  {
+    "id": "m05-u03-l01",
+    "unitId": "m05-u03",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Matnli masala yechish bosqichlari",
+    "why": "Masala shartida berilgan sonlarni ko'r-ko'rona qo'shish o'rniga, savolga aynan nima so'ralayotganini aniqlash to'g'ri amalni tanlashga olib keladi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Dilnoza masalani o'qidi va darrov ikkita sonni ko'rdi. U ularni qo'shdi va javob yozdi, lekin javob noto'g'ri chiqdi. Sababi oddiy: masalada nima so'ralayotganini aniqlamay turib amal tanlagan. Matnli masalada eng muhim ish hisoblash emas, balki shartni tushunish va qaysi amal keraklidigini aniqlashdir. Buning uchun aniq tartib mavjud."
+      },
+      {
+        "type": "theory",
+        "title": "Masala yechishning to'rt bosqichi",
+        "text": "Birinchi bosqich: shartni oxirigacha o'qib, nima berilganini va nima so'ralayotganini alohida yozib olish. Ikkinchi bosqich: berilganlar bilan so'ralayotgan miqdor orasidagi bog'lanishni aniqlash va kerakli amalni tanlash. Uchinchi bosqich: hisoblashni bajarish, kerak bo'lsa oraliq natijalar orqali. To'rtinchi bosqich: javobni shart bilan solishtirib tekshirish va aynan so'ralgan savolga javob berish.",
+        "keyPoint": "Oraliq natija javob emas, javob faqat so'ralgan savolga beriladi."
+      },
+      {
+        "type": "example",
+        "task": "Avtobus avval 3 soat davomida soatiga 65 km, so'ng 2 soat davomida soatiga 80 km tezlik bilan yurdi. Avtobus jami necha kilometr yo'l bosdi?",
+        "steps": [
+          { "text": "So'ralayotgani umumiy masofa. Demak har bir qismdagi masofani alohida topib qo'shish kerak." },
+          { "text": "Birinchi qismdagi masofani topamiz.", "latex": "$65 \\cdot 3 = 195$" },
+          { "text": "Ikkinchi qismdagi masofani topamiz.", "latex": "$80 \\cdot 2 = 160$" },
+          { "text": "Umumiy masofani hisoblaymiz.", "latex": "$195 + 160 = 355$" }
+        ],
+        "answer": "355 km"
+      },
+      {
+        "type": "example",
+        "task": "Nodira 6 ta non oldi, har biri 8500 so'mdan, va 2 kg go'sht oldi, har bir kilogrammi 95 000 so'mdan. Nodira jami qancha pul to'ladi?",
+        "steps": [
+          { "text": "Nonlar uchun to'langan pulni topamiz.", "latex": "$8500 \\cdot 6 = 51\\,000$" },
+          { "text": "Go'sht uchun to'langan pulni topamiz.", "latex": "$95\\,000 \\cdot 2 = 190\\,000$" },
+          { "text": "Umumiy summani hisoblaymiz.", "latex": "$51\\,000 + 190\\,000 = 241\\,000$" }
+        ],
+        "answer": "241 000 so'm"
+      },
+      {
+        "type": "example",
+        "task": "Bir qutiga 18 ta ruchka joylanadi. 504 ta ruchka nechta qutiga joylashadi?",
+        "steps": [
+          { "text": "So'ralayotgani qutilar soni. Umumiy miqdor bir qutidagi miqdorga bo'linadi." },
+          { "text": "Bo'lishni bajaramiz.", "latex": "$504 : 18 = 28$" },
+          { "text": "Tekshiramiz.", "latex": "$18 \\cdot 28 = 504$" }
+        ],
+        "answer": "28 ta quti"
+      },
+      {
+        "type": "mistake",
+        "wrong": "\"Alisher 250 000 so'm bilan bordi va 45 000 so'mdan 3 ta kitob oldi. Unga qancha pul qoldi?\" degan masalada o'quvchi $45\\,000 \\cdot 3 = 135\\,000$ ni hisoblab, javobni 135 000 so'm deb yozadi.",
+        "why": "135 000 so'm bu sarflangan pul, ya'ni oraliq natija. Masalada esa qolgan pul so'ralgan, demak yana bitta amal kerak. Bunday xatoni oldini olish uchun javob yozishdan oldin masalaning savolini qayta o'qib chiqish kerak.",
+        "correct": "$250\\,000 - 135\\,000 = 115\\,000$, ya'ni 115 000 so'm qoladi."
+      },
+      {
+        "type": "drill",
+        "question": "Avtobus avval 4 soat davomida soatiga 70 km, so'ng 3 soat davomida soatiga 90 km tezlik bilan yurdi. Jami necha kilometr yo'l bosdi?",
+        "answer": "550 km",
+        "hint": "Har bir qismdagi masofani alohida toping, so'ng qo'shing.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "Omborga 45 ta quti keltirildi, har birida 36 tadan olma bor. Jami nechta olma keltirilgan?",
+        "answer": "1620 ta",
+        "hint": "Qutilar sonini bir qutidagi olmalar soniga ko'paytiring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "2400 ta g'isht 8 ta mashinaga teng taqsimlandi. Bitta mashinada nechta g'isht bor?",
+        "answer": "300 ta",
+        "hint": "Umumiy miqdorni mashinalar soniga bo'ling.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Dilnoza 250 000 so'm bilan do'konga bordi va 45 000 so'mdan 3 ta kitob oldi. Unga qancha pul qoldi?",
+        "answer": "115 000 so'm",
+        "hint": "Avval sarflangan pulni toping, so'ng uni boshlang'ich summadan ayiring.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Matnli masalada avval nima berilgani va nima so'ralayotgani aniq ajratib olinadi.",
+      "Amal shartdagi bog'lanishga qarab tanlanadi, sonlarning tartibiga qarab emas.",
+      "Oraliq natijani javob deb yozmaslik uchun javobdan oldin masala savoli qayta o'qiladi."
+    ],
+    "tags": ["matnli masala", "yechish usuli"],
+    "dtm": true,
+    "estimatedMinutes": 45,
+    "prerequisites": ["m05-u02-l01", "m05-u02-l03"]
+  },
+  {
+    "id": "m05-u02-l17",
+    "unitId": "m05-u02",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "II bobni takrorlash",
+    "why": "Nazorat ishida bitta ifodada daraja, ko'paytirish, bo'lish va qavs birga uchraydi, shuning uchun barcha qoidalarni birga ishlata olish kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Bobur bo'lim bo'yicha nazorat ishiga tayyorlanmoqda. Har bir amalni alohida o'rgangan, lekin nazorat ishidagi ifodalarda ular birga keladi: bitta ifodada ham daraja, ham qavs, ham ko'paytirish bo'lishi mumkin. Bugungi dars yangi mavzu emas, balki o'rganilgan barcha qoidalarni bitta masalada birga ishlatib ko'rishga bag'ishlanadi."
+      },
+      {
+        "type": "theory",
+        "title": "Bo'limning asosiy qoidalari",
+        "text": "Bo'limda beshta asosiy qoida o'rganildi. Birinchisi: qo'shiluvchi va ko'paytuvchilarni qulay guruhlash hisobni tezlashtiradi. Ikkinchisi: ayirish qo'shish bilan, bo'lish esa ko'paytirish bilan tekshiriladi. Uchinchisi: qoldiq har doim bo'luvchidan kichik. To'rtinchisi: amallar qavs, daraja, ko'paytirish va bo'lish, qo'shish va ayirish tartibida bajariladi. Beshinchisi: matnli masalada javob aynan so'ralgan savolga beriladi.",
+        "keyPoint": "Har bir hisobdan keyin natijani tekshirish odat bo'lishi kerak."
+      },
+      {
+        "type": "example",
+        "task": "$340 \\cdot 25 - 1200 : 6$ ifodaning qiymatini toping.",
+        "steps": [
+          { "text": "Avval ko'paytirishni bajaramiz.", "latex": "$340 \\cdot 25 = 8500$" },
+          { "text": "So'ng bo'lishni bajaramiz.", "latex": "$1200 : 6 = 200$" },
+          { "text": "Oxirida ayirishni bajaramiz.", "latex": "$8500 - 200 = 8300$" }
+        ],
+        "answer": "$8300$"
+      },
+      {
+        "type": "example",
+        "task": "$2^5 - (144 : 12 + 8)$ ifodaning qiymatini toping.",
+        "steps": [
+          { "text": "Qavs ichida avval bo'lish bajariladi.", "latex": "$144 : 12 = 12$" },
+          { "text": "Qavs ichidagi qo'shish.", "latex": "$12 + 8 = 20$" },
+          { "text": "Darajani hisoblaymiz.", "latex": "$2^5 = 32$" },
+          { "text": "Ayirishni bajaramiz.", "latex": "$32 - 20 = 12$" }
+        ],
+        "answer": "$12$"
+      },
+      {
+        "type": "example",
+        "task": "$987$ ni $25$ ga qoldiqli bo'ling va natijani tekshiring.",
+        "steps": [
+          { "text": "25 ning 987 dan oshmaydigan eng katta karralisini izlaymiz.", "latex": "$25 \\cdot 39 = 975$" },
+          { "text": "Keyingi karrali oshib ketadi.", "latex": "$25 \\cdot 40 = 1000 > 987$" },
+          { "text": "Qoldiqni hisoblaymiz.", "latex": "$987 - 975 = 12$" },
+          { "text": "Tekshiramiz.", "latex": "$25 \\cdot 39 + 12 = 987$" }
+        ],
+        "answer": "To'liqsiz bo'linma $39$, qoldiq $12$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$2 + 3^2 \\cdot 4$ ifodani hisoblashda o'quvchi $2 + 3 = 5$, so'ng $5^2 = 25$, so'ng $25 \\cdot 4 = 100$ deb hisoblaydi.",
+        "why": "Ko'rsatkich faqat o'zidan oldingi songa tegishli, butun ifodaga emas. Bu yerda daraja faqat 3 ga tegishli. To'g'ri tartib: avval daraja, so'ng ko'paytirish, oxirida qo'shish. Agar daraja butun yig'indiga tegishli bo'lishi kerak bo'lganda, shart qavs bilan yozilar edi.",
+        "correct": "$2 + 3^2 \\cdot 4 = 2 + 9 \\cdot 4 = 2 + 36 = 38$"
+      },
+      {
+        "type": "drill",
+        "question": "$18 + 7 \\cdot 12 - 90 : 9$ ifodaning qiymatini toping.",
+        "answer": "$92$",
+        "hint": "Avval ko'paytirish va bo'lishni bajaring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$25 \\cdot 4 \\cdot 17$ ni qulay usulda hisoblang.",
+        "answer": "$1700$",
+        "hint": "$25$ va $4$ birga yuz beradi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$4872 : 24$ ni hisoblang va natijani ko'paytirish orqali tekshiring.",
+        "answer": "$203$, tekshiruv: $24 \\cdot 203 = 4872$",
+        "hint": "$24 \\cdot 200 = 4800$ dan boshlang, bo'linmada oraliq nol borligiga e'tibor bering.",
+        "level": 3
+      },
+      {
+        "type": "drill",
+        "question": "500 ta daftar 24 talik to'plamlarga joylanmoqda. Nechta to'liq to'plam hosil bo'ladi va nechta daftar ortadi?",
+        "answer": "20 ta to'plam, 20 ta daftar ortadi",
+        "hint": "$24 \\cdot 20 = 480$ ni hisoblang.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Ko'paytirish va bo'lishni ustunlab bajargandan keyin natijani teskari amal bilan tekshirish kerak.",
+      "Amallar qavs, daraja, ko'paytirish va bo'lish, qo'shish va ayirish tartibida bajariladi.",
+      "Ko'rsatkich faqat o'zidan oldingi songa tegishli, butun ifodaga emas."
+    ],
+    "tags": ["takrorlash", "mashq", "amallar"],
+    "dtm": true,
+    "estimatedMinutes": 45,
+    "prerequisites": [
+      "m05-u02-l04",
+      "m05-u02-l05",
+      "m05-u02-l09",
+      "m05-u02-l11"
+    ]
+  }
+]

@@ -1,0 +1,162 @@
+{
+  "grade": 5,
+  "title": "Matematika, 5-sinf",
+  "units": [
+    {
+      "id": "m05-u01",
+      "title": "I bob. Natural sonlarni qo'shish va ayirish",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m05-u01-l01", "title": "Natural sonlar va nol", "dtm": false },
+        { "id": "m05-u01-l02", "title": "Ko'p xonali sonlar. Xona va sinflar", "dtm": true },
+        { "id": "m05-u01-l03", "title": "Million va milliard", "dtm": true },
+        { "id": "m05-u01-l04", "title": "Rim raqamlari", "dtm": false },
+        { "id": "m05-u01-l05", "title": "Sodda geometrik shakllar: nuqta, kesma, to'g'ri chiziq", "dtm": true },
+        { "id": "m05-u01-l06", "title": "Uchburchak va to'rtburchak", "dtm": true },
+        { "id": "m05-u01-l07", "title": "Shkalalar va sonlar nuri", "dtm": true },
+        { "id": "m05-u01-l08", "title": "Natural sonlarni taqqoslash", "dtm": true },
+        { "id": "m05-u01-l09", "title": "Natural sonlarni yaxlitlash", "dtm": true },
+        { "id": "m05-u01-l10", "title": "Natural sonlarni qo'shish va uning xossalari", "dtm": true },
+        { "id": "m05-u01-l11", "title": "Natural sonlarni ayirish", "dtm": true },
+        { "id": "m05-u01-l12", "title": "Qulay va tezkor qo'shish usullari", "dtm": false },
+        { "id": "m05-u01-l13", "title": "Sonli va harfiy ifodalar", "dtm": true },
+        { "id": "m05-u01-l14", "title": "Matematik masala va tenglamalar", "dtm": true },
+        { "id": "m05-u01-l15", "title": "I bobni takrorlash", "dtm": true }
+      ]
+    },
+    {
+      "id": "m05-u02",
+      "title": "II bob. Natural sonlarni ko'paytirish va bo'lish",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m05-u02-l01", "title": "Natural sonlarni ko'paytirish va uning xossalari", "dtm": true },
+        { "id": "m05-u02-l02", "title": "Ustunlab ko'paytirish", "dtm": false },
+        { "id": "m05-u02-l03", "title": "Natural sonlarni bo'lish", "dtm": true },
+        { "id": "m05-u02-l04", "title": "Ustunlab bo'lish", "dtm": false },
+        { "id": "m05-u02-l05", "title": "Qoldiqli bo'lish", "dtm": true },
+        { "id": "m05-u02-l06", "title": "Qulay va tezkor hisoblash usullari", "dtm": true },
+        { "id": "m05-u02-l07", "title": "Ifodalarni soddalashtirish", "dtm": true },
+        { "id": "m05-u02-l08", "title": "Noma'lum ko'paytuvchi va bo'luvchini topish", "dtm": true },
+        { "id": "m05-u02-l09", "title": "Amallar tartibi", "dtm": true },
+        { "id": "m05-u02-l10", "title": "To'rt amalga doir hisoblash algoritmlari", "dtm": true },
+        { "id": "m05-u02-l11", "title": "Sonning kvadrati va kubi", "dtm": true },
+        { "id": "m05-u02-l12", "title": "Sonning darajasi", "dtm": true },
+        { "id": "m05-u02-l13", "title": "Ma'lumotlar bilan ishlash: jadvallar", "dtm": true },
+        { "id": "m05-u02-l14", "title": "Diagrammalarni o'qish va tuzish", "dtm": true },
+        { "id": "m05-u02-l15", "title": "Murakkabroq masalalarni yechish", "dtm": true },
+        { "id": "m05-u02-l16", "title": "Loyiha ishi: ma'lumot to'plash va tahlil qilish", "dtm": false },
+        { "id": "m05-u02-l17", "title": "II bobni takrorlash", "dtm": true }
+      ]
+    },
+    {
+      "id": "m05-u03",
+      "title": "III bob. Matnli masalalarni yechish",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m05-u03-l01", "title": "Matnli masala yechish bosqichlari", "dtm": true },
+        { "id": "m05-u03-l02", "title": "Qismlarga doir masalalar", "dtm": true },
+        { "id": "m05-u03-l03", "title": "Geometrik mazmundagi matnli masalalar", "dtm": true },
+        { "id": "m05-u03-l04", "title": "Harakatga doir masalalar", "dtm": true },
+        { "id": "m05-u03-l05", "title": "Qarama-qarshi harakat", "dtm": true },
+        { "id": "m05-u03-l06", "title": "Bir yo'nalishdagi harakat va quvib yetish", "dtm": true },
+        { "id": "m05-u03-l07", "title": "Narx, miqdor va qiymatga doir masalalar", "dtm": true },
+        { "id": "m05-u03-l08", "title": "Iqtisodiy mazmundagi masalalar", "dtm": true },
+        { "id": "m05-u03-l09", "title": "Bajarilgan ishga doir masalalar", "dtm": true },
+        { "id": "m05-u03-l10", "title": "To'g'ri va teskari masalalar", "dtm": true },
+        { "id": "m05-u03-l11", "title": "III bobni takrorlash", "dtm": true }
+      ]
+    },
+    {
+      "id": "m05-u04",
+      "title": "IV bob. Geometrik shakllar",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m05-u04-l01", "title": "Burchak va uning elementlari", "dtm": true },
+        { "id": "m05-u04-l02", "title": "Burchakni transportir bilan o'lchash", "dtm": false },
+        { "id": "m05-u04-l03", "title": "Burchak turlari: o'tkir, to'g'ri, o'tmas, yoyiq", "dtm": true },
+        { "id": "m05-u04-l04", "title": "Burchak bissektrisasi", "dtm": true },
+        { "id": "m05-u04-l05", "title": "Parallel to'g'ri chiziqlar", "dtm": true },
+        { "id": "m05-u04-l06", "title": "Perpendikulyar to'g'ri chiziqlar", "dtm": true },
+        { "id": "m05-u04-l07", "title": "Siniq chiziq va uning uzunligi", "dtm": true },
+        { "id": "m05-u04-l08", "title": "Ko'pburchak perimetri", "dtm": true },
+        { "id": "m05-u04-l09", "title": "To'g'ri to'rtburchakning yuzi", "dtm": true },
+        { "id": "m05-u04-l10", "title": "IV bobni takrorlash", "dtm": true }
+      ]
+    },
+    {
+      "id": "m05-u05",
+      "title": "V bob. Ulushlar va oddiy kasrlar",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m05-u05-l01", "title": "Ulush tushunchasi", "dtm": false },
+        { "id": "m05-u05-l02", "title": "Oddiy kasr. Surat va maxraj", "dtm": true },
+        { "id": "m05-u05-l03", "title": "Kasrlarni sonlar nurida tasvirlash", "dtm": false },
+        { "id": "m05-u05-l04", "title": "Bir xil maxrajli kasrlarni taqqoslash", "dtm": true },
+        { "id": "m05-u05-l05", "title": "To'g'ri va noto'g'ri kasrlar", "dtm": true },
+        { "id": "m05-u05-l06", "title": "Aralash son. Butun qismni ajratish", "dtm": true },
+        { "id": "m05-u05-l07", "title": "Bir xil maxrajli kasrlarni qo'shish va ayirish", "dtm": true },
+        { "id": "m05-u05-l08", "title": "Aralash sonlarni qo'shish va ayirish", "dtm": true },
+        { "id": "m05-u05-l09", "title": "Sonning kasr qismini topish", "dtm": true },
+        { "id": "m05-u05-l10", "title": "Kasr qismi bo'yicha sonni topish", "dtm": true },
+        { "id": "m05-u05-l11", "title": "Kasrga doir matnli masalalar", "dtm": true },
+        { "id": "m05-u05-l12", "title": "V bobni takrorlash", "dtm": true }
+      ]
+    },
+    {
+      "id": "m05-u06",
+      "title": "VI bob. O'nli kasrlar",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m05-u06-l01", "title": "O'nli kasr tushunchasi va yozilishi", "dtm": true },
+        { "id": "m05-u06-l02", "title": "O'nli kasrni sonlar nurida tasvirlash", "dtm": false },
+        { "id": "m05-u06-l03", "title": "O'nli kasrlarni taqqoslash", "dtm": true },
+        { "id": "m05-u06-l04", "title": "O'nli kasrlarni qo'shish", "dtm": true },
+        { "id": "m05-u06-l05", "title": "O'nli kasrlarni ayirish", "dtm": true },
+        { "id": "m05-u06-l06", "title": "O'nli kasrlarni yaxlitlash", "dtm": true },
+        { "id": "m05-u06-l07", "title": "O'nli kasrni natural songa ko'paytirish", "dtm": true },
+        { "id": "m05-u06-l08", "title": "O'nli kasrlarni o'zaro ko'paytirish", "dtm": true },
+        { "id": "m05-u06-l09", "title": "10, 100, 1000 ga ko'paytirish va bo'lish", "dtm": true },
+        { "id": "m05-u06-l10", "title": "O'nli kasrni natural songa bo'lish", "dtm": true },
+        { "id": "m05-u06-l11", "title": "O'nli kasrni o'nli kasrga bo'lish", "dtm": true },
+        { "id": "m05-u06-l12", "title": "Oddiy kasrni o'nli kasrga aylantirish", "dtm": true },
+        { "id": "m05-u06-l13", "title": "O'nli kasrlarga doir matnli masalalar", "dtm": true },
+        { "id": "m05-u06-l14", "title": "VI bobni takrorlash", "dtm": true }
+      ]
+    },
+    {
+      "id": "m05-u07",
+      "title": "VII bob. O'rtacha qiymat va foiz",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m05-u07-l01", "title": "O'rta arifmetik qiymat", "dtm": true },
+        { "id": "m05-u07-l02", "title": "O'rtacha tezlik", "dtm": true },
+        { "id": "m05-u07-l03", "title": "Foiz tushunchasi", "dtm": true },
+        { "id": "m05-u07-l04", "title": "Foizni kasrga, kasrni foizga aylantirish", "dtm": true },
+        { "id": "m05-u07-l05", "title": "Sonning foizini topish", "dtm": true },
+        { "id": "m05-u07-l06", "title": "Foizi bo'yicha sonni topish", "dtm": true },
+        { "id": "m05-u07-l07", "title": "Ikki sonning foizli nisbati", "dtm": true },
+        { "id": "m05-u07-l08", "title": "Chegirma va ustamaga doir masalalar", "dtm": true },
+        { "id": "m05-u07-l09", "title": "Bank foizi haqida boshlang'ich tushuncha", "dtm": true },
+        { "id": "m05-u07-l10", "title": "Doiraviy diagramma va foiz", "dtm": true },
+        { "id": "m05-u07-l11", "title": "Foizga doir aralash masalalar", "dtm": true },
+        { "id": "m05-u07-l12", "title": "VII bobni takrorlash", "dtm": true }
+      ]
+    },
+    {
+      "id": "m05-u08",
+      "title": "VIII bob. Yakuniy takrorlash",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m05-u08-l01", "title": "Natural sonlar va amallar takrori", "dtm": true },
+        { "id": "m05-u08-l02", "title": "Amallar tartibi va daraja takrori", "dtm": true },
+        { "id": "m05-u08-l03", "title": "Ifoda va tenglama takrori", "dtm": true },
+        { "id": "m05-u08-l04", "title": "Matnli masalalar takrori", "dtm": true },
+        { "id": "m05-u08-l05", "title": "Oddiy kasrlar takrori", "dtm": true },
+        { "id": "m05-u08-l06", "title": "O'nli kasrlar takrori", "dtm": true },
+        { "id": "m05-u08-l07", "title": "Foiz takrori", "dtm": true },
+        { "id": "m05-u08-l08", "title": "Geometriya takrori: perimetr va yuza", "dtm": true },
+        { "id": "m05-u08-l09", "title": "Yakuniy nazorat ishiga tayyorgarlik", "dtm": true }
+      ]
+    }
+  ]
+}

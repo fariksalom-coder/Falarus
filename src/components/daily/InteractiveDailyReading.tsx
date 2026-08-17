@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Volume2, X } from 'lucide-react';
 import type { DailyReadingLexeme } from '../../../shared/dailyCourseDay';
 import { normalizeRuWord } from '../../../shared/russianLexemeNormalize';
+import { useAuth } from '../../context/AuthContext';
+import { speakText, stopSpeaking } from '../../utils/speak';
 
 type WordSheetState = {
   wordKey: string;
@@ -43,27 +45,43 @@ function buildLexemeLookup(lexemes: DailyReadingLexeme[]): Map<string, DailyRead
   return map;
 }
 
-function speakRussian(audioRu: string | null | undefined, wordRu: string) {
+/**
+ * TALAFFUZ TEZLIGI — lug'at kartochkalaridagi bilan AYNAN BIR XIL.
+ *
+ * Tezlik server keshining kalitiga kiradi. Boshqa qiymat qo'yilsa, kursning
+ * allaqachon tayyor mingdan ortiq so'zi qaytadan generatsiya qilinardi:
+ * o'quvchi kutardi va har so'z pulga tushardi. Bir xil tezlikda esa matndagi
+ * tanish so'z darhol, keshdan yangraydi.
+ */
+const TALAFFUZ_TEZLIGI = 0.7;
+
+/**
+ * So'zni ovoz bilan o'qiydi.
+ *
+ * Ilgari bu yerda brauzerning `speechSynthesis` ishlatilardi — o'sha ROBOT
+ * ovoz. U qurilmaga qarab butunlay boshqacha yangrardi, ba'zi brauzerlarda
+ * ruscha ovoz umuman yo'q (Linux'da ovozlar ro'yxati bo'sh). Endi lug'at
+ * kartochkalari bilan bitta manba: server ovozi. Server javob bermasa jim
+ * o'tiladi (`zaxira: false`) — tushunarsiz robot talaffuzdan ko'ra jimlik
+ * afzal, chunki o'quvchi noto'g'ri talaffuzni yodlab qolishi mumkin.
+ */
+function speakRussian(audioRu: string | null | undefined, wordRu: string, token: string | null) {
   const trimmed = (audioRu ?? '').trim();
+  const serverdan = () =>
+    void speakText(wordRu, { token, speed: TALAFFUZ_TEZLIGI, zaxira: false });
+
   if (/^https?:\/\//i.test(trimmed)) {
+    // Bazada tayyor yozuv bor — u eng aniq talaffuz, avval shuni chalamiz.
+    stopSpeaking();
     try {
       const el = new Audio(trimmed);
-      void el.play().catch(() => speakTTS(wordRu));
+      void el.play().catch(serverdan);
     } catch {
-      speakTTS(wordRu);
+      serverdan();
     }
     return;
   }
-  speakTTS(wordRu);
-}
-
-function speakTTS(text: string) {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'ru-RU';
-  utterance.rate = 0.9;
-  window.speechSynthesis.speak(utterance);
+  serverdan();
 }
 
 export type InteractiveDailyReadingProps = {
@@ -83,6 +101,7 @@ export function InteractiveDailyReading({
   levelBadge,
   sectionLabel,
 }: InteractiveDailyReadingProps) {
+  const { token } = useAuth();
   const [sheet, setSheet] = useState<WordSheetState | null>(null);
 
   const tokens = useMemo(() => tokenizeText(bodyRu), [bodyRu]);
@@ -97,9 +116,11 @@ export function InteractiveDailyReading({
     return () => window.removeEventListener('keydown', onKey);
   }, [sheet]);
 
+  // Sahifadan chiqilganda ovoz orqadan gapirib qolmasin.
+  useEffect(() => stopSpeaking, []);
+
   const handleSpeak = (lexeme: DailyReadingLexeme | null, surfaceWord: string) => {
-    if (lexeme?.audioRu?.trim()) speakRussian(lexeme.audioRu, surfaceWord);
-    else speakTTS(surfaceWord);
+    speakRussian(lexeme?.audioRu, surfaceWord, token);
   };
 
   const showMeta = Boolean(title || levelBadge || sectionLabel);

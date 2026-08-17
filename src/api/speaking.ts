@@ -9,7 +9,6 @@ function authHeaders(token: string | null): HeadersInit {
 export type SpeakingTask = {
   id: number;
   uz_text: string;
-  ru_correct: string;
   topic: string;
   level: string;
   lesson_id: number | null;
@@ -83,25 +82,40 @@ export async function checkSpeakingAnswer(
   taskId: number,
   userAnswer: string,
   mode: 'text' | 'voice',
-  attempt: number = 1
+  attempt: number = 1,
+  shownAnswer: string = ''
 ): Promise<CheckResult> {
   const res = await fetch(apiUrl('/api/speaking/check'), {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ task_id: taskId, user_answer: userAnswer, mode, attempt }),
+    body: JSON.stringify({
+      task_id: taskId,
+      user_answer: userAnswer,
+      mode,
+      attempt,
+      ...(shownAnswer ? { shown_answer: shownAnswer } : {}),
+    }),
   });
   if (!res.ok) throw new Error(await parseApiError(res, 'Tekshirishda xatolik'));
   return res.json();
 }
 
+/**
+ * Tekshiruvga FAQAT o'zbekcha topshiriq va o'quvchi aytgan gap yuboriladi.
+ * Bazadagi etalon javob (`ru_correct`) endi uzatilmaydi — to'g'ri yoki
+ * xatoligini AI o'zi baholaydi.
+ *
+ * `shownAnswer` — ekranda allaqachon ko'rsatilgan to'g'ri javob. O'quvchi shuni
+ * aynan qaytarsa, server AI'ga bormasdan «to'g'ri» qaytaradi.
+ */
 export async function checkSpeakingPromptAnswer(
   token: string,
   userAnswer: string,
   uzText: string,
-  ruCorrect: string,
   mode: 'text' | 'voice',
   attempt: number = 1,
-  kunlikDayNumber?: number
+  kunlikDayNumber?: number,
+  shownAnswer: string = ''
 ): Promise<CheckResult> {
   const res = await fetch(apiUrl('/api/speaking/check'), {
     method: 'POST',
@@ -109,20 +123,26 @@ export async function checkSpeakingPromptAnswer(
     body: JSON.stringify({
       user_answer: userAnswer,
       uz_text: uzText,
-      ru_correct: ruCorrect,
       mode,
       attempt,
       ...(kunlikDayNumber != null ? { day_number: kunlikDayNumber } : {}),
+      ...(shownAnswer ? { shown_answer: shownAnswer } : {}),
     }),
   });
   if (!res.ok) throw new Error(await parseApiError(res, 'Tekshirishda xatolik'));
   return res.json();
 }
 
+/**
+ * Ovozni matnga o'giradi. `mimeType` — brauzer yozgan format
+ * (`recorder.audioBlob.type`). Uni yubormaslik iPhone'da xatoga olib keladi:
+ * Safari `audio/mp4` yozadi, server esa faylni `.webm` deb belgilardi.
+ */
 export async function transcribeSpeakingAudio(
   token: string,
   audioBase64: string,
-  kunlikDayNumber?: number
+  kunlikDayNumber?: number,
+  mimeType?: string
 ): Promise<string> {
   const res = await fetch(apiUrl('/api/speaking/transcribe'), {
     method: 'POST',
@@ -130,6 +150,7 @@ export async function transcribeSpeakingAudio(
     body: JSON.stringify({
       audio: audioBase64,
       ...(kunlikDayNumber != null ? { day_number: kunlikDayNumber } : {}),
+      ...(mimeType ? { mime: mimeType } : {}),
     }),
   });
   if (!res.ok) throw new Error(await parseApiError(res, "Ovozni tanib bo'lmadi"));

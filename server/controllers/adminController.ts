@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import type { DbClient } from '../types/dbClient';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../middleware/adminAuth';
+import { ADMIN_TOKEN_ROLE, JWT_SECRET } from '../middleware/adminAuth';
 import * as subscriptionService from '../services/subscription.service';
 import {
   getPaymentDisplayLabel,
@@ -45,10 +45,14 @@ async function collectBroadcastRecipientIds(
   const nowIso = new Date().toISOString();
   const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+  // OLTIN A'ZO ommaviy xabarlarga ham kirmaydi.
+  const { data: oltinRows } = await supabase.from('users').select('id').eq('is_golden', true);
+  const oltin = new Set<number>((oltinRows ?? []).map((r) => Number((r as { id: unknown }).id)));
+
   const takeIds = (data: { id: unknown }[] | null | undefined) =>
     (data ?? [])
       .map((r) => Number(r.id))
-      .filter((id) => Number.isFinite(id) && id > 0)
+      .filter((id) => Number.isFinite(id) && id > 0 && !oltin.has(id))
       .slice(0, MAX_BROADCAST_RECIPIENTS);
 
   if (filter === 'subscription_active') {
@@ -161,9 +165,9 @@ export function createAdminController(supabase: DbClient) {
   const HELP_IMAGE_PREFIX = '__image__:';
   const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
   const ADMIN_USERS_SELECT_FULL =
-    'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by';
+    'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by, account_type, is_golden';
   const ADMIN_USERS_SELECT_LEGACY =
-    'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, total_referral_earned, referred_by';
+    'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, total_referral_earned, referred_by, account_type';
 
   function isUndefinedColumnError(error: unknown): boolean {
     const msg = String((error as { message?: unknown })?.message ?? '').toLowerCase();
@@ -210,8 +214,11 @@ export function createAdminController(supabase: DbClient) {
     }
     const ok = await bcrypt.compare(password, (admin as any).password_hash);
     if (!ok) return res.status(401).json({ error: 'Email yoki parol noto\'g\'ri' });
+    // `role` SHART: middleware aynan shu da'voga qarab admin tokenini oddiy
+    // foydalanuvchi tokenidan ajratadi (ikkalasi bir xil sekret bilan
+    // imzolanishi mumkin). Olib tashlansa admin paneli butunlay yopilib qoladi.
     const token = jwt.sign(
-      { adminId: (admin as any).id, email: (admin as any).email },
+      { adminId: (admin as any).id, email: (admin as any).email, role: ADMIN_TOKEN_ROLE },
       JWT_SECRET,
       { expiresIn: tokenTtlSeconds }
     );
@@ -433,6 +440,26 @@ export function createAdminController(supabase: DbClient) {
   }
 
   // --- Users list with filters
+  /*
+   * OLTIN A'ZO — ichki xizmat hisobi.
+   *
+   * Admin uni ro'yxatlarda ko'rmaydi, profilini ocholmaydi, yozishmalarini
+   * kuzatolmaydi va unga tegolmaydi. Idlar qisqa muddat keshlanadi:
+   * bunday hisob juda kam va deyarli o'zgarmaydi.
+   */
+  let oltinKesh: { vaqt: number; ids: Set<number> } | null = null;
+  async function oltinIdlar(): Promise<Set<number>> {
+    if (oltinKesh && Date.now() - oltinKesh.vaqt < 60_000) return oltinKesh.ids;
+    const { data } = await supabase.from('users').select('id').eq('is_golden', true);
+    const ids = new Set<number>((data ?? []).map((r: { id: number }) => Number(r.id)));
+    oltinKesh = { vaqt: Date.now(), ids };
+    return ids;
+  }
+
+  async function oltinMi(userId: number): Promise<boolean> {
+    return (await oltinIdlar()).has(Number(userId));
+  }
+
   async function getUsers(req: Request, res: Response) {
     const registered = (req.query.registered as string) || '';
     const subscription = (req.query.subscription as string) || '';
@@ -441,6 +468,8 @@ export function createAdminController(supabase: DbClient) {
     let q = supabase
       .from('users')
       .select(ADMIN_USERS_SELECT_FULL)
+      // OLTIN A'ZO admin ro'yxatida ko'rinmaydi — kuzatilmaydi.
+      .neq('is_golden', true)
       .order('created_at', { ascending: false });
 
     const now = new Date().toISOString();
@@ -509,6 +538,9 @@ export function createAdminController(supabase: DbClient) {
       console.error('[admin/users]', error);
       return res.status(500).json({ error: error.message });
     }
+
+    // O'qituvchilar bu ro'yxatga tushmaydi — ular alohida "O'qituvchilar" bo'limida.
+    rows = (rows ?? []).filter((u: any) => String(u.account_type ?? '') !== 'teacher');
 
     const userIds = (rows ?? []).map((u: any) => Number(u.id)).filter((id: number) => Number.isFinite(id));
     const { data: kunlikRows } = await supabase
@@ -644,6 +676,10 @@ export function createAdminController(supabase: DbClient) {
       userErr = legacy.error;
     }
     if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
+    // OLTIN A'ZO — admin uni ocholmaydi ham (yo'q kabi ko'rinadi).
+    if ((user as { is_golden?: boolean }).is_golden) {
+      return res.status(404).json({ error: 'User topilmadi' });
+    }
 
     const now = new Date().toISOString();
     const lessonsCompleted = await getUserCompletedLessonsCount(supabase, id);
@@ -1162,7 +1198,7 @@ export function createAdminController(supabase: DbClient) {
 
   // --- Support chats (Telegram-like)
   async function getSupportChats(_req: Request, res: Response) {
-    const { data: chats, error: chatErr } = await supabase
+    let { data: chats, error: chatErr } = await supabase
       .from('support_chats')
       .select('id, user_id, status, created_at, updated_at, last_message_at, admin_last_read_at')
       .order('last_message_at', { ascending: false, nullsFirst: false });
@@ -1173,18 +1209,20 @@ export function createAdminController(supabase: DbClient) {
         .select('id, user_id, message, reply, status, created_at, answered_at')
         .order('created_at', { ascending: false });
       if (supportErr) return res.status(500).json({ error: supportErr.message });
-      const userIdsFallback = [...new Set((supportRows ?? []).map((r: any) => Number(r.user_id)).filter(Boolean))];
+      const oltinFallback = await oltinIdlar();
+      const supportVisible = (supportRows ?? []).filter((r: any) => !oltinFallback.has(Number(r.user_id)));
+      const userIdsFallback = [...new Set(supportVisible.map((r: any) => Number(r.user_id)).filter(Boolean))];
       let usersFallbackRes = userIdsFallback.length
         ? await supabase
             .from('users')
-            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance')
+            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, account_type')
             .in('id', userIdsFallback)
         : ({ data: [], error: null } as any);
       if (usersFallbackRes.error && isAdminUsersSchemaError(usersFallbackRes.error)) {
         usersFallbackRes = userIdsFallback.length
           ? await supabase
               .from('users')
-              .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance')
+              .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, account_type')
               .in('id', userIdsFallback)
           : ({ data: [], error: null } as any);
       }
@@ -1193,7 +1231,7 @@ export function createAdminController(supabase: DbClient) {
 
       const userMapFallback = new Map((usersFallback ?? []).map((u: any) => [Number(u.id), u]));
       const grouped = new Map<number, any[]>();
-      for (const row of supportRows ?? []) {
+      for (const row of supportVisible) {
         const uid = Number((row as any).user_id);
         if (!grouped.has(uid)) grouped.set(uid, []);
         grouped.get(uid)!.push(row);
@@ -1231,6 +1269,7 @@ export function createAdminController(supabase: DbClient) {
             },
             total_points: Number(user?.total_points ?? 0),
             referral_balance: Number(user?.referral_balance ?? 0),
+            account_type: user?.account_type ?? null,
           },
           last_message: latest
             ? {
@@ -1245,6 +1284,8 @@ export function createAdminController(supabase: DbClient) {
       return res.json(listFallback);
     }
 
+    const oltin = await oltinIdlar();
+    if (oltin.size) chats = (chats ?? []).filter((c: any) => !oltin.has(Number(c.user_id)));
     const userIds = [...new Set((chats ?? []).map((c: any) => Number(c.user_id)).filter(Boolean))];
     const chatIds = [...new Set((chats ?? []).map((c: any) => Number(c.id)).filter(Boolean))];
     const nowIso = new Date().toISOString();
@@ -1253,7 +1294,7 @@ export function createAdminController(supabase: DbClient) {
       userIds.length
         ? supabase
             .from('users')
-            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance')
+            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, account_type')
             .in('id', userIds)
         : Promise.resolve({ data: [], error: null } as any),
       chatIds.length
@@ -1271,7 +1312,7 @@ export function createAdminController(supabase: DbClient) {
       const legacyUsersResult = userIds.length
         ? await supabase
             .from('users')
-            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance')
+            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, account_type')
             .in('id', userIds)
         : ({ data: [], error: null } as any);
       users = legacyUsersResult.data;
@@ -1330,6 +1371,7 @@ export function createAdminController(supabase: DbClient) {
           },
           total_points: Number(user?.total_points ?? 0),
           referral_balance: Number(user?.referral_balance ?? 0),
+          account_type: user?.account_type ?? null,
         },
         last_message: last
           ? {
@@ -1579,6 +1621,7 @@ export function createAdminController(supabase: DbClient) {
     const { data: u, error: uErr } = await supabase.from('users').select('id').eq('id', userId).maybeSingle();
     if (uErr) return res.status(500).json({ error: uErr.message });
     if (!u) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+    if (await oltinMi(userId)) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
     try {
       const chatId = await ensureSupportChatForUser(supabase, userId);
       const now = new Date().toISOString();
@@ -1879,9 +1922,33 @@ export function createAdminController(supabase: DbClient) {
     }
   }
 
+  async function setTeacherRecommended(req: Request, res: Response) {
+    try {
+      const userId = Number(req.params.userId);
+      if (!Number.isFinite(userId)) return res.status(400).json({ error: 'userId noto‘g‘ri' });
+      const recommended = Boolean(req.body?.recommended);
+      const { data, error } = await supabase
+        .from('teacher_profiles')
+        .update({ is_recommended: recommended, updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .select('user_id, display_name, is_recommended')
+        .maybeSingle();
+      if (error) {
+        console.error('[admin/setTeacherRecommended]', error);
+        return res.status(500).json({ error: error.message });
+      }
+      if (!data) return res.status(404).json({ error: 'O‘qituvchi topilmadi' });
+      return res.json(data);
+    } catch (e: unknown) {
+      console.error('[admin/setTeacherRecommended]', e);
+      return res.status(500).json({ error: e instanceof Error ? e.message : 'Server xatosi' });
+    }
+  }
+
   return {
     login,
     getDashboard,
+    setTeacherRecommended,
     getUsers,
     createUser,
     getUserProfile,

@@ -21,6 +21,7 @@ type MeResponse = {
   planExpiresAt?: string | null;
   avatarUrl?: string | null;
   gender?: UserGender;
+  hasPassword?: boolean;
 };
 
 export default function ProfileSettingsPage() {
@@ -33,6 +34,11 @@ export default function ProfileSettingsPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [gender, setGender] = useState<UserGender>(null);
+  /*
+   * Google/Telegram orqali kirgan hisobda parol yo'q — bunday odamdan
+   * "joriy parol" so'rash mantiqsiz, u shu yerda birinchi parolini qo'yadi.
+   */
+  const [hasPassword, setHasPassword] = useState(true);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
@@ -56,6 +62,7 @@ export default function ProfileSettingsPage() {
         setPhone(data.phone ?? '');
         setGender(data.gender ?? null);
         setAvatarUrl(data.avatarUrl ?? null);
+        setHasPassword(data.hasPassword !== false);
       })
       .catch(() => {});
   }, [token]);
@@ -193,7 +200,7 @@ export default function ProfileSettingsPage() {
             disabled={saving}
             className="text-sm font-bold text-[#0B2A6B] disabled:opacity-50"
           >
-            {saving ? t('common.saving') : t('profile.done')}
+            {saving ? t('common.saving') : t('profile.save')}
           </button>
         </header>
 
@@ -278,7 +285,17 @@ export default function ProfileSettingsPage() {
             <div className="mt-5 space-y-5">
               <TextField label={t('auth.email')} action={t('profile.edit')} value={email} onChange={setEmail} type="email" clearLabel={t('kunlik.clear')} />
               <TextField label={t('auth.phone')} action={t('profile.edit')} value={phone} onChange={setPhone} type="tel" clearLabel={t('kunlik.clear')} />
-              <PasswordField label={t('profile.currentPassword')} value={currentPassword} onChange={setCurrentPassword} />
+              {hasPassword ? (
+                <PasswordField
+                  label={t('profile.currentPassword')}
+                  value={currentPassword}
+                  onChange={setCurrentPassword}
+                />
+              ) : (
+                <p className="rounded-xl bg-app-bg-subtle px-3 py-2.5 text-[13px] font-semibold text-app-text-muted">
+                  Hisobingizda hali parol yo'q — quyida birinchi parolingizni o'rnating.
+                </p>
+              )}
               <PasswordField label={t('profile.newPassword')} value={newPassword} onChange={setNewPassword} />
               <PasswordField
                 label={t('auth.rewritePassword')}
@@ -287,6 +304,27 @@ export default function ProfileSettingsPage() {
               />
             </div>
           </section>
+
+          {/* Asosiy saqlash tugmasi — barmoq yetadigan joyda, yozuv aniq. */}
+          <button
+            type="submit"
+            disabled={saving}
+            className="mt-5 mb-2 h-14 w-full rounded-2xl bg-app-primary text-[15px] font-black text-white shadow-[0_14px_30px_-14px_rgba(37,99,235,0.65)] transition active:scale-[0.99] disabled:opacity-60"
+          >
+            {saving ? t('common.saving') : t('profile.save')}
+          </button>
+
+          {/* Natija tugma yonida ham ko'rinsin — tepadagi xabarga qaytib
+              qarash uchun sahifani surish kerak bo'lmasin. */}
+          {banner ? (
+            <p
+              className={`mb-2 text-center text-[13px] font-bold ${
+                banner.kind === 'ok' ? 'text-emerald-700' : 'text-red-600'
+              }`}
+            >
+              {banner.text}
+            </p>
+          ) : null}
         </form>
       </main>
     </div>

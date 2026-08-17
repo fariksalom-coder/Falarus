@@ -23,6 +23,7 @@ import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
 import { getTeacherListingPriceUzs, getTeacherTrialPriceUzs } from '../../shared/paymentProducts.js';
 import {
+  activateTeacherMarketplacePayment,
   ensureTeacherListingSubscription,
   linkTeacherTrialPayment,
   parseTeacherListingPlanCode,
@@ -494,6 +495,20 @@ export async function handleRahmatMulticardCallback(
     invalidateAccessCache(Number(row.user_id));
   } catch (activationErr) {
     console.error('[rahmat/callback activation]', activationErr);
+  }
+
+  // `activateApprovedPayment` faqat 'russian' obunasini biladi. O'qituvchi
+  // mahsulotlari (listing obunasi, sinov darsi) alohida faollashtiriladi —
+  // busiz onlayn to'lov tasdiqlanadi-yu, listing_paid_until bo'sh qolib
+  // o'qituvchi pul to'lab hech narsa olmaydi. Click webhook'i ham shunday qiladi.
+  try {
+    await activateTeacherMarketplacePayment(supabase, {
+      paymentId,
+      userId: Number(row.user_id),
+      productCode: productCodeForAccess,
+    });
+  } catch (teacherErr) {
+    console.error('[rahmat/callback teacher activation]', teacherErr);
   }
 
   if (isRahmatPartnerCallbackEnabled()) {

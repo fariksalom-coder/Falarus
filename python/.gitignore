@@ -1,0 +1,12 @@
+# Python virtual environment
+venv/
+
+# Chroma vektor bazasi (kiritish.py qayta yaratadi)
+vektor_baza/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# HuggingFace / sentence-transformers model cache
+.cache/

@@ -44,6 +44,8 @@ export default function DailyGrammarRuleMcqPage() {
   const [message, setMessage] = useState('');
   const [finished, setFinished] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+  /** Oxirgi savoldan keyin progress serverga yozilmoqda — tugma ikki marta bosilmasin. */
+  const [advancing, setAdvancing] = useState(false);
 
   const [choiceOptions, setChoiceOptions] = useState<string[]>([]);
   /** Variant matni takrorlansa ham tugma va kalit noyob bo‘lishi uchun indeks. */
@@ -115,14 +117,18 @@ export default function DailyGrammarRuleMcqPage() {
 
   const handleBack = () => navigate(backPath);
 
-  const handleNext = () => {
-    if (status !== 'correct') return;
+  const handleNext = async () => {
+    if (status !== 'correct' || advancing) return;
     setCorrectCount((c) => c + 1);
     if (currentIndex < tasks.length - 1) {
       setCurrentIndex((p) => p + 1);
       return;
     }
-    patchDay(dayNumber, { grammar_1: true });
+    // Patch SERVERGA yetib bo'lgunicha kutiladi: «juftlik» sahifasi mount
+    // bo'lishi bilan progressni serverdan o'qiydi va grammar_1 hali yozilmagan
+    // bo'lsa foydalanuvchini ortga qaytarib yuboradi.
+    setAdvancing(true);
+    await patchDay(dayNumber, { grammar_1: true });
     navigate(`/kunlik-reja/kun/${dayNumber}/grammatika/juftlik`, { replace: true });
   };
 
@@ -283,7 +289,9 @@ export default function DailyGrammarRuleMcqPage() {
                         playWrongSound();
                       }
                     }}
-                    className="grammar-heading flex min-h-[54px] w-full items-center justify-between rounded-[16px] px-5 py-3 text-left text-[17px] transition-all active:scale-[0.98]"
+                    className={`grammar-heading flex min-h-[54px] w-full items-center justify-between rounded-[16px] px-5 py-3 text-left text-[17px] transition-all active:scale-[0.98]${
+                      showCorrect ? ' javob-togri' : showWrong ? ' javob-xato' : ''
+                    }`}
                     style={cardStyle}
                   >
                     <span>{option}</span>
@@ -341,10 +349,11 @@ export default function DailyGrammarRuleMcqPage() {
             </div>
             <button
               type="button"
-              onClick={handleNext}
-              className="grammar-heading h-[54px] w-full rounded-[16px] bg-[#22C55E] text-[16px] text-white shadow-[0_14px_28px_-12px_rgba(34,197,94,0.55)]"
+              onClick={() => void handleNext()}
+              disabled={advancing}
+              className="grammar-heading h-[54px] w-full rounded-[16px] bg-[#22C55E] text-[16px] text-white shadow-[0_14px_28px_-12px_rgba(34,197,94,0.55)] disabled:opacity-70"
             >
-              Keyingisi →
+              {advancing ? 'Saqlanmoqda…' : 'Keyingisi →'}
             </button>
           </div>
         </div>

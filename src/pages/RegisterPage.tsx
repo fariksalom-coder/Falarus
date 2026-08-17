@@ -41,7 +41,8 @@ export default function RegisterPage() {
       try {
         const data = await loginWithGoogle(idToken, refFromUrl || undefined);
         login(data.token!, normalizeAuthUser(data.user!));
-        navigate('/');
+        // Mavjud hisob bo'lsa so'rovnoma qayta chiqmasin.
+        navigate(data.isNewUser ? '/onboarding' : '/', { replace: true });
       } catch (err) {
         setFormError(err instanceof Error ? err.message : t('auth.genericError'));
       } finally {
@@ -177,7 +178,8 @@ export default function RegisterPage() {
         ref: refFromUrl || undefined,
       });
       login(data.token!, normalizeAuthUser(data.user!));
-      navigate('/');
+      // Yangi hisob — avval qisqa so'rovnoma (o'tkazib yuborish mumkin).
+      navigate('/onboarding', { replace: true });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {

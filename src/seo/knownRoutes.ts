@@ -17,6 +17,16 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/russian/grammar',
     '/russian/speaking',
     '/kunlik-reja',
+    '/kunlik-reja/xarita',
+    '/games',
+    '/games/word-swipe',
+    '/games/word-swipe/xarita',
+    '/games/soz-zanjiri',
+    '/games/soz-savati',
+    '/games/fel-ustasi',
+    '/welcome',
+    '/onboarding',
+    '/forgot-password',
     '/partner',
     '/teachers',
     '/teacher-cabinet',
@@ -40,6 +50,7 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/huquqiy/qaytarish',
     '/payment-history',
     '/reyting',
+    '/jonli-efir',
     '/auth',
   ]);
   exact.add(ADMIN_BASE_PATH);
@@ -60,6 +71,14 @@ export function isKnownAppRoute(pathname: string): boolean {
     /^\/lesson-\d+/,
     /^\/lesson\/[^/]+$/,
     /^\/preview\//,
+    // Kunlik reja ichidagi kun sahifalari va mashqlar.
+    /^\/kunlik-reja\/kun\/\d+(?:\/[^/]+)*$/,
+    // O'yinlar: bosqich xaritasi va daraja/bosqich sahifalari.
+    /^\/games\/word-swipe\/\d+\/\d+$/,
+    // Video darsxona (xona kodi yoki sessiya bo'yicha).
+    /^\/dars\/(?:s\/)?[^/]+$/,
+    // Ommaviy profil.
+    /^\/u\/[^/]+$/,
   ];
 
   if (patterns.some((re) => re.test(p))) return true;

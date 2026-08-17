@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { GraduationCap, LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { loginTeacherWithPassword, type AuthUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
@@ -34,58 +35,71 @@ export default function TeacherLoginPage() {
     }
   }
 
+  const inputCls =
+    'mt-1.5 w-full rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-app-text outline-none transition placeholder:text-app-text-secondary focus:border-app-primary focus:ring-2 focus:ring-app-primary/15';
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#071B5E] text-white">
+    <main className="flex min-h-screen items-center justify-center bg-app-bg-muted px-5 py-10">
+      <motion.form
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 240, damping: 24 }}
+        onSubmit={handleSubmit}
+        className="w-full max-w-md overflow-hidden rounded-[24px] bg-app-surface shadow-app-card ring-1 ring-app-border"
+      >
+        <div className="px-6 pb-6 pt-7 text-white" style={{ background: 'var(--app-brand-gradient)' }}>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
             <GraduationCap className="h-6 w-6" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-[#071B5E]">FalaRus</p>
-            <h1 className="text-2xl font-black text-slate-950">{t('teachers.loginTitle')}</h1>
-          </div>
+          <p className="mt-3 text-[11px] font-black uppercase tracking-[0.2em] text-white/70">FalaRus</p>
+          <h1 className="text-2xl font-black leading-tight">{t('teachers.loginTitle')}</h1>
         </div>
 
-        {error ? <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div> : null}
+        <div className="p-6">
+          {error ? (
+            <div className="mb-4 rounded-2xl bg-app-danger-bg px-4 py-3 text-sm font-semibold text-app-danger">
+              {error}
+            </div>
+          ) : null}
 
-        <label className="block text-sm font-bold text-slate-700">
-          {t('teachers.identifierLabel')}
-          <input
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            autoComplete="username"
-            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-950 outline-none focus:border-[#0B2A6B]"
-          />
-        </label>
+          <label className="block text-sm font-bold text-app-text">
+            {t('teachers.identifierLabel')}
+            <input
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              autoComplete="username"
+              className={inputCls}
+            />
+          </label>
 
-        <label className="mt-4 block text-sm font-bold text-slate-700">
-          {t('auth.password')}
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-950 outline-none focus:border-[#0B2A6B]"
-          />
-        </label>
+          <label className="mt-4 block text-sm font-bold text-app-text">
+            {t('auth.password')}
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className={inputCls}
+            />
+          </label>
 
-        <button
-          type="submit"
-          disabled={submitting || !identifier.trim() || !password}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#071B5E] px-5 py-3 font-black text-white disabled:opacity-50"
-        >
-          <LogIn className="h-5 w-5" />
-          {submitting ? t('teachers.loggingIn') : t('teachers.cabinetLogin')}
-        </button>
+          <button
+            type="submit"
+            disabled={submitting || !identifier.trim() || !password}
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-app-primary-deep px-5 py-3 font-black text-white transition active:scale-[0.98] disabled:opacity-50"
+          >
+            <LogIn className="h-5 w-5" />
+            {submitting ? t('teachers.loggingIn') : t('teachers.cabinetLogin')}
+          </button>
 
-        <p className="mt-5 text-center text-sm font-semibold text-slate-600">
-          {t('auth.noAccount')}
-          <Link to="/teacher-register" className="text-[#071B5E]">
-            {t('auth.signUp')}
-          </Link>
-        </p>
-      </form>
+          <p className="mt-5 text-center text-sm font-semibold text-app-text-muted">
+            {t('auth.noAccount')}{' '}
+            <Link to="/teacher-register" className="font-black text-app-primary-deep hover:underline">
+              {t('auth.signUp')}
+            </Link>
+          </p>
+        </div>
+      </motion.form>
     </main>
   );
 }

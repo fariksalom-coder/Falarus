@@ -163,3 +163,6 @@ Active: 0 18px 44px rgba(37,99,235,0.28)
 - ❌ Don't use emojis in code comments
 - ❌ Don't create new files when editing existing ones would suffice
 - ❌ Don't push to git unless explicitly asked
+
+---
+

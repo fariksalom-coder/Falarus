@@ -12,6 +12,7 @@ const defaultAccess: AccessInfo = {
   vnzh_course_active: false,
   vocabulary_free_topic_id: null,
   vocabulary_free_subtopic_id: null,
+  golden: false,
 };
 
 interface AccessContextType {
@@ -36,6 +37,8 @@ function normalizeAccessForExpiredPlan(
   access: AccessInfo,
   planExpiresAt?: string | null
 ): AccessInfo {
+  // OLTIN A'ZOda tarif muddati degan tushuncha yo'q.
+  if (access.golden) return access;
   if (!isExpiredByProfile(planExpiresAt)) return access;
   return {
     ...access,

@@ -1,0 +1,590 @@
+[
+  {
+    "id": "m05-u05-l01",
+    "unitId": "m05-u05",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Ulush tushunchasi",
+    "why": "Choyxonada bitta tarvuzni olti kishiga teng bo'lib berish kerak bo'lganda, har kimga tegadigan qism aynan ulush deb ataladi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Yozning issiq kunida Alisherning oilasi bitta tarvuz sotib oldi. Uyda olti kishi bor. Otasi tarvuzni oltita teng bo'lakka kesdi va har biriga bittadan berdi. Endi har bir kishi tarvuzning bir xil miqdordagi qismini oldi. Agar otasi tarvuzni notekis kesganda, kimdir ko'p, kimdir kam olardi va bunday bo'lish adolatli bo'lmasdi. Matematikada aynan shu teng bo'lish natijasida hosil bo'lgan bo'lak ulush deb ataladi."
+      },
+      {
+        "type": "theory",
+        "title": "Ulush nima",
+        "text": "Butun narsa bir necha teng bo'lakka bo'linganda, shu bo'laklardan bittasi ulush deyiladi. Bo'laklar soni ulush nomini belgilaydi. Butun ikkiga bo'linsa, har bir bo'lak yarim yoki ikkidan bir deyiladi. Uchga bo'linsa, uchdan bir. To'rtga bo'linsa, chorak yoki to'rtdan bir. Bo'laklar soni qancha ko'p bo'lsa, har bir ulush shuncha kichik bo'ladi.",
+        "keyPoint": "Ulush faqat teng bo'laklarga bo'linganda hosil bo'ladi."
+      },
+      {
+        "type": "formula",
+        "latex": "$\\frac{1}{n}$",
+        "caption": "$n$ — butun nechta teng bo'lakka bo'lingani. Yozuv shu bo'laklardan bittasini, ya'ni bitta ulushni bildiradi."
+      },
+      {
+        "type": "example",
+        "task": "Nodira bitta tandir nonni ikkita teng bo'lakka bo'ldi. Har bir bo'lak nima deb ataladi va qanday yoziladi?",
+        "steps": [
+          { "text": "Non nechta teng bo'lakka bo'linganini aniqlaymiz.", "latex": "$n = 2$" },
+          { "text": "Ikkiga bo'lingandagi bitta bo'lak yarim yoki ikkidan bir deb ataladi." },
+          { "text": "Yozuvi quyidagicha bo'ladi.", "latex": "$\\frac{1}{2}$" }
+        ],
+        "answer": "Yarim non, ya'ni $\\frac{1}{2}$"
+      },
+      {
+        "type": "example",
+        "task": "Bir soat 60 daqiqadan iborat. Soatning chorak qismi necha daqiqa?",
+        "steps": [
+          { "text": "Chorak degani to'rtdan bir ulush, demak 60 daqiqani 4 ta teng qismga bo'lamiz.", "latex": "$n = 4$" },
+          { "text": "Bo'lishni bajaramiz.", "latex": "$60 : 4 = 15$" },
+          { "text": "Demak bitta ulush 15 daqiqaga teng.", "latex": "$\\frac{1}{4}$ soat $= 15$ daqiqa" }
+        ],
+        "answer": "15 daqiqa"
+      },
+      {
+        "type": "example",
+        "task": "Bir metr uzunlikdagi lentaning $\\frac{1}{10}$ qismi necha santimetr?",
+        "steps": [
+          { "text": "Uzunlikni santimetrga o'tkazamiz.", "latex": "$1 \\text{ m} = 100 \\text{ sm}$" },
+          { "text": "Maxraj 10 ga teng, demak 100 santimetrni 10 ta teng qismga bo'lamiz.", "latex": "$100 : 10 = 10$" },
+          { "text": "Bitta ulush 10 santimetrga teng." }
+        ],
+        "answer": "10 sm"
+      },
+      {
+        "type": "mistake",
+        "wrong": "O'quvchi tortni uchta bo'lakka bo'ladi, lekin bo'laklar har xil kattalikda chiqadi. Shunga qaramay u katta bo'lakni ham $\\frac{1}{3}$ deb belgilaydi.",
+        "why": "Ulush faqat teng bo'laklarga bo'lingandagina hosil bo'ladi. Bo'laklar har xil bo'lsa, ularning hech biri uchdan bir emas. Aks holda uchta bo'lakni qo'shganda butun chiqmay qolar edi.",
+        "correct": "Avval bo'laklar teng ekaniga ishonch hosil qilinadi, keyingina $\\frac{1}{3}$ deb yoziladi."
+      },
+      {
+        "type": "drill",
+        "question": "Bir sutka 24 soatdan iborat. Sutkaning $\\frac{1}{3}$ qismi necha soat?",
+        "answer": "8 soat",
+        "hint": "24 ni maxrajga bo'ling.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Bobur 45 000 so'mning beshdan bir qismini avtobus chiptasiga sarfladi. U qancha pul sarfladi?",
+        "answer": "9 000 so'm",
+        "hint": "Beshdan bir degani $\\frac{1}{5}$, demak pulni 5 ga bo'ling.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Qaysi ulush kattaroq: $\\frac{1}{4}$ nonmi yoki $\\frac{1}{8}$ nonmi? Javobingizni izohlang.",
+        "answer": "$\\frac{1}{4}$ kattaroq, chunki non kamroq bo'lakka bo'linsa, har bir bo'lak yirikroq chiqadi.",
+        "hint": "Bitta nonni 4 ta va 8 ta bo'lakka bo'lganda qaysi bo'lak yirik bo'lishini tasavvur qiling.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "Dilnoza bir qop unning o'ndan bir qismini ishlatdi va bu 5 kilogrammga teng bo'ldi. Qopda dastlab necha kilogramm un bor edi?",
+        "answer": "50 kg",
+        "hint": "Bitta ulush 5 kg bo'lsa, butunda shunday ulushdan 10 ta bor.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Butunni bir necha teng bo'lakka bo'lganda hosil bo'lgan bitta bo'lak ulush deyiladi.",
+      "Ulush $\\frac{1}{n}$ ko'rinishida yoziladi, bunda $n$ teng bo'laklar soni.",
+      "Bo'laklar soni ortgani sari har bir ulush kichrayadi."
+    ],
+    "tags": ["ulush", "kasr", "boshlangich"],
+    "dtm": false,
+    "estimatedMinutes": 35,
+    "prerequisites": []
+  },
+  {
+    "id": "m05-u05-l03",
+    "unitId": "m05-u05",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Kasrlarni sonlar nurida tasvirlash",
+    "why": "Shifokor bergan dorining $\\frac{3}{4}$ qoshiqcha miqdorini o'lchash uchun idishdagi bo'linmalarni o'qish kerak, bu esa koordinata nuri bilan bir xil ish.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Alisherning chizg'ichiga qarang. Har bir santimetr o'nta mayda bo'linmaga ajratilgan. Agar qalam uzunligini o'lchaganda uchi to'rtinchi mayda bo'linmada tugasa, uzunlik butun santimetrga to'g'ri kelmaydi. Chizg'ich aslida ustiga kasrlar joylashtirilgan nurdir. Xuddi shu tamoyil bilan biz istalgan kasrni koordinata nurida aniq nuqta sifatida ko'rsatishimiz mumkin."
+      },
+      {
+        "type": "theory",
+        "title": "Kasrni nurda qanday belgilaymiz",
+        "text": "Koordinata nurida boshlanish nuqtasi nol bilan belgilanadi va birlik kesma tanlanadi. Kasrni belgilash uchun noldan birgacha bo'lgan kesma maxrajga teng miqdordagi teng bo'lakka bo'linadi. So'ngra noldan boshlab surat qancha bo'lsa, shuncha bo'lak sanaladi. Sanash tugagan nuqta izlangan kasrni bildiradi.",
+        "keyPoint": "Maxraj kesmani nechaga bo'lishni, surat esa noldan boshlab nechta bo'lak sanashni ko'rsatadi."
+      },
+      {
+        "type": "example",
+        "task": "Koordinata nurida $\\frac{3}{5}$ kasrini belgilang.",
+        "steps": [
+          { "text": "Nol va bir nuqtalari orasidagi kesmani olamiz." },
+          { "text": "Maxraj 5 ga teng, demak bu kesmani 5 ta teng bo'lakka bo'lamiz." },
+          { "text": "Noldan boshlab 3 ta bo'lakni sanaymiz, chunki surat 3 ga teng." },
+          { "text": "Uchinchi bo'lak tugagan nuqta izlangan kasr bo'ladi.", "latex": "$\\frac{3}{5}$" }
+        ],
+        "answer": "Noldan uchinchi bo'linmadagi nuqta"
+      },
+      {
+        "type": "example",
+        "task": "Nol va bir orasi 4 ta teng bo'lakka bo'lingan. Bo'linish nuqtalariga qanday kasrlar mos keladi?",
+        "steps": [
+          { "text": "Kesma 4 ga bo'lingani uchun barcha kasrlarning maxraji 4 bo'ladi." },
+          { "text": "Birinchi bo'linma noldan bitta bo'lak uzoqlikda.", "latex": "$\\frac{1}{4}$" },
+          { "text": "Ikkinchi va uchinchi bo'linmalarni xuddi shunday sanaymiz.", "latex": "$\\frac{2}{4}, \\ \\frac{3}{4}$" },
+          { "text": "To'rtinchi bo'linma bir sonining o'ziga to'g'ri keladi.", "latex": "$\\frac{4}{4} = 1$" }
+        ],
+        "answer": "$\\frac{1}{4}, \\ \\frac{2}{4}, \\ \\frac{3}{4}$ va $\\frac{4}{4} = 1$"
+      },
+      {
+        "type": "example",
+        "task": "Toshkentdan Samarqandgacha bo'lgan 300 km yo'lni bir kesma deb olaylik. Avtobus yo'lning $\\frac{2}{3}$ qismini bosib o'tdi. Avtobus qayerda va necha kilometr yurdi?",
+        "steps": [
+          { "text": "Butun yo'lni bildiruvchi kesmani maxrajga qarab 3 ta teng qismga bo'lamiz.", "latex": "$300 : 3 = 100$" },
+          { "text": "Har bir bo'lak 100 km ga teng." },
+          { "text": "Surat 2 ga teng, demak noldan ikkita bo'lak sanaymiz.", "latex": "$100 \\cdot 2 = 200$" }
+        ],
+        "answer": "200 km, ya'ni ikkinchi bo'linma nuqtasida"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$\\frac{2}{5}$ ni belgilashda o'quvchi kesmani 5 ga bo'ladi, so'ng bo'linmalarni birinchi bo'linmadan boshlab birinchi, ikkinchi deb sanab, uchinchi bo'linmaga nuqta qo'yadi.",
+        "why": "Sanash nol nuqtasidan boshlanishi kerak, birinchi bo'linmadan emas. Birinchi bo'linmaning o'zi allaqachon bitta bo'lakni, ya'ni $\\frac{1}{5}$ ni bildiradi.",
+        "correct": "Noldan boshlab ikkita bo'lak sanaladi va ikkinchi bo'linmaga nuqta qo'yiladi."
+      },
+      {
+        "type": "drill",
+        "question": "Koordinata nurida nol va bir orasi 6 ta teng bo'lakka bo'lingan. Beshinchi bo'linmaga qaysi kasr mos keladi?",
+        "answer": "$\\frac{5}{6}$",
+        "hint": "Maxraj bo'laklar soniga, surat sanalgan bo'laklar soniga teng.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{7}{10}$ kasrini belgilash uchun birlik kesma nechta bo'lakka bo'linadi va noldan nechta bo'lak sanaladi?",
+        "answer": "10 ta bo'lakka bo'linadi, 7 ta bo'lak sanaladi",
+        "hint": "Maxrajga qarang, keyin suratga.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Bobur 40 litrlik suv idishining $\\frac{3}{8}$ qismini to'ldirdi. Idishda necha litr suv bor?",
+        "answer": "15 litr",
+        "hint": "Avval $40 : 8$ ni hisoblang, so'ng 3 ga ko'paytiring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "Koordinata nurida $\\frac{4}{4}$ kasri qaysi butun songa to'g'ri keladi?",
+        "answer": "1 soniga",
+        "hint": "Barcha bo'laklar sanalganda butun kesma tugaydi.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Kasrni belgilash uchun birlik kesma maxrajga teng miqdordagi teng bo'lakka bo'linadi.",
+      "Sanash har doim nol nuqtasidan boshlanadi va surat qancha bo'lsa, shuncha bo'lak sanaladi.",
+      "Surat maxrajga teng bo'lganda kasr 1 soniga to'g'ri keladi."
+    ],
+    "tags": ["kasr", "koordinata nuri", "tasvirlash"],
+    "dtm": false,
+    "estimatedMinutes": 35,
+    "prerequisites": ["m05-u05-l02"]
+  },
+  {
+    "id": "m05-u05-l04",
+    "unitId": "m05-u05",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Bir xil maxrajli kasrlarni taqqoslash",
+    "why": "Ikki do'kon bir xil hajmdagi sut idishlarini sotayotganda, qaysi biri ko'proq to'ldirilganini aniqlash uchun kasrlarni taqqoslash kerak bo'ladi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Nodira va Dilnoza bir xil kattalikdagi ikkita tandir non oldi. Har ikkalasi ham nonini sakkizta teng bo'lakka bo'ldi. Nodira uchta bo'lak yedi, Dilnoza esa beshta bo'lak yedi. Bo'laklar bir xil kattalikda, chunki nonlar teng va bo'laklar soni bir xil. Demak kim ko'proq yeganini aniqlash uchun faqat bo'laklar sonini solishtirish yetarli."
+      },
+      {
+        "type": "theory",
+        "title": "Taqqoslash qoidasi",
+        "text": "Maxrajlari bir xil bo'lgan kasrlarda bo'laklarning kattaligi teng bo'ladi. Shuning uchun qaysi kasrning surati katta bo'lsa, o'sha kasr katta bo'ladi. Bu qoida koordinata nurida ham ko'rinadi: surati katta kasr noldan uzoqroqda joylashadi.",
+        "keyPoint": "Maxrajlar teng bo'lsa, surati katta bo'lgan kasr katta."
+      },
+      {
+        "type": "formula",
+        "latex": "$\\text{agar } a > b \\text{ bo'lsa, } \\frac{a}{c} > \\frac{b}{c}$",
+        "caption": "$c$ — ikkala kasrning umumiy maxraji, $a$ va $b$ — suratlar."
+      },
+      {
+        "type": "example",
+        "task": "$\\frac{3}{8}$ va $\\frac{5}{8}$ kasrlarini taqqoslang.",
+        "steps": [
+          { "text": "Maxrajlarni tekshiramiz: ikkalasi ham 8 ga teng, demak bo'laklar bir xil kattalikda." },
+          { "text": "Suratlarni taqqoslaymiz.", "latex": "$3 < 5$" },
+          { "text": "Surati katta bo'lgan kasr katta bo'ladi.", "latex": "$\\frac{3}{8} < \\frac{5}{8}$" }
+        ],
+        "answer": "$\\frac{3}{8} < \\frac{5}{8}$"
+      },
+      {
+        "type": "example",
+        "task": "$\\frac{4}{9}, \\ \\frac{2}{9}, \\ \\frac{7}{9}$ kasrlarini o'sish tartibida joylashtiring.",
+        "steps": [
+          { "text": "Barcha maxrajlar 9 ga teng, shuning uchun faqat suratlarga qaraymiz." },
+          { "text": "Suratlarni o'sish tartibida yozamiz.", "latex": "$2 < 4 < 7$" },
+          { "text": "Kasrlarni shu tartibda joylashtiramiz.", "latex": "$\\frac{2}{9} < \\frac{4}{9} < \\frac{7}{9}$" }
+        ],
+        "answer": "$\\frac{2}{9}, \\ \\frac{4}{9}, \\ \\frac{7}{9}$"
+      },
+      {
+        "type": "example",
+        "task": "Alisher tarvuzning $\\frac{5}{12}$ qismini, Bobur esa $\\frac{7}{12}$ qismini yedi. Kim ko'proq yedi va butun tarvuzdan qancha qism qoldi?",
+        "steps": [
+          { "text": "Maxrajlar teng, suratlarni taqqoslaymiz.", "latex": "$5 < 7$" },
+          { "text": "Demak Bobur ko'proq yegan." },
+          { "text": "Butun tarvuz $\\frac{12}{12}$ ga teng. Yeyilgan qismni topamiz.", "latex": "$5 + 7 = 12$" },
+          { "text": "Yeyilgan qism butunga teng chiqdi.", "latex": "$\\frac{12}{12} = 1$" }
+        ],
+        "answer": "Bobur ko'proq yedi, tarvuzdan hech narsa qolmadi"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$\\frac{3}{7}$ va $\\frac{5}{7}$ ni taqqoslaganda o'quvchi \"kasrda son qancha kichik bo'lsa, bo'lak shuncha katta\" degan qoidani eslab, $\\frac{3}{7} > \\frac{5}{7}$ deb yozadi.",
+        "why": "O'quvchi maxrajlarga tegishli qoidani suratlarga qo'llab yuborgan. Bo'laklar soni ortganda bo'lak kichrayishi maxraj haqidagi qoida. Bu yerda maxrajlar bir xil, faqat olingan bo'laklar soni har xil, shuning uchun ko'p bo'lak ko'p miqdorni bildiradi.",
+        "correct": "Maxrajlar teng bo'lgani uchun $\\frac{3}{7} < \\frac{5}{7}$."
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{6}{11}$ va $\\frac{9}{11}$ kasrlarini taqqoslang.",
+        "answer": "$\\frac{6}{11} < \\frac{9}{11}$",
+        "hint": "Maxrajlar teng, faqat suratlarga qarang.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{10}{13}, \\ \\frac{3}{13}, \\ \\frac{8}{13}$ kasrlarini kamayish tartibida yozing.",
+        "answer": "$\\frac{10}{13}, \\ \\frac{8}{13}, \\ \\frac{3}{13}$",
+        "hint": "Suratlarni katta sondan kichigiga qarab tartiblang.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Maxraji 15 bo'lgan va $\\frac{7}{15}$ dan katta, $\\frac{10}{15}$ dan kichik bo'lgan barcha kasrlarni yozing.",
+        "answer": "$\\frac{8}{15}$ va $\\frac{9}{15}$",
+        "hint": "7 va 10 orasidagi butun sonlarni surat sifatida oling.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "Nodira 20 litrlik idishning $\\frac{9}{20}$ qismini, Dilnoza esa xuddi shunday idishning $\\frac{11}{20}$ qismini suvga to'ldirdi. Kimning idishida ko'proq suv bor va necha litr?",
+        "answer": "Dilnozada, 11 litr",
+        "hint": "Maxraj 20 va idish 20 litrlik, demak bitta bo'lak 1 litrga teng.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Maxrajlari bir xil kasrlarda bo'laklar kattaligi teng bo'ladi.",
+      "Shunday kasrlardan surati katta bo'lgani katta hisoblanadi.",
+      "Maxrajga tegishli qoidani suratga qo'llash taqqoslashda xatoga olib keladi."
+    ],
+    "tags": ["kasr", "taqqoslash", "maxraj"],
+    "dtm": true,
+    "estimatedMinutes": 35,
+    "prerequisites": ["m05-u05-l02", "m05-u05-l03"]
+  },
+  {
+    "id": "m05-u05-l05",
+    "unitId": "m05-u05",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "To'g'ri va noto'g'ri kasrlar",
+    "why": "Oshxonada retsept ikki yarim stakan un talab qilsa, buni $\\frac{5}{2}$ deb yozish mumkin va bu yozuv bir butundan katta miqdorni bildiradi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Nodira mehmonlar uchun somsa pishirmoqchi. Retseptda choraklab o'lchanadigan stakan bilan ishlash ko'rsatilgan. Unga bir butun stakan va yana uchta chorak stakan un kerak. Agar hamma choraklarni sanasak, jami yettita chorak chiqadi va buni $\\frac{7}{4}$ deb yozish mumkin. Bu kasrning surati maxrajidan katta, ya'ni miqdor bir butundan oshib ketgan. Shu yerda kasrlarning ikki turi ajraladi."
+      },
+      {
+        "type": "theory",
+        "title": "Ikki tur kasr",
+        "text": "Agar kasrning surati maxrajidan kichik bo'lsa, bunday kasr to'g'ri kasr deyiladi. To'g'ri kasr har doim birdan kichik bo'ladi, chunki butunning barcha bo'laklari olinmagan. Agar surat maxrajga teng yoki undan katta bo'lsa, kasr noto'g'ri kasr deyiladi. Noto'g'ri kasr birga teng yoki birdan katta bo'ladi.",
+        "keyPoint": "Surat maxrajdan kichik bo'lsa to'g'ri kasr, teng yoki katta bo'lsa noto'g'ri kasr."
+      },
+      {
+        "type": "formula",
+        "latex": "$\\frac{a}{b} < 1 \\iff a < b, \\qquad \\frac{a}{b} \\ge 1 \\iff a \\ge b$",
+        "caption": "$a$ — surat, $b$ — maxraj. Kasrni bir bilan taqqoslash uchun surat va maxrajni solishtirish yetarli."
+      },
+      {
+        "type": "example",
+        "task": "$\\frac{3}{7}, \\ \\frac{9}{4}, \\ \\frac{6}{6}, \\ \\frac{2}{11}$ kasrlarini to'g'ri va noto'g'riga ajrating.",
+        "steps": [
+          { "text": "Har bir kasrda suratni maxraj bilan taqqoslaymiz." },
+          { "text": "$3 < 7$ va $2 < 11$, demak bu ikkisi to'g'ri kasr.", "latex": "$\\frac{3}{7}, \\ \\frac{2}{11}$" },
+          { "text": "$9 > 4$ va $6 = 6$, demak bu ikkisi noto'g'ri kasr.", "latex": "$\\frac{9}{4}, \\ \\frac{6}{6}$" }
+        ],
+        "answer": "To'g'ri: $\\frac{3}{7}, \\ \\frac{2}{11}$; noto'g'ri: $\\frac{9}{4}, \\ \\frac{6}{6}$"
+      },
+      {
+        "type": "example",
+        "task": "Maxraji 5 bo'lgan barcha to'g'ri kasrlarni yozing.",
+        "steps": [
+          { "text": "To'g'ri kasrda surat maxrajdan kichik bo'lishi kerak.", "latex": "$a < 5$" },
+          { "text": "Suratga mos keladigan natural sonlarni yozamiz.", "latex": "$a = 1, 2, 3, 4$" },
+          { "text": "Kasrlarni tuzamiz.", "latex": "$\\frac{1}{5}, \\ \\frac{2}{5}, \\ \\frac{3}{5}, \\ \\frac{4}{5}$" }
+        ],
+        "answer": "$\\frac{1}{5}, \\ \\frac{2}{5}, \\ \\frac{3}{5}, \\ \\frac{4}{5}$"
+      },
+      {
+        "type": "example",
+        "task": "Bobur uchta bir xil pitsani buyurtma qildi. Har biri 8 ta bo'lakka bo'lingan. Do'stlari jami 19 ta bo'lak yedi. Yeyilgan miqdorni kasr ko'rinishida yozing va uning turini aniqlang.",
+        "steps": [
+          { "text": "Bitta pitsa 8 ta bo'lak, demak maxraj 8 ga teng." },
+          { "text": "Yeyilgan bo'laklar soni suratga yoziladi.", "latex": "$\\frac{19}{8}$" },
+          { "text": "Suratni maxraj bilan taqqoslaymiz.", "latex": "$19 > 8$" },
+          { "text": "Demak bu noto'g'ri kasr va u bir butun pitsadan ko'p miqdorni bildiradi." }
+        ],
+        "answer": "$\\frac{19}{8}$, noto'g'ri kasr"
+      },
+      {
+        "type": "mistake",
+        "wrong": "O'quvchi $\\frac{6}{6}$ ni to'g'ri kasr deb belgilaydi, chunki uning fikricha noto'g'ri kasrda surat maxrajdan qat'iy katta bo'lishi kerak.",
+        "why": "Ta'rifda surat maxrajga teng bo'lgan holat ham noto'g'ri kasrlarga kiradi. $\\frac{6}{6}$ butunning barcha bo'laklari olinganini bildiradi va u aynan 1 ga teng, ya'ni birdan kichik emas.",
+        "correct": "$\\frac{6}{6}$ noto'g'ri kasr va u $1$ ga teng."
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{12}{7}$ kasri to'g'rimi yoki noto'g'rimi? Javobingizni asoslang.",
+        "answer": "Noto'g'ri kasr, chunki $12 > 7$",
+        "hint": "Suratni maxraj bilan taqqoslang.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Maxraji 9 bo'lgan nechta to'g'ri kasr mavjud?",
+        "answer": "8 ta",
+        "hint": "Surat 1 dan 8 gacha bo'lgan qiymatlarni olishi mumkin.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{n}{5}$ kasri noto'g'ri bo'lishi uchun $n$ eng kichik qanday natural qiymatni olishi kerak?",
+        "answer": "$n = 5$",
+        "hint": "Noto'g'ri kasrda surat maxrajga teng bo'lishi ham mumkin.",
+        "level": 3
+      },
+      {
+        "type": "drill",
+        "question": "Dilnoza bir xil hajmdagi to'rtta idishning har birini yarmigacha suvga to'ldirdi. To'plangan suvni maxraji 2 bo'lgan kasr bilan yozing va turini aniqlang.",
+        "answer": "$\\frac{4}{2}$, noto'g'ri kasr",
+        "hint": "Har bir idishdan bitta yarim, jami to'rtta yarim to'plangan.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Surati maxrajidan kichik kasr to'g'ri kasr deyiladi va u birdan kichik bo'ladi.",
+      "Surati maxrajiga teng yoki undan katta kasr noto'g'ri kasr deyiladi.",
+      "Surat maxrajga teng bo'lganda kasr aynan bir butunga teng bo'ladi."
+    ],
+    "tags": ["kasr", "togri kasr", "notogri kasr"],
+    "dtm": true,
+    "estimatedMinutes": 35,
+    "prerequisites": ["m05-u05-l02"]
+  },
+  {
+    "id": "m05-u05-l06",
+    "unitId": "m05-u05",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Aralash son. Butun qismni ajratish",
+    "why": "Sotuvchi \"ikki yarim kilogramm go'sht\" deganda aslida aralash sonni aytadi, va bu $\\frac{5}{2}$ bilan bir xil miqdorni bildiradi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Alisherning oilasi mehmon kutmoqda. Ular uchta tandir non oldi va har bir nonni ikkita teng bo'lakka bo'ldi. Bu jami oltita yarim bo'lak. So'ng qo'shni yana bitta yarim non olib keldi, endi yettita yarim bo'lak yig'ildi. Har bir bo'lak nonning ikkidan bir qismi bo'lgani uchun bu miqdorni $\\frac{7}{2}$ deb yozish mumkin. Lekin amalda odamlar \"uch yarim non\" deb aytishadi. Aynan shu qulay yozuv aralash son deb ataladi va u noto'g'ri kasrdan hosil qilinadi."
+      },
+      {
+        "type": "theory",
+        "title": "Aralash son nima",
+        "text": "Butun son va to'g'ri kasrdan iborat yozuv aralash son deyiladi. Masalan uch butun va to'rtdan bir qismni birgalikda yozganda aralash son hosil bo'ladi. Har qanday noto'g'ri kasrni aralash songa aylantirish mumkin. Buning uchun suratni maxrajga qoldiqli bo'lish yetarli: to'liq bo'linma butun qismni, qoldiq esa yangi suratni beradi, maxraj o'zgarmaydi.",
+        "keyPoint": "Noto'g'ri kasrni aralash songa aylantirish uchun surat maxrajga qoldiqli bo'linadi."
+      },
+      {
+        "type": "formula",
+        "latex": "$\\frac{a}{b} = q\\frac{r}{b}, \\quad \\text{bunda } a = b \\cdot q + r, \\ 0 \\le r < b$",
+        "caption": "$q$ — to'liq bo'linma, ya'ni butun qism. $r$ — qoldiq, ya'ni yangi surat. $b$ — maxraj, o'zgarmaydi."
+      },
+      {
+        "type": "example",
+        "task": "$\\frac{17}{5}$ noto'g'ri kasrni aralash songa aylantiring.",
+        "steps": [
+          { "text": "Suratni maxrajga qoldiqli bo'lamiz.", "latex": "$17 : 5 = 3$ (qoldiq $2$)" },
+          { "text": "To'liq bo'linma butun qism bo'ladi.", "latex": "$q = 3$" },
+          { "text": "Qoldiq yangi surat bo'ladi, maxraj o'zgarmaydi.", "latex": "$r = 2, \\ b = 5$" },
+          { "text": "Aralash sonni yozamiz.", "latex": "$3\\frac{2}{5}$" }
+        ],
+        "answer": "$3\\frac{2}{5}$"
+      },
+      {
+        "type": "example",
+        "task": "$2\\frac{3}{4}$ aralash sonini noto'g'ri kasrga aylantiring.",
+        "steps": [
+          { "text": "Butun qismni maxrajga ko'paytiramiz.", "latex": "$2 \\cdot 4 = 8$" },
+          { "text": "Chiqqan natijaga suratni qo'shamiz.", "latex": "$8 + 3 = 11$" },
+          { "text": "Natijani surat qilib yozamiz, maxraj o'zgarmaydi.", "latex": "$\\frac{11}{4}$" }
+        ],
+        "answer": "$\\frac{11}{4}$"
+      },
+      {
+        "type": "example",
+        "task": "Nodira bozordan $\\frac{9}{2}$ kilogramm olma keltirdi. Buni odatdagidek qanday aytish mumkin?",
+        "steps": [
+          { "text": "Suratni maxrajga qoldiqli bo'lamiz.", "latex": "$9 : 2 = 4$ (qoldiq $1$)" },
+          { "text": "Butun qism 4, qoldiq 1, maxraj 2.", "latex": "$4\\frac{1}{2}$" },
+          { "text": "Ikkidan bir yarim degani, demak to'rt yarim kilogramm." }
+        ],
+        "answer": "$4\\frac{1}{2}$ kg, ya'ni to'rt yarim kilogramm"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$2\\frac{3}{4}$ ni noto'g'ri kasrga aylantirishda o'quvchi butun qismni to'g'ridan to'g'ri suratga qo'shib, $\\frac{5}{4}$ deb yozadi.",
+        "why": "Butun qismni suratga qo'shishdan oldin uni maxrajga ko'paytirish kerak, chunki har bir butunda maxrajga teng miqdordagi bo'lak bor. Ikkita butunda $2 \\cdot 4 = 8$ ta chorak bor, ustiga yana 3 ta chorak qo'shiladi. Tekshirish usuli: $\\frac{5}{4}$ birdan biroz katta, lekin dastlabki son ikkidan katta edi.",
+        "correct": "$2\\frac{3}{4} = \\frac{2 \\cdot 4 + 3}{4} = \\frac{11}{4}$"
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{23}{6}$ ni aralash songa aylantiring.",
+        "answer": "$3\\frac{5}{6}$",
+        "hint": "$23$ ni $6$ ga qoldiqli bo'ling.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$5\\frac{2}{3}$ ni noto'g'ri kasrga aylantiring.",
+        "answer": "$\\frac{17}{3}$",
+        "hint": "Butun qismni maxrajga ko'paytiring, so'ng suratni qo'shing.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Bobur 40 000 so'mga tandir non oldi. Bitta non 8 000 so'm turadi va u yana yarim non qo'shimcha oldi. Bobur olgan non miqdorini aralash son va noto'g'ri kasr ko'rinishida yozing.",
+        "answer": "$5\\frac{1}{2}$ non, ya'ni $\\frac{11}{2}$",
+        "hint": "Avval $40\\,000 : 8\\,000$ ni hisoblang, keyin yarimni qo'shing.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{a}{7}$ noto'g'ri kasrni aralash songa aylantirganda butun qismi 4 ga, kasr qismi $\\frac{3}{7}$ ga teng bo'ldi. $a$ ni toping.",
+        "answer": "$a = 31$",
+        "hint": "$a = 7 \\cdot 4 + 3$ formulasidan foydalaning.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Aralash son butun qism va to'g'ri kasrdan iborat bo'ladi.",
+      "Noto'g'ri kasrni aralash songa aylantirish uchun surat maxrajga qoldiqli bo'linadi: bo'linma butun qism, qoldiq yangi surat bo'ladi.",
+      "Aralash sonni kasrga aylantirish uchun butun qism maxrajga ko'paytirilib, ustiga surat qo'shiladi."
+    ],
+    "tags": ["aralash son", "notogri kasr", "qoldiqli bolish"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u05-l05", "m05-u02-l05"]
+  },
+  {
+    "id": "m05-u05-l07",
+    "unitId": "m05-u05",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Bir xil maxrajli kasrlarni qo'shish va ayirish",
+    "why": "Ustaga g'isht tashiyotgan ikki ishchi ishning $\\frac{2}{9}$ va $\\frac{4}{9}$ qismini bajargan bo'lsa, jami qancha bajarilganini bilish uchun kasrlarni qo'shish kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Dilnoza tug'ilgan kun uchun tort tayyorladi va uni to'qqizta teng bo'lakka bo'ldi. Mehmonlar kelganda avval ikkita bo'lak, keyin yana to'rtta bo'lak yeyildi. Bo'laklar bir xil kattalikda bo'lgani uchun jami nechta bo'lak yeyilganini bilish uchun ularni oddiygina sanash yetarli: ikki qo'shuv to'rt, olti bo'lak. Bo'lak kattaligi esa o'zgarmadi. Kasrlarni qo'shish ham xuddi shunday ishlaydi."
+      },
+      {
+        "type": "theory",
+        "title": "Qo'shish va ayirish qoidasi",
+        "text": "Maxrajlari bir xil bo'lgan kasrlarni qo'shish uchun suratlar qo'shiladi, maxraj esa o'zgarishsiz qoladi. Ayirishda ham xuddi shunday: suratlar ayiriladi, maxraj o'zgarmaydi. Buning sababi shundaki, maxraj bo'lak kattaligini ko'rsatadi, amal esa faqat bo'laklar sonini o'zgartiradi.",
+        "keyPoint": "Suratlar ustida amal bajariladi, maxraj o'zgarmaydi."
+      },
+      {
+        "type": "formula",
+        "latex": "$\\frac{a}{c} + \\frac{b}{c} = \\frac{a+b}{c}, \\qquad \\frac{a}{c} - \\frac{b}{c} = \\frac{a-b}{c}$",
+        "caption": "$c$ — umumiy maxraj, u natijada ham o'zgarmaydi. $a$ va $b$ — suratlar."
+      },
+      {
+        "type": "example",
+        "task": "$\\frac{2}{9} + \\frac{4}{9}$ ni hisoblang.",
+        "steps": [
+          { "text": "Maxrajlar bir xil ekanini tekshiramiz: ikkalasi ham 9." },
+          { "text": "Suratlarni qo'shamiz.", "latex": "$2 + 4 = 6$" },
+          { "text": "Maxrajni o'zgarishsiz yozamiz.", "latex": "$\\frac{6}{9}$" }
+        ],
+        "answer": "$\\frac{6}{9}$"
+      },
+      {
+        "type": "example",
+        "task": "$\\frac{7}{8} - \\frac{3}{8}$ ni hisoblang.",
+        "steps": [
+          { "text": "Maxrajlar teng, demak amalni bevosita bajarish mumkin." },
+          { "text": "Suratlarni ayiramiz.", "latex": "$7 - 3 = 4$" },
+          { "text": "Maxrajni saqlaymiz.", "latex": "$\\frac{4}{8}$" }
+        ],
+        "answer": "$\\frac{4}{8}$"
+      },
+      {
+        "type": "example",
+        "task": "Alisher Toshkent-Samarqand yo'lining birinchi kuni $\\frac{3}{10}$ qismini, ikkinchi kuni $\\frac{4}{10}$ qismini bosib o'tdi. Yo'lning qancha qismi qoldi?",
+        "steps": [
+          { "text": "Ikki kunda bosib o'tilgan qismni topamiz.", "latex": "$\\frac{3}{10} + \\frac{4}{10} = \\frac{7}{10}$" },
+          { "text": "Butun yo'lni kasr ko'rinishida yozamiz.", "latex": "$1 = \\frac{10}{10}$" },
+          { "text": "Butundan bosib o'tilgan qismni ayiramiz.", "latex": "$\\frac{10}{10} - \\frac{7}{10} = \\frac{3}{10}$" }
+        ],
+        "answer": "$\\frac{3}{10}$ qismi qoldi"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$\\frac{2}{9} + \\frac{4}{9}$ ni hisoblashda o'quvchi maxrajlarni ham qo'shib, $\\frac{6}{18}$ deb javob yozadi.",
+        "why": "Maxraj bo'lakning kattaligini bildiradi, u qo'shilmaydi. Tortni to'qqiztadan bo'lakka bo'lgandan keyin bo'lak kattaligi o'zgarmaydi, faqat yeyilgan bo'laklar soni ortadi. Tekshirish usuli: $\\frac{6}{18}$ aslida $\\frac{1}{3}$ ga teng va u qo'shiluvchilardan biri bo'lgan $\\frac{4}{9}$ dan kichik, bu esa mumkin emas.",
+        "correct": "$\\frac{2}{9} + \\frac{4}{9} = \\frac{6}{9}$"
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{5}{12} + \\frac{4}{12}$ ni hisoblang.",
+        "answer": "$\\frac{9}{12}$",
+        "hint": "Faqat suratlarni qo'shing.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{11}{15} - \\frac{6}{15}$ ni hisoblang.",
+        "answer": "$\\frac{5}{15}$",
+        "hint": "Suratlarni ayiring, maxrajni o'zgartirmang.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Nodira bir qop unning $\\frac{2}{7}$ qismini nonga, $\\frac{3}{7}$ qismini somsaga ishlatdi. Qopda unning qancha qismi qoldi?",
+        "answer": "$\\frac{2}{7}$ qismi",
+        "hint": "Butun qopni $\\frac{7}{7}$ deb oling va ishlatilgan qismlarni ayiring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$\\frac{x}{13} + \\frac{5}{13} = \\frac{12}{13}$ tenglikda $x$ ni toping.",
+        "answer": "$x = 7$",
+        "hint": "Maxrajlar teng bo'lgani uchun suratlar uchun $x + 5 = 12$ tenglama hosil bo'ladi.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Bir xil maxrajli kasrlarni qo'shishda suratlar qo'shiladi, maxraj o'zgarmaydi.",
+      "Bir xil maxrajli kasrlarni ayirishda suratlar ayiriladi, maxraj o'zgarmaydi.",
+      "Bir butundan kasr ayirish uchun butun surati va maxraji teng bo'lgan kasr ko'rinishida yoziladi, masalan $1 = \\frac{10}{10}$."
+    ],
+    "tags": ["kasr", "qoshish", "ayirish"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u05-l04", "m05-u05-l05"]
+  }
+]

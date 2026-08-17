@@ -2,8 +2,8 @@ export function deepMerge<T extends Record<string, unknown>>(
   base: T,
   override: Record<string, unknown>,
 ): T {
-  const out = { ...base } as T;
-  for (const key of Object.keys(override) as (keyof T)[]) {
+  const out: Record<string, unknown> = { ...base };
+  for (const key of Object.keys(override)) {
     const b = base[key];
     const o = override[key];
     if (
@@ -17,10 +17,10 @@ export function deepMerge<T extends Record<string, unknown>>(
       out[key] = deepMerge(
         b as Record<string, unknown>,
         o as Record<string, unknown>,
-      ) as T[keyof T];
+      );
     } else if (o !== undefined) {
-      out[key] = o as T[keyof T];
+      out[key] = o;
     }
   }
-  return out;
+  return out as T;
 }

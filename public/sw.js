@@ -3,7 +3,13 @@
    - network-first for JS/CSS so new deployments reflect immediately
    - fallback to cache if network fails
 */
-const CACHE_NAME = 'falarus-pwa-v9';
+/*
+ * Versiya oshirilsa `activate` da eski kesh butunlay o'chiriladi.
+ * v20: platforma logotipi yangilandi (`/icons/*`). Rasmlar bu SW'da
+ * KESH-BIRINCHI olinadi, shuning uchun versiyani oshirmasak eski ikonka
+ * foydalanuvchilarda qolib ketardi.
+ */
+const CACHE_NAME = 'falarus-pwa-v20';
 
 const STATIC_ASSETS = [
   '/',

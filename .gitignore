@@ -33,3 +33,6 @@ data/fossils-payments.json
 # Worktree-local symlinks — never track (paths are absolute to dev host)
 public/courses/patent
 public/courses/vnzh
+
+# Lokal PGlite baza katalogi (dev) — hech qachon repoga tushmasin
+tmp/

@@ -1,0 +1,796 @@
+[
+  {
+    "id": "m05-u01-l01",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Natural sonlar va nol",
+    "why": "Navbatda turganda \"oldimda nechta odam bor\" va \"men nechanchiman\" degan ikki savol har xil javob talab qiladi, va bu farq natural sonlarning ikki vazifasidir.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Alisher ertalab maktabga 32-avtobusda boradi. Uning uyi 14-uy, sinfi 5-B, partasi eshikdan boshlab uchinchi. Bugun u non do'koniga kirib 4 ta non oldi. Diqqat qiling: 4 ta non deganda nechta ekani aytilyapti, 14-uy deganda esa nechanchi ekani aytilyapti. Bir xil sonlar ikki xil vazifani bajaryapti va bu ikkalasi ham natural sonlarning ishi."
+      },
+      {
+        "type": "theory",
+        "title": "Natural sonlar nima",
+        "text": "Narsalarni sanashda ishlatiladigan sonlar natural sonlar deyiladi. Ular birdan boshlanadi va cheksiz davom etadi. Natural sonlar ikki vazifani bajaradi. Birinchisi sanoq: nechta narsa borligini bildiradi. Ikkinchisi tartib: narsa qatorda nechanchi o'rinda turganini bildiradi. Nol natural son emas, chunki hech narsani sanaganda son yozilmaydi, biroq nol sonlar qatorida o'z o'rniga ega.",
+        "keyPoint": "Natural sonlar birdan boshlanadi, nol ularga kirmaydi."
+      },
+      {
+        "type": "theory",
+        "title": "Eng kichigi bor, eng kattasi yo'q",
+        "text": "Natural sonlar orasida eng kichigi bor va u birga teng. Eng kattasi esa mavjud emas: qanday katta son olmaylik, unga bir qo'shib undan ham katta son hosil qilish mumkin. Ketma-ket kelgan ikki natural son bir-biridan bir birlikka farq qiladi. Bir sondan keyingi son unga bir qo'shish bilan, oldingi son esa bir ayirish bilan topiladi.",
+        "keyPoint": "Eng kichik natural son 1, eng katta natural son mavjud emas."
+      },
+      {
+        "type": "example",
+        "task": "1 dan 20 gacha bo'lgan natural sonlar nechta?",
+        "steps": [
+          { "text": "Sanoq birdan boshlanadi va yigirmagacha davom etadi." },
+          { "text": "Har bir son bir marta sanaladi.", "latex": "$1, 2, 3, \\ldots, 20$" },
+          { "text": "Demak sonlar soni oxirgi songa teng.", "latex": "$20$" }
+        ],
+        "answer": "20 ta"
+      },
+      {
+        "type": "example",
+        "task": "15 va 28 sonlari orasida nechta natural son bor? Chegaradagi sonlarning o'zi hisobga olinmaydi.",
+        "steps": [
+          { "text": "Oraliqdagi birinchi son 16, oxirgi son 27." },
+          { "text": "Sonlar sonini topish uchun kattasidan kichigini ayiramiz.", "latex": "$28 - 15 = 13$" },
+          { "text": "Chegaradagi sonlar hisobga olinmagani uchun natijadan bir ayiramiz.", "latex": "$13 - 1 = 12$" }
+        ],
+        "answer": "12 ta"
+      },
+      {
+        "type": "example",
+        "task": "Dilnoza navbatda yettinchi o'rinda turibdi. Undan keyin yana 5 kishi bor. Navbatda jami nechta kishi bor?",
+        "steps": [
+          { "text": "Dilnoza yettinchi bo'lgani uchun undan oldin 6 kishi bor, Dilnozaning o'zi bilan birga 7 kishi." },
+          { "text": "Undan keyingi kishilarni qo'shamiz.", "latex": "$7 + 5 = 12$" },
+          { "text": "Bu yerda 7 tartibni, 5 esa sanoqni bildirdi." }
+        ],
+        "answer": "12 kishi"
+      },
+      {
+        "type": "mistake",
+        "wrong": "\"Eng kichik natural son qaysi?\" degan savolga o'quvchi nol deb javob beradi.",
+        "why": "Natural sonlar sanash uchun paydo bo'lgan, sanash esa birdan boshlanadi. Nol hech narsa yo'qligini bildiradi va hech qachon sanoq natijasi bo'lmaydi. Nol butun sonlar to'plamiga kiradi, lekin natural sonlar to'plamiga kirmaydi.",
+        "correct": "Eng kichik natural son 1 ga teng."
+      },
+      {
+        "type": "drill",
+        "question": "1 dan 50 gacha bo'lgan natural sonlar nechta?",
+        "answer": "50 ta",
+        "hint": "Sanoq birdan boshlangani uchun sonlar soni oxirgi songa teng bo'ladi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "40 va 60 sonlari orasida nechta natural son bor? Chegaradagi sonlar hisobga olinmaydi.",
+        "answer": "19 ta",
+        "hint": "Avval $60 - 40$ ni hisoblang, so'ng natijadan bir ayiring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "Bobur qatorda turibdi. Undan oldinda 8 kishi, orqasida 6 kishi bor. Qatorda jami nechta kishi bor?",
+        "answer": "15 kishi",
+        "hint": "Boburning o'zini ham sanashni unutmang.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "100 dan kichik bo'lgan eng katta natural sonni ayting va undan keyingi sonni yozing.",
+        "answer": "99, undan keyingisi 100",
+        "hint": "Keyingi sonni topish uchun songa bir qo'shiladi.",
+        "level": 1
+      }
+    ],
+    "summary": [
+      "Natural sonlar sanash uchun ishlatiladi, birdan boshlanadi va cheksiz davom etadi.",
+      "Nol natural son emas, chunki u sanoq natijasi bo'la olmaydi.",
+      "Natural son sanoqni (nechta) yoki tartibni (nechanchi) bildirishi mumkin."
+    ],
+    "tags": ["natural son", "sanoq", "tartib"],
+    "dtm": false,
+    "estimatedMinutes": 35,
+    "prerequisites": []
+  },
+  {
+    "id": "m05-u01-l02",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Ko'p xonali sonlar. Xona va sinflar",
+    "why": "Do'kondagi chekda 45 308 so'm yozilgan bo'lsa, uni to'g'ri o'qish uchun raqamlarning qaysi xonada turganini bilish kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Nodira do'kondan chiqib chekka qaradi: u yerda 45 308 so'm deb yozilgan. Nodira buni qanday o'qiydi? Agar u raqamlarni shunchaki ketma-ket aytsa, to'rt besh uch nol sakkiz bo'lib chiqadi va bu hech narsani anglatmaydi. Sonni to'g'ri o'qish uchun har bir raqam qaysi xonada turganini bilish kerak. Aynan shu joyning nomi raqamga o'z qiymatini beradi."
+      },
+      {
+        "type": "theory",
+        "title": "Xona va xona birligi",
+        "text": "Sonda raqam turgan o'rin xona deyiladi. Xonalar o'ngdan chapga qarab sanaladi: birlar, o'nlar, yuzlar, minglar, o'n minglar, yuz minglar. Har bir xonaning o'z birligi bor va chapga siljiganda birlik o'n barobar ortadi. Shuning uchun bir xil raqam turgan joyiga qarab har xil qiymat beradi. Masalan 55 sonida chapdagi 5 besh o'nlikni, o'ngdagi 5 esa besh birlikni bildiradi.",
+        "keyPoint": "Raqamning qiymati u turgan xonaga bog'liq."
+      },
+      {
+        "type": "theory",
+        "title": "Sinflar va o'qish tartibi",
+        "text": "Xonalar uchtadan guruhlanib sinflarni hosil qiladi: birliklar sinfi, minglar sinfi, millionlar sinfi. Yozuvda sinflar orasida kichik bo'sh joy qoldiriladi, bu o'qishni osonlashtiradi. Sonni o'qishda chapdagi sinfdan boshlanadi: avval sinfdagi uch xonali son aytiladi, so'ng sinf nomi qo'shiladi. Birliklar sinfining nomi aytilmaydi.",
+        "keyPoint": "Son sinflar bo'yicha chapdan o'ngga qarab o'qiladi."
+      },
+      {
+        "type": "formula",
+        "latex": "$\\overline{abcde} = a \\cdot 10\\,000 + b \\cdot 1000 + c \\cdot 100 + d \\cdot 10 + e$",
+        "caption": "$a, b, c, d, e$ — sonning raqamlari. Har bir raqam o'z xona birligiga ko'paytiriladi va natijalar qo'shiladi. Bunday yozuv xona qo'shiluvchilari yig'indisi deyiladi."
+      },
+      {
+        "type": "example",
+        "task": "$45\\,308$ sonini xonalarga ajrating va o'qing.",
+        "steps": [
+          { "text": "Xonalarni o'ngdan chapga sanaymiz: 8 birlik, 0 o'nlik, 3 yuzlik, 5 minglik, 4 o'n minglik." },
+          { "text": "Sinflarga ajratamiz: minglar sinfida 45, birliklar sinfida 308.", "latex": "$45\\,|\\,308$" },
+          { "text": "Chapdagi sinfdan boshlab o'qiymiz: qirq besh ming, so'ng uch yuz sakkiz." }
+        ],
+        "answer": "Qirq besh ming uch yuz sakkiz"
+      },
+      {
+        "type": "example",
+        "task": "\"Yetti yuz olti ming to'qson to'rt\" sonini raqamlar bilan yozing.",
+        "steps": [
+          { "text": "Minglar sinfini aniqlaymiz: yetti yuz olti ming.", "latex": "$706$" },
+          { "text": "Birliklar sinfini aniqlaymiz: to'qson to'rt. Bu ikki xonali son, lekin sinf uch xonali bo'lishi kerak, shuning uchun oldiga nol qo'yiladi.", "latex": "$094$" },
+          { "text": "Sinflarni birlashtiramiz.", "latex": "$706\\,094$" }
+        ],
+        "answer": "$706\\,094$"
+      },
+      {
+        "type": "example",
+        "task": "$82\\,507$ sonini xona qo'shiluvchilari yig'indisi ko'rinishida yozing.",
+        "steps": [
+          { "text": "Raqamlarni xonalari bilan yozamiz: 8 o'n minglik, 2 minglik, 5 yuzlik, 0 o'nlik, 7 birlik." },
+          { "text": "Har bir raqamni xona birligiga ko'paytiramiz.", "latex": "$80\\,000 + 2\\,000 + 500 + 0 + 7$" },
+          { "text": "Nolga teng qo'shiluvchi yozilmaydi.", "latex": "$80\\,000 + 2\\,000 + 500 + 7$" }
+        ],
+        "answer": "$80\\,000 + 2\\,000 + 500 + 7$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "\"Yetti ming besh\" sonini o'quvchi $75$ deb yozadi.",
+        "why": "O'quvchi eshitgan raqamlarni ketma-ket yozgan, lekin bo'sh xonalarni hisobga olmagan. Yetti ming besh sonida yuzlar va o'nlar xonasi bo'sh, ularning o'rniga nol yozilishi shart. Aks holda 7 raqami minglar emas, o'nlar xonasiga tushib qoladi va sonning qiymati butunlay o'zgaradi.",
+        "correct": "To'g'ri yozuv $7\\,005$."
+      },
+      {
+        "type": "drill",
+        "question": "$60\\,407$ sonini o'qing.",
+        "answer": "Oltmish ming to'rt yuz yetti",
+        "hint": "Sonni sinflarga ajrating: minglar sinfida 60, birliklar sinfida 407.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "\"To'qqiz yuz ming o'ttiz\" sonini raqamlar bilan yozing.",
+        "answer": "$900\\,030$",
+        "hint": "Minglar sinfi 900, birliklar sinfi ikki xonali bo'lgani uchun oldiga nol qo'yiladi.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$54\\,106$ sonini xona qo'shiluvchilari yig'indisi ko'rinishida yozing.",
+        "answer": "$50\\,000 + 4\\,000 + 100 + 6$",
+        "hint": "Nolga teng xona qo'shiluvchisi yozilmaydi.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$273\\,815$ sonida 7 raqami qaysi xonada turibdi?",
+        "answer": "O'n minglar xonasida",
+        "hint": "Xonalarni o'ngdan chapga sanang: birlar, o'nlar, yuzlar, minglar, o'n minglar.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Sonda raqam turgan o'rin xona deyiladi va raqamning qiymati shu xonaga bog'liq.",
+      "Xonalar uchtadan guruhlanib sinflarni hosil qiladi, son sinflar bo'yicha chapdan o'ngga o'qiladi.",
+      "Bo'sh xonaning o'rniga nol yoziladi, aks holda qolgan raqamlar boshqa xonaga siljib ketadi."
+    ],
+    "tags": ["xona", "sinf", "sonni oqish"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u01-l01"]
+  },
+  {
+    "id": "m05-u01-l03",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Million va milliard",
+    "why": "Yangiliklarda \"O'zbekiston aholisi 37 million kishidan oshdi\" deyilganda, bu sonning qanchaligini tasavvur qilish uchun million nima ekanini bilish kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Bobur televizorda yangilik ko'rdi: bir zavod yiliga 5 million dona g'isht ishlab chiqaradi. Boburning uyi qurilishiga 20 ming dona g'isht ketgan edi. Demak zavod bir yilda nechta uyga yetadigan g'isht ishlab chiqaryapti? Bunday savolga javob berish uchun million qanday son ekanini va u ming bilan qanday bog'liqligini aniq bilish kerak."
+      },
+      {
+        "type": "theory",
+        "title": "Million va milliard",
+        "text": "Ming ta ming bir million deyiladi. Million uchta noldan iborat minglar sinfidan keyin yangi sinfni boshlaydi va u millionlar sinfi deb ataladi. Ming ta million esa bir milliard deyiladi. Milliard to'qqizta nol bilan yoziladi va milliardlar sinfini boshlaydi. Har bir yangi sinf oldingisidan ming barobar katta bo'ladi.",
+        "keyPoint": "Har bir keyingi sinf oldingisidan ming barobar katta."
+      },
+      {
+        "type": "formula",
+        "latex": "$1\\,000\\,000 = 10^6, \\qquad 1\\,000\\,000\\,000 = 10^9$",
+        "caption": "Million oltita, milliard esa to'qqizta nol bilan yoziladi. Daraja ko'rsatkichi birdan keyin nechta nol turishini bildiradi."
+      },
+      {
+        "type": "example",
+        "task": "\"Besh million uch yuz ming\" sonini raqamlar bilan yozing.",
+        "steps": [
+          { "text": "Millionlar sinfini yozamiz.", "latex": "$5$" },
+          { "text": "Minglar sinfini yozamiz: uch yuz ming, ya'ni 300.", "latex": "$300$" },
+          { "text": "Birliklar sinfi bo'sh, uning o'rniga uchta nol qo'yiladi.", "latex": "$000$" },
+          { "text": "Sinflarni birlashtiramiz.", "latex": "$5\\,300\\,000$" }
+        ],
+        "answer": "$5\\,300\\,000$"
+      },
+      {
+        "type": "example",
+        "task": "$12\\,400\\,000$ sonini o'qing.",
+        "steps": [
+          { "text": "Sonni sinflarga ajratamiz.", "latex": "$12\\,|\\,400\\,|\\,000$" },
+          { "text": "Millionlar sinfida 12, minglar sinfida 400, birliklar sinfida 000." },
+          { "text": "Chapdan o'ngga o'qiymiz. Birliklar sinfi nolga teng bo'lgani uchun aytilmaydi." }
+        ],
+        "answer": "O'n ikki million to'rt yuz ming"
+      },
+      {
+        "type": "example",
+        "task": "Bir milliard necha millionga teng?",
+        "steps": [
+          { "text": "Milliard to'qqizta nol bilan yoziladi.", "latex": "$1\\,000\\,000\\,000$" },
+          { "text": "Million oltita nol bilan yoziladi.", "latex": "$1\\,000\\,000$" },
+          { "text": "Milliardni millionga bo'lamiz.", "latex": "$1\\,000\\,000\\,000 : 1\\,000\\,000 = 1000$" }
+        ],
+        "answer": "1000 million"
+      },
+      {
+        "type": "mistake",
+        "wrong": "O'quvchi bir milliardni yuz millionga teng deb hisoblaydi va uni $100\\,000\\,000$ deb yozadi.",
+        "why": "Sinflar ming barobardan ortadi, yuz barobardan emas. Milliard mingta milliondan iborat, shuning uchun unda to'qqizta nol bo'ladi. Yozilgan sondagi nollarni sanash tekshirishning eng tez usuli: $100\\,000\\,000$ da sakkizta nol bor, demak bu yuz million.",
+        "correct": "Bir milliard $1\\,000\\,000\\,000$ ko'rinishida yoziladi va $1000$ millionga teng."
+      },
+      {
+        "type": "drill",
+        "question": "\"Uch million ellik ming\" sonini raqamlar bilan yozing.",
+        "answer": "$3\\,050\\,000$",
+        "hint": "Minglar sinfi ellik ming, ya'ni 050. Birliklar sinfi bo'sh.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$7\\,800\\,000$ sonini o'qing.",
+        "answer": "Yetti million sakkiz yuz ming",
+        "hint": "Sonni uchtadan guruhlab sinflarga ajrating.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Bir million necha mingga teng?",
+        "answer": "1000 ming",
+        "hint": "Millionni mingga bo'ling.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "\"Ikki milliard besh yuz million\" sonini raqamlar bilan yozing.",
+        "answer": "$2\\,500\\,000\\,000$",
+        "hint": "Milliardlar sinfida 2, millionlar sinfida 500, qolgan ikki sinf nolga teng.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Ming ta ming bir million, ming ta million esa bir milliardga teng.",
+      "Million oltita, milliard to'qqizta nol bilan yoziladi.",
+      "Har bir yangi sinf oldingisidan ming barobar katta bo'ladi."
+    ],
+    "tags": ["million", "milliard", "sinf"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u01-l02"]
+  },
+  {
+    "id": "m05-u01-l08",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Natural sonlarni taqqoslash",
+    "why": "Ikki do'konda bir xil telefon 3 850 000 va 3 805 000 so'm turadi, va qaysi biri arzon ekanini bilish uchun sonlarni to'g'ri taqqoslash kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Nodira ikki do'konda bir xil sovutgichning narxini ko'rdi. Birinchisida 4 250 000 so'm, ikkinchisida 4 205 000 so'm deb yozilgan. Ikkala narx ham yetti xonali va ikkalasi ham 4 raqamidan boshlanadi. Shoshib qaraganda ular bir xilday tuyuladi. Lekin raqamlarni chapdan boshlab birma-bir solishtirsa, farq darrov ko'rinadi va qaysi do'kon arzonroq ekani ma'lum bo'ladi."
+      },
+      {
+        "type": "theory",
+        "title": "Taqqoslash qoidasi",
+        "text": "Ikki natural sonni taqqoslashda avval ularning xonalar soni solishtiriladi. Qaysi sonda xona ko'p bo'lsa, o'sha son katta bo'ladi. Agar xonalar soni teng bo'lsa, raqamlar chapdan boshlab birma-bir taqqoslanadi. Birinchi farq uchragan xonada qaysi raqam katta bo'lsa, o'sha son katta bo'ladi. Qolgan raqamlarga umuman qaralmaydi.",
+        "keyPoint": "Avval xonalar soni, so'ng chapdan boshlab birinchi farq uchragan xona taqqoslanadi."
+      },
+      {
+        "type": "example",
+        "task": "$4523$ va $4519$ sonlarini taqqoslang.",
+        "steps": [
+          { "text": "Ikkala son ham to'rt xonali, demak raqamlarni chapdan taqqoslaymiz." },
+          { "text": "Minglar teng, yuzlar teng.", "latex": "$4 = 4, \\ 5 = 5$" },
+          { "text": "O'nlar xonasida farq uchradi.", "latex": "$2 > 1$" },
+          { "text": "Birinchi farq uchragan xona hukmni beradi, birliklarga qaralmaydi.", "latex": "$4523 > 4519$" }
+        ],
+        "answer": "$4523 > 4519$"
+      },
+      {
+        "type": "example",
+        "task": "$9876$ va $10\\,001$ sonlarini taqqoslang.",
+        "steps": [
+          { "text": "Xonalar sonini sanaymiz: birinchisi to'rt xonali, ikkinchisi besh xonali." },
+          { "text": "Xonasi ko'p bo'lgan son katta bo'ladi." },
+          { "text": "Raqamlarni taqqoslash shart emas.", "latex": "$9876 < 10\\,001$" }
+        ],
+        "answer": "$9876 < 10\\,001$"
+      },
+      {
+        "type": "example",
+        "task": "$3401$, $3410$, $3041$, $3104$ sonlarini o'sish tartibida joylashtiring.",
+        "steps": [
+          { "text": "Barcha sonlar to'rt xonali va minglar xonasida 3 turibdi, demak yuzlar xonasiga qaraymiz.", "latex": "$4, 4, 0, 1$" },
+          { "text": "Yuzlar bo'yicha eng kichigi 3041, keyingisi 3104." },
+          { "text": "Qolgan ikkitasida yuzlar teng, o'nlar xonasiga qaraymiz.", "latex": "$0 < 1$" },
+          { "text": "Demak 3401 dan keyin 3410 keladi.", "latex": "$3041 < 3104 < 3401 < 3410$" }
+        ],
+        "answer": "$3041, \\ 3104, \\ 3401, \\ 3410$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$9876$ va $10\\,001$ ni taqqoslaganda o'quvchi \"birinchi sonning birinchi raqami 9, ikkinchisiniki 1, 9 katta\" deb $9876 > 10\\,001$ deb yozadi.",
+        "why": "Raqamlarni taqqoslashdan oldin xonalar soni solishtirilishi kerak. Besh xonali har qanday son to'rt xonali har qanday sondan katta, chunki eng kichik besh xonali son 10 000, eng katta to'rt xonali son esa 9999. Raqamlarni birma-bir taqqoslash faqat xonalar soni teng bo'lgandagina ishlaydi.",
+        "correct": "$9876 < 10\\,001$, chunki birinchi son to'rt xonali, ikkinchisi besh xonali."
+      },
+      {
+        "type": "drill",
+        "question": "$8042$ va $8402$ sonlarini taqqoslang.",
+        "answer": "$8042 < 8402$",
+        "hint": "Minglar teng, yuzlar xonasini solishtiring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$5607$, $5670$, $5076$ sonlarini kamayish tartibida yozing.",
+        "answer": "$5670, \\ 5607, \\ 5076$",
+        "hint": "Minglar barchasida teng, yuzlar xonasidan boshlab taqqoslang.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$2$, $5$, $7$ raqamlaridan foydalanib eng katta uch xonali sonni tuzing. Raqamlar takrorlanmaydi.",
+        "answer": "$752$",
+        "hint": "Eng katta raqam eng katta xonaga qo'yiladi.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$6\\square4 > 674$ tengsizlik o'rinli bo'lishi uchun $\\square$ o'rniga qanday raqamlarni qo'yish mumkin?",
+        "answer": "$8$ va $9$",
+        "hint": "Yuzlar va birliklar teng, demak hukm o'nlar xonasiga bog'liq.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Xonasi ko'p bo'lgan natural son har doim katta bo'ladi.",
+      "Xonalar soni teng bo'lsa, raqamlar chapdan boshlab birma-bir taqqoslanadi.",
+      "Birinchi farq uchragan xona hukmni beradi, undan keyingi raqamlarga qaralmaydi."
+    ],
+    "tags": ["taqqoslash", "tengsizlik", "xona"],
+    "dtm": true,
+    "estimatedMinutes": 35,
+    "prerequisites": ["m05-u01-l02"]
+  },
+  {
+    "id": "m05-u01-l07",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Shkalalar va sonlar nuri",
+    "why": "Toshkent-Samarqand yo'lidagi kilometr ustunlari aslida koordinata nuri bo'lib, ular yordamida istalgan ikki nuqta orasidagi masofa hisoblanadi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Toshkentdan Samarqandga ketayotgan yo'lda har kilometrda ustun turadi va unda son yozilgan. Alisher 140-ustunni ko'rdi, bir ozdan keyin 175-ustunni ko'rdi. Alisher shu oraliqda qancha yurganini bilish uchun ustunlarni qaytadan sanashi shart emas: ikki sonni ayirsa kifoya. Yo'ldagi ustunlar tizimi matematikada koordinata nuri deb ataladi."
+      },
+      {
+        "type": "theory",
+        "title": "Koordinata nuri qanday quriladi",
+        "text": "Sonlar nuri, ya'ni koordinata nurini qurish uchun uchta narsa kerak. Birinchisi boshlanish nuqtasi, u nol bilan belgilanadi. Ikkinchisi yo'nalish, odatda o'ngga qarab olinadi. Uchinchisi birlik kesma, ya'ni bir birlik qanday uzunlikda tasvirlanishi. Nurdagi har bir nuqtaga bitta son mos keladi va bu son shu nuqtaning koordinatasi deyiladi.",
+        "keyPoint": "Koordinata nuri boshlanish nuqtasi, yo'nalish va birlik kesmadan iborat."
+      },
+      {
+        "type": "theory",
+        "title": "Masofani hisoblash",
+        "text": "Koordinata nurida ikki nuqta orasidagi masofani topish uchun katta koordinatadan kichigi ayiriladi. Natija birliklarda chiqadi. Bu masofani sm yoki m kabi o'lchov birligiga aylantirish uchun birlik kesma uzunligiga ko'paytiriladi. Koordinata va uzunlik bir xil narsa emas: koordinata birliklarda, uzunlik esa tanlangan o'lchov birligida beriladi.",
+        "keyPoint": "Ikki nuqta orasidagi masofa koordinatalar ayirmasiga teng."
+      },
+      {
+        "type": "example",
+        "task": "Koordinata nurida $A(3)$ va $B(7)$ nuqtalar berilgan. Ular orasidagi masofani birliklarda toping.",
+        "steps": [
+          { "text": "Qaysi koordinata katta ekanini aniqlaymiz.", "latex": "$7 > 3$" },
+          { "text": "Kattasidan kichigini ayiramiz.", "latex": "$7 - 3 = 4$" },
+          { "text": "Demak nuqtalar orasida 4 birlik masofa bor." }
+        ],
+        "answer": "4 birlik"
+      },
+      {
+        "type": "example",
+        "task": "Koordinata nurida birlik kesma 2 sm ga teng. $C(5)$ nuqta boshlanish nuqtasidan necha santimetr uzoqlikda joylashgan?",
+        "steps": [
+          { "text": "Koordinata 5 ga teng, demak nuqta noldan 5 birlik uzoqlikda." },
+          { "text": "Har bir birlik 2 sm bilan tasvirlangan." },
+          { "text": "Birliklar sonini birlik kesma uzunligiga ko'paytiramiz.", "latex": "$5 \\cdot 2 = 10$" }
+        ],
+        "answer": "10 sm"
+      },
+      {
+        "type": "example",
+        "task": "$A(2)$ va $B(10)$ nuqtalar berilgan. $AB$ kesmaning o'rtasidagi nuqta koordinatasini toping.",
+        "steps": [
+          { "text": "Kesma uzunligini topamiz.", "latex": "$10 - 2 = 8$" },
+          { "text": "O'rta nuqta kesmani teng ikkiga bo'ladi.", "latex": "$8 : 2 = 4$" },
+          { "text": "$A$ nuqtadan 4 birlik o'ngga siljiymiz.", "latex": "$2 + 4 = 6$" }
+        ],
+        "answer": "$6$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "Birlik kesma 3 sm bo'lgan nurda $D(4)$ nuqta haqida so'ralganda o'quvchi \"nuqta noldan 4 sm uzoqlikda\" deb javob beradi.",
+        "why": "Koordinata birliklar sonini bildiradi, santimetrni emas. Bu yerda 4 birlik bor va har biri 3 sm bilan tasvirlangan, shuning uchun haqiqiy uzunlik ancha katta. Koordinatani uzunlikka aylantirish uchun uni birlik kesma uzunligiga ko'paytirish kerak.",
+        "correct": "Nuqta noldan $4 \\cdot 3 = 12$ sm uzoqlikda joylashgan."
+      },
+      {
+        "type": "drill",
+        "question": "Koordinata nurida $M(4)$ va $N(11)$ nuqtalar berilgan. Ular orasidagi masofani birliklarda toping.",
+        "answer": "7 birlik",
+        "hint": "Kattasidan kichigini ayiring.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "Birlik kesma 3 sm ga teng. $K(6)$ nuqta boshlanish nuqtasidan necha santimetr uzoqlikda?",
+        "answer": "18 sm",
+        "hint": "Koordinatani birlik kesma uzunligiga ko'paytiring.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "$A(5)$ nuqtadan 4 birlik o'ngga siljisak, qaysi koordinatali nuqtaga tushamiz?",
+        "answer": "$9$",
+        "hint": "O'ngga siljish koordinataning ortishini bildiradi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$A(3)$ va $B(15)$ nuqtalar berilgan. $AB$ kesmaning o'rtasidagi nuqta koordinatasini toping.",
+        "answer": "$9$",
+        "hint": "Avval kesma uzunligini toping, so'ng uning yarmini $A$ ning koordinatasiga qo'shing.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Koordinata nuri boshlanish nuqtasi, yo'nalish va birlik kesmadan tashkil topadi.",
+      "Nurdagi har bir nuqtaga bitta son, ya'ni uning koordinatasi mos keladi.",
+      "Ikki nuqta orasidagi masofa koordinatalar ayirmasiga teng, uzunlikka aylantirish uchun birlik kesmaga ko'paytiriladi."
+    ],
+    "tags": ["koordinata nuri", "masofa", "birlik kesma"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u01-l01"]
+  },
+  {
+    "id": "m05-u01-l09",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Natural sonlarni yaxlitlash",
+    "why": "Bozorda uch xil mahsulot 47 800, 12 300 va 9 600 so'm bo'lsa, pul yetadimi yoki yo'qligini tez chamalash uchun narxlarni yaxlitlash kifoya.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Dilnoza bozorga 70 000 so'm bilan bordi. U olmoqchi bo'lgan uchta narsa 47 800, 12 300 va 9 600 so'm turadi. Kassaga borishdan oldin puli yetishini bilmoqchi. Aniq hisoblash uchun vaqt ketadi, lekin narxlarni taxminan 48 ming, 12 ming va 10 ming deb olsa, yig'indi 70 ming atrofida chiqadi va Dilnoza darrov qaror qabul qiladi. Bunday soddalashtirish yaxlitlash deb ataladi."
+      },
+      {
+        "type": "theory",
+        "title": "Yaxlitlash qoidasi",
+        "text": "Sonni biror xonagacha yaxlitlash uchun shu xonadan keyingi bitta raqamga qaraladi. Agar u raqam 5 dan kichik bo'lsa, yaxlitlanayotgan xona o'zgarmaydi. Agar u 5 ga teng yoki undan katta bo'lsa, yaxlitlanayotgan xona bittaga oshadi. Ikkala holatda ham yaxlitlanayotgan xonadan keyingi barcha raqamlar nolga almashtiriladi.",
+        "keyPoint": "Faqat bitta keyingi raqamga qaraladi, undan keyingilariga emas."
+      },
+      {
+        "type": "example",
+        "task": "$3476$ sonini yuzlargacha yaxlitlang.",
+        "steps": [
+          { "text": "Yuzlar xonasini topamiz. Bu 4 raqami.", "latex": "$3\\,\\underline{4}\\,76$" },
+          { "text": "Undan keyingi bitta raqamga qaraymiz. Bu 7 ga teng." },
+          { "text": "7 raqami 5 dan katta, demak yuzlar xonasi bittaga oshadi.", "latex": "$4 \\to 5$" },
+          { "text": "Keyingi raqamlarni nolga almashtiramiz.", "latex": "$3500$" }
+        ],
+        "answer": "$3500$"
+      },
+      {
+        "type": "example",
+        "task": "$12\\,349$ sonini minglargacha yaxlitlang.",
+        "steps": [
+          { "text": "Minglar xonasini topamiz. Bu 2 raqami.", "latex": "$1\\,\\underline{2}\\,349$" },
+          { "text": "Undan keyingi bitta raqamga qaraymiz. Bu 3 ga teng." },
+          { "text": "3 raqami 5 dan kichik, demak minglar xonasi o'zgarmaydi." },
+          { "text": "Keyingi raqamlarni nolga almashtiramiz.", "latex": "$12\\,000$" }
+        ],
+        "answer": "$12\\,000$"
+      },
+      {
+        "type": "example",
+        "task": "Bobur do'konda 47 800 so'mlik xarid qildi. Xarid summasini minglargacha yaxlitlang.",
+        "steps": [
+          { "text": "Minglar xonasini topamiz. Bu 7 raqami.", "latex": "$4\\,\\underline{7}\\,800$" },
+          { "text": "Undan keyingi raqam 8 ga teng." },
+          { "text": "8 raqami 5 dan katta, demak minglar xonasi bittaga oshadi.", "latex": "$7 \\to 8$" },
+          { "text": "Natijani yozamiz.", "latex": "$48\\,000$" }
+        ],
+        "answer": "$48\\,000$ so'm"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$12\\,349$ ni minglargacha yaxlitlashda o'quvchi bosqichma-bosqich yaxlitlaydi: avval $349 \\to 350$, so'ng $350 \\to 400$, so'ng $12\\,400 \\to 12\\,000$ deb yuradi va yo'l-yo'lakay chalkashadi.",
+        "why": "Yaxlitlashda faqat bitta keyingi raqamga qaraladi, zanjir bo'ylab qayta-qayta yaxlitlash mumkin emas. Ketma-ket yaxlitlash natijani buzadi: masalan $4449$ ni minglargacha ketma-ket yaxlitlasa $4000$ o'rniga $5000$ chiqib qoladi.",
+        "correct": "Minglar xonasidan keyingi bitta raqam 3 ga teng va u 5 dan kichik, shuning uchun javob $12\\,000$."
+      },
+      {
+        "type": "drill",
+        "question": "$8623$ sonini yuzlargacha yaxlitlang.",
+        "answer": "$8600$",
+        "hint": "Yuzlar xonasidan keyingi raqam 2 ga teng.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$45\\,678$ sonini minglargacha yaxlitlang.",
+        "answer": "$46\\,000$",
+        "hint": "Minglar xonasidan keyingi raqam 6 ga teng, u 5 dan katta.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$2951$ sonini yuzlargacha yaxlitlang.",
+        "answer": "$3000$",
+        "hint": "Yuzlar xonasi 9 ga teng, u bittaga oshsa 10 bo'ladi va minglar xonasiga o'tadi.",
+        "level": 3
+      },
+      {
+        "type": "drill",
+        "question": "$74\\,500$ sonini minglargacha yaxlitlang.",
+        "answer": "$75\\,000$",
+        "hint": "Keyingi raqam aynan 5 ga teng, bunday holatda xona bittaga oshadi.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Yaxlitlashda yaxlitlanayotgan xonadan keyingi bitta raqamga qaraladi.",
+      "Bu raqam 5 dan kichik bo'lsa xona o'zgarmaydi, 5 ga teng yoki undan katta bo'lsa xona bittaga oshadi.",
+      "Yaxlitlangan xonadan keyingi barcha raqamlar nolga almashtiriladi."
+    ],
+    "tags": ["yaxlitlash", "taxminiy hisob"],
+    "dtm": true,
+    "estimatedMinutes": 40,
+    "prerequisites": ["m05-u01-l02", "m05-u01-l08"]
+  },
+  {
+    "id": "m05-u01-l04",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "Rim raqamlari",
+    "why": "Kitob boblari, soat siferblati va binolar peshtoqidagi qurilish yili ko'pincha rim raqamlarida yoziladi, va ularni o'qiy olish kerak bo'ladi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Nodira bobosining eski devor soatiga qaradi. Unda odatdagi raqamlar o'rniga I, II, III, IV kabi belgilar turibdi. Kutubxonadagi kitobning bo'limlari ham xuddi shunday belgilangan. Bu belgilar rim raqamlari deb ataladi va ular ming yillar oldin paydo bo'lgan. Ular bugun ham bob raqamlari, sana va soatlarda ishlatiladi."
+      },
+      {
+        "type": "theory",
+        "title": "Asosiy belgilar",
+        "text": "Rim yozuvida yettita asosiy belgi bor: I bir, V besh, X o'n, L ellik, C yuz, D besh yuz, M ming. Boshqa barcha sonlar shu belgilarni yonma-yon qo'yish bilan hosil qilinadi. Bu tizimda nol yo'q va xona tushunchasi ishlatilmaydi, shuning uchun ustunlab hisoblash uchun qulay emas.",
+        "keyPoint": "I, V, X, L, C, D, M belgilari mos ravishda 1, 5, 10, 50, 100, 500, 1000 ni bildiradi."
+      },
+      {
+        "type": "theory",
+        "title": "Qo'shish va ayirish qoidasi",
+        "text": "Agar kichik belgi katta belgidan keyin tursa, ularning qiymatlari qo'shiladi. Agar kichik belgi katta belgidan oldin tursa, kichigi kattasidan ayiriladi. Ayirish uchun faqat I, X va C belgilari ishlatiladi, ular esa faqat o'zidan keyingi ikkita katta belgi oldida tura oladi. Bir xil belgi ketma-ket uch martadan ortiq takrorlanmaydi.",
+        "keyPoint": "Kichik belgi kattasidan keyin tursa qo'shiladi, oldin tursa ayiriladi."
+      },
+      {
+        "type": "example",
+        "task": "XXVII rim raqami qaysi songa teng?",
+        "steps": [
+          { "text": "Belgilarni chapdan o'ngga ajratamiz.", "latex": "$X + X + V + I + I$" },
+          { "text": "Har bir belgi o'zidan keyingisidan katta yoki teng, demak hammasi qo'shiladi.", "latex": "$10 + 10 + 5 + 1 + 1$" },
+          { "text": "Yig'indini hisoblaymiz.", "latex": "$27$" }
+        ],
+        "answer": "$27$"
+      },
+      {
+        "type": "example",
+        "task": "$49$ sonini rim raqamlarida yozing.",
+        "steps": [
+          { "text": "Sonni o'nlar va birlarga ajratamiz.", "latex": "$49 = 40 + 9$" },
+          { "text": "40 ni yozamiz: X belgisi L dan oldin turadi.", "latex": "$XL = 50 - 10 = 40$" },
+          { "text": "9 ni yozamiz: I belgisi X dan oldin turadi.", "latex": "$IX = 10 - 1 = 9$" },
+          { "text": "Ikkalasini birlashtiramiz.", "latex": "$XLIX$" }
+        ],
+        "answer": "$XLIX$"
+      },
+      {
+        "type": "example",
+        "task": "$2024$ sonini rim raqamlarida yozing.",
+        "steps": [
+          { "text": "Sonni qismlarga ajratamiz.", "latex": "$2024 = 1000 + 1000 + 20 + 4$" },
+          { "text": "Ikki mingni yozamiz.", "latex": "$MM$" },
+          { "text": "Yigirmani yozamiz.", "latex": "$XX$" },
+          { "text": "To'rtni yozamiz: I belgisi V dan oldin turadi.", "latex": "$IV = 5 - 1 = 4$" },
+          { "text": "Hammasini birlashtiramiz.", "latex": "$MMXXIV$" }
+        ],
+        "answer": "$MMXXIV$"
+      },
+      {
+        "type": "mistake",
+        "wrong": "$49$ sonini o'quvchi $IL$ deb yozadi, ya'ni $50 - 1$ deb o'ylaydi.",
+        "why": "Ayirish qoidasi cheklangan: I belgisi faqat V va X oldida, X faqat L va C oldida, C faqat D va M oldida tura oladi. I belgisi L oldida turolmaydi. Shuning uchun 49 son ikki qismga ajratilib yoziladi: avval 40, keyin 9.",
+        "correct": "To'g'ri yozuv $XLIX$."
+      },
+      {
+        "type": "drill",
+        "question": "XXXIV rim raqami qaysi songa teng?",
+        "answer": "$34$",
+        "hint": "Uchta X va undan keyin IV bor.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$68$ sonini rim raqamlarida yozing.",
+        "answer": "$LXVIII$",
+        "hint": "Sonni $50 + 10 + 5 + 3$ ko'rinishida ajrating.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "XC rim raqami qaysi songa teng?",
+        "answer": "$90$",
+        "hint": "X belgisi C dan oldin turibdi, demak ayirish bajariladi.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "MMXXVI rim raqami qaysi songa teng?",
+        "answer": "$2026$",
+        "hint": "Sonni qismlarga ajrating: MM, XX va VI.",
+        "level": 2
+      }
+    ],
+    "summary": [
+      "Rim yozuvida yettita asosiy belgi bor: I, V, X, L, C, D, M.",
+      "Kichik belgi kattasidan keyin tursa qo'shiladi, oldin tursa kattasidan ayiriladi.",
+      "Ayirish uchun faqat I, X va C belgilari va faqat cheklangan juftliklarda ishlatiladi."
+    ],
+    "tags": ["rim raqamlari", "sanoq tizimi"],
+    "dtm": false,
+    "estimatedMinutes": 35,
+    "prerequisites": ["m05-u01-l01"]
+  },
+  {
+    "id": "m05-u01-l15",
+    "unitId": "m05-u01",
+    "grade": 5,
+    "subject": "matematika",
+    "title": "I bobni takrorlash",
+    "why": "Nazorat ishida savollar aralash keladi, shuning uchun xona, taqqoslash va yaxlitlash qoidalarini bir masalada birga ishlata olish kerak bo'ladi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Alisher bo'lim bo'yicha nazorat ishiga tayyorlanmoqda. Daftariga qarasa, har bir dars alohida o'rganilgan: xonalar alohida, taqqoslash alohida, yaxlitlash alohida. Lekin nazorat ishida savollar aralash keladi va bitta masalada bir nechta qoida kerak bo'ladi. Shu sababli bugungi dars yangi mavzu emas, balki o'rganilganlarni birga ishlatib ko'rishga bag'ishlanadi."
+      },
+      {
+        "type": "theory",
+        "title": "Bo'limning asosiy qoidalari",
+        "text": "Bo'lim davomida to'rtta asosiy qoida o'rganildi. Birinchisi: raqamning qiymati u turgan xonaga bog'liq va bo'sh xona o'rniga nol yoziladi. Ikkinchisi: taqqoslashda avval xonalar soni, so'ng chapdan boshlab birinchi farq uchragan xona hal qiladi. Uchinchisi: yaxlitlashda faqat bitta keyingi raqamga qaraladi. To'rtinchisi: koordinata nurida ikki nuqta orasidagi masofa koordinatalar ayirmasiga teng.",
+        "keyPoint": "Har bir masalada avval qaysi qoida kerakligini aniqlash lozim."
+      },
+      {
+        "type": "example",
+        "task": "$405\\,072$ sonida 5 raqami qaysi xonada turibdi va u qanday qiymat beradi?",
+        "steps": [
+          { "text": "Xonalarni o'ngdan chapga sanaymiz: 2 birlik, 7 o'nlik, 0 yuzlik, 5 minglik." },
+          { "text": "Demak 5 raqami minglar xonasida turibdi." },
+          { "text": "Raqamni xona birligiga ko'paytiramiz.", "latex": "$5 \\cdot 1000 = 5000$" }
+        ],
+        "answer": "Minglar xonasida, qiymati $5000$"
+      },
+      {
+        "type": "example",
+        "task": "$3700$ va $3070$ sonlarini taqqoslang va kattasini yuzlargacha yaxlitlang.",
+        "steps": [
+          { "text": "Ikkala son to'rt xonali, minglar xonasi teng.", "latex": "$3 = 3$" },
+          { "text": "Yuzlar xonasida farq uchradi.", "latex": "$7 > 0$" },
+          { "text": "Demak birinchi son katta.", "latex": "$3700 > 3070$" },
+          { "text": "$3700$ ni yuzlargacha yaxlitlaymiz. Yuzlar xonasidan keyingi raqam nolga teng, shuning uchun son o'zgarmaydi.", "latex": "$3700$" }
+        ],
+        "answer": "$3700 > 3070$, yaxlitlangani $3700$"
+      },
+      {
+        "type": "example",
+        "task": "Bir shaharning aholisi $26\\,481$ kishi. Bu sonni minglargacha yaxlitlang va yaxlitlash natijasida son kamayganini yoki ortganini ayting.",
+        "steps": [
+          { "text": "Minglar xonasini topamiz. Bu 6 raqami.", "latex": "$2\\,\\underline{6}\\,481$" },
+          { "text": "Undan keyingi raqam 4 ga teng va u 5 dan kichik, demak xona o'zgarmaydi.", "latex": "$26\\,000$" },
+          { "text": "Yaxlitlangan sonni asl son bilan taqqoslaymiz.", "latex": "$26\\,000 < 26\\,481$" },
+          { "text": "Demak yaxlitlash natijasida son kamaydi." }
+        ],
+        "answer": "$26\\,000$, son kamaydi"
+      },
+      {
+        "type": "mistake",
+        "wrong": "\"$9999$ ga 1 qo'shilsa nechta xonali son hosil bo'ladi?\" degan savolga o'quvchi to'rt deb javob beradi.",
+        "why": "Barcha xonalarda 9 turganda birni qo'shish zanjir reaksiyasini keltirib chiqaradi: birliklar 10 bo'lib o'nlarga o'tadi, o'nlar ham 10 bo'lib yuzlarga o'tadi va shu tariqa yangi xona ochiladi. Natijada $10\\,000$ hosil bo'ladi va u besh xonali son.",
+        "correct": "$9999 + 1 = 10\\,000$, ya'ni besh xonali son hosil bo'ladi."
+      },
+      {
+        "type": "drill",
+        "question": "1 dan 30 gacha bo'lgan natural sonlar nechta va ular orasida eng kattasi qaysi?",
+        "answer": "30 ta, eng kattasi 30",
+        "hint": "Sanoq birdan boshlanadi.",
+        "level": 1
+      },
+      {
+        "type": "drill",
+        "question": "$348\\,519$ sonini o'n minglargacha yaxlitlang.",
+        "answer": "$350\\,000$",
+        "hint": "O'n minglar xonasi 4 ga teng, undan keyingi raqam 8, u 5 dan katta.",
+        "level": 2
+      },
+      {
+        "type": "drill",
+        "question": "XLV rim raqami qaysi songa teng? Javobni o'nlargacha yaxlitlang.",
+        "answer": "$45$, yaxlitlangani $50$",
+        "hint": "$XL = 40$, $V = 5$. O'nlar xonasidan keyingi raqam aynan 5 ga teng.",
+        "level": 3
+      },
+      {
+        "type": "drill",
+        "question": "$0$, $3$, $8$ raqamlaridan foydalanib eng kichik uch xonali sonni tuzing. Raqamlar takrorlanmaydi.",
+        "answer": "$308$",
+        "hint": "Birinchi o'rinda nol tura olmaydi, shuning uchun u ikkinchi o'ringa qo'yiladi.",
+        "level": 3
+      }
+    ],
+    "summary": [
+      "Raqamning qiymati u turgan xonaga bog'liq va uni topish uchun raqam xona birligiga ko'paytiriladi.",
+      "Taqqoslashda avval xonalar soni, so'ng chapdan birinchi farq uchragan xona hal qiladi.",
+      "Yaxlitlashda faqat bitta keyingi raqamga qaraladi va natija asl sondan katta yoki kichik bo'lishi mumkin."
+    ],
+    "tags": ["takrorlash", "mashq", "natural son"],
+    "dtm": true,
+    "estimatedMinutes": 45,
+    "prerequisites": [
+      "m05-u01-l02",
+      "m05-u01-l04",
+      "m05-u01-l08",
+      "m05-u01-l09"
+    ]
+  }
+]

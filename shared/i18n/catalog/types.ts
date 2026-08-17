@@ -46,6 +46,29 @@ export type MessageCatalog = {
     selectTitle: string;
     selectSubtitle: string;
   };
+  /** Ilovani bosh ekranga chiqarish (PWA o'rnatish). */
+  install: {
+    cardTitle: string;
+    cardSubtitle: string;
+    action: string;
+    dismiss: string;
+    profileRow: string;
+    guideTitle: string;
+    guideIosIntro: string;
+    guideIosStep1: string;
+    guideIosStep2: string;
+    guideIosStep3: string;
+    guideAndroidIntro: string;
+    guideAndroidStep1: string;
+    guideAndroidStep2: string;
+    guideAndroidStep3: string;
+    guideDesktopIntro: string;
+    guideDesktopStep1: string;
+    guideDesktopStep2: string;
+    installed: string;
+    dismissedHint: string;
+    close: string;
+  };
   home: {
     premium: string;
     loadingPlan: string;
@@ -61,6 +84,8 @@ export type MessageCatalog = {
     questReadingSub: string;
     questSpeaking: string;
     questSpeakingSub: string;
+    questSpeakingTasks: string;
+    questSpeakingTasksSub: string;
     questStart: string;
     questRepeat: string;
     dayLabel: string;
@@ -185,6 +210,9 @@ export type MessageCatalog = {
     levelIntermediate: string;
     levelUpper: string;
     membersOnline: string;
+    mentionAlert: string;
+    mentionEmpty: string;
+    mentionTitle: string;
     noProfilesSub: string;
     outgoingSub: string;
     partnerLabel: string;
@@ -194,6 +222,8 @@ export type MessageCatalog = {
   };
   teachers: {
     title: string;
+    /** Ommaviy profildagi video-taqdimot sarlavhasi. */
+    videoTitle: string;
     subtitle: string;
     details: string;
     emptyTitle: string;
@@ -228,6 +258,17 @@ export type MessageCatalog = {
     loggingIn: string;
     identifierLabel: string;
     loginError: string;
+    // O'quvchi ro'yxati — qidiruv/filtr/reyting (optional; boshqa tillar uz'ga tushadi)
+    searchPlaceholder?: string;
+    resultsCount?: string;
+    noResults?: string;
+    sortRelevance?: string;
+    sortPriceLow?: string;
+    sortPriceHigh?: string;
+    sortExperience?: string;
+    sortRating?: string;
+    ratingNew?: string;
+    reviewsCount?: string;
   };
   courses: {
     title: string;
@@ -536,6 +577,7 @@ export type MessageCatalog = {
     questionsCount: string;
     statusPassed: string;
     statusFailed: string;
+    statusOpen: string;
     variantNotFound: string;
     writeAnswerPlaceholder: string;
   };
@@ -656,5 +698,17 @@ export type MessageCatalog = {
     onboardingTitle: string;
     onboardingSubtitle: string;
     loginRequired: string;
+  };
+  liveStream: {
+    badge: string;
+    title: string;
+    join: string;
+    watchingHint: string;
+    upcomingTitle: string;
+    noneTitle: string;
+    noneSubtitle: string;
+    endedTitle: string;
+    back: string;
+    loadError: string;
   };
 };

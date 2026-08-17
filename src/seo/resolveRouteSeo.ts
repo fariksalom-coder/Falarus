@@ -385,6 +385,86 @@ export function resolveRouteSeo(
     };
   }
 
+  // --- O'yinlar ---
+  if (raw === '/games') {
+    return {
+      title: clipTitle("O'yinlar — rus tilini o'ynab o'rganing"),
+      description: clipDescription(
+        "So'z o'yinlari bilan rus tilini mustahkamlang: so'zni harflardan yig'ish va oxirgi harfdan so'z topish."
+      ),
+      canonicalPath: '/games',
+    };
+  }
+
+  if (raw === '/games/soz-zanjiri') {
+    return {
+      title: clipTitle("So'z zanjiri — oxirgi harfdan so'z topish"),
+      description: clipDescription(
+        "Kompyuter aytgan so'zning oxirgi harfidan yangi so'z toping. 30 soniya vaqt, A1-B2 darajalar, 6800 dan ortiq so'z."
+      ),
+      canonicalPath: '/games/soz-zanjiri',
+    };
+  }
+
+  if (raw.startsWith('/games/word-swipe')) {
+    return {
+      title: clipTitle("So'zni yig'ing — harflardan so'z tuzish o'yini"),
+      description: clipDescription(
+        "Rus tilidagi so'zlarni harflardan yig'ing: bosqichma-bosqich xarita, yulduzlar va progress."
+      ),
+      canonicalPath: '/games/word-swipe/xarita',
+    };
+  }
+
+  if (raw.startsWith('/games')) {
+    return {
+      title: clipTitle("O'yinlar"),
+      description: clipDescription("Rus tilini o'ynab o'rganish uchun so'z o'yinlari."),
+      canonicalPath: '/games',
+    };
+  }
+
+  // --- Kunlik reja ichidagi kun sahifalari ---
+  const kunMatch = raw.match(/^\/kunlik-reja\/kun\/(\d+)/);
+  if (kunMatch) {
+    const day = kunMatch[1];
+    return {
+      title: clipTitle(`${day}-kun — kunlik rus tili darsi`),
+      description: clipDescription(
+        `182 kunlik dasturning ${day}-kuni: grammatika, lug'at, o'qish va gapirish mashqlari.`
+      ),
+      canonicalPath: '/kunlik-reja',
+    };
+  }
+
+  if (raw === '/kunlik-reja/xarita') {
+    return {
+      title: clipTitle("Kunlik reja xaritasi — 182 kunlik yo'l"),
+      description: clipDescription(
+        "182 kunlik rus tili dasturining to'liq xaritasi: bosqichlar, ochilgan kunlar va joriy progress."
+      ),
+      canonicalPath: '/kunlik-reja',
+    };
+  }
+
+  // --- Video darsxona (indekslanmaydi: shaxsiy xona) ---
+  if (raw.startsWith('/dars/')) {
+    return {
+      title: clipTitle('Video dars — jonli mashg\'ulot'),
+      description: clipDescription("O'qituvchi bilan jonli video dars xonasi."),
+      noindex: true,
+    };
+  }
+
+  // --- Ommaviy profil ---
+  if (raw.startsWith('/u/')) {
+    return {
+      title: clipTitle("O'quvchi profili"),
+      description: clipDescription("FalaRus o'quvchisining ochiq profili: yutuqlar va progress."),
+      noindex: true,
+    };
+  }
+
   // --- Stat / leaderboard ---
   if (raw === '/statistika') {
     return {

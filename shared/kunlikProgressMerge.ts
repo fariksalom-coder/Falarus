@@ -5,6 +5,10 @@ export type KunlikDayPatchFields = {
   words_learned?: number;
   words_correct?: number;
   words_match?: boolean;
+  phrases_done?: boolean;
+  phrases_correct?: number;
+  text_questions_correct?: number;
+  speaking_tasks_done?: number;
   oqish_done?: boolean;
   speaking_level?: number;
 };
@@ -16,12 +20,20 @@ export type KunlikDayProgressFields = {
   words_learned: number;
   words_correct: number;
   words_match: boolean;
+  phrases_done: boolean;
+  phrases_correct: number;
+  text_questions_correct: number;
+  speaking_tasks_done: number;
   oqish_done: boolean;
   speaking_level: number;
 };
 
-const BOOL_KEYS = ['grammar_1', 'grammar_2', 'grammar_3', 'words_match', 'oqish_done'] as const;
-const MAX_KEYS = ['words_learned', 'words_correct', 'speaking_level'] as const;
+const BOOL_KEYS = [
+  'grammar_1', 'grammar_2', 'grammar_3', 'words_match', 'phrases_done', 'oqish_done',
+] as const;
+const MAX_KEYS = [
+  'words_learned', 'words_correct', 'phrases_correct', 'text_questions_correct', 'speaking_tasks_done', 'speaking_level',
+] as const;
 
 /** Progress only moves forward — repeats must not clear completed stages or lower scores. */
 export function mergeKunlikDayPatch(

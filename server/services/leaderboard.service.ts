@@ -86,9 +86,13 @@ export async function getTop100(supabase: DbClient): Promise<LeaderboardEntry[]>
   const userIds = [...new Set(rows.map((r: { user_id: number }) => r.user_id))];
   const { data: users, error: uErr } = await supabase
     .from(USERS)
-    .select('id, first_name, last_name, avatar_url')
+    .select('id, first_name, last_name, avatar_url, is_golden')
     .in('id', userIds);
   if (uErr) throw uErr;
+  // OLTIN A'ZO reytingda qatnashmaydi.
+  const yashirin = new Set<number>(
+    (users ?? []).filter((u: any) => u?.is_golden).map((u: any) => Number(u.id))
+  );
   const byId = (users ?? []).reduce(
     (acc: Record<number, { id: number; first_name: string; last_name: string; avatar_url?: string | null }>, u: any) => {
       acc[u.id] = u;
@@ -96,7 +100,7 @@ export async function getTop100(supabase: DbClient): Promise<LeaderboardEntry[]>
     },
     {}
   );
-  return rows.map((r: any) => {
+  return rows.filter((r: any) => !yashirin.has(Number(r.user_id))).map((r: any) => {
     const u = byId[r.user_id];
     return {
       id: u?.id ?? r.user_id,

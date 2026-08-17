@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ExternalLink, Search } from 'lucide-react';
-import { getAdminTeachers, updateTeacherStatus, type AdminTeacherRow } from '../../api/admin';
+import { BadgeCheck, ExternalLink, Search } from 'lucide-react';
+import {
+  getAdminTeachers,
+  setTeacherRecommended,
+  updateTeacherStatus,
+  type AdminTeacherRow,
+} from '../../api/admin';
 
 function fmtDate(value: string | null | undefined): string {
   if (!value) return '-';
@@ -43,6 +48,19 @@ export default function AdminTeachersPage() {
     setActioning(userId);
     try {
       await updateTeacherStatus(userId, status);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Amal bajarilmadi');
+    } finally {
+      setActioning(null);
+    }
+  }
+
+  async function handleRecommend(userId: number, recommended: boolean) {
+    setError('');
+    setActioning(userId);
+    try {
+      await setTeacherRecommended(userId, recommended);
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Amal bajarilmadi');
@@ -173,6 +191,19 @@ export default function AdminTeachersPage() {
                             Rad etish
                           </button>
                         ) : null}
+                        <button
+                          type="button"
+                          disabled={actioning === row.user_id}
+                          onClick={() => handleRecommend(row.user_id, !row.is_recommended)}
+                          className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-50 ${
+                            row.is_recommended
+                              ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          <BadgeCheck className="h-3.5 w-3.5" />
+                          {row.is_recommended ? 'Tavsiyada' : 'Tavsiya qilish'}
+                        </button>
                       </div>
                     </td>
                   </tr>

@@ -9,9 +9,10 @@ import {
 } from '../api/wordSwipeGame';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
+import { bosqichYulduzi, yulduzlarniOqi, type YulduzXaritasi } from '../utils/wordSwipeStars';
 
+/** Server javob bermagan holat uchun — bittagina daraja ko'rsatiladi. */
 const TOTAL_STAGES = 5;
-const FALLBACK_LEVELS = 6;
 
 type LevelNode = {
   seq: number;
@@ -53,14 +54,33 @@ export default function WordSwipeMapPage() {
   const currentLevel = progress?.levelNumber ?? 1;
   const currentStage = progress?.stageNumber ?? 1;
 
+  /*
+   * XARITADA FAQAT HAQIQATDAN MAVJUD BOSQICHLAR TURADI.
+   *
+   * Ilgari bu yerda «kamida oltita daraja» degan zaxira qiymat bor edi va
+   * xarita bazada yo'q darajalarni ham chizardi. Bazada esa bitta daraja va
+   * 50 ta bosqich bor: o'yinchi 50-bosqichni yopgach, xarita uni «2-daraja»ga
+   * o'tkazardi va u yerda «bu bosqich hali tayyor emas» degan xato chiqardi.
+   * Endi ro'yxat serverdan kelgan darajalar bo'yicha tuziladi.
+   */
   const levelNodes: LevelNode[] = useMemo(() => {
     const base = levels ?? [];
-    const levelCount = Math.max(base.length, FALLBACK_LEVELS);
+    const royxat = base.length
+      ? base
+      : [{ levelNumber: 1, stagesCount: TOTAL_STAGES, availableStagesCount: TOTAL_STAGES }];
     const nodes: LevelNode[] = [];
     let seq = 0;
-    for (let l = 1; l <= levelCount; l += 1) {
-      const summary = base.find((x) => x.levelNumber === l);
-      const stagesCount = summary?.stagesCount ?? TOTAL_STAGES;
+    for (const summary of royxat) {
+      const l = summary.levelNumber;
+      /*
+       * `availableStagesCount` — so'zi BOR bosqichlar. Bo'sh bosqich xaritada
+       * ko'rinib, ochilganda «tayyor emas» xatosini berardi; shuning uchun
+       * kichigi olinadi.
+       */
+      const jami = summary.stagesCount ?? TOTAL_STAGES;
+      const stagesCount = summary.availableStagesCount
+        ? Math.min(jami, summary.availableStagesCount)
+        : jami;
       for (let s = 1; s <= stagesCount; s += 1) {
         seq += 1;
         let status: LevelNode['status'];
@@ -73,13 +93,29 @@ export default function WordSwipeMapPage() {
     return nodes;
   }, [levels, currentLevel, currentStage]);
 
+  const [yulduzlar, setYulduzlar] = useState<YulduzXaritasi>({});
+  useEffect(() => {
+    setYulduzlar(yulduzlarniOqi());
+  }, []);
+
+  /**
+   * Umumiy yulduz.
+   *
+   * Har yopilgan bosqich kamida bitta yulduz beradi (eski o'yinchilarning
+   * hisobi yo'qolmasin — ular o'ynaganda yulduz umuman yozilmasdi), qurilmada
+   * yaxshiroq natija saqlangan bo'lsa o'sha olinadi.
+   */
   const totalStars = useMemo(() => {
     if (!progress) return 0;
-    return Object.values(progress.completedStages ?? {}).reduce(
-      (acc, arr) => acc + (arr?.length ?? 0),
-      0,
-    );
-  }, [progress]);
+    let jami = 0;
+    for (const [levelKey, stages] of Object.entries(progress.completedStages ?? {})) {
+      const level = Number(levelKey);
+      for (const stage of stages ?? []) {
+        jami += Math.max(1, bosqichYulduzi(yulduzlar, level, stage));
+      }
+    }
+    return jami;
+  }, [progress, yulduzlar]);
 
   const currentSeq = useMemo(() => {
     const cur = levelNodes.find((n) => n.status === 'current');
@@ -122,7 +158,12 @@ export default function WordSwipeMapPage() {
           <p className="text-[10.5px] font-bold uppercase tracking-[0.24em] text-white/70">
             So'zni yig'ing
           </p>
-          <h1 className="mt-0.5 text-[22px] font-black leading-tight">Lvl {currentSeq}</h1>
+          <h1 className="mt-0.5 text-[22px] font-black leading-tight">
+            {currentSeq}-bosqich
+            <span className="ml-1.5 text-[13px] font-bold text-white/60">
+              / {levelNodes.length}
+            </span>
+          </h1>
         </div>
         <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/16 pl-2.5 pr-3 ring-1 ring-white/22 backdrop-blur">
           <span aria-hidden className="text-[15px] leading-none">⭐</span>
@@ -189,6 +230,38 @@ export default function WordSwipeMapPage() {
                   aria-label={`Level ${node.seq}${node.status === 'locked' ? ' (yopiq)' : ''}`}
                 >
                   {node.seq}
+
+                  {/* Joriy bosqich — yumshoq puls bilan «shu yerdasiz» deb turadi. */}
+                  {isCurrent ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 animate-ping rounded-full ring-2 ring-[#5C97FF]/50"
+                      style={{ animationDuration: '2.4s' }}
+                    />
+                  ) : null}
+
+                  {/*
+                    YULDUZLAR — yopilgan bosqich qanday yopilgani.
+                    Xarita ilgari faqat «yopildi/yopilmadi» ni ko'rsatardi va
+                    o'yinchi qaysi bosqichni yordamsiz yechganini bilmasdi.
+                  */}
+                  {isDone ? (
+                    <span className="pointer-events-none absolute -bottom-2 left-1/2 flex -translate-x-1/2 gap-[1px] rounded-full bg-[#0F1642]/80 px-1.5 py-[2px] ring-1 ring-white/15">
+                      {[1, 2, 3].map((n) => (
+                        <span
+                          key={n}
+                          aria-hidden
+                          className={`text-[8px] leading-none ${
+                            n <= Math.max(1, bosqichYulduzi(yulduzlar, node.levelNumber, node.stageNumber))
+                              ? ''
+                              : 'opacity-25 grayscale'
+                          }`}
+                        >
+                          ⭐
+                        </span>
+                      ))}
+                    </span>
+                  ) : null}
                 </button>
                 {!isLast ? <div className="h-[68px]" /> : null}
                 {isFirst && !isLast ? null : null}

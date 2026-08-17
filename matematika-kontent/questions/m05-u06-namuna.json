@@ -1,0 +1,258 @@
+[
+  {
+    "id": "m05-u06-l01-q",
+    "lessonId": "m05-u06-l01",
+    "title": "Ulush va kasr tushunchasi — test",
+    "passScore": 70,
+    "timeLimitSec": null,
+    "questions": [
+      {
+        "id": "m05-u06-l01-q01",
+        "lessonId": "m05-u06-l01",
+        "type": "single",
+        "body": "Tort 5 ta teng bo'lakka bo'lindi. Bir bo'lak tortning qanday qismi?",
+        "options": ["$\\frac{1}{5}$", "$\\frac{5}{1}$", "$\\frac{1}{4}$", "$\\frac{5}{5}$"],
+        "correct": 0,
+        "explanation": "Butun 5 ta bo'lakka bo'lingan, demak maxraj 5. Bitta bo'lak olingan, demak surat 1. Javob: 1/5.",
+        "d": 1,
+        "tags": ["kasr", "ulush"]
+      },
+      {
+        "id": "m05-u06-l01-q02",
+        "lessonId": "m05-u06-l01",
+        "type": "single",
+        "body": "$\\frac{4}{9}$ kasrida maxraj qaysi son?",
+        "options": ["4", "9", "13", "5"],
+        "correct": 1,
+        "explanation": "Maxraj — kasr chizig'ining pastida turgan son, ya'ni 9. U butun nechta teng bo'lakka bo'linganini ko'rsatadi.",
+        "d": 1,
+        "tags": ["kasr", "atama"]
+      },
+      {
+        "id": "m05-u06-l01-q03",
+        "lessonId": "m05-u06-l01",
+        "type": "input",
+        "body": "Sinfda 30 ta o'quvchi bor, 12 tasi bugun kutubxonaga bordi. Kutubxonaga borganlar sinfning qanday qismi? Javobni $\\frac{a}{b}$ ko'rinishida, qisqartirmasdan yozing (masalan: 12/30).",
+        "correct": ["12/30"],
+        "explanation": "Butun — butun sinf, 30 ta o'quvchi, demak maxraj 30. Qism — 12 ta o'quvchi, demak surat 12. Javob: 12/30.",
+        "d": 2,
+        "tags": ["kasr", "matnli masala"]
+      },
+      {
+        "id": "m05-u06-l01-q04",
+        "lessonId": "m05-u06-l01",
+        "type": "single",
+        "body": "Quyidagilardan qaysi biri kasr BO'LA OLMAYDI?",
+        "options": ["$\\frac{7}{2}$", "$\\frac{0}{5}$", "$\\frac{3}{0}$", "$\\frac{9}{9}$"],
+        "correct": 2,
+        "explanation": "Maxraj hech qachon nol bo'la olmaydi — narsani 0 ta bo'lakka bo'lish ma'noga ega emas. 0/5 esa mumkin: 5 ta bo'lakdan hech biri olinmagan, ya'ni 0.",
+        "d": 2,
+        "tags": ["kasr", "maxraj"]
+      },
+      {
+        "id": "m05-u06-l01-q05",
+        "lessonId": "m05-u06-l01",
+        "type": "match",
+        "body": "Har bir vaziyatni mos kasr bilan bog'lang.",
+        "options": [
+          "Olma 4 ga bo'lindi, 1 tasi yeyildi",
+          "Kun 24 soat, 6 soat maktabda",
+          "10 ta savoldan 7 tasiga javob berildi"
+        ],
+        "correct": ["1/4", "6/24", "7/10"],
+        "explanation": "Har holatda butun — maxraj, olingan qism — surat. 1) butun 4 bo'lak, 1 tasi → 1/4. 2) butun 24 soat, 6 soat → 6/24. 3) butun 10 savol, 7 tasi → 7/10.",
+        "d": 2,
+        "tags": ["kasr", "matnli masala"]
+      },
+      {
+        "id": "m05-u06-l01-q06",
+        "lessonId": "m05-u06-l01",
+        "type": "single",
+        "body": "$\\frac{5}{8}$ kasri nimani anglatadi?",
+        "options": [
+          "Butun 5 ta bo'lakka bo'lingan, 8 tasi olingan",
+          "Butun 8 ta bo'lakka bo'lingan, 5 tasi olingan",
+          "5 ni 8 ga qo'shish kerak",
+          "8 dan 5 ni ayirish kerak"
+        ],
+        "correct": 1,
+        "explanation": "Pastdagi son (maxraj 8) — nechta teng bo'lakka bo'linganini, yuqoridagi son (surat 5) — shundan nechtasi olinganini bildiradi.",
+        "d": 1,
+        "tags": ["kasr", "tushuncha"]
+      }
+    ]
+  },
+  {
+    "id": "m05-u06-l05-q",
+    "lessonId": "m05-u06-l05",
+    "title": "Bir xil maxrajli kasrlarni taqqoslash — test",
+    "passScore": 70,
+    "timeLimitSec": null,
+    "questions": [
+      {
+        "id": "m05-u06-l05-q01",
+        "lessonId": "m05-u06-l05",
+        "type": "single",
+        "body": "Qaysi kasr katta: $\\frac{7}{11}$ yoki $\\frac{4}{11}$?",
+        "options": ["$\\frac{7}{11}$", "$\\frac{4}{11}$", "Teng", "Taqqoslab bo'lmaydi"],
+        "correct": 0,
+        "explanation": "Maxrajlar bir xil (11), demak bo'laklar teng kattalikda. Suratlarni solishtiramiz: 7 > 4, shuning uchun 7/11 > 4/11.",
+        "d": 1,
+        "tags": ["kasr", "taqqoslash"]
+      },
+      {
+        "id": "m05-u06-l05-q02",
+        "lessonId": "m05-u06-l05",
+        "type": "order",
+        "body": "Kasrlarni o'sish tartibida joylashtiring.",
+        "options": ["$\\frac{9}{13}$", "$\\frac{2}{13}$", "$\\frac{11}{13}$", "$\\frac{5}{13}$"],
+        "correct": [1, 3, 0, 2],
+        "explanation": "Maxrajlar teng, faqat suratlarni tartiblaymiz: 2 < 5 < 9 < 11. Demak 2/13 < 5/13 < 9/13 < 11/13.",
+        "d": 2,
+        "tags": ["kasr", "taqqoslash", "tartiblash"]
+      },
+      {
+        "id": "m05-u06-l05-q03",
+        "lessonId": "m05-u06-l05",
+        "type": "single",
+        "body": "Aziz tortning $\\frac{3}{10}$ qismini, Bobur $\\frac{4}{10}$ qismini yedi. Kim ko'proq yedi?",
+        "options": ["Aziz", "Bobur", "Teng yedilar", "Aniqlab bo'lmaydi"],
+        "correct": 1,
+        "explanation": "Maxrajlar bir xil (10), demak bo'laklar teng. Bobur 4 ta bo'lak, Aziz 3 ta bo'lak yedi. 4 > 3, demak Bobur ko'proq yedi.",
+        "d": 1,
+        "tags": ["kasr", "taqqoslash", "matnli masala"]
+      },
+      {
+        "id": "m05-u06-l05-q04",
+        "lessonId": "m05-u06-l05",
+        "type": "single",
+        "body": "Diqqat, bu savolda maxrajlar HAR XIL. Qaysi kasr katta: $\\frac{1}{5}$ yoki $\\frac{1}{8}$?",
+        "options": ["$\\frac{1}{5}$", "$\\frac{1}{8}$", "Teng", "8 > 5 bo'lgani uchun $\\frac{1}{8}$"],
+        "correct": 0,
+        "explanation": "Bu yerda maxrajlar har xil, shuning uchun bu darsdagi qoida ishlamaydi. Tortni 5 ga bo'lsangiz, har bir bo'lak 8 ga bo'lgandagidan KATTA bo'ladi. Demak 1/5 > 1/8. Maxraj qancha katta bo'lsa, bo'lak shuncha kichik.",
+        "d": 3,
+        "tags": ["kasr", "taqqoslash", "tipik xato"]
+      },
+      {
+        "id": "m05-u06-l05-q05",
+        "lessonId": "m05-u06-l05",
+        "type": "multi",
+        "body": "Qaysi tasdiqlar to'g'ri? (bir nechta javob)",
+        "options": [
+          "$\\frac{6}{7} > \\frac{5}{7}$",
+          "$\\frac{2}{9} > \\frac{8}{9}$",
+          "$\\frac{4}{4} = 1$",
+          "$\\frac{0}{6} = 0$"
+        ],
+        "correct": [0, 2, 3],
+        "explanation": "1) 6 > 5, to'g'ri. 2) 2 < 8, demak noto'g'ri. 3) Butun to'liq olingan — bu 1 ga teng, to'g'ri. 4) Hech nima olinmagan — bu 0, to'g'ri.",
+        "d": 3,
+        "tags": ["kasr", "taqqoslash"]
+      },
+      {
+        "id": "m05-u06-l05-q06",
+        "lessonId": "m05-u06-l05",
+        "type": "fill_blank",
+        "body": "Bo'sh joyga mos belgini qo'ying (<, > yoki =): $\\frac{15}{20}$ ___ $\\frac{18}{20}$",
+        "correct": ["<"],
+        "explanation": "Maxrajlar teng (20). Suratlar: 15 va 18. 15 < 18, demak 15/20 < 18/20.",
+        "d": 2,
+        "tags": ["kasr", "taqqoslash"]
+      }
+    ]
+  },
+  {
+    "id": "m05-u06-l09-q",
+    "lessonId": "m05-u06-l09",
+    "title": "Kasrni qisqartirish — test",
+    "passScore": 70,
+    "timeLimitSec": null,
+    "questions": [
+      {
+        "id": "m05-u06-l09-q01",
+        "lessonId": "m05-u06-l09",
+        "type": "input",
+        "body": "$\\frac{10}{15}$ kasrini qisqartiring. Javobni a/b ko'rinishida yozing.",
+        "correct": ["2/3"],
+        "explanation": "EKUB(10, 15) = 5. Surat va maxrajni 5 ga bo'lamiz: 10:5 = 2, 15:5 = 3. Javob: 2/3.",
+        "d": 2,
+        "tags": ["kasr", "qisqartirish", "EKUB"]
+      },
+      {
+        "id": "m05-u06-l09-q02",
+        "lessonId": "m05-u06-l09",
+        "type": "single",
+        "body": "$\\frac{24}{36}$ kasrini bir qadamda qisqarmas holga keltirish uchun qaysi songa bo'lish kerak?",
+        "options": ["4", "6", "12", "2"],
+        "correct": 2,
+        "explanation": "EKUB(24, 36) = 12. Faqat EKUB ga bo'lganda bir qadamda qisqarmas kasr chiqadi: 24:12 = 2, 36:12 = 3 → 2/3. Boshqa sonlarga bo'lsak, yana qisqartirish kerak bo'ladi.",
+        "d": 3,
+        "tags": ["kasr", "qisqartirish", "EKUB"]
+      },
+      {
+        "id": "m05-u06-l09-q03",
+        "lessonId": "m05-u06-l09",
+        "type": "single",
+        "body": "Quyidagi qisqartirishlardan qaysi biri XATO?",
+        "options": [
+          "$\\frac{8}{12} = \\frac{2}{3}$",
+          "$\\frac{9}{15} = \\frac{3}{5}$",
+          "$\\frac{14}{21} = \\frac{2}{21}$",
+          "$\\frac{20}{50} = \\frac{2}{5}$"
+        ],
+        "correct": 2,
+        "explanation": "Uchinchi variantda faqat surat 7 ga bo'lingan, maxraj esa o'zgarmagan. Surat va maxrajni HAR DOIM bir xil songa bo'lish kerak. To'g'risi: 14:7 = 2, 21:7 = 3, ya'ni 2/3.",
+        "d": 3,
+        "tags": ["kasr", "qisqartirish", "tipik xato"]
+      },
+      {
+        "id": "m05-u06-l09-q04",
+        "lessonId": "m05-u06-l09",
+        "type": "multi",
+        "body": "Qaysi kasrlar QISQARMAYDI? (bir nechta javob)",
+        "options": ["$\\frac{7}{9}$", "$\\frac{6}{8}$", "$\\frac{5}{11}$", "$\\frac{15}{25}$"],
+        "correct": [0, 2],
+        "explanation": "Kasr qisqarmaydi, agar surat va maxraj o'zaro tub bo'lsa (EKUB = 1). 7 va 9 — o'zaro tub. 5 va 11 — o'zaro tub. 6 va 8 ning EKUB i 2, 15 va 25 niki 5 — bular qisqaradi.",
+        "d": 3,
+        "tags": ["kasr", "qisqartirish", "o'zaro tub"]
+      },
+      {
+        "id": "m05-u06-l09-q05",
+        "lessonId": "m05-u06-l09",
+        "type": "input",
+        "body": "$\\frac{72}{96}$ kasrini eng sodda ko'rinishga keltiring. Javobni a/b ko'rinishida yozing.",
+        "correct": ["3/4"],
+        "explanation": "72 = 2·2·2·3·3, 96 = 2·2·2·2·2·3. Umumiy ko'paytuvchilar: 2·2·2·3 = 24. EKUB = 24. 72:24 = 3, 96:24 = 4. Javob: 3/4.",
+        "d": 4,
+        "tags": ["kasr", "qisqartirish", "EKUB"]
+      },
+      {
+        "id": "m05-u06-l09-q06",
+        "lessonId": "m05-u06-l09",
+        "type": "order",
+        "body": "$\\frac{48}{60}$ ni bosqichma-bosqich qisqartirish qadamlarini to'g'ri tartibda joylashtiring.",
+        "options": [
+          "$\\frac{24}{30}$ (2 ga bo'ldik)",
+          "$\\frac{48}{60}$ (boshlang'ich)",
+          "$\\frac{4}{5}$ (3 ga bo'ldik)",
+          "$\\frac{12}{15}$ (yana 2 ga bo'ldik)"
+        ],
+        "correct": [1, 0, 3, 2],
+        "explanation": "48/60 → 2 ga bo'lamiz → 24/30 → yana 2 ga → 12/15 → 3 ga → 4/5. Bu qisqarmas kasr, chunki 4 va 5 o'zaro tub. Bir qadamda qilish uchun EKUB(48,60) = 12 ga bo'lish kerak edi.",
+        "d": 3,
+        "tags": ["kasr", "qisqartirish"]
+      },
+      {
+        "id": "m05-u06-l09-q07",
+        "lessonId": "m05-u06-l09",
+        "type": "single",
+        "body": "Sinfda 18 ta qiz va 12 ta o'g'il bor. Qizlar sinfning qanday qismini tashkil qiladi? Javobni qisqartirilgan holda tanlang.",
+        "options": ["$\\frac{18}{12}$", "$\\frac{3}{5}$", "$\\frac{18}{30}$", "$\\frac{2}{3}$"],
+        "correct": 1,
+        "explanation": "Sinfda jami 18 + 12 = 30 ta o'quvchi. Qizlar 18 ta, demak 18/30. EKUB(18, 30) = 6. 18:6 = 3, 30:6 = 5. Javob: 3/5. Diqqat: maxraj — butun sinf (30), o'g'illar soni emas.",
+        "d": 4,
+        "tags": ["kasr", "qisqartirish", "matnli masala"]
+      }
+    ]
+  }
+]

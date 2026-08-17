@@ -7,6 +7,8 @@ export type DailyVocabProgressState = {
   step2Incorrect: number;
   step2Passed: boolean;
   step3Completed: boolean;
+  /** 4-vazifa: ibora testlari (kunda ibora bo'lsa ko'rinadi). */
+  step4Completed: boolean;
 };
 
 const STORAGE_KEY = 'falarus:dailyVocabProgress:v1';
@@ -21,6 +23,7 @@ export function defaultDailyVocabProgress(): DailyVocabProgressState {
     step2Incorrect: 0,
     step2Passed: false,
     step3Completed: false,
+    step4Completed: false,
   };
 }
 

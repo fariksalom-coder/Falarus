@@ -1,0 +1,161 @@
+/**
+ * motion.css — ilova bo'ylab jonlilik qatlami.
+ *
+ * NIMA UCHUN BITTA FAYL: ilovada 48 sahifa va 72 komponent bor. Har biriga
+ * alohida animatsiya yozish — takrorlanish va nomuvofiqlik degani (hozirning
+ * o'zida bosish effekti to'rt xil qiymatda: 0.95, 0.97, 0.98, 0.99). Bu yerda
+ * bir marta belgilanadi va hamma joyda bir xil his beradi.
+ *
+ * NIMA UCHUN `@layer base`: Tailwind utility'lari bazadan ustun turadi.
+ * Shuning uchun komponentda `active:scale-[0.98]` yozilgan bo'lsa, u
+ * saqlanadi — bu yerdagi qoida faqat HECH QANDAY effekti yo'q elementlarga
+ * tegadi. Ya'ni mavjud dizayn buzilmaydi, faqat bo'shliqlar to'ldiriladi.
+ */
+
+@layer base {
+  :root {
+    /* Bosish — tez va qisqa, aks holda interfeys "og'ir" tuyuladi. */
+    --harakat-tez: 120ms;
+    /* Paydo bo'lish va yo'qolish. */
+    --harakat-orta: 240ms;
+    /* Tabiiy sekinlashuv — oxirida to'xtab qolmaydi. */
+    --harakat-egri: cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* Ozgina "sakrash" — bayram va tasdiq uchun. */
+    --harakat-sakrash: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /*
+   * Bosiladigan hamma narsa barmoqqa javob beradi.
+   * `.press-yoq` — ataylab chetlatish uchun (masalan navigatsiya yorliqlari
+   * yoki kattaligi o'zgarmasligi kerak bo'lgan elementlar).
+   */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    transition:
+      transform var(--harakat-tez) var(--harakat-egri),
+      box-shadow var(--harakat-orta) var(--harakat-egri),
+      background-color var(--harakat-tez) linear;
+  }
+
+  button:not(:disabled):active,
+  [role='button']:not([aria-disabled='true']):active {
+    transform: scale(0.97);
+  }
+
+  .press-yoq,
+  .press-yoq:active {
+    transform: none !important;
+  }
+
+  /* Klaviatura bilan yurgan foydalanuvchi qayerdaligini ko'rsin. */
+  :focus-visible {
+    outline: 2px solid var(--app-primary, #0b2a6b);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ *  Skeleton — yuklanish paytidagi "shakl"
+ *
+ *  Bo'sh ekran yoki aylanma spinner kutishni UZOQ ko'rsatadi: ko'z
+ *  ilinadigan narsa topolmaydi. Kelayotgan kontentning shaklini oldindan
+ *  ko'rsatish esa kutishni qisqartiradi va ilova tezroq tuyuladi.
+ * ------------------------------------------------------------------ */
+
+@keyframes skeleton-yaltirash {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--app-bg-muted, #f7f7f5) 25%,
+    var(--app-surface-elevated, #f7f9fd) 50%,
+    var(--app-bg-muted, #f7f7f5) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-yaltirash 1.4s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Javob tasdig'i
+ * ------------------------------------------------------------------ */
+
+/** To'g'ri javob — yashil halqa tarqaladi. */
+@keyframes togri-halqa {
+  0% { box-shadow: 0 0 0 0 rgb(18 161 80 / 0.45); }
+  100% { box-shadow: 0 0 0 16px rgb(18 161 80 / 0); }
+}
+
+.javob-togri {
+  animation:
+    togri-halqa 620ms ease-out both,
+    javob-sakra 420ms var(--harakat-sakrash) both;
+}
+
+@keyframes javob-sakra {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
+
+/** Xato javob — qisqa silkinish. */
+@keyframes xato-silkin {
+  0%, 100% { transform: translateX(0); }
+  22% { transform: translateX(-5px); }
+  44% { transform: translateX(5px); }
+  66% { transform: translateX(-3px); }
+  88% { transform: translateX(3px); }
+}
+
+.javob-xato {
+  animation: xato-silkin 380ms ease-in-out both;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Kontent paydo bo'lishi — ro'yxatlar ketma-ket chiqadi
+ * ------------------------------------------------------------------ */
+
+@keyframes yuqoriga-suzil {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.suzib-chiq {
+  animation: yuqoriga-suzil var(--harakat-orta) var(--harakat-egri) both;
+}
+
+/* Ro'yxat elementlari birin-ketin — bir vaqtda emas. */
+.suzib-chiq-1 { animation-delay: 40ms; }
+.suzib-chiq-2 { animation-delay: 80ms; }
+.suzib-chiq-3 { animation-delay: 120ms; }
+.suzib-chiq-4 { animation-delay: 160ms; }
+.suzib-chiq-5 { animation-delay: 200ms; }
+
+/* ------------------------------------------------------------------ *
+ *  Harakatni kamaytirish — tibbiy talab, tanlov emas.
+ *  Vestibulyar buzilishi bor foydalanuvchida harakat bosh aylanishiga
+ *  olib keladi. Bu yerda BARCHA animatsiyalar o'chiriladi, faqat rang
+ *  o'zgarishi qoladi — ya'ni javob baribir ko'rinadi.
+ * ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .javob-togri,
+  .javob-xato,
+  .suzib-chiq {
+    animation: none !important;
+  }
+
+  .skeleton {
+    background: var(--app-bg-muted, #f7f7f5);
+  }
+
+  button:not(:disabled):active,
+  [role='button']:active {
+    transform: none;
+  }
+}

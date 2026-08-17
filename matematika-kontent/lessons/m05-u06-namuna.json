@@ -1,0 +1,227 @@
+[
+  {
+    "id": "m05-u06-l01",
+    "title": "Ulush va kasr tushunchasi",
+    "why": "Bitta olmani 3 ta bolaga teng bo'lish kerak. Natural sonlar bu yerda yordam bermaydi — kasr aynan shu holat uchun ixtiro qilingan.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Tasavvur qiling: bitta pizza bor, siz esa 4 kishisiz. Har biringizga qancha tegadi? \"Bitta emas, ammo nolga ham teng emas\" — mana shu oraliqdagi sonlarni yozish uchun kasr kerak."
+      },
+      {
+        "type": "theory",
+        "text": "Butun narsani teng bo'laklarga bo'lganda hosil bo'lgan har bir bo'lak — ulush deyiladi. Agar butunni 4 ga bo'lsak, har bir bo'lak butunning to'rtdan bir ulushi bo'ladi."
+      },
+      {
+        "type": "formula",
+        "latex": "\\frac{a}{b}",
+        "caption": "a — surat (nechta ulush olingan), b — maxraj (butun nechta teng bo'lakka bo'lingan)"
+      },
+      {
+        "type": "note",
+        "text": "Maxraj hech qachon nolga teng bo'lmaydi. Chunki narsani 0 ta bo'lakka bo'lish ma'noga ega emas."
+      },
+      {
+        "type": "example",
+        "problem": "Pizza 8 ta teng bo'lakka bo'lindi. Alisher 3 ta bo'lak yedi. Alisher pizzaning qanchasini yedi?",
+        "steps": [
+          { "text": "Butun nechta bo'lakka bo'lingan? 8 ta. Demak maxraj — 8." },
+          { "text": "Nechta bo'lak olindi? 3 ta. Demak surat — 3." },
+          { "text": "Kasrni yozamiz:", "latex": "\\frac{3}{8}" }
+        ],
+        "answer": "Pizzaning 3/8 qismini"
+      },
+      {
+        "type": "example",
+        "problem": "Sinfda 24 ta o'quvchi bor, ulardan 15 tasi qiz. Qizlar sinfning qanday qismini tashkil qiladi?",
+        "steps": [
+          { "text": "Butun — butun sinf, ya'ni 24 ta o'quvchi. Maxraj — 24." },
+          { "text": "Qism — qizlar, 15 ta. Surat — 15." },
+          { "text": "Javob:", "latex": "\\frac{15}{24}" }
+        ],
+        "answer": "15/24 qismini"
+      },
+      {
+        "type": "mistake",
+        "text": "Ko'p o'quvchi 3/8 ni \"3 ga bo'lingan 8\" deb o'qiydi.",
+        "correction": "To'g'risi: 3/8 — bu \"8 ga bo'lingan 3\", ya'ni butun 8 ga bo'lingan va shundan 3 ta bo'lak olingan. Yuqoridagi son har doim nechta olinganini, pastdagisi nechta bo'lakka bo'linganini bildiradi."
+      },
+      {
+        "type": "drill",
+        "problem": "Tort 6 ta teng bo'lakka bo'lindi, 2 tasi yeyildi. Yeyilgan qismni kasr bilan yozing.",
+        "answer": "2/6",
+        "hint": "Avval maxrajni toping — butun nechta bo'lakka bo'lingan?"
+      },
+      {
+        "type": "drill",
+        "problem": "Kasr 7/10 nimani anglatadi?",
+        "answer": "Butun 10 ta teng bo'lakka bo'lingan va shundan 7 tasi olingan",
+        "hint": "Pastdagi son — bo'laklar soni, yuqoridagisi — olinganlar soni"
+      },
+      {
+        "type": "drill",
+        "problem": "Bir kunda 24 soat bor. Siz 8 soat uxladingiz. Uyqu kunning qanday qismini oldi?",
+        "answer": "8/24",
+        "hint": "Butun — bir kun, ya'ni 24 soat"
+      }
+    ],
+    "summary": [
+      "Kasr — butunning bir qismini ifodalaydigan son.",
+      "Maxraj (pastdagi son) butun nechta teng bo'lakka bo'linganini, surat (yuqoridagi son) shundan nechtasi olinganini ko'rsatadi.",
+      "Maxraj hech qachon nol bo'la olmaydi."
+    ]
+  },
+  {
+    "id": "m05-u06-l05",
+    "title": "Bir xil maxrajli kasrlarni taqqoslash",
+    "why": "Ikki do'kon bir xil tortni sotmoqda: biri 3/8 bo'lak, ikkinchisi 5/8 bo'lak. Qaysi biri kattaroq? Bu savolga javob berish uchun kasrlarni taqqoslashni bilish kerak.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Agar ikki kasrning maxraji bir xil bo'lsa, taqqoslash juda oson — bo'laklarning kattaligi teng, faqat soni farq qiladi."
+      },
+      {
+        "type": "theory",
+        "text": "Maxrajlari bir xil bo'lgan kasrlardan surati katta bo'lgani katta bo'ladi. Sababi oddiy: bo'laklar bir xil kattalikda, kim ko'proq bo'lak olsa, o'sha ko'p olgan bo'ladi."
+      },
+      {
+        "type": "formula",
+        "latex": "\\text{agar } a > c \\text{ bo'lsa, } \\frac{a}{b} > \\frac{c}{b}",
+        "caption": "Maxrajlar teng bo'lganda faqat suratlarni solishtirish yetarli"
+      },
+      {
+        "type": "example",
+        "problem": "Qaysi kasr katta: 3/8 yoki 5/8?",
+        "steps": [
+          { "text": "Maxrajlar bir xil — ikkalasida ham 8." },
+          { "text": "Suratlarni solishtiramiz: 3 va 5. 5 > 3." },
+          { "text": "Demak:", "latex": "\\frac{5}{8} > \\frac{3}{8}" }
+        ],
+        "answer": "5/8 katta"
+      },
+      {
+        "type": "example",
+        "problem": "Kasrlarni o'sish tartibida joylashtiring: 7/12, 2/12, 11/12, 5/12",
+        "steps": [
+          { "text": "Barcha maxrajlar 12 ga teng, demak faqat suratlarni tartiblaymiz." },
+          { "text": "Suratlar: 7, 2, 11, 5. O'sish tartibida: 2, 5, 7, 11." },
+          { "text": "Javob:", "latex": "\\frac{2}{12} < \\frac{5}{12} < \\frac{7}{12} < \\frac{11}{12}" }
+        ],
+        "answer": "2/12 < 5/12 < 7/12 < 11/12"
+      },
+      {
+        "type": "note",
+        "text": "Bu qoida faqat maxrajlar teng bo'lganda ishlaydi. 1/2 va 1/3 ni bu usul bilan taqqoslab bo'lmaydi — u yerda boshqa yo'l kerak (keyingi darslarda o'rganamiz)."
+      },
+      {
+        "type": "mistake",
+        "text": "O'quvchilar ba'zan 1/8 > 1/5 deb xato qiladi, chunki 8 > 5.",
+        "correction": "Maxraj katta bo'lsa, bo'lak kichik bo'ladi. Tortni 8 ga bo'lsangiz, har bir bo'lak 5 ga bo'lgandagidan kichikroq. Demak 1/8 < 1/5. Bu darsdagi qoida faqat maxrajlar teng bo'lgan holat uchun."
+      },
+      {
+        "type": "drill",
+        "problem": "Taqqoslang: 9/15 va 4/15",
+        "answer": "9/15 > 4/15",
+        "hint": "Maxrajlar teng — suratlarni solishtiring"
+      },
+      {
+        "type": "drill",
+        "problem": "Kamayish tartibida joylashtiring: 3/7, 6/7, 1/7",
+        "answer": "6/7 > 3/7 > 1/7"
+      },
+      {
+        "type": "drill",
+        "problem": "Bo'sh joyga <, > yoki = qo'ying: 10/21 ... 10/21",
+        "answer": "=",
+        "hint": "Ikkala kasr ham bir xil"
+      }
+    ],
+    "summary": [
+      "Maxrajlari teng kasrlardan surati kattasi katta bo'ladi.",
+      "Bu qoida faqat maxrajlar bir xil bo'lganda ishlaydi.",
+      "Surat teng, maxraj har xil bo'lsa — aksincha: maxraji kichik kasr katta bo'ladi."
+    ]
+  },
+  {
+    "id": "m05-u06-l09",
+    "title": "Kasrni qisqartirish",
+    "why": "12/18 va 2/3 — bu bir xil son, faqat boshqacha yozilgan. Qisqartirish kasrni eng sodda ko'rinishga keltiradi va keyingi hisoblarni ancha yengillashtiradi.",
+    "blocks": [
+      {
+        "type": "intro",
+        "text": "Kasrning asosiy xossasini eslang: surat va maxrajni bir xil songa ko'paytirsak yoki bo'lsak, kasrning qiymati o'zgarmaydi. Qisqartirish — aynan shu xossani bo'lish tomonga qo'llash."
+      },
+      {
+        "type": "theory",
+        "text": "Kasrni qisqartirish — surat va maxrajni ularning umumiy bo'luvchisiga bo'lish. Agar EKUB ga bo'lsak, kasr bir qadamda eng sodda ko'rinishga keladi."
+      },
+      {
+        "type": "formula",
+        "latex": "\\frac{a}{b} = \\frac{a : k}{b : k}, \\quad k \\text{ — } a \\text{ va } b \\text{ ning umumiy bo'luvchisi}",
+        "caption": "k = EKUB(a, b) bo'lsa, natija qisqarmas kasr bo'ladi"
+      },
+      {
+        "type": "example",
+        "problem": "Kasrni qisqartiring: 12/18",
+        "steps": [
+          { "text": "12 va 18 ning umumiy bo'luvchilarini topamiz: 1, 2, 3, 6." },
+          { "text": "Eng kattasi — 6. Demak EKUB(12, 18) = 6." },
+          { "text": "Surat va maxrajni 6 ga bo'lamiz:", "latex": "\\frac{12 : 6}{18 : 6} = \\frac{2}{3}" }
+        ],
+        "answer": "2/3"
+      },
+      {
+        "type": "example",
+        "problem": "Kasrni qisqartiring: 45/60",
+        "steps": [
+          { "text": "45 = 3 · 3 · 5, 60 = 2 · 2 · 3 · 5" },
+          { "text": "Umumiy tub ko'paytuvchilar: 3 va 5. EKUB = 15." },
+          { "text": "Bo'lamiz:", "latex": "\\frac{45 : 15}{60 : 15} = \\frac{3}{4}" }
+        ],
+        "answer": "3/4"
+      },
+      {
+        "type": "note",
+        "text": "EKUB ni darhol topa olmasangiz, bosqichma-bosqich qisqartiring: 45/60 → (5 ga) → 9/12 → (3 ga) → 3/4. Natija bir xil, faqat qadamlar ko'proq."
+      },
+      {
+        "type": "mistake",
+        "text": "Eng ko'p uchraydigan xato: faqat suratni yoki faqat maxrajni bo'lish. Masalan 12/18 dan 2/18 chiqarish.",
+        "correction": "Surat va maxrajni HAR DOIM bir xil songa bo'lish kerak. Aks holda kasrning qiymati o'zgarib ketadi: 12/18 ≈ 0,67 lekin 2/18 ≈ 0,11 — butunlay boshqa son."
+      },
+      {
+        "type": "mistake",
+        "text": "Yig'indi yoki ayirmadagi hadni qisqartirishga urinish, masalan (3+4)/(3+5) da 3 larni qisqartirish.",
+        "correction": "Qisqartirish faqat ko'paytmada mumkin. Yig'indida avval hisoblab, keyin qisqartiriladi: (3+4)/(3+5) = 7/8, bu qisqarmaydi."
+      },
+      {
+        "type": "drill",
+        "problem": "Qisqartiring: 8/12",
+        "answer": "2/3",
+        "hint": "EKUB(8, 12) = 4"
+      },
+      {
+        "type": "drill",
+        "problem": "Qisqartiring: 25/100",
+        "answer": "1/4",
+        "hint": "EKUB(25, 100) = 25"
+      },
+      {
+        "type": "drill",
+        "problem": "Qisqartiring: 36/48",
+        "answer": "3/4",
+        "hint": "EKUB(36, 48) = 12"
+      },
+      {
+        "type": "drill",
+        "problem": "Qaysi kasr qisqarmaydi: 14/21 yoki 15/28?",
+        "answer": "15/28 (chunki 15 va 28 o'zaro tub)"
+      }
+    ],
+    "summary": [
+      "Qisqartirish — surat va maxrajni ularning umumiy bo'luvchisiga bo'lish.",
+      "EKUB ga bo'lsak, bir qadamda qisqarmas kasr hosil bo'ladi.",
+      "Surat va maxrajni doim bir xil songa bo'lish shart; yig'indidagi alohida hadni qisqartirib bo'lmaydi."
+    ]
+  }
+]

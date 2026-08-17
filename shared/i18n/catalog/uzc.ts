@@ -1,3 +1,6 @@
+
+
+
 import type { MessageCatalog } from './types';
 
 /** Uzbek UI in Cyrillic script — generated from uz.ts via scripts/generate-uzc-catalog.mjs */
@@ -43,6 +46,28 @@ const uzc: MessageCatalog = {
     selectTitle: 'Тилни танланг',
     selectSubtitle: 'Интерфейс тилини танланг',
   },
+  install: {
+    cardTitle: 'Иловани бош экранга чиқаринг',
+    cardSubtitle: 'Браузерсиз, бир босишда очинг',
+    action: 'Чиқариш',
+    dismiss: 'Кейинроқ',
+    profileRow: 'Бош экранга чиқариш',
+    guideTitle: 'Бош экранга чиқариш',
+    guideIosIntro: 'iPhone’да буни Safari орқали қўшасиз:',
+    guideIosStep1: 'Пастдаги «Улашиш» тугмасини босинг (юқорига стрелкали квадрат).',
+    guideIosStep2: 'Рўйхатни пастга суринг ва «Бош экранга қўшиш»ни танланг.',
+    guideIosStep3: 'Ўнг юқоридаги «Қўшиш»ни босинг — илова бош экранда пайдо бўлади.',
+    guideAndroidIntro: 'Браузер менюси орқали қўшасиз:',
+    guideAndroidStep1: 'Ўнг юқоридаги менюни (⋮) босинг.',
+    guideAndroidStep2: '«Иловани ўрнатиш» ёки «Бош экранга қўшиш»ни танланг.',
+    guideAndroidStep3: 'Тасдиқланг — илова бош экранда пайдо бўлади.',
+    guideDesktopIntro: 'Компьютерда манзил қаторидан ўрнатасиз:',
+    guideDesktopStep1: 'Манзил қаторининг ўнг чеккасидаги ўрнатиш белгисини босинг.',
+    guideDesktopStep2: '«Ўрнатиш»ни тасдиқланг.',
+    installed: 'Илова ўрнатилди!',
+    dismissedHint: 'Бекор қилдингиз. Хоҳлаган вақтда қайта уриниб кўришингиз мумкин.',
+    close: 'Ёпиш',
+  },
   home: {
     premium: 'Премиум',
     loadingPlan: 'Режа юкланмоқда...',
@@ -58,6 +83,8 @@ const uzc: MessageCatalog = {
     questReadingSub: 'Матнни тушуниш',
     questSpeaking: 'Гапириш',
     questSpeakingSub: 'Суҳбат машқи',
+    questSpeakingTasks: 'Топшириқлар',
+    questSpeakingTasksSub: 'Очиқ жавоб',
     questStart: 'Бошлаш',
     questRepeat: 'Такрорлаш',
     dayLabel: 'Кун {{day}}',
@@ -131,7 +158,7 @@ const uzc: MessageCatalog = {
     incoming: 'Кирувчи сўровлар',
     outgoing: 'Чиқувчи сўровлар',
     activeChats: 'Фаол суҳбатлар',
-    adminChat: 'Админ билан чат',
+    adminChat: 'Support',
     groupChat: 'Савол-жавоб гуруҳи',
     partnerChat: 'Шерик билан ёзишма',
     noRequests: 'Ҳозирча сўровлар ёқ',
@@ -151,7 +178,7 @@ const uzc: MessageCatalog = {
     endPartnership: 'Суҳбатни тугатиш',
     support: 'Қўллаб-қувватлаш',
     adminMessagePlaceholder: 'Хабар ёзинг...',
-    adminPrompt: 'Админ билан ёзишмалар',
+    adminPrompt: 'Support билан ёзишмалар',
     cancelingRequest: 'Бекор қилинмоқда...',
     endConfirmBody: 'Шериклик тугатилса, чат ёпилади ва қайта уланиш учун янги со‘ров керак бо‘лади.',
     endConfirmTitle: 'Суҳбатни тугатишни тасдиқланг',
@@ -182,6 +209,9 @@ const uzc: MessageCatalog = {
     levelIntermediate: 'О‘рта',
     levelUpper: 'Юқори-о‘рта',
     membersOnline: '{{members}} аъзо · {{online}} онлайн',
+    mentionAlert: 'Сизни белгилашди',
+    mentionEmpty: 'Ҳеч ким топилмади',
+    mentionTitle: 'Кимни белгилайсиз?',
     noProfilesSub: 'Бошқа фойдаланувчилар анкетасини яратганда улар шу ерда ко‘ринади',
     outgoingSub: 'Сиз юборган со‘ровлар',
     partnerLabel: 'Шерик',
@@ -190,6 +220,7 @@ const uzc: MessageCatalog = {
     typingTwo: '{{first}} ва {{second}} ёзмоқда...',
   },
   teachers: {
+    videoTitle: 'Видео-тақдимот',
     title: 'Ўқитувчилар',
     subtitle: 'Тажрибали ўқитувчилардан дарс олинг',
     details: 'Батафсил',
@@ -654,6 +685,18 @@ const uzc: MessageCatalog = {
     onboardingTitle: 'Профилингизни то‘лдиринг',
     onboardingSubtitle: 'Сизга мос дарслар тавсия қилишимиз учун',
     loginRequired: 'Кириш керак',
+  },
+  liveStream: {
+    badge: 'ЖОНЛИ',
+    title: 'Жонли эфир',
+    join: 'Эфирга кириш',
+    watchingHint: 'Сиз томошабинсиз — саволингизни чатга ёзинг',
+    upcomingTitle: 'Яқинлашаётган эфирлар',
+    noneTitle: 'Ҳозир жонли эфир йўқ',
+    noneSubtitle: 'Эфир бошланганда бош саҳифада хабар чиқади',
+    endedTitle: 'Эфир тугади',
+    back: 'Ортга',
+    loadError: 'Эфир маълумоти юкланмади',
   },
 };
 

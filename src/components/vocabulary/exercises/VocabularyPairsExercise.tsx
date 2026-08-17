@@ -1,3 +1,6 @@
+import { useEffect, useRef } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { speakText } from '../../../utils/speak';
 import { AnimatePresence, motion } from 'motion/react';
 import type { VocabularyEntry } from '../../../data/vocabularyContent';
 import { shuffle } from '../vocabExerciseUtils';
@@ -47,6 +50,24 @@ export function VocabularyPairsExercise({
 }: Props) {
   const current = pairGroups[pairGroupIndex];
   const isGroupDone = current ? matched.length === current.pairs.length * 2 : false;
+
+  const { token } = useAuth();
+  const spokenRef = useRef<string | null>(null);
+
+  /*
+   * Juft TO'G'RI topilganda o'sha so'zning talaffuzi eshittiriladi — bu
+   * muvaffaqiyat payti, ya'ni yodda qolishi uchun eng qulay lahza.
+   * `matched` ichida chap va o'ng karta id'lari bor; ruscha so'z chapda.
+   */
+  useEffect(() => {
+    if (!current || matched.length === 0) return;
+    const lastLeftId = [...matched].reverse().find((id) => id.includes('-l-'));
+    if (!lastLeftId || spokenRef.current === lastLeftId) return;
+    spokenRef.current = lastLeftId;
+    const card = current.left.find((l) => l.id === lastLeftId);
+    if (card) void speakText(card.text, { token, speed: 0.8 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matched.length, current?.id]);
 
   if (current) {
     return (

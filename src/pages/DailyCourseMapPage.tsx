@@ -7,6 +7,9 @@ import { useKunlikProgress, type KunlikDayProgress } from '../hooks/useKunlikPro
 import { TOTAL_DAYS } from '../data/dailyPlan';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
 import { FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
+import { rememberKunlikOpenedDay } from '../utils/kunlikLastDay';
+import { getLifeScene, type LifeScene } from '../data/lifeJourney';
+import LifeSceneOverlay from '../components/journey/LifeSceneOverlay';
 
 /** 6 stages of 30 days each (last one = 32 days to cover 182). */
 const STAGES = [
@@ -35,9 +38,13 @@ export default function DailyCourseMapPage() {
   const { user } = useAuth();
   const { access } = useAccess();
   const premium = Boolean(access?.subscription_active);
+  // OLTIN A'ZO: 182 kunning hammasi ochiq — kelajak kunlar ham qulflanmaydi.
+  const oltin = Boolean(access?.golden);
   const { rows: rowMap, loaded, practicePromptCountByDay } = useKunlikProgress();
   const todayRef = useRef<HTMLDivElement>(null);
   const [toast, setToast] = useState<string | null>(null);
+  /** Ochilishi kutilayotgan kun sahnasi (1-10 kun uchun). */
+  const [pendingScene, setPendingScene] = useState<{ scene: LifeScene; day: number } | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
   const showToast = (msg: string) => {
@@ -74,7 +81,24 @@ export default function DailyCourseMapPage() {
     return () => window.clearTimeout(t);
   }, [loaded]);
 
-  const goDay = (day: number) => navigate(`/?kun=${day}`);
+  // Ikki mustaqil yo'l: sessionStorage (ishonchli, searchParams stale bo'lsa ham) + URL ?kun.
+  const openDay = (day: number) => {
+    rememberKunlikOpenedDay(day);
+    navigate(`/?kun=${day}`);
+  };
+
+  /**
+   * 1-10 kunlar "hayot yo'li" sahnasi bilan ochiladi: avval to'liq ekranli
+   * animatsiya, keyin kunning o'zi. Qolgan kunlar avvalgidek darhol ochiladi.
+   */
+  const goDay = (day: number) => {
+    const scene = getLifeScene(day);
+    if (scene) {
+      setPendingScene({ scene, day });
+      return;
+    }
+    openDay(day);
+  };
 
   return (
     <div className="min-h-screen bg-[#EEF1F8] pb-16">
@@ -259,6 +283,29 @@ export default function DailyCourseMapPage() {
                       );
                     }
 
+                    // OLTIN A'ZOda kelajak kun ham ochiq — oltin doira, to'g'ridan kiradi.
+                    if (oltin) {
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => goDay(day)}
+                          className="relative z-[2] flex flex-col items-center py-1 active:scale-95"
+                          style={{ transform: `translateX(${sideShift})` }}
+                          aria-label={`Kun ${day}`}
+                        >
+                          <span
+                            className="flex h-[40px] w-[40px] items-center justify-center rounded-full text-[13px] font-black text-[#5A3E0B] shadow-[0_8px_18px_-8px_rgba(192,138,45,0.55)] ring-4 ring-white"
+                            style={{ background: 'linear-gradient(135deg, #F5D48F, #D4AC5C)' }}
+                            aria-hidden
+                          >
+                            {day}
+                          </span>
+                          <span className="mt-1 text-[11px] font-black text-[#C08A2D]">Kun {day}</span>
+                        </button>
+                      );
+                    }
+
                     // Locked future day — clickable, shows toast "not yet reached"
                     return (
                       <button
@@ -309,6 +356,18 @@ export default function DailyCourseMapPage() {
             {toast}
           </div>
         </div>
+      ) : null}
+
+      {/* Hayot yo'li sahnasi — kun ochilishidan oldin to'liq ekranda */}
+      {pendingScene ? (
+        <LifeSceneOverlay
+          scene={pendingScene.scene}
+          onDone={() => {
+            const day = pendingScene.day;
+            setPendingScene(null);
+            openDay(day);
+          }}
+        />
       ) : null}
     </div>
   );

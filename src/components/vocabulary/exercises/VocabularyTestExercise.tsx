@@ -1,3 +1,6 @@
+import { useEffect, useRef } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { speakText } from '../../../utils/speak';
 import type { TestQuestion } from '../vocabExerciseUtils';
 
 const PASS_PERCENT = 80;
@@ -35,6 +38,23 @@ export function VocabularyTestExercise({
 }: Props) {
   const current = questions[testIndex];
   const n = questions.length;
+  const { token } = useAuth();
+  /** Har savol uchun bir marta — takroriy render ovozni qaytarmasin. */
+  const spokenRef = useRef<string | null>(null);
+
+  /*
+   * Savol o'zbekcha, javoblar ruscha. Shuning uchun talaffuz javob
+   * BERILGANDAN KEYIN eshittiriladi: o'quvchi to'g'ri so'zni ko'radi va
+   * o'sha zahoti uning qanday aytilishini eshitadi.
+   */
+  useEffect(() => {
+    if (!current || !testSelected) return;
+    const key = `${current.id}|${current.correct}`;
+    if (spokenRef.current === key) return;
+    spokenRef.current = key;
+    void speakText(current.correct, { token, speed: 0.8 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testSelected, current?.id]);
 
   if (current) {
     return (

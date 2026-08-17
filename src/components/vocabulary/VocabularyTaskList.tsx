@@ -16,9 +16,13 @@ export type VocabularyTaskListProps = {
   step2PercentageDisplay: number;
   step3Unlocked: boolean;
   step3Completed: boolean;
+  /** 4-vazifa (iboralar) faqat shu kunda ibora testi BO'LSA ko'rsatiladi. */
+  hasPhrases?: boolean;
+  step4Completed?: boolean;
   onOpenStep1: () => void;
   onOpenStep2: () => void;
   onOpenStep3: () => void;
+  onOpenStep4?: () => void;
   /** Preview words shown as chips in the purple hero (top 4 shown, rest → +N). */
   wordPreviews?: string[];
 };
@@ -38,23 +42,35 @@ export function VocabularyTaskList({
   step2PercentageDisplay,
   step3Unlocked,
   step3Completed,
+  hasPhrases = false,
+  step4Completed = false,
   onOpenStep1,
   onOpenStep2,
   onOpenStep3,
+  onOpenStep4,
   wordPreviews = [],
 }: VocabularyTaskListProps) {
   const { t } = useLocale();
   const step2Locked = !step1Completed;
   const step3Locked = !step3Unlocked;
 
+  const showStep4 = hasPhrases && Boolean(onOpenStep4);
+  const step4Locked = !step3Completed;
+
   const step1Current = !step1Completed;
   const step2Current = step1Completed && !step2Passed;
+  // Iboralar bo'lsa, juftlikdan keyin "hozirgi" vazifa 4-ga o'tadi.
   const step3Current = step2Passed && !step3Completed;
+  const step4Current = step3Completed && !step4Completed;
 
   const previewShown = wordPreviews;
 
-  const doneCount = [step1Completed, step2Passed, step3Completed].filter(Boolean).length;
-  const pct = Math.round((doneCount / 3) * 100);
+  const steps = showStep4
+    ? [step1Completed, step2Passed, step3Completed, step4Completed]
+    : [step1Completed, step2Passed, step3Completed];
+  const doneCount = steps.filter(Boolean).length;
+  const totalSteps = steps.length;
+  const pct = Math.round((doneCount / totalSteps) * 100);
 
   type CardVars = {
     style: CSSProperties;
@@ -164,6 +180,27 @@ export function VocabularyTaskList({
     },
   ];
 
+  if (showStep4) {
+    cards.push({
+      title: 'Iboralar',
+      onPress: () => onOpenStep4?.(),
+      disabled: step4Locked,
+      vars: buildVars(
+        4,
+        step4Current && !step4Locked,
+        step4Completed,
+        step4Locked,
+        step4Locked
+          ? 'Avval juftlikni bajaring'
+          : step4Completed
+            ? 'Barcha iboralar ishlandi'
+            : 'Iborani tarjimasi bilan moslang',
+        t('kunlik.completed'),
+        '💬',
+      ),
+    });
+  }
+
   return (
     <div className="space-y-4">
       {/* Purple hero: word set preview */}
@@ -214,7 +251,9 @@ export function VocabularyTaskList({
 
       {/* "3 ta vazifa" header + progress */}
       <div className="flex items-center gap-3">
-        <p className="grammar-heading text-[18px] leading-none text-[#2D1B69]">3 ta vazifa</p>
+        <p className="grammar-heading text-[18px] leading-none text-[#2D1B69]">
+          {totalSteps} ta vazifa
+        </p>
         <div className="flex flex-1 items-center gap-2">
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#DDD7F5]">
             <div
@@ -222,11 +261,13 @@ export function VocabularyTaskList({
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-[12px] font-black text-[#8B7FAB]">{doneCount}/3</span>
+          <span className="text-[12px] font-black text-[#8B7FAB]">
+            {doneCount}/{totalSteps}
+          </span>
         </div>
       </div>
 
-      {/* 3 vazifa cards */}
+      {/* Vazifa kartalari */}
       <div className="flex flex-col gap-3">
         {cards.map(({ vars, title, onPress, disabled }, i) => (
           <button

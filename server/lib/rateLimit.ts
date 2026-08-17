@@ -75,8 +75,21 @@ export async function rateLimit(
     }
     if (count > limit) {
       const ttl = await redis.ttl(redisKey);
-      const retry = ttl > 0 ? ttl : windowSec;
-      return { allowed: false, retryAfterSec: retry };
+      /*
+       * TTL yo'q (-1) — hisoblagich MUDDATSIZ qolgan.
+       *
+       * Yuqoridagi EXPIRE 2 soniyalik poygada yutqazsa (Redis sekinlashsa)
+       * yoki jarayon INCR bilan EXPIRE orasida qayta ishga tushsa shunday
+       * bo'ladi. Muddat qo'yilmagan kalit esa hech qachon tozalanmaydi:
+       * hisoblagich cheksiz o'sib, o'sha IP saytdan BUTUNLAY quriladi va
+       * har sahifada «So'rovlar soni oshib ketdi» chiqadi. Muddatni shu
+       * yerda tiklaymiz — eng yomon holatda bitta oyna kutiladi, abadiy emas.
+       */
+      if (ttl < 0) {
+        await redis.expire(redisKey, windowSec).catch(() => undefined);
+        return { allowed: false, retryAfterSec: windowSec };
+      }
+      return { allowed: false, retryAfterSec: ttl };
     }
     return { allowed: true, remaining: limit - count, resetMs: windowSec * 1000 };
   } catch {

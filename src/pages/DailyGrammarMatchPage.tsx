@@ -14,8 +14,16 @@ import {
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { isKunlikGrammarFullyDone } from '../../shared/kunlikProgressMerge';
 import { playCorrectSound, playWrongSound } from '../utils/sound';
+import { sameMatchText } from '../../shared/matchPairAnswer';
 
-type MatchCard = { id: string; text: string; pairId: number; side: 'left' | 'right' };
+type MatchCard = {
+  id: string;
+  text: string;
+  pairId: number;
+  side: 'left' | 'right';
+  /** Chap karta uchun — shu juftning to'g'ri o'ng matni (taqqoslash uchun). */
+  partnerText: string;
+};
 
 const shuffle = <T,>(items: T[]): T[] => {
   const arr = [...items];
@@ -35,12 +43,14 @@ function buildMatchCards(pairs: { left: string; right: string }[], chunkKey: str
     text: pair.left,
     pairId: idx,
     side: 'left' as const,
+    partnerText: pair.right,
   }));
   const rightBase = pairs.map((pair, idx) => ({
     id: `${chunkKey}-${idx}-r`,
     text: pair.right,
     pairId: idx,
     side: 'right' as const,
+    partnerText: pair.left,
   }));
   const right = shuffle(rightBase);
   return { left: shuffle(left), right };
@@ -79,10 +89,15 @@ export default function DailyGrammarMatchPage() {
   const [matchRight, setMatchRight] = useState<MatchCard[]>([]);
   const [matchSelected, setMatchSelected] = useState<MatchCard | null>(null);
   const [matchWrongIds, setMatchWrongIds] = useState<string[]>([]);
-  const [matchedPairIds, setMatchedPairIds] = useState<number[]>([]);
+  // Juft indeksi emas, KARTA id'lari saqlanadi: bir xil matnli kartalar
+  // kesishib juftlashishi mumkin (masalan uchta "были"), shunda chap va o'ng
+  // kartaning pairId'si har xil bo'ladi.
+  const [matchedCardIds, setMatchedCardIds] = useState<string[]>([]);
   const [matchLocked, setMatchLocked] = useState(false);
   const [blockComplete, setBlockComplete] = useState(false);
   const [finished, setFinished] = useState(false);
+  /** Oxirgi blokdan keyin progress serverga yozilmoqda — tugma ikki marta bosilmasin. */
+  const [advancing, setAdvancing] = useState(false);
   const [hint, setHint] = useState('');
   const [ruleMcqsCount, setRuleMcqsCount] = useState(0);
 
@@ -172,7 +187,7 @@ export default function DailyGrammarMatchPage() {
     setMatchRight(cards.right);
     setMatchSelected(null);
     setMatchWrongIds([]);
-    setMatchedPairIds([]);
+    setMatchedCardIds([]);
     setMatchLocked(false);
     setBlockComplete(false);
     setHint('');
@@ -187,7 +202,7 @@ export default function DailyGrammarMatchPage() {
   const handleMatchingClick = (card: MatchCard) => {
     if (blockComplete || finished) return;
     if (matchLocked) return;
-    if (matchedPairIds.includes(card.pairId)) return;
+    if (matchedCardIds.includes(card.id)) return;
     if (matchSelected?.id === card.id) return;
 
     if (!matchSelected) {
@@ -199,13 +214,20 @@ export default function DailyGrammarMatchPage() {
       setMatchSelected(card);
       return;
     }
-    if (matchSelected.pairId === card.pairId) {
-      const nextMatched = [...matchedPairIds, card.pairId];
-      setMatchedPairIds(nextMatched);
+    // Taqqoslash MATN bo'yicha: chap kartaning kutilgan javobi tanlangan o'ng
+    // karta matniga teng bo'lsa — to'g'ri. Juft indeksiga qarab bo'lmaydi,
+    // aks holda bir xil matnli kartalarda o'quvchi to'g'ri javob bersa ham
+    // "noto'g'ri" olardi (shared/matchPairAnswer.ts izohiga qarang).
+    const leftCard = matchSelected.side === 'left' ? matchSelected : card;
+    const rightCard = matchSelected.side === 'left' ? card : matchSelected;
+    if (sameMatchText(leftCard.partnerText, rightCard.text)) {
+      const nextMatched = [...matchedCardIds, leftCard.id, rightCard.id];
+      setMatchedCardIds(nextMatched);
       setMatchSelected(null);
       setHint("To'g'ri!");
       playCorrectSound();
-      if (nextMatched.length === matchLeft.length) {
+      // Har juftlik 2 ta karta yopadi.
+      if (nextMatched.length >= matchLeft.length * 2) {
         setBlockComplete(true);
       }
       return;
@@ -222,8 +244,8 @@ export default function DailyGrammarMatchPage() {
     }, 650);
   };
 
-  const handleNextChunkOrBlock = () => {
-    if (!blockComplete) return;
+  const handleNextChunkOrBlock = async () => {
+    if (!blockComplete || advancing) return;
     const nChunksInBlock = Math.max(1, Math.ceil(pairsInCurrentBlock.length / PAIRS_PER_SCREEN));
 
     if (chunkSubIndex < nChunksInBlock - 1) {
@@ -235,7 +257,10 @@ export default function DailyGrammarMatchPage() {
       setChunkSubIndex(0);
       return;
     }
-    patchDay(dayNumber, { grammar_2: true });
+    // «gap-tuzish» mount bo'lishi bilan grammar_2 ni serverdan tekshiradi —
+    // shuning uchun patch yozilib bo'lgunicha o'tilmaydi.
+    setAdvancing(true);
+    await patchDay(dayNumber, { grammar_2: true });
     navigate(`/kunlik-reja/kun/${dayNumber}/grammatika/gap-tuzish`, { replace: true });
   };
 
@@ -254,7 +279,7 @@ export default function DailyGrammarMatchPage() {
   const pillClass = (card: MatchCard) => {
     const isSelected = matchSelected?.id === card.id;
     const isWrong = matchWrongIds.includes(card.id);
-    const isMatched = matchedPairIds.includes(card.pairId);
+    const isMatched = matchedCardIds.includes(card.id);
     const base =
       'grammar-heading min-h-[50px] w-full rounded-full border-[1.5px] px-4 py-3 text-center text-[15px] transition-all active:scale-[0.98]';
     if (isMatched) return `${base} border-[#82E5B8] bg-[#DCFCE7] text-[#0F7C3A] shadow-[0_6px_14px_-8px_rgba(34,197,94,0.35)]`;
@@ -353,9 +378,9 @@ export default function DailyGrammarMatchPage() {
                     key={card.id}
                     type="button"
                     onClick={() => {
-                      if (!matchedPairIds.includes(card.pairId)) handleMatchingClick(card);
+                      if (!matchedCardIds.includes(card.id)) handleMatchingClick(card);
                     }}
-                    className={`${pillClass(card)} ${matchedPairIds.includes(card.pairId) ? 'cursor-default' : ''}`}
+                    className={`${pillClass(card)} ${matchedCardIds.includes(card.id) ? 'cursor-default' : ''}`}
                   >
                     {card.text}
                   </button>
@@ -367,9 +392,9 @@ export default function DailyGrammarMatchPage() {
                     key={card.id}
                     type="button"
                     onClick={() => {
-                      if (!matchedPairIds.includes(card.pairId)) handleMatchingClick(card);
+                      if (!matchedCardIds.includes(card.id)) handleMatchingClick(card);
                     }}
-                    className={`${pillClass(card)} ${matchedPairIds.includes(card.pairId) ? 'cursor-default' : ''}`}
+                    className={`${pillClass(card)} ${matchedCardIds.includes(card.id) ? 'cursor-default' : ''}`}
                   >
                     {card.text}
                   </button>
@@ -380,7 +405,7 @@ export default function DailyGrammarMatchPage() {
             {hint ? (
               <div className="mt-4 flex justify-center">
                 <span
-                  key={`hint-${hint}-${matchedPairIds.length}`}
+                  key={`hint-${hint}-${matchedCardIds.length}`}
                   className={`${matchLocked || matchWrongIds.length ? 'msg-shake' : 'msg-pop'} rounded-full px-4 py-2 text-sm font-black ${
                     blockComplete
                       ? 'bg-[#DCFCE7] text-[#0F7C3A] shadow-[0_6px_14px_-8px_rgba(34,197,94,0.35)]'
@@ -398,10 +423,11 @@ export default function DailyGrammarMatchPage() {
               <div className="mt-6 flex justify-center">
                 <button
                   type="button"
-                  onClick={handleNextChunkOrBlock}
-                  className="grammar-heading min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)]"
+                  onClick={() => void handleNextChunkOrBlock()}
+                  disabled={advancing}
+                  className="grammar-heading min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)] disabled:opacity-70"
                 >
-                  {nextButtonLabel}
+                  {advancing ? 'Saqlanmoqda…' : nextButtonLabel}
                 </button>
               </div>
             ) : null}

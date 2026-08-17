@@ -15,6 +15,12 @@ function promptCount(map: Map<number, number> | Record<number, number>, day: num
   return map[day] ?? 0;
 }
 
+/**
+ * Diqqat: lug'atning 4-vazifasi (`phrases_done` — ibora testlari) bu yerga
+ * ATAYIN kiritilmagan. U qo'shimcha mashq: hamma kunda kontenti yo'q, va
+ * mezonga qo'shilsa admin ibora qo'shgan zahoti allaqachon yopilgan kunlar
+ * qaytadan "tugallanmagan" bo'lib qolardi.
+ */
 export function isKunlikDayRowFullyComplete(
   r: KunlikDayProgressFields,
   practicePromptCountByDay: Map<number, number> | Record<number, number>,

@@ -35,16 +35,27 @@ export async function applyUserAccountPatch(
   if (fetchErr) {
     return { ok: false, status: 500, error: "Xatolik yuz berdi" };
   }
-  if (!user || typeof user.password !== 'string') {
+  if (!user) {
     return { ok: false, status: 404, error: 'User topilmadi' };
   }
 
-  if (wantsPasswordChange) {
+  /*
+   * PAROLSIZ HISOBLAR.
+   *
+   * Google yoki Telegram orqali kirganlarda `password` bo'sh bo'ladi. Ilgari
+   * bunday hisob PATCH'ni umuman ochmasdi — ism, email, telefonini ham
+   * o'zgartira olmasdi. Endi: parol bo'lsa — joriy parol so'raladi; bo'lmasa —
+   * foydalanuvchi allaqachon token bilan kirgani yetarli va shu yerda o'ziga
+   * birinchi parolni qo'yadi.
+   */
+  const hozirgiParol = typeof user.password === 'string' ? user.password : '';
+
+  if (wantsPasswordChange && hozirgiParol) {
     const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
     if (!currentPassword) {
       return { ok: false, status: 400, error: "Parolni almashtirish uchun joriy parol kiritilishi shart" };
     }
-    const valid = await bcrypt.compare(currentPassword, user.password);
+    const valid = await bcrypt.compare(currentPassword, hozirgiParol);
     if (!valid) {
       return { ok: false, status: 401, error: "Parol noto'g'ri" };
     }

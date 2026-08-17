@@ -1,82 +1,47 @@
 /**
- * Single source of truth for XP scoring.
+ * YANGI XP hisoblashning yagona manbasi.
  *
- * A finished day of Kunlik Reja is worth up to ~200 XP:
- *   grammar_1 / grammar_2 / grammar_3   → 15 XP each        (max 45)
- *   words_learned                       → 2  XP × count      (cap 30)
- *   words_correct                       → 3  XP × count      (cap 40)
- *   words_match (juftlik done)          → 20 XP              (max 20)
- *   oqish_done                          → 30 XP              (max 30)
- *   speaking_level                      → 20 XP × level      (cap 40)
+ * REYTING TARIXI: platformada 2026-08-01 gacha yig'ilgan jami ball
+ * `users.legacy_points` da muzlatilgan va `xpService` uni BAZA sifatida
+ * qo'shadi. Ya'ni jami ball =
+ *     legacy_points + (shu fayldagi formula)
+ * Shuning uchun eski foydalanuvchilarning o'rni yo'qolmaydi, reyting o'sha
+ * joydan davom etadi.
  *
- * On top of that:
- *   +5 XP × min(streak_days, 20)                             (max 100)
- *   +1 XP × min(minutes_today / 10, 30)                      (max 30)
+ * QOIDA (2026-08-01 dan): YANGI XP faqat lug'atdagi ibora testlaridan —
+ * har bir TO'G'RI javob uchun 1 XP. Boshqa hech narsa ball bermaydi:
+ * grammatika, so'zlar, juftlik, o'qish, gapirish, shuningdek streak va
+ * sarflangan vaqt bonuslari ham bekor qilindi. Maqsad — reyting bitta aniq
+ * va taqqoslanadigan ko'rsatkichga asoslansin.
  *
- * Level: `level = floor(total_points / 500) + 1`.
+ * `phrases_correct` server tomonida faqat OSHADI (`mergeKunlikDayPatch`
+ * MAX_KEYS), va bir kunda u o'sha kundagi iboralar sonidan oshmaydi —
+ * shuning uchun ballni "farming" qilib bo'lmaydi.
  *
- * All caps prevent farming (e.g. spamming vocab tests) while still rewarding
- * the natural progression of a day's plan.
+ * Daraja: `level = floor(total_points / 500) + 1`.
  */
 
 export type KunlikDayRowForXp = {
-  grammar_1?: boolean | null;
-  grammar_2?: boolean | null;
-  grammar_3?: boolean | null;
-  words_learned?: number | null;
-  words_correct?: number | null;
-  words_match?: boolean | null;
-  oqish_done?: boolean | null;
-  speaking_level?: number | null;
+  /** Ibora testlaridagi to'g'ri javoblar soni — yagona XP manbai. */
+  phrases_correct?: number | null;
 };
 
-const CAP_WORDS_LEARNED = 30;
-const CAP_WORDS_CORRECT = 40;
-const CAP_SPEAKING_LEVEL = 2; // → 40 XP max
-const CAP_STREAK_DAYS = 20;
-const CAP_TIME_MINUTES = 300; // 5h/day contributes to XP (then flat)
+/**
+ * Bir kunda hisobga olinadigan eng ko'p to'g'ri javob. Kunlik ibora soni
+ * hozir 10 atrofida, shuning uchun chegara amalda urilmaydi — u faqat
+ * kontent kutilmaganda kattalashib ketsa ishlaydigan zaxira.
+ */
+const CAP_PHRASES_CORRECT_PER_DAY = 30;
 
 export const XP_PER_LEVEL = 500;
 
 export function calculateXpForKunlikDay(row: KunlikDayRowForXp): number {
-  let xp = 0;
-  if (row.grammar_1) xp += 15;
-  if (row.grammar_2) xp += 15;
-  if (row.grammar_3) xp += 15;
-
-  const wordsLearned = Math.min(Math.max(row.words_learned ?? 0, 0), CAP_WORDS_LEARNED);
-  const wordsCorrect = Math.min(Math.max(row.words_correct ?? 0, 0), CAP_WORDS_CORRECT);
-  xp += 2 * wordsLearned;
-  xp += 3 * wordsCorrect;
-
-  if (row.words_match) xp += 20;
-  if (row.oqish_done) xp += 30;
-
-  const speaking = Math.min(Math.max(row.speaking_level ?? 0, 0), CAP_SPEAKING_LEVEL);
-  xp += 20 * speaking;
-
-  return xp;
+  const correct = Math.max(row.phrases_correct ?? 0, 0);
+  return Math.min(correct, CAP_PHRASES_CORRECT_PER_DAY);
 }
 
-export function calculateStreakBonus(streakDays: number): number {
-  const days = Math.min(Math.max(streakDays, 0), CAP_STREAK_DAYS);
-  return 5 * days;
-}
-
-export function calculateTimeBonus(minutesToday: number): number {
-  const minutes = Math.min(Math.max(minutesToday, 0), CAP_TIME_MINUTES);
-  return Math.floor(minutes / 10);
-}
-
-export function calculateTotalXp(input: {
-  kunlikRows: KunlikDayRowForXp[];
-  streakDays: number;
-  minutesToday: number;
-}): number {
-  const daysXp = input.kunlikRows.reduce((sum, r) => sum + calculateXpForKunlikDay(r), 0);
-  const streakBonus = calculateStreakBonus(input.streakDays);
-  const timeBonus = calculateTimeBonus(input.minutesToday);
-  return daysXp + streakBonus + timeBonus;
+export function calculateTotalXp(input: { kunlikRows: KunlikDayRowForXp[] }): number {
+  return input.kunlikRows.reduce((sum, r) => sum + calculateXpForKunlikDay(r), 0);
 }
 
 export function levelFromXp(xp: number): { level: number; toNext: number; pctInLevel: number } {

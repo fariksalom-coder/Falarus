@@ -1,0 +1,117 @@
+{
+  "grade": 6,
+  "title": "Matematika, 6-sinf",
+  "units": [
+    {
+      "id": "m06-u01",
+      "title": "Bo'linuvchanlik",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m06-u01-l01", "title": "Bo'luvchi va karrali", "dtm": true },
+        { "id": "m06-u01-l02", "title": "2, 5 va 10 ga bo'linish belgilari", "dtm": true },
+        { "id": "m06-u01-l03", "title": "3 va 9 ga bo'linish belgilari", "dtm": true },
+        { "id": "m06-u01-l04", "title": "Tub va murakkab sonlar", "dtm": true },
+        { "id": "m06-u01-l05", "title": "Sonni tub ko'paytuvchilarga ajratish", "dtm": true },
+        { "id": "m06-u01-l06", "title": "Eng katta umumiy bo'luvchi (EKUB)", "dtm": true },
+        { "id": "m06-u01-l07", "title": "Eng kichik umumiy karrali (EKUK)", "dtm": true }
+      ]
+    },
+    {
+      "id": "m06-u02",
+      "title": "Oddiy kasrlar ustida amallar",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m06-u02-l01", "title": "Kasrning asosiy xossasi. Qisqartirish", "dtm": true },
+        { "id": "m06-u02-l02", "title": "Kasrlarni umumiy maxrajga keltirish", "dtm": true },
+        { "id": "m06-u02-l03", "title": "Har xil maxrajli kasrlarni taqqoslash", "dtm": true },
+        { "id": "m06-u02-l04", "title": "Har xil maxrajli kasrlarni qo'shish va ayirish", "dtm": true },
+        { "id": "m06-u02-l05", "title": "Aralash sonlar ustida qo'shish va ayirish", "dtm": true },
+        { "id": "m06-u02-l06", "title": "Kasrlarni ko'paytirish", "dtm": true },
+        { "id": "m06-u02-l07", "title": "Teskari son. Kasrlarni bo'lish", "dtm": true },
+        { "id": "m06-u02-l08", "title": "Kasrga oid matnli masalalar", "dtm": true }
+      ]
+    },
+    {
+      "id": "m06-u03",
+      "title": "Nisbat va proporsiya",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m06-u03-l01", "title": "Ikki sonning nisbati", "dtm": true },
+        { "id": "m06-u03-l02", "title": "Proporsiya va uning asosiy xossasi", "dtm": true },
+        { "id": "m06-u03-l03", "title": "To'g'ri proporsional bog'lanish", "dtm": true },
+        { "id": "m06-u03-l04", "title": "Teskari proporsional bog'lanish", "dtm": true },
+        { "id": "m06-u03-l05", "title": "Masshtab", "dtm": true },
+        { "id": "m06-u03-l06", "title": "Sonni berilgan nisbatda bo'lish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m06-u04",
+      "title": "Foizga oid masalalar",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m06-u04-l01", "title": "Foizni kasr ko'rinishida yozish", "dtm": true },
+        { "id": "m06-u04-l02", "title": "Foizli o'zgarish: oshish va kamayish", "dtm": true },
+        { "id": "m06-u04-l03", "title": "Chegirma va ustama masalalari", "dtm": true },
+        { "id": "m06-u04-l04", "title": "Oddiy foiz. Bank omonati", "dtm": true },
+        { "id": "m06-u04-l05", "title": "Aralashma va qotishma masalalari", "dtm": true }
+      ]
+    },
+    {
+      "id": "m06-u05",
+      "title": "Musbat va manfiy sonlar",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m06-u05-l01", "title": "Manfiy sonlar. Koordinata to'g'ri chizig'i", "dtm": true },
+        { "id": "m06-u05-l02", "title": "Qarama-qarshi sonlar. Sonning moduli", "dtm": true },
+        { "id": "m06-u05-l03", "title": "Butun sonlarni taqqoslash", "dtm": true },
+        { "id": "m06-u05-l04", "title": "Ratsional sonlarni qo'shish", "dtm": true },
+        { "id": "m06-u05-l05", "title": "Ratsional sonlarni ayirish", "dtm": true },
+        { "id": "m06-u05-l06", "title": "Ratsional sonlarni ko'paytirish", "dtm": true },
+        { "id": "m06-u05-l07", "title": "Ratsional sonlarni bo'lish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m06-u06",
+      "title": "Ifodalar va tenglamalar",
+      "subject": "algebra",
+      "lessons": [
+        { "id": "m06-u06-l01", "title": "Qavslarni ochish qoidasi", "dtm": true },
+        { "id": "m06-u06-l02", "title": "O'xshash hadlarni ixchamlash", "dtm": true },
+        { "id": "m06-u06-l03", "title": "Tenglamaning ildizi. Ekvivalent almashtirishlar", "dtm": true },
+        { "id": "m06-u06-l04", "title": "Chiziqli tenglamalarni yechish", "dtm": true },
+        { "id": "m06-u06-l05", "title": "Tenglama tuzib masala yechish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m06-u07",
+      "title": "Koordinata tekisligi",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m06-u07-l01", "title": "Perpendikulyar va parallel to'g'ri chiziqlar", "dtm": false },
+        { "id": "m06-u07-l02", "title": "Koordinata tekisligi. Nuqta koordinatalari", "dtm": true },
+        { "id": "m06-u07-l03", "title": "Grafiklarni o'qish", "dtm": true }
+      ]
+    },
+    {
+      "id": "m06-u08",
+      "title": "Aylana va doira",
+      "subject": "geometriya",
+      "lessons": [
+        { "id": "m06-u08-l01", "title": "Aylana, radius, diametr", "dtm": true },
+        { "id": "m06-u08-l02", "title": "Aylana uzunligi. Pi soni", "dtm": true },
+        { "id": "m06-u08-l03", "title": "Doira yuzi", "dtm": true },
+        { "id": "m06-u08-l04", "title": "Shar va sfera haqida boshlang'ich tushuncha", "dtm": false }
+      ]
+    },
+    {
+      "id": "m06-u09",
+      "title": "Statistika elementlari",
+      "subject": "matematika",
+      "lessons": [
+        { "id": "m06-u09-l01", "title": "Ma'lumotlarni to'plash va guruhlash", "dtm": false },
+        { "id": "m06-u09-l02", "title": "O'rtacha, moda va mediana", "dtm": true },
+        { "id": "m06-u09-l03", "title": "Hodisa ehtimoli haqida dastlabki tushuncha", "dtm": true }
+      ]
+    }
+  ]
+}

@@ -196,7 +196,22 @@ export async function activateTeacherListingPayment(
   const durationDays = Number((plan as any)?.duration_days ?? 30);
   const teacherUserId = Number((subscription as any).teacher_user_id ?? userId);
   const startsAt = new Date();
-  const expiresAt = new Date(startsAt);
+
+  // Muddat UZAYTIRILADI, qayta boshlanmaydi: obunasi hali tugamagan o'qituvchi
+  // oldindan to'lasa qolgan kunlari kuymasin (rus tili obunasi ham shunday
+  // ishlaydi — shared/paymentActivation.ts).
+  const { data: current } = await supabase
+    .from('teacher_profiles')
+    .select('listing_paid_until')
+    .eq('user_id', teacherUserId)
+    .maybeSingle();
+  const currentEndRaw = (current as { listing_paid_until?: string | null } | null)?.listing_paid_until;
+  const currentEnd = currentEndRaw ? new Date(currentEndRaw) : null;
+  const startFrom =
+    currentEnd && Number.isFinite(currentEnd.getTime()) && currentEnd > startsAt
+      ? currentEnd
+      : startsAt;
+  const expiresAt = new Date(startFrom);
   expiresAt.setDate(expiresAt.getDate() + durationDays);
 
   await supabase
@@ -209,10 +224,22 @@ export async function activateTeacherListingPayment(
     })
     .eq('id', Number((subscription as any).id));
 
+  /*
+    DIQQAT: bu yerda `profile_status` GA TEGILMAYDI.
+
+    Ilgari to'lov o'tishi bilanoq profil `active` qilinardi — ya'ni to'lov
+    shlyuzining (Click/Rahmat) chaqiruvi o'qituvchini admin tasdig'isiz
+    ro'yxatga chiqarib yuborardi. Bundan tashqari u joriy holatni o'qimasdi:
+    admin RAD ETGAN yoki TO'XTATGAN o'qituvchi qayta to'lab o'zini tiklab
+    olardi.
+
+    Endi to'lov faqat PULNI qayd etadi (obuna + `listing_paid_until`), faol
+    holatni esa yagona joy — admin panelidagi "Tasdiqlash" (adminController
+    `updateTeacherStatus`) — belgilaydi.
+  */
   await supabase
     .from('teacher_profiles')
     .update({
-      profile_status: 'active',
       listing_paid_until: expiresAt.toISOString(),
       first_listing_discount_used: true,
       updated_at: startsAt.toISOString(),

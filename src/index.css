@@ -577,12 +577,25 @@ h1, h2, h3, h4, h5, h6 {
   --gr-warm-bg: #FFEEDD;
   --gr-border: #DDD7F5;
   --gr-card: #FFFFFF;
+  /* Grammatika bloki o'qish blokidagi komponentlarni qayta ishlatadi va ular
+     `--rd-*` so'raydi. Aniqlanmasa `var()` bo'sh qoladi: masalan "Davom etish"
+     tugmasi foni shaffof bo'lib, binafsha kartada matni ko'rinmay qolgan edi. */
+  --rd-white: var(--gr-card);
+  --rd-text: var(--gr-text);
+  --rd-text-muted: var(--gr-text-muted);
   background: var(--gr-bg);
 }
 .grammar-heading {
   font-family: 'Nunito', 'Manrope', sans-serif;
   font-weight: 900;
   letter-spacing: -0.01em;
+}
+
+/* Ustoz doskasi (dars slaydi) — sarlavha shrifti.
+   Faqat shu sahnada ishlatiladi; shrift yuklanmasa Fredoka'ga tushadi. */
+.doska-display {
+  font-family: 'Unbounded', 'Fredoka', 'Nunito', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 /* Dark-mode overrides for the per-course "premium" themes.

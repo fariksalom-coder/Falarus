@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { GraduationCap, UserPlus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { registerTeacherAccount, type AuthUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
+import TeacherField from '../components/teacher/TeacherField';
 
 function normalizeAuthUser(user: AuthUser) {
   return { ...user, progress: user.progress ?? 0, totalPoints: user.totalPoints ?? 0 };
@@ -40,72 +42,67 @@ export default function TeacherRegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#071B5E] text-white">
+    <main className="flex min-h-screen items-center justify-center bg-app-bg-muted px-5 py-10">
+      <motion.form
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 240, damping: 24 }}
+        onSubmit={handleSubmit}
+        className="w-full max-w-md overflow-hidden rounded-[24px] bg-app-surface shadow-app-card ring-1 ring-app-border"
+      >
+        <div className="px-6 pb-6 pt-7 text-white" style={{ background: 'var(--app-brand-gradient)' }}>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
             <GraduationCap className="h-6 w-6" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-[#071B5E]">FalaRus</p>
-            <h1 className="text-2xl font-black text-slate-950">O'qituvchi ro'yxatdan o'tishi</h1>
+          <p className="mt-3 text-[11px] font-black uppercase tracking-[0.2em] text-white/70">FalaRus</p>
+          <h1 className="text-2xl font-black leading-tight">O'qituvchi ro'yxatdan o'tishi</h1>
+        </div>
+
+        <div className="p-6">
+          {error ? (
+            <div className="mb-4 rounded-2xl bg-app-danger-bg px-4 py-3 text-sm font-semibold text-app-danger">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TeacherField label="Ism" value={firstName} onChange={setFirstName} autoComplete="given-name" />
+            <TeacherField label="Familiya" value={lastName} onChange={setLastName} autoComplete="family-name" />
           </div>
+          <TeacherField
+            label="Email yoki telefon"
+            value={identifier}
+            onChange={setIdentifier}
+            autoComplete="username"
+            className="mt-4"
+          />
+          <TeacherField
+            label="Parol"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            hint="Kamida 6 belgi"
+            className="mt-4"
+          />
+
+          <button
+            type="submit"
+            disabled={submitting || !firstName.trim() || !lastName.trim() || !identifier.trim() || password.length < 6}
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-app-primary-deep px-5 py-3 font-black text-white transition active:scale-[0.98] disabled:opacity-50"
+          >
+            <UserPlus className="h-5 w-5" />
+            {submitting ? 'Yaratilmoqda...' : "O'qituvchi hisobini yaratish"}
+          </button>
+
+          <p className="mt-5 text-center text-sm font-semibold text-app-text-muted">
+            Hisobingiz bormi?{' '}
+            <Link to="/teacher-login" className="font-black text-app-primary-deep hover:underline">
+              Kirish
+            </Link>
+          </p>
         </div>
-
-        {error ? <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div> : null}
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Ism" value={firstName} onChange={setFirstName} autoComplete="given-name" />
-          <Field label="Familiya" value={lastName} onChange={setLastName} autoComplete="family-name" />
-        </div>
-        <Field label="Email yoki telefon" value={identifier} onChange={setIdentifier} autoComplete="username" className="mt-4" />
-        <Field label="Parol" type="password" value={password} onChange={setPassword} autoComplete="new-password" className="mt-4" />
-
-        <button
-          type="submit"
-          disabled={submitting || !firstName.trim() || !lastName.trim() || !identifier.trim() || password.length < 6}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#071B5E] px-5 py-3 font-black text-white disabled:opacity-50"
-        >
-          <UserPlus className="h-5 w-5" />
-          {submitting ? 'Yaratilmoqda...' : "O'qituvchi hisobini yaratish"}
-        </button>
-
-        <p className="mt-5 text-center text-sm font-semibold text-slate-600">
-          Hisobingiz bormi?{' '}
-          <Link to="/teacher-login" className="text-[#071B5E]">
-            Kirish
-          </Link>
-        </p>
-      </form>
+      </motion.form>
     </main>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = 'text',
-  autoComplete,
-  className = '',
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
-  autoComplete?: string;
-  className?: string;
-}) {
-  return (
-    <label className={`block text-sm font-bold text-slate-700 ${className}`}>
-      {label}
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        autoComplete={autoComplete}
-        className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-950 outline-none focus:border-[#0B2A6B]"
-      />
-    </label>
   );
 }

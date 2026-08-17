@@ -1,3 +1,4 @@
+import { haptic } from './haptic';
 /** Lightweight Web Audio "success" chime — no external file, cached AudioContext. */
 
 let ctx: AudioContext | null = null;
@@ -30,6 +31,9 @@ function tone(context: AudioContext, freq: number, startAt: number, duration: nu
 
 /** Two-note "ding-ding" chime (C6 → E6) — cheerful, unobtrusive. */
 export function playCorrectSound() {
+  // Ovoz bilan birga tebranish: telefon jimlik rejimida bo'lsa ovoz
+  // eshitilmaydi, tebranish esa baribir tasdiq beradi.
+  haptic('togri');
   const c = getCtx();
   if (!c) return;
   if (c.state === 'suspended') {
@@ -42,6 +46,7 @@ export function playCorrectSound() {
 
 /** Soft warm buzz for wrong answers — currently unused, kept for future symmetry. */
 export function playWrongSound() {
+  haptic('xato');
   const c = getCtx();
   if (!c) return;
   if (c.state === 'suspended') c.resume().catch(() => {});

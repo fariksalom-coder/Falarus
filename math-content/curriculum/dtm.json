@@ -1,0 +1,114 @@
+{
+  "title": "DTM matematika: blok bo'yicha tayyorgarlik xaritasi",
+  "note": "Har bir mavzu 5-11 sinf darslariga bog'langan. sourceUnits — shu mavzu qaysi bo'limlardan yig'ilgani.",
+  "blocks": [
+    {
+      "id": "dtm-b01",
+      "title": "Sonlar va hisoblashlar",
+      "topics": [
+        { "id": "dtm-b01-t01", "title": "Bo'linuvchanlik, EKUB va EKUK", "sourceUnits": ["m06-u01"] },
+        { "id": "dtm-b01-t02", "title": "Oddiy va o'nli kasrlar", "sourceUnits": ["m05-u06", "m05-u07", "m06-u02"] },
+        { "id": "dtm-b01-t03", "title": "Nisbat, proporsiya, masshtab", "sourceUnits": ["m06-u03"] },
+        { "id": "dtm-b01-t04", "title": "Foiz, chegirma, qotishma", "sourceUnits": ["m05-u08", "m06-u04"] },
+        { "id": "dtm-b01-t05", "title": "Daraja va standart shakl", "sourceUnits": ["m07-u01", "m08-u02"] },
+        { "id": "dtm-b01-t06", "title": "Ildizlar va irratsional ifodalar", "sourceUnits": ["m08-u03", "m10-u01"] }
+      ]
+    },
+    {
+      "id": "dtm-b02",
+      "title": "Algebraik ifodalar",
+      "topics": [
+        { "id": "dtm-b02-t01", "title": "Qisqa ko'paytirish formulalari", "sourceUnits": ["m07-u03"] },
+        { "id": "dtm-b02-t02", "title": "Ko'paytuvchilarga ajratish", "sourceUnits": ["m07-u04"] },
+        { "id": "dtm-b02-t03", "title": "Ratsional kasrlarni soddalashtirish", "sourceUnits": ["m08-u01"] },
+        { "id": "dtm-b02-t04", "title": "Kvadrat uchhad va Vietta teoremasi", "sourceUnits": ["m08-u04"] }
+      ]
+    },
+    {
+      "id": "dtm-b03",
+      "title": "Tenglama va tengsizliklar",
+      "topics": [
+        { "id": "dtm-b03-t01", "title": "Chiziqli tenglama va sistemalar", "sourceUnits": ["m07-u05", "m07-u07"] },
+        { "id": "dtm-b03-t02", "title": "Kvadrat tenglamalar", "sourceUnits": ["m08-u04"] },
+        { "id": "dtm-b03-t03", "title": "Intervallar usuli va kasr tengsizliklar", "sourceUnits": ["m08-u05", "m09-u02"] },
+        { "id": "dtm-b03-t04", "title": "Irratsional tenglamalar", "sourceUnits": ["m09-u05", "m10-u01"] },
+        { "id": "dtm-b03-t05", "title": "Ko'rsatkichli tenglama va tengsizliklar", "sourceUnits": ["m10-u02"] },
+        { "id": "dtm-b03-t06", "title": "Logarifmik tenglama va tengsizliklar", "sourceUnits": ["m10-u03"] },
+        { "id": "dtm-b03-t07", "title": "Trigonometrik tenglamalar", "sourceUnits": ["m10-u06"] },
+        { "id": "dtm-b03-t08", "title": "Modul va parametrli masalalar", "sourceUnits": ["m11-u05"] }
+      ]
+    },
+    {
+      "id": "dtm-b04",
+      "title": "Funksiyalar",
+      "topics": [
+        { "id": "dtm-b04-t01", "title": "Chiziqli va teskari proporsional funksiya", "sourceUnits": ["m07-u06", "m08-u01"] },
+        { "id": "dtm-b04-t02", "title": "Kvadrat funksiya va parabola", "sourceUnits": ["m09-u01"] },
+        { "id": "dtm-b04-t03", "title": "Ko'rsatkichli va logarifmik funksiya", "sourceUnits": ["m10-u02", "m10-u03"] },
+        { "id": "dtm-b04-t04", "title": "Trigonometrik funksiyalar grafiklari", "sourceUnits": ["m10-u04"] },
+        { "id": "dtm-b04-t05", "title": "Aniqlanish sohasi va qiymatlar to'plami", "sourceUnits": ["m07-u06", "m09-u01", "m10-u03"] }
+      ]
+    },
+    {
+      "id": "dtm-b05",
+      "title": "Progressiyalar va ketma-ketliklar",
+      "topics": [
+        { "id": "dtm-b05-t01", "title": "Arifmetik progressiya", "sourceUnits": ["m09-u04"] },
+        { "id": "dtm-b05-t02", "title": "Geometrik progressiya", "sourceUnits": ["m09-u04"] },
+        { "id": "dtm-b05-t03", "title": "Cheksiz kamayuvchi progressiya yig'indisi", "sourceUnits": ["m09-u04"] }
+      ]
+    },
+    {
+      "id": "dtm-b06",
+      "title": "Analiz asoslari",
+      "topics": [
+        { "id": "dtm-b06-t01", "title": "Limitlar", "sourceUnits": ["m11-u01"] },
+        { "id": "dtm-b06-t02", "title": "Hosila va urinma", "sourceUnits": ["m11-u02"] },
+        { "id": "dtm-b06-t03", "title": "Ekstremum va eng katta/kichik qiymat", "sourceUnits": ["m11-u03"] },
+        { "id": "dtm-b06-t04", "title": "Integral va yuza hisoblash", "sourceUnits": ["m11-u04"] }
+      ]
+    },
+    {
+      "id": "dtm-b07",
+      "title": "Planimetriya",
+      "topics": [
+        { "id": "dtm-b07-t01", "title": "Uchburchaklar tengligi va xossalari", "sourceUnits": ["m07-u09", "m07-u10"] },
+        { "id": "dtm-b07-t02", "title": "To'rtburchaklar", "sourceUnits": ["m08-u06"] },
+        { "id": "dtm-b07-t03", "title": "Yuzalar va Pifagor teoremasi", "sourceUnits": ["m08-u07"] },
+        { "id": "dtm-b07-t04", "title": "O'xshashlik va metrik munosabatlar", "sourceUnits": ["m08-u08"] },
+        { "id": "dtm-b07-t05", "title": "Aylana, burchaklar, urinmalar", "sourceUnits": ["m08-u09", "m09-u10"] },
+        { "id": "dtm-b07-t06", "title": "Sinuslar va kosinuslar teoremasi", "sourceUnits": ["m09-u09"] },
+        { "id": "dtm-b07-t07", "title": "Vektorlar va koordinatalar usuli", "sourceUnits": ["m09-u07", "m09-u08"] }
+      ]
+    },
+    {
+      "id": "dtm-b08",
+      "title": "Stereometriya",
+      "topics": [
+        { "id": "dtm-b08-t01", "title": "Parallellik va perpendikulyarlik", "sourceUnits": ["m10-u08", "m10-u09"] },
+        { "id": "dtm-b08-t02", "title": "Prizma va piramida", "sourceUnits": ["m11-u07"] },
+        { "id": "dtm-b08-t03", "title": "Silindr, konus, shar", "sourceUnits": ["m11-u08"] },
+        { "id": "dtm-b08-t04", "title": "Hajmlar va sirt yuzalari", "sourceUnits": ["m11-u09"] }
+      ]
+    },
+    {
+      "id": "dtm-b09",
+      "title": "Kombinatorika, ehtimollik, statistika",
+      "topics": [
+        { "id": "dtm-b09-t01", "title": "Sanash qoidalari va gruppalashlar", "sourceUnits": ["m09-u06"] },
+        { "id": "dtm-b09-t02", "title": "Klassik ehtimollik", "sourceUnits": ["m09-u06", "m11-u06"] },
+        { "id": "dtm-b09-t03", "title": "Statistik xarakteristikalar", "sourceUnits": ["m06-u09", "m11-u06"] }
+      ]
+    },
+    {
+      "id": "dtm-b10",
+      "title": "Matnli masalalar",
+      "topics": [
+        { "id": "dtm-b10-t01", "title": "Harakatga oid masalalar", "sourceUnits": ["m05-u03", "m07-u07"] },
+        { "id": "dtm-b10-t02", "title": "Ish bajarish va quvur masalalari", "sourceUnits": ["m06-u03", "m08-u04"] },
+        { "id": "dtm-b10-t03", "title": "Aralashma va qotishma masalalari", "sourceUnits": ["m06-u04"] },
+        { "id": "dtm-b10-t04", "title": "Foiz va bank masalalari", "sourceUnits": ["m06-u04", "m09-u04"] }
+      ]
+    }
+  ]
+}

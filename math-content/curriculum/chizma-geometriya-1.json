@@ -1,0 +1,86 @@
+{
+  "courseId": "cg1",
+  "title": "Chizma geometriya, 1-qism",
+  "level": "oliy",
+  "note": "Mavzular tarkibi Sh. Murodov va boshqalar, 'Chizma geometriya, 1-qism', Nizomiy nomidagi TDPU, Toshkent 2005 qo'llanmasining mundarijasidan olingan. Kontent original yoziladi.",
+  "units": [
+    {
+      "id": "cg1-u01",
+      "title": "I bob. Kirish",
+      "lessons": [
+        { "id": "cg1-u01-l01", "title": "Proyeksiyalash asoslari. Yevklid fazosini kengaytirish" },
+        { "id": "cg1-u01-l02", "title": "Geometrik elementlarning parametri" },
+        { "id": "cg1-u01-l03", "title": "Markaziy va parallel proyeksiyalash, ularning xossalari" },
+        { "id": "cg1-u01-l04", "title": "Nuqtaning o'zaro perpendikulyar ikki va uch tekislikdagi proyeksiyalari" }
+      ]
+    },
+    {
+      "id": "cg1-u02",
+      "title": "II bob. To'g'ri chiziqning ortogonal proyeksiyalari",
+      "lessons": [
+        { "id": "cg1-u02-l01", "title": "Umumiy vaziyatdagi to'g'ri chiziqning proyeksiyalari" },
+        { "id": "cg1-u02-l02", "title": "Xususiy vaziyatdagi to'g'ri chiziqlarning proyeksiyalari" },
+        { "id": "cg1-u02-l03", "title": "Umumiy vaziyatdagi to'g'ri chiziq kesmasini tahlil qilish" },
+        { "id": "cg1-u02-l04", "title": "To'g'ri chiziq kesmasini berilgan nisbatda bo'lish" },
+        { "id": "cg1-u02-l05", "title": "To'g'ri chiziq izlari" }
+      ]
+    },
+    {
+      "id": "cg1-u03",
+      "title": "III bob. Fazodagi ikki to'g'ri chiziqning o'zaro vaziyati",
+      "lessons": [
+        { "id": "cg1-u03-l01", "title": "Parallel to'g'ri chiziqlar" },
+        { "id": "cg1-u03-l02", "title": "Kesishuvchi to'g'ri chiziqlar" },
+        { "id": "cg1-u03-l03", "title": "Chalmashuvchi (ayqash) to'g'ri chiziqlar" },
+        { "id": "cg1-u03-l04", "title": "To'g'ri burchakning proyeksiyasi" }
+      ]
+    },
+    {
+      "id": "cg1-u04",
+      "title": "IV bob. Tekislikning fazoda berilishi",
+      "lessons": [
+        { "id": "cg1-u04-l01", "title": "Tekislikning izlarini yasash" },
+        { "id": "cg1-u04-l02", "title": "Tekislikning xususiy holatlari" },
+        { "id": "cg1-u04-l03", "title": "Tekislikda to'g'ri chiziq tanlash" },
+        { "id": "cg1-u04-l04", "title": "Tekislikning maxsus chiziqlari" },
+        { "id": "cg1-u04-l05", "title": "Tekislikning eng katta og'ma chiziqlari" }
+      ]
+    },
+    {
+      "id": "cg1-u05",
+      "title": "V bob. Fazodagi to'g'ri chiziq va tekislikning o'zaro vaziyati",
+      "lessons": [
+        { "id": "cg1-u05-l01", "title": "To'g'ri chiziq orqali tekislik o'tkazish" },
+        { "id": "cg1-u05-l02", "title": "To'g'ri chiziqning tekislikka parallelligi" },
+        { "id": "cg1-u05-l03", "title": "To'g'ri chiziqning proyeksiyalovchi tekislik bilan kesishish nuqtasini yasash" },
+        { "id": "cg1-u05-l04", "title": "Umumiy vaziyatdagi tekislikning xususiy vaziyatdagi tekislik bilan kesishish chizig'i" },
+        { "id": "cg1-u05-l05", "title": "To'g'ri chiziqning umumiy vaziyatdagi tekislik bilan kesishish nuqtasi" },
+        { "id": "cg1-u05-l06", "title": "To'g'ri chiziqning tekislikka perpendikulyarligi" }
+      ]
+    },
+    {
+      "id": "cg1-u06",
+      "title": "VI bob. Fazodagi ikki tekislikning o'zaro vaziyati",
+      "lessons": [
+        { "id": "cg1-u06-l01", "title": "O'zaro parallel tekisliklar" },
+        { "id": "cg1-u06-l02", "title": "O'zaro kesishuvchi tekisliklar" },
+        { "id": "cg1-u06-l03", "title": "Tekisliklarning o'zaro perpendikulyarligi" },
+        { "id": "cg1-u06-l04", "title": "To'g'ri chiziq bilan tekislik orasidagi burchakni aniqlash" },
+        { "id": "cg1-u06-l05", "title": "Ikki tekislik orasidagi burchakni aniqlash" }
+      ]
+    },
+    {
+      "id": "cg1-u07",
+      "title": "VII bob. Ortogonal proyeksiyalarni qayta tuzish usullari",
+      "lessons": [
+        { "id": "cg1-u07-l01", "title": "Proyeksiyalar tekisliklarini almashtirish usuli. Bittasini almashtirish" },
+        { "id": "cg1-u07-l02", "title": "Proyeksiyalar tekisliklarini ikki marta almashtirish" },
+        { "id": "cg1-u07-l03", "title": "Aylantirish usuli. Proyeksiyalar tekisligiga perpendikulyar o'q atrofida aylantirish" },
+        { "id": "cg1-u07-l04", "title": "Proyeksiyalar tekisliklaridan bittasiga parallel o'q atrofida aylantirish" },
+        { "id": "cg1-u07-l05", "title": "Tekislikni uning izlaridan biri atrofida aylantirish" },
+        { "id": "cg1-u07-l06", "title": "Tekis parallel ko'chirish usuli" },
+        { "id": "cg1-u07-l07", "title": "Yordamchi proyeksiyalash usuli" }
+      ]
+    }
+  ]
+}

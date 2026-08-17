@@ -667,6 +667,20 @@ class LocalStorageBucketApi {
     }
   }
 
+  /** Fayl(lar)ni o'chiradi. Bo'lmasa jim o'tadi. */
+  async remove(objectPaths: string[]) {
+    const removed: string[] = [];
+    for (const objectPath of objectPaths) {
+      try {
+        await fs.unlink(safeStoragePath(this.root, this.bucket, objectPath));
+        removed.push(objectPath);
+      } catch {
+        /* fayl yo'q — muammo emas */
+      }
+    }
+    return { data: removed.map((p) => ({ name: p })), error: null };
+  }
+
   getPublicUrl(objectPath: string) {
     const cleanBucket = this.bucket.replace(/[^a-zA-Z0-9._-]/g, '_');
     const cleanPath = objectPath

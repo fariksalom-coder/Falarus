@@ -54,14 +54,16 @@ export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
   void vocabTick;
 
   const premium = Boolean(access?.subscription_active);
+  // OLTIN A'ZO: kunlar ketma-ketligi ham cheklamaydi — hamma kun ochiq.
+  const oltin = Boolean(access?.golden);
 
   const maxSequentialDay = useMemo(
     () => findFirstIncompletePlanDay(results, reviewVisits, kunlikRows, practicePromptCountByDay),
     [results, reviewVisits, kunlikRows, practicePromptCountByDay, vocabTick],
   );
 
-  const sequentiallyAllowed = dayNumber <= maxSequentialDay;
-  const contentAllowed = canEnterKunlikDayContent(dayNumber, premium);
+  const sequentiallyAllowed = oltin || dayNumber <= maxSequentialDay;
+  const contentAllowed = oltin || canEnterKunlikDayContent(dayNumber, premium);
   const dayAllowed = sequentiallyAllowed && contentAllowed;
 
   const bootstrapReady = Boolean(token && isReady && kunlikLoaded && accessLoaded);

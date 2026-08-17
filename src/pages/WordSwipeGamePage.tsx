@@ -19,6 +19,20 @@ import {
   DEV_WORD_SWIPE_FALLBACK_WORDS,
 } from '../data/wordSwipeLevel1';
 import { generateWordSwipeGrid } from '../../shared/wordSwipeGridGenerator';
+import { yordamdanYulduz, yulduzniSaqla } from '../utils/wordSwipeStars';
+
+/**
+ * Bir bosqichga beriladigan yordam soni.
+ *
+ * Uchta — o'quvchi qiyin so'zda qotib qolmasligi uchun yetarli, lekin butun
+ * bosqichni yordam bilan yechib bo'lmaydi. Har yordam yakundagi yulduzni
+ * kamaytiradi, ya'ni narxi bor.
+ */
+const MAX_YORDAM = 3;
+/** Har bir topilgan so'z uchun ball. */
+const SOZ_BALLI = 20;
+/** Har yordam uchun balldan ayiriladigan miqdor. */
+const YORDAM_NARXI = 15;
 import {
   coordKey,
   wordEntryIdKey,
@@ -59,10 +73,18 @@ export default function WordSwipeGamePage() {
   const [foundIds, setFoundIds] = useState<Set<string>>(() => new Set());
   const [foundCellKeys, setFoundCellKeys] = useState<Set<string>>(() => new Set());
   const [hintCounts, setHintCounts] = useState<Record<string, number>>({});
+  /**
+   * Shu bosqichda nechta yordam olindi.
+   *
+   * Ilgari yordam CHEKSIZ edi: chiroqchani ketma-ket bosib, so'zning deyarli
+   * hamma harfini ochib olish mumkin edi va o'yin ma'nosini yo'qotardi. Endi
+   * bosqichga uchta yordam beriladi va ularning soni yakunda YULDUZGA
+   * aylanadi: yordamsiz — uch yulduz.
+   */
+  const [yordamSoni, setYordamSoni] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
   const [progress, setProgress] = useState<WordSwipeProgressResponse | null>(null);
   const [availableStagesTotal, setAvailableStagesTotal] = useState(5);
-  const [saving, setSaving] = useState(false);
   const [stageSaved, setStageSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savedStageKeyRef = useRef<string | null>(null);
@@ -74,6 +96,7 @@ export default function WordSwipeGamePage() {
     setFoundIds(new Set());
     setFoundCellKeys(new Set());
     setHintCounts({});
+    setYordamSoni(0);
   }, []);
 
   useEffect(() => {
@@ -214,6 +237,10 @@ export default function WordSwipeGamePage() {
   const foundCount = foundIds.size;
   const totalCount = words.length;
   const allDone = loadState.status === 'ready' && totalCount > 0 && foundCount >= totalCount;
+  /** Yakuniy ball: topilgan so'zlar minus yordam narxi (noldan pastga tushmaydi). */
+  const ball = Math.max(0, foundCount * SOZ_BALLI - yordamSoni * YORDAM_NARXI);
+  const yulduz = yordamdanYulduz(yordamSoni);
+  const yordamQoldi = Math.max(0, MAX_YORDAM - yordamSoni);
   const availableStagesEnded = stageSaved && Boolean(progress?.completedAvailableStages);
   const hasNextStage = allDone && stageSaved && !availableStagesEnded;
 
@@ -243,6 +270,7 @@ export default function WordSwipeGamePage() {
   };
 
   const handleHint = () => {
+    if (yordamSoni >= MAX_YORDAM) return;
     const unfound = words.filter((w) => !foundIds.has(wordEntryIdKey(w.id)));
     if (unfound.length === 0) return;
     // Prefer a word that's already partially hinted but not yet fully revealed —
@@ -262,7 +290,15 @@ export default function WordSwipeGamePage() {
       if (next === current) return prev;
       return { ...prev, [idKey]: next };
     });
+    setYordamSoni((n) => n + 1);
   };
+
+  // Yulduz bosqich yopilishi bilan qurilmaga yoziladi (serverga emas — izohi
+  // `wordSwipeStars.ts` da).
+  useEffect(() => {
+    if (!allDone) return;
+    yulduzniSaqla(levelNumber, stageNumber, yulduz);
+  }, [allDone, levelNumber, stageNumber, yulduz]);
 
   useEffect(() => {
     if (!allDone || !token) return;
@@ -271,7 +307,6 @@ export default function WordSwipeGamePage() {
 
     let cancelled = false;
     saveInFlightRef.current = true;
-    setSaving(true);
     setSaveError(null);
 
     (async () => {
@@ -294,7 +329,6 @@ export default function WordSwipeGamePage() {
       } finally {
         if (!cancelled) {
           saveInFlightRef.current = false;
-          setSaving(false);
         }
       }
     })();
@@ -302,7 +336,6 @@ export default function WordSwipeGamePage() {
     return () => {
       cancelled = true;
       saveInFlightRef.current = false;
-      setSaving(false);
     };
   }, [allDone, completionKey, levelNumber, stageNumber, t, token]);
 
@@ -350,9 +383,7 @@ export default function WordSwipeGamePage() {
           {loadState.status === 'ready' ? (
             <span className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-white/16 pl-2.5 pr-3 text-white ring-1 ring-white/22 backdrop-blur">
               <span aria-hidden className="text-[15px] leading-none">💎</span>
-              <span className="text-[13px] font-black tracking-tight text-[#FFE9B0]">
-                {foundCount * 20}
-              </span>
+              <span className="text-[13px] font-black tracking-tight text-[#FFE9B0]">{ball}</span>
             </span>
           ) : null}
           {loadState.status === 'ready' ? (
@@ -365,15 +396,21 @@ export default function WordSwipeGamePage() {
               >
                 <RotateCcw className="h-4 w-4" strokeWidth={2.4} />
               </button>
+              {/* Yordam — nechtasi qolgani tugmaning o'zida turadi: har bosish
+                  yakundagi yulduzni kamaytiradi, shuning uchun bu son ko'rinib
+                  turishi kerak. */}
               <button
                 type="button"
                 onClick={handleHint}
-                disabled={allDone}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-[#22306B] shadow-[0_6px_14px_-6px_rgba(255,197,61,0.6)] transition hover:brightness-105 active:scale-95 disabled:opacity-40 sm:h-11 sm:w-11"
+                disabled={allDone || yordamQoldi === 0}
+                className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-[#22306B] shadow-[0_6px_14px_-6px_rgba(255,197,61,0.6)] transition hover:brightness-105 active:scale-95 disabled:opacity-40 sm:h-11 sm:w-11"
                 style={{ background: 'linear-gradient(150deg, #FFE9B0 0%, #FFC53D 100%)' }}
-                aria-label={t('games.hint')}
+                aria-label={`${t('games.hint')} — ${yordamQoldi} ta qoldi`}
               >
                 <Lightbulb className="h-4 w-4" strokeWidth={2.4} />
+                <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#22306B] px-1 text-[10px] font-black text-white ring-2 ring-[#FFD873]">
+                  {yordamQoldi}
+                </span>
               </button>
             </>
           ) : null}
@@ -482,24 +519,43 @@ export default function WordSwipeGamePage() {
           </div>
 
           <h2 className="mt-4 text-[36px] font-black leading-tight text-white">Ajoyib!</h2>
-          <p className="mt-1 text-[15px] font-semibold text-white/80">Barcha so'zlar topildi</p>
+          <p className="mt-1 text-[15px] font-semibold text-white/80">
+            {yulduz === 3
+              ? "Yordamsiz yechdingiz — uchta yulduz!"
+              : `Yordam: ${yordamSoni} ta`}
+          </p>
 
-          <div className="mt-6 grid w-full max-w-sm grid-cols-3 gap-2.5">
+          {/*
+            YULDUZLAR — bosqichning asosiy mukofoti.
+            Ilgari bu yerda uchinchi katakcha «Saqlash ✓» edi: o'yinchi uchun
+            hech qanday ma'no bermaydigan texnik holat. Endi uning o'rnida
+            natijaning o'zi turadi. Yulduzlar birin-ketin sakrab chiqadi.
+          */}
+          <div className="mt-5 flex items-center gap-2.5" aria-label={`${yulduz} yulduz`}>
+            {[1, 2, 3].map((n) => (
+              <span
+                key={n}
+                aria-hidden
+                className={`text-[38px] leading-none transition-all duration-300 ${
+                  n <= yulduz ? 'scale-100 opacity-100' : 'scale-75 opacity-25 grayscale'
+                }`}
+                style={{ transitionDelay: `${n * 140}ms` }}
+              >
+                ⭐
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-5 grid w-full max-w-sm grid-cols-2 gap-2.5">
             <div className="rounded-[16px] bg-white/16 px-3 py-3.5 text-center ring-1 ring-white/20 backdrop-blur">
               <p className="text-[22px] font-black leading-none text-white">{totalCount}</p>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">So'z</p>
             </div>
             <div className="rounded-[16px] bg-white/16 px-3 py-3.5 text-center ring-1 ring-white/20 backdrop-blur">
-              <p className="text-[22px] font-black leading-none text-[#FFE9B0]">+{totalCount * 20}</p>
+              <p className="text-[22px] font-black leading-none text-[#FFE9B0]">+{ball}</p>
               <p className="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">
                 Ball <span aria-hidden>💎</span>
               </p>
-            </div>
-            <div className="rounded-[16px] bg-white/16 px-3 py-3.5 text-center ring-1 ring-white/20 backdrop-blur">
-              <p className="text-[22px] font-black leading-none text-white">
-                {saving ? '…' : stageSaved ? '✓' : '—'}
-              </p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/70">Saqlash</p>
             </div>
           </div>
 
@@ -513,7 +569,6 @@ export default function WordSwipeGamePage() {
                   saveInFlightRef.current = false;
                   setStageSaved(false);
                   setSaveError(null);
-                  setSaving(false);
                 }}
                 className="inline-flex min-h-9 w-full items-center justify-center rounded-xl bg-white/20 px-3 text-xs font-bold text-white"
               >

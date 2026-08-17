@@ -1,0 +1,245 @@
+{
+  "subject": "matematika",
+  "grade": 11,
+  "totalLessons": 130,
+  "units": [
+    {
+      "id": "m11-u01",
+      "title": "Hosila",
+      "branch": "algebra",
+      "objectives": [
+        "Limit va uzluksizlik tushunchalarini o'zlashtirish",
+        "Hosila ta'rifi va hisoblash qoidalarini bilish",
+        "Barcha elementar funksiyalar hosilasini topish"
+      ],
+      "lessons": [
+        { "id": "m11-u01-l01", "title": "Sonli ketma-ketlik limiti", "d": 4, "min": 30, "q": 6, "prereq": ["m10-u11-l12"], "kind": "theory" },
+        { "id": "m11-u01-l02", "title": "Funksiya limiti", "d": 4, "min": 30, "q": 6, "prereq": ["m11-u01-l01"], "kind": "theory" },
+        { "id": "m11-u01-l03", "title": "Limitlarni hisoblash usullari", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u01-l02"], "kind": "theory" },
+        { "id": "m11-u01-l04", "title": "Ajoyib limitlar", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u01-l03"], "kind": "theory" },
+        { "id": "m11-u01-l05", "title": "Funksiyaning uzluksizligi", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u01-l04"], "kind": "theory" },
+        { "id": "m11-u01-l06", "title": "Argument va funksiya orttirmasi", "d": 3, "min": 25, "q": 6, "prereq": ["m11-u01-l05"], "kind": "theory" },
+        { "id": "m11-u01-l07", "title": "Hosila ta'rifi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u01-l06"], "kind": "theory" },
+        { "id": "m11-u01-l08", "title": "Hosilaning geometrik ma'nosi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u01-l07"], "kind": "theory" },
+        { "id": "m11-u01-l09", "title": "Hosilaning fizik ma'nosi", "d": 3, "min": 25, "q": 6, "prereq": ["m11-u01-l08"], "kind": "theory" },
+        { "id": "m11-u01-l10", "title": "Yig'indi, ko'paytma va bo'linma hosilasi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u01-l09"], "kind": "theory" },
+        { "id": "m11-u01-l11", "title": "Darajali funksiya hosilasi", "d": 3, "min": 25, "q": 7, "prereq": ["m11-u01-l10"], "kind": "theory" },
+        { "id": "m11-u01-l12", "title": "Trigonometrik funksiyalar hosilasi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u01-l11"], "kind": "theory" },
+        { "id": "m11-u01-l13", "title": "Ko'rsatkichli va logarifmik funksiya hosilasi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u01-l12"], "kind": "theory" },
+        { "id": "m11-u01-l14", "title": "Murakkab funksiya hosilasi", "d": 5, "min": 30, "q": 7, "prereq": ["m11-u01-l13"], "kind": "theory" },
+        { "id": "m11-u01-l15", "title": "Teskari funksiya hosilasi", "d": 5, "min": 25, "q": 6, "prereq": ["m11-u01-l14"], "kind": "theory" },
+        { "id": "m11-u01-l16", "title": "Ikkinchi tartibli hosila", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u01-l15"], "kind": "theory" },
+        { "id": "m11-u01-l17", "title": "Urinma tenglamasi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u01-l08"], "kind": "theory" },
+        { "id": "m11-u01-l18", "title": "Hosila hisoblash — aralash mashqlar", "d": 4, "min": 30, "q": 8, "prereq": ["m11-u01-l17"], "kind": "practice" },
+        { "id": "m11-u01-l19", "title": "Hosila — nazorat mashqlari", "d": 4, "min": 35, "q": 8, "prereq": ["m11-u01-l18"], "kind": "practice" },
+        { "id": "m11-u01-l20", "title": "Hosila — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m11-u01-l19"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m11-u02",
+      "title": "Hosilaning tatbiqi",
+      "branch": "algebra",
+      "objectives": [
+        "Funksiyani hosila yordamida tekshirish",
+        "Ekstremum va eng katta/kichik qiymatni topish",
+        "Optimallashtirish masalalarini yechish"
+      ],
+      "lessons": [
+        { "id": "m11-u02-l01", "title": "Funksiyaning o'sish va kamayish alomati", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u01-l20"], "kind": "theory" },
+        { "id": "m11-u02-l02", "title": "Kritik nuqtalar", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u02-l01"], "kind": "theory" },
+        { "id": "m11-u02-l03", "title": "Maksimum va minimum nuqtalari", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u02-l02"], "kind": "theory" },
+        { "id": "m11-u02-l04", "title": "Ekstremumning yetarli sharti", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u02-l03"], "kind": "theory" },
+        { "id": "m11-u02-l05", "title": "Ikkinchi hosila bilan ekstremumni aniqlash", "d": 5, "min": 25, "q": 6, "prereq": ["m11-u02-l04"], "kind": "theory" },
+        { "id": "m11-u02-l06", "title": "Qavariqlik va egilish nuqtasi", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u02-l05"], "kind": "theory" },
+        { "id": "m11-u02-l07", "title": "Asimptotalar", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u02-l06"], "kind": "theory" },
+        { "id": "m11-u02-l08", "title": "Funksiyani to'liq tekshirish sxemasi", "d": 5, "min": 35, "q": 7, "prereq": ["m11-u02-l07"], "kind": "theory" },
+        { "id": "m11-u02-l09", "title": "Funksiya grafigini qurish", "d": 5, "min": 35, "q": 7, "prereq": ["m11-u02-l08"], "kind": "practice" },
+        { "id": "m11-u02-l10", "title": "Kesmadagi eng katta va eng kichik qiymat", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u02-l04"], "kind": "theory" },
+        { "id": "m11-u02-l11", "title": "Optimallashtirish masalalari: geometriya", "d": 5, "min": 35, "q": 7, "prereq": ["m11-u02-l10"], "kind": "practice" },
+        { "id": "m11-u02-l12", "title": "Optimallashtirish masalalari: iqtisod va fizika", "d": 5, "min": 35, "q": 7, "prereq": ["m11-u02-l11"], "kind": "practice" },
+        { "id": "m11-u02-l13", "title": "Hosila yordamida tengsizlik isbotlash", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u02-l12"], "kind": "practice" },
+        { "id": "m11-u02-l14", "title": "Parametrli masalalarda hosila", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u02-l13"], "kind": "practice" },
+        { "id": "m11-u02-l15", "title": "Hosilaning tatbiqi — nazorat mashqlari", "d": 5, "min": 35, "q": 8, "prereq": ["m11-u02-l14"], "kind": "practice" },
+        { "id": "m11-u02-l16", "title": "Hosilaning tatbiqi — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m11-u02-l15"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m11-u03",
+      "title": "Integral",
+      "branch": "algebra",
+      "objectives": [
+        "Boshlang'ich funksiya va aniqmas integralni topish",
+        "Nyuton-Leybnits formulasini qo'llash",
+        "Yuza va hajmni integral bilan hisoblash"
+      ],
+      "lessons": [
+        { "id": "m11-u03-l01", "title": "Boshlang'ich funksiya", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u02-l16"], "kind": "theory" },
+        { "id": "m11-u03-l02", "title": "Aniqmas integral", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u03-l01"], "kind": "theory" },
+        { "id": "m11-u03-l03", "title": "Integrallash jadvali", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u03-l02"], "kind": "theory" },
+        { "id": "m11-u03-l04", "title": "Integrallashning asosiy qoidalari", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u03-l03"], "kind": "theory" },
+        { "id": "m11-u03-l05", "title": "O'zgaruvchini almashtirish usuli", "d": 5, "min": 30, "q": 7, "prereq": ["m11-u03-l04"], "kind": "theory" },
+        { "id": "m11-u03-l06", "title": "Bo'laklab integrallash", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u03-l05"], "kind": "theory" },
+        { "id": "m11-u03-l07", "title": "Egri chiziqli trapetsiya", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u03-l04"], "kind": "theory" },
+        { "id": "m11-u03-l08", "title": "Aniq integral tushunchasi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u03-l07"], "kind": "theory" },
+        { "id": "m11-u03-l09", "title": "Nyuton-Leybnits formulasi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u03-l08"], "kind": "theory" },
+        { "id": "m11-u03-l10", "title": "Aniq integral xossalari", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u03-l09"], "kind": "theory" },
+        { "id": "m11-u03-l11", "title": "Integral yordamida yuza hisoblash", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u03-l10"], "kind": "theory" },
+        { "id": "m11-u03-l12", "title": "Ikki egri chiziq orasidagi yuza", "d": 5, "min": 30, "q": 7, "prereq": ["m11-u03-l11"], "kind": "theory" },
+        { "id": "m11-u03-l13", "title": "Aylanish jismi hajmi", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u03-l12"], "kind": "theory" },
+        { "id": "m11-u03-l14", "title": "Integralning fizik tatbiqlari", "d": 4, "min": 30, "q": 6, "prereq": ["m11-u03-l13"], "kind": "practice" },
+        { "id": "m11-u03-l15", "title": "Integral — nazorat mashqlari", "d": 5, "min": 35, "q": 8, "prereq": ["m11-u03-l14"], "kind": "practice" },
+        { "id": "m11-u03-l16", "title": "Integral — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m11-u03-l15"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m11-u04",
+      "title": "Ehtimollik va statistika",
+      "branch": "general",
+      "objectives": [
+        "Shartli ehtimollik va Bayes formulasini qo'llash",
+        "Tasodifiy miqdor taqsimotini tushunish",
+        "Statistik gipotezalar bilan tanishish"
+      ],
+      "lessons": [
+        { "id": "m11-u04-l01", "title": "Ehtimollik — takrorlash va chuqurlashtirish", "d": 4, "min": 25, "q": 7, "prereq": ["m09-u06-l14"], "kind": "review" },
+        { "id": "m11-u04-l02", "title": "Shartli ehtimollik", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u04-l01"], "kind": "theory" },
+        { "id": "m11-u04-l03", "title": "To'la ehtimollik formulasi", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u04-l02"], "kind": "theory" },
+        { "id": "m11-u04-l04", "title": "Bayes formulasi", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u04-l03"], "kind": "theory" },
+        { "id": "m11-u04-l05", "title": "Bernulli sxemasi", "d": 5, "min": 30, "q": 7, "prereq": ["m11-u04-l04"], "kind": "theory" },
+        { "id": "m11-u04-l06", "title": "Tasodifiy miqdor va uning taqsimoti", "d": 4, "min": 30, "q": 6, "prereq": ["m11-u04-l05"], "kind": "theory" },
+        { "id": "m11-u04-l07", "title": "Matematik kutilma", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u04-l06"], "kind": "theory" },
+        { "id": "m11-u04-l08", "title": "Dispersiya va standart chetlanish", "d": 4, "min": 30, "q": 6, "prereq": ["m11-u04-l07"], "kind": "theory" },
+        { "id": "m11-u04-l09", "title": "Normal taqsimot haqida tushuncha", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u04-l08"], "kind": "theory" },
+        { "id": "m11-u04-l10", "title": "Katta sonlar qonuni", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u04-l09"], "kind": "theory" },
+        { "id": "m11-u04-l11", "title": "Ehtimollikka doir amaliy masalalar", "d": 5, "min": 30, "q": 7, "prereq": ["m11-u04-l10"], "kind": "practice" },
+        { "id": "m11-u04-l12", "title": "Ehtimollik va statistika — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m11-u04-l11"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m11-u05",
+      "title": "Kompleks sonlar",
+      "branch": "algebra",
+      "objectives": [
+        "Kompleks son ustida amallarni bajarish",
+        "Trigonometrik shaklga o'tish",
+        "Muavr formulasini qo'llash"
+      ],
+      "lessons": [
+        { "id": "m11-u05-l01", "title": "Kompleks son tushunchasi", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u04-l12"], "kind": "theory" },
+        { "id": "m11-u05-l02", "title": "Kompleks sonlar ustida amallar", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u05-l01"], "kind": "theory" },
+        { "id": "m11-u05-l03", "title": "Qo'shma kompleks son va bo'lish", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u05-l02"], "kind": "theory" },
+        { "id": "m11-u05-l04", "title": "Kompleks tekislik", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u05-l03"], "kind": "theory" },
+        { "id": "m11-u05-l05", "title": "Modul va argument", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u05-l04"], "kind": "theory" },
+        { "id": "m11-u05-l06", "title": "Trigonometrik shakl", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u05-l05"], "kind": "theory" },
+        { "id": "m11-u05-l07", "title": "Muavr formulasi", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u05-l06"], "kind": "theory" },
+        { "id": "m11-u05-l08", "title": "Kompleks sondan ildiz chiqarish", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u05-l07"], "kind": "theory" },
+        { "id": "m11-u05-l09", "title": "Kompleks sonlar bilan tenglama yechish", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u05-l08"], "kind": "practice" },
+        { "id": "m11-u05-l10", "title": "Kompleks sonlar — bo'lim takrorlash", "d": 4, "min": 25, "q": 12, "prereq": ["m11-u05-l09"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m11-u06",
+      "title": "Aylanma jismlar",
+      "branch": "geometry",
+      "objectives": [
+        "Silindr, konus va sharni tavsiflash",
+        "Kesimlarni yasash va hisoblash",
+        "Sirt yuzalarini topish"
+      ],
+      "lessons": [
+        { "id": "m11-u06-l01", "title": "Aylanma jismlar tushunchasi", "d": 3, "min": 20, "q": 6, "prereq": ["m10-u11-l12"], "kind": "theory" },
+        { "id": "m11-u06-l02", "title": "Silindr va uning elementlari", "d": 3, "min": 25, "q": 7, "prereq": ["m11-u06-l01"], "kind": "theory" },
+        { "id": "m11-u06-l03", "title": "Silindr kesimlari", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u06-l02"], "kind": "theory" },
+        { "id": "m11-u06-l04", "title": "Silindr sirti", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u06-l03"], "kind": "theory" },
+        { "id": "m11-u06-l05", "title": "Konus va uning elementlari", "d": 3, "min": 25, "q": 7, "prereq": ["m11-u06-l04"], "kind": "theory" },
+        { "id": "m11-u06-l06", "title": "Konus kesimlari", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u06-l05"], "kind": "theory" },
+        { "id": "m11-u06-l07", "title": "Konus sirti", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u06-l06"], "kind": "theory" },
+        { "id": "m11-u06-l08", "title": "Kesik konus", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u06-l07"], "kind": "theory" },
+        { "id": "m11-u06-l09", "title": "Shar va sfera", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u06-l08"], "kind": "theory" },
+        { "id": "m11-u06-l10", "title": "Sfera va tekislik; urinma tekislik", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u06-l09"], "kind": "theory" },
+        { "id": "m11-u06-l11", "title": "Sfera yuzasi", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u06-l10"], "kind": "theory" },
+        { "id": "m11-u06-l12", "title": "Ichki va tashqi chizilgan jismlar", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u06-l11"], "kind": "theory" },
+        { "id": "m11-u06-l13", "title": "Aylanma jismlarga doir masalalar", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u06-l12"], "kind": "practice" },
+        { "id": "m11-u06-l14", "title": "Aylanma jismlar — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m11-u06-l13"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m11-u07",
+      "title": "Hajmlar",
+      "branch": "geometry",
+      "objectives": [
+        "Barcha fazoviy jismlar hajmi formulalarini bilish",
+        "Kavaleri prinsipini tushunish",
+        "Kombinatsiyalangan jismlar hajmini topish"
+      ],
+      "lessons": [
+        { "id": "m11-u07-l01", "title": "Hajm tushunchasi va xossalari", "d": 3, "min": 20, "q": 6, "prereq": ["m11-u06-l14"], "kind": "theory" },
+        { "id": "m11-u07-l02", "title": "To'g'ri burchakli parallelepiped hajmi", "d": 3, "min": 20, "q": 6, "prereq": ["m11-u07-l01"], "kind": "theory" },
+        { "id": "m11-u07-l03", "title": "Kavaleri prinsipi", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u07-l02"], "kind": "theory" },
+        { "id": "m11-u07-l04", "title": "Prizma hajmi", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u07-l03"], "kind": "theory" },
+        { "id": "m11-u07-l05", "title": "Piramida hajmi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u07-l04"], "kind": "theory" },
+        { "id": "m11-u07-l06", "title": "Kesik piramida hajmi", "d": 5, "min": 25, "q": 6, "prereq": ["m11-u07-l05"], "kind": "theory" },
+        { "id": "m11-u07-l07", "title": "Silindr hajmi", "d": 3, "min": 25, "q": 7, "prereq": ["m11-u07-l06"], "kind": "theory" },
+        { "id": "m11-u07-l08", "title": "Konus hajmi", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u07-l07"], "kind": "theory" },
+        { "id": "m11-u07-l09", "title": "Kesik konus hajmi", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u07-l08"], "kind": "theory" },
+        { "id": "m11-u07-l10", "title": "Shar hajmi", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u07-l09"], "kind": "theory" },
+        { "id": "m11-u07-l11", "title": "Sharsimon segment va sektor", "d": 5, "min": 25, "q": 6, "prereq": ["m11-u07-l10"], "kind": "theory" },
+        { "id": "m11-u07-l12", "title": "O'xshash jismlar hajmi nisbati", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u07-l11"], "kind": "theory" },
+        { "id": "m11-u07-l13", "title": "Kombinatsiyalangan jismlar", "d": 5, "min": 30, "q": 7, "prereq": ["m11-u07-l12"], "kind": "practice" },
+        { "id": "m11-u07-l14", "title": "Hajmga doir amaliy masalalar", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u07-l13"], "kind": "practice" },
+        { "id": "m11-u07-l15", "title": "Hajmlar — nazorat mashqlari", "d": 5, "min": 35, "q": 8, "prereq": ["m11-u07-l14"], "kind": "practice" },
+        { "id": "m11-u07-l16", "title": "Hajmlar — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m11-u07-l15"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m11-u08",
+      "title": "Fazoda koordinatalar va vektorlar",
+      "branch": "geometry",
+      "objectives": [
+        "Fazoviy koordinatalar bilan ishlash",
+        "Vektorlarni fazoda qo'llash",
+        "Tekislik tenglamasini yozish"
+      ],
+      "lessons": [
+        { "id": "m11-u08-l01", "title": "Fazoda to'g'ri burchakli koordinatalar", "d": 3, "min": 25, "q": 6, "prereq": ["m11-u07-l16"], "kind": "theory" },
+        { "id": "m11-u08-l02", "title": "Fazoda vektor va uning koordinatalari", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u08-l01"], "kind": "theory" },
+        { "id": "m11-u08-l03", "title": "Fazoda vektorlar ustida amallar", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u08-l02"], "kind": "theory" },
+        { "id": "m11-u08-l04", "title": "Vektor uzunligi va nuqtalar orasidagi masofa", "d": 3, "min": 25, "q": 7, "prereq": ["m11-u08-l03"], "kind": "theory" },
+        { "id": "m11-u08-l05", "title": "Skalyar ko'paytma fazoda", "d": 4, "min": 30, "q": 7, "prereq": ["m11-u08-l04"], "kind": "theory" },
+        { "id": "m11-u08-l06", "title": "Vektorlar orasidagi burchak", "d": 4, "min": 25, "q": 7, "prereq": ["m11-u08-l05"], "kind": "theory" },
+        { "id": "m11-u08-l07", "title": "Komplanar vektorlar", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u08-l06"], "kind": "theory" },
+        { "id": "m11-u08-l08", "title": "Tekislik tenglamasi", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u08-l07"], "kind": "theory" },
+        { "id": "m11-u08-l09", "title": "Nuqtadan tekislikkacha masofa", "d": 5, "min": 30, "q": 6, "prereq": ["m11-u08-l08"], "kind": "theory" },
+        { "id": "m11-u08-l10", "title": "Koordinatalar usuli bilan stereometrik masala yechish", "d": 5, "min": 35, "q": 7, "prereq": ["m11-u08-l09"], "kind": "practice" },
+        { "id": "m11-u08-l11", "title": "Sfera tenglamasi", "d": 4, "min": 25, "q": 6, "prereq": ["m11-u08-l10"], "kind": "theory" },
+        { "id": "m11-u08-l12", "title": "Fazoda koordinatalar — bo'lim takrorlash", "d": 4, "min": 30, "q": 12, "prereq": ["m11-u08-l11"], "kind": "review" }
+      ]
+    },
+    {
+      "id": "m11-u09",
+      "title": "Yakuniy takrorlash",
+      "branch": "exam",
+      "objectives": [
+        "Butun maktab matematika kursini tizimlashtirish",
+        "Zaif mavzularni aniqlash va yopish",
+        "Yakuniy attestatsiyaga tayyorlanish"
+      ],
+      "lessons": [
+        { "id": "m11-u09-l01", "title": "Sonlar va ifodalar — yakuniy takrorlash", "d": 4, "min": 35, "q": 12, "prereq": ["m11-u08-l12"], "kind": "review" },
+        { "id": "m11-u09-l02", "title": "Tenglamalar — barcha turlar", "d": 4, "min": 35, "q": 12, "prereq": ["m11-u09-l01"], "kind": "review" },
+        { "id": "m11-u09-l03", "title": "Tengsizliklar — barcha turlar", "d": 5, "min": 35, "q": 12, "prereq": ["m11-u09-l02"], "kind": "review" },
+        { "id": "m11-u09-l04", "title": "Funksiyalar va grafiklar", "d": 4, "min": 35, "q": 12, "prereq": ["m11-u09-l03"], "kind": "review" },
+        { "id": "m11-u09-l05", "title": "Trigonometriya — yakuniy takrorlash", "d": 5, "min": 35, "q": 12, "prereq": ["m11-u09-l04"], "kind": "review" },
+        { "id": "m11-u09-l06", "title": "Hosila va integral — yakuniy takrorlash", "d": 5, "min": 35, "q": 12, "prereq": ["m11-u09-l05"], "kind": "review" },
+        { "id": "m11-u09-l07", "title": "Planimetriya — yakuniy takrorlash", "d": 4, "min": 35, "q": 12, "prereq": ["m11-u09-l06"], "kind": "review" },
+        { "id": "m11-u09-l08", "title": "Stereometriya — yakuniy takrorlash", "d": 5, "min": 35, "q": 12, "prereq": ["m11-u09-l07"], "kind": "review" },
+        { "id": "m11-u09-l09", "title": "Matnli masalalar — barcha turlar", "d": 4, "min": 35, "q": 12, "prereq": ["m11-u09-l08"], "kind": "practice" },
+        { "id": "m11-u09-l10", "title": "Yakuniy nazorat ishi — 1", "d": 5, "min": 60, "q": 25, "prereq": ["m11-u09-l09"], "kind": "control" },
+        { "id": "m11-u09-l11", "title": "Yakuniy nazorat ishi — 2", "d": 5, "min": 60, "q": 25, "prereq": ["m11-u09-l10"], "kind": "control" },
+        { "id": "m11-u09-l12", "title": "Kompleks sonlar va ehtimollik — yakuniy takrorlash", "d": 4, "min": 35, "q": 12, "prereq": ["m11-u05-l10"], "kind": "review" },
+        { "id": "m11-u09-l13", "title": "Nazorat ishlari xatolari ustida ishlash", "d": 4, "min": 35, "q": 10, "prereq": ["m11-u09-l12"], "kind": "review" },
+        { "id": "m11-u09-l14", "title": "Xatolar tahlili va DTM ga o'tish", "d": 4, "min": 30, "q": 10, "prereq": ["m11-u09-l13"], "kind": "review" }
+      ]
+    }
+  ]
+}

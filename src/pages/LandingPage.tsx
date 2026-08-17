@@ -17,6 +17,7 @@ import {
   UserRoundCheck,
   X,
 } from 'lucide-react';
+import TeacherRecruitBanner from '../components/landing/TeacherRecruitBanner';
 import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 import PricingCard from '../components/pricing/PricingCard';
 import { getLegalEntityMeta, LEGAL_PATHS } from '../config/legalPublic';
@@ -381,20 +382,11 @@ const copy = {
       bio: 'Я из Самарканда. Пять лет учился в России и хорошо понимаю, с какими трудностями сталкиваются узбекские мигранты и их дети при изучении русского языка. Я обучал русскому людей, которым язык нужен для работы, учебы и жизни в России, поэтому знаю, как объяснять простыми словами и что действительно нужно на практике. FalaRus создан, чтобы помочь подготовиться к русскому языку, экзамену на патент и ВНЖ без лишней путаницы.',
     },
     support: {
-      title: 'Поддержка',
-      name: 'Имя',
-      surname: 'Фамилия',
-      phone: 'Телефон',
-      email: 'Email',
-      description: 'Описание',
-      placeholder: 'расскажите о себе',
-      send: 'Отправить',
-      termsAgree: 'Создавая аккаунт, я соглашаюсь с Условиями использования и Политикой конфиденциальности',
-      haveAccount: 'Уже есть аккаунт?',
-      loginLink: 'Войти',
+      teacherAsk: 'Вы преподаватель?',
+      teacherLogin: 'Войти',
+      teacherRegister: 'Регистрация',
+      teacherMore: 'Подробнее об условиях',
       teacherTitle: 'Ищем преподавателя',
-      teacherText:
-        'FalaRus ищет увлеченных и опытных преподавателей русского языка, готовых вдохновлять, обучать и поддерживать студентов в современной онлайн-среде.',
     },
     footer: {
       address: <>Falarus, обучение русскому языку<br />2055 Something street at 23<br />Uzbekistan x72004</>,
@@ -496,20 +488,11 @@ const copy = {
       bio: 'Men Samarqanddanman. 5 yil Rossiyada o‘qiganman va o‘zbek migrantlari hamda ularning farzandlari rus tilini o‘rganishda qanday qiyinchiliklarga duch kelishini yaxshi bilaman. Men rus tilini ish, o‘qish va Rossiyadagi hayot uchun kerak bo‘lgan odamlarga o‘rgatganman. Shuning uchun nimani qanday tushuntirish kerakligini, patent va VNZh imtihonlariga tayyorlanishda nimalar muhimligini amaliy tajribadan bilaman. FalaRus shu tajriba asosida yaratilgan.',
     },
     support: {
-      title: 'Qo‘llab-quvvatlash',
-      name: 'Ism',
-      surname: 'Familiya',
-      phone: 'Telefon',
-      email: 'Email',
-      description: 'Tavsif',
-      placeholder: 'o‘zingiz haqingizda yozing',
-      send: 'Yuborish',
-      termsAgree: 'Hisob yaratish orqali Foydalanish shartlari va Maxfiylik siyosatiga roziman',
-      haveAccount: 'Hisobingiz bormi?',
-      loginLink: 'Kirish',
+      teacherAsk: 'Siz o‘qituvchimisiz?',
+      teacherLogin: 'Kirish',
+      teacherRegister: 'Ro‘yxatdan o‘tish',
+      teacherMore: 'Shartlar va daromad haqida',
       teacherTitle: 'O‘qituvchi qidiryapmiz',
-      teacherText:
-        'FalaRus zamonaviy onlayn ta’limda talabalarni ilhomlantirish, o‘qitish va qo‘llab-quvvatlashga tayyor tajribali rus tili o‘qituvchilarini qidirmoqda.',
     },
     footer: {
       address: <>Falarus rus tili ta’limi<br />2055 Something street at 23<br />Uzbekistan x72004</>,
@@ -611,20 +594,11 @@ const copy = {
       bio: 'Ман аз Самарқанд ҳастам. 5 сол дар Русия таҳсил кардаам ва хуб медонам, ки муҳоҷирони узбек ва фарзандони онҳо ҳангоми омӯзиши забони русӣ бо чӣ душвориҳо рӯ ба рӯ мешаванд. Ман ба одамоне русиро омӯзондаам, ки ин забон барои кор, таҳсил ва зиндагӣ дар Русия лозим буд. Аз ҳамин таҷриба медонам, ки чӣ гуна содда фаҳмондан ва барои имтиҳони патенту РМА чӣ чизҳо муҳиманд. FalaRus бар асоси ҳамин таҷриба сохта шудааст.',
     },
     support: {
-      title: 'Дастгирӣ',
-      name: 'Ном',
-      surname: 'Насаб',
-      phone: 'Телефон',
-      email: 'Email',
-      description: 'Тавсиф',
-      placeholder: 'дар бораи худ нависед',
-      send: 'Фиристодан',
-      termsAgree: 'Бо эҷоди ҳисоб ман ба Шартҳои истифода ва Сиёсати махфият розӣ ҳастам',
-      haveAccount: 'Ҳисоб доред?',
-      loginLink: 'Ворид шудан',
+      teacherAsk: 'Шумо омӯзгор ҳастед?',
+      teacherLogin: 'Ворид шудан',
+      teacherRegister: 'Бақайдгирӣ',
+      teacherMore: 'Дар бораи шартҳо',
       teacherTitle: 'Омӯзгор меҷӯем',
-      teacherText:
-        'FalaRus омӯзгорони ботаҷриба ва дилгарми забони русиро меҷӯяд, ки омодаанд донишҷӯёнро дар муҳити муосири онлайн илҳом бахшанд ва дастгирӣ кунанд.',
     },
     footer: {
       address: <>Falarus омӯзиши забони русӣ<br />2055 Something street at 23<br />Uzbekistan x72004</>,
@@ -726,20 +700,11 @@ const copy = {
       bio: 'I am from Samarkand. I studied in Russia for five years, so I understand the real challenges Uzbek migrants and their children face when learning Russian. I have taught Russian to people who needed it for work, study, and everyday life in Russia. That experience showed me what to explain first, how to make difficult topics simple, and what matters most when preparing for patent and residence permit exams. FalaRus was built from that practical experience.',
     },
     support: {
-      title: 'Support',
-      name: 'Name',
-      surname: 'Surname',
-      phone: 'Phone',
-      email: 'Email',
-      description: 'Description',
-      placeholder: 'write about yourself',
-      send: 'Send',
-      termsAgree: 'By creating an account, I agree to our Terms of use and Privacy Policy',
-      haveAccount: 'Have an account?',
-      loginLink: 'Log in',
+      teacherAsk: 'Are you a teacher?',
+      teacherLogin: 'Log in',
+      teacherRegister: 'Sign up',
+      teacherMore: 'More about the terms',
       teacherTitle: 'Looking for a teacher',
-      teacherText:
-        'FalaRus is currently looking for passionate and experienced Russian language teachers who are ready to inspire, educate, and support students through modern online learning experiences.',
     },
     footer: {
       address: <>Falarus Learning Russian language<br />2055 Something street at 23<br />Uzbekistan x72004</>,
@@ -821,19 +786,11 @@ const copy = {
       bio: 'Мен Самарқандтанмын. Ресейде 5 жыл оқыдым, сондықтан өзбек мигранттары мен олардың балалары орыс тілін үйренгенде қандай қиындықтарға кездесетінін жақсы түсінемін. Мен орыс тілін жұмыс, оқу және Ресейдегі күнделікті өмір үшін қажет адамдарға үйреттім. Осы тәжірибе арқылы күрделі тақырыпты қалай қарапайым түсіндіруді және патент пен тұруға рұқсат емтихандарына дайындықта ненің маңызды екенін білемін. FalaRus осы тәжірибе негізінде жасалды.',
     },
     support: {
-      title: 'Қолдау',
-      name: 'Аты',
-      surname: 'Тегі',
-      phone: 'Телефон',
-      email: 'Email',
-      description: 'Сипаттама',
-      placeholder: 'өзіңіз туралы жазыңыз',
-      send: 'Жіберу',
-      termsAgree: 'Тіркелу арқылы Пайдалану шарттары мен Құпиялылық саясатына келісемін',
-      haveAccount: 'Аккаунтыңыз бар ма?',
-      loginLink: 'Кіру',
+      teacherAsk: 'Сіз мұғалімсіз бе?',
+      teacherLogin: 'Кіру',
+      teacherRegister: 'Тіркелу',
+      teacherMore: 'Шарттар туралы толығырақ',
       teacherTitle: 'Мұғалім іздейміз',
-      teacherText: 'FalaRus заманауи онлайн оқытуда студенттерді шабыттандыратын тәжірибелі орыс тілі мұғалімдерін іздейді.',
     },
     footer: {
       address: <>Falarus орыс тілі<br />2055 Something street at 23<br />Uzbekistan x72004</>,
@@ -915,19 +872,11 @@ const copy = {
       bio: 'Мен Самаркандданмын. Россияда 5 жыл окудум, ошондуктан өзбек мигранттары жана алардын балдары орус тилин үйрөнүүдө кандай кыйынчылыктарга туш болорун жакшы түшүнөм. Мен орус тилин жумуш, окуу жана Россиядагы күнүмдүк жашоо үчүн керек болгон адамдарга үйрөткөм. Ошол тажрыйба мага татаал темаларды жөнөкөй түшүндүрүүнү жана патент, жашоо уруксаты экзамендерине даярданууда эмнелер маанилүү экенин көрсөттү. FalaRus ушул практикалык тажрыйбанын негизинде түзүлгөн.',
     },
     support: {
-      title: 'Колдоо',
-      name: 'Аты',
-      surname: 'Фамилиясы',
-      phone: 'Телефон',
-      email: 'Email',
-      description: 'Сүрөттөмө',
-      placeholder: 'өзүңүз жөнүндө жазыңыз',
-      send: 'Жөнөтүү',
-      termsAgree: 'Каттоо менен Колдонуу шарттары жана Купуялуулук саясатына макулмун',
-      haveAccount: 'Аккаунтуңуз барбы?',
-      loginLink: 'Кирүү',
+      teacherAsk: 'Сиз мугалимсизби?',
+      teacherLogin: 'Кирүү',
+      teacherRegister: 'Каттоо',
+      teacherMore: 'Шарттар жөнүндө',
       teacherTitle: 'Мугалим издейбиз',
-      teacherText: 'FalaRus заманбап онлайн окутууда студенттерди шыктандырган тажрыйбалуу орус тили мугалимдерин издейт.',
     },
     footer: {
       address: <>Falarus орус тили<br />2055 Something street at 23<br />Uzbekistan x72004</>,
@@ -971,20 +920,16 @@ const copy = {
   faq: { title: string };
   about: { title: string; description: string };
   founder: { name: string; role: string; bio: string };
+  /** O'qituvchi chaqiruv bo'limi (`#support`) matnlari. */
   support: {
-    title: string;
-    name: string;
-    surname: string;
-    phone: string;
-    email: string;
-    description: string;
-    placeholder: string;
-    send: string;
-    termsAgree: string;
-    haveAccount: string;
-    loginLink: string;
+    /** Banner sarlavhasi ustidagi yorliq: «O'qituvchi qidiryapmiz». */
     teacherTitle: string;
-    teacherText: string;
+    /** «Siz o'qituvchimisiz?» — asosiy tugma ustidagi savol. */
+    teacherAsk: string;
+    teacherLogin: string;
+    teacherRegister: string;
+    /** To'liq o'qituvchi lendingiga havola (shartlar, daromad kalkulyatori). */
+    teacherMore: string;
   };
   footer: { address: ReactNode; about: string; aboutLinks: string[]; privacy: string; privacyLinks: string[]; contacts: string; copyright: string };
   mobile: {
@@ -1506,54 +1451,25 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="support" className="bg-gradient-to-b from-[#FAF7F2] to-[#FDF8F2] px-5 py-14 sm:px-10 lg:px-24 lg:py-[108px]">
-          <div className="mx-auto grid max-w-[815px] items-center gap-10 lg:max-w-[815px] lg:grid-cols-[400px_314px] lg:gap-20">
-            <form className="rounded-[10px] bg-white px-5 py-8 shadow-[0_1px_0_rgba(0,0,0,0.03)] sm:px-10 sm:py-12">
-              <h2 className="text-center text-[22px] font-semibold leading-tight sm:text-[30px]">{t.support.title}</h2>
-              <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                <label className="text-sm font-medium">
-                  {t.support.name}
-                  <input className="mt-3 h-[38px] w-full rounded-[10px] border border-[#C8DCF3] px-3 outline-none" />
-                </label>
-                <label className="text-sm font-medium">
-                  {t.support.surname}
-                  <input className="mt-3 h-[38px] w-full rounded-[10px] border border-[#C8DCF3] px-3 outline-none" />
-                </label>
-              </div>
-              <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-[8px] bg-[#F1F5F9] p-1 text-base font-semibold text-[#0B2A6B]">
-                <button type="button" className="rounded-[7px] bg-[#1E3A8A] py-2 text-white">{t.support.phone}</button>
-                <button type="button" className="py-2">{t.support.email}</button>
-              </div>
-              <label className="mt-4 block text-sm font-medium">
-                {t.support.phone}
-                <div className="mt-3 flex h-10 items-center rounded-[10px] border border-[#C8DCF3] px-5 text-sm">
-                  <span className="mr-2 inline-flex h-5 min-w-[26px] items-center justify-center rounded-[5px] bg-[#0B2A6B] px-1 text-[10px] font-black uppercase text-white">UZ</span>
-                  <ChevronDown className="mr-3 h-4 w-4" />
-                  <span className="font-medium">+998</span>
-                  <span className="ml-3 text-[#A2A9B0]">XX XXX-XX-XX</span>
-                </div>
-              </label>
-              <label className="mt-4 block text-sm font-medium">
-                {t.support.description}
-                <input className="mt-3 h-10 w-full rounded-[10px] border border-[#C8DCF3] px-5 outline-none placeholder:text-[#A2A9B0]" placeholder={t.support.placeholder} />
-              </label>
-              <label className="mt-4 flex items-start gap-3 text-xs leading-relaxed text-[#4D4D4D]">
-                <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-[#C8DCF3] text-[#0B2A6B]" />
-                <span>{t.support.termsAgree}</span>
-              </label>
-              <button type="button" className="mt-4 h-10 w-full rounded-[20px] bg-[#1E3A8A] text-base font-semibold text-white">{t.support.send}</button>
-              <p className="mt-4 text-center text-sm text-[#4D4D4D]">
-                {t.support.haveAccount}{' '}
-                <Link className="font-semibold text-[#0B2A6B] underline-offset-2 hover:underline" to="/login">
-                  {t.support.loginLink}
-                </Link>
-              </p>
-            </form>
-            <div className="text-center">
-              <img src="/landing/teacher.png" alt="Russian language teacher" className="mx-auto h-[220px] w-[140px] object-contain sm:h-[303px] sm:w-[193px]" decoding="async" />
-              <h2 className="mt-4 text-[22px] font-semibold leading-tight text-black sm:text-[32px]">{t.support.teacherTitle}</h2>
-              <p className="mt-4 text-sm leading-[1.55] text-black sm:mt-6 sm:text-base sm:leading-[1.6]">{t.support.teacherText}</p>
-            </div>
+        {/*
+          O'QITUVCHI CHAQIRUVI.
+
+          Ilgari bu bo'limda «Qo'llab-quvvatlash» formasi va statik
+          `teacher.png` turardi. Forma hech qayerga yuborilmasdi, shuning
+          uchun butunlay olib tashlandi — bo'lim endi faqat o'qituvchi
+          chaqiruvidan iborat. `id="support"` qoldi: yuqoridagi «Kontakt»
+          havolasi shu yerga olib keladi.
+        */}
+        <section id="support" className="bg-gradient-to-b from-[#FAF7F2] to-[#FDF8F2] px-5 py-10 sm:px-8 lg:px-16 lg:py-16">
+          <div className="mx-auto max-w-[1080px]">
+            <TeacherRecruitBanner
+              language={languageCode}
+              eyebrow={t.support.teacherTitle}
+              ask={t.support.teacherAsk}
+              loginLabel={t.support.teacherLogin}
+              registerLabel={t.support.teacherRegister}
+              moreLabel={t.support.teacherMore}
+            />
           </div>
         </section>
       </main>

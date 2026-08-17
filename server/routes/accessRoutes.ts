@@ -21,6 +21,7 @@ export function createAccessRoutes(
         vnzh_course_active: access.vnzh_course_active,
         vocabulary_free_topic_id: access.vocabulary_free_topic_id ?? null,
         vocabulary_free_subtopic_id: access.vocabulary_free_subtopic_id ?? null,
+        golden: access.golden === true,
       });
     } catch (e) {
       console.error('[GET /user/access]', e);

@@ -5,9 +5,12 @@ import type {
   DailyCourseMatchSet,
   DailyGrammarSection,
   DailyGrammarSentenceArrange,
+  DailyPhraseMcq,
   DailyPracticePrompt,
   DailyReadingLexeme,
   DailyReadingSection,
+  DailySpeakingTask,
+  DailyTextQuestion,
   DailyVocabularySection,
 } from '../../shared/dailyCourseDay.ts';
 import { normalizeRuWord } from '../../shared/russianLexemeNormalize.ts';
@@ -21,6 +24,7 @@ type DbMcq = {
   option_c: string;
   option_d: string;
   correct_index: number;
+  explanation?: string | null;
 };
 
 type DbFlatMatch = {
@@ -39,6 +43,7 @@ function mapMcq(row: DbMcq): DailyCourseMcq {
     optionC: row.option_c,
     optionD: row.option_d,
     correctIndex: row.correct_index,
+    explanation: String(row.explanation ?? ''),
   };
 }
 
@@ -70,6 +75,8 @@ function grammarSectionEmpty(g: DailyGrammarSection): boolean {
 }
 
 function vocabSectionEmpty(v: DailyVocabularySection): boolean {
+  // Iboralar so'zlarsiz ma'noga ega emas (ular lug'atning qo'shimcha vazifasi),
+  // shuning uchun "bo'sh" mezoni faqat so'zlar bo'yicha qoladi.
   return v.words.length === 0;
 }
 
@@ -91,8 +98,11 @@ export async function fetchDailyCourseDayBundle(
     grammarMatchesRes,
     grammarSentenceArrangeRes,
     vocabWordsRes,
+    phraseMcqRes,
     readingPassageRes,
+    textQuestionRes,
     practiceRes,
+    speakingTaskRes,
   ] = await Promise.all([
     sb.from('daily_grammar_topics').select('title, theory_text').eq('day_number', dayNumber).maybeSingle(),
     sb.from('daily_grammar_mcqs').select('*').eq('day_number', dayNumber).order('sort_order', { ascending: true }),
@@ -112,10 +122,28 @@ export async function fetchDailyCourseDayBundle(
       .select('id, sort_order, word_uz, word_ru')
       .eq('day_number', dayNumber)
       .order('sort_order', { ascending: true }),
+    sb
+      // `correct_index` ATAYIN tanlanmaydi — javob kaliti klientga bormaydi.
+      .from('daily_phrase_mcqs')
+      .select('id, sort_order, phrase_ru, option_a, option_b, option_c, option_d')
+      .eq('day_number', dayNumber)
+      .order('sort_order', { ascending: true }),
     sb.from('daily_reading_passages').select('title, body_ru, text_id').eq('day_number', dayNumber).maybeSingle(),
     sb
+      // `correct_index` ATAYIN tanlanmaydi — javob kaliti klientga bormaydi.
+      .from('daily_text_questions')
+      .select('id, sort_order, question_ru, option_a, option_b, option_c, option_d')
+      .eq('day_number', dayNumber)
+      .order('sort_order', { ascending: true }),
+    sb
       .from('daily_practice_prompts')
-      .select('id, sort_order, uz_text, ru_correct')
+      // `ru_correct` YO'Q — etalon javob umuman ishlatilmaydi.
+      .select('id, sort_order, uz_text')
+      .eq('day_number', dayNumber)
+      .order('sort_order', { ascending: true }),
+    sb
+      .from('daily_speaking_tasks')
+      .select('id, sort_order, prompt_ru, prompt_uz')
       .eq('day_number', dayNumber)
       .order('sort_order', { ascending: true }),
   ]);
@@ -126,8 +154,11 @@ export async function fetchDailyCourseDayBundle(
     { label: 'daily_grammar_matches', error: grammarMatchesRes.error },
     { label: 'daily_grammar_sentence_arrange', error: grammarSentenceArrangeRes.error },
     { label: 'daily_vocab_words', error: vocabWordsRes.error },
+    { label: 'daily_phrase_mcqs', error: phraseMcqRes.error },
     { label: 'daily_reading_passages', error: readingPassageRes.error },
+    { label: 'daily_text_questions', error: textQuestionRes.error },
     { label: 'daily_practice_prompts', error: practiceRes.error },
+    { label: 'daily_speaking_tasks', error: speakingTaskRes.error },
   ];
 
   const failed = labeledResults.find((r) => r.error);
@@ -194,6 +225,16 @@ export async function fetchDailyCourseDayBundle(
   };
 
   const vocabRows = vocabWordsRes.data ?? [];
+  // Ibora testlari — lug'atning 4-vazifasi (juftlikdan keyin). Kontent bo'lmasa
+  // ro'yxat bo'sh qoladi va vazifa umuman ko'rsatilmaydi.
+  const phraseRows = (phraseMcqRes.data ?? []) as Array<Record<string, unknown>>;
+  const phrases: DailyPhraseMcq[] = phraseRows.map((row, idx) => ({
+    id: Number(row.id),
+    phraseRu: String(row.phrase_ru ?? ''),
+    options: [row.option_a, row.option_b, row.option_c, row.option_d].map((o) => String(o ?? '')),
+    sortOrder: row.sort_order != null ? Number(row.sort_order) : idx,
+  }));
+
   const vocabSection: DailyVocabularySection = {
     words: [...vocabRows].map((row, idx) => ({
       id: Number((row as Record<string, unknown>).id),
@@ -204,6 +245,7 @@ export async function fetchDailyCourseDayBundle(
           ? Number((row as Record<string, unknown>).sort_order)
           : idx,
     })),
+    phrases,
   };
 
   const bodyRu = passageRow ? String(passageRow.body_ru ?? '').trim() : '';
@@ -248,6 +290,15 @@ export async function fetchDailyCourseDayBundle(
     synthExtra += 1;
   }
 
+  const textQuestions: DailyTextQuestion[] = (
+    (textQuestionRes.data ?? []) as Array<Record<string, unknown>>
+  ).map((row, idx) => ({
+    id: Number(row.id),
+    questionRu: String(row.question_ru ?? ''),
+    options: [row.option_a, row.option_b, row.option_c, row.option_d].map((o) => String(o ?? '')),
+    sortOrder: row.sort_order != null ? Number(row.sort_order) : idx,
+  }));
+
   let reading: DailyReadingSection | null = null;
   if (bodyRu !== '' || lexemes.length > 0 || passageTextId !== '') {
     reading = {
@@ -255,6 +306,7 @@ export async function fetchDailyCourseDayBundle(
       title: passageRow ? String(passageRow.title ?? '').trim() || null : null,
       bodyRu,
       lexemes,
+      questions: textQuestions,
     };
   }
 
@@ -264,10 +316,20 @@ export async function fetchDailyCourseDayBundle(
       ? (practiceRows as Array<Record<string, unknown>>).map((row, idx) => ({
           id: Number(row.id),
           uzText: String(row.uz_text ?? ''),
-          ruCorrect: String(row.ru_correct ?? ''),
           sortOrder: row.sort_order != null ? Number(row.sort_order) : idx,
         }))
       : null;
+
+  const speakingTasks: DailySpeakingTask[] = (
+    (speakingTaskRes.data ?? []) as Array<Record<string, unknown>>
+  ).map((row, idx) => ({
+    id: Number(row.id),
+    promptRu: String(row.prompt_ru ?? ''),
+    promptUz: row.prompt_uz != null && String(row.prompt_uz).trim() !== ''
+      ? String(row.prompt_uz)
+      : null,
+    sortOrder: row.sort_order != null ? Number(row.sort_order) : idx,
+  }));
 
   const bundle: DailyCourseDayBundle = {
     dayNumber,
@@ -275,6 +337,7 @@ export async function fetchDailyCourseDayBundle(
     vocabulary: vocabSectionEmpty(vocabSection) ? null : vocabSection,
     reading,
     practice,
+    speakingTasks,
   };
 
   return { ok: true, bundle };

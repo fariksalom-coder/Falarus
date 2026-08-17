@@ -19,7 +19,7 @@ type Props = {
   topicLabel: string;
   onFinish: () => void;
   onBack: () => void;
-  /** `speaking_tasks` id o‘rniga `uz_text` / `ru_correct` bilan tekshirish (kunlik topshiriqlar) */
+  /** `speaking_tasks` id o‘rniga `uz_text` bilan tekshirish (kunlik topshiriqlar) */
   useInlineCheck?: boolean;
   /** Tashqi sahifada allaqachon «Orqaga» bo‘lsa, ichki sarlavhani yashirish */
   embedded?: boolean;
@@ -72,6 +72,11 @@ export default function SpeakingExercise({
   const [result, setResult] = useState<CheckResult | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [error, setError] = useState('');
+  /**
+   * Shu topshiriqda o'quvchiga ALLAQACHON ko'rsatilgan to'g'ri javob.
+   * Uni aynan qaytarganda tekshiruv «xato» demasligi uchun serverga yuboriladi.
+   */
+  const [shownAnswer, setShownAnswer] = useState('');
 
   const recorder = useVoiceRecorder();
   const task = tasks[currentIdx];
@@ -86,7 +91,12 @@ export default function SpeakingExercise({
       setError('');
       try {
         const base64 = await blobToBase64(recorder.audioBlob);
-        const text = await transcribeSpeakingAudio(token, base64, kunlikDayNumber);
+        const text = await transcribeSpeakingAudio(
+          token,
+          base64,
+          kunlikDayNumber,
+          recorder.audioBlob.type,
+        );
         if (!cancelled) {
           const normalized = text.trim();
           setVoiceText(normalized);
@@ -126,14 +136,16 @@ export default function SpeakingExercise({
               token,
               text.trim(),
               task.uz_text,
-              task.ru_correct,
               mode,
               nextAttempt,
-              kunlikDayNumber
+              kunlikDayNumber,
+              shownAnswer
             )
-          : await checkSpeakingAnswer(token, task.id, text.trim(), mode, nextAttempt);
+          : await checkSpeakingAnswer(token, task.id, text.trim(), mode, nextAttempt, shownAnswer);
         setResult(r);
         setAttempts(nextAttempt);
+        // To'g'ri javob ko'rsatilgan bo'lsa — keyingi urinishda uni eslab qolamiz.
+        if (r.correct_answer.trim()) setShownAnswer(r.correct_answer.trim());
         if (isPassingStatus(r.status)) {
           playCorrectSound();
         }
@@ -147,7 +159,7 @@ export default function SpeakingExercise({
         setChecking(false);
       }
     },
-    [token, task?.id, task?.uz_text, task?.ru_correct, useInlineCheck, kunlikDayNumber, checking, attempts]
+    [token, task?.id, task?.uz_text, useInlineCheck, kunlikDayNumber, checking, attempts, shownAnswer]
   );
 
   const handleTextSubmit = useCallback(() => {
@@ -193,14 +205,20 @@ export default function SpeakingExercise({
     recorder.reset();
   }, [recorder]);
 
+  /**
+   * Keyingi topshiriqqa o'tish.
+   *
+   * To'g'ri javobdan keyin ham, 3 urinish tugagach «o'tkazib yuborish»dan
+   * keyin ham shu chaqiriladi — ikkala holatda ham topshiriq ortda qoladi,
+   * shuning uchun progress bir xil saqlanadi. Aks holda sahifa qayta
+   * ochilganda o'quvchi yana o'sha gapga qaytib, tuzoqda qolardi.
+   */
   const handleNext = useCallback(() => {
     if (currentIdx + 1 >= tasks.length) {
       onFinish();
       return;
     }
-    if (result && isPassingStatus(result.status)) {
-      onCheckpoint?.(currentIdx + 1);
-    }
+    onCheckpoint?.(currentIdx + 1);
     setCurrentIdx((i) => i + 1);
     setAnswer('');
     setVoiceText('');
@@ -208,13 +226,17 @@ export default function SpeakingExercise({
     setIsVoiceEditing(false);
     setResult(null);
     setAttempts(0);
+    setShownAnswer('');
     setError('');
     recorder.reset();
-  }, [currentIdx, tasks.length, onFinish, onCheckpoint, recorder, result?.status]);
+  }, [currentIdx, tasks.length, onFinish, onCheckpoint, recorder]);
 
   const handleRetry = useCallback(() => {
     setResult(null);
     setAnswer('');
+    setVoiceText('');
+    setVoiceDraft('');
+    setIsVoiceEditing(false);
     setError('');
     recorder.reset();
   }, [recorder]);
@@ -476,7 +498,7 @@ export default function SpeakingExercise({
           <SpeakingFeedback
             result={result}
             attempts={attempts}
-            referenceAnswer={task.ru_correct}
+            isLast={currentIdx + 1 >= tasks.length}
             onNext={handleNext}
             onRetry={handleRetry}
           />
