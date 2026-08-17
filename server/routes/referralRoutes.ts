@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import type { DatabaseClient } from '../types/referral';
 import * as referralController from '../controllers/referralController';
-import * as referralPaymentService from '../services/referralPayment.service';
 
 export function createReferralRoutes(
   supabase: DatabaseClient,
@@ -36,28 +35,26 @@ export function createReferralRoutes(
     referralController.getDiscountEligibility(supabase)
   );
 
-  // Record payment: applies 10% discount if eligible, 25% reward to referrer (once), sets user plan
-  router.post('/payments', authenticate, async (req: any, res) => {
-    try {
-      const userId = req.userId as number;
-      const originalAmount = Math.round(Number(req.body?.amount) || 0);
-      const planName = req.body?.planName as string | undefined;
-      const planDurationMonths = req.body?.planDurationMonths != null ? Number(req.body.planDurationMonths) : undefined;
-      if (originalAmount <= 0) {
-        return res.status(400).json({ error: 'amount kerak (0 dan katta)' });
-      }
-      const result = await referralPaymentService.recordPayment(supabase, {
-        userId,
-        originalAmount,
-        planName: planName || undefined,
-        planDurationMonths: planDurationMonths && [1, 3, 12].includes(planDurationMonths) ? planDurationMonths : undefined,
-      });
-      res.json(result);
-    } catch (e) {
-      console.error('[POST /api/payments]', e);
-      res.status(500).json({ error: 'Xatolik yuz berdi' });
-    }
-  });
+  /*
+   * BU YERDA `POST /payments` BOR EDI — O'CHIRILDI (2026-08-17).
+   *
+   * U faqat `authenticate` ortida turardi va `planName` bilan
+   * `planDurationMonths` ni to'g'ridan-to'g'ri so'rov tanasidan olib
+   * `users.plan_expires_at` ni yozar hamda faol obuna yaratardi. Ya'ni
+   * ro'yxatdan o'tgan istalgan o'quvchi bitta so'rov bilan o'ziga bir
+   * yillik premium berib olishi mumkin edi — na to'lov shlyuzi, na admin
+   * tasdig'i tekshirilardi.
+   *
+   * Amalda u ishlamay turgandi: `server.ts` da `/api/payments` avvalroq
+   * ulanadi (`createPaymentRoutes`) va uning ildiz `POST /` handleri shu
+   * manzilni o'ziga oladi. Lekin bu tasodifiy himoya — ulash tartibi
+   * o'zgarsa yoki o'sha handler nomi almashsa teshik darhol ochilardi.
+   *
+   * Frontend uni hech qachon chaqirmagan (`planDurationMonths` src/ da
+   * umuman uchramaydi). Obuna berishning yagona to'g'ri yo'llari:
+   * to'lov shlyuzi callback'i (`shared/paymentActivation.ts`) va admin
+   * paneli (`adminController`).
+   */
 
   return router;
 }
