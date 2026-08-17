@@ -9,11 +9,18 @@ import { X } from 'lucide-react';
  *
  * `/oqituvchilarga/` — alohida statik to'plam (React marshrutiga kirmaydi).
  * Ilgari unga havola bosilsa, foydalanuvchi lendingni tark etardi. Endi o'sha
- * sahifa shu yerda, oynacha ichida ochiladi va ostida ro'yxatdan o'tish bilan
- * kirish tugmalari turadi.
+ * sahifa shu yerda ochiladi va ostida ro'yxatdan o'tish bilan kirish
+ * tugmalari turadi.
+ *
+ * TO'LIQ EKRAN, ATAYLAB (2026-08-17). Ilgari bu chegaralangan oynacha edi
+ * (`max-w-[1040px]`, `h-[min(94vh,940px)]`, atrofida orqa fon ko'rinib
+ * turardi) — ichkaridagi sahifaning o'zi 1200px kenglikka mo'ljallangani
+ * uchun u yana bir marta siqilib, "sahifa ichidagi sahifa" bo'lib qolardi.
+ * Telefonda esa sarlavha va tugmalar qatoridan keyin iframe'ga juda oz joy
+ * qolardi. Endi panel butun ekranni egallaydi.
  *
  * Nega `createPortal`: banner `overflow-hidden` va Framer Motion transformlari
- * ichida — ular `position: fixed` ni o'z ichiga qamab qo'yadi, oyna esa butun
+ * ichida — ular `position: fixed` ni o'z ichiga qamab qo'yadi, panel esa butun
  * ekranni egallashi kerak.
  */
 
@@ -112,59 +119,59 @@ export default function TeacherTermsModal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-[#0F172A]/60 p-2 backdrop-blur-sm sm:p-5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={onClose}
+          /*
+            `100dvh` — mobil brauzerlarda manzil paneli yig'ilganda `100vh`
+            ekrandan baland bo'lib, pastdagi tugmalar ko'rinmay qolardi.
+          */
+          className="fixed inset-0 z-[120] flex h-[100dvh] flex-col bg-white"
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 12 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 30 }}
           role="dialog"
           aria-modal="true"
           aria-label={title}
         >
-          <motion.div
-            className="flex h-[min(94vh,940px)] w-full max-w-[1040px] flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_30px_80px_rgba(15,23,42,0.35)] sm:rounded-[26px]"
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-            onClick={(event) => event.stopPropagation()}
+          <div
+            className="flex shrink-0 items-center gap-3 border-b border-[#E2E8F0] px-4 sm:px-6"
+            style={{ paddingTop: 'max(12px, env(safe-area-inset-top))', paddingBottom: 12 }}
           >
-            <div className="flex shrink-0 items-center gap-3 border-b border-[#E2E8F0] px-4 py-3 sm:px-5">
-              <h3 className="min-w-0 flex-1 truncate text-[15px] font-bold text-[#0B2A6B] sm:text-base">{title}</h3>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Yopish"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0F172A]"
-              >
-                <X className="h-5 w-5" strokeWidth={2.4} />
-              </button>
-            </div>
+            <h3 className="min-w-0 flex-1 truncate text-[15px] font-bold text-[#0B2A6B] sm:text-base">{title}</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Yopish"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#0F172A]"
+            >
+              <X className="h-5 w-5" strokeWidth={2.4} />
+            </button>
+          </div>
 
-            <iframe
-              ref={frameRef}
-              src={`${TERMS_URL}?lang=${TERMS_LANG[language] ?? 'RU'}`}
-              title={title}
-              onLoad={handleLoaded}
-              className="min-h-0 w-full flex-1 border-0"
-            />
+          <iframe
+            ref={frameRef}
+            src={`${TERMS_URL}?lang=${TERMS_LANG[language] ?? 'RU'}`}
+            title={title}
+            onLoad={handleLoaded}
+            className="min-h-0 w-full flex-1 border-0"
+          />
 
-            <div className="flex shrink-0 flex-col gap-2.5 border-t border-[#E2E8F0] bg-white px-4 py-3 sm:flex-row sm:px-5">
-              <Link
-                to="/teacher-register"
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-[16px] bg-[#1E3A8A] px-5 text-[15px] font-bold text-white transition hover:bg-[#16307a]"
-              >
-                {registerLabel}
-              </Link>
-              <Link
-                to="/teacher-login"
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-[16px] border-2 border-[#1E3A8A] px-5 text-[15px] font-bold text-[#1E3A8A] transition hover:bg-[#1E3A8A]/5"
-              >
-                {loginLabel}
-              </Link>
-            </div>
-          </motion.div>
+          <div
+            className="flex shrink-0 flex-col gap-2.5 border-t border-[#E2E8F0] bg-white px-4 sm:mx-auto sm:w-full sm:max-w-[720px] sm:flex-row sm:px-6"
+            style={{ paddingTop: 12, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+          >
+            <Link
+              to="/teacher-register"
+              className="inline-flex h-12 flex-1 items-center justify-center rounded-[16px] bg-[#1E3A8A] px-5 text-[15px] font-bold text-white transition hover:bg-[#16307a]"
+            >
+              {registerLabel}
+            </Link>
+            <Link
+              to="/teacher-login"
+              className="inline-flex h-12 flex-1 items-center justify-center rounded-[16px] border-2 border-[#1E3A8A] px-5 text-[15px] font-bold text-[#1E3A8A] transition hover:bg-[#1E3A8A]/5"
+            >
+              {loginLabel}
+            </Link>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>,
