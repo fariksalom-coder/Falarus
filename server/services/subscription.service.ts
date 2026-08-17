@@ -1,7 +1,9 @@
 import type { DbClient } from '../types/dbClient';
 import { resolveFreeVocabularyIds } from '../lib/freeVocabularyIds';
 import {
+  isPaymentProductCode,
   normalizePaymentProductCode,
+  SUBSCRIPTION_PRODUCT_CODE,
   type CourseProductCode,
 } from '../../shared/paymentProducts.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
@@ -35,6 +37,8 @@ export type AccessInfo = {
   vnzh_course_active: boolean;
   vocabulary_free_topic_id?: string | null;
   vocabulary_free_subtopic_id?: string | null;
+  /** OLTIN A'ZO: platformada hech qanday taqiq yo'q (to'lov ham, ketma-ketlik ham). */
+  golden?: boolean;
 };
 
 // Preserved at 3 to match the value that has been live in production via
@@ -97,8 +101,52 @@ export async function getActiveSubscription(
 }
 
 /**
+ * Approved-payment zaxirasi qancha amal qiladi.
+ *
+ * Zaxira `plan_expires_at` yozilmay qolgan holat uchun. Ilgari u MUDDATSIZ
+ * edi: bir marta to'lagan odam tarifi tugagach ham abadiy premium bo'lib
+ * qolardi (2026-08-17 da prodda 62 ta shunday hisob topildi). Endi zaxira
+ * to'lov tasdiqlangan sanadan boshlab tarif muddatichagina amal qiladi.
+ */
+const FALLBACK_DAYS_BY_TARIFF: Record<string, number> = {
+  year: 365,
+  yearly: 365,
+  three_month: 90,
+  month: 30,
+  monthly: 30,
+};
+/** Tarif kodi noma'lum bo'lsa eng qisqa joriy tarif bo'yicha hisoblanadi. */
+const FALLBACK_DAYS_DEFAULT = 90;
+
+function approvedPaymentStillCovers(
+  approvedAt: string | null | undefined,
+  tariffType: string | null | undefined
+): boolean {
+  if (!approvedAt) return false;
+  const start = new Date(approvedAt);
+  if (!Number.isFinite(start.getTime())) return false;
+  const days = FALLBACK_DAYS_BY_TARIFF[String(tariffType ?? '').toLowerCase()] ?? FALLBACK_DAYS_DEFAULT;
+  return start.getTime() + days * 24 * 60 * 60 * 1000 > Date.now();
+}
+
+/**
+ * To'lov rus kursi obunasimi.
+ *
+ * `normalizePaymentProductCode` NOMA'LUM qiymatni ham 'russian' qiladi, ya'ni
+ * kodi buzuq yozilgan har qanday to'lov jimgina premium berib yuborardi.
+ * Shu sabab bu yerda tekshiruv aniq: kod tanilgan bo'lishi VA 'russian'
+ * bo'lishi shart. Bo'sh/NULL kod — `product_code` ustuni paydo bo'lishidan
+ * oldingi eski yozuvlar; ular o'sha paytda faqat rus kursi bo'lgan.
+ */
+function isRussianSubscriptionPayment(productCode: string | null | undefined): boolean {
+  if (productCode == null || productCode === '') return true;
+  return isPaymentProductCode(productCode) && productCode === SUBSCRIPTION_PRODUCT_CODE;
+}
+
+/**
  * Also consider users.plan_expires_at as fallback (from payments).
- * Last resort: if user has any approved payment, grant access (in case plan_expires_at update failed).
+ * Last resort: an approved Russian-course payment still inside its tariff
+ * window (in case plan_expires_at update failed).
  */
 export async function hasActiveAccess(
   supabase: DbClient,
@@ -119,7 +167,7 @@ export async function hasActiveAccess(
   }
   const { data: approvedPayment, error: payErr } = await supabase
     .from('payments')
-    .select('id, product_code')
+    .select('id, product_code, approved_at, tariff_type')
     .eq('user_id', uid)
     .eq('status', 'approved')
     .order('approved_at', { ascending: false })
@@ -127,20 +175,32 @@ export async function hasActiveAccess(
   if (payErr && isPaymentsProductCodeSchemaError(payErr)) {
     const { data: legacyRows } = await supabase
       .from('payments')
-      .select('payment_proof_url')
+      .select('payment_proof_url, approved_at, tariff_type')
       .eq('user_id', uid)
       .eq('status', 'approved')
       .order('approved_at', { ascending: false })
       .limit(30);
-    return (legacyRows ?? []).some((r: { payment_proof_url?: string | null }) => {
-      const inferred = readFalarusProductFromProofUrl(r.payment_proof_url ?? undefined);
-      if (!inferred) return false;
-      return normalizePaymentProductCode(inferred) === 'russian';
-    });
+    return (legacyRows ?? []).some(
+      (r: {
+        payment_proof_url?: string | null;
+        approved_at?: string | null;
+        tariff_type?: string | null;
+      }) => {
+        const inferred = readFalarusProductFromProofUrl(r.payment_proof_url ?? undefined);
+        if (!inferred) return false;
+        if (normalizePaymentProductCode(inferred) !== SUBSCRIPTION_PRODUCT_CODE) return false;
+        return approvedPaymentStillCovers(r.approved_at, r.tariff_type);
+      }
+    );
   }
   return (approvedPayment ?? []).some(
-    (row: { product_code?: string | null }) =>
-      normalizePaymentProductCode(row.product_code) === 'russian'
+    (row: {
+      product_code?: string | null;
+      approved_at?: string | null;
+      tariff_type?: string | null;
+    }) =>
+      isRussianSubscriptionPayment(row.product_code) &&
+      approvedPaymentStillCovers(row.approved_at, row.tariff_type)
   );
 }
 
@@ -197,6 +257,29 @@ export async function getAccessInfo(
   }
   const cached = getCachedAccess(uid);
   if (cached) return cached;
+
+  /*
+   * OLTIN A'ZO — ichki xizmat hisobi: hamma narsa to'liq ochiq.
+   * Bu maqom o'quvchi, o'qituvchi va adminda ham yo'q.
+   */
+  const { data: oltinRow } = await supabase
+    .from('users')
+    .select('is_golden')
+    .eq('id', uid)
+    .maybeSingle();
+  if ((oltinRow as { is_golden?: boolean } | null)?.is_golden) {
+    const oltin: AccessInfo = {
+      lessons_free_limit: Number.MAX_SAFE_INTEGER,
+      vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
+      vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
+      subscription_active: true,
+      patent_course_active: true,
+      vnzh_course_active: true,
+      golden: true,
+    };
+    setCachedAccess(uid, oltin);
+    return oltin;
+  }
 
   let subscriptionActive = await hasActiveAccess(supabase, uid);
   const [patentCourseActive, vnzhCourseActive] = await Promise.all([
