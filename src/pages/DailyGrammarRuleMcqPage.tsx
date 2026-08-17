@@ -4,7 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
-import { dailyMcqsToChoiceTasks, type DailyChoiceTask } from '../utils/dailyGrammarMcqs';
+import { dailyMcqsToChoiceTasks, type DailyChoiceOption, type DailyChoiceTask } from '../utils/dailyGrammarMcqs';
+import {
+  answerGrammarQuestion,
+  fetchGrammarMistakes,
+  finishGrammarTest,
+  startGrammarTest,
+  type GrammarMistake,
+} from '../api/kunlikProgress';
 import { kunlikRejaPath } from '../utils/kunlikNavigation';
 import { useRememberKunlikDay } from '../hooks/useRememberKunlikDay';
 import {
@@ -44,10 +51,12 @@ export default function DailyGrammarRuleMcqPage() {
   const [message, setMessage] = useState('');
   const [finished, setFinished] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
-  /** Oxirgi savoldan keyin progress serverga yozilmoqda — tugma ikki marta bosilmasin. */
-  const [advancing, setAdvancing] = useState(false);
 
-  const [choiceOptions, setChoiceOptions] = useState<string[]>([]);
+  const [choiceOptions, setChoiceOptions] = useState<DailyChoiceOption[]>([]);
+  /** Javob serverga ketayotganda ikkinchi marta bosilmasin. */
+  const [checking, setChecking] = useState(false);
+  const [mistakes, setMistakes] = useState<GrammarMistake[]>([]);
+  const [savedCorrect, setSavedCorrect] = useState<number | null>(null);
   /** Variant matni takrorlansa ham tugma va kalit noyob bo‘lishi uchun indeks. */
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
 
@@ -66,6 +75,14 @@ export default function DailyGrammarRuleMcqPage() {
       const mcqs = bundle.grammar?.ruleMcqs ?? [];
       const norm = dailyMcqsToChoiceTasks(mcqs);
       setTasks(norm);
+      /*
+       * Yangi urinish: serverdagi eski javoblar o'chiriladi, ya'ni ball shu
+       * safargi javoblardan sanaladi. Eng yaxshi natija baribir saqlanadi
+       * (`grammar_correct` faqat oshadi), shuning uchun bu xavfsiz.
+       */
+      if (norm.length > 0) {
+        void startGrammarTest(token, dayNumber).catch(() => undefined);
+      }
       if (norm.length === 0) {
         setError(
           mcqs.length === 0
@@ -117,19 +134,34 @@ export default function DailyGrammarRuleMcqPage() {
 
   const handleBack = () => navigate(backPath);
 
-  const handleNext = async () => {
-    if (status !== 'correct' || advancing) return;
+  const handleNext = () => {
+    if (status !== 'correct') return;
     setCorrectCount((c) => c + 1);
     if (currentIndex < tasks.length - 1) {
       setCurrentIndex((p) => p + 1);
       return;
     }
-    // Patch SERVERGA yetib bo'lgunicha kutiladi: «juftlik» sahifasi mount
-    // bo'lishi bilan progressni serverdan o'qiydi va grammar_1 hali yozilmagan
-    // bo'lsa foydalanuvchini ortga qaytarib yuboradi.
-    setAdvancing(true);
-    await patchDay(dayNumber, { grammar_1: true });
-    navigate(`/kunlik-reja/kun/${dayNumber}/grammatika/juftlik`, { replace: true });
+    /*
+     * Test tugadi. Ilgari bu yerdan darhol juftlikka o'tib ketilardi va
+     * o'quvchi xatolarini umuman ko'rmasdi. Endi natija ekrani chiqadi:
+     * ball serverda sanaladi (XP), xatolar esa to'g'ri javob bilan
+     * ro'yxat bo'lib ko'rsatiladi.
+     */
+    setFinished(true);
+    patchDay(dayNumber, { grammar_1: true });
+    void (async () => {
+      try {
+        const r = await finishGrammarTest(token, dayNumber);
+        setSavedCorrect(r.correct);
+      } catch {
+        /* ball saqlanmasa ham natija ekrani ko'rsatiladi */
+      }
+      try {
+        setMistakes(await fetchGrammarMistakes(token, dayNumber));
+      } catch {
+        /* xatolar ro'yxati qo'shimcha imkoniyat */
+      }
+    })();
   };
 
   if (!isValidDailyCourseDay(dayNumber)) {
@@ -275,10 +307,26 @@ export default function DailyGrammarRuleMcqPage() {
                   <button
                     key={`${currentIndex}-${optionIndex}`}
                     type="button"
+                    disabled={checking}
                     onClick={() => {
-                      if (status === 'correct') return;
+                      if (status === 'correct' || checking) return;
                       setSelectedOptionIndex(optionIndex);
-                      const ok = option === currentTask.correct;
+                      /*
+                       * Javobni SERVER tekshiradi va qayd etadi: ball
+                       * (`grammar_correct`) shu yozuvlardan sanaladi va xato
+                       * javoblar keyin "Xatolaring" hamda haftalik
+                       * takrorlashda qaytadan so'raladi.
+                       *
+                       * Ekran esa javobni kutib qotib qolmaydi — natija
+                       * darhol ko'rsatiladi, so'rov fonda ketadi. Bir savol
+                       * uchun BIRINCHI javob qayd etiladi, ya'ni qayta
+                       * urinish ballni ko'tarmaydi.
+                       */
+                      const ok = option.index === currentTask.correctIndex;
+                      setChecking(true);
+                      void answerGrammarQuestion(token, dayNumber, currentTask.id, option.index)
+                        .catch(() => undefined)
+                        .finally(() => setChecking(false));
                       if (ok) {
                         setStatus('correct');
                         setMessage("To'g'ri! 🎉");
@@ -294,7 +342,7 @@ export default function DailyGrammarRuleMcqPage() {
                     }`}
                     style={cardStyle}
                   >
-                    <span>{option}</span>
+                    <span>{option.text}</span>
                     {icon}
                   </button>
                 );
@@ -302,28 +350,91 @@ export default function DailyGrammarRuleMcqPage() {
             </div>
 
             {status === 'wrong' && message ? (
-              <div className="mt-4 flex justify-center">
-                <span
-                  key={`${currentIndex}-wrong-${message}`}
-                  className="msg-shake rounded-full bg-[#FEEBEB] px-4 py-2 text-sm font-black text-[#B4282E] shadow-[0_6px_14px_-8px_rgba(180,40,46,0.35)]"
-                >
-                  ✕ {message}
-                </span>
-              </div>
+              <>
+                <div className="mt-4 flex justify-center">
+                  <span
+                    key={`${currentIndex}-wrong-${message}`}
+                    className="msg-shake rounded-full bg-[#FEEBEB] px-4 py-2 text-sm font-black text-[#B4282E] shadow-[0_6px_14px_-8px_rgba(180,40,46,0.35)]"
+                  >
+                    ✕ {message}
+                  </span>
+                </div>
+                {/*
+                  IZOH — xato javobdan keyin darhol. Ilgari faqat "yana urinib
+                  ko'ring" deyilardi va o'quvchi qoidani bilmasdan taxmin
+                  qilishda davom etardi.
+                */}
+                {currentTask.explanation ? (
+                  <p className="mt-3 rounded-[16px] border border-[#DDD7F5] bg-white px-4 py-3 text-[13px] leading-relaxed text-[#5C5470]">
+                    {currentTask.explanation}
+                  </p>
+                ) : null}
+              </>
             ) : null}
           </>
         )}
 
         {finished ? (
-          <div className="mt-8 rounded-[24px] border-[1.5px] border-[#82E5B8] bg-[#DCFCE7] p-6 text-center shadow-[0_14px_30px_-14px_rgba(34,197,94,0.25)]">
-            <p className="grammar-heading text-[22px] text-[#0F7C3A]">Tabriklaymiz! 🎉</p>
-            <p className="mt-2 text-sm font-black text-[#0F7C3A]">
-              Natija: {correctCount} / {tasks.length}
-            </p>
+          <div className="mt-6 space-y-4">
+            <div className="rounded-[24px] border-[1.5px] border-[#82E5B8] bg-[#DCFCE7] p-6 text-center shadow-[0_14px_30px_-14px_rgba(34,197,94,0.25)]">
+              <p className="grammar-heading text-[22px] text-[#0F7C3A]">Test tugadi</p>
+              <p className="mt-2 text-sm font-black text-[#0F7C3A]">
+                Birinchi urinishdan to‘g‘ri: {savedCorrect ?? Math.max(tasks.length - mistakes.length, 0)} / {tasks.length}
+              </p>
+              {savedCorrect !== null ? (
+                <p className="mt-1 text-[12.5px] font-bold text-[#0F7C3A]/80">
+                  +{savedCorrect} XP
+                </p>
+              ) : null}
+            </div>
+
+            {/*
+              XATOLARING — ilgari xato javob ekrandan ketishi bilan yo'qolardi
+              va o'sha xato ertaga qaytarilardi. Endi har bir xato to'g'ri
+              javobi bilan qoladi, haftalik takrorlashda esa qaytadan so'raladi.
+            */}
+            {mistakes.length > 0 ? (
+              <div className="rounded-[24px] border border-[#F5B5B5] bg-white p-5 shadow-[0_10px_28px_-14px_rgba(180,40,46,0.18)]">
+                <p className="grammar-heading text-[18px] text-[#B4282E]">
+                  Xatolaring · {mistakes.length} ta
+                </p>
+                <p className="mt-1 text-[12.5px] font-semibold text-[#8B7FAB]">
+                  Bu savollar haftalik takrorlashda yana so‘raladi.
+                </p>
+                <ul className="mt-3.5 space-y-3">
+                  {mistakes.map((m) => (
+                    <li key={m.id} className="rounded-[16px] bg-[#FBF9FF] p-3.5">
+                      <p className="text-[14px] font-bold leading-snug text-[#2D1B69]">
+                        {m.questionText}
+                      </p>
+                      <p className="mt-2 text-[13px] font-semibold text-[#B4282E]">
+                        Sizning javobingiz: {m.options[m.chosenIndex] ?? '—'}
+                      </p>
+                      <p className="mt-0.5 text-[13px] font-black text-[#0F7C3A]">
+                        To‘g‘ri javob: {m.options[m.correctIndex] ?? '—'}
+                      </p>
+                      {m.explanation ? (
+                        <p className="mt-2 rounded-[12px] bg-white px-3 py-2 text-[12.5px] leading-relaxed text-[#5C5470]">
+                          {m.explanation}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => navigate(`/kunlik-reja/kun/${dayNumber}/grammatika/juftlik`, { replace: true })}
+              className="min-h-[54px] w-full rounded-[16px] bg-[#22C55E] px-6 py-3 text-[16px] font-black text-white shadow-[0_10px_22px_-10px_rgba(34,197,94,0.5)]"
+            >
+              Keyingi vazifa →
+            </button>
             <button
               type="button"
               onClick={handleBack}
-              className="mt-4 min-h-[54px] w-full rounded-[16px] bg-[#22C55E] px-6 py-3 text-[16px] font-black text-white shadow-[0_10px_22px_-10px_rgba(34,197,94,0.5)]"
+              className="min-h-[48px] w-full rounded-[16px] border border-[#DDD7F5] bg-white px-6 py-3 text-[15px] font-bold text-[#2D1B69]"
             >
               Grammatikaga qaytish
             </button>
@@ -349,11 +460,10 @@ export default function DailyGrammarRuleMcqPage() {
             </div>
             <button
               type="button"
-              onClick={() => void handleNext()}
-              disabled={advancing}
-              className="grammar-heading h-[54px] w-full rounded-[16px] bg-[#22C55E] text-[16px] text-white shadow-[0_14px_28px_-12px_rgba(34,197,94,0.55)] disabled:opacity-70"
+              onClick={handleNext}
+              className="grammar-heading h-[54px] w-full rounded-[16px] bg-[#22C55E] text-[16px] text-white shadow-[0_14px_28px_-12px_rgba(34,197,94,0.55)]"
             >
-              {advancing ? 'Saqlanmoqda…' : 'Keyingisi →'}
+              Keyingisi →
             </button>
           </div>
         </div>

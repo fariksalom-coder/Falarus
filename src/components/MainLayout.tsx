@@ -1,6 +1,9 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import AppNavBar from './AppNavBar';
+import LiveCallOverlay from './live/LiveCallOverlay';
+import PushObunaFon from './live/PushObunaFon';
+import EfirQongiroqSorovi from './live/EfirQongiroqSorovi';
 import UpdateNotice from './UpdateNotice';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
@@ -18,6 +21,9 @@ function hideNavBar(path: string): boolean {
   if (path.startsWith('/kurslar/')) return true;
   if (path.startsWith('/help/')) return true;
   if (path.startsWith('/games/')) return true;
+  // Jonli efir — to'liq ekranli xona. Pastki menyu qolsa, telefonda Jitsi
+  // paneli bilan ustma-ust taxlanib ketadi.
+  if (path === '/jonli-efir') return true;
   // Kunlik reja: hide on any drilled-in lesson (grammar, lug'at, o'qish, gapirish).
   if (/^\/kunlik-reja\/kun\/\d+\/.+/.test(path)) return true;
   if (path === '/kunlik-reja/xarita') return true;
@@ -83,6 +89,14 @@ export default function MainLayout() {
         }
       `}</style>
       {showNavBar && <AppNavBar />}
+      {/*
+        Efir qo'ng'irog'i — ILOVA BO'YLAB. U qaysi sahifada bo'lishidan qat'i
+        nazar chiqishi kerak: o'quvchi mashq qilib o'tirganda efir boshlansa,
+        banner (bosh sahifa) ham, chat bandi ham unga ko'rinmaydi.
+      */}
+      <LiveCallOverlay />
+      <PushObunaFon />
+      <EfirQongiroqSorovi />
       <div
         className="min-h-screen app-layout-safe-pad"
       >

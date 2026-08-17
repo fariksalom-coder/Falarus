@@ -4,9 +4,11 @@ import { MEET_DOMAIN, generateRoomSlug } from './teacherMeet.service.js';
 /**
  * liveStream.service.ts — support ochadigan JONLI EFIR (vebinar).
  *
- * Formati: support kamera va mikrofon bilan gapiradi, ro'yxatdan o'tgan
- * istalgan foydalanuvchi kirib tomosha qiladi va yozma chatda savol beradi.
- * So'z berish Jitsi ichida moderator (support) qo'lida.
+ * Formati: support kamera va mikrofon bilan olib boradi, ro'yxatdan o'tgan
+ * istalgan foydalanuvchi kirib IKKI TOMONLAMA qatnashadi — o'z mikrofoni va
+ * kamerasini yoqib gapira oladi, qolganlar uni real vaqtda ko'radi-eshitadi.
+ * Kirishda mikrofon va kamera o'chiq (odam o'zi yoqadi), tartib esa moderator
+ * (support) qo'lida: u istalgan ishtirokchini o'chira yoki chiqarib yuboradi.
  *
  * NIMA UCHUN SLUG YASHIRIN.
  * Jitsi bu serverda `jitsi-anonymous` rejimida ishlaydi — ya'ni xonaga
@@ -15,11 +17,11 @@ import { MEET_DOMAIN, generateRoomSlug } from './teacherMeet.service.js';
  * `live` holatiga o'tgandan keyin beriladi. Support esa efirni boshlash
  * paytida xonaga birinchi kiradi va moderator bo'ladi.
  *
- * Bu himoya to'liq emas: efir boshlangach xona nomini bilgan talaba Jitsi
- * sahifasini to'g'ridan-to'g'ri ochib, o'zining mikrofonini yoqishi mumkin.
- * U moderator BO'LMAYDI, ya'ni support uni o'chirib yoki chiqarib yubora
- * oladi. To'liq yopish uchun Jitsi'da JWT autentifikatsiyasi kerak — u
- * hozirgi o'qituvchi darslarini ham qayta yozishni talab qiladi.
+ * Bu himoya to'liq emas: xona nomini bilgan odam Jitsi sahifasini
+ * to'g'ridan-to'g'ri ochib kirishi mumkin. U moderator BO'LMAYDI, ya'ni
+ * support uni o'chirib yoki chiqarib yubora oladi. To'liq yopish uchun
+ * Jitsi'da JWT autentifikatsiyasi kerak — u hozirgi o'qituvchi darslarini
+ * ham qayta yozishni talab qiladi.
  */
 
 /**

@@ -12,6 +12,8 @@ export type KunlikDayRow = {
   grammar_1:     boolean;
   grammar_2:     boolean;
   grammar_3:     boolean;
+  /** Grammatika testidagi to'g'ri javoblar soni — har biri 1 XP. */
+  grammar_correct: number;
   words_learned: number;
   words_correct: number;
   words_match:   boolean;
@@ -57,7 +59,7 @@ export function createKunlikProgressRoutes(
         supabase
           .from('user_kunlik_day_progress')
           .select(
-            'day_number, grammar_1, grammar_2, grammar_3, words_learned, words_correct, words_match, phrases_done, phrases_correct, text_questions_correct, speaking_tasks_done, oqish_done, speaking_level'
+            'day_number, grammar_1, grammar_2, grammar_3, grammar_correct, words_learned, words_correct, words_match, phrases_done, phrases_correct, text_questions_correct, speaking_tasks_done, oqish_done, speaking_level'
           )
           .eq('user_id', req.userId),
         supabase.from('daily_practice_prompts').select('day_number'),
@@ -108,7 +110,7 @@ export function createKunlikProgressRoutes(
     const { data: existing, error: fetchErr } = await supabase
       .from('user_kunlik_day_progress')
       .select(
-        'grammar_1, grammar_2, grammar_3, words_learned, words_correct, words_match, phrases_done, phrases_correct, text_questions_correct, speaking_tasks_done, oqish_done, speaking_level'
+        'grammar_1, grammar_2, grammar_3, grammar_correct, words_learned, words_correct, words_match, phrases_done, phrases_correct, text_questions_correct, speaking_tasks_done, oqish_done, speaking_level'
       )
       .eq('user_id', userId)
       .eq('day_number', dayNumber)
@@ -120,6 +122,7 @@ export function createKunlikProgressRoutes(
       grammar_1: false,
       grammar_2: false,
       grammar_3: false,
+      grammar_correct: 0,
       words_learned: 0,
       words_correct: 0,
       words_match: false,
@@ -147,6 +150,7 @@ export function createKunlikProgressRoutes(
         grammar_1: merged.grammar_1,
         grammar_2: merged.grammar_2,
         grammar_3: merged.grammar_3,
+        grammar_correct: merged.grammar_correct,
         words_learned: merged.words_learned,
         words_correct: merged.words_correct,
         words_match: merged.words_match,
@@ -454,6 +458,368 @@ export function createKunlikProgressRoutes(
       });
     } catch (e) {
       console.error('[POST /api/kunlik-progress/:dayNumber/phrases/finish]', e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  // ─── Grammatika testi (javoblar qayd etiladi, ball serverda sanaladi) ───
+
+  /**
+   * NIMA UCHUN SERVER: `grammar_correct` XP beradi, shuning uchun uni klient
+   * yubora olmaydi — javob kaliti faqat shu yerda. Ibora testlari ham xuddi
+   * shu tartibda ishlaydi.
+   *
+   * Ikkinchi foydasi: har bir javob (to'g'ri va xato) `user_grammar_answers`
+   * ga tushadi va shundan "Xatolaring" hamda haftalik takrorlash quriladi.
+   */
+  async function loadGrammarKey(dayNumber: number) {
+    const { data, error } = await supabase
+      .from('daily_grammar_mcqs')
+      .select('id, correct_index')
+      .eq('day_number', dayNumber)
+      .eq('quiz_kind', 'rule');
+    if (error) throw error;
+    return (data ?? []) as { id: number; correct_index: number }[];
+  }
+
+  /** Yangi urinish: shu kundagi eski javoblar o'chiriladi. */
+  router.post('/kunlik-progress/:dayNumber/grammar/start', authenticate, async (req: any, res: any) => {
+    try {
+      const dayNumber = await requirePhraseDayAccess(req, res);
+      if (dayNumber === null) return;
+      const mcqs = await loadGrammarKey(dayNumber);
+      if (mcqs.length === 0) return res.status(404).json({ error: 'Bu kunda test yo‘q' });
+
+      const { error } = await supabase
+        .from('user_grammar_answers')
+        .delete()
+        .eq('user_id', Number(req.userId))
+        .in('mcq_id', mcqs.map((m) => m.id));
+      if (error) throw error;
+
+      res.json({ started: true, total: mcqs.length });
+    } catch (e) {
+      console.error('[POST /api/kunlik-progress/:dayNumber/grammar/start]', e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  /** Bitta javob: to'g'riligini SERVER aytadi va yozib qo'yadi. */
+  router.post('/kunlik-progress/:dayNumber/grammar/answer', authenticate, async (req: any, res: any) => {
+    try {
+      const dayNumber = await requirePhraseDayAccess(req, res);
+      if (dayNumber === null) return;
+      const userId = Number(req.userId);
+
+      const mcqId = Number(req.body?.mcqId);
+      const choice = Number(req.body?.choice);
+      if (!Number.isFinite(mcqId) || !Number.isInteger(choice) || choice < 0 || choice > 3) {
+        return res.status(400).json({ error: 'Javob noto‘g‘ri' });
+      }
+
+      const mcqs = await loadGrammarKey(dayNumber);
+      const mcq = mcqs.find((m) => Number(m.id) === mcqId);
+      if (!mcq) return res.status(404).json({ error: 'Savol topilmadi' });
+
+      // Allaqachon javob berilgan bo'lsa — birinchi javob qoladi.
+      const { data: existing, error: exErr } = await supabase
+        .from('user_grammar_answers')
+        .select('choice, is_correct')
+        .eq('user_id', userId)
+        .eq('mcq_id', mcqId)
+        .maybeSingle();
+      if (exErr) throw exErr;
+
+      if (existing) {
+        const row = existing as { choice: number; is_correct: boolean };
+        return res.json({
+          correct: Boolean(row.is_correct),
+          correctIndex: Number(mcq.correct_index),
+          choice: Number(row.choice),
+          alreadyAnswered: true,
+        });
+      }
+
+      const isCorrect = choice === Number(mcq.correct_index);
+      const { error: insErr } = await supabase.from('user_grammar_answers').insert({
+        user_id: userId,
+        mcq_id: mcqId,
+        choice,
+        is_correct: isCorrect,
+      });
+      if (insErr) throw insErr;
+
+      res.json({
+        correct: isCorrect,
+        correctIndex: Number(mcq.correct_index),
+        choice,
+        alreadyAnswered: false,
+      });
+    } catch (e) {
+      console.error('[POST /api/kunlik-progress/:dayNumber/grammar/answer]', e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  /**
+   * Test tugadi: ball QAYD ETILGAN javoblardan sanaladi — klient son
+   * yubormaydi. `grammar_correct` faqat oshadi.
+   */
+  router.post('/kunlik-progress/:dayNumber/grammar/finish', authenticate, async (req: any, res: any) => {
+    try {
+      const dayNumber = await requirePhraseDayAccess(req, res);
+      if (dayNumber === null) return;
+      const userId = Number(req.userId);
+
+      const mcqs = await loadGrammarKey(dayNumber);
+      if (mcqs.length === 0) return res.status(404).json({ error: 'Bu kunda test yo‘q' });
+
+      const { data: answered, error } = await supabase
+        .from('user_grammar_answers')
+        .select('mcq_id, is_correct')
+        .eq('user_id', userId)
+        .in('mcq_id', mcqs.map((m) => m.id));
+      if (error) throw error;
+
+      const rows = (answered ?? []) as { mcq_id: number; is_correct: boolean }[];
+      const correct = rows.filter((r) => r.is_correct).length;
+
+      await applyDayPatch(userId, dayNumber, { grammar_1: true, grammar_correct: correct });
+
+      const { data: saved } = await supabase
+        .from('user_kunlik_day_progress')
+        .select('grammar_correct')
+        .eq('user_id', userId)
+        .eq('day_number', dayNumber)
+        .maybeSingle();
+
+      res.json({
+        correct,
+        answered: rows.length,
+        total: mcqs.length,
+        best: Number((saved as { grammar_correct?: number } | null)?.grammar_correct ?? correct),
+      });
+    } catch (e) {
+      console.error('[POST /api/kunlik-progress/:dayNumber/grammar/finish]', e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  // ─── Xatolar va haftalik takrorlash ─────────────────────────────────────
+
+  /*
+   * DIQQAT: bu yerdagi so'rovlar ATAYLAB ikki bosqichli.
+   * `postgresFacade` PostgREST'ning ichma-ich (embedded) tanlovlarini
+   * qo'llab-quvvatlamaydi — `daily_grammar_mcqs!inner(...)` jimgina kesib
+   * tashlanadi va filtr ishlamay qoladi. Shuning uchun avval savollar,
+   * keyin javoblar o'qiladi.
+   */
+
+  type McqQator = {
+    id: number;
+    day_number: number;
+    question_text: string;
+    option_a: string;
+    option_b: string;
+    option_c: string;
+    option_d: string;
+    correct_index: number;
+    explanation?: string | null;
+  };
+
+  const MCQ_MAYDONLARI =
+    'id, day_number, question_text, option_a, option_b, option_c, option_d, correct_index, explanation';
+
+  /** Kun oralig'idagi barcha qoida testlari. */
+  async function loadMcqRows(fromDay: number, toDay: number): Promise<McqQator[]> {
+    const { data, error } = await supabase
+      .from('daily_grammar_mcqs')
+      .select(MCQ_MAYDONLARI)
+      .eq('quiz_kind', 'rule')
+      .gte('day_number', fromDay)
+      .lte('day_number', toDay);
+    if (error) throw error;
+    return (data ?? []) as McqQator[];
+  }
+
+  /** Berilgan savollardan foydalanuvchi XATO javob berganlari. */
+  async function loadWrongAnswers(
+    userId: number,
+    mcqIds: number[],
+  ): Promise<Map<number, number>> {
+    const chiqdi = new Map<number, number>();
+    if (mcqIds.length === 0) return chiqdi;
+    const { data, error } = await supabase
+      .from('user_grammar_answers')
+      .select('mcq_id, choice, is_correct')
+      .eq('user_id', userId)
+      .eq('is_correct', false)
+      .in('mcq_id', mcqIds);
+    if (error) throw error;
+    for (const r of (data ?? []) as { mcq_id: number; choice: number }[]) {
+      chiqdi.set(Number(r.mcq_id), Number(r.choice));
+    }
+    return chiqdi;
+  }
+
+  function mcqShaklga(m: McqQator, chosenIndex: number) {
+    return {
+      id: Number(m.id),
+      dayNumber: Number(m.day_number),
+      questionText: String(m.question_text),
+      options: [m.option_a, m.option_b, m.option_c, m.option_d].map(String),
+      correctIndex: Number(m.correct_index),
+      chosenIndex,
+      explanation: String(m.explanation ?? ''),
+    };
+  }
+
+  /**
+   * GET /api/kunlik-progress/:dayNumber/grammar/mistakes
+   *
+   * Shu kundagi XATO javoblar — test tugagach "Xatolaring" bloki shundan
+   * chiziladi. Javob to'g'rilangan savol ro'yxatdan o'zi chiqib ketadi.
+   */
+  router.get('/kunlik-progress/:dayNumber/grammar/mistakes', authenticate, async (req: any, res: any) => {
+    try {
+      const dayNumber = await requirePhraseDayAccess(req, res);
+      if (dayNumber === null) return;
+
+      const mcqs = await loadMcqRows(dayNumber, dayNumber);
+      const wrong = await loadWrongAnswers(Number(req.userId), mcqs.map((m) => Number(m.id)));
+
+      const mistakes = mcqs
+        .filter((m) => wrong.has(Number(m.id)))
+        .map((m) => mcqShaklga(m, wrong.get(Number(m.id)) ?? -1));
+
+      res.json({ mistakes });
+    } catch (e) {
+      console.error('[GET /api/kunlik-progress/:dayNumber/grammar/mistakes]', e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  /**
+   * GET /api/kunlik-takrorlash/:dayNumber
+   *
+   * HAFTALIK TAKRORLASH. Til o'rganishda eng katta yo'qotish — o'tilgan
+   * mavzuning qaytarilmasligi: 5-kun grammatikasi 40-kunda hech qayerda
+   * uchramaydi va unutiladi. Shuning uchun har 7-kunda oldingi 6 kunning
+   * XATO javoblari qaytadan so'raladi.
+   *
+   * Xato yetarli bo'lmasa (o'quvchi yaxshi ishlagan) — o'sha kunlarning
+   * tasodifiy savollari bilan to'ldiriladi, ya'ni mini-test har doim to'liq.
+   */
+  router.get('/kunlik-takrorlash/:dayNumber', authenticate, async (req: any, res: any) => {
+    try {
+      const dayNumber = await requirePhraseDayAccess(req, res);
+      if (dayNumber === null) return;
+      const userId = Number(req.userId);
+
+      const KERAK = 10;
+      const boshlanish = Math.max(1, dayNumber - 6);
+
+      const mcqs = await loadMcqRows(boshlanish, dayNumber);
+      const wrong = await loadWrongAnswers(userId, mcqs.map((m) => Number(m.id)));
+
+      const xatolar = mcqs.filter((m) => wrong.has(Number(m.id)));
+      const qolgan = mcqs.filter((m) => !wrong.has(Number(m.id)));
+
+      // Tasodifiy tanlov: har hafta bir xil savollar chiqmasin.
+      const aralashtir = <T,>(arr: T[]): T[] => {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      };
+
+      const tanlangan = [
+        ...aralashtir(xatolar).slice(0, KERAK),
+        ...aralashtir(qolgan).slice(0, Math.max(0, KERAK - Math.min(xatolar.length, KERAK))),
+      ];
+
+      res.json({
+        fromDay: boshlanish,
+        toDay: dayNumber,
+        xatoSoni: xatolar.length,
+        // Javob kaliti YUBORILMAYDI: javob serverda tekshiriladi.
+        questions: tanlangan.map((m) => ({
+          id: Number(m.id),
+          dayNumber: Number(m.day_number),
+          questionText: String(m.question_text),
+          options: [m.option_a, m.option_b, m.option_c, m.option_d].map(String),
+          xatoEdi: wrong.has(Number(m.id)),
+        })),
+      });
+    } catch (e) {
+      console.error('[GET /api/kunlik-takrorlash/:dayNumber]', e);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  /**
+   * POST /api/kunlik-takrorlash/answer
+   *
+   * Takrorlashdagi javob. To'g'ri javob berilsa eski XATO yozuvi ustiga
+   * yoziladi — ya'ni savol "xatolar" ro'yxatidan chiqadi va o'sha kunning
+   * `grammar_correct` i qayta sanaladi (ball faqat oshadi).
+   */
+  router.post('/kunlik-takrorlash/answer', authenticate, async (req: any, res: any) => {
+    try {
+      const userId = Number(req.userId);
+      if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
+
+      const mcqId = Number(req.body?.mcqId);
+      const choice = Number(req.body?.choice);
+      if (!Number.isFinite(mcqId) || !Number.isInteger(choice) || choice < 0 || choice > 3) {
+        return res.status(400).json({ error: 'Javob noto‘g‘ri' });
+      }
+
+      const { data: mcq, error: mErr } = await supabase
+        .from('daily_grammar_mcqs')
+        .select('id, day_number, correct_index, explanation')
+        .eq('id', mcqId)
+        .maybeSingle();
+      if (mErr) throw mErr;
+      if (!mcq) return res.status(404).json({ error: 'Savol topilmadi' });
+
+      const row = mcq as { day_number: number; correct_index: number; explanation: string | null };
+      const dayNumber = Number(row.day_number);
+      const access = await getAccessForRequest(supabase, userId);
+      if (!accessControlService.canAccessKunlikDay(dayNumber, access)) {
+        return res.status(403).json({ error: 'Obuna kerak' });
+      }
+
+      const isCorrect = choice === Number(row.correct_index);
+      const { error: upErr } = await supabase.from('user_grammar_answers').upsert(
+        { user_id: userId, mcq_id: mcqId, choice, is_correct: isCorrect, answered_at: new Date().toISOString() },
+        { onConflict: 'user_id,mcq_id' },
+      );
+      if (upErr) throw upErr;
+
+      // Shu kunning balli qayta sanaladi: xato tuzatilsa XP o'sadi.
+      if (isCorrect) {
+        const mcqs = await loadGrammarKey(dayNumber);
+        if (mcqs.length > 0) {
+          const { data: answered } = await supabase
+            .from('user_grammar_answers')
+            .select('is_correct')
+            .eq('user_id', userId)
+            .in('mcq_id', mcqs.map((m) => m.id));
+          const correct = ((answered ?? []) as { is_correct: boolean }[]).filter((a) => a.is_correct).length;
+          await applyDayPatch(userId, dayNumber, { grammar_correct: correct });
+        }
+      }
+
+      res.json({
+        correct: isCorrect,
+        correctIndex: Number(row.correct_index),
+        explanation: String(row.explanation ?? ''),
+      });
+    } catch (e) {
+      console.error('[POST /api/kunlik-takrorlash/answer]', e);
       res.status(500).json({ error: 'Server error' });
     }
   });

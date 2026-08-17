@@ -7,6 +7,8 @@ export type KunlikDayProgress = {
   grammar_1:     boolean;
   grammar_2:     boolean;
   grammar_3:     boolean;
+  /** Grammatika testidagi to'g'ri javoblar (har biri 1 XP, server yozadi). */
+  grammar_correct: number;
   words_learned: number;
   words_correct: number;
   words_match:   boolean;
@@ -296,4 +298,140 @@ export async function saveDailySpeakingTaskProgress(
     headers: authHeaders(token),
     body: JSON.stringify({ done }),
   }).catch(() => undefined);
+}
+
+// ─── Grammatika testi: javoblar SERVERDA tekshiriladi va qayd etiladi ──────
+
+export type GrammarAnswerResult = {
+  correct: boolean;
+  correctIndex: number;
+  choice: number;
+  alreadyAnswered: boolean;
+};
+
+export type GrammarFinishResult = {
+  correct: number;
+  answered: number;
+  total: number;
+  /** Shu kun uchun eng yaxshi natija (kamaymaydi). */
+  best: number;
+};
+
+/** Xato javob berilgan savol — "Xatolaring" bloki shundan chiziladi. */
+export type GrammarMistake = {
+  id: number;
+  dayNumber: number;
+  questionText: string;
+  options: string[];
+  correctIndex: number;
+  chosenIndex: number;
+  explanation: string;
+};
+
+/** Yangi urinish: shu kundagi eski javoblar o'chiriladi. */
+export async function startGrammarTest(
+  token: string | null,
+  dayNumber: number,
+): Promise<{ total: number }> {
+  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/grammar/start`), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: '{}',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Test boshlanmadi');
+  return data as { total: number };
+}
+
+/**
+ * Bitta javob. To'g'ri/xato ekanini SERVER aytadi — ball shu javoblardan
+ * sanaladi, shuning uchun kalit brauzerga berilmaydi.
+ */
+export async function answerGrammarQuestion(
+  token: string | null,
+  dayNumber: number,
+  mcqId: number,
+  choice: number,
+): Promise<GrammarAnswerResult> {
+  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/grammar/answer`), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ mcqId, choice }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Javob tekshirilmadi');
+  return data as GrammarAnswerResult;
+}
+
+/** Testni yakunlaydi: `grammar_correct` (XP) serverda hisoblanadi. */
+export async function finishGrammarTest(
+  token: string | null,
+  dayNumber: number,
+): Promise<GrammarFinishResult> {
+  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/grammar/finish`), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: '{}',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Natija saqlanmadi');
+  return data as GrammarFinishResult;
+}
+
+/** Shu kundagi xato javoblar. */
+export async function fetchGrammarMistakes(
+  token: string | null,
+  dayNumber: number,
+): Promise<GrammarMistake[]> {
+  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/grammar/mistakes`), {
+    headers: authHeaders(token),
+  });
+  if (!res.ok) return [];
+  const data = (await res.json().catch(() => ({}))) as { mistakes?: GrammarMistake[] };
+  return data.mistakes ?? [];
+}
+
+// ─── Haftalik takrorlash ──────────────────────────────────────────────────
+
+export type TakrorlashSavol = {
+  id: number;
+  dayNumber: number;
+  questionText: string;
+  options: string[];
+  /** Ilgari shu savolda xato qilinganmi. */
+  xatoEdi: boolean;
+};
+
+export type TakrorlashTest = {
+  fromDay: number;
+  toDay: number;
+  xatoSoni: number;
+  questions: TakrorlashSavol[];
+};
+
+export async function fetchTakrorlash(
+  token: string | null,
+  dayNumber: number,
+): Promise<TakrorlashTest> {
+  const res = await fetch(apiUrl(`/api/kunlik-takrorlash/${dayNumber}`), {
+    headers: authHeaders(token),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Takrorlash yuklanmadi');
+  return data as TakrorlashTest;
+}
+
+export async function answerTakrorlash(
+  token: string | null,
+  mcqId: number,
+  choice: number,
+): Promise<{ correct: boolean; correctIndex: number; explanation: string }> {
+  const res = await fetch(apiUrl('/api/kunlik-takrorlash/answer'), {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ mcqId, choice }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Javob tekshirilmadi');
+  return data as { correct: boolean; correctIndex: number; explanation: string };
 }

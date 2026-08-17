@@ -21,8 +21,13 @@ export async function computeUserXp(
   const [kunlikRes, actRes, timeRes, userRes] = await Promise.all([
     supabase
       .from('user_kunlik_day_progress')
-      // Yangi XP faqat `phrases_correct` dan — boshqa ustunlar kerak emas.
-      .select('phrases_correct')
+      // XP kunning HAR BIR mashqidan yig'iladi, shuning uchun formulaga
+      // kiradigan barcha ustunlar o'qiladi (`shared/xpFormula.ts`).
+      .select(
+        'grammar_1, grammar_2, grammar_3, grammar_correct, words_correct, words_match, ' +
+          'phrases_done, phrases_correct, text_questions_correct, oqish_done, ' +
+          'speaking_level, speaking_tasks_done',
+      )
       .eq('user_id', userId),
     supabase
       .from('user_activity_dates')

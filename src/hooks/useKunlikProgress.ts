@@ -15,6 +15,7 @@ const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   grammar_1: false,
   grammar_2: false,
   grammar_3: false,
+  grammar_correct: 0,
   words_learned: 0,
   words_correct: 0,
   words_match: false,

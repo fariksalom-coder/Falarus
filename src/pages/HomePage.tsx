@@ -14,6 +14,7 @@ import {
   Edit3,
   FileText,
   RefreshCw,
+  RotateCcw,
 } from 'lucide-react';
 import {
   fetchMyRank,
@@ -40,6 +41,7 @@ const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   grammar_1: false,
   grammar_2: false,
   grammar_3: false,
+  grammar_correct: 0,
   words_learned: 0,
   words_correct: 0,
   words_match: false,
@@ -731,6 +733,36 @@ export default function HomePage() {
                 />
               ))}
             </motion.section>
+            {/*
+              HAFTALIK TAKRORLASH — har 7-kunda. Kurs to'g'ri chiziq bo'lgani
+              uchun o'tilgan mavzu qaytmasdi va unutilardi; bu karta oldingi
+              olti kunning savollarini, avvalo xato qilinganlarini qaytaradi.
+            */}
+            {displayDay >= 7 && displayDay % 7 === 0 ? (
+              <div className="px-4 pt-3">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/kunlik-reja/kun/${displayDay}/takrorlash`)}
+                  className="flex w-full items-center gap-3 rounded-[20px] border border-[#DDD7F5] bg-white px-4 py-3.5 text-left shadow-[0_10px_24px_-16px_rgba(45,27,105,0.35)] transition active:scale-[0.99]"
+                >
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-white"
+                    style={{ background: 'linear-gradient(145deg, #8B7AF7, #5B4CE0)' }}
+                  >
+                    <RotateCcw className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14.5px] font-black text-[#2D1B69]">
+                      Haftalik takrorlash
+                    </span>
+                    <span className="mt-0.5 block text-[12.5px] font-semibold text-[#8B7FAB]">
+                      {Math.max(1, displayDay - 6)}–{displayDay}-kunlar · 10 ta savol
+                    </span>
+                  </span>
+                  <span className="text-[18px] font-black text-[#5B4CE0]">→</span>
+                </button>
+              </div>
+            ) : null}
             {showFreeLimitCta ? <KunlikFreeLimitCta /> : null}
             {freeLimitModalOpen ? (
               <KunlikFreeLimitModal onClose={() => setFreeLimitModalOpen(false)} />

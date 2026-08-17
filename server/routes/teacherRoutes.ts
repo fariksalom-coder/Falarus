@@ -77,6 +77,30 @@ function teacherPublicSelect(): string {
   ].join(', ');
 }
 
+/**
+ * O'qituvchining BITTA profil sahifasi uchun tanlov.
+ *
+ * Ro'yxatdagi qisqa kartochkadan farqi — aloqa maydonlari qo'shiladi.
+ * Ular ataylab faqat shu yerda: `/teachers` ro'yxati yuzlab profilni
+ * qaytaradi va telefon/telegramni ommaviy yig'ib olishga yo'l ochmaslik
+ * kerak. Tafsilot sahifasi bitta o'qituvchini beradi va u yerda aloqa
+ * ma'lumoti sahifaning asosiy maqsadi.
+ *
+ * DIQQAT: bu ilgari VPS'da `sed` yamog'i sifatida yashardi
+ * (`ensure_free_access.sh`), repoda esa yo'q edi — ya'ni har deploy uni
+ * o'chirib yuborardi. 2026-08-17 da kodga ko'chirildi.
+ */
+function teacherDetailSelect(): string {
+  return [
+    teacherPublicSelect(),
+    'telegram_url',
+    'telegram_username',
+    'public_phone_e164',
+    'public_email',
+    'preferred_contact_method',
+  ].join(', ');
+}
+
 function teacherOwnerSelect(): string {
   return [
     teacherPublicSelect(),
@@ -450,7 +474,7 @@ export function createTeacherRoutes(
       const [{ data: profile, error }, { data: reviews }] = await Promise.all([
         supabase
           .from('teacher_profiles')
-          .select(teacherPublicSelect())
+          .select(teacherDetailSelect())
           .eq('user_id', teacherId)
           .eq('profile_status', 'active')
           .maybeSingle(),

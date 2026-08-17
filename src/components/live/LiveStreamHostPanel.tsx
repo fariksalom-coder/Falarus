@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Radio } from 'lucide-react';
+import { BellRing, Radio } from 'lucide-react';
+import { pushObunaBol, pushObunaSoni, pushQollabQuvvatlanadi, pushSinovYubor } from '../../api/push';
 import {
   cancelLiveStream,
   createLiveStream,
@@ -62,6 +63,14 @@ export default function LiveStreamHostPanel({
   const [startsAt, setStartsAt] = useState('');
   const [duration, setDuration] = useState(60);
 
+  /*
+   * Bildirishnoma holati. Efir xabari uni BOSHLAGAN supportga yuborilmaydi,
+   * shuning uchun "keldimi" degan savolga faqat shu yerdan javob bor:
+   * obuna soni nol bo'lsa xabar hech kimga bormaydi.
+   */
+  const [push, setPush] = useState<{ qurilmalar: number; odamlar: number } | null>(null);
+  const [sinov, setSinov] = useState('');
+
   const load = useCallback(async () => {
     try {
       setStreams((await listManagedStreams(token)).streams);
@@ -76,6 +85,31 @@ export default function LiveStreamHostPanel({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    // Qo'shimcha ko'rsatkich: yuklanmasa panel baribir ishlayveradi.
+    void pushObunaSoni(token).then(setPush).catch(() => undefined);
+  }, [token]);
+
+  const sinovQongiroq = async () => {
+    setSinov('Yuborilmoqda…');
+    try {
+      // Supportning o'z qurilmasi obuna bo'lmagan bo'lsa avval obuna qilamiz,
+      // aks holda sinov "0 ta yuborildi" deb qaytadi va sabab tushunarsiz bo'ladi.
+      if (pushQollabQuvvatlanadi() && Notification.permission !== 'denied') {
+        await pushObunaBol(token, true).catch(() => false);
+      }
+      const n = await pushSinovYubor(token);
+      setSinov(
+        n > 0
+          ? `${n} ta qurilmaga yuborildi — telefon ekranini tekshiring`
+          : 'Bu hisobda obuna bo‘lgan qurilma yo‘q. Bildirishnomaga ruxsat bering.',
+      );
+      setPush(await pushObunaSoni(token).catch(() => push));
+    } catch (e) {
+      setSinov(e instanceof Error ? e.message : 'Sinov yuborilmadi');
+    }
+  };
 
   const bajar = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -152,6 +186,41 @@ export default function LiveStreamHostPanel({
           </div>
         </section>
       ) : null}
+
+      {/* ── Bildirishnoma holati ── */}
+      <section className="rounded-[24px] bg-app-surface p-5 shadow-app-soft ring-1 ring-app-border">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <BellRing className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-black text-app-text">Qo‘ng‘iroq bildirishnomasi</h2>
+            <p className="mt-0.5 text-xs font-semibold text-app-text-muted">
+              {push
+                ? push.qurilmalar > 0
+                  ? `${push.odamlar} ta foydalanuvchi · ${push.qurilmalar} ta qurilma ruxsat bergan`
+                  : 'Hali hech kim ruxsat bermagan — efir xabari hech kimga bormaydi'
+                : 'Tekshirilmoqda…'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={sinovQongiroq}
+          className="mt-3.5 min-h-[44px] w-full rounded-2xl bg-app-bg-muted px-4 text-sm font-bold text-app-text transition active:scale-[0.98]"
+        >
+          Sinov qo‘ng‘irog‘ini yuborish
+        </button>
+        {sinov ? (
+          <p className="mt-2 text-xs font-semibold text-app-text-muted">{sinov}</p>
+        ) : (
+          <p className="mt-2 text-xs text-app-text-muted">
+            Efir boshlanganda xabar hammaga ketadi, lekin uni boshlagan sizga emas — shuning
+            uchun tekshirish shu tugma orqali.
+          </p>
+        )}
+      </section>
 
       {/* ── Yangi efir ── */}
       <section className="rounded-[24px] bg-app-surface p-5 shadow-app-soft ring-1 ring-app-border">

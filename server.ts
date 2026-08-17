@@ -182,7 +182,7 @@ const contentSecurityPolicy = [
  *
  * `/oqituvchilarga/` — dizayn to'plami sifatida kelgan STATIK sahifa: u o'zini
  * ishga tushirish uchun inline skriptlardan va blob orqali yuklanadigan
- * modullardan foydalanadi. Umumiy CSP faqat `index.html` ning uchta hash'iga
+ * modullardan foydalanadi. Umumiy CSP faqat `index.html` ning hash'lariga
  * ruxsat bergani uchun sahifa "Unpacking..." holatida qotib qolardi.
  *
  * Nima uchun butun sayt uchun bo'shatilmaydi: `unsafe-inline` + `unsafe-eval`
@@ -3033,6 +3033,58 @@ async function startServer() {
     return res.json(r.data);
   };
 
+  /**
+   * Efir JONLI holatga o'tganda hamma qurilmaga bildirishnoma yuboradi.
+   *
+   * Ilova ochiq bo'lganlarga qo'ng'iroq ekrani baribir chiqadi; bu esa
+   * ilovani YOPIB qo'yganlar uchun — telefon ekraniga chiqadi va bosilganda
+   * to'g'ridan-to'g'ri efirga olib kiradi.
+   *
+   * Javobni kutmaymiz: push xizmati sekin bo'lsa support "Boshlash" tugmasini
+   * bosib turib qolmasligi kerak.
+   */
+  const efirBoshlanganiniXabarQil = (natija: unknown, supportUserId: number) => {
+    const efir = natija as { status?: string; title?: string } | null;
+    if (!efir || efir.status !== 'live') return;
+
+    const xabar = {
+      title: 'Jonli efir boshlandi',
+      body: String(efir.title ?? 'Efirga qo\'shiling'),
+      url: '/jonli-efir',
+      tag: 'jonli-efir',
+    };
+
+    /*
+     * UCH MARTA, 7 soniya oralatib — telefon JIRINGLASHI uchun.
+     *
+     * Brauzer bildirishnomasi bir marta "ding" etadi va jim bo'ladi; odam
+     * telefonini cho'ntagida sezmay qolardi. Takroriy yuborish qo'ng'iroqqa
+     * yaqin taassurot beradi: bir xil `tag` + `renotify` bo'lgani uchun
+     * ekranda bittagina bildirishnoma qoladi, ammo har safar signal beradi.
+     */
+    const TAKROR = 3;
+    const ORALIQ_MS = 7000;
+
+    const yubor = (nechanchi: number) => {
+      void import('./server/services/push.service.js')
+        .then((p) => p.hammagaYubor(xabar, supportUserId))
+        .then((n) => {
+          if (n.yuborildi || n.ochirildi) {
+            console.log(
+              `[push] efir (${nechanchi}/${TAKROR}): ${n.yuborildi} ta yuborildi, ${n.ochirildi} ta o'lik obuna o'chirildi`,
+            );
+          }
+        })
+        .catch((e) => console.error('[push] efir xabari yuborilmadi:', (e as Error).message));
+    };
+
+    for (let i = 0; i < TAKROR; i += 1) {
+      if (i === 0) yubor(1);
+      // `unref` — takroriy yuborish serverning to'xtashiga to'sqinlik qilmasin.
+      else setTimeout(() => yubor(i + 1), i * ORALIQ_MS).unref?.();
+    }
+  };
+
   app.get('/api/live-streams/manage', authenticate, async (req: any, res) => {
     try {
       if (!(await supportOnly(req, res))) return;
@@ -3048,14 +3100,16 @@ async function startServer() {
     try {
       if (!(await supportOnly(req, res))) return;
       const ls = await import('./server/services/liveStream.service.js');
-      sendLive(res, await ls.createStream(supabase, {
+      const natija = await ls.createStream(supabase, {
         title: String(req.body?.title ?? ''),
         description: String(req.body?.description ?? ''),
         startsAt: req.body?.starts_at ?? null,
         durationMinutes: Number(req.body?.duration_minutes) || 60,
         startNow: req.body?.start_now === true,
         adminId: null,
-      }));
+      });
+      sendLive(res, natija);
+      if (natija.ok) efirBoshlanganiniXabarQil(natija.data, Number(req.userId));
     } catch (err) {
       console.error('[POST /api/live-streams]', (err as Error).message);
       res.status(500).json({ error: 'Efir ochilmadi' });
@@ -3067,13 +3121,96 @@ async function startServer() {
       try {
         if (!(await supportOnly(req, res))) return;
         const ls = await import('./server/services/liveStream.service.js');
-        sendLive(res, await (ls[fn] as (c: typeof supabase, id: number) => Promise<any>)(supabase, Number(req.params.id)));
+        const natija = await (ls[fn] as (c: typeof supabase, id: number) => Promise<any>)(
+          supabase,
+          Number(req.params.id),
+        );
+        sendLive(res, natija);
+        // Faqat "start" da: `endStream` va `cancelStream` natijasi `live` emas.
+        if (natija.ok) efirBoshlanganiniXabarQil(natija.data, Number(req.userId));
       } catch (err) {
         console.error(`[POST /api/live-streams/:id/${amal}]`, (err as Error).message);
         res.status(500).json({ error: 'Amal bajarilmadi' });
       }
     });
   }
+
+  /*
+   * PUSH OBUNASI — ilova yopiq bo'lganda ham efir xabari kelishi uchun.
+   * Ochiq kalit hammaga ochiq (brauzer obuna bo'lish uchun shuni so'raydi).
+   */
+  app.get('/api/push/public-key', async (_req, res) => {
+    const p = await import('./server/services/push.service.js');
+    res.json({ key: p.pushOchiqKalit(), enabled: p.pushSozlanganmi() });
+  });
+
+  app.post('/api/push/subscribe', authenticate, async (req: any, res) => {
+    try {
+      const obuna = req.body?.subscription ?? req.body;
+      const endpoint = String(obuna?.endpoint ?? '');
+      const p256dh = String(obuna?.keys?.p256dh ?? '');
+      const auth = String(obuna?.keys?.auth ?? '');
+      if (!endpoint || !p256dh || !auth) {
+        return res.status(400).json({ error: 'Obuna ma\'lumoti to\'liq emas' });
+      }
+      const p = await import('./server/services/push.service.js');
+      await p.obunaniSaqla(Number(req.userId), { endpoint, keys: { p256dh, auth } }, String(req.headers['user-agent'] ?? ''));
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[POST /api/push/subscribe]', (err as Error).message);
+      res.status(500).json({ error: 'Obuna saqlanmadi' });
+    }
+  });
+
+  app.post('/api/push/unsubscribe', authenticate, async (req: any, res) => {
+    try {
+      const endpoint = String(req.body?.endpoint ?? '');
+      if (endpoint) {
+        const p = await import('./server/services/push.service.js');
+        await p.obunaniOchir(endpoint);
+      }
+      res.json({ success: true });
+    } catch (err) {
+      console.error('[POST /api/push/unsubscribe]', (err as Error).message);
+      res.status(500).json({ error: 'Obuna o\'chirilmadi' });
+    }
+  });
+
+  /*
+   * SUPPORT UCHUN: nechta qurilma obuna bo'lgan va sinov qo'ng'irog'i.
+   *
+   * Efir xabari uni boshlagan supportga ATAYLAB yuborilmaydi, shuning uchun
+   * "ishlayaptimi" degan savolga faqat shu ikki uchidan javob topiladi:
+   * obuna soni nolga teng bo'lsa xabar hech kimga bormaydi (odamlar ruxsat
+   * bermagan), sinov esa supportning o'z telefonida ko'rinadi.
+   */
+  app.get('/api/push/stats', authenticate, async (req: any, res) => {
+    try {
+      if (!(await supportOnly(req, res))) return;
+      const p = await import('./server/services/push.service.js');
+      res.json(await p.obunaSoni());
+    } catch (err) {
+      console.error('[GET /api/push/stats]', (err as Error).message);
+      res.status(500).json({ error: 'Yuklanmadi' });
+    }
+  });
+
+  app.post('/api/push/test', authenticate, async (req: any, res) => {
+    try {
+      if (!(await supportOnly(req, res))) return;
+      const p = await import('./server/services/push.service.js');
+      const n = await p.foydalanuvchigaYubor(Number(req.userId), {
+        title: 'Sinov qo\'ng\'irog\'i',
+        body: 'Efir boshlanganda shunday bildirishnoma keladi',
+        url: '/jonli-efir',
+        tag: 'jonli-efir-sinov',
+      });
+      res.json(n);
+    } catch (err) {
+      console.error('[POST /api/push/test]', (err as Error).message);
+      res.status(500).json({ error: 'Sinov yuborilmadi' });
+    }
+  });
 
   // Support xonaga host sifatida kiradi.
   app.get('/api/live-streams/:id/room', authenticate, async (req: any, res) => {

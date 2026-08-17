@@ -1,7 +1,12 @@
 import { Router, type Request, type Response } from 'express';
 import type { DbClient } from '../types/dbClient';
 import {
+  HAMMA_MENTION_ID,
+  HAMMA_MENTION_NOMI,
   extractMentionUserIds,
+  hammaMatniniBelgiga,
+  hammaMentionBormi,
+  hammaMentionToken,
   mentionToken,
   parseMentionParts,
 } from '../../shared/communityMentions.js';
@@ -96,15 +101,33 @@ async function countUnreadMentions(
   userId: number,
   lastReadAt: string | null
 ): Promise<number> {
-  let query = supabase
-    .from('community_group_messages')
-    .select('*', { count: 'exact', head: true })
-    .eq('group_code', GROUP_CODE)
-    .neq('sender_user_id', userId)
-    .like('content', `%](${userId})%`);
-  if (lastReadAt) query = query.gt('created_at', lastReadAt);
-  const { count } = await query;
-  return Number(count ?? 0);
+  /*
+   * IKKI XIL BELGI HISOBLANADI:
+   *   `](42)` — shaxsan shu odam belgilangan;
+   *   `](0)`  — support "Hammaga" deb yozgan, ya'ni bildirishnoma hammaga.
+   *
+   * Ikkitasi alohida so'rov bilan sanaladi: bitta so'rovda OR yozish uchun
+   * PostgREST sintaksisiga tayanish kerak bo'lardi, bu esa `%` va qavslar
+   * bo'lgan naqsh bilan mo'rt. Bir xabarda ikkalasi ham bo'lsa nishon
+   * bittaga ko'p ko'rsatadi — bu zararsiz, xabar baribir bitta.
+   */
+  const sana = async (naqsh: string) => {
+    let query = supabase
+      .from('community_group_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_code', GROUP_CODE)
+      .neq('sender_user_id', userId)
+      .like('content', naqsh);
+    if (lastReadAt) query = query.gt('created_at', lastReadAt);
+    const { count } = await query;
+    return Number(count ?? 0);
+  };
+
+  const [shaxsiy, hammaga] = await Promise.all([
+    sana(`%](${userId})%`),
+    sana(`%](${HAMMA_MENTION_ID})%`),
+  ]);
+  return shaxsiy + hammaga;
 }
 
 /** Qidiruv matnidan LIKE va PostgREST ajratuvchi belgilarini olib tashlaydi. */
@@ -164,9 +187,23 @@ async function searchMembers(supabase: DbClient, excludeUserId: number, term: st
  * shunda hech kim boshqa nom bilan soxta "mention" yasay olmaydi.
  * Mavjud bo‘lmagan foydalanuvchi oddiy matnga aylanadi.
  */
-async function normalizeMentions(supabase: DbClient, content: string): Promise<string> {
+async function normalizeMentions(
+  supabase: DbClient,
+  xomMatn: string,
+  /**
+   * "Hammaga" belgisini ishlatishga ruxsat bormi (faqat support).
+   *
+   * Ruxsatsiz odam yozgan `@[Hammaga](0)` oddiy matnga aylanadi — ya'ni u
+   * hech kimga bildirishnoma yubormaydi, lekin xabari ham yo'qolmaydi.
+   */
+  hammagaRuxsat = false,
+): Promise<string> {
+  // Support "@all" deb yozgan bo'lsa — uni haqiqiy belgiga aylantiramiz.
+  const content = hammagaRuxsat ? hammaMatniniBelgiga(xomMatn) : xomMatn;
+
   const ids = extractMentionUserIds(content);
-  if (!ids.length) return content;
+  const hammaBor = hammaMentionBormi(content);
+  if (!ids.length && !hammaBor) return content;
 
   const { data: users } = await supabase
     .from('users')
@@ -181,6 +218,9 @@ async function normalizeMentions(supabase: DbClient, content: string): Promise<s
   return parseMentionParts(content)
     .map((part) => {
       if (part.type === 'text') return part.text;
+      if (part.userId === HAMMA_MENTION_ID) {
+        return hammagaRuxsat ? hammaMentionToken() : `@${HAMMA_MENTION_NOMI}`;
+      }
       const name = nameById.get(part.userId);
       if (!name) return `@${part.name}`;
       if (!kept.has(part.userId) && kept.size >= MAX_MENTIONS) return `@${name}`;
@@ -433,7 +473,12 @@ export function createCommunityRoutes(
       if (rawContent.length > MAX_CONTENT) {
         return res.status(400).json({ error: `Xabar ${MAX_CONTENT} belgidan oshmasin` });
       }
-      const content = await normalizeMentions(supabase, rawContent);
+      // "Hammaga" bildirishnomasini FAQAT support yubora oladi.
+      const content = await normalizeMentions(
+        supabase,
+        rawContent,
+        await moderatormi(supabase, userId),
+      );
       if (content.length > MAX_CONTENT) {
         return res.status(400).json({ error: `Xabar ${MAX_CONTENT} belgidan oshmasin` });
       }
@@ -571,7 +616,8 @@ export function createCommunityRoutes(
       const { error } = await supabase
         .from('community_group_messages')
         .update({
-          content: await normalizeMentions(supabase, content),
+          // Tahrirlovchi — moderator, ya'ni "Hammaga" belgisi unga ochiq.
+          content: await normalizeMentions(supabase, content, true),
           edited_at: new Date().toISOString(),
           moderated_by: mod.name,
         })

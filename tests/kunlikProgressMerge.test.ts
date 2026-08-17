@@ -5,6 +5,7 @@ import { mergeKunlikDayPatch } from '../shared/kunlikProgressMerge';
 
 const base = {
   grammar_1: true,
+  grammar_correct: 0,
   grammar_2: true,
   grammar_3: true,
   words_learned: 8,

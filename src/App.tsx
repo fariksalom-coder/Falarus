@@ -112,6 +112,10 @@ function AppRoutes() {
             <Route path="kunlik-reja" element={<KunlikRejaRedirect />} />
             <Route path="kunlik-reja/xarita" element={renderLazyPage('./pages/DailyCourseMapPage.tsx')} />
             <Route
+              path="kunlik-reja/kun/:dayNum/takrorlash"
+              element={renderLazyPage('./pages/KunlikTakrorlashPage.tsx')}
+            />
+            <Route
               path="kunlik-reja/kun/:dayNum/grammatika/test-variantlar"
               element={renderLazyPage('./pages/DailyGrammarRuleMcqPage.tsx')}
             />

@@ -1,5 +1,7 @@
 export type KunlikDayPatchFields = {
   grammar_1?: boolean;
+  /** Grammatika testidagi to'g'ri javoblar — server tekshirib yozadi. */
+  grammar_correct?: number;
   grammar_2?: boolean;
   grammar_3?: boolean;
   words_learned?: number;
@@ -15,6 +17,7 @@ export type KunlikDayPatchFields = {
 
 export type KunlikDayProgressFields = {
   grammar_1: boolean;
+  grammar_correct: number;
   grammar_2: boolean;
   grammar_3: boolean;
   words_learned: number;
@@ -32,7 +35,8 @@ const BOOL_KEYS = [
   'grammar_1', 'grammar_2', 'grammar_3', 'words_match', 'phrases_done', 'oqish_done',
 ] as const;
 const MAX_KEYS = [
-  'words_learned', 'words_correct', 'phrases_correct', 'text_questions_correct', 'speaking_tasks_done', 'speaking_level',
+  'words_learned', 'words_correct', 'grammar_correct', 'phrases_correct', 'text_questions_correct',
+  'speaking_tasks_done', 'speaking_level',
 ] as const;
 
 /** Progress only moves forward — repeats must not clear completed stages or lower scores. */
