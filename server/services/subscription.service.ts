@@ -2,13 +2,10 @@ import type { DbClient } from '../types/dbClient';
 import { resolveFreeVocabularyIds } from '../lib/freeVocabularyIds';
 import {
   isPaymentProductCode,
-  normalizePaymentProductCode,
   SUBSCRIPTION_PRODUCT_CODE,
   type CourseProductCode,
 } from '../../shared/paymentProducts.js';
-import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import {
-  readFalarusProductFromProofUrl,
   resolveApprovedCourseProduct,
 } from '../../shared/paymentsProofUrl.js';
 import { LruTtlCache } from '../lib/lruCache.js';
@@ -165,34 +162,13 @@ export async function hasActiveAccess(
     const expiry = new Date(user.plan_expires_at as string);
     if (Number.isFinite(expiry.getTime()) && expiry > new Date()) return true;
   }
-  const { data: approvedPayment, error: payErr } = await supabase
+  const { data: approvedPayment } = await supabase
     .from('payments')
     .select('id, product_code, approved_at, tariff_type')
     .eq('user_id', uid)
     .eq('status', 'approved')
     .order('approved_at', { ascending: false })
     .limit(10);
-  if (payErr && isPaymentsProductCodeSchemaError(payErr)) {
-    const { data: legacyRows } = await supabase
-      .from('payments')
-      .select('payment_proof_url, approved_at, tariff_type')
-      .eq('user_id', uid)
-      .eq('status', 'approved')
-      .order('approved_at', { ascending: false })
-      .limit(30);
-    return (legacyRows ?? []).some(
-      (r: {
-        payment_proof_url?: string | null;
-        approved_at?: string | null;
-        tariff_type?: string | null;
-      }) => {
-        const inferred = readFalarusProductFromProofUrl(r.payment_proof_url ?? undefined);
-        if (!inferred) return false;
-        if (normalizePaymentProductCode(inferred) !== SUBSCRIPTION_PRODUCT_CODE) return false;
-        return approvedPaymentStillCovers(r.approved_at, r.tariff_type);
-      }
-    );
-  }
   return (approvedPayment ?? []).some(
     (row: {
       product_code?: string | null;
@@ -211,27 +187,13 @@ export async function hasApprovedCourseAccess(
 ): Promise<boolean> {
   const uid = Number(userId);
   if (!Number.isFinite(uid)) return false;
-  const selectWithProduct =
-    'id, product_code, payment_proof_url, amount, currency';
-  const selectLegacy = 'id, payment_proof_url, amount, currency';
-  let { data: rows, error } = await supabase
+  const { data: rows, error } = await supabase
     .from('payments')
-    .select(selectWithProduct)
+    .select('id, product_code, payment_proof_url, amount, currency')
     .eq('user_id', uid)
     .eq('status', 'approved')
     .order('approved_at', { ascending: false })
     .limit(30);
-  if (error && isPaymentsProductCodeSchemaError(error)) {
-    const legacy = await supabase
-      .from('payments')
-      .select(selectLegacy)
-      .eq('user_id', uid)
-      .eq('status', 'approved')
-      .order('approved_at', { ascending: false })
-      .limit(30);
-    rows = legacy.data as typeof rows;
-    error = legacy.error;
-  }
   if (error) throw error;
   return (rows ?? []).some((row) => resolveApprovedCourseProduct(row) === productCode);
 }

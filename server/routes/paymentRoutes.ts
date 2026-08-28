@@ -25,7 +25,6 @@ import {
   shouldSkipClickSignatureVerify,
   verifyClickSignature,
 } from '../../shared/clickPayments.js';
-import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { embedFalarusProductInProofUrl } from '../../shared/paymentsProofUrl.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
 import { invalidateAccessCache } from '../services/subscription.service.js';
@@ -111,7 +110,7 @@ export function createPaymentRoutes(
         });
       }
 
-      let { data: pending, error: pendingErr } = await supabase
+      let { data: pending } = await supabase
         .from('payments')
         .select('id, payment_channel, payment_proof_url, amount, created_at, payment_time')
         .eq('user_id', userId)
@@ -119,9 +118,6 @@ export function createPaymentRoutes(
         .eq('product_code', productCode)
         .limit(1)
         .maybeSingle();
-      if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
-        pending = null;
-      }
       if (pending && isExpiredGatewayPending(pending as any)) {
         await supabase
           .from('payments')
@@ -185,20 +181,11 @@ export function createPaymentRoutes(
         payment_channel: 'click_button',
       };
 
-      let { data: row, error: insertErr } = await supabase
+      const { data: row, error: insertErr } = await supabase
         .from('payments')
         .insert({ ...insertBase, product_code: productCode })
         .select('id')
         .single();
-      if (insertErr && isPaymentsProductCodeSchemaError(insertErr)) {
-        const legacyBase = {
-          ...insertBase,
-          tariff_type: 'three_month',
-        };
-        const legacyIns = await supabase.from('payments').insert(legacyBase).select('id').single();
-        row = legacyIns.data;
-        insertErr = legacyIns.error;
-      }
       if (insertErr || !row) {
         return res.status(500).json({ error: insertErr?.message || 'To‘lov yaratilmadi' });
       }
@@ -289,7 +276,7 @@ export function createPaymentRoutes(
         }
       }
 
-      let { data: pending, error: pendingErr } = await supabase
+      let { data: pending } = await supabase
         .from('payments')
         .select('id, payment_channel, created_at, payment_time')
         .eq('user_id', userId)
@@ -297,18 +284,6 @@ export function createPaymentRoutes(
         .eq('product_code', productCode)
         .limit(1)
         .maybeSingle();
-      if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
-        // `payment_channel` ham olinadi: usiz quyidagi «chek tugatilmagan
-        // checkoutdan ustun» qoidasi eski sxemada hech qachon ishlamasdi.
-        const legacy = await supabase
-          .from('payments')
-          .select('id, payment_channel, created_at, payment_time')
-          .eq('user_id', userId)
-          .eq('status', 'pending')
-          .limit(1)
-          .maybeSingle();
-        pending = legacy.data as any;
-      }
       if (pending && isExpiredGatewayPending(pending as any)) {
         await supabase
           .from('payments')
@@ -419,25 +394,11 @@ export function createPaymentRoutes(
           payment_channel: 'manual',
           status: 'pending' as const,
         };
-        let { data: row, error: insertErr } = await supabase
+        const { data: row, error: insertErr } = await supabase
           .from('payments')
           .insert({ ...insertBase, product_code: productCode })
           .select('id')
           .single();
-        if (insertErr && isPaymentsProductCodeSchemaError(insertErr)) {
-          const proofUrl =
-            productCode === 'russian'
-              ? paymentProofUrl
-              : embedFalarusProductInProofUrl(paymentProofUrl, productCode);
-          const legacyBase = {
-            ...insertBase,
-            payment_proof_url: proofUrl,
-            tariff_type: productCode === 'russian' ? tariff_type : 'three_month',
-          };
-          const legacyIns = await supabase.from('payments').insert(legacyBase).select('id').single();
-          row = legacyIns.data;
-          insertErr = legacyIns.error;
-        }
         if (insertErr) {
           console.error('[payments insert]', insertErr);
           return res.status(500).json({ error: insertErr.message });
@@ -629,22 +590,13 @@ export function createClickMerchantRoutes(
       );
     }
 
-    let { data: payment, error } = await supabase
+    const { data: payment, error } = await supabase
       .from('payments')
       .select(
         'id, user_id, tariff_type, product_code, amount, status, payment_proof_url, click_merchant_payment_id'
       )
       .eq('id', paymentIdSafe)
       .maybeSingle();
-    if (error && isPaymentsProductCodeSchemaError(error)) {
-      const legacy = await supabase
-        .from('payments')
-        .select('id, user_id, tariff_type, amount, status, payment_proof_url, click_merchant_payment_id')
-        .eq('id', paymentIdSafe)
-        .maybeSingle();
-      payment = legacy.data as any;
-      error = legacy.error;
-    }
     if (error || !payment) {
       void audit('not_found', { signatureValid, note: error?.message ?? 'no row' });
       return res.status(200).json(

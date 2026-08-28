@@ -22,7 +22,6 @@ import {
 import {
   decryptCardTokenPlaintext,
 } from '../../shared/cardTokenCrypto.js';
-import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import {
   activateRussianSubscription,
 } from '../../shared/paymentActivation.js';
@@ -102,7 +101,7 @@ async function userHasPendingPaymentForProduct(
   userId: number,
   productCode: PaymentProductCode
 ): Promise<boolean> {
-  let q = supabase
+  const { data: pending } = await supabase
     .from('payments')
     .select('id, payment_channel, created_at, payment_time')
     .eq('user_id', userId)
@@ -110,17 +109,6 @@ async function userHasPendingPaymentForProduct(
     .eq('product_code', productCode)
     .limit(1)
     .maybeSingle();
-  let { data: pending, error } = await q;
-  if (error && isPaymentsProductCodeSchemaError(error)) {
-    const legacy = await supabase
-      .from('payments')
-      .select('id, payment_channel, created_at, payment_time')
-      .eq('user_id', userId)
-      .eq('status', 'pending')
-      .limit(1)
-      .maybeSingle();
-    pending = legacy.data;
-  }
   if (pending && isExpiredClickPending(pending as any)) {
     await supabase
       .from('payments')
@@ -228,23 +216,11 @@ async function insertClickTokenPaymentPending(
     status: 'pending',
     payment_channel: params.paymentChannel,
   };
-  let { data: row, error } = await supabase
+  const { data: row, error } = await supabase
     .from('payments')
     .insert({ ...insertBase, product_code: params.productCode })
     .select('id')
     .single();
-  if (error && isPaymentsProductCodeSchemaError(error)) {
-    const legacyIns = await supabase
-      .from('payments')
-      .insert({
-        ...insertBase,
-        tariff_type: params.tariffType ?? 'three_month',
-      })
-      .select('id')
-      .single();
-    row = legacyIns.data;
-    error = legacyIns.error;
-  }
   if (error || !row) throw error ?? new Error('Payment yozilmadi');
   const paymentId = Number((row as { id: number }).id);
   await supabase

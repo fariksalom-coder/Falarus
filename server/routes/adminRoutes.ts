@@ -393,8 +393,6 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.get('/referrals/withdrawals', (req, res, next) => ctrl.getWithdrawals(req, res).catch(next));
   router.post('/referrals/:id/approve', (req, res, next) => ctrl.approveWithdrawal(req, res).catch(next));
   router.post('/referrals/:id/reject', (req, res, next) => ctrl.rejectWithdrawal(req, res).catch(next));
-  router.get('/support', (req, res, next) => ctrl.getSupportMessages(req, res).catch(next));
-  router.post('/support/:id/reply', (req, res, next) => ctrl.replySupport(req, res).catch(next));
   router.get('/help/broadcast-preview', (req, res, next) => ctrl.getHelpBroadcastPreview(req, res).catch(next));
   router.post('/help/broadcast', (req, res, next) => ctrl.postHelpBroadcast(req, res).catch(next));
   router.post('/help/users/:userId/messages', (req, res, next) => ctrl.sendHelpDirectUserMessage(req, res).catch(next));

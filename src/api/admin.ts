@@ -460,17 +460,6 @@ export async function rejectWithdrawal(id: number): Promise<void> {
   });
 }
 
-export async function getSupportMessages(): Promise<AdminSupportRow[]> {
-  return adminApi<AdminSupportRow[]>('/support');
-}
-
-export async function replySupport(id: number, reply: string): Promise<void> {
-  await adminApi(`/support/${id}/reply`, {
-    method: 'POST',
-    body: JSON.stringify({ reply }),
-  });
-}
-
 export async function getAdminHelpChats(): Promise<AdminHelpChatListRow[]> {
   return adminApi<AdminHelpChatListRow[]>('/help/chats');
 }

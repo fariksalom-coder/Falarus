@@ -4,7 +4,6 @@ import {
   isSubscriptionTariffType,
   type PaymentProductCode,
 } from '../../shared/paymentProducts.js';
-import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
 import { invalidateAccessCache } from './subscription.service.js';
 
@@ -243,16 +242,12 @@ export async function confirmStorePurchase(
   const verifiedTransactionId = appleVerification?.transactionId ?? purchaseId;
   const proofUrl = `store:${verificationSource}:${verifiedTransactionId}:${storeProductId}`;
 
-  let { data: existing, error: existingErr } = await supabase
+  const { data: existing, error: existingErr } = await supabase
     .from('payments')
     .select('id, status')
     .eq('payment_proof_url', proofUrl)
     .limit(1)
     .maybeSingle();
-  if (existingErr && isPaymentsProductCodeSchemaError(existingErr)) {
-    existing = null;
-    existingErr = null;
-  }
   if (existingErr) {
     return { status: 500, json: { error: existingErr.message } };
   }
@@ -289,23 +284,11 @@ export async function confirmStorePurchase(
       isApple ? 'app_store' : 'google_play',
   };
 
-  let { data: row, error: insertErr } = await supabase
+  const { data: row, error: insertErr } = await supabase
     .from('payments')
     .insert({ ...insertBase, product_code: mapped.productCode })
     .select('id')
     .single();
-  if (insertErr && isPaymentsProductCodeSchemaError(insertErr)) {
-    const legacyInsert = await supabase
-      .from('payments')
-      .insert({
-        ...insertBase,
-        tariff_type: mapped.productCode === 'russian' ? tariffType : 'three_month',
-      })
-      .select('id')
-      .single();
-    row = legacyInsert.data as typeof row;
-    insertErr = legacyInsert.error;
-  }
   if (insertErr || !row) {
     return {
       status: 500,

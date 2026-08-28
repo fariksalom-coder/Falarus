@@ -19,7 +19,6 @@ import {
   isSubscriptionTariffType,
   normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
-import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
 import { getTeacherListingPriceUzs, getTeacherTrialPriceUzs } from '../../shared/paymentProducts.js';
 import {
@@ -123,7 +122,7 @@ export async function createRahmatMulticardPayment(
     }
   }
 
-  let { data: pending, error: pendingErr } = await supabase
+  let { data: pending } = await supabase
     .from('payments')
     .select('id, payment_channel, payment_proof_url, amount, created_at, payment_time')
     .eq('user_id', userId)
@@ -131,9 +130,6 @@ export async function createRahmatMulticardPayment(
     .eq('product_code', productCode)
     .limit(1)
     .maybeSingle();
-  if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
-    pending = null;
-  }
   if (pending && isExpiredRahmatPending(pending as Parameters<typeof isExpiredRahmatPending>[0])) {
     await supabase
       .from('payments')
@@ -218,23 +214,11 @@ export async function createRahmatMulticardPayment(
     multicard_invoice_uuid: null,
   };
 
-  let { data: row, error: insertErr } = await supabase
+  const { data: row, error: insertErr } = await supabase
     .from('payments')
     .insert({ ...insertBase, product_code: productCode })
     .select('id')
     .single();
-  if (insertErr && isPaymentsProductCodeSchemaError(insertErr)) {
-    const legacyIns = await supabase
-      .from('payments')
-      .insert({
-        ...insertBase,
-        tariff_type: productCode === 'russian' ? russianTariffType : 'three_month',
-      })
-      .select('id')
-      .single();
-    row = legacyIns.data;
-    insertErr = legacyIns.error;
-  }
   if (insertErr || !row) {
     return { status: 500, json: { error: insertErr?.message || 'To‘lov yaratilmadi' } };
   }
@@ -372,20 +356,11 @@ export async function handleRahmatMulticardCallback(
     return { status: 400, json: { success: false, message: 'Invalid amount' } };
   }
 
-  let { data: payment, error } = await supabase
+  const { data: payment, error } = await supabase
     .from('payments')
     .select('id, user_id, tariff_type, product_code, amount, status, payment_channel, multicard_invoice_uuid')
     .eq('id', paymentId)
     .maybeSingle();
-  if (error && isPaymentsProductCodeSchemaError(error)) {
-    const legacy = await supabase
-      .from('payments')
-      .select('id, user_id, tariff_type, amount, status, payment_channel, multicard_invoice_uuid')
-      .eq('id', paymentId)
-      .maybeSingle();
-    payment = legacy.data as typeof payment;
-    error = legacy.error;
-  }
   if (error || !payment) {
     void audit('not_found', { signatureValid: sigOk });
     return { status: 400, json: { success: false, message: 'Invoice not found' } };

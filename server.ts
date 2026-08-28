@@ -46,7 +46,6 @@ const AUTH_USER_SELECT =
   'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at, account_type, avatar_url, gender';
 
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
-import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
 import {
@@ -244,18 +243,6 @@ const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
 const USER_PROFILE_SELECT_FULL =
   'id, first_name, last_name, email, phone, level, onboarded, onboarding_completed, progress, plan_name, plan_expires_at, billing_notice_uz, account_type, avatar_url, gender, password';
-const USER_PROFILE_SELECT_LEGACY =
-  'id, first_name, last_name, email, phone, level, onboarded, progress, avatar_url, gender, password';
-
-function isUserProfileSchemaError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const code = 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
-  const message = 'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
-  if (code === 'PGRST204' || code === 'PGRST205' || code === '42703') return true;
-  const lower = message.toLowerCase();
-  return lower.includes('schema cache') || lower.includes('does not exist');
-}
-
 function isDatabaseNoRowsError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const code = 'code' in error ? (error as { code?: unknown }).code : null;
@@ -263,20 +250,11 @@ function isDatabaseNoRowsError(error: unknown): boolean {
 }
 
 async function fetchUserProfileById(userId: number) {
-  let { data: user, error } = await supabase
+  const { data: user, error } = await supabase
     .from('users')
     .select(USER_PROFILE_SELECT_FULL)
     .eq('id', userId)
     .maybeSingle();
-  if (error && isUserProfileSchemaError(error)) {
-    const legacy = await supabase
-      .from('users')
-      .select(USER_PROFILE_SELECT_LEGACY)
-      .eq('id', userId)
-      .maybeSingle();
-    user = legacy.data as typeof user;
-    error = legacy.error;
-  }
   return { user, error };
 }
 
@@ -1713,22 +1691,11 @@ async function startServer() {
     try {
       const PAY_FULL =
         'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at';
-      const PAY_LEGACY =
-        'id, tariff_type, currency, amount, payment_proof_url, created_at, status, approved_at';
-      let { data: rows, error } = await supabase
+      const { data: rows, error } = await supabase
         .from('payments')
         .select(PAY_FULL)
         .eq('user_id', req.userId)
         .order('created_at', { ascending: false });
-      if (error && isPaymentsProductCodeSchemaError(error)) {
-        const second = await supabase
-          .from('payments')
-          .select(PAY_LEGACY)
-          .eq('user_id', req.userId)
-          .order('created_at', { ascending: false });
-        rows = second.data as typeof rows;
-        error = second.error;
-      }
       if (error) {
         const msg =
           error && typeof error === 'object' && 'message' in error && typeof (error as { message: unknown }).message === 'string'
@@ -1791,13 +1758,6 @@ async function startServer() {
   // /api/support was removed when standalone support flow was replaced by
   // the help-chat (/api/help/chats/*). The route was already gated by 410
   // middleware above; the handler below is dead and has been removed.
-
-  function isMissingSupportChatSchemaError(error: unknown): boolean {
-    const message = typeof error === 'object' && error && 'message' in error
-      ? String((error as { message?: unknown }).message ?? '')
-      : String(error ?? '');
-    return message.includes('support_chats') || message.includes('support_chat_messages');
-  }
 
   app.get('/api/help/chats', authenticate, async (req: any, res) => {
     try {
@@ -1862,39 +1822,6 @@ async function startServer() {
         },
       ]);
     } catch (e: any) {
-      if (isMissingSupportChatSchemaError(e)) {
-        const { data: lastSupportRows } = await supabase
-          .from('support_messages')
-          .select('id, message, reply, created_at, answered_at, status')
-          .eq('user_id', Number(req.userId))
-          .order('created_at', { ascending: false })
-          .limit(1);
-        const last = lastSupportRows?.[0] ?? null;
-        const lastMessageAt = last ? String(last.answered_at ?? last.created_at) : null;
-        const lastMessageContent = last
-          ? String(last.reply ?? last.message)
-          : null;
-        const unreadCount = last?.status === 'answered' && !last?.reply ? 0 : 0;
-        return res.json([
-          {
-            id: -1,
-            title: 'Admin',
-            status: 'open',
-            created_at: new Date(0).toISOString(),
-            updated_at: lastMessageAt ?? new Date(0).toISOString(),
-            last_message_at: lastMessageAt,
-            last_message: lastMessageContent
-              ? {
-                  id: Number(last.id ?? 0),
-                  content: lastMessageContent,
-                  sender_type: last?.reply ? 'admin' : 'user',
-                  created_at: lastMessageAt ?? String(last.created_at),
-                }
-              : null,
-            unread_count: unreadCount,
-          },
-        ]);
-      }
       console.error('[GET /api/help/chats]', e);
       return res.status(500).json({ error: e?.message || 'Xatolik' });
     }
@@ -1904,50 +1831,6 @@ async function startServer() {
     const userId = Number(req.userId);
     const chatId = Number(req.params.chatId);
     if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
-    if (chatId === -1) {
-      const { data: rows, error } = await supabase
-        .from('support_messages')
-        .select('id, message, reply, created_at, answered_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true })
-        .limit(200);
-      if (error) return res.status(500).json({ error: error.message });
-      const mapped = (rows ?? []).flatMap((r: any) => {
-        const rawMessage = String(r.message ?? '');
-        const userMessage = rawMessage.startsWith('[ADMIN_NOTE]')
-          ? []
-          : [{
-              id: Number(r.id) * 2,
-              chat_id: -1,
-              sender_type: 'user',
-              sender_user_id: userId,
-              content: rawMessage,
-              created_at: String(r.created_at),
-            }];
-        const adminMessage = r.reply
-          ? [{
-              id: Number(r.id) * 2 + 1,
-              chat_id: -1,
-              sender_type: 'admin',
-              sender_user_id: null,
-              content: String(r.reply),
-              created_at: String(r.answered_at ?? r.created_at),
-            }]
-          : rawMessage.startsWith('[ADMIN_NOTE]')
-            ? [{
-                id: Number(r.id) * 2 + 1,
-                chat_id: -1,
-                sender_type: 'admin',
-                sender_user_id: null,
-                content: rawMessage.slice('[ADMIN_NOTE]'.length).trim(),
-                created_at: String(r.created_at),
-              }]
-            : [];
-        return [...userMessage, ...adminMessage];
-      });
-      return res.json(mapped);
-    }
-
     const { data: chat, error: chatErr } = await supabase
       .from('support_chats')
       .select('id, user_id')
@@ -2031,23 +1914,6 @@ async function startServer() {
       if (!imageUrl) return res.status(500).json({ error: 'Rasm URL olinmadi' });
       const content = `${HELP_IMAGE_PREFIX}${imageUrl}`;
 
-      if (chatId === -1) {
-        const { data: created, error } = await supabase
-          .from('support_messages')
-          .insert({ user_id: userId, message: content, status: 'new' })
-          .select('id, message, created_at')
-          .single();
-        if (error || !created) return res.status(500).json({ error: error?.message || 'Rasm yuborilmadi' });
-        return res.status(201).json({
-          id: Number((created as any).id) * 2,
-          chat_id: -1,
-          sender_type: 'user',
-          sender_user_id: userId,
-          content: String((created as any).message),
-          created_at: String((created as any).created_at),
-        });
-      }
-
       const { data: chat, error: chatErr } = await supabase
         .from('support_chats')
         .select('id, user_id')
@@ -2082,27 +1948,6 @@ async function startServer() {
     const content = String(req.body?.content ?? '').trim();
     if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
     if (!content) return res.status(400).json({ error: 'Xabar bo‘sh' });
-    if (chatId === -1) {
-      const { data: created, error } = await supabase
-        .from('support_messages')
-        .insert({
-          user_id: userId,
-          message: content,
-          status: 'new',
-        })
-        .select('id, message, created_at')
-        .single();
-      if (error || !created) return res.status(500).json({ error: error?.message || 'Xabar yuborilmadi' });
-      return res.status(201).json({
-        id: Number((created as any).id) * 2,
-        chat_id: -1,
-        sender_type: 'user',
-        sender_user_id: userId,
-        content: String((created as any).message),
-        created_at: String((created as any).created_at),
-      });
-    }
-
     const { data: chat, error: chatErr } = await supabase
       .from('support_chats')
       .select('id, user_id')
@@ -2138,7 +1983,6 @@ async function startServer() {
     const userId = Number(req.userId);
     const chatId = Number(req.params.chatId);
     if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
-    if (chatId === -1) return res.json({ success: true });
 
     const { data: chat, error: chatErr } = await supabase
       .from('support_chats')

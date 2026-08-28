@@ -10,7 +10,6 @@ import {
   isSubscriptionTariffType,
 } from '../../shared/paymentProducts.js';
 import { inferPaymentProviderFromProofUrl } from '../../shared/clickPayments.js';
-import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
 import { clickPaymentRefund, isClickMerchantSuccess } from '../../shared/clickMerchantClient.js';
 import { getClickConfig } from '../../shared/clickConfig.js';
@@ -162,19 +161,10 @@ async function collectBroadcastRecipientIds(
 export function createAdminController(supabase: DbClient) {
   /** Default 7 days (same order of magnitude as user JWT) — override via ADMIN_JWT_EXPIRES_SECONDS. */
   const tokenTtlSeconds = Number(process.env.ADMIN_JWT_EXPIRES_SECONDS || 60 * 60 * 24 * 7);
-  const SUPPORT_ADMIN_NOTE_MARKER = '[ADMIN_NOTE]';
   const HELP_IMAGE_PREFIX = '__image__:';
   const HELP_CHAT_MEDIA_BUCKET = 'help-chat-media';
   const ADMIN_USERS_SELECT_FULL =
     'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, total_referral_earned, referred_by, account_type, is_golden';
-  const ADMIN_USERS_SELECT_LEGACY =
-    'id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, total_referral_earned, referred_by, account_type';
-
-  function isUndefinedColumnError(error: unknown): boolean {
-    const msg = String((error as { message?: unknown })?.message ?? '').toLowerCase();
-    const code = String((error as { code?: unknown })?.code ?? '');
-    return code === '42703' || (msg.includes('column') && msg.includes('does not exist'));
-  }
 
   function isMissingRelationError(error: unknown): boolean {
     const msg = String((error as { message?: unknown })?.message ?? '').toLowerCase();
@@ -182,23 +172,6 @@ export function createAdminController(supabase: DbClient) {
     return code === '42P01' || (msg.includes('relation') && msg.includes('does not exist'));
   }
 
-  function isMissingSupportChatSchemaError(error: unknown): boolean {
-    const message = typeof error === 'object' && error && 'message' in error
-      ? String((error as { message?: unknown }).message ?? '')
-      : String(error ?? '');
-    return message.includes('support_chats') || message.includes('support_chat_messages');
-  }
-
-  function isAdminUsersSchemaError(error: unknown): boolean {
-    const msg = String((error as { message?: unknown })?.message ?? '').toLowerCase();
-    const code = String((error as { code?: unknown })?.code ?? '');
-    return (
-      code === '42703' ||
-      (msg.includes('column') &&
-        msg.includes('does not exist') &&
-        (msg.includes('total_points') || msg.includes('total_referral_earned') || msg.includes('referral_balance')))
-    );
-  }
   // --- Login (no auth)
   async function login(req: Request, res: Response) {
     const { email, password } = req.body || {};
@@ -502,39 +475,7 @@ export function createAdminController(supabase: DbClient) {
 
     const firstRes = await q;
     let rows: any[] | null = (firstRes.data as any[] | null) ?? null;
-    let error = firstRes.error;
-    if (error && isAdminUsersSchemaError(error)) {
-      let legacyQ = supabase
-        .from('users')
-        .select(ADMIN_USERS_SELECT_LEGACY)
-        .order('created_at', { ascending: false });
-      if (registered === 'today') {
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        legacyQ = legacyQ.gte('created_at', todayStart.toISOString());
-      } else if (registered === 'week') {
-        const d = new Date();
-        d.setDate(d.getDate() - 7);
-        legacyQ = legacyQ.gte('created_at', d.toISOString());
-      } else if (registered === 'month') {
-        const d = new Date();
-        d.setMonth(d.getMonth() - 1);
-        legacyQ = legacyQ.gte('created_at', d.toISOString());
-      }
-      if (subscription === 'none') {
-        legacyQ = legacyQ.or('plan_expires_at.is.null,plan_expires_at.lt.' + now);
-      } else if (subscription === 'monthly') {
-        legacyQ = legacyQ.eq('plan_name', '1 OY').gt('plan_expires_at', now);
-      } else if (subscription === 'yearly') {
-        legacyQ = legacyQ.eq('plan_name', '1 YIL').gt('plan_expires_at', now);
-      }
-      if (referralOnly) {
-        legacyQ = legacyQ.not('referred_by', 'is', null);
-      }
-      const legacyRes = await legacyQ;
-      rows = (legacyRes.data as any[] | null) ?? null;
-      error = legacyRes.error;
-    }
+    const error = firstRes.error;
     if (error) {
       console.error('[admin/users]', error);
       return res.status(500).json({ error: error.message });
@@ -666,16 +607,11 @@ export function createAdminController(supabase: DbClient) {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: 'Invalid user id' });
 
-    let { data: user, error: userErr } = await supabase
+    const { data: user, error: userErr } = await supabase
       .from('users')
       .select(ADMIN_USERS_SELECT_FULL)
       .eq('id', id)
       .single();
-    if (userErr && isAdminUsersSchemaError(userErr)) {
-      const legacy = await supabase.from('users').select(ADMIN_USERS_SELECT_LEGACY).eq('id', id).single();
-      user = legacy.data as typeof user;
-      userErr = legacy.error;
-    }
     if (userErr || !user) return res.status(404).json({ error: 'User topilmadi' });
     // OLTIN A'ZO — admin uni ocholmaydi ham (yo'q kabi ko'rinadi).
     if ((user as { is_golden?: boolean }).is_golden) {
@@ -713,21 +649,7 @@ export function createAdminController(supabase: DbClient) {
   async function getPayments(_req: Request, res: Response) {
     const PAY_EXTENDED =
       'id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, approved_at, created_at, payment_channel, click_merchant_payment_id, fiscal_status, fiscal_receipt_id';
-    const PAY_FULL =
-      'id, user_id, tariff_type, product_code, currency, payment_proof_url, payment_time, status, approved_at, created_at';
-    const PAY_LEGACY =
-      'id, user_id, tariff_type, currency, payment_proof_url, payment_time, status, approved_at, created_at';
-    let { data: rows, error } = await supabase.from('payments').select(PAY_EXTENDED).order('created_at', { ascending: false });
-    if (error && (isPaymentsProductCodeSchemaError(error) || isUndefinedColumnError(error))) {
-      const second = await supabase.from('payments').select(PAY_FULL).order('created_at', { ascending: false });
-      rows = second.data as typeof rows;
-      error = second.error;
-    }
-    if (error && isPaymentsProductCodeSchemaError(error)) {
-      const third = await supabase.from('payments').select(PAY_LEGACY).order('created_at', { ascending: false });
-      rows = third.data as typeof rows;
-      error = third.error;
-    }
+    const { data: rows, error } = await supabase.from('payments').select(PAY_EXTENDED).order('created_at', { ascending: false });
     if (error) {
       console.error('[admin/payments]', error);
       return res.status(500).json({ error: error.message });
@@ -779,22 +701,12 @@ export function createAdminController(supabase: DbClient) {
       const adminId = (req as any).adminId;
       if (!id) return res.status(400).json({ error: 'Invalid payment id' });
 
-      let { data: row, error: fetchErr } = await supabase
+      const { data: row, error: fetchErr } = await supabase
         .from('payments')
         .select('user_id, tariff_type, product_code, payment_channel, payment_proof_url')
         .eq('id', id)
         .eq('status', 'pending')
         .single();
-      if (fetchErr && isPaymentsProductCodeSchemaError(fetchErr)) {
-        const second = await supabase
-          .from('payments')
-          .select('user_id, tariff_type, payment_proof_url, payment_channel')
-          .eq('id', id)
-          .eq('status', 'pending')
-          .single();
-        row = second.data as unknown as typeof row;
-        fetchErr = second.error;
-      }
       if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi yoki tasdiqlangan' });
 
       if (String((row as any).payment_channel ?? '') === 'click_button') {
@@ -961,13 +873,7 @@ export function createAdminController(supabase: DbClient) {
   async function getSubscriptions(_req: Request, res: Response) {
     const SUB_FULL =
       'id, user_id, plan_type, status, started_at, expires_at, next_payment_date, auto_payment_enabled, card_token_id, auto_payment_retry_count, auto_payment_last_error';
-    const SUB_LEGACY = 'id, user_id, plan_type, status, started_at, expires_at';
-    let { data: rows, error } = await supabase.from('subscriptions').select(SUB_FULL).order('expires_at', { ascending: false });
-    if (error && isUndefinedColumnError(error)) {
-      const second = await supabase.from('subscriptions').select(SUB_LEGACY).order('expires_at', { ascending: false });
-      rows = second.data as typeof rows;
-      error = second.error;
-    }
+    const { data: rows, error } = await supabase.from('subscriptions').select(SUB_FULL).order('expires_at', { ascending: false });
     if (error) {
       console.error('[admin/subscriptions]', error);
       return res.status(500).json({ error: error.message });
@@ -1142,138 +1048,14 @@ export function createAdminController(supabase: DbClient) {
     return res.json({ success: true });
   }
 
-  // --- Support messages
-  async function getSupportMessages(_req: Request, res: Response) {
-    const { data: rows, error } = await supabase
-      .from('support_messages')
-      .select('id, user_id, message, status, created_at, answered_at, reply')
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('[admin/support]', error);
-      return res.status(500).json({ error: error.message });
-    }
-    const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id))];
-    const { data: users } = await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds);
-    const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
-
-    const list = (rows ?? []).map((r: any) => ({
-      id: r.id,
-      user_id: r.user_id,
-      user: userMap.get(r.user_id) ? [userMap.get(r.user_id)!.first_name, userMap.get(r.user_id)!.last_name].filter(Boolean).join(' ') || (userMap.get(r.user_id) as any).email : '—',
-      message: r.message,
-      status: r.status,
-      created_at: r.created_at,
-      answered_at: r.answered_at,
-      reply: r.reply,
-    }));
-    return res.json(list);
-  }
-
-  async function replySupport(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const { reply } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'Invalid id' });
-    if (reply == null || String(reply).trim() === '') return res.status(400).json({ error: 'reply kerak' });
-
-    const { error } = await supabase
-      .from('support_messages')
-      .update({
-        status: 'answered',
-        answered_at: new Date().toISOString(),
-        reply: String(reply).trim(),
-      })
-      .eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ success: true });
-  }
-
   // --- Support chats (Telegram-like)
   async function getSupportChats(_req: Request, res: Response) {
-    let { data: chats, error: chatErr } = await supabase
+    const chatsRes = await supabase
       .from('support_chats')
       .select('id, user_id, status, created_at, updated_at, last_message_at, admin_last_read_at')
       .order('last_message_at', { ascending: false, nullsFirst: false });
-    if (chatErr) {
-      if (!isMissingSupportChatSchemaError(chatErr)) return res.status(500).json({ error: chatErr.message });
-      const { data: supportRows, error: supportErr } = await supabase
-        .from('support_messages')
-        .select('id, user_id, message, reply, status, created_at, answered_at')
-        .order('created_at', { ascending: false });
-      if (supportErr) return res.status(500).json({ error: supportErr.message });
-      const oltinFallback = await oltinIdlar();
-      const supportVisible = (supportRows ?? []).filter((r: any) => !oltinFallback.has(Number(r.user_id)));
-      const userIdsFallback = [...new Set(supportVisible.map((r: any) => Number(r.user_id)).filter(Boolean))];
-      let usersFallbackRes = userIdsFallback.length
-        ? await supabase
-            .from('users')
-            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, total_points, referral_balance, account_type')
-            .in('id', userIdsFallback)
-        : ({ data: [], error: null } as any);
-      if (usersFallbackRes.error && isAdminUsersSchemaError(usersFallbackRes.error)) {
-        usersFallbackRes = userIdsFallback.length
-          ? await supabase
-              .from('users')
-              .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, account_type')
-              .in('id', userIdsFallback)
-          : ({ data: [], error: null } as any);
-      }
-      const { data: usersFallback, error: usersErrFallback } = usersFallbackRes;
-      if (usersErrFallback) return res.status(500).json({ error: usersErrFallback.message });
-
-      const userMapFallback = new Map((usersFallback ?? []).map((u: any) => [Number(u.id), u]));
-      const grouped = new Map<number, any[]>();
-      for (const row of supportVisible) {
-        const uid = Number((row as any).user_id);
-        if (!grouped.has(uid)) grouped.set(uid, []);
-        grouped.get(uid)!.push(row);
-      }
-      const nowIso = new Date().toISOString();
-      const listFallback = Array.from(grouped.entries()).map(([uid, rows]) => {
-        const user = userMapFallback.get(uid) as any;
-        const latest = rows[0] as any;
-        const latestContent = latest?.reply
-          ? String(latest.reply)
-          : String(latest.message).startsWith(SUPPORT_ADMIN_NOTE_MARKER)
-            ? String(latest.message).slice(SUPPORT_ADMIN_NOTE_MARKER.length).trim()
-            : String(latest.message);
-        const latestSender = latest?.reply || String(latest.message).startsWith(SUPPORT_ADMIN_NOTE_MARKER) ? 'admin' : 'user';
-        const unreadCount = rows.filter((r: any) => r.status === 'new' && !String(r.message).startsWith(SUPPORT_ADMIN_NOTE_MARKER)).length;
-        const isActiveSubscription = Boolean(user?.plan_expires_at && String(user.plan_expires_at) > nowIso);
-        return {
-          id: -uid,
-          user_id: uid,
-          status: 'open',
-          created_at: latest?.created_at ?? new Date(0).toISOString(),
-          updated_at: latest?.answered_at ?? latest?.created_at ?? new Date(0).toISOString(),
-          last_message_at: latest?.answered_at ?? latest?.created_at ?? null,
-          unread_count: unreadCount,
-          user: {
-            id: Number(user?.id ?? 0),
-            name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || '—' : '—',
-            email: user?.email ?? null,
-            phone: user?.phone ?? null,
-            registration_date: user?.created_at ?? null,
-            subscription: {
-              plan_type: user?.plan_name ?? null,
-              status: isActiveSubscription ? 'active' : 'inactive',
-              expires_at: user?.plan_expires_at ?? null,
-            },
-            total_points: Number(user?.total_points ?? 0),
-            referral_balance: Number(user?.referral_balance ?? 0),
-            account_type: user?.account_type ?? null,
-          },
-          last_message: latest
-            ? {
-                id: Number(latest.id),
-                sender_type: latestSender,
-                content: latestContent,
-                created_at: String(latest.answered_at ?? latest.created_at),
-              }
-            : null,
-        };
-      });
-      return res.json(listFallback);
-    }
+    if (chatsRes.error) return res.status(500).json({ error: chatsRes.error.message });
+    let chats = chatsRes.data;
 
     const oltin = await oltinIdlar();
     if (oltin.size) chats = (chats ?? []).filter((c: any) => !oltin.has(Number(c.user_id)));
@@ -1297,18 +1079,8 @@ export function createAdminController(supabase: DbClient) {
         : Promise.resolve({ data: [], error: null } as any),
     ]);
 
-    let users = usersResult.data;
-    let usersErr = usersResult.error;
-    if (usersErr && isAdminUsersSchemaError(usersErr)) {
-      const legacyUsersResult = userIds.length
-        ? await supabase
-            .from('users')
-            .select('id, first_name, last_name, email, phone, created_at, plan_name, plan_expires_at, referral_balance, account_type')
-            .in('id', userIds)
-        : ({ data: [], error: null } as any);
-      users = legacyUsersResult.data;
-      usersErr = legacyUsersResult.error;
-    }
+    const users = usersResult.data;
+    const usersErr = usersResult.error;
 
     if (usersErr) return res.status(500).json({ error: usersErr.message });
     if (latestErr) return res.status(500).json({ error: latestErr.message });
@@ -1381,51 +1153,6 @@ export function createAdminController(supabase: DbClient) {
   async function getSupportChatMessages(req: Request, res: Response) {
     const chatId = Number(req.params.chatId);
     if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
-    if (chatId < 0) {
-      const userId = Math.abs(chatId);
-      const { data: rows, error } = await supabase
-        .from('support_messages')
-        .select('id, message, reply, created_at, answered_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true })
-        .limit(500);
-      if (error) return res.status(500).json({ error: error.message });
-      const mapped = (rows ?? []).flatMap((r: any) => {
-        const msg = String(r.message ?? '');
-        const userMsg = msg.startsWith(SUPPORT_ADMIN_NOTE_MARKER)
-          ? []
-          : [{
-              id: Number(r.id) * 2,
-              chat_id: chatId,
-              sender_type: 'user',
-              sender_user_id: userId,
-              content: msg,
-              created_at: String(r.created_at),
-            }];
-        const adminMsg = r.reply
-          ? [{
-              id: Number(r.id) * 2 + 1,
-              chat_id: chatId,
-              sender_type: 'admin',
-              sender_user_id: null,
-              content: String(r.reply),
-              created_at: String(r.answered_at ?? r.created_at),
-            }]
-          : msg.startsWith(SUPPORT_ADMIN_NOTE_MARKER)
-            ? [{
-                id: Number(r.id) * 2 + 1,
-                chat_id: chatId,
-                sender_type: 'admin',
-                sender_user_id: null,
-                content: msg.slice(SUPPORT_ADMIN_NOTE_MARKER.length).trim(),
-                created_at: String(r.created_at),
-              }]
-            : [];
-        return [...userMsg, ...adminMsg];
-      });
-      return res.json(mapped);
-    }
-
     const { data: chat, error: chatErr } = await supabase
       .from('support_chats')
       .select('id')
@@ -1448,55 +1175,6 @@ export function createAdminController(supabase: DbClient) {
     const content = String((req.body as any)?.content ?? '').trim();
     if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
     if (!content) return res.status(400).json({ error: 'Xabar bo‘sh' });
-    if (chatId < 0) {
-      const userId = Math.abs(chatId);
-      const now = new Date().toISOString();
-      const { data: pending } = await supabase
-        .from('support_messages')
-        .select('id')
-        .eq('user_id', userId)
-        .is('reply', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (pending?.id) {
-        const { error } = await supabase
-          .from('support_messages')
-          .update({ status: 'answered', answered_at: now, reply: content })
-          .eq('id', Number(pending.id));
-        if (error) return res.status(500).json({ error: error.message });
-        return res.status(201).json({
-          id: Number(pending.id) * 2 + 1,
-          chat_id: chatId,
-          sender_type: 'admin',
-          sender_user_id: null,
-          content,
-          created_at: now,
-        });
-      }
-
-      const { data: created, error } = await supabase
-        .from('support_messages')
-        .insert({
-          user_id: userId,
-          message: `${SUPPORT_ADMIN_NOTE_MARKER} ${content}`,
-          status: 'answered',
-          answered_at: now,
-          reply: null,
-        })
-        .select('id, created_at')
-        .single();
-      if (error || !created) return res.status(500).json({ error: error?.message || 'Xabar yuborilmadi' });
-      return res.status(201).json({
-        id: Number((created as any).id) * 2 + 1,
-        chat_id: chatId,
-        sender_type: 'admin',
-        sender_user_id: null,
-        content,
-        created_at: String((created as any).created_at),
-      });
-    }
-
     const now = new Date().toISOString();
     const { data: created, error: msgErr } = await supabase
       .from('support_chat_messages')
@@ -1540,31 +1218,6 @@ export function createAdminController(supabase: DbClient) {
     if (!imageUrl) return res.status(500).json({ error: 'Rasm URL olinmadi' });
     const content = `${HELP_IMAGE_PREFIX}${imageUrl}`;
 
-    if (chatId < 0) {
-      const userId = Math.abs(chatId);
-      const now = new Date().toISOString();
-      const { data: created, error } = await supabase
-        .from('support_messages')
-        .insert({
-          user_id: userId,
-          message: `${SUPPORT_ADMIN_NOTE_MARKER} ${content}`,
-          status: 'answered',
-          answered_at: now,
-          reply: null,
-        })
-        .select('id, created_at')
-        .single();
-      if (error || !created) return res.status(500).json({ error: error?.message || 'Rasm yuborilmadi' });
-      return res.status(201).json({
-        id: Number((created as any).id) * 2 + 1,
-        chat_id: chatId,
-        sender_type: 'admin',
-        sender_user_id: null,
-        content,
-        created_at: String((created as any).created_at),
-      });
-    }
-
     const now = new Date().toISOString();
     const { data: created, error: msgErr } = await supabase
       .from('support_chat_messages')
@@ -1585,16 +1238,6 @@ export function createAdminController(supabase: DbClient) {
   async function markSupportChatRead(req: Request, res: Response) {
     const chatId = Number(req.params.chatId);
     if (!chatId) return res.status(400).json({ error: 'Invalid chat id' });
-    if (chatId < 0) {
-      const userId = Math.abs(chatId);
-      const { error } = await supabase
-        .from('support_messages')
-        .update({ status: 'answered', answered_at: new Date().toISOString() })
-        .eq('user_id', userId)
-        .eq('status', 'new');
-      if (error) return res.status(500).json({ error: error.message });
-      return res.json({ success: true });
-    }
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('support_chats')
@@ -1631,9 +1274,6 @@ export function createAdminController(supabase: DbClient) {
       await supabase.from('support_chats').update({ updated_at: now, last_message_at: now }).eq('id', chatId);
       return res.status(201).json({ chat_id: chatId, message: created });
     } catch (e) {
-      if (isMissingSupportChatSchemaError(e)) {
-        return res.status(503).json({ error: 'Yozishmalar (support_chats) mavjud emas' });
-      }
       console.error('[admin/help/users message]', e);
       return res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
     }
@@ -2087,8 +1727,6 @@ export function createAdminController(supabase: DbClient) {
     getWithdrawals,
     approveWithdrawal,
     rejectWithdrawal,
-    getSupportMessages,
-    replySupport,
     getSupportChats,
     getSupportChatMessages,
     sendSupportChatMessage,

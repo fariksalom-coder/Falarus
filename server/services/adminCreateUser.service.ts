@@ -8,7 +8,6 @@ import {
   isSubscriptionTariffType,
   type PaymentProductCode,
 } from '../../shared/paymentProducts.js';
-import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import * as subscriptionService from './subscription.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
 
@@ -217,21 +216,9 @@ async function insertApprovedPayment(
     payment_channel: 'manual',
   };
 
-  const first = await supabase.from('payments').insert(row);
-  if (!first.error) return;
-
-  if (!isPaymentsProductCodeSchemaError(first.error)) {
-    throw new Error(first.error.message || "To'lov yozilmadi");
-  }
-
-  const legacy: Record<string, unknown> = {
-    ...row,
-    tariff_type: opts.productCode === 'russian' ? opts.tariffType : 'three_month',
-  };
-  delete legacy.product_code;
-  const second = await supabase.from('payments').insert(legacy);
-  if (second.error) {
-    throw new Error(second.error.message || "To'lov yozilmadi (legacy)");
+  const { error } = await supabase.from('payments').insert(row);
+  if (error) {
+    throw new Error(error.message || "To'lov yozilmadi");
   }
 }
 
