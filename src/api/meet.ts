@@ -92,27 +92,6 @@ export async function createMeetSession(
   return data.session;
 }
 
-/** Darsni tahrirlash yoki bekor qilish. */
-export async function updateMeetSession(
-  token: string,
-  sessionId: number,
-  body: {
-    starts_at?: string;
-    duration_minutes?: number;
-    title?: string;
-    join_url?: string;
-    status?: MeetSession['status'];
-  },
-): Promise<MeetSession | null> {
-  const res = await fetch(apiUrl(`/api/teacher/me/meet-sessions/${sessionId}`), {
-    method: 'PATCH',
-    headers: authHeaders(token),
-    body: JSON.stringify(body),
-  });
-  const data = await parse<{ session: MeetSession | null }>(res, 'Dars yangilanmadi');
-  return data.session;
-}
-
 /** Darsni butunlay o'chirish. */
 export async function deleteMeetSession(token: string, sessionId: number): Promise<void> {
   const res = await fetch(apiUrl(`/api/teacher/me/meet-sessions/${sessionId}`), {

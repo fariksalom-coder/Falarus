@@ -53,24 +53,6 @@ export async function fetchWordSwipeLevels(): Promise<WordSwipeLevelsResponse | 
   }
 }
 
-export async function fetchWordSwipeStage(
-  token: string | null,
-  level: number,
-  stage: number,
-): Promise<WordSwipeStageResponse | null> {
-  if (!token) return null;
-  try {
-    const res = await fetch(
-      apiUrl(`/api/games/word-swipe/stage?level=${level}&stage=${stage}`),
-      { headers: authHeaders(token) },
-    );
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
-}
-
 export async function fetchWordSwipeProgress(
   token: string,
 ): Promise<WordSwipeProgressResponse | null> {

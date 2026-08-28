@@ -88,7 +88,7 @@ export type AdminUserProfile = {
   phone: string | null;
   registration_date: string;
   subscription: { plan_type: string | null; status: string; expires_at: string | null };
-  statistics: { total_points: number; lessons_completed: number; words_learned: number };
+  statistics: { total_points: number };
   referral: { referral_balance: number; invited_users: number };
 };
 
@@ -157,25 +157,36 @@ export type AdminClickPaymentLogRow = {
 
 export type AdminTeacherRow = {
   user_id: number;
-  first_name: string;
-  last_name: string;
-  display_name: string;
-  age: number;
+  /*
+   * HISOBNING O'ZIDAGI ma'lumot — anketa to'ldirilmagan bo'lsa ham bor.
+   * Admin bog'lanish uchun aynan shu raqamdan foydalanadi.
+   */
+  account_first_name: string | null;
+  account_last_name: string | null;
+  account_phone: string | null;
+  account_email: string | null;
+  registered_at: string | null;
+  /** `false` — anketa umuman boshlanmagan. */
+  has_profile: boolean;
+  first_name?: string;
+  last_name?: string;
+  display_name?: string;
+  age?: number;
   avatar_url: string | null;
-  region: string;
-  city: string;
-  experience_years: number;
-  experience_months: number;
-  teaching_format: string;
-  headline: string;
-  about: string;
-  subjects: string[];
-  teaching_levels: string[];
-  languages: string[];
-  monthly_course_price_amount: number;
-  monthly_course_price_currency: string;
-  rating_avg: number;
-  rating_count: number;
+  region?: string;
+  city?: string;
+  experience_years?: number;
+  experience_months?: number;
+  teaching_format?: string;
+  headline?: string;
+  about?: string;
+  subjects?: string[];
+  teaching_levels?: string[];
+  languages?: string[];
+  monthly_course_price_amount?: number;
+  monthly_course_price_currency?: string;
+  rating_avg?: number;
+  rating_count?: number;
   listing_paid_until: string | null;
   is_recommended?: boolean;
   telegram_username: string | null;
@@ -185,9 +196,9 @@ export type AdminTeacherRow = {
   public_phone_e164: string | null;
   public_email: string | null;
   preferred_contact_method: string | null;
-  profile_status: string;
+  profile_status?: string;
   admin_note: string | null;
-  first_listing_discount_used: boolean;
+  first_listing_discount_used?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -404,6 +415,22 @@ export async function updateTeacherStatus(
 }
 
 /** FalaRus tavsiyasini yoqadi/o'chiradi. */
+/**
+ * Admin o'qituvchi anketasini o'zi to'ldiradi yoki tuzatadi.
+ *
+ * Anketa yozuvi hali bo'lmasa server uni yaratadi (`draft` holatida), ya'ni
+ * kabinетga hech qachon kirmagan o'qituvchi uchun ham ishlaydi.
+ */
+export async function updateTeacherProfile(
+  userId: number,
+  patch: Record<string, unknown>
+): Promise<{ ok: boolean; created: boolean }> {
+  return adminApi(`/teachers/${userId}/profile`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+}
+
 export async function setTeacherRecommended(userId: number, recommended: boolean): Promise<void> {
   await adminApi(`/teachers/${userId}/recommend`, {
     method: 'POST',
@@ -665,10 +692,6 @@ export async function deleteAdminMeetRoom(id: number): Promise<void> {
   await adminApi(`/meet-rooms/${id}`, { method: 'DELETE' });
 }
 
-export async function getAdminMeetRoomSessions(id: number): Promise<{ sessions: AdminMeetSession[] }> {
-  return adminApi<{ sessions: AdminMeetSession[] }>(`/meet-rooms/${id}/sessions`);
-}
-
 /** O'qituvchi yuklagan hujjatlar — admin tekshiruvi uchun. */
 export type AdminTeacherDocument = {
   id: number;
@@ -681,12 +704,6 @@ export type AdminTeacherDocument = {
   admin_note: string;
   created_at: string;
 };
-
-export async function getAdminTeacherDocuments(
-  status: string
-): Promise<{ status: string; counts: Record<string, number>; documents: AdminTeacherDocument[] }> {
-  return adminApi(`/teacher-documents?status=${status}`);
-}
 
 /** To'liq tekshiruv: o'qituvchining anketasi, hujjatlari, videosi va cheki. */
 export type AdminTeacherReview = {

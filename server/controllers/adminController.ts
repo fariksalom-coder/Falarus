@@ -12,7 +12,6 @@ import {
 import { inferPaymentProviderFromProofUrl } from '../../shared/clickPayments.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
 import { resolvePaymentProductFromRow } from '../../shared/paymentsProofUrl.js';
-import { getUserCompletedLessonsCount } from '../services/lessonProgressSnapshot.service.js';
 import { clickPaymentRefund, isClickMerchantSuccess } from '../../shared/clickMerchantClient.js';
 import { getClickConfig } from '../../shared/clickConfig.js';
 import { adminCreateUserWithAccess } from '../services/adminCreateUser.service.js';
@@ -112,7 +111,7 @@ async function collectBroadcastRecipientIds(
   if (filter === 'kunlik_day1_complete' || filter === 'kunlik_day1_incomplete') {
     const { data: rows, error } = await supabase
       .from('user_kunlik_day_progress')
-      .select('user_id, day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, speaking_level')
+      .select('user_id, day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, suhbat_done, speaking_level')
       .eq('day_number', 1);
     if (error) return { ids: [], error: error.message };
     const complete: number[] = [];
@@ -125,6 +124,7 @@ async function collectBroadcastRecipientIds(
         grammar_3: unknown;
         words_match: unknown;
         oqish_done: unknown;
+        suhbat_done: unknown;
         speaking_level: unknown;
       };
       const uid = Number(r.user_id);
@@ -136,6 +136,7 @@ async function collectBroadcastRecipientIds(
         grammar_3: Boolean(r.grammar_3),
         words_match: Boolean(r.words_match),
         oqish_done: Boolean(r.oqish_done),
+        suhbat_done: Boolean(r.suhbat_done),
         speaking_level: Number(r.speaking_level ?? 0),
       };
       if (isKunlikDayRowFullyComplete(slice, countMap)) complete.push(uid);
@@ -545,7 +546,7 @@ export function createAdminController(supabase: DbClient) {
     const userIds = (rows ?? []).map((u: any) => Number(u.id)).filter((id: number) => Number.isFinite(id));
     const { data: kunlikRows } = await supabase
       .from('user_kunlik_day_progress')
-      .select('user_id, day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, speaking_level')
+      .select('user_id, day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, suhbat_done, speaking_level')
       .in('user_id', userIds);
     const kunlikByUser = new Map<number, any[]>();
     for (const row of kunlikRows ?? []) {
@@ -682,12 +683,6 @@ export function createAdminController(supabase: DbClient) {
     }
 
     const now = new Date().toISOString();
-    const lessonsCompleted = await getUserCompletedLessonsCount(supabase, id);
-    const { count: wordsLearned } = await supabase
-      .from('vocabulary')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', id);
-
     const { data: referrals } = await supabase
       .from('referrals')
       .select('id')
@@ -706,8 +701,6 @@ export function createAdminController(supabase: DbClient) {
       },
       statistics: {
         total_points: (user as any).total_points ?? 0,
-        lessons_completed: lessonsCompleted,
-        words_learned: wordsLearned ?? 0,
       },
       referral: {
         referral_balance: (user as any).referral_balance ?? 0,
@@ -859,8 +852,6 @@ export function createAdminController(supabase: DbClient) {
       await activateTeacherMarketplacePayment(supabase, { paymentId: id, userId, productCode });
       subscriptionService.invalidateAccessCache(userId);
       try {
-        const { invalidateLessonsCache } = await import('../cache/lessonsCache');
-        invalidateLessonsCache(userId);
       } catch {}
       return res.json({ success: true });
     } catch (e: any) {
@@ -1864,25 +1855,6 @@ export function createAdminController(supabase: DbClient) {
     return res.json({ success: true });
   }
 
-  async function bulkUpdateTariffPrices(req: Request, res: Response) {
-    const body = req.body;
-    if (!Array.isArray(body)) return res.status(400).json({ error: 'Array kerak' });
-    const now = new Date().toISOString();
-    for (const row of body) {
-      const { tariff_type, currency, price } = row;
-      if (!tariff_type || !currency || price == null) continue;
-      const priceNum = Number(price);
-      if (Number.isNaN(priceNum) || priceNum < 0) continue;
-      await supabase
-        .from('tariff_prices')
-        .upsert(
-          { tariff_type, currency, price: priceNum, updated_at: now },
-          { onConflict: 'tariff_type,currency' }
-        );
-    }
-    return res.json({ success: true });
-  }
-
   const TEACHER_PROFILE_STATUSES = ['draft', 'pending_review', 'active', 'paused', 'rejected'] as const;
 
   async function updateTeacherStatus(req: Request, res: Response) {
@@ -1922,6 +1894,158 @@ export function createAdminController(supabase: DbClient) {
     }
   }
 
+  /*
+   * ADMIN ANKETANI O'ZI TO'LDIRADI / TUZATADI.
+   *
+   * Nima uchun kerak: o'qituvchilarning bir qismi anketani noto'g'ri yoki
+   * chala to'ldiradi, ba'zilari umuman kirmaydi. Ilgari admin faqat status
+   * qo'ya olardi — «rad etish»dan boshqa chorasi yo'q edi. Endi qo'ng'iroq
+   * qilib, ma'lumotni og'zaki olib, o'zi kiritib qo'yishi mumkin.
+   *
+   * ANKETA YOZUVI BO'LMASA — YARATILADI. Yozuv o'qituvchi kabinetni birinchi
+   * ochganda paydo bo'ladi; admin undan oldin ham to'ldira olishi kerak.
+   * NOT NULL ustunlarga shu sabab qat'iy standart qiymat beriladi.
+   *
+   * TAHRIRLASH RO'YXATI YOPIQ (allowlist): `profile_status`, `listing_paid_until`,
+   * `rating_*`, `is_recommended` bu yerdan O'ZGARMAYDI — ularning har biri
+   * o'z endpointi va o'z qoidasiga ega (tasdiq, to'lov, reyting). Aks holda
+   * bitta PATCH bilan pulsiz listing ochib yuborish mumkin bo'lardi.
+   */
+  const TEACHER_EDITABLE_TEXT = [
+    'first_name', 'last_name', 'display_name', 'region', 'city', 'address',
+    'teaching_format', 'headline', 'about', 'achievements',
+    'telegram_username', 'telegram_url', 'whatsapp_phone_e164', 'max_contact',
+    'public_phone_e164', 'public_email', 'preferred_contact_method',
+    'gender', 'passport_number', 'passport_issued_by', 'admin_note',
+    'monthly_course_price_currency',
+  ] as const;
+  const TEACHER_EDITABLE_NUM = [
+    'age', 'experience_years', 'experience_months',
+    'monthly_course_price_amount', 'students_total', 'students_success', 'students_failed',
+  ] as const;
+  const TEACHER_EDITABLE_ARR = ['subjects', 'teaching_levels', 'languages'] as const;
+  const TEACHER_EDITABLE_DATE = ['birth_date', 'passport_issued_at'] as const;
+
+  async function updateTeacherProfile(req: Request, res: Response) {
+    try {
+      const userId = Number(req.params.userId);
+      if (!Number.isFinite(userId) || userId < 1) {
+        return res.status(400).json({ error: 'userId noto‘g‘ri' });
+      }
+
+      const { data: user, error: userErr } = await supabase
+        .from('users')
+        .select('id, account_type, first_name, last_name')
+        .eq('id', userId)
+        .maybeSingle();
+      if (userErr) throw userErr;
+      const u = user as { account_type?: string; first_name?: string; last_name?: string } | null;
+      if (!u) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+      if (u.account_type !== 'teacher') {
+        return res.status(400).json({ error: 'Bu foydalanuvchi o‘qituvchi emas' });
+      }
+
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const patch: Record<string, unknown> = {};
+
+      for (const key of TEACHER_EDITABLE_TEXT) {
+        if (typeof body[key] === 'string') patch[key] = (body[key] as string).trim();
+      }
+      /*
+       * MAYDONNI BO'SHATISH ISHLASHI KERAK.
+       *
+       * Klient tozalangan raqam uchun `null`, tozalangan sana uchun `''`
+       * yuboradi. Ilgari ikkalasi ham "o'zgarish yo'q" deb o'tkazib
+       * yuborilardi: panel "Anketa yangilandi" derdi, eski qiymat esa
+       * bazada qolib, ro'yxat qayta yuklanganda qaytib chiqardi.
+       *
+       * Raqamli ustunlar NOT NULL (`age`, `experience_*`, `students_*`,
+       * `monthly_course_price_amount`), shuning uchun tozalash NULL emas,
+       * NOLGA tushiradi — ekranda nol qiymat "ko'rsatilmagan" kabi
+       * ko'rinmaydi (`row.age ? ... : ''`).
+       */
+      for (const key of TEACHER_EDITABLE_NUM) {
+        if (!(key in body)) continue;
+        const v = body[key];
+        if (v === null || v === '') {
+          patch[key] = 0;
+          continue;
+        }
+        const n = Number(v);
+        if (Number.isFinite(n) && n >= 0) patch[key] = n;
+      }
+      for (const key of TEACHER_EDITABLE_ARR) {
+        const v = body[key];
+        if (Array.isArray(v)) {
+          patch[key] = v.map((x) => String(x).trim()).filter(Boolean);
+        } else if (typeof v === 'string') {
+          // Paneldan vergul bilan ajratilgan matn kelishi mumkin.
+          patch[key] = v.split(',').map((x) => x.trim()).filter(Boolean);
+        }
+      }
+      for (const key of TEACHER_EDITABLE_DATE) {
+        if (!(key in body)) continue;
+        const v = body[key];
+        // Sana ustunlari NULL qabul qiladi — bo'sh satr ham tozalash demak.
+        if (v === null || (typeof v === 'string' && !v.trim())) patch[key] = null;
+        else if (typeof v === 'string') patch[key] = v.trim();
+      }
+
+      if (Object.keys(patch).length === 0) {
+        return res.status(400).json({ error: 'O‘zgartirish uchun maydon yo‘q' });
+      }
+      patch.updated_at = new Date().toISOString();
+
+      const { data: mavjud, error: borErr } = await supabase
+        .from('teacher_profiles')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (borErr) throw borErr;
+
+      if (!mavjud) {
+        /*
+         * Anketa hali yo'q — yaratamiz. NOT NULL ustunlarga standart qiymat
+         * beriladi, ustiga adminning kiritgani yoziladi. `draft` holatida
+         * yaratiladi: admin ataylab «Faol» qilmaguncha o'quvchilarga
+         * ko'rinmaydi.
+         */
+        const asagi: Record<string, unknown> = {
+          user_id: userId,
+          first_name: String(u.first_name ?? '') || 'Oʻqituvchi',
+          last_name: String(u.last_name ?? ''),
+          age: 18,
+          profile_status: 'draft',
+          ...patch,
+        };
+        const { error: insErr } = await supabase.from('teacher_profiles').insert(asagi);
+        if (insErr) {
+          console.error('[admin/updateTeacherProfile] insert', insErr);
+          return res.status(500).json({ error: insErr.message });
+        }
+      } else {
+        const { error: updErr } = await supabase
+          .from('teacher_profiles')
+          .update(patch)
+          .eq('user_id', userId);
+        if (updErr) {
+          console.error('[admin/updateTeacherProfile] update', updErr);
+          return res.status(500).json({ error: updErr.message });
+        }
+      }
+
+      const { data: yangi } = await supabase
+        .from('teacher_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      return res.json({ ok: true, created: !mavjud, profile: yangi ?? null });
+    } catch (e: unknown) {
+      console.error('[admin/updateTeacherProfile]', e);
+      return res.status(500).json({ error: e instanceof Error ? e.message : 'Server xatosi' });
+    }
+  }
+
   async function setTeacherRecommended(req: Request, res: Response) {
     try {
       const userId = Number(req.params.userId);
@@ -1949,6 +2073,7 @@ export function createAdminController(supabase: DbClient) {
     login,
     getDashboard,
     setTeacherRecommended,
+    updateTeacherProfile,
     getUsers,
     createUser,
     getUserProfile,
@@ -1981,7 +2106,6 @@ export function createAdminController(supabase: DbClient) {
     deletePaymentMethod,
     getTariffPrices,
     updateTariffPrice,
-    bulkUpdateTariffPrices,
     updateTeacherStatus,
   };
 }

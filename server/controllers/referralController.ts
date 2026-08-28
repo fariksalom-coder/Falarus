@@ -3,7 +3,6 @@ import type { DatabaseClient } from '../types/referral';
 import { MIN_WITHDRAWAL_AMOUNT } from '../types/referral';
 import * as referralService from '../services/referral.service';
 import * as referralStatsService from '../services/referralStats.service';
-import * as referralDiscountService from '../services/referralDiscount.service';
 import * as repo from '../repositories/referralRepository';
 
 export function getLink(supabase: DatabaseClient) {
@@ -132,24 +131,3 @@ export function postWithdraw(supabase: DatabaseClient) {
   };
 }
 
-export function getDiscountEligibility(supabase: DatabaseClient) {
-  return async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).userId as number;
-      const raw = req.query.amount;
-      const originalAmount = Math.round(Number(raw) || 0);
-      if (originalAmount <= 0) {
-        return res.status(400).json({ error: 'amount kerak' });
-      }
-      const result = await referralDiscountService.getReferralDiscountEligibility(
-        supabase,
-        userId,
-        originalAmount
-      );
-      res.json(result);
-    } catch (e) {
-      console.error('[GET /referral/discount-eligible]', e);
-      res.status(500).json({ error: 'Xatolik yuz berdi' });
-    }
-  };
-}

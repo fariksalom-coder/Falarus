@@ -93,6 +93,7 @@ describe('kunlik XP', () => {
       text_questions_correct: 0,
       speaking_tasks_done: 0,
       oqish_done: false,
+      suhbat_done: false,
       speaking_level: 0,
     };
     // 8 to'g'ri javobdan keyin 3 ta bilan qayta ishlansa — 8 saqlanadi.

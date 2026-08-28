@@ -46,20 +46,6 @@ function ruxsatBormi(): boolean {
   return yoqilgan;
 }
 
-/** Foydalanuvchi sozlamalaridan o'chirib qo'yishi uchun. */
-export function haptikaniSozla(holat: boolean): void {
-  yoqilgan = holat;
-  try {
-    window.localStorage.setItem(SOZLAMA_KALITI, holat ? 'on' : 'off');
-  } catch {
-    /* maxfiylik rejimi — shu seans uchun qoladi */
-  }
-}
-
-export function haptikaYoqilganmi(): boolean {
-  return ruxsatBormi();
-}
-
 /** Qisqa tebranish. Qo'llab-quvvatlanmasa jim o'tadi. */
 export function haptic(tur: HaptikTuri = 'tegish'): void {
   if (!ruxsatBormi()) return;

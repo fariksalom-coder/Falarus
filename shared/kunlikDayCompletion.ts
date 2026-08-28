@@ -8,6 +8,8 @@ export type KunlikDayProgressFields = {
   words_match: boolean;
   oqish_done: boolean;
   speaking_level: number | null | undefined;
+  /** 5-blok: ustoz bilan jonli savol-javob. */
+  suhbat_done: boolean | null | undefined;
 };
 
 function promptCount(map: Map<number, number> | Record<number, number>, day: number): number {
@@ -23,6 +25,21 @@ function promptCount(map: Map<number, number> | Record<number, number>, day: num
  */
 export function isKunlikDayRowFullyComplete(
   r: KunlikDayProgressFields,
+  practicePromptCountByDay: Map<number, number> | Record<number, number>,
+): boolean {
+  return isKunlikDayReadyForSuhbat(r, practicePromptCountByDay) && r.suhbat_done === true;
+}
+
+/**
+ * DASTLABKI TO'RT BLOK bajarilganmi — ya'ni 5-blok (savol-javob) ochiladimi.
+ *
+ * Alohida chiqarilgan, chunki ikki joyda kerak: bosh sahifadagi bloklar
+ * zanjiri va savol-javob sahifasining O'ZI. Sahifa ham tekshirishi shart —
+ * bosh sahifada kartani yashirish yetarli emas, manzilni qo'lda yozib
+ * kirish mumkin edi.
+ */
+export function isKunlikDayReadyForSuhbat(
+  r: Omit<KunlikDayProgressFields, 'suhbat_done'>,
   practicePromptCountByDay: Map<number, number> | Record<number, number>,
 ): boolean {
   const grammarOk = r.grammar_1 && r.grammar_2 && r.grammar_3;

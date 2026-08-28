@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { createDecipheriv, createHash } from 'node:crypto';
 
 const PREFIX = 'v1';
 
@@ -9,15 +9,6 @@ function deriveKey(): Buffer {
     throw new Error('CLICK_CARD_TOKEN_ENCRYPTION_KEY yoki JWT_SECRET sozlash kerak (token shifrlash)');
   }
   return createHash('sha256').update(secret, 'utf8').digest();
-}
-
-export function encryptCardTokenPlaintext(plaintext: string): string {
-  const iv = randomBytes(12);
-  const cipher = createCipheriv('aes-256-gcm', deriveKey(), iv);
-  const enc = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  const blob = Buffer.concat([iv, tag, enc]).toString('base64');
-  return `${PREFIX}:${blob}`;
 }
 
 export function decryptCardTokenPlaintext(stored: string): string {

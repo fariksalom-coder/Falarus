@@ -157,20 +157,12 @@ export const DAILY_COURSE_DAY_MAX = 182;
 /** Obunasiz kunlik kurs: faqat shu kunlar (grammatika, lug‘at, o‘qish, gapirish). */
 export const FREE_KUNLIK_DAY_LIMIT = 1;
 
-/** @deprecated Use FREE_KUNLIK_DAY_LIMIT */
-export const FREE_KUNLIK_SPEAKING_DAY_LIMIT = FREE_KUNLIK_DAY_LIMIT;
-
 export function isFreeKunlikDay(dayNumber: number): boolean {
   return (
     Number.isInteger(dayNumber) &&
     dayNumber >= DAILY_COURSE_DAY_MIN &&
     dayNumber <= FREE_KUNLIK_DAY_LIMIT
   );
-}
-
-/** Kunlik gapirish AI tekshiruvi — obunasiz faqat bepul kunlar uchun. */
-export function isFreeKunlikSpeakingDay(dayNumber: number): boolean {
-  return isFreeKunlikDay(dayNumber);
 }
 
 /** Whether a user may open lesson content for this day (API + section routes). */

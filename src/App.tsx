@@ -9,10 +9,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { TextScaleProvider } from './context/TextScaleContext';
 import { AccessProvider } from './context/AccessContext';
 import { PaymentStatusProvider } from './context/PaymentStatusContext';
-import { SequentialLessonProvider } from './context/SequentialLessonContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
-import AdminLayout from './pages/admin/AdminLayout';
-import AdminGuard from './pages/admin/AdminGuard';
 import MainLayout from './components/MainLayout';
 import NotFoundPage from './pages/NotFoundPage';
 import KunlikRejaRedirect from './components/KunlikRejaRedirect';
@@ -50,8 +47,14 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to={adminPath('/dashboard')} replace />} />
         <Route path="login" element={renderLazyPage('./pages/admin/AdminLoginPage.tsx')} />
-        <Route element={<AdminGuard />}>
-          <Route element={<AdminLayout />}>
+        {/*
+          Admin qobig'i ham LAZY. Ilgari `AdminGuard` bilan `AdminLayout`
+          statik import qilinardi va shuning uchun butun admin chunki (~170 KB)
+          HAR BIR tashrifchiga — ro'yxatdan o'tayotgan oddiy o'quvchiga ham —
+          yuklanardi. Endi u faqat admin yo'liga kirilganda keladi.
+        */}
+        <Route element={renderLazyPage('./pages/admin/AdminGuard.tsx')}>
+          <Route element={renderLazyPage('./pages/admin/AdminLayout.tsx')}>
             <Route path="dashboard" element={renderLazyPage('./pages/admin/AdminDashboardPage.tsx')} />
             <Route path="users" element={renderLazyPage('./pages/admin/AdminUsersPage.tsx')} />
             <Route path="users/create" element={renderLazyPage('./pages/admin/AdminCreateUserPage.tsx')} />
@@ -236,11 +239,9 @@ export default function App() {
           <AnalyticsScripts />
           <AccessProvider>
             <PaymentStatusProvider>
-              <SequentialLessonProvider>
                 <AchievementCelebrationProvider>
                   <AppRoutes />
                 </AchievementCelebrationProvider>
-              </SequentialLessonProvider>
             </PaymentStatusProvider>
           </AccessProvider>
         </Router>

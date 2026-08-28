@@ -85,10 +85,6 @@ export default function AdminUserProfilePage() {
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-slate-500">Total points</dt>
             <dd>{profile.statistics.total_points.toLocaleString()}</dd>
-            <dt className="text-slate-500">Lessons completed</dt>
-            <dd>{profile.statistics.lessons_completed}</dd>
-            <dt className="text-slate-500">Words learned</dt>
-            <dd>{profile.statistics.words_learned}</dd>
           </dl>
         </section>
 

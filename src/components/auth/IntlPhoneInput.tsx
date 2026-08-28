@@ -1,5 +1,17 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
-import intlTelInput from 'intl-tel-input/intlTelInputWithUtils';
+/*
+ * `intl-tel-input` — YADRO, `…WithUtils` EMAS.
+ *
+ * `intlTelInputWithUtils` ichida raqam tekshirish/formatlash kutubxonasi
+ * (`utils`) allaqachon bog'langan: 304 KB min, yadroning o'zi esa 44 KB.
+ * Ayni paytda quyida `loadUtils` ham turibdi — ya'ni o'sha utils ikkinchi
+ * marta, endi alohida so'rov bilan yuklanardi.
+ *
+ * Bu kirish va ro'yxatdan o'tish sahifasi, ya'ni yangi foydalanuvchining
+ * BIRINCHI ekrani. `loadUtils` o'z ishini qiladi: utils faqat kerak
+ * bo'lganda va faqat bir marta keladi.
+ */
+import intlTelInput from 'intl-tel-input';
 import 'intl-tel-input/styles';
 
 export type IntlPhoneInputHandle = {

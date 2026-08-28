@@ -132,12 +132,6 @@ export async function getPartnerStatus(token: string): Promise<PartnerStatus> {
   return normalizePartnerStatus(data);
 }
 
-export async function getPartnerProfile(token: string): Promise<PartnerProfile | null> {
-  const res = await fetch(apiUrl('/api/partner/profile'), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Profil yuklanmadi');
-  return res.json();
-}
-
 export async function savePartnerProfile(
   token: string,
   data: Omit<PartnerProfile, 'user_id' | 'created_at' | 'updated_at'>
@@ -213,12 +207,6 @@ export async function rejectRequest(token: string, requestId: number): Promise<v
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error('Rad etishda xatolik');
-}
-
-export async function getPartnerMatch(token: string): Promise<PartnerMatch | null> {
-  const res = await fetch(apiUrl('/api/partner/match'), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Match yuklanmadi');
-  return res.json();
 }
 
 export async function endPartnership(token: string, matchId: number): Promise<void> {

@@ -21,18 +21,6 @@ function authHeaders(token: string | null): HeadersInit {
   return h;
 }
 
-export async function fetchOnboardingStatus(token: string | null): Promise<OnboardingStatus> {
-  if (!token) return { completed: true, answers: null };
-  try {
-    const res = await fetch(apiUrl('/api/onboarding'), { headers: authHeaders(token) });
-    if (!res.ok) return { completed: true, answers: null };
-    return (await res.json()) as OnboardingStatus;
-  } catch {
-    // So'rovnoma ixtiyoriy — tarmoq muammosi ilovaga to'siq bo'lmasin.
-    return { completed: true, answers: null };
-  }
-}
-
 /*
  * Eslatma: bu yerda ilgari `onboardingShownThisSession`/`markOnboardingShown`
  * bor edi — ular `MainLayout` dagi umumiy yo'naltirish aylanib qolmasligi uchun

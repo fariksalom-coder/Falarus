@@ -12,7 +12,7 @@
  * Qoidalar (rodlar, aralashma, tezlik, ball) `shared/wordRise.ts` da va testlar
  * bilan qoplangan — bu fayl faqat ko'rinishni boshqaradi.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ArrowLeft, RotateCcw, Trophy } from 'lucide-react';
@@ -23,7 +23,6 @@ import {
   WORD_RISE_GENDER_META,
   WRONG_PENALTY,
   genderWords,
-  isTargetWord,
   pickNextWord,
   spawnDelayMs,
   travelMs,

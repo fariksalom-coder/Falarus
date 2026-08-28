@@ -77,29 +77,3 @@ export async function getReferralStats(token: string | null): Promise<ReferralSt
   return data as ReferralStats;
 }
 
-export async function getReferralList(token: string | null): Promise<ReferralListItem[]> {
-  const res = await fetch(apiUrl('/api/referral?action=list'), { headers: authHeaders(token) });
-  const data = await parseJsonOrThrow<ReferralListItem[] & { error?: string }>(
-    res,
-    'Ro\'yxat yuklanmadi'
-  );
-  if (!res.ok) throw new Error((data as { error?: string }).error || "Ro'yxat yuklanmadi");
-  return Array.isArray(data) ? data : [];
-}
-
-export async function withdrawReferral(
-  token: string | null,
-  amount: number
-): Promise<{ success: boolean; id: number; amount: number }> {
-  const res = await fetch(apiUrl('/api/referral'), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ amount }),
-  });
-  const data = await parseJsonOrThrow<{ success?: boolean; id?: number; amount?: number; error?: string }>(
-    res,
-    'Yechib olish amalga oshmadi'
-  );
-  if (!res.ok) throw new Error(data.error || 'Yechib olish amalga oshmadi');
-  return data as { success: boolean; id: number; amount: number };
-}

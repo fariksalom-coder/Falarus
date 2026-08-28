@@ -19,21 +19,6 @@ export function Skeleton({ className = '' }: Props) {
   return <div className={`skeleton ${className}`} aria-hidden="true" />;
 }
 
-/** Matn qatorlari — oxirgisi qisqaroq, haqiqiy matndagidek. */
-export function SkeletonMatn({ qatorlar = 3, className = '' }: { qatorlar?: number; className?: string }) {
-  return (
-    <div className={`flex flex-col gap-2 ${className}`} aria-hidden="true">
-      {Array.from({ length: qatorlar }).map((_, i) => (
-        <div
-          key={i}
-          className="skeleton h-3.5"
-          style={{ width: i === qatorlar - 1 ? '62%' : '100%' }}
-        />
-      ))}
-    </div>
-  );
-}
-
 /**
  * Karta shakli — ilovadagi asosiy blok ko'rinishi (dumaloq burchak,
  * chap tomonda belgi, o'ngda matn).

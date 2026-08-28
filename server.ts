@@ -47,7 +47,6 @@ const AUTH_USER_SELECT =
 
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { isPaymentsProductCodeSchemaError } from './shared/paymentsCompat.ts';
-import { shouldPreservePreviousLessonTaskResult } from './shared/lessonTaskPassing.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
 import { listPatentVariantResults, persistPatentVariantResult } from './shared/patentVariantResultsDb.ts';
 import {
@@ -57,7 +56,6 @@ import {
   verifyGoogleIdToken,
 } from './server/services/socialAuth.service.ts';
 import { resolveGoogleWebClientId } from './shared/googleOAuth.ts';
-import { buildGrammarCatalogPayload } from './server/services/grammarCatalog.service.ts';
 import {
   DAILY_COURSE_BUNDLE_FETCH_REV,
   fetchDailyCourseDayBundle,
@@ -68,7 +66,6 @@ import {
   isFreeKunlikDay,
   isValidDailyCourseDay,
 } from './shared/dailyCourseDay.ts';
-import { payloadFromQuestionContentEmbed } from './shared/questionContentPayload.ts';
 import { getAccessInfo, getActiveSubscription } from './server/services/subscription.service.ts';
 import { mergeRussianPlanForMeResponse } from './shared/russianProfilePlan.ts';
 import { createIpRateLimitMiddleware, enforceRateLimit } from './server/lib/rateLimit.ts';
@@ -77,6 +74,7 @@ import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/
 import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
 import { runClickFiscalRetryCron } from './server/services/clickFiscal.service.ts';
 import { resolveRussianTariffQuote } from './server/services/promoPricing.service.ts';
+import { belgilaKorinish } from './server/services/oxirgiKorinish.service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
@@ -207,6 +205,23 @@ const lendingCsp = [
 /** Shu yo'ldagi (va ichidagi) so'rovlarga yumshatilgan CSP beriladi. */
 const LENDING_YOLI = '/oqituvchilarga';
 
+/**
+ * `/teacherinfo` — o'sha statik sahifaning ODDIY HAVOLA ko'rinishi.
+ *
+ * Ilgari u bosh sahifadagi oynacha ichida iframe bilan ko'rsatilardi. Endi
+ * to'liq sahifa bo'lib yangi oynada ochiladi: havolani ulashsa bo'ladi,
+ * qidiruv tizimi ko'radi, «orqaga» tugmasi kutilganidek ishlaydi.
+ *
+ * Fayl joyidan qimirlamaydi (`oqituvchilarga/index.html`) — tashqarida
+ * tarqalib ketgan `/oqituvchilarga/` havolalari buzilmasin.
+ */
+const TEACHER_INFO_YOLI = '/teacherinfo';
+
+/** Ikkala yo'l ham bir xil statik sahifani beradi, demak sarlavhalar ham bir xil. */
+function lendingSahifasimi(yol: string): boolean {
+  return yol.startsWith(LENDING_YOLI) || yol === TEACHER_INFO_YOLI;
+}
+
 // Video xonasi alohida manbada (boshqa port) — kamera/mikrofon unga delegatsiya qilinmasa,
 // iframe ichida ovoz ham, video ham ishlamaydi.
 const permissionsPolicy = [
@@ -245,19 +260,6 @@ function isDatabaseNoRowsError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const code = 'code' in error ? (error as { code?: unknown }).code : null;
   return code === 'PGRST116';
-}
-
-function isLessonTaskResultsSchemaError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const code = 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
-  const message = 'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
-  return (
-    code === '42P01' ||
-    code === 'PGRST205' ||
-    code === 'PGRST204' ||
-    message.includes('lesson_task_results') ||
-    message.toLowerCase().includes('schema cache')
-  );
 }
 
 async function fetchUserProfileById(userId: number) {
@@ -454,7 +456,7 @@ async function startServer() {
     // o'z saytimiz ramkasiga tushadi; qolgan hamma sahifa avvalgidek yopiq.
     res.setHeader(
       'X-Frame-Options',
-      String(req.path || '').startsWith(LENDING_YOLI) ? 'SAMEORIGIN' : 'DENY',
+      lendingSahifasimi(String(req.path || '')) ? 'SAMEORIGIN' : 'DENY',
     );
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     // Prevent stale API responses (e.g. old 410 from disk cache) from being reused by browsers.
@@ -471,7 +473,7 @@ async function startServer() {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
       res.setHeader(
         'Content-Security-Policy',
-        String(req.path || '').startsWith(LENDING_YOLI) ? lendingCsp : contentSecurityPolicy,
+        lendingSahifasimi(String(req.path || '')) ? lendingCsp : contentSecurityPolicy,
       );
     }
     if (req.method === 'OPTIONS') return res.sendStatus(204);
@@ -512,9 +514,30 @@ async function startServer() {
    * yo'q — xato kirishdan oldin ham bo'lishi mumkin; shuning uchun hajm
    * qat'iy cheklangan.
    */
+  /*
+   * SIRLARNI JURNALGA TUSHIRMASLIK.
+   *
+   * Brauzerdan kelgan xato matni ichida foydalanuvchi tokeni bo'lishi
+   * mumkin: manzilda `?token=...` bo'lsa, xabar ham, `stack` ham o'sha
+   * manzilni o'z ichiga oladi. Shu yo'l bilan `pm2 logs` ga tirik JWT'lar
+   * tushib turardi — ularni o'qigan odam istalgan hisobga kira olardi.
+   *
+   * Shuning uchun jurnalga yozishdan OLDIN token ko'rinishidagi hamma
+   * narsa niqoblanadi: `token=`/`access_token=` parametri, `Bearer <...>`
+   * va bevosita uchraydigan JWT (`xxx.yyy.zzz`).
+   */
+  const SIR_NAQSHLARI: ReadonlyArray<[RegExp, string]> = [
+    [/([?&](?:token|access_token|auth|jwt)=)[^&\s"']+/gi, '$1<yashirildi>'],
+    [/(Bearer\s+)[A-Za-z0-9._-]+/gi, '$1<yashirildi>'],
+    [/eyJ[A-Za-z0-9._-]{20,}/g, '<jwt-yashirildi>'],
+  ];
+  const sirlarniYashir = (matn: string): string =>
+    SIR_NAQSHLARI.reduce((s, [re, orin]) => s.replace(re, orin), matn);
+
   app.post('/api/client-error', (req, res) => {
     const b = (req.body ?? {}) as Record<string, unknown>;
-    const kes = (v: unknown, n: number) => String(v ?? '').slice(0, n).replace(/[\r\n]+/g, ' ');
+    const kes = (v: unknown, n: number) =>
+      sirlarniYashir(String(v ?? '').slice(0, n).replace(/[\r\n]+/g, ' '));
     console.error(
       '[client-error]',
       JSON.stringify({
@@ -531,6 +554,21 @@ async function startServer() {
   } catch (err) {
     logError('express.admin.routes_failed_to_load', err);
   }
+
+  /*
+   * O'QITUVCHILAR UCHUN SHARTLAR SAHIFASI.
+   *
+   * Statik to'plam `oqituvchilarga/index.html` da yotadi va o'zi bir butun —
+   * ichida tashqi fayl yo'q, shuning uchun ikkinchi manzildan berilganda ham
+   * hech narsa buzilmaydi.
+   *
+   * Marshrut SPA fallback'idan OLDIN turishi shart: aks holda `app.get('*')`
+   * uni ushlab, o'rniga React ilovasining `index.html` ini qaytarardi.
+   */
+  app.get(TEACHER_INFO_YOLI, (_req, res) => {
+    const ildiz = isProduction ? 'dist' : 'public';
+    res.sendFile(path.resolve(__dirname, ildiz, 'oqituvchilarga', 'index.html'));
+  });
 
   app.get('/api/health', async (_req, res) => {
     const started = Date.now();
@@ -1045,6 +1083,15 @@ async function startServer() {
       const userId = Number(rawId);
       if (!Number.isFinite(userId) || userId < 1) return res.status(401).json({ error: 'Yaroqsiz token' });
       req.userId = userId;
+      /*
+       * "Qachon onlayn bo'lgan" belgisi. Aynan shu yerda, chunki bu —
+       * barcha autentifikatsiyalangan so'rovlarning yagona o'tish nuqtasi:
+       * dars, lug'at, chat, reyting — hammasi shu yerdan o'tadi.
+       *
+       * `void` — javob kutilmaydi. Belgi qo'yilmasa hech narsa buzilmaydi,
+       * so'rov esa bu sabab bir millisekund ham kechikmasligi kerak.
+       */
+      belgilaKorinish(supabase, userId);
       next();
     } catch (e) {
       res.status(401).json({ error: 'Yaroqsiz token' });
@@ -1166,7 +1213,7 @@ async function startServer() {
 
   // "Ustozdan so'ra" — ovozli o'qish baholash + grammatika tushuntirishi
   const { createUstozRoutes } = await import('./server/routes/ustozRoutes');
-  app.use('/api', createUstozRoutes(authenticate));
+  app.use('/api', createUstozRoutes(authenticate, supabase));
 
   // User
   app.get('/api/user/me', authenticate, async (req: any, res) => {
@@ -1739,32 +1786,6 @@ async function startServer() {
     if (error) return res.status(500).json({ error: error.message });
     if (!data) return res.status(500).json({ error: 'Patent natijasi saqlanmadi' });
     res.json(data);
-  });
-
-  // User: request subscription payment (by card) — admin confirms later
-  app.post('/api/payment-request', authenticate, async (req: any, res) => {
-    const { plan_type, amount } = req.body || {};
-    if (!plan_type || !['monthly', 'yearly'].includes(plan_type)) {
-      return res.status(400).json({ error: 'plan_type kerak: monthly, yearly' });
-    }
-    const amt = Number(amount);
-    if (!(amt > 0)) return res.status(400).json({ error: 'amount kerak' });
-    const { data: row, error } = await supabase
-      .from('subscription_payment_requests')
-      .insert({
-        user_id: req.userId,
-        plan_type,
-        amount: amt,
-        payment_method: 'card',
-        status: 'pending',
-      })
-      .select('id')
-      .single();
-    if (error) {
-      console.error('[POST /api/payment-request]', error);
-      return res.status(500).json({ error: error.message });
-    }
-    res.json({ success: true, id: (row as any).id });
   });
 
   // /api/support was removed when standalone support flow was replaced by
@@ -2503,242 +2524,6 @@ async function startServer() {
     await leaderboardSvc.updateUserPoints(supabase, req.userId, nextPoints.total_points);
     await leaderboardCacheSvc.invalidateLeaderboardCache();
     res.json({ success: true, ...nextPoints });
-  });
-
-  // Lessons (freemium: locked flag, preview, protect full content)
-  const { getAccessForRequest } = await import('./server/routes/accessRoutes');
-  const accessControlService = await import('./server/services/accessControl.service');
-  const lessonsCache = await import('./server/cache/lessonsCache');
-  const lessonProgressSnapshotService = await import('./server/services/lessonProgressSnapshot.service');
-
-  app.get('/api/lessons', authenticate, async (req: any, res) => {
-    const userId = Number(req.userId);
-    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-    const cached = lessonsCache.getCachedLessonsList(userId);
-    if (cached != null) return res.json(cached);
-    // NOTE: the `lessons` table has been removed from the DB (migration 022).
-    // We now use the static LESSONS list from the frontend data file.
-    const { LESSONS } = await import('./src/data/lessonsList.ts');
-    const access = await getAccessForRequest(supabase, userId);
-    const withLock = accessControlService.applyLessonsLock(
-      LESSONS.map((l) => ({ id: l.id, title: l.title })),
-      access
-    );
-    const list = withLock.map((l) => ({
-      id: l.id,
-      title: l.title,
-      locked: l.locked,
-    }));
-    lessonsCache.setCachedLessonsList(userId, list);
-    res.json(list);
-  });
-
-  app.get('/api/lessons/preview', authenticate, async (req: any, res) => {
-    const raw = req.query.lesson_id ?? req.query.lessonId;
-    const s = Array.isArray(raw) ? raw[0] : raw;
-    const id = Number(typeof s === 'string' ? s.trim() : s);
-    if (!Number.isFinite(id) || id <= 0) {
-      return res.status(400).json({ error: 'lesson_id query parameter required' });
-    }
-    const preview = await accessControlService.getLessonPreview(supabase, id);
-    if (!preview) return res.status(404).json({ error: 'Dars topilmadi' });
-    res.json(preview);
-  });
-
-  app.get('/api/lessons/:id/preview', authenticate, async (req: any, res) => {
-    const id = Number(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid lesson id' });
-    const preview = await accessControlService.getLessonPreview(supabase, id);
-    if (!preview) return res.status(404).json({ error: 'Dars topilmadi' });
-    res.json(preview);
-  });
-
-  app.get('/api/lessons/:lessonId/tasks/:taskNumber', authenticate, async (req: any, res) => {
-    const userId = Number(req.userId);
-    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-    const lessonId = Number(req.params.lessonId);
-    const taskNumber = Number(req.params.taskNumber);
-    if (!Number.isFinite(lessonId) || lessonId <= 0 || !Number.isFinite(taskNumber) || taskNumber <= 0) {
-      return res.status(400).json({ error: 'lesson yoki task raqami noto‘g‘ri' });
-    }
-    const access = await getAccessForRequest(supabase, userId);
-    if (!accessControlService.canAccessLesson(lessonId, access)) {
-      return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
-    }
-    const start = taskNumber * 1000;
-    const end = start + 999;
-    const { data, error } = await supabase
-      .from('questions')
-      .select('id,type,prompt,order_index,version,difficulty,skill,meta,question_content(content,answer)')
-      .eq('lesson_id', lessonId)
-      .eq('is_active', true)
-      .gte('order_index', start)
-      .lte('order_index', end)
-      .order('order_index', { ascending: true });
-    if (error) {
-      console.error('[lessons/:id/tasks]', error.message);
-      return res.status(500).json({ error: 'Savollar yuklanmadi' });
-    }
-    const items = (data ?? []).map((q: any) => {
-      const payload = payloadFromQuestionContentEmbed(q.question_content);
-      return {
-        id: q.id,
-        type: q.type,
-        prompt: q.prompt,
-        order_index: q.order_index,
-        version: q.version ?? 1,
-        difficulty: q.difficulty ?? 1,
-        skill: q.skill ?? 'grammar',
-        meta: q.meta ?? {},
-        content: payload.content ?? {},
-        answer: payload.answer ?? {},
-      };
-    });
-    res.json(items);
-  });
-
-  /** Same data as `/api/lessons/:id/tasks/:n` — flat path for Vercel/proxies that mishandle nested lesson URLs. */
-  app.get('/api/lesson-task-questions', authenticate, async (req: any, res) => {
-    const userId = Number(req.userId);
-    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-    const lessonId = Number(req.query.lesson_id);
-    const taskNumber = Number(req.query.task_number);
-    if (!Number.isFinite(lessonId) || lessonId <= 0 || !Number.isFinite(taskNumber) || taskNumber <= 0) {
-      return res.status(400).json({ error: 'lesson_id va task_number kerak' });
-    }
-    const access = await getAccessForRequest(supabase, userId);
-    if (!accessControlService.canAccessLesson(lessonId, access)) {
-      return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
-    }
-    const start = taskNumber * 1000;
-    const end = start + 999;
-    const { data, error } = await supabase
-      .from('questions')
-      .select('id,type,prompt,order_index,version,difficulty,skill,meta,question_content(content,answer)')
-      .eq('lesson_id', lessonId)
-      .eq('is_active', true)
-      .gte('order_index', start)
-      .lte('order_index', end)
-      .order('order_index', { ascending: true });
-    if (error) {
-      console.error('[lesson-task-questions]', error.message);
-      return res.status(500).json({ error: 'Savollar yuklanmadi' });
-    }
-    const items = (data ?? []).map((q: any) => {
-      const payload = payloadFromQuestionContentEmbed(q.question_content);
-      return {
-        id: q.id,
-        type: q.type,
-        prompt: q.prompt,
-        order_index: q.order_index,
-        version: q.version ?? 1,
-        difficulty: q.difficulty ?? 1,
-        skill: q.skill ?? 'grammar',
-        meta: q.meta ?? {},
-        content: payload.content ?? {},
-        answer: payload.answer ?? {},
-      };
-    });
-    res.json(items);
-  });
-
-  app.get('/api/lessons/:id', authenticate, async (req: any, res) => {
-    const id = Number(req.params.id);
-    const userId = Number(req.userId);
-    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-    const access = await getAccessForRequest(supabase, userId);
-    if (!accessControlService.canAccessLesson(id, access)) {
-      return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
-    }
-    const { data: lesson, error: lessonErr } = await supabase
-      .from('lessons')
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (lessonErr || !lesson) return res.status(404).json({ error: 'Dars topilmadi' });
-    const { data: exercises } = await supabase.from('exercises').select('*').eq('lesson_id', id);
-    const exercisesParsed = (exercises ?? []).map((e: any) => ({
-      ...e,
-      options: typeof e.options === 'string' ? JSON.parse(e.options) : e.options,
-    }));
-    res.json({ ...lesson, exercises: exercisesParsed });
-  });
-
-  app.post('/api/lessons/:id/complete', authenticate, async (req: any, res) => {
-    try {
-      await lessonProgressSnapshotService.recordFullLessonPassInTaskResults(
-        supabase,
-        Number(req.userId),
-        Number(req.params.id)
-      );
-    } catch (e) {
-      console.error('[lessons/complete] lesson_task_results', e);
-      return res.status(500).json({ error: 'Xatolik yuz berdi' });
-    }
-    const progress = await lessonProgressSnapshotService.syncUserLessonProgressPercent(
-      supabase,
-      Number(req.userId)
-    );
-    res.json({ success: true, progress });
-  });
-
-  app.get('/api/lessons/path/:encodedPath/tasks/:taskNumber', authenticate, async (req: any, res) => {
-    const userId = Number(req.userId);
-    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-    let lessonPath = '';
-    try {
-      lessonPath = decodeURIComponent(String(req.params.encodedPath));
-    } catch {
-      return res.status(400).json({ error: 'lessonPath noto‘g‘ri' });
-    }
-    const taskNumber = Number(req.params.taskNumber);
-    const lessonIdMatch = lessonPath.match(/\/lesson-(\d+)/);
-    const lessonId = lessonIdMatch ? Number(lessonIdMatch[1]) : null;
-    if (!lessonId || !Number.isFinite(taskNumber) || taskNumber <= 0) {
-      return res.status(400).json({ error: 'lessonPath yoki taskNumber noto‘g‘ri' });
-    }
-    const access = await getAccessForRequest(supabase, userId);
-    if (!accessControlService.canAccessLesson(lessonId, access)) {
-      return res.status(403).json({ error: 'locked', message: 'Ushbu dars uchun tarif kerak' });
-    }
-    const start = taskNumber * 1000;
-    const end = start + 999;
-    const { data, error } = await supabase
-      .from('questions')
-      .select('id,type,prompt,order_index,version,difficulty,skill,meta,question_content(content,answer)')
-      .eq('lesson_id', lessonId)
-      .eq('is_active', true)
-      .gte('order_index', start)
-      .lte('order_index', end)
-      .order('order_index', { ascending: true });
-    if (error) {
-      console.error('[lessons/path/tasks]', error.message);
-      return res.status(500).json({ error: 'Savollar yuklanmadi' });
-    }
-    const items = (data ?? []).map((q: any) => {
-      const payload = payloadFromQuestionContentEmbed(q.question_content);
-      return {
-        id: q.id,
-        type: q.type,
-        prompt: q.prompt,
-        order_index: q.order_index,
-        version: q.version ?? 1,
-        difficulty: q.difficulty ?? 1,
-        skill: q.skill ?? 'grammar',
-        meta: q.meta ?? {},
-        content: payload.content ?? {},
-        answer: payload.answer ?? {},
-      };
-    });
-    res.json(items);
-  });
-
-  app.get('/api/grammar/catalog', authenticate, async (req: any, res) => {
-    const userId = Number(req.userId);
-    if (!Number.isFinite(userId)) return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
-    const result = await buildGrammarCatalogPayload(supabase, userId);
-    if (result.ok === false) return res.status(500).json({ error: result.error });
-    res.json(result.payload);
   });
 
   app.get('/api/daily-course/day/:dayNumber', authenticate, async (req: any, res) => {
@@ -3485,110 +3270,6 @@ async function startServer() {
     }
   });
 
-  // Lesson task results (e.g. /lesson-14 topshiriq 1–16)
-  app.get('/api/lesson-task-results', authenticate, async (req: any, res) => {
-    const lessonPath = req.query.lesson_path as string | undefined;
-    let q = supabase
-      .from('lesson_task_results')
-      .select('lesson_path, task_number, correct, total')
-      .eq('user_id', req.userId);
-    if (lessonPath) q = q.eq('lesson_path', lessonPath);
-    const { data: rows, error } = await q;
-    if (error) {
-      if (isLessonTaskResultsSchemaError(error)) {
-        return res.json([]);
-      }
-      console.error('[api/lesson-task-results] GET error:', error.message);
-      return res.status(500).json({ error: error.message });
-    }
-    res.json(rows ?? []);
-  });
-
-  app.post('/api/lesson-task-results', authenticate, async (req: any, res) => {
-    const { lesson_path, task_number, correct, total } = req.body;
-    if (!lesson_path || task_number == null) {
-      return res.status(400).json({ error: 'lesson_path va task_number kerak' });
-    }
-    const lessonPath = String(lesson_path);
-    const taskNumber = Number(task_number);
-    const correctCount = Number(correct) || 0;
-    const totalCount = Number(total) || 0;
-    const { calculateImprovementDelta } = await import('./server/services/scoringRules.service');
-    const { data: prevRow, error: prevError } = await supabase
-      .from('lesson_task_results')
-      .select('correct, total')
-      .eq('user_id', req.userId)
-      .eq('lesson_path', lessonPath)
-      .eq('task_number', taskNumber)
-      .maybeSingle();
-    if (prevError && isLessonTaskResultsSchemaError(prevError)) {
-      return res.json({ success: true, skipped: 'lesson_task_results_missing' });
-    }
-    const prev =
-      prevRow != null && prevRow.correct != null && prevRow.total != null
-        ? { correct: Number(prevRow.correct), total: Number(prevRow.total) }
-        : null;
-    if (shouldPreservePreviousLessonTaskResult(prev, correctCount, totalCount)) {
-      return res.json({ success: true, preserved: true });
-    }
-    const prevCorrect = Number(prevRow?.correct ?? 0);
-    const delta = calculateImprovementDelta(prevCorrect, correctCount);
-    if (delta > 0) {
-      const today = formatDateInAppTimezone(new Date());
-      try {
-        const pointEventStatus = await insertPointEvent(supabase, {
-          userId: req.userId,
-          points: delta,
-          source: 'lesson_task_result',
-          sourceRef: `${lessonPath}#${taskNumber}`,
-          eventKey: `lesson_task_result:${req.userId}:${lessonPath}:${taskNumber}:correct:${correctCount}`,
-          eventType: 'award',
-          activityDate: today,
-        });
-        if (pointEventStatus !== 'duplicate') {
-          const { data: user } = await supabase
-            .from('users')
-            .select('points, points_date, weekly_points, weekly_points_week_start, monthly_points, total_points')
-            .eq('id', req.userId)
-            .single();
-          if (user) {
-            const nextPoints = buildPeriodicPointsUpdate(user, delta, today);
-            await supabase
-              .from('users')
-              .update(nextPoints)
-              .eq('id', req.userId);
-            const leaderboardSvc = await import('./server/services/leaderboard.service');
-            const leaderboardCacheSvc = await import('./server/services/leaderboardCache.service');
-            await leaderboardSvc.ensureUserInLeaderboard(supabase, req.userId);
-            await leaderboardSvc.updateUserPoints(supabase, req.userId, nextPoints.total_points);
-            await leaderboardCacheSvc.invalidateLeaderboardCache();
-          }
-        }
-      } catch (pointEventError) {
-        console.error('[api/lesson-task-results] point event', pointEventError);
-      }
-    }
-    const row = {
-      user_id: req.userId,
-      lesson_path: lessonPath,
-      task_number: taskNumber,
-      correct: correctCount,
-      total: totalCount,
-      updated_at: new Date().toISOString(),
-    };
-    const { error } = await supabase.from('lesson_task_results').upsert(row, {
-      onConflict: 'user_id,lesson_path,task_number',
-    });
-    if (error) {
-      if (isLessonTaskResultsSchemaError(error)) {
-        return res.json({ success: true, skipped: 'lesson_task_results_missing' });
-      }
-      console.error('[api/lesson-task-results] POST error:', error.message);
-      return res.status(500).json({ error: error.message });
-    }
-    res.json({ success: true });
-  });
-
   // Vite / static
   if (process.env.NODE_ENV !== 'production') {
     // Unmatched /api/* would otherwise fall through to Vite and return an empty 404,
@@ -3617,8 +3298,80 @@ async function startServer() {
       if (p.startsWith('/uploads/')) {
         return res.status(404).type('text/plain').send('Not found');
       }
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+
+      const indexFayl = path.resolve(__dirname, 'dist', 'index.html');
+
+      /*
+       * YO'Q FAYL — 404, `index.html` EMAS.
+       *
+       * Ilgari mavjud bo'lmagan `/assets/index-ESKI.js` uchun ham `index.html`
+       * qaytarilardi: brauzer JS o'rniga HTML olib "Importing a module script
+       * failed" deb yiqilardi, service worker esa O'SHA HTML ni `.js` manzili
+       * ostida keshlab qo'yardi — sahifa qayta yuklangandan keyin ham
+       * ochilmasdi. Bu holat har deploy'dan keyin ochiq turgan eski
+       * ilovalarda yuz berardi (`vite build` eski bo'laklarni o'chiradi).
+       *
+       * Endi bunday so'rov TOZA 404 oladi: `AppErrorBoundary` buni "yangi
+       * versiya chiqibdi" deb tanib, sahifani bir marta qayta yuklaydi va
+       * yangi bo'laklarga o'tadi.
+       *
+       * `index.html` mavjud bo'lmasa (deploy o'rtasi) bu qoida ishlamaydi —
+       * o'shanda pastdagi 503 "yangilanmoqda" javobi to'g'riroq.
+       */
+      const statikFayl =
+        p.startsWith('/assets/')
+        || /\.(js|mjs|css|map|woff2?|ttf|otf|png|jpe?g|gif|svg|webp|avif|ico|mp3|wav|json|txt|xml)$/i.test(p);
+      if (statikFayl && fs.existsSync(indexFayl)) {
+        return res.status(404).type('text/plain').send('Not found');
+      }
+
+      /*
+       * DEPLOY PAYTIDAGI OYNA.
+       *
+       * `vite build` `dist` ni bo'shatib qayta yozadi, eski jarayon esa
+       * shu vaqtda ham so'rovlarga javob beryapti. O'sha bir necha
+       * soniyada `index.html` mavjud bo'lmaydi va `sendFile` ishlov
+       * berilmagan xato bilan yiqilardi — jurnalda 40 marta uchradi,
+       * tashrifchi esa buzuq sahifa ko'rardi.
+       *
+       * Endi bunday holatda 503 va `Retry-After` qaytadi: brauzer ham,
+       * qidiruv tizimi ham buni vaqtinchalik deb tushunadi (500 esa
+       * doimiy nosozlik degani).
+       */
+      res.sendFile(indexFayl, (err) => {
+        if (!err || res.headersSent) return;
+        res.status(503)
+          .set('Retry-After', '5')
+          .type('text/html')
+          .send(
+            '<!doctype html><meta charset="utf-8">' +
+              '<meta http-equiv="refresh" content="5">' +
+              '<title>Yangilanmoqda</title>' +
+              '<p style="font:16px system-ui;padding:24px">Sayt yangilanmoqda, bir necha soniyadan keyin o‘zi ochiladi…</p>',
+          );
+      });
     });
+  }
+
+  /*
+   * DISKNI TOZALASH — mustaqil jadval.
+   *
+   * `ENABLE_INTERNAL_CRON` ortiga QO'YILMADI: u bilan birga to'lovlarni
+   * avto-yangilash cronlari ham yonadi, tozalash esa moliyaga tegmaydi
+   * va har doim ishlashi kerak. O'chirish uchun `DISABLE_MEDIA_CLEANUP=1`.
+   *
+   * Har soatda yuradi va ishga tushgandan bir daqiqa keyin bir marta —
+   * qayta ishga tushirishdan keyin uzoq kutib turmasin.
+   */
+  if (process.env.DISABLE_MEDIA_CLEANUP !== '1') {
+    const cronModule = await import('node-cron');
+    const { tozalashniYurgiz } = await import('./server/services/mediaTozalash.service.ts');
+    const yurgiz = () => void tozalashniYurgiz(supabase, UPLOADS_DIR);
+    cronModule.default.schedule('20 * * * *', yurgiz);
+    setTimeout(yurgiz, 60_000).unref?.();
+    console.log('[tozalash] chat mediasi va TTS keshi jadvalga qo\'yildi (soatiga bir marta)');
+  } else {
+    console.warn('[tozalash] DISABLE_MEDIA_CLEANUP=1 — o\'chirilgan');
   }
 
   const leaderboardCronEnabled = String(process.env.ENABLE_LEADERBOARD_CRON ?? 'false').toLowerCase() === 'true';

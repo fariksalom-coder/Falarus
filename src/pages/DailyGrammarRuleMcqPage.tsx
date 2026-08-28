@@ -50,7 +50,6 @@ export default function DailyGrammarRuleMcqPage() {
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [message, setMessage] = useState('');
   const [finished, setFinished] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
 
   const [choiceOptions, setChoiceOptions] = useState<DailyChoiceOption[]>([]);
   /** Javob serverga ketayotganda ikkinchi marta bosilmasin. */
@@ -105,7 +104,6 @@ export default function DailyGrammarRuleMcqPage() {
   useEffect(() => {
     setCurrentIndex(0);
     setFinished(false);
-    setCorrectCount(0);
     setStatus('idle');
     setMessage('');
     setSelectedOptionIndex(null);
@@ -136,7 +134,6 @@ export default function DailyGrammarRuleMcqPage() {
 
   const handleNext = () => {
     if (status !== 'correct') return;
-    setCorrectCount((c) => c + 1);
     if (currentIndex < tasks.length - 1) {
       setCurrentIndex((p) => p + 1);
       return;

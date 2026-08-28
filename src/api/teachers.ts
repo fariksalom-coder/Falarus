@@ -363,16 +363,6 @@ export async function bookFreeLessons(
   return Array.isArray(data) ? data : [data];
 }
 
-export async function completeTeacherTrial(token: string, trialId: number): Promise<void> {
-  const res = await fetch(apiUrl(`/api/teacher/me/trial-lessons/${trialId}/complete`), {
-    method: 'PATCH',
-    headers: authHeaders(token),
-    body: JSON.stringify({}),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || 'Dars yakunlanmadi');
-}
-
 /** O'quvchining sinov darslari — statistika paneli uchun. */
 export type MyTrialItem = {
   trialId: number;

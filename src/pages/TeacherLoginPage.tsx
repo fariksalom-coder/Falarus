@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GraduationCap, LogIn } from 'lucide-react';
+import { ChevronLeft, GraduationCap, LogIn } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { loginTeacherWithPassword, type AuthUser } from '../api/auth';
@@ -14,6 +14,29 @@ export default function TeacherLoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { t } = useLocale();
+
+  /*
+   * ORQAGA.
+   *
+   * NIMA UCHUN `navigate(-1)` EMAS: bu sahifaga ko'pincha `/teacherinfo`
+   * dan kelishadi, u esa React marshruti emas — server beradigan alohida
+   * statik hujjat. `navigate(-1)` faqat SPA ichida orqaga qaytadi va
+   * `/teacherinfo` ni topa olmay 404 sahifasini chizadi (sinovda aynan
+   * shunday bo'ldi).
+   *
+   * Shuning uchun `location.assign` bilan TO'LIQ yuklash qilinadi — u
+   * statik sahifa uchun ham, SPA sahifasi uchun ham bir xil ishlaydi.
+   * Manzil `document.referrer` dan olinadi va faqat o'z saytimiz bo'lsa
+   * ishlatiladi; aks holda bosh sahifaga chiqamiz.
+   */
+  function orqaga() {
+    const kelgan = document.referrer;
+    if (kelgan && kelgan.startsWith(window.location.origin) && !kelgan.startsWith(window.location.href)) {
+      window.location.assign(kelgan);
+      return;
+    }
+    navigate('/');
+  }
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +70,15 @@ export default function TeacherLoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-md overflow-hidden rounded-[24px] bg-app-surface shadow-app-card ring-1 ring-app-border"
       >
-        <div className="px-6 pb-6 pt-7 text-white" style={{ background: 'var(--app-brand-gradient)' }}>
+        <div className="px-6 pb-6 pt-6 text-white" style={{ background: 'var(--app-brand-gradient)' }}>
+          <button
+            type="button"
+            onClick={orqaga}
+            className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-bold text-white ring-1 ring-white/25 transition hover:bg-white/25"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.6} />
+            {t('common.back')}
+          </button>
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
             <GraduationCap className="h-6 w-6" />
           </div>

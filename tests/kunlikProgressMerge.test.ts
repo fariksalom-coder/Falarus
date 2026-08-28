@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isKunlikDayRowFullyComplete } from '../shared/kunlikDayCompletion';
+import { isKunlikDayReadyForSuhbat, isKunlikDayRowFullyComplete } from '../shared/kunlikDayCompletion';
 import { mergeKunlikDayPatch } from '../shared/kunlikProgressMerge';
 
 const base = {
@@ -16,6 +16,7 @@ const base = {
   text_questions_correct: 0,
   speaking_tasks_done: 0,
   oqish_done: true,
+  suhbat_done: true,
   speaking_level: 3,
 };
 
@@ -64,8 +65,46 @@ describe('phrases_done (lug\'at 4-vazifasi)', () => {
       grammar_3: true,
       words_match: true,
       oqish_done: true,
+      suhbat_done: true,
       speaking_level: 0,
     };
     assert.strictEqual(isKunlikDayRowFullyComplete(row, new Map()), true);
+  });
+
+  it('5-blok dastlabki to\'rt blok tugamaguncha ochilmaydi', () => {
+    const kam = {
+      day_number: 1,
+      grammar_1: true,
+      grammar_2: true,
+      grammar_3: true,
+      words_match: true,
+      oqish_done: false,
+      speaking_level: 0,
+    };
+    assert.strictEqual(isKunlikDayReadyForSuhbat(kam, new Map()), false);
+    assert.strictEqual(isKunlikDayReadyForSuhbat({ ...kam, oqish_done: true }, new Map()), true);
+    // Gapirish topshirig'i bor kunda daraja yetmasa ham ochilmaydi.
+    assert.strictEqual(
+      isKunlikDayReadyForSuhbat({ ...kam, oqish_done: true }, new Map([[1, 3]])),
+      false,
+    );
+  });
+
+  it('kun 5-bloksiz (savol-javob) yopilmaydi', () => {
+    const row = {
+      day_number: 1,
+      grammar_1: true,
+      grammar_2: true,
+      grammar_3: true,
+      words_match: true,
+      oqish_done: true,
+      suhbat_done: false,
+      speaking_level: 0,
+    };
+    assert.strictEqual(isKunlikDayRowFullyComplete(row, new Map()), false);
+    assert.strictEqual(
+      isKunlikDayRowFullyComplete({ ...row, suhbat_done: true }, new Map()),
+      true,
+    );
   });
 });

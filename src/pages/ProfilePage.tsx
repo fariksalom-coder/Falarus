@@ -194,13 +194,23 @@ export default function ProfilePage() {
 
         {/* Passport-navy hero with gold guilloché */}
         <section className="profile-guilloche relative mb-4 overflow-hidden rounded-[24px] px-5 py-5 text-white shadow-[0_22px_44px_-18px_rgba(15,27,59,0.55)]">
-          {/* Top row: OLTIN A'ZO pill + member code */}
+          {/*
+            Top row: OLTIN A'ZO pill + member code.
+
+            Yorliq FAQAT haqiqiy oltin a'zoda chiqadi. Ilgari u shartsiz
+            chizilardi — passport dizaynining bezagi sifatida — va natijada
+            endigina ro'yxatdan o'tgan, hech narsa to'lamagan foydalanuvchi
+            ham o'zini «OLTIN A'ZO» deb ko'rardi. Yorliq bo'lmaganda a'zolik
+            kodi `ml-auto` bilan o'ng chetda qoladi.
+          */}
           <div className="relative z-[2] flex items-center justify-between">
-            <span className="profile-gold-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em]">
-              <span aria-hidden>✦</span>
-              <span>Oltin a'zo</span>
-            </span>
-            <span className="profile-heading text-[13px] tracking-[0.28em] text-[#D4AC5C]">
+            {oltin ? (
+              <span className="profile-gold-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em]">
+                <span aria-hidden>✦</span>
+                <span>Oltin a'zo</span>
+              </span>
+            ) : null}
+            <span className="profile-heading ml-auto text-[13px] tracking-[0.28em] text-[#D4AC5C]">
               {membershipCode}
             </span>
           </div>

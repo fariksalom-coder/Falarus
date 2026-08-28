@@ -95,15 +95,3 @@ export async function pushSinovYubor(token: string): Promise<number> {
   return Number(d.yuborildi ?? 0);
 }
 
-export async function pushObunaniBekorQil(token: string): Promise<void> {
-  if (!pushQollabQuvvatlanadi()) return;
-  const reg = await navigator.serviceWorker.ready;
-  const obuna = await reg.pushManager.getSubscription();
-  if (!obuna) return;
-  await fetch(apiUrl('/api/push/unsubscribe'), {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ endpoint: obuna.endpoint }),
-  }).catch(() => undefined);
-  await obuna.unsubscribe().catch(() => undefined);
-}

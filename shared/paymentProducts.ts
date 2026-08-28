@@ -59,11 +59,6 @@ export function getTeacherListingPriceUzs(planCode: TeacherListingPlanCode): num
   return TEACHER_LISTING_PRICES_UZS[planCode] ?? TEACHER_LISTING_PRICE_UZS;
 }
 
-export function getTeacherListingPlanLabel(_planCode: TeacherListingPlanCode): string {
-  // Ikkala tarif kodi ham bitta mahsulot — chegirmali birinchi oy bekor qilingan.
-  return "O'qituvchi ro'yxati · 1 oy";
-}
-
 /** Sinov darsi — 490 ₽, UZS hisobida (150 kurs). */
 export const TEACHER_TRIAL_PRICE_RUB = 490;
 export const TEACHER_TRIAL_PRICE_UZS = 73_500;
@@ -80,17 +75,6 @@ export function getTeacherTrialPrice(currency: CurrencyCode): number {
   if (currency === 'RUB') return TEACHER_TRIAL_PRICE_RUB;
   return TEACHER_TRIAL_PRICE_UZS;
 }
-
-export const COURSE_PRODUCT_CODES: readonly CourseProductCode[] = ['patent', 'vnzh'] as const;
-export const TEACHER_PRODUCT_CODES: readonly TeacherProductCode[] = [
-  TEACHER_LISTING_PRODUCT_CODE,
-  TEACHER_TRIAL_PRODUCT_CODE,
-] as const;
-export const PAYMENT_PRODUCT_CODES: readonly PaymentProductCode[] = [
-  SUBSCRIPTION_PRODUCT_CODE,
-  ...COURSE_PRODUCT_CODES,
-  ...TEACHER_PRODUCT_CODES,
-] as const;
 
 type CourseProductMeta = {
   label: string;

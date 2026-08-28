@@ -24,6 +24,7 @@ const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   text_questions_correct: 0,
   speaking_tasks_done: 0,
   oqish_done: false,
+  suhbat_done: false,
   speaking_level: 0,
 };
 

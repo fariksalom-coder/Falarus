@@ -18,7 +18,8 @@ import {
   CLICK_PAY_CARD_TYPE_DEFAULT,
   inferPaymentProviderFromProofUrl,
   getClickAmountForProduct,
-  isExpiredClickPending,
+  isExpiredGatewayPending,
+  isGatewayCheckoutChannel,
   isResumableClickButtonPending,
   normalizeClickCallbackPayload,
   shouldSkipClickSignatureVerify,
@@ -33,7 +34,6 @@ import {
   handleClickCardTokenDelete,
   handleClickCardTokenPayment,
   handleClickCardTokenRequest,
-  handleClickCardTokenVerify,
 } from '../services/clickCardToken.service.js';
 import { fiscalizePayment } from '../services/clickFiscal.service.js';
 import { resolveRussianTariffQuote } from '../services/promoPricing.service.js';
@@ -122,7 +122,7 @@ export function createPaymentRoutes(
       if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
         pending = null;
       }
-      if (pending && isExpiredClickPending(pending as any)) {
+      if (pending && isExpiredGatewayPending(pending as any)) {
         await supabase
           .from('payments')
           .update({ status: 'rejected' })
@@ -233,42 +233,6 @@ export function createPaymentRoutes(
     return res.status(out.status).json(out.json);
   });
 
-  router.post('/click/card-token/verify', authenticate, async (req: any, res: Response) => {
-    const cfg = getClickConfig();
-
-    console.log('CLICK CONFIG FINAL:', {
-      serviceId: cfg.serviceId,
-      merchantUserId: cfg.apiMerchantUserId,
-      secretKey: cfg.secretKey ? 'OK' : 'MISSING'
-    });
-
-    const payload = (req.body ?? {}) as Record<string, unknown>;
-    const verifyOut = await handleClickCardTokenVerify(supabase, req.userId, payload);
-    if (verifyOut.status !== 200) {
-      return res.status(verifyOut.status).json(verifyOut.json);
-    }
-
-    // Backward compatibility for existing clients:
-    // old frontend sends plan/product to verify and expects immediate activation.
-    const shouldAutoCharge =
-      typeof payload.product_code === 'string' ||
-      typeof payload.plan_type === 'string' ||
-      typeof payload.tariff_type === 'string';
-    if (!shouldAutoCharge) {
-      return res.status(verifyOut.status).json(verifyOut.json);
-    }
-
-    const paymentOut = await handleClickCardTokenPayment(supabase, req.userId, payload);
-    if (paymentOut.status !== 200) {
-      return res.status(paymentOut.status).json(paymentOut.json);
-    }
-    return res.status(200).json({
-      ...paymentOut.json,
-      card_verified: true,
-      card_token_id: verifyOut.json.card_token_id ?? null,
-    });
-  });
-
   router.post('/click/card-token/payment', authenticate, async (req: any, res: Response) => {
     const out = await handleClickCardTokenPayment(supabase, req.userId, (req.body ?? {}) as Record<string, unknown>);
     return res.status(out.status).json(out.json);
@@ -334,16 +298,18 @@ export function createPaymentRoutes(
         .limit(1)
         .maybeSingle();
       if (pendingErr && isPaymentsProductCodeSchemaError(pendingErr)) {
+        // `payment_channel` ham olinadi: usiz quyidagi «chek tugatilmagan
+        // checkoutdan ustun» qoidasi eski sxemada hech qachon ishlamasdi.
         const legacy = await supabase
           .from('payments')
-          .select('id')
+          .select('id, payment_channel, created_at, payment_time')
           .eq('user_id', userId)
           .eq('status', 'pending')
           .limit(1)
           .maybeSingle();
         pending = legacy.data as any;
       }
-      if (pending && isExpiredClickPending(pending as any)) {
+      if (pending && isExpiredGatewayPending(pending as any)) {
         await supabase
           .from('payments')
           .update({ status: 'rejected' })
@@ -354,12 +320,32 @@ export function createPaymentRoutes(
       if (pending) {
         const pendingId = Number((pending as { id?: number }).id);
         const pendingChannel = String((pending as { payment_channel?: string | null }).payment_channel ?? '');
-        const canSupersedePending =
-          productCode === 'teacher_trial' &&
-          file &&
-          (pendingChannel === 'rahmat' || pendingChannel === 'click_button');
+        /*
+         * CHEK TUGATILMAGAN CHECKOUTDAN USTUN.
+         *
+         * Bu qoida ilgari FAQAT `teacher_trial` uchun ishlardi. Qolgan hamma
+         * mahsulotda (russian, vnzh, patent, teacher_listing) tashlab ketilgan
+         * bitta Rahmat checkout'i foydalanuvchini butunlay qamab qo'yardi:
+         * `isExpiredClickPending` `rahmat` kanalini tanimaydi, shuning uchun
+         * yozuv o'z-o'zidan ham o'chmasdi. Foydalanuvchi «To'lovingiz
+         * tekshirilmoqda» xabarini ko'rar, adminda esa tasdiqlaydigan haqiqiy
+         * hujjat yo'q edi — chek o'rniga Rahmat havolasi turardi.
+         * Prodda 50+ kun shu holatda qolgan hisoblar topildi (2026-08-18).
+         *
+         * Chek yuklangan bo'lsa, foydalanuvchi to'lov usulini ataylab
+         * o'zgartirgan. Shlyuz yozuvi ortida pul yo'q — pul o'tganida
+         * callback uni allaqachon `approved` qilgan bo'lardi.
+         *
+         * `manual` pending ustidan O'TILMAYDI: unda admin ko'rishi kerak
+         * bo'lgan haqiqiy chek bor, uni bloklash to'g'ri.
+         */
+        const canSupersedePending = Boolean(file) && isGatewayCheckoutChannel(pendingChannel);
         if (canSupersedePending && Number.isFinite(pendingId)) {
-          await supabase.from('payments').update({ status: 'rejected' }).eq('id', pendingId);
+          await supabase
+            .from('payments')
+            .update({ status: 'rejected' })
+            .eq('id', pendingId)
+            .eq('status', 'pending');
           pending = null;
         } else {
           return res.status(400).json({

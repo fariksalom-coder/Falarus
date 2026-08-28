@@ -60,19 +60,6 @@ export async function createReferral(
   if (error) throw error;
 }
 
-export async function getReferralByReferredUser(
-  supabase: DatabaseClient,
-  referredUserId: number
-): Promise<{ id: number; referrer_id: number; discount_used: boolean; status: string } | null> {
-  const { data, error } = await supabase
-    .from('referrals')
-    .select('id, referrer_id, discount_used, status')
-    .eq('referred_user_id', referredUserId)
-    .single();
-  if (error || !data) return null;
-  return data as any;
-}
-
 export async function getReferralsByReferrer(
   supabase: DatabaseClient,
   referrerId: number
@@ -104,17 +91,6 @@ export async function getReferralsByReferrer(
 // NOTE: updateReferralToPaid + updateReferralToRewarded were removed as part
 // of P0 #3 (migration 117). They are now done atomically inside the
 // process_referral_reward() Postgres function — see referralReward.service.ts.
-
-export async function updateReferralDiscountUsed(
-  supabase: DatabaseClient,
-  referralId: number
-) {
-  const { error } = await supabase
-    .from('referrals')
-    .update({ discount_used: true })
-    .eq('id', referralId);
-  if (error) throw error;
-}
 
 export async function getUserReferralBalance(
   supabase: DatabaseClient,

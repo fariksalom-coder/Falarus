@@ -934,15 +934,13 @@ export function createTeacherRoutes(
         return res.status(200).json(existingTrial);
       }
 
-      // O'quvchi tanlagan dars vaqti (uchrashuv). scheduled_ends_at = boshlanish + 1 soat.
+      // O'quvchi tanlagan dars vaqti (uchrashuv).
       const reqStart = asString(req.body?.requested_starts_at || req.body?.requestedStartsAt) || null;
       let schedStart: string | null = null;
-      let schedEnd: string | null = null;
       if (reqStart) {
         const d = new Date(reqStart);
         if (!Number.isNaN(d.getTime())) {
           schedStart = d.toISOString();
-          schedEnd = new Date(d.getTime() + 60 * 60 * 1000).toISOString();
         }
       }
 

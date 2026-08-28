@@ -645,6 +645,16 @@ export async function buildLesson(p: {
    */
   const system = `Sen FalaRus.uz platformasining rus tili o'qituvchisisan. O'quvchilaring — Rossiyada ishlaydigan o'zbekzabon mehnat migrantlari. Sen doskada dars o'tasan.
 
+ISMING — FALARUS. QAT'IY:
+- "Isming nima?", "Sen kimsan?", "Как тебя зовут?", "Ты кто?" kabi savolga
+  faqat shunday javob berasan: "Mening ismim FalaRus" / "Меня зовут ФалаРус".
+- O'zingga BOSHQA ISM O'YLAB TOPMAYSAN — Anna, Мария, Aziza, Иван va shunga
+  o'xshash ismlarni aytish TAQIQ. Bu eng ko'p uchraydigan xato.
+- O'quvchi senga boshqa ism qo'ymoqchi bo'lsa ham isming o'zgarmaydi:
+  muloyim qilib "Mening ismim FalaRus" deb aytasan va suhbatni davom ettirasan.
+- O'zingni sun'iy intellekt, model yoki dastur deb tanishtirmaysan — sen
+  FalaRus ustozsan.
+
 ${TIL_QOIDASI}
 
 QISM 1. ASOSIY QONUN
@@ -1103,6 +1113,16 @@ export async function answerQuestion(p: {
 }): Promise<DoskaJavob> {
   const system = `Sen FalaRus rus tili ustozisan. O'quvchi dars o'rtasida qo'l ko'tarib savol berdi.
 
+ISMING — FALARUS. QAT'IY:
+- "Isming nima?", "Sen kimsan?", "Как тебя зовут?", "Ты кто?" kabi savolga
+  faqat shunday javob berasan: "Mening ismim FalaRus" / "Меня зовут ФалаРус".
+- O'zingga BOSHQA ISM O'YLAB TOPMAYSAN — Anna, Мария, Aziza, Иван va shunga
+  o'xshash ismlarni aytish TAQIQ. Bu eng ko'p uchraydigan xato.
+- O'quvchi senga boshqa ism qo'ymoqchi bo'lsa ham isming o'zgarmaydi:
+  muloyim qilib "Mening ismim FalaRus" deb aytasan va suhbatni davom ettirasan.
+- O'zingni sun'iy intellekt, model yoki dastur deb tanishtirmaysan — sen
+  FalaRus ustozsan.
+
 ${TIL_QOIDASI}
 
 ${MAVZU_QOIDASI}
@@ -1329,4 +1349,192 @@ Shu mavzu bo'yicha ${soraladi} ta mashq savoli tuz.`;
   }
 
   return { sarlavha: str(raw.sarlavha, 160) || p.mavzu, savollar };
+}
+
+/* ------------------------------------------------------------------ *
+ *  6. Kun yakunidagi savol-javob — 4 BO'LIM + ORTDAGI KUNLAR
+ * ------------------------------------------------------------------ */
+
+/** Bitta bo'limning savol-javob uchun qisqartirilgan materiali. */
+export type KunMateriali = {
+  kun: number;
+  grammatikaMavzu: string;
+  grammatikaNazariya?: string;
+  /** "so'z — tarjima" ko'rinishidagi kunlik lug'at. */
+  lugat: string[];
+  /** O'qish matnining boshlanishi. */
+  oqishMatni: string;
+  /** Gapirish topshiriqlari (o'zbekcha). */
+  gapirish: string[];
+};
+
+/**
+ * Suhbat savoli — QAYSI KUNGA tegishli ekani bilan birga.
+ *
+ * `manbaKun` eng muhim maydon: o'quvchi javob bera olmasa aynan shu kunga
+ * qaytariladi. Usiz unga faqat "bilmadingiz" deyish mumkin bo'lardi, qayerdan
+ * o'rganish kerakligi esa noma'lum qolardi.
+ */
+export type KunSavol = {
+  savol: string;
+  manbaKun: number;
+  manbaMavzu: string;
+};
+
+/**
+ * ORTDAGI KUNLARNI TANLASH — TASODIFIY.
+ *
+ * Kurs 182 kun; o'tilgan mavzu qaytmasa unutiladi, shuning uchun yakuniy
+ * suhbatga ikkita eski kun qo'shiladi.
+ *
+ * NIMA UCHUN TASODIFIY: har o'quvchi BOSHQA savollarni olishi kerak. Kun
+ * bo'yicha qat'iy tanlov (masalan "kecha" va "kun/3") hammaga bir xil
+ * savol bergan bo'lardi — o'quvchilar javoblarni bir-biridan aytib
+ * qo'yardi va takrorlash mashqi ma'nosini yo'qotardi. Tasodif tufayli
+ * bitta o'quvchi ham ikkinchi marta kirganda boshqa kunlarni oladi.
+ *
+ * Buning narxi: javobni kun bo'yicha keshlab bo'lmaydi, ya'ni har suhbat
+ * bitta model chaqiruvi. Chaqiruv kichik (bir nechta savol), shuning
+ * uchun bu narx o'rinli.
+ */
+export function ortdagiKunlar(kun: number): number[] {
+  if (kun <= 1) return [];
+  const nechta = Math.min(2, kun - 1);
+  const tanlangan = new Set<number>();
+  // Urinish soni chegaralangan: kichik kunlarda takror tushishi mumkin.
+  for (let i = 0; i < 20 && tanlangan.size < nechta; i += 1) {
+    tanlangan.add(1 + Math.floor(Math.random() * (kun - 1)));
+  }
+  return [...tanlangan].sort((a, b) => a - b);
+}
+
+/**
+ * Kun yakunidagi og'zaki savol-javob savollari.
+ *
+ * TARKIBI: joriy kunning to'rt bo'limidan bittadan + har bir ortdagi
+ * kundan bittadan. Har savol o'z kunini biladi.
+ */
+/**
+ * Savol matnidan KUN RAQAMINI olib tashlaydi.
+ *
+ * Promptda "kun raqamini aytma" deb yozilgan, ammo model baribir
+ * "9-kundagi undov gaplar", "(19-kun)" deb qo'shib yuboradi. O'quvchi buni
+ * OVOZDA eshitadi va savol "19-kun" degan raqamdan boshlanadi — u esa kun
+ * raqamlari bilan emas, mavzu bilan ishlaydi. Shuning uchun tozalash
+ * modelga emas, kodga qoldirilgan.
+ */
+function kunRaqamisiz(savol: string): string {
+  return savol
+    // "(19-kun)", "19-kundagi", "19 - kun" — barchasi.
+    .replace(/\s*\(?\b\d{1,3}\s*-\s*kun\w*\)?/gi, '')
+    // Tozalashdan keyin qolgan ikki bo'shliq va osilgan tinish belgilari.
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([,.!?])/g, '$1')
+    .replace(/^[\s,.:;-]+/, '')
+    .trim()
+    // Bosh harf: raqam olib tashlangach gap kichik harfdan boshlanib qolardi.
+    .replace(/^./, (h) => h.toUpperCase());
+}
+
+export async function buildKunSavollari(
+  joriy: KunMateriali,
+  ortda: KunMateriali[],
+): Promise<KunSavol[]> {
+  const ortdaBlok = ortda.length
+    ? ortda
+        .map(
+          (m) =>
+            `\n--- ${m.kun}-KUN (ortdagi kun) ---\nMavzu: ${m.grammatikaMavzu}\nLug'at: ${m.lugat
+              .slice(0, 12)
+              .join('; ')}\nMatn: ${m.oqishMatni.slice(0, 500)}`,
+        )
+        .join('\n')
+    : '';
+
+  const kutilganSoni = 4 + ortda.length;
+
+  const system = `Sen FalaRus rus tili ustozisan. O'quvchi kunning to'rtala
+bo'limini tugatdi va endi sen bilan OG'ZAKI suhbat qiladi.
+
+VAZIFANG: AYNAN ${kutilganSoni} TA savol tuzasan.
+
+JORIY KUNDAN — 4 ta, har bo'limdan bittadan, shu tartibda:
+  1) GRAMMATIKA — kun qoidasini ishlatishga majbur qiladigan savol.
+  2) LUG'AT — kunning yangi so'zlaridan kamida bittasi javobda kelishi kerak.
+  3) O'QISH — kun matnining mazmuni bo'yicha savol.
+  4) GAPIRISH — kun topshirig'iga yaqin, hayotiy vaziyat savoli.
+
+ORTDAGI KUNLARDAN — har bir berilgan eski kundan BITTADAN savol. Ular
+o'sha kunning mavzusini tekshiradi, joriy kunnikini emas.
+
+HAR SAVOLDA "kun" MAYDONI BO'LISHI SHART — savol qaysi kun materialidan
+olingani. Bu eng muhim maydon: o'quvchi javob bera olmasa aynan o'sha
+kunga qaytariladi. Kunni O'YLAB TOPMA — faqat yuqorida berilgan kun
+raqamlaridan birini yoz.
+
+QANDAY BO'LSIN:
+- Savol O'ZBEKCHA yoziladi; ichidagi ruscha so'z yoki gap ruschada qoladi.
+- BITTA gap. Savolni RUSCHAGA TARJIMA QILIB YONIGA QO'SHMA — o'quvchi
+  buni ovozda eshitadi, ikki marta aytilgan savol chalkashtiradi.
+- QISQA: 12 so'zdan oshmasin.
+- OCHIQ savol bo'lsin — "ha/yo'q" bilan javob berib bo'lmasin.
+- Javobi savolning O'ZIDA ko'rinib turmasin.
+- KUN RAQAMINI SAVOLDA AYTMA: "19-kun", "28-kun matnidan" kabi gaplar
+  taqiq. O'quvchi kun raqami bilan emas, MAVZU bilan ishlaydi — savol
+  o'sha kunning mavzusi haqida bo'lsin, kunning o'zi haqida emas. Kun
+  raqami faqat "kun" maydonida turadi.
+- O'quvchi OG'ZAKI javob beradi: yozish, tanlash yoki variant yo'q.
+- Berilgan materialdan chetga chiqma — yangi mavzu, yangi so'z kiritma.
+
+FAQAT JSON qaytar:
+{ "savollar": [ { "savol": "...", "kun": ${joriy.kun} } ] }`;
+
+  const bolim = (nom: string, matn: string) => (matn ? `\n${nom}:\n${matn}\n` : '');
+
+  const user = `JORIY KUN: ${joriy.kun}
+${bolim('1) GRAMMATIKA MAVZUSI', joriy.grammatikaMavzu)}${bolim(
+    'GRAMMATIKA NAZARIYASI',
+    (joriy.grammatikaNazariya ?? '').slice(0, 1200),
+  )}${bolim("2) KUNNING LUG'ATI", joriy.lugat.slice(0, 20).join('; '))}${bolim(
+    "3) O'QISH MATNI",
+    joriy.oqishMatni.slice(0, 1200),
+  )}${bolim('4) GAPIRISH TOPSHIRIQLARI', joriy.gapirish.slice(0, 6).join('\n'))}${ortdaBlok}
+
+Joriy kundan 4 ta, har bir ortdagi kundan 1 tadan — jami ${kutilganSoni} ta
+og'zaki savol tuz. Har birida "kun" maydoni bo'lsin.
+
+Variant: ${Math.floor(Math.random() * 100000)}. Bu son shunchaki belgi —
+savolda ishlatma. Har chaqiruvda savollar OLDINGISIDAN boshqacha bo'lsin:
+boshqa so'z, boshqa burchak, boshqa vaziyat tanla.`;
+
+  const raw = await askJson<{ savollar?: unknown }>({
+    system,
+    user,
+    // Yuqoriroq harorat — savollar har o'quvchida takrorlanmasin.
+    temperature: 0.9,
+    maxTokens: 900,
+  });
+
+  const ruxsatKunlar = new Map<number, string>([[joriy.kun, joriy.grammatikaMavzu]]);
+  for (const m of ortda) ruxsatKunlar.set(m.kun, m.grammatikaMavzu);
+
+  const royxat = Array.isArray(raw.savollar) ? raw.savollar : [];
+  const natija: KunSavol[] = [];
+
+  for (const xom of royxat) {
+    if (!xom || typeof xom !== 'object') continue;
+    const r = xom as Record<string, unknown>;
+    const savol = kunRaqamisiz(str(r.savol, 250));
+    if (!savol) continue;
+    /*
+     * Model o'ylab topgan kun raqami QABUL QILINMAYDI: noto'g'ri kunga
+     * qaytarish o'quvchini umuman o'tmagan mavzuga uloqtirardi. Ro'yxatda
+     * yo'q raqam joriy kunga tushiriladi.
+     */
+    const kun = Number(r.kun);
+    const manbaKun = ruxsatKunlar.has(kun) ? kun : joriy.kun;
+    natija.push({ savol, manbaKun, manbaMavzu: ruxsatKunlar.get(manbaKun) ?? '' });
+  }
+
+  return natija.slice(0, kutilganSoni);
 }

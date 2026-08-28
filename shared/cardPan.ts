@@ -1,18 +1,6 @@
 /** Humo/UzCard uchun umumiy PAN uzunligi */
 export const CARD_PAN_DIGITS_UZ = 16;
 
-export function normalizeCardPanDigits(raw: string, maxLen = CARD_PAN_DIGITS_UZ): string {
-  return raw.replace(/\D/g, '').slice(0, maxLen);
-}
-
-export function formatCardPanGroups(digits: string): string {
-  const parts: string[] = [];
-  for (let i = 0; i < digits.length; i += 4) {
-    parts.push(digits.slice(i, i + 4));
-  }
-  return parts.join(' ');
-}
-
 /**
  * Luhn algoritmi — haqiqiy kartochka raqamlari uchun standart tekshiruv.
  * Tasodifiy 16 ta raqam odatda bu tekshiruvdan o‘tmaydi.

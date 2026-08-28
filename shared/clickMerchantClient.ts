@@ -101,31 +101,6 @@ export async function clickCardTokenRequest(params: {
   }
 }
 
-export async function clickCardTokenVerify(params: {
-  serviceId: number;
-  card_token: string;
-  sms_code: string | number;
-  merchantUserId: string;
-  secretKey: string;
-}): Promise<ClickMerchantJson> {
-  const url = `${CLICK_MERCHANT_API_BASE}/card_token/verify`;
-  const body = {
-    service_id: params.serviceId,
-    card_token: params.card_token,
-    sms_code: Number(params.sms_code),
-  };
-  console.info('[click.merchant]', 'POST', url, { service_id: body.service_id });
-  const { httpStatus, json } = await clickMerchantAuthorizedRequest({
-    method: 'POST',
-    url,
-    merchantUserId: params.merchantUserId,
-    secretKey: params.secretKey,
-    body,
-  });
-  console.info('[click.merchant]', 'response', url, 'status', httpStatus, json);
-  return json;
-}
-
 export async function clickCardTokenPayment(params: {
   serviceId: number;
   card_token: string;
@@ -170,38 +145,6 @@ export async function clickPaymentStatus(params: {
     url,
     merchantUserId: params.merchantUserId,
     secretKey: params.secretKey,
-  });
-  console.info('[click.merchant]', 'response', url, 'status', httpStatus, json);
-  return json;
-}
-
-/** https://docs.click.uz — Create invoice (Auth required) */
-export async function clickInvoiceCreate(params: {
-  serviceId: number;
-  amount: number;
-  phone_number: string;
-  merchant_trans_id: string;
-  merchantUserId: string;
-  secretKey: string;
-}): Promise<ClickMerchantJson> {
-  const url = `${CLICK_MERCHANT_API_BASE}/invoice/create`;
-  const body = {
-    service_id: params.serviceId,
-    amount: params.amount,
-    phone_number: params.phone_number,
-    merchant_trans_id: params.merchant_trans_id,
-  };
-  console.info('[click.merchant]', 'POST', url, {
-    service_id: body.service_id,
-    amount: body.amount,
-    merchant_trans_id: body.merchant_trans_id,
-  });
-  const { httpStatus, json } = await clickMerchantAuthorizedRequest({
-    method: 'POST',
-    url,
-    merchantUserId: params.merchantUserId,
-    secretKey: params.secretKey,
-    body,
   });
   console.info('[click.merchant]', 'response', url, 'status', httpStatus, json);
   return json;

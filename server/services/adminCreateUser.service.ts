@@ -176,8 +176,6 @@ function buildAdminUserResult(
 async function invalidateUserAccessCaches(userId: number): Promise<void> {
   subscriptionService.invalidateAccessCache(userId);
   try {
-    const { invalidateLessonsCache } = await import('../cache/lessonsCache.js');
-    invalidateLessonsCache(userId);
   } catch {
     /* optional */
   }

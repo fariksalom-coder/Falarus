@@ -18,6 +18,7 @@ import PartnerChat from '../components/partner/PartnerChat';
 import PartnerChatsSection from '../components/partner/PartnerChatsSection';
 import PartnerAdminChat from '../components/partner/PartnerAdminChat';
 import SavolJavobChat from '../components/partner/SavolJavobChat';
+import ReelsFeed from '../components/partner/ReelsFeed';
 
 type PageView = 'loading' | 'guest' | 'hub';
 
@@ -29,6 +30,7 @@ type OverlayView =
   | 'outgoing'
   | 'admin-chat'
   | 'group-chat'
+  | 'reels'
   | 'partner-chat';
 
 export default function PartnerPage() {
@@ -250,6 +252,7 @@ export default function PartnerPage() {
                 matches={status.matches}
                 onOpenAdmin={() => setOverlay('admin-chat')}
                 onOpenGroup={() => setOverlay('group-chat')}
+                onOpenReels={() => setOverlay('reels')}
                 onOpenPartner={(matchId) => {
                   setActiveMatchId(matchId);
                   setOverlay('partner-chat');
@@ -353,6 +356,7 @@ export default function PartnerPage() {
       {overlay === 'group-chat' ? (
         <SavolJavobChat onBack={() => setOverlay(null)} onOpenSupport={() => setOverlay('admin-chat')} />
       ) : null}
+      {overlay === 'reels' ? <ReelsFeed onBack={() => setOverlay(null)} /> : null}
     </div>
   );
 }

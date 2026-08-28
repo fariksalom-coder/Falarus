@@ -26,6 +26,4 @@ export type ReferralWithdrawalRow = {
   processed_at: string | null;
 };
 
-export const REFERRAL_REWARD_PERCENT = 0.25;
-export const REFERRAL_DISCOUNT_PERCENT = 0.1;
 export const MIN_WITHDRAWAL_AMOUNT = 50000;

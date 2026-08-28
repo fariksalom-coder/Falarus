@@ -18,7 +18,7 @@ export function createStatsRoutes(
         supabase
           .from('user_kunlik_day_progress')
           .select(
-            'day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, speaking_level',
+            'day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, suhbat_done, speaking_level',
           )
           .eq('user_id', req.userId),
         supabase.from('daily_practice_prompts').select('day_number'),
@@ -42,6 +42,7 @@ export function createStatsRoutes(
             grammar_3: !!r.grammar_3,
             words_match: !!r.words_match,
             oqish_done: !!r.oqish_done,
+            suhbat_done: !!r.suhbat_done,
             speaking_level: r.speaking_level as number | null | undefined,
           },
           practicePromptCountByDay,

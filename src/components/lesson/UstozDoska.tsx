@@ -38,7 +38,7 @@ import { pauseSpeaking, prefetchSpeech, resumeSpeaking, speakText, stopSpeaking 
 import { darsNutqRejasi, nutqBolaklari, type NutqQadam } from '../../../shared/nutqBolaklari';
 import UstozLive from './UstozLive';
 import UstozDoskaSahna from './UstozDoskaSahna';
-import { doskaKvota, type DoskaKvota } from '../../api/ustozDoska';
+import { doskaKvota, type DoskaKvota, type KunSavol } from '../../api/ustozDoska';
 import {
   buildDoskaExercise,
   buildDoskaLesson,
@@ -95,6 +95,38 @@ type Props = {
    * Berilmasa, birinchi bosqichda tugma o'chiq turadi.
    */
   onChiqish?: () => void;
+  /**
+   * DOSKANING QAYSI QISMI KO'RSATILADI.
+   *
+   *   'dars'   — tushuntirish va test (odatiy holat);
+   *   'suhbat' — faqat ustoz bilan jonli savol-javob.
+   *
+   * NIMA UCHUN AJRATILDI: savol-javob ilgari darsning O'RTASIDA, tushuntirish
+   * bilan test orasida turardi. O'quvchi mavzuni endigina eshitgan bo'lardi va
+   * gapirishga tayyor emasdi. Endi u kunning MUSTAQIL 5-BLOKI — bosh sahifadan
+   * `/kunlik-reja/kun/:kun/savol-javob` orqali ochiladi. Suhbatning o'zi
+   * o'zgarmadi, faqat o'rni ko'chdi.
+   */
+  qism?: 'dars' | 'suhbat';
+  /**
+   * SUHBAT rejimidagi savollar — kunning TO'RT BO'LIMIDAN tayyorlangan.
+   *
+   * Berilsa dars umuman so'ralmaydi. Ilgari savol-javob butun darsni
+   * yuklab olib undan faqat `savollar` ni olardi — savollar esa darsning
+   * ichida tug'ilgani uchun faqat GRAMMATIKA mavzusiga tegishli bo'lardi.
+   * Endi ular alohida, to'rt bo'lim materialidan tuziladi.
+   */
+  savollarManbasi?: KunSavol[];
+  /** O'quvchi savolga javob bera olmadi — savol tegishli kunga qaytariladi. */
+  onQaytarish?: (kun: number) => void;
+  /**
+   * Suhbat uchun savol umuman topilmadi.
+   *
+   * `onTugadi` dan ATAYIN ajratilgan: u bosqichni "bajarildi" deb
+   * belgilaydi, bu holatda esa hech qanday savol berilmagan — bloknni
+   * bajarilgan deb yozib qo'yish yolg'on bo'lardi.
+   */
+  onSavolYoq?: () => void;
 };
 
 /** Darsning bosqichlari. */
@@ -118,6 +150,15 @@ const DOSKA_OHANG = 'ustoz' as const;
 /** Tushuntirish — tabiiy nutq tezligi; pastroq qiymatda ovoz cho'ziladi. */
 const NUTQ_TEZLIGI = 1.0;
 
+/**
+ * Nechta bo'lak oldindan yuklanadi.
+ *
+ * Uchtasi yetarli: qisqa gaplar ketma-ket kelganda ham ovoz uzilmaydi.
+ * Ko'proq qilish serverga bir vaqtda ortiqcha yuk beradi va o'quvchi
+ * eshitmasligi mumkin bo'lgan matnga ovoz tayyorlanadi.
+ */
+const OLDINDAN_YUKLASH = 3;
+
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -138,15 +179,22 @@ export default function UstozDoska({
   ortgaRef,
   toliqEkran = false,
   onChiqish,
+  qism = 'dars',
+  savollarManbasi,
+  onQaytarish,
+  onSavolYoq,
 }: Props) {
   const { token } = useAuth();
   const recorder = useVoiceRecorder();
+
+  /** Faqat savol-javob rejimi: dars va test bu yerda ko'rsatilmaydi. */
+  const suhbatRejimi = qism === 'suhbat';
 
   const [dars, setDars] = useState<DoskaDars | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [faza, setFaza] = useState<Faza>('tushuntirish');
+  const [faza, setFaza] = useState<Faza>(suhbatRejimi ? 'suhbat' : 'tushuntirish');
   const [step, setStep] = useState(0);
   const [savolIdx, setSavolIdx] = useState(0);
   const [baho, setBaho] = useState<DoskaBaho | null>(null);
@@ -193,7 +241,14 @@ export default function UstozDoska({
   const boshlandiRef = useRef(false);
 
   const bosqichlar = dars?.bosqichlar ?? [];
-  const savollar = dars?.savollar ?? [];
+  /*
+   * Suhbat savollari. Tashqaridan kelganda ular O'Z KUNI bilan keladi
+   * (`KunSavol`), darsdan kelganda esa oddiy matn — shuning uchun ikkala
+   * ko'rinish ham bir xil ro'yxatga keltiriladi.
+   */
+  const savollar: KunSavol[] =
+    savollarManbasi ??
+    (dars?.savollar ?? []).map((q) => ({ savol: q, manbaKun: kun ?? 0, manbaMavzu: mavzu }));
   const joriy = bosqichlar[step];
   const joriySavol = savollar[savolIdx];
 
@@ -285,14 +340,23 @@ export default function UstozDoska({
           if (ijroRef.current !== tk) return;
           setTayyorlanmoqda(false);
           /*
-           * Keyingi bo'lak SHU bo'lak chalina boshlagach yuklanadi.
+           * KEYINGI BIR NECHA BO'LAK OLDINDAN YUKLANADI.
            *
-           * Ilgari u oldinroq so'ralardi va serverdagi navbatda BIRINCHI
-           * bo'lakdan oldinga tushib qolardi — dars gapirishni boshlashi
-           * uchun ikkita ovoz tayyorlanishini kutish kerak bo'lardi.
+           * Ilgari faqat BITTA keyingi bo'lak so'ralardi. Bo'lak qisqa
+           * bo'lsa (bir gap ~2 soniya), server esa ovozni 3-5 soniyada
+           * tayyorlasa, joriy bo'lak tugaganda keyingisi hali yo'q edi —
+           * dars TO'XTAB-TO'XTAB gapirardi. Zaxira oynasi kengaytirildi:
+           * bir nechta bo'lak yo'lda bo'lsa, uzilish yopiladi.
+           *
+           * Boshlanish tartibi saqlanadi: oldindan yuklash faqat BIRINCHI
+           * bo'lak chalina boshlagandan KEYIN ishlaydi, aks holda ikkinchi
+           * bo'lak serverdagi navbatda birinchisidan oldinga tushib,
+           * darsning boshlanishi kechikardi.
            */
-          if (bolaklar[i + 1]) {
-            prefetchSpeech(bolaklar[i + 1], {
+          for (let j = 1; j <= OLDINDAN_YUKLASH; j += 1) {
+            const keyingi = bolaklar[i + j];
+            if (!keyingi) break;
+            prefetchSpeech(keyingi, {
               token,
               lang: 'uz-UZ',
               ohang: DOSKA_OHANG,
@@ -334,7 +398,7 @@ export default function UstozDoska({
     if (!token) return;
     setLoading(true);
     setError(null);
-    setFaza('tushuntirish');
+    setFaza(suhbatRejimi ? 'suhbat' : 'tushuntirish');
     setStep(0);
     setSavolIdx(0);
     setBaho(null);
@@ -342,14 +406,18 @@ export default function UstozDoska({
     setMashq(null);
     setMashqJavoblar({});
     try {
-      setDars(await buildDoskaLesson(token, { mavzu, nazariya, kun, vazifalar }));
+      // Savollar tashqaridan berilgan bo'lsa dars kerak emas — suhbat
+      // rejimida undan boshqa hech narsa ishlatilmaydi.
+      if (!savollarManbasi) {
+        setDars(await buildDoskaLesson(token, { mavzu, nazariya, kun, vazifalar }));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ustoz darsni tayyorlay olmadi");
     } finally {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, mavzu, nazariya, kun]);
+  }, [token, mavzu, nazariya, kun, savollarManbasi]);
 
   // Mavzu ochilishi bilan dars o'zi boshlanadi (bir marta).
   useEffect(() => {
@@ -366,8 +434,8 @@ export default function UstozDoska({
    */
   useEffect(() => {
     if (faza !== 'tushuntirish' || !dars) return;
-    if (step >= bosqichlar.length) setFaza(savollar.length ? 'suhbat' : 'test');
-  }, [faza, step, dars, bosqichlar.length, savollar.length]);
+    if (step >= bosqichlar.length) setFaza('test');
+  }, [faza, step, dars, bosqichlar.length]);
 
   useEffect(() => {
     if (faza !== 'tushuntirish' || !joriy) return;
@@ -385,7 +453,7 @@ export default function UstozDoska({
        */
       if (!ovozOchiq) return;
       if (step < bosqichlar.length - 1) setStep((s) => s + 1);
-      else setFaza(savollar.length ? 'suhbat' : 'test');
+      else setFaza('test');
     });
     // Bosqich almashsa: zanjir ham, chalinayotgan (va yo'ldagi) ovoz ham to'xtaydi.
     return () => {
@@ -403,7 +471,7 @@ export default function UstozDoska({
     if (faza !== 'suhbat' || !joriySavol || !zaxiraSuhbat) return;
     setBaho(null);
     recorder.reset();
-    oqi(joriySavol);
+    oqi(joriySavol.savol);
     return () => {
       ijroRef.current += 1;
       stopSpeaking();
@@ -423,7 +491,7 @@ export default function UstozDoska({
       try {
         const audioBase64 = await blobToBase64(blob);
         const r = await suhbatJavobi(token, {
-          savol: joriySavol,
+          savol: joriySavol.savol,
           mavzu,
           audioBase64,
           mimeType: blob.type || 'audio/webm',
@@ -442,17 +510,41 @@ export default function UstozDoska({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorder.audioBlob, recorder.isRecording, token]);
 
-  // Suhbat bosqichiga o'tganda qolgan savol sonini olamiz.
+  /*
+   * ZAXIRA REJIM SAVOLSIZ QOLMASIN.
+   *
+   * Jonli ulanish yiqilsa suhbat "yozib yuborish" usuliga o'tadi, u esa
+   * kunning savollariga tayanadi. Savollar bo'lmasa ekran bo'sh qolardi va
+   * o'quvchi oxirgi bosqichda tiqilib qolardi — bunday holatda bosqichni
+   * yopib, kun oqimini davom ettiramiz.
+   */
   useEffect(() => {
-    if (faza !== 'suhbat' || !token) return;
+    if (!suhbatRejimi || faza !== 'suhbat' || !zaxiraSuhbat) return;
+    if (savollar.length === 0) (suhbatRejimi ? (onSavolYoq ?? onTugadi) : onTugadi)?.();
+    // `onTugadi` har renderda yangi funksiya — deps'ga qo'shilmaydi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suhbatRejimi, faza, zaxiraSuhbat, savollar.length]);
+
+  /*
+   * KVOTA — FAQAT ZAXIRA REJIM UCHUN.
+   *
+   * Jonli suhbat kvotadan hisoblanmaydi: uning chegarasi VAQT (3 daqiqa).
+   * Zaxira ("javob berish" tugmasi bilan yozib yuborish) esa har javobda
+   * `/ustoz/suhbat` ga boradi va o'sha kvotaga kiradi — qolgan son shu
+   * yerdagina ma'noli.
+   */
+  useEffect(() => {
+    if (faza !== 'suhbat' || !zaxiraSuhbat || !token) return;
     let bekor = false;
     void doskaKvota(token).then((k) => { if (!bekor) setKvota(k); });
     return () => { bekor = true; };
-  }, [faza, token, savolIdx]);
+  }, [faza, zaxiraSuhbat, token, savolIdx]);
 
   function keyingiSavol() {
     toxtat();
     if (savolIdx < savollar.length - 1) setSavolIdx((i) => i + 1);
+    // Alohida bosqichda suhbatdan keyin test yo'q — kun oqimi davom etadi.
+    else if (suhbatRejimi) onTugadi?.();
     else setFaza('test');
   }
 
@@ -489,13 +581,15 @@ export default function UstozDoska({
     }
     if (faza === 'suhbat') {
       if (zaxiraSuhbat && savolIdx > 0) { setSavolIdx((i) => i - 1); return; }
+      // Suhbat alohida bosqich: uning ortida dars yo'q, sahifaning o'zi qaytaradi.
+      if (suhbatRejimi) return;
       setFaza('tushuntirish');
       setStep(Math.max(0, bosqichlar.length - 1));
       return;
     }
     if (faza === 'test') {
-      if (savollar.length) { setFaza('suhbat'); setSavolIdx(Math.max(0, savollar.length - 1)); }
-      else { setFaza('tushuntirish'); setStep(Math.max(0, bosqichlar.length - 1)); }
+      setFaza('tushuntirish');
+      setStep(Math.max(0, bosqichlar.length - 1));
       return;
     }
     setFaza('test');
@@ -604,27 +698,57 @@ export default function UstozDoska({
 
   /* ---------------- Ko'rinish ---------------- */
 
-  const jamiQadam = bosqichlar.length + savollar.length + 1;
-  const otilgan =
-    faza === 'tushuntirish' ? step
-      : faza === 'suhbat' ? bosqichlar.length + savolIdx
-      : jamiQadam - 1;
+  // Suhbat rejimida qadamlar — savollar; darsda esa bosqichlar va test.
+  const jamiQadam = suhbatRejimi ? Math.max(savollar.length, 1) : bosqichlar.length + 1;
+  const otilgan = suhbatRejimi
+    ? Math.min(savolIdx, jamiQadam - 1)
+    : faza === 'tushuntirish' ? step : jamiQadam - 1;
   const progress = useMemo(
     () => (jamiQadam > 0 ? ((otilgan + 1) / jamiQadam) * 100 : 0),
     [otilgan, jamiQadam],
   );
 
+  /**
+   * Suhbat tugagach ko'rinadigan tugma nomi. Dars ichida suhbatdan keyin test
+   * kelardi; alohida bosqichda esa keyingi qadamni sahifa aytadi.
+   */
+  const suhbatYakuniNomi = suhbatRejimi
+    ? (keyingiNomi ? `Davom etish: ${keyingiNomi}` : 'Davom etish')
+    : 'Testga o‘tish';
+
+  /*
+   * Yuklanish — YOZUVSIZ.
+   *
+   * Ilgari bu yerda "Ustoz darsga tayyorlanmoqda…" yozuvi turardi. Dars
+   * ko'pincha serverdagi keshdan keladi, ya'ni yozuv bir lahzaga chaqnab
+   * yo'qolardi — bu kutish tuyg'usini yaratardi, holbuki kutish yo'q edi.
+   * Endi o'rnida doskaning o'z shakli turadi: ekran bo'sh qolmaydi, ammo
+   * hech narsa "yuklanyapti" deb qichqirmaydi.
+   */
   if (loading) {
     return (
-      <div className="rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] p-6 text-center shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)]">
-        <Loader2 size={22} className="mx-auto animate-spin text-[#5B3FA8]" />
-        <p className="mt-2.5 text-[14px] font-bold text-[#2D1B69]">Ustoz darsga tayyorlanmoqda…</p>
-        <p className="mt-1 text-[12.5px] text-[#8B7FAB]">{mavzu}</p>
+      <div className="overflow-hidden rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] p-5 shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)]">
+        <div className="animate-pulse space-y-3">
+          <div className="h-3.5 w-1/2 rounded-full bg-[#EDE9FB]" />
+          <div className="h-2.5 w-full rounded-full bg-[#F2EFFA]" />
+          <div className="h-2.5 w-[85%] rounded-full bg-[#F2EFFA]" />
+          <div className="h-2.5 w-[70%] rounded-full bg-[#F2EFFA]" />
+        </div>
       </div>
     );
   }
 
-  if (!dars) {
+  /*
+   * DARS KELMADI.
+   *
+   * DIQQAT: savollar TASHQARIDAN kelgan bo'lsa (`savollarManbasi`) dars
+   * umuman so'ralmaydi va `dars` doim `null` bo'ladi — u holda bu yerda
+   * to'xtash NOTO'G'RI. Ilgari shart shuni hisobga olmasdi va savol-javob
+   * bloki muvaffaqiyatli holatda ham "Ustoz darsni tayyorlay olmadi"
+   * ekraniga tushib qolardi; savollar KELMAGANDA esa ishlardi — ya'ni
+   * xatti-harakat teskari edi.
+   */
+  if (!dars && !savollarManbasi) {
     return (
       <div className="rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] p-5 shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)]">
         <p className="text-[13px] font-semibold text-[#B91C1C]">
@@ -701,11 +825,12 @@ export default function UstozDoska({
                 className="flex items-center gap-1.5 rounded-full border border-white/12 px-2 py-1 text-[10.5px] font-semibold"
                 style={{ background: 'rgba(0,0,0,0.30)', color: 'rgba(237,244,244,0.76)' }}
               >
+                {/* Rang o'zgarmaydi: "ovoz yuklanyapti" holati o'quvchiga
+                    ko'rsatilmaydi — u uchun dars uzluksiz. */}
                 <span
                   className="h-1.5 w-1.5 animate-pulse rounded-full"
-                  style={{ background: tayyorlanmoqda && !pauza ? '#F0B963' : '#56CC97' }}
+                  style={{ background: '#56CC97' }}
                 />
-                {tayyorlanmoqda && !pauza ? 'tayyorlanmoqda…' : null}
               </span>
             ) : null}
 
@@ -796,12 +921,12 @@ export default function UstozDoska({
               onClick={() => {
                 toxtat();
                 if (step < bosqichlar.length - 1) setStep((s) => s + 1);
-                else setFaza(savollar.length ? 'suhbat' : 'test');
+                else setFaza('test');
               }}
               className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-2xl px-4 text-[14.5px] font-bold transition active:scale-[0.98]"
               style={{ background: '#F0B963', color: '#08121C' }}
             >
-              {step < bosqichlar.length - 1 ? 'Keyingisi' : 'Savol-javobga o‘tish'}
+              {step < bosqichlar.length - 1 ? 'Keyingisi' : 'Testga o‘tish'}
               <ArrowRight size={17} />
             </button>
           </div>
@@ -861,14 +986,21 @@ export default function UstozDoska({
 
       </div>
 
-      <div className="mt-3 h-1.5 bg-[#EDE9FB]">
-        <motion.div
-          className="h-full bg-[#5B3FA8]"
-          initial={false}
-          animate={{ width: `${progress}%` }}
-          transition={{ type: 'spring', stiffness: 180, damping: 24 }}
-        />
-      </div>
+      {/*
+        Jonli suhbatda o'lchanadigan qadam yo'q: gap ustozning savollari
+        bilan emas, suhbatning o'zi bilan boradi. Muzlab qolgan chiziq
+        "dastur qotdi" degan taassurot berardi.
+      */}
+      {suhbatRejimi && !zaxiraSuhbat ? null : (
+        <div className="mt-3 h-1.5 bg-[#EDE9FB]">
+          <motion.div
+            className="h-full bg-[#5B3FA8]"
+            initial={false}
+            animate={{ width: `${progress}%` }}
+            transition={{ type: 'spring', stiffness: 180, damping: 24 }}
+          />
+        </div>
+      )}
 
       {/* Dars to'xtatib turilgani ko'rinib tursin — jimlik "buzildi" degani emas. */}
       <AnimatePresence initial={false}>
@@ -939,19 +1071,19 @@ export default function UstozDoska({
                   onClick={() => {
                     toxtat();
                     if (step < bosqichlar.length - 1) setStep((s) => s + 1);
-                    else setFaza(savollar.length ? 'suhbat' : 'test');
+                    else setFaza('test');
                   }}
                   className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
                 >
-                  {step < bosqichlar.length - 1 ? 'Keyingisi' : 'Savol-javobga o‘tish'}
+                  {step < bosqichlar.length - 1 ? 'Keyingisi' : 'Testga o‘tish'}
                   <ArrowRight size={17} />
                 </button>
               </div>
             </motion.div>
           ) : null}
 
-          {/* Qolgan savol soni — faqat suhbat bosqichida va oz qolganda. */}
-          {faza === 'suhbat' && kvota && kvota.qolgan <= 5 ? (
+          {/* Qolgan savol soni — faqat ZAXIRA suhbatda va oz qolganda. */}
+          {faza === 'suhbat' && zaxiraSuhbat && kvota && kvota.qolgan <= 5 ? (
             <p className="mb-2.5 rounded-xl bg-[#FEF3E2] px-3 py-2 text-[12.5px] font-semibold leading-snug text-[#B45309]">
               {kvota.ruxsat
                 ? `Ustoz bilan suhbat: yana ${kvota.qolgan} ta savol qoldi (${kvota.jami} tadan).`
@@ -966,7 +1098,14 @@ export default function UstozDoska({
                 token={token}
                 mavzu={mavzu}
                 savollar={savollar}
-                onTugadi={() => { toxtat(); setFaza('test'); }}
+                kun={kun}
+                onQaytarish={onQaytarish}
+                keyingiNomi={suhbatYakuniNomi}
+                onTugadi={() => {
+                  toxtat();
+                  if (suhbatRejimi) onTugadi?.();
+                  else setFaza('test');
+                }}
                 onZaxira={(sabab) => {
                   // Jonli suhbat ochilmadi: darsni to'xtatmaymiz, eski
                   // yozib-yuborish usuliga o'tamiz.
@@ -990,7 +1129,7 @@ export default function UstozDoska({
                   <Volume2 size={15} strokeWidth={2.4} />
                 </span>
                 <p className="rounded-2xl rounded-tl-md bg-[#F7F5FE] px-3.5 py-3 text-[15px] font-bold leading-snug text-[#2D1B69]">
-                  {joriySavol}
+                  {joriySavol.savol}
                 </p>
               </div>
 
@@ -1053,7 +1192,7 @@ export default function UstozDoska({
                   onClick={keyingiSavol}
                   className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-[#F3F0FC] px-4 text-[14px] font-bold text-[#5B3FA8] transition active:scale-[0.98]"
                 >
-                  {savolIdx < savollar.length - 1 ? 'Keyingi savol' : 'Testga o‘tish'}
+                  {savolIdx < savollar.length - 1 ? 'Keyingi savol' : suhbatYakuniNomi}
                   <ArrowRight size={16} />
                 </button>
               </div>

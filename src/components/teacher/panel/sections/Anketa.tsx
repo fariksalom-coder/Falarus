@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Check, Lock, ShieldCheck, Trash2, X } from 'lucide-react';
+import { Camera, Lock, ShieldCheck, Trash2, X } from 'lucide-react';
 import {
   deleteTeacherVideo,
   getTeacherProfile,

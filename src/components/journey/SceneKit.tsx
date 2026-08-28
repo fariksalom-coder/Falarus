@@ -66,11 +66,6 @@ export function SceneDefs({ uid, accent }: { uid: string; accent: string }) {
   );
 }
 
-/** Chetlarni qoraytiruvchi qatlam — har sahnaning eng ustida turadi. */
-export function Vignette({ uid }: { uid: string }) {
-  return <rect x="0" y="0" width="320" height="320" fill={`url(#${uid}-vignette)`} pointerEvents="none" />;
-}
-
 /**
  * Kamera — butun sahnani sekin yaqinlashtiradi/suradi (Ken Burns).
  * Statik rasmni ham "suratga olingan" qilib ko'rsatadi.

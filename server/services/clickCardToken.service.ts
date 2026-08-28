@@ -3,7 +3,6 @@ import {
   clickCardTokenDelete,
   clickCardTokenPayment,
   clickCardTokenRequest,
-  clickCardTokenVerify,
   clickMerchantErrorCode,
   clickPaymentStatus,
   isClickMerchantSuccess,
@@ -21,7 +20,6 @@ import {
   isValidPanLuhn,
 } from '../../shared/cardPan.js';
 import {
-  encryptCardTokenPlaintext,
   decryptCardTokenPlaintext,
 } from '../../shared/cardTokenCrypto.js';
 import { isPaymentsProductCodeSchemaError } from '../../shared/paymentsCompat.js';
@@ -336,122 +334,6 @@ export async function handleClickCardTokenRequest(
       phone_number: String(apiJson.phone_number ?? ''),
       card_token: String(apiJson.card_token ?? ''),
       temporary: Number(apiJson.temporary ?? 0),
-    },
-  };
-}
-
-export async function handleClickCardTokenVerify(
-  supabase: DbClient,
-  userId: number,
-  body: Record<string, unknown>
-): Promise<{ status: number; json: Record<string, unknown> }> {
-  const cfg = getClickConfig();
-  const serviceId = Number(cfg.serviceId);
-  const merchantUserId = cfg.apiMerchantUserId?.trim();
-  const secretKey = cfg.secretKey?.trim();
-
-  if (!merchantUserId || !secretKey || !cfg.serviceId || !Number.isFinite(serviceId)) {
-    return { status: 503, json: { error: 'Click Merchant API sozlanmagan (CLICK_MERCHANT_USER_ID, CLICK_SECRET_KEY, CLICK_SERVICE_ID)' } };
-  }
-
-  const card_token = String(body.card_token ?? '').trim();
-  const sms_code = body.sms_code;
-  if (!card_token || sms_code == null || sms_code === '') {
-    return {
-      status: 400,
-      json: { error: 'card_token, sms_code kerak' },
-    };
-  }
-  let verifyJson: ClickMerchantJson;
-  try {
-    verifyJson = await clickCardTokenVerify({
-      serviceId,
-      card_token,
-      sms_code: String(sms_code).trim(),
-      merchantUserId,
-      secretKey,
-    });
-    console.log('CLICK VERIFY OK:', verifyJson);
-  } catch (e: unknown) {
-    const details = (() => {
-      if (typeof e === 'object' && e && 'response' in e) {
-        const resp = (e as { response?: { data?: unknown } }).response;
-        if (resp?.data != null) return resp.data;
-      }
-      if (e instanceof Error) return e.message;
-      return String(e ?? 'unknown verify error');
-    })();
-    console.error('CLICK VERIFY ERROR FULL:', e);
-    console.error('CLICK VERIFY ERROR DATA:', details);
-    await logClickSafe(supabase, {
-      user_id: userId,
-      operation: 'card_token_verify_exception',
-      error_code: null,
-      error_note: String(details),
-      response_safe: { details: details as unknown } as Record<string, unknown>,
-    });
-    return {
-      status: 500,
-      json: {
-        error: 'Click request failed',
-        details,
-      },
-    };
-  }
-  await logClickSafe(supabase, {
-    user_id: userId,
-    operation: 'card_token_verify',
-    error_code: clickMerchantErrorCode(verifyJson),
-    error_note: String(verifyJson?.error_note ?? ''),
-    response_safe: verifyJson as Record<string, unknown>,
-  });
-
-  if (!isClickMerchantSuccess(verifyJson)) {
-    return {
-      status: 400,
-      json: {
-        error: String(verifyJson?.error_note ?? 'SMS kod noto‘g‘ri'),
-        error_code: clickMerchantErrorCode(verifyJson),
-      },
-    };
-  }
-
-  const maskedCard = String(verifyJson.card_number ?? '').trim();
-
-  const encrypted = encryptCardTokenPlaintext(card_token);
-  const nowIso = new Date().toISOString();
-
-  await supabase
-    .from('card_tokens')
-    .update({ is_active: false, updated_at: nowIso })
-    .eq('user_id', userId)
-    .eq('is_active', true);
-
-  const { data: tokenRow, error: tokErr } = await supabase
-    .from('card_tokens')
-    .insert({
-      user_id: userId,
-      encrypted_card_token: encrypted,
-      masked_phone: null,
-      masked_card: maskedCard || null,
-      is_active: true,
-      updated_at: nowIso,
-    })
-    .select('id')
-    .single();
-
-  if (tokErr || !tokenRow) {
-    console.error('[card_tokens insert]', tokErr);
-    return { status: 500, json: { error: 'Karta tokeni saqlanmadi' } };
-  }
-
-  return {
-    status: 200,
-    json: {
-      success: true,
-      card_token_id: Number((tokenRow as { id: number }).id),
-      card_verified: true,
-      message: 'Karta tasdiqlandi',
     },
   };
 }

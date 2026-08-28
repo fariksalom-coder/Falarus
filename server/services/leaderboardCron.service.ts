@@ -25,12 +25,3 @@ export function startLeaderboardCron(supabase: DbClient): void {
   void tick().catch((e) => console.error('[leaderboardCron] initial run', e));
 }
 
-/**
- * Stop cron (e.g. for tests or graceful shutdown).
- */
-export function stopLeaderboardCron(): void {
-  if (cronTimer != null) {
-    clearInterval(cronTimer);
-    cronTimer = null;
-  }
-}

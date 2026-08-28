@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DAILY_PLAN_PROGRESS_MODE } from '../config/dailyPlanProgress';
-import { useSequentialLesson } from '../context/SequentialLessonContext';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { findFirstIncompletePlanDay, readPlanReviewVisits } from '../utils/kunlikPlanDayProgress';
@@ -28,7 +27,6 @@ export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
   const { token } = useAuth();
   const { access, accessLoaded } = useAccess();
   const navigate = useNavigate();
-  const { results, isReady } = useSequentialLesson();
   const { rows: kunlikRows, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
 
   const [reviewVisits, setReviewVisits] = useState(readPlanReviewVisits);
@@ -58,15 +56,15 @@ export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
   const oltin = Boolean(access?.golden);
 
   const maxSequentialDay = useMemo(
-    () => findFirstIncompletePlanDay(results, reviewVisits, kunlikRows, practicePromptCountByDay),
-    [results, reviewVisits, kunlikRows, practicePromptCountByDay, vocabTick],
+    () => findFirstIncompletePlanDay(reviewVisits, kunlikRows, practicePromptCountByDay),
+    [reviewVisits, kunlikRows, practicePromptCountByDay, vocabTick],
   );
 
   const sequentiallyAllowed = oltin || dayNumber <= maxSequentialDay;
   const contentAllowed = oltin || canEnterKunlikDayContent(dayNumber, premium);
   const dayAllowed = sequentiallyAllowed && contentAllowed;
 
-  const bootstrapReady = Boolean(token && isReady && kunlikLoaded && accessLoaded);
+  const bootstrapReady = Boolean(token && kunlikLoaded && accessLoaded);
 
   useEffect(() => {
     if (!enabled || !bootstrapReady) return;

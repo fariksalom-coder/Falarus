@@ -175,7 +175,6 @@ export default function Profile() {
   const status = statusView(String(p?.profile_status ?? 'draft'), String(p?.admin_note ?? ''), t);
   const subjects = asList(p?.subjects);
   const levels = asList(p?.teaching_levels);
-  const languages = asList(p?.languages);
   const rating = Number(p?.rating_avg ?? 0);
   const ratingCount = Number(p?.rating_count ?? 0);
   const contact = data.contact;

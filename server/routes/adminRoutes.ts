@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router } from 'express';
 import type { DbClient } from '../types/dbClient';
 import multer from 'multer';
 import { createAdminAuthMiddleware } from '../middleware/adminAuth';
@@ -7,6 +7,7 @@ import { createAdminController } from '../controllers/adminController';
 import { createAdminGrammarController } from '../controllers/adminGrammarController';
 import { createAdminMeetController } from '../controllers/adminMeetController';
 import { blockUser, listBlocks, unblockUser } from '../services/chatBlock.service.js';
+import { ochirXabarMediasi } from '../services/mediaTozalash.service.js';
 
 const TEACHER_OWNER_SELECT = [
   'user_id',
@@ -202,27 +203,6 @@ export function createAdminRoutes(supabase: DbClient): Router {
 
   // One-shot XP backfill — iterates all users, recomputes total_points from
   // user_kunlik_day_progress + streak + time. Safe to re-run.
-  router.post('/recompute-xp', async (_req, res, next) => {
-    try {
-      const { recomputeUserXp } = await import('../services/xpService.js');
-      const { data: users, error } = await supabase.from('users').select('id');
-      if (error) throw error;
-      let ok = 0, fail = 0;
-      const failures: Array<{ id: number; message: string }> = [];
-      for (const row of users ?? []) {
-        try {
-          await recomputeUserXp(supabase, (row as { id: number }).id);
-          ok += 1;
-        } catch (err) {
-          fail += 1;
-          failures.push({ id: (row as { id: number }).id, message: err instanceof Error ? err.message : String(err) });
-        }
-      }
-      res.json({ processed: (users ?? []).length, ok, fail, failures });
-    } catch (e) {
-      next(e);
-    }
-  });
   router.get('/users', (req, res, next) => ctrl.getUsers(req, res).catch(next));
   router.post('/users', (req, res, next) => ctrl.createUser(req, res).catch(next));
   router.get('/users/:id', (req, res, next) => ctrl.getUserProfile(req, res).catch(next));
@@ -315,11 +295,14 @@ export function createAdminRoutes(supabase: DbClient): Router {
   });
   router.delete('/community-messages/:id', async (req, res, next) => {
     try {
+      const id = Number(req.params.id);
       const { error } = await supabase
         .from('community_group_messages')
         .update({ deleted_at: new Date().toISOString(), moderated_by: 'Admin' })
-        .eq('id', Number(req.params.id));
+        .eq('id', id);
       if (error) throw error;
+      // Fayl darhol ketadi; yozuvning o'zini soatlik tozalash muhlatdan keyin oladi.
+      await ochirXabarMediasi(supabase, id);
       res.json({ success: true });
     } catch (e) {
       next(e);
@@ -331,21 +314,67 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.post('/payments/:id/reject', (req, res, next) => ctrl.rejectPayment(req, res).catch(next));
   router.post('/payments/:id/refund', (req, res, next) => ctrl.refundPayment(req, res).catch(next));
   router.get('/subscriptions', (req, res, next) => ctrl.getSubscriptions(req, res).catch(next));
+  /*
+   * O'QITUVCHILAR RO'YXATI — HAMMASI, ANKETA TO'LDIRILGAN-TO'LDIRILMAGANIDAN QAT'I NAZAR.
+   *
+   * Ilgari bu yerda faqat `teacher_profiles` o'qilardi. Lekin anketa yozuvi
+   * ro'yxatdan o'tishda EMAS, o'qituvchi kabinetni birinchi marta ochganda
+   * yaratiladi (`ensureTeacherProfile`). Ya'ni ro'yxatdan o'tib kabinetga
+   * kirmagan odam adminga UMUMAN ko'rinmasdi — unga qo'ng'iroq qilib yordam
+   * berishning iloji yo'q edi.
+   *
+   * Endi ro'yxat `users` dan boshlanadi va anketa unga qo'shiladi. Shu bilan
+   * birga hisobning O'ZIDAGI telefon/email ham qaytadi: anketadagi
+   * `public_phone_e164` — o'qituvchi ixtiyoriy to'ldiradigan maydon, u bo'sh
+   * bo'lsa ham admin bog'lana olishi kerak.
+   */
   router.get('/teachers', async (_req, res, next) => {
     try {
-      const { data, error } = await supabase
+      const { data: users, error: usersErr } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, phone, email, created_at')
+        .eq('account_type', 'teacher')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (usersErr) throw usersErr;
+
+      const { data: profiles, error: profErr } = await supabase
         .from('teacher_profiles')
         .select(TEACHER_OWNER_SELECT)
-        .order('created_at', { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      res.json(data ?? []);
+        .limit(500);
+      if (profErr) throw profErr;
+
+      const byUser = new Map<number, Record<string, unknown>>();
+      for (const p of (profiles ?? []) as Record<string, unknown>[]) {
+        byUser.set(Number(p.user_id), p);
+      }
+
+      const rows = ((users ?? []) as Record<string, unknown>[]).map((u) => {
+        const uid = Number(u.id);
+        const profile = byUser.get(uid);
+        return {
+          // Anketa maydonlari (bo'lmasa — bo'sh)
+          ...(profile ?? {}),
+          user_id: uid,
+          // Hisobning o'zidagi ma'lumot — anketadan QAT'I NAZAR har doim bor.
+          account_first_name: u.first_name ?? null,
+          account_last_name: u.last_name ?? null,
+          account_phone: u.phone ?? null,
+          account_email: u.email ?? null,
+          registered_at: u.created_at ?? null,
+          /** Anketa yozuvi umuman bormi. `false` — hech narsa to'ldirilmagan. */
+          has_profile: Boolean(profile),
+        };
+      });
+
+      res.json(rows);
     } catch (e) {
       next(e);
     }
   });
   router.post('/teachers/:userId/status', (req, res, next) => ctrl.updateTeacherStatus(req, res).catch(next));
   router.post('/teachers/:userId/recommend', (req, res, next) => ctrl.setTeacherRecommended(req, res).catch(next));
+  router.patch('/teachers/:userId/profile', (req, res, next) => ctrl.updateTeacherProfile(req, res).catch(next));
   router.get('/teacher-trials', async (_req, res, next) => {
     try {
       const { data, error } = await supabase
@@ -385,7 +414,6 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.delete('/payment-methods/:id', (req, res, next) => ctrl.deletePaymentMethod(req, res).catch(next));
   router.get('/tariff-prices', (req, res, next) => ctrl.getTariffPrices(req, res).catch(next));
   router.put('/tariff-prices', (req, res, next) => ctrl.updateTariffPrice(req, res).catch(next));
-  router.put('/tariff-prices/bulk', (req, res, next) => ctrl.bulkUpdateTariffPrices(req, res).catch(next));
 
   // Video dars xonalari ("met"): admin yaratadi va o'qituvchilarga yo'naltiradi.
   router.get('/meet-rooms', (req, res, next) => meet.listRooms(req, res).catch(next));

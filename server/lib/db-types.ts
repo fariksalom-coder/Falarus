@@ -308,6 +308,7 @@ export interface UserKunlikDayProgress {
   grammar_3: Generated<boolean>;
   oqish_done: Generated<boolean>;
   speaking_level: Generated<number>;
+  suhbat_done: Generated<boolean>;
   updated_at: Generated<Timestamp>;
   user_id: Int8;
   words_correct: Generated<number>;

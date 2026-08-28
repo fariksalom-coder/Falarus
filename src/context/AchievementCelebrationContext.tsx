@@ -1,7 +1,6 @@
 import {
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -29,11 +28,6 @@ type Ctx = {
 const AchievementCelebrationCtx = createContext<Ctx>({
   refresh: async () => {},
 });
-
-/** Consumer hook — pages call `refresh()` after actions that could unlock a medal. */
-export function useAchievementCelebration(): Ctx {
-  return useContext(AchievementCelebrationCtx);
-}
 
 const TOTAL_MEDALS = ALL_ACHIEVEMENTS.length;
 

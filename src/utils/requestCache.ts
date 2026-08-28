@@ -25,11 +25,6 @@ export function setCachedValue<T>(key: string, value: T, ttlMs: number): void {
   memoryCache.set(key, { value, expiresAt: nowMs() + ttlMs });
 }
 
-export function invalidateCachedValue(key: string): void {
-  memoryCache.delete(key);
-  inflightRequests.delete(key);
-}
-
 export function invalidateCacheByPrefix(prefix: string): void {
   for (const key of Array.from(memoryCache.keys())) {
     if (key.startsWith(prefix)) memoryCache.delete(key);

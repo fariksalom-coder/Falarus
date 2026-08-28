@@ -88,10 +88,3 @@ export function computeQualifyingAchievements(input: {
 /** Total medals in the catalog. Used for the "N/M MEDAL" pill in the modal. */
 export const TOTAL_ACHIEVEMENTS = ALL_ACHIEVEMENTS.length;
 
-/** Next threshold above `value` in a family (for progress bars, if needed). */
-export function nextThresholdIn(family: AchievementDef[], value: number): number | null {
-  for (const def of family) {
-    if (value < def.threshold) return def.threshold;
-  }
-  return null;
-}

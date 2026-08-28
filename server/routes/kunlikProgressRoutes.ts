@@ -26,6 +26,8 @@ export type KunlikDayRow = {
   /** Gapirish testidan keyingi qo'shimcha topshiriqlardan nechtasi bajarilgan. */
   speaking_tasks_done: number;
   oqish_done:    boolean;
+  /** 5-blok: ustoz bilan jonli savol-javob. */
+  suhbat_done:   boolean;
   speaking_level: number;
 };
 
@@ -59,7 +61,7 @@ export function createKunlikProgressRoutes(
         supabase
           .from('user_kunlik_day_progress')
           .select(
-            'day_number, grammar_1, grammar_2, grammar_3, grammar_correct, words_learned, words_correct, words_match, phrases_done, phrases_correct, text_questions_correct, speaking_tasks_done, oqish_done, speaking_level'
+            'day_number, grammar_1, grammar_2, grammar_3, grammar_correct, words_learned, words_correct, words_match, phrases_done, phrases_correct, text_questions_correct, speaking_tasks_done, oqish_done, suhbat_done, speaking_level'
           )
           .eq('user_id', req.userId),
         supabase.from('daily_practice_prompts').select('day_number'),
@@ -110,7 +112,7 @@ export function createKunlikProgressRoutes(
     const { data: existing, error: fetchErr } = await supabase
       .from('user_kunlik_day_progress')
       .select(
-        'grammar_1, grammar_2, grammar_3, grammar_correct, words_learned, words_correct, words_match, phrases_done, phrases_correct, text_questions_correct, speaking_tasks_done, oqish_done, speaking_level'
+        'grammar_1, grammar_2, grammar_3, grammar_correct, words_learned, words_correct, words_match, phrases_done, phrases_correct, text_questions_correct, speaking_tasks_done, oqish_done, suhbat_done, speaking_level'
       )
       .eq('user_id', userId)
       .eq('day_number', dayNumber)
@@ -131,6 +133,7 @@ export function createKunlikProgressRoutes(
       text_questions_correct: 0,
       speaking_tasks_done: 0,
       oqish_done: false,
+      suhbat_done: false,
       speaking_level: 0,
     };
 
@@ -159,6 +162,7 @@ export function createKunlikProgressRoutes(
         text_questions_correct: merged.text_questions_correct,
         speaking_tasks_done: merged.speaking_tasks_done,
         oqish_done: merged.oqish_done,
+        suhbat_done: merged.suhbat_done,
         speaking_level: merged.speaking_level,
         updated_at: new Date().toISOString(),
       },
@@ -183,6 +187,7 @@ export function createKunlikProgressRoutes(
       grammar_3: r.grammar_3,
       words_match: r.words_match,
       oqish_done: r.oqish_done,
+      suhbat_done: r.suhbat_done,
       speaking_level: r.speaking_level,
     });
 
@@ -234,7 +239,7 @@ export function createKunlikProgressRoutes(
       const allowed: (keyof KunlikDayRow)[] = [
         'grammar_1', 'grammar_2', 'grammar_3',
         'words_learned', 'words_correct', 'words_match',
-        'speaking_tasks_done', 'oqish_done', 'speaking_level',
+        'speaking_tasks_done', 'oqish_done', 'suhbat_done', 'speaking_level',
       ];
 
       const patch: Partial<KunlikDayRow> = {};

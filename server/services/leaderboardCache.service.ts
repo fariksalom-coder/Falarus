@@ -1,19 +1,4 @@
-import type { DbClient } from '../types/dbClient';
-import { getCached, setCached, getRedis, LEADERBOARD_CACHE_KEY, LEADERBOARD_CACHE_TTL_SEC } from '../lib/redis.js';
-import * as leaderboardService from './leaderboard.service.js';
-
-/**
- * Get top 100 leaderboard: from Redis if present, else from PostgreSQL and cache 60s.
- */
-export async function getTop100Cached(
-  supabase: DbClient
-): Promise<leaderboardService.LeaderboardEntry[]> {
-  const cached = await getCached<leaderboardService.LeaderboardEntry[]>(LEADERBOARD_CACHE_KEY);
-  if (cached != null) return cached;
-  const list = await leaderboardService.getTop100(supabase);
-  await setCached(LEADERBOARD_CACHE_KEY, list, LEADERBOARD_CACHE_TTL_SEC);
-  return list;
-}
+import { getRedis, LEADERBOARD_CACHE_KEY } from '../lib/redis.js';
 
 /**
  * Invalidate leaderboard cache (e.g. after rank recalc or after points update).

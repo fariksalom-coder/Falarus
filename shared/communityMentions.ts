@@ -71,13 +71,6 @@ export function hammaMentionBormi(content: string): boolean {
   );
 }
 
-/** Xabar shu odamga tegishlimi: shaxsan belgilangan yoki "hammaga" yozilgan. */
-export function mengaTegishlimi(content: string, userId: number): boolean {
-  return parseMentionParts(content).some(
-    (p) => p.type === 'mention' && (p.userId === userId || p.userId === HAMMA_MENTION_ID),
-  );
-}
-
 /** Matnni oddiy bo‘laklar va belgilangan odamlarga ajratadi (render uchun). */
 export function parseMentionParts(content: string): MentionPart[] {
   const parts: MentionPart[] = [];
@@ -108,7 +101,3 @@ export function extractMentionUserIds(content: string): number[] {
   return [...ids];
 }
 
-/** Bildirishnoma yoki ro‘yxatdagi qisqa ko‘rinish uchun: `@Ism Familiya`. */
-export function stripMentionTokens(content: string): string {
-  return content.replace(mentionRegex(), (_full, name: string) => `@${name}`);
-}

@@ -382,9 +382,6 @@ const copy = {
       bio: 'Я из Самарканда. Пять лет учился в России и хорошо понимаю, с какими трудностями сталкиваются узбекские мигранты и их дети при изучении русского языка. Я обучал русскому людей, которым язык нужен для работы, учебы и жизни в России, поэтому знаю, как объяснять простыми словами и что действительно нужно на практике. FalaRus создан, чтобы помочь подготовиться к русскому языку, экзамену на патент и ВНЖ без лишней путаницы.',
     },
     support: {
-      teacherAsk: 'Вы преподаватель?',
-      teacherLogin: 'Войти',
-      teacherRegister: 'Регистрация',
       teacherMore: 'Подробнее об условиях',
       teacherTitle: 'Ищем преподавателя',
     },
@@ -488,9 +485,6 @@ const copy = {
       bio: 'Men Samarqanddanman. 5 yil Rossiyada o‘qiganman va o‘zbek migrantlari hamda ularning farzandlari rus tilini o‘rganishda qanday qiyinchiliklarga duch kelishini yaxshi bilaman. Men rus tilini ish, o‘qish va Rossiyadagi hayot uchun kerak bo‘lgan odamlarga o‘rgatganman. Shuning uchun nimani qanday tushuntirish kerakligini, patent va VNZh imtihonlariga tayyorlanishda nimalar muhimligini amaliy tajribadan bilaman. FalaRus shu tajriba asosida yaratilgan.',
     },
     support: {
-      teacherAsk: 'Siz o‘qituvchimisiz?',
-      teacherLogin: 'Kirish',
-      teacherRegister: 'Ro‘yxatdan o‘tish',
       teacherMore: 'Shartlar va daromad haqida',
       teacherTitle: 'O‘qituvchi qidiryapmiz',
     },
@@ -594,9 +588,6 @@ const copy = {
       bio: 'Ман аз Самарқанд ҳастам. 5 сол дар Русия таҳсил кардаам ва хуб медонам, ки муҳоҷирони узбек ва фарзандони онҳо ҳангоми омӯзиши забони русӣ бо чӣ душвориҳо рӯ ба рӯ мешаванд. Ман ба одамоне русиро омӯзондаам, ки ин забон барои кор, таҳсил ва зиндагӣ дар Русия лозим буд. Аз ҳамин таҷриба медонам, ки чӣ гуна содда фаҳмондан ва барои имтиҳони патенту РМА чӣ чизҳо муҳиманд. FalaRus бар асоси ҳамин таҷриба сохта шудааст.',
     },
     support: {
-      teacherAsk: 'Шумо омӯзгор ҳастед?',
-      teacherLogin: 'Ворид шудан',
-      teacherRegister: 'Бақайдгирӣ',
       teacherMore: 'Дар бораи шартҳо',
       teacherTitle: 'Омӯзгор меҷӯем',
     },
@@ -700,9 +691,6 @@ const copy = {
       bio: 'I am from Samarkand. I studied in Russia for five years, so I understand the real challenges Uzbek migrants and their children face when learning Russian. I have taught Russian to people who needed it for work, study, and everyday life in Russia. That experience showed me what to explain first, how to make difficult topics simple, and what matters most when preparing for patent and residence permit exams. FalaRus was built from that practical experience.',
     },
     support: {
-      teacherAsk: 'Are you a teacher?',
-      teacherLogin: 'Log in',
-      teacherRegister: 'Sign up',
       teacherMore: 'More about the terms',
       teacherTitle: 'Looking for a teacher',
     },
@@ -786,9 +774,6 @@ const copy = {
       bio: 'Мен Самарқандтанмын. Ресейде 5 жыл оқыдым, сондықтан өзбек мигранттары мен олардың балалары орыс тілін үйренгенде қандай қиындықтарға кездесетінін жақсы түсінемін. Мен орыс тілін жұмыс, оқу және Ресейдегі күнделікті өмір үшін қажет адамдарға үйреттім. Осы тәжірибе арқылы күрделі тақырыпты қалай қарапайым түсіндіруді және патент пен тұруға рұқсат емтихандарына дайындықта ненің маңызды екенін білемін. FalaRus осы тәжірибе негізінде жасалды.',
     },
     support: {
-      teacherAsk: 'Сіз мұғалімсіз бе?',
-      teacherLogin: 'Кіру',
-      teacherRegister: 'Тіркелу',
       teacherMore: 'Шарттар туралы толығырақ',
       teacherTitle: 'Мұғалім іздейміз',
     },
@@ -872,9 +857,6 @@ const copy = {
       bio: 'Мен Самаркандданмын. Россияда 5 жыл окудум, ошондуктан өзбек мигранттары жана алардын балдары орус тилин үйрөнүүдө кандай кыйынчылыктарга туш болорун жакшы түшүнөм. Мен орус тилин жумуш, окуу жана Россиядагы күнүмдүк жашоо үчүн керек болгон адамдарга үйрөткөм. Ошол тажрыйба мага татаал темаларды жөнөкөй түшүндүрүүнү жана патент, жашоо уруксаты экзамендерине даярданууда эмнелер маанилүү экенин көрсөттү. FalaRus ушул практикалык тажрыйбанын негизинде түзүлгөн.',
     },
     support: {
-      teacherAsk: 'Сиз мугалимсизби?',
-      teacherLogin: 'Кирүү',
-      teacherRegister: 'Каттоо',
       teacherMore: 'Шарттар жөнүндө',
       teacherTitle: 'Мугалим издейбиз',
     },
@@ -925,9 +907,6 @@ const copy = {
     /** Banner sarlavhasi ustidagi yorliq: «O'qituvchi qidiryapmiz». */
     teacherTitle: string;
     /** «Siz o'qituvchimisiz?» — asosiy tugma ustidagi savol. */
-    teacherAsk: string;
-    teacherLogin: string;
-    teacherRegister: string;
     /** To'liq o'qituvchi lendingiga havola (shartlar, daromad kalkulyatori). */
     teacherMore: string;
   };
@@ -1193,14 +1172,18 @@ export default function LandingPage() {
           </div>
 
           {/* Students */}
-          <img
-            src="/landing/hero-students.png"
-            alt=""
-            aria-hidden
-            className="pointer-events-none relative z-[2] mx-auto mt-1.5 w-full max-h-[40dvh] object-contain object-bottom"
-            style={{ filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.35))' }}
-            decoding="async"
-          />
+          <picture className="contents">
+            <source srcSet="/landing/hero-students.webp" type="image/webp" />
+            <img
+              src="/landing/hero-students-opt.png"
+              alt=""
+              aria-hidden
+              className="pointer-events-none relative z-[2] mx-auto mt-1.5 w-full max-h-[40dvh] object-contain object-bottom"
+              style={{ filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.35))' }}
+              decoding="async"
+              fetchPriority="high"
+            />
+          </picture>
         </section>
 
         {/* Floating CTA card — overlaps hero (LIGHT 1A) */}
@@ -1325,12 +1308,16 @@ export default function LandingPage() {
                 <span>{t.hero.learners}</span>
               </div>
             </div>
-            <img
-              src="/landing/hero-students.png"
-              alt="FalaRus students"
-              className="pointer-events-none mx-auto mt-10 w-[min(760px,100%)] object-contain lg:absolute lg:bottom-0 lg:right-[60px] lg:mt-0 lg:w-[610px] 2xl:right-[110px] 2xl:w-[734px]"
-              decoding="async"
-            />
+            <picture className="contents">
+              <source srcSet="/landing/hero-students.webp" type="image/webp" />
+              <img
+                src="/landing/hero-students-opt.png"
+                alt="FalaRus students"
+                className="pointer-events-none mx-auto mt-10 w-[min(760px,100%)] object-contain lg:absolute lg:bottom-0 lg:right-[60px] lg:mt-0 lg:w-[610px] 2xl:right-[110px] 2xl:w-[734px]"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </picture>
           </div>
         </section>
 
@@ -1365,7 +1352,10 @@ export default function LandingPage() {
               <h2 className="text-[32px] font-semibold leading-tight">{t.certificate.title}</h2>
               <p className="mt-6 max-w-[1230px] text-lg leading-[1.6] text-white">{t.certificate.description}</p>
             </div>
-            <img src="/landing/certificate-perspective.png" alt="FalaRus certificate" className="mx-auto w-full max-w-[430px] rotate-[5deg] object-contain lg:max-w-[394px]" decoding="async" />
+            <picture className="contents">
+              <source srcSet="/landing/certificate-perspective.webp" type="image/webp" />
+              <img src="/landing/certificate-perspective-opt.png" alt="FalaRus certificate" className="mx-auto w-full max-w-[430px] rotate-[5deg] object-contain lg:max-w-[394px]" decoding="async" loading="lazy" />
+            </picture>
           </div>
         </section>
 
@@ -1437,12 +1427,16 @@ export default function LandingPage() {
 
         <section className="bg-[#0F172A] px-5 py-20 text-white sm:px-10 lg:px-24 lg:py-[92px]">
           <div className="mx-auto grid max-w-[800px] items-center gap-8 md:grid-cols-[300px_1fr]">
-            <img
-              src="/landing/фоундер.png"
-              alt={t.founder.name}
-              className="mx-auto h-[300px] w-[300px] rounded-[10px] object-cover object-top shadow-[0_18px_34px_rgba(15,23,42,0.2)]"
-              decoding="async"
-            />
+            <picture className="contents">
+              <source srcSet="/landing/founder.webp" type="image/webp" />
+              <img
+                src="/landing/founder-opt.png"
+                alt={t.founder.name}
+                className="mx-auto h-[300px] w-[300px] rounded-[10px] object-cover object-top shadow-[0_18px_34px_rgba(15,23,42,0.2)]"
+                decoding="async"
+                loading="lazy"
+              />
+            </picture>
             <div className="text-left">
               <h2 className="text-[32px] font-semibold leading-tight">{t.founder.name}</h2>
               <p className="mt-3 text-base font-semibold text-[#93C5FD]">{t.founder.role}</p>
@@ -1465,9 +1459,6 @@ export default function LandingPage() {
             <TeacherRecruitBanner
               language={languageCode}
               eyebrow={t.support.teacherTitle}
-              ask={t.support.teacherAsk}
-              loginLabel={t.support.teacherLogin}
-              registerLabel={t.support.teacherRegister}
               moreLabel={t.support.teacherMore}
             />
           </div>

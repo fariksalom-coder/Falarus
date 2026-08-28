@@ -47,26 +47,6 @@ export type SpeakingStats = {
   wrong: number;
 };
 
-export async function getSpeakingTopics(token: string): Promise<SpeakingTopic[]> {
-  const res = await fetch(apiUrl('/api/speaking/topics'), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Mavzular yuklanmadi');
-  return res.json();
-}
-
-export async function getSpeakingTasks(
-  token: string,
-  opts?: { topic?: string; lessonId?: number }
-): Promise<SpeakingTask[]> {
-  let url = '/api/speaking/tasks';
-  const params: string[] = [];
-  if (opts?.topic) params.push(`topic=${encodeURIComponent(opts.topic)}`);
-  if (opts?.lessonId) params.push(`lesson_id=${opts.lessonId}`);
-  if (params.length) url += '?' + params.join('&');
-  const res = await fetch(apiUrl(url), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Topshiriqlar yuklanmadi');
-  return res.json();
-}
-
 async function parseApiError(res: Response, fallback: string): Promise<string> {
   try {
     const body = (await res.json()) as { error?: string };
@@ -158,8 +138,3 @@ export async function transcribeSpeakingAudio(
   return data.text;
 }
 
-export async function getSpeakingStats(token: string): Promise<SpeakingStats> {
-  const res = await fetch(apiUrl('/api/speaking/stats'), { headers: authHeaders(token) });
-  if (!res.ok) throw new Error('Statistika yuklanmadi');
-  return res.json();
-}

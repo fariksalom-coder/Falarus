@@ -123,20 +123,93 @@ async function post<T>(token: string, path: string, body: Record<string, unknown
   return data as T;
 }
 
+/*
+ * DARS KESHI — BIR KUNGA BITTA SO'ROV.
+ *
+ * NIMA UCHUN: bitta grammatika kunida dars IKKI joyda kerak bo'ladi —
+ * tushuntirish bosqichida va kunning oxiridagi savol-javob bosqichida.
+ * Bosqichlar orasida yurilganda komponent har safar qaytadan mount bo'ladi
+ * va har mount serverga yangi `POST /api/ustoz/dars` yuborardi. Marshrutda
+ * esa daqiqasiga 6 ta chegara bor: bir necha marta oldinga-ortga yurilsa
+ * (yoki ikkita oyna ochiq bo'lsa) chegara to'lib, «So'rovlar soni oshib
+ * ketdi» chiqardi va bosqich UMUMAN OCHILMASDI.
+ *
+ * Dars serverda ham keshlanadi, ya'ni javob har safar bir xil — shuning
+ * uchun uni klientda ham saqlash xavfsiz. Ayni damda ketayotgan so'rov
+ * bo'lishiladi: bir vaqtda ikkita mount bitta javobni kutadi.
+ *
+ * Faqat OXIRGI dars saqlanadi (bir vaqtda bitta kun ochiq bo'ladi).
+ */
+const DARS_KESH_TTL_MS = 10 * 60_000;
+
+let darsKesh: { kalit: string; vaqt: number; natija: Promise<DoskaDars> } | null = null;
+
+function darsKaliti(
+  params: { mavzu: string; nazariya?: string; kun?: number; vazifalar?: DoskaVazifa[] },
+): string {
+  return JSON.stringify([
+    params.kun ?? '',
+    params.mavzu,
+    params.nazariya ?? '',
+    (params.vazifalar ?? []).length,
+  ]);
+}
+
 /** Kun mavzusi va vazifalari bo'yicha to'liq dars tayyorlaydi. */
 export function buildDoskaLesson(
   token: string,
   params: { mavzu: string; nazariya?: string; kun?: number; vazifalar?: DoskaVazifa[] },
 ): Promise<DoskaDars> {
-  return post<DoskaDars>(token, '/api/ustoz/dars', params);
+  const kalit = darsKaliti(params);
+  const hozir = Date.now();
+  if (darsKesh && darsKesh.kalit === kalit && hozir - darsKesh.vaqt < DARS_KESH_TTL_MS) {
+    return darsKesh.natija;
+  }
+
+  const natija = post<DoskaDars>(token, '/api/ustoz/dars', params);
+  darsKesh = { kalit, vaqt: hozir, natija };
+  // Xato keshda qolmasin: "Qayta urinish" haqiqatan ham qayta so'rasin.
+  void natija.catch(() => {
+    if (darsKesh?.natija === natija) darsKesh = null;
+  });
+  return natija;
 }
 
-/** Dars davomida berilgan savolga javob oladi. */
-export function askDoska(
-  token: string,
-  params: { savol: string; mavzu: string; bosqich?: string },
-): Promise<DoskaJavob> {
-  return post<DoskaJavob>(token, '/api/ustoz/savol', params);
+/**
+ * Suhbat savoli — QAYSI KUNGA tegishli ekani bilan.
+ *
+ * `manbaKun` javob bera olmagan o'quvchini qaytarish uchun: savol qaysi
+ * kun materialidan olingan bo'lsa, u o'sha kunga yuboriladi.
+ */
+export type KunSavol = {
+  savol: string;
+  manbaKun: number;
+  manbaMavzu: string;
+};
+
+/**
+ * Kun yakunidagi og'zaki savol-javob savollari: joriy kunning to'rt
+ * bo'limidan bittadan + ortdagi kunlardan bittadan.
+ *
+ * Material serverda bazadan olinadi, shuning uchun bu yerdan faqat kun
+ * raqami yuboriladi.
+ */
+export async function fetchKunSavollari(token: string, kun: number): Promise<KunSavol[]> {
+  const javob = await post<{ savollar?: unknown }>(token, '/api/ustoz/kun-savollari', { kun });
+  if (!Array.isArray(javob.savollar)) return [];
+  return javob.savollar
+    .map((xom): KunSavol | null => {
+      if (!xom || typeof xom !== 'object') return null;
+      const r = xom as Record<string, unknown>;
+      const savol = String(r.savol ?? '').trim();
+      if (!savol) return null;
+      return {
+        savol,
+        manbaKun: Number(r.manbaKun) || kun,
+        manbaMavzu: String(r.manbaMavzu ?? ''),
+      };
+    })
+    .filter((s): s is KunSavol => s !== null);
 }
 
 /** Og'zaki javobni baholaydi: ovoz yuboriladi, matn va baho qaytadi. */

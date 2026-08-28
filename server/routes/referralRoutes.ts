@@ -29,12 +29,6 @@ export function createReferralRoutes(
   router.post('/referral', authenticate, (req: any, res) => {
     return referralController.postWithdraw(supabase)(req, res);
   });
-  router.get(
-    '/referral/discount-eligible',
-    authenticate,
-    referralController.getDiscountEligibility(supabase)
-  );
-
   /*
    * BU YERDA `POST /payments` BOR EDI — O'CHIRILDI (2026-08-17).
    *

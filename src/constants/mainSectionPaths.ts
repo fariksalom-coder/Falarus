@@ -15,6 +15,3 @@ export function mainSectionIndex(pathname: string): number {
   return MAIN_SECTION_PATHS.findIndex((p) => p === pathname);
 }
 
-export function isMainSectionPath(pathname: string): boolean {
-  return mainSectionIndex(pathname) >= 0;
-}

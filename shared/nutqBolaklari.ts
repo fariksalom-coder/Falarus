@@ -72,11 +72,6 @@ export function nutqBolaklari(matn: string): string[] {
   return out;
 }
 
-/** Bir bosqichda ovoz bilan o'qiladigan matn (doskadagi tartib bilan bir xil). */
-export function bosqichNutqMatni(bosqich: { tushuntirish?: string; qoida?: string }): string {
-  return [bosqich?.tushuntirish, bosqich?.qoida].filter(Boolean).join('. ');
-}
-
 /**
  * TAQQOSLASH JADVALI — doskaning eng "darslik" qismi.
  *

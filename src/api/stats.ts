@@ -24,19 +24,6 @@ function authHeaders(token: string | null): HeadersInit {
   return h;
 }
 
-export async function fetchCourseProgress(token: string | null): Promise<CourseProgress | null> {
-  if (!token) return null;
-  try {
-    const res = await fetch(apiUrl('/api/stats/course-progress'), {
-      headers: authHeaders(token),
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
-}
-
 export type WeeklyActivityDay = {
   date: string;
   minutes: number;
@@ -83,14 +70,3 @@ export async function fetchActivityCalendar(
   }
 }
 
-export async function recordCourseDay(token: string | null): Promise<void> {
-  if (!token) return;
-  try {
-    await fetch(apiUrl('/api/stats/record-course-day'), {
-      method: 'POST',
-      headers: authHeaders(token),
-    });
-  } catch {
-    // fire-and-forget
-  }
-}

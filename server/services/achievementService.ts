@@ -1,9 +1,7 @@
 import type { DatabaseClient } from '../types/progress';
 import {
   ACHIEVEMENTS_BY_KEY,
-  ALL_ACHIEVEMENTS,
   computeQualifyingAchievements,
-  TOTAL_ACHIEVEMENTS,
   type AchievementDef,
 } from '../../shared/achievements.js';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
@@ -35,7 +33,7 @@ export async function computeUserProgress(
     supabase
       .from('user_kunlik_day_progress')
       .select(
-        'day_number, grammar_1, grammar_2, grammar_3, words_learned, words_match, oqish_done, speaking_level',
+        'day_number, grammar_1, grammar_2, grammar_3, words_learned, words_match, oqish_done, suhbat_done, speaking_level',
       )
       .eq('user_id', userId),
     supabase.from('daily_practice_prompts').select('day_number'),
@@ -57,6 +55,7 @@ export async function computeUserProgress(
     words_learned: number | null;
     words_match: boolean | null;
     oqish_done: boolean | null;
+    suhbat_done: boolean | null;
     speaking_level: number | null;
   }>) {
     wordsLearned += Math.max(0, Number(r.words_learned ?? 0));
@@ -68,6 +67,7 @@ export async function computeUserProgress(
         grammar_3: !!r.grammar_3,
         words_match: !!r.words_match,
         oqish_done: !!r.oqish_done,
+        suhbat_done: !!r.suhbat_done,
         speaking_level: r.speaking_level,
       },
       promptCountByDay,
@@ -153,12 +153,3 @@ export async function markAchievementsNotified(
     .in('achievement_key', keys);
 }
 
-/** Convenience: total catalog size — mirrors the shared constant. */
-export function getTotalAchievementsCount(): number {
-  return TOTAL_ACHIEVEMENTS;
-}
-
-/** Convenience: full ordered catalog (used by the grid). */
-export function getCatalog(): AchievementDef[] {
-  return ALL_ACHIEVEMENTS;
-}

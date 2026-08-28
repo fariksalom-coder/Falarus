@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react';
-import { ArrowLeft, AtSign, Headphones, Lock, MoreVertical, Pencil, Send, Trash2, Users } from 'lucide-react';
+import ChatMedia from './ChatMedia';
+import ChatMediaComposer, { type ComposerRejim } from './ChatMediaComposer';
+import MessageReactions from './MessageReactions';
+import { ArrowLeft, AtSign, Clapperboard, Headphones, ImagePlus, Lock, Mic, MoreVertical, Pencil, Send, SmilePlus, Trash2, Users, Video, X } from 'lucide-react';
 import {
   getSavolJavobLiveState,
   getSavolJavobMessages,
@@ -9,6 +12,13 @@ import {
   pingSavolJavobPresence,
   searchSavolJavobMembers,
   sendSavolJavobMessage,
+  sendSavolJavobMedia,
+  toggleMessageReaction,
+  getAvailableReactions,
+  uploadReactionImage,
+  type ReactionOption,
+  addReactionEmoji,
+  removeReactionEmoji,
   setSavolJavobTyping,
   getSavolJavobSummary,
   blockChatUser,
@@ -23,6 +33,7 @@ import {
 import { mentionToken, parseMentionParts } from '../../../shared/communityMentions';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
+import UserCard from './UserCard';
 
 type Props = {
   onBack: () => void;
@@ -255,6 +266,8 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
   /** O'qish rejimi (blok) va moderator huquqi — summariyadan keladi. */
   const [block, setBlock] = useState<ChatBlock | null>(null);
   const [canModerate, setCanModerate] = useState(false);
+  /* Support ismga bosganda ochiladigan karta. Oddiy foydalanuvchida hech qachon. */
+  const [karta, setKarta] = useState<number | null>(null);
   /** Moderator menyusi ochilgan xabar. */
   const [menyu, setMenyu] = useState<SavolJavobMessage | null>(null);
   const [tahrir, setTahrir] = useState<{ id: number; matn: string } | null>(null);
@@ -517,6 +530,160 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
     }
   }
 
+  /*
+   * MEDIA YUBORISH.
+   *
+   * Matnli xabar bilan bir xil oqim: yuborilgach ro'yxatga qo'shiladi va
+   * pastga tushiriladi. Faqat bu yerda matn maydoni ham birga ketadi —
+   * odam rasmga izoh yozgan bo'lishi mumkin.
+   */
+  const [mediaRejim, setMediaRejim] = useState<ComposerRejim | null>(null);
+  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  const faylRef = useRef<HTMLInputElement | null>(null);
+
+  async function mediaYubor(
+    kind: 'image' | 'video' | 'voice' | 'video_note',
+    file: Blob,
+    fileName: string,
+    ms?: number | null,
+  ) {
+    if (!token || yuklanmoqda) return;
+    setYuklanmoqda(true);
+    setError('');
+    const izoh = text.trim() ? serializeMentions(text.trim(), pickedRef.current) : '';
+    try {
+      const created = await sendSavolJavobMedia(token, { kind, file, fileName, content: izoh, ms });
+      stickToBottomRef.current = true;
+      setMessages((prev) => [...prev, created]);
+      setText('');
+      pickedRef.current = [];
+      void markSavolJavobRead(token).catch(() => {});
+      void refreshLive();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.loadError'));
+    } finally {
+      setYuklanmoqda(false);
+      setMediaRejim(null);
+    }
+  }
+
+  /*
+   * Taklif etiladigan emojilar serverdan keladi — support hisobi
+   * ro'yxatni o'zgartirsa, deploy kutmasdan hammada yangilanadi.
+   */
+  const [emojilar, setEmojilar] = useState<ReactionOption[]>([]);
+  const [emojiPanel, setEmojiPanel] = useState(false);
+  const [yangiEmoji, setYangiEmoji] = useState('');
+  const [emojiBand, setEmojiBand] = useState(false);
+  const [rasmNomi, setRasmNomi] = useState('');
+  const emojiFaylRef = useRef<HTMLInputElement | null>(null);
+
+  async function rasmliEmojiQoshish(file: File) {
+    if (!token || emojiBand) return;
+    setEmojiBand(true);
+    setError('');
+    try {
+      await uploadReactionImage(token, file, rasmNomi.trim());
+      setRasmNomi('');
+      await emojilarniYukla();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.loadError'));
+    } finally {
+      setEmojiBand(false);
+    }
+  }
+
+  const emojilarniYukla = useCallback(async () => {
+    if (!token) return;
+    try {
+      const r = await getAvailableReactions(token);
+      setEmojilar(r.emojis ?? []);
+    } catch {
+      /* zaxira to'plam MessageReactions ichida */
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void emojilarniYukla();
+  }, [emojilarniYukla]);
+
+  async function emojiQoshish() {
+    const e = yangiEmoji.trim();
+    if (!token || !e || emojiBand) return;
+    setEmojiBand(true);
+    setError('');
+    try {
+      await addReactionEmoji(token, e);
+      setYangiEmoji('');
+      await emojilarniYukla();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.loadError'));
+    } finally {
+      setEmojiBand(false);
+    }
+  }
+
+  async function emojiOchirish(e: string) {
+    if (!token || emojiBand) return;
+    setEmojiBand(true);
+    setError('');
+    try {
+      await removeReactionEmoji(token, e);
+      await emojilarniYukla();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.loadError'));
+    } finally {
+      setEmojiBand(false);
+    }
+  }
+
+  /*
+   * REAKSIYA — darhol ko'rinadi, keyin server bilan solishtiriladi.
+   *
+   * Server javobini kutib turilsa, sekin tarmoqda tugma "o'lik" bo'lib
+   * tuyulardi. Shuning uchun avval mahalliy holat o'zgaradi, javob
+   * kelgach haqiqiy yig'ma bilan almashtiriladi. Xato bo'lsa — orqaga
+   * qaytariladi.
+   */
+  async function reaksiyaBos(messageId: number, emoji: string) {
+    if (!token) return;
+    const oldingi = messages;
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const hozir = m.reactions ?? [];
+        const bor = hozir.find((r) => r.emoji === emoji);
+        let yangi;
+        if (bor?.meni) {
+          yangi = hozir
+            .map((r) => (r.emoji === emoji ? { ...r, soni: r.soni - 1, meni: false } : r))
+            .filter((r) => r.soni > 0);
+        } else if (bor) {
+          yangi = hozir.map((r) => (r.emoji === emoji ? { ...r, soni: r.soni + 1, meni: true } : r));
+        } else {
+          yangi = [...hozir, { emoji, soni: 1, meni: true }];
+        }
+        return { ...m, reactions: yangi };
+      }),
+    );
+    try {
+      const javob = await toggleMessageReaction(token, messageId, emoji);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, reactions: javob.reactions } : m)),
+      );
+    } catch (e) {
+      setMessages(oldingi);
+      setError(e instanceof Error ? e.message : t('common.loadError'));
+    }
+  }
+
+  /** Galereyadan tanlangan fayl — turi MIME bo'yicha aniqlanadi. */
+  function faylTanlandi(f: File | null | undefined) {
+    if (!f) return;
+    const kind = f.type.startsWith('video/') ? 'video' : 'image';
+    void mediaYubor(kind, f, f.name || (kind === 'video' ? 'video' : 'rasm'));
+  }
+
   /** Moderator amallari — xabar menyusidan chaqiriladi. */
   async function modAmal(fn: () => Promise<void>) {
     if (!token) return;
@@ -554,6 +721,17 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
         >
           <Users className="h-5 w-5" />
         </div>
+        {canModerate ? (
+          <button
+            type="button"
+            onClick={() => setEmojiPanel(true)}
+            className="order-last flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[12px] bg-pmn-pill text-pmn-text ring-1 ring-pmn-border"
+            aria-label="Reaksiya emojilarini boshqarish"
+            title="Reaksiya emojilari"
+          >
+            <SmilePlus className="h-4 w-4" />
+          </button>
+        ) : null}
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-extrabold text-app-text">{t('partner.groupChat')}</p>
           <p className="text-[11.5px] font-bold text-[#35C06E]">
@@ -587,18 +765,47 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
               return (
                 <div key={msg.id} className={`group ${mine ? 'flex justify-end' : 'flex items-end gap-2'}`}>
                   {!mine ? (
-                    <div
-                      className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white"
-                      style={{ background: 'linear-gradient(145deg, #8B5CF6, #6D28D9)' }}
-                    >
-                      {initials || '?'}
-                    </div>
+                    /*
+                      Support uchun bu tugma (ma'lumot kartasi ochiladi),
+                      qolganlar uchun oddiy `div`. Tugmani hammaga berib,
+                      keyin bosilganda "ruxsat yo'q" deyish yomonroq
+                      bo'lardi: bosiladigan ko'rinib turgan narsa
+                      ishlamasligi kerak emas.
+                    */
+                    canModerate ? (
+                      <button
+                        type="button"
+                        onClick={() => setKarta(msg.sender_user_id)}
+                        aria-label={`${msg.sender_name} ma'lumotlari`}
+                        className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white transition-transform active:scale-90"
+                        style={{ background: 'linear-gradient(145deg, #8B5CF6, #6D28D9)' }}
+                      >
+                        {initials || '?'}
+                      </button>
+                    ) : (
+                      <div
+                        className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white"
+                        style={{ background: 'linear-gradient(145deg, #8B5CF6, #6D28D9)' }}
+                      >
+                        {initials || '?'}
+                      </div>
+                    )
                   ) : null}
                   <div className="max-w-[74%]">
                     {!mine ? (
-                      <p className="ml-1 mb-[3px] text-[11px] font-extrabold text-[#A78BFA]">
-                        {msg.sender_name}
-                      </p>
+                      canModerate ? (
+                        <button
+                          type="button"
+                          onClick={() => setKarta(msg.sender_user_id)}
+                          className="ml-1 mb-[3px] block text-[11px] font-extrabold text-[#A78BFA] underline decoration-dotted underline-offset-2"
+                        >
+                          {msg.sender_name}
+                        </button>
+                      ) : (
+                        <p className="ml-1 mb-[3px] text-[11px] font-extrabold text-[#A78BFA]">
+                          {msg.sender_name}
+                        </p>
+                      )
                     ) : null}
                     <MaybeSuriladigan
                       surilsin={!mine && !block}
@@ -618,7 +825,35 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
                             : undefined
                         }
                       >
-                        <MessageBody content={msg.content} mine={mine} myUserId={user?.id} />
+                        {/*
+                          Rels kommentariyasi — oddiy xabar bilan bir joyda
+                          turadi, shuning uchun qayerdan kelgani belgilanadi.
+                          Aks holda suhbat kontekstsiz ko'rinardi.
+                        */}
+                        {msg.reel_id ? (
+                          <span
+                            className={`mb-1 inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[10px] font-black uppercase tracking-wide ${
+                              mine ? 'bg-white/20 text-white/85' : 'bg-[#8B5CF6]/12 text-[#6D28D9]'
+                            }`}
+                          >
+                            <Clapperboard className="h-3 w-3" aria-hidden />
+                            Rels
+                          </span>
+                        ) : null}
+                        {msg.media_url && msg.media_kind ? (
+                          <div className={msg.content ? 'mb-1.5' : ''}>
+                            <ChatMedia
+                              kind={msg.media_kind}
+                              url={msg.media_url}
+                              ms={msg.media_ms}
+                              oziniki={mine}
+                              ochirilgan={Boolean(msg.media_deleted_at)}
+                            />
+                          </div>
+                        ) : null}
+                        {msg.content ? (
+                          <MessageBody content={msg.content} mine={mine} myUserId={user?.id} />
+                        ) : null}
                         {msg.edited_at ? (
                           <span className={`ml-1 text-[10px] font-bold ${mine ? 'text-white/70' : 'text-app-text-muted'}`}>
                             (tahrirlangan)
@@ -626,6 +861,14 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
                         ) : null}
                       </div>
                     </MaybeSuriladigan>
+                    <div className={mine ? 'flex justify-end' : 'ml-1'}>
+                      <MessageReactions
+                        reactions={msg.reactions ?? []}
+                        oziniki={mine}
+                        emojilar={emojilar}
+                        onToggle={(e) => void reaksiyaBos(msg.id, e)}
+                      />
+                    </div>
                     <p
                       className={`mt-[3px] text-[10px] font-bold ${
                         mine ? 'text-right text-[#6E86BE]' : 'ml-1 text-app-text-secondary'
@@ -753,7 +996,36 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
             </button>
           </div>
         ) : (
-        <div className="mx-auto flex max-w-lg items-end gap-2">
+        <div className="mx-auto flex max-w-lg items-end gap-1.5">
+          {/* Galereya — rasm va video. Bitta input, turi MIME bo'yicha ajratiladi. */}
+          <input
+            ref={faylRef}
+            type="file"
+            accept="image/*,video/*"
+            className="hidden"
+            onChange={(e) => {
+              faylTanlandi(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => faylRef.current?.click()}
+            disabled={yuklanmoqda}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-pmn-text-muted transition hover:bg-pmn-pill disabled:opacity-40"
+            aria-label="Rasm yoki video"
+          >
+            <ImagePlus className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMediaRejim('video_note')}
+            disabled={yuklanmoqda}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-pmn-text-muted transition hover:bg-pmn-pill disabled:opacity-40"
+            aria-label="Dumaloq video xabar"
+          >
+            <Video className="h-5 w-5" />
+          </button>
           <textarea
             ref={textareaRef}
             value={text}
@@ -796,18 +1068,178 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
               }
             }}
           />
-          <button
-            type="button"
-            onClick={() => void handleSend()}
-            disabled={!text.trim() || sending}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0EA5A5] text-white shadow-md disabled:opacity-50"
-            aria-label={t('common.send')}
-          >
-            <Send className="h-5 w-5" />
-          </button>
+          {/*
+            Matn bo'sh bo'lsa — mikrofon, yozilgan bo'lsa — yuborish.
+            Telegram va WhatsApp'dagi xulq; ikkita alohida tugma joyni
+            bekorga egallardi.
+          */}
+          {text.trim() ? (
+            <button
+              type="button"
+              onClick={() => void handleSend()}
+              disabled={sending || yuklanmoqda}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0EA5A5] text-white shadow-md disabled:opacity-50"
+              aria-label={t('common.send')}
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setMediaRejim('voice')}
+              disabled={yuklanmoqda}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0EA5A5] text-white shadow-md disabled:opacity-50"
+              aria-label="Ovozli xabar"
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+          )}
         </div>
         )}
       </div>
+
+      {/*
+        SUPPORT: reaksiya emojilarini boshqarish.
+
+        O'chirish faqat RO'YXATDAN olib tashlaydi — odamlar ilgari qo'ygan
+        reaksiyalar joyida qoladi. Kamida bitta emoji qolishi shart, aks
+        holda chatda reaksiya qo'yib bo'lmay qolardi.
+      */}
+      {emojiPanel && canModerate
+        ? createPortal(
+            <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 sm:items-center">
+              <div className="w-full max-w-sm rounded-t-[24px] bg-pmn-card sm:rounded-[24px]">
+                <div className="flex items-center justify-between border-b border-pmn-border px-5 py-3">
+                  <span className="text-[14px] font-black text-pmn-text">Reaksiya emojilari</span>
+                  <button
+                    type="button"
+                    onClick={() => setEmojiPanel(false)}
+                    className="rounded-lg p-1.5 text-pmn-text-muted"
+                    aria-label="Yopish"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="px-5 py-4">
+                  <div className="flex flex-wrap gap-2">
+                    {emojilar.map((o) => (
+                      <span
+                        key={o.emoji}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-pmn-pill px-2.5 py-1.5 ring-1 ring-pmn-border"
+                        title={o.label || undefined}
+                      >
+                        {o.image_url ? (
+                          <img
+                            src={o.image_url}
+                            alt={o.label || o.emoji}
+                            className="h-[18px] w-[18px] object-contain"
+                          />
+                        ) : (
+                          <span className="text-[18px] leading-none">{o.emoji}</span>
+                        )}
+                        <button
+                          type="button"
+                          disabled={emojiBand || emojilar.length <= 1}
+                          onClick={() => void emojiOchirish(o.emoji)}
+                          className="text-pmn-text-muted transition hover:text-red-600 disabled:opacity-30"
+                          aria-label={`${o.label || o.emoji} ni o'chirish`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                    {emojilar.length === 0 ? (
+                      <p className="text-[13px] text-pmn-text-muted">Ro'yxat bo'sh</p>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <input
+                      value={yangiEmoji}
+                      onChange={(ev) => setYangiEmoji(ev.target.value)}
+                      onKeyDown={(ev) => {
+                        if (ev.key === 'Enter') {
+                          ev.preventDefault();
+                          void emojiQoshish();
+                        }
+                      }}
+                      placeholder="Yangi emoji (masalan 🎉)"
+                      maxLength={16}
+                      className="min-w-0 flex-1 rounded-[12px] border border-pmn-border bg-pmn-bg px-3 py-2.5 text-[15px] text-pmn-text outline-none focus:border-[#0EA5A5]"
+                    />
+                    <button
+                      type="button"
+                      disabled={!yangiEmoji.trim() || emojiBand}
+                      onClick={() => void emojiQoshish()}
+                      className="shrink-0 rounded-[12px] bg-[#0EA5A5] px-4 py-2.5 text-[13.5px] font-black text-white disabled:opacity-40"
+                    >
+                      Qo'shish
+                    </button>
+                  </div>
+
+                  {/* Galereyadan rasmli reaksiya. */}
+                  <div className="mt-4 border-t border-pmn-border pt-4">
+                    <p className="text-[12.5px] font-bold text-pmn-text">Rasmli reaksiya</p>
+                    <input
+                      ref={emojiFaylRef}
+                      type="file"
+                      accept="image/png,image/webp,image/jpeg,image/gif"
+                      className="hidden"
+                      onChange={(ev) => {
+                        const f = ev.target.files?.[0];
+                        ev.target.value = '';
+                        if (f) void rasmliEmojiQoshish(f);
+                      }}
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        value={rasmNomi}
+                        onChange={(ev) => setRasmNomi(ev.target.value)}
+                        placeholder="Nom (masalan falarus)"
+                        maxLength={40}
+                        className="min-w-0 flex-1 rounded-[12px] border border-pmn-border bg-pmn-bg px-3 py-2.5 text-[14px] text-pmn-text outline-none focus:border-[#0EA5A5]"
+                      />
+                      <button
+                        type="button"
+                        disabled={!rasmNomi.trim() || emojiBand}
+                        onClick={() => emojiFaylRef.current?.click()}
+                        className="shrink-0 inline-flex items-center gap-1.5 rounded-[12px] bg-pmn-pill px-3 py-2.5 text-[13px] font-black text-pmn-text ring-1 ring-pmn-border disabled:opacity-40"
+                      >
+                        <ImagePlus className="h-4 w-4" />
+                        Rasm
+                      </button>
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-pmn-text-muted">
+                      PNG, WEBP, JPEG yoki GIF · 512 KB gacha · 128px ga kichraytiriladi
+                    </p>
+                  </div>
+
+                  <p className="mt-3 text-[11.5px] leading-snug text-pmn-text-muted">
+                    O'chirilgan reaksiya ro'yxatdan chiqadi, lekin ilgari qo'yilganlari
+                    xabarlarda qolaveradi.
+                  </p>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {/* Ovoz / dumaloq video yozish oynasi. */}
+      {mediaRejim
+        ? createPortal(
+            <ChatMediaComposer
+              rejim={mediaRejim}
+              onYop={() => setMediaRejim(null)}
+              onOvoz={(blob, ms) => void mediaYubor('voice', blob, 'ovoz.webm', ms)}
+              onVideo={(blob, ms, mime) =>
+                void mediaYubor('video_note', blob, mime.includes('mp4') ? 'video.mp4' : 'video.webm', ms)
+              }
+            />,
+            document.body,
+          )
+        : null}
 
       {/* Moderator menyusi — xabarni tahrirlash/o'chirish, muallifni bloklash. */}
       {menyu ? (
@@ -826,6 +1258,24 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
             <p className="mb-3 line-clamp-2 text-[12.5px] font-semibold text-app-text-muted">
               {menyu.content}
             </p>
+
+            {/*
+              Menyudan ham kirish mumkin: ismga bosish kichik nishon,
+              menyu esa allaqachon ochilgan bo'ladi va bu yerdan
+              ma'lumotga o'tish tabiiyroq.
+            */}
+            <button
+              type="button"
+              onClick={() => {
+                const kim = menyu.sender_user_id;
+                setMenyu(null);
+                setTahrir(null);
+                setKarta(kim);
+              }}
+              className="mb-2 w-full rounded-[14px] bg-pmn-pill py-2.5 text-[13.5px] font-black text-pmn-text"
+            >
+              Ma'lumotlari
+            </button>
 
             {tahrir ? (
               <>
@@ -902,6 +1352,9 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
           </div>
         </div>
       ) : null}
+
+      {/* Ma'lumot kartasi — faqat support ochadi. */}
+      {karta != null ? <UserCard userId={karta} onClose={() => setKarta(null)} /> : null}
     </div>
   );
 

@@ -1,8 +1,6 @@
 import type { DbClient } from '../types/dbClient';
 
 const LEADERBOARD = 'leaderboard';
-const USERS = 'users';
-const TOP_LIMIT = 100;
 
 export type LeaderboardRow = {
   id: number;
@@ -69,48 +67,6 @@ export async function updateUserPoints(
     }
     throw error;
   }
-}
-
-/**
- * Get top 100 from leaderboard with user names. Used by cache miss.
- */
-export async function getTop100(supabase: DbClient): Promise<LeaderboardEntry[]> {
-  const { data: lbRows, error: lbErr } = await supabase
-    .from(LEADERBOARD)
-    .select('user_id, total_points, rank')
-    .order('rank', { ascending: true })
-    .limit(TOP_LIMIT);
-  if (lbErr) throw lbErr;
-  const rows = lbRows ?? [];
-  if (rows.length === 0) return [];
-  const userIds = [...new Set(rows.map((r: { user_id: number }) => r.user_id))];
-  const { data: users, error: uErr } = await supabase
-    .from(USERS)
-    .select('id, first_name, last_name, avatar_url, is_golden')
-    .in('id', userIds);
-  if (uErr) throw uErr;
-  // OLTIN A'ZO reytingda qatnashmaydi.
-  const yashirin = new Set<number>(
-    (users ?? []).filter((u: any) => u?.is_golden).map((u: any) => Number(u.id))
-  );
-  const byId = (users ?? []).reduce(
-    (acc: Record<number, { id: number; first_name: string; last_name: string; avatar_url?: string | null }>, u: any) => {
-      acc[u.id] = u;
-      return acc;
-    },
-    {}
-  );
-  return rows.filter((r: any) => !yashirin.has(Number(r.user_id))).map((r: any) => {
-    const u = byId[r.user_id];
-    return {
-      id: u?.id ?? r.user_id,
-      firstName: u?.first_name ?? '',
-      lastName: u?.last_name ?? '',
-      avatarUrl: u?.avatar_url ?? null,
-      total_points: Number(r.total_points),
-      rank: Number(r.rank),
-    };
-  });
 }
 
 /**

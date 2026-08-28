@@ -12,6 +12,8 @@ export type KunlikDayPatchFields = {
   text_questions_correct?: number;
   speaking_tasks_done?: number;
   oqish_done?: boolean;
+  /** 5-blok: ustoz bilan jonli savol-javob tugadi. */
+  suhbat_done?: boolean;
   speaking_level?: number;
 };
 
@@ -28,11 +30,13 @@ export type KunlikDayProgressFields = {
   text_questions_correct: number;
   speaking_tasks_done: number;
   oqish_done: boolean;
+  suhbat_done: boolean;
   speaking_level: number;
 };
 
 const BOOL_KEYS = [
   'grammar_1', 'grammar_2', 'grammar_3', 'words_match', 'phrases_done', 'oqish_done',
+  'suhbat_done',
 ] as const;
 const MAX_KEYS = [
   'words_learned', 'words_correct', 'grammar_correct', 'phrases_correct', 'text_questions_correct',

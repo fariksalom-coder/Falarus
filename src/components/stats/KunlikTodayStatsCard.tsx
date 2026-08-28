@@ -4,7 +4,6 @@ import { Brain, CheckCircle2, ChevronRight } from 'lucide-react';
 import { getDailyCourseDay } from '../../api/dailyCourse';
 import { DAILY_PLAN, TOTAL_DAYS } from '../../data/dailyPlan';
 import { useLocale } from '../../context/LocaleContext';
-import { useSequentialLesson } from '../../context/SequentialLessonContext';
 import { useKunlikProgress } from '../../hooks/useKunlikProgress';
 import { loadDailyVocabProgress } from '../../utils/dailyVocabProgress';
 import {
@@ -30,7 +29,6 @@ export type KunlikTodayStatsCardProps = {
 export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
   const navigate = useNavigate();
   const { t } = useLocale();
-  const { results, isReady } = useSequentialLesson();
   const { rows: kunlikRows, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
   const [reviewVisits, setReviewVisits] = useState<Record<number, true>>(readPlanReviewVisits);
   const [vocabTick, setVocabTick] = useState(0);
@@ -59,8 +57,8 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
   void vocabTick;
 
   const focusDay = useMemo(
-    () => findFirstIncompletePlanDay(results, reviewVisits, kunlikRows, practicePromptCountByDay),
-    [results, reviewVisits, kunlikRows, practicePromptCountByDay],
+    () => findFirstIncompletePlanDay(reviewVisits, kunlikRows, practicePromptCountByDay),
+    [reviewVisits, kunlikRows, practicePromptCountByDay],
   );
 
   const serverDone = useMemo(() => buildPlanServerDoneChecker(kunlikRows), [kunlikRows]);
@@ -68,8 +66,8 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
   const planDay = useMemo(() => DAILY_PLAN.find((d) => d.day === focusDay), [focusDay]);
 
   const allDone = useMemo(
-    () => allPlanDaysComplete(results, reviewVisits, kunlikRows, practicePromptCountByDay),
-    [results, reviewVisits, kunlikRows, practicePromptCountByDay],
+    () => allPlanDaysComplete(reviewVisits, kunlikRows, practicePromptCountByDay),
+    [reviewVisits, kunlikRows, practicePromptCountByDay],
   );
 
   const row = kunlikRows.get(focusDay);
@@ -118,14 +116,16 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
     if (!planDay) return null;
     const countForSlice =
       bundlePracticeLen ?? practicePromptCountByDay.get(planDay.day) ?? 0;
-    return getKunlikQuestProgressSlice(planDay, results, reviewVisits, serverDone, row, countForSlice);
-  }, [planDay, results, reviewVisits, serverDone, row, bundlePracticeLen, practicePromptCountByDay]);
+    return getKunlikQuestProgressSlice(planDay, reviewVisits, serverDone, row, countForSlice);
+  }, [planDay, reviewVisits, serverDone, row, bundlePracticeLen, practicePromptCountByDay]);
 
   const questProg = { done: questSlice?.done ?? 0, total: questSlice?.total ?? 0 };
   const readingDone = questSlice?.readingDone ?? false;
+  // 5-blok: ustoz bilan savol-javob — kun shu bloksiz yopilmaydi.
+  const suhbatDone = questSlice?.suhbatDone ?? false;
 
   const started =
-    gDone > 0 || vSteps > 0 || readingDone || speak > 0 || questProg.done > 0;
+    gDone > 0 || vSteps > 0 || readingDone || speak > 0 || suhbatDone || questProg.done > 0;
 
   const fullDayDone = questProg.total > 0 && questProg.done >= questProg.total;
 
@@ -174,13 +174,20 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
     primaryAction = { label: t('stats.kunlikContinue'), onClick: () => goPlan(focusDay) };
   }
 
-  const loadingCard = !isReady || !kunlikLoaded;
+  const loadingCard = !kunlikLoaded;
 
   const blocks = [
     { key: 'grammar', label: t('stats.kunlikGrammar'), value: grammarLabel, done: grammarVisual, emoji: '🧠' },
     { key: 'lugat', label: t('stats.kunlikVocab'), value: vocabLabel, done: vocabVisual, emoji: '📖' },
     { key: 'oqish', label: t('stats.kunlikReading'), value: readingLabel, done: readingVisual, emoji: '📄' },
     { key: 'gapirish', label: t('stats.kunlikSpeaking'), value: speakingLabel, done: speakingVisual, emoji: '🎤' },
+    {
+      key: 'suhbat',
+      label: t('stats.kunlikSuhbat'),
+      value: suhbatDone ? t('stats.kunlikReadingDone') : t('stats.kunlikReadingTodo'),
+      done: suhbatDone as RowStatProps['doneVisual'],
+      emoji: '💬',
+    },
   ];
   const doneCount = blocks.filter((b) => b.done === true).length;
   const totalBlocks = blocks.length;

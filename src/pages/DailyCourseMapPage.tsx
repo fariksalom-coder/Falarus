@@ -6,7 +6,6 @@ import { useAccess } from '../context/AccessContext';
 import { useKunlikProgress, type KunlikDayProgress } from '../hooks/useKunlikProgress';
 import { TOTAL_DAYS } from '../data/dailyPlan';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
-import { FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
 import { rememberKunlikOpenedDay } from '../utils/kunlikLastDay';
 import { getLifeScene, type LifeScene } from '../data/lifeJourney';
 import LifeSceneOverlay from '../components/journey/LifeSceneOverlay';
@@ -37,7 +36,6 @@ export default function DailyCourseMapPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { access } = useAccess();
-  const premium = Boolean(access?.subscription_active);
   // OLTIN A'ZO: 182 kunning hammasi ochiq — kelajak kunlar ham qulflanmaydi.
   const oltin = Boolean(access?.golden);
   const { rows: rowMap, loaded, practicePromptCountByDay } = useKunlikProgress();
@@ -213,8 +211,6 @@ export default function DailyCourseMapPage() {
                     const done = isDayDone(row, practicePromptCountByDay);
                     const isToday = day === currentDay;
                     const isPast = day < currentDay;
-                    const isFuture = day > currentDay;
-                    const freeLocked = !premium && day > FREE_KUNLIK_DAY_LIMIT;
                     // Alternate left / right offset from vertical center — Duolingo-style path.
                     // Today marker + milestones stay centered; done + locked days zig-zag.
                     const sideShift = day % 2 === 1 ? '-36px' : '36px';

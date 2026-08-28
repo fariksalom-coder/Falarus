@@ -341,11 +341,17 @@ export default function UstozDoskaSahna({
                 className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold"
                 style={{ background: 'rgba(255,255,255,0.07)', border: `1px solid ${R.line}`, color: R.fg2 }}
               >
+                {/*
+                  Nishon HAR DOIM bir xil: "Ustoz tushuntirmoqda".
+                  Ilgari ovoz yuklanayotganda "Ovoz tayyorlanmoqda…" deb
+                  o'zgarardi — bu o'quvchiga texnik kutish borligini
+                  eslatardi, holbuki uning uchun bu bitta uzluksiz dars.
+                */}
                 <span
                   className="h-1.5 w-1.5 animate-pulse rounded-full"
-                  style={{ background: loading ? R.accent : R.mint }}
+                  style={{ background: R.mint }}
                 />
-                {loading ? 'Ovoz tayyorlanmoqda…' : 'Ustoz tushuntirmoqda'}
+                Ustoz tushuntirmoqda
               </span>
             ) : null}
           </div>

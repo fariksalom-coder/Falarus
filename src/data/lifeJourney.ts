@@ -42,8 +42,6 @@ export type LifeScene = {
   durationMs: number;
 };
 
-export const LIFE_JOURNEY_LAST_DAY = 10;
-
 export const LIFE_SCENES: LifeScene[] = [
   {
     day: 1,
@@ -151,6 +149,3 @@ export function getLifeScene(day: number): LifeScene | null {
   return LIFE_SCENES.find((s) => s.day === day) ?? null;
 }
 
-export function hasLifeScene(day: number): boolean {
-  return day >= 1 && day <= LIFE_JOURNEY_LAST_DAY;
-}

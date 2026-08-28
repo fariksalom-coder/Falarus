@@ -1,11 +1,9 @@
 import { createHash } from 'node:crypto';
 import {
   getCourseProductPrice,
-  getPaymentProductLabel,
   getTeacherListingPriceUzs,
   getTeacherTrialPriceUzs,
   isCourseProductCode,
-  isSubscriptionTariffType,
   isTeacherListingPlanCode,
   type PaymentProductCode,
   type PaymentProvider,
@@ -35,7 +33,6 @@ export const CLICK_BASE_URL = 'https://my.click.uz/services/pay';
  */
 export const CLICK_PAY_CARD_TYPE_DEFAULT = '';
 export const CLICK_TOKEN_PAYMENT_PREFIX = 'click-token:';
-export const CLICK_PROVIDER_LABEL = 'Click';
 export const CLICK_PENDING_EXPIRE_MS = 5 * 60 * 1000;
 
 export function isClickShopCheckoutUrl(url: string | null | undefined): boolean {
@@ -75,13 +72,6 @@ export function isRahmatHostedCheckoutUrl(url: string | null | undefined): boole
   }
 }
 
-export function isResumableRahmatPending(row: {
-  payment_channel?: string | null;
-  payment_proof_url?: string | null;
-}): boolean {
-  return row.payment_channel === 'rahmat' && isRahmatHostedCheckoutUrl(row.payment_proof_url);
-}
-
 export function isExpiredRahmatPending(row: {
   payment_channel?: string | null;
   created_at?: string | null;
@@ -106,6 +96,36 @@ export function isExpiredClickPending(row: {
   const createdAtMs = Date.parse(rawTs);
   if (!Number.isFinite(createdAtMs)) return false;
   return Date.now() - createdAtMs >= CLICK_PENDING_EXPIRE_MS;
+}
+
+/**
+ * Shlyuz checkout kanali — Click yoki Rahmat.
+ *
+ * Bunday `pending` yozuv PUL EMAS, shunchaki boshlangan va tugatilmagan
+ * checkout. Pul o'tganida shlyuz callback'i yozuvni `approved` qiladi;
+ * `pending` bo'lib qolgani — foydalanuvchi oynani yopgani yoki to'lov
+ * o'tmagani. Chek yuklash (`manual`) esa buning aksi: unda admin
+ * ko'radigan haqiqiy hujjat bor.
+ */
+export function isGatewayCheckoutChannel(channel?: string | null): boolean {
+  return channel === 'rahmat' || isClickLikePendingChannel(channel);
+}
+
+/**
+ * Muddati o'tgan shlyuz `pending`i (Click 5 daqiqa, Rahmat 24 soat).
+ *
+ * NIMA UCHUN IKKALASI BIRGA: ilgari to'lov yo'llari faqat
+ * `isExpiredClickPending` ni chaqirardi, u esa `rahmat` kanalini umuman
+ * tanimaydi (`isClickLikePendingChannel` ro'yxatida yo'q). Natijada
+ * tashlab ketilgan bitta Rahmat checkout'i foydalanuvchini ABADIY
+ * bloklab qo'yardi — prodda 50+ kun kutgan hisoblar topildi.
+ */
+export function isExpiredGatewayPending(row: {
+  payment_channel?: string | null;
+  created_at?: string | null;
+  payment_time?: string | null;
+}): boolean {
+  return isExpiredClickPending(row) || isExpiredRahmatPending(row);
 }
 
 export function buildClickTokenPaymentProofUrl(paymentId: number | string): string {
@@ -151,17 +171,6 @@ export function buildClickPaymentUrl(params: {
     search.set('card_type', ct);
   }
   return `${CLICK_BASE_URL}?${search.toString()}`;
-}
-
-export function buildClickPaymentTitle(params: {
-  productCode: PaymentProductCode;
-  tariffType?: string | null;
-}): string {
-  if (params.productCode === 'russian' && isSubscriptionTariffType(params.tariffType)) {
-    if (params.tariffType === 'year') return 'Курс русского языка · 1 год';
-    return 'Курс русского языка · 3 месяца';
-  }
-  return getPaymentProductLabel(params.productCode);
 }
 
 export function getClickAmountForProduct(params: {

@@ -84,17 +84,6 @@ export default defineConfig(({mode}) => {
             if (id.includes('node_modules/lucide-react') || id.includes('node_modules/motion')) {
               return 'ui-vendor';
             }
-            if (id.includes('/src/pages/admin/') || id.includes('/src/api/admin')) {
-              return 'admin';
-            }
-            if (
-              id.includes('/src/pages/Vocabulary') ||
-              id.includes('/src/components/vocabulary/') ||
-              id.includes('/src/api/vocabulary') ||
-              id.includes('/src/state/vocabulary')
-            ) {
-              return 'vocabulary';
-            }
             if (
               id.includes('/src/pages/LessonEleven') ||
               id.includes('/src/pages/LessonFourteen') ||

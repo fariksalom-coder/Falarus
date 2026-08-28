@@ -21,6 +21,8 @@ export type KunlikDayProgress = {
   /** Gapirish testidan keyingi topshiriqlardan nechtasi bajarilgan. */
   speaking_tasks_done: number;
   oqish_done:    boolean;
+  /** 5-blok: ustoz bilan jonli savol-javob. */
+  suhbat_done:   boolean;
   speaking_level: number;
 };
 

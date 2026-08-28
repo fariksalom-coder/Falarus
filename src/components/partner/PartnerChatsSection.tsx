@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AtSign, Headphones, MessageCircle, Users } from 'lucide-react';
+import { AtSign, Headphones, MessageCircle, Users, Clapperboard } from 'lucide-react';
 import { getHelpChats, type HelpChatListItem } from '../../api/help';
 import { getSavolJavobSummary, type SavolJavobSummary } from '../../api/communityChat';
 import { useAuth } from '../../context/AuthContext';
@@ -30,10 +30,11 @@ type Props = {
   matches: PartnerMatch[];
   onOpenAdmin: () => void;
   onOpenGroup: () => void;
+  onOpenReels: () => void;
   onOpenPartner: (matchId: number) => void;
 };
 
-export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup, onOpenPartner }: Props) {
+export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup, onOpenReels, onOpenPartner }: Props) {
   const { token, user } = useAuth();
   const { t } = useLocale();
   const [adminChat, setAdminChat] = useState<HelpChatListItem | null>(null);
@@ -169,6 +170,26 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
             {groupSummary!.unread_count}
           </span>
         ) : null}
+      </button>
+
+      {/* RELS — qisqa videolar lentasi. Savol-javob guruhidan keyin turadi. */}
+      <button
+        type="button"
+        onClick={onOpenReels}
+        className="flex items-center gap-[13px] rounded-[18px] bg-app-surface px-[14px] py-[13px] text-left shadow-[0_6px_14px_rgba(23,34,74,0.05)] transition hover:-translate-y-0.5 active:scale-[0.99]"
+      >
+        <div
+          className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[16px] text-white"
+          style={{ background: 'linear-gradient(145deg, #8B5CF6, #6D28D9)' }}
+        >
+          <Clapperboard className="h-5 w-5" aria-hidden />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-black text-app-text">Rels</p>
+          <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
+            Qisqa videolar — ko'ring va o'zingiznikini joylang
+          </p>
+        </div>
       </button>
 
       {/* Partners heading */}

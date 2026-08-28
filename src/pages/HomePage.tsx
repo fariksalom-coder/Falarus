@@ -50,6 +50,7 @@ const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
   text_questions_correct: 0,
   speaking_tasks_done: 0,
   oqish_done: false,
+  suhbat_done: false,
   speaking_level: 0,
 };
 
@@ -98,6 +99,22 @@ const QUESTS = [
       locked: '/app-mobile/images/home/block_icons/speaking_locked.png',
     },
   },
+  /*
+   * 5-BLOK — ustoz bilan jonli savol-javob. Ilgari grammatika oqimining
+   * ichida, uchala mashqdan keyingi bosqich edi: o'quvchi u yergacha
+   * yetib bormasdi. Endi kunning mustaqil bloki.
+   */
+  {
+    id: 'suhbat',
+    titleKey: 'home.questSuhbat',
+    subtitleKey: 'home.questSuhbatSub',
+    route: (day: number) => `/kunlik-reja/kun/${day}/savol-javob`,
+    images: {
+      done: '/app-mobile/images/home/block_icons/speaking_done.png',
+      active: '/app-mobile/images/home/block_icons/speaking_current.png',
+      locked: '/app-mobile/images/home/block_icons/speaking_locked.png',
+    },
+  },
 ] as const;
 
 type QuestState = 'done' | 'active' | 'locked';
@@ -125,12 +142,17 @@ function isSpeakingDone(row: KunlikDayProgress, promptCount: number): boolean {
   return promptCount <= 0 || row.speaking_level >= promptCount;
 }
 
-function buildQuestSlots(row: KunlikDayProgress, promptCount: number): QuestSlot[] {
+function buildQuestSlots(
+  row: KunlikDayProgress,
+  promptCount: number,
+  oltin: boolean,
+): QuestSlot[] {
   const raw = [
     { done: isGrammarDone(row), hasContent: true },
     { done: isVocabularyDone(row), hasContent: true },
     { done: row.oqish_done, hasContent: true },
     { done: isSpeakingDone(row, promptCount), hasContent: promptCount > 0 },
+    { done: row.suhbat_done === true, hasContent: true },
   ];
 
   let activeAssigned = false;
@@ -154,6 +176,14 @@ function buildQuestSlots(row: KunlikDayProgress, promptCount: number): QuestSlot
     } else {
       state = 'locked';
     }
+
+    /*
+     * OLTIN A'ZO (support hisobi) — FAQAT 5-BLOK zanjirdan chiqarilgan.
+     *
+     * Qolgan to'rt blok hammaga bir xil tartibda ochiladi; savol-javobni
+     * esa support butun kunni o'tmasdan ochib ko'ra olishi kerak.
+     */
+    if (oltin && quest.id === 'suhbat' && state === 'locked') state = 'active';
 
     return { ...quest, state, canOpen: state !== 'locked' };
   });
@@ -275,8 +305,17 @@ function ExamShortcuts({ t }: { t: TranslateFn }) {
     },
   ] as const;
 
+  /*
+   * YOTIQ, PAST KARTA.
+   *
+   * Ilgari belgi, sarlavha va izoh ustma-ust turardi va karta 120px ga
+   * yaqin bo'lardi. Bosh sahifaga beshinchi blok qo'shilgach ekran uzayib
+   * ketdi — bu ikki karta esa faqat kirish nuqtasi, balandlikning shuncha
+   * qismini egallashi shart emas. Belgi matnning YONIGA olindi: karta
+   * ikki barobar pasaydi, bosish maydoni esa 44px dan baland qoladi.
+   */
   return (
-    <section className="grid grid-cols-2 gap-2.5 px-4 pt-2 min-[408px]:gap-3.5">
+    <section className="grid grid-cols-2 gap-2.5 px-4 pt-2 min-[408px]:gap-3">
       {cards.map(({ href, title, subtitle, solid, Icon }) => (
         <button
           key={href}
@@ -285,26 +324,33 @@ function ExamShortcuts({ t }: { t: TranslateFn }) {
           onMouseEnter={() => prefetchRoutePath(href)}
           onTouchStart={() => prefetchRoutePath(href)}
           onFocus={() => prefetchRoutePath(href)}
-          className={`flex min-h-[92px] min-w-0 flex-col items-start rounded-[22px] p-[14px] text-left shadow-[0_12px_28px_-10px_rgba(15,23,42,0.16)] active:scale-[0.99] ${
+          className={`flex min-h-[62px] min-w-0 items-center gap-2.5 rounded-[18px] px-3 py-2.5 text-left shadow-[0_8px_20px_-10px_rgba(15,23,42,0.18)] active:scale-[0.99] ${
             solid
               ? 'bg-[#0B2A6B] text-white'
               : 'bg-[#C89935] text-white'
           }`}
         >
           <span
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] ${
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] ${
               solid ? 'bg-white/12 ring-1 ring-white/20' : 'bg-white/22 ring-1 ring-white/30'
             }`}
           >
-            <Icon className="h-5 w-5 text-white" aria-hidden />
+            <Icon className="h-[18px] w-[18px] text-white" aria-hidden />
           </span>
-          <span className="mt-3 block truncate text-[19px] font-extrabold leading-none">{title}</span>
-          <span
-            className={`mt-1.5 block truncate text-[12px] font-semibold leading-snug ${
-              solid ? 'text-white/85' : 'text-white/90'
-            }`}
-          >
-            {subtitle}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[15px] font-extrabold leading-tight">{title}</span>
+            {/*
+              Izoh QIRQILMAYDI, ikki qatorgacha o'raladi: tor ekranda
+              "Patentga tayyorgarlik" bir qatorga sig'masdi va oxiri
+              kesilib qolardi.
+            */}
+            <span
+              className={`mt-0.5 line-clamp-2 block text-[10.5px] font-semibold leading-[1.25] ${
+                solid ? 'text-white/85' : 'text-white/90'
+              }`}
+            >
+              {subtitle}
+            </span>
           </span>
         </button>
       ))}
@@ -404,6 +450,7 @@ function QuestCard({
   day,
   premium,
   onPurchaseRequired,
+  wide = false,
   t,
 }: {
   slot: QuestSlot;
@@ -411,6 +458,12 @@ function QuestCard({
   day: number;
   premium: boolean;
   onPurchaseRequired: () => void;
+  /**
+   * Toq sondagi oxirgi karta — kvadrat emas, ikkala ustunni egallagan PAST
+   * QATOR bo'lib chiziladi. Yolg'iz qolgan kvadrat yonida bo'shliq qoldirar
+   * va bosh sahifani 188px ga uzaytirardi; qator esa 72px.
+   */
+  wide?: boolean;
   t: TranslateFn;
 }) {
   const navigate = useNavigate();
@@ -425,7 +478,9 @@ function QuestCard({
       ? '🗂️'
       : slot.id === 'reading'
         ? '📕'
-        : '🎤';
+        : slot.id === 'suhbat'
+          ? '💬'
+          : '🎤';
 
   const numberBg = done ? '#12A150' : active ? '#0B2A6B' : '#94A3B8';
   // Surfaces use app-* tokens so light/dark themes are handled automatically;
@@ -460,20 +515,71 @@ function QuestCard({
     navigate(questPath);
   };
 
+  // Bosish xatti-harakati ikkala ko'rinishda bir xil — faqat ichki chizma boshqa.
+  const tegish = {
+    type: 'button' as const,
+    disabled: locked,
+    onClick: handleQuestClick,
+    onMouseEnter: () => {
+      if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
+    },
+    onTouchStart: () => {
+      if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
+    },
+    onFocus: () => {
+      if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
+    },
+  };
+
+  if (wide) {
+    return (
+      <button
+        {...tegish}
+        className={`col-span-2 flex min-h-[72px] w-full items-center gap-3 rounded-[22px] px-4 py-3 text-left transition-transform active:scale-[0.99] disabled:cursor-default ${cardSurface} ${
+          locked ? 'opacity-70' : ''
+        }`}
+      >
+        <span
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-black leading-none text-white"
+          style={{ background: numberBg }}
+        >
+          {index}
+        </span>
+        <span className={`shrink-0 text-[28px] leading-none ${locked ? 'grayscale' : ''}`}>{emoji}</span>
+
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate text-[17px] font-extrabold leading-tight ${locked ? 'text-app-text-muted' : 'text-app-text'}`}>
+            {t(slot.titleKey)}
+          </span>
+          <span className={`block truncate text-[11.5px] font-semibold leading-snug ${subtitleClass}`}>
+            {t(slot.subtitleKey)}
+          </span>
+        </span>
+
+        <span
+          className={`flex min-h-[36px] shrink-0 items-center justify-center gap-1.5 rounded-full px-3.5 text-[13px] font-black leading-none ${
+            done
+              ? 'bg-[#12A150] text-white shadow-[0_8px_18px_-8px_rgba(18,161,80,0.45)]'
+              : active
+                ? 'quest-cta-active bg-[#0B2A6B] text-white'
+                : 'bg-[#EEF1F6] text-app-text-muted'
+          }`}
+        >
+          {locked ? '🔒' : null}
+          <span className="truncate">{actionLabel}</span>
+          {done ? (
+            <RefreshCw className="h-4 w-4" aria-hidden />
+          ) : active ? (
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          ) : null}
+        </span>
+      </button>
+    );
+  }
+
   return (
     <button
-      type="button"
-      disabled={locked}
-      onClick={handleQuestClick}
-      onMouseEnter={() => {
-        if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
-      }}
-      onTouchStart={() => {
-        if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
-      }}
-      onFocus={() => {
-        if (!requiresPurchase && !locked) prefetchRoutePath(questPath);
-      }}
+      {...tegish}
       className={`relative flex min-h-[188px] min-w-0 flex-col items-center rounded-[22px] p-4 text-center transition-transform active:scale-[0.99] disabled:cursor-default ${cardSurface} ${
         locked ? 'opacity-70' : ''
       }`}
@@ -654,7 +760,7 @@ export default function HomePage() {
   const displayDay = selectedDay ?? currentDay ?? 1;
   const row = progressReady ? getRow(rows, displayDay) : null;
   const promptCount = progressReady ? practicePromptCountByDay.get(displayDay) ?? 0 : 0;
-  const slots = row ? buildQuestSlots(row, promptCount) : [];
+  const slots = row ? buildQuestSlots(row, promptCount, oltin) : [];
   const done = slots.filter((slot) => slot.state === 'done').length;
   const showFreeLimitCta =
     !premium && displayDay > FREE_KUNLIK_DAY_LIMIT;
@@ -729,6 +835,7 @@ export default function HomePage() {
                   day={displayDay}
                   premium={premium}
                   onPurchaseRequired={() => setFreeLimitModalOpen(true)}
+                  wide={index === slots.length - 1 && slots.length % 2 === 1}
                   t={t}
                 />
               ))}

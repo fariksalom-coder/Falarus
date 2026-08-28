@@ -26,11 +26,17 @@ import { darsNutqRejasi } from '../../shared/nutqBolaklari.js';
 import {
   answerQuestion,
   buildExercise,
+  buildKunSavollari,
   buildLesson,
+  ortdagiKunlar,
   evaluateAnswer,
   transcribeSpeech,
   type DoskaVazifa,
+  type KunMateriali,
 } from '../services/ustozDoska.service.js';
+import { fetchDailyCourseDayBundle } from '../services/dailyCourseBundle.service.js';
+import { isKunlikDayReadyForSuhbat } from '../../shared/kunlikDayCompletion.js';
+import type { DatabaseClient } from '../types/progress.js';
 
 /** Base64 audio uchun chegara: 5MB ~ 1 daqiqalik webm yozuv. */
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
@@ -82,6 +88,7 @@ function ovozniQizdir(dars: unknown): void {
 
 export function createUstozRoutes(
   authenticate: (req: any, res: any, next: any) => void,
+  supabase: DatabaseClient,
 ): Router {
   const router = Router();
 
@@ -128,7 +135,7 @@ export function createUstozRoutes(
   const doskaRoute = (
     path: string,
     limit: number,
-    handler: (body: Record<string, unknown>) => Promise<unknown>,
+    handler: (body: Record<string, unknown>, userId: number) => Promise<unknown>,
     /**
      * Ustoz bilan ERKIN suhbatmi. Shunday bo'lsa foydalanuvchi kvotasidan
      * hisoblanadi (20 ta so'rov, so'ng 5 soat tanaffus). Dars tushuntirish
@@ -191,7 +198,7 @@ export function createUstozRoutes(
           });
         }
 
-        const natija = await handler(body);
+        const natija = await handler(body, userId);
         if (kesh && keshKaliti) void keshYoz(kesh.tur, keshKaliti, natija);
         res.json(natija);
         keyin?.(natija);
@@ -207,8 +214,120 @@ export function createUstozRoutes(
     });
   };
 
-  /** Dars generatsiyasi qimmat — daqiqasiga 6 ta yetarli. */
-  doskaRoute('/ustoz/dars', 6, async (body) => {
+  /*
+   * Dars generatsiyasi qimmat, lekin javob KESHLANADI (`ustozKesh.service`)
+   * va bir kunning darsi bir necha bosqichda kerak bo'ladi. 6 ta chegara
+   * amalda kam edi: bosqichlar orasida yurgan yoki ikkita oyna ochgan
+   * o'quvchi «So'rovlar soni oshib ketdi» ga urilib qolardi. Klientda ham
+   * kesh qo'yildi (`buildDoskaLesson`), bu yerda esa zaxira kengaytirildi.
+   */
+  /*
+   * KUN YAKUNIDAGI SAVOL-JAVOB — TO'RT BO'LIMDAN.
+   *
+   * Material klientdan EMAS, bazadan olinadi: savollar kunning haqiqiy
+   * grammatikasi, lug'ati, matni va gapirish topshiriqlaridan tuzilishi
+   * kerak, klient yuborgan narsadan emas. Shu sabab so'rovda faqat kun
+   * raqami bo'ladi va kesh kaliti ham o'sha kun.
+   */
+  doskaRoute('/ustoz/kun-savollari', 10, async (body, userId) => {
+    const kun = Number(body.kun);
+    if (!Number.isInteger(kun) || kun < 1 || kun > 182) {
+      throw Object.assign(new Error('Kun raqami noto\'g\'ri'), { status: 400 });
+    }
+
+    /*
+     * QULF SERVERDA HAM.
+     *
+     * Sahifadagi tekshiruv ko'rinishni to'sadi, lekin so'rovni to'smaydi:
+     * manzilni qo'lda yozgan o'quvchi ekranda "ochilmagan" degan yozuvni
+     * ko'rar, ammo model allaqachon savollarni tayyorlab bo'lgan bo'lardi —
+     * ya'ni pullik resurs qulfdan tashqarida qolardi. Shuning uchun
+     * dastlabki to'rt blok SHU YERDA ham tekshiriladi.
+     */
+    const [progressRes, promptsRes, oltinRes] = await Promise.all([
+      supabase
+        .from('user_kunlik_day_progress')
+        .select('day_number, grammar_1, grammar_2, grammar_3, words_match, oqish_done, speaking_level')
+        .eq('user_id', userId)
+        .eq('day_number', kun)
+        .maybeSingle(),
+      supabase.from('daily_practice_prompts').select('day_number').eq('day_number', kun),
+      supabase.from('users').select('is_golden').eq('id', userId).maybeSingle(),
+    ]);
+
+    const oltin = (oltinRes.data as { is_golden?: boolean } | null)?.is_golden === true;
+    if (!oltin) {
+      const r = (progressRes.data ?? null) as Record<string, unknown> | null;
+      const tayyor =
+        r !== null &&
+        isKunlikDayReadyForSuhbat(
+          {
+            day_number: kun,
+            grammar_1: Boolean(r.grammar_1),
+            grammar_2: Boolean(r.grammar_2),
+            grammar_3: Boolean(r.grammar_3),
+            words_match: Boolean(r.words_match),
+            oqish_done: Boolean(r.oqish_done),
+            speaking_level: Number(r.speaking_level ?? 0),
+          },
+          { [kun]: (promptsRes.data ?? []).length },
+        );
+      if (!tayyor) {
+        throw Object.assign(
+          new Error('Savol-javob hali ochilmagan: avval kunning to\'rt bo\'limini tugating'),
+          { status: 403 },
+        );
+      }
+    }
+
+    /** Kun bandini savol tuzish uchun qisqartirilgan materialga aylantiradi. */
+    const materialOl = async (n: number): Promise<KunMateriali | null> => {
+      const natija = await fetchDailyCourseDayBundle(supabase, n);
+      if (natija.ok === false) return null;
+      const b = natija.bundle;
+      return {
+        kun: n,
+        grammatikaMavzu: b.grammar?.topic?.title ?? '',
+        grammatikaNazariya: b.grammar?.topic?.theoryText ?? undefined,
+        lugat: (b.vocabulary?.words ?? []).map((w) => `${w.wordRu} — ${w.wordUz}`),
+        oqishMatni: b.reading?.bodyRu ?? '',
+        gapirish: (b.practice ?? []).map((p) => p.uzText).filter(Boolean),
+      };
+    };
+
+    const joriy = await materialOl(kun);
+    if (!joriy) {
+      throw Object.assign(new Error('Kun materiali topilmadi'), { status: 500 });
+    }
+
+    /*
+     * ORTDAGI KUNLAR — o'tilgan mavzu unutilmasin.
+     *
+     * Materiali topilmagan kun jimgina tushib qoladi: eski kun tayyor
+     * bo'lmagani uchun butun suhbat to'xtab qolishi noto'g'ri bo'lardi.
+     */
+    const ortda = (
+      await Promise.all(ortdagiKunlar(kun).map((n) => materialOl(n)))
+    ).filter((m): m is KunMateriali => m !== null && Boolean(m.grammatikaMavzu));
+
+    const savollar = await buildKunSavollari(joriy, ortda);
+
+    return { savollar };
+  }, false);
+  /*
+   * KESHLANMAYDI.
+   *
+   * Ilgari javob kun bo'yicha keshlanardi — ya'ni bir kunning hamma
+   * o'quvchisi AYNAN bir xil savollarni olardi. Ular javoblarni
+   * bir-biridan aytib qo'yardi va takrorlash mashqi ma'nosini yo'qotardi.
+   * Endi har suhbat o'z savollarini oladi: ortdagi kunlar tasodifiy
+   * tanlanadi va prompt har chaqiruvda boshqacha savol so'raydi.
+   *
+   * Narxi: har suhbat bitta model chaqiruvi. Chaqiruv kichik (bir nechta
+   * qisqa savol), so'rov chegarasi esa daqiqasiga 10 ta bo'lib qoladi.
+   */
+
+  doskaRoute('/ustoz/dars', 12, async (body) => {
     const mavzu = String(body.mavzu ?? '').trim();
     if (!mavzu) {
       throw Object.assign(new Error('Dars mavzusi topilmadi'), { status: 400 });

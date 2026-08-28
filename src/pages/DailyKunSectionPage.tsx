@@ -8,12 +8,13 @@ import { useAuth } from '../context/AuthContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import type { DailyCourseDayBundle, DailyCourseMcq } from '../../shared/dailyCourseDay';
 import { READING_QUESTIONS_PASS_PERCENT, isValidDailyCourseDay, FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
+import { isKunlikDayReadyForSuhbat } from '../../shared/kunlikDayCompletion';
 import { VocabularyTaskList } from '../components/vocabulary/VocabularyTaskList';
 import { InteractiveDailyReading } from '../components/daily/InteractiveDailyReading';
 import SpeakingExercise from '../components/speaking/SpeakingExercise';
 import UstozdanSora, { type UstozSentence } from '../components/lesson/UstozdanSora';
 import UstozDoska from '../components/lesson/UstozDoska';
-import type { DoskaTestSavol, DoskaVazifa } from '../api/ustozDoska';
+import { fetchKunSavollari, type DoskaTestSavol, type DoskaVazifa, type KunSavol } from '../api/ustozDoska';
 import type { SpeakingTask } from '../api/speaking';
 import type { KunlikDayPatch } from '../api/kunlikProgress';
 import { loadDailyVocabProgress } from '../utils/dailyVocabProgress';
@@ -28,7 +29,13 @@ import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { useAccess } from '../context/AccessContext';
 import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
 
-const SECTIONS = ['grammatika', 'lugat', 'oqish', 'gapirish'] as const;
+/*
+ * Kunning bloklari. `savol-javob` — BESHINCHI blok: ustoz bilan jonli
+ * suhbat. Ilgari u grammatika oqimining oxirgi bosqichi edi va o'quvchi
+ * unga faqat grammatika ichiga kirib borgandagina duch kelardi; endi u
+ * bosh sahifada mustaqil blok bo'lib turadi.
+ */
+const SECTIONS = ['grammatika', 'lugat', 'oqish', 'gapirish', 'savol-javob'] as const;
 export type KunlikSection = (typeof SECTIONS)[number];
 
 type PageProps = {
@@ -101,7 +108,9 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
   const isGrammar = sec === 'grammatika';
   const isLugat = sec === 'lugat';
   const isOqish = sec === 'oqish';
-  const usePurpleTheme = isGrammar || isLugat;
+  // Suhbat grammatika oqimidan ko'chirildi — ko'rinishi o'sha binafsha mavzu.
+  const isSuhbat = sec === 'savol-javob';
+  const usePurpleTheme = isGrammar || isLugat || isSuhbat;
   const themeClass = usePurpleTheme ? 'grammar-theme' : isOqish ? 'reading-theme' : 'bg-[#F5F7FA]';
   return (
     <div className={`min-h-screen pb-28 ${themeClass}`}>
@@ -135,6 +144,9 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
         {!loading && !err && bundle && sec === 'oqish' && (
           <ReadingFromBundle bundle={bundle} dayNumber={dayNumber} />
         )}
+        {!loading && !err && bundle && sec === 'savol-javob' && (
+          <SuhbatFromBundle dayNumber={dayNumber} bundle={bundle} />
+        )}
         {!loading && !err && bundle && sec === 'gapirish' && (
           /*
            * Gapirish bloki IKKI mavzudan iborat: tarjima va ochiq topshiriqlar.
@@ -150,6 +162,54 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
       </main>
     </div>
   );
+}
+
+/**
+ * Doska uchun kunning VAZIFALARI. Ustoz mavzuni umumiy gapirmaydi — aynan
+ * shu mashqlarni kengaytirib tushuntiradi, ya'ni o'quvchi mashqqa kirishdan
+ * oldin nima talab qilinishini va nega shundayligini biladi.
+ *
+ * Modul darajasida turadi: bir xil ro'yxat ham grammatika darsiga, ham
+ * alohida blokka chiqarilgan savol-javobga kerak.
+ */
+function doskaVazifalariniYig(g: DailyCourseDayBundle['grammar'] | null | undefined): DoskaVazifa[] {
+  if (!g) return [];
+  const out: DoskaVazifa[] = [];
+
+  const mcqToVazifa = (m: DailyCourseMcq): DoskaVazifa => {
+    const variantlar = [m.optionA, m.optionB, m.optionC, m.optionD]
+      .map((o) => String(o ?? '').trim())
+      .filter(Boolean);
+    return {
+      tur: 'test',
+      savol: String(m.questionText ?? '').trim(),
+      variantlar,
+      javob: variantlar[m.correctIndex] ?? undefined,
+    };
+  };
+
+  // Qoida testlari — mavzuning o'zini tekshiradi, shuning uchun birinchi.
+  for (const m of g.ruleMcqs.slice(0, 2)) out.push(mcqToVazifa(m));
+  for (const m of g.sentenceMcqs.slice(0, 1)) out.push(mcqToVazifa(m));
+
+  for (const s of g.sentenceArrange.slice(0, 1)) {
+    out.push({
+      tur: 'gap',
+      savol: String(s.promptText ?? '').trim(),
+      variantlar: Array.isArray(s.wordBank) ? s.wordBank.map(String) : undefined,
+      javob: String(s.answerRu ?? '').trim() || undefined,
+    });
+  }
+
+  const pairs = g.matchSets.flatMap((s) => s.pairs).slice(0, 4);
+  if (pairs.length > 0) {
+    out.push({
+      tur: 'moslash',
+      savol: `Juftlarni moslashtiring: ${pairs.map((p) => `${p.left} — ${p.right}`).join('; ')}`,
+    });
+  }
+
+  return out.filter((v) => v.savol);
 }
 
 function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: DailyCourseDayBundle }) {
@@ -183,45 +243,7 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
    * shu mashqlarni kengaytirib tushuntiradi, ya'ni o'quvchi mashqqa kirishdan
    * oldin nima talab qilinishini va nega shundayligini biladi.
    */
-  const doskaVazifalar = useMemo<DoskaVazifa[]>(() => {
-    if (!g) return [];
-    const out: DoskaVazifa[] = [];
-
-    const mcqToVazifa = (m: DailyCourseMcq): DoskaVazifa => {
-      const variantlar = [m.optionA, m.optionB, m.optionC, m.optionD]
-        .map((o) => String(o ?? '').trim())
-        .filter(Boolean);
-      return {
-        tur: 'test',
-        savol: String(m.questionText ?? '').trim(),
-        variantlar,
-        javob: variantlar[m.correctIndex] ?? undefined,
-      };
-    };
-
-    // Qoida testlari — mavzuning o'zini tekshiradi, shuning uchun birinchi.
-    for (const m of g.ruleMcqs.slice(0, 2)) out.push(mcqToVazifa(m));
-    for (const m of g.sentenceMcqs.slice(0, 1)) out.push(mcqToVazifa(m));
-
-    for (const s of g.sentenceArrange.slice(0, 1)) {
-      out.push({
-        tur: 'gap',
-        savol: String(s.promptText ?? '').trim(),
-        variantlar: Array.isArray(s.wordBank) ? s.wordBank.map(String) : undefined,
-        javob: String(s.answerRu ?? '').trim() || undefined,
-      });
-    }
-
-    const pairs = g.matchSets.flatMap((s) => s.pairs).slice(0, 4);
-    if (pairs.length > 0) {
-      out.push({
-        tur: 'moslash',
-        savol: `Juftlarni moslashtiring: ${pairs.map((p) => `${p.left} — ${p.right}`).join('; ')}`,
-      });
-    }
-
-    return out.filter((v) => v.savol);
-  }, [g]);
+  const doskaVazifalar = useMemo<DoskaVazifa[]>(() => doskaVazifalariniYig(g), [g]);
 
   /**
    * Darsning yakuniy testi — kunning O'Z savol bankidan.
@@ -439,6 +461,15 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
       ),
     });
   }
+
+  /*
+   * JONLI SAVOL-JAVOB endi bu oqimda EMAS.
+   *
+   * U grammatikaning oxirgi bosqichi edi va o'quvchi unga faqat grammatika
+   * ichiga kirib borgandagina duch kelardi. Endi kunning mustaqil 5-bloki:
+   * bosh sahifadan `/kunlik-reja/kun/:kun/savol-javob` ochiladi
+   * (`SuhbatFromBundle`). Ekranning o'zi o'zgarmadi.
+   */
 
   return (
     <div className="space-y-5">
@@ -672,6 +703,161 @@ function GrammarStepFlow({
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * 5-BLOK — ustoz bilan jonli savol-javob.
+ *
+ * Ilgari grammatika oqimining oxirgi bosqichi edi (`GrammarStepFlow` ichida).
+ * Ekran va uning mantig'i o'zgarmadi — aynan o'sha `UstozDoska qism="suhbat"`,
+ * faqat endi kunning mustaqil bloki sifatida o'z sahifasida ochiladi.
+ */
+function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: DailyCourseDayBundle }) {
+  const navigate = useNavigate();
+  const { token } = useAuth();
+  const { patchDay, getDay, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
+  const { access } = useAccess();
+  const g = bundle.grammar;
+
+  /*
+   * SUHBAT SAVOLLARI — KUNNING TO'RT BO'LIMIDAN.
+   *
+   * Har bo'limdan bittadan: grammatika, lug'at, o'qish, gapirish. Ilgari
+   * savollar darsning ichidan chiqardi va faqat grammatikaga tegishli
+   * bo'lardi — o'quvchi lug'at, matn va gapirish ustida ishlagan bo'lsa
+   * ham yakuniy suhbat ulardan hech narsa so'ramasdi.
+   *
+   * Savollar kelmasa suhbat baribir ochiladi: ustoz mavzu bo'yicha o'zi
+   * suhbatni olib ketadi, oqim to'xtab qolmaydi.
+   */
+  const [suhbatSavollari, setSuhbatSavollari] = useState<KunSavol[] | null>(null);
+  const [savollarYuklandi, setSavollarYuklandi] = useState(false);
+  const doskaVazifalar = useMemo<DoskaVazifa[]>(() => doskaVazifalariniYig(g), [g]);
+
+  useEffect(() => {
+    if (!token) return;
+    let bekor = false;
+    setSavollarYuklandi(false);
+    fetchKunSavollari(token, dayNumber)
+      .then((s) => {
+        if (!bekor) setSuhbatSavollari(s.length > 0 ? s : null);
+      })
+      .catch(() => {
+        if (!bekor) setSuhbatSavollari(null);
+      })
+      .finally(() => {
+        if (!bekor) setSavollarYuklandi(true);
+      });
+    return () => {
+      bekor = true;
+    };
+  }, [token, dayNumber]);
+
+  /*
+   * QULF — DASTLABKI TO'RT BLOK TUGAMAGUNCHA OCHILMAYDI.
+   *
+   * Bosh sahifada kartani qulflash yetarli emas edi: manzilni qo'lda yozib
+   * yoki eski havola orqali to'g'ridan-to'g'ri kirib bo'lardi. Suhbat
+   * kunning YAKUNI — mavzu mashqlar bilan mustahkamlangach o'tiladi,
+   * shuning uchun tekshiruv sahifaning o'zida ham turadi.
+   *
+   * Oltin a'zo (support hisobi) bundan mustasno — bosh sahifadagi qoida
+   * bilan bir xil.
+   */
+  const oltin = Boolean(access?.golden);
+  const kp = kunlikLoaded ? getDay(dayNumber) : null;
+  const tayyor =
+    oltin ||
+    (kp ? isKunlikDayReadyForSuhbat({ ...kp, day_number: dayNumber }, practicePromptCountByDay) : false);
+
+  /*
+   * Progress yuklanmaguncha SUHBAT KO'RSATILMAYDI.
+   *
+   * Aks holda qulf hisoblanguncha `UstozDoska` mount bo'lib, ustoz gapira
+   * boshlardi — ya'ni yopiq bo'lishi kerak bo'lgan suhbat bir zumga
+   * ochilib ketardi.
+   */
+  if (!kunlikLoaded || !savollarYuklandi) {
+    return <SkeletonRoyxat soni={2} className="py-4" />;
+  }
+
+  if (!tayyor) {
+    return (
+      <div className="rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] p-5 text-center">
+        <p className="text-[15px] font-black text-[#2D1B69]">Savol-javob hali ochilmagan</p>
+        <p className="mt-1.5 text-[13px] font-semibold leading-snug text-[#8B7FAB]">
+          Bu kunning dastlabki to‘rt bo‘limini tugatganingizdan keyin ochiladi.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate(kunlikRejaPath(dayNumber))}
+          className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
+        >
+          Kunlik rejaga qaytish
+        </button>
+      </div>
+    );
+  }
+
+  const mavzu = g?.topic?.title ?? '';
+  if (!mavzu) {
+    return (
+      <div className="rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] p-5 text-center">
+        <p className="text-[14px] font-bold text-[#2D1B69]">Bu kunda suhbat mavzusi yo'q.</p>
+        <button
+          type="button"
+          onClick={() => navigate(kunlikRejaPath(dayNumber))}
+          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
+        >
+          Kunlik reja
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="mb-1">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8B7FAB]">
+          {`KUN ${dayNumber} · SAVOL-JAVOB`}
+        </p>
+        <h1 className="grammar-heading mt-1.5 text-[26px] leading-[1.1] text-[#2D1B69]">{mavzu}</h1>
+      </div>
+
+      <UstozDoska
+        key={`suhbat-${dayNumber}-${mavzu}`}
+        qism="suhbat"
+        mavzu={mavzu}
+        nazariya={g!.topic!.theoryText}
+        kun={dayNumber}
+        vazifalar={doskaVazifalar}
+        savollarManbasi={suhbatSavollari ?? undefined}
+        /*
+          JAVOB BERILMAGAN SAVOL — O'SHA KUNGA QAYTARISH.
+          Grammatikaga yuboriladi: kunning kirish nuqtasi shu va nazariya
+          aynan o'sha yerda tushuntiriladi.
+        */
+        onQaytarish={(qaytKun) => navigate(`/kunlik-reja/kun/${qaytKun}/grammatika`)}
+        /*
+          Savol topilmadi — blok BAJARILDI deb belgilanmaydi, shunchaki
+          kunlik rejaga qaytariladi. Aks holda o'quvchi bitta ham savolga
+          javob bermay turib kunni yopib olardi.
+        */
+        onSavolYoq={() => navigate(kunlikRejaPath(dayNumber))}
+        keyingiNomi="Kunlik reja"
+        /*
+          Belgi SAQLANIB BO'LGACH qaytamiz: bosh sahifa progressni darhol
+          o'qiydi va patch yetib bormasa kun yana "tugallanmagan" bo'lib
+          ko'rinardi.
+        */
+        onTugadi={() => {
+          void patchDay(dayNumber, { suhbat_done: true }).finally(() => {
+            navigate(kunlikRejaPath(dayNumber));
+          });
+        }}
+      />
     </div>
   );
 }

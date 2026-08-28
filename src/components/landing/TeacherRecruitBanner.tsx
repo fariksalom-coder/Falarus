@@ -1,15 +1,11 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
-import TeacherTermsModal from './TeacherTermsModal';
 import {
   ArrowRight,
   BookOpen,
   Globe2,
-  Hand,
-  Headphones,
   MessageCircle,
   Mic,
-  MicOff,
   Rocket,
   ShieldCheck,
   Sparkles,
@@ -33,6 +29,47 @@ import {
  * harakat qoladi, qolgani bir bosishdan keyin.
  */
 
+/**
+ * Shartlar sahifasi. Fayl `public/oqituvchilarga/index.html` da yotadi, lekin
+ * `server.ts` uni shu qisqa manzildan ham beradi — eski `/oqituvchilarga/`
+ * havolalari ham ishlab turaveradi.
+ */
+const TEACHER_INFO_URL = '/teacherinfo';
+
+/**
+ * Statik sahifa tilni shu kalitdan o'qiydi (`?lang=` dan keyingi navbatda).
+ * Ikkalasi ham bitta manbada tursa, `localStorage` umumiy bo'ladi.
+ */
+const TERMS_LANG_KEY = 'falarus_lending_lang';
+
+/**
+ * Havola bosilganda saytning joriy tilini eslatib qo'yamiz.
+ *
+ * NIMA UCHUN MANZILGA YOZILMAYDI: ilgari `?lang=UZ` havolaning o'zida
+ * turardi va brauzer qatorida ham ko'rinardi. Manzil toza `/teacherinfo`
+ * bo'lishi kerak, shuning uchun til yon yo'ldan uzatiladi.
+ *
+ * Ishlamay qolsa ham sahifa buzilmaydi: statik sahifa ruschaga tushadi va
+ * tepasida RU/UZ/EN almashtirgichi turadi.
+ */
+function eslatTil(language: string): void {
+  try {
+    window.localStorage.setItem(TERMS_LANG_KEY, TERMS_LANG[language] ?? 'RU');
+  } catch {
+    /* private rejim yoki kvota — sahifa baribir ochiladi */
+  }
+}
+
+/** Statik sahifa faqat shu uch tilda mavjud; qolgani ruschaga tushadi. */
+const TERMS_LANG: Record<string, 'RU' | 'UZ' | 'EN'> = {
+  uz: 'UZ',
+  en: 'EN',
+  ru: 'RU',
+  kk: 'RU',
+  tg: 'RU',
+  ky: 'RU',
+};
+
 export type TeacherBannerLanguage = 'en' | 'uz' | 'ru' | 'kk' | 'tg' | 'ky';
 
 type Pair = readonly [string, string];
@@ -40,159 +77,132 @@ type Pair = readonly [string, string];
 type BannerCopy = {
   title: string;
   headline: string;
-  headlineAlt: string;
   lead: string;
-  chips: readonly [Pair, Pair, Pair];
+  /** Uch afzallik — har biri BITTA qator. Ilgari sarlavha+izoh juftligi edi. */
+  chips: readonly [string, string, string];
   cards: readonly [Pair, Pair, Pair];
-  trust: Pair;
-  /** Asosiy tugma ostidagi kichik izoh. */
-  ctaNote: string;
-  panelFull: string;
+  trust: string;
   /** Jonli dars oynasi yozuvlari. */
   live: string;
   teacherTag: string;
-  studentsTag: string;
-  handTag: string;
+  /** Jonli dars oynasidagi o'quvchi plitkasining yorlig'i. */
+  studentTag: string;
 };
 
 const BANNER_COPY: Record<TeacherBannerLanguage, BannerCopy> = {
   uz: {
     title: 'O‘qituvchilar uchun',
     headline: 'Rus tilini onlayn o‘rgating',
-    headlineAlt: 'Преподавайте русский язык онлайн',
-    lead: 'Bilim ulashing, talabalar hayotini o‘zgartiring va istalgan joydan daromad toping.',
+    lead: 'Tajribangizni daromadga aylantiring.',
     chips: [
-      ['Istalgan joydan', 'onlayn ishlang'],
-      ['Talabalarni biz topamiz', 'siz izlamaysiz'],
-      ['Moslashuvchan', 'jadval va o‘sish'],
+      'Istalgan joydan ishlang',
+      'Talabalarni biz topamiz',
+      'Moslashuvchan jadval',
     ],
     cards: [
       ['Interaktiv darslar', 'jonli formatda'],
       ['Zamonaviy materiallar', 'va qulay vositalar'],
       ['Qo‘llab-quvvatlash', 'har qadamda'],
     ],
-    trust: ['Ishonchli platforma', 'Qulay sharoitlar'],
-    ctaNote: 'Shartlarni ko‘ring va bugun boshlang',
-    panelFull: 'To‘liq shartlar va daromad kalkulyatori',
+    trust: 'Ishonchli platforma',
     live: 'Jonli dars',
     teacherTag: 'Ustoz',
-    studentsTag: '12 ta o‘quvchi onlayn',
-    handTag: 'Savol bor',
+    studentTag: 'O‘quvchi',
   },
   ru: {
     title: 'Для преподавателей',
     headline: 'Преподавайте русский онлайн',
-    headlineAlt: 'Работайте из любой точки мира',
-    lead: 'Делитесь знаниями, меняйте жизнь студентов и зарабатывайте откуда угодно.',
+    lead: 'Превратите свой опыт в стабильный доход.',
     chips: [
-      ['Из любой точки', 'работайте онлайн'],
-      ['Учеников находим мы', 'вам не нужно искать'],
-      ['Гибкий график', 'и рост дохода'],
+      'Из любой точки',
+      'Учеников находим мы',
+      'Гибкий график',
     ],
     cards: [
       ['Интерактивные уроки', 'в живом формате'],
       ['Современные материалы', 'и инструменты'],
       ['Поддержка и развитие', 'на каждом шагу'],
     ],
-    trust: ['Надёжная платформа', 'Удобные условия'],
-    ctaNote: 'Посмотрите условия и начните сегодня',
-    panelFull: 'Полные условия и калькулятор дохода',
+    trust: 'Надёжная платформа',
     live: 'Прямой эфир',
     teacherTag: 'Преподаватель',
-    studentsTag: '12 учеников онлайн',
-    handTag: 'Вопрос',
+    studentTag: 'Ученик',
   },
   en: {
     title: 'For teachers',
     headline: 'Teach Russian online',
-    headlineAlt: 'Преподавайте русский язык онлайн',
-    lead: 'Share your knowledge, change students’ lives and earn from anywhere.',
+    lead: 'Turn your experience into steady income.',
     chips: [
-      ['From anywhere', 'work online'],
-      ['We bring the students', 'no searching needed'],
-      ['Flexible', 'schedule and growth'],
+      'From anywhere',
+      'We bring the students',
+      'Flexible schedule',
     ],
     cards: [
       ['Interactive lessons', 'in a live format'],
       ['Modern materials', 'and tools'],
       ['Support and growth', 'at every step'],
     ],
-    trust: ['Trusted platform', 'Fair conditions'],
-    ctaNote: 'See the terms and start today',
-    panelFull: 'Full terms and income calculator',
+    trust: 'Trusted platform',
     live: 'Live lesson',
     teacherTag: 'Teacher',
-    studentsTag: '12 students online',
-    handTag: 'Question',
+    studentTag: 'Student',
   },
   kk: {
     title: 'Оқытушылар үшін',
     headline: 'Орыс тілін онлайн үйретіңіз',
-    headlineAlt: 'Преподавайте русский язык онлайн',
-    lead: 'Біліміңізбен бөлісіңіз, студенттердің өмірін өзгертіңіз және кез келген жерден табыс табыңыз.',
+    lead: 'Тәжірибеңізді тұрақты табысқа айналдырыңыз.',
     chips: [
-      ['Кез келген жерден', 'онлайн жұмыс'],
-      ['Оқушыларды біз табамыз', 'сіз іздемейсіз'],
-      ['Икемді', 'кесте және өсу'],
+      'Кез келген жерден',
+      'Оқушыларды біз табамыз',
+      'Икемді кесте',
     ],
     cards: [
       ['Интерактивті сабақтар', 'тікелей форматта'],
       ['Заманауи материалдар', 'және құралдар'],
       ['Қолдау және даму', 'әр қадамда'],
     ],
-    trust: ['Сенімді платформа', 'Қолайлы жағдайлар'],
-    ctaNote: 'Шарттарды көріңіз және бүгін бастаңыз',
-    panelFull: 'Толық шарттар және табыс калькуляторы',
+    trust: 'Сенімді платформа',
     live: 'Тікелей сабақ',
     teacherTag: 'Оқытушы',
-    studentsTag: '12 оқушы онлайн',
-    handTag: 'Сұрақ бар',
+    studentTag: 'Оқушы',
   },
   tg: {
     title: 'Барои омӯзгорон',
     headline: 'Забони русиро онлайн омӯзонед',
-    headlineAlt: 'Преподавайте русский язык онлайн',
-    lead: 'Донишатонро мубодила кунед, ҳаёти донишомӯзонро тағйир диҳед ва аз ҳар ҷо даромад ба даст оред.',
+    lead: 'Таҷрибаи худро ба даромади доимӣ табдил диҳед.',
     chips: [
-      ['Аз ҳар ҷо', 'онлайн кор кунед'],
-      ['Донишомӯзонро мо меёбем', 'шумо ҷустуҷӯ намекунед'],
-      ['Ҷадвали мутобиқ', 'ва рушд'],
+      'Аз ҳар ҷо',
+      'Донишомӯзонро мо меёбем',
+      'Ҷадвали мутобиқ',
     ],
     cards: [
       ['Дарсҳои интерактивӣ', 'дар формати зинда'],
       ['Маводи муосир', 'ва абзорҳо'],
       ['Дастгирӣ ва рушд', 'дар ҳар қадам'],
     ],
-    trust: ['Платформаи боэътимод', 'Шароити қулай'],
-    ctaNote: 'Шартҳоро бинед ва имрӯз оғоз кунед',
-    panelFull: 'Шартҳои пурра ва ҳисобкунаки даромад',
+    trust: 'Платформаи боэътимод',
     live: 'Дарси зинда',
     teacherTag: 'Омӯзгор',
-    studentsTag: '12 донишомӯз онлайн',
-    handTag: 'Савол ҳаст',
+    studentTag: 'Шогирд',
   },
   ky: {
     title: 'Мугалимдер үчүн',
     headline: 'Орус тилин онлайн үйрөтүңүз',
-    headlineAlt: 'Преподавайте русский язык онлайн',
-    lead: 'Билимиңизди бөлүшүңүз, студенттердин жашоосун өзгөртүңүз жана каалаган жерден киреше табыңыз.',
+    lead: 'Тажрыйбаңызды туруктуу кирешеге айландырыңыз.',
     chips: [
-      ['Каалаган жерден', 'онлайн иштеңиз'],
-      ['Окуучуларды биз табабыз', 'сиз издебейсиз'],
-      ['Ийкемдүү', 'график жана өсүү'],
+      'Каалаган жерден',
+      'Окуучуларды биз табабыз',
+      'Ийкемдүү график',
     ],
     cards: [
       ['Интерактивдүү сабактар', 'жандуу форматта'],
       ['Заманбап материалдар', 'жана куралдар'],
       ['Колдоо жана өнүгүү', 'ар бир кадамда'],
     ],
-    trust: ['Ишенимдүү платформа', 'Ыңгайлуу шарттар'],
-    ctaNote: 'Шарттарды көрүп, бүгүн баштаңыз',
-    panelFull: 'Толук шарттар жана киреше калькулятору',
+    trust: 'Ишенимдүү платформа',
     live: 'Түз сабак',
     teacherTag: 'Мугалим',
-    studentsTag: '12 окуучу онлайн',
-    handTag: 'Суроо бар',
+    studentTag: 'Окуучу',
   },
 };
 
@@ -212,15 +222,34 @@ const CARD_TONES = [
   'bg-[#FFF1E3] text-[#F97316]',
 ] as const;
 
-/** Darsdagi o'quvchilar — ismi emas, bosh harfi (hech kimning ma'lumoti emas). */
-const STUDENTS = [
-  { initial: 'A', muted: false },
-  { initial: 'M', muted: true },
-  { initial: 'S', muted: false },
+/**
+ * Doskadagi juftliklar — «Глаголы движения» darsidan (rus → o'zbek).
+ *
+ * Harakat fe'llarida ma'no yurish USULIga bog'liq, shuning uchun tarjima
+ * shunchaki «bormoq» emas: `идти` — piyoda, `ехать` — ulovda, `лететь` —
+ * havoda. Darsning butun mazmuni shu farqda.
+ */
+const LESSON_PAIRS = [
+  ['идти', 'yurmoq'],
+  ['ехать', 'ketmoq'],
+  ['лететь', 'uchmoq'],
 ] as const;
 
-/** Slaydda ko'rinadigan mavzu so'zlari — «Глаголы движения» darsidan. */
-const LESSON_WORDS = ['идти', 'ехать', 'лететь'] as const;
+/**
+ * Jonli dars oynasidagi ikkita video plitka.
+ *
+ * Suratlar `public/landing/` da — «Falarus Dars» maketidan chiqarilgan ASL
+ * PNG fayllar, bayt-ma-bayt o'zgartirilmagan (542px, 318/276 KB). Ilgari ular
+ * WebP'ga siqilgan edi; bu tarmoq uchun yengilroq, lekin surat asl nusxa
+ * bo'lmay qolardi. Shuning uchun asli qoldirildi.
+ *
+ * `objectPosition` yuzni kadr markazida ushlab turadi — plitka kvadratga
+ * yaqin bo'lgani uchun kesilganda peshona qirqilmasin.
+ */
+const LIVE_TILES = [
+  { key: 'teacher', src: '/landing/live-teacher.png', objectPosition: '50% 18%' },
+  { key: 'student', src: '/landing/live-student.png', objectPosition: '50% 20%' },
+] as const;
 
 /** Rus tili bayrog'i — rasm emas, uchta chiziq (retina ekranda ham tiniq). */
 function RussianFlag() {
@@ -263,10 +292,6 @@ export type TeacherRecruitBannerProps = {
   language: TeacherBannerLanguage;
   /** «O'qituvchi qidiryapmiz» — sarlavha ustidagi kichik yorliq. */
   eyebrow: string;
-  /** «Siz o'qituvchimisiz?» */
-  ask: string;
-  loginLabel: string;
-  registerLabel: string;
   /** «Shartlar va daromad haqida» — asosiy tugma matni. */
   moreLabel: string;
 };
@@ -274,14 +299,10 @@ export type TeacherRecruitBannerProps = {
 export default function TeacherRecruitBanner({
   language,
   eyebrow,
-  ask,
-  loginLabel,
-  registerLabel,
   moreLabel,
 }: TeacherRecruitBannerProps) {
   const reduce = useReducedMotion() ?? false;
   const c = BANNER_COPY[language] ?? BANNER_COPY.uz;
-  const [termsModalOpen, setTermsModalOpen] = useState(false);
 
   /*
     Bitta kuzatuvchi — butun banner uchun. `whileInView` har bir bolaga
@@ -347,16 +368,12 @@ export default function TeacherRecruitBanner({
             <span className="text-[#2563EB]">{c.headline}</span>
             <span aria-hidden className="hidden h-2 w-2 rounded-full bg-[#F97316] sm:inline-block" />
           </motion.p>
-          <motion.p variants={rise} className="mt-0.5 text-[16px] font-bold leading-snug text-[#F97316] sm:text-[18px]">
-            {c.headlineAlt}
-          </motion.p>
-
           <motion.p variants={rise} className="mt-3 max-w-[500px] text-[14px] leading-[1.6] text-[#475569] sm:text-[15px]">
             {c.lead}
           </motion.p>
 
-          <motion.ul variants={rise} className="mt-5 grid max-w-[500px] gap-x-5 gap-y-3.5 sm:grid-cols-2">
-            {[...c.chips, c.trust].map(([chipTitle, chipSub], index) => {
+          <motion.ul variants={rise} className="mt-4 grid max-w-[500px] gap-x-5 gap-y-3 sm:grid-cols-2">
+            {[...c.chips, c.trust].map((chipTitle, index) => {
               const Icon = CHIP_ICONS[index];
               return (
                 <motion.li
@@ -368,31 +385,29 @@ export default function TeacherRecruitBanner({
                   <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] ${CHIP_TONES[index]}`}>
                     <Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
                   </span>
-                  <span className="min-w-0">
-                    <span className="block text-[13px] font-bold leading-tight text-[#0F172A]">{chipTitle}</span>
-                    <span className="block text-[13px] leading-tight text-[#64748B]">{chipSub}</span>
-                  </span>
+                  <span className="min-w-0 text-[13px] font-bold leading-tight text-[#0F172A]">{chipTitle}</span>
                 </motion.li>
               );
             })}
           </motion.ul>
 
-          <motion.p variants={rise} className="mt-6 text-[13px] font-semibold text-[#0B2A6B]">
-            {ask}
-          </motion.p>
-
           {/*
-            BITTA ASOSIY TUGMA.
+            BITTA ASOSIY HAVOLA.
 
-            Bosilishi bilanoq to'liq shartlar va daromad kalkulyatori oynacha
-            ichida ochiladi; ro'yxatdan o'tish bilan kirish esa o'sha oynaning
-            pastida turadi. Ilgari oraliqda yana bir panel bor edi — ortiqcha
-            qadam bo'lgani uchun olib tashlandi.
+            Ilgari bu tugma bosilganda shartlar bosh sahifa ustidagi oynacha
+            ichida, iframe bilan ochilardi. Endi u haqiqiy havola: `/teacherinfo`
+            SHU OYNADA ochiladi va brauzer manzili o'zgaradi.
+
+            NIMA UCHUN `target="_blank"` EMAS: sayt PWA sifatida o'rnatiladi
+            (`manifest.json` → `display: standalone`, `scope: "/"`). Ilova
+            ichida yangi oyna ochilsa, u ham manzil qatorisiz standalone oyna
+            bo'lib chiqadi — foydalanuvchi qayerda ekanini ko'rmaydi. Shu
+            oynada o'tilsa esa manzil ko'rinadi va «orqaga» tugmasi qaytaradi.
           */}
           <motion.div variants={rise} className="mt-2 max-w-[420px]">
-            <motion.button
-              type="button"
-              onClick={() => setTermsModalOpen(true)}
+            <motion.a
+              href={TEACHER_INFO_URL}
+              onClick={() => eslatTil(language)}
               whileHover={reduce ? undefined : { scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               className="group flex w-full items-center gap-3 rounded-[20px] bg-[linear-gradient(120deg,#2563EB,#1E3A8A)] px-5 py-3.5 text-left shadow-[0_16px_34px_rgba(37,99,235,0.30)] transition hover:shadow-[0_20px_44px_rgba(37,99,235,0.38)]"
@@ -400,14 +415,11 @@ export default function TeacherRecruitBanner({
               <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-white/15">
                 <Rocket className="h-5 w-5 text-white" strokeWidth={2.2} />
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-bold leading-tight text-white">{moreLabel}</span>
-                <span className="mt-0.5 block text-[12px] leading-snug text-white/80">{c.ctaNote}</span>
-              </span>
+              <span className="min-w-0 flex-1 text-[15px] font-bold leading-tight text-white">{moreLabel}</span>
               <span className="shrink-0 text-white/90 transition group-hover:translate-x-0.5">
                 <ArrowRight className="h-5 w-5" strokeWidth={2.4} />
               </span>
-            </motion.button>
+            </motion.a>
           </motion.div>
 
         </div>
@@ -445,27 +457,41 @@ export default function TeacherRecruitBanner({
               </div>
 
               <div className="mt-3 flex gap-2.5">
-                {/* Ekranda ko'rsatilayotgan dars slaydi. */}
+                {/* Doska — ayni damda ochiq slayd. */}
                 <div className="min-w-0 flex-1 rounded-[16px] bg-[linear-gradient(135deg,#EAF1FE,#F7FAFF)] p-3">
                   <div className="flex items-center gap-2">
                     <RussianFlag />
                     <span className="text-[11px] font-medium text-[#64748B]">Сегодня:</span>
                   </div>
-                  <p className="mt-1.5 text-[16px] font-extrabold leading-tight text-[#0B2A6B]">
-                    Глаголы<br />движения
+                  <p className="mt-1.5 text-[15px] font-extrabold leading-tight tracking-[-0.015em] text-[#0B2A6B]">
+                    Глаголы движения
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {LESSON_WORDS.map((word, index) => (
-                      <motion.span
-                        key={word}
-                        className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#2563EB] shadow-[0_2px_6px_rgba(37,99,235,0.12)]"
+
+                  {/*
+                    Juftliklar ustun-ustun: chapda ruscha, o'ngda o'zbekcha,
+                    orada qisqa chiziq. Ruscha o'ngga tekislangani bejiz emas —
+                    ikkala ustun ham chiziqqa qarab yaqinlashadi va ko'z juftni
+                    bir qarashda bog'laydi.
+                  */}
+                  <ul className="mt-2 space-y-1">
+                    {LESSON_PAIRS.map(([ru, uz], index) => (
+                      <motion.li
+                        key={ru}
+                        className="grid grid-cols-[1fr_auto_1fr] items-baseline gap-2 border-b border-[#DCE7FA] pb-1 last:border-b-0 last:pb-0"
                         variants={{ hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0 } }}
                         transition={{ delay: 0.5 + index * 0.12 }}
                       >
-                        {word}
-                      </motion.span>
+                        <span className="truncate text-right text-[12px] font-medium tracking-[-0.015em] text-[#1B2140]">
+                          {ru}
+                        </span>
+                        <span aria-hidden className="h-px w-3.5 shrink-0 bg-[#B9CDF2]" />
+                        <span className="truncate text-[12px] font-bold tracking-[-0.015em] text-[#2563EB]">
+                          {uz}
+                        </span>
+                      </motion.li>
                     ))}
-                  </div>
+                  </ul>
+
                   <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-white">
                     <motion.span
                       className="block h-full rounded-full bg-[#2563EB]"
@@ -475,57 +501,38 @@ export default function TeacherRecruitBanner({
                   </div>
                 </div>
 
-                {/* Ustoz oynasi — gapirayotgani halqa bilan ko'rsatiladi. */}
-                <div className="relative flex w-[78px] shrink-0 flex-col justify-end rounded-[16px] bg-[linear-gradient(160deg,#1E3A8A,#2563EB)] p-2">
-                  <span className="absolute left-1/2 top-3 -translate-x-1/2">
-                    <motion.span
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white ring-2 ring-white/70"
-                      animate={reduce ? undefined : { boxShadow: ['0 0 0 0 rgba(255,255,255,0.5)', '0 0 0 8px rgba(255,255,255,0)'] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
+                {/* Ustoz va o'quvchi oynalari — haqiqiy suratlar. */}
+                <div className="flex w-[82px] shrink-0 flex-col gap-2">
+                  {LIVE_TILES.map((tile, index) => (
+                    <motion.div
+                      key={tile.key}
+                      className="relative min-h-0 flex-1 overflow-hidden rounded-[16px] bg-[#12183A]"
+                      variants={{ hidden: { opacity: 0, scale: 0.94 }, show: { opacity: 1, scale: 1 } }}
+                      transition={{ delay: 0.45 + index * 0.12, type: 'spring', stiffness: 220, damping: 22 }}
                     >
-                      <Headphones className="h-4 w-4" strokeWidth={2.2} />
-                    </motion.span>
-                  </span>
-                  <span className="flex items-center gap-1 rounded-full bg-black/25 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                    <Mic className="h-2.5 w-2.5" strokeWidth={2.6} />
-                    {c.teacherTag}
-                  </span>
+                      <img
+                        src={tile.src}
+                        alt=""
+                        aria-hidden
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full min-h-[62px] w-full object-cover"
+                        style={{ objectPosition: tile.objectPosition }}
+                      />
+                      <span className="absolute inset-x-1 bottom-1 truncate rounded-full bg-white/92 px-1.5 py-0.5 text-center text-[9px] font-bold text-[#101528] backdrop-blur-sm">
+                        {index === 0 ? c.teacherTag : c.studentTag}
+                      </span>
+                      {index === 0 && (
+                        <motion.span
+                          aria-hidden
+                          className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#22A552] ring-2 ring-white/80"
+                          animate={reduce ? undefined : { opacity: [1, 0.3, 1] }}
+                          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      )}
+                    </motion.div>
+                  ))}
                 </div>
-              </div>
-
-              {/* O'quvchilar oynachalari — biri qo'l ko'targan. */}
-              <div className="mt-2.5 grid grid-cols-4 gap-2">
-                {STUDENTS.map((student, index) => (
-                  <motion.span
-                    key={student.initial}
-                    className="relative flex h-[46px] items-center justify-center rounded-[12px] bg-[#EEF3FD] text-[13px] font-black text-[#2563EB]"
-                    variants={{ hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1 } }}
-                    transition={{ delay: 0.55 + index * 0.1, type: 'spring', stiffness: 240, damping: 20 }}
-                  >
-                    {student.initial}
-                    <span className="absolute bottom-1 right-1 text-[#94A3B8]">
-                      {student.muted ? <MicOff className="h-3 w-3" strokeWidth={2.4} /> : <Mic className="h-3 w-3 text-[#22A552]" strokeWidth={2.4} />}
-                    </span>
-                    {index === 2 && (
-                      <motion.span
-                        className="absolute -top-2 left-1/2 flex h-5 w-5 -translate-x-1/2 items-center justify-center rounded-full bg-[#F97316] text-white shadow-[0_4px_10px_rgba(249,115,22,0.4)]"
-                        title={c.handTag}
-                        animate={reduce ? undefined : { y: [0, -3, 0] }}
-                        transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-                      >
-                        <Hand className="h-3 w-3" strokeWidth={2.6} />
-                      </motion.span>
-                    )}
-                  </motion.span>
-                ))}
-                <span className="flex h-[46px] items-center justify-center rounded-[12px] border border-dashed border-[#C7D8F5] text-[12px] font-bold text-[#64748B]">
-                  +9
-                </span>
-              </div>
-
-              <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-[#64748B]">
-                <Users className="h-3.5 w-3.5" strokeWidth={2.2} />
-                {c.studentsTag}
               </div>
 
               <div className="mt-2.5 flex items-center justify-center gap-2.5">
@@ -568,15 +575,6 @@ export default function TeacherRecruitBanner({
           </div>
         </motion.div>
       </div>
-
-      <TeacherTermsModal
-        open={termsModalOpen}
-        onClose={() => setTermsModalOpen(false)}
-        language={language}
-        title={c.panelFull}
-        registerLabel={registerLabel}
-        loginLabel={loginLabel}
-      />
     </motion.section>
   );
 }

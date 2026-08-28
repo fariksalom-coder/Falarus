@@ -226,8 +226,6 @@ export const DAILY_PLAN: DayPlan[] = [...DAILY_PLAN_BASE, ...spiralContinuationP
 }));
 
 export const TOTAL_DAYS = DAILY_PLAN.length;
-export const TOTAL_WEEKS = Math.max(...DAILY_PLAN.map((d) => d.week));
-
 /** Bosqichlar (oy/level) — har biri 4-5 hafta. 180-kunlik plan uchun ham scale qiladi. */
 export type Stage = {
   id: number;
@@ -245,14 +243,3 @@ export const STAGES: Stage[] = [
   { id: 5, title: 'Spiral takrorlash va rivojlanish', level: 'A1–A2', weekFrom: 7, weekTo: 26 },
 ];
 
-export function getStageOfWeek(week: number): Stage {
-  return STAGES.find((s) => week >= s.weekFrom && week <= s.weekTo) ?? STAGES[0];
-}
-
-export function getDayByNumber(day: number): DayPlan | undefined {
-  return DAILY_PLAN.find((d) => d.day === day);
-}
-
-export function getDaysByWeek(week: number): DayPlan[] {
-  return DAILY_PLAN.filter((d) => d.week === week);
-}

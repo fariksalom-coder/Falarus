@@ -25,10 +25,6 @@ export function sanitizePhoneForDb(raw: string): string | null {
   return s;
 }
 
-/** @deprecated Same as sanitizePhoneForDb — old name from regional formatting era. */
-export const normalizePhone = sanitizePhoneForDb;
-export const normalizeUzPhone = sanitizePhoneForDb;
-
 export type ParsedContact =
   | {
       ok: true;
