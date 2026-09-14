@@ -90,13 +90,9 @@ function checkGemini(env) {
   const warnings = [];
 
   if (apiKey) {
-    if (!apiKey.startsWith('AIza')) {
-      warnings.push(
-        'GEMINI_API_KEY doimiy AI Studio kaliti emas (doimiy kalit "AIza" bilan boshlanadi). ' +
-          'Vaqtinchalik tokenlar eskiradi va eskirganda BUTUN AI to\'xtaydi — ' +
-          'log\'da AI_CREDENTIAL_EXPIRED chiqadi. Doimiy kalit: https://aistudio.google.com/apikey'
-      );
-    }
+    // Google supports both standard and service-account-bound authorization
+    // keys. A prefix alone cannot establish validity or expiration.
+    // https://ai.google.dev/gemini-api/docs/api-key
     return { mode: 'ai-studio', warnings };
   }
 

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Info } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
@@ -128,6 +128,22 @@ const VOCAB_STEPS = [
 
 export default function PricingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  /*
+   * ORTGA — BITTA QADAM.
+   *
+   * Tariflar sahifasiga har xil joydan kelinadi: bosh sahifadan, profildan,
+   * to'lov taklifidan. Shuning uchun `'/'` ga qaytarish noto'g'ri edi —
+   * profildan kelgan odam ham bosh ekranga uloqtirilardi.
+   *
+   * `location.key === 'default'` — sahifa TO'G'RIDAN-TO'G'RI ochilgan
+   * (havola orqali, ilova ichida hech qayerdan kelinmagan). Faqat o'shanda
+   * bosh sahifaga qaytariladi, aks holda oddiy bitta qadam ortga.
+   */
+  const ortga = () => {
+    if (location.key === 'default') navigate('/');
+    else navigate(-1);
+  };
   const { t } = useLocale();
   const { token } = useAuth();
   const { access } = useAccess();
@@ -228,7 +244,7 @@ export default function PricingPage() {
         <div className="mb-5 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={ortga}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-pmn-card text-pmn-text shadow-[0_6px_16px_-6px_rgba(15,27,59,0.28)] ring-1 ring-pmn-border transition active:scale-95"
             aria-label={t('common.back')}
           >

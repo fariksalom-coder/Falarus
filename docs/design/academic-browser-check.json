@@ -1,0 +1,146 @@
+{
+  "results": [
+    {
+      "width": 375,
+      "route": "/",
+      "overflow": false,
+      "heading": "O'quv rejangiz",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/",
+      "overflow": false,
+      "heading": "O'quv rejangiz",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/",
+      "overflow": false,
+      "heading": "O'quv rejangiz",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    }
+  ],
+  "interactions": [
+    {
+      "test": "sequential-lessons",
+      "width": 375,
+      "pass": true
+    },
+    {
+      "test": "future-days-locked",
+      "width": 375,
+      "pass": true
+    },
+    {
+      "test": "sequential-lessons",
+      "width": 390,
+      "pass": true
+    },
+    {
+      "test": "future-days-locked",
+      "width": 390,
+      "pass": true
+    },
+    {
+      "test": "admin-mobile-menu-open",
+      "pass": true
+    },
+    {
+      "test": "sequential-lessons",
+      "width": 1440,
+      "pass": true
+    },
+    {
+      "test": "future-days-locked",
+      "width": 1440,
+      "pass": true
+    }
+  ],
+  "errors": []
+}

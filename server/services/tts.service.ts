@@ -22,9 +22,82 @@ import { spawn } from 'child_process';
 import { createHash } from 'crypto';
 import { WebSocket } from 'ws';
 
-const MODEL = process.env.OPENAI_TTS_MODEL || 'tts-1';
-/** Ayol ovoz — sinovda ruscha so'zlarni eng tiniq talaffuz qilgani. */
+/*
+ * SO'Z OVOZI — `gpt-4o-mini-tts` + `alloy`.
+ *
+ * NEGA ALMASHTIRILDI: eski `tts-1` + `nova` yakka ruscha so'zni ishonchsiz
+ * o'qirdi. Kontekstsiz bitta so'z modelga juda kam ma'lumot beradi va u
+ * so'zni O'YLAB TOPARDI. 2026-09-01 da o'lchandi (bazadan 24 ta tasodifiy
+ * so'z, ovoz Whisper bilan qaytadan matnga aylantirildi):
+ *
+ *     tts-1 / nova / 0.7            -> 12/24 to'g'ri
+ *     gpt-4o-mini-tts / nova        -> 19/24 to'g'ri
+ *
+ * Eski ovozdagi xatolar shunchaki urg'u emas, BOSHQA SO'Z edi:
+ * «работе» -> «Вау», «строитель» -> «Стрейчель», «зовут» -> «ЗАВОД»,
+ * «приятно» -> «Приятного аппетита!». O'quvchi noto'g'ri talaffuzni
+ * yodlab qolardi — bu esa talaffuz yo'qligidan ham yomon.
+ *
+ * `gpt-4o-mini-tts` ning asosiy afzalligi — `instructions` maydoni: modelga
+ * matn QAYSI TILDA ekanini va uni o'ylab topmaslik kerakligini aytish
+ * mumkin (pastda `RU_KORSATMA`).
+ */
+const MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
+/*
+ * OVOZ — `nova`, ya'ni yosh qiz ovozi. O'quvchilarga tanish (eski `tts-1`
+ * da ham shu ovoz edi) va o'lchovda ham eng aniq chiqdi. 16 ta so'zda
+ * qiz ovozlari solishtirildi:
+ *
+ *     nova 13/16 · coral 12/16 · alloy 11/16 · sage 10/16 · shimmer 9/16
+ *
+ * (nova'ning uchta "xatosi" — Whisper'ning o'zi: «тридцать» ni «30» deb,
+ * «соседей» ni «Соседи» deb yozgan.)
+ */
 const VOICE = process.env.OPENAI_TTS_VOICE || 'nova';
+
+/**
+ * Yakka so'z uchun ko'rsatma.
+ *
+ * Ikki narsa aytiladi:
+ *  1. matn RUSCHA (aks holda model lotin/ingliz tovushlariga o'tib ketadi);
+ *  2. AYNAN yozilganini o'qi — tarjima qilma, gapni davom ettirma
+ *     («приятно» dan «Приятного аппетита!» aynan shundan chiqqan).
+ *
+ * "SLOWLY" DEYILMAYDI. Avval aytilgan edi va natija ikki tomondan yomon
+ * bo'ldi: ovoz cho'zilib g'ayritabiiy eshitildi, ustiga aniqlik ham
+ * tushdi (nova: sekin ko'rsatma bilan 5/8, tabiiy ko'rsatma bilan 13/16).
+ * Tezlikni ilovaning `speed` parametri boshqaradi — ohang emas.
+ */
+const RU_KORSATMA =
+  'You are a native Russian speaker. Read the given Russian word or phrase ' +
+  'clearly and naturally, with correct Russian stress, exactly as written. ' +
+  'Do not translate it, do not add any other words, and do not complete the ' +
+  'phrase — read only what is written.';
+
+/**
+ * `gpt-4o-mini-tts` UCHUN ENG PAST TEZLIK.
+ *
+ * Bu model `tts-1` dan tabiiy holda ancha bosiq gapiradi: bir xil so'z
+ * `tts-1` da 1.0 tezlikda 0.8 soniya, bu modelda 2.1 soniya. Ilovadagi
+ * eski qiymatlar (0.7-0.8) `tts-1` ga qarab tanlangan edi va bu modelda
+ * so'zni cho'zib, "hunuk" qilib yuboradi.
+ *
+ * Shuning uchun quyi chegara: chaqiruvchi qanchalik past so'ramasin,
+ * 0.9 dan sekin o'qilmaydi. Yuqori chegara o'zgarmaydi — kimdir tezroq
+ * so'rasa, o'shanday bo'ladi.
+ */
+const SOZ_ENG_PAST_TEZLIK = 0.9;
+
+/**
+ * Ko'rsatma matni o'zgarsa shu raqam ham oshirilsin: u kesh kalitiga kiradi,
+ * aks holda eski ovoz yangi ko'rsatma o'rniga qaytaverardi.
+ */
+const SOZ_KORSATMA_VERSIYA = 'ru2';
+
+/** Kirill harfi bormi — ko'rsatma faqat ruscha matnga qo'yiladi. */
+function kirillmi(text: string): boolean {
+  return /[А-Яа-яЁё]/.test(text);
+}
 /** 1.0 dan past — sekinroq va aniqroq (o'quvchi talaffuzni ilg'ab olsin). */
 const SPEED = Number(process.env.OPENAI_TTS_SPEED || 0.85);
 const MAX_CHARS = 200;
@@ -58,10 +131,11 @@ const LIVE_TIMEOUT_MS = Number(process.env.TTS_LIVE_TIMEOUT_MS || 30_000);
 /**
  * OPENAI OVOZ PROFILLARI.
  *
- * `sozlar` — lug'at kartochkalari uchun eski sozlama. Uni o'zgartirmaslik
- * kerak: kesh kaliti model va ovozdan tuziladi, ya'ni almashtirilsa allaqachon
- * keshlangan minglab so'z bekor bo'ladi va qaytadan pul evaziga generatsiya
- * qilinadi.
+ * `sozlar` — lug'at kartochkalari va o'qish matnidagi yakka so'zlar.
+ * DIQQAT: kesh kaliti model, ovoz va ko'rsatma versiyasidan tuziladi. Bu
+ * qiymatlarni o'zgartirish keshlangan minglab so'zni bekor qiladi va ular
+ * qaytadan (pul evaziga) generatsiya qilinadi — shuning uchun faqat sifat
+ * o'lchab isbotlanganda o'zgartiring.
  *
  * `ustoz` — doskadagi dars ovozi: `tts-1-hd` + `nova`, ya'ni yosh qiz ovozi.
  * `tts-1` ning HD varianti sifatliroq (narxi ikki barobar, lekin kesh tufayli
@@ -70,7 +144,7 @@ const LIVE_TIMEOUT_MS = Number(process.env.TTS_LIVE_TIMEOUT_MS || 30_000);
  * yuborilmaydi ham.
  */
 const OHANGLAR = {
-  sozlar: { model: MODEL, voice: VOICE, instructions: '' },
+  sozlar: { model: MODEL, voice: VOICE, instructions: RU_KORSATMA },
   ustoz: {
     model: process.env.OPENAI_TTS_USTOZ_MODEL || 'tts-1-hd',
     voice: process.env.OPENAI_TTS_USTOZ_VOICE || 'nova',
@@ -104,8 +178,20 @@ const LIVE_TTS = {
     "Sen ovoz chiqaruvchi vositasan (text-to-speech). Foydalanuvchi bergan " +
     "matnni AYNAN o'sha holicha ovoz bilan o'qib berasan. Hech narsa " +
     "qo'shmaysan, hech narsani tushirib qoldirmaysan, savolga javob " +
-    "bermaysan, izoh bermaysan. Faqat matnni o'qiysan. Ohang: yosh, quvnoq " +
-    "va samimiy o'qituvchi — tetik va tiniq, lekin shoshmasdan.\n" +
+    "bermaysan, izoh bermaysan. Faqat matnni o'qiysan.\n" +
+    /*
+     * OHANG — foydalanuvchi «hayajon bilan gapirmayapti» dedi (2026-08-30).
+     * Ilgari ko'rsatma «tetik va tiniq, lekin shoshmasdan» edi — model buni
+     * mo''tadil, deyarli tekis o'qish deb tushunardi. Endi jonlilik ATAYLAB
+     * so'raladi, lekin «shoshmasdan» saqlanadi: o'quvchi migrant, rus tilini
+     * endi o'rganyapti — tez gapirilsa ilgamaydi.
+     */
+    "OHANG (muhim): sen dars berayotgan JONLI o'qituvchisan, diktor emas. " +
+    "Ovozingda qiziqish va hayajon bo'lsin — o'quvchini ergashtirasan. " +
+    "Yangi mavzuni yoki qoidani aytganda ovozingni bir oz ko'tar, muhim " +
+    "so'zni ajratib ayt, gap oxirida ohangni tabiiy tushir. Bir maromda, " +
+    "tekis o'qish TAQIQLANADI — u zerikarli va o'quvchi tinglashni to'xtatadi. " +
+    "Shu bilan birga SHOSHMA: o'quvchi rus tilini endi o'rganyapti.\n" +
     "TALAFFUZ QOIDASI (eng muhimi): matn IKKI TILDA keladi. LOTIN yozuvidagi " +
     "qism — O'ZBEK tili, uni o'zbekcha talaffuz qil. KIRILL yozuvidagi qism — " +
     "RUS tili, uni ONA TILI DARAJASIDAGI to'g'ri rus talaffuzi bilan o'qi.\n" +
@@ -406,14 +492,16 @@ export function isTtsConfigured(): boolean {
  * Kesh kaliti. Manba va ovoz kalitga kiradi: ovoz almashtirilsa eski yozuvlar
  * o'z-o'zidan chetlab o'tiladi, qo'lda tozalash kerak emas.
  *
- * MUHIM: `sozlar` profilining kaliti tarixiy ko'rinishda qoladi (manba
- * qo'shilmaydi) — aks holda lug'atning 1300 dan ortiq keshlangan so'zi bekor
- * bo'lib, qaytadan pulga generatsiya qilinardi.
+ * `sozlar` uchun ko'rsatma VERSIYASI ham kalitga kiradi: ko'rsatma matni
+ * talaffuzni o'zgartiradi, ya'ni u boshqa ovoz demakdir. Versiyasiz eski
+ * yozuvlar yangi ko'rsatma o'rniga qaytaverardi.
  */
 function cacheKalit(text: string, speed: number, ohang: TtsOhang, manba: Manba): string {
   if (manba === 'openai' && ohang === 'sozlar') {
     const { model, voice } = OHANGLAR.sozlar;
-    return createHash('sha256').update(`${model}|${voice}|${speed}|${text}`).digest('hex');
+    return createHash('sha256')
+      .update(`${model}|${voice}|${SOZ_KORSATMA_VERSIYA}|${speed}|${text}`)
+      .digest('hex');
   }
   if (manba === 'openai') {
     const { model, voice } = OHANGLAR[ohang];
@@ -702,6 +790,13 @@ async function speechifyNutq(text: string): Promise<Natija> {
 async function openaiNutq(text: string, speed: number, ohang: TtsOhang): Promise<Natija> {
   if (!process.env.OPENAI_API_KEY?.trim()) throw new Error('OPENAI_API_KEY yo\'q');
   const { model, voice, instructions } = OHANGLAR[ohang];
+  /*
+   * Ko'rsatma IKKI shart bajarilgandagina yuboriladi:
+   *  - modeli qo'llab-quvvatlasin (`tts-1`/`tts-1-hd` bu maydonni bilmaydi);
+   *  - matn kirillda bo'lsin — lotin yozuvidagi matnga "ruscha o'qi" deyish
+   *    uni buzardi.
+   */
+  const korsatma = instructions && model.startsWith('gpt-4o') && kirillmi(text) ? instructions : '';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   let res: Response;
@@ -719,7 +814,7 @@ async function openaiNutq(text: string, speed: number, ohang: TtsOhang): Promise
         input: text,
         speed,
         response_format: 'mp3',
-        ...(instructions ? { instructions } : {}),
+        ...(korsatma ? { instructions: korsatma } : {}),
       }),
     });
   } finally {
@@ -751,8 +846,17 @@ export async function speak(
     throw err;
   }
 
-  const speed = Math.min(1.2, Math.max(0.5, opts.speed ?? SPEED));
   const ohang: TtsOhang = opts.ohang === 'ustoz' ? 'ustoz' : 'sozlar';
+  /*
+   * Quyi chegara `sozlar` uchun modelga qarab ko'tariladi (izohga qarang).
+   * Kesh kalitiga AYNAN shu yakuniy qiymat kiradi, shuning uchun tuzatish
+   * kalit hisoblanishidan oldin turishi shart.
+   */
+  const engPast =
+    ohang === 'sozlar' && OHANGLAR.sozlar.model.startsWith('gpt-4o')
+      ? SOZ_ENG_PAST_TEZLIK
+      : 0.5;
+  const speed = Math.min(1.2, Math.max(engPast, opts.speed ?? SPEED));
 
   /*
    * MANBALAR TARTIBI.

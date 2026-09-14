@@ -78,7 +78,7 @@ export default function SpeakingExercise({
    */
   const [shownAnswer, setShownAnswer] = useState('');
 
-  const recorder = useVoiceRecorder();
+  const recorder = useVoiceRecorder(60_000);
   const task = tasks[currentIdx];
   const progress = ((currentIdx + (result && isPassingStatus(result.status) ? 1 : 0)) / tasks.length) * 100;
 

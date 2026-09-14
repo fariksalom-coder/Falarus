@@ -3,6 +3,7 @@ import { AtSign, Headphones, MessageCircle, Users, Clapperboard } from 'lucide-r
 import { getHelpChats, type HelpChatListItem } from '../../api/help';
 import { getSavolJavobSummary, type SavolJavobSummary } from '../../api/communityChat';
 import { useAuth } from '../../context/AuthContext';
+import { resolveAssetUrl } from '../../api';
 import { useLocale } from '../../context/LocaleContext';
 import type { PartnerMatch } from '../../api/partner';
 
@@ -214,12 +215,21 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
             onClick={() => onOpenPartner(match.id)}
             className="flex items-center gap-[13px] rounded-[18px] bg-app-surface px-[14px] py-[13px] text-left shadow-[0_6px_14px_rgba(23,34,74,0.05)] transition hover:-translate-y-0.5 active:scale-[0.99]"
           >
-            <div
-              className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[16px] text-[15px] font-black text-white"
-              style={{ background: gradients[idx % gradients.length] }}
-            >
-              {initials(name)}
-            </div>
+            {match.partner_profile?.avatar_url ? (
+              <img
+                src={resolveAssetUrl(match.partner_profile.avatar_url) ?? ''}
+                alt=""
+                className="h-[50px] w-[50px] shrink-0 rounded-[16px] object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div
+                className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[16px] text-[15px] font-black text-white"
+                style={{ background: gradients[idx % gradients.length] }}
+              >
+                {initials(name)}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-[15px] font-black text-app-text">{name}</p>
               <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getMyPayments, type MyPaymentRow } from '../api/payment';
+import { isAdminReviewPending } from '../utils/paymentPending';
 import { useAuth } from './AuthContext';
 
 type PaymentStatusContextType = {
@@ -39,7 +40,9 @@ export function PaymentStatusProvider({ children }: { children: React.ReactNode 
   }, [refreshPayments]);
 
   const pendingPayment = useMemo(
-    () => payments.find((payment) => payment.status === 'pending') ?? null,
+    () =>
+      payments.find((payment) => payment.status === 'pending' && isAdminReviewPending(payment)) ??
+      null,
     [payments]
   );
   const hasPendingPayment = !!pendingPayment;

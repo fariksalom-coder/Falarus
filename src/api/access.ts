@@ -12,6 +12,8 @@ export type AccessInfo = {
   vocabulary_free_subtopic_id?: string | null;
   /** OLTIN A'ZO: hech qanday qulf yo'q — na to'lov, na ketma-ketlik. */
   golden?: boolean;
+  /** Obuna qachon tugashi (ISO). Muddat banneri shu asosda ko'rsatiladi. */
+  subscription_expires_at?: string | null;
 };
 
 function authHeaders(token: string | null): HeadersInit {

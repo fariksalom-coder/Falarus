@@ -1,4 +1,7 @@
 import 'dotenv/config';
+import { checkOperatorAccess } from './server/operator/freeze.js';
+import { serviceAuthorized } from './server/operator/routes.js';
+import { operatorResetRoutes } from './server/operator/passwordReset.js';
 
 // Suppress DEP0169 url.parse() deprecation from dependencies (e.g. multer/busboy)
 const origEmitWarning = process.emitWarning;
@@ -411,6 +414,7 @@ async function startServer() {
     if (!url.startsWith('/api/')) {
       return next();
     }
+    if (url.startsWith('/api/operator-bot/') && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress || '') && serviceAuthorized(req.headers.authorization)) return next();
     // Help chat long-polling can be frequent; avoid blocking message sends with global 429.
     if (url.startsWith('/api/help/') || url.startsWith('/api/admin/help/')) {
       return next();
@@ -483,6 +487,9 @@ async function startServer() {
   try {
     const { createAdminRoutes } = await import('./server/routes/adminRoutes');
     app.use('/api/admin', createAdminRoutes(supabase));
+    const { operatorBotRoutes } = await import('./server/operator/routes.js');
+    app.use('/api/operator-bot', operatorBotRoutes(supabase));
+    app.use('/api/operator-reset', operatorResetRoutes());
 
   /*
    * BRAUZERDAGI XATO MAYOG'I.
@@ -1070,7 +1077,7 @@ async function startServer() {
        * so'rov esa bu sabab bir millisekund ham kechikmasligi kerak.
        */
       belgilaKorinish(supabase, userId);
-      next();
+      void checkOperatorAccess(req, res, next);
     } catch (e) {
       res.status(401).json({ error: 'Yaroqsiz token' });
     }
@@ -1135,6 +1142,36 @@ async function startServer() {
       return res.json(result);
     } catch (e) {
       console.error('[cron/click-fiscal-retry]', e);
+      return res.status(500).json({ error: 'Cron failed' });
+    }
+  });
+
+  /*
+   * OBUNA MUDDATI ESLATMASI — kuniga bir marta tashqi cron chaqiradi.
+   *
+   * Nega `ENABLE_INTERNAL_CRON` emas: u bayroq avto-to'lovni ham yoqadi,
+   * bizga esa kartadan so'roqsiz pul yechish KERAK EMAS. Shu endpoint
+   * mustaqil ishlaydi va faqat eslatma yuboradi.
+   *
+   * `?quruq=1` — sinov rejimi: hech kimga yuborilmaydi, faqat kim eslatma
+   * olishi hisoblanadi. Birinchi ishga tushirishdan oldin shu bilan tekshiring.
+   */
+  app.all('/api/cron/obuna-eslatma', async (req: any, res: any) => {
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+    const secret = process.env.CRON_SECRET;
+    const auth = req.headers.authorization;
+    if (!secret || auth !== `Bearer ${secret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const { runObunaEslatmaCron } = await import('./server/services/obunaEslatma.service.ts');
+      const quruq = String(req.query?.quruq ?? '') === '1';
+      const result = await runObunaEslatmaCron({ quruq });
+      return res.json(result);
+    } catch (e) {
+      console.error('[cron/obuna-eslatma]', e);
       return res.status(500).json({ error: 'Cron failed' });
     }
   });
@@ -1689,8 +1726,10 @@ async function startServer() {
 
   app.get('/api/user/payments', authenticate, async (req: any, res) => {
     try {
+      // payment_channel — frontend tashlab ketilgan shlyuz checkoutini haqiqiy
+      // «tekshiruvdagi» chekdan ajrata olishi uchun kerak (PaymentStatusContext).
       const PAY_FULL =
-        'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at';
+        'id, tariff_type, product_code, currency, amount, payment_proof_url, created_at, status, approved_at, payment_channel';
       const { data: rows, error } = await supabase
         .from('payments')
         .select(PAY_FULL)
@@ -2714,6 +2753,31 @@ async function startServer() {
     }
   };
 
+  /*
+   * PAROLNI QO'LDA TIKLASH — support hisobi uchun.
+   *
+   * SMTP sozlanmagan, SMS provayderi ham yo'q: `forgot-password` 503
+   * qaytaradi. Shu sababli parolini unutgan odam telefon qiladi, support
+   * uni bu yerdan topib yangi parol yaratadi va og'zaki aytadi.
+   *
+   * Ruxsat: `supportOnly` — oltin hisob (`users.is_golden`). Admin uchun
+   * xuddi shu amal `/api/admin/parol-tiklash` da.
+   */
+  app.post('/api/support/parol-tiklash', authenticate, async (req: any, res) => {
+    try {
+      if (!(await supportOnly(req, res))) return;
+      const sorov = String(req.body?.sorov ?? '').trim();
+      if (!sorov) return res.status(400).json({ error: 'Telefon yoki email kiriting' });
+      const { qolParolTiklash } = await import('./server/services/qolParolTiklash.service.js');
+      const natija = await qolParolTiklash(supabase, sorov, `support:${req.userId}`);
+      if (natija.ok === false) return res.status(natija.status).json({ error: natija.error });
+      res.json(natija);
+    } catch (err) {
+      console.error('[POST /api/support/parol-tiklash]', (err as Error).message);
+      res.status(500).json({ error: 'Parol tiklanmadi' });
+    }
+  });
+
   app.get('/api/live-streams/manage', authenticate, async (req: any, res) => {
     try {
       if (!(await supportOnly(req, res))) return;
@@ -3072,22 +3136,26 @@ async function startServer() {
           return res.status(400).json({ error: "Ovoz juda qisqa. Mikrofonni bosib, gapirib bo'lgach to'xtating." });
         }
         /*
-         * Fayl nomi klient YOZGAN formatga qarab tanlanadi. Ilgari bu yerda
-         * har doim 'recording.webm' turardi — iPhone/Safari esa `audio/mp4`
-         * yozadi, natijada Whisper "Invalid file format" deb rad qilardi va
-         * ovozli javob umuman ishlamasdi.
+         * Format BAYTLARDAN aniqlanadi, brauzer aytgan `mime` ga emas.
+         *
+         * Whisper formatni fayl nomidagi kengaytma bo'yicha tanlaydi, `mime`
+         * esa har doim ham to'g'ri kelmaydi: Safari `audio/mp4` yozadi,
+         * ba'zi Android brauzerlari `mime` ni umuman yubormaydi. Nomuvofiqlik
+         * "Invalid file format" xatosiga olib kelardi va odam ovozli javobni
+         * umuman bera olmasdi.
          */
-        const rawMime = String(req.body.mime ?? '').split(';')[0].trim().toLowerCase();
-        const filename =
-          rawMime === 'audio/mp4' || rawMime === 'audio/m4a' || rawMime === 'audio/x-m4a'
-            ? 'recording.mp4'
-            : rawMime === 'audio/mpeg' || rawMime === 'audio/mp3'
-              ? 'recording.mp3'
-              : rawMime === 'audio/wav' || rawMime === 'audio/x-wav'
-                ? 'recording.wav'
-                : rawMime === 'audio/ogg' || rawMime === 'audio/oga'
-                  ? 'recording.ogg'
-                  : 'recording.webm';
+        const { ovozFormati } = await import('./shared/audioFormat.js');
+        const format = ovozFormati(buffer, String(req.body.mime ?? ''));
+        if (!format.ok) {
+          // Bu foydalanuvchi xatosi, server nosozligi emas — 400.
+          return res.status(400).json({
+            error:
+              format.sabab === 'qollanmaydi'
+                ? `Bu qurilma ovozni ${format.nomi} formatida yozdi — u qo'llab-quvvatlanmaydi. Boshqa brauzerda urinib ko'ring.`
+                : "Ovoz formati tanilmadi. Qaytadan yozib ko'ring.",
+          });
+        }
+        const filename = `recording.${format.kengaytma ?? 'webm'}`;
         const { transcribeAudio } = await import('./server/lib/openai.js');
         const text = await transcribeAudio(buffer, filename);
         return res.json({ text });
@@ -3109,8 +3177,19 @@ async function startServer() {
       console.error('[speaking]', e);
       const { openAIUserFacingError, isOpenAIQuotaError } = await import('./server/lib/openai.js');
       const message = openAIUserFacingError(e);
-      const status = isOpenAIQuotaError(e) ? 503 : 500;
-      return res.status(status).json({ error: message });
+      /*
+       * "Invalid file format" — foydalanuvchi qurilmasi yozgan ovoz aybdor,
+       * server sog'-salomat. Ilgari bu 500 bo'lib, kuzatuvni bekorga
+       * qo'zg'atardi va grafikda "server ishlamayapti" bo'lib ko'rinardi.
+       */
+      const xomXato = e instanceof Error ? e.message : String(e);
+      const formatXatosi = /invalid file format|could not be decoded/i.test(xomXato);
+      const status = isOpenAIQuotaError(e) ? 503 : formatXatosi ? 400 : 500;
+      return res.status(status).json({
+        error: formatXatosi
+          ? "Ovozni o'qib bo'lmadi. Yana bir marta yozib ko'ring."
+          : message,
+      });
     }
   });
 
@@ -3133,7 +3212,15 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static('dist'));
+    app.use(express.static('dist', {
+      setHeaders(res, filePath) {
+        if (filePath.endsWith('/sw.js') || filePath.endsWith('/index.html')) {
+          res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    }));
     app.get('*', (req, res) => {
       const p = String(req.path || '');
       if (p.startsWith('/api/')) {
@@ -3239,7 +3326,8 @@ async function startServer() {
   }
 
   const port = Number(process.env.PORT) || 3000;
-  const httpServer = app.listen(port, '0.0.0.0', () => {
+  const host = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0.0.1' : '0.0.0.0');
+  const httpServer = app.listen(port, host, () => {
     console.log('Server running on http://localhost:' + port);
   });
 
@@ -3251,6 +3339,7 @@ async function startServer() {
 
 startServer().catch((err) => {
   console.error('Failed to start server:', err);
+  process.exit(1);
 });
 
 process.on('uncaughtException', (err) => {

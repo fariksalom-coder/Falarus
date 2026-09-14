@@ -1,0 +1,80 @@
+{
+  "results": [
+    {
+      "route": "/games/word-swipe/1/1",
+      "width": 375,
+      "scene": "game-letters",
+      "background": "url(\"http://127.0.0.1:5175/backgrounds/game-letters.svg\"), radial-gradient(at 85% 15%, rgb(72, 56, 155), rgba(0, 0, 0, 0) 65%), linear-gradient(155deg, rgb(25, 40, 94), rgb(37, 38, 95) 65%, rgb(23, 59, 87))",
+      "overflow": false,
+      "crash": false,
+      "pass": true
+    },
+    {
+      "route": "/games/soz-savati",
+      "width": 375,
+      "scene": "game-basket",
+      "background": "url(\"http://127.0.0.1:5175/backgrounds/game-basket.svg\"), radial-gradient(at 90% 10%, rgba(51, 158, 185, 0.18), rgba(0, 0, 0, 0) 65%)",
+      "overflow": false,
+      "crash": false,
+      "pass": true
+    },
+    {
+      "test": "playing",
+      "scene": "game-basket",
+      "overflow": false,
+      "arena": true,
+      "input": false,
+      "buttons": 1,
+      "background": "url(\"http://127.0.0.1:5175/backgrounds/game-basket.svg\"), radial-gradient(at 90% 10%, rgba(51, 158, 185, 0.18), rgba(0, 0, 0, 0) 65%)",
+      "pass": true
+    },
+    {
+      "route": "/games/soz-zanjiri",
+      "width": 375,
+      "scene": "game-chain",
+      "background": "url(\"http://127.0.0.1:5175/backgrounds/game-chain.svg\"), radial-gradient(at 90% 10%, rgba(135, 90, 217, 0.2), rgba(0, 0, 0, 0) 65%)",
+      "overflow": false,
+      "crash": false,
+      "pass": true
+    },
+    {
+      "test": "playing",
+      "scene": "game-chain",
+      "overflow": false,
+      "arena": false,
+      "input": true,
+      "buttons": 1,
+      "background": "url(\"http://127.0.0.1:5175/backgrounds/game-chain.svg\"), radial-gradient(at 90% 10%, rgba(135, 90, 217, 0.2), rgba(0, 0, 0, 0) 65%)",
+      "pass": true
+    },
+    {
+      "route": "/games/fel-ustasi",
+      "width": 375,
+      "scene": "game-verbs",
+      "background": "url(\"http://127.0.0.1:5175/backgrounds/game-verbs.svg\"), radial-gradient(at 90% 10%, rgba(71, 125, 220, 0.22), rgba(0, 0, 0, 0) 65%)",
+      "overflow": false,
+      "crash": false,
+      "pass": true
+    },
+    {
+      "test": "playing",
+      "scene": "game-verbs",
+      "overflow": false,
+      "arena": false,
+      "input": false,
+      "buttons": 4,
+      "background": "url(\"http://127.0.0.1:5175/backgrounds/game-verbs.svg\"), radial-gradient(at 90% 10%, rgba(71, 125, 220, 0.22), rgba(0, 0, 0, 0) 65%)",
+      "pass": true
+    },
+    {
+      "route": "/games/word-swipe/xarita",
+      "width": 375,
+      "scene": "game-letters",
+      "background": "url(\"http://127.0.0.1:5175/backgrounds/game-letters.svg\"), radial-gradient(at 85% 15%, rgb(72, 56, 155), rgba(0, 0, 0, 0) 65%), linear-gradient(155deg, rgb(25, 40, 94), rgb(37, 38, 95) 65%, rgb(23, 59, 87))",
+      "overflow": false,
+      "crash": false,
+      "pass": true
+    }
+  ],
+  "errors": []
+}

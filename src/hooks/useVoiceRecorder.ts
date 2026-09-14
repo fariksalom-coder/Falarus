@@ -1,6 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
-
-const MAX_DURATION_MS = 15_000;
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 export type VoiceRecorderState = {
   isRecording: boolean;
@@ -13,155 +11,120 @@ export type VoiceRecorderState = {
   reset: () => void;
 };
 
-export function useVoiceRecorder(): VoiceRecorderState {
+type Session = {
+  recorder: MediaRecorder | null;
+  stream: MediaStream | null;
+  context: AudioContext | null;
+  timers: ReturnType<typeof setTimeout>[];
+  cancelled: boolean;
+};
+
+export function useVoiceRecorder(maxDurationMs = 15_000): VoiceRecorderState {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
+  const sessionRef = useRef<Session | null>(null);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAtRef = useRef(0);
-  const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const rafRef = useRef<number | null>(null);
-
-  const stopMeters = useCallback(() => {
-    if (rafRef.current != null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    if (elapsedTimerRef.current) {
-      clearInterval(elapsedTimerRef.current);
-      elapsedTimerRef.current = null;
-    }
-    if (audioContextRef.current) {
-      void audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    analyserRef.current = null;
-    setAudioLevel(0);
+  const release = useCallback((session: Session) => {
+    session.timers.forEach(clearTimeout);
+    session.timers = [];
+    session.stream?.getTracks().forEach(t => t.stop());
+    session.stream = null;
+    void session.context?.close().catch(() => {});
+    session.context = null;
   }, []);
 
-  const stopStream = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+  const cancel = useCallback(() => {
+    const session = sessionRef.current;
+    sessionRef.current = null;
+    if (!session) return;
+    session.cancelled = true;
+    if (session.recorder?.state !== 'inactive') {
+      try { session.recorder?.stop(); } catch { /* already stopped */ }
     }
-  }, []);
+    release(session);
+  }, [release]);
+
+  useEffect(() => cancel, [cancel]);
 
   const stopRecording = useCallback(() => {
-    if (maxTimerRef.current) {
-      clearTimeout(maxTimerRef.current);
-      maxTimerRef.current = null;
-    }
-    const mr = mediaRecorderRef.current;
-    if (mr && mr.state !== 'inactive') {
-      mr.stop();
-    } else {
-      stopStream();
-    }
-    setIsRecording(false);
-    stopMeters();
-  }, [stopMeters, stopStream]);
+    const session = sessionRef.current;
+    if (!session) return;
+    if (!session.recorder) { cancel(); setIsRecording(false); return; }
+    session.timers.forEach(clearTimeout);
+    session.timers = [];
+    // Keep this session owned until its final dataavailable + stop events arrive.
+    if (session.recorder.state !== 'inactive') session.recorder.stop();
+    setAudioLevel(0);
+  }, [cancel]);
 
   const startRecording = useCallback(async () => {
-    setError(null);
-    setAudioBlob(null);
-    setElapsedSeconds(0);
-    chunksRef.current = [];
-
+    if (sessionRef.current) return;
+    const session: Session = { recorder: null, stream: null, context: null, timers: [], cancelled: false };
+    sessionRef.current = session;
+    setError(null); setAudioBlob(null); setElapsedSeconds(0); setAudioLevel(0);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : 'audio/mp4';
-
-      const mr = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mr;
-
-      mr.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: {
+        echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1,
+      } });
+      session.stream = stream;
+      if (session.cancelled) { release(session); return; }
+      const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+        .find(type => MediaRecorder.isTypeSupported(type));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      session.recorder = recorder;
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = e => { if (!session.cancelled && e.data.size) chunks.push(e.data); };
+      recorder.onstop = () => {
+        release(session);
+        if (sessionRef.current !== session || session.cancelled) return;
+        sessionRef.current = null;
+        setIsRecording(false); setAudioLevel(0);
+        const blob = new Blob(chunks, { type: recorder.mimeType || mimeType || chunks[0]?.type });
+        if (blob.size) setAudioBlob(blob);
+        else setError("Ovoz yozilmadi. Qayta urinib ko'ring.");
       };
-
-      mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        setAudioBlob(blob);
-        stopStream();
+      recorder.onerror = () => {
+        if (sessionRef.current !== session) return;
+        cancel(); setIsRecording(false); setAudioLevel(0); setError("Ovoz yozib bo'lmadi");
       };
-
-      mr.onerror = () => {
-        setError("Ovoz yozib bo'lmadi");
-        setIsRecording(false);
-        stopMeters();
-        stopStream();
-      };
-
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
-
-      const sampleData = new Uint8Array(analyser.frequencyBinCount);
-      const updateLevel = () => {
-        const currentAnalyser = analyserRef.current;
-        if (!currentAnalyser) return;
-        currentAnalyser.getByteTimeDomainData(sampleData);
-        let sumSq = 0;
-        for (let i = 0; i < sampleData.length; i++) {
-          const normalized = (sampleData[i] - 128) / 128;
-          sumSq += normalized * normalized;
-        }
-        const rms = Math.sqrt(sumSq / sampleData.length);
-        setAudioLevel(Math.min(1, rms * 6));
-        rafRef.current = requestAnimationFrame(updateLevel);
-      };
-      updateLevel();
-
-      mr.start();
+      recorder.start(1000);
       setIsRecording(true);
-      startedAtRef.current = Date.now();
-
-      elapsedTimerRef.current = setInterval(() => {
-        setElapsedSeconds(Math.min(15, Math.floor((Date.now() - startedAtRef.current) / 1000)));
-      }, 200);
-
-      maxTimerRef.current = setTimeout(() => stopRecording(), MAX_DURATION_MS);
-    } catch {
-      setError("Mikrofonga ruxsat berilmadi");
-      stopMeters();
-      stopStream();
+      const startedAt = Date.now();
+      session.timers.push(setInterval(() => setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000)), 500));
+      session.timers.push(setTimeout(stopRecording, maxDurationMs));
+      // A meter is optional; its failure must never discard a valid recording.
+      try {
+        const context = new AudioContext();
+        session.context = context;
+        void context.resume().catch(() => {});
+        const source = context.createMediaStreamSource(stream);
+        const analyser = context.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.fftSize);
+        session.timers.push(setInterval(() => {
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (const value of data) sum += ((value - 128) / 128) ** 2;
+          setAudioLevel(Math.min(1, Math.sqrt(sum / data.length) * 6));
+        }, 100));
+      } catch { /* microphone recording continues without a meter */ }
+    } catch (err) {
+      release(session);
+      if (sessionRef.current !== session || session.cancelled) return;
+      sessionRef.current = null;
+      setIsRecording(false);
+      setError(err instanceof DOMException && err.name === 'NotAllowedError'
+        ? "Mikrofonga ruxsat berilmadi" : "Mikrofonni ochib bo'lmadi. Qayta urinib ko'ring.");
     }
-  }, [stopMeters, stopRecording, stopStream]);
+  }, [cancel, maxDurationMs, release, stopRecording]);
 
   const reset = useCallback(() => {
-    stopRecording();
-    setAudioBlob(null);
-    setError(null);
-    setElapsedSeconds(0);
-    setAudioLevel(0);
-    chunksRef.current = [];
-  }, [stopRecording]);
+    cancel(); setIsRecording(false); setAudioBlob(null); setError(null); setElapsedSeconds(0); setAudioLevel(0);
+  }, [cancel]);
 
-  return {
-    isRecording,
-    audioBlob,
-    error,
-    elapsedSeconds,
-    audioLevel,
-    startRecording,
-    stopRecording,
-    reset,
-  };
+  return { isRecording, audioBlob, error, elapsedSeconds, audioLevel, startRecording, stopRecording, reset };
 }

@@ -10,9 +10,9 @@ export function OrDivider({ label }: Props) {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="h-[1.5px] flex-1 bg-[#EAF0FE]" />
-      <span className="text-xs font-black uppercase tracking-[0.06em] text-[#A7B1C6]">{text}</span>
-      <div className="h-[1.5px] flex-1 bg-[#EAF0FE]" />
+      <div className="h-[1.5px] flex-1 bg-app-border" />
+      <span className="text-xs font-black uppercase tracking-[0.06em] text-app-text-muted">{text}</span>
+      <div className="h-[1.5px] flex-1 bg-app-border" />
     </div>
   );
 }

@@ -43,7 +43,7 @@ const STATUS_TONES: Record<string, string> = {
   pending_review: 'bg-blue-100 text-blue-700',
   rejected: 'bg-red-100 text-red-700',
   paused: 'bg-amber-100 text-amber-700',
-  draft: 'bg-slate-200 text-slate-700',
+  draft: 'bg-slate-200 text-app-text',
 };
 
 /** Tahrir oynasidagi maydonlar. `kind` — qanday jo'natilishi. */
@@ -212,13 +212,13 @@ export default function AdminTeachersPage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">O'qituvchilar</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold text-app-text">O'qituvchilar</h1>
+          <p className="text-sm text-app-text-muted">
             Ro'yxatdan o'tgan hamma o'qituvchi — anketa to'ldirilgan yoki yo'q.
           </p>
         </div>
         <div className="flex gap-2">
-          <div className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-xl bg-app-surface px-4 py-3 text-sm font-semibold text-app-text shadow-sm ring-1 ring-slate-200">
             Jami: {rows.length}
           </div>
           {anketasiz > 0 ? (
@@ -239,7 +239,7 @@ export default function AdminTeachersPage() {
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <label className="flex min-w-[280px] flex-1 items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-slate-200">
+        <label className="flex min-w-[280px] flex-1 items-center gap-2 rounded-xl bg-app-surface px-3 py-2 shadow-sm ring-1 ring-slate-200">
           <Search className="h-4 w-4 text-slate-400" />
           <input
             value={q}
@@ -248,7 +248,7 @@ export default function AdminTeachersPage() {
             className="w-full bg-transparent text-sm outline-none"
           />
         </label>
-        <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200">
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-app-surface px-3 py-2.5 text-sm font-semibold text-app-text shadow-sm ring-1 ring-slate-200">
           <input
             type="checkbox"
             checked={onlyIncomplete}
@@ -259,10 +259,10 @@ export default function AdminTeachersPage() {
         </label>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-hidden rounded-2xl bg-app-surface shadow-sm ring-1 ring-slate-200">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-bold uppercase text-slate-500">
+            <thead className="bg-app-bg-muted text-left text-xs font-bold uppercase text-app-text-muted">
               <tr>
                 <th className="px-4 py-3">O'qituvchi</th>
                 <th className="px-4 py-3">Holat</th>
@@ -274,9 +274,9 @@ export default function AdminTeachersPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={6}>Yuklanmoqda...</td></tr>
+                <tr><td className="px-4 py-8 text-center text-app-text-muted" colSpan={6}>Yuklanmoqda...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td className="px-4 py-8 text-center text-slate-500" colSpan={6}>Ma'lumot yo'q.</td></tr>
+                <tr><td className="px-4 py-8 text-center text-app-text-muted" colSpan={6}>Ma'lumot yo'q.</td></tr>
               ) : (
                 filtered.map((row) => {
                   const ism =
@@ -285,24 +285,24 @@ export default function AdminTeachersPage() {
                     'Ismsiz';
                   const status = row.profile_status ?? 'draft';
                   return (
-                    <tr key={row.user_id} className={`hover:bg-slate-50/70 ${row.has_profile ? '' : 'bg-amber-50/40'}`}>
+                    <tr key={row.user_id} className={`hover:bg-app-bg-muted/70 ${row.has_profile ? '' : 'bg-amber-50/40'}`}>
                       <td className="px-4 py-3">
-                        <div className="font-semibold text-slate-900">{ism}</div>
-                        <div className="text-xs text-slate-500">
+                        <div className="font-semibold text-app-text">{ism}</div>
+                        <div className="text-xs text-app-text-muted">
                           ID: {row.user_id}
                           {row.age ? ` · ${row.age} yosh` : ''}
                           {row.registered_at ? ` · ${fmtDate(row.registered_at)}` : ''}
                         </div>
                         {row.headline ? (
-                          <div className="mt-1 max-w-xs truncate text-xs text-slate-500">{row.headline}</div>
+                          <div className="mt-1 max-w-xs truncate text-xs text-app-text-muted">{row.headline}</div>
                         ) : null}
-                        <div className="mt-1 text-xs text-slate-500">
+                        <div className="mt-1 text-xs text-app-text-muted">
                           {[row.region, row.city].filter(Boolean).join(', ') || 'Joylashuv kiritilmagan'}
                         </div>
                       </td>
 
                       <td className="px-4 py-3">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_TONES[status] ?? 'bg-slate-200 text-slate-700'}`}>
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_TONES[status] ?? 'bg-slate-200 text-app-text'}`}>
                           {STATUS_LABELS[status] ?? status}
                         </span>
                         {!row.has_profile ? (
@@ -312,9 +312,9 @@ export default function AdminTeachersPage() {
                         ) : null}
                       </td>
 
-                      <td className="px-4 py-3 text-slate-700">
+                      <td className="px-4 py-3 text-app-text">
                         {/* Ro'yxatdan o'tgan raqam — har doim bor, admin shu bilan bog'lanadi. */}
-                        <div className="flex items-center gap-1.5 font-semibold text-slate-900">
+                        <div className="flex items-center gap-1.5 font-semibold text-app-text">
                           <Phone className="h-3.5 w-3.5 text-slate-400" />
                           {row.account_phone ? (
                             <a href={`tel:${row.account_phone}`} className="hover:text-blue-700">{row.account_phone}</a>
@@ -322,12 +322,12 @@ export default function AdminTeachersPage() {
                             <span className="text-slate-400">raqam yo'q</span>
                           )}
                         </div>
-                        {row.account_email ? <div className="text-xs text-slate-500">{row.account_email}</div> : null}
+                        {row.account_email ? <div className="text-xs text-app-text-muted">{row.account_email}</div> : null}
                         {row.public_phone_e164 && row.public_phone_e164 !== row.account_phone ? (
-                          <div className="mt-1 text-xs text-slate-500">Anketada: {row.public_phone_e164}</div>
+                          <div className="mt-1 text-xs text-app-text-muted">Anketada: {row.public_phone_e164}</div>
                         ) : null}
                         {row.telegram_username ? (
-                          <div className="text-xs text-slate-500">{row.telegram_username}</div>
+                          <div className="text-xs text-app-text-muted">{row.telegram_username}</div>
                         ) : null}
                         {row.telegram_url ? (
                           <a className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-700" href={row.telegram_url} target="_blank" rel="noreferrer">
@@ -336,9 +336,9 @@ export default function AdminTeachersPage() {
                         ) : null}
                       </td>
 
-                      <td className="px-4 py-3 text-slate-700">
+                      <td className="px-4 py-3 text-app-text">
                         <div>{row.experience_years ?? 0} yil {row.experience_months ?? 0} oy</div>
-                        <div className="font-semibold text-slate-900">
+                        <div className="font-semibold text-app-text">
                           {Number(row.monthly_course_price_amount || 0).toLocaleString('ru-RU')}{' '}
                           {row.monthly_course_price_currency ?? ''}
                         </div>
@@ -396,7 +396,7 @@ export default function AdminTeachersPage() {
                             className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-50 ${
                               row.is_recommended
                                 ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                : 'bg-app-bg-subtle text-app-text hover:bg-slate-200'
                             }`}
                           >
                             <BadgeCheck className="h-3.5 w-3.5" />
@@ -416,13 +416,13 @@ export default function AdminTeachersPage() {
       {/* Tahrir oynasi — admin anketani o'zi to'ldiradi yoki tuzatadi. */}
       {editing ? (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4">
-          <div className="my-8 w-full max-w-3xl rounded-2xl bg-white shadow-xl">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
+          <div className="my-8 w-full max-w-3xl rounded-2xl bg-app-surface shadow-xl">
+            <div className="flex items-start justify-between gap-4 border-b border-app-border px-6 py-4">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">
+                <h2 className="text-lg font-semibold text-app-text">
                   Anketani {editing.has_profile ? 'tahrirlash' : "to'ldirish"}
                 </h2>
-                <p className="mt-0.5 text-sm text-slate-500">
+                <p className="mt-0.5 text-sm text-app-text-muted">
                   ID {editing.user_id}
                   {editing.account_phone ? ` · ${editing.account_phone}` : ''}
                 </p>
@@ -430,7 +430,7 @@ export default function AdminTeachersPage() {
               <button
                 type="button"
                 onClick={() => setEditing(null)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-app-bg-subtle hover:text-app-text"
                 aria-label="Yopish"
               >
                 <X className="h-5 w-5" />
@@ -440,7 +440,7 @@ export default function AdminTeachersPage() {
             <div className="grid gap-4 px-6 py-5 sm:grid-cols-2">
               {FIELDS.map((f) => (
                 <label key={f.key} className={f.kind === 'area' ? 'sm:col-span-2' : ''}>
-                  <span className="block text-xs font-bold uppercase tracking-wide text-slate-500">
+                  <span className="block text-xs font-bold uppercase tracking-wide text-app-text-muted">
                     {f.label}
                     {f.hint ? <span className="ml-1 font-medium normal-case text-slate-400">({f.hint})</span> : null}
                   </span>
@@ -463,15 +463,15 @@ export default function AdminTeachersPage() {
               ))}
             </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-6 py-4">
-              <p className="text-xs text-slate-500">
+            <div className="flex items-center justify-between gap-3 border-t border-app-border px-6 py-4">
+              <p className="text-xs text-app-text-muted">
                 Faqat o'zgartirilgan maydonlar saqlanadi. Status va to'lov muddati bu yerdan o'zgarmaydi.
               </p>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setEditing(null)}
-                  className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200"
+                  className="rounded-lg bg-app-bg-subtle px-4 py-2 text-sm font-bold text-app-text hover:bg-slate-200"
                 >
                   Bekor qilish
                 </button>

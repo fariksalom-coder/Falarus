@@ -12,6 +12,12 @@ coverage/
 .env*
 !.env.example
 !.env.production
+.dist-build.*
+dist.rollback/
+.deploy-build.lock
+.server-backups/
+__pycache__/
+*.pyc
 *.db
 
 # Тяжёлые материалы курсов (~2+ ГБ) — не в GitHub; заливайте на хостинг/CDN или в Supabase Storage.
@@ -36,3 +42,8 @@ public/courses/vnzh
 
 # Lokal PGlite baza katalogi (dev) — hech qachon repoga tushmasin
 tmp/
+
+/dist-design/
+
+# Design QA screenshots (large; keep MD/JSON only in git)
+docs/design/*.png

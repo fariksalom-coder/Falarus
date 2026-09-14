@@ -5,8 +5,8 @@
  * Autentifikatsiya — sozlamaga qarab avtomatik tanlanadi:
  *
  *   1. AI Studio (default) — GEMINI_API_KEY → generativelanguage.googleapis.com,
- *      `x-goog-api-key` header. Ham doimiy "AIza..." kalitlari, ham vaqtinchalik
- *      "AQ..." tokenlari shu yerda ishlaydi.
+ *      `x-goog-api-key` header. Standard va authorization kalitlari ishlaydi;
+ *      kalitning muddati yoki yaroqliligi prefiksdan aniqlanmaydi.
  *
  *   2. Vertex AI — GOOGLE_APPLICATION_CREDENTIALS=/path/sa.json + GEMINI_PROJECT_ID.
  *      OAuth token google-auth-library orqali olinadi va AVTOMATIK yangilanadi.
@@ -61,8 +61,7 @@ function resolveAuthMode(): AuthMode {
     ''
   ).trim();
 
-  // AI Studio endpointi "AIza..." kalitlarini ham, "AQ..." tokenlarini ham
-  // `x-goog-api-key` sifatida qabul qiladi — ikkalasi uchun bitta yo'l.
+  // Standard va authorization kalitlari uchun bir xil x-goog-api-key header.
   if (apiKey) return { kind: 'api-key', apiKey };
 
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -81,7 +80,7 @@ function resolveAuthMode(): AuthMode {
 }
 
 /**
- * Vaqtinchalik "AQ..." tokenlari muddati tugaganda Google 401/403 qaytaradi.
+ * Google kalitni yaroqsiz yoki muddati tugagan deb rad etganda 401/403 qaytaradi.
  * Shu holatni aniq xabar bilan ajratamiz, aks holda "AI ishlamayapti" deb qolinadi.
  */
 function isExpiredCredential(status: number | undefined, message: string): boolean {
@@ -134,12 +133,18 @@ async function buildRequest(model: string): Promise<{ url: string; headers: Reco
 // So'rov yuborish (timeout + retry)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function isRetryable(err: unknown): boolean {
-  const e = err as { status?: number; code?: string; name?: string };
+export function isRetryableGeminiError(err: unknown, depth = 0): boolean {
+  if (!err || depth > 4) return false;
+  const e = err as { status?: number; code?: string; name?: string; cause?: unknown; errors?: unknown[] };
+  if (e.code === 'AI_CREDITS_DEPLETED' || e.code === 'AI_CREDENTIAL_EXPIRED') return false;
   if (e?.name === 'AbortError') return true;
-  if (e?.code === 'ETIMEDOUT' || e?.code === 'ECONNRESET' || e?.code === 'ECONNREFUSED') return true;
+  if (['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN',
+    'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT', 'UND_ERR_SOCKET'].includes(e.code ?? '')) return true;
   const s = e?.status;
-  return typeof s === 'number' && (s === 408 || s === 429 || s >= 500);
+  if (typeof s === 'number') return s === 408 || s === 429 || s >= 500;
+  // Node fetch wraps transport failures in TypeError.cause / AggregateError.
+  if (isRetryableGeminiError(e.cause, depth + 1)) return true;
+  return Array.isArray(e.errors) && e.errors.some((cause) => isRetryableGeminiError(cause, depth + 1));
 }
 
 export type GeminiTurn = { role: 'user' | 'model'; text: string };
@@ -310,7 +315,7 @@ async function withRetry<T>(
       ) {
         throw err;
       }
-      if (attempt < maxRetries && isRetryable(err)) {
+      if (attempt < maxRetries && isRetryableGeminiError(err)) {
         // 503 (band) uchun uzunroq kutamiz — darhol urinish yana 503 beradi.
         const status = (err as GeminiError)?.status;
         const base = status === 503 || status === 429 ? 1200 : 250;

@@ -27,8 +27,18 @@ import { pool } from '../lib/db.js';
  * v7 (2026-08-14) — dars prompti SLAYD tuzilishiga o'tdi: 8-12 bosqich,
  * ayrilish/tenglama/nishonlar maketlari va ikonkalar. Eski keshdagi darslar
  * bu maketlarsiz edi, ya'ni yangi doskada yarim bo'sh ko'rinardi.
+ *
+ * v8 (2026-08-30) — promptga KELISHIK BOSHQARUVI qoidalari qo'shildi va
+ * kelishik ziddiyatini ushlaydigan tekshiruv paydo bo'ldi. Eski keshda
+ * xato darslar bor edi (masalan "нет паспорта" haqida "tushum kelishigi"
+ * deb yozilgani), ular shu versiya bilan o'z-o'zidan chetlab o'tiladi.
+ *
+ * v9 (2026-08-30) — dars endi MAVZUNI E'LON QILIB boshlanadi (QISM 4).
+ * Keshdagi darslar eski tuzilishda edi: birinchi slayd to'g'ridan-to'g'ri
+ * hayotiy vaziyatdan boshlanardi va o'quvchi nima o'rganayotganini
+ * bilmasdi.
  */
-const KESH_VERSIYA = 'v7';
+const KESH_VERSIYA = 'v9';
 
 /** Shu muddatdan eski javoblar ishlatilmaydi (kun). */
 const YAROQLILIK_KUN = Number(process.env.USTOZ_KESH_KUN || 30);

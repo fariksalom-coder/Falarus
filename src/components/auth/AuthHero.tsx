@@ -14,15 +14,15 @@ export function AuthHero({ title, subtitle, icon, onBack }: Props) {
     <div
       className="relative mb-5 -mx-4 sm:-mx-5"
       style={{
-        background: 'linear-gradient(165deg, #4C86FF 0%, #2F6BFF 100%)',
+        background: 'var(--app-brand-gradient)',
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
-        boxShadow: '0 20px 44px -16px rgba(47,107,255,0.4)',
+        boxShadow: 'var(--app-shadow-soft)',
       }}
     >
       <div className="relative overflow-hidden px-6 pb-4 pt-2.5">
         <div
-          className="pointer-events-none absolute -right-8 -top-8 h-[130px] w-[130px] rounded-full bg-white/12"
+          className="pointer-events-none absolute -right-8 -top-8 h-[130px] w-[130px] rounded-full bg-app-surface/12"
           aria-hidden
         />
         {onBack ? (

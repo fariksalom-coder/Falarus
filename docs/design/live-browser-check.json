@@ -1,0 +1,444 @@
+{
+  "results": [
+    {
+      "width": 375,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/kurslar",
+      "overflow": false,
+      "heading": "Kurslar",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/statistika",
+      "overflow": false,
+      "heading": "Statistika",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/tariflar",
+      "overflow": false,
+      "heading": "Tariflar",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/login",
+      "overflow": false,
+      "heading": "Kirish",
+      "crash": false
+    },
+    {
+      "width": 375,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/kurslar",
+      "overflow": false,
+      "heading": "Kurslar",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/statistika",
+      "overflow": false,
+      "heading": "Statistika",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/tariflar",
+      "overflow": false,
+      "heading": "Tariflar",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/login",
+      "overflow": false,
+      "heading": "Kirish",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/kurslar",
+      "overflow": false,
+      "heading": "Kurslar",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/statistika",
+      "overflow": false,
+      "heading": "Statistika",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/tariflar",
+      "overflow": false,
+      "heading": "Tariflar",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/login",
+      "overflow": false,
+      "heading": "Kirish",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    }
+  ],
+  "errors": [
+    {
+      "exceptionId": 1,
+      "text": "Uncaught (in promise)",
+      "lineNumber": 26,
+      "columnNumber": 34,
+      "scriptId": "251",
+      "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+      "stackTrace": {
+        "callFrames": [
+          {
+            "functionName": "script.onerror",
+            "scriptId": "251",
+            "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+            "lineNumber": 26,
+            "columnNumber": 34
+          }
+        ]
+      },
+      "exception": {
+        "type": "object",
+        "subtype": "error",
+        "className": "Error",
+        "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+        "objectId": "4829678303979573455.8.2",
+        "preview": {
+          "type": "object",
+          "subtype": "error",
+          "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+          "overflow": false,
+          "properties": [
+            {
+              "name": "stack",
+              "type": "string",
+              "value": "Error: Google SDK yuklanmadi\n    at script.onerror…27.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "value": "Google SDK yuklanmadi"
+            }
+          ]
+        }
+      },
+      "executionContextId": 8
+    },
+    {
+      "exceptionId": 2,
+      "text": "Uncaught (in promise)",
+      "lineNumber": 26,
+      "columnNumber": 34,
+      "scriptId": "251",
+      "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+      "stackTrace": {
+        "callFrames": [
+          {
+            "functionName": "script.onerror",
+            "scriptId": "251",
+            "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+            "lineNumber": 26,
+            "columnNumber": 34
+          }
+        ]
+      },
+      "exception": {
+        "type": "object",
+        "subtype": "error",
+        "className": "Error",
+        "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+        "objectId": "4829678303979573455.8.3",
+        "preview": {
+          "type": "object",
+          "subtype": "error",
+          "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+          "overflow": false,
+          "properties": [
+            {
+              "name": "stack",
+              "type": "string",
+              "value": "Error: Google SDK yuklanmadi\n    at script.onerror…27.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "value": "Google SDK yuklanmadi"
+            }
+          ]
+        }
+      },
+      "executionContextId": 8
+    },
+    {
+      "exceptionId": 3,
+      "text": "Uncaught (in promise)",
+      "lineNumber": 26,
+      "columnNumber": 34,
+      "scriptId": "251",
+      "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+      "stackTrace": {
+        "callFrames": [
+          {
+            "functionName": "script.onerror",
+            "scriptId": "251",
+            "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+            "lineNumber": 26,
+            "columnNumber": 34
+          }
+        ]
+      },
+      "exception": {
+        "type": "object",
+        "subtype": "error",
+        "className": "Error",
+        "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+        "objectId": "4829678303979573455.16.2",
+        "preview": {
+          "type": "object",
+          "subtype": "error",
+          "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+          "overflow": false,
+          "properties": [
+            {
+              "name": "stack",
+              "type": "string",
+              "value": "Error: Google SDK yuklanmadi\n    at script.onerror…27.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "value": "Google SDK yuklanmadi"
+            }
+          ]
+        }
+      },
+      "executionContextId": 16
+    },
+    {
+      "exceptionId": 4,
+      "text": "Uncaught (in promise)",
+      "lineNumber": 26,
+      "columnNumber": 34,
+      "scriptId": "251",
+      "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+      "stackTrace": {
+        "callFrames": [
+          {
+            "functionName": "script.onerror",
+            "scriptId": "251",
+            "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+            "lineNumber": 26,
+            "columnNumber": 34
+          }
+        ]
+      },
+      "exception": {
+        "type": "object",
+        "subtype": "error",
+        "className": "Error",
+        "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+        "objectId": "4829678303979573455.16.3",
+        "preview": {
+          "type": "object",
+          "subtype": "error",
+          "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+          "overflow": false,
+          "properties": [
+            {
+              "name": "stack",
+              "type": "string",
+              "value": "Error: Google SDK yuklanmadi\n    at script.onerror…27.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "value": "Google SDK yuklanmadi"
+            }
+          ]
+        }
+      },
+      "executionContextId": 16
+    },
+    {
+      "exceptionId": 5,
+      "text": "Uncaught (in promise)",
+      "lineNumber": 26,
+      "columnNumber": 34,
+      "scriptId": "251",
+      "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+      "stackTrace": {
+        "callFrames": [
+          {
+            "functionName": "script.onerror",
+            "scriptId": "251",
+            "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+            "lineNumber": 26,
+            "columnNumber": 34
+          }
+        ]
+      },
+      "exception": {
+        "type": "object",
+        "subtype": "error",
+        "className": "Error",
+        "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+        "objectId": "4829678303979573455.24.2",
+        "preview": {
+          "type": "object",
+          "subtype": "error",
+          "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+          "overflow": false,
+          "properties": [
+            {
+              "name": "stack",
+              "type": "string",
+              "value": "Error: Google SDK yuklanmadi\n    at script.onerror…27.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "value": "Google SDK yuklanmadi"
+            }
+          ]
+        }
+      },
+      "executionContextId": 24
+    },
+    {
+      "exceptionId": 6,
+      "text": "Uncaught (in promise)",
+      "lineNumber": 26,
+      "columnNumber": 34,
+      "scriptId": "251",
+      "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+      "stackTrace": {
+        "callFrames": [
+          {
+            "functionName": "script.onerror",
+            "scriptId": "251",
+            "url": "http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts",
+            "lineNumber": 26,
+            "columnNumber": 34
+          }
+        ]
+      },
+      "exception": {
+        "type": "object",
+        "subtype": "error",
+        "className": "Error",
+        "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+        "objectId": "4829678303979573455.24.3",
+        "preview": {
+          "type": "object",
+          "subtype": "error",
+          "description": "Error: Google SDK yuklanmadi\n    at script.onerror (http://127.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)",
+          "overflow": false,
+          "properties": [
+            {
+              "name": "stack",
+              "type": "string",
+              "value": "Error: Google SDK yuklanmadi\n    at script.onerror…27.0.0.1:5174/src/hooks/useGoogleSignIn.ts:27:35)"
+            },
+            {
+              "name": "message",
+              "type": "string",
+              "value": "Google SDK yuklanmadi"
+            }
+          ]
+        }
+      },
+      "executionContextId": 24
+    }
+  ]
+}

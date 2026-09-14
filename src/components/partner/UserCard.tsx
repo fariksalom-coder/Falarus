@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Ban, Clock, Flame, Mail, MessageSquare, Phone, ShieldCheck, Trophy, X } from 'lucide-react';
+import { Ban, Clock, Flame, Mail, MessageSquare, Phone, ShieldCheck, Trophy, X, ZoomIn } from 'lucide-react';
 import { getUserCard, type UserCard as Karta } from '../../api/communityChat';
 import { useAuth } from '../../context/AuthContext';
+import { resolveAssetUrl } from '../../api';
 
 /**
  * FOYDALANUVCHI KARTASI — support chatda ismga bosganda ochiladi.
@@ -97,6 +98,11 @@ export default function UserCard({ userId, onClose }: { userId: number; onClose:
   const { token } = useAuth();
   const [karta, setKarta] = useState<Karta | null>(null);
   const [xato, setXato] = useState('');
+  /*
+   * Suratni KATTA ko'rish — faqat shu kartada, ya'ni faqat supportda.
+   * Chatda hamma kichik avatarni ko'radi, lekin uni ochib bo'lmaydi.
+   */
+  const [kattaSurat, setKattaSurat] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -125,7 +131,21 @@ export default function UserCard({ userId, onClose }: { userId: number; onClose:
       >
         <div className="flex shrink-0 items-center gap-3 border-b border-pmn-border px-5 py-4">
           {karta?.avatar_url ? (
-            <img src={karta.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+            <button
+              type="button"
+              onClick={() => setKattaSurat(true)}
+              aria-label="Suratni katta ko'rish"
+              className="relative h-11 w-11 shrink-0 transition-transform active:scale-95"
+            >
+              <img
+                src={resolveAssetUrl(karta.avatar_url) ?? karta.avatar_url}
+                alt=""
+                className="h-11 w-11 rounded-full object-cover"
+              />
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-pmn-card text-pmn-text-muted ring-1 ring-pmn-border">
+                <ZoomIn className="h-2.5 w-2.5" />
+              </span>
+            </button>
           ) : (
             <span
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[14px] font-black text-white"
@@ -296,6 +316,34 @@ export default function UserCard({ userId, onClose }: { userId: number; onClose:
           ) : null}
         </div>
       </div>
+
+      {/* Katta surat — support uchun. Bosilsa yopiladi. */}
+      {kattaSurat && karta?.avatar_url ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/90 p-4"
+          onClick={(e) => {
+            e.stopPropagation();
+            setKattaSurat(false);
+          }}
+        >
+          <img
+            src={resolveAssetUrl(karta.avatar_url) ?? karta.avatar_url}
+            alt={karta.name}
+            className="max-h-[86vh] max-w-full rounded-2xl object-contain"
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setKattaSurat(false);
+            }}
+            aria-label="Yopish"
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

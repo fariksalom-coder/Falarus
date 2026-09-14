@@ -292,6 +292,15 @@ export function createUstozRoutes(
         lugat: (b.vocabulary?.words ?? []).map((w) => `${w.wordRu} — ${w.wordUz}`),
         oqishMatni: b.reading?.bodyRu ?? '',
         gapirish: (b.practice ?? []).map((p) => p.uzText).filter(Boolean),
+        /*
+         * Gap tuzish topshiriqlari — og'zaki suhbat uchun tayyor manba:
+         * o'zbekcha gap va uning tekshirilgan ruscha javobi. Faqat
+         * o'zbekchadan ruschaga bo'lgan yo'nalish olinadi.
+         */
+        gapTuzish: (b.grammar?.sentenceArrange ?? [])
+          .filter((t) => t.promptLang === 'uz')
+          .map((t) => ({ uz: String(t.promptText ?? ''), ru: String(t.answerRu ?? '') }))
+          .filter((g) => g.uz && g.ru),
       };
     };
 
@@ -301,16 +310,15 @@ export function createUstozRoutes(
     }
 
     /*
-     * ORTDAGI KUNLAR — o'tilgan mavzu unutilmasin.
+     * FAQAT JORIY KUN.
      *
-     * Materiali topilmagan kun jimgina tushib qoladi: eski kun tayyor
-     * bo'lmagani uchun butun suhbat to'xtab qolishi noto'g'ri bo'lardi.
+     * Ilgari suhbatga ikkita eski kun ham qo'shilardi va javob berilmagan
+     * kunga qaytarish mexanizmi bor edi. Ikkalasi ham olib tashlandi:
+     * suhbat 4 daqiqa davom etadi va shu vaqt AYNAN BUGUNGI material
+     * ustida ishlashga ketadi. O'tgan kunlarni takrorlash — alohida
+     * mashq, og'zaki suhbatning vazifasi emas.
      */
-    const ortda = (
-      await Promise.all(ortdagiKunlar(kun).map((n) => materialOl(n)))
-    ).filter((m): m is KunMateriali => m !== null && Boolean(m.grammatikaMavzu));
-
-    const savollar = await buildKunSavollari(joriy, ortda);
+    const savollar = await buildKunSavollari(joriy, []);
 
     return { savollar };
   }, false);

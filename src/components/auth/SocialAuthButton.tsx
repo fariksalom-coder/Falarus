@@ -30,8 +30,8 @@ export function SocialAuthButton({
         disabled={isDisabled}
         aria-busy={loading}
         className={[
-          'flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[16px] border-[2px] border-[#E1E7F1] bg-white px-5 text-[15px] font-black text-[#17224A] transition',
-          isDisabled && !loading ? 'cursor-not-allowed opacity-60' : 'hover:bg-[#F5F8FF]',
+          'flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[16px] border-[2px] border-app-border-strong bg-app-surface px-5 text-[15px] font-black text-app-text transition',
+          isDisabled && !loading ? 'cursor-not-allowed opacity-60' : 'hover:bg-app-bg-muted',
         ]
           .filter(Boolean)
           .join(' ')}

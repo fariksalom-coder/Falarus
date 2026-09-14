@@ -1,3 +1,4 @@
+import { ConversationMicGate } from '../../utils/conversationAudio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Loader2, PhoneOff } from 'lucide-react';
@@ -9,19 +10,17 @@ import { MikrofonOqimi, OvozNavbati } from '../../utils/liveAudio';
  * UstozLive — doskadagi JONLI ovozli savol-javob.
  *
  * Oddiy savol-javobdan farqi: mikrofon uzluksiz ochiq turadi va ustozning
- * ovozi oqim bo'lib keladi. O'quvchi ustozning gapini bo'lib savol bera oladi
- * — bunda ustoz darhol jim bo'ladi (`interrupted`), xuddi tirik suhbatdagidek.
+ * ovozi oqim bo'lib keladi. Karnay aks-sadosini qayta yubormaslik uchun
+ * ustoz gapirganda mikrofon oqimi jim PCM bilan almashtiriladi.
  *
  * Ulanib bo'lmasa `onZaxira` chaqiriladi va doska eski, yozib-yuborish
  * usuliga qaytadi — jonli suhbat qo'shimcha imkoniyat, darsni to'xtatib
  * qo'ymasligi kerak.
  */
 
-type Holat = 'kutmoqda' | 'ulanmoqda' | 'jonli' | 'tugadi' | 'xato' | 'kvota' | 'qaytarish';
+type Holat = 'kutmoqda' | 'ulanmoqda' | 'jonli' | 'tugadi' | 'xato' | 'kvota';
 
 /** Javob berilmagan savol — o'quvchi shu kunga qaytariladi. */
-type Qaytarish = { kun: number; mavzu: string; savol: string };
-
 type Props = {
   token: string | null;
   mavzu: string;
@@ -36,7 +35,6 @@ type Props = {
    * O'quvchi savolga javob bera olmadi — savol tegishli kunga qaytariladi.
    * Berilmasa qaytarish ekrani ko'rsatiladi, lekin o'tish bo'lmaydi.
    */
-  onQaytarish?: (kun: number) => void;
   /**
    * Suhbatdan KEYINGI qadam nomi — yakundagi tugmada yoziladi.
    *
@@ -53,7 +51,6 @@ export default function UstozLive({
   kun,
   onTugadi,
   onZaxira,
-  onQaytarish,
   keyingiNomi = 'Testga o‘tish',
 }: Props) {
   const [holat, setHolat] = useState<Holat>('kutmoqda');
@@ -65,7 +62,6 @@ export default function UstozLive({
    * ko'rib tursa, suhbat kutilmaganda kesilgandek tuyulmaydi.
    */
   const [qoldi, setQoldi] = useState<number | null>(null);
-  const [qaytarish, setQaytarish] = useState<Qaytarish | null>(null);
   const [gapiryapti, setGapiryapti] = useState(false);
   const [daraja, setDaraja] = useState(0);
 
@@ -73,7 +69,13 @@ export default function UstozLive({
   const mikRef = useRef<MikrofonOqimi | null>(null);
   const ovozRef = useRef<OvozNavbati | null>(null);
 
+  const generationRef = useRef(0);
+  const connectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tozala = useCallback(() => {
+    generationRef.current++;
+    if (connectionTimerRef.current) clearTimeout(connectionTimerRef.current);
+    const ws = wsRef.current;
+    if (ws) { ws.onopen = null; ws.onmessage = null; ws.onerror = null; ws.onclose = null; }
     try { wsRef.current?.close(); } catch { /* allaqachon yopiq */ }
     wsRef.current = null;
     mikRef.current?.toxtat();
@@ -86,14 +88,22 @@ export default function UstozLive({
 
   const boshla = useCallback(async () => {
     if (!token) { onZaxira('token yo\'q'); return; }
+    tozala();
+    const generation = generationRef.current;
+    const active = () => generation === generationRef.current;
+    const micGate = new ConversationMicGate();
     setHolat('ulanmoqda');
 
     // Ovoz kontekstini foydalanuvchi bosgan paytda ochamiz: brauzerlar
     // avtomatik ijroni faqat shu holatda ruxsat beradi.
     const ovoz = new OvozNavbati();
+    ovozRef.current = ovoz;
     try {
       await ovoz.tayyorla();
+      if (!active()) { ovoz.yop(); return; }
     } catch {
+      if (!active()) return;
+      tozala();
       setHolat('xato');
       onZaxira('ovoz chiqishini ochib bo\'lmadi');
       return;
@@ -118,12 +128,17 @@ export default function UstozLive({
     manzil.searchParams.set('token', token);
     const ws = new WebSocket(manzil);
     wsRef.current = ws;
+    connectionTimerRef.current = setTimeout(() => {
+      if (!active()) return;
+      tozala(); setHolat('xato'); onZaxira('Ulanish vaqti tugadi.');
+    }, 20_000);
 
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'start', mavzu, savollar, kun }));
     };
 
     ws.onmessage = async (e) => {
+      if (!active()) return;
       let m: {
         type?: string; kim?: string; matn?: string; data?: string;
         sabab?: string; xato?: string; kod?: string; qolgan?: number;
@@ -132,20 +147,30 @@ export default function UstozLive({
       try { m = JSON.parse(e.data); } catch { return; }
 
       if (m.type === 'ready') {
+        if (mikRef.current) return;
+        if (connectionTimerRef.current) clearTimeout(connectionTimerRef.current);
         setHolat('jonli');
         if (typeof m.qolgan === 'number') setQoldi(m.qolgan);
-        // Ustoz gapira boshlagach mikrofon ochiladi. Aks-sado bostirish
-        // yoqilgani uchun ustozning o'z ovozi mikrofonga qaytmaydi.
+        // Keep the connection alive with silent PCM while the response plays.
+        // Browser echo cancellation alone cannot guarantee speaker isolation.
         try {
           const mik = new MikrofonOqimi();
+          mikRef.current = mik;
           await mik.boshla((b64) => {
-            if (wsRef.current?.readyState === WebSocket.OPEN) {
-              wsRef.current.send(JSON.stringify({ type: 'audio', data: b64 }));
+            if (!active()) return;
+            if (ws.bufferedAmount >= 64_000) {
+              tozala(); setHolat('xato');
+              onZaxira('Ulanish sekinlashdi. Ovozli javob rejimida davom eting.');
+              return;
+            }
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'audio', data: micGate.filter(b64, ovoz.gapiryapti, performance.now()) }));
             }
             setDaraja(mik.daraja);
-          });
-          mikRef.current = mik;
+          }, ovoz.context);
+          if (!active()) mik.toxtat();
         } catch {
+          if (!active()) return;
           // Mikrofonga ruxsat berilmadi — suhbatni davom ettirib bo'lmaydi.
           tozala();
           setHolat('xato');
@@ -164,23 +189,6 @@ export default function UstozLive({
         // O'quvchi gapira boshladi — ustoz darhol jim bo'ladi.
         ovozRef.current?.toxtat();
         setGapiryapti(false);
-        return;
-      }
-
-      /*
-       * QAYTARISH — savolga javob berilmadi.
-       *
-       * Suhbat SHU YERDA tugaydi: o'quvchi mavzuni bilmagani aniq bo'ldi,
-       * qolgan savollarni davom ettirish uni yanada chalkashtirardi. Ustoz
-       * gapirib bo'lguncha kutamiz — gapi o'rtasida ekran almashsa, u
-       * nima uchun qaytarilayotganini eshitmay qolardi.
-       */
-      if (m.type === 'qaytarish' && Number(m.kun) > 0) {
-        setQaytarish({
-          kun: Number(m.kun),
-          mavzu: String(m.mavzu ?? ''),
-          savol: String(m.savol ?? ''),
-        });
         return;
       }
 
@@ -206,6 +214,7 @@ export default function UstozLive({
        * chegara haqida ochiq aytiladi va u dars bilan davom etadi.
        */
       if (m.type === 'error' && m.kod === 'kvota') {
+        tozala();
         setXatoMatn(m.xato ?? 'Suhbat chegarasi tugadi.');
         setHolat('kvota');
         return;
@@ -219,8 +228,18 @@ export default function UstozLive({
       }
 
       if (m.type === 'end') {
-        tozala();
-        setHolat('tugadi');
+        if (m.sabab && m.sabab !== 'vaqt tugadi' && m.sabab !== "o'quvchi yopdi") {
+          tozala(); setHolat('xato');
+          onZaxira('Jonli ulanish uzildi. Ovozli javob rejimida davom eting.');
+          return;
+        }
+        mikRef.current?.toxtat();
+        ws.onclose = null;
+        // Let already received speech finish before navigating away.
+        ovoz.whenDrained(() => {
+          if (!active()) return;
+          tozala(); setGapiryapti(false); setHolat('tugadi');
+        });
       }
     };
 
@@ -231,28 +250,11 @@ export default function UstozLive({
     };
 
     ws.onclose = () => {
-      mikRef.current?.toxtat();
-      mikRef.current = null;
-      setHolat((h) => (h === 'jonli' || h === 'ulanmoqda' ? 'tugadi' : h));
+      if (!active()) return;
+      tozala(); setHolat('xato');
+      onZaxira('Jonli ulanish uzildi. Ovozli javob rejimida davom eting.');
     };
   }, [token, mavzu, savollar, kun, onZaxira, tozala]);
-
-  /*
-   * Ustoz gapini TUGATGACH qaytarish ekraniga o'tamiz.
-   *
-   * Model funksiyani chaqirganda odatda o'quvchiga nima uchun qaytarilayotganini
-   * ham aytadi. Ekran o'sha gap o'rtasida almashsa, o'quvchi sababini
-   * eshitmay qolardi — shuning uchun ovoz tugashini kutamiz.
-   */
-  useEffect(() => {
-    if (!qaytarish || gapiryapti) return;
-    const t = setTimeout(() => {
-      try { wsRef.current?.send(JSON.stringify({ type: 'end' })); } catch { /* yopiq */ }
-      tozala();
-      setHolat('qaytarish');
-    }, 900);
-    return () => clearTimeout(t);
-  }, [qaytarish, gapiryapti, tozala]);
 
   const yakunla = useCallback(() => {
     try { wsRef.current?.send(JSON.stringify({ type: 'end' })); } catch { /* yopiq */ }
@@ -307,12 +309,13 @@ export default function UstozLive({
    * `useRef` bilan bir marta: `boshla` qayta yaratilganda effekt takror
    * ishlab, ikkinchi ulanish ochilib ketmasin.
    */
-  const avtoBoshlandi = useRef(false);
+  const startRef = useRef(boshla);
+  startRef.current = boshla;
   useEffect(() => {
-    if (avtoBoshlandi.current || holat !== 'kutmoqda') return;
-    avtoBoshlandi.current = true;
-    void boshla();
-  }, [holat, boshla]);
+    // Deferral lets StrictMode cleanup cancel the first mount before it opens audio.
+    const timer = window.setTimeout(() => void startRef.current(), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   /* ------------------------------ Ko'rinish ------------------------------ */
 
@@ -328,9 +331,9 @@ export default function UstozLive({
           Endi ustoz bilan jonli suhbat
         </p>
         <p className="mx-auto mt-1.5 max-w-[300px] text-[13px] leading-relaxed text-[#7A6C9E]">
-          Mavzu bo'yicha <b className="font-bold text-[#5B3FA8]">3 daqiqalik erkin
-          suhbat</b>. Savol soni cheklanmagan — ustozning gapini bo'lib savol
-          bersangiz ham bo'ladi, u sizni eshitib to'xtaydi.
+          Mavzu bo'yicha <b className="font-bold text-[#5B3FA8]">5 daqiqalik erkin
+          suhbat</b>. Ustoz savolini tugatgach javob bering. Mikrofon
+          javobingizni avtomatik qabul qiladi.
         </p>
         <p className="mt-3.5 inline-flex items-center justify-center gap-2 text-[13px] font-bold text-[#5B3FA8]">
           <Loader2 size={15} className="animate-spin" /> Mikrofon yoqilmoqda…
@@ -352,32 +355,6 @@ export default function UstozLive({
           className="mt-3.5 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
         >
           Davom etish
-        </button>
-      </div>
-    );
-  }
-
-  if (holat === 'qaytarish' && qaytarish) {
-    return (
-      <div className="rounded-[20px] bg-[#FEF3E2] p-4 text-center">
-        <p className="text-[15px] font-black leading-snug text-[#B45309]">
-          {qaytarish.kun}-kunga qaytamiz
-        </p>
-        <p className="mt-2 text-[13.5px] font-semibold leading-relaxed text-[#8A5A1B]">
-          Siz {qaytarish.kun}-kunga tegishli savolga javob bera olmadingiz. O‘sha kunni
-          qayta o‘qib chiqing — keyin yana savol-javob qilamiz.
-        </p>
-        {qaytarish.savol ? (
-          <p className="mt-3 rounded-2xl bg-white/70 px-3.5 py-2.5 text-[13px] font-semibold leading-snug text-[#8A5A1B]">
-            «{qaytarish.savol}»
-          </p>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => onQaytarish?.(qaytarish.kun)}
-          className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-[#B45309] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
-        >
-          {qaytarish.kun}-kunni qayta o‘qish
         </button>
       </div>
     );
@@ -461,6 +438,7 @@ export default function UstozLive({
         </p>
       </div>
 
+      {jonli && <p className="mt-2 text-center text-xs text-[#7A6C9E]">{gapiryapti ? 'Savolni tinglang — mikrofon vaqtincha jim.' : 'Savol tugagach, javobingizni ayting.'}</p>}
       {jonli && qoldi !== null ? (
         <span
           className={`mt-2 rounded-full px-3 py-1 text-[12.5px] font-black tabular-nums ${
@@ -472,6 +450,9 @@ export default function UstozLive({
         </span>
       ) : null}
 
+      {holat === 'ulanmoqda' && <button type="button" className="mt-3 min-h-[44px] rounded-xl bg-[#5B3FA8] px-5 text-sm font-bold text-white" onClick={() => { void ovozRef.current?.tayyorla().catch(() => {}); }}>
+        Ovozni yoqish
+      </button>}
       <button
         type="button"
         onClick={yakunla}

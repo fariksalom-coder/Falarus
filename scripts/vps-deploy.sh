@@ -1,39 +1,17 @@
 #!/usr/bin/env bash
-# Run on VPS after git pull: install, build, restart pm2.
+# Git orqali deploy faqat toza ishchi nusxada bajariladi.
 set -euo pipefail
-
 APP_DIR="${APP_DIR:-$HOME/Falarus}"
 cd "$APP_DIR"
-
-echo "[deploy] git pull"
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo '[deploy] Lokal o‘zgarishlar bor. vps-deploy-rsync.sh ishlating.' >&2
+  exit 1
+fi
+bash scripts/server-backup.sh
 git pull --ff-only origin main
-
-echo "[deploy] npm ci"
-npm ci
-
-# ---------------------------------------------------------------------------
-# BUILD — `dist` BO'SHATILMAYDI.
-#
-# Ilgari `vite build` `dist` ni butunlay o'chirib qayta yozardi. Shu 15-20
-# soniya ichida ikki narsa buzilardi:
-#   1. `index.html` yo'q — server har so'rovga "Sayt yangilanmoqda" (503)
-#      sahifasini qaytarardi, `sw.js` ham 503 bilan kelib service worker
-#      yangilanishi uzilardi;
-#   2. deploy tugagach eski bo'lak fayllari (`/assets/Sahifa-ESKI.js`)
-#      butunlay yo'qolardi — ochiq turgan ilova keyingi bo'limga o'tolmay
-#      "sahifa ochilmadi" holatiga tushardi.
-#
-# `--no-emptyOutDir` ikkalasini ham hal qiladi: yangi fayllar yoniga
-# yoziladi, `index.html` esa oxirida ALMASHADI. Eski bo'laklar bir hafta
-# turadi — ochiq ilovalar tinch yakunlanadi.
-# ---------------------------------------------------------------------------
-echo "[deploy] build (dist bo'shatilmaydi)"
-npx vite build --no-emptyOutDir
-
-echo "[deploy] eski bo'laklarni tozalash (7 kundan oshgani)"
-find dist/assets -type f -mtime +7 -delete 2>/dev/null || true
-
-echo "[deploy] pm2 restart"
-pm2 restart app
-
-echo "[deploy] done"
+npm ci --no-audit --no-fund
+npm run lint
+npm test
+bash scripts/deploy-build.sh
+pm2 restart "${PM2_APP:-app}" --update-env
+curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 2 --max-time 10 http://127.0.0.1:3001/api/health

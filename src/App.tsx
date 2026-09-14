@@ -11,6 +11,7 @@ import { AccessProvider } from './context/AccessContext';
 import { PaymentStatusProvider } from './context/PaymentStatusContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 import MainLayout from './components/MainLayout';
+import { PanelSceneProvider } from './components/ui/PanelScene';
 import NotFoundPage from './pages/NotFoundPage';
 import KunlikRejaRedirect from './components/KunlikRejaRedirect';
 import GameGate from './components/games/GameGate';
@@ -31,6 +32,7 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/operator-reset" element={renderLazyPage('./pages/OperatorResetPage.tsx')} />
       <Route path="/huquqiy/ommaviy-oferta" element={renderLazyPage('./pages/legal/LegalOfferPage.tsx')} />
       <Route path="/huquqiy/maxfiylik" element={renderLazyPage('./pages/legal/LegalPrivacyPage.tsx')} />
       <Route path="/huquqiy/qaytarish" element={renderLazyPage('./pages/legal/LegalRefundPage.tsx')} />
@@ -60,6 +62,7 @@ function AppRoutes() {
             <Route path="users/create" element={renderLazyPage('./pages/admin/AdminCreateUserPage.tsx')} />
             <Route path="users/:id" element={renderLazyPage('./pages/admin/AdminUserProfilePage.tsx')} />
             <Route path="payments" element={renderLazyPage('./pages/admin/AdminPaymentsPage.tsx')} />
+            <Route path="operators" element={renderLazyPage('./pages/admin/AdminOperatorsPage.tsx')} />
             <Route path="click-logs" element={renderLazyPage('./pages/admin/AdminClickLogsPage.tsx')} />
             <Route path="referrals" element={renderLazyPage('./pages/admin/AdminReferralsPage.tsx')} />
             <Route path="support" element={renderLazyPage('./pages/admin/AdminSupportPage.tsx')} />
@@ -111,9 +114,17 @@ function AppRoutes() {
         <>
           <Route path="/onboarding" element={renderLazyPage('./pages/OnboardingPage.tsx')} />
           <Route path="/" element={<MainLayout />}>
-            <Route index element={renderLazyPage('./pages/HomePage.tsx')} />
+            {/*
+              ILOVANING BIRINCHI EKRANI — XARITA.
+              O'quvchi ilovani ochganda 182 kunlik yo'lni ko'radi va qayerda
+              turganini darhol biladi. Kunni bosgach o'sha kunning bloklari
+              (`HomePage`) ochiladi — ular endi bir pog'ona pastda.
+              `kunlik-reja/xarita` eski havolalar uchun qoldirildi.
+            */}
+            <Route index element={renderLazyPage('./pages/DailyCourseMapPage.tsx')} />
             <Route path="kunlik-reja" element={<KunlikRejaRedirect />} />
             <Route path="kunlik-reja/xarita" element={renderLazyPage('./pages/DailyCourseMapPage.tsx')} />
+            <Route path="kunlik-reja/kun/:dayNum" element={renderLazyPage('./pages/HomePage.tsx')} />
             <Route
               path="kunlik-reja/kun/:dayNum/takrorlash"
               element={renderLazyPage('./pages/KunlikTakrorlashPage.tsx')}
@@ -198,9 +209,12 @@ function AppRoutes() {
             <Route path="teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
             <Route path="help" element={renderLazyPage('./pages/HelpPage.tsx')} />
             <Route path="jonli-efir" element={renderLazyPage('./pages/LiveStreamPage.tsx')} />
+            <Route path="support/parol" element={renderLazyPage('./pages/SupportParolPage.tsx')} />
             <Route path="help/:chatId" element={renderLazyPage('./pages/HelpPage.tsx')} />
             <Route path="profile" element={renderLazyPage('./pages/ProfilePage.tsx')} />
+            <Route path="profile/anketa" element={renderLazyPage('./pages/PartnerProfilePage.tsx')} />
             <Route path="profile/settings" element={renderLazyPage('./pages/ProfileSettingsPage.tsx')} />
+            <Route path="profile/parol" element={renderLazyPage('./pages/ParolOzgartirishPage.tsx')} />
             <Route path="u/:userId" element={renderLazyPage('./pages/PublicProfilePage.tsx')} />
             <Route path="invite" element={renderLazyPage('./pages/InvitePage.tsx')} />
             <Route path="statistika" element={renderLazyPage('./pages/StatistikaPage.tsx')} />
@@ -240,7 +254,7 @@ export default function App() {
           <AccessProvider>
             <PaymentStatusProvider>
                 <AchievementCelebrationProvider>
-                  <AppRoutes />
+                  <PanelSceneProvider><AppRoutes /></PanelSceneProvider>
                 </AchievementCelebrationProvider>
             </PaymentStatusProvider>
           </AccessProvider>

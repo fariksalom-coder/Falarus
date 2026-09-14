@@ -1,33 +1,13 @@
-/**
- * liveAudio.ts — jonli suhbat uchun mikrofon va ovoz chiqishi.
- *
- * Gemini Live API ikki xil format kutadi va qaytaradi:
- *   kirish  — 16 kHz, 16 bitli PCM (mono)
- *   chiqish — 24 kHz, 16 bitli PCM (mono)
- * Brauzerning o'z tezligi odatda 44.1 yoki 48 kHz, shuning uchun kirish
- * qayta hisoblanadi, chiqish esa AudioBuffer orqali brauzerning o'ziga
- * moslashtiriladi.
- *
- * NIMA UCHUN ScriptProcessorNode: u eskirgan deb belgilangan, lekin AudioWorklet
- * alohida fayl va qo'shimcha yuklash talab qiladi, iOS Safari'da esa cheklovlar
- * bor. Foydalanuvchilarning aksariyati telefondan kiradi, shuning uchun hamma
- * joyda ishlaydigan yo'l tanlandi.
- */
+import captureWorkletUrl from './liveCapture.worklet?worker&url';
+import { PcmResampler } from './pcmResampler';
+import { PcmPlaybackResampler } from './pcmPlayback';
 
-const KIRISH_HZ = 16_000;
 const CHIQISH_HZ = 24_000;
-/** Bir bo'lakda ~256 ms ovoz — kechikish va so'rovlar soni orasidagi muvozanat. */
+/** Legacy capture block; both capture paths send 100 ms PCM packets. */
 const BOLAK = 4096;
 
-function base64dan(b64: string): Int16Array {
-  const xom = atob(b64);
-  const bayt = new Uint8Array(xom.length);
-  for (let i = 0; i < xom.length; i += 1) bayt[i] = xom.charCodeAt(i);
-  return new Int16Array(bayt.buffer);
-}
-
 function base64ga(pcm: Int16Array): string {
-  const bayt = new Uint8Array(pcm.buffer);
+  const bayt = new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength);
   let s = '';
   // Katta massivni bir yo'la `String.fromCharCode` ga bermaymiz — uzun
   // argument ro'yxati ba'zi brauzerlarda stekni to'ldiradi.
@@ -47,95 +27,102 @@ function base64ga(pcm: Int16Array): string {
 export class MikrofonOqimi {
   private ctx: AudioContext | null = null;
   private oqim: MediaStream | null = null;
-  private ishlovchi: ScriptProcessorNode | null = null;
+  private ishlovchi: ScriptProcessorNode | AudioWorkletNode | null = null;
   private manba: MediaStreamAudioSourceNode | null = null;
   private ovozBor = 0;
+  private ownsContext = true;
+  private generation = 0;
 
-  /** Oxirgi bo'lakdagi eng baland tovush (0..1) — jonli ko'rsatkich uchun. */
-  get daraja(): number {
-    return this.ovozBor;
-  }
+  get daraja(): number { return this.ovozBor; }
 
-  async boshla(bolak: (base64: string) => void): Promise<void> {
-    this.oqim = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        channelCount: 1,
-      },
-    });
-
-    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    this.ctx = new Ctx();
-    if (this.ctx.state === 'suspended') await this.ctx.resume();
-
-    this.manba = this.ctx.createMediaStreamSource(this.oqim);
-    this.ishlovchi = this.ctx.createScriptProcessor(BOLAK, 1, 1);
-
-    const manbaHz = this.ctx.sampleRate;
-
-    this.ishlovchi.onaudioprocess = (e) => {
-      const kirish = e.inputBuffer.getChannelData(0);
-
-      let eng = 0;
-      for (let i = 0; i < kirish.length; i += 1) {
-        const v = Math.abs(kirish[i]);
-        if (v > eng) eng = v;
+  async boshla(bolak: (base64: string) => void, sharedContext?: AudioContext): Promise<void> {
+    this.toxtat();
+    const generation = this.generation;
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: {
+      echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1,
+    } });
+    if (generation !== this.generation) { stream.getTracks().forEach(t => t.stop()); return; }
+    this.oqim = stream;
+    try {
+      const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = sharedContext ?? new Ctx({ latencyHint: 'interactive' });
+      this.ownsContext = !sharedContext;
+      this.ctx = ctx;
+      if (ctx.state === 'suspended') await ctx.resume();
+      if (generation !== this.generation) return;
+      this.manba = ctx.createMediaStreamSource(stream);
+      const send = (pcm: Int16Array, peak: number) => {
+        if (generation !== this.generation) return;
+        this.ovozBor = peak;
+        bolak(base64ga(pcm));
+      };
+      if (ctx.audioWorklet) {
+        try {
+          await ctx.audioWorklet.addModule(captureWorkletUrl);
+          if (generation !== this.generation) return;
+          const node = new AudioWorkletNode(ctx, 'falarus-live-capture');
+          node.port.onmessage = e => send(e.data.pcm, e.data.peak);
+          this.ishlovchi = node;
+        } catch { /* Older browsers keep a compatible capture path below. */ }
       }
-      this.ovozBor = eng;
-
-      // 48 kHz -> 16 kHz: chiziqli interpolatsiya. Oddiy tashlab ketish
-      // (decimation) yuqori chastotalarda "sim" tovushi berardi.
-      const nisbat = manbaHz / KIRISH_HZ;
-      const uzunlik = Math.floor(kirish.length / nisbat);
-      const chiqish = new Int16Array(uzunlik);
-      for (let i = 0; i < uzunlik; i += 1) {
-        const joy = i * nisbat;
-        const p = Math.floor(joy);
-        const q = Math.min(p + 1, kirish.length - 1);
-        const aralash = kirish[p] + (kirish[q] - kirish[p]) * (joy - p);
-        const s = Math.max(-1, Math.min(1, aralash));
-        chiqish[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      if (generation !== this.generation) return;
+      if (!this.ishlovchi) {
+        const node = ctx.createScriptProcessor(BOLAK, 1, 1);
+        const resampler = new PcmResampler(ctx.sampleRate);
+        node.onaudioprocess = e => resampler.push(e.inputBuffer.getChannelData(0), pcm => {
+          let peak = 0;
+          for (const value of pcm) peak = Math.max(peak, Math.abs(value) / 32768);
+          send(pcm, peak);
+        });
+        this.ishlovchi = node;
       }
-
-      bolak(base64ga(chiqish));
-    };
-
-    this.manba.connect(this.ishlovchi);
-    // ScriptProcessor faqat chiqishga ulangandagina ishlaydi. Ovozni qaytarib
-    // chiqarmaslik uchun tovushi nolga tenglashtirilgan tugun orqali ulaymiz.
-    const jim = this.ctx.createGain();
-    jim.gain.value = 0;
-    this.ishlovchi.connect(jim);
-    jim.connect(this.ctx.destination);
+      const silent = ctx.createGain();
+      silent.gain.value = 0;
+      this.manba.connect(this.ishlovchi);
+      this.ishlovchi.connect(silent);
+      silent.connect(ctx.destination);
+    } catch (error) {
+      if (generation === this.generation) this.toxtat();
+      throw error;
+    }
   }
 
   toxtat(): void {
-    try { this.ishlovchi?.disconnect(); } catch { /* allaqachon uzilgan */ }
-    try { this.manba?.disconnect(); } catch { /* allaqachon uzilgan */ }
-    this.oqim?.getTracks().forEach((t) => t.stop());
-    void this.ctx?.close().catch(() => {});
-    this.ishlovchi = null;
-    this.manba = null;
-    this.oqim = null;
-    this.ctx = null;
-    this.ovozBor = 0;
+    this.generation++;
+    if (this.ishlovchi && 'port' in this.ishlovchi) {
+      this.ishlovchi.port.onmessage = null;
+      this.ishlovchi.port.close();
+    } else if (this.ishlovchi && 'onaudioprocess' in this.ishlovchi) this.ishlovchi.onaudioprocess = null;
+    try { this.ishlovchi?.disconnect(); } catch { /* already closed */ }
+    try { this.manba?.disconnect(); } catch { /* already closed */ }
+    this.oqim?.getTracks().forEach(t => t.stop());
+    if (this.ownsContext) void this.ctx?.close().catch(() => {});
+    this.ownsContext = true;
+    this.ishlovchi = null; this.manba = null; this.oqim = null; this.ctx = null; this.ovozBor = 0;
   }
 }
 
-/**
- * Kelayotgan PCM bo'laklarini uzluksiz qilib chaladi.
- *
- * Bo'laklar tarmoqdan notekis keladi, shuning uchun har biri oldingisi
- * tugaydigan aniq vaqtga rejalashtiriladi — aks holda orada sanchiq va
- * uzilishlar eshitiladi.
- */
+/** Schedule PCM continuously with 300 ms initial reserve, up to 600 ms after underruns. */
+const ZAXIRA_S = 0.3;
+
 export class OvozNavbati {
   private ctx: AudioContext | null = null;
   private keyingi = 0;
   private manbalar = new Set<AudioBufferSourceNode>();
   private ochiq = false;
+  private trailingByte: number | null = null;
+  private generation = 0;
+  private reserve = ZAXIRA_S;
+  private drained: (() => void) | null = null;
+  private resampler: PcmPlaybackResampler | null = null;
+
+  /** Capture and playback share one device clock for the whole live session. */
+  get context(): AudioContext | undefined { return this.ctx ?? undefined; }
+
+  whenDrained(callback: () => void): void {
+    if (!this.manbalar.size) callback();
+    else this.drained = callback;
+  }
 
   /** Hozir ustoz gapiryaptimi. */
   get gapiryapti(): boolean {
@@ -148,26 +135,45 @@ export class OvozNavbati {
       return;
     }
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    this.ctx = new Ctx();
+    // Resampling each AudioBuffer separately creates boundary clicks. Match PCM
+    // to the context, so the device resamples the continuous mixed output once.
+    try { this.ctx = new Ctx({ sampleRate: CHIQISH_HZ, latencyHint: 'interactive' }); }
+    catch { this.ctx = new Ctx({ latencyHint: 'interactive' }); }
+    this.resampler = new PcmPlaybackResampler(this.ctx.sampleRate);
     if (this.ctx.state === 'suspended') await this.ctx.resume();
   }
 
   qosh(base64: string, tugadi?: () => void): void {
     if (!this.ctx) return;
-    const pcm = base64dan(base64);
+    // Preserve a split PCM16 sample instead of shifting every following sample.
+    const raw = atob(base64);
+    const bytes = new Uint8Array(raw.length + (this.trailingByte === null ? 0 : 1));
+    let offset = 0;
+    if (this.trailingByte !== null) bytes[offset++] = this.trailingByte;
+    for (let i = 0; i < raw.length; i++) bytes[offset + i] = raw.charCodeAt(i);
+    this.trailingByte = bytes.length % 2 ? bytes[bytes.length - 1] : null;
+    const pcm = new Int16Array(bytes.buffer, 0, Math.floor(bytes.length / 2));
     if (!pcm.length) return;
 
-    const bufer = this.ctx.createBuffer(1, pcm.length, CHIQISH_HZ);
-    const kanal = bufer.getChannelData(0);
-    for (let i = 0; i < pcm.length; i += 1) kanal[i] = pcm[i] / 0x8000;
+    const samples = this.resampler!.convert(pcm);
+    if (!samples.length) return;
+    const bufer = this.ctx.createBuffer(1, samples.length, this.ctx.sampleRate);
+    bufer.getChannelData(0).set(samples);
 
     const manba = this.ctx.createBufferSource();
     manba.buffer = bufer;
     manba.connect(this.ctx.destination);
 
-    // Kechikib qolgan bo'lsak, navbatni hozirgi vaqtdan boshlaymiz.
+    /*
+     * Navbat bo'shab qolgan bo'lsa (birinchi bo'lak yoki uzilish) —
+     * zaxira bilan boshlaymiz. Aks holda ketma-ket, tirqishsiz ulanadi.
+     */
     const hozir = this.ctx.currentTime;
-    if (this.keyingi < hozir) this.keyingi = hozir + 0.04;
+    if (this.keyingi <= hozir) {
+      if (this.keyingi > 0) this.reserve = Math.min(0.6, this.reserve + 0.05);
+      this.keyingi = hozir + this.reserve;
+    }
+    const generation = this.generation;
 
     manba.start(this.keyingi);
     this.keyingi += bufer.duration;
@@ -175,17 +181,29 @@ export class OvozNavbati {
 
     this.manbalar.add(manba);
     manba.onended = () => {
+      manba.disconnect();
+      if (generation !== this.generation) return;
       this.manbalar.delete(manba);
       if (this.manbalar.size === 0) {
         this.ochiq = false;
         tugadi?.();
+        const drained = this.drained;
+        this.drained = null;
+        drained?.();
       }
     };
   }
 
   /** Darhol jim bo'lish — o'quvchi ustozning gapini bo'lganda. */
   toxtat(): void {
+    this.generation++;
+    this.drained = null;
+    this.trailingByte = null;
+    this.reserve = ZAXIRA_S;
+    this.resampler = this.ctx ? new PcmPlaybackResampler(this.ctx.sampleRate) : null;
     for (const m of this.manbalar) {
+      m.onended = null;
+      m.disconnect();
       try { m.stop(); } catch { /* allaqachon tugagan */ }
     }
     this.manbalar.clear();

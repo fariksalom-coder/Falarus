@@ -42,7 +42,7 @@ export default function Settings() {
       {err ? <ErrorNote text={err} /> : null}
 
       <Card className="mb-4 p-5">
-        <p className="mb-3 text-[15px] font-semibold text-[#171A3D]">{t.settingsLanguage}</p>
+        <p className="mb-3 text-[15px] font-semibold text-app-text">{t.settingsLanguage}</p>
         <div className="flex gap-2">
           {(['uz', 'ru'] as const).map((l) => (
             <button
@@ -51,8 +51,8 @@ export default function Settings() {
               onClick={() => setLang(l)}
               className={`min-h-[44px] flex-1 rounded-[12px] border text-[13px] font-semibold transition ${
                 lang === l
-                  ? 'border-[#4B3BE4] bg-[#4B3BE4] text-white'
-                  : 'border-[#E4E3F2] bg-white text-[#5B5E86]'
+                  ? 'border-app-brand bg-app-primary text-white'
+                  : 'border-app-border-strong bg-app-surface text-app-text-muted'
               }`}
             >
               {l === 'uz' ? "O'zbekcha" : 'Русский'}
@@ -65,10 +65,10 @@ export default function Settings() {
       <Card className="mb-4 flex items-center gap-4 p-5">
         <Avatar name={ism} url={user?.avatarUrl ?? null} size={64} />
         <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold text-[#171A3D]">{t.accPhoto}</p>
-          <p className="mt-0.5 text-[12px] text-[#8A8CAE]">{t.photoFormats}</p>
+          <p className="text-[15px] font-semibold text-app-text">{t.accPhoto}</p>
+          <p className="mt-0.5 text-[12px] text-app-text-muted">{t.photoFormats}</p>
         </div>
-        <label className="min-h-[44px] cursor-pointer rounded-[12px] bg-[#4B3BE4] px-4 py-3 text-[12.5px] font-semibold text-white">
+        <label className="min-h-[44px] cursor-pointer rounded-[12px] bg-app-primary px-4 py-3 text-[12.5px] font-semibold text-white">
           {user?.avatarUrl ? t.photoReplace : t.photoUpload}
           <input
             type="file"
@@ -99,7 +99,7 @@ export default function Settings() {
 
       {/* Ism, telefon, email — tahrirlanadi. */}
       <Card className="mb-4 p-5">
-        <p className="mb-3 text-[15px] font-semibold text-[#171A3D]">{t.accEdit}</p>
+        <p className="mb-3 text-[15px] font-semibold text-app-text">{t.accEdit}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label={t.fFirstName}>
             <input
@@ -166,7 +166,7 @@ export default function Settings() {
 
       {/* Parol — joriy parol bilan tasdiqlanadi. */}
       <Card className="mb-4 p-5">
-        <p className="mb-3 text-[15px] font-semibold text-[#171A3D]">{t.passTitle}</p>
+        <p className="mb-3 text-[15px] font-semibold text-app-text">{t.passTitle}</p>
         <div className="grid gap-3 sm:grid-cols-3">
           {parolBor ? (
             <Field label={t.passCurrent}>
@@ -219,8 +219,8 @@ export default function Settings() {
           {busy ? t.saving : t.passChange}
         </PrimaryButton>
 
-        <div className="mt-4 border-t border-[#F1F0FA] pt-4">
-          <p className="text-[12.5px] text-[#8A8CAE]">
+        <div className="mt-4 border-t border-app-border pt-4">
+          <p className="text-[12.5px] text-app-text-muted">
             {email ? t.settingsPasswordHint : t.settingsPasswordNoEmail}
           </p>
           {email ? (
@@ -275,27 +275,27 @@ export function Help() {
       <div className="space-y-3">
         {items.map((it) => (
           <Card key={it.q} className="p-5">
-            <p className="text-[14px] font-semibold text-[#171A3D]">{it.q}</p>
-            <p className="mt-2 text-[13px] leading-[1.7] text-[#5B5E86]">{it.a}</p>
+            <p className="text-[14px] font-semibold text-app-text">{it.q}</p>
+            <p className="mt-2 text-[13px] leading-[1.7] text-app-text-muted">{it.a}</p>
           </Card>
         ))}
       </div>
 
       <Card className="mt-4 p-5">
-        <p className="mb-3 text-[15px] font-semibold text-[#171A3D]">{t.helpContact}</p>
+        <p className="mb-3 text-[15px] font-semibold text-app-text">{t.helpContact}</p>
         <div className="flex flex-wrap gap-2.5">
           <a
             href={adminContact.telegram}
             target="_blank"
             rel="noreferrer"
-            className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-[#4B3BE4] px-4 text-[13px] font-semibold text-white"
+            className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-app-primary px-4 text-[13px] font-semibold text-white"
           >
             <MessageCircle className="h-[18px] w-[18px]" />
             Telegram
           </a>
           <a
             href={`mailto:${adminContact.email}`}
-            className="flex min-h-[44px] items-center gap-2 rounded-[12px] border border-[#E4E3F2] bg-white px-4 text-[13px] font-semibold text-[#3E4166]"
+            className="flex min-h-[44px] items-center gap-2 rounded-[12px] border border-app-border-strong bg-app-surface px-4 text-[13px] font-semibold text-app-text"
           >
             <Mail className="h-[18px] w-[18px]" />
             {adminContact.email}

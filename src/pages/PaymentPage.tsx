@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { submitPayment, type TariffType, type Currency } from '../api/payment';
 import { getPaymentMethodByCurrency, getTariffPricesByCurrency, getUserTariffPricesByCurrency } from '../api/publicPricing';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
+import { isAdminReviewPending } from '../utils/paymentPending';
 import {
   getCourseProductPrice,
   getPaymentProductLabel,
@@ -130,7 +131,13 @@ export default function PaymentPage() {
 
   useEffect(() => {
     setHasPendingPayment(
-      payments.some((payment) => payment.status === 'pending' && payment.product_code === productCode)
+      payments.some(
+        (payment) =>
+          payment.status === 'pending' &&
+          payment.product_code === productCode &&
+          // Tashlab ketilgan shlyuz checkouti to'lash sahifasini yopmasin.
+          isAdminReviewPending(payment)
+      )
     );
   }, [payments, productCode]);
 

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "duplicate start opens one microphone",
+    "pass": true
+  },
+  {
+    "name": "recording continues beyond 15 seconds",
+    "pass": true
+  },
+  {
+    "name": "final audio retained",
+    "pass": true
+  },
+  {
+    "name": "recorded speech contains over 15 seconds",
+    "pass": true
+  },
+  {
+    "name": "stopped microphone released",
+    "pass": true
+  },
+  {
+    "name": "reset ignores queued recorder events",
+    "pass": true
+  },
+  {
+    "name": "late permission after unmount releases mic",
+    "pass": true
+  },
+  {
+    "name": "worklet used",
+    "pass": true
+  },
+  {
+    "name": "worklet delivers PCM during UI stall",
+    "pass": true
+  },
+  {
+    "name": "no audio after mic stop",
+    "pass": true
+  },
+  {
+    "name": "odd PCM boundaries preserve samples",
+    "pass": true
+  },
+  {
+    "name": "initial audio has jitter reserve even at time zero",
+    "pass": true
+  },
+  {
+    "name": "stale ended cannot stop new speech",
+    "pass": true
+  },
+  {
+    "name": "session end waits for speech",
+    "pass": true
+  },
+  {
+    "name": "session finishes after last sample",
+    "pass": true
+  }
+]

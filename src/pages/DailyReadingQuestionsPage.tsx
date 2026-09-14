@@ -24,7 +24,7 @@ import {
   startTextQuestions,
   type TextQuestionFinishResult,
 } from '../api/kunlikProgress';
-import { kunlikRejaPath } from '../utils/kunlikNavigation';
+import { xaritaYoli } from '../utils/kunlikNavigation';
 import { useRememberKunlikDay } from '../hooks/useRememberKunlikDay';
 import { playCorrectSound, playWrongSound } from '../utils/sound';
 
@@ -203,7 +203,7 @@ export default function DailyReadingQuestionsPage() {
             {passed ? (
               <button
                 type="button"
-                onClick={() => navigate(kunlikRejaPath(dayNumber))}
+                onClick={() => navigate(xaritaYoli())}
                 className="mt-6 flex h-13 w-full items-center justify-center rounded-full bg-[#0FA598] py-3.5 text-[15px] font-black text-white active:scale-[0.99]"
               >
                 Kun rejasiga qaytish →

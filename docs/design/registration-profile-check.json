@@ -1,0 +1,30 @@
+{
+  "registrationSteps": 7,
+  "requests": [
+    "/api/partner/profile",
+    "/api/onboarding",
+    "/api/partner/profile",
+    "/api/onboarding"
+  ],
+  "savedProfile": {
+    "display_name": "Anketa Sinov",
+    "age": 26,
+    "gender": "female",
+    "language_level": "elementary",
+    "goal": "work",
+    "about": "",
+    "seeking": "",
+    "user_id": 999999,
+    "created_at": "",
+    "updated_at": ""
+  },
+  "checks": [
+    "failure stays on registration",
+    "retry completes registration",
+    "chat has no form",
+    "existing answers preserved",
+    "failed read cannot overwrite",
+    "read retry"
+  ],
+  "errors": []
+}

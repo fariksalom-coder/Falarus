@@ -78,30 +78,30 @@ export default class AppErrorBoundary extends Component<Props, State> {
 
     if (reloading) {
       return (
-        <div className="flex min-h-screen items-center justify-center bg-[#F5F5FB] px-6 text-center">
-          <p className="text-[14px] font-semibold text-[#3E4166]">Yangilanmoqda…</p>
+        <div className="flex min-h-screen items-center justify-center bg-app-bg-muted px-6 text-center">
+          <p className="text-[14px] font-semibold text-app-text">Yangilanmoqda…</p>
         </div>
       );
     }
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F5F5FB] px-6">
-        <div className="w-full max-w-[380px] rounded-[22px] border border-[#EFEEF8] bg-white p-6 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-app-bg-muted px-6">
+        <div className="w-full max-w-[380px] rounded-[22px] border border-app-border bg-app-surface p-6 text-center">
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#FDECEC] text-[22px]">
             ⚠
           </span>
-          <p className="text-[16px] font-bold text-[#171A3D]">Sahifa ochilmadi</p>
-          <p className="mt-1.5 text-[13px] leading-[1.6] text-[#6E7191]">
+          <p className="text-[16px] font-bold text-app-text">Sahifa ochilmadi</p>
+          <p className="mt-1.5 text-[13px] leading-[1.6] text-app-text-muted">
             Ilovani yangilang. Muammo takrorlansa, quyidagi matnni qo‘llab-quvvatlashga yuboring.
           </p>
           <button
             type="button"
             onClick={this.hardReload}
-            className="mt-4 min-h-[48px] w-full rounded-[14px] bg-[#4B3BE4] text-[15px] font-semibold text-white"
+            className="mt-4 min-h-[48px] w-full rounded-[14px] bg-app-primary text-[15px] font-semibold text-white"
           >
             Yangilash
           </button>
-          <p className="mt-3 break-words text-left text-[11px] leading-[1.5] text-[#A0A1BC]">
+          <p className="mt-3 break-words text-left text-[11px] leading-[1.5] text-app-text-muted">
             {error.message}
           </p>
         </div>

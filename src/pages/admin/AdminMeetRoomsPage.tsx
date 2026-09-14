@@ -19,10 +19,10 @@ const STATUS_LABELS: Record<AdminMeetRoomStatus, string> = {
 };
 
 const STATUS_CLASSES: Record<AdminMeetRoomStatus, string> = {
-  free: 'bg-slate-100 text-slate-600',
+  free: 'bg-app-bg-subtle text-app-text-muted',
   assigned: 'bg-emerald-100 text-emerald-700',
   paused: 'bg-amber-100 text-amber-700',
-  archived: 'bg-slate-200 text-slate-500',
+  archived: 'bg-slate-200 text-app-text-muted',
 };
 
 const FILTERS: { id: AdminMeetRoomStatus | 'all'; label: string }[] = [
@@ -167,16 +167,16 @@ export default function AdminMeetRoomsPage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Video xonalar</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold text-app-text">Video xonalar</h1>
+          <p className="text-sm text-app-text-muted">
             Xonalarni oching va o'qituvchilarga yo'naltiring. Xona faqat shu o'qituvchiga yozilgan
             o'quvchilarga ko'rinadi.
           </p>
         </div>
-        <div className="flex gap-2 text-sm font-semibold text-slate-700">
-          <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">Jami: {stats.total}</div>
-          <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">Bo'sh: {stats.free}</div>
-          <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
+        <div className="flex gap-2 text-sm font-semibold text-app-text">
+          <div className="rounded-xl bg-app-surface px-4 py-3 shadow-sm ring-1 ring-slate-200">Jami: {stats.total}</div>
+          <div className="rounded-xl bg-app-surface px-4 py-3 shadow-sm ring-1 ring-slate-200">Bo'sh: {stats.free}</div>
+          <div className="rounded-xl bg-app-surface px-4 py-3 shadow-sm ring-1 ring-slate-200">
             Biriktirilgan: {stats.assigned}
           </div>
         </div>
@@ -193,37 +193,37 @@ export default function AdminMeetRoomsPage() {
         </div>
       ) : null}
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+      <section className="rounded-2xl bg-app-surface p-4 shadow-sm ring-1 ring-slate-200">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-app-text">
           <Video className="h-4 w-4 text-blue-600" /> Yangi xona ochish
         </h2>
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-500">Nechta</span>
+            <span className="text-xs font-semibold text-app-text-muted">Nechta</span>
             <input
               type="number"
               min={1}
               max={50}
               value={count}
               onChange={(e) => setCount(Math.min(Math.max(Number(e.target.value) || 1, 1), 50))}
-              className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              className="w-24 rounded-lg border border-app-border px-3 py-2 text-sm outline-none focus:border-blue-500"
             />
           </label>
           <label className="flex flex-1 flex-col gap-1" style={{ minWidth: 220 }}>
-            <span className="text-xs font-semibold text-slate-500">Nomi (ixtiyoriy)</span>
+            <span className="text-xs font-semibold text-app-text-muted">Nomi (ixtiyoriy)</span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Masalan: Kechki guruh"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              className="rounded-lg border border-app-border px-3 py-2 text-sm outline-none focus:border-blue-500"
             />
           </label>
           <label className="flex flex-col gap-1" style={{ minWidth: 240 }}>
-            <span className="text-xs font-semibold text-slate-500">Darhol biriktirish (ixtiyoriy)</span>
+            <span className="text-xs font-semibold text-app-text-muted">Darhol biriktirish (ixtiyoriy)</span>
             <select
               value={assignTo}
               onChange={(e) => setAssignTo(e.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              className="rounded-lg border border-app-border px-3 py-2 text-sm outline-none focus:border-blue-500"
             >
               <option value="">Biriktirilmasin (zaxira)</option>
               {activeTeachers.map((t) => (
@@ -246,21 +246,21 @@ export default function AdminMeetRoomsPage() {
       </section>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 rounded-xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
+        <div className="flex gap-1 rounded-xl bg-app-surface p-1 shadow-sm ring-1 ring-slate-200">
           {FILTERS.map((f) => (
             <button
               key={f.id}
               type="button"
               onClick={() => setFilter(f.id)}
               className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
-                filter === f.id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+                filter === f.id ? 'bg-blue-600 text-white' : 'text-app-text-muted hover:bg-app-bg-subtle'
               }`}
             >
               {f.label}
             </button>
           ))}
         </div>
-        <label className="flex max-w-xs flex-1 items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-slate-200">
+        <label className="flex max-w-xs flex-1 items-center gap-2 rounded-xl bg-app-surface px-3 py-2 shadow-sm ring-1 ring-slate-200">
           <Search className="h-4 w-4 text-slate-400" />
           <input
             value={q}
@@ -271,10 +271,10 @@ export default function AdminMeetRoomsPage() {
         </label>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-hidden rounded-2xl bg-app-surface shadow-sm ring-1 ring-slate-200">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-bold uppercase text-slate-500">
+            <thead className="bg-app-bg-muted text-left text-xs font-bold uppercase text-app-text-muted">
               <tr>
                 <th className="px-4 py-3">Xona</th>
                 <th className="px-4 py-3">O'qituvchi</th>
@@ -287,29 +287,29 @@ export default function AdminMeetRoomsPage() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td className="px-4 py-8 text-center text-slate-500" colSpan={6}>
+                  <td className="px-4 py-8 text-center text-app-text-muted" colSpan={6}>
                     Yuklanmoqda...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-8 text-center text-slate-500" colSpan={6}>
+                  <td className="px-4 py-8 text-center text-app-text-muted" colSpan={6}>
                     Xona yo'q. Yuqoridan yangi xona oching.
                   </td>
                 </tr>
               ) : (
                 filtered.map((room) => (
-                  <tr key={room.id} className="hover:bg-slate-50/70">
+                  <tr key={room.id} className="hover:bg-app-bg-muted/70">
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-900">{room.title || `Xona #${room.id}`}</div>
-                      <div className="font-mono text-xs text-slate-500">{room.room_slug}</div>
+                      <div className="font-semibold text-app-text">{room.title || `Xona #${room.id}`}</div>
+                      <div className="font-mono text-xs text-app-text-muted">{room.room_slug}</div>
                     </td>
                     <td className="px-4 py-3">
                       <select
                         value={room.teacher_user_id ?? ''}
                         disabled={actioning === room.id}
                         onChange={(e) => void handleAssign(room, e.target.value)}
-                        className="w-56 rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-blue-500 disabled:opacity-50"
+                        className="w-56 rounded-lg border border-app-border px-2 py-1.5 text-sm outline-none focus:border-blue-500 disabled:opacity-50"
                       >
                         <option value="">— biriktirilmagan —</option>
                         {activeTeachers.map((t) => (
@@ -319,8 +319,8 @@ export default function AdminMeetRoomsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-slate-700">{room.students_count}</td>
-                    <td className="px-4 py-3 font-semibold text-slate-700">{room.upcoming_sessions}</td>
+                    <td className="px-4 py-3 font-semibold text-app-text">{room.students_count}</td>
+                    <td className="px-4 py-3 font-semibold text-app-text">{room.upcoming_sessions}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_CLASSES[room.status]}`}>
                         {STATUS_LABELS[room.status]}
@@ -331,7 +331,7 @@ export default function AdminMeetRoomsPage() {
                         <button
                           type="button"
                           onClick={() => void handleCopy(room)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200"
+                          className="inline-flex items-center gap-1 rounded-lg bg-app-bg-subtle px-3 py-1.5 text-xs font-bold text-app-text hover:bg-slate-200"
                         >
                           {copiedId === room.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                           {copiedId === room.id ? 'Nusxalandi' : 'Havola'}

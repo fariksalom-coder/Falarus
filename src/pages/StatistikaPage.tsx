@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/ui/Foundation';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -15,7 +16,7 @@ import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { KunlikTodayStatsCard } from '../components/stats/KunlikTodayStatsCard';
 import ActivityCalendarCard from '../components/stats/ActivityCalendarCard';
 import AchievementsSection from '../components/achievements/AchievementsSection';
-import { Flame } from 'lucide-react';
+import { Check, BookOpen, Clock3 } from 'lucide-react';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
 
 const EMPTY_STREAK: StreakResponse = {
@@ -65,16 +66,16 @@ function LevelXpCard({
             {loaded ? points.toLocaleString('ru-RU').replace(/,/g, ' ') : '—'}
           </p>
           <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-pmn-gold-deep">
-            <span aria-hidden>💎</span> Ball
+            Ball
           </p>
         </div>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#F1E5C0]/40">
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-app-bg-subtle">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{
             width: `${loaded ? pctInLevel : 0}%`,
-            background: 'linear-gradient(90deg, #EBD199 0%, #D4AC5C 100%)',
+            background: 'var(--app-primary)',
           }}
         />
       </div>
@@ -89,7 +90,7 @@ function MetricTile({
   valueSuffix,
   valueColor,
 }: {
-  emoji: string;
+  emoji: React.ReactNode;
   label: string;
   value: string;
   valueSuffix?: string;
@@ -299,7 +300,7 @@ function PodiumSlot({
       <div className="relative">
         {rank === 1 ? (
           <span aria-hidden className="absolute -top-4 left-1/2 -translate-x-1/2 text-[18px]">
-            👑
+            № 1
           </span>
         ) : null}
         <LeaderboardAvatar
@@ -328,7 +329,7 @@ function PodiumSlot({
         {name || ' '}
       </p>
       <p className="mt-0.5 text-[12px] font-bold text-pmn-gold-deep">
-        <span aria-hidden>🔥</span> {points.toLocaleString('ru-RU').replace(/,/g, ' ')}
+        <span aria-hidden>·</span> {points.toLocaleString('ru-RU').replace(/,/g, ' ')}
       </p>
     </div>
   );
@@ -411,7 +412,7 @@ function ReytingSection({
                 {displayNameFrom(u)}
               </p>
               <p className="shrink-0 text-[13px] font-black text-pmn-gold-deep">
-                <span aria-hidden>🔥</span> {u.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
+                <span aria-hidden>·</span> {u.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
               </p>
             </button>
           ))}
@@ -445,7 +446,7 @@ function ReytingSection({
                 {displayNameFrom(u)}
               </p>
               <p className="shrink-0 text-[13px] font-black text-pmn-gold-deep">
-                <span aria-hidden>🔥</span> {u.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
+                <span aria-hidden>·</span> {u.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
               </p>
             </button>
           ))}
@@ -471,7 +472,7 @@ function ReytingSection({
                 Siz · {displayNameFrom(myRank)}
               </p>
               <p className="shrink-0 text-[13px] font-black text-[#3B2A0A]">
-                <span aria-hidden>🔥</span> {myRank.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
+                <span aria-hidden>·</span> {myRank.points.toLocaleString('ru-RU').replace(/,/g, ' ')}
               </p>
             </div>
           ) : null}
@@ -626,31 +627,29 @@ export default function StatistikaPage() {
   return (
     <div className="profile-premium min-h-screen" style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}>
       <main className="mx-auto max-w-4xl px-4 py-4 md:px-5 md:py-5">
-        <h1 className="profile-heading mb-4 text-[28px] leading-none text-pmn-text md:text-[32px]">
-          {t('stats.title')}
-        </h1>
+        <PageHeader title={t('stats.title')} />
 
         <div className="space-y-4">
           <>
               {/* Streak card — navy passport style with gold guilloche + gold flame chips */}
-              <div className="profile-guilloche relative overflow-hidden rounded-[24px] px-5 py-5 text-white shadow-[0_22px_44px_-18px_rgba(15,27,59,0.55)]">
+              <div className="relative overflow-hidden rounded-xl border border-app-border bg-app-surface px-5 py-5 text-app-text">
                 <div className="relative z-[2] flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10.5px] font-bold uppercase tracking-[0.24em] text-[#D4AC5C]">
-                      Bu hafta <span aria-hidden>🔥</span>
+                    <p className="text-[10.5px] font-bold uppercase tracking-wide text-app-text-muted">
+                      Bu hafta <span aria-hidden>·</span>
                     </p>
                     <div className="mt-2 flex items-baseline gap-2">
-                      <span className="profile-heading text-[42px] leading-none text-white sm:text-[46px]">
+                      <span className="profile-heading text-[30px] leading-none text-app-text sm:text-[34px]">
                         {streakLoaded ? streak.last_7_days.filter(Boolean).length : '—'}
                       </span>
-                      <span className="text-[13px] font-bold text-white/70">/ 7 kun kirdingiz</span>
+                      <span className="text-[13px] font-bold text-app-text-muted">/ 7 kun kirdingiz</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#D4AC5C]">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-app-text-muted">
                       Eng yaxshi
                     </p>
-                    <p className="profile-heading mt-1 text-[22px] leading-none text-white">
+                    <p className="profile-heading mt-1 text-[22px] leading-none text-app-text">
                       {Math.max(streak.streak_days ?? 0, streak.best_streak_days ?? 0)} kun
                     </p>
                   </div>
@@ -662,22 +661,22 @@ export default function StatistikaPage() {
                       <div
                         className={`flex h-12 w-full items-center justify-center rounded-[13px] transition-all ${
                           active
-                            ? 'text-[#0A1638] shadow-[0_10px_20px_-8px_rgba(212,172,92,0.5)]'
-                            : 'bg-pmn-card/10 text-white/40 ring-1 ring-white/15'
+                            ? 'text-app-brand bg-app-icon-bg'
+                            : 'bg-app-bg-muted text-app-text-muted ring-1 ring-app-border'
                         }`}
                         style={
                           active
-                            ? { background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }
+                            ? { background: 'var(--app-icon-bg)' }
                             : undefined
                         }
                       >
                         {active ? (
-                          <span aria-hidden className="text-[18px]">🔥</span>
+                          <Check size={18} aria-hidden />
                         ) : (
-                          <Flame className="h-5 w-5 text-white/30" strokeWidth={2} aria-hidden />
+                          <span className="h-1.5 w-1.5 rounded-full bg-app-border-strong" aria-hidden />
                         )}
                       </div>
-                      <div className={`truncate text-[11px] font-black uppercase tracking-[0.06em] ${active ? 'text-[#D4AC5C]' : 'text-white/50'}`}>
+                      <div className={`truncate text-[11px] font-black uppercase tracking-[0.06em] ${active ? 'text-app-text-muted' : 'text-app-text-muted'}`}>
                         {d}
                       </div>
                     </div>
@@ -690,9 +689,9 @@ export default function StatistikaPage() {
 
               {/* Metric tiles */}
               <div className="grid grid-cols-2 gap-[11px]">
-                <MetricTile emoji="📚" label="So'zlar" value={kunlikMetrics.wordsLearned.toString()} />
+                <MetricTile emoji={<BookOpen size={18} />} label="So'zlar" value={kunlikMetrics.wordsLearned.toString()} />
                 <MetricTile
-                  emoji="⏱️"
+                  emoji={<Clock3 size={18} />}
                   label="O'qish vaqti"
                   value={readingTimeLabel}
                 />

@@ -32,7 +32,7 @@ const toneClasses = {
   green: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
   amber: 'bg-amber-50 text-amber-700 ring-amber-100',
   rose: 'bg-rose-50 text-rose-700 ring-rose-100',
-  slate: 'bg-slate-100 text-slate-700 ring-slate-200',
+  slate: 'bg-app-bg-subtle text-app-text ring-slate-200',
 } as const;
 
 const statusLabels: Record<string, string> = {
@@ -78,7 +78,7 @@ function statusClass(status: string): string {
   if (status === 'approved') return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
   if (status === 'pending') return 'bg-amber-50 text-amber-700 ring-amber-100';
   if (status === 'rejected' || status === 'refunded') return 'bg-rose-50 text-rose-700 ring-rose-100';
-  return 'bg-slate-100 text-slate-700 ring-slate-200';
+  return 'bg-app-bg-subtle text-app-text ring-slate-200';
 }
 
 type DailyPaymentRow = DashboardStats['payments_daily_last_30'][number];
@@ -171,23 +171,23 @@ function DailyPaymentsChart({ rows: rowsInput }: { rows: DailyPaymentRow[] }) {
   const tooltipAlign = tooltipLeftPct > 70 ? 'right' : tooltipLeftPct < 20 ? 'left' : 'center';
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">To'lovlar 30 kunlik statistikasi</h2>
-          <p className="text-sm text-slate-500">Kunlik tushum va sotuvlar soni.</p>
+          <h2 className="text-base font-semibold text-app-text">To'lovlar 30 kunlik statistikasi</h2>
+          <p className="text-sm text-app-text-muted">Kunlik tushum va sotuvlar soni.</p>
         </div>
         <BarChart3 className="h-5 w-5 shrink-0 text-slate-400" />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <div>
-          <span className="text-slate-500">30 kunda to'lovlar: </span>
-          <span className="font-semibold text-slate-900">{formatNumber(totalCount)}</span>
+          <span className="text-app-text-muted">30 kunda to'lovlar: </span>
+          <span className="font-semibold text-app-text">{formatNumber(totalCount)}</span>
         </div>
         <div>
-          <span className="text-slate-500">Jami tushum: </span>
-          <span className="font-semibold text-slate-900">{formatRubFull(totalRub)}</span>
+          <span className="text-app-text-muted">Jami tushum: </span>
+          <span className="font-semibold text-app-text">{formatRubFull(totalRub)}</span>
           <span className="ml-1 text-xs text-slate-400">(1 ₽ = {UZS_PER_RUB} so'm)</span>
         </div>
       </div>
@@ -305,7 +305,7 @@ function DailyPaymentsChart({ rows: rowsInput }: { rows: DailyPaymentRow[] }) {
 
         {hoverRow ? (
           <div
-            className="pointer-events-none absolute z-10 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg"
+            className="pointer-events-none absolute z-10 rounded-lg border border-app-border bg-app-surface px-3 py-2 shadow-lg"
             style={{
               left: `${tooltipLeftPct}%`,
               top: 4,
@@ -321,7 +321,7 @@ function DailyPaymentsChart({ rows: rowsInput }: { rows: DailyPaymentRow[] }) {
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               {formatFullDayLabel(hoverRow.date)}
             </p>
-            <p className="mt-1 text-sm font-bold text-slate-900">
+            <p className="mt-1 text-sm font-bold text-app-text">
               {formatRubFull(revenueToRub(hoverRow.revenue))}
             </p>
             {(hoverRow.revenue.UZS > 0 || hoverRow.revenue.USD > 0 || hoverRow.revenue.RUB > 0) &&
@@ -331,7 +331,7 @@ function DailyPaymentsChart({ rows: rowsInput }: { rows: DailyPaymentRow[] }) {
                 {formatRevenue(hoverRow.revenue)}
               </p>
             ) : null}
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-app-text-muted">
               {formatNumber(hoverRow.count)} ta to'lov
             </p>
           </div>
@@ -356,7 +356,7 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-app-brand border-t-transparent" />
       </div>
     );
   }
@@ -423,14 +423,14 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="ui-page-header flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Admin dashboard</h1>
-          <p className="mt-1 text-sm text-slate-500">Foydalanuvchilar, to'lovlar, support va referral holati.</p>
+          <h1 className="text-2xl font-semibold text-app-text">Umumiy holat</h1>
+          <p className="ui-description">Foydalanuvchilar, to'lovlar, support va referral holati.</p>
         </div>
         <Link
           to={adminPath('/users/create')}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-app-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-app-primary-deep"
         >
           <UserPlus className="h-4 w-4" />
           Yangi foydalanuvchi
@@ -441,17 +441,17 @@ export default function AdminDashboardPage() {
         {cards.map((card) => {
           const Icon = card.icon;
           const content = (
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200">
+            <div className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card transition hover:border-indigo-200">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-500">{card.label}</p>
-                  <p className="mt-2 break-words text-2xl font-semibold leading-tight text-slate-900">{card.value}</p>
+                  <p className="text-sm font-medium text-app-text-muted">{card.label}</p>
+                  <p className="mt-2 break-words text-2xl font-semibold leading-tight text-app-text">{card.value}</p>
                 </div>
                 <span className={`rounded-lg p-2 ring-1 ${toneClasses[card.tone]}`}>
                   <Icon className="h-5 w-5" />
                 </span>
               </div>
-              <div className="mt-4 flex items-center justify-between gap-2 text-sm text-slate-500">
+              <div className="mt-4 flex items-center justify-between gap-2 text-sm text-app-text-muted">
                 <span className="min-w-0 truncate">{card.hint}</span>
                 {card.href ? <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" /> : null}
               </div>
@@ -470,18 +470,18 @@ export default function AdminDashboardPage() {
       <DailyPaymentsChart rows={stats.payments_daily_last_30 ?? []} />
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+        <div className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card xl:col-span-2">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-slate-900">Daromad mahsulotlar bo'yicha</h2>
-              <p className="text-sm text-slate-500">Joriy oyda tasdiqlangan to'lovlar.</p>
+              <h2 className="text-base font-semibold text-app-text">Daromad mahsulotlar bo'yicha</h2>
+              <p className="text-sm text-app-text-muted">Joriy oyda tasdiqlangan to'lovlar.</p>
             </div>
             <Receipt className="h-5 w-5 text-slate-400" />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-left text-slate-500">
+                <tr className="border-b border-app-border text-left text-app-text-muted">
                   <th className="py-2 pr-4 font-medium">Mahsulot</th>
                   <th className="py-2 pr-4 font-medium">Soni</th>
                   <th className="py-2 text-right font-medium">Tushum</th>
@@ -490,31 +490,31 @@ export default function AdminDashboardPage() {
               <tbody>
                 {stats.revenue_by_product_this_month.map((row) => (
                   <tr key={`${row.product_code}-${row.label}`} className="border-b border-slate-50">
-                    <td className="py-3 pr-4 font-medium text-slate-800">{row.label}</td>
-                    <td className="py-3 pr-4 text-slate-600">{formatNumber(row.count)}</td>
-                    <td className="py-3 text-right font-semibold text-slate-900">{formatRevenue(row.revenue)}</td>
+                    <td className="py-3 pr-4 font-medium text-app-text">{row.label}</td>
+                    <td className="py-3 pr-4 text-app-text-muted">{formatNumber(row.count)}</td>
+                    <td className="py-3 text-right font-semibold text-app-text">{formatRevenue(row.revenue)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           {stats.revenue_by_product_this_month.length === 0 ? (
-            <div className="py-8 text-center text-sm text-slate-500">Bu oy tasdiqlangan to'lov yo'q.</div>
+            <div className="py-8 text-center text-sm text-app-text-muted">Bu oy tasdiqlangan to'lov yo'q.</div>
           ) : null}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-slate-900">Click bugun</h2>
-              <p className="text-sm text-slate-500">Callback va payment loglar.</p>
+              <h2 className="text-base font-semibold text-app-text">Click bugun</h2>
+              <p className="text-sm text-app-text-muted">Callback va payment loglar.</p>
             </div>
             <ScrollText className="h-5 w-5 text-slate-400" />
           </div>
           <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-sm text-slate-600">Jami</span>
-              <span className="font-semibold text-slate-900">{formatNumber(stats.click_today.total)}</span>
+            <div className="flex items-center justify-between rounded-lg bg-app-bg-muted px-3 py-2">
+              <span className="text-sm text-app-text-muted">Jami</span>
+              <span className="font-semibold text-app-text">{formatNumber(stats.click_today.total)}</span>
             </div>
             <div className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2">
               <span className="text-sm text-emerald-700">Success</span>
@@ -527,7 +527,7 @@ export default function AdminDashboardPage() {
           </div>
           <Link
             to={adminPath('/click-logs')}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-app-border px-3 py-2 text-sm font-semibold text-app-text hover:bg-app-bg-muted"
           >
             Loglarni ochish
             <ArrowRight className="h-4 w-4" />
@@ -536,24 +536,24 @@ export default function AdminDashboardPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-slate-900">So'nggi to'lovlar</h2>
-            <Link to={adminPath('/payments')} className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+            <h2 className="text-base font-semibold text-app-text">So'nggi to'lovlar</h2>
+            <Link to={adminPath('/payments')} className="text-sm font-semibold text-app-brand hover:text-app-brand">
               Hammasi
             </Link>
           </div>
           <div className="space-y-3">
             {stats.recent_payments.map((payment) => (
-              <div key={payment.id} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+              <div key={payment.id} className="flex items-center justify-between gap-3 border-b border-app-border pb-3 last:border-b-0 last:pb-0">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">{payment.user}</p>
-                  <p className="truncate text-xs text-slate-500">
+                  <p className="truncate text-sm font-semibold text-app-text">{payment.user}</p>
+                  <p className="truncate text-xs text-app-text-muted">
                     {payment.product_label} · {channelLabels[payment.payment_channel ?? ''] ?? '—'} · {formatDateTime(payment.created_at)}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-semibold text-slate-900">{formatMoney(payment.amount, payment.currency)}</p>
+                  <p className="text-sm font-semibold text-app-text">{formatMoney(payment.amount, payment.currency)}</p>
                   <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${statusClass(payment.status)}`}>
                     {statusLabels[payment.status] ?? payment.status}
                   </span>
@@ -561,44 +561,44 @@ export default function AdminDashboardPage() {
               </div>
             ))}
           </div>
-          {stats.recent_payments.length === 0 ? <div className="py-8 text-center text-sm text-slate-500">To'lovlar yo'q.</div> : null}
+          {stats.recent_payments.length === 0 ? <div className="py-8 text-center text-sm text-app-text-muted">To'lovlar yo'q.</div> : null}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-slate-900">Yangi foydalanuvchilar</h2>
-            <Link to={adminPath('/users')} className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+            <h2 className="text-base font-semibold text-app-text">Yangi foydalanuvchilar</h2>
+            <Link to={adminPath('/users')} className="text-sm font-semibold text-app-brand hover:text-app-brand">
               Hammasi
             </Link>
           </div>
           <div className="space-y-3">
             {stats.recent_users.map((user) => (
-              <div key={user.id} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+              <div key={user.id} className="flex items-center justify-between gap-3 border-b border-app-border pb-3 last:border-b-0 last:pb-0">
                 <div className="min-w-0">
-                  <Link to={adminPath(`/users/${user.id}`)} className="truncate text-sm font-semibold text-slate-900 hover:text-indigo-600">
+                  <Link to={adminPath(`/users/${user.id}`)} className="truncate text-sm font-semibold text-app-text hover:text-app-brand">
                     {user.name}
                   </Link>
-                  <p className="truncate text-xs text-slate-500">{user.email ?? user.phone ?? 'Kontakt yoʼq'} · {formatDateTime(user.created_at)}</p>
+                  <p className="truncate text-xs text-app-text-muted">{user.email ?? user.phone ?? 'Kontakt yoʼq'} · {formatDateTime(user.created_at)}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold ring-1 ${user.subscription_status === 'active' ? 'bg-emerald-50 text-emerald-700 ring-emerald-100' : 'bg-slate-100 text-slate-600 ring-slate-200'}`}>
+                <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-semibold ring-1 ${user.subscription_status === 'active' ? 'bg-emerald-50 text-emerald-700 ring-emerald-100' : 'bg-app-bg-subtle text-app-text-muted ring-slate-200'}`}>
                   {user.subscription_status === 'active' ? user.plan_name ?? 'Active' : 'Inactive'}
                 </span>
               </div>
             ))}
           </div>
-          {stats.recent_users.length === 0 ? <div className="py-8 text-center text-sm text-slate-500">Foydalanuvchilar yo'q.</div> : null}
+          {stats.recent_users.length === 0 ? <div className="py-8 text-center text-sm text-app-text-muted">Foydalanuvchilar yo'q.</div> : null}
         </div>
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
         {Object.entries(stats.payment_statuses_this_month).map(([status, count]) => (
-          <div key={status} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div key={status} className="rounded-lg border border-app-border bg-app-surface p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-slate-500">{statusLabels[status] ?? status}</span>
+              <span className="text-sm font-medium text-app-text-muted">{statusLabels[status] ?? status}</span>
               {status === 'approved' ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : null}
             </div>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{formatNumber(count)}</p>
-            <p className="mt-1 text-xs text-slate-500">Joriy oy</p>
+            <p className="mt-2 text-2xl font-semibold text-app-text">{formatNumber(count)}</p>
+            <p className="mt-1 text-xs text-app-text-muted">Joriy oy</p>
           </div>
         ))}
       </section>

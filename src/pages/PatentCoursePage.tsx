@@ -46,23 +46,31 @@ export default function PatentCoursePage() {
 
   return (
     <div className="patent-premium min-h-screen pb-16">
-      <main className="mx-auto max-w-4xl px-4 pb-6 pt-3 sm:px-5">
+      <main className="mx-auto max-w-4xl px-4 pb-6 pt-[max(1rem,env(safe-area-inset-top))] sm:px-5">
         {/* Back button */}
         <div className="mb-4">
+          {/*
+            ORTGA — YOZUVI BILAN va yuqori XAVFSIZ MAYDONdan pastda.
+
+            Ilgari bu faqat belgi edi va sahifaning eng tepasida turardi:
+            telefonda brauzer paneli/notch ostida qolib, umuman ko'rinmasdi.
+            Endi "Orqaga" yozuvi bor (nima qilishi o'qilib turadi) va
+            `env(safe-area-inset-top)` hisobga olinadi.
+          */}
           <button
             type="button"
-            onClick={() => navigate('/')}
-            className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-[#E5DDCB] bg-white/80 text-[#0A1E48] shadow-[0_6px_16px_-8px_rgba(10,30,72,0.2)] transition hover:-translate-y-0.5"
-            aria-label={t('common.back')}
+            onClick={() => navigate('/kurslar')}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-[14px] border border-[#E5DDCB] bg-white/80 px-4 text-[14px] font-bold text-[#0A1E48] shadow-[0_6px_16px_-8px_rgba(10,30,72,0.2)] transition active:scale-[0.98]"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.4} />
+            {t('common.back')}
           </button>
         </div>
 
         {/* Premium navy hero with guilloché + gold seal */}
         <section
           className="patent-guilloche relative mb-5 overflow-hidden rounded-[28px] p-6 text-white shadow-[0_28px_60px_-24px_rgba(10,30,72,0.55)]"
-          style={{ background: '#0A1E48' }}
+          style={{ background: 'var(--platform-hero)' }}
         >
           {/* Guilloché radial rings decor (SVG for crispness) */}
           <svg

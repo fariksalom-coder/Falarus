@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Teacher migrations on VPS PostgreSQL (not Supabase).
-# Requires SSH access: ubuntu@82.115.50.76 (password once, or add ~/.ssh/id_ed25519.pub to server).
+# Requires SSH key access to the production server in lib/vps-config.sh.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VPS="${VPS_SSH:-ubuntu@82.115.50.76}"
+source "$ROOT/scripts/lib/vps-config.sh"
+VPS="$VPS_SSH"
 REMOTE_DIR="${VPS_REMOTE_DIR:-~/Falarus}"
 
 echo "[vps] Copying teacher migrations to ${VPS}:${REMOTE_DIR}/db/migrations/"

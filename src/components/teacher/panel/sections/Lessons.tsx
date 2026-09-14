@@ -81,7 +81,7 @@ export default function Lessons() {
         <Empty text={t.lessonsEmpty} />
       ) : (
         <Card className="px-4 py-1 lg:px-5">
-          <div className="hidden grid-cols-[1.4fr_1fr_0.8fr_0.9fr_1fr_auto] gap-3.5 border-b border-[#F1F0FA] py-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8A8CAE] lg:grid">
+          <div className="hidden grid-cols-[1.4fr_1fr_0.8fr_0.9fr_1fr_auto] gap-3.5 border-b border-app-border py-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-app-text-muted lg:grid">
             <span>{t.colStudent}</span>
             <span>{t.colDate}</span>
             <span>{t.colTime}</span>
@@ -102,22 +102,22 @@ export default function Lessons() {
                   <span className="flex min-w-0 flex-1 items-center gap-3 lg:flex-none">
                     <Avatar name={l.student_name} size={34} />
                     <span className="min-w-0">
-                      <span className="block truncate text-[13.5px] font-medium text-[#171A3D]">
+                      <span className="block truncate text-[13.5px] font-medium text-app-text">
                         {l.student_name}
                       </span>
-                      <span className="block text-[11.5px] text-[#8A8CAE] lg:hidden">
+                      <span className="block text-[11.5px] text-app-text-muted lg:hidden">
                         {l.starts_at ? `${fmtDate(l.starts_at, lang)} · ${fmtTime(l.starts_at)}` : t.timeNotSet}
                       </span>
                     </span>
                   </span>
 
-                  <span className="hidden text-[13px] text-[#3E4166] lg:block">
+                  <span className="hidden text-[13px] text-app-text lg:block">
                     {l.starts_at ? fmtDate(l.starts_at, lang) : t.timeNotSet}
                   </span>
-                  <span className="hidden text-[13px] text-[#3E4166] lg:block">
+                  <span className="hidden text-[13px] text-app-text lg:block">
                     {l.starts_at ? fmtTime(l.starts_at) : t.dash}
                   </span>
-                  <span className="hidden text-[13px] text-[#6E7191] lg:block">
+                  <span className="hidden text-[13px] text-app-text-muted lg:block">
                     {l.duration_minutes} {t.minutesShort}
                   </span>
 
@@ -132,7 +132,7 @@ export default function Lessons() {
                     onClick={() =>
                       showReport && trialId ? go('report', trialId) : openLesson(l)
                     }
-                    className="min-h-[38px] shrink-0 rounded-[10px] bg-[#F5F5FB] px-3.5 text-[12px] font-semibold text-[#3E4166] transition hover:bg-[#EAE9F8]"
+                    className="min-h-[38px] shrink-0 rounded-[10px] bg-app-bg-muted px-3.5 text-[12px] font-semibold text-app-text transition hover:bg-[#EAE9F8]"
                   >
                     {showReport && trialId ? t.reportOpen : t.goToLesson}
                   </button>

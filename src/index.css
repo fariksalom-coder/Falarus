@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/foundation.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -70,18 +71,18 @@
   /* Premium palette (Statistika / Profile / Pricing / Payment / Courses).
      Every recently-redesigned card should reach for these tokens instead of
      hardcoding #131F44 / #F1F0EB / #E5E7EB so that dark mode auto-adapts. */
-  --pmn-card-bg: #FFFFFF;
-  --pmn-card-border: #E5E7EB;
-  --pmn-card-shadow: 0 14px 28px -16px rgba(15, 27, 59, 0.18);
-  --pmn-text: #131F44;                 /* serif heading */
-  --pmn-text-muted: #7A756B;           /* cream-tinted caption */
-  --pmn-text-soft: #9E9787;            /* subtle caption / weekday labels */
-  --pmn-fill-inset: #F8F9FB;           /* rest-of-list row bg */
-  --pmn-fill-inset-border: #EEF1F6;
+  --pmn-card-bg: var(--app-surface);
+  --pmn-card-border: var(--app-border);
+  --pmn-card-shadow: var(--app-shadow-card);
+  --pmn-text: var(--app-text);                 /* serif heading */
+  --pmn-text-muted: var(--app-text-muted);           /* cream-tinted caption */
+  --pmn-text-soft: var(--app-text-secondary);            /* subtle caption / weekday labels */
+  --pmn-fill-inset: var(--app-bg-muted);           /* rest-of-list row bg */
+  --pmn-fill-inset-border: var(--app-border);
   --pmn-fill-cream: #F5F3EC;           /* cream chip / stripe */
   --pmn-fill-cream-strong: #F1F0EB;
   --pmn-fill-cream-border: #E7E5DC;
-  --pmn-pill-bg: #F1F4F9;              /* light pill / tab background */
+  --pmn-pill-bg: var(--app-icon-bg);              /* light pill / tab background */
   --pmn-navy: #0F1B3B;                 /* dark passport surface (stays dark in both themes) */
   --pmn-navy-deep: #0A1638;
   --pmn-gold: #D4AC5C;
@@ -93,6 +94,7 @@
 }
 
 .dark {
+  --app-success-text: #79E8A7;
   /* Surfaces — deep navy */
   --app-bg: #0A1122;
   --app-bg-muted: #0A1122;
@@ -155,18 +157,18 @@
   /* Premium palette — dark theme overrides.
      Navy/gold stay the same; the "cream" and inset fills shift to deep-navy
      so cards feel intentional (not floating white) on the dark bg. */
-  --pmn-card-bg: #142139;
-  --pmn-card-border: rgb(255 255 255 / 0.08);
-  --pmn-card-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --pmn-text: #F0E6CE;                 /* serif heading — warm cream, echoes gold */
-  --pmn-text-muted: #B4AFA0;
-  --pmn-text-soft: #8A8574;
-  --pmn-fill-inset: #182645;
-  --pmn-fill-inset-border: rgb(255 255 255 / 0.06);
+  --pmn-card-bg: var(--app-surface);
+  --pmn-card-border: var(--app-border);
+  --pmn-card-shadow: var(--app-shadow-card);
+  --pmn-text: var(--app-text);                 /* serif heading — warm cream, echoes gold */
+  --pmn-text-muted: var(--app-text-muted);
+  --pmn-text-soft: var(--app-text-secondary);
+  --pmn-fill-inset: var(--app-bg-muted);
+  --pmn-fill-inset-border: var(--app-border);
   --pmn-fill-cream: #1A2949;
   --pmn-fill-cream-strong: #17253F;
   --pmn-fill-cream-border: rgb(255 255 255 / 0.06);
-  --pmn-pill-bg: #1A2949;
+  --pmn-pill-bg: var(--app-icon-bg);
   --pmn-navy: #0F1B3B;
   --pmn-navy-deep: #0A1638;
   --pmn-gold: #E7C578;
@@ -260,7 +262,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Auth pages use Nunito (1B theme) */
 .auth-theme,
 .auth-theme * {
-  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 /* Bottom nav: light SVGs are invisible on dark surfaces */
@@ -303,30 +305,30 @@ h1, h2, h3, h4, h5, h6 {
 .intl-phone-field .iti input {
   min-height: 3.5rem;
   border-radius: 1rem;
-  border-color: #E1E7F1;
+  border-color: var(--app-border-strong);
   border-width: 2px;
-  background: #FFFFFF;
-  color: #17224A;
+  background: var(--app-surface);
+  color: var(--app-text);
   font-weight: 800;
 }
 .intl-phone-field .iti input:focus {
-  border-color: #2F6BFF;
+  border-color: var(--app-brand);
   box-shadow: 0 0 0 4px rgba(47, 107, 255, 0.1);
 }
 .intl-phone-field .iti__country-list {
-  background: #FFFFFF;
-  border: 1px solid #E1E7F1;
-  color: #17224A;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-strong);
+  color: var(--app-text);
 }
 .intl-phone-field .iti__country:hover,
 .intl-phone-field .iti__country.iti__highlight {
   background: rgba(47, 107, 255, 0.08);
 }
 .intl-phone-field .iti__divider {
-  border-bottom-color: #E1E7F1;
+  border-bottom-color: var(--app-border-strong);
 }
 .intl-phone-field .iti__dial-code {
-  color: #B4BFD3;
+  color: var(--app-text-muted);
 }
 /* Force country dropdown to open BELOW the phone field, not above. */
 .intl-phone-field .iti__dropdown-content,
@@ -380,7 +382,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Patent Premium theme — serif titles, cream palette, guilloché motif. */
 .font-serif-display {
-  font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-feature-settings: 'lnum';
   letter-spacing: -0.01em;
 }
@@ -408,7 +410,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Profile — passport-document: cream bg + deep navy card + champagne gold accents. */
 .profile-premium {
-  --pf-bg: #FFFFFF;
+  --pf-bg: var(--app-bg);
   --pf-bg-alt: #F7F7F5;
   --pf-navy: #0F1B3B;
   --pf-navy-deep: #0A1638;
@@ -419,14 +421,14 @@ h1, h2, h3, h4, h5, h6 {
   --pf-gold-bg: rgba(212, 172, 92, 0.14);
   --pf-cream-tile: #FCF8EC;
   --pf-cream-tile-warm: #F8F0DB;
-  --pf-text: #131F44;
-  --pf-text-muted: #7A756B;
+  --pf-text: var(--app-text);
+  --pf-text-muted: var(--app-text-muted);
   --pf-text-faint: #9E9787;
   --pf-border: #E4DBBE;
   background: var(--pf-bg);
 }
 .profile-heading {
-  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-weight: 700;
   letter-spacing: -0.005em;
 }
@@ -474,12 +476,12 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--vz-bg);
 }
 .vnzh-heading {
-  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-weight: 600;
   letter-spacing: -0.005em;
 }
 .vnzh-serif-italic {
-  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-style: italic;
   color: var(--vz-gold-deep);
 }
@@ -585,6 +587,35 @@ h1, h2, h3, h4, h5, h6 {
   --rd-text-muted: var(--gr-text-muted);
   background: var(--gr-bg);
 }
+/*
+ * TANLOV EKRANINING JONLI FONI.
+ *
+ * Video qatlami sahifa MATNIDAN orqada (`-z-10`), lekin sahifa fonidan
+ * oldinda turadi. Sahifa foni oq bo'lgani uchun video ko'rinmay qolmasin
+ * deb, fon aynan shu ekranda shaffof qilinadi.
+ */
+body.kunlik-fon-video .grammar-theme {
+  background: transparent;
+}
+/* Parda — lavha ustida sarlavha va plitkalar kontrasti saqlanadi. */
+.kunlik-fon-parda {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.74) 42%,
+    rgba(255, 255, 255, 0.94) 100%
+  );
+}
+.dark .kunlik-fon-parda {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.94) 0%,
+    rgba(15, 23, 42, 0.72) 42%,
+    rgba(15, 23, 42, 0.94) 100%
+  );
+}
 .grammar-heading {
   font-family: 'Nunito', 'Manrope', sans-serif;
   font-weight: 900;
@@ -650,6 +681,103 @@ h1, h2, h3, h4, h5, h6 {
   --gr-warm-bg: rgba(255, 206, 176, 0.14);
   background: var(--gr-bg);
 }
+
+/* ===========================================================================
+   XARITA — YO'L, TANGA VA TAXTA
+   ---------------------------------------------------------------------------
+   Bezakli o'yin-xarita ko'rinishi. Tayyor rasm to'plamlari mos kelmadi
+   (bir uslubda emas, litsenziyalari har xil), shuning uchun shakl CSS
+   bilan yasalgan: bitta uslub, qo'shimcha fayl yo'q, har o'lchamda tiniq.
+   =========================================================================== */
+
+/* Eshilgan arqon: qiya yo'l-yo'l = eshik, ustidagi yon soyalar = hajm. */
+.xarita-arqon {
+  background-image:
+    /* chap chekka soyasi */
+    linear-gradient(90deg, rgba(120, 86, 20, 0.35) 0 18%, transparent 18% 82%, rgba(120, 86, 20, 0.35) 82% 100%),
+    /* eshik chiziqlari */
+    repeating-linear-gradient(
+      118deg,
+      #E8D2A8 0 4px,
+      #D6B87F 4px 7px,
+      #C4A167 7px 9px,
+      #E8D2A8 9px 13px
+    );
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(120, 86, 20, 0.25);
+}
+
+/* Bosib o'tilgan qism — o'sha arqon, faqat yashil ohangda. */
+.xarita-arqon-otilgan {
+  background-image:
+    linear-gradient(90deg, rgba(6, 78, 43, 0.35) 0 18%, transparent 18% 82%, rgba(6, 78, 43, 0.35) 82% 100%),
+    repeating-linear-gradient(
+      118deg,
+      #63E39B 0 4px,
+      #34D577 4px 7px,
+      #17A75A 7px 9px,
+      #63E39B 9px 13px
+    );
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(6, 78, 43, 0.28);
+}
+
+/*
+   Tanga: tepadan yorug'lik, pastdan soya va ichki halqa — yassi doira
+   emas, quyilgan metall taassuroti.
+*/
+.xarita-tanga {
+  position: relative;
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.65),
+    inset 0 -3px 5px rgba(120, 86, 20, 0.45),
+    0 8px 18px -8px rgba(120, 86, 20, 0.6);
+}
+.xarita-tanga::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+/* Yashil (tugagan) kun tangasi — o'sha hajm, boshqa rang. */
+.xarita-tanga-yashil {
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.5),
+    inset 0 -3px 5px rgba(6, 78, 43, 0.5),
+    0 8px 18px -8px rgba(6, 78, 43, 0.55);
+}
+
+/* Yog'och lavha: tolalar va ikkita mix. */
+.xarita-taxta {
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      rgba(139, 101, 32, 0.09) 0 2px,
+      transparent 2px 9px
+    ),
+    linear-gradient(180deg, #FBF3DF 0%, #F0DFBB 55%, #E6D0A4 100%);
+  box-shadow:
+    inset 0 0 0 2px #E7C578,
+    inset 0 0 0 4px #FBF3DF,
+    inset 0 2px 4px rgba(255, 255, 255, 0.7),
+    0 12px 24px -14px rgba(120, 86, 20, 0.5);
+}
+.xarita-taxta::before,
+.xarita-taxta::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #D8B978, #9A7526);
+}
+.xarita-taxta::before { left: 9px; }
+.xarita-taxta::after { right: 9px; }
 
 /* Feedback pop-in — small bounce + fade for correct/wrong messages. */
 @keyframes msg-pop-in {

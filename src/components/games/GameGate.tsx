@@ -19,13 +19,17 @@ export default function GameGate({ game, children }: { game: string; children: R
   const [quota, setQuota] = useState<GameQuota | null>(null);
   const [xato, setXato] = useState('');
   // Bitta ochilish — bitta yozuv (React qayta chizsa ham takrorlanmasin).
-  const yozildi = useRef(false);
+  const request = useRef<{ token: string; game: string; promise: Promise<GameQuota> } | null>(null);
 
   useEffect(() => {
-    if (!token || yozildi.current) return;
-    yozildi.current = true;
+    if (!token) return;
+    // Reuse the request across StrictMode effect setup/cleanup without losing its result.
+    if (!request.current || request.current.token !== token || request.current.game !== game) {
+      request.current = { token, game, promise: startGamePlay(token, game) };
+    }
+    setQuota(null);
     let alive = true;
-    startGamePlay(token, game)
+    request.current.promise
       .then((q) => alive && setQuota(q))
       .catch((e: Error) => {
         // Server javob bermasa o'yinni yopib qo'ymaymiz — dars ham, o'yin ham

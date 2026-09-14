@@ -51,6 +51,8 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/payment-history',
     '/reyting',
     '/jonli-efir',
+    '/support/parol',
+    '/profile/parol',
     '/auth',
   ]);
   exact.add(ADMIN_BASE_PATH);

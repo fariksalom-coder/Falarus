@@ -1,0 +1,70 @@
+{
+  "results": [
+    {
+      "width": 375,
+      "overflow": false,
+      "ctaVisible": true,
+      "lessons": 5,
+      "locked": 4,
+      "days": 30,
+      "videos": 0,
+      "pass": true
+    },
+    {
+      "test": "last-stage-locked",
+      "width": 375,
+      "pass": true
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "ctaVisible": true,
+      "lessons": 5,
+      "locked": 4,
+      "days": 30,
+      "videos": 0,
+      "pass": true
+    },
+    {
+      "test": "last-stage-locked",
+      "width": 390,
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "overflow": false,
+      "ctaVisible": true,
+      "lessons": 5,
+      "locked": 4,
+      "days": 30,
+      "videos": 0,
+      "pass": true
+    },
+    {
+      "test": "last-stage-locked",
+      "width": 1440,
+      "pass": true
+    },
+    {
+      "test": "paywall",
+      "pass": true
+    },
+    {
+      "test": "correct-day-route",
+      "pass": true
+    },
+    {
+      "test": "golden-future-days",
+      "pass": true
+    },
+    {
+      "test": "selected-day-and-locks",
+      "pass": true
+    },
+    {
+      "test": "profile-stays-scoped",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

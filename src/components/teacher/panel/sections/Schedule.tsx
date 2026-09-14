@@ -34,10 +34,10 @@ type View = 'day' | 'week' | 'month';
 
 const SLOT_STYLE: Record<string, string> = {
   free: 'border border-dashed border-[#B4E0C6] bg-[#EDF8F1] text-[#12703A]',
-  booked: 'bg-[#4B3BE4] text-white',
+  booked: 'bg-app-primary text-white',
   trial: 'bg-[#E6B33E] text-[#3A2A00]',
   blocked:
-    'bg-[repeating-linear-gradient(45deg,#F0EFF7,#F0EFF7_5px,#E7E6F0_5px,#E7E6F0_10px)] text-[#8A8CAE]',
+    'bg-[repeating-linear-gradient(45deg,#F0EFF7,#F0EFF7_5px,#E7E6F0_5px,#E7E6F0_10px)] text-app-text-muted',
   past: 'bg-[#F8F8FC] text-[#B3B4C9]',
 };
 
@@ -242,9 +242,9 @@ export default function Schedule() {
       {err ? <ErrorNote text={err} /> : null}
 
       <Card className="mb-4 overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F1F0FA] p-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-app-border p-3.5">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex gap-0.5 rounded-[12px] bg-[#F5F5FB] p-[3px]">
+            <div className="flex gap-0.5 rounded-[12px] bg-app-bg-muted p-[3px]">
               {(
                 [
                   ['day', t.viewDay],
@@ -257,7 +257,7 @@ export default function Schedule() {
                   type="button"
                   onClick={() => setView(key)}
                   className={`min-h-[36px] rounded-[9px] px-4 text-[12.5px] font-semibold transition ${
-                    view === key ? 'bg-white text-[#171A3D] shadow-sm' : 'text-[#8A8CAE]'
+                    view === key ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted'
                   }`}
                 >
                   {label}
@@ -269,7 +269,7 @@ export default function Schedule() {
               <button
                 type="button"
                 onClick={() => shift(-1)}
-                className="h-9 w-9 rounded-[9px] bg-[#F5F5FB] text-[#3E4166]"
+                className="h-9 w-9 rounded-[9px] bg-app-bg-muted text-app-text"
                 aria-label={t.back}
               >
                 ‹
@@ -277,14 +277,14 @@ export default function Schedule() {
               <button
                 type="button"
                 onClick={() => setAnchor(today)}
-                className="min-h-[36px] rounded-[9px] bg-[#F5F5FB] px-3.5 text-[12.5px] font-semibold text-[#3E4166]"
+                className="min-h-[36px] rounded-[9px] bg-app-bg-muted px-3.5 text-[12.5px] font-semibold text-app-text"
               >
                 {view === 'week' ? t.weekThis : t.today_}
               </button>
               <button
                 type="button"
                 onClick={() => shift(1)}
-                className="h-9 w-9 rounded-[9px] bg-[#F5F5FB] text-[#3E4166]"
+                className="h-9 w-9 rounded-[9px] bg-app-bg-muted text-app-text"
                 aria-label={t.next}
               >
                 ›
@@ -292,9 +292,9 @@ export default function Schedule() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3.5 text-[11.5px] text-[#6E7191]">
+          <div className="flex flex-wrap items-center gap-3.5 text-[11.5px] text-app-text-muted">
             <Legend color="bg-[#EDF8F1] border border-[#B4E0C6]" label={t.slotFree} />
-            <Legend color="bg-[#4B3BE4]" label={t.slotBooked} />
+            <Legend color="bg-app-primary" label={t.slotBooked} />
             <Legend color="bg-[#E6B33E]" label={t.slotTrial} />
             <Legend color="bg-[#E7E6F0]" label={t.slotBlocked} />
           </div>
@@ -333,25 +333,25 @@ export default function Schedule() {
         )}
       </Card>
 
-      <p className="mb-4 text-center text-[11.5px] text-[#A0A1BC]">{t.clickEmptyHint}</p>
+      <p className="mb-4 text-center text-[11.5px] text-app-text-muted">{t.clickEmptyHint}</p>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-4">
           <Card className="p-5">
-            <p className="text-[15.5px] font-semibold text-[#171A3D]">{t.weeklyRules}</p>
-            <p className="mt-1 mb-3 text-[12px] text-[#8A8CAE]">{t.weeklyRulesHint}</p>
+            <p className="text-[15.5px] font-semibold text-app-text">{t.weeklyRules}</p>
+            <p className="mt-1 mb-3 text-[12px] text-app-text-muted">{t.weeklyRulesHint}</p>
             {(data?.rules ?? []).length === 0 ? (
-              <p className="py-4 text-center text-[12.5px] text-[#8A8CAE]">{t.noWeeklyRules}</p>
+              <p className="py-4 text-center text-[12.5px] text-app-text-muted">{t.noWeeklyRules}</p>
             ) : (
               <ul className="space-y-2">
                 {data!.rules.map((r) => (
                   <li
                     key={r.id}
-                    className="flex items-center gap-3 rounded-[13px] border border-[#F1F0FA] bg-[#FAFAFE] px-3.5 py-3"
+                    className="flex items-center gap-3 rounded-[13px] border border-app-border bg-app-bg-muted px-3.5 py-3"
                   >
-                    <span className="min-w-0 flex-1 text-[13px] font-medium text-[#171A3D]">
+                    <span className="min-w-0 flex-1 text-[13px] font-medium text-app-text">
                       {WEEKDAYS[lang][r.weekday]}
-                      <span className="ml-2 text-[12.5px] font-normal text-[#6E7191]">
+                      <span className="ml-2 text-[12.5px] font-normal text-app-text-muted">
                         {r.start_time} — {r.end_time} · {r.slot_minutes} {t.minutesShort}
                       </span>
                     </span>
@@ -370,20 +370,20 @@ export default function Schedule() {
           </Card>
 
           <Card className="p-5">
-            <p className="mb-3 text-[15.5px] font-semibold text-[#171A3D]">{t.oneTimeSlots}</p>
+            <p className="mb-3 text-[15.5px] font-semibold text-app-text">{t.oneTimeSlots}</p>
             {(data?.exceptions ?? []).length === 0 ? (
-              <p className="py-4 text-center text-[12.5px] text-[#8A8CAE]">{t.noExceptions}</p>
+              <p className="py-4 text-center text-[12.5px] text-app-text-muted">{t.noExceptions}</p>
             ) : (
               <ul className="space-y-2">
                 {data!.exceptions.map((x) => (
                   <li
                     key={x.id}
-                    className="flex items-center gap-3 rounded-[13px] border border-[#F1F0FA] bg-[#FAFAFE] px-3.5 py-3"
+                    className="flex items-center gap-3 rounded-[13px] border border-app-border bg-app-bg-muted px-3.5 py-3"
                   >
                     <Tag tone={x.is_available ? 'green' : 'grey'}>
                       {x.is_available ? t.openTimeTag : t.blockedTag}
                     </Tag>
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] text-[#3E4166]">
+                    <span className="min-w-0 flex-1 truncate text-[12.5px] text-app-text">
                       {fmtDate(x.date, lang)}
                       {x.start_time ? ` · ${x.start_time}—${x.end_time}` : ` · ${t.wholeDayBlocked}`}
                       {x.note ? ` · ${x.note}` : ''}
@@ -392,7 +392,7 @@ export default function Schedule() {
                       type="button"
                       disabled={busy}
                       onClick={() => void act(() => unblockTime(token, x.id))}
-                      className="shrink-0 text-[12px] font-semibold text-[#4B3BE4] disabled:opacity-50"
+                      className="shrink-0 text-[12px] font-semibold text-app-brand disabled:opacity-50"
                     >
                       {x.is_available ? t.delete : t.unblock}
                     </button>
@@ -404,9 +404,9 @@ export default function Schedule() {
         </div>
 
         <Card className="p-5">
-          <p className="mb-3 text-[15.5px] font-semibold text-[#171A3D]">{t.historyTitle}</p>
+          <p className="mb-3 text-[15.5px] font-semibold text-app-text">{t.historyTitle}</p>
           {events.length === 0 ? (
-            <p className="py-4 text-center text-[12.5px] text-[#8A8CAE]">{t.historyEmpty}</p>
+            <p className="py-4 text-center text-[12.5px] text-app-text-muted">{t.historyEmpty}</p>
           ) : (
             <ul className="space-y-3">
               {events.map((e, i) => (
@@ -416,15 +416,15 @@ export default function Schedule() {
                       e.type === 'cancelled'
                         ? 'bg-[#E9474D]'
                         : e.type === 'booked'
-                          ? 'bg-[#4B3BE4]'
+                          ? 'bg-app-primary'
                           : e.type === 'block'
                             ? 'bg-[#8A8CAE]'
                             : 'bg-[#17A34A]'
                     }`}
                   />
-                  <p className="text-[12.5px] leading-[1.6] text-[#3E4166]">
+                  <p className="text-[12.5px] leading-[1.6] text-app-text">
                     {eventText(e, t, lang)}
-                    <span className="ml-1.5 text-[#A0A1BC]">· {fmtDate(e.at, lang)}</span>
+                    <span className="ml-1.5 text-app-text-muted">· {fmtDate(e.at, lang)}</span>
                   </p>
                 </li>
               ))}
@@ -464,19 +464,19 @@ function WeekGrid({
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[820px]">
-        <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] border-b border-[#F1F0FA]">
+        <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] border-b border-app-border">
           <div />
           {days.map((d) => (
             <div
               key={d.date}
-              className={`border-l border-[#F1F0FA] px-2 py-3 text-center ${
+              className={`border-l border-app-border px-2 py-3 text-center ${
                 d.date === today ? 'bg-[#F5F3FF]' : ''
               }`}
             >
-              <p className="text-[11.5px] font-medium text-[#8A8CAE]">{WEEKDAYS_SHORT[lang][d.weekday]}</p>
+              <p className="text-[11.5px] font-medium text-app-text-muted">{WEEKDAYS_SHORT[lang][d.weekday]}</p>
               <p
                 className={`text-[16px] font-semibold ${
-                  d.date === today ? 'text-[#4B3BE4]' : 'text-[#171A3D]'
+                  d.date === today ? 'text-app-brand' : 'text-app-text'
                 }`}
               >
                 {Number(d.date.slice(8, 10))}
@@ -487,7 +487,7 @@ function WeekGrid({
 
         {rows.map((time) => (
           <div key={time} className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))]">
-            <div className="border-b border-[#F6F5FC] px-2.5 py-2 text-right text-[11px] text-[#8A8CAE]">
+            <div className="border-b border-[#F6F5FC] px-2.5 py-2 text-right text-[11px] text-app-text-muted">
               {time}
             </div>
             {days.map((d) => {
@@ -597,7 +597,7 @@ function DayList({
         const past = isPast(date, time);
         return (
           <li key={time} className="flex items-center gap-3 px-4 py-2.5">
-            <span className="w-[52px] shrink-0 text-[12.5px] font-medium text-[#8A8CAE]">{time}</span>
+            <span className="w-[52px] shrink-0 text-[12.5px] font-medium text-app-text-muted">{time}</span>
             <span className="h-[46px] min-w-0 flex-1">
               {slot ? (
                 <SlotCell
@@ -614,7 +614,7 @@ function DayList({
                 <button
                   type="button"
                   onClick={() => onToggle(date, time, null)}
-                  className={`h-full w-full rounded-[10px] border border-dashed border-[#D9D8EC] text-[12px] font-semibold text-[#8A8CAE] transition hover:border-[#17A34A] hover:bg-[#EDF8F1] hover:text-[#17A34A] active:scale-[0.98] ${
+                  className={`h-full w-full rounded-[10px] border border-dashed border-app-border text-[12px] font-semibold text-app-text-muted transition hover:border-[#17A34A] hover:bg-[#EDF8F1] hover:text-[#17A34A] active:scale-[0.98] ${
                     busyCell === `${date}-${time}` ? 'animate-pulse border-[#17A34A] bg-[#EDF8F1]' : ''
                   }`}
                 >
@@ -626,7 +626,7 @@ function DayList({
         );
       })}
       {(day?.slots.length ?? 0) === 0 ? (
-        <li className="px-4 py-3 text-center text-[12.5px] text-[#8A8CAE]">{t.dayEmpty}</li>
+        <li className="px-4 py-3 text-center text-[12.5px] text-app-text-muted">{t.dayEmpty}</li>
       ) : null}
     </ul>
   );
@@ -654,7 +654,7 @@ function MonthGrid({
     <div className="p-3">
       <div className="mb-2 grid grid-cols-7 gap-2">
         {[1, 2, 3, 4, 5, 6, 0].map((w) => (
-          <p key={w} className="text-center text-[11.5px] font-medium text-[#8A8CAE]">
+          <p key={w} className="text-center text-[11.5px] font-medium text-app-text-muted">
             {WEEKDAYS_SHORT[lang][w]}
           </p>
         ))}
@@ -671,19 +671,19 @@ function MonthGrid({
               key={d.date}
               type="button"
               onClick={() => onPickDay(d.date)}
-              className={`flex min-h-[86px] flex-col gap-1.5 rounded-[14px] border p-2.5 text-left transition hover:border-[#C9C6EC] ${
-                d.date === today ? 'border-[#4B3BE4] bg-[#F5F3FF]' : 'border-[#F1F0FA] bg-white'
+              className={`flex min-h-[86px] flex-col gap-1.5 rounded-[14px] border p-2.5 text-left transition hover:border-app-border-strong ${
+                d.date === today ? 'border-app-brand bg-[#F5F3FF]' : 'border-app-border bg-app-surface'
               }`}
             >
               <span
                 className={`text-[14px] font-semibold ${
-                  d.date === today ? 'text-[#4B3BE4]' : 'text-[#171A3D]'
+                  d.date === today ? 'text-app-brand' : 'text-app-text'
                 }`}
               >
                 {Number(d.date.slice(8, 10))}
               </span>
               {lessons > 0 ? (
-                <span className="rounded-full bg-[#EFEDFD] px-2 py-0.5 text-[10.5px] font-semibold text-[#4B3BE4]">
+                <span className="rounded-full bg-app-icon-bg px-2 py-0.5 text-[10.5px] font-semibold text-app-brand">
                   {tpl(t.monthLessons, { n: lessons })}
                 </span>
               ) : null}

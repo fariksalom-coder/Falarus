@@ -1,0 +1,235 @@
+{
+  "screens": [
+    {
+      "width": 375,
+      "screen": "today",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "courses",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "games",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "chat",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "teachers",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "stats",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "profile",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "pricing",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "lesson",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "login",
+      "overflow": false
+    },
+    {
+      "width": 375,
+      "screen": "system",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "today",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "courses",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "games",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "chat",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "teachers",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "stats",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "profile",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "pricing",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "lesson",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "login",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "system",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "today",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "courses",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "games",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "chat",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "teachers",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "stats",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "profile",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "pricing",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "lesson",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "login",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "screen": "system",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "today",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "courses",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "games",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "chat",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "teachers",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "stats",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "profile",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "pricing",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "lesson",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "login",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "screen": "system",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "teacher",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "screen": "admin",
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

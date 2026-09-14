@@ -34,6 +34,7 @@ import { mentionToken, parseMentionParts } from '../../../shared/communityMentio
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 import UserCard from './UserCard';
+import ChatAvatar from '../ChatAvatar';
 
 type Props = {
   onBack: () => void;
@@ -755,13 +756,6 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
             {messages.map((msg) => {
               const mine = msg.sender_user_id === user?.id;
               const mentionsMe = !mine && user?.id != null && mentionsUser(msg.content, user.id);
-              const initials = msg.sender_name
-                ?.split(' ')
-                .map((p) => p[0])
-                .filter(Boolean)
-                .slice(0, 2)
-                .join('')
-                .toUpperCase();
               return (
                 <div key={msg.id} className={`group ${mine ? 'flex justify-end' : 'flex items-end gap-2'}`}>
                   {!mine ? (
@@ -777,18 +771,12 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
                         type="button"
                         onClick={() => setKarta(msg.sender_user_id)}
                         aria-label={`${msg.sender_name} ma'lumotlari`}
-                        className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white transition-transform active:scale-90"
-                        style={{ background: 'linear-gradient(145deg, #8B5CF6, #6D28D9)' }}
+                        className="shrink-0 transition-transform active:scale-90"
                       >
-                        {initials || '?'}
+                        <ChatAvatar url={msg.sender_avatar_url} ism={msg.sender_name} />
                       </button>
                     ) : (
-                      <div
-                        className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white"
-                        style={{ background: 'linear-gradient(145deg, #8B5CF6, #6D28D9)' }}
-                      >
-                        {initials || '?'}
-                      </div>
+                      <ChatAvatar url={msg.sender_avatar_url} ism={msg.sender_name} />
                     )
                   ) : null}
                   <div className="max-w-[74%]">

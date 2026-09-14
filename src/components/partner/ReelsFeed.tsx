@@ -12,6 +12,7 @@ import {
   type ReelComment,
 } from '../../api/communityChat';
 import { useAuth } from '../../context/AuthContext';
+import ChatAvatar from '../ChatAvatar';
 
 /**
  * RELS LENTASI — vertikal, bittalab suriladigan videolar.
@@ -329,7 +330,10 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
 
               {/* Pastdagi ma'lumot — video ustida, gradient bilan o'qiladi. */}
               <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-[max(env(safe-area-inset-bottom,0px),16px)] pt-10">
-                <p className="text-[14px] font-black text-white">{r.author_name}</p>
+                <div className="flex items-center gap-2">
+                  <ChatAvatar url={r.author_avatar_url} ism={r.author_name} olcham={28} />
+                  <p className="text-[14px] font-black text-white">{r.author_name}</p>
+                </div>
                 {r.caption ? (
                   <p className="mt-1 max-w-[80%] text-[13.5px] leading-snug text-white/90">
                     {r.caption}
@@ -425,11 +429,14 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
               ) : (
                 <div className="flex flex-col gap-3">
                   {kommlar.map((k) => (
-                    <div key={k.id}>
-                      <p className="text-[12.5px] font-black text-[#0EA5A5]">{k.author_name}</p>
-                      <p className="mt-0.5 whitespace-pre-wrap break-words text-[14px] leading-snug text-pmn-text">
-                        {k.content}
-                      </p>
+                    <div key={k.id} className="flex items-start gap-2">
+                      <ChatAvatar url={k.author_avatar_url} ism={k.author_name} olcham={26} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12.5px] font-black text-[#0EA5A5]">{k.author_name}</p>
+                        <p className="mt-0.5 whitespace-pre-wrap break-words text-[14px] leading-snug text-pmn-text">
+                          {k.content}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>

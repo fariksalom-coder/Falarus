@@ -22,6 +22,8 @@ export type MyPaymentRow = {
   created_at: string;
   status: PaymentStatus;
   approved_at: string | null;
+  /** `manual` | `rahmat` | `click_button` … — eski yozuvlarda bo'lmasligi mumkin. */
+  payment_channel?: string | null;
 };
 
 const PAYMENTS_TTL_MS = 30_000;

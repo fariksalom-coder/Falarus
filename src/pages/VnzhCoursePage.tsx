@@ -92,14 +92,25 @@ export default function VnzhCoursePage() {
 
   return (
     <div className="vnzh-premium min-h-screen pb-16">
-      <main className="mx-auto max-w-4xl px-4 py-5 sm:px-5">
+      <main className="mx-auto max-w-4xl px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))] sm:px-5">
+        {/*
+          ORTGA — `/kurslar` ga, ya'ni BITTA qadam ortga.
+
+          Ilgari `navigate('/')` edi va u to'g'ri ishlardi: kursga bosh
+          sahifadagi kartadan kirilardi. Endi kirish nuqtasi profildagi
+          "Kurslar" qatori va u `/kurslar` ro'yxatini ochadi — `'/'` ga
+          qaytarish o'quvchini bir emas, IKKI qadam orqaga uloqtirardi.
+
+          YOZUVI BILAN: avval faqat belgi edi va telefonda sahifaning eng
+          tepasida, brauzer paneli ostida qolib ketardi.
+        */}
         <button
           type="button"
-          onClick={() => navigate('/')}
-          className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-[13px] bg-pmn-card text-[#123A32] shadow-[0_6px_16px_-6px_rgba(18,58,50,0.25)] ring-1 ring-pmn-border transition active:scale-95"
-          aria-label={t('common.back')}
+          onClick={() => navigate('/kurslar')}
+          className="mb-4 inline-flex min-h-[44px] items-center gap-2 rounded-[14px] bg-pmn-card px-4 text-[14px] font-bold text-[#123A32] shadow-[0_6px_16px_-6px_rgba(18,58,50,0.25)] ring-1 ring-pmn-border transition active:scale-[0.98]"
         >
-          <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
+          <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.4} />
+          {t('common.back')}
         </button>
 
         <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.28em] text-[#9A947F]">

@@ -124,11 +124,11 @@ export default function AdminPaymentMethodsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold text-slate-800">To'lov usullari</h1>
+        <h1 className="text-2xl font-semibold text-app-text">To'lov usullari</h1>
         <button
           type="button"
           onClick={openAdd}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white hover:bg-app-primary-deep"
         >
           <Plus className="h-4 w-4" />
           To'lov usulini qo'shish
@@ -142,37 +142,37 @@ export default function AdminPaymentMethodsPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-slate-500">Yuklanmoqda...</div>
+          <div className="p-8 text-center text-app-text-muted">Yuklanmoqda...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-app-bg-muted border-b border-app-border">
                 <tr>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Valyuta</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Bank</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Karta raqami</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Telefon</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Karta egasi</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Holat</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">Amallar</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Valyuta</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Bank</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Karta raqami</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Telefon</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Karta egasi</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Holat</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">Amallar</th>
                 </tr>
               </thead>
               <tbody>
                 {list.map((p) => (
-                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <tr key={p.id} className="border-b border-app-border hover:bg-app-bg-muted">
                     <td className="py-3 px-4 font-medium">{p.currency}</td>
                     <td className="py-3 px-4">{p.bank_name}</td>
-                    <td className="py-3 px-4 font-mono text-slate-700">{p.card_number}</td>
-                    <td className="py-3 px-4 text-slate-600">{p.phone_number ?? '—'}</td>
+                    <td className="py-3 px-4 font-mono text-app-text">{p.card_number}</td>
+                    <td className="py-3 px-4 text-app-text-muted">{p.phone_number ?? '—'}</td>
                     <td className="py-3 px-4">{p.card_holder_name}</td>
                     <td className="py-3 px-4">
                       <span
                         className={
                           p.status === 'active'
                             ? 'text-green-600 font-medium'
-                            : 'text-slate-500 font-medium'
+                            : 'text-app-text-muted font-medium'
                         }
                       >
                         {p.status === 'active' ? 'Faol' : 'O\'chirilgan'}
@@ -183,7 +183,7 @@ export default function AdminPaymentMethodsPage() {
                         <button
                           type="button"
                           onClick={() => openEdit(p)}
-                          className="rounded p-1.5 text-slate-600 hover:bg-slate-200"
+                          className="rounded p-1.5 text-app-text-muted hover:bg-slate-200"
                           title="Tahrirlash"
                         >
                           <Pencil className="h-4 w-4" />
@@ -192,7 +192,7 @@ export default function AdminPaymentMethodsPage() {
                           type="button"
                           onClick={() => handleToggle(p.id)}
                           disabled={actioning !== null}
-                          className="rounded p-1.5 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
+                          className="rounded p-1.5 text-app-text-muted hover:bg-slate-200 disabled:opacity-50"
                           title={p.status === 'active' ? "O'chirish" : "Yoqish"}
                         >
                           {p.status === 'active' ? (
@@ -219,29 +219,29 @@ export default function AdminPaymentMethodsPage() {
           </div>
         )}
         {!loading && list.length === 0 && (
-          <div className="p-8 text-center text-slate-500">To'lov usullari yo'q.</div>
+          <div className="p-8 text-center text-app-text-muted">To'lov usullari yo'q.</div>
         )}
       </div>
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setModalOpen(false)}>
           <div
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative"
+            className="bg-app-surface rounded-2xl shadow-xl max-w-md w-full p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-100 text-slate-500"
+              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-app-bg-subtle text-app-text-muted"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-bold text-slate-900 mb-4">
+            <h2 className="text-lg font-bold text-app-text mb-4">
               {form.id != null ? "To'lov usulini tahrirlash" : "To'lov usulini qo'shish"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Valyuta</label>
+                <label className="block text-sm font-medium text-app-text mb-1">Valyuta</label>
                 <select
                   value={form.currency}
                   onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -254,7 +254,7 @@ export default function AdminPaymentMethodsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Bank nomi</label>
+                <label className="block text-sm font-medium text-app-text mb-1">Bank nomi</label>
                 <input
                   type="text"
                   value={form.bank_name}
@@ -264,7 +264,7 @@ export default function AdminPaymentMethodsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Karta raqami</label>
+                <label className="block text-sm font-medium text-app-text mb-1">Karta raqami</label>
                 <input
                   type="text"
                   value={form.card_number}
@@ -274,7 +274,7 @@ export default function AdminPaymentMethodsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Telefon raqami</label>
+                <label className="block text-sm font-medium text-app-text mb-1">Telefon raqami</label>
                 <input
                   type="text"
                   value={form.phone_number}
@@ -283,7 +283,7 @@ export default function AdminPaymentMethodsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Karta egasi</label>
+                <label className="block text-sm font-medium text-app-text mb-1">Karta egasi</label>
                 <input
                   type="text"
                   value={form.card_holder_name}
@@ -295,14 +295,14 @@ export default function AdminPaymentMethodsPage() {
               <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                  className="flex-1 rounded-lg bg-app-primary py-2 text-sm font-medium text-white hover:bg-app-primary-deep"
                 >
                   Saqlash
                 </button>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-app-text hover:bg-app-bg-muted"
                 >
                   Bekor qilish
                 </button>

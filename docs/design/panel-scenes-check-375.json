@@ -1,0 +1,81 @@
+{
+  "results": [
+    {
+      "width": 375,
+      "route": "/",
+      "overflow": false,
+      "scene": "learning",
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/learning.svg\"), radial-gradient(at 95% 8%, rgba(77, 132, 227, 0.16), rgba(0, 0, 0, 0) 65%), radial-gradient(at 0% 80%, rgba(65, 164, 207, 0.12), rgba(0, 0, 0, 0) 60%)",
+      "crash": false,
+      "headerPoster": "/kunlik/dars-fon.jpg",
+      "pass": true
+    },
+    {
+      "width": 375,
+      "route": "/games",
+      "overflow": false,
+      "scene": "games",
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/games.svg\"), radial-gradient(at 95% 8%, rgba(133, 85, 227, 0.22), rgba(0, 0, 0, 0) 65%), radial-gradient(at 0% 80%, rgba(65, 164, 207, 0.12), rgba(0, 0, 0, 0) 60%)",
+      "crash": false,
+      "headerPoster": "/backgrounds/games.svg",
+      "pass": true
+    },
+    {
+      "width": 375,
+      "route": "/statistika",
+      "overflow": false,
+      "scene": "statistics",
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/statistics.svg\"), radial-gradient(at 95% 8%, rgba(49, 158, 208, 0.2), rgba(0, 0, 0, 0) 65%), radial-gradient(at 0% 80%, rgba(65, 164, 207, 0.12), rgba(0, 0, 0, 0) 60%)",
+      "crash": false,
+      "headerPoster": "/backgrounds/statistics.svg",
+      "pass": true
+    },
+    {
+      "width": 375,
+      "route": "/partner",
+      "overflow": false,
+      "scene": "conversation",
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/conversation.svg\"), radial-gradient(at 95% 8%, rgba(108, 112, 233, 0.2), rgba(0, 0, 0, 0) 65%), radial-gradient(at 0% 80%, rgba(65, 164, 207, 0.12), rgba(0, 0, 0, 0) 60%)",
+      "crash": false,
+      "pass": true
+    },
+    {
+      "width": 375,
+      "route": "/teachers",
+      "overflow": false,
+      "scene": "teachers",
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/teachers.svg\"), radial-gradient(at 95% 8%, rgba(59, 156, 201, 0.2), rgba(0, 0, 0, 0) 65%), radial-gradient(at 0% 80%, rgba(65, 164, 207, 0.12), rgba(0, 0, 0, 0) 60%)",
+      "crash": false,
+      "pass": true
+    },
+    {
+      "width": 375,
+      "route": "/profile",
+      "overflow": false,
+      "scene": "profile",
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/profile.svg\"), radial-gradient(at 95% 8%, rgba(145, 99, 215, 0.22), rgba(0, 0, 0, 0) 65%), radial-gradient(at 0% 80%, rgba(65, 164, 207, 0.12), rgba(0, 0, 0, 0) 60%)",
+      "crash": false,
+      "headerPoster": "/backgrounds/profile.svg",
+      "pass": true
+    },
+    {
+      "width": 375,
+      "route": "/kurslar",
+      "overflow": false,
+      "scene": "courses",
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/courses.svg\"), radial-gradient(at 95% 8%, rgba(96, 110, 224, 0.2), rgba(0, 0, 0, 0) 65%), radial-gradient(at 0% 80%, rgba(65, 164, 207, 0.12), rgba(0, 0, 0, 0) 60%)",
+      "crash": false,
+      "headerPoster": "/backgrounds/courses.svg",
+      "pass": true
+    },
+    {
+      "test": "game-play-scene",
+      "pass": true
+    },
+    {
+      "test": "background-beyond-header",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

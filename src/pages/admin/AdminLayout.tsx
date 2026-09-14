@@ -3,6 +3,8 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { adminPath } from '../../constants/adminPath';
 import {
+  Menu,
+  X,
   ShieldBan,
   LayoutDashboard,
   BookOpen,
@@ -22,25 +24,27 @@ import {
 import { getAdminHelpChats } from '../../api/admin';
 
 const nav = [
-  { to: adminPath('/dashboard'), label: 'Dashboard', icon: LayoutDashboard },
+  { to: adminPath('/dashboard'), label: 'Umumiy holat', icon: LayoutDashboard },
   { to: adminPath('/content'), label: 'Kurs kontenti', icon: BookOpen },
   { to: adminPath('/onboarding'), label: "So'rovnoma", icon: ClipboardList },
-  { to: adminPath('/users'), label: 'Users', icon: Users },
+  { to: adminPath('/users'), label: 'Foydalanuvchilar', icon: Users },
   { to: adminPath('/users/create'), label: 'Yangi foydalanuvchi', icon: UserPlus },
-  { to: adminPath('/payments'), label: 'Payments', icon: CreditCard },
+  { to: adminPath('/payments'), label: 'To‘lovlar', icon: CreditCard },
+  { to: adminPath('/operators'), label: 'Operatorlar va cheklar', icon: Users },
   { to: adminPath('/teachers'), label: "O'qituvchilar", icon: GraduationCap },
   { to: adminPath('/teacher-trials'), label: 'Sinov darslari', icon: ClipboardList },
   { to: adminPath('/meet-rooms'), label: 'Video xonalar', icon: Video },
   { to: adminPath('/teacher-documents'), label: 'Hujjat tekshiruvi', icon: ClipboardList },
-  { to: adminPath('/click-logs'), label: 'Click logs', icon: ScrollText },
-  { to: adminPath('/referrals'), label: 'Referrals', icon: Wallet },
+  { to: adminPath('/click-logs'), label: 'Click jurnali', icon: ScrollText },
+  { to: adminPath('/referrals'), label: 'Takliflar', icon: Wallet },
   { to: adminPath('/support'), label: 'Yozishmalar', icon: MessageSquare },
   { to: adminPath('/chat-moderation'), label: 'Chat nazorati', icon: ShieldBan },
-  { to: adminPath('/payment-methods'), label: 'Payment Methods', icon: Banknote },
-  { to: adminPath('/tariff-pricing'), label: 'Tariff Pricing', icon: DollarSign },
+  { to: adminPath('/payment-methods'), label: 'To‘lov usullari', icon: Banknote },
+  { to: adminPath('/tariff-pricing'), label: 'Tarif narxlari', icon: DollarSign },
 ] as const;
 
 export default function AdminLayout() {
+  const [menuOpen, setMenuOpen] = useState(false);
   const { logout } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -69,6 +73,8 @@ export default function AdminLayout() {
     };
   }, [location.pathname]);
 
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+
   function handleLogout() {
     logout();
     // Admin panelidan chiqqach saytning o'ziga qaytadi: admin login sahifasida
@@ -78,10 +84,15 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9]">
+    <div className="admin-workspace min-h-screen bg-app-bg-muted">
+      <header className="flex items-center justify-between border-b border-app-border bg-app-surface px-4 py-3 lg:hidden">
+        <strong>FalaRus Admin</strong>
+        <button type="button" aria-expanded={menuOpen} aria-controls="admin-navigation" aria-label={menuOpen ? 'Menyuni yopish' : 'Menyuni ochish'} onClick={() => setMenuOpen(!menuOpen)} className="ui-button ui-button--secondary">{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
+      </header>
       <aside
-        className="fixed inset-y-0 left-0 flex w-[216px] shrink-0 flex-col text-white"
-        style={{ background: '#0C1526' }}
+        id="admin-navigation"
+        className={`${menuOpen ? 'flex' : 'hidden'} relative w-full shrink-0 flex-col text-white lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[224px] lg:overflow-y-auto`}
+        style={{ background: 'var(--app-primary-deep)' }}
       >
         <div
           className="flex items-center gap-2.5 px-[18px] py-4"
@@ -102,7 +113,7 @@ export default function AdminLayout() {
               to={to}
               end={to === adminPath('/users')}
               className={({ isActive }) =>
-                `flex items-center gap-[11px] rounded-[9px] px-3 py-[9px] text-[13.5px] font-semibold transition-colors ${
+                `flex items-center gap-[11px] rounded-[9px] px-3 min-h-[44px] py-[9px] text-[13.5px] font-semibold transition-colors ${
                   isActive
                     ? 'bg-[#0B2A6B] text-white'
                     : 'text-[#8A97AD] hover:bg-white/8 hover:text-white'
@@ -125,14 +136,14 @@ export default function AdminLayout() {
         <div className="p-[10px]" style={{ borderTop: '1px solid #1C2740' }}>
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-[11px] rounded-[9px] px-3 py-[9px] text-[13.5px] font-semibold text-[#8A97AD] hover:bg-white/8 hover:text-white"
+            className="flex w-full items-center gap-[11px] rounded-[9px] px-3 min-h-[44px] py-[9px] text-[13.5px] font-semibold text-[#8A97AD] hover:bg-white/8 hover:text-white"
           >
             <LogOut className="h-[17px] w-[17px]" />
             Chiqish
           </button>
         </div>
       </aside>
-      <main className="min-h-screen ml-[216px] overflow-auto p-6">
+      <main className="min-h-screen min-w-0 overflow-x-auto p-4 lg:ml-[224px] lg:p-8">
         <Outlet />
       </main>
     </div>

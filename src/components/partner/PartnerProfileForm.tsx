@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
 import { savePartnerProfile, type PartnerProfile } from '../../api/partner';
@@ -7,8 +7,9 @@ import { useLocale } from '../../context/LocaleContext';
 
 type Props = {
   existing?: PartnerProfile | null;
-  onSaved: () => void;
+  onSaved: () => void | Promise<void>;
   onBack?: () => void;
+  onBusyChange?: (busy: boolean) => void;
   /** create = first-time anketa; edit = change existing profile */
   variant?: 'create' | 'edit';
 };
@@ -34,6 +35,7 @@ export default function PartnerProfileForm({
   existing,
   onSaved,
   onBack,
+  onBusyChange,
   variant = existing ? 'edit' : 'create',
 }: Props) {
   const { token, user } = useAuth();
@@ -46,6 +48,7 @@ export default function PartnerProfileForm({
   const [goal, setGoal] = useState<string>(existing?.goal ?? '');
   const [about, setAbout] = useState(existing?.about ?? '');
   const [saving, setSaving] = useState(false);
+  const submitting = useRef(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -57,7 +60,9 @@ export default function PartnerProfileForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token || submitting.current) return;
+    submitting.current = true;
+    onBusyChange?.(true);
     setSaving(true);
     setError('');
     try {
@@ -70,10 +75,12 @@ export default function PartnerProfileForm({
         about: about.trim(),
         seeking: existing?.seeking ?? '',
       });
-      onSaved();
+      await onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.loadError'));
     } finally {
+      submitting.current = false;
+      onBusyChange?.(false);
       setSaving(false);
     }
   };

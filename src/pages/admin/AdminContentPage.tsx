@@ -141,8 +141,8 @@ export default function AdminContentPage() {
       {/* Sarlavha + kun tanlash */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-black text-slate-900">Kurs kontenti</h1>
-          <p className="text-[13px] text-slate-500">
+          <h1 className="text-xl font-black text-app-text">Kurs kontenti</h1>
+          <p className="text-[13px] text-app-text-muted">
             Darslik, testlar va mashqlarni shu yerdan tahrirlaysiz
           </p>
         </div>
@@ -151,12 +151,12 @@ export default function AdminContentPage() {
           <button
             type="button"
             onClick={() => setDay((d) => Math.max(1, d - 1))}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 ring-1 ring-slate-200 transition active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-app-surface text-app-text ring-1 ring-slate-200 transition active:scale-95"
             aria-label="Oldingi kun"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+          <div className="flex items-center gap-2 rounded-xl bg-app-surface px-3 py-2 ring-1 ring-slate-200">
             <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Kun</span>
             <input
               type="number"
@@ -167,13 +167,13 @@ export default function AdminContentPage() {
                 const n = Number(e.target.value);
                 if (Number.isFinite(n)) setDay(Math.min(TOTAL_DAYS, Math.max(1, Math.trunc(n))));
               }}
-              className="w-16 bg-transparent text-center text-[16px] font-black text-slate-900 outline-none"
+              className="w-16 bg-transparent text-center text-[16px] font-black text-app-text outline-none"
             />
           </div>
           <button
             type="button"
             onClick={() => setDay((d) => Math.min(TOTAL_DAYS, d + 1))}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-700 ring-1 ring-slate-200 transition active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-app-surface text-app-text ring-1 ring-slate-200 transition active:scale-95"
             aria-label="Keyingi kun"
           >
             <ChevronRight className="h-4 w-4" />
@@ -195,14 +195,14 @@ export default function AdminContentPage() {
                 setSearch('');
               }}
               className={`inline-flex min-h-[40px] items-center gap-2 rounded-xl px-3.5 text-[13px] font-bold transition ${
-                on ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50'
+                on ? 'bg-blue-600 text-white' : 'bg-app-surface text-app-text ring-1 ring-slate-200 hover:bg-app-bg-muted'
               }`}
             >
               {r.label}
               {n != null ? (
                 <span
                   className={`rounded-md px-1.5 py-0.5 text-[11px] font-black ${
-                    on ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                    on ? 'bg-app-surface/20 text-white' : 'bg-app-bg-subtle text-app-text-muted'
                   }`}
                 >
                   {n}
@@ -217,7 +217,7 @@ export default function AdminContentPage() {
           type="button"
           onClick={() => setActiveKey(SQL_TAB)}
           className={`inline-flex min-h-[40px] items-center gap-2 rounded-xl px-3.5 text-[13px] font-black transition ${
-            sqlMode ? 'bg-slate-900 text-white' : 'bg-slate-900/5 text-slate-700 ring-1 ring-slate-300 hover:bg-slate-900/10'
+            sqlMode ? 'bg-slate-900 text-white' : 'bg-slate-900/5 text-app-text ring-1 ring-slate-300 hover:bg-slate-900/10'
           }`}
         >
           <Terminal className="h-4 w-4" /> SQL
@@ -230,13 +230,13 @@ export default function AdminContentPage() {
       <>
       {/* Qidiruv + qo'shish */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl bg-white px-3 ring-1 ring-slate-200">
+        <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl bg-app-surface px-3 ring-1 ring-slate-200">
           <Search className="h-4 w-4 shrink-0 text-slate-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Matn bo'yicha qidirish…"
-            className="min-h-[40px] w-full bg-transparent text-[14px] text-slate-900 outline-none placeholder:text-slate-400"
+            className="min-h-[40px] w-full bg-transparent text-[14px] text-app-text outline-none placeholder:text-slate-400"
           />
           {search ? (
             <button type="button" onClick={() => setSearch('')} aria-label="Tozalash">
@@ -262,13 +262,13 @@ export default function AdminContentPage() {
       ) : null}
 
       {/* Jadval */}
-      <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+      <div className="overflow-hidden rounded-2xl bg-app-surface ring-1 ring-slate-200">
         {loading ? (
-          <div className="flex items-center gap-2 p-6 text-sm text-slate-500">
+          <div className="flex items-center gap-2 p-6 text-sm text-app-text-muted">
             <Loader2 className="h-4 w-4 animate-spin" /> Yuklanmoqda…
           </div>
         ) : rows.length === 0 ? (
-          <div className="p-6 text-sm text-slate-500">
+          <div className="p-6 text-sm text-app-text-muted">
             Bu kunda ma'lumot yo'q.
             {active && !active.singleton ? " «Yangi qo'shish» bilan boshlang." : ''}
           </div>
@@ -276,7 +276,7 @@ export default function AdminContentPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-app-border text-left text-[11px] uppercase tracking-wide text-app-text-muted">
                   <th className="w-10 px-3 py-2.5">#</th>
                   {tableFields.map((f) => (
                     <th key={f.name} className="px-3 py-2.5 font-black">
@@ -291,7 +291,7 @@ export default function AdminContentPage() {
                   <tr key={String(row[active?.pk ?? 'id'])} className="border-b border-slate-50 align-top last:border-0">
                     <td className="px-3 py-3 text-[12px] font-bold text-slate-400">{i + 1}</td>
                     {tableFields.map((f) => (
-                      <td key={f.name} className="max-w-[280px] px-3 py-3 text-slate-700">
+                      <td key={f.name} className="max-w-[280px] px-3 py-3 text-app-text">
                         <span className="line-clamp-3 whitespace-pre-wrap break-words">
                           {cellText(f, row[f.name])}
                         </span>
@@ -304,7 +304,7 @@ export default function AdminContentPage() {
                             <button
                               type="button"
                               onClick={() => onMove(row, 'up')}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 active:scale-95"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted ring-1 ring-slate-200 transition hover:bg-app-bg-muted active:scale-95"
                               aria-label="Yuqoriga"
                             >
                               <ChevronUp className="h-4 w-4" />
@@ -312,7 +312,7 @@ export default function AdminContentPage() {
                             <button
                               type="button"
                               onClick={() => onMove(row, 'down')}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50 active:scale-95"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted ring-1 ring-slate-200 transition hover:bg-app-bg-muted active:scale-95"
                               aria-label="Pastga"
                             >
                               <ChevronDown className="h-4 w-4" />
@@ -423,20 +423,20 @@ function EditDrawer({
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-6" onClick={onClose}>
       <div
-        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
+        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-app-surface p-5 shadow-2xl sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-[17px] font-black text-slate-900">
+            <h2 className="text-[17px] font-black text-app-text">
               {row ? 'Tahrirlash' : "Yangi qo'shish"} · {resource.label}
             </h2>
-            {resource.dayScoped ? <p className="text-[12px] text-slate-500">{day}-kun</p> : null}
+            {resource.dayScoped ? <p className="text-[12px] text-app-text-muted">{day}-kun</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 ring-1 ring-slate-200"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-app-text-muted ring-1 ring-slate-200"
             aria-label="Yopish"
           >
             <X className="h-4 w-4" />
@@ -446,7 +446,7 @@ function EditDrawer({
         <div className="space-y-3.5">
           {resource.fields.map((f) => (
             <label key={f.name} className="block">
-              <span className="mb-1 block text-[12px] font-black text-slate-600">
+              <span className="mb-1 block text-[12px] font-black text-app-text-muted">
                 {f.label}
                 {f.required ? <span className="text-red-500"> *</span> : null}
               </span>
@@ -455,13 +455,13 @@ function EditDrawer({
                   value={values[f.name] ?? ''}
                   onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
                   rows={6}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-[14px] text-slate-900 outline-none focus:border-blue-500"
+                  className="w-full rounded-xl border border-app-border px-3 py-2.5 text-[14px] text-app-text outline-none focus:border-blue-500"
                 />
               ) : f.type === 'select' ? (
                 <select
                   value={values[f.name] ?? ''}
                   onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-                  className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-white px-3 text-[14px] font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  className="min-h-[44px] w-full rounded-xl border border-app-border bg-app-surface px-3 text-[14px] font-semibold text-app-text outline-none focus:border-blue-500"
                 >
                   <option value="">— tanlang —</option>
                   {(f.options ?? []).map((o) => (
@@ -475,7 +475,7 @@ function EditDrawer({
                   type={f.type === 'int' ? 'number' : 'text'}
                   value={values[f.name] ?? ''}
                   onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-                  className="min-h-[44px] w-full rounded-xl border border-slate-200 px-3 text-[14px] text-slate-900 outline-none focus:border-blue-500"
+                  className="min-h-[44px] w-full rounded-xl border border-app-border px-3 text-[14px] text-app-text outline-none focus:border-blue-500"
                 />
               )}
               {f.type === 'stringArray' ? (
@@ -504,7 +504,7 @@ function EditDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[46px] rounded-2xl px-5 text-[15px] font-bold text-slate-600 ring-1 ring-slate-200"
+            className="min-h-[46px] rounded-2xl px-5 text-[15px] font-bold text-app-text-muted ring-1 ring-slate-200"
           >
             Bekor
           </button>

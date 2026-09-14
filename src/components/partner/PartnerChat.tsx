@@ -10,6 +10,7 @@ import {
   type ChatMessage,
 } from '../../api/partner';
 import { useAuth } from '../../context/AuthContext';
+import { resolveAssetUrl } from '../../api';
 import { useLocale } from '../../context/LocaleContext';
 import { usePartnerRealtimeChat } from '../../hooks/usePartnerRealtimeChat';
 import { isRealtimeEnabled } from '../../lib/dbFacadeClient';
@@ -171,9 +172,17 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
             <ArrowLeft className="h-4 w-4" />
           </button>
         )}
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#123A8F] to-[#0B2A6B] text-sm font-bold text-white">
-          {initials}
-        </div>
+        {partner?.avatar_url ? (
+          <img
+            src={resolveAssetUrl(partner.avatar_url) ?? ''}
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#123A8F] to-[#0B2A6B] text-sm font-bold text-white">
+            {initials}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-bold text-slate-900">{partner?.display_name ?? t('common.user')}</p>
           <p className="text-xs text-slate-500">{t('partner.partnerLabel')}</p>

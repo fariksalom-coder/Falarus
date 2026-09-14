@@ -91,7 +91,7 @@ export default function AdminTariffPricingPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-4">Tarif narxlari (valyuta bo'yicha)</h1>
+      <h1 className="text-2xl font-semibold text-app-text mb-4">Tarif narxlari (valyuta bo'yicha)</h1>
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 p-3 flex items-center gap-2 text-red-700 text-sm">
@@ -100,25 +100,25 @@ export default function AdminTariffPricingPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-slate-500">Yuklanmoqda...</div>
+          <div className="p-8 text-center text-app-text-muted">Yuklanmoqda...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-app-bg-muted border-b border-app-border">
                 <tr>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Tarif</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">UZS</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">RUB</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">USD</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">Amallar</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Tarif</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">UZS</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">RUB</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">USD</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">Amallar</th>
                 </tr>
               </thead>
               <tbody>
                 {TARIFF_TYPES.map((tariff_type) => (
-                  <tr key={tariff_type} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-4 font-medium text-slate-800">
+                  <tr key={tariff_type} className="border-b border-app-border hover:bg-app-bg-muted">
+                    <td className="py-3 px-4 font-medium text-app-text">
                       {TARIFF_LABELS[tariff_type] ?? tariff_type}
                     </td>
                     <td className="py-3 px-4 text-right font-mono">
@@ -134,7 +134,7 @@ export default function AdminTariffPricingPage() {
                       <button
                         type="button"
                         onClick={() => openEdit(tariff_type)}
-                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-slate-600 hover:bg-slate-200"
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-app-text-muted hover:bg-slate-200"
                       >
                         <Pencil className="h-4 w-4" />
                         Tahrirlash
@@ -154,23 +154,23 @@ export default function AdminTariffPricingPage() {
           onClick={() => setEditModal(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 relative"
+            className="bg-app-surface rounded-2xl shadow-xl max-w-sm w-full p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setEditModal(null)}
-              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-100 text-slate-500"
+              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-app-bg-subtle text-app-text-muted"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-bold text-slate-900 mb-4">
+            <h2 className="text-lg font-bold text-app-text mb-4">
               {TARIFF_LABELS[editModal.tariff_type]} — narxlarni tahrirlash
             </h2>
             <div className="space-y-4">
               {CURRENCIES.map((curr) => (
                 <div key={curr}>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{curr}</label>
+                  <label className="block text-sm font-medium text-app-text mb-1">{curr}</label>
                   <input
                     type="number"
                     min={0}
@@ -198,14 +198,14 @@ export default function AdminTariffPricingPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-app-primary py-2 text-sm font-medium text-white hover:bg-app-primary-deep disabled:opacity-50"
               >
                 {saving ? 'Saqlanmoqda...' : 'Saqlash'}
               </button>
               <button
                 type="button"
                 onClick={() => setEditModal(null)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-app-text hover:bg-app-bg-muted"
               >
                 Bekor qilish
               </button>

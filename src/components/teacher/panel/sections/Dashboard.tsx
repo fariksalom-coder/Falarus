@@ -118,7 +118,7 @@ export default function Dashboard() {
                 </p>
                 <span
                   className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold ${
-                    next.is_trial ? 'bg-[rgba(230,179,62,0.18)] text-[#F2C75C]' : 'bg-white/10 text-white/80'
+                    next.is_trial ? 'bg-[rgba(230,179,62,0.18)] text-[#F2C75C]' : 'bg-app-surface/10 text-white/80'
                   }`}
                 >
                   {next.is_trial ? t.trialTag : t.regularTag}
@@ -138,7 +138,7 @@ export default function Dashboard() {
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-2.5 rounded-full bg-white/10 px-4 py-2.5">
+                <span className="flex items-center gap-2.5 rounded-full bg-app-surface/10 px-4 py-2.5">
                   <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-[#6CE0A0]" />
                   <span className="text-[12.5px] font-medium">
                     {until != null && until > 0 ? tpl(t.startsIn, { n: until }) : t.lessonNow}
@@ -149,7 +149,7 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => go('student', next.student_user_id!)}
-                      className="min-h-[44px] rounded-[12px] bg-white/12 px-4 text-[13px] font-medium text-white transition hover:bg-white/20"
+                      className="min-h-[44px] rounded-[12px] bg-app-surface/12 px-4 text-[13px] font-medium text-white transition hover:bg-app-surface/20"
                     >
                       {t.openStudent}
                     </button>
@@ -157,7 +157,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => openLesson(next)}
-                    className="min-h-[44px] rounded-[12px] bg-white px-5 text-[13px] font-semibold text-[#12265F] transition active:scale-[0.98]"
+                    className="min-h-[44px] rounded-[12px] bg-app-surface px-5 text-[13px] font-semibold text-[#12265F] transition active:scale-[0.98]"
                   >
                     {t.goToLesson}
                   </button>
@@ -166,8 +166,8 @@ export default function Dashboard() {
             </div>
           ) : (
             <Card className="px-5 py-8 text-center">
-              <p className="text-[15px] font-semibold text-[#171A3D]">{t.noNextLesson}</p>
-              <p className="mx-auto mt-1.5 max-w-[420px] text-[12.5px] text-[#6E7191]">
+              <p className="text-[15px] font-semibold text-app-text">{t.noNextLesson}</p>
+              <p className="mx-auto mt-1.5 max-w-[420px] text-[12.5px] text-app-text-muted">
                 {t.noNextLessonHint}
               </p>
               <PrimaryButton onClick={() => setAddOpen(true)} className="mt-4">
@@ -178,33 +178,33 @@ export default function Dashboard() {
 
           <Card className="p-5">
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-[16px] font-semibold text-[#171A3D]">{t.todaySchedule}</p>
+              <p className="text-[16px] font-semibold text-app-text">{t.todaySchedule}</p>
               <button
                 type="button"
                 onClick={() => go('lessons')}
-                className="text-[12.5px] font-semibold text-[#4B3BE4]"
+                className="text-[12.5px] font-semibold text-app-brand"
               >
                 {t.wholeDay}
               </button>
             </div>
             {s.today.schedule.length === 0 ? (
-              <p className="py-6 text-center text-[13px] text-[#8A8CAE]">{t.noLessonsToday}</p>
+              <p className="py-6 text-center text-[13px] text-app-text-muted">{t.noLessonsToday}</p>
             ) : (
               <ul>
                 {s.today.schedule.map((l) => (
                   <li
                     key={l.id}
-                    className="flex items-center gap-3 border-t border-[#F1F0FA] py-3 first:border-t-0"
+                    className="flex items-center gap-3 border-t border-app-border py-3 first:border-t-0"
                   >
-                    <span className="w-[52px] shrink-0 text-[14px] font-semibold text-[#171A3D]">
+                    <span className="w-[52px] shrink-0 text-[14px] font-semibold text-app-text">
                       {fmtTime(l.starts_at)}
                     </span>
                     <Avatar name={l.student_name} size={34} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-medium text-[#171A3D]">
+                      <span className="block truncate text-[13.5px] font-medium text-app-text">
                         {l.student_name}
                       </span>
-                      <span className="block text-[11.5px] text-[#8A8CAE]">
+                      <span className="block text-[11.5px] text-app-text-muted">
                         {l.duration_minutes} {t.minutesShort}
                       </span>
                     </span>
@@ -214,7 +214,7 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => openLesson(l)}
-                      className="hidden min-h-[38px] rounded-[10px] bg-[#F5F5FB] px-3.5 text-[12px] font-semibold text-[#3E4166] transition hover:bg-[#EAE9F8] sm:block"
+                      className="hidden min-h-[38px] rounded-[10px] bg-app-bg-muted px-3.5 text-[12px] font-semibold text-app-text transition hover:bg-[#EAE9F8] sm:block"
                     >
                       {t.open}
                     </button>
@@ -228,17 +228,17 @@ export default function Dashboard() {
         <div className="space-y-4">
           <Card className="p-5">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[16px] font-semibold text-[#171A3D]">{t.newStudents}</p>
+              <p className="text-[16px] font-semibold text-app-text">{t.newStudents}</p>
               <button
                 type="button"
                 onClick={() => go('students')}
-                className="text-[12.5px] font-semibold text-[#4B3BE4]"
+                className="text-[12.5px] font-semibold text-app-brand"
               >
                 {t.allArrow}
               </button>
             </div>
             {s.new_students.length === 0 ? (
-              <p className="py-5 text-center text-[13px] text-[#8A8CAE]">{t.noNewStudents}</p>
+              <p className="py-5 text-center text-[13px] text-app-text-muted">{t.noNewStudents}</p>
             ) : (
               <ul className="space-y-2.5">
                 {s.new_students.map((st) => (
@@ -246,14 +246,14 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => go('student', st.user_id)}
-                      className="flex w-full items-center gap-3 rounded-[14px] border border-[#F1F0FA] bg-[#FAFAFE] p-3 text-left transition hover:border-[#D8D5F6]"
+                      className="flex w-full items-center gap-3 rounded-[14px] border border-app-border bg-app-bg-muted p-3 text-left transition hover:border-[#D8D5F6]"
                     >
                       <Avatar name={st.name} size={40} tone="green" />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13.5px] font-medium text-[#171A3D]">
+                        <span className="block truncate text-[13.5px] font-medium text-app-text">
                           {st.name}
                         </span>
-                        <span className="block text-[11.5px] text-[#8A8CAE]">
+                        <span className="block text-[11.5px] text-app-text-muted">
                           {st.scheduled_starts_at
                             ? `${t.trialTag} · ${fmtDate(st.scheduled_starts_at, lang)}, ${fmtTime(
                                 st.scheduled_starts_at
@@ -262,7 +262,7 @@ export default function Dashboard() {
                         </span>
                       </span>
                       {st.level ? (
-                        <span className="shrink-0 text-[11.5px] font-semibold text-[#4B3BE4]">
+                        <span className="shrink-0 text-[11.5px] font-semibold text-app-brand">
                           {st.level}
                         </span>
                       ) : null}
@@ -274,26 +274,26 @@ export default function Dashboard() {
           </Card>
 
           <Card className="p-5">
-            <p className="mb-3 text-[16px] font-semibold text-[#171A3D]">{t.quickActions}</p>
+            <p className="mb-3 text-[16px] font-semibold text-app-text">{t.quickActions}</p>
             <div className="grid grid-cols-2 gap-2.5">
               <QuickAction
-                icon={<CalendarPlus className="h-[19px] w-[19px] text-[#4B3BE4]" />}
+                icon={<CalendarPlus className="h-[19px] w-[19px] text-app-brand" />}
                 label={t.qaFreeTime}
                 accent
                 onClick={() => setAddOpen(true)}
               />
               <QuickAction
-                icon={<UserRound className="h-[19px] w-[19px] text-[#3E4166]" />}
+                icon={<UserRound className="h-[19px] w-[19px] text-app-text" />}
                 label={t.qaStudents}
                 onClick={() => go('students')}
               />
               <QuickAction
-                icon={<Video className="h-[19px] w-[19px] text-[#3E4166]" />}
+                icon={<Video className="h-[19px] w-[19px] text-app-text" />}
                 label={t.qaStartLesson}
                 onClick={() => go('class')}
               />
               <QuickAction
-                icon={<GraduationCap className="h-[19px] w-[19px] text-[#3E4166]" />}
+                icon={<GraduationCap className="h-[19px] w-[19px] text-app-text" />}
                 label={t.qaEditProfile}
                 onClick={() => go('anketa')}
               />
@@ -339,11 +339,11 @@ function QuickAction({
       type="button"
       onClick={onClick}
       className={`flex min-h-[76px] flex-col justify-between gap-2 rounded-[14px] p-3.5 text-left transition active:scale-[0.98] ${
-        accent ? 'bg-[#F1EFFE] hover:bg-[#E8E4FD]' : 'bg-[#F5F5FB] hover:bg-[#EAE9F8]'
+        accent ? 'bg-app-icon-bg hover:bg-[#E8E4FD]' : 'bg-app-bg-muted hover:bg-[#EAE9F8]'
       }`}
     >
       {icon}
-      <span className={`text-[12.5px] font-semibold ${accent ? 'text-[#2E2A6B]' : 'text-[#3E4166]'}`}>
+      <span className={`text-[12.5px] font-semibold ${accent ? 'text-[#2E2A6B]' : 'text-app-text'}`}>
         {label}
       </span>
     </button>

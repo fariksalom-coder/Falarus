@@ -100,14 +100,14 @@ export default function Class() {
               onClick={() => {
                 void navigator.clipboard?.writeText(`${window.location.origin}/dars/${room.id}`);
               }}
-              className="min-h-[44px] rounded-[12px] bg-white/12 px-4 text-[13px] font-medium text-white"
+              className="min-h-[44px] rounded-[12px] bg-app-surface/12 px-4 text-[13px] font-medium text-white"
             >
               {t.classCopyLink}
             </button>
             <button
               type="button"
               onClick={() => navigate(`/dars/${room.id}`)}
-              className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-white px-5 text-[13px] font-semibold text-[#12265F]"
+              className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-app-surface px-5 text-[13px] font-semibold text-[#12265F]"
             >
               <Video className="h-[18px] w-[18px]" />
               {t.classEnter}
@@ -127,18 +127,18 @@ export default function Class() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <Card className="p-5">
-          <p className="mb-3 text-[16px] font-semibold text-[#171A3D]">{t.classSessions}</p>
+          <p className="mb-3 text-[16px] font-semibold text-app-text">{t.classSessions}</p>
           {sessions.length === 0 ? (
-            <p className="py-6 text-center text-[13px] text-[#8A8CAE]">{t.classNoSessions}</p>
+            <p className="py-6 text-center text-[13px] text-app-text-muted">{t.classNoSessions}</p>
           ) : (
             <ul className="divide-y divide-[#F6F5FC]">
               {sessions.map((s) => (
                 <li key={s.id} className="flex flex-wrap items-center gap-3 py-3.5">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13.5px] font-medium text-[#171A3D]">
+                    <span className="block truncate text-[13.5px] font-medium text-app-text">
                       {s.title || t.classTitle}
                     </span>
-                    <span className="block text-[11.5px] text-[#8A8CAE]">
+                    <span className="block text-[11.5px] text-app-text-muted">
                       {fmtDateTime(s.starts_at, lang)} · {s.duration_minutes} {t.minutesShort}
                     </span>
                   </span>
@@ -148,7 +148,7 @@ export default function Class() {
                   <button
                     type="button"
                     onClick={() => navigate(`/dars/s/${s.id}`)}
-                    className="min-h-[38px] rounded-[10px] bg-[#F5F5FB] px-3.5 text-[12px] font-semibold text-[#3E4166] transition hover:bg-[#EAE9F8]"
+                    className="min-h-[38px] rounded-[10px] bg-app-bg-muted px-3.5 text-[12px] font-semibold text-app-text transition hover:bg-[#EAE9F8]"
                   >
                     {t.classJoin}
                   </button>
@@ -177,7 +177,7 @@ export default function Class() {
         </Card>
 
         <Card className="p-5">
-          <p className="mb-3 text-[16px] font-semibold text-[#171A3D]">{t.classAddSession}</p>
+          <p className="mb-3 text-[16px] font-semibold text-app-text">{t.classAddSession}</p>
           <div className="flex flex-col gap-3">
             <Field label={t.classSessionTitle}>
               <input

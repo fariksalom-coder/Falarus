@@ -75,7 +75,7 @@ export default function AdminCreateUserPage() {
       <div className="max-w-lg">
         <Link
           to={adminPath('/users')}
-          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-indigo-600 mb-6"
+          className="inline-flex items-center gap-2 text-sm text-app-text-muted hover:text-app-brand mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
           Foydalanuvchilar ro‘yxati
@@ -85,20 +85,20 @@ export default function AdminCreateUserPage() {
             <Check className="h-5 w-5" />
             {created.updated_existing ? 'Foydalanuvchi yangilandi' : 'Foydalanuvchi yaratildi'}
           </div>
-          <p className="text-sm text-slate-700 mb-4">
+          <p className="text-sm text-app-text mb-4">
             {created.updated_existing
               ? 'Mavjud akkaunt yangilandi: yangi parol o‘rnatildi va tanlangan kurslar uchun kirish ochildi.'
               : 'Quyidagi login va parolni foydalanuvchiga bering. Parol boshqa ko‘rinmaydi — kerak bo‘lsa hozir nusxalang.'}
           </p>
-          <div className="space-y-3 rounded-xl bg-white border border-slate-200 p-4">
+          <div className="space-y-3 rounded-xl bg-app-surface border border-app-border p-4">
             <div>
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Login</div>
+              <div className="text-xs font-medium text-app-text-muted uppercase tracking-wide mb-1">Login</div>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm text-slate-900 break-all">{created.login_identifier}</code>
+                <code className="flex-1 text-sm text-app-text break-all">{created.login_identifier}</code>
                 <button
                   type="button"
                   onClick={() => copyText('login', created.login_identifier)}
-                  className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+                  className="shrink-0 rounded-lg border border-app-border p-2 text-app-text-muted hover:bg-app-bg-muted"
                   aria-label="Login nusxalash"
                 >
                   {copiedField === 'login' ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
@@ -106,13 +106,13 @@ export default function AdminCreateUserPage() {
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Parol</div>
+              <div className="text-xs font-medium text-app-text-muted uppercase tracking-wide mb-1">Parol</div>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm text-slate-900 break-all">{created.password}</code>
+                <code className="flex-1 text-sm text-app-text break-all">{created.password}</code>
                 <button
                   type="button"
                   onClick={() => copyText('password', created.password)}
-                  className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
+                  className="shrink-0 rounded-lg border border-app-border p-2 text-app-text-muted hover:bg-app-bg-muted"
                   aria-label="Parol nusxalash"
                 >
                   {copiedField === 'password' ? (
@@ -124,7 +124,7 @@ export default function AdminCreateUserPage() {
               </div>
             </div>
           </div>
-          <p className="text-xs text-slate-500 mt-4">
+          <p className="text-xs text-app-text-muted mt-4">
             ID: {created.user.id} ·{' '}
             {created.grants.week_trial
               ? `1 hafta bepul sinov${created.access_expires_at ? ` — ${new Date(created.access_expires_at).toLocaleString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} gacha` : ''}`
@@ -135,7 +135,7 @@ export default function AdminCreateUserPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               to={adminPath(`/users/${created.user.id}`)}
-              className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+              className="inline-flex items-center justify-center rounded-xl bg-app-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-app-primary-deep"
             >
               Profilni ochish
             </Link>
@@ -153,7 +153,7 @@ export default function AdminCreateUserPage() {
                 setAmountPatent('');
                 setAmountVnzh('');
               }}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-app-surface px-4 py-2.5 text-sm font-medium text-app-text hover:bg-app-bg-muted"
             >
               Yana yaratish
             </button>
@@ -167,13 +167,13 @@ export default function AdminCreateUserPage() {
     <div className="max-w-xl">
       <Link
         to={adminPath('/users')}
-        className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-indigo-600 mb-4"
+        className="inline-flex items-center gap-2 text-sm text-app-text-muted hover:text-app-brand mb-4"
       >
         <ArrowLeft className="h-4 w-4" />
         Orqaga
       </Link>
-      <h1 className="text-2xl font-semibold text-slate-900 mb-1">Yangi foydalanuvchi</h1>
-      <p className="text-sm text-slate-600 mb-6">
+      <h1 className="text-2xl font-semibold text-app-text mb-1">Yangi foydalanuvchi</h1>
+      <p className="text-sm text-app-text-muted mb-6">
         Yangi akkaunt yarating yoki mavjud foydalanuvchini faollashtiring — telefon/email bo‘yicha topilsa,
         parol va tarif yangilanadi.
       </p>
@@ -187,66 +187,66 @@ export default function AdminCreateUserPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_14px_34px_rgba(148,163,184,0.12)] space-y-5"
+        className="rounded-2xl border border-app-border bg-app-surface p-6 shadow-[0_14px_34px_rgba(148,163,184,0.12)] space-y-5"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Ism</label>
+            <label className="block text-sm font-medium text-app-text mb-1">Ism</label>
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+              className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
               autoComplete="off"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Familiya</label>
+            <label className="block text-sm font-medium text-app-text mb-1">Familiya</label>
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+              className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
               autoComplete="off"
             />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-app-text mb-1">
             {isWeekTrial ? 'Telefon raqami' : 'Telefon yoki email'}
           </label>
           <input
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             placeholder={isWeekTrial ? '+998 90 123 45 67' : '+998… yoki name@mail.com'}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+            className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
             autoComplete="off"
             required
           />
           {isWeekTrial && (
-            <p className="mt-1.5 text-xs text-slate-500">
+            <p className="mt-1.5 text-xs text-app-text-muted">
               Sinov rejimida faqat telefon raqami qabul qilinadi. 7 kundan keyin kirish avtomatik yopiladi.
             </p>
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Parol (kamida 8 belgi)</label>
+          <label className="block text-sm font-medium text-app-text mb-1">Parol (kamida 8 belgi)</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+            className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
             autoComplete="new-password"
             required
             minLength={8}
           />
         </div>
 
-        <div className="border-t border-slate-100 pt-5 space-y-4">
+        <div className="border-t border-app-border pt-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Rus tili kursi</label>
+            <label className="block text-sm font-medium text-app-text mb-1">Rus tili kursi</label>
             <select
               value={russianTariff}
               onChange={(e) => onRussianTariffChange(e.target.value as 'none' | 'month' | 'year' | 'week')}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+              className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm bg-app-surface focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
             >
               <option value="none">Tanlanmagan</option>
               <option value="week">1 hafta — bepul sinov</option>
@@ -262,14 +262,14 @@ export default function AdminCreateUserPage() {
           </div>
           {russianTariff !== 'none' && russianTariff !== 'week' && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-app-text mb-1">
                 Rus tili — to‘lov summasi (UZS, ixtiyoriy)
               </label>
               <input
                 value={amountRussian}
                 onChange={(e) => setAmountRussian(e.target.value)}
                 placeholder="Bo‘sh qoldiring — joriy narx"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
                 inputMode="numeric"
               />
             </div>
@@ -282,9 +282,9 @@ export default function AdminCreateUserPage() {
                 checked={grantPatent}
                 disabled={isWeekTrial}
                 onChange={(e) => setGrantPatent(e.target.checked)}
-                className="rounded border-slate-300 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-slate-300 h-4 w-4 text-app-brand focus:ring-indigo-500"
               />
-              <span className="text-sm text-slate-800">Patent imtihoni kursi</span>
+              <span className="text-sm text-app-text">Patent imtihoni kursi</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -292,19 +292,19 @@ export default function AdminCreateUserPage() {
                 checked={grantVnzh}
                 disabled={isWeekTrial}
                 onChange={(e) => setGrantVnzh(e.target.checked)}
-                className="rounded border-slate-300 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                className="rounded border-slate-300 h-4 w-4 text-app-brand focus:ring-indigo-500"
               />
-              <span className="text-sm text-slate-800">VNJ imtihoni kursi</span>
+              <span className="text-sm text-app-text">VNJ imtihoni kursi</span>
             </label>
           </div>
 
           {(grantPatent || grantVnzh) && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Patent / VNJ narxi valyutasi</label>
+              <label className="block text-sm font-medium text-app-text mb-1">Patent / VNJ narxi valyutasi</label>
               <select
                 value={courseCurrency}
                 onChange={(e) => setCourseCurrency(e.target.value as 'UZS' | 'USD' | 'RUB')}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm bg-app-surface focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
               >
                 <option value="UZS">UZS</option>
                 <option value="USD">USD</option>
@@ -314,28 +314,28 @@ export default function AdminCreateUserPage() {
           )}
           {grantPatent && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-app-text mb-1">
                 Patent — summa (ixtiyoriy, tanlangan valyutada)
               </label>
               <input
                 value={amountPatent}
                 onChange={(e) => setAmountPatent(e.target.value)}
                 placeholder="Bo‘sh qoldiring — joriy narx"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
                 inputMode="decimal"
               />
             </div>
           )}
           {grantVnzh && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-app-text mb-1">
                 VNJ — summa (ixtiyoriy, tanlangan valyutada)
               </label>
               <input
                 value={amountVnzh}
                 onChange={(e) => setAmountVnzh(e.target.value)}
                 placeholder="Bo‘sh qoldiring — joriy narx"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+                className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
                 inputMode="decimal"
               />
             </div>
@@ -345,7 +345,7 @@ export default function AdminCreateUserPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 text-white font-medium py-3 text-sm hover:bg-indigo-700 disabled:opacity-60 min-h-[48px]"
+          className="w-full flex items-center justify-center gap-2 rounded-2xl bg-app-primary text-white font-medium py-3 text-sm hover:bg-app-primary-deep disabled:opacity-60 min-h-[48px]"
         >
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
           {isWeekTrial ? 'Sinov akkauntini yaratish' : 'Saqlash va kirishni ochish'}

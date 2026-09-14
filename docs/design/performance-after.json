@@ -1,0 +1,26 @@
+[
+  {
+    "route": "/",
+    "frames": 209,
+    "p95Ms": 16.799999999999272,
+    "slowFrames": 0,
+    "videoCount": 0,
+    "fixedBackground": "scroll, scroll, scroll",
+    "routeLayers": 1,
+    "paintMs": 34,
+    "layoutMs": 14,
+    "styleMs": 48
+  },
+  {
+    "route": "/profile",
+    "frames": 211,
+    "p95Ms": 16.700000000000728,
+    "slowFrames": 0,
+    "videoCount": 0,
+    "fixedBackground": "scroll",
+    "routeLayers": 1,
+    "paintMs": 10,
+    "layoutMs": 1,
+    "styleMs": 81
+  }
+]

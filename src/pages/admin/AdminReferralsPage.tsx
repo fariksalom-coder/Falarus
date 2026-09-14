@@ -54,7 +54,7 @@ export default function AdminReferralsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-4">Referral Withdrawals</h1>
+      <h1 className="text-2xl font-semibold text-app-text mb-4">Referral Withdrawals</h1>
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 p-3 flex items-center gap-2 text-red-700 text-sm">
@@ -63,29 +63,29 @@ export default function AdminReferralsPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-slate-500">Loading...</div>
+          <div className="p-8 text-center text-app-text-muted">Loading...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-app-bg-muted border-b border-app-border">
                 <tr>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">User</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">Amount</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Card</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Phone</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Name</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Status</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">Actions</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">User</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">Amount</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Card</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Phone</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Name</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Status</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {list.map((w) => (
-                  <tr key={w.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <tr key={w.id} className="border-b border-app-border hover:bg-app-bg-muted">
                     <td className="py-3 px-4">{w.user}</td>
                     <td className="py-3 px-4 text-right">{Number(w.amount).toLocaleString()} so'm</td>
-                    <td className="py-3 px-4 font-mono text-slate-600">{w.card_number}</td>
+                    <td className="py-3 px-4 font-mono text-app-text-muted">{w.card_number}</td>
                     <td className="py-3 px-4">{w.phone}</td>
                     <td className="py-3 px-4">{w.full_name}</td>
                     <td className="py-3 px-4">
@@ -159,7 +159,7 @@ export default function AdminReferralsPage() {
           </div>
         )}
         {!loading && list.length === 0 && (
-          <div className="p-8 text-center text-slate-500">No withdrawal requests.</div>
+          <div className="p-8 text-center text-app-text-muted">No withdrawal requests.</div>
         )}
       </div>
     </div>

@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
-import { kunlikRejaPath } from '../utils/kunlikNavigation';
+import { xaritaYoli } from '../utils/kunlikNavigation';
 import {
   answerTakrorlash,
   fetchTakrorlash,
@@ -107,7 +107,7 @@ export default function KunlikTakrorlashPage() {
           <p className="text-sm font-semibold">{error ?? 'Takrorlash uchun savol topilmadi.'}</p>
           <button
             type="button"
-            onClick={() => navigate(kunlikRejaPath(dayNumber))}
+            onClick={() => navigate(xaritaYoli())}
             className="mt-4 min-h-[44px] rounded-2xl border border-[#DDD7F5] bg-white px-4 py-2 text-sm font-bold"
           >
             Ortga
@@ -123,7 +123,7 @@ export default function KunlikTakrorlashPage() {
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => navigate(kunlikRejaPath(dayNumber))}
+            onClick={() => navigate(xaritaYoli())}
             className="flex h-10 w-10 items-center justify-center rounded-[13px] border border-[#DDD7F5] bg-white text-[#2D1B69]"
             aria-label="Ortga"
           >
@@ -224,7 +224,7 @@ export default function KunlikTakrorlashPage() {
             </p>
             <button
               type="button"
-              onClick={() => navigate(kunlikRejaPath(dayNumber))}
+              onClick={() => navigate(xaritaYoli())}
               className="mt-5 min-h-[54px] w-full rounded-[16px] bg-[#22C55E] px-6 py-3 text-[16px] font-black text-white"
             >
               Rejaga qaytish

@@ -63,8 +63,8 @@ export default function AdminChatModerationPage() {
     <div className="mx-auto max-w-[1100px] px-4 py-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-[22px] font-black text-slate-900">Chat nazorati</h1>
-          <p className="mt-1 text-[13px] font-semibold text-slate-500">
+          <h1 className="text-[22px] font-black text-app-text">Chat nazorati</h1>
+          <p className="mt-1 text-[13px] font-semibold text-app-text-muted">
             Bloklangan odam chatlarda yozolmaydi — faqat o'qiydi va Support'ga yoza oladi.
           </p>
         </div>
@@ -72,7 +72,7 @@ export default function AdminChatModerationPage() {
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] font-bold text-slate-700 disabled:opacity-60"
+          className="flex h-10 items-center gap-2 rounded-xl border border-app-border bg-app-surface px-3.5 text-[13px] font-bold text-app-text disabled:opacity-60"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />
           Yangilash
@@ -84,26 +84,26 @@ export default function AdminChatModerationPage() {
       ) : null}
 
       {/* Yangi blok */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-3 text-[15px] font-black text-slate-900">Yangi blok</h2>
+      <section className="mb-6 rounded-2xl border border-app-border bg-app-surface p-5">
+        <h2 className="mb-3 text-[15px] font-black text-app-text">Yangi blok</h2>
         <div className="grid gap-3 sm:grid-cols-[160px_1fr_140px_auto]">
           <input
             value={yangi.userId}
             onChange={(e) => setYangi((v) => ({ ...v, userId: e.target.value }))}
             placeholder="Foydalanuvchi ID"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-[14px] font-semibold text-slate-900 outline-none"
+            className="h-11 rounded-xl border border-app-border px-3 text-[14px] font-semibold text-app-text outline-none"
           />
           <input
             value={yangi.reason}
             onChange={(e) => setYangi((v) => ({ ...v, reason: e.target.value }))}
             placeholder="Sabab (ixtiyoriy)"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-[14px] font-semibold text-slate-900 outline-none"
+            className="h-11 rounded-xl border border-app-border px-3 text-[14px] font-semibold text-app-text outline-none"
           />
           <input
             value={yangi.days}
             onChange={(e) => setYangi((v) => ({ ...v, days: e.target.value }))}
             placeholder="Kun (bo'sh = doim)"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-[14px] font-semibold text-slate-900 outline-none"
+            className="h-11 rounded-xl border border-app-border px-3 text-[14px] font-semibold text-app-text outline-none"
           />
           <button
             type="button"
@@ -127,25 +127,25 @@ export default function AdminChatModerationPage() {
       </section>
 
       {/* Bloklanganlar */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-3 text-[15px] font-black text-slate-900">
+      <section className="mb-6 rounded-2xl border border-app-border bg-app-surface p-5">
+        <h2 className="mb-3 text-[15px] font-black text-app-text">
           Bloklanganlar ({blocks.length})
         </h2>
         {blocks.length === 0 ? (
-          <p className="text-[13px] font-semibold text-slate-500">Hozircha hech kim bloklanmagan.</p>
+          <p className="text-[13px] font-semibold text-app-text-muted">Hozircha hech kim bloklanmagan.</p>
         ) : (
           <div className="space-y-2.5">
             {blocks.map((b) => (
               <div
                 key={b.id}
-                className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 px-4 py-3"
+                className="flex flex-wrap items-center gap-3 rounded-xl bg-app-bg-muted px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-black text-slate-900">
+                  <p className="text-[14px] font-black text-app-text">
                     {b.full_name}{' '}
                     <span className="text-[12px] font-bold text-slate-400">#{b.user_id}</span>
                   </p>
-                  <p className="mt-0.5 text-[12.5px] font-semibold text-slate-500">
+                  <p className="mt-0.5 text-[12.5px] font-semibold text-app-text-muted">
                     {b.phone ?? '—'} · {b.reason || 'sabab yozilmagan'} ·{' '}
                     {b.expires_at
                       ? `${new Date(b.expires_at).toLocaleDateString('uz-UZ')} gacha`
@@ -168,7 +168,7 @@ export default function AdminChatModerationPage() {
                       })
                     )
                   }
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[12.5px] font-bold text-slate-700 disabled:opacity-60"
+                  className="flex h-9 items-center gap-1.5 rounded-lg border border-app-border bg-app-surface px-3 text-[12.5px] font-bold text-app-text disabled:opacity-60"
                 >
                   <Pencil className="h-3.5 w-3.5" aria-hidden />
                   Tahrirlash
@@ -189,13 +189,13 @@ export default function AdminChatModerationPage() {
       </section>
 
       {/* Guruh xabarlari */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-3 text-[15px] font-black text-slate-900">Savol-Javob guruhi — oxirgi xabarlar</h2>
+      <section className="rounded-2xl border border-app-border bg-app-surface p-5">
+        <h2 className="mb-3 text-[15px] font-black text-app-text">Savol-Javob guruhi — oxirgi xabarlar</h2>
         <div className="space-y-2.5">
           {messages.map((m) => (
-            <div key={m.id} className="rounded-xl bg-slate-50 px-4 py-3">
+            <div key={m.id} className="rounded-xl bg-app-bg-muted px-4 py-3">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[13.5px] font-black text-slate-900">
+                <p className="text-[13.5px] font-black text-app-text">
                   {m.sender_name}{' '}
                   <span className="text-[12px] font-bold text-slate-400">#{m.sender_user_id}</span>
                 </p>
@@ -207,7 +207,7 @@ export default function AdminChatModerationPage() {
                   <button
                     type="button"
                     onClick={() => setTahrir({ id: m.id, matn: m.content })}
-                    className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[12px] font-bold text-slate-700"
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-app-border bg-app-surface px-2.5 text-[12px] font-bold text-app-text"
                   >
                     <Pencil className="h-3.5 w-3.5" aria-hidden />
                     Tahrir
@@ -250,7 +250,7 @@ export default function AdminChatModerationPage() {
                     value={tahrir.matn}
                     onChange={(e) => setTahrir({ ...tahrir, matn: e.target.value })}
                     rows={2}
-                    className="flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-[13.5px] font-semibold text-slate-900 outline-none"
+                    className="flex-1 resize-none rounded-xl border border-app-border px-3 py-2 text-[13.5px] font-semibold text-app-text outline-none"
                   />
                   <button
                     type="button"
@@ -262,14 +262,14 @@ export default function AdminChatModerationPage() {
                   </button>
                 </div>
               ) : (
-                <p className="mt-1.5 whitespace-pre-wrap text-[13.5px] font-semibold text-slate-700">
+                <p className="mt-1.5 whitespace-pre-wrap text-[13.5px] font-semibold text-app-text">
                   {m.content}
                 </p>
               )}
             </div>
           ))}
           {messages.length === 0 && !loading ? (
-            <p className="text-[13px] font-semibold text-slate-500">Xabar yo'q.</p>
+            <p className="text-[13px] font-semibold text-app-text-muted">Xabar yo'q.</p>
           ) : null}
         </div>
       </section>

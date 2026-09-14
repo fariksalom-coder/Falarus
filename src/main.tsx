@@ -5,6 +5,7 @@ import AppErrorBoundary from './components/AppErrorBoundary';
 import './index.css';
 import './styles/text-scale-overrides.css';
 import './styles/motion.css';
+import './styles/platform-theme.css';
 import { audioUnlockInit } from './utils/audioUnlock';
 import { haptikaniUlash } from './utils/haptic';
 import { captureAttributionOnce } from './api/onboarding';
@@ -104,16 +105,31 @@ if ('serviceWorker' in navigator) {
         // olinmasin, aks holda yangi versiya kechikib yetadi.
         .register('/sw.js', { updateViaCache: 'none' })
         .then((reg) => {
-          void reg.update(); // darhol yangi versiyani tekshiramiz
+          // Offline yoki vaqtinchalik HTTP xatosi ilovaning ushlanmagan
+          // xatosiga aylanmasin. Keyingi tekshiruvda yana uriniladi.
+          let updating = false;
+          const checkForUpdate = async () => {
+            if (updating || !navigator.onLine) return;
+            updating = true;
+            try {
+              await reg.update();
+            } catch {
+              // Amaldagi service worker ishlashda davom etadi.
+            } finally {
+              updating = false;
+            }
+          };
+          void checkForUpdate();
           // Har 60 soniyada yangilanishни tekshirib turamiz.
           setInterval(() => {
-            void reg.update();
+            void checkForUpdate();
           }, 60_000);
           // Ilovaga qaytganda ham tekshiramiz: fon rejimida taymerlar
           // to'xtatib qo'yiladi, shuning uchun interval yetarli emas.
           document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') void reg.update();
+            if (document.visibilityState === 'visible') void checkForUpdate();
           });
+          window.addEventListener('online', () => void checkForUpdate());
         })
         .catch(() => {
           /* SW registration failed — offline mode simply unavailable */

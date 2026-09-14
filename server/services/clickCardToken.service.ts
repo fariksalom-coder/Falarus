@@ -13,7 +13,9 @@ import {
 import { getClickConfig } from '../../shared/clickConfig.js';
 import {
   buildClickTokenPaymentProofUrl,
-  isExpiredClickPending,
+  isClickLikePendingChannel,
+  isExpiredGatewayPending,
+  isGatewayCheckoutChannel,
 } from '../../shared/clickPayments.js';
 import {
   CARD_PAN_DIGITS_UZ,
@@ -109,7 +111,9 @@ async function userHasPendingPaymentForProduct(
     .eq('product_code', productCode)
     .limit(1)
     .maybeSingle();
-  if (pending && isExpiredClickPending(pending as any)) {
+  if (!pending) return false;
+  // Muddati o'tgan shlyuz checkouti (Click 5 daqiqa, Rahmat 24 soat) — o'lik yozuv, tozalanadi.
+  if (isExpiredGatewayPending(pending as any)) {
     await supabase
       .from('payments')
       .update({ status: 'rejected' })
@@ -117,7 +121,28 @@ async function userHasPendingPaymentForProduct(
       .eq('status', 'pending');
     return false;
   }
-  return Boolean(pending);
+  /*
+   * BOSHQA SHLYUZNING TUGATILMAGAN CHECKOUTI KARTA TO'LOVINI TO'SMAYDI.
+   *
+   * Foydalanuvchi Rahmat oynasini ochib, to'lamay yopsa, `rahmat` kanalida
+   * `pending` yozuv qoladi. Ilgari bu yozuv karta orqali to'lashni ham
+   * bloklardi ("Oldingi to'lov tekshirilmoqda") — `isExpiredClickPending`
+   * `rahmat` kanalini tanimagani uchun 24 soat davomida. Ortida pul yo'q:
+   * pul o'tganida Rahmat callback'i uni `approved` qilgan bo'lardi.
+   *
+   * Yozuvni bu yerda `rejected` QILMAYMIZ: kechikkan haqiqiy callback
+   * `.eq('status','pending')` sharti bilan yozadi, erta bekor qilsak
+   * to'lov egasini topolmay qoladi. U 24 soatdan keyin yoki keyingi Rahmat
+   * urinishida o'zi tozalanadi.
+   *
+   * O'z kanalimizning (`click_*`) yangi yozuvi esa to'sib turadi — u 5
+   * daqiqada muddati o'tadi va shu vaqtda haqiqiy callback kelishi mumkin.
+   */
+  const pendingChannel = String((pending as { payment_channel?: string | null }).payment_channel ?? '');
+  if (isGatewayCheckoutChannel(pendingChannel) && !isClickLikePendingChannel(pendingChannel)) {
+    return false;
+  }
+  return true;
 }
 
 async function chargeCardTokenWithRetries(params: {

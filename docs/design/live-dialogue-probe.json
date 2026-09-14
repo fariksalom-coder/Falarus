@@ -1,0 +1,249 @@
+{
+  "name": "dialogue",
+  "model": "gemini-3.1-flash-live-preview",
+  "voice": "Leda",
+  "seconds": 26.401416666666666,
+  "packets": 125,
+  "mimes": [
+    "audio/pcm;rate=24000"
+  ],
+  "transcript": "Salom! Tayyor misiz? Qani boshladik. Olma ruschada qanday bo'ladi?Olma — яблоко. Endi siz takrorlang: яблоко.To'g'ri! Kitob ruschada qanday bo'ladi?Kitob — книга. Endi siz takrorlang: книга.Mayli, hech qisi yo'q. Keling, bo'lib-bo'lib aytamiz: кни-га. Qani, takrorlangchi?Hechqisi yo'q, keyinchalik yana mashq qilamiz. Suv ruschada qanday bo'ladi, bilasizmi?",
+  "events": [
+    {
+      "t": 1443,
+      "output": "Salom! Tayyor"
+    },
+    {
+      "t": 1834,
+      "output": " misiz?"
+    },
+    {
+      "t": 1941,
+      "output": " Qani"
+    },
+    {
+      "t": 2070,
+      "output": " boshladik."
+    },
+    {
+      "t": 2406,
+      "output": " Olma"
+    },
+    {
+      "t": 2513,
+      "output": " ruschada"
+    },
+    {
+      "t": 2607,
+      "output": " qanday"
+    },
+    {
+      "t": 2787,
+      "output": " bo'ladi?"
+    },
+    {
+      "t": 6287,
+      "turnComplete": 0
+    },
+    {
+      "t": 9883,
+      "input": "Я не знаю."
+    },
+    {
+      "t": 9883,
+      "output": "Olma — яблоко."
+    },
+    {
+      "t": 10370,
+      "output": " Endi"
+    },
+    {
+      "t": 10503,
+      "output": " siz"
+    },
+    {
+      "t": 10625,
+      "output": " takrorlang:"
+    },
+    {
+      "t": 10758,
+      "output": " яблоко."
+    },
+    {
+      "t": 14204,
+      "turnComplete": 1
+    },
+    {
+      "t": 17396,
+      "input": "яблоко"
+    },
+    {
+      "t": 17397,
+      "tools": [
+        {
+          "name": "javob_baholandi",
+          "args": {
+            "savol_raqami": 1,
+            "izoh": "Yordam bilan to'g'ri takrorladi.",
+            "togri": true
+          },
+          "id": "fc_3276007262526110238"
+        }
+      ]
+    },
+    {
+      "t": 18467,
+      "output": "To'g'ri! Kitob"
+    },
+    {
+      "t": 18919,
+      "output": " ruschada"
+    },
+    {
+      "t": 18974,
+      "output": " qanday"
+    },
+    {
+      "t": 19077,
+      "output": " bo'ladi?"
+    },
+    {
+      "t": 21186,
+      "turnComplete": 2
+    },
+    {
+      "t": 24790,
+      "input": "Я не знаю."
+    },
+    {
+      "t": 24792,
+      "output": "Kitob — книга."
+    },
+    {
+      "t": 24954,
+      "output": " Endi"
+    },
+    {
+      "t": 25113,
+      "output": " siz"
+    },
+    {
+      "t": 25226,
+      "output": " takrorlang:"
+    },
+    {
+      "t": 25383,
+      "output": " книга."
+    },
+    {
+      "t": 28572,
+      "turnComplete": 3
+    },
+    {
+      "t": 32058,
+      "input": "Я не знаю."
+    },
+    {
+      "t": 32058,
+      "output": "Mayli, hech"
+    },
+    {
+      "t": 32284,
+      "output": " qisi"
+    },
+    {
+      "t": 32342,
+      "output": " yo'q."
+    },
+    {
+      "t": 32491,
+      "output": " Keling,"
+    },
+    {
+      "t": 32665,
+      "output": " bo'lib-bo'lib"
+    },
+    {
+      "t": 32889,
+      "output": " aytamiz:"
+    },
+    {
+      "t": 33033,
+      "output": " кни-га."
+    },
+    {
+      "t": 33452,
+      "output": " Qani,"
+    },
+    {
+      "t": 33590,
+      "output": " takrorlangchi?"
+    },
+    {
+      "t": 38083,
+      "turnComplete": 4
+    },
+    {
+      "t": 41699,
+      "input": "Я не знаю."
+    },
+    {
+      "t": 41700,
+      "tools": [
+        {
+          "name": "javob_baholandi",
+          "args": {
+            "izoh": "Ikki marta yordam berilsa ham takrorlay olmadi.",
+            "togri": false,
+            "savol_raqami": 2
+          },
+          "id": "fc_9814230436469463055"
+        }
+      ]
+    },
+    {
+      "t": 42644,
+      "output": "Hechqisi yo'q,"
+    },
+    {
+      "t": 42934,
+      "output": " keyinchalik"
+    },
+    {
+      "t": 43118,
+      "output": " yana"
+    },
+    {
+      "t": 43219,
+      "output": " mashq"
+    },
+    {
+      "t": 43293,
+      "output": " qilamiz."
+    },
+    {
+      "t": 43491,
+      "output": " Suv"
+    },
+    {
+      "t": 43627,
+      "output": " ruschada"
+    },
+    {
+      "t": 43703,
+      "output": " qanday"
+    },
+    {
+      "t": 43810,
+      "output": " bo'ladi,"
+    },
+    {
+      "t": 43926,
+      "output": " bilasizmi?"
+    },
+    {
+      "t": 47474,
+      "turnComplete": 5
+    }
+  ]
+}

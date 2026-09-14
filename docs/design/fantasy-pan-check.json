@@ -1,0 +1,33 @@
+{
+  "before": {
+    "header": 11.6875,
+    "map": 206.8671875,
+    "scroll": 0,
+    "page": 0
+  },
+  "wheel": {
+    "header": 11.6875,
+    "map": -293.1328125,
+    "scroll": 500,
+    "page": 0
+  },
+  "drag": {
+    "header": 11.6875,
+    "map": -593.1328125,
+    "scroll": 800,
+    "page": 0
+  },
+  "reverse": {
+    "header": 11.6875,
+    "map": -243.1328125,
+    "scroll": 450,
+    "page": 0
+  },
+  "touch": {
+    "header": 11.6875,
+    "map": -528.1328125,
+    "scroll": 735,
+    "page": 0
+  },
+  "errors": []
+}

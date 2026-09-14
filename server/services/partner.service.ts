@@ -72,6 +72,34 @@ async function handleSaveProfile(userId: number, req: RouterReq, res: RouterRes)
   return res.status(200).json(data);
 }
 
+/**
+ * Berilgan foydalanuvchilarning profil suratlari.
+ *
+ * NEGA ALOHIDA SO'ROV: surat `users` jadvalida, partner anketasi esa
+ * `partner_profiles` da. Ikkalasini bitta so'rovda olish uchun embedded
+ * select kerak bo'lardi — `postgresFacade` uni qo'llamaydi.
+ */
+async function avatarlarniOl(ids: number[]): Promise<Map<number, string | null>> {
+  const xarita = new Map<number, string | null>();
+  const yagona = [...new Set(ids.filter((n) => Number.isFinite(n)))];
+  if (!yagona.length) return xarita;
+  const { data } = await supabase.from('users').select('id, avatar_url').in('id', yagona);
+  for (const u of (data ?? []) as Array<Record<string, unknown>>) {
+    xarita.set(Number(u.id), u.avatar_url ? String(u.avatar_url) : null);
+  }
+  return xarita;
+}
+
+/** Anketaga suratni qo'shadi (anketa yo'q bo'lsa — `null` qaytadi). */
+function suratBilan<T extends object>(
+  anketa: T | null | undefined,
+  userId: number,
+  avatarlar: Map<number, string | null>,
+): (T & { avatar_url: string | null }) | null {
+  if (!anketa) return null;
+  return { ...anketa, avatar_url: avatarlar.get(userId) ?? null };
+}
+
 // ---------------------------------------------------------------------------
 // GET /api/partner/people — list available people
 // ---------------------------------------------------------------------------
@@ -86,7 +114,9 @@ async function handleGetPeople(userId: number, res: RouterRes) {
 
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: 'Xatolik yuz berdi' });
-  return res.status(200).json(data ?? []);
+  const royxat = (data ?? []) as Array<{ user_id: number }>;
+  const avatarlar = await avatarlarniOl(royxat.map((p) => p.user_id));
+  return res.status(200).json(royxat.map((p) => suratBilan(p, p.user_id, avatarlar)));
 }
 
 // ---------------------------------------------------------------------------
@@ -149,9 +179,10 @@ async function handleIncomingRequests(userId: number, res: RouterRes) {
     }
   }
 
+  const avatarlar = await avatarlarniOl(senderIds);
   const result = (data ?? []).map((r) => ({
     ...r,
-    sender_profile: profiles[r.sender_id] ?? null,
+    sender_profile: suratBilan(profiles[r.sender_id], r.sender_id, avatarlar),
   }));
   return res.status(200).json(result);
 }
@@ -180,9 +211,10 @@ async function handleOutgoingRequests(userId: number, res: RouterRes) {
     }
   }
 
+  const avatarlar = await avatarlarniOl(receiverIds);
   const result = (data ?? []).map((r) => ({
     ...r,
-    receiver_profile: profiles[r.receiver_id] ?? null,
+    receiver_profile: suratBilan(profiles[r.receiver_id], r.receiver_id, avatarlar),
   }));
   return res.status(200).json(result);
 }
@@ -300,7 +332,11 @@ async function handleGetMatch(userId: number, res: RouterRes) {
     .eq('user_id', partnerId)
     .maybeSingle();
 
-  return res.status(200).json({ ...match, partner_profile: profile });
+  const avatarlar = await avatarlarniOl([partnerId]);
+  return res.status(200).json({
+    ...match,
+    partner_profile: suratBilan(profile, partnerId, avatarlar),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -432,15 +468,17 @@ async function handleGetStatus(userId: number, res: RouterRes) {
     }
   }
 
+  const avatarlar = await avatarlarniOl([...partnerIds, ...outgoingReceiverIds]);
+
   return res.status(200).json({
     hasProfile: !!profileRes.data,
     matches: matches.map((match) => {
       const partnerId = match.user1_id === userId ? match.user2_id : match.user1_id;
-      return { ...match, partner_profile: partnerProfilesById[partnerId] ?? null };
+      return { ...match, partner_profile: suratBilan(partnerProfilesById[partnerId], partnerId, avatarlar) };
     }),
     outgoingRequests: outgoingRequests.map((request) => ({
       ...request,
-      receiver_profile: outgoingProfilesById[request.receiver_id] ?? null,
+      receiver_profile: suratBilan(outgoingProfilesById[request.receiver_id], request.receiver_id, avatarlar),
     })),
     outgoingRequestsCount: outgoingRequests.length,
     incomingRequestsCount: (incomingRes.data ?? []).length,

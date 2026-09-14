@@ -39,7 +39,7 @@ import { transcribeSpeakingAudio } from '../api/speaking';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { useRememberKunlikDay } from '../hooks/useRememberKunlikDay';
-import { kunlikRejaPath } from '../utils/kunlikNavigation';
+import { xaritaYoli } from '../utils/kunlikNavigation';
 import { playCorrectSound, playWrongSound } from '../utils/sound';
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -59,7 +59,7 @@ export default function DailySpeakingTasksPage() {
   const dayNumber = Number(dayNum ?? '');
   useRememberKunlikDay(dayNumber);
   const { getDay, loaded: kunlikLoaded } = useKunlikProgress();
-  const recorder = useVoiceRecorder();
+  const recorder = useVoiceRecorder(60_000);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -238,7 +238,7 @@ export default function DailySpeakingTasksPage() {
           <p className="text-sm text-amber-950">{error ?? t('common.noData')}</p>
           <button
             type="button"
-            onClick={() => navigate(kunlikRejaPath(dayNumber))}
+            onClick={() => navigate(xaritaYoli())}
             className="mt-4 rounded-xl border bg-white px-4 py-2 text-sm font-semibold"
           >
             {t('common.back')}
@@ -260,7 +260,7 @@ export default function DailySpeakingTasksPage() {
           </p>
           <button
             type="button"
-            onClick={() => navigate(kunlikRejaPath(dayNumber))}
+            onClick={() => navigate(xaritaYoli())}
             className="mt-6 w-full rounded-2xl bg-[#12A150] px-5 py-3.5 text-[15px] font-black text-white"
           >
             Kun rejasiga qaytish
@@ -291,7 +291,7 @@ export default function DailySpeakingTasksPage() {
         <div className="mb-4 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate(kunlikRejaPath(dayNumber))}
+            onClick={() => navigate(xaritaYoli())}
             aria-label={t('common.back')}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white text-app-text shadow-app-soft ring-1 ring-app-border"
           >

@@ -278,7 +278,7 @@ export default function AdminSupportPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-slate-800">Yozishmalar</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-app-text">Yozishmalar</h1>
       {error ? (
         <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
           <AlertCircle className="h-4 w-4 shrink-0" />
@@ -286,21 +286,21 @@ export default function AdminSupportPage() {
         </div>
       ) : null}
 
-      <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+      <div className="mb-4 rounded-xl border border-app-border bg-app-surface p-4 shadow-sm">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-app-text">
           <Megaphone className="h-4 w-4 text-[#0B2A6B]" />
           Guruhga xabar (admin nomidan)
         </div>
-        <p className="mb-3 text-xs text-slate-500">
+        <p className="mb-3 text-xs text-app-text-muted">
           Filtr bo‘yicha har bir foydalanuvchining yordam chatiga alohida xabar tushadi; javoblar shu sahifada ko‘rinadi.
         </p>
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
-          <label className="flex-1 text-xs font-medium text-slate-600">
+          <label className="flex-1 text-xs font-medium text-app-text-muted">
             Filtr
             <select
               value={broadcastFilter}
               onChange={(e) => setBroadcastFilter(e.target.value as HelpBroadcastFilter)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             >
               {BROADCAST_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -314,19 +314,19 @@ export default function AdminSupportPage() {
               type="button"
               onClick={() => void loadBroadcastPreview()}
               disabled={broadcastPreviewLoading}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="rounded-xl border border-slate-300 bg-app-surface px-3 py-2 text-sm font-medium text-app-text hover:bg-app-bg-muted disabled:opacity-50"
             >
               {broadcastPreviewLoading ? 'Hisoblanmoqda...' : 'Qabul qiluvchilar soni'}
             </button>
             {broadcastRecipientCount !== null ? (
-              <span className="text-sm text-slate-600">
-                Taxminan: <strong className="text-slate-900">{broadcastRecipientCount}</strong>
+              <span className="text-sm text-app-text-muted">
+                Taxminan: <strong className="text-app-text">{broadcastRecipientCount}</strong>
               </span>
             ) : null}
           </div>
         </div>
         {broadcastFilter === 'all_users' ? (
-          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-app-text">
             <input
               type="checkbox"
               checked={broadcastConfirmAll}
@@ -348,7 +348,7 @@ export default function AdminSupportPage() {
             type="button"
             onClick={() => void handleBroadcastSend()}
             disabled={broadcastSending || !broadcastText.trim()}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0B2A6B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#071B5E] disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-app-primary px-4 py-2 text-sm font-semibold text-white hover:bg-app-primary-deep disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
             {broadcastSending ? 'Yuborilmoqda...' : 'Guruhga yuborish'}
@@ -357,11 +357,11 @@ export default function AdminSupportPage() {
         </div>
       </div>
 
-      <div className="grid min-h-[740px] overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="grid min-h-[740px] overflow-hidden rounded-xl border border-app-border bg-app-surface">
         {!activeChat ? (
         <aside>
-          <div className="border-b border-slate-200 px-4 py-3">
-            <div className="text-sm font-semibold text-slate-700">Yozishmalar</div>
+          <div className="border-b border-app-border px-4 py-3">
+            <div className="text-sm font-semibold text-app-text">Yozishmalar</div>
             <div className="mt-2 flex gap-1.5">
               {([['all', 'Hammasi'], ['teacher', "O‘qituvchilar"], ['student', "O‘quvchilar"]] as const).map(
                 ([val, label]) => {
@@ -373,7 +373,7 @@ export default function AdminSupportPage() {
                       type="button"
                       onClick={() => setRoleFilter(val)}
                       className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                        roleFilter === val ? 'bg-[#0B2A6B] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        roleFilter === val ? 'bg-app-primary text-white' : 'bg-app-bg-subtle text-app-text-muted hover:bg-slate-200'
                       }`}
                     >
                       {label} ({count})
@@ -384,7 +384,7 @@ export default function AdminSupportPage() {
             </div>
           </div>
           {loading ? (
-            <div className="p-4 text-sm text-slate-500">Yuklanmoqda...</div>
+            <div className="p-4 text-sm text-app-text-muted">Yuklanmoqda...</div>
           ) : (
             <div className="divide-y divide-slate-100">
               {visibleChats.map((chat) => {
@@ -395,7 +395,7 @@ export default function AdminSupportPage() {
                     type="button"
                     onClick={() => setActiveChatId(chat.id)}
                     className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors ${
-                      activeChatId === chat.id ? 'bg-blue-50/70' : 'bg-white hover:bg-slate-50'
+                      activeChatId === chat.id ? 'bg-blue-50/70' : 'bg-app-surface hover:bg-app-bg-muted'
                     }`}
                   >
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3B6FE0] via-[#123A8F] to-[#0B2A6B] text-[12px] font-bold text-white">
@@ -403,7 +403,7 @@ export default function AdminSupportPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-slate-900">
+                        <p className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-app-text">
                           {isTeacherChat(chat) ? (
                             <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">
                               <GraduationCap className="h-3 w-3" /> Ustoz
@@ -414,7 +414,7 @@ export default function AdminSupportPage() {
                         <span className="shrink-0 text-[11px] text-slate-400">{fmtListTime(chat.last_message_at)}</span>
                       </div>
                       <div className="mt-0.5 flex items-center justify-between gap-2">
-                        <p className="line-clamp-1 text-xs text-slate-500">
+                        <p className="line-clamp-1 text-xs text-app-text-muted">
                           {previewMedia.isImage ? 'Rasm' : (chat.last_message?.content ?? 'Xabar yo‘q')}
                         </p>
                         {chat.unread_count > 0 ? (
@@ -427,7 +427,7 @@ export default function AdminSupportPage() {
                   </button>
                 );
               })}
-              {!visibleChats.length && <p className="p-4 text-center text-sm text-slate-500">Chatlar yo‘q</p>}
+              {!visibleChats.length && <p className="p-4 text-center text-sm text-app-text-muted">Chatlar yo‘q</p>}
             </div>
           )}
         </aside>
@@ -436,17 +436,17 @@ export default function AdminSupportPage() {
         {activeChat ? (
           <>
             <section className="flex min-w-0 flex-col">
-              <div className="relative flex items-center justify-center border-b border-slate-200 px-4 py-3">
+              <div className="relative flex items-center justify-center border-b border-app-border px-4 py-3">
                 <button
                   type="button"
                   onClick={() => setActiveChatId(null)}
-                  className="absolute left-4 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  className="absolute left-4 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-app-border text-app-text-muted hover:bg-app-bg-muted"
                   aria-label="Orqaga"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
                 <div className="text-center">
-                  <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-slate-900">
+                  <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-app-text">
                     {activeChat.user.account_type === 'teacher' ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">
                         <GraduationCap className="h-3 w-3" /> Ustoz
@@ -454,14 +454,14 @@ export default function AdminSupportPage() {
                     ) : null}
                     {activeChat.user.name}
                   </p>
-                  <p className="text-xs text-slate-500">{activeChat.user.email ?? '—'}</p>
-                  <p className="text-xs text-slate-500">{activeChat.user.phone ?? '—'}</p>
+                  <p className="text-xs text-app-text-muted">{activeChat.user.email ?? '—'}</p>
+                  <p className="text-xs text-app-text-muted">{activeChat.user.phone ?? '—'}</p>
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto px-4 py-3">
                 {messagesLoading ? (
-                  <p className="text-sm text-slate-500">Xabarlar yuklanmoqda...</p>
+                  <p className="text-sm text-app-text-muted">Xabarlar yuklanmoqda...</p>
                 ) : (
                   <div className="space-y-2.5">
                     {messages.map((msg) => {
@@ -469,7 +469,7 @@ export default function AdminSupportPage() {
                       const media = parseHelpImageMessage(msg.content);
                       return (
                         <div key={msg.id} className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm ${isAdmin ? 'bg-[#0B2A6B] text-white' : 'border border-slate-200 bg-slate-50 text-slate-900'}`}>
+                          <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm ${isAdmin ? 'bg-app-primary text-white' : 'border border-app-border bg-app-bg-muted text-app-text'}`}>
                             {media.isImage && media.imageUrl ? (
                               <img
                                 src={media.imageUrl}
@@ -485,14 +485,14 @@ export default function AdminSupportPage() {
                         </div>
                       );
                     })}
-                    {!messages.length && <p className="py-10 text-center text-sm text-slate-500">Yozishma hali boshlanmagan</p>}
+                    {!messages.length && <p className="py-10 text-center text-sm text-app-text-muted">Yozishma hali boshlanmagan</p>}
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-slate-200 p-3">
+              <div className="border-t border-app-border p-3">
                 <div className="flex gap-2">
-                  <label className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-50">
+                  <label className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-300 text-app-text-muted hover:bg-app-bg-muted">
                     <ImagePlus className="h-4 w-4" />
                     <input
                       type="file"
@@ -518,7 +518,7 @@ export default function AdminSupportPage() {
                     type="button"
                     onClick={() => void handleSend()}
                     disabled={sending || uploadingImage || !text.trim() || !activeChatId}
-                    className="inline-flex items-center gap-1 rounded-xl bg-[#0B2A6B] px-3 py-2 text-sm font-semibold text-white hover:bg-[#071B5E] disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-xl bg-app-primary px-3 py-2 text-sm font-semibold text-white hover:bg-app-primary-deep disabled:opacity-50"
                   >
                     <Send className="h-4 w-4" />
                     Yuborish
@@ -539,7 +539,7 @@ export default function AdminSupportPage() {
           aria-modal="true"
           aria-labelledby="compose-user-title"
         >
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="relative w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl">
             <button
               type="button"
               onClick={() => {
@@ -547,15 +547,15 @@ export default function AdminSupportPage() {
                 setComposeUserId(null);
                 setComposeText('');
               }}
-              className="absolute right-4 top-4 rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+              className="absolute right-4 top-4 rounded-lg p-1 text-app-text-muted hover:bg-app-bg-subtle"
               aria-label="Yopish"
             >
               <X className="h-5 w-5" />
             </button>
-            <h2 id="compose-user-title" className="pr-10 text-lg font-semibold text-slate-900">
+            <h2 id="compose-user-title" className="pr-10 text-lg font-semibold text-app-text">
               Foydalanuvchiga xabar
             </h2>
-            <p className="mt-1 text-sm text-slate-500">ID: {composeUserId}</p>
+            <p className="mt-1 text-sm text-app-text-muted">ID: {composeUserId}</p>
             <textarea
               value={composeText}
               onChange={(e) => setComposeText(e.target.value)}
@@ -571,7 +571,7 @@ export default function AdminSupportPage() {
                   setComposeUserId(null);
                   setComposeText('');
                 }}
-                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-app-text hover:bg-app-bg-muted"
               >
                 Bekor qilish
               </button>
@@ -579,7 +579,7 @@ export default function AdminSupportPage() {
                 type="button"
                 onClick={() => void handleComposeSend()}
                 disabled={composeSending || !composeText.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#0B2A6B] px-4 py-2 text-sm font-semibold text-white hover:bg-[#071B5E] disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-app-primary px-4 py-2 text-sm font-semibold text-white hover:bg-app-primary-deep disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
                 {composeSending ? 'Yuborilmoqda...' : 'Yuborish'}

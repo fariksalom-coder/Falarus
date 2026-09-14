@@ -251,10 +251,10 @@ export default function Anketa() {
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#171A3D] lg:text-[27px]">
+          <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-app-text lg:text-[27px]">
             {t.anketaTitle}
           </h1>
-          <p className="mt-1 text-[13px] text-[#6E7191] lg:text-[14px]">
+          <p className="mt-1 text-[13px] text-app-text-muted lg:text-[14px]">
             {tpl(t.anketaSubtitle, { step, pct: percent })}
           </p>
         </div>
@@ -310,10 +310,10 @@ export default function Anketa() {
                 onClick={() => setStep(s.step)}
                 className={`mb-0.5 flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left text-[12.5px] transition ${
                   on
-                    ? 'bg-[#F1EFFE] font-semibold text-[#2E2A6B]'
+                    ? 'bg-app-icon-bg font-semibold text-[#2E2A6B]'
                     : gap
                       ? 'font-semibold text-[#C23A3F] hover:bg-[#FFF6F6]'
-                      : 'text-[#5B5E86] hover:bg-[#FAFAFE]'
+                      : 'text-app-text-muted hover:bg-app-bg-muted'
                 }`}
               >
                 <span
@@ -323,8 +323,8 @@ export default function Anketa() {
                       : s.done
                         ? 'bg-[#17A34A] text-white'
                         : on
-                          ? 'bg-[#4B3BE4] text-white'
-                          : 'bg-[#F0EFF8] text-[#8A8CAE]'
+                          ? 'bg-app-primary text-white'
+                          : 'bg-app-bg-subtle text-app-text-muted'
                   }`}
                 >
                   {gap ? '!' : s.done ? '✓' : s.step}
@@ -346,12 +346,12 @@ export default function Anketa() {
                 onClick={() => setStep(s.step)}
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${
                   s.step === step
-                    ? 'bg-[#4B3BE4] text-white'
+                    ? 'bg-app-primary text-white'
                     : gap
                       ? 'bg-[#FFF6F6] text-[#C23A3F] ring-1 ring-[#F3C7C7]'
                       : s.done
                         ? 'bg-[#E7F4EC] text-[#17A34A]'
-                        : 'bg-white text-[#8A8CAE] ring-1 ring-[#E4E3F2]'
+                        : 'bg-app-surface text-app-text-muted ring-1 ring-[#E4E3F2]'
                 }`}
               >
                 {s.step === step ? s.step : gap ? '!' : s.done ? '✓' : s.step}
@@ -362,10 +362,10 @@ export default function Anketa() {
 
         <Card className="flex min-h-[440px] flex-col gap-5 p-5 lg:p-7">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-[#8A8CAE]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-app-text-muted">
               {tpl(t.stepLabel, { n: step })}
             </p>
-            <p className="mt-1 text-[19px] font-semibold tracking-[-0.01em] text-[#171A3D]">
+            <p className="mt-1 text-[19px] font-semibold tracking-[-0.01em] text-app-text">
               {stepTitles[step - 1]}
             </p>
           </div>
@@ -375,7 +375,7 @@ export default function Anketa() {
           ) : null}
           {step === 2 ? (
             <Note
-              icon={<ShieldCheck className="h-5 w-5 text-[#4B3BE4]" />}
+              icon={<ShieldCheck className="h-5 w-5 text-app-brand" />}
               tone="violet"
               text={t.contactHint}
             />
@@ -418,12 +418,12 @@ export default function Anketa() {
                   <div key={f} className="sm:col-span-2">
                     <p
                       className={`mb-2 text-[12.5px] font-semibold ${
-                        gap ? 'text-[#C23A3F]' : 'text-[#3E4166]'
+                        gap ? 'text-[#C23A3F]' : 'text-app-text'
                       }`}
                     >
                       {label}
                       {gap ? <span className="ml-1 text-[#E9474D]">*</span> : null}
-                      <span className="ml-2 font-normal text-[#A0A1BC]">
+                      <span className="ml-2 font-normal text-app-text-muted">
                         {gap ? t.notFilledField : t.selectHint}
                       </span>
                     </p>
@@ -511,7 +511,7 @@ export default function Anketa() {
                         <button
                           type="button"
                           onClick={() => setStep(m.step)}
-                          className="flex w-full items-center gap-2.5 rounded-[10px] bg-white px-3 py-2 text-left text-[12.5px] font-semibold text-[#8A3B3E] ring-1 ring-[#F3C7C7]"
+                          className="flex w-full items-center gap-2.5 rounded-[10px] bg-app-surface px-3 py-2 text-left text-[12.5px] font-semibold text-[#8A3B3E] ring-1 ring-[#F3C7C7]"
                         >
                           <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#E9474D] text-[11px] font-bold text-white">
                             {m.step}
@@ -577,7 +577,7 @@ export default function Anketa() {
                 </div>
               ) : null}
 
-              <div className="rounded-[16px] bg-[#F1EFFE] p-4">
+              <div className="rounded-[16px] bg-app-icon-bg p-4">
                 <p className="text-[13.5px] font-semibold text-[#2E2A6B]">{t.previewHint}</p>
                 <div className="mt-3 flex flex-wrap gap-2.5">
                   <GhostButton onClick={() => go('public')}>{t.openFullPreview}</GhostButton>
@@ -594,11 +594,11 @@ export default function Anketa() {
             </div>
           ) : null}
 
-          <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#F1F0FA] pt-4">
+          <div className="mt-auto flex items-center justify-between gap-3 border-t border-app-border pt-4">
             <GhostButton onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1 || saving}>
               ← {t.back}
             </GhostButton>
-            <span className="hidden text-[12px] text-[#8A8CAE] sm:block">{t.anketaAutoSave}</span>
+            <span className="hidden text-[12px] text-app-text-muted sm:block">{t.anketaAutoSave}</span>
             <PrimaryButton
               onClick={() => void persist({}, step < 12 ? step + 1 : undefined)}
               disabled={saving}
@@ -624,8 +624,8 @@ function Note({
 }) {
   const tones = {
     blue: 'bg-[#F5F7FF] border-[#DDE3FA] text-[#4A5C93]',
-    violet: 'bg-[#F1EFFE] border-transparent text-[#3B357F]',
-    grey: 'bg-[#F7F7FC] border-transparent text-[#6E7191]',
+    violet: 'bg-app-icon-bg border-transparent text-[#3B357F]',
+    grey: 'bg-[#F7F7FC] border-transparent text-app-text-muted',
   } as const;
   return (
     <div className={`flex gap-3 rounded-[16px] border p-4 ${tones[tone]}`}>
@@ -690,10 +690,10 @@ function VideoStep({ doc, onChanged }: { doc: DocRow | null; onChanged: () => Pr
           className="w-full max-h-[380px] rounded-[18px] bg-black"
         />
       ) : (
-        <label className="flex min-h-[180px] cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[18px] border-[1.5px] border-dashed border-[#C9C6EC] bg-[#FAFAFE] text-[#4B3BE4] transition hover:border-[#4B3BE4]">
+        <label className="flex min-h-[180px] cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[18px] border-[1.5px] border-dashed border-app-border-strong bg-app-bg-muted text-app-brand transition hover:border-app-brand">
           <Camera className="h-8 w-8" strokeWidth={1.6} />
           <span className="text-[13px] font-semibold">{t.videoUpload}</span>
-          <span className="text-[11.5px] font-normal text-[#8A8CAE]">{t.videoFormats}</span>
+          <span className="text-[11.5px] font-normal text-app-text-muted">{t.videoFormats}</span>
           <input
             type="file"
             accept="video/mp4,video/quicktime,video/webm"
@@ -711,7 +711,7 @@ function VideoStep({ doc, onChanged }: { doc: DocRow | null; onChanged: () => Pr
       {busy ? (
         <div>
           <ProgressBar percent={percent} />
-          <p className="mt-1.5 text-center text-[12px] font-semibold text-[#4B3BE4]">
+          <p className="mt-1.5 text-center text-[12px] font-semibold text-app-brand">
             {tpl(t.videoUploading, { n: percent })}
           </p>
         </div>
@@ -744,7 +744,7 @@ function VideoStep({ doc, onChanged }: { doc: DocRow | null; onChanged: () => Pr
                 ? t.videoStatusRejected
                 : t.videoStatusPending}
           </p>
-          <p className="mt-1 text-[12.5px] leading-[1.65] text-[#6E7191]">
+          <p className="mt-1 text-[12.5px] leading-[1.65] text-app-text-muted">
             {status === 'approved'
               ? t.videoStatusApprovedText
               : status === 'rejected'
@@ -755,7 +755,7 @@ function VideoStep({ doc, onChanged }: { doc: DocRow | null; onChanged: () => Pr
       ) : null}
 
       <div className="flex flex-wrap gap-2.5">
-        <label className="min-h-[44px] cursor-pointer rounded-[12px] bg-[#4B3BE4] px-4 py-3 text-[13px] font-semibold text-white">
+        <label className="min-h-[44px] cursor-pointer rounded-[12px] bg-app-primary px-4 py-3 text-[13px] font-semibold text-white">
           {doc ? t.videoReplace : t.videoUpload}
           <input
             type="file"
@@ -776,24 +776,24 @@ function VideoStep({ doc, onChanged }: { doc: DocRow | null; onChanged: () => Pr
         ) : null}
       </div>
 
-      <p className="text-[11.5px] leading-[1.6] text-[#8A8CAE]">
+      <p className="text-[11.5px] leading-[1.6] text-app-text-muted">
         {t.videoFormats} · {t.videoModerationNote}
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-[16px] bg-[#F1EFFE] p-4">
+        <div className="rounded-[16px] bg-app-icon-bg p-4">
           <p className="text-[13px] font-semibold text-[#2E2A6B]">{t.videoWhyTitle}</p>
           <p className="mt-1.5 text-[12.5px] leading-[1.7] text-[#5C5A8F]">{t.videoWhyText}</p>
           <p className="mt-3 text-[13px] font-semibold text-[#2E2A6B]">{t.videoTipsTitle}</p>
           <p className="mt-1.5 text-[12.5px] leading-[1.7] text-[#5C5A8F]">{t.videoHint}</p>
         </div>
 
-        <div className="rounded-[16px] border border-[#EFEEF8] bg-[#FAFAFE] p-4">
-          <p className="text-[13px] font-semibold text-[#171A3D]">{t.videoQuestionsTitle}</p>
+        <div className="rounded-[16px] border border-app-border bg-app-bg-muted p-4">
+          <p className="text-[13px] font-semibold text-app-text">{t.videoQuestionsTitle}</p>
           <ul className="mt-2 space-y-1.5">
             {VIDEO_QUESTIONS[lang].map((q) => (
-              <li key={q} className="flex gap-2 text-[12px] leading-[1.55] text-[#5B5E86]">
-                <span className="text-[#4B3BE4]">•</span>
+              <li key={q} className="flex gap-2 text-[12px] leading-[1.55] text-app-text-muted">
+                <span className="text-app-brand">•</span>
                 {q}
               </li>
             ))}
@@ -874,14 +874,14 @@ function RowEditor({
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-[14px] bg-[#F7F7FC] p-3.5">
-        <p className="text-[12.5px] leading-[1.65] text-[#6E7191]">{edu ? t.eduHint : t.certHint}</p>
+        <p className="text-[12.5px] leading-[1.65] text-app-text-muted">{edu ? t.eduHint : t.certHint}</p>
         {edu ? (
-          <p className="mt-1.5 text-[12px] font-semibold text-[#4B3BE4]">{t.eduExample}</p>
+          <p className="mt-1.5 text-[12px] font-semibold text-app-brand">{t.eduExample}</p>
         ) : null}
       </div>
 
       {rows.length === 0 ? (
-        <p className="py-2 text-center text-[12.5px] text-[#8A8CAE]">
+        <p className="py-2 text-center text-[12.5px] text-app-text-muted">
           {edu ? t.eduEmpty : t.certEmpty}
         </p>
       ) : null}
@@ -889,10 +889,10 @@ function RowEditor({
       {rows.map((r, i) => (
         <div
           key={i}
-          className="rounded-[16px] border border-[#EFEEF8] bg-[#FAFAFE] p-4"
+          className="rounded-[16px] border border-app-border bg-app-bg-muted p-4"
         >
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8A8CAE]">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">
               {i + 1}
             </span>
             <button
@@ -1004,7 +1004,7 @@ function RowEditor({
                     />
                     <div className="flex min-w-0 flex-wrap gap-2">
                       <label
-                        className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-[#EFEDFD] px-3.5 text-[12.5px] font-semibold text-[#4B3BE4] transition hover:bg-[#E4E0FA] ${
+                        className={`inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-[12px] bg-app-icon-bg px-3.5 text-[12.5px] font-semibold text-app-brand transition hover:bg-[#E4E0FA] ${
                           yuklanmoqda === i ? 'pointer-events-none opacity-60' : ''
                         }`}
                       >
@@ -1033,7 +1033,7 @@ function RowEditor({
                   </div>
                 ) : (
                   <label
-                    className={`flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-dashed border-[#C9C6EC] bg-white text-[12.5px] font-semibold text-[#4B3BE4] transition hover:border-[#4B3BE4] ${
+                    className={`flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-dashed border-app-border-strong bg-app-surface text-[12.5px] font-semibold text-app-brand transition hover:border-app-brand ${
                       yuklanmoqda === i ? 'pointer-events-none opacity-60' : ''
                     }`}
                   >
@@ -1051,7 +1051,7 @@ function RowEditor({
                     />
                   </label>
                 )}
-                <p className="mt-1.5 text-[11.5px] leading-[1.6] text-[#8A8CAE]">{t.certImageHint}</p>
+                <p className="mt-1.5 text-[11.5px] leading-[1.6] text-app-text-muted">{t.certImageHint}</p>
               </Field>
             </div>
           )}
@@ -1061,7 +1061,7 @@ function RowEditor({
       <button
         type="button"
         onClick={add}
-        className="min-h-[48px] rounded-[16px] border-[1.5px] border-dashed border-[#C9C6EC] bg-white text-[13px] font-semibold text-[#4B3BE4] transition hover:border-[#4B3BE4]"
+        className="min-h-[48px] rounded-[16px] border-[1.5px] border-dashed border-app-border-strong bg-app-surface text-[13px] font-semibold text-app-brand transition hover:border-app-brand"
       >
         {edu ? t.eduAdd : t.certAdd}
       </button>
@@ -1137,14 +1137,14 @@ function PhotoStep({ url, onChanged }: { url: string; onChanged: () => Promise<v
       <div className="grid gap-5 sm:grid-cols-[220px_minmax(0,1fr)] sm:items-start">
       <div className="flex flex-col gap-2.5">
         <label
-          className={`relative flex aspect-square w-full max-w-[220px] cursor-pointer items-center justify-center overflow-hidden rounded-[20px] bg-[#EFEDFD] transition hover:brightness-95 ${
+          className={`relative flex aspect-square w-full max-w-[220px] cursor-pointer items-center justify-center overflow-hidden rounded-[20px] bg-app-icon-bg transition hover:brightness-95 ${
             busy ? 'animate-pulse' : ''
           }`}
         >
           {shown ? (
             <img src={shown} alt={name} className="h-full w-full object-cover" />
           ) : (
-            <span className="flex flex-col items-center gap-2 text-[#4B3BE4]">
+            <span className="flex flex-col items-center gap-2 text-app-brand">
               <Camera className="h-8 w-8" strokeWidth={1.6} />
               <span className="text-[12.5px] font-semibold">{t.photoUpload}</span>
             </span>
@@ -1163,7 +1163,7 @@ function PhotoStep({ url, onChanged }: { url: string; onChanged: () => Promise<v
         </label>
 
         <div className="flex gap-2">
-          <label className="min-h-[44px] flex-1 cursor-pointer rounded-[11px] bg-[#4B3BE4] px-3 py-3 text-center text-[12.5px] font-semibold text-white">
+          <label className="min-h-[44px] flex-1 cursor-pointer rounded-[11px] bg-app-primary px-3 py-3 text-center text-[12.5px] font-semibold text-white">
             {shown ? t.photoReplace : t.photoUpload}
             <input
               type="file"
@@ -1189,20 +1189,20 @@ function PhotoStep({ url, onChanged }: { url: string; onChanged: () => Promise<v
             </button>
           ) : null}
         </div>
-        <p className="text-[11.5px] leading-[1.5] text-[#8A8CAE]">{t.photoFormats}</p>
+        <p className="text-[11.5px] leading-[1.5] text-app-text-muted">{t.photoFormats}</p>
         {err ? <p className="text-[12px] font-medium text-[#C23A3F]">{err}</p> : null}
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="rounded-[18px] border border-[#EFEEF8] bg-[#FAFAFE] p-4">
-          <p className="mb-3 text-[13px] font-semibold text-[#171A3D]">{t.photoPreviewTitle}</p>
+        <div className="rounded-[18px] border border-app-border bg-app-bg-muted p-4">
+          <p className="mb-3 text-[13px] font-semibold text-app-text">{t.photoPreviewTitle}</p>
           <div className="flex flex-wrap items-end gap-5">
             <PreviewSize url={shown} name={name} size={40} label={t.photoInMenu} />
             <PreviewSize url={shown} name={name} size={56} label={t.photoInList} />
             <PreviewSize url={shown} name={name} size={88} label={t.photoInProfile} />
           </div>
           {!shown ? (
-            <p className="mt-3 text-[12px] text-[#8A8CAE]">{t.photoEmpty}</p>
+            <p className="mt-3 text-[12px] text-app-text-muted">{t.photoEmpty}</p>
           ) : null}
           </div>
 
@@ -1210,7 +1210,7 @@ function PhotoStep({ url, onChanged }: { url: string; onChanged: () => Promise<v
           <button
             type="button"
             onClick={() => setGuideOpen(true)}
-            className="flex w-full max-w-[320px] items-center gap-3 rounded-[14px] border border-[#EFEEF8] bg-white p-2.5 text-left transition hover:border-[#4B3BE4]"
+            className="flex w-full max-w-[320px] items-center gap-3 rounded-[14px] border border-app-border bg-app-surface p-2.5 text-left transition hover:border-app-brand"
           >
             <img
               src="/teacher-photo-guide.jpg"
@@ -1219,9 +1219,9 @@ function PhotoStep({ url, onChanged }: { url: string; onChanged: () => Promise<v
               loading="lazy"
             />
             <span className="min-w-0">
-              <span className="block text-[12.5px] font-semibold text-[#171A3D]">{t.photoSample}</span>
-              <span className="block text-[11.5px] leading-[1.4] text-[#8A8CAE]">{t.photoGuideCard}</span>
-              <span className="mt-0.5 block text-[11.5px] font-semibold text-[#4B3BE4]">
+              <span className="block text-[12.5px] font-semibold text-app-text">{t.photoSample}</span>
+              <span className="block text-[11.5px] leading-[1.4] text-app-text-muted">{t.photoGuideCard}</span>
+              <span className="mt-0.5 block text-[11.5px] font-semibold text-app-brand">
                 {t.photoGuideOpen} →
               </span>
             </span>
@@ -1240,7 +1240,7 @@ function PhotoStep({ url, onChanged }: { url: string; onChanged: () => Promise<v
             href="/teacher-photo-guide.jpg"
             target="_blank"
             rel="noreferrer"
-            className="text-center text-[12.5px] font-semibold text-[#4B3BE4]"
+            className="text-center text-[12.5px] font-semibold text-app-brand"
           >
             {t.photoGuideFull}
           </a>
@@ -1273,7 +1273,7 @@ function PreviewSize({
       ) : (
         <Avatar name={name} size={size} />
       )}
-      <span className="text-[10.5px] text-[#8A8CAE]">{label}</span>
+      <span className="text-[10.5px] text-app-text-muted">{label}</span>
     </div>
   );
 }

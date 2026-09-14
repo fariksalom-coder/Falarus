@@ -1,0 +1,42 @@
+[
+  {
+    "name": "No live connection or startup audio",
+    "pass": true
+  },
+  {
+    "name": "Unanswered question cannot advance",
+    "pass": true
+  },
+  {
+    "name": "Listen reads only the question",
+    "pass": true
+  },
+  {
+    "name": "Empty voice is not praised or graded",
+    "pass": true
+  },
+  {
+    "name": "Recording creates draft without grading",
+    "pass": true
+  },
+  {
+    "name": "Explicit submit grades once with actual answer",
+    "pass": true
+  },
+  {
+    "name": "Grade never advances automatically",
+    "pass": true
+  },
+  {
+    "name": "Next question needs its own answer",
+    "pass": true
+  },
+  {
+    "name": "Last graded answer still waits for user",
+    "pass": true
+  },
+  {
+    "name": "Completion only after final explicit advance",
+    "pass": true
+  }
+]

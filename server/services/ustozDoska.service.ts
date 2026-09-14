@@ -218,6 +218,25 @@ ANIQLIK (eng muhim talab):
 - Har bir ruscha gap grammatik jihatdan MUTLAQO to'g'ri bo'lishi shart.
 - Fe'l yoki predlog qaysi kelishikni talab qilishini tekshir. Masalan "обсуждать"
   tushum kelishigini oladi ("обсуждаем проблему"), predlog kelishigini EMAS.
+
+KELISHIK BOSHQARUVI (eng ko'p xato shu yerda — har safar tekshir):
+- "нет / не было / не будет" — DOIM qaratqich kelishigi (родительный):
+  "У него нет паспортА" (pasportA), "У меня нет временИ". Bu yerda tushum
+  kelishigi ISHLATILMAYDI. Agar javobda so'z oxiri o'zgargan bo'lsa, izohda
+  ham AYNAN o'sha shaklni ko'rsat — "to'g'ri shakli паспорт" deb yozib,
+  javobda "паспорта" berish QAT'IY MAN ETILADI.
+- "в / на" + JOY (qayerda?) — o'rin-payt kelishigi (предложный):
+  "на стройкЕ", "в школЕ", "в тетрадИ". Bu tushum kelishigi EMAS.
+- "в / на" + YO'NALISH (qayerga?) — tushum kelishigi: "на стройкУ", "в школУ".
+- O'TIMSIZ fe'llar to'ldiruvchi OLMAYDI, ya'ni ular hech qanday kelishikni
+  "talab qilmaydi": течь, капать, идти, ехать, спать, работать, жить,
+  сидеть, стоять, болеть. "Кран течёт" — bu yerda to'ldiruvchi yo'q.
+  Bunday fe'l haqida "tushum kelishigini talab qiladi" deb YOZMA.
+- O'timli fe'llar (tushum kelishigini oladi): видеть, читать, брать, купить,
+  делать, обсуждать, ремонтировать: "Я вижу братА", "Я читаю книгУ".
+- Kelishik nomini aytishdan OLDIN o'zingdan so'ra: bu gapda so'z qaysi
+  savolga javob beryapti? Кого?/Что? — tushum; Кого?/Чего? — qaratqich;
+  Где?/О ком? — o'rin-payt. Savol bilan nom MOS kelmasa, yozma.
 - Kelishik qo'shimchasi predlogga emas, OTNING o'ziga (jinsi va turiga) bog'liq:
   "в тетради" — chunki "тетрадь" yumshoq belgili ayol rodi, predlog "в" emas.
 - Ishonching komil bo'lmasa, sodda va aniq misol tanla. Chalkash misoldan ko'ra
@@ -296,6 +315,67 @@ const KELISHIK_NOMI: Record<string, string> = {
   'творительн': 'vosita kelishigi',
   'предложн': "o'rin-payt kelishigi",
 };
+
+/**
+ * KELISHIK ZIDDIYATI — modelning eng qaytariladigan grammatik xatosi.
+ *
+ * Mavjud `KELISHIK_NOMI` tuzatuvchisi faqat NOMni to'g'rilaydi (qavs ichida
+ * "родительный падеж (tushum kelishigi)" yozilsa). U MANTIQNI tekshirmaydi:
+ * "нет паспорта" haqida "tushum kelishigi bo'lishi kerak" deb yozilsa,
+ * rus atamasi umuman yo'q va tuzatuvchi buni ko'rmaydi.
+ *
+ * Prodda topilgan ikkita haqiqiy xato (2026-08-30):
+ *   "'паспорт' tushum kelishigi (винительный падеж) bo'lishi kerak" —
+ *      javob esa "У него нет паспортА" (qaratqich).
+ *   "'Течь' fe'li tushum kelishigini talab qiladi" —
+ *      течь o'timsiz, u umuman to'ldiruvchi olmaydi.
+ *
+ * Bu yerda FAQAT 100% ishonchli naqshlar tekshiriladi. Shubhali holat
+ * ushlanmaydi: yolg'on ayblov darsni bekorga qayta yozdiradi va token yeydi
+ * (avvalgi keng AI-tekshiruv tajribasi shuni ko'rsatgan).
+ */
+const OTIMSIZ_FELLAR = [
+  'течь', 'течёт', 'течет', 'капать', 'капает', 'идти', 'идёт', 'идет',
+  'ехать', 'едет', 'спать', 'спит', 'жить', 'живёт', 'живет',
+  'сидеть', 'сидит', 'стоять', 'стоит', 'болеть', 'болит',
+];
+
+export function kelishikZiddiyati(matn: string): string | null {
+  const past = matn.toLowerCase();
+
+  /*
+   * 1) "нет / не было / не будет" dan KEYIN "tushum kelishigi" da'vosi.
+   *
+   * Gap chegarasi bo'yicha qarash yetarli emas edi: proddagi haqiqiy xatoda
+   * "нет" birinchi gapda, da'vo esa ikkinchisida turgan. Shuning uchun
+   * YAQINLIK oynasi ishlatiladi (200 belgi).
+   *
+   * "qaratqich" so'zi oynada bo'lsa — model to'g'ri kelishikni ham aytgan,
+   * ya'ni ikkisini QIYOSLAYAPTI. Bunday matn xato emas, o'tkaziladi.
+   */
+  const YAQINLIK = 200;
+  /*
+   * DIQQAT: JS'da `\b` KIRILLNI TANIMAYDI (`\w` = [A-Za-z0-9_]), shuning
+   * uchun `\bнет\b` hech qachon mos kelmaydi — bu shu fayldagi
+   * `KELISHIK_NOMI_RE` da ham yozib qo'yilgan tuzoq. Chegarani kirill
+   * harflari bo'yicha o'zimiz qo'yamiz: "нету", "нетто" ushlanmasin.
+   */
+  for (const m of past.matchAll(/(?<![а-яё])нет(?![а-яё])|не было|не будет/g)) {
+    const oyna = past.slice(m.index ?? 0, (m.index ?? 0) + YAQINLIK);
+    if (oyna.includes('tushum kelishig') && !oyna.includes('qaratqich')) {
+      return "'нет' qaratqich kelishigini talab qiladi, tushum kelishigini emas";
+    }
+  }
+
+  // 2) O'timsiz fe'l haqida "tushum kelishigini talab qiladi" deyilgan.
+  for (const gap of past.split(/[.!?\n]+/)) {
+    if (!/tushum kelishigini talab|tushum kelishigi bilan ishlat/.test(gap)) continue;
+    const fel = OTIMSIZ_FELLAR.find((f) => gap.includes(f));
+    if (fel) return `'${fel}' o'timsiz fe'l — u to'ldiruvchi olmaydi`;
+  }
+
+  return null;
+}
 
 /**
  * Qavs ichidagi LOTIN yozuvidagi izohnigina almashtiradi. Kirilldagi qavs
@@ -620,15 +700,22 @@ export async function buildLesson(p: {
   vazifalar?: DoskaVazifa[];
 }): Promise<DoskaDars> {
   /*
-   * QO'LDA YOZILGAN DARS — AI'dan USTUN.
+   * QO'LDA YOZILGAN DARS — endi faqat ZAXIRA, AI'dan ustun EMAS.
    *
-   * Ba'zi kunlarning darsi metodik tartibda qo'lda tuzilgan (`server/data/
-   * doskaDarslari.ts`). Bunday kunda modelga umuman murojaat qilinmaydi:
-   * dars har safar aynan bir xil chiqadi, tartibi kafolatlangan, tayyorlash
-   * bir zumda va bepul bo'ladi. Qolgan kunlar avvalgidek AI'da qoladi.
+   * NIMA UCHUN O'ZGARTIRILDI: ilgari `if (qolda) return qolda` edi, ya'ni
+   * qo'lda yozilgan kun (1-kun) darsi kodda QOTIB qolgan edi. Darslik SQL
+   * konsoli yoki /content paneli orqali tahrirlansa ham doskada eski matn
+   * ko'rinaverardi — o'qituvchi tuzatish kiritsa, u hech qachon yetib
+   * bormasdi.
+   *
+   * Endi qoida shunday: kunning bazada materiali bo'lsa (nazariya yoki
+   * vazifalar), dars O'SHANDAN quriladi. Qo'lda yozilgan matn faqat
+   * material umuman bo'lmagan kun uchun zaxira bo'lib qoladi.
    */
+  const bazadaMaterialBor =
+    Boolean(p.nazariya && p.nazariya.trim()) || Boolean(p.vazifalar && p.vazifalar.length);
   const qolda = qoldaDars(p.kun);
-  if (qolda) return qolda;
+  if (qolda && !bazadaMaterialBor) return qolda;
 
   // Dars uzun bo'lib ketmasin: har vazifa bitta bosqich degani, 6 tadan
   // ortiq vazifa o'quvchini charchatadi.
@@ -700,15 +787,22 @@ QISM 3. DOSKA QOIDALARI (qat'iy)
 
 QISM 4. DARS NUTQINING TUZILMASI
 Dars quyidagi ketma-ketlikda quriladi:
-1. Hayotiy vaziyat — birinchi bosqich qoidadan emas, VAZIYATDAN boshlanadi
+1. MAVZUNI E'LON QILISH — birinchi bosqich SHU, boshqa hech narsa emas.
+   O'quvchi darsga endi kirdi va nima o'rganishini bilishi kerak.
+   - Qisqa salomlashish va mavzu nomi: "Assalomu alaykum! Bugungi mavzu —
+     <mavzu nomi>."
+   - Bir og'iz: bu nimaga kerak. "Bugun siz ... ayta oladigan bo'lasiz."
+   - Bu bosqichda QOIDA YO'Q, jadval YO'Q, mashq YO'Q. Faqat kirish.
+     "sarlavha" — mavzu nomi, "tushuntirish" — ikki-uch qisqa gap.
+2. Hayotiy vaziyat — mavzu qayerda kerak bo'lishini ko'rsatadi
    ("Brigadir so'radi: Кому ты дал документы?").
-2. Kalit savol doskaga chiqadi ("kalitSavol").
-3. O'zbek tili bilan ko'prik: o'zbekchada qanday, ruschada nimasi boshqacha.
-4. Qoida bosqichma-bosqich ochiladi: avval eng sodda holat va DARHOL 2 ta
+3. Kalit savol doskaga chiqadi ("kalitSavol").
+4. O'zbek tili bilan ko'prik: o'zbekchada qanday, ruschada nimasi boshqacha.
+5. Qoida bosqichma-bosqich ochiladi: avval eng sodda holat va DARHOL 2 ta
    misol, keyin ikkinchi holat va yana 2 ta misol.
-5. Yig'ma jadval ("taqqoslash") — hamma holat bitta jadvalda.
-6. Tipik xato ("xato") — eng ko'p uchraydigan noto'g'ri gap va uning to'g'risi.
-7. O'quvchi gapiradi ("savollar") va yakuniy gap ("xulosa").
+6. Yig'ma jadval ("taqqoslash") — hamma holat bitta jadvalda.
+7. Tipik xato ("xato") — eng ko'p uchraydigan noto'g'ri gap va uning to'g'risi.
+8. O'quvchi gapiradi ("savollar") va yakuniy gap ("xulosa").
 
 QISM 5. USLUB
 - Bir vaqtda bitta fikr; har qoidadan keyin darhol misol.
@@ -967,12 +1061,34 @@ Shu mavzu va vazifalar bo'yicha doskada o'tiladigan to'liq dars tayyorla.`;
   // kesilardi va oxirgi vazifalar tahlilsiz qolardi.
   const maxTokens = Math.min(9500, 3200 + 720 * (vazifalar.length + 1));
 
-  const raw = await askJson<Record<string, unknown>>({
+  let raw = await askJson<Record<string, unknown>>({
     system,
     user,
     temperature: 0.5,
     maxTokens,
   });
+
+  /*
+   * KELISHIK ZIDDIYATI BO'LSA — BIR MARTA QAYTA SO'RAYMIZ.
+   *
+   * Faqat 100% aniq xatoda ishlaydi (`kelishikZiddiyati`), shuning uchun
+   * qayta so'rov kamdan-kam bo'ladi va token sarfi sezilmaydi. Modelga
+   * xatoning O'ZI aytiladi — shunchaki "qaytadan yoz" deyishdan ko'ra
+   * ancha samarali. Ikkinchi urinish ham xato chiqsa, dars shundayligicha
+   * ketadi (jurnalga yoziladi) — o'quvchini bo'sh ekranda qoldirmaymiz.
+   */
+  const ziddiyat = kelishikZiddiyati(JSON.stringify(raw));
+  if (ziddiyat) {
+    console.warn(`[doska] kelishik xatosi (kun ${p.kun ?? '-'}): ${ziddiyat} — qayta so'ralmoqda`);
+    raw = await askJson<Record<string, unknown>>({
+      system: `${system}\n\nDIQQAT: oldingi urinishda GRAMMATIK XATO bo'ldi — ${ziddiyat}. Shu xatoni takrorlama, kelishikni gapdagi savolga qarab aniqla.`,
+      user,
+      temperature: 0.3,
+      maxTokens,
+    });
+    const qayta = kelishikZiddiyati(JSON.stringify(raw));
+    if (qayta) console.error(`[doska] kelishik xatosi QAYTA chiqdi (kun ${p.kun ?? '-'}): ${qayta}`);
+  }
 
   const bosqichlar: DoskaBosqich[] = (Array.isArray(raw.bosqichlar) ? raw.bosqichlar : [])
     .map(bosqichOqi)
@@ -1366,6 +1482,14 @@ export type KunMateriali = {
   oqishMatni: string;
   /** Gapirish topshiriqlari (o'zbekcha). */
   gapirish: string[];
+  /**
+   * Gap tuzish topshiriqlari: o'zbekcha gap va uning ruscha javobi.
+   *
+   * Og'zaki suhbat uchun bu eng qulay manba — tayyor, tekshirilgan gap
+   * juftliklari. Har biridan "shu gapni ruschada ayting" degan aniq savol
+   * chiqadi va javobi bazada turibdi.
+   */
+  gapTuzish: { uz: string; ru: string }[];
 };
 
 /**
@@ -1423,6 +1547,34 @@ export function ortdagiKunlar(kun: number): number[] {
  * raqamlari bilan emas, mavzu bilan ishlaydi. Shuning uchun tozalash
  * modelga emas, kodga qoldirilgan.
  */
+/**
+ * Savol oxiridagi MANBA IZOHLARINI olib tashlaydi.
+ *
+ * Promptda "qo'shma" deb yozilgan, ammo model baribir "(lug'atdan)",
+ * "(matndan)", "— matnidan" deb qo'shib yuboradi. O'quvchi buni OVOZDA
+ * eshitadi va savolning bir qismi deb o'ylaydi. Tozalash modelga emas,
+ * kodga qoldirilgan — bir marta yozilib, har safar ishlaydi.
+ */
+function manbaIzohsiz(savol: string): string {
+  return (
+    savol
+      // "(lug'atdan)", "matndan", "— matnidan)" — oxiridagi manba izohi.
+      .replace(/[\s—–-]*\(?\s*(lug['’]?at|matn|gapirish|topshiriq)\w*\s*(dan|idan)\s*\)?[\s.]*$/giu, '')
+      // "— 5-uy, 2-podyezd matnidan)." kabi uzunroq quyruq.
+      .replace(/\s*[—–-]\s*[^—–-]{0,60}?(lug['’]?at|matn|topshiriq)\w*(dan|idan)\s*\)?[\s.]*$/giu, '')
+      // "(gapirish topshirig'idan)" — yopilgan qavs ichidagi manba izohi.
+      .replace(
+        /\s*\([^)]*(o['’]?qish|matn|lug['’]?at|gapirish|topshiriq)[^)]*\)[\s.]*$/giu,
+        '',
+      )
+      // "(o'qish" — model qavsni yopmasdan uzib qo'yadi.
+      .replace(/\s*\([^)]*$/u, '')
+      .replace(/\s+([,.!?])/g, '$1')
+      .replace(/[\s,;:—–-]+$/u, '')
+      .trim()
+  );
+}
+
 function kunRaqamisiz(savol: string): string {
   return savol
     // "(19-kun)", "19-kundagi", "19 - kun" — barchasi.
@@ -1436,10 +1588,81 @@ function kunRaqamisiz(savol: string): string {
     .replace(/^./, (h) => h.toUpperCase());
 }
 
+/**
+ * LUG'AT SAVOLLARI — KODDA TUZILADI, MODELGA QOLDIRILMAYDI.
+ *
+ * Talab oddiy: o'zbekcha so'z beriladi, ruschasi so'raladi. Ammo model buni
+ * ishonchli bajarmadi — lug'at "Работа — ish" ko'rinishida kelgani uchun u
+ * doimo RUSCHA tomonni olib, «"Стол" ruschada qanday bo'ladi?» degan
+ * ma'nosiz savol tuzardi yoki yo'nalishni teskari o'girib yuborardi.
+ * Promptni uch marta qattiqlashtirish yordam bermadi.
+ *
+ * Bu savolning shakli qat'iy va o'zgarmas — ya'ni uni modelga berishning
+ * umuman hojati yo'q. Kod juftlikning o'zbekcha tomonini oladi va savolni
+ * o'zi yasaydi: xato qilish imkoni yo'q.
+ */
+function gapSavollari(
+  gaplar: { uz: string; ru: string }[] | undefined,
+  nechta: number,
+): string[] {
+  // Maydon yo'q bo'lsa ham qulamaydi: savol manbai yo'qolgani suhbatni
+  // to'xtatishi kerak emas.
+  const yaroqli = (gaplar ?? []).filter(
+    (g) => g.uz.trim().length > 3 && g.ru.trim().length > 3 && !/[А-Яа-яЁё]/.test(g.uz),
+  );
+  for (let i = yaroqli.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [yaroqli[i], yaroqli[j]] = [yaroqli[j], yaroqli[i]];
+  }
+  return yaroqli
+    .slice(0, nechta)
+    .map((g) => `«${g.uz.trim().replace(/[.!?]+$/, '')}» gapini ruschada ayting.`);
+}
+
+function lugatSavollari(lugat: string[], nechta: number): string[] {
+  const juftlar = lugat
+    .map((qator) => {
+      const [ru, ...qolgan] = qator.split(' — ');
+      const uz = qolgan.join(' — ').trim();
+      return { ru: ru.trim(), uz };
+    })
+    // O'zbekcha tomoni bo'sh yoki o'zi kirillda bo'lsa — yaroqsiz.
+    .filter((j) => j.uz.length > 1 && !/[А-Яа-яЁё]/.test(j.uz));
+
+  // Tasodifiy tanlov: har suhbatda boshqa so'zlar tushsin.
+  for (let i = juftlar.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [juftlar[i], juftlar[j]] = [juftlar[j], juftlar[i]];
+  }
+
+  return juftlar.slice(0, nechta).map((j) => {
+    const soz = j.uz.charAt(0).toUpperCase() + j.uz.slice(1);
+    return `«${soz}» ruschada qanday bo'ladi?`;
+  });
+}
+
 export async function buildKunSavollari(
   joriy: KunMateriali,
   ortda: KunMateriali[],
 ): Promise<KunSavol[]> {
+  /*
+   * KODDA TUZILADIGAN SAVOLLAR — KO'P VA ISHONCHLI.
+   *
+   * Suhbat 5 daqiqa davom etadi va shu vaqtga savol YETMASLIGI kerak emas:
+   * ustoz "savollarim tugadi" deb qolsa, qolgan vaqt behuda ketadi.
+   * Kunning lug'ati odatda 10-20 so'z, gap tuzish topshiriqlari esa
+   * tayyor juftliklar — ulardan o'nlab aniq savol chiqadi. Ular kodda
+   * tuziladi: shakli qat'iy, model xato qilishi mumkin bo'lgan joy yo'q.
+   */
+  const kodSavollari = [
+    ...lugatSavollari(joriy.lugat, 8),
+    ...gapSavollari(joriy.gapTuzish, 5),
+  ];
+  const lugatdan = kodSavollari.map((savol) => ({
+    savol,
+    manbaKun: joriy.kun,
+    manbaMavzu: joriy.grammatikaMavzu,
+  }));
   const ortdaBlok = ortda.length
     ? ortda
         .map(
@@ -1451,21 +1674,56 @@ export async function buildKunSavollari(
         .join('\n')
     : '';
 
-  const kutilganSoni = 4 + ortda.length;
+  /* Modeldan matn va gapirish savollari — kodnikiga qo'shimcha. */
+  const kutilganSoni = 6;
 
   const system = `Sen FalaRus rus tili ustozisan. O'quvchi kunning to'rtala
 bo'limini tugatdi va endi sen bilan OG'ZAKI suhbat qiladi.
 
 VAZIFANG: AYNAN ${kutilganSoni} TA savol tuzasan.
 
-JORIY KUNDAN — 4 ta, har bo'limdan bittadan, shu tartibda:
-  1) GRAMMATIKA — kun qoidasini ishlatishga majbur qiladigan savol.
-  2) LUG'AT — kunning yangi so'zlaridan kamida bittasi javobda kelishi kerak.
-  3) O'QISH — kun matnining mazmuni bo'yicha savol.
-  4) GAPIRISH — kun topshirig'iga yaqin, hayotiy vaziyat savoli.
+GRAMMATIKADAN SAVOL TUZMAYSAN (qat'iy):
+Qoida nomlari, atamalar va "qaysi kelishik", "qaysi zamon" kabi nazariy
+savollar TAQIQ. Grammatika og'zaki suhbatda emas, yozma mashqlarda
+tekshiriladi; bu yerda o'quvchi GAPIRISHI kerak. Grammatika nazariyasi
+pastda faqat KONTEKST uchun berilgan — undan savol olma.
 
-ORTDAGI KUNLARDAN — har bir berilgan eski kundan BITTADAN savol. Ular
-o'sha kunning mavzusini tekshiradi, joriy kunnikini emas.
+HAMMA SAVOL FAQAT JORIY KUNDAN — ${kutilganSoni} ta:
+  ${Math.max(0, kutilganSoni - 1)} ta O'QISH — kun matnida javobi ANIQ turgan savollar.
+  1 ta GAPIRISH — kun topshirig'iga yaqin, aniq javobli hayotiy savol.
+
+LUG'AT SAVOLLARI KERAK EMAS — ular alohida tayyorlanadi. Sen faqat matn va
+gapirish savollarini tuzasan.
+
+Boshqa kunlardan, kelasi darslardan yoki umumiy rus tilidan savol tuzma.
+
+SAVOL VA JAVOB TILI — IKKI YO'L:
+
+SAVOL ANIQ BO'LSIN, JAVOBI ham ANIQ (eng muhim talab):
+Har savolning YAGONA, tekshirib bo'ladigan javobi bo'lsin. Mavhum,
+"fikringizni ayting" turidagi savollar TAQIQ.
+
+SEN FAQAT MATN VA GAPIRISH SAVOLLARINI TUZASAN.
+Lug'at savollari — «filon so'z ruschada qanday bo'ladi?» — ALOHIDA
+tayyorlanadi va senga kerak emas. Shuning uchun:
+  ✗ Qo'shtirnoq ichida so'z berib, uning tarjimasini SO'RAMAYSAN.
+  ✗ «"Аптечка" ruschada qanday bo'ladi?», «"Падение" o'zbekchada nima?»
+    kabi savollar TAQIQ — bu sening ishing emas.
+  ✓ Sen kun MATNI va GAPIRISH topshiriqlari bo'yicha savol berasan.
+
+SAVOLNI IKKI KO'RINISHDAN BIRIDA YOZASAN:
+  A) O'ZBEKCHA savol, oxirida "Ruschada ayting" — javob ruscha kutiladi.
+     Namuna: «Ombor qayerda joylashgan? Ruschada ayting.»
+  B) TO'LIQ RUSCHA sodda savol — javob ham ruscha. Faqat o'sha kunning
+     so'zlaridan tuzilsin, grammatikasi TO'G'RI bo'lsin.
+     Namuna: «Где находится склад?»
+
+BIR SAVOLNI IKKI TILDA TAKRORLAMA. «Ombor qayerda joylashgan?» va «Где
+находится склад?» — bu BITTA savol. Har savol boshqa narsani so'rasin.
+
+RUSCHA MATN — HAR DOIM KIRILLDA VA TO'G'RI GRAMMATIKADA. Aralash yozuv
+(«Рускada», «рощо») va buzuq gap TAQIQ. Ishonching komil bo'lmasa,
+savolni A ko'rinishida — o'zbekcha — yoz.
 
 HAR SAVOLDA "kun" MAYDONI BO'LISHI SHART — savol qaysi kun materialidan
 olingani. Bu eng muhim maydon: o'quvchi javob bera olmasa aynan o'sha
@@ -1473,10 +1731,18 @@ kunga qaytariladi. Kunni O'YLAB TOPMA — faqat yuqorida berilgan kun
 raqamlaridan birini yoz.
 
 QANDAY BO'LSIN:
-- Savol O'ZBEKCHA yoziladi; ichidagi ruscha so'z yoki gap ruschada qoladi.
+- RUSCHA MATN HAR DOIM KIRILLDA. "Mokryy", "Ne znachit eto po-russki",
+  "yashik" kabi LOTIN yozuvidagi ruscha so'zlar TAQIQ — faqat «мокрый»,
+  «Что это значит?», «ящик». Bu eng ko'p uchraydigan xato.
+- A va B turdagi savolning gap qismi o'zbekcha; ichidagi ruscha so'z
+  kirillda qoladi. C turdagi savol butunlay ruscha.
+- Savolni ikki tilda TAKRORLAMA (avval o'zbekcha, keyin ruschasi) —
+  o'quvchi buni ovozda eshitadi va ikki marta aytilgan savol chalkashtiradi.
+- Savol oxiriga "— matnidan", "(lug'atdan)" kabi izohlar QO'SHMA: o'quvchi
+  buni ovozda eshitadi va savolning bir qismi deb o'ylaydi.
 - BITTA gap. Savolni RUSCHAGA TARJIMA QILIB YONIGA QO'SHMA — o'quvchi
   buni ovozda eshitadi, ikki marta aytilgan savol chalkashtiradi.
-- QISQA: 12 so'zdan oshmasin.
+- QISQA: 16 so'zdan oshmasin.
 - OCHIQ savol bo'lsin — "ha/yo'q" bilan javob berib bo'lmasin.
 - Javobi savolning O'ZIDA ko'rinib turmasin.
 - KUN RAQAMINI SAVOLDA AYTMA: "19-kun", "28-kun matnidan" kabi gaplar
@@ -1492,16 +1758,17 @@ FAQAT JSON qaytar:
   const bolim = (nom: string, matn: string) => (matn ? `\n${nom}:\n${matn}\n` : '');
 
   const user = `JORIY KUN: ${joriy.kun}
-${bolim('1) GRAMMATIKA MAVZUSI', joriy.grammatikaMavzu)}${bolim(
-    'GRAMMATIKA NAZARIYASI',
-    (joriy.grammatikaNazariya ?? '').slice(0, 1200),
-  )}${bolim("2) KUNNING LUG'ATI", joriy.lugat.slice(0, 20).join('; '))}${bolim(
-    "3) O'QISH MATNI",
-    joriy.oqishMatni.slice(0, 1200),
-  )}${bolim('4) GAPIRISH TOPSHIRIQLARI', joriy.gapirish.slice(0, 6).join('\n'))}${ortdaBlok}
+${bolim('MAVZU (faqat kontekst — bundan savol tuzma)', joriy.grammatikaMavzu)}${bolim(
+    "1) KUNNING LUG'ATI",
+    joriy.lugat.slice(0, 20).join('; '),
+  )}${bolim("2) O'QISH MATNI", joriy.oqishMatni.slice(0, 1200))}${bolim(
+    '3) GAPIRISH TOPSHIRIQLARI',
+    joriy.gapirish.slice(0, 6).join('\n'),
+  )}${ortdaBlok}
 
-Joriy kundan 4 ta, har bir ortdagi kundan 1 tadan — jami ${kutilganSoni} ta
-og'zaki savol tuz. Har birida "kun" maydoni bo'lsin.
+Faqat SHU kundan ${kutilganSoni} ta og'zaki savol tuz (2 lug'at, 2 o'qish,
+1 gapirish). Grammatika qoidasi bo'yicha savol tuzma. Har savolning javobi
+ANIQ va tekshirib bo'ladigan bo'lsin. Har birida "kun" maydoni bo'lsin.
 
 Variant: ${Math.floor(Math.random() * 100000)}. Bu son shunchaki belgi —
 savolda ishlatma. Har chaqiruvda savollar OLDINGISIDAN boshqacha bo'lsin:
@@ -1524,7 +1791,7 @@ boshqa so'z, boshqa burchak, boshqa vaziyat tanla.`;
   for (const xom of royxat) {
     if (!xom || typeof xom !== 'object') continue;
     const r = xom as Record<string, unknown>;
-    const savol = kunRaqamisiz(str(r.savol, 250));
+    const savol = manbaIzohsiz(kunRaqamisiz(str(r.savol, 250)));
     if (!savol) continue;
     /*
      * Model o'ylab topgan kun raqami QABUL QILINMAYDI: noto'g'ri kunga
@@ -1536,5 +1803,32 @@ boshqa so'z, boshqa burchak, boshqa vaziyat tanla.`;
     natija.push({ savol, manbaKun, manbaMavzu: ruxsatKunlar.get(manbaKun) ?? '' });
   }
 
-  return natija.slice(0, kutilganSoni);
+  /*
+   * UCH MANBANI ARALASHTIRAMIZ.
+   *
+   * Ketma-ket sakkizta lug'at savoli — bu suhbat emas, mashq. O'quvchi
+   * zerikadi va javoblar mexanik bo'lib qoladi. Navbatma-navbat olinganda
+   * esa suhbat tirik qoladi: so'z, gap, matn savoli almashib turadi.
+   *
+   * Boshida bitta lug'at savoli — eng oson kirish nuqtasi.
+   */
+  const modeldan = natija.slice(0, kutilganSoni);
+  const guruhlar = [
+    lugatdan.slice(0, 8),
+    lugatdan.slice(8),
+    modeldan,
+  ].filter((g) => g.length > 0);
+
+  const aralash: KunSavol[] = [];
+  for (let i = 0; aralash.length < lugatdan.length + modeldan.length; i += 1) {
+    let qoshildi = false;
+    for (const guruh of guruhlar) {
+      if (i < guruh.length) {
+        aralash.push(guruh[i]);
+        qoshildi = true;
+      }
+    }
+    if (!qoshildi) break;
+  }
+  return aralash;
 }

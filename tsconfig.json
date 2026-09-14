@@ -1,4 +1,6 @@
 {
+  "include": ["src", "server", "shared", "tests", "scripts/**/*.ts", "server.ts", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "dist.*", "tmp", "python", "public"],
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,

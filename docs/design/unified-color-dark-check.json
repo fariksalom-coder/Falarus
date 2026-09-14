@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    }
+  ],
+  "interactions": [
+    {
+      "test": "admin-mobile-menu-open",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

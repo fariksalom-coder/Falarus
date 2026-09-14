@@ -1,3 +1,4 @@
+import { Badge, Button, Card, Field, PageHeader } from '../components/ui/Foundation';
 import { useEffect, useId, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
@@ -7,8 +8,11 @@ import {
   ChevronRight,
   CircleDollarSign,
   CircleHelp,
+  GraduationCap,
   Globe2,
   History,
+  KeyRound,
+  Lock,
   LogOut,
   Moon,
   Pencil,
@@ -24,6 +28,7 @@ import { fetchLeaderboard } from '../api/leaderboard';
 import { useTheme } from '../context/ThemeContext';
 import { useTextScale } from '../context/TextScaleContext';
 import { useAccess } from '../context/AccessContext';
+import { prefetchRoutePath } from '../routeModules';
 import { useLocale } from '../context/LocaleContext';
 import LanguagePickerModal from '../components/LanguagePickerModal';
 import { InstallGuideModal } from '../components/InstallAppCard';
@@ -161,11 +166,6 @@ export default function ProfilePage() {
     navigate('/auth');
   }
 
-  const memberSince = new Date().getFullYear();
-  const memberInitials = (
-    (user?.firstName?.[0] ?? '') + (user?.lastName?.[0] ?? '')
-  ).toUpperCase() || 'FR';
-  const membershipCode = `${memberInitials.slice(0, 2)} · ${memberSince}`;
   const formattedPoints = points.toLocaleString('ru-RU').replace(/,/g, ' ');
 
   return (
@@ -174,11 +174,7 @@ export default function ProfilePage() {
       style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}
     >
       <main className="mx-auto w-full max-w-[820px]">
-        <header className="mb-4 px-0.5">
-          <h1 className="profile-heading text-[30px] leading-none text-pmn-text">
-            {t('nav.profile')}
-          </h1>
-        </header>
+        <PageHeader title={t('nav.profile')} />
 
         {banner ? (
           <div
@@ -192,159 +188,37 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
-        {/* Passport-navy hero with gold guilloché */}
-        <section className="profile-guilloche relative mb-4 overflow-hidden rounded-[24px] px-5 py-5 text-white shadow-[0_22px_44px_-18px_rgba(15,27,59,0.55)]">
-          {/*
-            Top row: OLTIN A'ZO pill + member code.
-
-            Yorliq FAQAT haqiqiy oltin a'zoda chiqadi. Ilgari u shartsiz
-            chizilardi — passport dizaynining bezagi sifatida — va natijada
-            endigina ro'yxatdan o'tgan, hech narsa to'lamagan foydalanuvchi
-            ham o'zini «OLTIN A'ZO» deb ko'rardi. Yorliq bo'lmaganda a'zolik
-            kodi `ml-auto` bilan o'ng chetda qoladi.
-          */}
-          <div className="relative z-[2] flex items-center justify-between">
-            {oltin ? (
-              <span className="profile-gold-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em]">
-                <span aria-hidden>✦</span>
-                <span>Oltin a'zo</span>
-              </span>
-            ) : null}
-            <span className="profile-heading ml-auto text-[13px] tracking-[0.28em] text-[#D4AC5C]">
-              {membershipCode}
-            </span>
-          </div>
-
-          {/* Avatar + name + course line */}
-          <div className="relative z-[2] mt-4 flex items-center gap-4">
-            <label
-              htmlFor={avatarInputId}
-              className={`relative flex h-[76px] w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-full ring-2 ring-[#D4AC5C] ring-offset-2 ring-offset-[#0F1B3B] ${
-                uploadingAvatar ? 'pointer-events-none opacity-60' : ''
-              }`}
-              aria-label="Profil rasmini tanlash"
-            >
-              <UserAvatar
-                avatarUrl={localPreviewUrl ?? avatarDisplayUrl(user?.avatarUrl)}
-                gender={user?.gender ?? null}
-                name={fullName}
-                className="h-[72px] w-[72px]"
-              />
-              <span className="pointer-events-none absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0F1B3B] bg-[#D4AC5C] text-[#0F1B3B] shadow-md">
-                {uploadingAvatar ? (
-                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#0F1B3B] border-t-transparent" />
-                ) : (
-                  <Camera className="h-3 w-3" aria-hidden strokeWidth={2.4} />
-                )}
-              </span>
-              <input
-                id={avatarInputId}
-                type="file"
-                accept="image/*"
-                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-                onChange={handlePickAvatar}
-                disabled={uploadingAvatar}
-              />
+        <Card className="academic-profile-card mb-5">
+          <div className="academic-profile-identity">
+            <label htmlFor={avatarInputId} className="academic-avatar" aria-label="Profil rasmini tanlash">
+              <UserAvatar avatarUrl={localPreviewUrl ?? avatarDisplayUrl(user?.avatarUrl)} gender={user?.gender ?? null} name={fullName} className="h-16 w-16" />
+              <span className="academic-avatar-edit"><Camera size={13} aria-hidden /></span>
+              <input id={avatarInputId} type="file" accept="image/*" className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={handlePickAvatar} disabled={uploadingAvatar} />
             </label>
-
-            <div className="min-w-0 flex-1">
-              {editingName ? (
-                <div className="space-y-2">
-                  <input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder={t('profile.firstName')}
-                    className="h-10 w-full rounded-[10px] border border-white/20 bg-white/10 px-3 text-[15px] font-bold text-white placeholder:text-white/50"
-                    autoComplete="given-name"
-                  />
-                  <input
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder={t('profile.lastName')}
-                    className="h-10 w-full rounded-[10px] border border-white/20 bg-white/10 px-3 text-[15px] font-bold text-white placeholder:text-white/50"
-                    autoComplete="family-name"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void handleSaveName()}
-                      disabled={savingName}
-                      className="profile-gold-pill flex h-9 flex-1 items-center justify-center rounded-full text-xs font-black disabled:opacity-50"
-                    >
-                      {savingName ? '...' : t('profile.save')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingName(false);
-                        setFirstName(user?.firstName ?? '');
-                        setLastName(user?.lastName ?? '');
-                      }}
-                      className="flex h-9 items-center justify-center rounded-full border border-white/25 px-4 text-xs font-bold text-white"
-                    >
-                      {t('profile.cancel')}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setEditingName(true)}
-                    className="flex items-center gap-2 text-left"
-                  >
-                    <h2 className="profile-heading text-[24px] leading-tight text-white sm:text-[26px]">
-                      {fullName}
-                    </h2>
-                    <Pencil className="h-3.5 w-3.5 text-[#D4AC5C]/80" aria-hidden />
-                  </button>
-                  <p className="mt-1 text-[12.5px] font-bold text-[#D4AC5C]">
-                    ВНЖ kursi · B1 daraja
-                  </p>
-                </>
-              )}
-            </div>
+            <div className="min-w-0 flex-1"><h2 className="text-xl font-bold text-app-text">{fullName}</h2><p className="ui-description">{user?.email || user?.phone || "Shaxsiy o'quvchi hisobi"}</p>{uploadingAvatar && <p role="status" className="ui-description">Rasm yuklanmoqda…</p>}</div>
+            <Button variant="secondary" onClick={() => setEditingName(!editingName)} aria-expanded={editingName}><Pencil size={15} /> Tahrirlash</Button>
           </div>
-
-          {/* Gold divider */}
-          <div className="relative z-[2] mt-5 h-px w-full bg-gradient-to-r from-transparent via-[#D4AC5C]/40 to-transparent" />
-
-          {/* 3 stats row */}
-          <div className="relative z-[2] mt-4 grid grid-cols-3 gap-3">
-            <div>
-              <p className="profile-heading text-[26px] leading-none text-white">{streakDays}</p>
-              <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#D4AC5C]">
-                Seriya
-              </p>
-            </div>
-            <div className="border-x border-[#D4AC5C]/25 px-3">
-              <p className="profile-heading text-[26px] leading-none text-white">
-                {oltin ? CHEKSIZ : level}
-              </p>
-              <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#D4AC5C]">
-                Daraja
-              </p>
-            </div>
-            <div>
-              <p className="profile-heading text-[26px] leading-none text-white">
-                {oltin ? CHEKSIZ : formattedPoints}
-              </p>
-              <p className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.18em] text-[#D4AC5C]">
-                Ball
-              </p>
-            </div>
-          </div>
-        </section>
+          {editingName && <form className="academic-profile-form" onSubmit={e => { e.preventDefault(); void handleSaveName(); }}>
+            <Field label={t('profile.firstName')} value={firstName} onChange={e => setFirstName(e.target.value)} autoComplete="given-name" required />
+            <Field label={t('profile.lastName')} value={lastName} onChange={e => setLastName(e.target.value)} autoComplete="family-name" required />
+            <div className="flex gap-2"><Button type="submit" loading={savingName}>{t('profile.save')}</Button><Button variant="ghost" onClick={() => { setEditingName(false); setFirstName(user?.firstName ?? ''); setLastName(user?.lastName ?? ''); }}>{t('profile.cancel')}</Button></div>
+          </form>}
+          <div className="academic-profile-stats"><div><strong>{streakDays}</strong><span>Kunlik faollik</span></div><div><strong>{oltin ? CHEKSIZ : level}</strong><span>Faollik darajasi</span></div><div><strong>{oltin ? CHEKSIZ : formattedPoints}</strong><span>To'plangan ball</span></div></div>
+          {oltin && <Badge>Oltin a'zo</Badge>}
+        </Card>
+        <button type="button" onClick={() => navigate('/kurslar')} onMouseEnter={() => prefetchRoutePath('/kurslar')} onFocus={() => prefetchRoutePath('/kurslar')} className="academic-profile-course">
+          <GraduationCap size={22} aria-hidden /><span><strong>Kurslarim</strong><small>Patent va ВНЖ imtihoniga tayyorgarlik</small></span><ChevronRight size={18} aria-hidden />
+        </button>
 
         {/* Premium sotib olish / status tile */}
         {showActivePremium ? (
-          <div className="mb-6 flex items-center gap-3 rounded-[20px] bg-pmn-card px-4 py-3.5 shadow-[0_12px_24px_-14px_rgba(184,135,58,0.35)] ring-1 ring-pmn-border">
+          <div className="mb-6 flex items-center gap-3 rounded-xl bg-pmn-card px-4 py-3.5 shadow-none ring-1 ring-pmn-border">
             <span
               aria-hidden
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[20px]"
-              style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+              style={{ background: 'var(--app-icon-bg)', color: 'var(--app-brand)' }}
             >
-              👑
+              <BookOpen size={21} />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-black text-pmn-text">
@@ -359,14 +233,14 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => navigate('/tariflar')}
-            className="mb-6 flex w-full items-center gap-3 rounded-[20px] bg-pmn-card px-4 py-3.5 text-left shadow-[0_12px_24px_-14px_rgba(184,135,58,0.35)] ring-1 ring-pmn-border transition hover:-translate-y-0.5 active:scale-[0.995]"
+            className="mb-6 flex w-full items-center gap-3 rounded-xl bg-pmn-card px-4 py-3.5 text-left shadow-none ring-1 ring-pmn-border transition hover:bg-app-bg-muted"
           >
             <span
               aria-hidden
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[20px]"
-              style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+              style={{ background: 'var(--app-icon-bg)', color: 'var(--app-brand)' }}
             >
-              👑
+              <BookOpen size={21} />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-black text-pmn-text">Premium sotib olish</p>
@@ -382,7 +256,24 @@ export default function ProfilePage() {
           <ProfileRow icon={<UserCircle />} label={t('profile.rows.profile')} onClick={() => navigate('/profile/settings')} />
           <ProfileRow icon={<BookOpen />} label={t('profile.rows.certificates')} />
           <ProfileRow icon={<Users />} label={t('profile.rows.invite')} onClick={() => navigate('/invite')} />
+          {/* Parolni o'zgartirish — alohida ekran: ilgari u profil formasining
+              eng pastida ko'rinmay yotardi. */}
+          <ProfileRow icon={<Lock />} label="Parolni o'zgartirish" onClick={() => navigate('/profile/parol')} />
         </ProfileGroup>
+
+        {/*
+          * Support asboblari — faqat oltin hisobda. Ruxsat serverda ham
+          * tekshiriladi, bu yerdagi shart shunchaki ko'rinishni yashiradi.
+          */}
+        {oltin ? (
+          <ProfileGroup title="Support">
+            <ProfileRow
+              icon={<KeyRound />}
+              label="Foydalanuvchi paroli"
+              onClick={() => navigate('/support/parol')}
+            />
+          </ProfileGroup>
+        ) : null}
 
         <ProfileGroup title={t('profile.groups.settings')}>
           <ProfileRow
@@ -451,10 +342,10 @@ export default function ProfilePage() {
 function ProfileGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-5">
-      <h3 className="mb-2.5 px-1 text-[10.5px] font-bold uppercase tracking-[0.24em] text-pmn-text-soft">
+      <h3 className="mb-2.5 px-1 text-xs font-semibold tracking-wide text-pmn-text-soft">
         {title}
       </h3>
-      <div className="overflow-hidden rounded-[22px] bg-pmn-card shadow-[0_12px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border">
+      <div className="overflow-hidden rounded-xl bg-pmn-card shadow-none ring-1 ring-pmn-border">
         {children}
       </div>
     </section>

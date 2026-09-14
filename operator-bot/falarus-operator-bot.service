@@ -1,0 +1,28 @@
+[Unit]
+Description=FalaRus operator payments bot (separate token and process)
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+User=falarus-operator
+Group=falarus-operator
+WorkingDirectory=/opt/falarus-operator-bot
+EnvironmentFile=/etc/falarus-operator-bot.env
+Environment=OPERATOR_STATE_DIR=/var/lib/falarus-operator-bot
+ExecStartPre=/usr/bin/rm -f /var/lib/falarus-operator-bot/running.lock
+ExecStart=/usr/bin/node /opt/falarus-operator-bot/index.mjs
+Restart=on-failure
+RestartSec=15
+StateDirectory=falarus-operator-bot
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=192M
+CPUQuota=20%
+TasksMax=32
+TimeoutStopSec=50
+[Install]
+WantedBy=multi-user.target

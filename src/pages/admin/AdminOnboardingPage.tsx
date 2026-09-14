@@ -73,8 +73,8 @@ const label = (v: string | null | undefined): string => {
 function DistCard({ title, items, suffix }: { title: string; items: Bucket[]; suffix?: string }) {
   const max = Math.max(1, ...items.map((i) => i.count));
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-[13px] font-black uppercase tracking-wide text-slate-500">{title}</p>
+    <div className="rounded-2xl border border-app-border bg-app-surface p-4">
+      <p className="text-[13px] font-black uppercase tracking-wide text-app-text-muted">{title}</p>
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-slate-400">Ma'lumot yo'q</p>
       ) : (
@@ -82,17 +82,17 @@ function DistCard({ title, items, suffix }: { title: string; items: Bucket[]; su
           {items.map((b) => (
             <div key={b.value}>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate text-[13.5px] font-bold text-slate-800">
+                <span className="truncate text-[13.5px] font-bold text-app-text">
                   {label(b.value)}
                   {suffix ?? ''}
                 </span>
-                <span className="shrink-0 text-[12.5px] font-black tabular-nums text-slate-500">
+                <span className="shrink-0 text-[12.5px] font-black tabular-nums text-app-text-muted">
                   {b.count} · {b.pct}%
                 </span>
               </div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-app-bg-subtle">
                 <div
-                  className="h-full rounded-full bg-[#0B2A6B]"
+                  className="h-full rounded-full bg-app-primary"
                   style={{ width: `${(b.count / max) * 100}%` }}
                 />
               </div>
@@ -157,8 +157,8 @@ export default function AdminOnboardingPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-black text-slate-900">So'rovnoma</h1>
-        <p className="mt-1 text-sm font-medium text-slate-500">
+        <h1 className="text-2xl font-black text-app-text">So'rovnoma</h1>
+        <p className="mt-1 text-sm font-medium text-app-text-muted">
           Ro'yxatdan o'tgandan keyingi savollar — javoblar va reklama manbasi
         </p>
       </div>
@@ -177,11 +177,11 @@ export default function AdminOnboardingPage() {
           { label: "So'nggi 7 kun", value: last7 },
           { label: 'Jami boshlagan', value: t?.started ?? 0 },
         ].map((card) => (
-          <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-[12px] font-black uppercase tracking-wide text-slate-500">
+          <div key={card.label} className="rounded-2xl border border-app-border bg-app-surface p-4">
+            <p className="text-[12px] font-black uppercase tracking-wide text-app-text-muted">
               {card.label}
             </p>
-            <p className="mt-1 text-[26px] font-black tabular-nums text-slate-900">{card.value}</p>
+            <p className="mt-1 text-[26px] font-black tabular-nums text-app-text">{card.value}</p>
           </div>
         ))}
       </div>
@@ -204,17 +204,17 @@ export default function AdminOnboardingPage() {
           </div>
 
           {/* Aytgan vs haqiqiy */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-[13px] font-black uppercase tracking-wide text-slate-500">
+          <div className="rounded-2xl border border-app-border bg-app-surface p-4">
+            <p className="text-[13px] font-black uppercase tracking-wide text-app-text-muted">
               Aytgan manba ↔ haqiqiy UTM
             </p>
-            <p className="mt-1 text-[12.5px] font-medium text-slate-500">
+            <p className="mt-1 text-[12.5px] font-medium text-app-text-muted">
               Foydalanuvchi javobi ko'pincha noaniq — haqiqiy manba reklama parametridan olinadi
             </p>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[420px] text-left text-[13.5px]">
                 <thead>
-                  <tr className="border-b border-slate-200 text-[12px] uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-app-border text-[12px] uppercase tracking-wide text-app-text-muted">
                     <th className="py-2 font-black">Aytgan</th>
                     <th className="py-2 font-black">Haqiqiy (UTM)</th>
                     <th className="py-2 text-right font-black">Soni</th>
@@ -222,10 +222,10 @@ export default function AdminOnboardingPage() {
                 </thead>
                 <tbody>
                   {summary.source_vs_utm.map((r, i) => (
-                    <tr key={i} className="border-b border-slate-100 last:border-0">
-                      <td className="py-2 font-bold text-slate-800">{label(r.said)}</td>
-                      <td className="py-2 font-bold text-slate-800">{label(r.real)}</td>
-                      <td className="py-2 text-right font-black tabular-nums text-slate-600">
+                    <tr key={i} className="border-b border-app-border last:border-0">
+                      <td className="py-2 font-bold text-app-text">{label(r.said)}</td>
+                      <td className="py-2 font-bold text-app-text">{label(r.real)}</td>
+                      <td className="py-2 text-right font-black tabular-nums text-app-text-muted">
                         {r.count}
                       </td>
                     </tr>
@@ -245,9 +245,9 @@ export default function AdminOnboardingPage() {
       ) : null}
 
       {/* Javoblar ro'yxati */}
-      <div className="rounded-2xl border border-slate-200 bg-white">
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 p-4">
-          <p className="mr-auto text-[15px] font-black text-slate-900">
+      <div className="rounded-2xl border border-app-border bg-app-surface">
+        <div className="flex flex-wrap items-center gap-2 border-b border-app-border p-4">
+          <p className="mr-auto text-[15px] font-black text-app-text">
             Javoblar <span className="text-slate-400">({total})</span>
           </p>
           {([
@@ -262,7 +262,7 @@ export default function AdminOnboardingPage() {
                 setOffset(0);
                 setFilter((f) => ({ ...f, [key]: e.target.value }));
               }}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[13px] font-bold text-slate-700"
+              className="rounded-xl border border-app-border bg-app-surface px-3 py-2 text-[13px] font-bold text-app-text"
             >
               <option value="">{name}: hammasi</option>
               {opts.map((o) => (
@@ -277,7 +277,7 @@ export default function AdminOnboardingPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-[13px]">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-[11.5px] uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-app-border bg-app-bg-muted text-[11.5px] uppercase tracking-wide text-app-text-muted">
                 {['Foydalanuvchi', 'Maqsad', 'Daraja', 'Vaqt', 'Yosh', 'Davlat', 'Aytgan', 'UTM', 'Qurilma', 'Sana'].map((h) => (
                   <th key={h} className="whitespace-nowrap px-3 py-2.5 font-black">{h}</th>
                 ))}
@@ -285,22 +285,22 @@ export default function AdminOnboardingPage() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.user_id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                <tr key={r.user_id} className="border-b border-app-border last:border-0 hover:bg-app-bg-muted">
                   <td className="px-3 py-2.5">
-                    <span className="block font-bold text-slate-900">
+                    <span className="block font-bold text-app-text">
                       {[r.first_name, r.last_name].filter(Boolean).join(' ') || `#${r.user_id}`}
                     </span>
-                    <span className="block text-[12px] text-slate-500">{r.email || r.phone || '—'}</span>
+                    <span className="block text-[12px] text-app-text-muted">{r.email || r.phone || '—'}</span>
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700">{label(r.goal)}</td>
-                  <td className="px-3 py-2.5 text-slate-700">{label(r.level)}</td>
-                  <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-slate-700">
+                  <td className="px-3 py-2.5 text-app-text">{label(r.goal)}</td>
+                  <td className="px-3 py-2.5 text-app-text">{label(r.level)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 tabular-nums text-app-text">
                     {r.daily_minutes ? `${r.daily_minutes} daq` : '—'}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700">{label(r.age_range)}</td>
-                  <td className="px-3 py-2.5 text-slate-700">{label(r.country)}</td>
-                  <td className="px-3 py-2.5 text-slate-700">{label(r.source)}</td>
-                  <td className="px-3 py-2.5 text-slate-700">
+                  <td className="px-3 py-2.5 text-app-text">{label(r.age_range)}</td>
+                  <td className="px-3 py-2.5 text-app-text">{label(r.country)}</td>
+                  <td className="px-3 py-2.5 text-app-text">{label(r.source)}</td>
+                  <td className="px-3 py-2.5 text-app-text">
                     {r.utm_source ? (
                       <span title={`${r.utm_medium ?? ''} · ${r.utm_campaign ?? ''}`}>
                         {r.utm_source}
@@ -309,8 +309,8 @@ export default function AdminOnboardingPage() {
                       '—'
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700">{label(r.device_type)}</td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-slate-500">
+                  <td className="px-3 py-2.5 text-app-text">{label(r.device_type)}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-app-text-muted">
                     {r.completed_at ? new Date(r.completed_at).toLocaleDateString('uz-UZ') : '—'}
                   </td>
                 </tr>
@@ -327,23 +327,23 @@ export default function AdminOnboardingPage() {
         </div>
 
         {total > LIMIT ? (
-          <div className="flex items-center justify-between gap-3 border-t border-slate-200 p-3">
+          <div className="flex items-center justify-between gap-3 border-t border-app-border p-3">
             <button
               type="button"
               disabled={offset === 0}
               onClick={() => setOffset((o) => Math.max(0, o - LIMIT))}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-[13px] font-bold text-slate-700 disabled:opacity-40"
+              className="rounded-xl border border-app-border px-4 py-2 text-[13px] font-bold text-app-text disabled:opacity-40"
             >
               ← Oldingi
             </button>
-            <span className="text-[13px] font-bold text-slate-500">
+            <span className="text-[13px] font-bold text-app-text-muted">
               {offset + 1}–{Math.min(offset + LIMIT, total)} / {total}
             </span>
             <button
               type="button"
               disabled={offset + LIMIT >= total}
               onClick={() => setOffset((o) => o + LIMIT)}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-[13px] font-bold text-slate-700 disabled:opacity-40"
+              className="rounded-xl border border-app-border px-4 py-2 text-[13px] font-bold text-app-text disabled:opacity-40"
             >
               Keyingi →
             </button>

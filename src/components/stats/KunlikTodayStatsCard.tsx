@@ -13,7 +13,7 @@ import {
   getKunlikQuestProgressSlice,
   readPlanReviewVisits,
 } from '../../utils/kunlikPlanDayProgress';
-import { kunlikRejaPath } from '../../utils/kunlikNavigation';
+import { xaritaYoli } from '../../utils/kunlikNavigation';
 
 type RowStatProps = {
   icon: typeof Brain;
@@ -161,7 +161,8 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
 
   const showPrevChip = focusDay > 1 && !allDone;
 
-  const goPlan = (day?: number) => navigate(kunlikRejaPath(day));
+  /* Statistikadan ham XARITAGA — ilovada bitta ko'rinish. */
+  const goPlan = (_day?: number) => navigate(xaritaYoli());
 
   let primaryAction: { label: string; onClick: () => void };
   if (allDone) {

@@ -5,7 +5,7 @@ import { useLocale } from '../context/LocaleContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
 import type { DailyGrammarSentenceArrange } from '../../shared/dailyCourseDay';
-import { kunlikRejaPath } from '../utils/kunlikNavigation';
+import { xaritaYoli } from '../utils/kunlikNavigation';
 import { useRememberKunlikDay } from '../hooks/useRememberKunlikDay';
 import {
   KunlikSequentialGateSpinner,
@@ -208,7 +208,7 @@ export default function DailyGrammarSentenceArrangePage() {
     return (
       <div className="min-h-screen bg-app-bg p-6">
         <p className="text-gray-700">Sahifa topilmadi.</p>
-        <button type="button" className="mt-4 text-[#0B2A6B] underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
+        <button type="button" className="mt-4 text-[#0B2A6B] underline" onClick={() => navigate(xaritaYoli())}>
           {t('kunlik.backToPlan')}
         </button>
       </div>

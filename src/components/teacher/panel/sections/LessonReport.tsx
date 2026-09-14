@@ -96,7 +96,7 @@ export default function LessonReport({ trialId }: { trialId: number }) {
       <button
         type="button"
         onClick={() => go('lessons')}
-        className="mb-4 text-[13px] font-medium text-[#6E7191] hover:text-[#4B3BE4]"
+        className="mb-4 text-[13px] font-medium text-app-text-muted hover:text-app-brand"
       >
         {t.reportBack}
       </button>
@@ -105,10 +105,10 @@ export default function LessonReport({ trialId }: { trialId: number }) {
         <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#E7F4EC]">
           <Check className="h-6 w-6 text-[#17A34A]" strokeWidth={2.4} />
         </span>
-        <p className="mt-3 text-[22px] font-semibold tracking-[-0.02em] text-[#171A3D]">
+        <p className="mt-3 text-[22px] font-semibold tracking-[-0.02em] text-app-text">
           {t.reportTitle}
         </p>
-        <p className="mt-1 text-[13.5px] text-[#6E7191]">
+        <p className="mt-1 text-[13.5px] text-app-text-muted">
           {tpl(t.reportSubtitle, {
             student: l.student_name,
             kind: t.trialTag,
@@ -173,7 +173,7 @@ export default function LessonReport({ trialId }: { trialId: number }) {
         </Field>
 
         <div>
-          <p className="mb-2 text-[12.5px] font-semibold text-[#3E4166]">{t.reportRating}</p>
+          <p className="mb-2 text-[12.5px] font-semibold text-app-text">{t.reportRating}</p>
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map((n) => {
               const on = (form.lesson_rating ?? 0) >= n;
@@ -190,7 +190,7 @@ export default function LessonReport({ trialId }: { trialId: number }) {
                     }))
                   }
                   className={`h-[44px] w-[44px] rounded-[12px] text-[18px] transition ${
-                    on ? 'bg-[#FFF4DA] text-[#E6B33E]' : 'bg-[#F5F5FB] text-[#C9CADD]'
+                    on ? 'bg-[#FFF4DA] text-[#E6B33E]' : 'bg-app-bg-muted text-[#C9CADD]'
                   }`}
                   aria-label={`${n}`}
                 >
@@ -219,7 +219,7 @@ export default function LessonReport({ trialId }: { trialId: number }) {
               </select>
             </Field>
             <div className="flex flex-col gap-1.5">
-              <span className="text-[12.5px] font-semibold text-[#3E4166]">{t.reportReady}</span>
+              <span className="text-[12.5px] font-semibold text-app-text">{t.reportReady}</span>
               <div className="flex gap-2">
                 <ChoiceButton
                   active={form.student_enrolled_monthly_course === true}
@@ -275,7 +275,7 @@ function ChoiceButton({
       type="button"
       onClick={onClick}
       className={`min-h-[44px] flex-1 rounded-[11px] border px-3 text-[12.5px] font-semibold transition ${
-        active ? on : 'border-[#E9D9AE] bg-white text-[#5B5E86]'
+        active ? on : 'border-[#E9D9AE] bg-app-surface text-app-text-muted'
       }`}
     >
       {children}

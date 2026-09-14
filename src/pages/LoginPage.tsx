@@ -49,7 +49,7 @@ export default function LoginPage() {
       try {
         const data = await loginWithGoogle(idToken, refFromUrl || undefined);
         login(data.token!, normalizeAuthUser(data.user!));
-        navigate('/');
+        navigate(data.isNewUser ? '/onboarding' : '/', { replace: true });
       } catch (err) {
         setFormError(err instanceof Error ? err.message : t('auth.genericError'));
       } finally {

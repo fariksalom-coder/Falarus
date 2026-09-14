@@ -1,7 +1,7 @@
 # FalaRus AI — Ishlab chiqarish deploy qo'llanmasi
 
 AI backend (Ollama + RAG) **alohida serverga** o'rnatiladi. Ishlab turgan FalaRus
-ilovasi (82.115.50.76) ga TEGILMAYDI — u faqat `RAG_API_URL` orqali shu AI serverga ulanadi.
+ilovasi (82.115.50.100) faqat `RAG_API_URL` orqali shu AI serverga ulanadi.
 
 ## 0. Server talablari
 
@@ -11,7 +11,9 @@ ilovasi (82.115.50.76) ga TEGILMAYDI — u faqat `RAG_API_URL` orqali shu AI ser
 | CPU, 16GB+ RAM | gemma2:9b | ~200s | ⚠️ Juda sekin |
 | CPU, 8-16GB RAM | gemma2:2b | ~40s | ⚠️ Sifat past |
 
-Bu 4GB prod serverга SIG'MAYDI — shuning uchun alohida server.
+Production server 4 vCPU / 8 GiB RAM bo'lib, sayt, PostgreSQL va Jitsi ham unda
+ishlaydi. Ollama uchun alohida resurs rejalashtiring; bu qo'llanma ixtiyoriy AI
+xizmatiga tegishli, asosiy ilova deployiga emas.
 
 ---
 
@@ -79,10 +81,10 @@ sudo systemctl status falarus-ai
 ## 6. ⚠️ XAVFSIZLIK — portni faqat prod serverga ochish
 
 Python API'da autentifikatsiya YO'Q (auth Express qatlamida). Shuning uchun 8000-port
-**faqat prod server (82.115.50.76)** uchun ochiq bo'lishi shart, internetga EMAS:
+**faqat prod server (82.115.50.100)** uchun ochiq bo'lishi shart, internetga EMAS:
 
 ```bash
-sudo ufw allow from 82.115.50.76 to any port 8000 proto tcp
+sudo ufw allow from 82.115.50.100 to any port 8000 proto tcp
 sudo ufw deny 8000
 sudo ufw enable
 ```
@@ -98,7 +100,7 @@ curl -X POST http://AI_SERVER_IP:8000/savol \
 
 ## 7. Prod serverni ulash (yengil, ehtiyotkorlik bilan)
 
-Prod serverда (82.115.50.76) faqat:
+Prod serverда (82.115.50.100) faqat:
 1. `RAG_API_URL=http://AI_SERVER_IP:8000` muhit o'zgaruvchisini qo'shish
 2. Yangilangan kodni tortib olish + qayta build/restart (mavjud deploy usuli bilan)
 

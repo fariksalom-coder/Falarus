@@ -24,7 +24,10 @@ export type PartnerProfile = {
 export type PartnerPerson = Pick<
   PartnerProfile,
   'user_id' | 'display_name' | 'age' | 'gender' | 'language_level' | 'goal' | 'about' | 'seeking'
->;
+> & {
+  /** Profil surati — chat va ro'yxatlardagi kichik doira uchun. */
+  avatar_url?: string | null;
+};
 
 export type PartnerRequest = {
   id: number;
@@ -130,6 +133,12 @@ export async function getPartnerStatus(token: string): Promise<PartnerStatus> {
   if (!res.ok) throw new Error('Partner status yuklanmadi');
   const data = await res.json();
   return normalizePartnerStatus(data);
+}
+
+export async function getPartnerProfile(token: string): Promise<PartnerProfile | null> {
+  const res = await fetch(apiUrl('/api/partner/profile'), { headers: authHeaders(token) });
+  if (!res.ok) throw new Error('Anketa yuklanmadi. Qayta urinib ko‘ring.');
+  return res.json();
 }
 
 export async function savePartnerProfile(

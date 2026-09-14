@@ -109,11 +109,17 @@ export type DoskaMashq = {
   savollar: DoskaMashqSavol[];
 };
 
-async function post<T>(token: string, path: string, body: Record<string, unknown>): Promise<T> {
+async function post<T>(
+  token: string,
+  path: string,
+  body: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<T> {
   const res = await fetch(apiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
+    signal,
   });
 
   const data = await res.json().catch(() => ({}) as Record<string, unknown>);
@@ -155,6 +161,56 @@ function darsKaliti(
   ]);
 }
 
+/*
+ * DARS SO'ROVI CHEKSIZ OSILIB QOLMASIN.
+ *
+ * MUAMMO: `fetch` da timeout yo'q edi. Mobil tarmoq uzilib qolsa yoki
+ * so'rov qotib qolsa, va'da (promise) HECH QACHON tugamasdi. Doskada esa
+ * yuklanish ekrani ataylab yozuvsiz — foydalanuvchi cheksiz skeletni
+ * ko'rar, na xato, na "Qayta urinish" tugmasi chiqardi. Yagona chora
+ * orqaga qaytib qayta kirish edi (yangi mount).
+ *
+ * O'LCHOV (prod, 247 so'rov): median 7 ms, 90-foiz 10 ms — deyarli hammasi
+ * server keshidan. Eng sekini 33 s — bu yangi dars yaratilgani. Shuning
+ * uchun 60 s chegara xavfsiz: u faqat haqiqatan osilgan so'rovni uzadi.
+ *
+ * UZILGANDA BIR MARTA QAYTA SO'RAYMIZ: birinchi urinish server tomonda
+ * odatda oxirigacha yetadi va dars keshga tushadi, ya'ni ikkinchi urinish
+ * bir zumda qaytadi. Foydalanuvchi hech narsa sezmaydi.
+ */
+const DARS_TIMEOUT_MS = 60_000;
+
+function uzilishmi(e: unknown): boolean {
+  if (e instanceof DOMException && e.name === 'AbortError') return true;
+  // Tarmoq uzilishi: brauzerlar buni TypeError qilib beradi.
+  return e instanceof TypeError;
+}
+
+async function darsSoroviBir(
+  token: string,
+  params: { mavzu: string; nazariya?: string; kun?: number; vazifalar?: DoskaVazifa[] },
+): Promise<DoskaDars> {
+  const ctrl = new AbortController();
+  const soat = setTimeout(() => ctrl.abort(), DARS_TIMEOUT_MS);
+  try {
+    return await post<DoskaDars>(token, '/api/ustoz/dars', params, ctrl.signal);
+  } finally {
+    clearTimeout(soat);
+  }
+}
+
+async function darsniSora(
+  token: string,
+  params: { mavzu: string; nazariya?: string; kun?: number; vazifalar?: DoskaVazifa[] },
+): Promise<DoskaDars> {
+  try {
+    return await darsSoroviBir(token, params);
+  } catch (e) {
+    if (!uzilishmi(e)) throw e;
+    return darsSoroviBir(token, params);
+  }
+}
+
 /** Kun mavzusi va vazifalari bo'yicha to'liq dars tayyorlaydi. */
 export function buildDoskaLesson(
   token: string,
@@ -166,7 +222,7 @@ export function buildDoskaLesson(
     return darsKesh.natija;
   }
 
-  const natija = post<DoskaDars>(token, '/api/ustoz/dars', params);
+  const natija = darsniSora(token, params);
   darsKesh = { kalit, vaqt: hozir, natija };
   // Xato keshda qolmasin: "Qayta urinish" haqiqatan ham qayta so'rasin.
   void natija.catch(() => {

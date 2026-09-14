@@ -8,6 +8,9 @@ import { createAdminGrammarController } from '../controllers/adminGrammarControl
 import { createAdminMeetController } from '../controllers/adminMeetController';
 import { blockUser, listBlocks, unblockUser } from '../services/chatBlock.service.js';
 import { ochirXabarMediasi } from '../services/mediaTozalash.service.js';
+import { operatorAdminRoutes } from '../operator/admin.js';
+import { operatorReceipt } from '../operator/routes.js';
+import { enabled as operatorEnabled } from '../operator/service.js';
 
 const TEACHER_OWNER_SELECT = [
   'user_id',
@@ -69,6 +72,10 @@ export function createAdminRoutes(supabase: DbClient): Router {
   // Bundan keyingi HAMMA yo'l admin tokenini talab qiladi. `/login` ataylab
   // yuqorida — u token bermaydi, balki tokenni beradigan yagona yo'l.
   router.use(createAdminAuthMiddleware(supabase));
+  if (operatorEnabled()) {
+    router.use('/operator-bot', operatorAdminRoutes());
+    router.get('/operator-bot/receipts/:id/file', operatorReceipt);
+  }
 
   router.get('/dashboard', (req, res, next) => ctrl.getDashboard(req, res).catch(next));
 
@@ -206,6 +213,36 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.get('/users', (req, res, next) => ctrl.getUsers(req, res).catch(next));
   router.post('/users', (req, res, next) => ctrl.createUser(req, res).catch(next));
   router.get('/users/:id', (req, res, next) => ctrl.getUserProfile(req, res).catch(next));
+
+  /*
+   * PAROLNI QO'LDA TIKLASH.
+   *
+   * SMTP sozlanmagani uchun `forgot-password` 503 qaytaradi va foydalanuvchi
+   * hisobiga qaytolmaydi (2026-08-30 da prodda 11 marta urinish qayd etildi).
+   * Bu yerda yangi parol yaratiladi va JAVOBDA qaytariladi — admin uni
+   * foydalanuvchiga telefon orqali aytadi.
+   *
+   * Xuddi shu amal support hisobiga ham ochiq: `/api/support/parol-tiklash`.
+   */
+  router.post('/parol-tiklash', async (req: any, res, next) => {
+    try {
+      const kim = `admin:${req.adminId ?? '?'}`;
+      // Foydalanuvchi sahifasidan `userId` keladi, umumiy qidiruvdan `sorov`.
+      const userId = Number(req.body?.userId);
+      const sorov = String(req.body?.sorov ?? '').trim();
+      const idBor = Number.isInteger(userId) && userId > 0;
+      if (!idBor && !sorov) return res.status(400).json({ error: 'Telefon yoki email kiriting' });
+
+      const svc = await import('../services/qolParolTiklash.service.js');
+      const natija = idBor
+        ? await svc.qolParolTiklashById(supabase, userId, kim)
+        : await svc.qolParolTiklash(supabase, sorov, kim);
+      if (natija.ok === false) return res.status(natija.status).json({ error: natija.error });
+      res.json(natija);
+    } catch (e) {
+      next(e);
+    }
+  });
   /* Chat moderatsiyasi — bloklash o'qish rejimini yoqadi (Support kanali ochiq qoladi). */
   router.get('/chat-blocks', async (_req, res, next) => {
     try {

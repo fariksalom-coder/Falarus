@@ -1,0 +1,33 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "overflow": false
+    }
+  ],
+  "posts": [
+    {
+      "path": "/api/admin/operator-bot/receipts/1/decision",
+      "body": {
+        "decision": "approved",
+        "reason": ""
+      }
+    },
+    {
+      "path": "/api/operator-reset",
+      "body": {
+        "token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "password": "SecurePassword2026!"
+      }
+    }
+  ],
+  "errors": []
+}

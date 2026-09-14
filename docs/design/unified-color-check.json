@@ -1,0 +1,119 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/kurslar",
+      "overflow": false,
+      "heading": "Kurslar",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/statistika",
+      "overflow": false,
+      "heading": "Statistika",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/login",
+      "overflow": false,
+      "heading": "Kirish",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/games",
+      "overflow": false,
+      "heading": "O'yinlar",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/kurslar",
+      "overflow": false,
+      "heading": "Kurslar",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/statistika",
+      "overflow": false,
+      "heading": "Statistika",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/login",
+      "overflow": false,
+      "heading": "Kirish",
+      "crash": false
+    },
+    {
+      "width": 1440,
+      "route": "/secure-admin-a9k7x4p2/dashboard",
+      "overflow": false,
+      "heading": "Umumiy holat",
+      "crash": false
+    }
+  ],
+  "interactions": [
+    {
+      "test": "password-toggle",
+      "width": 390,
+      "pass": true
+    },
+    {
+      "test": "admin-mobile-menu-open",
+      "pass": true
+    },
+    {
+      "test": "password-toggle",
+      "width": 1440,
+      "pass": true
+    }
+  ],
+  "errors": []
+}

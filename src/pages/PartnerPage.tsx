@@ -10,7 +10,6 @@ import {
   setCachedPartnerStatus,
   type PartnerStatus,
 } from '../api/partner';
-import PartnerProfileForm from '../components/partner/PartnerProfileForm';
 import PartnerPeopleList from '../components/partner/PartnerPeopleList';
 import PartnerIncomingRequests from '../components/partner/PartnerIncomingRequests';
 import PartnerOutgoingRequests from '../components/partner/PartnerOutgoingRequests';
@@ -24,7 +23,6 @@ type PageView = 'loading' | 'guest' | 'hub';
 
 type OverlayView =
   | null
-  | 'profile-form'
   | 'browse'
   | 'incoming'
   | 'outgoing'
@@ -43,7 +41,6 @@ export default function PartnerPage() {
   const [status, setStatus] = useState<PartnerStatus | null>(null);
   const [activeMatchId, setActiveMatchId] = useState<number | null>(null);
   const loadingStatusRef = useRef(false);
-  const inlineFormRef = useRef<HTMLDivElement>(null);
 
   const normalizeStatus = useCallback((s: PartnerStatus): PartnerStatus => {
     const matches = Array.isArray(s.matches) ? s.matches : [];
@@ -57,18 +54,14 @@ export default function PartnerPage() {
     };
   }, []);
 
-  const scrollToInlineForm = useCallback(() => {
-    inlineFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
   const openAnketalar = useCallback(() => {
     if (!status) return;
     if (status.hasProfile) {
       setOverlay('browse');
       return;
     }
-    scrollToInlineForm();
-  }, [status, scrollToInlineForm]);
+    navigate('/profile/anketa');
+  }, [status, navigate]);
 
   const applyStatusToView = useCallback(
     (s: PartnerStatus, forceViewTransition = true) => {
@@ -233,13 +226,7 @@ export default function PartnerPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (status.hasProfile) {
-                        setOverlay('profile-form');
-                        return;
-                      }
-                      scrollToInlineForm();
-                    }}
+                    onClick={() => navigate('/profile/anketa')}
                     className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
                     aria-label={t('partner.profiles')}
                   >
@@ -259,35 +246,10 @@ export default function PartnerPage() {
                 }}
               />
 
-              {!status.hasProfile ? (
-                <div
-                  ref={inlineFormRef}
-                  className="mt-5 rounded-[24px] border border-app-border bg-app-surface p-4 shadow-app-card sm:p-5"
-                >
-                  <PartnerProfileForm
-                    variant="create"
-                    onSaved={() => void loadStatus(false)}
-                  />
-                </div>
-              ) : null}
             </motion.div>
           )}
         </AnimatePresence>
       </main>
-
-      {overlay === 'profile-form' && status?.hasProfile ? (
-        <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">
-          <div className="mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5">
-            <PartnerProfileForm
-              variant="edit"
-              onSaved={() => {
-                void loadStatus(false).then(() => setOverlay(null));
-              }}
-              onBack={() => setOverlay(null)}
-            />
-          </div>
-        </div>
-      ) : null}
 
       {overlay === 'browse' && status ? (
         <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">

@@ -18,9 +18,9 @@ export function AuthSegmentedTabs<T extends string>({ value, options, onChange }
   );
 
   return (
-    <div className="relative h-[54px] rounded-[16px] bg-[#F1F4FA] p-[5px]">
+    <div className="relative h-[54px] rounded-[16px] bg-app-bg-subtle p-[5px]">
 <motion.div
-        className="absolute bottom-[5px] top-[5px] rounded-[12px] bg-white shadow-[0_3px_8px_rgba(23,34,74,0.1)]"
+        className="absolute bottom-[5px] top-[5px] rounded-[12px] bg-app-surface shadow-[0_3px_8px_rgba(23,34,74,0.1)]"
         initial={false}
         animate={{
           left: `calc(${selectedIndex} * (100% / ${options.length}) + 5px)`,
@@ -35,10 +35,11 @@ export function AuthSegmentedTabs<T extends string>({ value, options, onChange }
             <button
               key={option.value}
               type="button"
+              aria-pressed={selected}
               onClick={() => onChange(option.value)}
               className={[
                 'flex-1 rounded-[12px] text-[14px] transition-colors duration-180',
-                selected ? 'font-black text-[#2F6BFF]' : 'font-extrabold text-[#8794AC]',
+                selected ? 'font-black text-app-brand' : 'font-extrabold text-[#8794AC]',
               ].join(' ')}
             >
               {option.label}

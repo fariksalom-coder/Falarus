@@ -4,7 +4,7 @@ import { DAILY_PLAN_PROGRESS_MODE } from '../config/dailyPlanProgress';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { findFirstIncompletePlanDay, readPlanReviewVisits } from '../utils/kunlikPlanDayProgress';
-import { kunlikRejaPath } from '../utils/kunlikNavigation';
+import { xaritaYoli } from '../utils/kunlikNavigation';
 import { useKunlikProgress } from './useKunlikProgress';
 import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 
@@ -70,12 +70,14 @@ export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
     if (!enabled || !bootstrapReady) return;
     if (dayAllowed) return;
 
-    if (!sequentiallyAllowed) {
-      navigate(kunlikRejaPath(maxSequentialDay), { replace: true });
-      return;
-    }
-
-    navigate(kunlikRejaPath(dayNumber), { replace: true });
+    /*
+     * Ruxsat etilmagan kunga kirilganda XARITAGA qaytariladi.
+     *
+     * Ilgari kunning eski sahifasiga yuborilardi. Endi ilovada bitta
+     * ko'rinish bor — xarita — va o'quvchi u yerda o'zi qayerda turganini
+     * darhol ko'radi.
+     */
+    navigate(xaritaYoli(), { replace: true });
   }, [enabled, bootstrapReady, dayAllowed, dayNumber, maxSequentialDay, navigate, sequentiallyAllowed]);
 
   const gatePending = Boolean(enabled && token && (!bootstrapReady || !dayAllowed));

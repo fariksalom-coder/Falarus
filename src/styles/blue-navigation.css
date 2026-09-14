@@ -1,0 +1,11 @@
+/* Blue navigation across all main panels, with clear active and focus states. */
+body .app-navigation.blue-navigation {
+  background: linear-gradient(110deg, #154ca5, #092b73);
+  border-color: #366ac0;
+  box-shadow: 0 -4px 20px rgb(9 43 115 / .22);
+}
+.app-navigation.blue-navigation :is(.text-app-brand, .text-app-text-muted, .app-navigation-brand, .app-navigation-brand small) { color: #e0edff; }
+.app-navigation.blue-navigation [aria-current='page'] :is(.text-app-brand, .app-navigation-label) { color: #fff; }
+.app-navigation.blue-navigation .app-navigation-active { background: rgb(255 255 255 / .19); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .2); }
+.app-navigation.blue-navigation .app-navigation-link:hover { background: rgb(255 255 255 / .1); }
+.app-navigation.blue-navigation .app-navigation-link:focus-visible { outline-color: #bce6ff; }

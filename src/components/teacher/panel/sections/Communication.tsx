@@ -117,15 +117,15 @@ export default function Messages() {
                     type="button"
                     onClick={() => setActiveId(c.id)}
                     className={`flex w-full items-center gap-3 rounded-[14px] p-3 text-left transition ${
-                      c.id === activeId ? 'bg-[#F1EFFE]' : 'hover:bg-[#FAFAFE]'
+                      c.id === activeId ? 'bg-app-icon-bg' : 'hover:bg-app-bg-muted'
                     }`}
                   >
                     <Avatar name={nameOf(c)} size={40} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-medium text-[#171A3D]">
+                      <span className="block truncate text-[13.5px] font-medium text-app-text">
                         {nameOf(c)}
                       </span>
-                      <span className="block text-[11.5px] text-[#8A8CAE]">
+                      <span className="block text-[11.5px] text-app-text-muted">
                         {c.last_message_at ? fmtDateTime(c.last_message_at, lang) : ''}
                       </span>
                     </span>
@@ -137,16 +137,16 @@ export default function Messages() {
 
           {active ? (
             <Card className="flex h-[62vh] flex-col lg:h-[600px]">
-              <div className="flex items-center gap-3 border-b border-[#F1F0FA] p-4">
+              <div className="flex items-center gap-3 border-b border-app-border p-4">
                 <button
                   type="button"
                   onClick={() => setActiveId(null)}
-                  className="text-[13px] font-medium text-[#6E7191] lg:hidden"
+                  className="text-[13px] font-medium text-app-text-muted lg:hidden"
                 >
                   ←
                 </button>
                 <Avatar name={nameOf(active)} size={36} />
-                <p className="text-[14px] font-semibold text-[#171A3D]">{nameOf(active)}</p>
+                <p className="text-[14px] font-semibold text-app-text">{nameOf(active)}</p>
               </div>
 
               <div className="flex-1 space-y-2.5 overflow-y-auto p-4">
@@ -157,12 +157,12 @@ export default function Messages() {
                       key={m.id}
                       className={`max-w-[80%] rounded-[14px] px-3.5 py-2.5 text-[13px] leading-[1.55] ${
                         mine
-                          ? 'ml-auto rounded-br-[4px] bg-[#4B3BE4] text-white'
-                          : 'rounded-bl-[4px] bg-[#F5F5FB] text-[#171A3D]'
+                          ? 'ml-auto rounded-br-[4px] bg-app-primary text-white'
+                          : 'rounded-bl-[4px] bg-app-bg-muted text-app-text'
                       }`}
                     >
                       {m.content}
-                      <span className={`mt-1 block text-[10.5px] ${mine ? 'text-white/60' : 'text-[#A0A1BC]'}`}>
+                      <span className={`mt-1 block text-[10.5px] ${mine ? 'text-white/60' : 'text-app-text-muted'}`}>
                         {fmtTime(m.created_at)}
                       </span>
                     </div>
@@ -171,7 +171,7 @@ export default function Messages() {
                 <div ref={endRef} />
               </div>
 
-              <div className="flex gap-2 border-t border-[#F1F0FA] p-3">
+              <div className="flex gap-2 border-t border-app-border p-3">
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -188,7 +188,7 @@ export default function Messages() {
                   type="button"
                   onClick={() => void send()}
                   disabled={sending || !text.trim()}
-                  className="min-h-[44px] shrink-0 rounded-[12px] bg-[#4B3BE4] px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                  className="min-h-[44px] shrink-0 rounded-[12px] bg-app-primary px-4 text-[13px] font-semibold text-white disabled:opacity-50"
                 >
                   {t.send}
                 </button>
@@ -196,7 +196,7 @@ export default function Messages() {
             </Card>
           ) : (
             <Card className="hidden items-center justify-center p-10 lg:flex">
-              <p className="text-[13px] text-[#8A8CAE]">{t.chooseChat}</p>
+              <p className="text-[13px] text-app-text-muted">{t.chooseChat}</p>
             </Card>
           )}
         </div>
@@ -248,13 +248,13 @@ export function Reviews() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start">
           <Card className="p-5">
-            <p className="text-[32px] font-semibold text-[#171A3D]">{data.rating_avg}</p>
+            <p className="text-[32px] font-semibold text-app-text">{data.rating_avg}</p>
             <p className="text-[14px] text-[#E6B33E]">{'★'.repeat(Math.round(data.rating_avg))}</p>
             <ul className="mt-3 space-y-1.5">
               {[5, 4, 3, 2, 1].map((n) => (
-                <li key={n} className="flex items-center gap-2 text-[12px] text-[#6E7191]">
+                <li key={n} className="flex items-center gap-2 text-[12px] text-app-text-muted">
                   <span className="w-3">{n}</span>
-                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-[#F0EFF8]">
+                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-app-bg-subtle">
                     <span
                       className="block h-full rounded-full bg-[#E6B33E]"
                       style={{ width: `${((data.breakdown[String(n)] ?? 0) / max) * 100}%` }}
@@ -273,20 +273,20 @@ export function Reviews() {
                   <div className="flex items-center gap-3">
                     <Avatar name={r.student_name} size={40} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13.5px] font-semibold text-[#171A3D]">
+                      <p className="truncate text-[13.5px] font-semibold text-app-text">
                         {r.student_name}
                       </p>
-                      <p className="text-[11.5px] text-[#A0A1BC]">{fmtDate(r.created_at, lang)}</p>
+                      <p className="text-[11.5px] text-app-text-muted">{fmtDate(r.created_at, lang)}</p>
                     </div>
                     <span className="text-[13px] text-[#E6B33E]">{'★'.repeat(Math.round(r.rating))}</span>
                   </div>
                   {r.opinion || r.what_liked ? (
-                    <p className="mt-2.5 text-[12.5px] leading-[1.7] text-[#5B5E86]">
+                    <p className="mt-2.5 text-[12.5px] leading-[1.7] text-app-text-muted">
                       {r.opinion || r.what_liked}
                     </p>
                   ) : null}
                   {r.what_was_missing ? (
-                    <p className="mt-1.5 text-[12.5px] leading-[1.7] text-[#8A8CAE]">
+                    <p className="mt-1.5 text-[12.5px] leading-[1.7] text-app-text-muted">
                       {t.reviewMissing}: {r.what_was_missing}
                     </p>
                   ) : null}
@@ -327,14 +327,14 @@ export function NotificationsDrawer({
         animate={{ x: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 380, damping: 34 }}
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-[400px] flex-col gap-4 overflow-y-auto bg-white p-5 pt-[max(env(safe-area-inset-top,0px),20px)]"
+        className="flex h-full w-full max-w-[400px] flex-col gap-4 overflow-y-auto bg-app-surface p-5 pt-[max(env(safe-area-inset-top,0px),20px)]"
       >
         <div className="flex items-center justify-between">
-          <p className="text-[18px] font-semibold text-[#171A3D]">{t.notifications}</p>
+          <p className="text-[18px] font-semibold text-app-text">{t.notifications}</p>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F5F5FB] text-[#3E4166]"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-app-bg-muted text-app-text"
             aria-label={t.close}
           >
             ✕
@@ -342,7 +342,7 @@ export function NotificationsDrawer({
         </div>
 
         {notifications.length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-[#8A8CAE]">{t.notificationsEmpty}</p>
+          <p className="py-8 text-center text-[13px] text-app-text-muted">{t.notificationsEmpty}</p>
         ) : (
           <>
             <button
@@ -352,7 +352,7 @@ export function NotificationsDrawer({
                   .then(onRead)
                   .catch(() => undefined)
               }
-              className="self-start text-[12.5px] font-semibold text-[#4B3BE4]"
+              className="self-start text-[12.5px] font-semibold text-app-brand"
             >
               {t.markAllRead}
             </button>
@@ -360,19 +360,19 @@ export function NotificationsDrawer({
               {notifications.map((n) => (
                 <li
                   key={n.id}
-                  className={`flex gap-3 rounded-[14px] border border-[#F1F0FA] p-3.5 ${
-                    n.read_at ? 'bg-white' : 'bg-[#FAFAFE]'
+                  className={`flex gap-3 rounded-[14px] border border-app-border p-3.5 ${
+                    n.read_at ? 'bg-app-surface' : 'bg-app-bg-muted'
                   }`}
                 >
                   <span
                     className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
-                      n.read_at ? 'bg-[#D9D8EC]' : 'bg-[#4B3BE4]'
+                      n.read_at ? 'bg-[#D9D8EC]' : 'bg-app-primary'
                     }`}
                   />
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-[#171A3D]">{n.title}</p>
-                    <p className="mt-1 text-[12.5px] leading-[1.6] text-[#6E7191]">{n.body}</p>
-                    <p className="mt-1.5 text-[11px] text-[#A0A1BC]">
+                    <p className="text-[13px] font-semibold text-app-text">{n.title}</p>
+                    <p className="mt-1 text-[12.5px] leading-[1.6] text-app-text-muted">{n.body}</p>
+                    <p className="mt-1.5 text-[11px] text-app-text-muted">
                       {fmtDateTime(n.created_at, lang)}
                     </p>
                   </div>

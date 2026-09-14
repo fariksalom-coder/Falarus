@@ -1,18 +1,16 @@
 import { SkeletonKarta } from '../components/ui/Skeleton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { isValidDailyCourseDay, FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
-import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
 import {
+  ArrowLeft,
   ArrowDown,
   ArrowUp,
   Check,
   ChevronLeft,
   ChevronRight,
   Crown,
-  Edit3,
-  FileText,
   RefreshCw,
   RotateCcw,
 } from 'lucide-react';
@@ -25,9 +23,17 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { useLocale } from '../context/LocaleContext';
-import { useKunlikProgress, type KunlikDayProgress } from '../hooks/useKunlikProgress';
+import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { prefetchRoutePath } from '../routeModules';
 import { TOTAL_DAYS } from '../data/dailyPlan';
+import {
+  QUESTS,
+  buildQuestSlots,
+  findCurrentDay,
+  getRow,
+  isDayComplete,
+  type QuestSlot,
+} from '../utils/kunlikBloklar';
 import { takeKunlikRestoreDay } from '../utils/kunlikLastDay';
 import UserAvatar from '../components/UserAvatar';
 import type { UserGender } from '../components/UserAvatar';
@@ -35,171 +41,10 @@ import KunlikFreeLimitCta from '../components/KunlikFreeLimitCta';
 import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
 import InstallAppCard from '../components/InstallAppCard';
 import LiveStreamBanner from '../components/live/LiveStreamBanner';
+import ObunaMuddatBanner from '../components/subscription/ObunaMuddatBanner';
 import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 
-const DEFAULT_ROW: Omit<KunlikDayProgress, 'day_number'> = {
-  grammar_1: false,
-  grammar_2: false,
-  grammar_3: false,
-  grammar_correct: 0,
-  words_learned: 0,
-  words_correct: 0,
-  words_match: false,
-  phrases_done: false,
-  phrases_correct: 0,
-  text_questions_correct: 0,
-  speaking_tasks_done: 0,
-  oqish_done: false,
-  suhbat_done: false,
-  speaking_level: 0,
-};
-
-const QUESTS = [
-  {
-    id: 'grammar',
-    titleKey: 'home.questGrammar',
-    subtitleKey: 'home.questGrammarSub',
-    route: (day: number) => `/kunlik-reja/kun/${day}/grammatika`,
-    images: {
-      done: '/app-mobile/images/home/block_icons/grammar_done.png',
-      active: '/app-mobile/images/home/block_icons/grammar_current.png',
-      locked: '/app-mobile/images/home/block_icons/grammar_locked.png',
-    },
-  },
-  {
-    id: 'vocabulary',
-    titleKey: 'home.questVocab',
-    subtitleKey: 'home.questVocabSub',
-    route: (day: number) => `/kunlik-reja/kun/${day}/lugat`,
-    images: {
-      done: '/app-mobile/images/home/block_icons/vocabulary_done.png',
-      active: '/app-mobile/images/home/block_icons/vocabulary_current.png',
-      locked: '/app-mobile/images/home/block_icons/vocabulary_locked.png',
-    },
-  },
-  {
-    id: 'reading',
-    titleKey: 'home.questReading',
-    subtitleKey: 'home.questReadingSub',
-    route: (day: number) => `/kunlik-reja/kun/${day}/oqish`,
-    images: {
-      done: '/app-mobile/images/home/block_icons/reading_done.png',
-      active: '/app-mobile/images/home/block_icons/reading_current.png',
-      locked: '/app-mobile/images/home/block_icons/reading_locked.png',
-    },
-  },
-  {
-    id: 'speaking',
-    titleKey: 'home.questSpeaking',
-    subtitleKey: 'home.questSpeakingSub',
-    route: (day: number) => `/kunlik-reja/kun/${day}/gapirish`,
-    images: {
-      done: '/app-mobile/images/home/block_icons/speaking_done.png',
-      active: '/app-mobile/images/home/block_icons/speaking_current.png',
-      locked: '/app-mobile/images/home/block_icons/speaking_locked.png',
-    },
-  },
-  /*
-   * 5-BLOK — ustoz bilan jonli savol-javob. Ilgari grammatika oqimining
-   * ichida, uchala mashqdan keyingi bosqich edi: o'quvchi u yergacha
-   * yetib bormasdi. Endi kunning mustaqil bloki.
-   */
-  {
-    id: 'suhbat',
-    titleKey: 'home.questSuhbat',
-    subtitleKey: 'home.questSuhbatSub',
-    route: (day: number) => `/kunlik-reja/kun/${day}/savol-javob`,
-    images: {
-      done: '/app-mobile/images/home/block_icons/speaking_done.png',
-      active: '/app-mobile/images/home/block_icons/speaking_current.png',
-      locked: '/app-mobile/images/home/block_icons/speaking_locked.png',
-    },
-  },
-] as const;
-
-type QuestState = 'done' | 'active' | 'locked';
-
-type QuestSlot = (typeof QUESTS)[number] & {
-  state: QuestState;
-  canOpen: boolean;
-};
-
 type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
-
-function getRow(rows: Map<number, KunlikDayProgress>, day: number): KunlikDayProgress {
-  return rows.get(day) ?? { day_number: day, ...DEFAULT_ROW };
-}
-
-function isGrammarDone(row: KunlikDayProgress): boolean {
-  return row.grammar_1 && row.grammar_2 && row.grammar_3;
-}
-
-function isVocabularyDone(row: KunlikDayProgress): boolean {
-  return row.words_match;
-}
-
-function isSpeakingDone(row: KunlikDayProgress, promptCount: number): boolean {
-  return promptCount <= 0 || row.speaking_level >= promptCount;
-}
-
-function buildQuestSlots(
-  row: KunlikDayProgress,
-  promptCount: number,
-  oltin: boolean,
-): QuestSlot[] {
-  const raw = [
-    { done: isGrammarDone(row), hasContent: true },
-    { done: isVocabularyDone(row), hasContent: true },
-    { done: row.oqish_done, hasContent: true },
-    { done: isSpeakingDone(row, promptCount), hasContent: promptCount > 0 },
-    { done: row.suhbat_done === true, hasContent: true },
-  ];
-
-  let activeAssigned = false;
-  let previousIncomplete = false;
-
-  return QUESTS.map((quest, index) => {
-    const item = raw[index];
-    let state: QuestState;
-
-    if (previousIncomplete) {
-      state = 'locked';
-    } else if (item.done) {
-      state = 'done';
-    } else if (!item.hasContent) {
-      state = 'locked';
-      previousIncomplete = true;
-    } else if (!activeAssigned) {
-      state = 'active';
-      activeAssigned = true;
-      previousIncomplete = true;
-    } else {
-      state = 'locked';
-    }
-
-    /*
-     * OLTIN A'ZO (support hisobi) — FAQAT 5-BLOK zanjirdan chiqarilgan.
-     *
-     * Qolgan to'rt blok hammaga bir xil tartibda ochiladi; savol-javobni
-     * esa support butun kunni o'tmasdan ochib ko'ra olishi kerak.
-     */
-    if (oltin && quest.id === 'suhbat' && state === 'locked') state = 'active';
-
-    return { ...quest, state, canOpen: state !== 'locked' };
-  });
-}
-
-function isDayComplete(row: KunlikDayProgress, promptCount: number): boolean {
-  const counts = new Map<number, number>([[row.day_number, promptCount]]);
-  return isKunlikDayRowFullyComplete(row, counts);
-}
-
-function findCurrentDay(rows: Map<number, KunlikDayProgress>, promptCounts: Map<number, number>): number {
-  for (let day = 1; day <= TOTAL_DAYS; day += 1) {
-    if (!isDayComplete(getRow(rows, day), promptCounts.get(day) ?? 0)) return day;
-  }
-  return TOTAL_DAYS;
-}
 
 function HomeHeader({
   myRank,
@@ -283,78 +128,6 @@ function HomeHeader({
         </button>
       ) : null}
     </header>
-  );
-}
-
-function ExamShortcuts({ t }: { t: TranslateFn }) {
-  const navigate = useNavigate();
-  const cards = [
-    {
-      href: '/kurslar/patent',
-      title: t('home.patentTitle'),
-      subtitle: t('home.patentSubtitle'),
-      solid: true,
-      Icon: Edit3,
-    },
-    {
-      href: '/kurslar/vnzh',
-      title: t('home.vnzhTitle'),
-      subtitle: t('home.vnzhSubtitle'),
-      solid: false,
-      Icon: FileText,
-    },
-  ] as const;
-
-  /*
-   * YOTIQ, PAST KARTA.
-   *
-   * Ilgari belgi, sarlavha va izoh ustma-ust turardi va karta 120px ga
-   * yaqin bo'lardi. Bosh sahifaga beshinchi blok qo'shilgach ekran uzayib
-   * ketdi — bu ikki karta esa faqat kirish nuqtasi, balandlikning shuncha
-   * qismini egallashi shart emas. Belgi matnning YONIGA olindi: karta
-   * ikki barobar pasaydi, bosish maydoni esa 44px dan baland qoladi.
-   */
-  return (
-    <section className="grid grid-cols-2 gap-2.5 px-4 pt-2 min-[408px]:gap-3">
-      {cards.map(({ href, title, subtitle, solid, Icon }) => (
-        <button
-          key={href}
-          type="button"
-          onClick={() => navigate(href)}
-          onMouseEnter={() => prefetchRoutePath(href)}
-          onTouchStart={() => prefetchRoutePath(href)}
-          onFocus={() => prefetchRoutePath(href)}
-          className={`flex min-h-[62px] min-w-0 items-center gap-2.5 rounded-[18px] px-3 py-2.5 text-left shadow-[0_8px_20px_-10px_rgba(15,23,42,0.18)] active:scale-[0.99] ${
-            solid
-              ? 'bg-[#0B2A6B] text-white'
-              : 'bg-[#C89935] text-white'
-          }`}
-        >
-          <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] ${
-              solid ? 'bg-white/12 ring-1 ring-white/20' : 'bg-white/22 ring-1 ring-white/30'
-            }`}
-          >
-            <Icon className="h-[18px] w-[18px] text-white" aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[15px] font-extrabold leading-tight">{title}</span>
-            {/*
-              Izoh QIRQILMAYDI, ikki qatorgacha o'raladi: tor ekranda
-              "Patentga tayyorgarlik" bir qatorga sig'masdi va oxiri
-              kesilib qolardi.
-            */}
-            <span
-              className={`mt-0.5 line-clamp-2 block text-[10.5px] font-semibold leading-[1.25] ${
-                solid ? 'text-white/85' : 'text-white/90'
-              }`}
-            >
-              {subtitle}
-            </span>
-          </span>
-        </button>
-      ))}
-    </section>
   );
 }
 
@@ -637,6 +410,12 @@ export default function HomePage() {
   const { t } = useLocale();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  /*
+   * Kun endi MANZILDA: `/kunlik-reja/kun/N`. Ilgari u `?kun=N` so'rov
+   * parametri edi, chunki bu sahifa ilovaning ildizi bo'lgan. Eski havolalar
+   * (`/?kun=N`) hali ham ishlashi uchun ikkala manba ham o'qiladi.
+   */
+  const { dayNum: dayNumParam } = useParams<{ dayNum?: string }>();
   const { rows, loaded, practicePromptCountByDay } = useKunlikProgress();
   const premium = Boolean(access?.subscription_active);
   // OLTIN A'ZO: kunlar bo'ylab oldinga ham erkin yuradi (182 kun ochiq).
@@ -691,6 +470,7 @@ export default function HomePage() {
   // shu sabab xaritadan `/?kun=N` bilan kelganda kun qo'llanmay, har doim currentDay'ga
   // tushib qolardi. Shuning uchun window.location'dan ham o'qiymiz (ishonchli manba).
   const kunParam =
+    dayNumParam ??
     searchParams.get('kun') ??
     (typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('kun')
@@ -784,20 +564,34 @@ export default function HomePage() {
         <div className="px-4">
           <LiveStreamBanner />
         </div>
+        {/* Obuna muddati tugayapti/tugadi — avto-to'lov yo'q, shuning uchun
+            odam o'zi qaror qilishi uchun eslatib turamiz. Muddat uzoq bo'lsa
+            komponent hech narsa chizmaydi. */}
+        <div className="px-4">
+          <ObunaMuddatBanner />
+        </div>
         {/* Ilovani bosh ekranga chiqarish — eng tepada, sarlavhadan keyin.
             O'rnatilgan bo'lsa o'zi ko'rinmaydi. */}
         <InstallAppCard />
-        <ExamShortcuts t={t} />
 
+        {/*
+          XARITAGA QAYTISH.
+
+          Xarita endi ilovaning birinchi ekrani, bu sahifa esa undan bir
+          pog'ona pastda — shuning uchun bu qator "ko'rish" emas, QAYTISH
+          bo'ldi: chapda strelka, manzili `/` (ildiz), ya'ni tarixda yangi
+          qatlam ochilmaydi.
+        */}
         <div className="px-4 pt-2">
           <button
             type="button"
-            onClick={() => navigate('/kunlik-reja/xarita')}
+            onClick={() => navigate('/')}
             className="flex w-full items-center justify-between rounded-[22px] bg-app-surface px-[18px] py-[13px] shadow-[0_10px_28px_-16px_rgba(15,23,42,0.18)] ring-1 ring-app-border/70 transition-transform active:scale-[0.99]"
           >
             <span className="flex items-center gap-2.5">
+              <ArrowLeft className="h-4 w-4 shrink-0 text-app-text-muted" aria-hidden strokeWidth={2.6} />
               <span aria-hidden className="text-[19px] leading-none">🗺</span>
-              <span className="text-[14px] font-black text-app-text">Butun xarita · {TOTAL_DAYS} kun</span>
+              <span className="text-[14px] font-black text-app-text">Xarita · {TOTAL_DAYS} kun</span>
             </span>
             <ChevronRight className="h-4 w-4 text-app-text-muted" />
           </button>

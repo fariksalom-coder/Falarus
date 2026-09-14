@@ -91,7 +91,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-4">To'lovlarni tekshirish</h1>
+      <h1 className="text-2xl font-semibold text-app-text mb-4">To'lovlarni tekshirish</h1>
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 p-3 flex items-center gap-2 text-red-700 text-sm">
@@ -100,39 +100,39 @@ export default function AdminPaymentsPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-slate-500">Yuklanmoqda...</div>
+          <div className="p-8 text-center text-app-text-muted">Yuklanmoqda...</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-app-bg-muted border-b border-app-border">
                 <tr>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Foydalanuvchi</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Email</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Phone</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Obuna / kurs</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Usul</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Kanal</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Click payment id</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Fiskal</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Fiskal chek</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Valyuta</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">To'lov vaqti</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Chek</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Holat</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">Amallar</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Foydalanuvchi</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Email</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Phone</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Obuna / kurs</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Usul</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Kanal</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Click payment id</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Fiskal</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Fiskal chek</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Valyuta</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">To'lov vaqti</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Chek</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Holat</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">Amallar</th>
                 </tr>
               </thead>
               <tbody>
                 {list.map((p) => (
-                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-3 px-4 font-medium text-slate-800">{p.user}</td>
-                    <td className="py-3 px-4 text-slate-600">{p.user_email}</td>
-                    <td className="py-3 px-4 text-slate-600">{p.user_phone ?? '—'}</td>
+                  <tr key={p.id} className="border-b border-app-border hover:bg-app-bg-muted">
+                    <td className="py-3 px-4 font-medium text-app-text">{p.user}</td>
+                    <td className="py-3 px-4 text-app-text-muted">{p.user_email}</td>
+                    <td className="py-3 px-4 text-app-text-muted">{p.user_phone ?? '—'}</td>
                     <td className="py-3 px-4">{p.product_label}</td>
                     <td className="py-3 px-4">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                      <span className="rounded-full bg-app-bg-subtle px-2.5 py-1 text-xs font-semibold text-app-text">
                         {p.payment_provider === 'click'
                           ? 'Click'
                           : p.payment_provider === 'rahmat'
@@ -140,21 +140,21 @@ export default function AdminPaymentsPage() {
                             : 'Manual'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-xs text-slate-600">{paymentChannelLabel(p.payment_channel)}</td>
-                    <td className="py-3 px-4 font-mono text-xs text-slate-600 max-w-[140px] truncate" title={p.click_merchant_payment_id ?? ''}>
+                    <td className="py-3 px-4 text-xs text-app-text-muted">{paymentChannelLabel(p.payment_channel)}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-app-text-muted max-w-[140px] truncate" title={p.click_merchant_payment_id ?? ''}>
                       {p.click_merchant_payment_id ?? '—'}
                     </td>
-                    <td className="py-3 px-4 text-xs text-slate-600">
+                    <td className="py-3 px-4 text-xs text-app-text-muted">
                       {p.fiscal_status ? FISCAL_LABELS[p.fiscal_status] ?? p.fiscal_status : '—'}
                     </td>
-                    <td className="py-3 px-4 font-mono text-xs text-slate-600 max-w-[180px] truncate" title={p.fiscal_receipt_id ?? ''}>
+                    <td className="py-3 px-4 font-mono text-xs text-app-text-muted max-w-[180px] truncate" title={p.fiscal_receipt_id ?? ''}>
                       {p.fiscal_receipt_id ? (
                         /^https?:\/\//i.test(p.fiscal_receipt_id) ? (
                           <a
                             href={p.fiscal_receipt_id}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-indigo-600 hover:underline"
+                            className="text-app-brand hover:underline"
                           >
                             Ochish
                           </a>
@@ -166,7 +166,7 @@ export default function AdminPaymentsPage() {
                       )}
                     </td>
                     <td className="py-3 px-4">{p.currency}</td>
-                    <td className="py-3 px-4 text-slate-600">
+                    <td className="py-3 px-4 text-app-text-muted">
                       {p.payment_time ? new Date(p.payment_time).toLocaleString() : '—'}
                     </td>
                     <td className="py-3 px-4">
@@ -175,7 +175,7 @@ export default function AdminPaymentsPage() {
                           href={p.payment_proof_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-indigo-600 hover:underline"
+                          className="inline-flex items-center gap-1 text-app-brand hover:underline"
                         >
                           {p.payment_provider === 'click' ? 'Ochish' : "Ko'rish"} <ExternalLink className="h-3.5 w-3.5" />
                         </a>
@@ -203,7 +203,7 @@ export default function AdminPaymentsPage() {
                             (p.payment_channel === 'rahmat' &&
                               p.product_code !== 'teacher_trial' &&
                               p.product_code !== 'teacher_listing')) && (
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-app-text-muted">
                               {p.payment_channel === 'rahmat' ? 'Rahmat' : 'Click'} — toʻlov yakunlangacha kuting
                             </span>
                           )}
@@ -255,7 +255,7 @@ export default function AdminPaymentsPage() {
           </div>
         )}
         {!loading && list.length === 0 && (
-          <div className="p-8 text-center text-slate-500">To'lovlar yo'q.</div>
+          <div className="p-8 text-center text-app-text-muted">To'lovlar yo'q.</div>
         )}
       </div>
     </div>

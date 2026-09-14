@@ -138,13 +138,21 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
 
   useEffect(() => {
     if (!clientId) return;
-    void loadGoogleScript().then(() => {
-      ensureInitialized(clientId, (token) => {
-        pendingRef.current?.resolve();
-        pendingRef.current = null;
-        onCredentialRef.current(token);
+    let cancelled = false;
+    void loadGoogleScript()
+      .then(() => {
+        if (cancelled || !window.google?.accounts?.id) return;
+        ensureInitialized(clientId, (token) => {
+          pendingRef.current?.resolve();
+          pendingRef.current = null;
+          onCredentialRef.current(token);
+        });
+      })
+      .catch(() => {
+        // Offline or blocked SDK: the password form remains usable.
+        if (!cancelled) setButtonReady(false);
       });
-    });
+    return () => { cancelled = true; };
   }, [clientId]);
 
   useEffect(() => {

@@ -1,0 +1,29 @@
+{
+  "results": [
+    {
+      "width": 375,
+      "overflow": false,
+      "colors": 5,
+      "ctaVisible": true,
+      "videos": 0,
+      "pass": true
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "colors": 5,
+      "ctaVisible": true,
+      "videos": 0,
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "overflow": false,
+      "colors": 5,
+      "ctaVisible": true,
+      "videos": 0,
+      "pass": true
+    }
+  ],
+  "errors": []
+}

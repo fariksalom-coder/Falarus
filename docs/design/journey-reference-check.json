@@ -1,0 +1,77 @@
+{
+  "results": [
+    {
+      "width": 375,
+      "overflow": false,
+      "ctaVisible": true,
+      "done": 3,
+      "locked": 1,
+      "active": "Gapirish",
+      "days": 30,
+      "videos": 0,
+      "pass": true
+    },
+    {
+      "test": "last-stage-locked",
+      "width": 375,
+      "pass": true
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "ctaVisible": true,
+      "done": 3,
+      "locked": 1,
+      "active": "Gapirish",
+      "days": 30,
+      "videos": 0,
+      "pass": true
+    },
+    {
+      "test": "last-stage-locked",
+      "width": 390,
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "overflow": false,
+      "ctaVisible": true,
+      "done": 3,
+      "locked": 1,
+      "active": "Gapirish",
+      "days": 30,
+      "videos": 0,
+      "pass": true
+    },
+    {
+      "test": "last-stage-locked",
+      "width": 1440,
+      "pass": true
+    },
+    {
+      "test": "speaking-next-route",
+      "pass": true
+    },
+    {
+      "test": "paywall",
+      "pass": true
+    },
+    {
+      "test": "premium-correct-day",
+      "pass": true
+    },
+    {
+      "test": "golden-future",
+      "pass": true
+    },
+    {
+      "test": "selected-day-locks",
+      "pass": true
+    },
+    {
+      "test": "profile-unchanged",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,7 @@
+{
+  "sampleRate": 48000,
+  "maxDifference": 0.18450927734375,
+  "rmsDifference": 0.00033306331707065503,
+  "samplesDifferentAbovePoint01": 5,
+  "note": "Original player vs a single uninterrupted AudioBuffer, same provider PCM."
+}

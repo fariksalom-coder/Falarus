@@ -1,11 +1,10 @@
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { isValidDailyCourseDay } from '../../shared/dailyCourseDay';
+import { kunlikRejaPath } from '../utils/kunlikNavigation';
 
-/** Legacy `/kunlik-reja` → new home at `/` (preserves `?kun=`). */
+/** Eski `/kunlik-reja` (va `?kun=`) → kunning bloklari sahifasiga. */
 export default function KunlikRejaRedirect() {
   const [searchParams] = useSearchParams();
   const kunRaw = searchParams.get('kun');
   const kun = kunRaw != null ? Number(kunRaw) : null;
-  const to = kun != null && isValidDailyCourseDay(kun) ? `/?kun=${kun}` : '/';
-  return <Navigate to={to} replace />;
+  return <Navigate to={kunlikRejaPath(kun ?? undefined)} replace />;
 }

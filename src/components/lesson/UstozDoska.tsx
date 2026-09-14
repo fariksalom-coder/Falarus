@@ -1,3 +1,4 @@
+import { acquireConversationAudio } from '../../utils/conversationAudio';
 /**
  * UstozDoska — grammatika bo'limidagi jonli dars.
  *
@@ -6,7 +7,6 @@
  *      tugagach keyingisiga o'zi o'tadi.
  *   2. SUHBAT — ustoz og'zaki savol beradi, o'quvchi mikrofon orqali javob
  *      beradi, ustoz baholab ovoz bilan javob qaytaradi. Ikkala tomon ovozli.
- *   3. TEST — nazorat savoli va qo'shimcha mashq.
  *
  * Dars mavzu ochilishi bilan O'ZI boshlanadi — qo'shimcha tugma yo'q.
  *
@@ -27,7 +27,6 @@ import {
   Send,
   Square,
   Volume2,
-  VolumeX,
   XCircle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -40,13 +39,10 @@ import UstozLive from './UstozLive';
 import UstozDoskaSahna from './UstozDoskaSahna';
 import { doskaKvota, type DoskaKvota, type KunSavol } from '../../api/ustozDoska';
 import {
-  buildDoskaExercise,
   buildDoskaLesson,
   suhbatJavobi,
   type DoskaBaho,
   type DoskaDars,
-  type DoskaMashq,
-  type DoskaTestSavol,
   type DoskaVazifa,
 } from '../../api/ustozDoska';
 
@@ -56,21 +52,15 @@ type Props = {
   kun?: number;
   vazifalar?: DoskaVazifa[];
   /**
-   * Yakuniy testning savollari — kunning O'Z bazasidan. Model bittagina
-   * nazorat savoli qaytaradi, dars esa shu ro'yxat bilan to'liq testga
-   * aylanadi (kamida olti savol).
-   */
-  testSavollari?: DoskaTestSavol[];
-  /**
    * DARS TUGAGACH KEYINGI BOSQICHGA O'TKAZADI.
    *
-   * Dars test bilan tugab, ekranda "Dars yakunlandi" yozuvi va faqat
+   * Dars oxirgi bosqichda tugaydi va o'quvchi darhol keyingi bosqichga
    * "Qaytadan ko'rish" tugmasi qolardi — o'quvchi uchun kun SHU YERDA
    * tugagandek edi. Aslida undan keyin "Ustozdan so'ra" va mashqlar bor;
    * ularga o'tish faqat tepadagi kichkina yozuvda turardi va ko'rinmasdi.
    */
   onTugadi?: () => void;
-  /** Keyingi bosqichning nomi — yakundagi tugmada ko'rinadi. */
+  /** Keyingi bosqichning nomi — oxirgi qadam tugmasida ko'rinadi. */
   keyingiNomi?: string;
   /**
    * SAHIFANING "←" TUGMASI UCHUN.
@@ -117,8 +107,6 @@ type Props = {
    * Endi ular alohida, to'rt bo'lim materialidan tuziladi.
    */
   savollarManbasi?: KunSavol[];
-  /** O'quvchi savolga javob bera olmadi — savol tegishli kunga qaytariladi. */
-  onQaytarish?: (kun: number) => void;
   /**
    * Suhbat uchun savol umuman topilmadi.
    *
@@ -130,13 +118,13 @@ type Props = {
 };
 
 /** Darsning bosqichlari. */
-type Faza = 'tushuntirish' | 'suhbat' | 'test' | 'yakun';
+type Faza = 'tushuntirish' | 'suhbat';
+
+
 
 const FAZA_NOMI: Record<Faza, string> = {
   tushuntirish: 'Tushuntirish',
   suhbat: 'Savol-javob',
-  test: 'Test',
-  yakun: 'Yakun',
 };
 
 /**
@@ -173,7 +161,6 @@ export default function UstozDoska({
   nazariya,
   kun,
   vazifalar,
-  testSavollari,
   onTugadi,
   keyingiNomi,
   ortgaRef,
@@ -181,11 +168,10 @@ export default function UstozDoska({
   onChiqish,
   qism = 'dars',
   savollarManbasi,
-  onQaytarish,
   onSavolYoq,
 }: Props) {
   const { token } = useAuth();
-  const recorder = useVoiceRecorder();
+  const recorder = useVoiceRecorder(60_000);
 
   /** Faqat savol-javob rejimi: dars va test bu yerda ko'rsatilmaydi. */
   const suhbatRejimi = qism === 'suhbat';
@@ -195,14 +181,14 @@ export default function UstozDoska({
   const [error, setError] = useState<string | null>(null);
 
   const [faza, setFaza] = useState<Faza>(suhbatRejimi ? 'suhbat' : 'tushuntirish');
+  useEffect(() => {
+    if (faza === 'suhbat') return acquireConversationAudio();
+  }, [faza]);
   const [step, setStep] = useState(0);
   const [savolIdx, setSavolIdx] = useState(0);
   const [baho, setBaho] = useState<DoskaBaho | null>(null);
   const [baholanmoqda, setBaholanmoqda] = useState(false);
 
-  const [testJavoblar, setTestJavoblar] = useState<Record<number, number>>({});
-  const [mashq, setMashq] = useState<DoskaMashq | null>(null);
-  const [mashqJavoblar, setMashqJavoblar] = useState<Record<number, number>>({});
 
   /**
    * Jonli suhbat (Gemini Live). Ishlamasa `zaxiraSuhbat` yoqiladi va suhbat
@@ -217,7 +203,6 @@ export default function UstozDoska({
    */
   const [kvota, setKvota] = useState<DoskaKvota | null>(null);
 
-  const [ovozOchiq, setOvozOchiq] = useState(true);
   const [oqilmoqda, setOqilmoqda] = useState(false);
   /** Dars to'xtatib turilgan — ovoz ham, avtomatik o'tish ham muzlaydi. */
   const [pauza, setPauza] = useState(false);
@@ -252,43 +237,6 @@ export default function UstozDoska({
   const joriy = bosqichlar[step];
   const joriySavol = savollar[savolIdx];
 
-  /**
-   * YAKUNIY TEST savollari.
-   *
-   * Ilgari bu yerda modelning BITTA nazorat savoli turardi — o'quvchi darsni
-   * bir savol bilan tugatardi va mavzu mustahkamlanmasdi. Endi asosini kunning
-   * o'z bazasi tashkil qiladi (har kunda 10-20 ta tekshirilgan savol bor),
-   * model savoli esa oxiriga qo'shiladi: uning izohi foydali, ammo yolg'iz
-   * o'zi yetarli emas va xato bo'lishi ham mumkin.
-   */
-  const testSavollar = useMemo<DoskaTestSavol[]>(() => {
-    const out: DoskaTestSavol[] = [];
-    const korilgan = new Set<string>();
-
-    for (const q of testSavollari ?? []) {
-      const savol = String(q.savol ?? '').trim();
-      const variantlar = (q.variantlar ?? []).map((v) => String(v ?? '').trim());
-      if (!savol || variantlar.length < 2 || korilgan.has(savol)) continue;
-      if (q.togriIndex < 0 || q.togriIndex >= variantlar.length) continue;
-      korilgan.add(savol);
-      out.push({ savol, variantlar, togriIndex: q.togriIndex, izoh: q.izoh });
-    }
-
-    const n = dars?.nazorat;
-    if (n && String(n.savol ?? '').trim() && !korilgan.has(String(n.savol).trim())) {
-      out.push({
-        savol: String(n.savol).trim(),
-        variantlar: n.variantlar.map(String),
-        togriIndex: n.togriIndex,
-        izoh: n.izoh,
-      });
-    }
-
-    return out;
-  }, [testSavollari, dars?.nazorat]);
-
-  const testTogri = testSavollar.filter((q, i) => testJavoblar[i] === q.togriIndex).length;
-  const testJavobBerilgan = Object.keys(testJavoblar).length;
 
   /* ---------------- Ovoz ---------------- */
 
@@ -304,7 +252,7 @@ export default function UstozDoska({
       ijroRef.current += 1;
       const tk = ijroRef.current;
       const bolaklar = reja.map((q) => q.matn);
-      if (!bolaklar.length || !ovozOchiq) {
+      if (!bolaklar.length) {
         // Ovoz o'chiq bo'lsa ham doska to'liq ko'rinishi kerak.
         setOchiqSatr(Number.MAX_SAFE_INTEGER);
         setFaolSatr(-1);
@@ -367,7 +315,7 @@ export default function UstozDoska({
       };
       yur(0);
     },
-    [token, ovozOchiq],
+    [token],
   );
 
   /** Oddiy matnni o'qish (savol, izoh, xulosa) — doska satrlariga bog'liq emas. */
@@ -392,6 +340,25 @@ export default function UstozDoska({
 
   useEffect(() => () => { ijroRef.current += 1; stopSpeaking(); }, []);
 
+  /*
+   * UZOQ KUTISH BELGISI.
+   *
+   * Yuklanish ekrani ataylab yozuvsiz: dars ko'pincha server keshidan
+   * bir zumda keladi va yozuv chaqnab yo'qolardi. Lekin YANGI dars
+   * yaratilganda 30 soniyagacha ketishi mumkin — o'shanda jim skelet
+   * "sayt qotib qoldi" degan taassurot berardi. Shuning uchun yozuv
+   * faqat 6 soniyadan keyin, ya'ni haqiqatan kutilayotganda chiqadi.
+   */
+  const [uzoqKutish, setUzoqKutish] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setUzoqKutish(false);
+      return;
+    }
+    const soat = setTimeout(() => setUzoqKutish(true), 6000);
+    return () => clearTimeout(soat);
+  }, [loading]);
+
   /* ---------------- Dars avtomatik boshlanadi ---------------- */
 
   const darsniBoshla = useCallback(async () => {
@@ -402,9 +369,6 @@ export default function UstozDoska({
     setStep(0);
     setSavolIdx(0);
     setBaho(null);
-    setTestJavoblar({});
-    setMashq(null);
-    setMashqJavoblar({});
     try {
       // Savollar tashqaridan berilgan bo'lsa dars kerak emas — suhbat
       // rejimida undan boshqa hech narsa ishlatilmaydi.
@@ -434,7 +398,7 @@ export default function UstozDoska({
    */
   useEffect(() => {
     if (faza !== 'tushuntirish' || !dars) return;
-    if (step >= bosqichlar.length) setFaza('test');
+    if (step >= bosqichlar.length) darsniYakunla();
   }, [faza, step, dars, bosqichlar.length]);
 
   useEffect(() => {
@@ -451,9 +415,8 @@ export default function UstozDoska({
        * tushuntirishni o'qishga ham ulgurmasdi. Endi jim rejimda bosqichni
        * o'quvchining o'zi almashtiradi.
        */
-      if (!ovozOchiq) return;
       if (step < bosqichlar.length - 1) setStep((s) => s + 1);
-      else setFaza('test');
+      else darsniYakunla();
     });
     // Bosqich almashsa: zanjir ham, chalinayotgan (va yo'ldagi) ovoz ham to'xtaydi.
     return () => {
@@ -528,7 +491,7 @@ export default function UstozDoska({
   /*
    * KVOTA — FAQAT ZAXIRA REJIM UCHUN.
    *
-   * Jonli suhbat kvotadan hisoblanmaydi: uning chegarasi VAQT (3 daqiqa).
+   * Jonli suhbat kvotadan hisoblanmaydi: uning chegarasi VAQT (5 daqiqa).
    * Zaxira ("javob berish" tugmasi bilan yozib yuborish) esa har javobda
    * `/ustoz/suhbat` ga boradi va o'sha kvotaga kiradi — qolgan son shu
    * yerdagina ma'noli.
@@ -545,7 +508,7 @@ export default function UstozDoska({
     if (savolIdx < savollar.length - 1) setSavolIdx((i) => i + 1);
     // Alohida bosqichda suhbatdan keyin test yo'q — kun oqimi davom etadi.
     else if (suhbatRejimi) onTugadi?.();
-    else setFaza('test');
+    else darsniYakunla();
   }
 
   /* ---------------- Boshqaruv: pauza, ortga, qayta eshitish ---------------- */
@@ -585,15 +548,25 @@ export default function UstozDoska({
       if (suhbatRejimi) return;
       setFaza('tushuntirish');
       setStep(Math.max(0, bosqichlar.length - 1));
-      return;
     }
-    if (faza === 'test') {
-      setFaza('tushuntirish');
-      setStep(Math.max(0, bosqichlar.length - 1));
-      return;
-    }
-    setFaza('test');
   }
+
+  /*
+   * DARS TUGADI -> DARHOL KEYINGI BOSQICH.
+   *
+   * Ilgari bu yerda alohida "Yakun" ekrani turardi (tabrik, xulosa va
+   * sanoq). Egasining qarori bilan u butunlay olib tashlandi: dars oxirgi
+   * bosqichda tugashi bilan o'quvchi to'g'ridan-to'g'ri vazifalarga tushadi,
+   * ortiqcha ekran ko'rsatilmaydi.
+   */
+  const darsniYakunla = () => {
+    toxtat();
+    if (onTugadi) {
+      onTugadi();
+      return;
+    }
+    onChiqish?.();
+  };
 
   /** Joriy bosqichni boshidan qayta o'qib berish. */
   function qaytaEshit() {
@@ -606,18 +579,25 @@ export default function UstozDoska({
   const ortgaMumkin = !(faza === 'tushuntirish' && step === 0);
 
   /**
-   * TO'LIQ EKRANDAGI "ORTGA".
+   * TEPADAGI "ORTGA" — DARSDAN TO'LIQ CHIQARADI.
    *
-   * Dars ichida bo'lsa bir bosqich ortga suradi; eng boshida bo'lsa
-   * sahifadan chiqaradi. Sahifada boshqa "ortga" qolmagani uchun (mavzu
-   * qatori olib tashlangan) chiqish yo'li shu tugmada bo'lishi shart.
+   * Ilgari u bosqichma-bosqich ortga surardi, ya'ni pastki qatordagi "←"
+   * bilan AYNI ISHNI qilardi — ikkita bir xil tugma foydalanuvchini
+   * chalkashtirardi. Endi vazifalar ajratilgan:
+   *   tepadagi «←»  — darsdan butunlay chiqish;
+   *   pastdagi «←»  — bir bosqich ortga.
+   *
+   * `onChiqish` berilmagan holat uchun eski xatti-harakat zaxira bo'lib
+   * qoladi: tugma hech bo'lmasa bir bosqich ortga suradi, o'lik bo'lib
+   * qolmaydi.
    */
-  const ortgaYokiChiqish = () => {
-    if (ortgaMumkin) {
-      ortga();
+  const darsdanChiqish = () => {
+    toxtat();
+    if (onChiqish) {
+      onChiqish();
       return;
     }
-    onChiqish?.();
+    if (ortgaMumkin) ortga();
   };
 
   /*
@@ -636,69 +616,9 @@ export default function UstozDoska({
     };
   });
 
-  /* ---------------- 3. Test ---------------- */
-
-  useEffect(() => {
-    if (faza !== 'test' || !dars?.nazorat) return;
-    oqi(dars.nazorat.savol);
-    return () => { ijroRef.current += 1; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [faza, dars]);
-
-  /**
-   * TEST TUGADI -> YAKUN (avtomatik).
-   *
-   * Dars zanjiri o'zi oqishi kerak: tushuntirish -> savol-javob -> test ->
-   * vazifalar. Ilgari oxirgi savolga javob berilgach ham ekranda "Darsni
-   * yakunlash" tugmasi kutib turardi va o'quvchi kun shu yerda tugadi deb
-   * o'ylardi.
-   */
-  useEffect(() => {
-    if (faza !== 'test' || testSavollar.length === 0 || pauza) return;
-    if (testJavobBerilgan < testSavollar.length) return;
-    // Oxirgi javobning izohi o'qilib ulgursin.
-    const id = window.setTimeout(() => setFaza('yakun'), 1600);
-    return () => window.clearTimeout(id);
-  }, [faza, testJavobBerilgan, testSavollar.length, pauza]);
-
-  /**
-   * YAKUN -> KEYINGI BOSQICH (avtomatik).
-   *
-   * Xulosa o'qib bo'lingach o'quvchi vazifalarga o'zi tushadi. Tugma ham
-   * qoladi — sabri chidamagani bosib o'tib ketishi mumkin.
-   */
-  useEffect(() => {
-    if (faza !== 'yakun' || !dars || !onTugadi) return;
-    let bekor = false;
-    let tid = 0;
-    const otish = () => {
-      if (bekor) return;
-      bekor = true;
-      stopSpeaking();
-      onTugadi();
-    };
-    if (ovozOchiq) oqi(dars.xulosa, () => { tid = window.setTimeout(otish, 1400); });
-    else tid = window.setTimeout(otish, 3000);
-    return () => {
-      bekor = true;
-      window.clearTimeout(tid);
-      ijroRef.current += 1;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [faza, dars, ovozOchiq]);
-
-  async function mashqOl() {
-    if (!token || mashq) return;
-    try {
-      setMashq(await buildDoskaExercise(token, { mavzu, nazariya }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Mashq tayyorlanmadi');
-    }
-  }
-
   /* ---------------- Ko'rinish ---------------- */
 
-  // Suhbat rejimida qadamlar — savollar; darsda esa bosqichlar va test.
+  // Suhbat rejimida qadamlar — savollar; darsda esa bosqichlar.
   const jamiQadam = suhbatRejimi ? Math.max(savollar.length, 1) : bosqichlar.length + 1;
   const otilgan = suhbatRejimi
     ? Math.min(savolIdx, jamiQadam - 1)
@@ -714,7 +634,7 @@ export default function UstozDoska({
    */
   const suhbatYakuniNomi = suhbatRejimi
     ? (keyingiNomi ? `Davom etish: ${keyingiNomi}` : 'Davom etish')
-    : 'Testga o‘tish';
+    : (keyingiNomi ?? 'Yakunlash');
 
   /*
    * Yuklanish — YOZUVSIZ.
@@ -734,6 +654,11 @@ export default function UstozDoska({
           <div className="h-2.5 w-[85%] rounded-full bg-[#F2EFFA]" />
           <div className="h-2.5 w-[70%] rounded-full bg-[#F2EFFA]" />
         </div>
+        {uzoqKutish ? (
+          <p className="mt-4 text-center text-[13px] font-semibold text-[#6B5CA5]">
+            Ustoz dars tayyorlayapti…
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -790,7 +715,7 @@ export default function UstozDoska({
           <UstozDoskaSahna
             toliq
             bosqich={joriy}
-            speaking={oqilmoqda && ovozOchiq && !pauza}
+            speaking={oqilmoqda && !pauza}
             loading={tayyorlanmoqda && !pauza}
             kalitSavol={dars?.kalitSavol}
             ochiqSatr={ochiqSatr}
@@ -811,9 +736,9 @@ export default function UstozDoska({
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2 px-3 pt-[max(env(safe-area-inset-top),10px)]">
             <button
               type="button"
-              onClick={ortgaYokiChiqish}
+              onClick={darsdanChiqish}
               className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white backdrop-blur transition active:scale-[0.95]"
-              aria-label={ortgaMumkin ? 'Oldingi bosqich' : 'Darsdan chiqish'}
+              aria-label="Darsdan chiqish"
             >
               <ArrowLeft size={17} />
             </button>
@@ -834,44 +759,6 @@ export default function UstozDoska({
               </span>
             ) : null}
 
-            {ovozOchiq ? (
-              <button
-                type="button"
-                onClick={pauzaAlmashtir}
-                className="pointer-events-auto flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-white/15 px-2.5 text-[12px] font-bold backdrop-blur transition active:scale-[0.95]"
-                style={
-                  pauza
-                    ? { background: '#F0B963', color: '#08121C', borderColor: 'transparent' }
-                    : { background: 'rgba(0,0,0,0.35)', color: '#fff' }
-                }
-                aria-label={pauza ? 'Darsni davom ettirish' : "Darsni to'xtatib turish"}
-              >
-                {pauza ? (
-                  <>
-                    <Play size={14} fill="currentColor" /> Davom etish
-                  </>
-                ) : (
-                  <Pause size={16} />
-                )}
-              </button>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={() => {
-                if (ovozOchiq) {
-                  setOvozOchiq(false);
-                  toxtat();
-                  return;
-                }
-                setOvozOchiq(true);
-                qaytaEshit();
-              }}
-              className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white backdrop-blur transition active:scale-[0.95]"
-              aria-label={ovozOchiq ? "Ovozni o'chirish" : 'Ovozni yoqish'}
-            >
-              {ovozOchiq ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            </button>
           </div>
         </div>
 
@@ -916,17 +803,33 @@ export default function UstozDoska({
               <RotateCcw size={17} />
             </button>
 
+            {/* Pauza — ortga/qayta eshitish bilan bitta qatorda. Ilgari u
+                ekranning tepasida, o'ng burchakda turardi. */}
+            <button
+              type="button"
+              onClick={pauzaAlmashtir}
+              className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-white/12 transition active:scale-[0.95]"
+              style={
+                pauza
+                  ? { background: '#F0B963', color: '#08121C', borderColor: 'transparent' }
+                  : { background: 'rgba(255,255,255,0.07)', color: '#fff' }
+              }
+              aria-label={pauza ? 'Darsni davom ettirish' : "Darsni to'xtatib turish"}
+            >
+              {pauza ? <Play size={17} fill="currentColor" /> : <Pause size={17} />}
+            </button>
+
             <button
               type="button"
               onClick={() => {
                 toxtat();
                 if (step < bosqichlar.length - 1) setStep((s) => s + 1);
-                else setFaza('test');
+                else darsniYakunla();
               }}
               className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-2xl px-4 text-[14.5px] font-bold transition active:scale-[0.98]"
               style={{ background: '#F0B963', color: '#08121C' }}
             >
-              {step < bosqichlar.length - 1 ? 'Keyingisi' : 'Testga o‘tish'}
+              {step < bosqichlar.length - 1 ? 'Keyingisi' : (keyingiNomi ?? 'Yakunlash')}
               <ArrowRight size={17} />
             </button>
           </div>
@@ -953,36 +856,20 @@ export default function UstozDoska({
         </div>
 
         {/*
-          Darsni BOSHQARISH: to'xtatib turish va ovoz. "Ortga" bu yerda
+          Darsni BOSHQARISH: to'xtatib turish. "Ortga" bu yerda
           takrorlanmaydi — sahifaning tepasidagi "←" ayni shu darsni bir
           bosqich orqaga suradi.
         */}
-        {ovozOchiq ? (
-          <button
-            type="button"
-            onClick={pauzaAlmashtir}
-            className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-2.5 text-[12.5px] font-bold transition active:scale-[0.95]"
-            style={pauza ? { background: '#5B3FA8', color: '#fff' } : { background: '#F3F0FC', color: '#5B3FA8' }}
-            aria-label={pauza ? 'Darsni davom ettirish' : "Darsni to'xtatib turish"}
-          >
-            {pauza ? <><Play size={15} fill="currentColor" /> Davom etish</> : <Pause size={16} />}
-          </button>
-        ) : null}
-
         <button
           type="button"
-          onClick={() => {
-            if (ovozOchiq) { setOvozOchiq(false); toxtat(); return; }
-            setOvozOchiq(true);
-            // Ovoz qaytgach shu bosqich boshidan o'qib beriladi.
-            qaytaEshit();
-          }}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl transition active:scale-[0.95]"
-          style={ovozOchiq ? { background: '#5B3FA8', color: '#fff' } : { background: '#F3F0FC', color: '#5B3FA8' }}
-          aria-label={ovozOchiq ? "Ovozni o'chirish" : 'Ovozni yoqish'}
+          onClick={pauzaAlmashtir}
+          className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-2.5 text-[12.5px] font-bold transition active:scale-[0.95]"
+          style={pauza ? { background: '#5B3FA8', color: '#fff' } : { background: '#F3F0FC', color: '#5B3FA8' }}
+          aria-label={pauza ? 'Darsni davom ettirish' : "Darsni to'xtatib turish"}
         >
-          {ovozOchiq ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          {pauza ? <><Play size={15} fill="currentColor" /> Davom etish</> : <Pause size={16} />}
         </button>
+
 
       </div>
 
@@ -1032,7 +919,7 @@ export default function UstozDoska({
               */}
               <UstozDoskaSahna
                 bosqich={joriy}
-                speaking={oqilmoqda && ovozOchiq && !pauza}
+                speaking={oqilmoqda && !pauza}
                 loading={tayyorlanmoqda && !pauza}
                 kalitSavol={dars?.kalitSavol}
                 ochiqSatr={ochiqSatr}
@@ -1071,11 +958,11 @@ export default function UstozDoska({
                   onClick={() => {
                     toxtat();
                     if (step < bosqichlar.length - 1) setStep((s) => s + 1);
-                    else setFaza('test');
+                    else darsniYakunla();
                   }}
                   className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
                 >
-                  {step < bosqichlar.length - 1 ? 'Keyingisi' : 'Testga o‘tish'}
+                  {step < bosqichlar.length - 1 ? 'Keyingisi' : (keyingiNomi ?? 'Yakunlash')}
                   <ArrowRight size={17} />
                 </button>
               </div>
@@ -1099,12 +986,11 @@ export default function UstozDoska({
                 mavzu={mavzu}
                 savollar={savollar}
                 kun={kun}
-                onQaytarish={onQaytarish}
                 keyingiNomi={suhbatYakuniNomi}
                 onTugadi={() => {
                   toxtat();
                   if (suhbatRejimi) onTugadi?.();
-                  else setFaza('test');
+                  else darsniYakunla();
                 }}
                 onZaxira={(sabab) => {
                   // Jonli suhbat ochilmadi: darsni to'xtatmaymiz, eski
@@ -1202,167 +1088,6 @@ export default function UstozDoska({
               ) : null}
             </motion.div>
           ) : null}
-
-          {/* ---------- 3. TEST ---------- */}
-          {faza === 'test' ? (
-            <motion.div key="test" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
-              {testSavollar.length > 0 ? (
-                <>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[13px] font-black text-[#2D1B69]">
-                      {testSavollar.length} ta savol
-                    </p>
-                    <p className="text-[13px] font-bold text-[#5C5470]">
-                      To‘g‘ri: {testTogri}/{testJavobBerilgan || 0}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 grid gap-3">
-                    {testSavollar.map((q, qi) => {
-                      const tanlov = testJavoblar[qi];
-                      const ochilgan = tanlov !== undefined;
-                      return (
-                        <div key={`${qi}-${q.savol}`} className="rounded-2xl bg-[#F7F5FE] p-3.5">
-                          <p className="text-[14px] font-bold leading-snug text-[#2D1B69]">
-                            {qi + 1}. {q.savol}
-                          </p>
-                          <div className="mt-2.5 grid gap-2">
-                            {q.variantlar.map((v, vi) => {
-                              const togri = vi === q.togriIndex;
-                              const cls = !ochilgan
-                                ? 'bg-white text-[#2D1B69]'
-                                : togri ? 'bg-[#E7F7ED] text-[#177A3C]'
-                                : tanlov === vi ? 'bg-[#FDECEC] text-[#B91C1C]'
-                                : 'bg-white text-[#8B7FAB]';
-                              return (
-                                <button
-                                  key={vi}
-                                  type="button"
-                                  disabled={ochilgan}
-                                  onClick={() => {
-                                    setTestJavoblar((p) => ({ ...p, [qi]: vi }));
-                                    /*
-                                     * Ovoz faqat XATO javobda: har to'g'ri javobda
-                                     * "barakalla" deyilsa, olti savollik testda
-                                     * ustoz gapdan to'xtamaydi.
-                                     */
-                                    if (!togri) {
-                                      oqi(q.izoh || `To‘g‘ri javob: ${q.variantlar[q.togriIndex]}`);
-                                    }
-                                  }}
-                                  className={`min-h-[44px] rounded-2xl px-3.5 py-2.5 text-left text-[14px] font-semibold transition active:scale-[0.99] ${cls}`}
-                                >
-                                  {v}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {ochilgan ? (
-                            <p className="mt-2.5 rounded-2xl bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-[#5C5470]">
-                              {q.izoh || `To‘g‘ri javob: ${q.variantlar[q.togriIndex]}`}
-                            </p>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <p className="text-[14px] text-[#5C5470]">Bu dars uchun test tayyorlanmadi.</p>
-              )}
-
-              {mashq ? (
-                <div className="mt-4 grid gap-3">
-                  {mashq.savollar.map((q, qi) => {
-                    const tanlov = mashqJavoblar[qi];
-                    const ochilgan = tanlov !== undefined;
-                    return (
-                      <div key={qi} className="rounded-2xl bg-[#F7F5FE] p-3.5">
-                        <p className="text-[14px] font-bold leading-snug text-[#2D1B69]">{qi + 1}. {q.savol}</p>
-                        <div className="mt-2.5 grid gap-2">
-                          {q.variantlar.map((v, vi) => {
-                            const togri = vi === q.togriIndex;
-                            const cls = !ochilgan
-                              ? 'bg-white text-[#2D1B69]'
-                              : togri ? 'bg-[#E7F7ED] text-[#177A3C]'
-                              : tanlov === vi ? 'bg-[#FDECEC] text-[#B91C1C]'
-                              : 'bg-white text-[#8B7FAB]';
-                            return (
-                              <button
-                                key={vi}
-                                type="button"
-                                disabled={ochilgan}
-                                onClick={() => setMashqJavoblar((p) => ({ ...p, [qi]: vi }))}
-                                className={`min-h-[44px] rounded-2xl px-3.5 py-2.5 text-left text-[14px] font-semibold transition active:scale-[0.99] ${cls}`}
-                              >
-                                {v}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {ochilgan && q.izoh ? (
-                          <p className="mt-2.5 rounded-2xl bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-[#5C5470]">{q.izoh}</p>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => void mashqOl()}
-                  className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-[#F3F0FC] px-4 text-[14px] font-bold text-[#5B3FA8] transition active:scale-[0.98]"
-                >
-                  <Send size={16} /> Yana mashq qilish
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => { toxtat(); setFaza('yakun'); }}
-                className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
-              >
-                Darsni yakunlash <ArrowRight size={17} />
-              </button>
-            </motion.div>
-          ) : null}
-
-          {/* ---------- Yakun ---------- */}
-          {faza === 'yakun' ? (
-            <motion.div key="yakun" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E7F7ED] text-[#177A3C]">
-                <CheckCircle2 size={24} />
-              </span>
-              <p className="mt-2.5 text-[15px] font-black text-[#2D1B69]">Dars yakunlandi</p>
-              <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#5C5470]">{dars.xulosa}</p>
-
-              {/*
-                Kun shu yerda tugamaydi: darsdan keyin "Ustozdan so'ra" va
-                mashqlar bor. Shuning uchun DAVOM ETISH asosiy tugma, qaytadan
-                ko'rish esa ikkinchi darajali bo'lib qoladi.
-              */}
-              {onTugadi ? (
-                <button
-                  type="button"
-                  onClick={() => { toxtat(); onTugadi(); }}
-                  className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#5B3FA8] px-4 text-[15px] font-bold text-white transition active:scale-[0.98]"
-                >
-                  {keyingiNomi ? `Davom etish: ${keyingiNomi}` : 'Davom etish'}
-                  <ArrowRight size={17} />
-                </button>
-              ) : null}
-
-              <button
-                type="button"
-                onClick={() => { setFaza('tushuntirish'); setStep(0); }}
-                className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-4 text-[14px] font-bold text-[#5B3FA8] transition active:scale-[0.98] ${
-                  onTugadi ? 'mt-2.5 bg-transparent' : 'mt-4 bg-[#F3F0FC]'
-                }`}
-              >
-                <Play size={16} /> Qaytadan ko‘rish
-              </button>
-            </motion.div>
-          ) : null}
         </AnimatePresence>
 
         {error ? (
@@ -1373,7 +1098,7 @@ export default function UstozDoska({
   );
 
   /*
-   * To'liq ekran rejimida qolgan bosqichlar (savol-javob, test, yakun) oq
+   * To'liq ekran rejimida savol-javob bosqichi oq
    * kartochka bo'lib qoladi, lekin sahifada sarlavha yo'q — shuning uchun
    * o'ram o'zi bo'shliq beradi va aylantirishga ruxsat etadi.
    */
@@ -1383,7 +1108,7 @@ export default function UstozDoska({
         <div className="mb-2 flex items-center gap-2">
           <button
             type="button"
-            onClick={ortgaYokiChiqish}
+            onClick={darsdanChiqish}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--rd-white)] text-[#5B4CE0] shadow-[0_6px_16px_rgba(91,76,224,0.12)] transition active:scale-[0.95]"
             aria-label="Ortga"
           >

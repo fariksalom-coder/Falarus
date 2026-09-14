@@ -1,3 +1,4 @@
+import { PageHeader } from '../../ui/Foundation';
 import { useEffect, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { MONTHS, type PanelLang } from './lang';
@@ -140,7 +141,7 @@ export function Card({
 }) {
   const Tag = as;
   return (
-    <Tag className={`rounded-[22px] border border-[#EFEEF8] bg-white ${className}`}>{children}</Tag>
+    <Tag className={`rounded-[22px] border border-app-border bg-app-surface ${className}`}>{children}</Tag>
   );
 }
 
@@ -153,17 +154,7 @@ export function PageHead({
   subtitle?: string;
   actions?: ReactNode;
 }) {
-  return (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0">
-        <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#171A3D] lg:text-[27px]">
-          {title}
-        </h1>
-        {subtitle ? <p className="mt-1 text-[13px] text-[#6E7191] lg:text-[14px]">{subtitle}</p> : null}
-      </div>
-      {actions ? <div className="flex flex-wrap gap-2.5">{actions}</div> : null}
-    </div>
-  );
+  return <PageHeader title={title} description={subtitle} action={actions ? <div className="flex flex-wrap gap-2.5">{actions}</div> : undefined} />;
 }
 
 export function PrimaryButton({
@@ -184,7 +175,7 @@ export function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`min-h-[44px] rounded-[12px] bg-[#4B3BE4] px-[18px] text-[13px] font-semibold text-white transition hover:bg-[#3A2CD0] active:scale-[0.98] disabled:opacity-50 ${className}`}
+      className={`min-h-[48px] rounded-[16px] bg-app-primary px-[18px] text-[13px] font-semibold text-white transition hover:bg-app-primary-deep active:scale-[0.98] disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -205,8 +196,8 @@ export function GhostButton({
   tone?: 'default' | 'danger' | 'dark';
 }) {
   const tones = {
-    default: 'bg-white text-[#3E4166] border border-[#E4E3F2] hover:border-[#C9C6EC]',
-    danger: 'bg-white text-[#C23A3F] border border-[#F6D9D9] hover:border-[#E9474D]',
+    default: 'bg-app-surface text-app-text border border-app-border-strong hover:border-app-border-strong',
+    danger: 'bg-app-surface text-[#C23A3F] border border-[#F6D9D9] hover:border-[#E9474D]',
     dark: 'bg-[#171A3D] text-white border border-[#171A3D] hover:bg-[#25295A]',
   } as const;
   return (
@@ -233,10 +224,10 @@ export function Avatar({
   tone?: 'violet' | 'green' | 'grey' | 'light';
 }) {
   const tones = {
-    violet: 'bg-[#EFEDFD] text-[#4B3BE4]',
+    violet: 'bg-app-icon-bg text-app-brand',
     green: 'bg-[#E7F4EC] text-[#17A34A]',
-    grey: 'bg-[#F0EFF7] text-[#6E7191]',
-    light: 'bg-white/14 text-white',
+    grey: 'bg-app-bg-subtle text-app-text-muted',
+    light: 'bg-app-surface/14 text-white',
   } as const;
   if (url) {
     return (
@@ -266,10 +257,10 @@ export function Tag({
   tone?: 'violet' | 'green' | 'amber' | 'grey' | 'red';
 }) {
   const tones = {
-    violet: 'bg-[#EFEDFD] text-[#4B3BE4]',
+    violet: 'bg-app-icon-bg text-app-brand',
     green: 'bg-[#E7F4EC] text-[#17A34A]',
     amber: 'bg-[#FFF4DA] text-[#8A6B12]',
-    grey: 'bg-[#F0EFF7] text-[#6E7191]',
+    grey: 'bg-app-bg-subtle text-app-text-muted',
     red: 'bg-[#FDECEC] text-[#C23A3F]',
   } as const;
   return (
@@ -292,11 +283,11 @@ export function StatCard({
   hint?: string;
   hintTone?: 'muted' | 'green' | 'violet';
 }) {
-  const tones = { muted: 'text-[#6E7191]', green: 'text-[#17A34A]', violet: 'text-[#4B3BE4]' } as const;
+  const tones = { muted: 'text-app-text-muted', green: 'text-[#17A34A]', violet: 'text-app-brand' } as const;
   return (
-    <div className="rounded-[18px] border border-[#EFEEF8] bg-white p-4">
-      <p className="text-[12.5px] text-[#6E7191]">{label}</p>
-      <p className="mt-2 text-[22px] font-semibold tracking-[-0.02em] text-[#171A3D] lg:text-[26px]">
+    <div className="rounded-[18px] border border-app-border bg-app-surface p-4">
+      <p className="text-[12.5px] text-app-text-muted">{label}</p>
+      <p className="mt-2 text-[22px] font-semibold tracking-[-0.02em] text-app-text lg:text-[26px]">
         {value}
       </p>
       <p className={`mt-1.5 min-h-[16px] text-[11.5px] font-medium ${tones[hintTone]}`}>{hint ?? ''}</p>
@@ -324,13 +315,13 @@ export function Pills<T extends string>({
             onClick={() => onChange(it.key)}
             className={`min-h-[40px] shrink-0 rounded-full border px-[18px] text-[12.5px] font-semibold transition ${
               on
-                ? 'border-[#4B3BE4] bg-[#4B3BE4] text-white'
-                : 'border-[#E4E3F2] bg-white text-[#5B5E86] hover:border-[#C9C6EC]'
+                ? 'border-app-brand bg-app-primary text-white'
+                : 'border-app-border-strong bg-app-surface text-app-text-muted hover:border-app-border-strong'
             }`}
           >
             {it.label}
             {it.count != null ? (
-              <span className={on ? 'ml-1.5 text-white/70' : 'ml-1.5 text-[#8A8CAE]'}>{it.count}</span>
+              <span className={on ? 'ml-1.5 text-white/70' : 'ml-1.5 text-app-text-muted'}>{it.count}</span>
             ) : null}
           </button>
         );
@@ -363,8 +354,8 @@ export function Chips({
               square ? 'min-w-[60px] rounded-[12px] font-semibold' : 'rounded-full'
             } ${
               on
-                ? 'border-[#4B3BE4] bg-[#4B3BE4] text-white'
-                : 'border-[#E4E3F2] bg-white text-[#5B5E86] hover:border-[#C9C6EC]'
+                ? 'border-app-brand bg-app-primary text-white'
+                : 'border-app-border-strong bg-app-surface text-app-text-muted hover:border-app-border-strong'
             }`}
           >
             {o}
@@ -377,9 +368,9 @@ export function Chips({
 
 export function ProgressBar({ percent, tone = 'violet' }: { percent: number; tone?: 'violet' | 'green' }) {
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-[#F0EFF8]">
+    <div className="h-2 overflow-hidden rounded-full bg-app-bg-subtle">
       <div
-        className={`h-full rounded-full transition-all ${tone === 'green' ? 'bg-[#17A34A]' : 'bg-[#4B3BE4]'}`}
+        className={`h-full rounded-full transition-all ${tone === 'green' ? 'bg-[#17A34A]' : 'bg-app-primary'}`}
         style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
       />
     </div>
@@ -402,7 +393,7 @@ export function Field({
 }) {
   return (
     <label className={`flex flex-col gap-1.5 ${className}`}>
-      <span className={`text-[12.5px] font-semibold ${error ? 'text-[#C23A3F]' : 'text-[#3E4166]'}`}>
+      <span className={`text-[12.5px] font-semibold ${error ? 'text-[#C23A3F]' : 'text-app-text'}`}>
         {label}
         {error ? <span className="ml-1 text-[#E9474D]">*</span> : null}
       </span>
@@ -410,7 +401,7 @@ export function Field({
       {error ? (
         <span className="text-[11.5px] font-semibold text-[#C23A3F]">{error}</span>
       ) : hint ? (
-        <span className="text-[11.5px] text-[#8A8CAE]">{hint}</span>
+        <span className="text-[11.5px] text-app-text-muted">{hint}</span>
       ) : null}
     </label>
   );
@@ -420,16 +411,16 @@ export function Field({
 export const inputErrorClass = 'border-[#E9474D] bg-[#FFF8F8]';
 
 export const inputClass =
-  'min-h-[44px] w-full rounded-[12px] border border-[#E4E3F2] bg-white px-3.5 text-[13px] text-[#171A3D] outline-none transition focus:border-[#4B3BE4]';
+  'min-h-[44px] w-full rounded-[12px] border border-app-border-strong bg-app-surface px-3.5 text-[13px] text-app-text outline-none transition focus:border-app-brand';
 
 export const textareaClass =
-  'w-full rounded-[13px] border border-[#E4E3F2] bg-white p-3.5 text-[13px] leading-[1.6] text-[#171A3D] outline-none transition focus:border-[#4B3BE4]';
+  'w-full rounded-[13px] border border-app-border-strong bg-app-surface p-3.5 text-[13px] leading-[1.6] text-app-text outline-none transition focus:border-app-brand';
 
 export function Empty({ text, hint }: { text: string; hint?: string }) {
   return (
-    <div className="rounded-[18px] border border-dashed border-[#D9D8EC] bg-white px-5 py-10 text-center">
-      <p className="text-[13.5px] font-medium text-[#6E7191]">{text}</p>
-      {hint ? <p className="mx-auto mt-1.5 max-w-[420px] text-[12.5px] text-[#8A8CAE]">{hint}</p> : null}
+    <div className="rounded-[18px] border border-dashed border-app-border bg-app-surface px-5 py-10 text-center">
+      <p className="text-[13.5px] font-medium text-app-text-muted">{text}</p>
+      {hint ? <p className="mx-auto mt-1.5 max-w-[420px] text-[12.5px] text-app-text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -438,7 +429,7 @@ export function Skeleton({ rows = 3 }: { rows?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-[72px] animate-pulse rounded-[18px] bg-white" />
+        <div key={i} className="h-[72px] animate-pulse rounded-[18px] bg-app-surface" />
       ))}
     </div>
   );
@@ -486,17 +477,17 @@ export function Modal({
         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
         style={{ maxWidth: width }}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[24px] bg-white p-6 pb-[max(env(safe-area-inset-bottom,0px),24px)] sm:rounded-[24px] sm:pb-6"
+        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[24px] bg-app-surface p-6 pb-[max(env(safe-area-inset-bottom,0px),24px)] sm:rounded-[24px] sm:pb-6"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[18px] font-semibold text-[#171A3D]">{title}</p>
-            {subtitle ? <p className="mt-1 text-[12.5px] text-[#6E7191]">{subtitle}</p> : null}
+            <p className="text-[18px] font-semibold text-app-text">{title}</p>
+            {subtitle ? <p className="mt-1 text-[12.5px] text-app-text-muted">{subtitle}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5FB] text-[15px] text-[#3E4166]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-bg-muted text-[15px] text-app-text"
             aria-label="close"
           >
             ✕

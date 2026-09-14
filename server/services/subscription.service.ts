@@ -36,6 +36,12 @@ export type AccessInfo = {
   vocabulary_free_subtopic_id?: string | null;
   /** OLTIN A'ZO: platformada hech qanday taqiq yo'q (to'lov ham, ketma-ketlik ham). */
   golden?: boolean;
+  /**
+   * Obuna qachon tugashi (ISO). Ilova shu asosda "muddat tugayapti"
+   * bannerini ko'rsatadi — avto-to'lov yo'q, qaror foydalanuvchida.
+   * Obunasi bo'lmaganlarda `null`.
+   */
+  subscription_expires_at?: string | null;
 };
 
 // Preserved at 3 to match the value that has been live in production via
@@ -248,16 +254,28 @@ export async function getAccessInfo(
     hasApprovedCourseAccess(supabase, uid, 'patent'),
     hasApprovedCourseAccess(supabase, uid, 'vnzh'),
   ]);
+  // Eslatma banneri uchun: eng kech tugaydigan sana. Obuna yozuvi
+  // birinchi navbatda, bo'lmasa `users.plan_expires_at` zaxirasi.
+  let expiresAt: string | null = null;
+  try {
+    const sub = await getActiveSubscription(supabase, uid);
+    if (sub?.expires_at) expiresAt = String(sub.expires_at);
+  } catch {
+    expiresAt = null;
+  }
   if (!subscriptionActive) {
     const { data: user } = await supabase
       .from('users')
       .select('plan_expires_at')
       .eq('id', uid)
       .maybeSingle();
-    const expiresAt = user?.plan_expires_at;
-    if (expiresAt != null && expiresAt !== '') {
-      const expiry = new Date(expiresAt as string);
-      if (Number.isFinite(expiry.getTime()) && expiry > new Date()) subscriptionActive = true;
+    const planExpiresAt = user?.plan_expires_at;
+    if (planExpiresAt != null && planExpiresAt !== '') {
+      const expiry = new Date(planExpiresAt as string);
+      if (Number.isFinite(expiry.getTime()) && expiry > new Date()) {
+        subscriptionActive = true;
+        if (!expiresAt) expiresAt = String(planExpiresAt);
+      }
     }
   }
 
@@ -273,6 +291,7 @@ export async function getAccessInfo(
     vnzh_course_active: vnzhCourseActive,
     vocabulary_free_topic_id: vocabulary_free_topic_id ?? undefined,
     vocabulary_free_subtopic_id: vocabulary_free_subtopic_id ?? undefined,
+    subscription_expires_at: expiresAt,
   };
   setCachedAccess(uid, access);
   return access;

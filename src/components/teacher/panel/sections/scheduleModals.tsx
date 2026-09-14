@@ -106,11 +106,11 @@ export function AddTimeModal({
       <button
         type="button"
         onClick={() => setRepeat((v) => !v)}
-        className="flex items-center justify-between gap-4 rounded-[14px] border border-[#F1F0FA] bg-[#FAFAFE] p-4 text-left"
+        className="flex items-center justify-between gap-4 rounded-[14px] border border-app-border bg-app-bg-muted p-4 text-left"
       >
         <span className="min-w-0">
-          <span className="block text-[13px] font-semibold text-[#171A3D]">{t.repeatWeekly}</span>
-          <span className="mt-0.5 block text-[11.5px] text-[#8A8CAE]">
+          <span className="block text-[13px] font-semibold text-app-text">{t.repeatWeekly}</span>
+          <span className="mt-0.5 block text-[11.5px] text-app-text-muted">
             {tpl(t.repeatWeeklyHint, {
               weekday: WEEKDAYS[lang][weekdayOf(date)] ?? '',
               from: start,
@@ -120,10 +120,10 @@ export function AddTimeModal({
         </span>
         <span
           className={`flex h-[26px] w-[44px] shrink-0 items-center rounded-full p-[3px] transition ${
-            repeat ? 'justify-end bg-[#4B3BE4]' : 'justify-start bg-[#D9D8EC]'
+            repeat ? 'justify-end bg-app-primary' : 'justify-start bg-[#D9D8EC]'
           }`}
         >
-          <span className="h-5 w-5 rounded-full bg-white" />
+          <span className="h-5 w-5 rounded-full bg-app-surface" />
         </span>
       </button>
     </Modal>
@@ -194,7 +194,7 @@ export function BlockTimeModal({ onClose, onSaved }: { onClose: () => void; onSa
           <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass} />
         </Field>
       </div>
-      <p className="-mt-1 text-[11.5px] text-[#8A8CAE]">{t.blockWholeDayHint}</p>
+      <p className="-mt-1 text-[11.5px] text-app-text-muted">{t.blockWholeDayHint}</p>
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}

@@ -19,7 +19,7 @@ export function AuthPageScaffold({ children, className = '' }: Props) {
   return (
     <div
       className={[
-        'auth-theme h-[100dvh] overflow-hidden bg-white text-[#17224A]',
+        'auth-theme h-[100dvh] overflow-hidden bg-app-bg text-app-text',
         'pt-[max(0px,env(safe-area-inset-top))]',
         'pb-[max(0px,env(safe-area-inset-bottom))]',
         className,

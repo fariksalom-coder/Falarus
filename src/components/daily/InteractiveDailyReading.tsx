@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { Volume2, X } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Loader2, Volume2 } from 'lucide-react';
 import type { DailyReadingLexeme } from '../../../shared/dailyCourseDay';
 import { normalizeRuWord } from '../../../shared/russianLexemeNormalize';
 import { useAuth } from '../../context/AuthContext';
-import { speakText, stopSpeaking } from '../../utils/speak';
+import { useQurilmaOrqaga } from '../../hooks/useQurilmaOrqaga';
+import { prefetchSpeech, speakText, stopSpeaking } from '../../utils/speak';
 
 type WordSheetState = {
   wordKey: string;
   surface: string;
   lexeme: DailyReadingLexeme | null;
+  /**
+   * Bosilgan so'zning O'ZI. Oynacha shu elementga tirab qo'yiladi va sahifa
+   * sirg'alganda ham undan uzilmaydi — shuning uchun o'lchov emas, element
+   * saqlanadi.
+   */
+  anchor: HTMLElement;
 };
 
 type TextToken =
@@ -65,23 +71,25 @@ const TALAFFUZ_TEZLIGI = 0.7;
  * o'tiladi (`zaxira: false`) — tushunarsiz robot talaffuzdan ko'ra jimlik
  * afzal, chunki o'quvchi noto'g'ri talaffuzni yodlab qolishi mumkin.
  */
-function speakRussian(audioRu: string | null | undefined, wordRu: string, token: string | null) {
+function speakRussian(
+  audioRu: string | null | undefined,
+  wordRu: string,
+  token: string | null
+): Promise<void> {
   const trimmed = (audioRu ?? '').trim();
-  const serverdan = () =>
-    void speakText(wordRu, { token, speed: TALAFFUZ_TEZLIGI, zaxira: false });
+  const serverdan = () => speakText(wordRu, { token, speed: TALAFFUZ_TEZLIGI, zaxira: false });
 
   if (/^https?:\/\//i.test(trimmed)) {
     // Bazada tayyor yozuv bor — u eng aniq talaffuz, avval shuni chalamiz.
     stopSpeaking();
     try {
       const el = new Audio(trimmed);
-      void el.play().catch(serverdan);
+      return el.play().catch(serverdan);
     } catch {
-      serverdan();
+      return serverdan();
     }
-    return;
   }
-  serverdan();
+  return serverdan();
 }
 
 export type InteractiveDailyReadingProps = {
@@ -101,27 +109,44 @@ export function InteractiveDailyReading({
   levelBadge,
   sectionLabel,
 }: InteractiveDailyReadingProps) {
-  const { token } = useAuth();
+  const { token: authToken } = useAuth();
   const [sheet, setSheet] = useState<WordSheetState | null>(null);
 
   const tokens = useMemo(() => tokenizeText(bodyRu), [bodyRu]);
   const lookup = useMemo(() => buildLexemeLookup(lexemes), [lexemes]);
 
-  useEffect(() => {
-    if (!sheet) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSheet(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [sheet]);
-
   // Sahifadan chiqilganda ovoz orqadan gapirib qolmasin.
   useEffect(() => stopSpeaking, []);
 
-  const handleSpeak = (lexeme: DailyReadingLexeme | null, surfaceWord: string) => {
-    speakRussian(lexeme?.audioRu, surfaceWord, token);
-  };
+  const handleSpeak = useCallback(
+    (lexeme: DailyReadingLexeme | null, surfaceWord: string) =>
+      speakRussian(lexeme?.audioRu, surfaceWord, authToken),
+    [authToken]
+  );
+
+  /* Barqaror bo'lishi kerak: oynacha shu funksiyalarga tinglovchi bog'laydi. */
+  const avtoYopish = useCallback(() => setSheet(null), []);
+  /*
+   * Telefonning "ortga" tugmasi ochiq oynachani YOPSIN, sahifadan chiqarib
+   * yubormasin.
+   *
+   * IKKI XIL YOPISH ATAYLAB AJRATILGAN:
+   *  - `yopish` — ODAM yopganda (tashqariga bosish, Esc). U tarixdagi
+   *    yozuvni ham iste'mol qiladi, aks holda keyingi "ortga" behuda ketardi.
+   *  - `avtoYopish` — oynacha O'ZI yopilganda (so'z sirg'alib ekrandan
+   *    chiqib ketdi). Bu yo'l tarixga TEGMASLIGI shart: sirg'alish
+   *    foydalanuvchini sahifadan orqaga uloqtirib yuborardi.
+   */
+  const yopish = useQurilmaOrqaga(Boolean(sheet), avtoYopish);
+
+  useEffect(() => {
+    if (!sheet) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') yopish();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sheet, yopish]);
 
   const showMeta = Boolean(title || levelBadge || sectionLabel);
 
@@ -162,13 +187,13 @@ export function InteractiveDailyReading({
         </div>
 
         <div className={`whitespace-pre-wrap text-[17px] leading-[2.1] text-[#0B2926] ${showMeta ? 'mt-3' : ''}`}>
-          {tokens.map((token, index) => {
-            if (token.type !== 'word') {
-              return <span key={`t-${index}-${token.type}`}>{token.value}</span>;
+          {tokens.map((bolak, index) => {
+            if (bolak.type !== 'word') {
+              return <span key={`t-${index}-${bolak.type}`}>{bolak.value}</span>;
             }
 
-            const wordKey = `w-${index}-${token.value}`;
-            const normalized = normalizeRuWord(token.value);
+            const wordKey = `w-${index}-${bolak.value}`;
+            const normalized = normalizeRuWord(bolak.value);
             const lexeme = lookup.get(normalized) ?? null;
             const isActive = sheet?.wordKey === wordKey;
 
@@ -176,10 +201,27 @@ export function InteractiveDailyReading({
               <button
                 key={wordKey}
                 type="button"
-                onClick={() => setSheet({ wordKey, surface: token.value, lexeme })}
+                onClick={(e) => {
+                  setSheet({ wordKey, surface: bolak.value, lexeme, anchor: e.currentTarget });
+                  /*
+                   * OVOZNI DARHOL YUKLAB QO'YAMIZ — 🔊 bosilishini kutmasdan.
+                   *
+                   * Server yangi so'zni ~1.5-2 soniyada tayyorlaydi. Odam
+                   * shu vaqtni tarjimani o'qishga sarflaydi, ya'ni tugmani
+                   * bosganda ovoz allaqachon tayyor bo'ladi.
+                   *
+                   * Ikkinchi va MUHIMROQ sabab: brauzer ovozni faqat
+                   * BOSISHGA YAQIN chalishga ruxsat beradi. Yuklash bosishdan
+                   * keyin boshlansa, 2 soniyalik kutishdan so'ng ijro
+                   * bloklanardi va tugma "ishlamayotgandek" tuyulardi.
+                   */
+                  if (!/^https?:\/\//i.test(String(lexeme?.audioRu ?? '').trim())) {
+                    prefetchSpeech(bolak.value, { token: authToken, speed: TALAFFUZ_TEZLIGI });
+                  }
+                }}
                 className={`reading-word-btn ${isActive ? 'reading-word-btn-active' : ''}`}
               >
-                {token.value}
+                {bolak.value}
               </button>
             );
           })}
@@ -188,84 +230,242 @@ export function InteractiveDailyReading({
         {/* Tip footer inside card */}
         <div className="mt-5 flex items-start gap-2 border-t border-dashed border-[#DCEBE7] pt-3.5 text-[12.5px] leading-snug text-[color:var(--rd-text-muted)]">
           <span aria-hidden className="text-[15px] leading-none">👆</span>
-          <span className="font-medium">Har qanday so'zga bosing — tarjimasi pastda chiqadi</span>
+          <span className="font-medium">
+            Har qanday so'zga bosing — tarjimasi shu so'zning yonida chiqadi
+          </span>
         </div>
       </div>
 
-      {/* Bottom sheet: word + translation + audio */}
-      <AnimatePresence>
-        {sheet ? (
-          <>
-            <motion.div
-              key="sheet-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              onClick={() => setSheet(null)}
-              className="fixed inset-0 z-40 bg-[#0B2926]/25 backdrop-blur-[2px]"
-            />
-            <motion.div
-              key="sheet"
-              initial={{ y: 320, opacity: 0.6 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 320, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 34, mass: 0.7 }}
-              className="fixed inset-x-0 bottom-0 z-50 rounded-t-[28px] bg-[color:var(--rd-white)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-24px_60px_-20px_rgba(11,113,103,0.35)]"
-              role="dialog"
-              aria-label="So'z tarjimasi"
-            >
-              {/* Drag handle */}
-              <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-[#DCEBE7]" />
+      {/*
+        TARJIMA OYNACHASI — bosilgan so'zning O'ZIDA.
 
-              {/* Close button */}
-              <button
-                type="button"
-                onClick={() => setSheet(null)}
-                aria-label="Yopish"
-                className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--rd-card)] text-[color:var(--rd-text-muted)] ring-1 ring-[color:var(--rd-border)] transition hover:bg-[#E1F5F1] active:scale-95"
-              >
-                <X className="h-4 w-4" strokeWidth={2.4} />
-              </button>
+        Ilgari bu pastki panel edi: o'quvchining ko'zi matndan ekran tagiga
+        tushib, keyin qaytadan so'zni izlab topishi kerak edi. Endi oynacha
+        so'z ustida (joy bo'lmasa — ostida) chiqadi va strelka bilan aynan
+        qaysi so'z ekanini ko'rsatadi.
+      */}
+      {sheet ? (
+        <SozOynachasi
+          sheet={sheet}
+          onClose={yopish}
+          onAvtoYopish={avtoYopish}
+          onSpeak={() => handleSpeak(sheet.lexeme, sheet.surface)}
+        />
+      ) : null}
+    </div>
+  );
+}
 
-              <p className="text-[10.5px] font-bold uppercase tracking-[0.24em] text-[color:var(--rd-text-muted)]">
-                So'z tarjimasi
-              </p>
+/** Oynacha eni — telefonda ham ekranga sig'adi. */
+const OYNACHA_MAX_EN = 280;
+/** Ekran chetidan qoldiriladigan bo'shliq. */
+const CHET_BOSHLIQ = 10;
+/** So'z bilan oynacha orasidagi masofa (strelka shu yerga tushadi). */
+const SOZ_MASOFA = 10;
 
-              <div className="mt-2 flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[24px] font-bold leading-tight text-[#0B2926]">
-                    {sheet.surface}
-                  </p>
-                  <p className="mt-2 text-[16px] font-semibold leading-snug text-[#0B7167]">
-                    {sheet.lexeme?.translationUz?.trim() || 'Tarjima topilmadi'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleSpeak(sheet.lexeme, sheet.surface)}
-                  className="mt-1 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white shadow-[0_12px_24px_-8px_rgba(15,165,152,0.55)] transition hover:brightness-[1.05] active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #25D19A 0%, #0FA598 60%, #0E8A80 100%)' }}
-                  aria-label="Eshitish"
-                >
-                  <Volume2 className="h-5 w-5" />
-                </button>
-              </div>
+type Joylashuv = {
+  top: number;
+  left: number;
+  /** Strelkaning oynacha ichidagi gorizontal o'rni. */
+  strelkaX: number;
+  /** Oynacha so'zning OSTIDA turibdimi (tepada joy yetmagan). */
+  pastda: boolean;
+};
 
-              {sheet.lexeme?.wordRu && sheet.lexeme.wordRu.trim().toLowerCase() !== sheet.surface.trim().toLowerCase() ? (
-                <div className="mt-3 rounded-2xl bg-[color:var(--rd-card)] px-3.5 py-2.5 ring-1 ring-[color:var(--rd-mint-panel)]">
-                  <p className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-[color:var(--rd-text-muted)]">
-                    So'z shakli
-                  </p>
-                  <p className="mt-0.5 text-[15px] font-semibold text-[#123B36]">
-                    {sheet.lexeme.wordRu}
-                  </p>
-                </div>
-              ) : null}
-            </motion.div>
-          </>
+/**
+ * So'z tarjimasi — so'zning yonidagi kichik oynacha.
+ *
+ * O'RNI: sukut bo'yicha so'zning USTIDA. Tepada joy yetmasa ostiga tushadi.
+ * Gorizontal — so'z markazida, lekin ekran chetiga tirab, tashqariga
+ * chiqmaydi; strelka esa baribir so'zni ko'rsatib turadi.
+ *
+ * SIRG'ALISH: sahifa sirg'alganda oynacha so'z bilan birga suriladi. So'z
+ * ekrandan butunlay chiqib ketsa oynacha o'zi yopiladi — bo'sh joyda osilib
+ * qolmasin.
+ */
+function SozOynachasi({
+  sheet,
+  onClose,
+  onAvtoYopish,
+  onSpeak,
+}: {
+  sheet: WordSheetState;
+  /** Odam yopdi — tarix yozuvi ham iste'mol qilinadi. */
+  onClose: () => void;
+  /** Oynacha o'zi yopildi (so'z ekrandan chiqdi) — tarixga tegilmaydi. */
+  onAvtoYopish: () => void;
+  onSpeak: () => Promise<void>;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [joy, setJoy] = useState<Joylashuv | null>(null);
+  /*
+   * Ovoz tayyorlanayotgani KO'RINSIN. Server yangi so'zni bir necha soniyada
+   * tayyorlaydi va shu vaqt ichida tugma hech qanday javob bermasdi —
+   * o'quvchi "ishlamayapti" deb qayta-qayta bosardi.
+   */
+  const [yuklanmoqda, setYuklanmoqda] = useState(false);
+
+  const hisobla = useCallback(() => {
+    const el = ref.current;
+    const soz = sheet.anchor;
+    if (!el || !soz.isConnected) return;
+
+    const a = soz.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+
+    // So'z ko'rinmay qolsa oynacha ham kerak emas (tarixga tegmaymiz).
+    if (a.bottom < 0 || a.top > vh) {
+      onAvtoYopish();
+      return;
+    }
+
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const pastda = a.top - SOZ_MASOFA - h < CHET_BOSHLIQ;
+    const top = pastda
+      ? Math.min(a.bottom + SOZ_MASOFA, vh - h - CHET_BOSHLIQ)
+      : a.top - SOZ_MASOFA - h;
+    const markaz = a.left + a.width / 2;
+    const left = Math.min(Math.max(markaz - w / 2, CHET_BOSHLIQ), vw - w - CHET_BOSHLIQ);
+
+    setJoy({
+      top,
+      left,
+      strelkaX: Math.min(Math.max(markaz - left, 18), Math.max(w - 18, 18)),
+      pastda,
+    });
+  }, [sheet.anchor, onAvtoYopish]);
+
+  // Birinchi o'lchov — chizilishidan OLDIN, aks holda oynacha sakrab chiqadi.
+  useLayoutEffect(() => {
+    hisobla();
+  }, [hisobla]);
+
+  /*
+   * Tashqariga bosilganda yopiladi. To'siq qatlami (`backdrop`) QO'YILMAGAN:
+   * u birinchi bosishni yutib yuborardi va o'quvchi keyingi so'zni ko'rish
+   * uchun ikki marta bosishga majbur bo'lardi. Endi bosish matnga yetib
+   * boradi — ya'ni bitta bosishda oynacha keyingi so'zga ko'chadi.
+   */
+  useEffect(() => {
+    const tashqarida = (e: PointerEvent) => {
+      const el = ref.current;
+      if (!(e.target instanceof Node)) return;
+      if (el?.contains(e.target)) return;
+      /*
+       * Boshqa so'z bosilgan bo'lsa YOPMAYMIZ — oynacha o'sha so'zga
+       * ko'chadi. Yopib qo'ysak, chiqish animatsiyasi endigina ochilayotgan
+       * oynacha bilan to'qnashardi.
+       */
+      if (e.target instanceof Element && e.target.closest('.reading-word-btn')) return;
+      onClose();
+    };
+    // `pointerdown` — bosish tugmaga yetib borishidan oldin ishlaydi, lekin
+    // React'ning `click` hodisasini to'smaydi.
+    document.addEventListener('pointerdown', tashqarida);
+    return () => document.removeEventListener('pointerdown', tashqarida);
+  }, [onClose]);
+
+  useEffect(() => {
+    let ramka = 0;
+    const yangila = () => {
+      cancelAnimationFrame(ramka);
+      ramka = requestAnimationFrame(hisobla);
+    };
+    window.addEventListener('scroll', yangila, true);
+    window.addEventListener('resize', yangila);
+    return () => {
+      cancelAnimationFrame(ramka);
+      window.removeEventListener('scroll', yangila, true);
+      window.removeEventListener('resize', yangila);
+    };
+  }, [hisobla]);
+
+  /* Boshqa so'zga o'tilganda eski "yuklanmoqda" belgisi qolib ketmasin. */
+  useEffect(() => setYuklanmoqda(false), [sheet.wordKey]);
+
+  const eshit = useCallback(() => {
+    if (yuklanmoqda) return;
+    setYuklanmoqda(true);
+    void onSpeak().finally(() => setYuklanmoqda(false));
+  }, [onSpeak, yuklanmoqda]);
+
+  const boshqaShakl =
+    sheet.lexeme?.wordRu &&
+    sheet.lexeme.wordRu.trim().toLowerCase() !== sheet.surface.trim().toLowerCase()
+      ? sheet.lexeme.wordRu
+      : null;
+
+  /*
+   * ODDIY `div` + CSS o'tishi — `motion.div` va `AnimatePresence` EMAS.
+   *
+   * Yordamchi oynachaga prujina fizikasi ham, chiqish animatsiyasi ham kerak
+   * emas: u so'z bosilganda paydo bo'lib, bosilmay qolganda yo'qoladi.
+   * Bitta qisqa CSS o'tishi shu ishni bajaradi va React holati o'zgarishi
+   * bilanoq element DOMdan chiqadi — animatsiya kutilmaydi.
+   */
+  return (
+    <div
+        ref={ref}
+        role="dialog"
+        aria-label="So'z tarjimasi"
+        className="fixed z-50 rounded-[18px] bg-[color:var(--rd-white)] px-3.5 py-3 shadow-[0_18px_40px_-14px_rgba(11,113,103,0.45)] ring-1 ring-[color:var(--rd-border)] transition-[opacity,transform] duration-150 ease-out"
+        style={{
+          top: joy?.top ?? 0,
+          left: joy?.left ?? 0,
+          width: `min(${OYNACHA_MAX_EN}px, calc(100vw - ${CHET_BOSHLIQ * 2}px))`,
+          // O'lchanmaguncha ko'rinmaydi — chap yuqori burchakda chaqnab ketmasin.
+          visibility: joy ? 'visible' : 'hidden',
+          opacity: joy ? 1 : 0,
+          transform: joy ? 'none' : 'translateY(4px) scale(0.96)',
+        }}
+      >
+        {/* Strelka — qaysi so'z ekanini ko'rsatadi. */}
+        {joy ? (
+          <span
+            aria-hidden
+            className="absolute h-3 w-3 rotate-45 bg-[color:var(--rd-white)]"
+            style={{
+              left: joy.strelkaX - 6,
+              [joy.pastda ? 'top' : 'bottom']: -6,
+              borderTop: joy.pastda ? '1px solid var(--rd-border)' : 'none',
+              borderLeft: joy.pastda ? '1px solid var(--rd-border)' : 'none',
+              borderRight: joy.pastda ? 'none' : '1px solid var(--rd-border)',
+              borderBottom: joy.pastda ? 'none' : '1px solid var(--rd-border)',
+            }}
+          />
         ) : null}
-      </AnimatePresence>
+
+        <div className="flex items-start gap-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[17px] font-bold leading-tight text-[#0B2926]">
+              {sheet.surface}
+            </p>
+            <p className="mt-1 text-[15px] font-semibold leading-snug text-[#0B7167]">
+              {sheet.lexeme?.translationUz?.trim() || 'Tarjima topilmadi'}
+            </p>
+            {boshqaShakl ? (
+              <p className="mt-1.5 text-[12px] font-semibold text-[color:var(--rd-text-muted)]">
+                Asosi: {boshqaShakl}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={eshit}
+            aria-label="Eshitish"
+            aria-busy={yuklanmoqda}
+            className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-[0_10px_20px_-8px_rgba(15,165,152,0.55)] transition hover:brightness-[1.05] active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #25D19A 0%, #0FA598 60%, #0E8A80 100%)' }}
+          >
+            {yuklanmoqda ? (
+              <Loader2 className="h-[18px] w-[18px] animate-spin" />
+            ) : (
+              <Volume2 className="h-[18px] w-[18px]" />
+            )}
+          </button>
+        </div>
     </div>
   );
 }

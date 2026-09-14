@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { isConversationAudioActive, subscribeConversationAudio } from '../../utils/conversationAudio';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { Phone, PhoneOff, Radio } from 'lucide-react';
@@ -159,7 +160,9 @@ export default function LiveCallOverlay() {
    *  - efir sahifasida turmagan (u allaqachon xonada);
    *  - bu efirga hali javob bermagan.
    */
+  const spokenLesson = useSyncExternalStore(subscribeConversationAudio, isConversationAudioActive, () => false);
   const korsatilsin =
+    !spokenLesson &&
     Boolean(live) &&
     Boolean(user) &&
     !access?.golden &&

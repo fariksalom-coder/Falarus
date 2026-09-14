@@ -19,7 +19,8 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOCAL_DIR="$REPO_ROOT/public/courses/patent/media/"
-SSH_HOST="ubuntu@82.115.50.76"
+source "$REPO_ROOT/scripts/lib/vps-config.sh"
+SSH_HOST="$VPS_SSH"
 STAGING_DIR="/tmp/falarus-media-staging"
 REMOTE_DIR="/var/www/falarus-media/courses/patent/media"
 
@@ -57,7 +58,7 @@ if [[ "\$COUNT" -eq 0 ]]; then
   exit 0
 fi
 sudo mkdir -p "$REMOTE_DIR"
-sudo cp -n "$STAGING_DIR"/* "$REMOTE_DIR"/
+sudo cp "$STAGING_DIR"/* "$REMOTE_DIR"/
 sudo chown ubuntu:ubuntu "$REMOTE_DIR"/*
 sudo chmod 644 "$REMOTE_DIR"/*.{mp3,jpg,jpeg,png,gif,webp} 2>/dev/null || true
 EOF

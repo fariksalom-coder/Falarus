@@ -12,6 +12,10 @@ export type SavolJavobMessage = {
   group_code: string;
   sender_user_id: number;
   sender_name: string;
+  /** Yuboruvchining profil surati. Yo'q bo'lsa — bosh harflar chiziladi. */
+  sender_avatar_url?: string | null;
+  /** Surati yo'qlarda o'rniga qo'yiladigan belgi shunga qarab tanlanadi. */
+  sender_gender?: string | null;
   content: string;
   created_at: string;
   /** Moderator tahrirlagan bo'lsa — vaqti. */
@@ -389,6 +393,8 @@ export type Reel = {
   id: number;
   author_user_id: number;
   author_name: string;
+  /** Muallifning profil surati (kichik doira uchun). */
+  author_avatar_url?: string | null;
   video_url: string;
   poster_url?: string | null;
   caption: string;
@@ -405,6 +411,7 @@ export type ReelComment = {
   id: number;
   author_user_id: number;
   author_name: string;
+  author_avatar_url?: string | null;
   content: string;
   created_at: string;
 };

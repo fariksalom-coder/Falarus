@@ -1,24 +1,28 @@
 import { SkeletonRoyxat } from '../components/ui/Skeleton';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowLeft, ArrowRight, Link2, ListChecks, Puzzle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Link2, ListChecks, Lock, PlayCircle, Puzzle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import type { DailyCourseDayBundle, DailyCourseMcq } from '../../shared/dailyCourseDay';
-import { READING_QUESTIONS_PASS_PERCENT, isValidDailyCourseDay, FREE_KUNLIK_DAY_LIMIT } from '../../shared/dailyCourseDay';
+import {
+  READING_QUESTIONS_PASS_PERCENT,
+  isValidDailyCourseDay,
+  FREE_KUNLIK_DAY_LIMIT,
+  canEnterKunlikDayContent,
+} from '../../shared/dailyCourseDay';
 import { isKunlikDayReadyForSuhbat } from '../../shared/kunlikDayCompletion';
 import { VocabularyTaskList } from '../components/vocabulary/VocabularyTaskList';
 import { InteractiveDailyReading } from '../components/daily/InteractiveDailyReading';
 import SpeakingExercise from '../components/speaking/SpeakingExercise';
-import UstozdanSora, { type UstozSentence } from '../components/lesson/UstozdanSora';
 import UstozDoska from '../components/lesson/UstozDoska';
-import { fetchKunSavollari, type DoskaTestSavol, type DoskaVazifa, type KunSavol } from '../api/ustozDoska';
+import { fetchKunSavollari, type DoskaVazifa, type KunSavol } from '../api/ustozDoska';
 import type { SpeakingTask } from '../api/speaking';
 import type { KunlikDayPatch } from '../api/kunlikProgress';
 import { loadDailyVocabProgress } from '../utils/dailyVocabProgress';
-import { kunlikRejaPath } from '../utils/kunlikNavigation';
+import { xaritaYoli } from '../utils/kunlikNavigation';
 import { useRememberKunlikDay } from '../hooks/useRememberKunlikDay';
 import { useLocale } from '../context/LocaleContext';
 import {
@@ -26,6 +30,7 @@ import {
   useKunlikSequentialGate,
 } from '../hooks/useKunlikSequentialGate';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
+import { useQurilmaOrqaga } from '../hooks/useQurilmaOrqaga';
 import { useAccess } from '../context/AccessContext';
 import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
 
@@ -50,6 +55,10 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
   const navigate = useNavigate();
   const { token } = useAuth();
   const { t } = useLocale();
+  const { access: kirishHuquqi } = useAccess();
+  /* Oltin a'zoda hamma kun ochiq — to'lov to'sig'i unga tegishli emas. */
+  const premiumOchiq =
+    Boolean(kirishHuquqi?.subscription_active) || Boolean(kirishHuquqi?.golden);
   const dayNumber = Number(dayNum ?? '');
   const sec = (sectionOverride ?? section) as KunlikSection;
   useRememberKunlikDay(dayNumber);
@@ -90,7 +99,7 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
       <div className="flex min-h-screen flex-col bg-[#F5F7FA] px-4 py-6">
         <button
           type="button"
-          onClick={() => navigate(kunlikRejaPath(dayNumber))}
+          onClick={() => navigate(xaritaYoli())}
           className="mb-6 flex items-center gap-2 text-sm font-medium text-gray-600"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -105,6 +114,49 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
     return <KunlikSequentialGateSpinner />;
   }
 
+  /*
+   * TO'LOV TO'SIG'I — BO'LIM SAHIFASIDA HAM.
+   *
+   * Server obunasiz kunni baribir rad etadi, lekin ekranda sabab
+   * ko'rinmasdi: o'quvchi bo'sh yoki xato sahifaga tushardi. Manzilni
+   * qo'lda yozib yoki eski havola orqali kelgan odam ham nima uchun
+   * ochilmayotganini bilishi kerak.
+   */
+  if (!canEnterKunlikDayContent(dayNumber, premiumOchiq)) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5F7FA] px-5 text-center">
+        <span
+          aria-hidden
+          className="flex h-14 w-14 items-center justify-center rounded-full text-[26px]"
+          style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
+        >
+          👑
+        </span>
+        <p className="mt-3 text-[17px] font-black text-[#0B2A6B]">
+          {dayNumber}-kun obuna bilan ochiladi
+        </p>
+        <p className="mt-2 max-w-[34ch] text-[13.5px] font-semibold leading-snug text-slate-600">
+          1-kun bepul. To'lovdan keyin 182 kunning hammasi ochiladi.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/tariflar')}
+          className="mt-5 flex min-h-[48px] w-full max-w-[300px] items-center justify-center gap-2 rounded-[14px] bg-[#0B2A6B] px-4 text-[14px] font-black text-white shadow-[0_10px_24px_-12px_rgba(11,42,107,0.8)] transition active:scale-[0.99]"
+        >
+          To'lov qilish
+          <ArrowRight className="h-4 w-4" strokeWidth={2.8} />
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(xaritaYoli())}
+          className="mt-3 min-h-[44px] text-[13.5px] font-bold text-slate-500"
+        >
+          Xaritaga qaytish
+        </button>
+      </div>
+    );
+  }
+
   const isGrammar = sec === 'grammatika';
   const isLugat = sec === 'lugat';
   const isOqish = sec === 'oqish';
@@ -114,11 +166,11 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
   const themeClass = usePurpleTheme ? 'grammar-theme' : isOqish ? 'reading-theme' : 'bg-[#F5F7FA]';
   return (
     <div className={`min-h-screen pb-28 ${themeClass}`}>
-      <main className="mx-auto max-w-md space-y-4 px-4 pb-5 pt-[max(1rem,env(safe-area-inset-top))]">
+      <main className="mx-auto max-w-md space-y-4 px-4 pb-5 pt-[max(0.5rem,env(safe-area-inset-top))]">
         {isOqish ? null : (
           <button
             type="button"
-            onClick={() => navigate(kunlikRejaPath(dayNumber))}
+            onClick={() => navigate(xaritaYoli())}
             className={`flex min-h-[44px] items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition-colors ${
               usePurpleTheme
                 ? 'border border-[#DDD7F5] bg-[color:var(--rd-white)] text-[#2D1B69] shadow-[0_4px_10px_rgba(91,76,224,0.08)]'
@@ -220,70 +272,11 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
   const kp = kunlikLoaded ? getDay(dayNumber) : null;
 
   /**
-   * "Ustozdan so'ra" uchun o'qiladigan gaplar — kunning O'Z materialidan.
-   * Gap tuzish mashqlarining javobi tayyor rus gapi bo'ladi; topshiriq matni
-   * o'zbekcha bo'lsa, u gapning ma'nosi sifatida ishlatiladi.
-   */
-  const ustozSentences = useMemo<UstozSentence[]>(() => {
-    if (!g) return [];
-    const seen = new Set<string>();
-    const out: UstozSentence[] = [];
-    for (const s of g.sentenceArrange) {
-      const ru = String(s.answerRu ?? '').trim();
-      if (!ru || seen.has(ru)) continue;
-      seen.add(ru);
-      out.push({ ru, uz: s.promptLang === 'uz' ? String(s.promptText ?? '').trim() || undefined : undefined });
-      if (out.length >= 5) break;
-    }
-    return out;
-  }, [g]);
-
-  /**
    * Doska uchun kunning VAZIFALARI. Ustoz mavzuni umumiy gapirmaydi — aynan
    * shu mashqlarni kengaytirib tushuntiradi, ya'ni o'quvchi mashqqa kirishdan
    * oldin nima talab qilinishini va nega shundayligini biladi.
    */
   const doskaVazifalar = useMemo<DoskaVazifa[]>(() => doskaVazifalariniYig(g), [g]);
-
-  /**
-   * Darsning yakuniy testi — kunning O'Z savol bankidan.
-   *
-   * Ilgari doskada modelning bitta nazorat savoli turardi: o'quvchi mavzuni
-   * tinglab, bir savol bilan darsni tugatardi. Bazada esa har kun uchun
-   * 10-20 ta tayyor savol bor edi va ular ishlatilmasdan qolardi.
-   *
-   * Har kirishda tartib aralashtiriladi: dars ikkinchi marta ochilganda ham
-   * savollar yodlab olingan bo'lmasin. Qoida testlari birinchi (mavzuning
-   * o'zini tekshiradi), yetmasa gap testlari bilan to'ldiriladi.
-   */
-  const doskaTestSavollari = useMemo<DoskaTestSavol[]>(() => {
-    if (!g) return [];
-    const KERAK = 6;
-
-    const toSavol = (m: DailyCourseMcq): DoskaTestSavol | null => {
-      const variantlar = [m.optionA, m.optionB, m.optionC, m.optionD].map((o) => String(o ?? '').trim());
-      const savol = String(m.questionText ?? '').trim();
-      if (!savol || variantlar.some((v) => !v)) return null;
-      if (m.correctIndex < 0 || m.correctIndex > 3) return null;
-      return { savol, variantlar, togriIndex: m.correctIndex, izoh: m.explanation || undefined };
-    };
-
-    const aralashtir = <T,>(arr: T[]): T[] => {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    };
-
-    const qoida = aralashtir(g.ruleMcqs).map(toSavol).filter((q): q is DoskaTestSavol => q !== null);
-    const gap = aralashtir(g.sentenceMcqs).map(toSavol).filter((q): q is DoskaTestSavol => q !== null);
-
-    // Kamida oltita; qoida savollari yetarli bo'lsa gap testlariga o'tilmaydi.
-    return [...qoida, ...gap].slice(0, Math.max(KERAK, Math.min(qoida.length, 8)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [g, dayNumber]);
 
   useEffect(() => {
     grammarGapPatchSent.current = false;
@@ -330,9 +323,9 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
         </div>
         <DailyGrammarMashqlarGrid
           kunlikLoaded={kunlikLoaded}
-          grammar1Done={kp.grammar_1}
-          grammar2Done={kp.grammar_2}
-          grammar3Done={kp.grammar_3}
+          grammar1Done={kp?.grammar_1 ?? false}
+          grammar2Done={kp?.grammar_2 ?? false}
+          grammar3Done={kp?.grammar_3 ?? false}
           ruleMcqsCount={0}
           matchSetsCount={0}
           sentenceArrangeCount={0}
@@ -344,7 +337,6 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
 
   // Nazariya matni EKRANDA KO'RSATILMAYDI — u faqat ustozning darsiga manba
   // bo'lib xizmat qiladi (`UstozDoska`ga `nazariya` sifatida uzatiladi).
-  const dayCaption = g.topic?.title ? `KUN ${dayNumber} · GRAMMATIKA` : '';
 
   if (!kunlikLoaded) {
     return (
@@ -378,8 +370,18 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
   const testBor = g.ruleMcqs.length > 0;
   const juftlikBor = g.matchSets.some((s) => s.pairs.length > 0);
   const gapBor = g.sentenceArrange.some(
-    (s) => s.wordBank.length > 0 && String(s.answerRu ?? '').trim() !== ''
+    (s) => s.wordBank.length > 0 && String(s.answerRu ?? '').trim() !== '',
   );
+  /*
+   * Tanlov ekranidagi "1/3" nishoni uchun: kunda umuman nechta mashq bor
+   * va nechtasi bajarilgan. Kunda bo'lmagan mashq sanoqqa kirmaydi.
+   */
+  const jamiMashq = [testBor, juftlikBor, gapBor].filter(Boolean).length;
+  const bajarilganMashq =
+    (testBor && kp?.grammar_1 ? 1 : 0) +
+    (juftlikBor && kp?.grammar_2 ? 1 : 0) +
+    (gapBor && kp?.grammar_3 ? 1 : 0);
+
   const birinchiVazifaYoli =
     testBor && !kp?.grammar_1
       ? grammatikaYoli('test-variantlar')
@@ -389,25 +391,28 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
           ? grammatikaYoli('gap-tuzish')
           : null;
 
+  /* Sarlavha bir marta ajratiladi — har renderda uch marta emas. */
+  const sarlavha = g.topic?.title ? sarlavhaBolaklari(g.topic.title) : null;
+
   // Bir ekranda bitta blok. Kunda bo'lmagan blok bosqich sifatida ham chiqmaydi.
   const steps: GrammarStep[] = [];
   if (g.topic?.title) {
     steps.push({
       key: 'doska',
-      label: 'Tushuntirish',
+      label: 'Video dars',
       ownPrimary: true,
       fullscreen: true,
-      node: ({ bosqichga }) => (
+      node: ({ bosqichga, tanlovga }) => (
         <UstozDoska
           key={`${dayNumber}-${g.topic!.title}`}
           mavzu={g.topic!.title}
           nazariya={g.topic!.theoryText}
           kun={dayNumber}
           vazifalar={doskaVazifalar}
-          testSavollari={doskaTestSavollari}
           keyingiNomi="Vazifalar"
           toliqEkran
-          onChiqish={() => navigate(-1)}
+          /* Tepadagi "ortga" — grammatikadan chiqmaydi, tanlovga qaytaradi. */
+          onChiqish={tanlovga}
           /*
             Dars tugagach o'quvchi TO'G'RIDAN-TO'G'RI birinchi bajarilmagan
             mashqqa tushadi — mashqlar esa o'zaro zanjirlangan (test ->
@@ -416,7 +421,10 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
           */
           onTugadi={() => {
             bosqichga('vazifa');
-            if (birinchiVazifaYoli) navigate(birinchiVazifaYoli);
+            if (birinchiVazifaYoli) {
+              mashqqaOtishniBelgila(dayNumber);
+              navigate(birinchiVazifaYoli);
+            }
           }}
         />
       ),
@@ -435,33 +443,33 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
         matchSetsCount={g.matchSets.filter((s) => s.pairs.length > 0).length}
         sentenceArrangeCount={g.sentenceArrange.length}
         sentenceMcqsCount={g.sentenceMcqs.length}
-        onOpenTest={testBor ? () => navigate(grammatikaYoli('test-variantlar')) : undefined}
-        onOpenMatch={juftlikBor ? () => navigate(grammatikaYoli('juftlik')) : undefined}
-        onOpenSentence={gapBor ? () => navigate(grammatikaYoli('gap-tuzish')) : undefined}
+        onOpenTest={
+          testBor
+            ? () => {
+                mashqqaOtishniBelgila(dayNumber);
+                navigate(grammatikaYoli('test-variantlar'));
+              }
+            : undefined
+        }
+        onOpenMatch={
+          juftlikBor
+            ? () => {
+                mashqqaOtishniBelgila(dayNumber);
+                navigate(grammatikaYoli('juftlik'));
+              }
+            : undefined
+        }
+        onOpenSentence={
+          gapBor
+            ? () => {
+                mashqqaOtishniBelgila(dayNumber);
+                navigate(grammatikaYoli('gap-tuzish'));
+              }
+            : undefined
+        }
       />
     ),
   });
-  /*
-   * "Ustozdan so'ra" — mashqlardan KEYIN.
-   *
-   * Ilgari u darsdan keyin ikkinchi bosqich edi va o'quvchi kunning asosiy
-   * vazifalariga yetib bormasdan ovozli mashqqa tushib qolardi. Endi tartib
-   * kun mantig'iga mos: tushuntirish -> vazifalar -> qo'shimcha ovozli mashq.
-   */
-  if (ustozSentences.length > 0) {
-    steps.push({
-      key: 'ustoz',
-      label: "Ustozdan so'ra",
-      node: ({ keyingiga, keyingiNomi }) => (
-        <UstozdanSora
-          sentences={ustozSentences}
-          onTugadi={keyingiga ?? (() => navigate(kunlikRejaPath(dayNumber)))}
-          keyingiNomi={keyingiNomi ?? 'Kunlik reja'}
-        />
-      ),
-    });
-  }
-
   /*
    * JONLI SAVOL-JAVOB endi bu oqimda EMAS.
    *
@@ -473,28 +481,43 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
 
   return (
     <div className="space-y-5">
-      {/* Day topic header — purple caption + big rounded title */}
-      {g.topic?.title ? (
-        <div className="mb-1">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8B7FAB]">
-            {dayCaption}
-          </p>
-          <h1 className="grammar-heading mt-1.5 text-[26px] leading-[1.1] text-[#2D1B69]">
-            {g.topic.title}
+      {/*
+        Sarlavha — MARKAZDA. Chapga tekislangan uzun qalin matn ekranning
+        bir yonini bosib turardi; markaz esa ikkita kartaning o'qi bilan
+        bir chiziqqa tushadi va ekran muvozanatli ko'rinadi.
+
+        Qavs ichidagi ruscha nom pastda, kichikroq va bosiqroq — ko'z avval
+        o'zbekcha nomni oladi, keyin kerak bo'lsa ruschasini.
+      */}
+      {sarlavha ? (
+        <header className="mx-auto mb-1 max-w-[460px] px-1 text-center">
+          <h1 className="grammar-heading mx-auto max-w-[20ch] text-[26px] leading-[1.14] text-[#2D1B69] sm:text-[30px]">
+            {sarlavha.asosiy}
           </h1>
-        </div>
+          {sarlavha.izoh ? (
+            <p className="mx-auto mt-2 max-w-[32ch] text-[13.5px] font-semibold leading-snug text-[#8B7FAB]">
+              {sarlavha.izoh}
+            </p>
+          ) : null}
+          <span
+            aria-hidden
+            className="mx-auto mt-4 block h-[3px] w-10 rounded-full"
+            style={{ background: 'linear-gradient(90deg, #5B4CE0, #A78BFA)' }}
+          />
+        </header>
       ) : null}
 
-      <GrammarStepFlow dayNumber={dayNumber} steps={steps} title={g.topic?.title ?? ''} />
+      <GrammarStepFlow
+        dayNumber={dayNumber}
+        steps={steps}
+        bajarilganMashq={bajarilganMashq}
+        jamiMashq={jamiMashq}
+        kunlikLoaded={kunlikLoaded}
+      />
     </div>
   );
 }
 
-/**
- * Grammatika kuni bosqichma-bosqich ko'rsatiladi: bir ekranda bitta blok.
- * Ilgari tushuntirish, nazariya, "Ustozdan so'ra" va vazifalar bitta uzun
- * ro'yxatda turardi — o'quvchi qaysi biridan boshlashni bilmasdi.
- */
 /** Bosqich o'z yakunida oqimni boshqarishi uchun beriladigan vositalar. */
 type OqimApi = {
   /** Keyingi bosqichga o'tkazadi; oxirgi bosqichda `null`. */
@@ -503,6 +526,13 @@ type OqimApi = {
   keyingiNomi?: string;
   /** Ma'lum bosqichga o'tkazadi (kaliti bo'yicha; topilmasa hech narsa qilmaydi). */
   bosqichga: (kalit: string) => void;
+  /**
+   * Tanlov ekraniga qaytaradi ("Video dars" / "Vazifalar").
+   *
+   * Darsdan chiqqan odam grammatikadan BUTUNLAY chiqib ketmasin: u
+   * ko'pincha darsni to'xtatib, mashqqa o'tmoqchi bo'ladi.
+   */
+  tanlovga: () => void;
 };
 
 type GrammarStep = {
@@ -532,6 +562,85 @@ type GrammarStep = {
 
 const GRAMMAR_STEP_KEY = 'falarus:kun-grammatika-qadam';
 
+/*
+ * MASHQDAN QAYTISH BELGISI.
+ *
+ * MUAMMO: oqim qolgan bosqichni `localStorage` da saqlar va HAR kirishda
+ * tiklardi. Natijada o'quvchi grammatikadan butunlay chiqib, keyin qaytadan
+ * kirsa ham o'sha joyda — masalan "Vazifalar" da — qolib ketardi va darsni
+ * qaytadan ko'ra olmasdi.
+ *
+ * LEKIN saqlashni butunlay olib tashlab bo'lmaydi: u mashqdan (test/juftlik/
+ * gap tuzish) qaytganda doska QAYTA OCHILIB ketmasligi uchun qo'yilgan.
+ *
+ * Yechim — bosqich faqat MASHQDAN QAYTGANDA tiklanadi. Mashqqa o'tishdan
+ * oldin shu belgi qo'yiladi, qaytishda esa ishlatilib O'CHIRILADI. Boshqa
+ * har qanday kirishda oqim boshidan — doskadagi darsdan — ochiladi.
+ *
+ * `sessionStorage`: ilova yopilsa belgi o'zi yo'qoladi. Ustiga vaqt chegarasi
+ * ham bor — mashqni ochib tashlab ketilgan holat abadiy qolib ketmasin.
+ */
+const GRAMMAR_RETURN_KEY = 'falarus:kun-grammatika-qaytish';
+const GRAMMAR_RETURN_TTL_MS = 60 * 60_000;
+
+/** Mashqqa o'tishdan oldin chaqiriladi. */
+function mashqqaOtishniBelgila(dayNumber: number): void {
+  try {
+    sessionStorage.setItem(`${GRAMMAR_RETURN_KEY}:${dayNumber}`, String(Date.now()));
+  } catch {
+    /* saqlab bo'lmasa oqim baribir ishlaydi — shunchaki doskadan boshlanadi */
+  }
+}
+
+/** Qaytish belgisini o'qib, DARHOL o'chiradi (bir martalik). */
+function mashqdanQaytdimi(dayNumber: number): boolean {
+  try {
+    const kalit = `${GRAMMAR_RETURN_KEY}:${dayNumber}`;
+    const xom = sessionStorage.getItem(kalit);
+    if (!xom) return false;
+    sessionStorage.removeItem(kalit);
+    const vaqt = Number(xom);
+    return Number.isFinite(vaqt) && Date.now() - vaqt < GRAMMAR_RETURN_TTL_MS;
+  } catch {
+    return false;
+  }
+}
+
+/*
+ * VIDEO DARS BIR MARTA AVTOMATIK, KEYIN — TANLOV.
+ *
+ * Kunning grammatikasiga BIRINCHI kirganda doskadagi dars o'zi
+ * boshlanadi: o'quvchi mavzuni avval tushunib olsin.
+ *
+ * Ikkinchi va undan keyingi kirishlarda esa tanlov ekrani chiqadi —
+ * "Video dars" va "Vazifalar". Sabab: o'tilgan kunga qaytgan odam ko'pincha
+ * mashqni qaytarish uchun kiradi, uni har safar 10 daqiqalik darsdan
+ * o'tkazish noto'g'ri. Aksincha, darsni qayta eshitmoqchi bo'lsa ham
+ * bir bosishda ochadi.
+ *
+ * `localStorage`: qurilmada saqlanadi va sessiyadan keyin ham qoladi.
+ * Bundan tashqari kunda mashqlardan bittasi bajarilgan bo'lsa ham tanlov
+ * ko'rsatiladi — boshqa qurilmadan kirgan odam ham qaytadan darsga
+ * tushib qolmasin.
+ */
+const DOSKA_KORILDI_KEY = 'falarus:kun-doska-korildi';
+
+function doskaKorildimi(dayNumber: number): boolean {
+  try {
+    return localStorage.getItem(`${DOSKA_KORILDI_KEY}:${dayNumber}`) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function doskaniBelgila(dayNumber: number): void {
+  try {
+    localStorage.setItem(`${DOSKA_KORILDI_KEY}:${dayNumber}`, '1');
+  } catch {
+    /* saqlanmasa — keyingi safar ham dars o'zi boshlanadi, zarari yo'q */
+  }
+}
+
 /**
  * Bosqichni BUTUN EKRANGA chiqaradi (ilova menyusi ham berkitiladi).
  *
@@ -557,29 +666,536 @@ function FullscreenStep({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Sarlavhani ikkiga ajratadi: qisqa NOM va uning izohi (misollar / tarjima).
+ *
+ * NEGA: mavzu nomlari uzun va telefon ekranida uch-to'rt qatorni egallaydi —
+ * ko'z qayerga qarashni bilmaydi. Qalin qisqa nom + ostida bosiqroq izoh
+ * ancha tez o'qiladi.
+ *
+ * MUHIM — 182 KUN BIR XIL KO'RINISHI KERAK. Ilgari bu yerda faqat oxiridagi
+ * QAVS tekshirilardi, holbuki 182 kundan atigi 2 tasi shunday yozilgan:
+ *
+ *     qavs bilan  ....  2 kun    "Shaxs olmoshlari (Личные местоимения)"
+ *     ikki nuqta  .... 147 kun   "Kasb: Я сварщик. А вы?"
+ *     uzun tire   ....  21 kun   "Что случилось? — потерял, сломал"
+ *     ajratgichsiz ...  12 kun   "Har bir feʼl oʻz shaklini talab qiladi"
+ *
+ * Ya'ni 1-kun ikki qatorli chiroyli sarlavha bilan ochilar, qolgan 180 kun
+ * esa bitta uzun qator bo'lib qolardi. Endi uch ajratgich ham tanilади:
+ * 182 kundan 172 tasi ikki qatorli, qolgan 10 tasi haqiqatan bir bo'lak.
+ *
+ * AJRATGICH TANLASH: bir nechta nomzod bo'lsa, davomi KIRILLDA boshlanadigani
+ * olinadi. 85-kun aynan shuning uchun: "Bitta shakl — toʻrt vazifa: на
+ * работу…" — tire bo'yicha kesilsa o'zbekcha nom ikkiga bo'linib ketardi.
+ */
+function sarlavhaBolaklari(xom: string): {
+  asosiy: string;
+  izoh: string | null;
+} {
+  // Bazadagi ba'zi sarlavhalarda markdown qoldig'i bor (24-kun: "**в** yoki
+  // **на**?") — ekranda yulduzcha bo'lib ko'rinardi.
+  const t = String(xom ?? '')
+    .replace(/\*\*/g, '')
+    .trim();
+  if (!t) return { asosiy: '', izoh: null };
+
+  const qavs = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(t);
+  if (qavs && qavs[1].trim().length >= 3 && qavs[2].trim()) {
+    return { asosiy: qavs[1].trim(), izoh: qavs[2].trim() };
+  }
+
+  const nomzodlar: { chap: string; ong: string }[] = [];
+  for (let i = 3; i < t.length - 1; i += 1) {
+    if (t[i] !== ':' && t[i] !== '—') continue;
+    const chap = t.slice(0, i).trim();
+    const ong = t.slice(i + 1).trim();
+    if (chap.length >= 3 && ong) nomzodlar.push({ chap, ong });
+  }
+  if (nomzodlar.length > 0) {
+    const kirillDan = nomzodlar.find((n) => /^[«"']?[А-ЯЁа-яё]/.test(n.ong));
+    const tanlangan = kirillDan ?? nomzodlar[0];
+    return { asosiy: tanlangan.chap, izoh: tanlangan.ong };
+  }
+
+  // "Sonlar 1–20. Сколько это стоит?" — nuqtadan keyin ruscha misol.
+  const nuqta = /^(.{3,}?)\.\s+([А-ЯЁ].*)$/.exec(t);
+  if (nuqta && nuqta[2].trim()) return { asosiy: nuqta[1].trim(), izoh: nuqta[2].trim() };
+
+  return { asosiy: t, izoh: null };
+}
+
+/** Tanlov ekrani orqasidagi jonli lavha. */
+const TANLOV_FON_VIDEO = '/kunlik/dars-fon.mp4';
+const TANLOV_FON_POSTER = '/kunlik/dars-fon.jpg';
+
+/**
+ * TANLOV EKRANINING JONLI FONI.
+ *
+ * Ekranda ikkita plitkadan boshqa hech narsa yo'q va u yarim bo'sh
+ * ko'rinardi. Orqa fonga dars qilayotgan bolalar lavhasi qo'yiladi:
+ * ekran tirik bo'ladi, lekin lavha diqqatni tortmaydi — ustidan parda
+ * tushadi va harakat sekinlashtiriladi.
+ *
+ * Fayl bo'lmasa yoki brauzer o'ynata olmasa qatlam butunlay o'chadi va
+ * sahifa avvalgi foni bilan qoladi — video yo'qligi ekranni buzmaydi.
+ *
+ * `-z-10`: qatlam sahifa MATNIDAN orqada, lekin sahifa fonidan oldinda.
+ * Sahifa foni oq bo'lgani uchun u `body` sinfi orqali shaffof qilinadi.
+ */
+function TanlovFonVideo() {
+  const reduce = useReducedMotion();
+  const [xato, setXato] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (xato) return;
+    document.body.classList.add('kunlik-fon-video');
+    return () => document.body.classList.remove('kunlik-fon-video');
+  }, [xato]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || reduce) return;
+    // Lavha diqqatni tortmasin — sekin oqadi.
+    el.playbackRate = 0.75;
+    void el.play().catch(() => undefined);
+  }, [reduce]);
+
+  if (xato) return null;
+
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {reduce ? (
+        <img
+          src={TANLOV_FON_POSTER}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setXato(true)}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          src={TANLOV_FON_VIDEO}
+          poster={TANLOV_FON_POSTER}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          className="h-full w-full object-cover"
+          onError={() => setXato(true)}
+        />
+      )}
+      {/* Parda — sarlavha va plitkalar kontrasti saqlanadi. */}
+      <div className="kunlik-fon-parda" />
+    </div>
+  );
+}
+
+/**
+ * Bajarilgan mashqlar halqasi.
+ *
+ * Raqamdan ko'ra tezroq o'qiladi: o'quvchi bosishdan oldin qancha qolganini
+ * bir qarashda ko'radi. Tugaganda halqaning o'rniga belgi qo'yiladi.
+ */
+function MashqHalqasi({
+  qiymat,
+  jami,
+  rang,
+  fon,
+  tugagan,
+  kichik = false,
+}: {
+  qiymat: number;
+  jami: number;
+  rang: string;
+  fon: string;
+  tugagan: boolean;
+  /** Bo'lim sarlavhasidagi ixcham o'lcham. */
+  kichik?: boolean;
+}) {
+  const r = 15.5;
+  const aylana = 2 * Math.PI * r;
+  const ulush = jami > 0 ? Math.min(Math.max(qiymat / jami, 0), 1) : 0;
+
+  return (
+    <span
+      className={`relative flex shrink-0 items-center justify-center ${kichik ? 'h-9 w-9' : 'h-11 w-11'}`}
+    >
+      <svg viewBox="0 0 40 40" className={`-rotate-90 ${kichik ? 'h-9 w-9' : 'h-11 w-11'}`}>
+        <circle cx="20" cy="20" r={r} fill="none" stroke={fon} strokeWidth="4" />
+        {/*
+          Nol progressda chizilmaydi: `strokeLinecap="round"` nol uzunlikdagi
+          chiziqni ham dumaloq nuqta qilib ko'rsatardi va halqa tepasida
+          tushunarsiz dog' turardi.
+        */}
+        {ulush > 0 ? (
+          <circle
+            cx="20"
+            cy="20"
+            r={r}
+            fill="none"
+            stroke={rang}
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={`${aylana * ulush} ${aylana}`}
+            style={{
+              transition: 'stroke-dasharray 600ms cubic-bezier(0.32,0.72,0,1)',
+            }}
+          />
+        ) : null}
+      </svg>
+      <span
+        className={`absolute font-black leading-none ${kichik ? 'text-[10px]' : 'text-[11px]'}`}
+        style={{ color: rang }}
+      >
+        {tugagan ? (
+          <Check className={kichik ? 'h-3.5 w-3.5' : 'h-4 w-4'} strokeWidth={3.4} />
+        ) : (
+          `${qiymat}/${jami}`
+        )}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Grammatikaga QAYTA kirganda chiqadigan tanlov.
+ *
+ * Ikki yo'l teng ko'rsatiladi — kim mavzuni qayta tushunmoqchi, kim
+ * mashqni bajarmoqchi. Birinchi kirishda bu ekran umuman chiqmaydi:
+ * o'quvchi avval darsni ko'radi.
+ *
+ * SHAKL: ro'yxat emas, ikkita KATTA plitka. Ro'yxat ikki qatordan iborat
+ * bo'lganda ekran yarim bo'sh va tugallanmagan ko'rinardi; plitkalar esa
+ * ekranni to'ldiradi va barmoq uchun ancha keng nishon bo'ladi.
+ *
+ * BITTA ASOSIY HARAKAT: davom etadigan ish to'ldirilgan (binafsha) plitka,
+ * ikkinchisi oq. Mashqlar tugagach asosiy harakat "Video dars"ga o'tadi.
+ */
+function GrammatikaTanlov({
+  onDars,
+  onVazifalar,
+  bajarilgan,
+  jami,
+  qulf,
+}: {
+  onDars: () => void;
+  onVazifalar: () => void;
+  /** Bajarilgan mashqlar soni. */
+  bajarilgan: number;
+  /** Kunda umuman nechta mashq bor. */
+  jami: number;
+  /** Video darsga hali kirilmagan — vazifalar yopiq. */
+  qulf: boolean;
+}) {
+  const tugagan = jami > 0 && bajarilgan >= jami;
+  // Vazifalar yopiq bo'lsa, asosiy harakat — albatta dars.
+  const darsAsosiy = tugagan || qulf;
+  /* Yopiq plitka bosilganda sababi ko'rsatiladi (aks holda "ishlamayapti"). */
+  const [ogoh, setOgoh] = useState(false);
+
+  // Ogohlantirish o'zi so'nadi; sahifadan chiqilsa taymer tozalanadi.
+  useEffect(() => {
+    if (!ogoh) return;
+    const t = setTimeout(() => setOgoh(false), 2600);
+    return () => clearTimeout(t);
+  }, [ogoh]);
+
+  const toldirilgan: React.CSSProperties = {
+    background: 'linear-gradient(150deg, #5B4CE0 0%, #7C3AED 55%, #6D28D9 100%)',
+    border: '1.5px solid transparent',
+    boxShadow: '0 22px 40px -20px rgba(91,76,224,0.8)',
+  };
+  const oq: React.CSSProperties = {
+    background: '#FFFFFF',
+    border: '1.5px solid #E9E4F8',
+    boxShadow: '0 14px 30px -22px rgba(45,27,105,0.45)',
+  };
+
+  const plitka =
+    'group relative flex min-h-[168px] flex-col justify-between overflow-hidden rounded-[26px] p-[18px] text-left';
+
+  return (
+    <>
+      <TanlovFonVideo />
+      {/*
+        PLITKALAR EKRAN O'RTASIDA.
+
+        Ilgari ular sarlavhaga yopishib turardi va ekranning pastki yarmi
+        butunlay bo'sh qolardi. Endi qolgan balandlikning o'rtasiga tushadi:
+        sarlavha bilan orasi ochiladi, barmoq esa ekranning eng qulay —
+        o'rta — qismiga tushadi.
+
+        `svh` (kichik ko'rinish balandligi) bejiz tanlangan emas: telefon
+        brauzerlarida manzil qatori sirg'alganda `vh` sakraydi va plitkalar
+        joyidan siljib ketardi.
+      */}
+      <div className="relative mx-auto flex min-h-[46svh] w-full max-w-[520px] items-center">
+        <div className="grid w-full grid-cols-2 gap-3.5">
+          {/* ── VIDEO DARS ── */}
+          <motion.button
+            type="button"
+            onClick={onDars}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              delay: 0.05,
+              type: 'spring',
+              stiffness: 320,
+              damping: 30,
+            }}
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.98 }}
+            className={plitka}
+            style={darsAsosiy ? toldirilgan : oq}
+          >
+            {/* Yumshoq yorug'lik — plitka tekis "qog'oz" bo'lib qolmasin. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full"
+              style={{
+                background: darsAsosiy ? 'rgba(255,255,255,0.13)' : 'rgba(91,76,224,0.07)',
+              }}
+            />
+            <span
+              aria-hidden
+              className="flex h-[52px] w-[52px] items-center justify-center rounded-[18px]"
+              style={
+                darsAsosiy
+                  ? { background: 'rgba(255,255,255,0.18)', color: '#FFFFFF' }
+                  : { background: '#F1EEFC', color: '#5B4CE0' }
+              }
+            >
+              <PlayCircle className="h-[26px] w-[26px]" strokeWidth={2.1} />
+            </span>
+            <span className="relative">
+              <span
+                className="block text-[17px] font-black leading-tight tracking-[-0.01em]"
+                style={{ color: darsAsosiy ? '#FFFFFF' : '#2D1B69' }}
+              >
+                Video dars
+            </span>
+              <ArrowRight
+                className="mt-2 h-[18px] w-[18px] transition-transform group-hover:translate-x-1"
+                strokeWidth={2.8}
+                style={{
+                  color: darsAsosiy ? 'rgba(255,255,255,0.85)' : '#C4B8E0',
+                }}
+              />
+            </span>
+          </motion.button>
+
+          {/* ── VAZIFALAR ── */}
+          <motion.button
+            type="button"
+            onClick={() => {
+              if (qulf) {
+                setOgoh(true);
+                return;
+              }
+              onVazifalar();
+            }}
+            aria-disabled={qulf}
+            initial={{ opacity: 0, y: 16 }}
+            animate={
+              ogoh ? { opacity: 1, y: 0, x: [0, -7, 7, -4, 4, 0] } : { opacity: 1, y: 0, x: 0 }
+            }
+            transition={
+              ogoh
+                ? { duration: 0.42, ease: 'easeInOut' }
+                : { delay: 0.13, type: 'spring', stiffness: 320, damping: 30 }
+            }
+            whileHover={qulf ? undefined : { y: -3 }}
+            whileTap={{ scale: 0.98 }}
+            className={plitka}
+            style={
+              qulf
+                ? {
+                    background: '#F7F6FC',
+                    border: '1.5px solid #E9E4F8',
+                    boxShadow: 'none',
+                  }
+                : tugagan
+                  ? {
+                      background: '#F2FDF6',
+                      border: '1.5px solid #A7E8C4',
+                      boxShadow: '0 14px 30px -22px rgba(34,197,94,0.5)',
+                    }
+                  : toldirilgan
+            }
+          >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full"
+              style={{
+                background: qulf
+                  ? 'rgba(45,27,105,0.03)'
+                  : tugagan
+                    ? 'rgba(34,197,94,0.08)'
+                    : 'rgba(255,255,255,0.13)',
+              }}
+            />
+            <span className="relative flex items-start justify-between gap-2">
+              <span
+                aria-hidden
+                className="flex h-[52px] w-[52px] items-center justify-center rounded-[18px]"
+                style={
+                  qulf
+                    ? { background: '#EFECF9', color: '#A79BC7' }
+                    : tugagan
+                      ? { background: '#22C55E', color: '#FFFFFF' }
+                      : { background: 'rgba(255,255,255,0.18)', color: '#FFFFFF' }
+                }
+              >
+                <ListChecks className="h-[26px] w-[26px]" strokeWidth={2.1} />
+            </span>
+              {qulf ? (
+                <span
+                  aria-hidden
+                  className="flex h-9 w-9 items-center justify-center rounded-full"
+                  style={{ background: '#EFECF9', color: '#A79BC7' }}
+                >
+                  <Lock className="h-[18px] w-[18px]" strokeWidth={2.6} />
+                </span>
+              ) : jami > 0 ? (
+                <MashqHalqasi
+                  qiymat={bajarilgan}
+                  jami={jami}
+                  tugagan={tugagan}
+                  rang={tugagan ? '#16A34A' : '#FFFFFF'}
+                  fon={tugagan ? 'rgba(22,163,74,0.18)' : 'rgba(255,255,255,0.25)'}
+                />
+              ) : null}
+            </span>
+            <span className="relative">
+              <span
+                className="block text-[17px] font-black leading-tight tracking-[-0.01em]"
+                style={{
+                  color: qulf ? '#A79BC7' : tugagan ? '#0F7C3A' : '#FFFFFF',
+                }}
+              >
+                Vazifalar
+            </span>
+              {qulf ? (
+                <span className="mt-1.5 block text-[11.5px] font-bold leading-snug text-[#B3A9CF]">
+                  {ogoh ? 'Avval video darsni oching' : ''}
+                </span>
+              ) : (
+                <ArrowRight
+                  className="mt-2 h-[18px] w-[18px] transition-transform group-hover:translate-x-1"
+                  strokeWidth={2.8}
+                  style={{
+                    color: tugagan ? '#5FC98C' : 'rgba(255,255,255,0.85)',
+                  }}
+                />
+              )}
+            </span>
+          </motion.button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Grammatika kuni bosqichma-bosqich ko'rsatiladi: bir ekranda bitta blok.
+ * Ilgari tushuntirish, nazariya va vazifalar bitta uzun ro'yxatda turardi —
+ * o'quvchi qaysi biridan boshlashni bilmasdi.
+ */
 function GrammarStepFlow({
   dayNumber,
   steps,
-  title,
+  bajarilganMashq,
+  jamiMashq,
+  kunlikLoaded,
 }: {
   dayNumber: number;
   steps: GrammarStep[];
-  title: string;
+  /** Bajarilgan mashqlar soni (boshqa qurilmadagi progress ham shu yerda). */
+  bajarilganMashq: number;
+  /** Kunda umuman nechta mashq bor. */
+  jamiMashq: number;
+  /** Kunlik progress yuklandimi — qaror shuni kutadi. */
+  kunlikLoaded: boolean;
 }) {
+  /* Kunga avval kirilganini bildiruvchi belgi: bittasi bajarilgan bo'lsa. */
+  const mashqBajarilgan = bajarilganMashq > 0;
   const [index, setIndex] = useState(0);
+  /**
+   * `null` — hali hal qilinmagan (birinchi render), `true` — bosqich
+   * ko'rsatiladi, `false` — tanlov ekrani. Boshlang'ich `null` bo'lishi
+   * shart: aks holda tanlov kerak bo'lgan kunda dars bir lahza chaqnab
+   * ketardi.
+   */
+  const [tanlandi, setTanlandi] = useState<boolean | null>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
-  // Kun almashganda o'quvchi qolgan joyidan davom etadi.
+  const doskaBor = steps.some((st) => st.key === 'doska');
+  const vazifaJoyi = steps.findIndex((st) => st.key === 'vazifa');
+
+  /*
+   * Bosqich FAQAT mashqdan qaytganda tiklanadi — qolgan hamma holatda
+   * oqim boshidan ochiladi.
+   *
+   * Kunga QAYTA kirilgan bo'lsa (dars allaqachon ko'rilgan yoki mashq
+   * bajarilgan) — avval TANLOV: "Video dars" yoki "Vazifalar".
+   */
+  const qarorKuni = useRef<number | null>(null);
+  /** Progress kechiksa ham cheksiz kutmaymiz. */
+  const [kutishTugadi, setKutishTugadi] = useState(false);
+  /*
+   * Qaytish belgisi BIR MARTALIK: o'qilishi bilan o'chadi. Effekt esa ikki
+   * marta ishga tushishi mumkin (React StrictMode, yoki progress kelgach
+   * qayta hisoblanishi) — shuning uchun natija kun bo'yicha eslab qolinadi,
+   * aks holda ikkinchi o'qishda mashqdan qaytgan odam tanlov ekraniga
+   * uloqtirilardi.
+   */
+  const qaytishBelgisi = useRef<{ kun: number; qiymat: boolean } | null>(null);
+  const qaytdimi = useCallback((kun: number) => {
+    if (qaytishBelgisi.current?.kun !== kun) {
+      qaytishBelgisi.current = { kun, qiymat: mashqdanQaytdimi(kun) };
+    }
+    return qaytishBelgisi.current.qiymat;
+  }, []);
+
+  useEffect(() => {
+    qarorKuni.current = null;
+    setTanlandi(null);
+    setKutishTugadi(false);
+    const t = setTimeout(() => setKutishTugadi(true), 1500);
+    return () => clearTimeout(t);
+  }, [dayNumber]);
+
   useEffect(() => {
     if (steps.length === 0) return;
-    let saved = 0;
-    try {
-      saved = Number(localStorage.getItem(`${GRAMMAR_STEP_KEY}:${dayNumber}`) ?? 0);
-    } catch {
-      saved = 0;
+    if (qarorKuni.current === dayNumber) return;
+
+    if (qaytdimi(dayNumber)) {
+      let saved = 0;
+      try {
+        saved = Number(localStorage.getItem(`${GRAMMAR_STEP_KEY}:${dayNumber}`) ?? 0);
+      } catch {
+        saved = 0;
+      }
+      qarorKuni.current = dayNumber;
+      setIndex(Number.isFinite(saved) ? Math.min(Math.max(saved, 0), steps.length - 1) : 0);
+      setTanlandi(true);
+      return;
     }
-    setIndex(Number.isFinite(saved) ? Math.min(Math.max(saved, 0), steps.length - 1) : 0);
-  }, [dayNumber, steps.length]);
+
+    /*
+     * Qurilmada belgi bo'lsa — kutishning hojati yo'q. Bo'lmasa serverdagi
+     * progressni kutamiz: oyin oldin tugatilgan kunga boshqa qurilmadan
+     * kirgan odam qaytadan darsga tushib qolmasin.
+     */
+    const belgi = doskaBor && doskaKorildimi(dayNumber);
+    if (!belgi && !kunlikLoaded && !kutishTugadi) return;
+
+    qarorKuni.current = dayNumber;
+    setIndex(0);
+    setTanlandi(!(doskaBor && (belgi || mashqBajarilgan)));
+  }, [dayNumber, steps.length, doskaBor, mashqBajarilgan, kunlikLoaded, kutishTugadi, qaytdimi]);
 
   const goTo = useCallback(
     (next: number) => {
@@ -597,9 +1213,63 @@ function GrammarStepFlow({
     [dayNumber]
   );
 
+  const safeIndex = Math.min(index, Math.max(steps.length - 1, 0));
+
+  /*
+   * Dars ochilishi bilan "ko'rildi" deb belgilanadi. Tugashini kutmaymiz:
+   * darsni yarmida tashlab ketgan odam ham keyingi kirishda tanlovni
+   * ko'rsin — xohlasa o'sha yerdan darsni qayta ochadi.
+   */
+  const joriyKalit = steps[safeIndex]?.key;
+  useEffect(() => {
+    if (tanlandi && joriyKalit === 'doska') doskaniBelgila(dayNumber);
+  }, [tanlandi, joriyKalit, dayNumber]);
+
+  /*
+   * Telefonning "ortga" tugmasi bosqichdan TANLOVGA qaytarsin.
+   *
+   * Bosqichlar URL'ni o'zgartirmaydi, shuning uchun ular tarixda ko'rinmasdi
+   * va "ortga" bir zumda kunlik rejaga uloqtirardi — o'quvchi darsning
+   * o'rtasida bo'lsa ham.
+   */
+  const tanlovgaQaytish = useQurilmaOrqaga(tanlandi === true, () => setTanlandi(false));
+
   if (steps.length === 0) return null;
 
-  const safeIndex = Math.min(index, steps.length - 1);
+  /*
+   * VAZIFALAR QULFI: video darsga KIRMAGUNCHA mashqlar yopiq.
+   *
+   * Mavzuni ko'rmasdan mashq bajarish o'quvchiga foyda bermaydi. Qulf
+   * darsning o'zi ochilishi bilan yechiladi — dars oxirigacha o'tirishga
+   * majburlamaymiz, lekin mashqqa yo'l darsdan o'tadi.
+   *
+   * MUHIM: ilgari bu yerda "bitta mashq bajarilgan bo'lsa ochiq" degan
+   * yon yo'l bor edi va shu sababli kun qayta ochilganda vazifalar darsga
+   * kirmasdan ham ochiq turardi. Yon yo'l olib tashlandi.
+   */
+  const vazifaQulf = doskaBor && !doskaKorildimi(dayNumber);
+
+  /* TANLOV EKRANI — kunga qayta kirilganda. */
+  if (tanlandi === null) return <SkeletonRoyxat soni={2} />;
+  if (!tanlandi) {
+    return (
+      <GrammatikaTanlov
+        bajarilgan={bajarilganMashq}
+        jami={jamiMashq}
+        qulf={vazifaQulf}
+        onDars={() => {
+          setTanlandi(true);
+          goTo(0);
+        }}
+        onVazifalar={() => {
+          if (vazifaQulf) return;
+          setTanlandi(true);
+          goTo(vazifaJoyi >= 0 ? vazifaJoyi : 0);
+        }}
+      />
+    );
+  }
+
   const current = steps[safeIndex];
   const nextStep = steps[safeIndex + 1];
   const hasPrev = safeIndex > 0;
@@ -611,6 +1281,8 @@ function GrammarStepFlow({
       const joy = steps.findIndex((st) => st.key === kalit);
       if (joy >= 0) goTo(joy);
     },
+    // `tanlovgaQaytish` — tarix yozuvini ham iste'mol qiladi (hook izohiga qarang).
+    tanlovga: tanlovgaQaytish,
   };
 
   /*
@@ -631,36 +1303,14 @@ function GrammarStepFlow({
     <div className="space-y-5">
       <div ref={topRef} className="scroll-mt-3" />
 
-      <div>
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8B7FAB]">
-            {safeIndex + 1} / {steps.length} · {current.label}
-          </p>
-          {nextStep ? (
-            <p className="shrink-0 truncate text-[11px] font-bold text-[#A79BC7]">
-              Keyingisi: {nextStep.label}
-            </p>
-          ) : null}
-        </div>
-        <div className="mt-1 flex gap-1.5">
-          {steps.map((s, i) => (
-            <button
-              key={s.key}
-              type="button"
-              onClick={() => goTo(i)}
-              aria-label={`${i + 1}-bosqich: ${s.label}`}
-              aria-current={i === safeIndex ? 'step' : undefined}
-              className="flex-1 py-2 outline-none"
-            >
-              <span
-                className={`block h-1.5 rounded-full transition-colors ${
-                  i <= safeIndex ? 'bg-[#5B4CE0]' : 'bg-[#E6E1F7]'
-                }`}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
+      {/*
+        BOSQICH KO'RSATKICHI OLIB TASHLANDI ("2 / 2 · Vazifalar" va chiziqlar).
+        Dars to'liq ekranda ochiladi, ya'ni bu chrome FAQAT vazifalar
+        bosqichida ko'rinardi va har doim oxirgi bosqichni — "2 / 2" ni —
+        ko'rsatib turardi. Hech qanday ma'lumot bermaydigan, lekin ekranning
+        eng qimmatli tepa qismini egallaydigan bo'lak edi. Bosqich nomi endi
+        bo'limning O'Z sarlavhasida turadi.
+      */}
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
@@ -680,7 +1330,16 @@ function GrammarStepFlow({
           {hasPrev ? (
             <button
               type="button"
-              onClick={() => goTo(safeIndex - 1)}
+              /*
+               * "Ortga" — oldingi bosqich DARS bo'lsa, darsni qayta ochmaydi,
+               * TANLOV ekraniga qaytaradi. Aks holda vazifalardan chiqmoqchi
+               * bo'lgan odam har safar video darsning ichiga tushib qolardi.
+               */
+              onClick={() =>
+                steps[safeIndex - 1]?.key === 'doska'
+                  ? tanlovgaQaytish()
+                  : goTo(safeIndex - 1)
+              }
               className="flex min-h-[52px] items-center gap-1.5 rounded-2xl border border-[#E6E1F7] bg-[color:var(--rd-white)] px-4 text-[14px] font-bold text-[#5B4CE0] transition active:scale-[0.98]"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
@@ -792,7 +1451,7 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
         </p>
         <button
           type="button"
-          onClick={() => navigate(kunlikRejaPath(dayNumber))}
+          onClick={() => navigate(xaritaYoli())}
           className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
         >
           Kunlik rejaga qaytish
@@ -808,7 +1467,7 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
         <p className="text-[14px] font-bold text-[#2D1B69]">Bu kunda suhbat mavzusi yo'q.</p>
         <button
           type="button"
-          onClick={() => navigate(kunlikRejaPath(dayNumber))}
+          onClick={() => navigate(xaritaYoli())}
           className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
         >
           Kunlik reja
@@ -835,17 +1494,11 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
         vazifalar={doskaVazifalar}
         savollarManbasi={suhbatSavollari ?? undefined}
         /*
-          JAVOB BERILMAGAN SAVOL — O'SHA KUNGA QAYTARISH.
-          Grammatikaga yuboriladi: kunning kirish nuqtasi shu va nazariya
-          aynan o'sha yerda tushuntiriladi.
-        */
-        onQaytarish={(qaytKun) => navigate(`/kunlik-reja/kun/${qaytKun}/grammatika`)}
-        /*
           Savol topilmadi — blok BAJARILDI deb belgilanmaydi, shunchaki
           kunlik rejaga qaytariladi. Aks holda o'quvchi bitta ham savolga
           javob bermay turib kunni yopib olardi.
         */
-        onSavolYoq={() => navigate(kunlikRejaPath(dayNumber))}
+        onSavolYoq={() => navigate(xaritaYoli())}
         keyingiNomi="Kunlik reja"
         /*
           Belgi SAQLANIB BO'LGACH qaytamiz: bosh sahifa progressni darhol
@@ -854,7 +1507,7 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
         */
         onTugadi={() => {
           void patchDay(dayNumber, { suhbat_done: true }).finally(() => {
-            navigate(kunlikRejaPath(dayNumber));
+            navigate(xaritaYoli());
           });
         }}
       />
@@ -950,27 +1603,52 @@ function DailyGrammarMashqlarGrid({
     return num;
   };
 
+  /** Grammatika bloki har doim uchta mashqdan iborat. */
+  const JAMI_VAZIFA = 3;
   const doneCount = [grammar1Done, grammar2Done, grammar3Done].filter(Boolean).length;
-  const pct = Math.round((doneCount / 3) * 100);
+  const hammasiBajarildi = doneCount >= JAMI_VAZIFA;
 
   return (
     <div className="mt-2">
-      {/* Header row: "3 ta vazifa" + progress */}
-      <div className="mb-3 flex items-center gap-3">
-        <p className="grammar-heading text-[18px] leading-none text-[#2D1B69]">
-          3 ta vazifa
-        </p>
-        <div className="flex flex-1 items-center gap-2">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#DDD7F5]">
-            <div
-              className="h-full rounded-full bg-[#22C55E] transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <span className="text-[12px] font-black text-[#8B7FAB]">
-            {doneCount}/3
-          </span>
+      {/*
+        BO'LIM SARLAVHASI — RAMKADA.
+
+        Ilgari tepada ikkita alohida bo'lak turardi: oqim ko'rsatkichi
+        ("2 / 2 · Vazifalar") va yupqa "3 ta vazifa" qatori. Ikkalasi ham
+        bir xil narsani aytardi, ammo ekranda ikki qavat joy egallardi va
+        hech biri bo'limning boshlanishini ko'rsatib turmasdi.
+
+        Endi bitta ixcham ramka: nomi, qancha qolgani va halqali ko'rsatkich.
+
+        RANGI DOIM KO'K — bajarilgan holatda ham yashilga o'tmaydi. Ilgari
+        o'tardi va natijada sarlavha pastdagi uchta yashil "bajarildi"
+        kartasidan farq qilmay qolardi: ko'z ro'yxatning qayerdan
+        boshlanganini topa olmasdi. Sarlavha karta emas — u BO'LIM NOMI,
+        shuning uchun ranggi ham, o'lchami ham ro'yxatdan ajralib turadi.
+      */}
+      <div className="mb-6 flex items-center gap-3 rounded-[16px] border-[1.5px] border-[#DDD7F5] bg-[#F7F5FF] px-3.5 py-2.5">
+        <span
+          aria-hidden
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[#5B4CE0] text-white"
+        >
+          <ListChecks className="h-[19px] w-[19px]" strokeWidth={2.3} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-black uppercase leading-none tracking-[0.14em] text-[#5B4CE0]">
+            Vazifalar
+          </p>
+          <p className="mt-1 text-[11.5px] font-semibold leading-none text-[#8B7FAB]">
+            {hammasiBajarildi ? 'Hammasi bajarildi' : `Yana ${JAMI_VAZIFA - doneCount} ta vazifa`}
+          </p>
         </div>
+        <MashqHalqasi
+          kichik
+          qiymat={doneCount}
+          jami={JAMI_VAZIFA}
+          tugagan={hammasiBajarildi}
+          rang="#5B4CE0"
+          fon="#E6E1F7"
+        />
       </div>
 
       <div className="flex flex-col gap-3">
@@ -1055,11 +1733,8 @@ function DailyGrammarMashqlarGrid({
                     {shortTitle}
                   </p>
                   {!done && !active && (
-                    <p
-                      className="mt-0.5 truncate text-[12px] font-semibold"
-                      style={{ color: locked ? '#8B7FAB' : '#8B7FAB' }}
-                    >
-                      {count > 0 ? `${count} ta topshiriq` : subtitleMuted}
+                    <p className="mt-0.5 truncate text-[12px] font-semibold text-[#8B7FAB]">
+                      {count > 0 && !locked ? `${count} ta topshiriq` : subtitleMuted}
                     </p>
                   )}
                   {done && (
@@ -1068,12 +1743,6 @@ function DailyGrammarMashqlarGrid({
                     </p>
                   )}
                 </div>
-
-                {done ? null : active ? null : (
-                  <span className="grammar-heading shrink-0 text-[14px] text-[#8B7FAB]">
-                    {locked ? '' : ''}
-                  </span>
-                )}
               </div>
 
               {active && (
@@ -1102,15 +1771,16 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
   const { getDay } = useKunlikProgress();
   const w = bundle.vocabulary;
   const totalWords = w?.words?.length ?? 0;
-  const [tick, setTick] = useState(0);
+  /*
+   * Lug'at progressi `localStorage` da turadi va hodisa orqali xabar beradi.
+   * State'ning o'zi kerak emas — faqat qayta chizish kerak.
+   */
+  const [, qaytaChiz] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
-    const fn = () => setTick((t) => t + 1);
-    window.addEventListener('daily-vocab-progress', fn as EventListener);
-    return () => window.removeEventListener('daily-vocab-progress', fn as EventListener);
+    window.addEventListener('daily-vocab-progress', qaytaChiz);
+    return () => window.removeEventListener('daily-vocab-progress', qaytaChiz);
   }, []);
-
-  void tick;
 
   if (!w?.words?.length) {
     return (
@@ -1229,7 +1899,7 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
     // Grammatikadagi kabi: reja sahifasi mount bo'lishi bilan progressni
     // serverdan qayta o'qiydi, shuning uchun patch yozilib bo'lgunicha kutiladi.
     await patchDay(dayNumber, { oqish_done: true });
-    navigate(kunlikRejaPath(dayNumber));
+    navigate(xaritaYoli());
   };
 
   const title = r.title?.trim() || 'Matn';
@@ -1240,7 +1910,7 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
       <div className="flex items-start gap-3">
         <button
           type="button"
-          onClick={() => navigate(kunlikRejaPath(dayNumber))}
+          onClick={() => navigate(xaritaYoli())}
           aria-label={t('common.back')}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[color:var(--rd-white)] text-[color:var(--rd-text)] shadow-[0_6px_16px_-6px_rgba(15,165,152,0.28)] ring-1 ring-[#DCEBE7] transition active:scale-[0.97]"
         >
@@ -1521,7 +2191,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
       navigate(`/kunlik-reja/kun/${dayNumber}/gapirish`);
       return;
     }
-    navigate(kunlikRejaPath(dayNumber));
+    navigate(xaritaYoli());
   };
 
   if (!p?.length) {
@@ -1553,7 +2223,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
             navigate(
               hasSecondTopic
                 ? `/kunlik-reja/kun/${dayNumber}/gapirish`
-                : kunlikRejaPath(dayNumber),
+                : xaritaYoli(),
             )
           }
           className="mt-4 min-h-[44px] w-full rounded-2xl border border-emerald-300 bg-[color:var(--rd-white)] px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm hover:bg-emerald-50"
@@ -1580,7 +2250,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
         <KunlikFreeLimitModal
           onClose={() => {
             setShowFreeLimitModal(false);
-            navigate(kunlikRejaPath(dayNumber));
+            navigate(xaritaYoli());
           }}
         />
       ) : null}
@@ -1596,7 +2266,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
           if (!forceRetry) patchDay(dayNumber, { speaking_level: completed });
         }}
         onFinish={finishSpeaking}
-        onBack={() => navigate(kunlikRejaPath(dayNumber))}
+        onBack={() => navigate(xaritaYoli())}
       />
     </>
   );

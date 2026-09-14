@@ -130,7 +130,7 @@ function statusView(
         target: 'help',
         bg: 'bg-[#F7F7FA]',
         border: 'border-[#DFDFE9]',
-        fg: 'text-[#3E4166]',
+        fg: 'text-app-text',
         dot: 'bg-[#5B5E86]',
       };
     default:
@@ -139,9 +139,9 @@ function statusView(
         text: t.stDraftText,
         cta: t.stDraftCta,
         target: 'anketa',
-        bg: 'bg-[#F5F5FB]',
-        border: 'border-[#E4E3F2]',
-        fg: 'text-[#3E4166]',
+        bg: 'bg-app-bg-muted',
+        border: 'border-app-border-strong',
+        fg: 'text-app-text',
         dot: 'bg-[#8A8CAE]',
       };
   }
@@ -223,8 +223,8 @@ export default function Profile() {
               </span>
             </button>
             <div className="min-w-0 flex-1">
-              <p className="text-[20px] font-semibold text-[#171A3D]">{name}</p>
-              <p className="mt-1 text-[13px] text-[#6E7191]">
+              <p className="text-[20px] font-semibold text-app-text">{name}</p>
+              <p className="mt-1 text-[13px] text-app-text-muted">
                 {p?.experience_years
                   ? `${tpl(t.yearsExp, { n: p.experience_years })} · `
                   : ''}
@@ -233,7 +233,7 @@ export default function Profile() {
                   : t.noRatingYet}
               </p>
               {subjects.length ? (
-                <p className="mt-1.5 text-[12.5px] font-medium text-[#4B3BE4]">
+                <p className="mt-1.5 text-[12.5px] font-medium text-app-brand">
                   {subjects.join(' · ')}
                 </p>
               ) : null}
@@ -246,8 +246,8 @@ export default function Profile() {
 
           <Card className="p-5">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[16px] font-semibold text-[#171A3D]">{t.publicPart}</p>
-              <span className="text-[12px] text-[#8A8CAE]">{t.publicPartHint}</span>
+              <p className="text-[16px] font-semibold text-app-text">{t.publicPart}</p>
+              <span className="text-[12px] text-app-text-muted">{t.publicPartHint}</span>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <InfoBox label={t.fieldSpecialization} value={subjects.join(', ') || t.notFilled} />
@@ -274,8 +274,8 @@ export default function Profile() {
           <Card className="p-5">
             <div className="mb-3 flex items-center gap-2.5">
               <Lock className="h-[18px] w-[18px] text-[#2E4BA8]" />
-              <p className="text-[16px] font-semibold text-[#171A3D]">{t.privatePart}</p>
-              <span className="text-[12px] text-[#8A8CAE]">{t.privatePartHint}</span>
+              <p className="text-[16px] font-semibold text-app-text">{t.privatePart}</p>
+              <span className="text-[12px] text-app-text-muted">{t.privatePartHint}</span>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-[14px] border border-[#DDE3FA] bg-[#F5F7FF] p-3.5">
@@ -291,17 +291,17 @@ export default function Profile() {
                 </p>
               </div>
             </div>
-            <p className="mt-3 text-[12px] leading-[1.65] text-[#8A8CAE]">{t.privateHint}</p>
+            <p className="mt-3 text-[12px] leading-[1.65] text-app-text-muted">{t.privateHint}</p>
           </Card>
         </div>
 
         <div className="space-y-4">
           <Card className="p-5">
             <div className="mb-2 flex items-baseline justify-between">
-              <p className="text-[16px] font-semibold text-[#171A3D]">
+              <p className="text-[16px] font-semibold text-app-text">
                 {tpl(t.filledPercent, { pct: data.anketa.completion_percent })}
               </p>
-              <span className="text-[12px] text-[#8A8CAE]">
+              <span className="text-[12px] text-app-text-muted">
                 {tpl(t.ofSteps, { done: data.anketa.done_steps, total: data.anketa.total_steps })}
               </span>
             </div>
@@ -319,7 +319,7 @@ export default function Profile() {
                 <li
                   key={s.step}
                   className={`flex items-center gap-2.5 text-[12.5px] ${
-                    s.done ? 'text-[#3E4166]' : 'font-semibold text-[#C23A3F]'
+                    s.done ? 'text-app-text' : 'font-semibold text-[#C23A3F]'
                   }`}
                 >
                   <span
@@ -348,16 +348,16 @@ export default function Profile() {
           </Card>
 
           <Card className="p-5">
-            <p className="mb-2 text-[16px] font-semibold text-[#171A3D]">{t.ratingTitle}</p>
+            <p className="mb-2 text-[16px] font-semibold text-app-text">{t.ratingTitle}</p>
             {ratingCount > 0 ? (
               <>
                 <div className="flex items-baseline gap-2.5">
-                  <span className="text-[32px] font-semibold text-[#171A3D]">{rating}</span>
+                  <span className="text-[32px] font-semibold text-app-text">{rating}</span>
                   <span className="text-[14px] text-[#E6B33E]">
                     {'★'.repeat(Math.round(rating))}
                   </span>
                 </div>
-                <p className="mt-1 text-[12.5px] text-[#8A8CAE]">
+                <p className="mt-1 text-[12.5px] text-app-text-muted">
                   {tpl(t.reviewsCount, { n: ratingCount })}
                 </p>
                 <GhostButton onClick={() => go('reviews')} className="mt-3 w-full">
@@ -365,18 +365,18 @@ export default function Profile() {
                 </GhostButton>
               </>
             ) : (
-              <p className="py-3 text-[12.5px] text-[#8A8CAE]">{t.noRatingYet}</p>
+              <p className="py-3 text-[12.5px] text-app-text-muted">{t.noRatingYet}</p>
             )}
           </Card>
 
           <Card className="p-5">
-            <p className="mb-2 text-[16px] font-semibold text-[#171A3D]">{t.documentsTitle}</p>
+            <p className="mb-2 text-[16px] font-semibold text-app-text">{t.documentsTitle}</p>
             {data.documents.length === 0 ? (
-              <p className="text-[12.5px] text-[#8A8CAE]">{t.documentsEmpty}</p>
+              <p className="text-[12.5px] text-app-text-muted">{t.documentsEmpty}</p>
             ) : (
               <ul className="space-y-2">
                 {data.documents.slice(0, 4).map((d) => (
-                  <li key={d.id} className="flex items-center gap-2 text-[12.5px] text-[#3E4166]">
+                  <li key={d.id} className="flex items-center gap-2 text-[12.5px] text-app-text">
                     <span className="min-w-0 flex-1 truncate">{d.original_name || d.kind}</span>
                     <DocStatus status={d.status} />
                   </li>
@@ -390,7 +390,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <p className="mt-4 text-center text-[11.5px] text-[#A0A1BC]">
+      <p className="mt-4 text-center text-[11.5px] text-app-text-muted">
         {data.anketa.submitted_at
           ? `${t.anketaSent} · ${fmtDate(data.anketa.submitted_at, lang)}`
           : ''}
@@ -417,14 +417,14 @@ function InfoBox({
       ? 'text-[#17A34A]'
       : tone === 'warn'
         ? 'text-[#C57A1F]'
-        : 'text-[#3E4166]';
+        : 'text-app-text';
   return (
     <div
       className={`rounded-[14px] border p-3.5 ${
-        empty ? 'border-[#FBDCDC] bg-[#FFF6F6]' : 'border-[#F1F0FA] bg-[#FAFAFE]'
+        empty ? 'border-[#FBDCDC] bg-[#FFF6F6]' : 'border-app-border bg-app-bg-muted'
       }`}
     >
-      <p className="text-[11.5px] text-[#8A8CAE]">{label}</p>
+      <p className="text-[11.5px] text-app-text-muted">{label}</p>
       <p className={`mt-1 text-[12.5px] leading-[1.6] ${color}`}>{value}</p>
     </div>
   );
@@ -486,7 +486,7 @@ export function Documents() {
         {DOC_KINDS.map((k) => (
           <label
             key={k}
-            className="min-h-[44px] cursor-pointer rounded-[12px] bg-[#EFEDFD] px-4 py-3 text-[12.5px] font-semibold text-[#4B3BE4] transition hover:bg-[#E4E0FA]"
+            className="min-h-[44px] cursor-pointer rounded-[12px] bg-app-icon-bg px-4 py-3 text-[12.5px] font-semibold text-app-brand transition hover:bg-[#E4E0FA]"
           >
             {tpl(t.docAdd, { kind: kindLabel(k) })}
             <input
@@ -522,7 +522,7 @@ export function Documents() {
           <ul className="divide-y divide-[#F6F5FC]">
             {data!.documents.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center gap-3 px-3 py-3.5">
-                <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-[#EFEDFD] text-[11px] font-semibold text-[#4B3BE4]">
+                <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-app-icon-bg text-[11px] font-semibold text-app-brand">
                   {(d.original_name || 'file').split('.').pop()?.slice(0, 4).toUpperCase()}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -530,11 +530,11 @@ export function Documents() {
                     href={d.file_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="block truncate text-[13px] font-medium text-[#171A3D] hover:text-[#4B3BE4]"
+                    className="block truncate text-[13px] font-medium text-app-text hover:text-app-brand"
                   >
                     {d.original_name || d.kind}
                   </a>
-                  <span className="text-[11.5px] text-[#8A8CAE]">{d.kind}</span>
+                  <span className="text-[11.5px] text-app-text-muted">{d.kind}</span>
                 </span>
                 <DocStatus status={d.status} />
                 <button
@@ -602,14 +602,14 @@ export function PublicPreview() {
           <button
             type="button"
             onClick={() => go('anketa')}
-            className="min-h-[40px] rounded-[11px] bg-white/12 px-4 text-[12.5px] font-semibold text-white"
+            className="min-h-[40px] rounded-[11px] bg-app-surface/12 px-4 text-[12.5px] font-semibold text-white"
           >
             {t.edit}
           </button>
           <button
             type="button"
             onClick={() => go('profile')}
-            className="min-h-[40px] rounded-[11px] bg-white px-4 text-[12.5px] font-semibold text-[#171A3D]"
+            className="min-h-[40px] rounded-[11px] bg-app-surface px-4 text-[12.5px] font-semibold text-app-text"
           >
             {t.exitPreview}
           </button>
@@ -622,40 +622,40 @@ export function PublicPreview() {
             <Avatar name={name} size={120} url={p?.avatar_url ?? null} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2.5">
-                <p className="text-[24px] font-semibold tracking-[-0.02em] text-[#171A3D]">{name}</p>
+                <p className="text-[24px] font-semibold tracking-[-0.02em] text-app-text">{name}</p>
                 {p?.profile_status === 'active' ? <Tag tone="green">{t.stActiveTitle}</Tag> : null}
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-4 text-[13px] text-[#3E4166]">
+              <div className="mt-2 flex flex-wrap items-center gap-4 text-[13px] text-app-text">
                 {Number(p?.rating_count ?? 0) > 0 ? (
                   <span>
                     <span className="text-[#E6B33E]">★</span> {p?.rating_avg}{' '}
-                    <span className="text-[#8A8CAE]">
+                    <span className="text-app-text-muted">
                       · {tpl(t.reviewsCount, { n: Number(p?.rating_count ?? 0) })}
                     </span>
                   </span>
                 ) : null}
                 {p?.experience_years ? <span>{tpl(t.yearsExp, { n: p.experience_years })}</span> : null}
-                {p?.city ? <span className="text-[#8A8CAE]">{p.city}</span> : null}
+                {p?.city ? <span className="text-app-text-muted">{p.city}</span> : null}
               </div>
               {subjects.length || levels.length ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {subjects.map((s) => (
                     <span
                       key={s}
-                      className="rounded-full bg-[#F1EFFE] px-3 py-1.5 text-[12px] font-medium text-[#3B357F]"
+                      className="rounded-full bg-app-icon-bg px-3 py-1.5 text-[12px] font-medium text-[#3B357F]"
                     >
                       {s}
                     </span>
                   ))}
                   {levels.length ? (
-                    <span className="rounded-full bg-[#F5F5FB] px-3 py-1.5 text-[12px] font-medium text-[#5B5E86]">
+                    <span className="rounded-full bg-app-bg-muted px-3 py-1.5 text-[12px] font-medium text-app-text-muted">
                       {levels.join(' — ')}
                     </span>
                   ) : null}
                 </div>
               ) : null}
               {languages.length ? (
-                <p className="mt-2.5 text-[12.5px] text-[#6E7191]">
+                <p className="mt-2.5 text-[12.5px] text-app-text-muted">
                   {t.speaks}: {languages.join(' · ')}
                 </p>
               ) : null}
@@ -663,27 +663,27 @@ export function PublicPreview() {
           </Card>
 
           <Card className="p-6">
-            <p className="mb-2 text-[17px] font-semibold text-[#171A3D]">{t.aboutTeacher}</p>
-            <p className="whitespace-pre-line text-[13.5px] leading-[1.8] text-[#3E4166]">
+            <p className="mb-2 text-[17px] font-semibold text-app-text">{t.aboutTeacher}</p>
+            <p className="whitespace-pre-line text-[13.5px] leading-[1.8] text-app-text">
               {about || t.emptyAbout}
             </p>
           </Card>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Card className="p-6">
-              <p className="mb-2 text-[17px] font-semibold text-[#171A3D]">{t.educationBlock}</p>
+              <p className="mb-2 text-[17px] font-semibold text-app-text">{t.educationBlock}</p>
               {education.length === 0 ? (
-                <p className="text-[13px] text-[#8A8CAE]">{t.notFilled}</p>
+                <p className="text-[13px] text-app-text-muted">{t.notFilled}</p>
               ) : (
                 <ul className="space-y-3">
                   {education.map((e, i) => (
                     <li key={i}>
-                      <p className="text-[13px] font-semibold text-[#171A3D]">{e.institution}</p>
-                      <p className="text-[12.5px] text-[#6E7191]">
+                      <p className="text-[13px] font-semibold text-app-text">{e.institution}</p>
+                      <p className="text-[12.5px] text-app-text-muted">
                         {[e.specialty, e.degree].filter(Boolean).join(' · ')}
                       </p>
                       {e.start_year || e.end_year ? (
-                        <p className="text-[11.5px] text-[#8A8CAE]">
+                        <p className="text-[11.5px] text-app-text-muted">
                           {[e.start_year, e.end_year].filter(Boolean).join(' — ')}
                         </p>
                       ) : null}
@@ -693,9 +693,9 @@ export function PublicPreview() {
               )}
             </Card>
             <Card className="p-6">
-              <p className="mb-2 text-[17px] font-semibold text-[#171A3D]">{t.certificatesBlock}</p>
+              <p className="mb-2 text-[17px] font-semibold text-app-text">{t.certificatesBlock}</p>
               {certificates.length === 0 && !achievements ? (
-                <p className="text-[13px] text-[#8A8CAE]">{t.notFilled}</p>
+                <p className="text-[13px] text-app-text-muted">{t.notFilled}</p>
               ) : (
                 <>
                   <ul className="space-y-2.5">
@@ -711,8 +711,8 @@ export function PublicPreview() {
                             />
                           ) : null}
                           <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-[#171A3D]">{c.title}</p>
-                            <p className="text-[11.5px] text-[#8A8CAE]">
+                            <p className="text-[13px] font-semibold text-app-text">{c.title}</p>
+                            <p className="text-[11.5px] text-app-text-muted">
                               {[c.issuer, c.year].filter(Boolean).join(' · ')}
                             </p>
                           </div>
@@ -721,7 +721,7 @@ export function PublicPreview() {
                     })}
                   </ul>
                   {achievements ? (
-                    <p className="mt-3 whitespace-pre-line text-[12.5px] leading-[1.7] text-[#5B5E86]">
+                    <p className="mt-3 whitespace-pre-line text-[12.5px] leading-[1.7] text-app-text-muted">
                       {achievements}
                     </p>
                   ) : null}
@@ -732,36 +732,36 @@ export function PublicPreview() {
 
           <Card className="p-6">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[17px] font-semibold text-[#171A3D]">{t.reviewsBlock}</p>
+              <p className="text-[17px] font-semibold text-app-text">{t.reviewsBlock}</p>
               {reviews && reviews.rating_count > 0 ? (
-                <span className="text-[13px] text-[#8A8CAE]">
+                <span className="text-[13px] text-app-text-muted">
                   ★ {reviews.rating_avg} · {tpl(t.reviewsCount, { n: reviews.rating_count })}
                 </span>
               ) : null}
             </div>
             {!reviews || reviews.reviews.length === 0 ? (
-              <p className="text-[13px] text-[#8A8CAE]">{t.reviewsEmpty}</p>
+              <p className="text-[13px] text-app-text-muted">{t.reviewsEmpty}</p>
             ) : (
               <ul className="space-y-3">
                 {reviews.reviews.slice(0, 5).map((r) => (
                   <li
                     key={r.id}
-                    className="flex gap-3 rounded-[16px] border border-[#F1F0FA] bg-[#FAFAFE] p-4"
+                    className="flex gap-3 rounded-[16px] border border-app-border bg-app-bg-muted p-4"
                   >
                     <Avatar name={r.student_name} size={40} />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2.5">
-                        <span className="text-[13px] font-semibold text-[#171A3D]">
+                        <span className="text-[13px] font-semibold text-app-text">
                           {r.student_name}
                         </span>
                         <span className="text-[11.5px] text-[#E6B33E]">
                           {'★'.repeat(Math.round(r.rating))}
                         </span>
-                        <span className="text-[11.5px] text-[#A0A1BC]">
+                        <span className="text-[11.5px] text-app-text-muted">
                           {fmtDate(r.created_at, lang)}
                         </span>
                       </div>
-                      <p className="mt-1 text-[12.5px] leading-[1.7] text-[#5B5E86]">
+                      <p className="mt-1 text-[12.5px] leading-[1.7] text-app-text-muted">
                         {r.opinion || r.what_liked}
                       </p>
                     </div>
@@ -774,10 +774,10 @@ export function PublicPreview() {
 
         <Card className="p-5">
           <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-semibold text-[#171A3D]">
+            <span className="text-[24px] font-semibold text-app-text">
               {p?.monthly_course_price_amount ? fmtSum(Number(p.monthly_course_price_amount)) : '—'}
             </span>
-            <span className="text-[13px] text-[#6E7191]">{t.sum}</span>
+            <span className="text-[13px] text-app-text-muted">{t.sum}</span>
           </div>
           <p className="mt-3 rounded-[12px] bg-[#E7F4EC] px-3.5 py-3 text-[12.5px] font-semibold text-[#12703A]">
             {t.trialFree}
@@ -785,18 +785,18 @@ export function PublicPreview() {
           <button
             type="button"
             disabled
-            className="mt-3 min-h-[48px] w-full rounded-[14px] bg-[#4B3BE4] text-[14px] font-semibold text-white opacity-60"
+            className="mt-3 min-h-[48px] w-full rounded-[14px] bg-app-primary text-[14px] font-semibold text-white opacity-60"
           >
             {t.bookTrial}
           </button>
           <button
             type="button"
             disabled
-            className="mt-2 min-h-[44px] w-full rounded-[14px] bg-[#F5F5FB] text-[13px] font-semibold text-[#3E4166] opacity-60"
+            className="mt-2 min-h-[44px] w-full rounded-[14px] bg-app-bg-muted text-[13px] font-semibold text-app-text opacity-60"
           >
             {t.writeTeacher}
           </button>
-          <p className="mt-2 text-center text-[11px] text-[#A0A1BC]">{t.previewBanner}</p>
+          <p className="mt-2 text-center text-[11px] text-app-text-muted">{t.previewBanner}</p>
         </Card>
       </div>
     </div>

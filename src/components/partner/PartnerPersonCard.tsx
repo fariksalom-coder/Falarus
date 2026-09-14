@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Send } from 'lucide-react';
 import type { PartnerPerson } from '../../api/partner';
+import { resolveAssetUrl } from '../../api';
 import { useLocale } from '../../context/LocaleContext';
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -41,9 +42,18 @@ export default function PartnerPersonCard({
       className="rounded-[24px] border border-app-border bg-app-surface p-5 shadow-app-card"
     >
       <div className="flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#123A8F] to-[#0B2A6B] text-lg font-bold text-white shadow-[0_4px_12px_rgba(11,42,107,0.25)]">
-          {initials}
-        </div>
+        {person.avatar_url ? (
+          <img
+            src={resolveAssetUrl(person.avatar_url) ?? ''}
+            alt=""
+            className="h-14 w-14 shrink-0 rounded-full object-cover shadow-[0_4px_12px_rgba(11,42,107,0.25)]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#123A8F] to-[#0B2A6B] text-lg font-bold text-white shadow-[0_4px_12px_rgba(11,42,107,0.25)]">
+            {initials}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate text-base font-bold text-app-text">{person.display_name}</h3>

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { isClickLikePendingChannel, isGatewayCheckoutChannel } from './paymentChannel.js';
 import {
   getCourseProductPrice,
   getTeacherListingPriceUzs,
@@ -25,6 +26,9 @@ export type ClickCallbackPayload = {
   sign_string: string;
 };
 
+// Kanal tekshiruvi brauzerga ham kerak — manbasi ./paymentChannel.ts da.
+export { isClickLikePendingChannel, isGatewayCheckoutChannel };
+
 export const CLICK_BASE_URL = 'https://my.click.uz/services/pay';
 /**
  * Empty = do not send `card_type` (optional per Click docs). Both uzcard and humo stay available on Click UI.
@@ -50,9 +54,7 @@ export function isResumableClickButtonPending(row: {
   return ch === 'click_button' || ch == null || ch === '';
 }
 
-export function isClickLikePendingChannel(channel?: string | null): boolean {
-  return channel === 'click_button' || channel === 'click_auto_token' || channel === 'click_auto_cron';
-}
+
 
 const RAHMAT_PENDING_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -98,18 +100,6 @@ export function isExpiredClickPending(row: {
   return Date.now() - createdAtMs >= CLICK_PENDING_EXPIRE_MS;
 }
 
-/**
- * Shlyuz checkout kanali — Click yoki Rahmat.
- *
- * Bunday `pending` yozuv PUL EMAS, shunchaki boshlangan va tugatilmagan
- * checkout. Pul o'tganida shlyuz callback'i yozuvni `approved` qiladi;
- * `pending` bo'lib qolgani — foydalanuvchi oynani yopgani yoki to'lov
- * o'tmagani. Chek yuklash (`manual`) esa buning aksi: unda admin
- * ko'radigan haqiqiy hujjat bor.
- */
-export function isGatewayCheckoutChannel(channel?: string | null): boolean {
-  return channel === 'rahmat' || isClickLikePendingChannel(channel);
-}
 
 /**
  * Muddati o'tgan shlyuz `pending`i (Click 5 daqiqa, Rahmat 24 soat).

@@ -6,7 +6,7 @@ type Props = {
 
 export function AuthSwitchLink({ prefix, action, onAction }: Props) {
   return (
-    <p className="text-center text-sm font-medium text-[#2F6BFF]">
+    <p className="text-center text-sm font-medium text-app-brand">
       {prefix}
       <button type="button" onClick={onAction} className="underline underline-offset-2">
         {action}

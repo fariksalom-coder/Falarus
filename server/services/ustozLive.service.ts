@@ -1,3 +1,4 @@
+import { isOperatorFrozen } from '../operator/freeze.js';
 /**
  * ustozLive.service.ts — doskadagi JONLI ovozli savol-javob (Gemini Live API).
  *
@@ -27,6 +28,7 @@
 import type { Server } from 'http';
 import jwt from 'jsonwebtoken';
 import { WebSocketServer, WebSocket } from 'ws';
+import { buildLiveLessonInstruction as tizimKorsatmasi, LiveQuestionProgress } from './liveLessonPrompt.js';
 import { pool } from '../lib/db.js';
 import { kvotaOl, kvotaXabari } from './ustozKvota.service.js';
 
@@ -47,7 +49,13 @@ const VOICE = process.env.GEMINI_LIVE_VOICE || 'Leda';
  * Bu ayni paytda o'quvchiga ko'rsatiladigan vaqt ham: `ready` xabarida
  * qolgan soniyalar yuboriladi va doskada teskari hisob yuradi.
  */
-const MAX_SESSIYA_MS = Number(process.env.USTOZ_LIVE_MAX_MS || 3 * 60 * 1000);
+/*
+ * SUHBAT UZUNLIGI — 5 DAQIQA.
+ *
+ * Butun vaqt AYNAN BUGUNGI kun materialiga ketadi: eski kunlardan savol
+ * ham, javob berilmagan kunga qaytarish ham yo'q.
+ */
+const MAX_SESSIYA_MS = Number(process.env.USTOZ_LIVE_MAX_MS || 5 * 60 * 1000);
 /**
  * Yakundan shuncha oldin ustozga "xulosa qil" deyiladi.
  *
@@ -55,7 +63,32 @@ const MAX_SESSIYA_MS = Number(process.env.USTOZ_LIVE_MAX_MS || 3 * 60 * 1000);
  * shunchaki ulanishni yopadi. Bu ogohlantirish o'quvchiga ham eshitiladi —
  * ustoz o'zi maqtab, xulosa qilib xayrlashadi.
  */
-const YAKUN_OGOH_MS = 20 * 1000;
+/*
+ * YAKUNLASH OGOHLANTIRISHI — oxirdan 12 soniya oldin.
+ *
+ * 20 soniya ko'p edi: ustoz xulosani erta boshlab, o'quvchi "vaqt hali
+ * bor edi-ku" deb qolardi. 12 soniya bir-ikki gapli xulosaga yetadi va
+ * suhbat oxirigacha tirik qoladi.
+ */
+const YAKUN_OGOH_MS = 12 * 1000;
+
+/**
+ * ERTA XAYRLASHISH NAQSHI.
+ *
+ * Model ro'yxatdagi savollar tugagach "savollarimiz tugadi", "suhbatimiz
+ * yakunlandi", "xayr" deb qo'yadi — keyin esa o'zi suhbatni davom
+ * ettiraveradi. O'quvchi uchun bu chalkash: tugadi deyildi, lekin
+ * tugamadi.
+ *
+ * Promptdagi taqiq yetarli bo'lmadi (uch marta kuchaytirildi). Shuning
+ * uchun tekshiruv KODGA olindi: matn oqimida shu naqsh uchrasa va vaqt
+ * hali tugamagan bo'lsa, modelga yashirin tuzatish yuboriladi.
+ */
+const ERTA_XAYR =
+  /(savollar(imiz)?\s+(tugadi|yakunlandi|tamom))|(suhbat(imiz)?\s+(tugadi|yakunlandi|tamom))|(shu\s+bilan\s+yakunla)|(\bxayr\b[,.!]?\s|ko['’]rishguncha|yaxshi\s+qoling|до\s+свидания|всего\s+доброго)/iu;
+
+/** Bir suhbatda nechta marta tuzatish yuboriladi (cheksiz aylanma bo'lmasin). */
+const MAX_TUZATISH = 4;
 /**
  * Jonli suhbat foydalanuvchi kvotasidan hisoblanadimi.
  *
@@ -79,154 +112,6 @@ export function isUstozLiveConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY?.trim());
 }
 
-/** Suhbat qoidalari — ustoz o'zini qanday tutishi kerak. */
-function tizimKorsatmasi(mavzu: string, savollar: JonliSavol[]): string {
-  const royxat = savollar.length
-    ? `\n\nSAVOLLAR — SHULARNI KETMA-KET BERASAN:\n${savollar
-        .map((s, i) => `${i + 1}. ${s.savol}${s.manbaKun > 0 ? ` (${s.manbaKun}-kun)` : ''}`)
-        .join('\n')}
-
-SAVOL BERISH TARTIBI:
-- Savollarni RAQAMI BO'YICHA, birma-bir berasan. Bittasini o'tkazib yuborma.
-- Har savolga o'quvchi javob bergach, qisqa munosabat bildirasan va
-  KEYINGI savolga o'tasan.
-- SAVOL SONI CHEKLANMAGAN. Yuqoridagi ro'yxat — boshlanish nuqtasi. U
-  tugagach TO'XTAMAYSAN: o'sha kunlarning materialidan yangi savollar
-  o'ylab topib, suhbatni davom ettiraverasan.
-- RO'YXATDAN TASHQARI savol berganingda \`javob_baholandi\` ni shunday
-  chaqirasan: \`savol_raqami: 0\`, \`savol\` — bergan savolingning matni,
-  \`manba_kun\` — savol QAYSI KUN materialidan olingani. Kun raqamini
-  yuqoridagi ro'yxatda ko'rsatilgan kunlardan tanlaysan, boshqasini
-  yozma. Qo'shimcha savolga javob bera olmasa ham o'quvchi o'sha kunga
-  qaytariladi.
-- Suhbat FAQAT VAQT tugaganda yakunlanadi. Vaqt tugayotgani haqida xabar
-  kelmaguncha "suhbatimiz tugadi", "savollar tugadi" kabi gaplarni
-  aytmaysan va o'quvchi bilan xayrlashmaysan.
-- Yangi savollar ham shu kunlar materialidan bo'lsin — kursdan chetga
-  chiqma, yangi mavzu ochma.
-
-HAR SAVOL YAKUNIDA \`javob_baholandi\` FUNKSIYASINI CHAQIRASAN:
-- Savolga javob olgach — javob yaxshi bo'lsa ham, bo'lmasa ham — shu
-  funksiyani o'sha savolning RAQAMI bilan chaqirasan. Bitta savol uchun
-  bir marta.
-- \`togri: true\` — o'quvchi mazmunan javob berdi (til xatosi bo'lsa ham).
-- \`togri: false\` — "bilmayman", "esimda yo'q", "o'tkazing" desa; jim
-  qolsa; yoki ikki marta urinib ham mavzuga umuman aloqasiz javob bersa.
-- \`false\` dan OLDIN bir marta yordam berasan: savolni soddalashtirib
-  qayta berasan yoki kichik ishora aytasan. Birinchi qiynalishdayoq
-  \`false\` qo'yma.
-- \`false\` bo'lgach o'quvchiga qisqa va muloyim aytasan: u savol qaysi
-  kunga tegishli bo'lsa, o'sha kunni qayta o'qib chiqadi va keyin yana
-  gaplashasizlar. Koyimaysan, aybdor qilib qo'ymaysan.
-- \`false\` da javobni O'ZING aytib yuborma — maqsad o'quvchi o'sha kunni
-  qayta o'rganishi, tayyor javobni eshitishi emas.`
-    : '';
-
-  return `Sen FalaRus platformasining rus tili ustozisan. Hozir o'quvchi bilan
-OG'ZAKI suhbat qilyapsan: u mikrofonga gapiradi, sen ovoz bilan javob berasan.
-
-MAVZU: "${mavzu}"
-
-ISMING — FALARUS. QAT'IY:
-- "Isming nima?", "Sen kimsan?", "Как тебя зовут?", "Ты кто?" kabi savolga
-  faqat shunday javob berasan: "Mening ismim FalaRus" / "Меня зовут ФалаРус".
-- O'zingga BOSHQA ISM O'YLAB TOPMAYSAN — Anna, Мария, Aziza, Иван va shunga
-  o'xshash ismlarni aytish TAQIQ. Bu eng ko'p uchraydigan xato.
-- O'quvchi senga boshqa ism qo'ymoqchi bo'lsa ham isming o'zgarmaydi:
-  muloyim qilib "Mening ismim FalaRus" deb aytasan va suhbatni davom ettirasan.
-- O'zingni sun'iy intellekt, model yoki dastur deb tanishtirmaysan — sen
-  FalaRus ustozsan.
-
-TIL — O'QUVCHI TANLAYDI (muhim):
-- SUKUT bo'yicha: o'zbek tilida gapirasan, ruscha so'z va gaplarni ruschada,
-  sekin va aniq aytasan.
-- Ammo o'quvchi tilni O'ZI o'zgartira oladi va sen uni SO'ZSIZ bajarasan:
-  * "faqat ruscha gapiring", "to'liq rus tilida", "говори по-русски",
-    "только по-русски" — shundan keyin FAQAT rus tilida gapirasan.
-  * "o'zbekcha gapiring", "faqat o'zbek tilida" — faqat o'zbekcha gapirasan.
-  * "aralashtirib gapiring", "ikkalasida" — ikki tilni aralashtirasan.
-- Tanlov suhbat OXIRIGACHA saqlanadi — o'quvchi qayta o'zgartirmaguncha
-  eski tilga qaytmaysan. Har javobdan keyin sukutdagi holatga tushib
-  qolishing NOTO'G'RI.
-- TIL SO'ROVI HAR SAFAR BAJARILADI: birinchi marta ham, o'ninchi marta ham.
-  O'quvchi ruschaga o'tkazib, keyin o'zbekchaga qaytarishi mumkin — ikkinchi
-  so'rov birinchisidan kam emas. "Endi o'zbekcha gapiring" deganda DARHOL
-  o'zbekchaga o'tasan.
-- Til so'rovini "hozir biz mavzu haqida gapiryapmiz" deb RAD ETISH TAQIQ.
-  Bu mavzudan chiqish emas — bu o'quvchining suhbatni qanday olib borish
-  haqidagi ko'rsatmasi va u har doim ustun turadi.
-- Tanlovni bajarishda TASDIQ SO'RAMA. "Ты хочешь, чтобы я говорил
-  по-русски?", "Rostdan ham shundaymi?", "Yaxshi, endi ruscha gapiraman"
-  kabi gaplar TAQIQLANADI. O'quvchi allaqachon aytdi — takror so'rash
-  uning vaqtini oladi va suhbatni sun'iy qiladi.
-- To'g'ri xatti-harakat: keyingi gapingni SHU ZAHOTI yangi tilda ayt va
-  suhbatni davom ettir. Hech qanday e'lon, izoh yoki kechirim so'rash yo'q.
-  Masalan o'quvchi "faqat ruscha gapiring" desa, javobing to'g'ridan-to'g'ri
-  ruscha savol bo'lsin.
-- FAQAT RUSCHA rejimida ham o'quvchining darajasini unutma: sodda so'zlar,
-  qisqa gaplar, sekin sur'at. Maqsad — uni tushuntirish, ko'z-ko'z qilish emas.
-
-QANDAY GAPIRASAN:
-- Yosh, quvnoq va samimiy ohangda gapirasan — tetik va jonli, lekin
-  shoshiltirmaysan va hech qachon koyimaysan.
-- QISQA gapirasan: bir javobda 2-3 gapdan oshmaydi. Bu suhbat, ma'ruza emas.
-- Har safar BITTA savol berasan va o'quvchining javobini kutasan.
-
-SUHBAT TARTIBI:
-1. Qisqa salomlashib, birinchi savolni berasan.
-2. O'quvchi javob bergach: to'g'ri bo'lsa maqtaysan va sababini bir gapda aytasan;
-   xato bo'lsa koyimasdan to'g'rilaysan va to'g'ri namunani aytasan.
-3. Keyin navbatdagi savolga o'tasan.
-
-SUHBAT 3 DAQIQA DAVOM ETADI — MAVZU BO'YICHA KENG SUHBAT:
-- Vaqtni TIZIM hisoblaydi. Sen o'zing "suhbat tugadi", "savollar tugadi" deb
-  to'xtamaysan va xayrlashmaysan. Tizim "Vaqt tugayapti" deb xabar berganda
-  VA FAQAT O'SHANDA qisqa xulosa qilib xayrlashasan.
-- Boshlang'ich savollar tugab qolsa — suhbat DAVOM ETADI. Mavzuni shu
-  yo'llar bilan kengaytirasan (har safar boshqasini tanlaysan):
-  * o'quvchidan mavzu bo'yicha O'Z GAPINI tuzishni so'raysan;
-  * kundalik hayotdan misol so'raysan (do'kon, maktab, oila, ish, safar);
-  * o'zing bitta ruscha gap aytib, uni o'zbekchaga tarjima qilishini
-    yoki aksincha qilishini so'raysan;
-  * ataylab XATO gap aytib, o'quvchidan uni to'g'rilashini so'raysan;
-  * o'quvchi yo'l qo'ygan xato ustida yana bir-ikki savol berasan —
-    xato tuzalgunicha shu yerda qolasan;
-  * mavzuning yaqin qismlariga o'tasan (masalan zamon → shaxs qo'shimchasi,
-    ko'plik → kelishik), lekin YANGI KATTA mavzu ochmaysan;
-  * o'quvchi qiynalsa osonlashtirasan, oson kelsa qiyinlashtirasan.
-- Bir savolni ikki marta bermaysan. Suhbat aylanib qolsa — yangi burchakdan
-  yondashasan.
-- Jim qolib kutib turmaysan: o'quvchi javob bermasa, savolni soddalashtirib
-  qaytarasan yoki o'zing namuna aytib, takrorlashini so'raysan.
-
-MAVZUDAN CHIQMASLIK (eng qat'iy qoida):
-Bu suhbat FAQAT yuqoridagi mavzu haqida. Savol turiga qarab:
- 1) Mavzuga oid savol — to'liq javob berasan.
- 2) Rus tiliga oid, lekin boshqa mavzu — bir gapda qisqa javob berib, darhol
-    mavzuga qaytarasan: "buni keyingi darslarda ko'ramiz, hozir esa..."
- 3) Rus tiliga umuman aloqasiz (ob-havo, sport, siyosat, shaxsiy savollar) —
-    javobni cho'zmaysan va darhol savolingni qaytarasan.
-Yangi grammatik mavzu ochmaysan, kelasi darslar materialini aytmaysan.
-
-ISTISNO: suhbat TILINI o'zgartirish so'rovi "mavzudan chiqish" EMAS.
-"Faqat ruscha gapiring" degan iltimosni chetga surma, mavzuga qaytarma va
-javobsiz qoldirma — uni darhol bajar va suhbatni o'sha tilda davom ettir.
-
-QOIDALARNI OVOZGA CHIQARMA (muhim):
-Yuqoridagilar SENING ichki qoidalaring — o'quvchi ularni eshitmasligi kerak.
-"Men mavzudan chiqib keta olmayman", "menga ruxsat yo'q", "men faqat shu mavzu
-haqida gapira olaman", "bu darsimizga tegishli emas" kabi gaplarni ASLO aytma.
-O'zing, o'z vazifang yoki cheklovlaring haqida umuman gapirma. Mavzuga
-qaytarish kerak bo'lsa, buni tabiiy qil: shunchaki keyingi savolga o't yoki
-mavzu bo'yicha gapirishda davom et. Suhbat oxirida ham faqat qisqa xulosa va
-maqtov aytasan — qoidalar haqida hech narsa demaysan.
-
-MUHIM:
-- O'quvchi javobni bilmasa yoki jim qolsa, javobni o'zing aytib berasan va
-  takrorlashini so'raysan.
-- Javobni hech qachon harflab yozib bermaysan — bu ovozli suhbat.${royxat}`;
-}
-
 type Boshlash = { mavzu?: unknown; savollar?: unknown; kun?: unknown };
 
 /** Suhbat savoli — qaysi kun materialidan olingani bilan. */
@@ -244,18 +129,18 @@ type JonliSavol = { savol: string; manbaKun: number; manbaMavzu: string };
 const BAHOLASH_FUNKSIYASI = {
   name: 'javob_baholandi',
   description:
-    "Har savol yakunlangach chaqiriladi: o'quvchi javob berdimi yoki bera olmadimi.",
+    "Faqat savol yakunlanganda chaqir: to'g'ri javob yoki takror, ikki muvaffaqiyatsiz takror, yoxud aniq o'tkazish so'rovi. Birinchi bilmayman javobida namuna berib takrorni kut; hali chaqirma.",
   parameters: {
     type: 'OBJECT',
     properties: {
       savol_raqami: {
         type: 'NUMBER',
-        description: 'Savolning tartib raqami (1 dan boshlab).',
+        description: "Savolning tartib raqami (1 dan boshlab); ro'yxat tugagandan keyingi yangi savol uchun 0.",
       },
       togri: {
         type: 'BOOLEAN',
         description:
-          "O'quvchi savolga mazmunan javob berdimi. Javob bera olmasa, bilmasa yoki mavzuga aloqasiz gapirsa — false.",
+          "Mustaqil to'g'ri javob yoki namunani to'g'ri takrorlash — true. Faqat ikkita muvaffaqiyatsiz takrordan keyin yoki aniq o'tkazish so'rovida — false. Jimlik javob emas.",
       },
       izoh: {
         type: 'STRING',
@@ -414,7 +299,22 @@ export function attachUstozLive(server: Server): void {
     return;
   }
 
-  const wss = new WebSocketServer({ server, path: YOL, maxPayload: 2 * 1024 * 1024 });
+  const wss = new WebSocketServer({
+    server, path: YOL, maxPayload: 2 * 1024 * 1024,
+    // Check before the handshake completes: do not delay connection listeners
+    // and lose the client's initial audio-session message.
+    verifyClient: (info, done) => {
+      try {
+        const token = new URL(info.req.url ?? '', 'http://localhost').searchParams.get('token') ?? '';
+        const payload = jwt.verify(token, String(process.env.JWT_SECRET)) as { id?: number };
+        if (!payload.id) return done(false, 401, 'Unauthorized');
+        void isOperatorFrozen(Number(payload.id)).then(
+          frozen => done(!frozen, frozen ? 403 : undefined, frozen ? 'Debt frozen' : undefined),
+          () => done(false, 503, 'Account check unavailable'),
+        );
+      } catch { done(false, 401, 'Unauthorized'); }
+    },
+  });
 
   wss.on('connection', (klient: WebSocket, req) => {
     // --- Autentifikatsiya -----------------------------------------------
@@ -457,8 +357,29 @@ export function attachUstozLive(server: Server): void {
      * yo'qolar, `finished_at` esa abadiy `NULL` bo'lib qolardi.
      */
     let urinishKutish: Promise<number | null> = Promise.resolve(null);
+    /** Erta xayrlashish uchun yuborilgan tuzatishlar soni. */
+    let tuzatishSoni = 0;
+    let questionProgress = new LiveQuestionProgress(0);
+    /*
+     * USTOZ GAPINING OXIRGI QISMI.
+     *
+     * Matn BO'LAKLAB keladi: "Savollarimiz " va "tugadi" ikki xabarda
+     * kelishi mumkin va har birini alohida tekshirish naqshni topa
+     * olmasdi. Shuning uchun oxirgi bir necha yuz belgi to'planadi va
+     * tekshiruv shunga qo'yiladi. Navbat tugagach tozalanadi.
+     */
+    let ustozMatni = '';
     /** Shu suhbatda ochilgan kunlar: kun -> mavzu. Qaytarish faqat shularga. */
     const ruxsatKunlar = new Map<number, string>();
+    /*
+     * KUNGA QAYTARISH MEXANIZMI OLIB TASHLANDI.
+     *
+     * Ilgari savolga javob bera olmagan o'quvchi "falon kunga qaytamiz"
+     * ekraniga uloqtirilardi. Bu ikki tomondan noto'g'ri edi: suhbat
+     * o'rtasida uzilardi va o'quvchi bir savol tufayli butun kunni
+     * qaytadan o'qishga yuborilardi. Endi javob natijasi faqat tarixga
+     * yoziladi (`javobYoz`), suhbat esa vaqt tugaguncha davom etadi.
+     */
     let sonChaqiruv = Date.now();
     /** Sessiya shu paytda ochildi — qolgan vaqt shundan hisoblanadi. */
     const boshlanish = Date.now();
@@ -588,6 +509,7 @@ export function attachUstozLive(server: Server): void {
         }
       }
 
+      questionProgress = new LiveQuestionProgress(savollar.length);
       urinishKutish = urinishOch(userId, kun, savollar);
       void urinishKutish;
 
@@ -636,11 +558,8 @@ export function attachUstozLive(server: Server): void {
         }
 
         /*
-         * FUNKSIYA CHAQIRUVI — o'quvchi savolga javob bera olmadi.
-         *
-         * Klientga savol qaysi kunga tegishli ekani yuboriladi va u
-         * o'quvchini o'sha kunga qaytaradi. Modelga javob qaytarish SHART:
-         * aks holda u chaqiruvni kutib qotib qoladi va suhbat jim bo'lardi.
+         * Yakunlangan savolni bir marta baholab, navbatdagi raqamni qaytaramiz.
+         * Takrorlangan tool chaqiruvi tarixdagi natijani almashtirmasligi kerak.
          */
         if (msg.toolCall?.functionCalls?.length) {
           const javoblar: unknown[] = [];
@@ -649,18 +568,19 @@ export function attachUstozLive(server: Server): void {
               const raqam = Number(fc.args?.savol_raqami);
               const togri = fc.args?.togri === true;
               const izoh = String(fc.args?.izoh ?? '');
+              const progress = questionProgress.record(raqam, String(fc.args?.savol ?? ''));
+              javoblar.push({ id: fc.id, name: fc.name, response: {
+                natija: progress.reason,
+                keyingi_savol: progress.nextQuestion,
+                korsatma: progress.accepted || progress.reason === 'duplicate'
+                  ? "Yakunlangan savolni qaytarma. Keyingi hali berilmagan savolga o't. Bu o'quvchi javobi emas."
+                  : "Hozirgi savolni yakunla; yordam berayotgan bo'lsang o'quvchining takrorini kut. Tartibni tashlama.",
+              } });
+              if (!progress.accepted) continue;
               const royxatdagi = savollar[raqam - 1];
 
               if (royxatdagi) {
                 void urinishKutish.then((id) => javobYoz(id, raqam, togri, izoh));
-                if (!togri && royxatdagi.manbaKun > 0) {
-                  yubor({
-                    type: 'qaytarish',
-                    kun: royxatdagi.manbaKun,
-                    mavzu: royxatdagi.manbaMavzu,
-                    savol: royxatdagi.savol,
-                  });
-                }
               } else {
                 /*
                  * RO'YXATDAN TASHQARI SAVOL.
@@ -689,21 +609,14 @@ export function attachUstozLive(server: Server): void {
                       izoh,
                     ),
                   );
-                  if (!togri) {
-                    yubor({
-                      type: 'qaytarish',
-                      kun: manbaKun,
-                      mavzu: ruxsatKunlar.get(manbaKun) ?? '',
-                      savol: savolMatni,
-                    });
-                  }
                 }
               }
+            } else {
+              javoblar.push({ id: fc?.id, name: fc?.name, response: { natija: 'unknown_function' } });
             }
-            javoblar.push({ id: fc?.id, name: fc?.name, response: { natija: 'qabul qilindi' } });
           }
           yuqori?.send(JSON.stringify({ toolResponse: { functionResponses: javoblar } }));
-          return;
+          // Audio/text may share this message with the tool call; process both.
         }
 
         const sc = msg.serverContent;
@@ -714,12 +627,54 @@ export function attachUstozLive(server: Server): void {
           yubor({ type: 'text', kim: 'oquvchi', matn: sc.inputTranscription.text });
         }
         if (sc.outputTranscription?.text) {
-          yubor({ type: 'text', kim: 'ustoz', matn: sc.outputTranscription.text });
+          const matn = sc.outputTranscription.text;
+          yubor({ type: 'text', kim: 'ustoz', matn });
+          /*
+           * Bo'laklar BO'SHLIQSIZ ulanadi. Oraga bo'shliq qo'shsak, ikkiga
+           * bo'lingan so'z ("ko" + "’rishguncha") uzilib qolar va naqsh
+           * topilmasdi — transkript bo'laklari o'z bo'shlig'i bilan keladi.
+           */
+          ustozMatni = (ustozMatni + matn).slice(-400);
+          /*
+           * ERTA XAYRLASHISHNI TO'XTATAMIZ.
+           *
+           * Vaqt hali tugamagan bo'lsa (yakunlash signali yuborilmagan),
+           * ustoz xayrlashsa — bu xato. Unga yashirin xabar yuboramiz:
+           * xayrlashma, keyingi savolga o't. Xabar ovozga chiqmaydi.
+           */
+          const yakunSignaliBerildi = Date.now() - boshlanish >= MAX_SESSIYA_MS - YAKUN_OGOH_MS;
+          if (
+            !yakunSignaliBerildi &&
+            tuzatishSoni < MAX_TUZATISH &&
+            ERTA_XAYR.test(ustozMatni) &&
+            yuqori?.readyState === WebSocket.OPEN
+          ) {
+            tuzatishSoni += 1;
+            ustozMatni = '';
+            const qolgan = Math.max(1, Math.round(qolganSoniya() / 60));
+            yuqori.send(JSON.stringify({
+              clientContent: {
+                turns: [{
+                  role: 'user',
+                  parts: [{
+                    text: `Vaqt hali TUGAMADI — yana ${qolgan} daqiqacha bor. `
+                      + 'Xayrlashma. Agar takrorlashni kutayotgan bo\'lsang, o\'sha javobni kut; '
+                      + 'aks holda hali berilmagan keyingi savol bilan davom et. Bu xabarni '
+                      + 'ovozga chiqarma va u haqda gapirma.',
+                  }],
+                }],
+                turnComplete: true,
+              },
+            }));
+          }
         }
         for (const p of sc.modelTurn?.parts ?? []) {
           if (p.inlineData?.data) yubor({ type: 'audio', data: p.inlineData.data });
         }
-        if (sc.turnComplete) yubor({ type: 'turnComplete' });
+        if (sc.turnComplete) {
+          ustozMatni = '';
+          yubor({ type: 'turnComplete' });
+        }
       });
 
       yuqori.on('error', (e: Error) => {

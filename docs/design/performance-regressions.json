@@ -1,0 +1,31 @@
+{
+  "results": [
+    {
+      "test": "strict-mode-opens-game-once",
+      "pass": true,
+      "requests": 1
+    },
+    {
+      "test": "quota-still-blocks-game",
+      "pass": true,
+      "requests": 2
+    },
+    {
+      "test": "static-default",
+      "pass": true
+    },
+    {
+      "test": "optional-animation",
+      "pass": true
+    },
+    {
+      "test": "pause",
+      "pass": true
+    },
+    {
+      "test": "single-page-during-navigation",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

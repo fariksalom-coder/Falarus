@@ -1,0 +1,33 @@
+{
+  "results": [
+    {
+      "width": 941,
+      "days": 182,
+      "overflow": false,
+      "card": true,
+      "locked": 4,
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/fantasy-journey.webp\")"
+    },
+    {
+      "width": 390,
+      "days": 182,
+      "overflow": false,
+      "card": true,
+      "locked": 4,
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/fantasy-journey.webp\")"
+    },
+    {
+      "width": 1440,
+      "days": 182,
+      "overflow": false,
+      "card": true,
+      "locked": 4,
+      "background": "url(\"http://127.0.0.1:5174/backgrounds/fantasy-journey.webp\")"
+    },
+    {
+      "lastDay": "Kun 182",
+      "scroll": 35307
+    }
+  ],
+  "errors": []
+}

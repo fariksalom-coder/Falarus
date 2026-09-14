@@ -1,10 +1,17 @@
+import { isConversationAudioActive, subscribeConversationAudio } from './conversationAudio';
 import { haptic } from './haptic';
 /** Lightweight Web Audio "success" chime — no external file, cached AudioContext. */
 
 let ctx: AudioContext | null = null;
+subscribeConversationAudio(() => {
+  if (isConversationAudioActive() && ctx) {
+    void ctx.close().catch(() => {});
+    ctx = null;
+  }
+});
 
 function getCtx(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined' || isConversationAudioActive()) return null;
   if (ctx && ctx.state !== 'closed') return ctx;
   try {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;

@@ -28,6 +28,8 @@
 #   media: rsync -a ~/backups/media/<sana>/ ~/Falarus/uploads/
 
 set -euo pipefail
+umask 077
+trap 'status=$?; logger -t falarus-backup "Backup failed (exit $status), line $LINENO"; exit "$status"' ERR
 
 APP="${APP_DIR:-/home/ubuntu/Falarus}"
 ROOT="${BACKUP_DIR:-/home/ubuntu/backups}"
@@ -63,6 +65,7 @@ prune_backups() {
         ;;
     esac
   done
+  return 0
 }
 
 if [ "${1:-}" = "--prune-dry" ]; then
@@ -85,13 +88,18 @@ fi
 TS="$(date +%Y%m%d-%H%M%S)"
 DIR="$ROOT/$TS"
 mkdir -p "$DIR" "$MEDIA_ROOT"
+exec 9>"$ROOT/.backup.lock"
+flock -n 9 || { echo 'Boshqa backup ishlayapti' >&2; exit 1; }
 
 echo "[1/3] Baza…"
 sudo -u postgres pg_dump "$DB_NAME" | gzip > "$DIR/falarus_db.sql.gz"
+gzip -t "$DIR/falarus_db.sql.gz"
 
 echo "[2/3] Kod…"
 tar czf "$DIR/app-files.tar.gz" -C "$APP" \
-  --exclude=node_modules --exclude=.git --exclude=dist --exclude=uploads .
+  --exclude=node_modules --exclude=.git --exclude=dist --exclude='dist.*' \
+  --exclude='.dist-build.*' --exclude='.deploy-build.lock' --exclude=tmp \
+  --exclude=uploads --exclude='python/venv' --exclude='__pycache__' .
 cp "$APP/.env" "$DIR/.env.bak"
 
 echo "[3/3] Media (video, avatar, hujjat)…"
@@ -118,3 +126,4 @@ echo
 echo "Tayyor: $DIR"
 du -sh "$DIR" "$MEDIA_ROOT/$TS"
 echo "Media jami (qattiq havolalar bilan): $(du -sh "$MEDIA_ROOT" | cut -f1)"
+logger -t falarus-backup "Backup completed: $TS"

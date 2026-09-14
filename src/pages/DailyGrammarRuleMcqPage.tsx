@@ -12,7 +12,7 @@ import {
   startGrammarTest,
   type GrammarMistake,
 } from '../api/kunlikProgress';
-import { kunlikRejaPath } from '../utils/kunlikNavigation';
+import { xaritaYoli } from '../utils/kunlikNavigation';
 import { useRememberKunlikDay } from '../hooks/useRememberKunlikDay';
 import {
   KunlikSequentialGateSpinner,
@@ -165,7 +165,7 @@ export default function DailyGrammarRuleMcqPage() {
     return (
       <div className="min-h-screen bg-app-bg p-6">
         <p className="text-gray-700">Sahifa topilmadi.</p>
-        <button type="button" className="mt-4 text-[#0B2A6B] underline" onClick={() => navigate(kunlikRejaPath(dayNumber))}>
+        <button type="button" className="mt-4 text-[#0B2A6B] underline" onClick={() => navigate(xaritaYoli())}>
           {t('kunlik.backToPlan')}
         </button>
       </div>

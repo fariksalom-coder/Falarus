@@ -1,0 +1,68 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "route": "/",
+      "overflow": false,
+      "heading": "O'quv rejangiz",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/profile",
+      "overflow": false,
+      "heading": "Profil",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/kurslar",
+      "overflow": false,
+      "heading": "Kurslar",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/statistika",
+      "overflow": false,
+      "heading": "Statistika",
+      "crash": false
+    },
+    {
+      "width": 390,
+      "route": "/teacher-cabinet",
+      "overflow": false,
+      "heading": "Xayrli kech, Namuna",
+      "crash": false
+    }
+  ],
+  "interactions": [
+    {
+      "test": "sequential-lessons",
+      "width": 390,
+      "pass": true
+    },
+    {
+      "test": "future-days-locked",
+      "width": 390,
+      "pass": true
+    },
+    {
+      "test": "unpaid-day-two-shows-paywall",
+      "pass": true
+    },
+    {
+      "test": "premium-continues-correct-day",
+      "pass": true
+    },
+    {
+      "test": "golden-future-days-available",
+      "pass": true
+    },
+    {
+      "test": "golden-retains-lesson-sequence",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

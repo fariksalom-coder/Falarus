@@ -13,7 +13,7 @@
  * v22: push kelganda ochiq oynalarga xabar beriladi — qo'ng'iroq ekrani
  * darhol ko'tariladi va JIRINGLAYDI (SW o'zi ovoz chiqara olmaydi).
  */
-const CACHE_NAME = 'falarus-pwa-v22';
+const CACHE_NAME = 'falarus-pwa-v47';
 
 const STATIC_ASSETS = [
   '/',
@@ -33,7 +33,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+        keys.filter((k) => k.startsWith('falarus-pwa-') && k !== CACHE_NAME).map((k) => caches.delete(k))
       )
     ).then(() => self.clients.claim())
   );
@@ -71,8 +71,8 @@ self.addEventListener('fetch', (event) => {
         .catch(() =>
           caches.match(request).then((cached) => {
             if (cached) return cached;
-            // Last resort: try app shell
-            return caches.match('/index.html');
+            // HTML JS/CSS o'rnida qaytmasin: bu MIME/sintaksis xatosi beradi.
+            return Response.error();
           })
         )
     );

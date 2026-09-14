@@ -1,0 +1,208 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "before": {
+        "page": 0,
+        "header": 11.6875,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      },
+      "during": {
+        "page": 1,
+        "header": 11.6875,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -588.671)",
+        "label": "11–20 kun"
+      },
+      "after": {
+        "page": 1,
+        "header": 11.6875,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -844)",
+        "label": "11–20 kun"
+      },
+      "reverse": {
+        "page": 0,
+        "header": 11.6875,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      }
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "before": {
+        "page": 0,
+        "header": 9.796875,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      },
+      "during": {
+        "page": 1,
+        "header": 9.796875,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -646.645)",
+        "label": "11–20 kun"
+      },
+      "after": {
+        "page": 1,
+        "header": 9.796875,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -1024)",
+        "label": "11–20 kun"
+      },
+      "reverse": {
+        "page": 0,
+        "header": 9.796875,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "before": {
+        "page": 0,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      },
+      "during": {
+        "page": 1,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -271.126)",
+        "label": "11–20 kun"
+      },
+      "after": {
+        "page": 1,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -768)",
+        "label": "11–20 kun"
+      },
+      "reverse": {
+        "page": 0,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      }
+    },
+    {
+      "width": 1366,
+      "height": 768,
+      "before": {
+        "page": 0,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      },
+      "during": {
+        "page": 1,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -271.142)",
+        "label": "11–20 kun"
+      },
+      "after": {
+        "page": 1,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -768)",
+        "label": "11–20 kun"
+      },
+      "reverse": {
+        "page": 0,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "before": {
+        "page": 0,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      },
+      "during": {
+        "page": 1,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -413.426)",
+        "label": "11–20 kun"
+      },
+      "after": {
+        "page": 1,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, -900)",
+        "label": "11–20 kun"
+      },
+      "reverse": {
+        "page": 0,
+        "header": 12,
+        "window": 0,
+        "scroll": 0,
+        "overflow": false,
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "label": "1–10 kun"
+      }
+    }
+  ],
+  "touch": 1,
+  "next": "21–30 kun",
+  "last": "181–182 kun",
+  "errors": []
+}

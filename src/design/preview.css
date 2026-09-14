@@ -1,0 +1,1116 @@
+.ds-app {
+  min-height: 100dvh;
+  background: var(--app-bg-muted);
+  font-weight: 500;
+  line-height: 1.5;
+}
+.ds-app * {
+  box-sizing: border-box;
+}
+.ds-app button,
+.ds-app a,
+.ds-app input,
+.ds-app select {
+  -webkit-tap-highlight-color: transparent;
+}
+.ds-app button:focus-visible,
+.ds-app a:focus-visible,
+.ds-app select:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+.ds-app h2 {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.ds-app h3 {
+  font-size: 16px;
+}
+.ds-preview-bar {
+  height: 48px;
+  padding: 0 28px;
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+  position: relative;
+  z-index: 20;
+}
+.ds-preview-bar > span,
+.ds-preview-bar label,
+.ds-preview-bar button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ds-preview-bar label {
+  margin-left: auto;
+}
+.ds-preview-bar select {
+  min-height: 44px;
+  background: transparent;
+  color: var(--app-text);
+  font-weight: 700;
+  border: 0;
+  padding: 0 8px;
+}
+.ds-preview-bar button {
+  min-height: 44px;
+  padding: 0 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ds-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--app-success);
+}
+.ds-sidebar {
+  position: fixed;
+  top: 48px;
+  bottom: 0;
+  width: 256px;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 20px 16px;
+  border-right: 1px solid var(--app-border);
+  background: var(--app-surface);
+  z-index: 10;
+  overflow-y: auto;
+}
+.ds-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--app-text);
+  font-size: 27px;
+  letter-spacing: -1px;
+  font-weight: 800;
+  padding: 0 10px;
+}
+.ds-brand img {
+  width: 34px;
+  height: 34px;
+}
+.ds-brand > span > span {
+  color: var(--app-accent);
+}
+.ds-brand small {
+  display: block;
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--app-text-muted);
+  margin-top: 0;
+}
+.dark .ds-brand img {
+  filter: brightness(0) invert(1);
+}
+.ds-nav-caption {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--app-text-muted);
+  font-weight: 700;
+  margin: 44px 12px 14px;
+}
+.ds-sidebar nav {
+  display: grid;
+  gap: 5px;
+}
+.ds-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  min-height: 48px;
+  border-radius: 12px;
+  color: var(--app-text-muted);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+.ds-nav-link:hover {
+  background: var(--app-bg-muted);
+}
+.ds-nav-link--active,
+.ds-nav-link--active:hover {
+  background: var(--ui-action);
+  color: white;
+  box-shadow: 0 6px 14px #0b2a6b1a;
+}
+.ds-nav-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #e7c578;
+  margin-left: auto;
+}
+.ds-sidebar-bottom {
+  margin-top: auto;
+  padding-top: 40px;
+}
+.ds-premium-note {
+  padding: 18px;
+  border: 1px solid var(--pmn-fill-cream-border);
+  border-radius: 18px;
+  background: var(--pmn-fill-cream);
+}
+.ds-premium-note > svg {
+  color: var(--app-accent);
+  margin-bottom: 10px;
+}
+.ds-premium-note strong {
+  display: block;
+  font-size: 13px;
+}
+.ds-premium-note p {
+  font-size: 11px;
+  color: var(--app-text-muted);
+  margin: 6px 0 14px;
+}
+.ds-premium-note .ui-button {
+  font-size: 11px;
+  padding: 10px;
+  width: 100%;
+}
+.ds-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  margin-top: 20px;
+  padding: 8px 2px;
+  cursor: pointer;
+}
+.ds-account > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.ds-account strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+.ds-account small {
+  display: block;
+  font-size: 10px;
+  color: var(--app-text-muted);
+}
+.ds-body {
+  margin-left: 256px;
+}
+.ds-topbar {
+  height: 76px;
+  border-bottom: 1px solid var(--app-border);
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--app-surface);
+}
+.ds-topbar > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+}
+.ds-topbar > div > span {
+  color: var(--app-text-muted);
+}
+.ds-theme {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.ds-theme:hover {
+  background: var(--app-bg-muted);
+}
+.ds-content {
+  max-width: 1320px;
+  margin: auto;
+  padding: 36px 40px 24px;
+  outline: none;
+}
+.ds-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 24px;
+}
+.ds-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.ds-hero {
+  min-height: 274px;
+  border-radius: 24px;
+  padding: 32px;
+  color: #fff;
+  background: linear-gradient(115deg, #0b234f, #152f61);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.ds-overline {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #b8c8e6;
+  font-weight: 700;
+}
+.ds-hero h2 {
+  font-size: clamp(28px, 2.8vw, 38px);
+  line-height: 1.18;
+  letter-spacing: -0.035em;
+  margin: 14px 0 12px;
+}
+.ds-hero p {
+  font-size: 12px;
+  color: #c5d2e9;
+  margin-bottom: 22px;
+}
+.ds-hero .ds-hero-cta {
+  background: #f2d89c;
+  color: #16274a;
+  border-radius: 12px;
+  font-size: 12px;
+}
+.ds-hero .ds-hero-cta:hover {
+  background: #ffe6af;
+}
+.ds-hero-foot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  font-size: 10px;
+  color: #c5d2e9;
+}
+.ds-hero-copy {
+  position: relative;
+  z-index: 1;
+}
+.ds-orbit {
+  width: 166px;
+  height: 166px;
+  border: 1px solid #ffffff19;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  position: relative;
+  box-shadow:
+    0 0 0 22px #ffffff03,
+    0 0 0 23px #ffffff0b;
+  margin: 0 15px;
+  transform: rotate(-8deg);
+}
+.ds-orbit-inner {
+  display: grid;
+  place-items: center;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f5dca6, #cba45c);
+  color: #142951;
+  box-shadow: 0 10px 30px #0003;
+}
+.ds-orbit-inner > span {
+  font-family: Georgia, serif;
+  font-size: 60px;
+  line-height: 1;
+  margin-top: 14px;
+}
+.ds-orbit-inner > small {
+  font-size: 6px;
+  letter-spacing: 1px;
+  margin-top: -12px;
+  font-weight: 800;
+}
+.ds-orbit-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #fff;
+  color: #137147;
+  border: 5px solid #18305e;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.ds-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.ds-section-title h2 {
+  margin: 0;
+}
+.ds-lesson-list {
+  display: grid;
+}
+.ds-lesson-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 16px 0;
+  border-top: 1px solid var(--app-border);
+  cursor: pointer;
+}
+.ds-lesson-row:hover {
+  background: var(--app-bg-muted);
+}
+.ds-grow {
+  flex: 1;
+  min-width: 0;
+}
+.ds-grow strong {
+  display: block;
+  font-size: 14px;
+}
+.ds-grow small {
+  display: block;
+  font-size: 11px;
+  color: var(--app-text-muted);
+  margin-top: 4px;
+}
+.ds-row-meta {
+  font-size: 10px;
+  color: var(--app-text-muted);
+  white-space: nowrap;
+}
+.ds-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--app-icon-bg);
+  color: var(--app-brand);
+  border-radius: 14px;
+}
+.ds-icon--gold {
+  background: var(--app-accent-bg);
+  color: var(--app-accent-strong);
+}
+.ds-review {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ds-review .ui-description {
+  font-size: 11px;
+}
+.ds-review .ui-button {
+  font-size: 11px;
+  padding: 10px 14px;
+}
+.ds-big-stat {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.5;
+  margin: 4px 0 16px;
+}
+.ds-big-stat > span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+  letter-spacing: 0;
+}
+.ds-divider {
+  height: 1px;
+  background: var(--app-border);
+  margin: 24px 0;
+}
+.ds-stat-pair {
+  display: flex;
+  gap: 24px;
+}
+.ds-stat-pair strong {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+}
+.ds-stat-pair small {
+  font-size: 10px;
+  color: var(--app-text-muted);
+}
+.ds-full {
+  width: 100%;
+}
+.ds-stat-pair + .ui-button {
+  margin-top: 20px;
+  min-height: 44px;
+  font-size: 12px;
+}
+.ds-week {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+.ds-week > div {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.ds-week small {
+  font-size: 10px;
+  color: var(--app-text-muted);
+}
+.ds-day {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--app-bg-muted);
+  color: var(--app-text-muted);
+  font-size: 10px;
+}
+.ds-day--done {
+  background: var(--app-success-bg);
+  color: var(--ui-success-ink, var(--app-success-text));
+}
+.ds-day--today {
+  background: var(--ui-action);
+  color: white;
+  box-shadow: 0 0 0 3px var(--app-icon-bg);
+}
+.ds-mentor {
+  padding: 24px;
+  border: 1px solid var(--pmn-fill-cream-border);
+  border-radius: 24px;
+  background: var(--pmn-fill-cream);
+}
+.ds-eyebrow {
+  font-size: 9px;
+  color: var(--app-accent-strong);
+  letter-spacing: 0.12em;
+  font-weight: 800;
+}
+.ds-mentor h3 {
+  margin-top: 12px;
+}
+.ds-mentor p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--app-text-muted);
+  margin: 10px 0 16px;
+}
+.ds-mentor .ui-button {
+  min-height: 44px;
+  font-size: 12px;
+}
+.ds-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 32px 0 0;
+  color: var(--app-text-muted);
+  font-size: 10px;
+}
+.ds-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.ds-mt {
+  margin-top: 24px;
+}
+.ds-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ds-card-title {
+  margin-top: 24px;
+}
+.ds-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.ds-metrics .ui-card {
+  padding: 20px;
+}
+.ds-metrics .ds-big-stat {
+  font-size: 26px;
+  margin-bottom: 0;
+}
+.ds-metrics .ui-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+.ds-chart {
+  display: flex;
+  height: 240px;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 14px;
+  padding: 24px 0 0;
+}
+.ds-chart > div {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.ds-chart span {
+  width: 100%;
+  max-width: 44px;
+  background: var(--ui-action);
+  border-radius: 8px 8px 3px 3px;
+}
+.ds-chart small {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+.ds-avatar {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: var(--app-icon-bg);
+  color: var(--app-brand);
+  font-size: 20px;
+  font-weight: 800;
+}
+.ds-avatar--1 {
+  background: var(--app-success-bg);
+  color: var(--ui-success-ink, var(--app-success-text));
+}
+.ds-avatar--2 {
+  background: var(--app-accent-bg);
+  color: var(--app-accent-strong);
+}
+.ds-avatar--small {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.ds-profile-line {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.ds-profile-line h2 {
+  margin-bottom: 6px;
+}
+.ds-segments {
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface);
+}
+.ds-segments button {
+  min-height: 44px;
+  padding: 10px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.ds-segments button[aria-pressed="true"] {
+  background: var(--ui-action);
+  color: white;
+}
+.ds-featured {
+  border: 2px solid var(--app-accent);
+}
+.ds-benefits {
+  list-style: none;
+  display: grid;
+  gap: 14px;
+  padding: 24px 0;
+  font-size: 14px;
+}
+.ds-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ds-benefits svg {
+  color: var(--ui-success-ink, var(--app-success-text));
+}
+.ds-focus {
+  max-width: 620px;
+  margin: auto;
+}
+.ds-question {
+  text-align: center;
+  padding: 40px;
+}
+.ds-question h1 {
+  font-size: 28px;
+  margin: 28px 0 8px;
+  line-height: 1.35;
+}
+.ds-options {
+  display: grid;
+  gap: 12px;
+  margin: 32px 0;
+}
+.ds-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 16px 20px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 16px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 18px;
+  cursor: pointer;
+}
+.ds-option:hover:not(:disabled) {
+  background: var(--app-bg-muted);
+}
+.ds-option--selected {
+  border: 2px solid var(--ui-focus);
+  background: var(--app-icon-bg);
+}
+.ds-option:disabled {
+  cursor: default;
+}
+.ds-feedback {
+  margin: 20px 0;
+  font-size: 14px;
+}
+.ds-feedback p {
+  margin-top: 12px;
+}
+.ds-success-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--app-success-bg);
+  color: var(--ui-success-ink, var(--app-success-text));
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  margin: auto;
+}
+.ds-question > .ui-button {
+  margin-top: 24px;
+}
+.ds-chat {
+  max-width: 800px;
+}
+.ds-messages {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+.ds-bubble {
+  background: var(--app-bg-muted);
+  border: 1px solid var(--app-border);
+  border-radius: 4px 18px 18px;
+  padding: 16px 20px;
+  max-width: 85%;
+  align-self: flex-start;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.ds-bubble strong,
+.ds-bubble small {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+.ds-bubble p {
+  margin: 8px 0;
+}
+.ds-bubble--own {
+  background: var(--app-icon-bg);
+  align-self: flex-end;
+  border-radius: 18px 4px 18px 18px;
+}
+.ds-chat-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.ds-chat-compose .ui-field {
+  flex: 1;
+  min-width: 0;
+}
+.ds-auth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  min-height: 65vh;
+}
+.ds-auth > div > h1 {
+  font-size: 42px;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+.ds-auth .ui-eyebrow {
+  display: block;
+  margin-bottom: 24px;
+}
+.ds-table-wrap {
+  overflow-x: auto;
+}
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+.ds-table th {
+  color: var(--app-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 12px;
+}
+.ds-table td {
+  padding: 16px 12px;
+  border-top: 1px solid var(--app-border);
+}
+.ds-table small {
+  display: block;
+  color: var(--app-text-muted);
+  font-size: 11px;
+  margin-top: 5px;
+}
+.ds-table .ui-button {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ds-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.ds-swatches > div {
+  display: grid;
+  gap: 10px;
+  flex: 1;
+  min-width: 100px;
+}
+.ds-swatches span {
+  height: 70px;
+  border-radius: 16px;
+  border: 1px solid var(--app-border);
+}
+.ds-swatches small {
+  font-size: 12px;
+}
+.ds-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ds-mobile-nav {
+  display: none;
+}
+.ds-toast {
+  position: fixed;
+  bottom: 24px;
+  left: calc(50% + 128px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--app-text);
+  color: var(--app-bg);
+  max-width: 580px;
+  width: calc(100% - 40px);
+  padding: 12px 16px;
+  border-radius: 16px;
+  box-shadow: var(--app-shadow-elevated);
+  font-size: 13px;
+  z-index: 100;
+}
+.ds-toast > svg {
+  flex-shrink: 0;
+}
+.ds-toast > span {
+  flex: 1;
+}
+.ds-toast button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.ds-skip {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  background: var(--app-surface);
+  padding: 12px;
+  z-index: 200;
+}
+.ds-skip:focus {
+  top: 12px;
+}
+.ds-screen-select {
+  display: none;
+}
+@media (min-width: 1600px) {
+  .ds-content {
+    padding-top: 48px;
+  }
+  .ds-hero {
+    min-height: 310px;
+  }
+}
+@media (max-width: 1190px) {
+  .ds-sidebar {
+    width: 220px;
+    padding: 28px 14px 16px;
+  }
+  .ds-body {
+    margin-left: 220px;
+  }
+  .ds-content {
+    padding: 28px 24px;
+  }
+  .ds-topbar {
+    padding: 0 24px;
+  }
+  .ds-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 20px;
+  }
+  .ds-orbit {
+    display: none;
+  }
+  .ds-toast {
+    left: calc(50% + 110px);
+  }
+  .ds-review {
+    flex-wrap: wrap;
+  }
+  .ds-review .ui-button {
+    margin-left: 60px;
+  }
+  .ds-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 960px) {
+  .ds-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .ds-dashboard-grid > aside {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ds-mentor {
+    grid-column: 1/-1;
+  }
+  .ds-orbit {
+    display: grid;
+  }
+  .ds-card-grid {
+    gap: 16px;
+  }
+  .ds-auth {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .ds-auth > div > h1 {
+    font-size: 32px;
+  }
+}
+@media (max-width: 760px) {
+  .ds-preview-bar {
+    padding: 0 16px;
+    gap: 4px;
+    font-size: 10px;
+  }
+  .ds-preview-bar > span {
+    font-size: 0;
+    gap: 0;
+  }
+  .ds-preview-bar label {
+    margin-left: 0;
+  }
+  .ds-sidebar {
+    display: none;
+  }
+  .ds-body {
+    margin-left: 0;
+  }
+  .ds-topbar {
+    height: 64px;
+    padding: 0 20px;
+  }
+  .ds-topbar > div > span,
+  .ds-topbar > div > svg {
+    display: none;
+  }
+  .ds-topbar > div {
+    font-size: 13px;
+  }
+  .ds-content {
+    padding: 24px 20px 104px;
+  }
+  .ds-screen-select {
+    display: block;
+    margin-bottom: 20px;
+  }
+  .ds-screen-select label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--app-text-muted);
+  }
+  .ds-screen-select select {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--app-border);
+    border-radius: 12px;
+    background: var(--app-surface);
+    color: var(--app-text);
+    font: inherit;
+    font-weight: 700;
+  }
+  .ds-mobile-nav {
+    position: fixed;
+    display: flex;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--app-border);
+    background: var(--app-surface);
+  }
+  .ds-mobile-nav button {
+    display: flex;
+    flex: 1;
+    min-height: 56px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    color: var(--app-text-muted);
+    font-size: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .ds-mobile-nav button[aria-current="page"] {
+    color: var(--app-brand);
+    background: var(--app-icon-bg);
+    font-weight: 800;
+  }
+  .ds-toast {
+    left: 50%;
+    bottom: 92px;
+  }
+  .ds-footer {
+    flex-wrap: wrap;
+  }
+  .ds-hero {
+    padding: 26px;
+  }
+  .ds-hero h2 {
+    font-size: 32px;
+  }
+  .ds-orbit {
+    width: 130px;
+    height: 130px;
+    margin: 0;
+  }
+  .ds-orbit-inner {
+    width: 108px;
+    height: 108px;
+  }
+  .ds-orbit-inner > span {
+    font-size: 46px;
+  }
+}
+@media (max-width: 500px) {
+  .ds-card-grid {
+    grid-template-columns: 1fr;
+  }
+  .ds-dashboard-grid > aside {
+    grid-template-columns: 1fr;
+  }
+  .ds-hero {
+    min-height: 290px;
+  }
+  .ds-orbit {
+    position: absolute;
+    right: -40px;
+    top: 52px;
+    opacity: 0.35;
+    transform: rotate(-12deg);
+  }
+  .ds-hero-copy {
+    max-width: 100%;
+  }
+  .ds-hero h2 {
+    font-size: 31px;
+  }
+  .ds-hero p {
+    max-width: 210px;
+  }
+  .ds-row-meta {
+    display: none;
+  }
+  .ds-lesson-row {
+    gap: 12px;
+  }
+  .ds-section-title h2 {
+    font-size: 16px;
+  }
+  .ds-section-title .ui-badge {
+    font-size: 10px;
+  }
+  .ds-question {
+    padding: 24px 20px;
+  }
+  .ds-question h1 {
+    font-size: 25px;
+  }
+  .ds-metrics {
+    gap: 12px;
+  }
+  .ds-metrics .ui-card {
+    padding: 16px;
+  }
+  .ds-metrics .ds-big-stat {
+    font-size: 24px;
+  }
+  .ds-table {
+    min-width: 530px;
+  }
+  .ds-bubble {
+    max-width: 95%;
+  }
+}

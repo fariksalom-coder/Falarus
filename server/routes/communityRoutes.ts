@@ -407,7 +407,15 @@ async function fetchMessagesWithSenders(
   if (!messages.length) return [];
 
   const senderIds = [...new Set(messages.map((m) => Number(m.sender_user_id)).filter(Number.isFinite))];
-  const { data: users } = await supabase.from('users').select('id, first_name, last_name').in('id', senderIds);
+  /*
+   * AVATAR: chatda odamning o'z surati ko'rinadi (ilgari faqat bosh harflar
+   * turardi). Jins ham olinadi — surati yo'qlarda o'rniga chiziladigan
+   * belgi shunga qarab tanlanadi.
+   */
+  const { data: users } = await supabase
+    .from('users')
+    .select('id, first_name, last_name, avatar_url, gender')
+    .in('id', senderIds);
   const userById = new Map<number, Record<string, unknown>>();
   for (const u of users ?? []) userById.set(Number((u as any).id), u as Record<string, unknown>);
 
@@ -453,6 +461,8 @@ async function fetchMessagesWithSenders(
         group_code: String(m.group_code),
         sender_user_id: senderId,
         sender_name: fullNameFromUser(user),
+        sender_avatar_url: user.avatar_url ? String(user.avatar_url) : null,
+        sender_gender: user.gender ? String(user.gender) : null,
         content: String(m.content),
         created_at: String(m.created_at),
         edited_at: m.edited_at ? String(m.edited_at) : null,
@@ -693,14 +703,17 @@ export function createCommunityRoutes(
       await touchPresence(supabase, userId);
       const { data: user } = await supabase
         .from('users')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar_url, gender')
         .eq('id', userId)
         .maybeSingle();
+      const u = (user ?? {}) as Record<string, unknown>;
       res.status(201).json({
         id: Number((data as any).id),
         group_code: GROUP_CODE,
         sender_user_id: userId,
-        sender_name: fullNameFromUser((user ?? {}) as Record<string, unknown>),
+        sender_name: fullNameFromUser(u),
+        sender_avatar_url: u.avatar_url ? String(u.avatar_url) : null,
+        sender_gender: u.gender ? String(u.gender) : null,
         content: String((data as any).content),
         created_at: String((data as any).created_at),
       });
@@ -814,15 +827,18 @@ export function createCommunityRoutes(
 
         const { data: user } = await supabase
           .from('users')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, avatar_url, gender')
           .eq('id', userId)
           .maybeSingle();
+        const u = (user ?? {}) as Record<string, unknown>;
 
         return res.status(201).json({
           id: Number((data as any).id),
           group_code: GROUP_CODE,
           sender_user_id: userId,
-          sender_name: fullNameFromUser((user ?? {}) as Record<string, unknown>),
+          sender_name: fullNameFromUser(u),
+          sender_avatar_url: u.avatar_url ? String(u.avatar_url) : null,
+          sender_gender: u.gender ? String(u.gender) : null,
           content,
           created_at: String((data as any).created_at),
           edited_at: null,
@@ -1272,7 +1288,7 @@ export function createCommunityRoutes(
       const ids = [...new Set(qatorlar.map((r) => Number(r.author_user_id)).filter(Number.isFinite))];
       const { data: users } = await supabase
         .from('users')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar_url')
         .in('id', ids);
       const byId = new Map<number, Record<string, unknown>>();
       for (const u of users ?? []) byId.set(Number((u as any).id), u as Record<string, unknown>);
@@ -1314,6 +1330,9 @@ export function createCommunityRoutes(
           id: Number(r.id),
           author_user_id: Number(r.author_user_id),
           author_name: fullNameFromUser(byId.get(Number(r.author_user_id)) ?? {}),
+          author_avatar_url: byId.get(Number(r.author_user_id))?.avatar_url
+            ? String(byId.get(Number(r.author_user_id))!.avatar_url)
+            : null,
           video_url: String(r.video_url),
           poster_url: r.poster_url ? String(r.poster_url) : null,
           caption: String(r.caption ?? ''),
@@ -1394,7 +1413,7 @@ export function createCommunityRoutes(
 
         const { data: user } = await supabase
           .from('users')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, avatar_url')
           .eq('id', userId)
           .maybeSingle();
 
@@ -1402,6 +1421,9 @@ export function createCommunityRoutes(
           id: Number((data as any).id),
           author_user_id: userId,
           author_name: fullNameFromUser((user ?? {}) as Record<string, unknown>),
+          author_avatar_url: (user as Record<string, unknown> | null)?.avatar_url
+            ? String((user as Record<string, unknown>).avatar_url)
+            : null,
           video_url: videoUrl,
           poster_url: null,
           caption,
@@ -1498,7 +1520,7 @@ export function createCommunityRoutes(
       const ids = [...new Set(qatorlar.map((r) => Number(r.sender_user_id)).filter(Number.isFinite))];
       const { data: users } = await supabase
         .from('users')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar_url')
         .in('id', ids);
       const byId = new Map<number, Record<string, unknown>>();
       for (const u of users ?? []) byId.set(Number((u as any).id), u as Record<string, unknown>);
@@ -1508,6 +1530,9 @@ export function createCommunityRoutes(
           id: Number(r.id),
           author_user_id: Number(r.sender_user_id),
           author_name: fullNameFromUser(byId.get(Number(r.sender_user_id)) ?? {}),
+          author_avatar_url: byId.get(Number(r.sender_user_id))?.avatar_url
+            ? String(byId.get(Number(r.sender_user_id))!.avatar_url)
+            : null,
           content: String(r.content),
           created_at: String(r.created_at),
         })),
@@ -1561,7 +1586,7 @@ export function createCommunityRoutes(
       await touchPresence(supabase, userId);
       const { data: user } = await supabase
         .from('users')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar_url')
         .eq('id', userId)
         .maybeSingle();
 
@@ -1569,6 +1594,9 @@ export function createCommunityRoutes(
         id: Number((data as any).id),
         author_user_id: userId,
         author_name: fullNameFromUser((user ?? {}) as Record<string, unknown>),
+        author_avatar_url: (user as Record<string, unknown> | null)?.avatar_url
+          ? String((user as Record<string, unknown>).avatar_url)
+          : null,
         content,
         created_at: String((data as any).created_at),
       });
