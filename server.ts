@@ -487,6 +487,8 @@ async function startServer() {
   try {
     const { createAdminRoutes } = await import('./server/routes/adminRoutes');
     app.use('/api/admin', createAdminRoutes(supabase));
+    const { createSupportCrmRoutes } = await import('./server/routes/supportCrmRoutes');
+    app.use('/api/support-crm', createSupportCrmRoutes(supabase));
     const { operatorBotRoutes } = await import('./server/operator/routes.js');
     app.use('/api/operator-bot', operatorBotRoutes(supabase));
     app.use('/api/operator-reset', operatorResetRoutes());
@@ -536,6 +538,7 @@ async function startServer() {
     res.status(204).end();
   });
     console.log('Admin API: /api/admin (login, dashboard, users, payments, etc.)');
+    console.log('Support CRM API: /api/support-crm (retention queue)');
   } catch (err) {
     logError('express.admin.routes_failed_to_load', err);
   }

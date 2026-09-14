@@ -20,6 +20,8 @@ interface ImportMetaEnv {
   readonly VITE_LEGAL_SUPPORT_PHONE?: string;
   /** Hidden admin frontend base path (e.g. /secure-admin-abc123). */
   readonly VITE_ADMIN_PATH?: string;
+  /** Support CRM (retention) frontend base path (default /support-crm). */
+  readonly VITE_SUPPORT_CRM_PATH?: string;
 }
 
 interface ImportMeta {

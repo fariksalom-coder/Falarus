@@ -17,6 +17,8 @@ import KunlikRejaRedirect from './components/KunlikRejaRedirect';
 import GameGate from './components/games/GameGate';
 import { renderLazyPage } from './routeModules';
 import { ADMIN_BASE_PATH, adminPath } from './constants/adminPath';
+import { SUPPORT_CRM_BASE_PATH, supportCrmPath } from './constants/supportCrmPath';
+import { SupportCrmAuthProvider } from './context/SupportCrmAuthContext';
 
 
 function AppRoutes() {
@@ -76,6 +78,25 @@ function AppRoutes() {
             <Route path="onboarding" element={renderLazyPage('./pages/admin/AdminOnboardingPage.tsx')} />
             <Route path="content" element={renderLazyPage('./pages/admin/AdminContentPage.tsx')} />
             <Route path="sql" element={renderLazyPage('./pages/admin/AdminSqlPage.tsx')} />
+          </Route>
+        </Route>
+      </Route>
+
+      <Route
+        path={SUPPORT_CRM_BASE_PATH}
+        element={
+          <SupportCrmAuthProvider>
+            <Outlet />
+          </SupportCrmAuthProvider>
+        }
+      >
+        <Route index element={<Navigate to={supportCrmPath('/dashboard')} replace />} />
+        <Route path="login" element={renderLazyPage('./pages/supportCrm/SupportCrmLoginPage.tsx')} />
+        <Route element={renderLazyPage('./pages/supportCrm/SupportCrmGuard.tsx')}>
+          <Route element={renderLazyPage('./pages/supportCrm/SupportCrmLayout.tsx')}>
+            <Route path="dashboard" element={renderLazyPage('./pages/supportCrm/SupportCrmDashboardPage.tsx')} />
+            <Route path="queue" element={renderLazyPage('./pages/supportCrm/SupportCrmQueuePage.tsx')} />
+            <Route path="users/:id" element={renderLazyPage('./pages/supportCrm/SupportCrmUserPage.tsx')} />
           </Route>
         </Route>
       </Route>

@@ -3,6 +3,7 @@
  * Update when adding major path prefixes.
  */
 import { ADMIN_BASE_PATH } from '../constants/adminPath';
+import { SUPPORT_CRM_BASE_PATH } from '../constants/supportCrmPath';
 
 export function isKnownAppRoute(pathname: string): boolean {
   const p = pathname.split('?')[0].replace(/\/+$/, '') || '/';
@@ -56,6 +57,7 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/auth',
   ]);
   exact.add(ADMIN_BASE_PATH);
+  exact.add(SUPPORT_CRM_BASE_PATH);
 
   if (exact.has(p)) return true;
 
@@ -63,6 +65,7 @@ export function isKnownAppRoute(pathname: string): boolean {
     /^\/help\/[^/]+$/,
     /^\/teachers\/[^/]+$/,
     new RegExp(`^${ADMIN_BASE_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:/|$)`),
+    new RegExp(`^${SUPPORT_CRM_BASE_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:/|$)`),
     /^\/vocabulary\/matnlar\/[^/]+$/,
     /^\/vocabulary\/[^/]+\/?$/,
     /^\/vocabulary\/[^/]+\/[^/]+\/?$/,

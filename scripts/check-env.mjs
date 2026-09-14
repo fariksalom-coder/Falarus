@@ -80,6 +80,28 @@ function checkAdminSecret(env) {
   return warnings;
 }
 
+function checkSupportCrmSecret(env) {
+  const crm = (env.SUPPORT_CRM_JWT_SECRET || '').trim();
+  const user = (env.JWT_SECRET || '').trim();
+  const warnings = [];
+
+  if (!crm) {
+    warnings.push(
+      'SUPPORT_CRM_JWT_SECRET yo\'q — Support CRM tokeni JWT_SECRET bilan imzolanadi. ' +
+        'Teshik emas (role + support_crm_agents tekshiruvi bor), lekin alohida sekret tavsiya etiladi.'
+    );
+  } else if (crm === user) {
+    warnings.push(
+      'SUPPORT_CRM_JWT_SECRET va JWT_SECRET bir xil — alohida sekretdan foyda yo\'q.'
+    );
+  } else if (crm.length < 32) {
+    warnings.push(
+      'SUPPORT_CRM_JWT_SECRET 32 belgidan qisqa — ilova ishga tushmaydi. Uzunroq qiymat qo\'ying.'
+    );
+  }
+  return warnings;
+}
+
 /**
  * Gemini sozlamasini tekshiradi. Unga 4-blok "gapirish" javoblarini tekshirish va
  * ovozli javob transkripsiyasi bog'liq (OPENAI_API_KEY bo'lsa o'sha ustun turadi).
@@ -154,6 +176,9 @@ try {
     console.log(`  ! ${warning}`);
   }
   for (const warning of checkAdminSecret(env)) {
+    console.log(`  ! ${warning}`);
+  }
+  for (const warning of checkSupportCrmSecret(env)) {
     console.log(`  ! ${warning}`);
   }
   if (missingRecommended.length) {
