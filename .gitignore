@@ -46,4 +46,4 @@ tmp/
 /dist-design/
 
 # Design QA screenshots (large; keep MD/JSON only in git)
-docs/design/*.png
+docs/design/**/*.png
