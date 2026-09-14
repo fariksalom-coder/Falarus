@@ -5,7 +5,14 @@ import { pool } from '../lib/db.js';
 
 const IDLE_HOURS = 72;
 
-export type ContactChannel = 'phone' | 'telegram' | 'whatsapp' | 'max' | 'other';
+export type ContactChannel =
+  | 'phone'
+  | 'telegram'
+  | 'whatsapp'
+  | 'max'
+  | 'imo'
+  | 'email'
+  | 'other';
 export type ContactOutcome =
   | 'reached'
   | 'no_answer'
@@ -13,6 +20,7 @@ export type ContactOutcome =
   | 'no_contact'
   | 'no_telegram'
   | 'no_whatsapp'
+  | 'no_imo'
   | 'other';
 export type ContactResult = 'returned_ok' | 'helped_login' | 'needs_fix' | 'feedback' | 'other';
 
@@ -403,7 +411,15 @@ export async function createSupportCrmContact(input: {
   commentText?: string | null;
 }): Promise<ContactRow> {
   const db = requirePool();
-  const channels: ContactChannel[] = ['phone', 'telegram', 'whatsapp', 'max', 'other'];
+  const channels: ContactChannel[] = [
+    'phone',
+    'telegram',
+    'whatsapp',
+    'max',
+    'imo',
+    'email',
+    'other',
+  ];
   const outcomes: ContactOutcome[] = [
     'reached',
     'no_answer',
@@ -411,6 +427,7 @@ export async function createSupportCrmContact(input: {
     'no_contact',
     'no_telegram',
     'no_whatsapp',
+    'no_imo',
     'other',
   ];
   const results: ContactResult[] = ['returned_ok', 'helped_login', 'needs_fix', 'feedback', 'other'];

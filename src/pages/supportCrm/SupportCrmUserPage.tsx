@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Mail, MessageCircle, Phone } from 'lucide-react';
 import { Button, Card } from '../../components/ui/Foundation';
 import {
   getSupportCrmUser,
   postSupportCrmContact,
+  supportCrmParolTiklash,
   type ContactChannel,
   type ContactOutcome,
   type ContactResult,
   type SupportCrmUserDetail,
 } from '../../api/supportCrm';
+import ParolTiklashPanel from '../../components/support/ParolTiklashPanel';
 import { supportCrmPath } from '../../constants/supportCrmPath';
 import {
   formatCrmDate,
@@ -21,7 +23,8 @@ const CHANNELS: { id: ContactChannel; label: string }[] = [
   { id: 'phone', label: 'Telefon' },
   { id: 'telegram', label: 'Telegram' },
   { id: 'whatsapp', label: 'WhatsApp' },
-  { id: 'max', label: 'Max' },
+  { id: 'imo', label: 'IMO' },
+  { id: 'email', label: 'Email' },
   { id: 'other', label: 'Boshqa' },
 ];
 
@@ -32,8 +35,13 @@ const OUTCOMES: { id: ContactOutcome; label: string }[] = [
   { id: 'no_contact', label: 'Kontakt yo‘q' },
   { id: 'no_telegram', label: 'Telegram yo‘q' },
   { id: 'no_whatsapp', label: 'WhatsApp yo‘q' },
+  { id: 'no_imo', label: 'IMO yo‘q' },
   { id: 'other', label: 'Boshqa' },
 ];
+
+function phoneDigits(phone: string | null | undefined): string {
+  return String(phone ?? '').replace(/\D/g, '');
+}
 
 const RESULTS: { id: ContactResult; label: string }[] = [
   { id: 'returned_ok', label: 'Muammo yo‘q' },
@@ -175,6 +183,7 @@ export default function SupportCrmUserPage() {
   const u = data.user;
   const idleDays = u.idle_days ?? idleDaysFromHours(u.idle_hours);
   const progress = data.progress;
+  const digits = phoneDigits(u.phone);
 
   return (
     <div className="space-y-4 pb-8">
@@ -207,25 +216,119 @@ export default function SupportCrmUserPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
-        <MiniCard label="Telefon">
+      <Card className="space-y-3 p-4">
+        <h2 className="text-sm font-semibold text-app-text">Kontaktlar</h2>
+        <div className="grid grid-cols-2 gap-2.5">
+          <MiniCard label="Telefon">
+            {u.phone ? (
+              <a href={`tel:${u.phone}`} className="break-all font-semibold text-[#2563EB] hover:underline">
+                {u.phone}
+              </a>
+            ) : (
+              <span className="font-semibold text-app-muted">—</span>
+            )}
+          </MiniCard>
+          <MiniCard label="Email">
+            {u.email ? (
+              <a href={`mailto:${u.email}`} className="break-all font-semibold text-[#2563EB] hover:underline">
+                {u.email}
+              </a>
+            ) : (
+              <span className="font-semibold text-app-muted">—</span>
+            )}
+          </MiniCard>
+          <MiniCard label="Telegram">
+            {digits ? (
+              <a
+                href={`https://t.me/+${digits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all font-semibold text-[#2563EB] hover:underline"
+              >
+                {u.phone}
+              </a>
+            ) : (
+              <span className="font-semibold text-app-muted">—</span>
+            )}
+          </MiniCard>
+          <MiniCard label="WhatsApp">
+            {digits ? (
+              <a
+                href={`https://wa.me/${digits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all font-semibold text-[#2563EB] hover:underline"
+              >
+                {u.phone}
+              </a>
+            ) : (
+              <span className="font-semibold text-app-muted">—</span>
+            )}
+          </MiniCard>
+          <MiniCard label="IMO" className="col-span-2">
+            {u.phone ? (
+              <span className="break-all font-semibold text-app-text">{u.phone}</span>
+            ) : (
+              <span className="font-semibold text-app-muted">—</span>
+            )}
+          </MiniCard>
+        </div>
+
+        <div className="flex flex-wrap gap-2 pt-1">
           {u.phone ? (
-            <a href={`tel:${u.phone}`} className="break-all font-semibold text-[#2563EB] hover:underline">
-              {u.phone}
+            <a
+              href={`tel:${u.phone}`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[#2563EB] px-3.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98]"
+            >
+              <Phone size={16} />
+              Qo‘ng‘iroq
             </a>
-          ) : (
-            <span className="font-semibold text-app-muted">—</span>
-          )}
-        </MiniCard>
-        <MiniCard label="Email">
+          ) : null}
+          {digits ? (
+            <a
+              href={`https://t.me/+${digits}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white px-3.5 text-sm font-semibold text-app-text ring-1 ring-app-border active:scale-[0.98]"
+            >
+              <MessageCircle size={16} className="text-sky-500" />
+              Telegram
+            </a>
+          ) : null}
+          {digits ? (
+            <a
+              href={`https://wa.me/${digits}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white px-3.5 text-sm font-semibold text-app-text ring-1 ring-app-border active:scale-[0.98]"
+            >
+              <MessageCircle size={16} className="text-emerald-600" />
+              WhatsApp
+            </a>
+          ) : null}
+          {u.phone ? (
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(u.phone ?? '')}
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white px-3.5 text-sm font-semibold text-app-text ring-1 ring-app-border active:scale-[0.98]"
+            >
+              <MessageCircle size={16} className="text-indigo-500" />
+              IMO nusxa
+            </button>
+          ) : null}
           {u.email ? (
-            <a href={`mailto:${u.email}`} className="break-all font-semibold text-[#2563EB] hover:underline">
-              {u.email}
+            <a
+              href={`mailto:${u.email}`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white px-3.5 text-sm font-semibold text-app-text ring-1 ring-app-border active:scale-[0.98]"
+            >
+              <Mail size={16} className="text-slate-500" />
+              Email
             </a>
-          ) : (
-            <span className="font-semibold text-app-muted">—</span>
-          )}
-        </MiniCard>
+          ) : null}
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-2.5">
         <MiniCard label="Tarif">
           <span className="font-semibold text-app-text">{u.plan_name || '—'}</span>
         </MiniCard>
@@ -306,6 +409,12 @@ export default function SupportCrmUserPage() {
           </ul>
         )}
       </section>
+
+      <ParolTiklashPanel
+        boshlangich={u.phone ?? u.email ?? `#${u.id}`}
+        qulf
+        onTikla={() => supportCrmParolTiklash(userId)}
+      />
 
       <Card className="space-y-3 p-4">
         <h2 className="text-sm font-semibold text-app-text">Aloqa yozish</h2>

@@ -71,7 +71,14 @@ export type SupportCrmUserDetail = {
   contacts: SupportCrmContact[];
 };
 
-export type ContactChannel = 'phone' | 'telegram' | 'whatsapp' | 'max' | 'other';
+export type ContactChannel =
+  | 'phone'
+  | 'telegram'
+  | 'whatsapp'
+  | 'max'
+  | 'imo'
+  | 'email'
+  | 'other';
 export type ContactOutcome =
   | 'reached'
   | 'no_answer'
@@ -79,6 +86,7 @@ export type ContactOutcome =
   | 'no_contact'
   | 'no_telegram'
   | 'no_whatsapp'
+  | 'no_imo'
   | 'other';
 export type ContactResult = 'returned_ok' | 'helped_login' | 'needs_fix' | 'feedback' | 'other';
 
@@ -119,5 +127,16 @@ export async function postSupportCrmContact(body: {
   return supportCrmApi<{ contact: SupportCrmContact; nextUserId: number | null }>('/contacts', {
     method: 'POST',
     body: JSON.stringify(body),
+  });
+}
+
+/** Support CRM agent: reset student password and return the new one once. */
+export async function supportCrmParolTiklash(userId: number) {
+  return supportCrmApi<{
+    parol: string;
+    foydalanuvchi: { id: number; ism: string; telefon: string | null; email: string | null };
+  }>(`/users/${userId}/parol-tiklash`, {
+    method: 'POST',
+    body: JSON.stringify({}),
   });
 }

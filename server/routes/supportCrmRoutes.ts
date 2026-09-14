@@ -186,5 +186,31 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
     }
   });
 
+  /**
+   * Student password reset for Support CRM agents.
+   * Same service as admin/golden support — returns the new password once.
+   */
+  router.post('/users/:id/parol-tiklash', async (req, res) => {
+    try {
+      const agentId = agentIdFromReq(req as { supportCrmAgentId?: number });
+      const userId = Number(req.params.id);
+      if (!Number.isInteger(userId) || userId <= 0) {
+        res.status(400).json({ error: 'Noto‘g‘ri foydalanuvchi' });
+        return;
+      }
+
+      const { qolParolTiklashById } = await import('../services/qolParolTiklash.service.js');
+      const natija = await qolParolTiklashById(supabase, userId, `support-crm:${agentId}`);
+      if (natija.ok === false) {
+        res.status(natija.status).json({ error: natija.error });
+        return;
+      }
+      res.json(natija);
+    } catch (e) {
+      console.error('[support-crm/users/:id/parol-tiklash]', e);
+      res.status(500).json({ error: 'Parol tiklanmadi' });
+    }
+  });
+
   return router;
 }
