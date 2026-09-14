@@ -11,7 +11,7 @@ import { useHeartbeat } from '../hooks/useHeartbeat';
 
 /** Routes where we hide the global bottom nav — focus mode for lesson/exercise/game/course/payment drill-ins. */
 function hideNavBar(path: string): boolean {
-  if (path === '/') return true;
+  // Bosh sahifada pastki menyu KO'RINADI (deploydan oldingi production holati).
   if (path === '/payment' || path.startsWith('/payment')) return true;
   if (path === '/tariflar' || path === '/pricing') return true;
   if (path === '/payment-history') return true;

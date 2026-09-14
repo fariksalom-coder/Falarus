@@ -1,8 +1,13 @@
 /* Blue navigation across all main panels, with clear active and focus states. */
 body .app-navigation.blue-navigation {
-  background: linear-gradient(110deg, #154ca5, #092b73);
+  /* Solid fallback first — later theme rules must not leave the bar see-through. */
+  background-color: #092b73;
+  background-image: linear-gradient(110deg, #154ca5, #092b73);
   border-color: #366ac0;
   box-shadow: 0 -4px 20px rgb(9 43 115 / .22);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  opacity: 1;
 }
 .app-navigation.blue-navigation :is(.text-app-brand, .text-app-text-muted, .app-navigation-brand, .app-navigation-brand small) { color: #e0edff; }
 .app-navigation.blue-navigation [aria-current='page'] :is(.text-app-brand, .app-navigation-label) { color: #fff; }
