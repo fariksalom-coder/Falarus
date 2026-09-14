@@ -123,7 +123,11 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
     try {
       const filterRaw = String(req.query.filter ?? 'needs_contact');
       const filter: QueueFilter =
-        filterRaw === 'contacted_today' ? 'contacted_today' : 'needs_contact';
+        filterRaw === 'contacted_today'
+          ? 'contacted_today'
+          : filterRaw === 'in_progress'
+            ? 'in_progress'
+            : 'needs_contact';
       const limit = Number(req.query.limit ?? 50);
       const offset = Number(req.query.offset ?? 0);
       const data = await listSupportCrmQueue({

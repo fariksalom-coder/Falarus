@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Mail, MessageCircle, Phone } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button, Card } from '../../components/ui/Foundation';
 import {
   getSupportCrmUser,
@@ -36,12 +36,9 @@ const OUTCOMES: { id: ContactOutcome; label: string }[] = [
   { id: 'no_telegram', label: 'Telegram yo‘q' },
   { id: 'no_whatsapp', label: 'WhatsApp yo‘q' },
   { id: 'no_imo', label: 'IMO yo‘q' },
+  { id: 'in_progress', label: 'Jarayonda' },
   { id: 'other', label: 'Boshqa' },
 ];
-
-function phoneDigits(phone: string | null | undefined): string {
-  return String(phone ?? '').replace(/\D/g, '');
-}
 
 const RESULTS: { id: ContactResult; label: string }[] = [
   { id: 'returned_ok', label: 'Muammo yo‘q' },
@@ -132,22 +129,27 @@ export default function SupportCrmUserPage() {
     return [data.user.first_name, data.user.last_name].filter(Boolean).join(' ').trim() || `User #${data.user.id}`;
   }, [data]);
 
-  async function save(goNext: boolean) {
+  async function save(goNext: boolean, forcedOutcome?: ContactOutcome) {
     setFormError('');
     if (channel === 'other' && !channelOther.trim()) {
       setFormError('Boshqa kanal nomini yozing');
       return;
     }
+    const saveOutcome = forcedOutcome ?? outcome;
     setSaving(true);
     try {
       const res = await postSupportCrmContact({
         userId,
         channel,
         channelOther: channel === 'other' ? channelOther.trim() : undefined,
-        outcome,
-        result: outcome === 'reached' ? result : null,
+        outcome: saveOutcome,
+        result: saveOutcome === 'reached' ? result : null,
         commentText: comment.trim() || undefined,
       });
+      if (forcedOutcome === 'in_progress') {
+        navigate(supportCrmPath('/in-progress'), { replace: true });
+        return;
+      }
       if (goNext && res.nextUserId && res.nextUserId !== userId) {
         navigate(supportCrmPath(`/users/${res.nextUserId}`), { replace: true });
       } else if (goNext) {
@@ -183,21 +185,28 @@ export default function SupportCrmUserPage() {
   const u = data.user;
   const idleDays = u.idle_days ?? idleDaysFromHours(u.idle_hours);
   const progress = data.progress;
-  const digits = phoneDigits(u.phone);
+  const isInProgress = data.contacts[0]?.outcome === 'in_progress';
+  const backTo = isInProgress ? supportCrmPath('/in-progress') : supportCrmPath('/queue');
+  const backLabel = isInProgress ? 'Jarayonda' : 'Navbat';
 
   return (
     <div className="space-y-4 pb-8">
       <Link
-        to={supportCrmPath('/queue')}
+        to={backTo}
         className="inline-flex min-h-10 items-center gap-2 text-sm text-app-muted hover:text-app-text"
       >
         <ArrowLeft size={18} />
-        Navbat
+        {backLabel}
       </Link>
 
       <div>
         <h1 className="text-xl font-semibold text-app-text">{name}</h1>
         <p className="mt-0.5 text-xs text-app-muted">#{u.id}</p>
+        {isInProgress ? (
+          <span className="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">
+            Jarayonda
+          </span>
+        ) : null}
       </div>
 
       {/* Asosiy: necha kundan beri kirmagan — aniq va katta */}
@@ -216,119 +225,25 @@ export default function SupportCrmUserPage() {
         </p>
       </div>
 
-      <Card className="space-y-3 p-4">
-        <h2 className="text-sm font-semibold text-app-text">Kontaktlar</h2>
-        <div className="grid grid-cols-2 gap-2.5">
-          <MiniCard label="Telefon">
-            {u.phone ? (
-              <a href={`tel:${u.phone}`} className="break-all font-semibold text-[#2563EB] hover:underline">
-                {u.phone}
-              </a>
-            ) : (
-              <span className="font-semibold text-app-muted">—</span>
-            )}
-          </MiniCard>
-          <MiniCard label="Email">
-            {u.email ? (
-              <a href={`mailto:${u.email}`} className="break-all font-semibold text-[#2563EB] hover:underline">
-                {u.email}
-              </a>
-            ) : (
-              <span className="font-semibold text-app-muted">—</span>
-            )}
-          </MiniCard>
-          <MiniCard label="Telegram">
-            {digits ? (
-              <a
-                href={`https://t.me/+${digits}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="break-all font-semibold text-[#2563EB] hover:underline"
-              >
-                {u.phone}
-              </a>
-            ) : (
-              <span className="font-semibold text-app-muted">—</span>
-            )}
-          </MiniCard>
-          <MiniCard label="WhatsApp">
-            {digits ? (
-              <a
-                href={`https://wa.me/${digits}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="break-all font-semibold text-[#2563EB] hover:underline"
-              >
-                {u.phone}
-              </a>
-            ) : (
-              <span className="font-semibold text-app-muted">—</span>
-            )}
-          </MiniCard>
-          <MiniCard label="IMO" className="col-span-2">
-            {u.phone ? (
-              <span className="break-all font-semibold text-app-text">{u.phone}</span>
-            ) : (
-              <span className="font-semibold text-app-muted">—</span>
-            )}
-          </MiniCard>
-        </div>
-
-        <div className="flex flex-wrap gap-2 pt-1">
-          {u.phone ? (
-            <a
-              href={`tel:${u.phone}`}
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[#2563EB] px-3.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98]"
-            >
-              <Phone size={16} />
-              Qo‘ng‘iroq
-            </a>
-          ) : null}
-          {digits ? (
-            <a
-              href={`https://t.me/+${digits}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white px-3.5 text-sm font-semibold text-app-text ring-1 ring-app-border active:scale-[0.98]"
-            >
-              <MessageCircle size={16} className="text-sky-500" />
-              Telegram
-            </a>
-          ) : null}
-          {digits ? (
-            <a
-              href={`https://wa.me/${digits}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white px-3.5 text-sm font-semibold text-app-text ring-1 ring-app-border active:scale-[0.98]"
-            >
-              <MessageCircle size={16} className="text-emerald-600" />
-              WhatsApp
-            </a>
-          ) : null}
-          {u.phone ? (
-            <button
-              type="button"
-              onClick={() => void navigator.clipboard?.writeText(u.phone ?? '')}
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white px-3.5 text-sm font-semibold text-app-text ring-1 ring-app-border active:scale-[0.98]"
-            >
-              <MessageCircle size={16} className="text-indigo-500" />
-              IMO nusxa
-            </button>
-          ) : null}
-          {u.email ? (
-            <a
-              href={`mailto:${u.email}`}
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-white px-3.5 text-sm font-semibold text-app-text ring-1 ring-app-border active:scale-[0.98]"
-            >
-              <Mail size={16} className="text-slate-500" />
-              Email
-            </a>
-          ) : null}
-        </div>
-      </Card>
-
       <div className="grid grid-cols-2 gap-2.5">
+        <MiniCard label="Telefon">
+          {u.phone ? (
+            <a href={`tel:${u.phone}`} className="break-all font-semibold text-[#2563EB] hover:underline">
+              {u.phone}
+            </a>
+          ) : (
+            <span className="font-semibold text-app-muted">—</span>
+          )}
+        </MiniCard>
+        <MiniCard label="Email">
+          {u.email ? (
+            <a href={`mailto:${u.email}`} className="break-all font-semibold text-[#2563EB] hover:underline">
+              {u.email}
+            </a>
+          ) : (
+            <span className="font-semibold text-app-muted">—</span>
+          )}
+        </MiniCard>
         <MiniCard label="Tarif">
           <span className="font-semibold text-app-text">{u.plan_name || '—'}</span>
         </MiniCard>
@@ -478,6 +393,14 @@ export default function SupportCrmUserPage() {
             Saqlash → keyingi
           </Button>
         </div>
+        <Button
+          variant="secondary"
+          loading={saving}
+          className="min-h-12 w-full !bg-amber-50 !text-amber-950 ring-1 ring-amber-200 hover:!bg-amber-100"
+          onClick={() => void save(false, 'in_progress')}
+        >
+          Jarayonga olish
+        </Button>
       </Card>
     </div>
   );

@@ -21,10 +21,11 @@ export type ContactOutcome =
   | 'no_telegram'
   | 'no_whatsapp'
   | 'no_imo'
+  | 'in_progress'
   | 'other';
 export type ContactResult = 'returned_ok' | 'helped_login' | 'needs_fix' | 'feedback' | 'other';
 
-export type QueueFilter = 'needs_contact' | 'contacted_today';
+export type QueueFilter = 'needs_contact' | 'contacted_today' | 'in_progress';
 
 export type QueueRow = {
   id: number;
@@ -103,6 +104,7 @@ const QUEUE_BASE_SQL = `
 
 export async function getSupportCrmStats(): Promise<{
   queue_count: number;
+  in_progress_count: number;
   contacted_today: number;
   reached_today: number;
   no_pickup_today: number;
@@ -110,13 +112,21 @@ export async function getSupportCrmStats(): Promise<{
   const db = requirePool();
   const { rows } = await db.query<{
     queue_count: number;
+    in_progress_count: number;
     contacted_today: number;
     reached_today: number;
     no_pickup_today: number;
   }>(
     `${QUEUE_BASE_SQL}
     SELECT
-      (SELECT COUNT(*)::int FROM candidates) AS queue_count,
+      (
+        SELECT COUNT(*)::int FROM candidates
+        WHERE last_contact_outcome IS NULL OR last_contact_outcome <> 'in_progress'
+      ) AS queue_count,
+      (
+        SELECT COUNT(*)::int FROM candidates
+        WHERE last_contact_outcome = 'in_progress'
+      ) AS in_progress_count,
       (
         SELECT COUNT(*)::int FROM support_crm_contacts
         WHERE created_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent')
@@ -140,6 +150,7 @@ export async function getSupportCrmStats(): Promise<{
   const r = rows[0];
   return {
     queue_count: Number(r?.queue_count ?? 0),
+    in_progress_count: Number(r?.in_progress_count ?? 0),
     contacted_today: Number(r?.contacted_today ?? 0),
     reached_today: Number(r?.reached_today ?? 0),
     no_pickup_today: Number(r?.no_pickup_today ?? 0),
@@ -152,17 +163,26 @@ export async function listSupportCrmQueue(opts: {
   offset?: number;
 }): Promise<{ rows: QueueRow[]; total: number }> {
   const db = requirePool();
-  const filter: QueueFilter = opts.filter === 'contacted_today' ? 'contacted_today' : 'needs_contact';
+  const filter: QueueFilter =
+    opts.filter === 'contacted_today'
+      ? 'contacted_today'
+      : opts.filter === 'in_progress'
+        ? 'in_progress'
+        : 'needs_contact';
   const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
   const offset = Math.max(opts.offset ?? 0, 0);
 
   const dayFilter =
-    filter === 'contacted_today'
-      ? `AND last_contact_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'`
-      : `AND (
-           last_contact_at IS NULL
-           OR last_contact_at < date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'
-         )`;
+    filter === 'in_progress'
+      ? `AND last_contact_outcome = 'in_progress'`
+      : filter === 'contacted_today'
+        ? `AND last_contact_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'
+           AND (last_contact_outcome IS NULL OR last_contact_outcome <> 'in_progress')`
+        : `AND (
+             last_contact_at IS NULL
+             OR last_contact_at < date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'
+           )
+           AND (last_contact_outcome IS NULL OR last_contact_outcome <> 'in_progress')`;
 
   const { rows } = await db.query<QueueRow>(
     `${QUEUE_BASE_SQL}
@@ -428,6 +448,7 @@ export async function createSupportCrmContact(input: {
     'no_telegram',
     'no_whatsapp',
     'no_imo',
+    'in_progress',
     'other',
   ];
   const results: ContactResult[] = ['returned_ok', 'helped_login', 'needs_fix', 'feedback', 'other'];

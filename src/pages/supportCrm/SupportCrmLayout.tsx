@@ -1,11 +1,12 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ListOrdered, LogOut } from 'lucide-react';
+import { LayoutDashboard, ListOrdered, Loader, LogOut } from 'lucide-react';
 import { useSupportCrmAuth } from '../../context/SupportCrmAuthContext';
 import { supportCrmPath } from '../../constants/supportCrmPath';
 
 const nav = [
   { to: supportCrmPath('/dashboard'), label: 'Dashboard', icon: LayoutDashboard },
   { to: supportCrmPath('/queue'), label: 'Navbat', icon: ListOrdered },
+  { to: supportCrmPath('/in-progress'), label: 'Jarayonda', icon: Loader },
 ];
 
 export default function SupportCrmLayout() {

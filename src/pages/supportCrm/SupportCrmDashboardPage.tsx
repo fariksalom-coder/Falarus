@@ -49,18 +49,27 @@ export default function SupportCrmDashboardPage() {
       ) : stats ? (
         <div className="grid grid-cols-2 gap-2.5">
           <StatCard label="Navbat" value={stats.queue_count} />
+          <StatCard label="Jarayonda" value={stats.in_progress_count} />
           <StatCard label="Bugun qo‘ng‘iroq" value={stats.contacted_today} />
           <StatCard label="Bog‘landi" value={stats.reached_today} />
           <StatCard label="Ko‘tarmadi" value={stats.no_pickup_today} />
         </div>
       ) : null}
 
-      <Link
-        to={supportCrmPath('/queue')}
-        className="ui-button ui-button--primary flex min-h-12 w-full items-center justify-center text-base"
-      >
-        Navbatni ochish
-      </Link>
+      <div className="grid gap-2">
+        <Link
+          to={supportCrmPath('/queue')}
+          className="ui-button ui-button--primary flex min-h-12 w-full items-center justify-center text-base"
+        >
+          Navbatni ochish
+        </Link>
+        <Link
+          to={supportCrmPath('/in-progress')}
+          className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-amber-50 text-base font-semibold text-amber-950 ring-1 ring-amber-200"
+        >
+          Jarayondagilar
+        </Link>
+      </div>
     </div>
   );
 }

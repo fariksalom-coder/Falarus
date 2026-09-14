@@ -8,6 +8,7 @@ export type SupportCrmAgent = {
 
 export type SupportCrmStats = {
   queue_count: number;
+  in_progress_count: number;
   contacted_today: number;
   reached_today: number;
   no_pickup_today: number;
@@ -87,6 +88,7 @@ export type ContactOutcome =
   | 'no_telegram'
   | 'no_whatsapp'
   | 'no_imo'
+  | 'in_progress'
   | 'other';
 export type ContactResult = 'returned_ok' | 'helped_login' | 'needs_fix' | 'feedback' | 'other';
 
@@ -106,7 +108,9 @@ export async function getSupportCrmStats() {
   return supportCrmApi<SupportCrmStats>('/stats');
 }
 
-export async function getSupportCrmQueue(filter: 'needs_contact' | 'contacted_today' = 'needs_contact') {
+export async function getSupportCrmQueue(
+  filter: 'needs_contact' | 'contacted_today' | 'in_progress' = 'needs_contact'
+) {
   return supportCrmApi<{ rows: SupportCrmQueueRow[]; total: number }>(
     `/queue?filter=${encodeURIComponent(filter)}&limit=100`
   );
