@@ -100,7 +100,7 @@ export async function createRahmatMulticardPayment(
   const productCode = rawProductCode;
   const russianTariffType = isSubscriptionTariffType(tariffTypeRaw) ? tariffTypeRaw : null;
   if (productCode === 'russian' && !russianTariffType) {
-    return { status: 400, json: { error: 'tariff_type kerak: three_month, year' } };
+    return { status: 400, json: { error: 'tariff_type kerak: month, three_month, six_month' } };
   }
   const listingPlanCode =
     productCode === 'teacher_listing' ? parseTeacherListingPlanCode(body as Record<string, unknown>) : null;
@@ -179,6 +179,12 @@ export async function createRahmatMulticardPayment(
     });
     amount = quote.finalAmount;
     baseAmount = quote.baseAmount;
+    discountMeta = {
+      price_rub: quote.priceRub ?? null,
+      rub_uzs_rate: quote.rubUzsRate ?? null,
+      rate_as_of: quote.rateAsOf ?? null,
+      pricing_source: 'rub_catalog_x_cbu',
+    };
   } else if (productCode === 'teacher_listing' && listingPlanCode) {
     amount = getTeacherListingPriceUzs(listingPlanCode);
     baseAmount = amount;

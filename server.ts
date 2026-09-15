@@ -601,6 +601,25 @@ async function startServer() {
     }
   });
 
+  // Public RUB→UZS (CBU), ~1 soat cache — tarif kartalari va Rahmat summasi.
+  app.get('/api/fx/rub-uzs', async (_req, res) => {
+    try {
+      const { getRubToUzsRate } = await import('./server/services/rubUzsRate.service.js');
+      const info = await getRubToUzsRate();
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.json({
+        rate: info.rate,
+        as_of: info.asOf,
+        source: info.source,
+        updated_at: info.updatedAt,
+        unit: 'UZS_per_RUB',
+      });
+    } catch (e) {
+      console.error('[GET /api/fx/rub-uzs]', e);
+      res.status(500).json({ error: 'Kurs yuklanmadi' });
+    }
+  });
+
   // Public tariff prices by currency (no auth) — three_month, year
   app.get('/api/tariff-prices', async (req, res) => {
     const currency = (req.query.currency as string)?.toUpperCase();

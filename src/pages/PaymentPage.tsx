@@ -19,6 +19,7 @@ import {
   type PaymentProductCode,
   type TeacherListingPlanCode,
 } from '../../shared/paymentProducts';
+import { getRussianTariffPlanRub } from '../../shared/russianTariffs';
 import {
   Copy,
   X,
@@ -162,9 +163,14 @@ export default function PaymentPage() {
               }
         );
         if (isRussianCourse && tariffType) {
+          const rubPlan = getRussianTariffPlanRub(tariffType);
+          if (currency === 'RUB' && rubPlan) {
+            setPrice(rubPlan.priceRub);
+            return;
+          }
           const key = tariffType === 'year' ? 'year' : 'three_month';
           const payload = prices as { three_month: number; year: number } | null;
-          setPrice(payload?.[key] ?? null);
+          setPrice(payload?.[key] ?? rubPlan?.priceRub ?? null);
           return;
         }
         if (isTeacherListing && listingPlanCode) {

@@ -10,7 +10,6 @@ import type { DailyCourseDayBundle, DailyCourseMcq } from '../../shared/dailyCou
 import {
   READING_QUESTIONS_PASS_PERCENT,
   isValidDailyCourseDay,
-  FREE_KUNLIK_DAY_LIMIT,
   canEnterKunlikDayContent,
 } from '../../shared/dailyCourseDay';
 import { isKunlikDayReadyForSuhbat } from '../../shared/kunlikDayCompletion';
@@ -32,7 +31,6 @@ import {
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { useQurilmaOrqaga } from '../hooks/useQurilmaOrqaga';
 import { useAccess } from '../context/AccessContext';
-import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
 
 /*
  * Kunning bloklari. `savol-javob` — BESHINCHI blok: ustoz bilan jonli
@@ -136,7 +134,7 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
           {dayNumber}-kun obuna bilan ochiladi
         </p>
         <p className="mt-2 max-w-[34ch] text-[13.5px] font-semibold leading-snug text-slate-600">
-          1-kun bepul. To'lovdan keyin 182 kunning hammasi ochiladi.
+          Kunlik kurs to‘liq obuna bilan ochiladi — 182 kunning hammasi.
         </p>
         <button
           type="button"
@@ -2114,10 +2112,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
   const { t } = useLocale();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { access } = useAccess();
-  const premium = Boolean(access?.subscription_active);
   const { patchDay, getDay, loaded: kunlikLoaded } = useKunlikProgress();
-  const [showFreeLimitModal, setShowFreeLimitModal] = useState(false);
   const [forceRetry, setForceRetry] = useState(() => searchParams.get('retry') === '1');
   const isRepeatSessionRef = useRef(searchParams.get('retry') === '1');
   const autoRetryStartedRef = useRef(false);
@@ -2176,14 +2171,9 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
     if (!forceRetry) {
       patchDay(dayNumber, { speaking_level: tasks.length });
     }
-    if (!premium && dayNumber === FREE_KUNLIK_DAY_LIMIT && !isRepeatSessionRef.current) {
-      setShowFreeLimitModal(true);
-      return;
-    }
     /*
-     * 1-mavzu (tarjima) tugadi. Shu kunda 2-mavzu bo'lsa — kun rejasiga
-     * qaytarmasdan, gapirish blokining MAVZULAR ro'yxatiga qaytamiz: shunda
-     * endigina ochilgan 2-mavzu darrov ko'rinadi.
+     * Extra speaking mavzulari tugasa — xaritaga (yoki mavzular ro'yxatiga).
+     * Bepul kun limiiti endi yo'q; paywall kontentga kirishda tekshiriladi.
      */
     const extra = bundle.speakingTasks ?? [];
     const extraDone = (getDay(dayNumber).speaking_tasks_done ?? 0) >= extra.length;
@@ -2246,14 +2236,6 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
 
   return (
     <>
-      {showFreeLimitModal ? (
-        <KunlikFreeLimitModal
-          onClose={() => {
-            setShowFreeLimitModal(false);
-            navigate(xaritaYoli());
-          }}
-        />
-      ) : null}
       <SpeakingExercise
         key={exerciseKey}
         tasks={tasks}

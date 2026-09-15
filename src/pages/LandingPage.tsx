@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import {
@@ -20,10 +20,11 @@ import {
 import TeacherRecruitBanner from '../components/landing/TeacherRecruitBanner';
 import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 import PricingCard from '../components/pricing/PricingCard';
-import DiscountCountdownBanner from '../components/pricing/DiscountCountdownBanner';
 import { getLegalEntityMeta, LEGAL_PATHS } from '../config/legalPublic';
 import { useAuth } from '../context/AuthContext';
-import { getDiscountRemaining } from '../utils/discountDeadline';
+import { useRubUzsRate } from '../hooks/useRubUzsRate';
+import { formatRubAmount, RUSSIAN_TARIFF_PLANS_RUB } from '../../shared/russianTariffs';
+import { formatRubUzsPair } from '../../shared/rubUzs';
 
 type LanguageCode = 'en' | 'uz' | 'ru' | 'kk' | 'tg' | 'ky';
 type NavKey = 'home' | 'about' | 'certificates' | 'pricing' | 'contact';
@@ -129,7 +130,8 @@ const FAQ_ITEMS_UZ: readonly FaqItem[] = [
   },
   {
     question: 'Bepul sinab ko‘rish mumkinmi?',
-    answer: 'Ha. Platformani bepul sinab ko‘rish imkoniyati mavjud.',
+    answer:
+      'Kunlik 182 kunlik kurs obuna bilan ochiladi. Patent va VNZh bo‘limlarida ayrim bepul namunalar bor.',
   },
   {
     question: 'Darslar qanday formatda?',
@@ -939,19 +941,12 @@ function Brand({ light = false }: { light?: boolean }) {
 export default function LandingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { rate: rubUzsRate } = useRubUzsRate();
   const [activeNav, setActiveNav] = useState<NavKey>('home');
   const [languageCode, setLanguageCode] = useState<LanguageCode>('uz');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [discountActive, setDiscountActive] = useState(() => getDiscountRemaining().active);
-
-  useEffect(() => {
-    const tick = () => setDiscountActive(getDiscountRemaining().active);
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -1371,40 +1366,34 @@ export default function LandingPage() {
 
         <section id="pricing" className="bg-[#FDF8F2] px-5 py-14 sm:px-10 lg:px-24 lg:py-[120px]">
           <div className="mx-auto max-w-[1000px] text-center">
-            {discountActive ? (
-              <div className="mx-auto mb-8 max-w-[720px] text-left">
-                <DiscountCountdownBanner className="mb-0" />
-              </div>
-            ) : (
-              <>
-                <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.pricingIntro.title}</h2>
-                <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.pricingIntro.description}</p>
-              </>
-            )}
-            <div className="mx-auto mt-10 grid max-w-[720px] items-stretch gap-6 pt-4 sm:mt-12 sm:grid-cols-2 sm:gap-8">
-              <PricingCard
-                duration={t.pricing.elite.name}
-                price={`${t.pricing.elite.price}${t.pricing.currency}${t.pricing.elite.period}`}
-                pricePerMonth={t.pricing.elite.price}
-                pricePerMonthUnit={`${t.pricing.currency.trim()} ${t.pricing.elite.period}`}
-                compareAtPrice={`2 388 000${t.pricing.currency}`}
-                discountPercent={50}
-                features={t.pricing.elite.items}
-                buttonLabel={t.pricing.elite.button}
-                onSelect={() => navigate('/register')}
-              />
-              <PricingCard
-                duration={t.pricing.pro.name}
-                price={`${t.pricing.pro.price}${t.pricing.currency}${t.pricing.pro.period}`}
-                pricePerMonth={t.pricing.pro.price}
-                pricePerMonthUnit={`${t.pricing.currency.trim()} ${t.pricing.pro.period}`}
-                compareAtPrice={`597 000${t.pricing.currency}`}
-                discountPercent={50}
-                features={t.pricing.pro.items}
-                buttonLabel={t.pricing.pro.button}
-                highlighted
-                badge={`${t.pricing.recommended} ⭐`}
-              />
+            <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.pricingIntro.title}</h2>
+            <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.pricingIntro.description}</p>
+            <div className="mx-auto mt-10 grid max-w-[960px] items-stretch gap-6 pt-4 sm:mt-12 sm:grid-cols-3 sm:gap-5">
+              {RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {
+                const hasSavings = plan.savingsRub > 0;
+                const perMonth = Math.round(plan.priceRub / plan.months);
+                const { labelUzs } = formatRubUzsPair(plan.priceRub, rubUzsRate);
+                const highlighted = plan.code === 'three_month';
+                return (
+                  <PricingCard
+                    key={plan.code}
+                    duration={plan.labelUz}
+                    price={`${formatRubAmount(plan.priceRub)} ₽`}
+                    pricePerMonth={formatRubAmount(plan.priceRub)}
+                    pricePerMonthUnit="₽"
+                    priceSecondary={labelUzs}
+                    compareAtPrice={hasSavings ? `${formatRubAmount(plan.wasRub)} ₽` : undefined}
+                    discountPercent={hasSavings ? plan.discountPercent : undefined}
+                    savingsAmount={hasSavings ? `${formatRubAmount(plan.savingsRub)} ₽` : undefined}
+                    description={plan.months > 1 ? `≈ ${formatRubAmount(perMonth)} ₽ / oy` : undefined}
+                    features={plan.code === 'six_month' ? t.pricing.elite.items : t.pricing.pro.items}
+                    buttonLabel="Premium olish"
+                    highlighted={highlighted}
+                    badge={highlighted ? `${t.pricing.recommended} ⭐` : undefined}
+                    onSelect={() => navigate('/register')}
+                  />
+                );
+              })}
             </div>
           </div>
         </section>

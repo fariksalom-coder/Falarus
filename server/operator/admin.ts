@@ -24,9 +24,24 @@ export async function decideReceipt(id: number, admin: number, decision: string,
                 throw new Error('To‘lov qoldiqdan oshib ketadi.');
             if (!b.activated_at) {
                 const u = (await c.query('SELECT plan_expires_at FROM users WHERE id=$1 FOR UPDATE', [b.user_id])).rows[0];
-                const expiry = new Date(Math.max(Date.now(), u?.plan_expires_at ? +new Date(u.plan_expires_at) : 0) + (b.tariff === 'year' ? 365 : 90) * 86400000);
-                await c.query('UPDATE users SET plan_name=$2,plan_expires_at=$3 WHERE id=$1', [b.user_id, b.tariff === 'year' ? '1 YIL' : '3 OY', expiry]);
-                await c.query("INSERT INTO subscriptions(user_id,plan_type,expires_at,status) VALUES($1,$2,$3,'active')", [b.user_id, b.tariff === 'year' ? 'yearly' : 'three_month', expiry]);
+                const days =
+                  b.tariff === 'six_month' ? 180
+                    : b.tariff === 'month' ? 30
+                      : b.tariff === 'year' ? 365
+                        : 90;
+                const planType =
+                  b.tariff === 'six_month' ? 'six_month'
+                    : b.tariff === 'month' ? 'monthly'
+                      : b.tariff === 'year' ? 'yearly'
+                        : 'three_month';
+                const planName =
+                  b.tariff === 'six_month' ? '6 OY'
+                    : b.tariff === 'month' ? '1 OY'
+                      : b.tariff === 'year' ? '1 YIL'
+                        : '3 OY';
+                const expiry = new Date(Math.max(Date.now(), u?.plan_expires_at ? +new Date(u.plan_expires_at) : 0) + days * 86400000);
+                await c.query('UPDATE users SET plan_name=$2,plan_expires_at=$3 WHERE id=$1', [b.user_id, planName, expiry]);
+                await c.query("INSERT INTO subscriptions(user_id,plan_type,expires_at,status) VALUES($1,$2,$3,'active')", [b.user_id, planType, expiry]);
                 await c.query('UPDATE operator_contracts SET activated_at=now() WHERE id=$1', [b.id]);
             }
         }
@@ -82,7 +97,7 @@ export function operatorAdminRoutes() {
         for (const d of [from, to])
             if (d && !/^\d{4}-\d{2}-\d{2}$/.test(d))
                 throw new Error('Sana noto‘g‘ri.');
-        const source = String(req.query.source ?? '').trim().slice(0, 100) || null, tariff = ['three_month', 'year'].includes(req.query.tariff) ? req.query.tariff : null;
+        const source = String(req.query.source ?? '').trim().slice(0, 100) || null, tariff = ['month', 'three_month', 'six_month', 'year'].includes(req.query.tariff) ? req.query.tariff : null;
         const offset = Math.max(0, Math.min(100000, Number(req.query.offset) || 0));
         const args = [op, status, from || null, to || null, source, tariff];
         const filter = `($1::bigint IS NULL OR r.operator_id=$1) AND ($2::text IS NULL OR r.status=$2) AND ($3::date IS NULL OR r.created_at>=($3::date::timestamp AT TIME ZONE 'Asia/Tashkent')) AND ($4::date IS NULL OR r.created_at<(($4::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent')) AND ($5::text IS NULL OR c.source=$5) AND ($6::text IS NULL OR c.tariff=$6)`;

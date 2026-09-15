@@ -55,13 +55,19 @@ export default function AdminOperatorsPage() {
                 <input aria-label="Boshlanish sanasi" type="date" value={filter.from} onChange={e => change('from', e.target.value)}/>,
                 <input aria-label="Tugash sanasi" type="date" value={filter.to} onChange={e => change('to', e.target.value)}/>,
                 <input aria-label="Manba" placeholder="Manba: Instagram…" value={filter.source} onChange={e => change('source', e.target.value)}/>,
-                <select aria-label="Tarif" value={filter.tariff} onChange={e => change('tariff', e.target.value)}><option value="">Barcha tariflar</option><option value="three_month">3 oy</option><option value="year">1 yil</option></select>
+                <select aria-label="Tarif" value={filter.tariff} onChange={e => change('tariff', e.target.value)}>
+                  <option value="">Barcha tariflar</option>
+                  <option value="month">1 oy</option>
+                  <option value="three_month">3 oy</option>
+                  <option value="six_month">6 oy</option>
+                  <option value="year">1 yil (eski)</option>
+                </select>
             ].map((el, i) => <div key={i} className="[&>*]:w-full [&>*]:p-2 [&>*]:rounded-lg [&>*]:border [&>*]:bg-white [&>*]:text-slate-900">{el}</div>)}</div>}
   {loading && <p role="status">Yuklanmoqda…</p>}
   {tab === 'receipts' && !loading && <><div className="grid lg:grid-cols-2 gap-4">{data.rows.map((r: any) => <article key={r.id} className="rounded-2xl border border-app-border bg-app-surface p-5 space-y-3">
    <div className="flex justify-between gap-3"><strong>Chek #{r.id} · {names[r.status]}</strong><span>{r.amount} {r.currency}</span></div>
    <p>#{r.user_id} {r.first_name} {r.last_name}<br /><span className="text-sm">{r.phone || '—'} · {r.email || '—'}</span></p>
-   <dl className="text-sm grid grid-cols-2 gap-2"><dt>Operator</dt><dd>{r.operator_name}</dd><dt>Tarif / manba</dt><dd>{r.tariff === 'year' ? '1 yil' : '3 oy'} / {r.source}</dd><dt>Jami / tasdiqlangan</dt><dd>{r.total} / {r.paid} {r.currency}</dd><dt>Qarz / tekshiruvda</dt><dd>{r.debt} / {r.pending} {r.currency}</dd><dt>Qarz muddati</dt><dd className={r.due_at && +new Date(r.due_at) < Date.now() && Number(r.debt) > 0 ? 'text-red-600 font-bold' : ''}>{fmt(r.due_at)}</dd><dt>Chek yuklangan</dt><dd>{fmt(r.created_at)}</dd><dt>Admin qarori</dt><dd>{r.admin_id ? `#${r.admin_id} · ${fmt(r.decided_at)}` : 'Kutilmoqda'}</dd><dt>Muzlatilgan</dt><dd>{r.frozen ? 'Ha' : 'Yo‘q'}</dd></dl>
+   <dl className="text-sm grid grid-cols-2 gap-2"><dt>Operator</dt><dd>{r.operator_name}</dd><dt>Tarif / manba</dt><dd>{r.tariff === 'month' ? '1 oy' : r.tariff === 'six_month' ? '6 oy' : r.tariff === 'year' ? '1 yil' : '3 oy'} / {r.source}</dd><dt>Jami / tasdiqlangan</dt><dd>{r.total} / {r.paid} {r.currency}</dd><dt>Qarz / tekshiruvda</dt><dd>{r.debt} / {r.pending} {r.currency}</dd><dt>Qarz muddati</dt><dd className={r.due_at && +new Date(r.due_at) < Date.now() && Number(r.debt) > 0 ? 'text-red-600 font-bold' : ''}>{fmt(r.due_at)}</dd><dt>Chek yuklangan</dt><dd>{fmt(r.created_at)}</dd><dt>Admin qarori</dt><dd>{r.admin_id ? `#${r.admin_id} · ${fmt(r.decided_at)}` : 'Kutilmoqda'}</dd><dt>Muzlatilgan</dt><dd>{r.frozen ? 'Ha' : 'Yo‘q'}</dd></dl>
    {r.reason && <p>Sabab: {r.reason}</p>}
    <div className="flex flex-wrap gap-2"><button className="ui-button ui-button--secondary" disabled={busy} onClick={() => void download(r.id)}>Chekni yuklash</button>{r.status === 'pending' && <><button className="ui-button ui-button--primary" disabled={busy} onClick={() => { setDecision({ r, kind: 'approved' }); setReason(''); }}>Tasdiqlash</button><button className="ui-button ui-button--secondary" disabled={busy} onClick={() => { setDecision({ r, kind: 'rejected' }); setReason(''); }}>Rad etish</button></>}</div>
    <label className="block text-sm">Shartnomaga mas’ul operator<select className="ml-2 border rounded p-1" defaultValue="" disabled={busy} onChange={e => { const id = e.target.value; if (id)

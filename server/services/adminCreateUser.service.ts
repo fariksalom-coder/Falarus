@@ -5,9 +5,10 @@ import bcrypt from 'bcryptjs';
 import { parseContactIdentifier, sanitizePhoneRaw } from '../../shared/authIdentifiers.js';
 import {
   getCourseProductPrice,
-  isSubscriptionTariffType,
   type PaymentProductCode,
+  type SubscriptionTariffType,
 } from '../../shared/paymentProducts.js';
+import { activateRussianSubscription } from '../../shared/paymentActivation.js';
 import * as subscriptionService from './subscription.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
 
@@ -20,7 +21,7 @@ export type AdminCreateUserInput = {
   identifier: string;
   password: string;
   adminId: number;
-  russianTariff: 'three_month' | 'year' | 'week' | null;
+  russianTariff: 'month' | 'three_month' | 'six_month' | 'week' | null;
   grantPatent: boolean;
   grantVnzh: boolean;
   /** To‘lov summalari (ixtiyoriy). Kiritilmasa — joriy narxlar ishlatiladi. */
@@ -190,7 +191,7 @@ async function insertApprovedPayment(
     userId: number;
     adminId: number;
     productCode: PaymentProductCode;
-    tariffType: 'three_month' | 'year' | null;
+    tariffType: SubscriptionTariffType | null;
     amount: number;
     currency: string;
   }
@@ -241,35 +242,23 @@ async function grantRussianWeekTrial(supabase: DbClient, userId: number): Promis
 async function grantRussianAccess(
   supabase: DbClient,
   userId: number,
-  tariffType: 'three_month' | 'year',
+  tariffType: SubscriptionTariffType,
   adminId: number,
   amountUzs: number
 ): Promise<void> {
-  if (!isSubscriptionTariffType(tariffType)) {
-    throw new Error('russianTariff: three_month yoki year bo‘lishi kerak');
+  if (
+    tariffType !== 'month' &&
+    tariffType !== 'three_month' &&
+    tariffType !== 'six_month' &&
+    tariffType !== 'year'
+  ) {
+    throw new Error('russianTariff: month, three_month yoki six_month bo‘lishi kerak');
   }
-  const planType = tariffType === 'year' ? 'yearly' : 'three_month';
-  const daysToAdd = tariffType === 'year' ? 365 : 90;
-  const planName = tariffType === 'year' ? '1 YIL' : '3 OY';
-  const now = new Date();
 
-  const { data: current } = await supabase
-    .from('users')
-    .select('plan_expires_at')
-    .eq('id', userId)
-    .single();
-  const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at as string) : null;
-  const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
-  const ext = new Date(startFrom);
-  ext.setDate(ext.getDate() + daysToAdd);
-
-  const { error: updateUserErr } = await supabase
-    .from('users')
-    .update({ plan_name: planName, plan_expires_at: ext.toISOString() })
-    .eq('id', userId);
-  if (updateUserErr) throw new Error(updateUserErr.message);
-
-  await subscriptionService.createOrExtendSubscription(supabase, userId, planType, ext);
+  await activateRussianSubscription(supabase, {
+    userId,
+    tariffType,
+  });
 
   await insertApprovedPayment(supabase, {
     userId,

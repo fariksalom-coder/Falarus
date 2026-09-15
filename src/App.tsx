@@ -35,6 +35,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/operator-reset" element={renderLazyPage('./pages/OperatorResetPage.tsx')} />
+      <Route path="/dev/robot-preview" element={renderLazyPage('./pages/RobotPreviewPage.tsx')} />
       <Route path="/huquqiy/ommaviy-oferta" element={renderLazyPage('./pages/legal/LegalOfferPage.tsx')} />
       <Route path="/huquqiy/maxfiylik" element={renderLazyPage('./pages/legal/LegalPrivacyPage.tsx')} />
       <Route path="/huquqiy/qaytarish" element={renderLazyPage('./pages/legal/LegalRefundPage.tsx')} />

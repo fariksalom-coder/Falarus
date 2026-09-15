@@ -10,9 +10,13 @@ export type PricingCardProps = {
   badge?: string;
   pricePerMonth?: string;
   pricePerMonthUnit?: string;
+  /** Masalan: «≈ 418 050 so‘m» — RUB ostida kurs bo‘yicha. */
+  priceSecondary?: string;
   compareAtPrice?: string;
   topCompareAtPrice?: string;
   discountPercent?: number;
+  /** Masalan: «5 000 ₽» — tejamkorlikni ajratib ko‘rsatish. */
+  savingsAmount?: string;
   onSelect?: () => void;
   purchaseDisabled?: boolean;
   purchaseDisabledLabel?: string;
@@ -38,7 +42,7 @@ function CompareAtRow({
           }}
         >
           <span className="rounded-md bg-[#DC2626] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-            Eski
+            To‘liq
           </span>
           <span className="text-[18px] font-black tabular-nums leading-none text-[#7F1D1D] line-through decoration-[3px] decoration-[#DC2626] sm:text-[20px]">
             {compareAtPrice}
@@ -54,6 +58,25 @@ function CompareAtRow({
   );
 }
 
+function SavingsBanner({ amount, dark }: { amount: string; dark?: boolean }) {
+  return (
+    <div
+      className={`mt-3 flex items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-center ${
+        dark
+          ? 'bg-[#22C55E]/20 ring-1 ring-[#4ADE80]/45'
+          : 'bg-[#ECFDF5] ring-1 ring-[#86EFAC]'
+      }`}
+    >
+      <span className={`text-[12px] font-extrabold uppercase tracking-[0.06em] ${dark ? 'text-[#BBF7D0]' : 'text-[#166534]'}`}>
+        Tejaysiz
+      </span>
+      <span className={`text-[18px] font-black tabular-nums leading-none ${dark ? 'text-[#86EFAC]' : 'text-[#15803D]'}`}>
+        {amount}
+      </span>
+    </div>
+  );
+}
+
 export default function PricingCard({
   duration,
   price,
@@ -64,16 +87,18 @@ export default function PricingCard({
   badge,
   pricePerMonth,
   pricePerMonthUnit,
+  priceSecondary,
   compareAtPrice,
   discountPercent,
+  savingsAmount,
   onSelect,
   purchaseDisabled = false,
   purchaseDisabledLabel = "To'lov tekshirilmoqda",
 }: PricingCardProps) {
   const useNewStructure = pricePerMonth != null;
 
-  // Highlighted (year) → navy card with guilloche + gold accents.
-  // Regular (month) → cream card with navy accents.
+  // Highlighted → navy card with guilloche + gold accents.
+  // Regular → cream card with navy accents.
   if (highlighted) {
     return (
       <div className="relative flex flex-col overflow-hidden rounded-[24px] shadow-[0_22px_44px_-16px_rgba(15,27,59,0.5)]">
@@ -102,8 +127,16 @@ export default function PricingCard({
             ) : null}
           </div>
 
+          {priceSecondary ? (
+            <p className="mt-1.5 text-[13px] font-bold tabular-nums text-[#E7C578]/95">
+              ≈ {priceSecondary}
+            </p>
+          ) : null}
+
+          {savingsAmount ? <SavingsBanner amount={savingsAmount} dark /> : null}
+
           {description ? (
-            <p className="mt-2 text-[12.5px] font-bold text-[#D4AC5C]">≈ {description}</p>
+            <p className="mt-2 text-[12.5px] font-bold text-[#D4AC5C]">{description}</p>
           ) : null}
 
           <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-[#D4AC5C]/40 to-transparent" />
@@ -146,7 +179,7 @@ export default function PricingCard({
     );
   }
 
-  // Non-highlighted (month) — cream card with navy outline CTA.
+  // Non-highlighted — cream card with navy outline CTA.
   return (
     <div className="relative flex flex-col rounded-[24px] bg-pmn-card p-6 shadow-[0_14px_28px_-14px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border">
       {badge ? (
@@ -173,8 +206,16 @@ export default function PricingCard({
         ) : null}
       </div>
 
+      {priceSecondary ? (
+        <p className="mt-1.5 text-[13px] font-bold tabular-nums text-pmn-text-muted">
+          ≈ {priceSecondary}
+        </p>
+      ) : null}
+
+      {savingsAmount ? <SavingsBanner amount={savingsAmount} /> : null}
+
       {description ? (
-        <p className="mt-1.5 text-[12px] font-semibold text-pmn-text-muted">≈ {description}</p>
+        <p className="mt-1.5 text-[12px] font-semibold text-pmn-text-muted">{description}</p>
       ) : null}
 
       <div className="mt-4 h-px w-full bg-[#E4DBBE]" />

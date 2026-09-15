@@ -17,6 +17,7 @@ import { adminCreateUserWithAccess } from '../services/adminCreateUser.service.j
 import { ensureSupportChatForUser } from '../lib/ensureSupportChat.js';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
 import { activateTeacherMarketplacePayment } from '../services/teacherMarketplace.service.js';
+import { activateRussianSubscription } from '../../shared/paymentActivation.js';
 
 const BROADCAST_FILTERS = [
   'subscription_active',
@@ -542,8 +543,9 @@ export function createAdminController(supabase: DbClient) {
       const identifier = typeof body.identifier === 'string' ? body.identifier.trim() : '';
       const password = typeof body.password === 'string' ? body.password : '';
       const russianTariff =
+        body.russianTariff === 'month' ||
         body.russianTariff === 'three_month' ||
-        body.russianTariff === 'year' ||
+        body.russianTariff === 'six_month' ||
         body.russianTariff === 'week'
           ? body.russianTariff
           : null;
@@ -672,9 +674,7 @@ export function createAdminController(supabase: DbClient) {
         user_id: r.user_id,
         plan:
           productCode === 'russian'
-            ? r.tariff_type === 'year'
-              ? '1 yil'
-              : '1 oy'
+            ? getPaymentDisplayLabel(productCode, r.tariff_type)
             : getPaymentProductLabel(productCode),
         tariff_type: r.tariff_type,
         product_code: productCode,
@@ -732,34 +732,10 @@ export function createAdminController(supabase: DbClient) {
       }
 
       if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
-        const planType = tariffType === 'year' ? 'yearly' : 'three_month';
-        const daysToAdd = tariffType === 'year' ? 365 : 90;
-        const planName = tariffType === 'year' ? '1 YIL' : '3 OY';
-        const { data: current } = await supabase
-          .from('users')
-          .select('plan_expires_at')
-          .eq('id', userId)
-          .single();
-        const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null;
-        const startFrom = currentEnd && currentEnd > now ? currentEnd : now;
-        const ext = new Date(startFrom);
-        ext.setDate(ext.getDate() + daysToAdd);
-
-        const { error: updateUserErr } = await supabase
-          .from('users')
-          .update({ plan_name: planName, plan_expires_at: ext.toISOString() })
-          .eq('id', userId);
-        if (updateUserErr) {
-          console.error('[admin/confirmPayment] users update', updateUserErr);
-          return res.status(500).json({ error: updateUserErr.message });
-        }
-
-        await subscriptionService.createOrExtendSubscription(
-          supabase as any,
+        await activateRussianSubscription(supabase as any, {
           userId,
-          planType as any,
-          ext
-        );
+          tariffType,
+        });
       }
       await activateTeacherMarketplacePayment(supabase, { paymentId: id, userId, productCode });
       subscriptionService.invalidateAccessCache(userId);
@@ -1473,8 +1449,8 @@ export function createAdminController(supabase: DbClient) {
   async function updateTariffPrice(req: Request, res: Response) {
     const body = req.body || {};
     const { tariff_type, currency, price } = body;
-    if (!tariff_type || !['three_month', 'year'].includes(tariff_type)) {
-      return res.status(400).json({ error: 'tariff_type kerak: three_month, year' });
+    if (!tariff_type || !['month', 'three_month', 'six_month'].includes(tariff_type)) {
+      return res.status(400).json({ error: 'tariff_type kerak: month, three_month, six_month' });
     }
     if (!currency || !['UZS', 'RUB', 'USD'].includes(currency)) {
       return res.status(400).json({ error: 'currency kerak: UZS, RUB, USD' });

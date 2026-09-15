@@ -9,7 +9,9 @@ export default function AdminCreateUserPage() {
   const [lastName, setLastName] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [russianTariff, setRussianTariff] = useState<'none' | 'month' | 'year' | 'week'>('none');
+  const [russianTariff, setRussianTariff] = useState<
+    'none' | 'month' | 'three_month' | 'six_month' | 'week'
+  >('none');
   const [grantPatent, setGrantPatent] = useState(false);
   const [grantVnzh, setGrantVnzh] = useState(false);
   const [courseCurrency, setCourseCurrency] = useState<'UZS' | 'USD' | 'RUB'>('UZS');
@@ -23,7 +25,7 @@ export default function AdminCreateUserPage() {
 
   const isWeekTrial = russianTariff === 'week';
 
-  function onRussianTariffChange(value: 'none' | 'month' | 'year' | 'week') {
+  function onRussianTariffChange(value: 'none' | 'month' | 'three_month' | 'six_month' | 'week') {
     setRussianTariff(value);
     if (value === 'week') {
       setGrantPatent(false);
@@ -245,13 +247,18 @@ export default function AdminCreateUserPage() {
             <label className="block text-sm font-medium text-app-text mb-1">Rus tili kursi</label>
             <select
               value={russianTariff}
-              onChange={(e) => onRussianTariffChange(e.target.value as 'none' | 'month' | 'year' | 'week')}
+              onChange={(e) =>
+                onRussianTariffChange(
+                  e.target.value as 'none' | 'month' | 'three_month' | 'six_month' | 'week'
+                )
+              }
               className="w-full rounded-xl border border-app-border px-3 py-2.5 text-sm bg-app-surface focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
             >
               <option value="none">Tanlanmagan</option>
               <option value="week">1 hafta — bepul sinov</option>
-              <option value="month">1 oy</option>
-              <option value="year">1 yil</option>
+              <option value="month">1 oy — 3 000 ₽</option>
+              <option value="three_month">3 oy — 4 000 ₽</option>
+              <option value="six_month">6 oy — 6 000 ₽</option>
             </select>
             {isWeekTrial && (
               <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">

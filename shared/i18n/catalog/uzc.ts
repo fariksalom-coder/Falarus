@@ -389,8 +389,9 @@ const uzc: MessageCatalog = {
     readingFinishDelay: 'Якунлаш учун {{seconds}} сония о‘қинг',
     sentenceTestSoon: 'Гап тузиш тести тез орада ({{count}} савол)',
     speakingDoneAlready: 'Гапириш бо‘лими бажарилган',
-    freeLimitTitle: 'Бепул кунлар тугади!',
-    freeLimitBody: '1-кунни муваффақиятли якунладингиз. Давом етиш учун тўлиқ курсни сотиб олинг — 2-кун ва кейинги дарслар Premium билан очилади.',
+    freeLimitTitle: 'Обуна керак',
+    freeLimitBody:
+      'Кунлик курс тўлиқ обуна билан очилади. Тўловдан кейин 182 куннинг ҳаммаси очиқ бўлади.',
     chooseTariff: 'Тарифни танлаш',
     continueCta: 'Давом етиш учун босинг',
     testHint: 'Камида 80% билан о‘тинг',

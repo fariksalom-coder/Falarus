@@ -1,10 +1,10 @@
 import { ConversationMicGate } from '../../utils/conversationAudio';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import { Loader2, PhoneOff } from 'lucide-react';
 import { apiUrl } from '../../api';
 import type { KunSavol } from '../../api/ustozDoska';
 import { MikrofonOqimi, OvozNavbati } from '../../utils/liveAudio';
+import UstozRobotAvatar from './UstozRobotAvatar';
 
 /**
  * UstozLive — doskadagi JONLI ovozli savol-javob.
@@ -389,77 +389,52 @@ export default function UstozLive({
   const jonli = holat === 'jonli';
 
   return (
-    <div className="flex flex-col items-center">
-      {/* Ustoz — yagona ko'rgazmali element */}
-      <div className="relative flex h-[210px] w-full items-end justify-center">
-        {/* Gapirayotganda tarqaladigan halqalar */}
-        {gapiryapti
-          ? [0, 1].map((i) => (
-              <motion.span
-                key={i}
-                className="absolute bottom-6 h-[130px] w-[130px] rounded-full bg-[#5B3FA8]/12"
-                animate={{ scale: [0.85, 1.5], opacity: [0.55, 0] }}
-                transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.9, ease: 'easeOut' }}
-              />
-            ))
-          : null}
+    <div
+      className="flex min-h-[70vh] flex-col items-center justify-between px-4 pb-6 pt-4"
+      style={{ background: '#101728' }}
+    >
+      <div className="relative flex w-full flex-1 items-center justify-center">
+        <UstozRobotAvatar speaking={gapiryapti} displayHeight={340} />
+      </div>
 
-        {/*
-          Tinglayotganda halqa o'quvchining OVOZIGA qarab kengayadi —
-          mikrofon ishlayotgani shu bilan bilinadi.
-        */}
-        {jonli && !gapiryapti ? (
-          <span
-            className="absolute bottom-6 rounded-full bg-[#5B3FA8]/10 transition-transform duration-100"
-            style={{
-              height: 130,
-              width: 130,
-              transform: `scale(${(0.8 + Math.min(0.45, daraja * 2.2)).toFixed(3)})`,
-            }}
-          />
+      <div className="flex w-full flex-col items-center">
+        {holat === 'ulanmoqda' ? (
+          <div className="mb-3 flex items-center gap-2">
+            <Loader2 size={15} className="animate-spin text-white/70" />
+            <p className="text-[14px] font-bold leading-none text-white/70">Ulanmoqda…</p>
+          </div>
         ) : null}
 
-        <motion.img
-          src="/app-mobile/images/ustoz/robot.png"
-          alt=""
-          aria-hidden
-          draggable={false}
-          className="relative h-[196px] w-auto select-none object-contain drop-shadow-[0_18px_28px_rgba(45,27,105,0.22)]"
-          animate={gapiryapti ? { y: [0, -6, 0] } : { y: 0 }}
-          transition={gapiryapti ? { duration: 1.6, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
-        />
-      </div>
+        {jonli && qoldi !== null ? (
+          <span
+            className={`mb-3 rounded-full px-3 py-1 text-[12.5px] font-black tabular-nums ${
+              qoldi <= 30 ? 'bg-[#FEF3E2] text-[#B45309]' : 'bg-white/10 text-white/90'
+            }`}
+            title="Suhbat tugashiga qolgan vaqt"
+          >
+            {Math.floor(qoldi / 60)}:{String(qoldi % 60).padStart(2, '0')}
+          </span>
+        ) : null}
 
-      {/* Holat — bir qator, o'qishga majburlamaydigan qisqa yozuv */}
-      <div className="mt-1 flex items-center gap-2">
-        {holat === 'ulanmoqda' ? <Loader2 size={15} className="animate-spin text-[#5B3FA8]" /> : null}
-        <p className="text-[15px] font-black leading-none text-[#2D1B69]">
-          {holat === 'ulanmoqda' ? 'Ustoz ulanmoqda…' : gapiryapti ? 'Ustoz gapiryapti' : 'Sizni tinglayapti'}
-        </p>
-      </div>
-
-      {jonli && <p className="mt-2 text-center text-xs text-[#7A6C9E]">{gapiryapti ? 'Savolni tinglang — mikrofon vaqtincha jim.' : 'Savol tugagach, javobingizni ayting.'}</p>}
-      {jonli && qoldi !== null ? (
-        <span
-          className={`mt-2 rounded-full px-3 py-1 text-[12.5px] font-black tabular-nums ${
-            qoldi <= 30 ? 'bg-[#FEF3E2] text-[#B45309]' : 'bg-[#EDE9FB] text-[#5B3FA8]'
-          }`}
-          title="Suhbat tugashiga qolgan vaqt"
+        {holat === 'ulanmoqda' && (
+          <button
+            type="button"
+            className="mb-3 min-h-[44px] rounded-xl bg-white px-5 text-sm font-bold text-[#101728]"
+            onClick={() => {
+              void ovozRef.current?.tayyorla().catch(() => {});
+            }}
+          >
+            Ovozni yoqish
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={yakunla}
+          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-white/10 px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
         >
-          {Math.floor(qoldi / 60)}:{String(qoldi % 60).padStart(2, '0')}
-        </span>
-      ) : null}
-
-      {holat === 'ulanmoqda' && <button type="button" className="mt-3 min-h-[44px] rounded-xl bg-[#5B3FA8] px-5 text-sm font-bold text-white" onClick={() => { void ovozRef.current?.tayyorla().catch(() => {}); }}>
-        Ovozni yoqish
-      </button>}
-      <button
-        type="button"
-        onClick={yakunla}
-        className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border border-[#DDD7F5] px-4 text-[14px] font-bold text-[#5B3FA8] transition active:scale-[0.98]"
-      >
-        <PhoneOff size={16} /> Suhbatni tugatish
-      </button>
+          <PhoneOff size={16} /> Suhbatni tugatish
+        </button>
+      </div>
     </div>
   );
 }

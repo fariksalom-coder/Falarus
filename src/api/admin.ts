@@ -344,7 +344,7 @@ export async function createAdminUser(body: {
   lastName: string;
   identifier: string;
   password: string;
-  russianTariff: 'month' | 'year' | 'week' | null;
+  russianTariff: 'month' | 'three_month' | 'six_month' | 'week' | null;
   grantPatent: boolean;
   grantVnzh: boolean;
   courseCurrency?: 'UZS' | 'USD' | 'RUB';

@@ -399,9 +399,9 @@ const uz: MessageCatalog = {
     readingFinishDelay: 'Yakunlash uchun {{seconds}} soniya o‘qing',
     sentenceTestSoon: 'Gap tuzish testi tez orada ({{count}} savol)',
     speakingDoneAlready: 'Gapirish bo‘limi bajarilgan',
-    freeLimitTitle: 'Bepul kunlar tugadi!',
+    freeLimitTitle: 'Obuna kerak',
     freeLimitBody:
-      '1-kunni muvaffaqiyatli yakunladingiz. Davom etish uchun to‘liq kursni sotib oling — 2-kun va keyingi darslar Premium bilan ochiladi.',
+      'Kunlik kurs to‘liq obuna bilan ochiladi. To‘lovdan keyin 182 kunning hammasi ochiq bo‘ladi.',
     chooseTariff: 'Tarifni tanlash',
     continueCta: 'Davom etish uchun bosing',
     testHint: 'Kamida 80% bilan o‘ting',

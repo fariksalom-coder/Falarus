@@ -29,6 +29,13 @@ export async function audit(c: PoolClient, operator: number | null, admin: numbe
 export async function enqueue(c: PoolClient, method: string, payload: any, dedupe: string | null = null, contract: number | null = null) {
     await c.query(`INSERT INTO operator_outbox(method,payload,dedupe,contract_id,operator_id) VALUES($1,$2,$3,$4,(SELECT id FROM operator_accounts WHERE telegram_id=$5 AND active)) ON CONFLICT(dedupe) DO NOTHING`, [method, JSON.stringify(payload), dedupe, contract, payload.chat_id ?? null]);
 }
+const TARIFF_CHOICES: [string, string][] = [
+  ['1 oy — 3 000 ₽', 'tariff:month'],
+  ['3 oy — 4 000 ₽', 'tariff:three_month'],
+  ['6 oy — 6 000 ₽', 'tariff:six_month'],
+];
+const TARIFF_CODES = new Set(['month', 'three_month', 'six_month']);
+
 const menu = [['Yangi foydalanuvchi qo‘shish', 'create_customer'], ['Qidirish', 'search'], ['Barcha foydalanuvchilar', 'list:0'], ['Qarzlarim', 'debts'], ['Hisobotim', 'report'], ['Parolni almashtirish', 'password'], ['Chiqish', 'logout']];
 const buttons = (items: string[][]) => ({ inline_keyboard: items.map(([text, callback_data]) => [{ text, callback_data }]) });
 const date = (d: any) => d ? new Date(d).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' }) : '—';
@@ -155,7 +162,7 @@ export async function handleUpdate(update: any) {
                     text: `O‘quvchi #${uid} yaratildi: ${state.firstName} ${state.lastName}\nKirish: ${state.phone}${state.email ? ' yoki ' + state.email : ''}\nO‘quvchi o‘z parolini o‘rnatishi uchun havola (30 daqiqa, bir marta):\n${link}\nFaqat shu o‘quvchiga yuboring. Tarif hali faollashtirilmagan.`,
                     link_preview_options: { is_disabled: true } }, `reset-link:${update.update_id}`);
                 await save({ step: 'tariff', uid });
-                await say('Endi shu o‘quvchi uchun tarifni tanlang:', [['3 oy', 'tariff:three_month'], ['1 yil', 'tariff:year'], ['Mijoz kartasi', `user:${uid}`]]);
+                await say('Endi shu o‘quvchi uchun tarifni tanlang:', [...TARIFF_CHOICES, ['Mijoz kartasi', `user:${uid}`]]);
                 return;
             }
             if (action === 'search') {
@@ -245,7 +252,7 @@ export async function handleUpdate(update: any) {
                 if (!(await c.query('SELECT 1 FROM users WHERE id=$1', [uid])).rowCount)
                     throw new Error('Foydalanuvchi topilmadi.');
                 await save({ step: 'tariff', uid });
-                await say('Tarifni tanlang:', ['3 oy', '1 yil'].map((t, i) => [t, `tariff:${i ? 'year' : 'three_month'}`]));
+                await say('Tarifni tanlang:', TARIFF_CHOICES);
                 return;
             }
             if (action.startsWith('settle:')) {
@@ -259,7 +266,7 @@ export async function handleUpdate(update: any) {
             }
             if (state.step === 'tariff' && action.startsWith('tariff:')) {
                 const tariff = action.split(':')[1];
-                if (!['three_month', 'year'].includes(tariff))
+                if (!TARIFF_CODES.has(tariff))
                     throw new Error('Tarif noto‘g‘ri.');
                 await save({ ...state, tariff, step: 'source' });
                 await say('Mijoz qayerdan kelgan?', ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'].map(x => [x, `source:${x}`]));

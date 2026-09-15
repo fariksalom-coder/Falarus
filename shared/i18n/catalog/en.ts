@@ -298,9 +298,9 @@ const en: DeepPartial<MessageCatalog> = {
     daySpeaking: 'Day {{day}} · Speaking',
     seqHint2: 'Complete task 1 first',
     seqHint3: 'Complete task 2 first',
-    freeLimitTitle: 'Free days are over!',
+    freeLimitTitle: 'Subscription required',
     freeLimitBody:
-      'You completed day 1. To keep learning, buy the full course — day 2 and beyond unlock with Premium.',
+      'The daily course unlocks with a full subscription. After payment, all 182 days are available.',
     chooseTariff: 'Choose a plan',
     continueCta: 'Tap to continue',
   },

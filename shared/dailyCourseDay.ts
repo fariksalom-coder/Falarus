@@ -154,10 +154,11 @@ export type DailyCourseDayBundle = {
 export const DAILY_COURSE_DAY_MIN = 1;
 export const DAILY_COURSE_DAY_MAX = 182;
 
-/** Obunasiz kunlik kurs: faqat shu kunlar (grammatika, lug‘at, o‘qish, gapirish). */
-export const FREE_KUNLIK_DAY_LIMIT = 1;
+/** Obunasiz kunlik kurs: bepul kun YO'Q (0). Avval 1-kun bepul edi. */
+export const FREE_KUNLIK_DAY_LIMIT = 0;
 
 export function isFreeKunlikDay(dayNumber: number): boolean {
+  if (FREE_KUNLIK_DAY_LIMIT < DAILY_COURSE_DAY_MIN) return false;
   return (
     Number.isInteger(dayNumber) &&
     dayNumber >= DAILY_COURSE_DAY_MIN &&

@@ -1,14 +1,13 @@
 export type CurrencyCode = 'UZS' | 'RUB' | 'USD';
 /**
  * Russian language course subscription plans.
- *   • three_month — 3 oy (90 days) entry-level plan.
- *   • year        — 1 yil (365 days) full plan.
+ *   • month       — 1 oy (30 days)
+ *   • three_month — 3 oy (90 days)
+ *   • six_month   — 6 oy (180 days)
  *
- * Legacy value 'month' (30-day plan, deprecated 2026-07) is still recognised
- * by getSubscriptionTariffLabel so historic payment history renders correctly,
- * but new checkouts must use 'three_month' or 'year'.
+ * Legacy values 'year' / old 'month' still recognised in labels for payment history.
  */
-export type SubscriptionTariffType = 'three_month' | 'year';
+export type SubscriptionTariffType = 'month' | 'three_month' | 'six_month' | 'year';
 export type CourseProductCode = 'patent' | 'vnzh';
 export type TeacherListingProductCode = 'teacher_listing';
 export type TeacherTrialProductCode = 'teacher_trial';
@@ -119,7 +118,7 @@ export function isCurrencyCode(value: unknown): value is CurrencyCode {
 }
 
 export function isSubscriptionTariffType(value: unknown): value is SubscriptionTariffType {
-  return value === 'three_month' || value === 'year';
+  return value === 'month' || value === 'three_month' || value === 'six_month' || value === 'year';
 }
 
 export function isCourseProductCode(value: unknown): value is CourseProductCode {
@@ -153,15 +152,19 @@ export function getPaymentProductLabel(productCode: PaymentProductCode): string 
 }
 
 export function getSubscriptionTariffLabel(tariffType: SubscriptionTariffType): string {
+  if (tariffType === 'six_month') return '6 OY';
+  if (tariffType === 'three_month') return '3 OY';
+  if (tariffType === 'month') return '1 OY';
   if (tariffType === 'year') return '1 YIL';
   return '3 OY';
 }
 
-/** Historic-friendly label — accepts legacy 'month' from payment history. */
+/** Historic-friendly label — accepts legacy codes from payment history. */
 export function getSubscriptionTariffLabelLoose(tariffType: string | null | undefined): string {
-  if (tariffType === 'year') return '1 YIL';
+  if (tariffType === 'year' || tariffType === 'yearly') return '1 YIL';
+  if (tariffType === 'six_month') return '6 OY';
   if (tariffType === 'three_month') return '3 OY';
-  if (tariffType === 'month') return '1 OY';
+  if (tariffType === 'month' || tariffType === 'monthly') return '1 OY';
   return '';
 }
 

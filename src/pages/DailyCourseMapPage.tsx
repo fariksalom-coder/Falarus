@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, Lock } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, Lock, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { useKunlikProgress, type KunlikDayProgress } from '../hooks/useKunlikProgress';
@@ -13,7 +13,6 @@ import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
 import { rememberKunlikOpenedDay } from '../utils/kunlikLastDay';
 import { getLifeScene, type LifeScene } from '../data/lifeJourney';
 import LifeSceneOverlay from '../components/journey/LifeSceneOverlay';
-import HomeDiscountTimerLink from '../components/pricing/HomeDiscountTimerLink';
 
 /** 6 stages of 30 days each (last one = 32 days to cover 182). */
 const STAGES = [
@@ -48,9 +47,9 @@ export default function DailyCourseMapPage() {
   const oltin = Boolean(access?.golden);
   const premium = Boolean(access?.subscription_active);
   /*
-   * BEPUL DAVR TUGADIMI.
+   * OBUNA KERAKMI.
    *
-   * Ro'yxatdan o'tgan odamga 1-kun bepul. 2-kunga o'tganda to'lov kerak.
+   * Bepul kun yo'q: kunlik kurs faqat obuna bilan ochiladi.
    * Ilgari bu taklif faqat eski bosh sahifada turardi; xarita asosiy ekran
    * bo'lgach, o'quvchi to'lov haqida umuman xabar olmay qoldi — kunni
    * bosar, server esa jimgina rad etardi.
@@ -256,10 +255,6 @@ export default function DailyCourseMapPage() {
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.10), transparent 60%)' }}
         />
 
-        <div className="relative z-[2]">
-          <HomeDiscountTimerLink className="mt-0 mb-3" />
-        </div>
-
         <div className="relative z-[2] flex items-start gap-3">
           {/*
             "ORTGA" FAQAT ESKI MANZILDA.
@@ -317,6 +312,33 @@ export default function DailyCourseMapPage() {
           </div>
         </div>
       </header>
+
+      {/* Tariflar — bosh ekrandan to‘g‘ridan-to‘g‘ri */}
+      {!premium && !oltin ? (
+        <div className="mx-auto max-w-md px-4 pt-3">
+          <button
+            type="button"
+            onClick={() => navigate('/tariflar')}
+            className="flex w-full items-center justify-between gap-3 rounded-[18px] bg-white px-4 py-3.5 text-left shadow-[0_10px_24px_-12px_rgba(11,42,107,0.35)] ring-1 ring-app-border transition active:scale-[0.99]"
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-white"
+                style={{ background: 'linear-gradient(145deg, #0B2A6B, #123A8F)' }}
+              >
+                <Sparkles className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[14px] font-black text-app-text">Tariflarni ko‘rish</span>
+                <span className="block text-[12px] font-semibold text-app-text-muted">
+                  1 / 3 / 6 oy · Rahmat orqali to‘lov
+                </span>
+              </span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-app-primary" strokeWidth={2.8} aria-hidden />
+          </button>
+        </div>
+      ) : null}
 
       <main className="relative mx-auto max-w-md px-4 pt-6">
         {/*
@@ -486,9 +508,9 @@ export default function DailyCourseMapPage() {
                             qaytadi va o'z qadamini darhol ko'radi.
                           */}
                           {/*
-                            BEPUL DAVR TUGAGANDA — QADAMLAR O'RNIGA TO'LOV.
+                            OBUNASIZ — QADAMLAR O'RNIGA TO'LOV.
 
-                            1-kun bepul; 2-kundan boshlab obuna kerak.
+                            Bepul kun yo'q: kunlik kurs faqat obuna bilan ochiladi.
                             Qadamlar ro'yxatini ko'rsatib, keyin har bosishda
                             rad etish noto'g'ri bo'lardi: o'quvchi nima
                             uchun ishlamayotganini tushunmasdi. Shuning
@@ -504,7 +526,7 @@ export default function DailyCourseMapPage() {
                                 👑
                               </span>
                               <p className="mt-2.5 text-[15px] font-black text-app-text">
-                                1-kun tugadi
+                                Obuna kerak
                               </p>
                               <p className="mt-1.5 text-[13px] font-semibold leading-snug text-app-text-muted">
                                 {day}-kunni ochish uchun obuna kerak. To'lovdan keyin
@@ -512,10 +534,10 @@ export default function DailyCourseMapPage() {
                               </p>
                               <button
                                 type="button"
-                                onClick={() => setTolovOynasi(true)}
+                                onClick={() => navigate('/tariflar')}
                                 className="mt-3.5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#0B2A6B] px-4 text-[14px] font-black text-white shadow-[0_10px_24px_-12px_rgba(11,42,107,0.8)] transition active:scale-[0.99]"
                               >
-                                To'lov qilish
+                                Tariflarni ko‘rish
                                 <ArrowRight className="h-4 w-4" strokeWidth={2.8} />
                               </button>
                             </div>

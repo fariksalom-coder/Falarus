@@ -13,7 +13,7 @@ import { PATENT_COURSE_FREE_FOR_ALL } from '../../shared/courseAccess.js';
 
 // 'monthly' is kept for backward compatibility with historic subscriptions rows
 // (deprecated 2026-07); new activations use 'three_month' or 'yearly'.
-const PLAN_TYPES = ['monthly', 'three_month', 'yearly'] as const;
+const PLAN_TYPES = ['monthly', 'three_month', 'six_month', 'yearly'] as const;
 export type PlanType = (typeof PLAN_TYPES)[number];
 
 export type SubscriptionRow = {
@@ -114,6 +114,7 @@ export async function getActiveSubscription(
 const FALLBACK_DAYS_BY_TARIFF: Record<string, number> = {
   year: 365,
   yearly: 365,
+  six_month: 180,
   three_month: 90,
   month: 30,
   monthly: 30,

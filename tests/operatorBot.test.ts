@@ -182,7 +182,7 @@ test('operator conversation + admin workflow: authorization, replay, installment
         const studentToken = message.match(/#token=([A-Za-z0-9_-]{43})/)[1];
         await consumeOperatorReset(studentToken, 'StudentPassword2026!');
         assert.ok(await bcrypt.compare('StudentPassword2026!', (await db.query<any>('SELECT password FROM users WHERE id=$1', [student.id])).rows[0].password));
-        await click('tariff:year'); await click('source:Telegram'); await click('currency:UZS');
+        await click('tariff:six_month'); await click('source:Telegram'); await click('currency:UZS');
         await send('2000000'); await send('1000000'); await send('2027-12-01 10:00');
         await receipt('new-student-receipt'); await click('submit');
         const newReceipt = (await db.query<any>('SELECT r.id,c.operator_id,c.due_at,r.status FROM operator_receipts r JOIN operator_contracts c ON c.id=r.contract_id WHERE c.user_id=$1', [student.id])).rows[0];

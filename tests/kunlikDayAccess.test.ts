@@ -14,23 +14,18 @@ const freeAccess: AccessInfo = {
 };
 
 describe('kunlik free day access', () => {
-  it('allows days 1 through FREE_KUNLIK_DAY_LIMIT without subscription', () => {
-    for (let day = 1; day <= FREE_KUNLIK_DAY_LIMIT; day += 1) {
-      assert.strictEqual(isFreeKunlikDay(day), true);
-      assert.strictEqual(canAccessKunlikDay(day, freeAccess), true);
-    }
-  });
-
-  it('blocks day 2+ without subscription', () => {
+  it('has no free kunlik days without subscription', () => {
+    assert.strictEqual(FREE_KUNLIK_DAY_LIMIT, 0);
+    assert.strictEqual(isFreeKunlikDay(1), false);
+    assert.strictEqual(canAccessKunlikDay(1, freeAccess), false);
     assert.strictEqual(isFreeKunlikDay(2), false);
     assert.strictEqual(canAccessKunlikDay(2, freeAccess), false);
-    assert.strictEqual(isFreeKunlikDay(3), false);
-    assert.strictEqual(canAccessKunlikDay(3, freeAccess), false);
     assert.strictEqual(canAccessKunlikDay(182, freeAccess), false);
   });
 
   it('allows any day with active subscription', () => {
     const premium = { ...freeAccess, subscription_active: true };
+    assert.strictEqual(canAccessKunlikDay(1, premium), true);
     assert.strictEqual(canAccessKunlikDay(2, premium), true);
     assert.strictEqual(canAccessKunlikDay(3, premium), true);
     assert.strictEqual(canAccessKunlikDay(182, premium), true);

@@ -3,7 +3,7 @@ import { isFreeKunlikDay } from '../../shared/dailyCourseDay';
 
 /**
  * Check if user can access a kunlik reja day (grammar, vocab, reading, speaking).
- * Free tier: days 1–FREE_KUNLIK_DAY_LIMIT only.
+ * Free kunlik days: none (subscription required for all days).
  */
 export function canAccessKunlikDay(dayNumber: number, access: AccessInfo): boolean {
   if (access.subscription_active) return true;

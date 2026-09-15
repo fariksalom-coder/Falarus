@@ -42,7 +42,7 @@ type DiscountCountdownBannerProps = {
  */
 export default function DiscountCountdownBanner({
   title = '15-sentyabr 24:00 da tariflar yangilanadi',
-  subtitle = 'Shu vaqtgacha 50% chegirma bilan eski narxda obuna bo‘lishingiz mumkin.',
+  subtitle = 'Shu vaqtgacha 3 va 6 oylik tariflarda katta tejam — hozir obuna bo‘ling.',
   className = '',
 }: DiscountCountdownBannerProps) {
   const [remaining, setRemaining] = useState<DiscountRemaining>(() => getDiscountRemaining());
@@ -88,7 +88,7 @@ export default function DiscountCountdownBanner({
             }}
           />
           <div className="relative flex flex-col items-center text-center text-white">
-            <span className="text-[18px] font-black leading-none sm:text-[22px]">-50%</span>
+            <span className="text-[18px] font-black leading-none sm:text-[22px]">Tejam</span>
             <span className="mt-0.5 text-[8px] font-black uppercase tracking-[0.12em] sm:text-[9px]">
               Chegirma
             </span>

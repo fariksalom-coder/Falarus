@@ -43,7 +43,7 @@ export default function HomeDiscountTimerLink({ className = '' }: { className?: 
             <Clock className="h-[18px] w-[18px]" strokeWidth={2.8} aria-hidden />
           </span>
           <p className="text-[13px] font-black leading-tight tracking-tight text-white">
-            −50% CHEGIRMA
+            TEJAMLI TARIF
           </p>
         </div>
 

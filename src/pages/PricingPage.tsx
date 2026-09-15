@@ -1,17 +1,20 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowLeft, Info } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
-import CurrencyModal from '../components/pricing/CurrencyModal';
-import DiscountCountdownBanner from '../components/pricing/DiscountCountdownBanner';
-import { getTariffPricesByCurrency, getUserTariffPricesByCurrency } from '../api/publicPricing';
-import type { Currency } from '../components/pricing/CurrencyModal';
-import { openRahmatCheckout } from '../api/rahmat';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { useLocale } from '../context/LocaleContext';
+import { useRubUzsRate } from '../hooks/useRubUzsRate';
+import { openRahmatCheckout } from '../api/rahmat';
+import {
+  formatRubAmount,
+  RUSSIAN_TARIFF_PLANS_RUB,
+  type RussianTariffCode,
+} from '../../shared/russianTariffs';
+import { formatRubUzsPair } from '../../shared/rubUzs';
 
 const BENEFIT_KEYS = [
   'pricing.benefitGrammar',
@@ -23,80 +26,21 @@ const BENEFIT_KEYS = [
 ] as const;
 
 type PlanCard = {
-  tariffType: 'three_month' | 'year';
+  tariffType: RussianTariffCode;
   duration: string;
   price: string;
   pricePerMonth: string;
   pricePerMonthUnit: string;
-  compareAtPrice: string;
-  topCompareAtPrice?: string;
-  /** Ilgari va joriy narxlardan hisoblangan chegirma foizi */
+  priceSecondary?: string;
+  compareAtPrice?: string;
   discountPercent?: number;
+  savingsAmount?: string;
+  description?: string;
   features: string[];
   buttonLabel: string;
   highlighted: boolean;
   badge?: string;
 };
-
-/** Marketing: ilgari narxlari (chiziq bilan kartochkada) */
-const WAS_UZS = {
-  three_month: 597_000,
-  year: 2_388_000,
-} as const;
-
-function formatPrice(n: number): string {
-  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-/** Ilgari narxdan chegirma foizi (yaxlitlangan). */
-function discountPercentFromWas(was: number, sale: number): number | undefined {
-  if (!Number.isFinite(was) || !Number.isFinite(sale) || was <= 0 || sale <= 0 || sale >= was) return undefined;
-  const pct = Math.round(((was - sale) / was) * 100);
-  return pct > 0 ? pct : undefined;
-}
-
-/** Kartochkalar: joriy `tariff_prices` UZS. Ilgari narxlari dizayn konstantalari. */
-function buildPlansFromTariffPrices(
-  prices: { three_month: number; year: number },
-  copy: {
-    threeMonthLabel: string;
-    yearLabel: string;
-    threeMonthBuy: string;
-    yearBuy: string;
-    popular: string;
-    currency: string;
-  },
-  features: string[],
-): PlanCard[] {
-  const { three_month, year } = prices;
-  return [
-    {
-      tariffType: 'year',
-      duration: copy.yearLabel,
-      price: `${formatPrice(year)} ${copy.currency}`,
-      pricePerMonth: formatPrice(year),
-      pricePerMonthUnit: copy.currency,
-      compareAtPrice: `${formatPrice(WAS_UZS.year)} ${copy.currency}`,
-      discountPercent: discountPercentFromWas(WAS_UZS.year, year),
-      features,
-      buttonLabel: copy.yearBuy,
-      highlighted: false,
-    },
-    {
-      tariffType: 'three_month',
-      duration: copy.threeMonthLabel,
-      price: `${formatPrice(three_month)} ${copy.currency}`,
-      pricePerMonth: formatPrice(three_month),
-      pricePerMonthUnit: copy.currency,
-      compareAtPrice: `${formatPrice(WAS_UZS.three_month)} ${copy.currency}`,
-      discountPercent: discountPercentFromWas(WAS_UZS.three_month, three_month),
-      features,
-      buttonLabel: copy.threeMonthBuy,
-      highlighted: true,
-      badge: `${copy.popular} ⭐`,
-    },
-  ];
-}
 
 const WHY_COURSE = [
   {
@@ -119,7 +63,7 @@ const WHY_COURSE = [
     titleKey: 'pricing.whyLeaderboardTitle',
     descriptionKey: 'pricing.whyLeaderboardDesc',
   },
-  ] as const;
+] as const;
 
 const VOCAB_STEPS = [
   { num: '1', titleKey: 'kunlik.stepLearn', descKey: 'pricing.vocabStepLearnDesc' },
@@ -127,20 +71,38 @@ const VOCAB_STEPS = [
   { num: '3', titleKey: 'kunlik.stepPairs', descKey: 'pricing.vocabStepPairsDesc' },
 ] as const;
 
+function buildRubPlans(
+  features: string[],
+  popularLabel: string,
+  rubUzsRate: number,
+): PlanCard[] {
+  return RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {
+    const perMonth = Math.round(plan.priceRub / plan.months);
+    const highlighted = plan.code === 'three_month';
+    const hasSavings = plan.savingsRub > 0;
+    const { labelUzs } = formatRubUzsPair(plan.priceRub, rubUzsRate);
+    return {
+      tariffType: plan.code,
+      duration: plan.labelUz,
+      price: `${formatRubAmount(plan.priceRub)} ₽`,
+      pricePerMonth: formatRubAmount(plan.priceRub),
+      pricePerMonthUnit: '₽',
+      priceSecondary: labelUzs,
+      compareAtPrice: hasSavings ? `${formatRubAmount(plan.wasRub)} ₽` : undefined,
+      discountPercent: hasSavings ? plan.discountPercent : undefined,
+      savingsAmount: hasSavings ? `${formatRubAmount(plan.savingsRub)} ₽` : undefined,
+      description: plan.months > 1 ? `≈ ${formatRubAmount(perMonth)} ₽ / oy` : undefined,
+      features,
+      buttonLabel: 'Rahmat orqali to‘lash',
+      highlighted,
+      badge: highlighted ? `${popularLabel} ⭐` : undefined,
+    };
+  });
+}
+
 export default function PricingPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  /*
-   * ORTGA — BITTA QADAM.
-   *
-   * Tariflar sahifasiga har xil joydan kelinadi: bosh sahifadan, profildan,
-   * to'lov taklifidan. Shuning uchun `'/'` ga qaytarish noto'g'ri edi —
-   * profildan kelgan odam ham bosh ekranga uloqtirilardi.
-   *
-   * `location.key === 'default'` — sahifa TO'G'RIDAN-TO'G'RI ochilgan
-   * (havola orqali, ilova ichida hech qayerdan kelinmagan). Faqat o'shanda
-   * bosh sahifaga qaytariladi, aks holda oddiy bitta qadam ortga.
-   */
   const ortga = () => {
     if (location.key === 'default') navigate('/');
     else navigate(-1);
@@ -149,86 +111,40 @@ export default function PricingPage() {
   const { token } = useAuth();
   const { access } = useAccess();
   const { hasPendingPayment, refreshPayments } = usePaymentStatus();
+  const { rate: rubUzsRate, asOf: rateAsOf } = useRubUzsRate();
   const hasActivePremium = Boolean(access?.subscription_active);
-  const [plans, setPlans] = useState<PlanCard[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currencyQuotes, setCurrencyQuotes] = useState<
-    Partial<Record<Currency, { three_month: number; year: number }>>
-  >({});
-  const [currencyModal, setCurrencyModal] = useState<{ open: boolean; tariffType: 'three_month' | 'year'; tariffLabel: string } | null>(null);
   const [paymentError, setPaymentError] = useState('');
-  const planCopy = useMemo(
-    () => ({
-      threeMonthLabel: t('payment.buyThreeMonth'),
-      yearLabel: t('payment.buyYear'),
-      threeMonthBuy: t('payment.buyThreeMonthAction'),
-      yearBuy: t('payment.buyYearAction'),
-      popular: t('payment.popular'),
-      currency: t('payment.currency'),
-    }),
-    [t],
-  );
-  const benefits = useMemo(() => BENEFIT_KEYS.map((key) => t(key)), [t]);
+  const [buyingTariff, setBuyingTariff] = useState<RussianTariffCode | null>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    const load = async () => {
-      const prices = token
-        ? await getUserTariffPricesByCurrency(token, 'UZS')
-        : await getTariffPricesByCurrency('UZS');
-      setPlans(buildPlansFromTariffPrices(prices, planCopy, benefits));
-    };
-    load()
-      .catch(() => setPlans([]))
-      .finally(() => setLoading(false));
-  }, [token, planCopy, benefits]);
+  const benefits = useMemo(() => BENEFIT_KEYS.map((key) => t(key)), [t]);
+  const plans = useMemo(
+    () => buildRubPlans(benefits, t('payment.popular'), rubUzsRate),
+    [benefits, t, rubUzsRate],
+  );
 
   const handleSelectPlan = (plan: PlanCard) => {
-    setCurrencyModal({
-      open: true,
-      tariffType: plan.tariffType,
-      tariffLabel: plan.duration,
-    });
-    if (!token) return;
-    void Promise.all([
-      getUserTariffPricesByCurrency(token, 'UZS'),
-      getUserTariffPricesByCurrency(token, 'RUB'),
-      getUserTariffPricesByCurrency(token, 'USD'),
-    ]).then(([uzs, rub, usd]) => {
-      setCurrencyQuotes({ UZS: uzs, RUB: rub, USD: usd });
-    }).catch(() => {
-      setCurrencyQuotes({});
-    });
-  };
-
-  const handleCurrencySelect = (currency: Currency) => {
-    if (!currencyModal) return;
-    setPaymentError('');
-    if (currency === 'UZS') {
-      const { tariffType } = currencyModal;
-      setCurrencyModal(null);
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-      void (async () => {
-        try {
-          await openRahmatCheckout({
-            token,
-            productCode: 'russian',
-            tariffType,
-            afterCreate: refreshPayments,
-          });
-        } catch (e) {
-          setPaymentError(e instanceof Error ? e.message : t('payment.rahmatStartError'));
-        }
-      })();
+    if (!token) {
+      navigate('/login');
       return;
     }
-    navigate('/payment', {
-      state: { tariffType: currencyModal.tariffType, currency, tariffLabel: currencyModal.tariffLabel },
-    });
-    setCurrencyModal(null);
+    setPaymentError('');
+    setBuyingTariff(plan.tariffType);
+    void (async () => {
+      try {
+        await openRahmatCheckout({
+          token,
+          productCode: 'russian',
+          tariffType: plan.tariffType,
+          afterCreate: refreshPayments,
+        });
+      } catch (e) {
+        setPaymentError(
+          e instanceof Error ? e.message : 'Rahmat to‘lovini ochib bo‘lmadi. Qayta urinib ko‘ring.',
+        );
+      } finally {
+        setBuyingTariff(null);
+      }
+    })();
   };
 
   const scrollToTariffs = () => {
@@ -251,81 +167,73 @@ export default function PricingPage() {
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
           </button>
-          <h1 className="profile-heading text-[26px] leading-tight text-pmn-text">
-            Tariflar
-          </h1>
+          <h1 className="profile-heading text-[26px] leading-tight text-pmn-text">Tariflar</h1>
         </div>
-        {/* 1. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
+
         <section id="tariflar" className="mb-20">
-          <DiscountCountdownBanner />
           {token && hasPendingPayment && (
-            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/12 dark:text-amber-200">
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
               <Info className="h-5 w-5 shrink-0" />
-              <p className="text-sm font-medium">
-                {t('pricing.pendingNotice')}
-              </p>
+              <p className="text-sm font-medium">{t('pricing.pendingNotice')}</p>
             </div>
           )}
           {paymentError ? (
-            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/12 dark:text-red-300">
+            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
               {paymentError}
             </div>
           ) : null}
-          {loading ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:max-w-4xl md:mx-auto md:gap-8">
-              {[1, 2].map((i) => (
-                <div
-                  key={i}
-                  className={`animate-pulse rounded-2xl border border-app-border bg-app-surface p-6 ${
-                    i === 2 ? 'order-1 md:order-2' : 'order-2 md:order-1'
-                  }`}
-                >
-                  <div className="mb-4 h-6 w-16 rounded bg-app-bg-subtle" />
-                  <div className="mb-2 h-8 w-24 rounded bg-app-bg-subtle" />
-                  <div className="mb-6 h-6 w-32 rounded bg-app-bg-subtle" />
-                  <div className="space-y-3">
-                    {[1, 2, 3, 4].map((j) => (
-                      <div key={j} className="h-4 w-full rounded bg-app-bg-subtle" />
-                    ))}
-                  </div>
-                  <div className="mt-6 h-12 rounded-xl bg-app-bg-subtle" />
-                </div>
-              ))}
-            </div>
-          ) : plans && plans.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:max-w-4xl md:mx-auto md:gap-8">
-              {plans.map((plan) => (
-                <div
-                  key={plan.duration}
-                  className={
-                    plan.highlighted ? 'order-1 md:order-2' : 'order-2 md:order-1'
+
+          <p className="mb-5 text-center text-[12.5px] font-semibold text-pmn-text-muted">
+            Narxlar rublda. To‘lov Rahmat orqali so‘mda — Markaziy bank kursi
+            {rateAsOf && rateAsOf !== 'fallback' ? ` (${rateAsOf}: 1 ₽ ≈ ${rubUzsRate} so‘m)` : ` (1 ₽ ≈ ${rubUzsRate} so‘m)`}
+            .
+          </p>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:max-w-5xl md:mx-auto md:gap-5">
+            {plans.map((plan) => (
+              <div
+                key={plan.tariffType}
+                className={plan.highlighted ? 'md:-mt-2 md:mb-2' : undefined}
+              >
+                <PricingCard
+                  duration={plan.duration}
+                  price={plan.price}
+                  description={plan.description}
+                  features={plan.features}
+                  buttonLabel={
+                    buyingTariff === plan.tariffType ? 'Ochilmoqda…' : plan.buttonLabel
                   }
-                >
-                  <PricingCard
-                    duration={plan.duration}
-                    price={plan.price}
-                    features={plan.features}
-                    buttonLabel={plan.buttonLabel}
-                    highlighted={plan.highlighted}
-                    badge={plan.badge}
-                    pricePerMonth={plan.pricePerMonth}
-                    pricePerMonthUnit={plan.pricePerMonthUnit}
-                    compareAtPrice={plan.compareAtPrice}
-                    topCompareAtPrice={plan.topCompareAtPrice}
-                    discountPercent={plan.discountPercent}
-                    onSelect={hasPendingPayment || hasActivePremium ? undefined : () => handleSelectPlan(plan)}
-                    purchaseDisabled={(!!token && hasPendingPayment) || hasActivePremium}
-                    purchaseDisabledLabel={hasActivePremium ? t('pricing.alreadyActive') : t('payment.statusPending')}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="py-8 text-center text-app-text-muted">{t('pricing.loadError')}</p>
-          )}
+                  highlighted={plan.highlighted}
+                  badge={plan.badge}
+                  pricePerMonth={plan.pricePerMonth}
+                  pricePerMonthUnit={plan.pricePerMonthUnit}
+                  priceSecondary={plan.priceSecondary}
+                  compareAtPrice={plan.compareAtPrice}
+                  discountPercent={plan.discountPercent}
+                  savingsAmount={plan.savingsAmount}
+                  onSelect={
+                    hasPendingPayment || hasActivePremium || buyingTariff
+                      ? undefined
+                      : () => handleSelectPlan(plan)
+                  }
+                  purchaseDisabled={
+                    (!!token && hasPendingPayment) || hasActivePremium || buyingTariff !== null
+                  }
+                  purchaseDisabledLabel={
+                    buyingTariff !== null
+                      ? buyingTariff === plan.tariffType
+                        ? 'Ochilmoqda…'
+                        : 'Kuting…'
+                      : hasActivePremium
+                        ? t('pricing.alreadyActive')
+                        : t('payment.statusPending')
+                  }
+                />
+              </div>
+            ))}
+          </div>
         </section>
 
-        {/* 3. Why this course */}
         <section className="mb-20">
           <h2 className="mb-10 text-center text-2xl font-bold text-app-text md:text-3xl">
             {t('pricing.whyTitle')}
@@ -351,7 +259,6 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* 4. Vocabulary 3-step */}
         <section className="mb-20">
           <h2 className="mb-10 text-center text-2xl font-bold text-app-text md:text-3xl">
             {t('pricing.vocabTitle')}
@@ -368,7 +275,10 @@ export default function PricingPage() {
                 <h3 className="text-lg font-bold text-app-text">{t(step.titleKey)}</h3>
                 <p className="mt-2 text-sm text-app-text-muted">{t(step.descKey)}</p>
                 {i < VOCAB_STEPS.length - 1 && (
-                  <span className="absolute -right-4 top-1/2 hidden -translate-y-1/2 text-app-text-muted md:inline" aria-hidden>
+                  <span
+                    className="absolute -right-4 top-1/2 hidden -translate-y-1/2 text-app-text-muted md:inline"
+                    aria-hidden
+                  >
                     →
                   </span>
                 )}
@@ -386,16 +296,6 @@ export default function PricingPage() {
           </div>
         </section>
       </div>
-
-      {currencyModal?.open && (
-        <CurrencyModal
-          onClose={() => setCurrencyModal(null)}
-          onSelect={handleCurrencySelect}
-          tariffType={currencyModal.tariffType}
-          currencyPrices={currencyQuotes}
-        />
-      )}
-
     </div>
   );
 }
