@@ -18,6 +18,42 @@ export type PricingCardProps = {
   purchaseDisabledLabel?: string;
 };
 
+function CompareAtRow({
+  compareAtPrice,
+  discountPercent,
+}: {
+  compareAtPrice?: string;
+  discountPercent?: number;
+}) {
+  if (!compareAtPrice && discountPercent == null) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2.5">
+      {compareAtPrice ? (
+        <div
+          className="inline-flex items-center gap-2 rounded-[14px] px-3.5 py-2 shadow-[0_10px_22px_-8px_rgba(185,28,28,0.45)]"
+          style={{
+            background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 55%, #FECACA 100%)',
+            boxShadow: '0 0 0 2px rgba(255,255,255,0.55), 0 10px 22px -8px rgba(185,28,28,0.45)',
+          }}
+        >
+          <span className="rounded-md bg-[#DC2626] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+            Eski
+          </span>
+          <span className="text-[18px] font-black tabular-nums leading-none text-[#7F1D1D] line-through decoration-[3px] decoration-[#DC2626] sm:text-[20px]">
+            {compareAtPrice}
+          </span>
+        </div>
+      ) : null}
+      {discountPercent != null ? (
+        <span className="inline-flex items-center rounded-[14px] bg-[#16A34A] px-3.5 py-2 text-[15px] font-black tracking-wide text-white shadow-[0_10px_22px_-6px_rgba(22,163,74,0.55)] ring-2 ring-white/70 sm:text-[16px]">
+          −{discountPercent}%
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export default function PricingCard({
   duration,
   price,
@@ -52,7 +88,12 @@ export default function PricingCard({
             {duration}
           </p>
 
-          <div className="mt-3 flex items-baseline gap-2">
+          <CompareAtRow
+            compareAtPrice={compareAtPrice}
+            discountPercent={discountPercent}
+          />
+
+          <div className="mt-2.5 flex items-baseline gap-2">
             <span className="profile-heading text-[38px] leading-none text-white sm:text-[42px]">
               {pricePerMonth ?? price}
             </span>
@@ -60,21 +101,6 @@ export default function PricingCard({
               <span className="text-[15px] font-semibold text-white/80">{pricePerMonthUnit}</span>
             ) : null}
           </div>
-
-          {compareAtPrice || discountPercent != null ? (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {compareAtPrice ? (
-                <span className="text-[13px] font-semibold text-white/50 line-through decoration-white/40">
-                  {compareAtPrice}
-                </span>
-              ) : null}
-              {discountPercent != null ? (
-                <span className="rounded-full bg-[#3B8A5F]/25 px-2 py-0.5 text-[11px] font-black text-[#7BE3A6] ring-1 ring-[#3B8A5F]/50">
-                  -{discountPercent}%
-                </span>
-              ) : null}
-            </div>
-          ) : null}
 
           {description ? (
             <p className="mt-2 text-[12.5px] font-bold text-[#D4AC5C]">≈ {description}</p>
@@ -133,7 +159,12 @@ export default function PricingCard({
         {duration}
       </p>
 
-      <div className="mt-3 flex items-baseline gap-2">
+      <CompareAtRow
+        compareAtPrice={compareAtPrice}
+        discountPercent={discountPercent}
+      />
+
+      <div className="mt-2.5 flex items-baseline gap-2">
         <span className="profile-heading text-[34px] leading-none text-pmn-text">
           {pricePerMonth ?? price}
         </span>
@@ -141,21 +172,6 @@ export default function PricingCard({
           <span className="text-[14px] font-semibold text-pmn-text-muted">{pricePerMonthUnit}</span>
         ) : null}
       </div>
-
-      {compareAtPrice || discountPercent != null ? (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {compareAtPrice ? (
-            <span className="text-[12.5px] font-semibold text-pmn-text-soft line-through">
-              {compareAtPrice}
-            </span>
-          ) : null}
-          {discountPercent != null ? (
-            <span className="rounded-full bg-[#E6F2EA] px-2 py-0.5 text-[11px] font-black text-[#2E7D57] ring-1 ring-[#B7DCC4]">
-              -{discountPercent}%
-            </span>
-          ) : null}
-        </div>
-      ) : null}
 
       {description ? (
         <p className="mt-1.5 text-[12px] font-semibold text-pmn-text-muted">≈ {description}</p>

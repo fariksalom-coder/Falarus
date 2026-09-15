@@ -4,6 +4,7 @@ import { ArrowLeft, Info } from 'lucide-react';
 import PricingCard from '../components/pricing/PricingCard';
 import FeatureCard from '../components/pricing/FeatureCard';
 import CurrencyModal from '../components/pricing/CurrencyModal';
+import DiscountCountdownBanner from '../components/pricing/DiscountCountdownBanner';
 import { getTariffPricesByCurrency, getUserTariffPricesByCurrency } from '../api/publicPricing';
 import type { Currency } from '../components/pricing/CurrencyModal';
 import { openRahmatCheckout } from '../api/rahmat';
@@ -256,6 +257,7 @@ export default function PricingPage() {
         </div>
         {/* 1. Pricing cards — данные только из tariff_prices (UZS), без мигания */}
         <section id="tariflar" className="mb-20">
+          <DiscountCountdownBanner />
           {token && hasPendingPayment && (
             <div className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/12 dark:text-amber-200">
               <Info className="h-5 w-5 shrink-0" />

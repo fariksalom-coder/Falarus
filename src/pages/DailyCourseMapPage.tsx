@@ -13,6 +13,7 @@ import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
 import { rememberKunlikOpenedDay } from '../utils/kunlikLastDay';
 import { getLifeScene, type LifeScene } from '../data/lifeJourney';
 import LifeSceneOverlay from '../components/journey/LifeSceneOverlay';
+import HomeDiscountTimerLink from '../components/pricing/HomeDiscountTimerLink';
 
 /** 6 stages of 30 days each (last one = 32 days to cover 182). */
 const STAGES = [
@@ -254,6 +255,10 @@ export default function DailyCourseMapPage() {
           className="pointer-events-none absolute -left-10 bottom-0 h-[130px] w-[130px] rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.10), transparent 60%)' }}
         />
+
+        <div className="relative z-[2]">
+          <HomeDiscountTimerLink className="mt-0 mb-3" />
+        </div>
 
         <div className="relative z-[2] flex items-start gap-3">
           {/*

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import {
@@ -20,8 +20,10 @@ import {
 import TeacherRecruitBanner from '../components/landing/TeacherRecruitBanner';
 import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 import PricingCard from '../components/pricing/PricingCard';
+import DiscountCountdownBanner from '../components/pricing/DiscountCountdownBanner';
 import { getLegalEntityMeta, LEGAL_PATHS } from '../config/legalPublic';
 import { useAuth } from '../context/AuthContext';
+import { getDiscountRemaining } from '../utils/discountDeadline';
 
 type LanguageCode = 'en' | 'uz' | 'ru' | 'kk' | 'tg' | 'ky';
 type NavKey = 'home' | 'about' | 'certificates' | 'pricing' | 'contact';
@@ -942,6 +944,14 @@ export default function LandingPage() {
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [discountActive, setDiscountActive] = useState(() => getDiscountRemaining().active);
+
+  useEffect(() => {
+    const tick = () => setDiscountActive(getDiscountRemaining().active);
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -1361,8 +1371,16 @@ export default function LandingPage() {
 
         <section id="pricing" className="bg-[#FDF8F2] px-5 py-14 sm:px-10 lg:px-24 lg:py-[120px]">
           <div className="mx-auto max-w-[1000px] text-center">
-            <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.pricingIntro.title}</h2>
-            <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.pricingIntro.description}</p>
+            {discountActive ? (
+              <div className="mx-auto mb-8 max-w-[720px] text-left">
+                <DiscountCountdownBanner className="mb-0" />
+              </div>
+            ) : (
+              <>
+                <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.pricingIntro.title}</h2>
+                <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.pricingIntro.description}</p>
+              </>
+            )}
             <div className="mx-auto mt-10 grid max-w-[720px] items-stretch gap-6 pt-4 sm:mt-12 sm:grid-cols-2 sm:gap-8">
               <PricingCard
                 duration={t.pricing.elite.name}
