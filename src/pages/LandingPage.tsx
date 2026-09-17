@@ -1085,10 +1085,10 @@ export default function LandingPage() {
       </header>
 
       <main>
-        {/* Mobile hero (< lg) */}
+        {/* Mobile hero (< lg): CTA yuqorida, talabalar pastida */}
         <section
           id="home-mobile"
-          className="relative min-h-[100dvh] overflow-hidden pb-[140px] text-white lg:hidden"
+          className="relative overflow-hidden text-white lg:hidden"
           style={{ background: 'linear-gradient(160deg, #0B2A6B 0%, #123A8F 60%, #0B2A6B 100%)' }}
         >
           <div
@@ -1140,8 +1140,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Copy */}
-          <div className="relative z-[2] px-[22px] pt-[22px]">
+          {/* Copy — ixcham */}
+          <div className="relative z-[2] px-[22px] pt-3">
             <div
               className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-extrabold text-[#E7C578]"
               style={{
@@ -1152,54 +1152,54 @@ export default function LandingPage() {
               <Star className="h-3.5 w-3.5 fill-[#E7C578] text-[#E7C578]" />
               {t.mobile.badge}
             </div>
-            <h1 className="mt-4 text-[30px] font-extrabold leading-[1.12] tracking-[-0.02em] text-white">
+            <h1 className="mt-3 text-[28px] font-extrabold leading-[1.12] tracking-[-0.02em] text-white">
               {t.mobile.titleTop}<br />{t.mobile.titleMiddle}<br />
               <span className="text-[#E7C578]">{t.mobile.titleAccent}</span>
             </h1>
-            <p className="mt-2.5 max-w-[250px] text-[13.5px] font-semibold leading-[1.5] text-[#C6D2EE]">
+            <p className="mt-2 max-w-[280px] text-[13px] font-semibold leading-[1.45] text-[#C6D2EE]">
               {t.mobile.subtitle}
             </p>
           </div>
 
-          {/* Students */}
+          {/* CTA — matndan darhol keyin (yuqoriga ko‘tarilgan) */}
+          <div className="relative z-[5] px-[22px] pb-2 pt-5">
+            <div className="rounded-[22px] bg-white p-[16px] shadow-[0_24px_50px_-20px_rgba(11,42,107,0.45)]">
+              <Link
+                to="/register"
+                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[15px] bg-[#0B2A6B] text-[16px] font-extrabold text-white shadow-[0_14px_28px_-10px_rgba(11,42,107,0.5)] active:translate-y-0.5"
+              >
+                {t.mobile.register}
+                <span aria-hidden>→</span>
+              </Link>
+              <Link
+                to="/login"
+                className="mt-2.5 flex h-[48px] w-full items-center justify-center rounded-[15px] border-[1.4px] border-[#DCE3F0] bg-white text-[15px] font-extrabold text-[#0B2A6B] active:bg-[#F5F7FB]"
+              >
+                {t.auth.login}
+              </Link>
+              <div className="mt-3 flex items-center justify-center gap-2 text-[11px] font-semibold text-[#8794AC]">
+                <img src="/payment-logos/click-logo-new.png" alt="Click" className="h-4 w-auto" />
+                <span aria-hidden className="text-[#C6CEDD]">·</span>
+                <img src="/payment-logos/rahmat-logo.png" alt="Rahmat" className="h-[15px] w-auto" />
+                <span>{t.mobile.safePayment}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Talabalar — pastga */}
           <picture className="contents">
             <source srcSet="/landing/hero-students.webp" type="image/webp" />
             <img
               src="/landing/hero-students-opt.png"
               alt=""
               aria-hidden
-              className="pointer-events-none relative z-[2] mx-auto mt-1.5 w-full max-h-[40dvh] object-contain object-bottom"
-              style={{ filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.35))' }}
+              className="pointer-events-none relative z-[2] mx-auto mt-1 w-full max-h-[32dvh] object-contain object-bottom"
+              style={{ filter: 'drop-shadow(0 16px 24px rgba(0,0,0,0.3))' }}
               decoding="async"
               fetchPriority="high"
             />
           </picture>
         </section>
-
-        {/* Floating CTA card — overlaps hero (LIGHT 1A) */}
-        <div className="relative z-[5] -mt-[170px] px-[22px] pb-8 lg:hidden">
-          <div className="rounded-[22px] bg-white p-[18px] shadow-[0_24px_50px_-20px_rgba(11,42,107,0.4)]">
-            <Link
-              to="/register"
-              className="flex h-[54px] w-full items-center justify-center gap-2 rounded-[15px] bg-[#0B2A6B] text-[16px] font-extrabold text-white shadow-[0_14px_28px_-10px_rgba(11,42,107,0.5)] active:translate-y-0.5"
-            >
-              {t.mobile.register}
-              <span aria-hidden>→</span>
-            </Link>
-            <Link
-              to="/login"
-              className="mt-2.5 flex h-[50px] w-full items-center justify-center rounded-[15px] border-[1.4px] border-[#DCE3F0] bg-white text-[15px] font-extrabold text-[#0B2A6B] active:bg-[#F5F7FB]"
-            >
-              {t.auth.login}
-            </Link>
-            <div className="mt-3.5 flex items-center justify-center gap-2 text-[11px] font-semibold text-[#8794AC]">
-              <img src="/payment-logos/click-logo-new.png" alt="Click" className="h-4 w-auto" />
-              <span aria-hidden className="text-[#C6CEDD]">·</span>
-              <img src="/payment-logos/rahmat-logo.png" alt="Rahmat" className="h-[15px] w-auto" />
-              <span>{t.mobile.safePayment}</span>
-            </div>
-          </div>
-        </div>
 
         {/* Mobile feature tiles — smartfonlarda ko‘rsatilmaydi */}
         <section className="hidden">
