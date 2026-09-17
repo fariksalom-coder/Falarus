@@ -2,27 +2,26 @@
  * Obunasiz foydalanuvchi uchun bosh sahifa: video + oxirgi 1:10 da tariflar.
  *
  * Video: `public/videos/paywall-intro.mp4`. Tezlatish tugmasi video ostida.
- * 3 oy tarifi oxirgi 51 soniyada yashil bo‘ladi.
+ * Oldinga o‘tkazish taqiqlangan (faqat orqaga).
+ * 3 oy tarifi oxirgi 50 soniyada yashil bo‘ladi.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Gauge, Play, Volume2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useRubUzsRate } from '../hooks/useRubUzsRate';
 import { openRahmatCheckout } from '../api/rahmat';
 import {
   formatRubAmount,
   RUSSIAN_TARIFF_PLANS_RUB,
   type RussianTariffCode,
 } from '../../shared/russianTariffs';
-import { formatRubUzsPair } from '../../shared/rubUzs';
 
 /** Tariflar shu qolgan vaqtda chiqadi (1 daqiqa 10 soniya). */
 const TARIFF_REMAINING_SEC = 70;
 
-/** 3 oylik tarif shu qolgan vaqtda yashil bo‘ladi. */
-const THREE_MONTH_GREEN_REMAINING_SEC = 51;
+/** 3 oylik tarif shu qolgan vaqtda yashil bo‘ladi (1 soniya oldinga — 51 → 50). */
+const THREE_MONTH_GREEN_REMAINING_SEC = 50;
 
 /** Asosiy paywall video — fayl `public/videos/paywall-intro.mp4` ga qo‘yiladi. */
 export const PAYWALL_VIDEO_SRC = '/videos/paywall-intro.mp4';
@@ -33,6 +32,13 @@ export const PAYWALL_VIDEO_SRC = '/videos/paywall-intro.mp4';
  */
 export const PAYWALL_VIDEO_READY = true;
 
+/** Paywall uchun qat’iy UZS narxlar (ming so‘m). */
+const FIXED_UZS_MING: Record<RussianTariffCode, number> = {
+  month: 400,
+  three_month: 530,
+  six_month: 790,
+};
+
 const SPEED_STEPS = [1, 1.5, 2, 2.5] as const;
 type SpeedStep = (typeof SPEED_STEPS)[number];
 const BG = '#0B1220';
@@ -41,9 +47,12 @@ function formatSpeed(rate: SpeedStep): string {
   return rate === 1 ? '1×' : rate === 1.5 ? '1.5×' : rate === 2 ? '2×' : '2.5×';
 }
 
+function formatFixedUzsMing(ming: number): string {
+  return `${ming} ming so‘m`;
+}
+
 export default function UnpaidHomePaywall() {
   const { token } = useAuth();
-  const { rate } = useRubUzsRate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showTariffs, setShowTariffs] = useState(!PAYWALL_VIDEO_READY);
   const [highlightThreeMonth, setHighlightThreeMonth] = useState(false);
@@ -55,6 +64,9 @@ export default function UnpaidHomePaywall() {
   speedRef.current = speed;
   /** Bitta marta start — StrictMode / canplay qayta chaqiruvlarini oldini oladi. */
   const playAttemptedRef = useRef(false);
+  /** Eng uzoq ko‘rilgan nuqta — oldinga seek qilishni bloklash uchun. */
+  const maxPlayedRef = useRef(0);
+  const seekingClampRef = useRef(false);
 
   const syncFromPlayback = useCallback(() => {
     const el = videoRef.current;
@@ -113,6 +125,7 @@ export default function UnpaidHomePaywall() {
 
   useEffect(() => {
     playAttemptedRef.current = false;
+    maxPlayedRef.current = 0;
     const el = videoRef.current;
     void tryAutoplay();
     return () => {
@@ -131,7 +144,25 @@ export default function UnpaidHomePaywall() {
     if (!el) return;
     let lockingRate = false;
 
-    const onTime = () => syncFromPlayback();
+    const clampForwardSeek = () => {
+      if (seekingClampRef.current) return;
+      const maxAllowed = maxPlayedRef.current;
+      if (el.currentTime > maxAllowed + 0.35) {
+        seekingClampRef.current = true;
+        el.currentTime = maxAllowed;
+        seekingClampRef.current = false;
+      }
+    };
+
+    const onTime = () => {
+      if (!el.seeking && !seekingClampRef.current) {
+        maxPlayedRef.current = Math.max(maxPlayedRef.current, el.currentTime);
+      }
+      clampForwardSeek();
+      syncFromPlayback();
+    };
+    const onSeeking = () => clampForwardSeek();
+    const onSeeked = () => clampForwardSeek();
     const onMeta = () => {
       syncFromPlayback();
       void tryAutoplay();
@@ -140,6 +171,7 @@ export default function UnpaidHomePaywall() {
       if (el.paused && !playAttemptedRef.current) void tryAutoplay();
     };
     const onEnded = () => {
+      maxPlayedRef.current = Math.max(maxPlayedRef.current, el.duration || 0);
       setShowTariffs(true);
       setHighlightThreeMonth(true);
     };
@@ -154,12 +186,16 @@ export default function UnpaidHomePaywall() {
     };
 
     el.addEventListener('timeupdate', onTime);
+    el.addEventListener('seeking', onSeeking);
+    el.addEventListener('seeked', onSeeked);
     el.addEventListener('loadedmetadata', onMeta);
     el.addEventListener('canplay', onCanPlay);
     el.addEventListener('ended', onEnded);
     el.addEventListener('ratechange', onRate);
     return () => {
       el.removeEventListener('timeupdate', onTime);
+      el.removeEventListener('seeking', onSeeking);
+      el.removeEventListener('seeked', onSeeked);
       el.removeEventListener('loadedmetadata', onMeta);
       el.removeEventListener('canplay', onCanPlay);
       el.removeEventListener('ended', onEnded);
@@ -256,7 +292,7 @@ export default function UnpaidHomePaywall() {
                 ref={videoRef}
                 className="h-full w-full object-contain"
                 style={{ background: BG }}
-                src={`${PAYWALL_VIDEO_SRC}?v=4`}
+                src={`${PAYWALL_VIDEO_SRC}?v=5`}
                 playsInline
                 controls
                 controlsList="nodownload noplaybackrate"
@@ -334,23 +370,20 @@ export default function UnpaidHomePaywall() {
             >
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {
-                  const uzsNow = formatRubUzsPair(plan.priceRub, rate);
-                  const uzsWas =
-                    plan.wasRub > plan.priceRub
-                      ? formatRubUzsPair(plan.wasRub, rate)
-                      : null;
                   const busy = buying === plan.code;
                   const monthsLabel =
                     plan.months === 1 ? '1 oy' : plan.months === 3 ? '3 oy' : '6 oy';
                   const isGreen =
                     plan.code === 'three_month' && highlightThreeMonth;
+                  const showWas = plan.wasRub > plan.priceRub;
+                  const uzsLabel = formatFixedUzsMing(FIXED_UZS_MING[plan.code]);
 
                   return (
                     <div
                       key={plan.code}
                       className={`flex flex-col rounded-[18px] p-2.5 shadow-[0_14px_34px_rgba(15,23,42,0.28)] transition sm:rounded-[22px] sm:p-3.5 ${
                         isGreen
-                          ? 'border-2 border-[#16A34A] bg-[#ECFDF5] ring-2 ring-[#86EFAC]/60'
+                          ? 'border-[3px] border-[#16A34A] bg-[#ECFDF5] ring-4 ring-[#86EFAC]/70 shadow-[0_0_0_2px_rgba(22,163,74,0.35),0_18px_40px_rgba(22,163,74,0.28)] scale-[1.03]'
                           : 'border border-white/10 bg-white'
                       }`}
                     >
@@ -369,8 +402,19 @@ export default function UnpaidHomePaywall() {
                         ) : null}
                       </div>
 
+                      {/* 3/6 oy: to‘liq narx — joriy narxning yuqorisida */}
+                      {showWas ? (
+                        <p className="mt-1.5 text-[11px] font-semibold leading-snug text-slate-400 sm:text-[12px]">
+                          <span className="line-through decoration-[#DC2626] decoration-2">
+                            {formatRubAmount(plan.wasRub)} ₽
+                          </span>
+                        </p>
+                      ) : (
+                        <div className="mt-1.5 min-h-[1.1rem]" aria-hidden />
+                      )}
+
                       <p
-                        className={`mt-1.5 text-[15px] font-black tabular-nums leading-tight sm:text-[18px] ${
+                        className={`text-[15px] font-black tabular-nums leading-tight sm:text-[18px] ${
                           isGreen ? 'text-[#14532D]' : 'text-slate-900'
                         }`}
                       >
@@ -381,23 +425,8 @@ export default function UnpaidHomePaywall() {
                           isGreen ? 'text-[#166534]' : 'text-slate-500'
                         }`}
                       >
-                        ≈ {uzsNow.labelUzs}
+                        {uzsLabel}
                       </p>
-
-                      {plan.wasRub > plan.priceRub ? (
-                        <p className="mt-1 text-[10px] font-semibold leading-snug text-slate-400 sm:text-[11px]">
-                          <span className="line-through decoration-[#DC2626]">
-                            {formatRubAmount(plan.wasRub)} ₽
-                          </span>
-                          {uzsWas ? (
-                            <span className="mt-0.5 block line-through">
-                              ≈ {uzsWas.labelUzs}
-                            </span>
-                          ) : null}
-                        </p>
-                      ) : (
-                        <div className="mt-1 min-h-[2.2rem]" aria-hidden />
-                      )}
 
                       <button
                         type="button"
