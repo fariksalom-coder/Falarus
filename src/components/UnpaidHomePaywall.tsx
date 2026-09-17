@@ -33,8 +33,13 @@ export const PAYWALL_VIDEO_SRC = '/videos/paywall-intro.mp4';
  */
 export const PAYWALL_VIDEO_READY = true;
 
-const SPEED_STEPS = [1, 1.5, 2] as const;
+const SPEED_STEPS = [1, 1.5, 2, 2.5] as const;
+type SpeedStep = (typeof SPEED_STEPS)[number];
 const BG = '#0B1220';
+
+function formatSpeed(rate: SpeedStep): string {
+  return rate === 1 ? '1×' : rate === 1.5 ? '1.5×' : rate === 2 ? '2×' : '2.5×';
+}
 
 export default function UnpaidHomePaywall() {
   const { token } = useAuth();
@@ -45,7 +50,9 @@ export default function UnpaidHomePaywall() {
   const [needsGesture, setNeedsGesture] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
   const [buying, setBuying] = useState<RussianTariffCode | null>(null);
-  const [speed, setSpeed] = useState<(typeof SPEED_STEPS)[number]>(1);
+  const [speed, setSpeed] = useState<SpeedStep>(1);
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
 
   const syncFromPlayback = useCallback(() => {
     const el = videoRef.current;
@@ -55,37 +62,52 @@ export default function UnpaidHomePaywall() {
     setHighlightThreeMonth(remaining <= THREE_MONTH_GREEN_REMAINING_SEC);
   }, []);
 
-  const applySpeed = useCallback((next: number) => {
-    const el = videoRef.current;
-    if (!el) return;
-    el.playbackRate = next;
-  }, []);
-
-  const cycleSpeed = () => {
-    const idx = SPEED_STEPS.indexOf(speed);
-    const next = SPEED_STEPS[(idx + 1) % SPEED_STEPS.length] ?? 1;
+  const setPlaybackSpeed = (next: SpeedStep) => {
     setSpeed(next);
-    applySpeed(next);
+    const el = videoRef.current;
+    if (el) el.playbackRate = next;
   };
 
+  /**
+   * Kirishda avtomatik boshlash:
+   * 1) ovoz bilan play
+   * 2) bloklansa — muted play (video baribir yuradi), keyin unmute urinish
+   * 3) umuman play bo‘lmasa — bitta bosish overlay
+   */
   const tryAutoplay = useCallback(async () => {
     if (!PAYWALL_VIDEO_READY) return;
     const el = videoRef.current;
     if (!el) return;
-    el.muted = false;
-    el.playbackRate = speed;
+    if (!el.paused && !el.ended) {
+      setNeedsGesture(false);
+      return;
+    }
+    el.playbackRate = speedRef.current;
     try {
+      el.muted = false;
       await el.play();
       setNeedsGesture(false);
+      return;
+    } catch {
+      /* ovozli autoplay ko‘pincha bloklanadi */
+    }
+    try {
+      el.muted = true;
+      await el.play();
+      setNeedsGesture(false);
+      try {
+        el.muted = false;
+      } catch {
+        /* ignore */
+      }
     } catch {
       setNeedsGesture(true);
     }
-  }, [speed]);
+  }, []);
 
   useEffect(() => {
     void tryAutoplay();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional once on mount
-  }, []);
+  }, [tryAutoplay]);
 
   useEffect(() => {
     if (!PAYWALL_VIDEO_READY) return;
@@ -93,7 +115,13 @@ export default function UnpaidHomePaywall() {
     if (!el) return;
 
     const onTime = () => syncFromPlayback();
-    const onMeta = () => syncFromPlayback();
+    const onMeta = () => {
+      syncFromPlayback();
+      void tryAutoplay();
+    };
+    const onCanPlay = () => {
+      if (el.paused) void tryAutoplay();
+    };
     const onEnded = () => {
       setShowTariffs(true);
       setHighlightThreeMonth(true);
@@ -101,19 +129,21 @@ export default function UnpaidHomePaywall() {
 
     el.addEventListener('timeupdate', onTime);
     el.addEventListener('loadedmetadata', onMeta);
+    el.addEventListener('canplay', onCanPlay);
     el.addEventListener('ended', onEnded);
     return () => {
       el.removeEventListener('timeupdate', onTime);
       el.removeEventListener('loadedmetadata', onMeta);
+      el.removeEventListener('canplay', onCanPlay);
       el.removeEventListener('ended', onEnded);
     };
-  }, [syncFromPlayback]);
+  }, [syncFromPlayback, tryAutoplay]);
 
   const startWithSound = async () => {
     const el = videoRef.current;
     if (!el) return;
     el.muted = false;
-    el.playbackRate = speed;
+    el.playbackRate = speedRef.current;
     try {
       await el.play();
       setNeedsGesture(false);
@@ -142,8 +172,6 @@ export default function UnpaidHomePaywall() {
       setBuying(null);
     }
   };
-
-  const speedLabel = speed === 1 ? '1×' : speed === 1.5 ? '1.5×' : '2×';
 
   return (
     <div
@@ -200,6 +228,7 @@ export default function UnpaidHomePaywall() {
                 style={{ background: BG }}
                 src={`${PAYWALL_VIDEO_SRC}?v=2`}
                 playsInline
+                autoPlay
                 controls
                 controlsList="nodownload"
                 disablePictureInPicture
@@ -234,18 +263,33 @@ export default function UnpaidHomePaywall() {
           )}
         </div>
 
-        {/* Tezlatish — video ostida */}
+        {/* Tezlik — video ostida, alohida tugmalar */}
         {PAYWALL_VIDEO_READY ? (
-          <div className="flex justify-center px-4 pb-1 pt-3" style={{ background: BG }}>
-            <button
-              type="button"
-              onClick={cycleSpeed}
-              aria-label={`Tezlik: ${speedLabel}`}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl bg-white/10 px-5 py-2.5 text-[14px] font-black text-white ring-1 ring-white/20 transition hover:bg-white/16 active:scale-[0.97]"
-            >
-              <Gauge className="h-4 w-4" aria-hidden />
-              Tezlik {speedLabel}
-            </button>
+          <div
+            className="flex flex-wrap items-center justify-center gap-2 px-4 pb-1 pt-3"
+            style={{ background: BG }}
+            role="group"
+            aria-label="Video tezligi"
+          >
+            {SPEED_STEPS.map((step) => {
+              const active = speed === step;
+              return (
+                <button
+                  key={step}
+                  type="button"
+                  onClick={() => setPlaybackSpeed(step)}
+                  aria-pressed={active}
+                  className={`inline-flex min-h-[44px] min-w-[64px] items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-[14px] font-black transition active:scale-[0.97] ${
+                    active
+                      ? 'bg-[#2563EB] text-white ring-2 ring-[#93C5FD]'
+                      : 'bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/16'
+                  }`}
+                >
+                  {step === 1 ? <Gauge className="h-3.5 w-3.5" aria-hidden /> : null}
+                  {formatSpeed(step)}
+                </button>
+              );
+            })}
           </div>
         ) : null}
 
