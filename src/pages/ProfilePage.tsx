@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fetchStreak, getCachedStreak } from '../api/activity';
-import { fetchLeaderboard } from '../api/leaderboard';
+import { fetchMyRank, getCachedMyRank } from '../api/leaderboard';
 import { useTheme } from '../context/ThemeContext';
 import { useTextScale } from '../context/TextScaleContext';
 import { useAccess } from '../context/AccessContext';
@@ -72,7 +72,7 @@ export default function ProfilePage() {
   const [installGuideOpen, setInstallGuideOpen] = useState(false);
   const { isInstalled: appInstalled, promptInstall } = usePwaInstall();
   const [streakDays, setStreakDays] = useState(() => getCachedStreak()?.streak_days ?? 0);
-  const [points, setPoints] = useState(0);
+  const [points, setPoints] = useState(() => getCachedMyRank()?.points ?? 0);
 
   useEffect(() => {
     setFirstName(user?.firstName ?? '');
@@ -81,12 +81,27 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!token) return;
-    void fetchStreak(token).then((res) => {
-      if (res) setStreakDays(res.streak_days);
-    });
-    void fetchLeaderboard(token, 'all').then((res) => {
-      setPoints(res.myRank?.points ?? 0);
-    });
+    let cancelled = false;
+    const run = () => {
+      void fetchStreak(token).then((res) => {
+        if (!cancelled && res) setStreakDays(res.streak_days);
+      });
+      void fetchMyRank(token).then((res) => {
+        if (!cancelled && res) setPoints(res.points);
+      });
+    };
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    if (typeof window.requestIdleCallback === 'function') {
+      idleId = window.requestIdleCallback(() => run(), { timeout: 1200 });
+    } else {
+      timeoutId = window.setTimeout(run, 0);
+    }
+    return () => {
+      cancelled = true;
+      if (idleId != null) window.cancelIdleCallback(idleId);
+      if (timeoutId != null) window.clearTimeout(timeoutId);
+    };
   }, [token]);
 
   const level = Math.floor(points / 500) + 1;

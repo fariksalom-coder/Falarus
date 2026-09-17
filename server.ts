@@ -3240,6 +3240,9 @@ async function startServer() {
           res.setHeader('Cache-Control', 'no-cache, must-revalidate');
         } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
           res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (/\.(mp4|webm|m4v)$/i.test(filePath)) {
+          // Paywall / media — brauzer qayta-qayta 20–50MB yuklamasin.
+          res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
         }
       },
     }));

@@ -256,12 +256,12 @@ export default function UnpaidHomePaywall() {
                 ref={videoRef}
                 className="h-full w-full object-contain"
                 style={{ background: BG }}
-                src={`${PAYWALL_VIDEO_SRC}?v=3`}
+                src={`${PAYWALL_VIDEO_SRC}?v=4`}
                 playsInline
                 controls
                 controlsList="nodownload noplaybackrate"
                 disablePictureInPicture
-                preload="auto"
+                preload="metadata"
                 onContextMenu={(e) => e.preventDefault()}
               />
               {needsGesture ? (
