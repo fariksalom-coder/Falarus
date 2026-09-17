@@ -3,7 +3,7 @@
  *
  * Video: `public/videos/paywall-intro.mp4`. Tezlatish tugmasi video ostida.
  * Oldinga o‘tkazish taqiqlangan (faqat orqaga).
- * 3 oy tarifi oxirgi 50 soniyada yashil bo‘ladi.
+ * 3 oy tarifi oxirgi 52.5 soniyada yashil bo‘ladi.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -21,8 +21,8 @@ import {
 /** Tariflar shu qolgan vaqtda chiqadi (1 daqiqa 10 soniya). */
 const TARIFF_REMAINING_SEC = 70;
 
-/** 3 oylik tarif shu qolgan vaqtda yashil bo‘ladi (1 soniya oldinga — 51 → 50). */
-const THREE_MONTH_GREEN_REMAINING_SEC = 50;
+/** 3 oylik tarif shu qolgan vaqtda yashil bo‘ladi (52.5 s). */
+const THREE_MONTH_GREEN_REMAINING_SEC = 52.5;
 
 /** Asosiy paywall video — fayl `public/videos/paywall-intro.mp4` ga qo‘yiladi. */
 export const PAYWALL_VIDEO_SRC = '/videos/paywall-intro.mp4';
