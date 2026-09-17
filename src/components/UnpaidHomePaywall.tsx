@@ -137,12 +137,15 @@ export default function UnpaidHomePaywall() {
 
   return (
     <div
-      className="relative flex min-h-full flex-col"
+      className="relative flex min-h-full w-full flex-1 flex-col"
       style={{ background: '#0B1220' }}
     >
-      <div className="relative mx-auto w-full max-w-3xl flex-1">
+      <div
+        className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col"
+        style={{ background: '#0B1220' }}
+      >
         {/* Yuqoridagi ogohlantirish — videoni oxirigacha ko‘rish */}
-        <div className="px-3 pb-2 pt-3 sm:px-4 sm:pt-4">
+        <div className="px-3 pb-2 pt-3 sm:px-4 sm:pt-4" style={{ background: '#0B1220' }}>
           <div
             className="rounded-[16px] px-3.5 py-3 text-center sm:rounded-[18px] sm:px-4 sm:py-3.5"
             style={{
@@ -169,7 +172,8 @@ export default function UnpaidHomePaywall() {
               <video
                 ref={videoRef}
                 className="h-full w-full object-contain"
-                src={PAYWALL_VIDEO_SRC}
+                style={{ background: '#0B1220' }}
+                src={`${PAYWALL_VIDEO_SRC}?v=2`}
                 playsInline
                 controls
                 controlsList="nodownload"
@@ -236,7 +240,8 @@ export default function UnpaidHomePaywall() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 12 }}
               transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-              className="relative z-20 space-y-3 px-4 pb-8 pt-4"
+              className="relative z-20 flex-1 space-y-3 px-4 pb-8 pt-4"
+              style={{ background: '#0B1220' }}
             >
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {

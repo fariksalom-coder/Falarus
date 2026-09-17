@@ -9,7 +9,7 @@ import { appMainBottomOffsetCss } from '../constants/appLayout';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { useHeartbeat } from '../hooks/useHeartbeat';
-import { isPremiumNavPathLocked } from '../utils/premiumNav';
+import { hasAppPremiumAccess, isPremiumNavPathLocked } from '../utils/premiumNav';
 
 /** Routes where we hide the global bottom nav — focus mode for lesson/exercise/game/course/payment drill-ins. */
 function hideNavBar(path: string): boolean {
@@ -40,7 +40,7 @@ function hideNavBar(path: string): boolean {
 
 export default function MainLayout() {
   const { pathname } = useLocation();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { access, accessLoaded } = useAccess();
   useHeartbeat(token);
 
@@ -59,8 +59,16 @@ export default function MainLayout() {
   const sectionIdx = mainSectionIndex(pathname);
   const motionKey = sectionIdx >= 0 ? `section-${sectionIdx}` : pathname;
 
+  // Obunasiz bosh sahifa — bitta quyuq fon (aks holda parent `bg-app-bg` yorug' bo'lib qoladi).
+  const unpaidHome =
+    (pathname === '/' || pathname === '/kunlik-reja/xarita') &&
+    accessLoaded &&
+    user?.accountType !== 'teacher' &&
+    !hasAppPremiumAccess(access);
+
   // Nav har doim pastda → tepada faqat status zonasi, scroll uchun pastdan padding.
   const bottomOffset = appMainBottomOffsetCss();
+  const panelBg = unpaidHome ? 'bg-[#0B1220]' : 'bg-app-bg';
 
   return (
     <>
@@ -86,7 +94,7 @@ export default function MainLayout() {
       <PushObunaFon />
       <EfirQongiroqSorovi />
       <div
-        className={`min-h-screen app-layout-safe-pad${showNavBar ? ' app-with-navigation' : ''}`}
+        className={`min-h-screen app-layout-safe-pad${showNavBar ? ' app-with-navigation' : ''}${unpaidHome ? ' bg-[#0B1220]' : ''}`}
       >
         <div
           className="relative w-full overflow-hidden app-content-safe-min-h"
@@ -94,7 +102,7 @@ export default function MainLayout() {
           {/* Only the active page mounts; large game/media trees never overlap. */}
             <div
               key={motionKey}
-              className={`absolute inset-0 w-full min-w-0 overflow-y-auto overflow-x-hidden bg-app-bg panel-scroll overscroll-y-contain${showNavBar ? ' nav-scroll-pad' : ''}`}
+              className={`absolute inset-0 w-full min-w-0 overflow-y-auto overflow-x-hidden ${panelBg} panel-scroll overscroll-y-contain${showNavBar ? ' nav-scroll-pad' : ''}`}
             >
               <div className="flex min-h-full flex-col">
                 {/*
@@ -102,8 +110,8 @@ export default function MainLayout() {
                   Faqat asosiy ekranlarda: dars, o'yin va to'lov sahifalari
                   "fokus rejimi" (nav yashiriladi), u yerda e'lon halaqit beradi.
                 */}
-                {showNavBar && <UpdateNotice />}
-                <div className="flex-1 panel-content">
+                {showNavBar && !unpaidHome && <UpdateNotice />}
+                <div className={`flex-1 panel-content${unpaidHome ? ' bg-[#0B1220]' : ''}`}>
                   <Outlet />
                 </div>
               </div>
