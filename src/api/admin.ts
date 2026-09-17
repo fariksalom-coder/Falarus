@@ -268,6 +268,13 @@ export type AdminHelpChatListRow = {
       status: 'active' | 'inactive';
       expires_at: string | null;
     };
+    payment?: {
+      has_paid: boolean;
+      latest_status: string | null;
+      latest_product: string | null;
+      latest_tariff: string | null;
+      latest_at: string | null;
+    };
     total_points: number;
     referral_balance: number;
     account_type: string | null;

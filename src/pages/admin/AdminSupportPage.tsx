@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type MouseEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, GraduationCap, ImagePlus, Megaphone, MessageCircle, Send, X } from 'lucide-react';
 import {
   getAdminHelpChats,
@@ -14,6 +14,7 @@ import {
   type AdminHelpChatMessage,
   type HelpBroadcastFilter,
 } from '../../api/admin';
+import { adminPath } from '../../constants/adminPath';
 import { parseHelpImageMessage } from '../../utils/helpMessageContent';
 
 function fmt(date: string | null): string {
@@ -41,6 +42,58 @@ function initialsFromName(name: string): string {
     .join('')
     .slice(0, 2)
     .toUpperCase();
+}
+
+type PayJourney = {
+  key: 'active' | 'pending' | 'paid_inactive' | 'unpaid';
+  label: string;
+  className: string;
+  detail: string;
+};
+
+function resolvePayJourney(user: AdminHelpChatListRow['user']): PayJourney {
+  const subActive = user.subscription.status === 'active';
+  const hasPaid = Boolean(user.payment?.has_paid) || subActive;
+  const latest = user.payment?.latest_status ?? null;
+  const plan = user.subscription.plan_type;
+  const tariff = user.payment?.latest_tariff || user.payment?.latest_product;
+
+  if (subActive) {
+    return {
+      key: 'active',
+      label: 'To‘lagan',
+      className: 'bg-emerald-100 text-emerald-800',
+      detail: [plan, user.subscription.expires_at ? `gacha ${fmtListTime(user.subscription.expires_at)}` : null]
+        .filter(Boolean)
+        .join(' · ') || 'Obuna faol',
+    };
+  }
+  if (latest === 'pending') {
+    return {
+      key: 'pending',
+      label: 'Kutilmoqda',
+      className: 'bg-amber-100 text-amber-800',
+      detail: tariff ? `To‘lov: ${tariff}` : 'To‘lov tekshiruvda',
+    };
+  }
+  if (hasPaid) {
+    return {
+      key: 'paid_inactive',
+      label: 'Muddati tugagan',
+      className: 'bg-slate-200 text-slate-700',
+      detail: plan || tariff || 'Oldin to‘lagan',
+    };
+  }
+  return {
+    key: 'unpaid',
+    label: 'To‘lamagan',
+    className: 'bg-rose-100 text-rose-800',
+    detail: 'Obuna / to‘lov yo‘q',
+  };
+}
+
+function stopOpenChat(e: MouseEvent) {
+  e.stopPropagation();
 }
 
 const BROADCAST_OPTIONS: { value: HelpBroadcastFilter; label: string; hint: string }[] = [
@@ -389,12 +442,21 @@ export default function AdminSupportPage() {
             <div className="divide-y divide-slate-100">
               {visibleChats.map((chat) => {
                 const previewMedia = parseHelpImageMessage(chat.last_message?.content ?? '');
+                const journey = resolvePayJourney(chat.user);
+                const profileHref = adminPath(`/users/${chat.user.id}`);
                 return (
-                  <button
+                  <div
                     key={chat.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setActiveChatId(chat.id)}
-                    className={`flex w-full items-center gap-3 px-3 py-3 text-left transition-colors ${
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveChatId(chat.id);
+                      }
+                    }}
+                    className={`flex w-full cursor-pointer items-center gap-3 px-3 py-3 text-left transition-colors ${
                       activeChatId === chat.id ? 'bg-blue-50/70' : 'bg-app-surface hover:bg-app-bg-muted'
                     }`}
                   >
@@ -409,9 +471,24 @@ export default function AdminSupportPage() {
                               <GraduationCap className="h-3 w-3" /> Ustoz
                             </span>
                           ) : null}
-                          <span className="truncate">{chat.user.name}</span>
+                          <Link
+                            to={profileHref}
+                            onClick={stopOpenChat}
+                            className="truncate text-app-text hover:text-app-primary hover:underline"
+                            title="Profilni ochish"
+                          >
+                            {chat.user.name}
+                          </Link>
                         </p>
                         <span className="shrink-0 text-[11px] text-slate-400">{fmtListTime(chat.last_message_at)}</span>
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <span
+                          className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold ${journey.className}`}
+                        >
+                          {journey.label}
+                        </span>
+                        <span className="truncate text-[10px] text-app-text-muted">{journey.detail}</span>
                       </div>
                       <div className="mt-0.5 flex items-center justify-between gap-2">
                         <p className="line-clamp-1 text-xs text-app-text-muted">
@@ -424,7 +501,7 @@ export default function AdminSupportPage() {
                         ) : null}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
               {!visibleChats.length && <p className="p-4 text-center text-sm text-app-text-muted">Chatlar yo‘q</p>}
@@ -445,18 +522,38 @@ export default function AdminSupportPage() {
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
-                <div className="text-center">
-                  <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-app-text">
-                    {activeChat.user.account_type === 'teacher' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">
-                        <GraduationCap className="h-3 w-3" /> Ustoz
-                      </span>
-                    ) : null}
-                    {activeChat.user.name}
-                  </p>
-                  <p className="text-xs text-app-text-muted">{activeChat.user.email ?? '—'}</p>
-                  <p className="text-xs text-app-text-muted">{activeChat.user.phone ?? '—'}</p>
-                </div>
+                {(() => {
+                  const journey = resolvePayJourney(activeChat.user);
+                  return (
+                    <div className="max-w-[min(100%,28rem)] text-center">
+                      <p className="flex flex-wrap items-center justify-center gap-1.5 text-sm font-semibold text-app-text">
+                        {activeChat.user.account_type === 'teacher' ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700">
+                            <GraduationCap className="h-3 w-3" /> Ustoz
+                          </span>
+                        ) : null}
+                        <Link
+                          to={adminPath(`/users/${activeChat.user.id}`)}
+                          className="hover:text-app-primary hover:underline"
+                          title="Profilni ochish"
+                        >
+                          {activeChat.user.name}
+                        </Link>
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+                        <span
+                          className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold ${journey.className}`}
+                        >
+                          {journey.label}
+                        </span>
+                        <span className="text-[11px] text-app-text-muted">{journey.detail}</span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-app-text-muted">
+                        {[activeChat.user.phone, activeChat.user.email].filter(Boolean).join(' · ') || '—'}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="flex-1 overflow-y-auto px-4 py-3">

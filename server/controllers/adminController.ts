@@ -1039,7 +1039,7 @@ export function createAdminController(supabase: DbClient) {
     const chatIds = [...new Set((chats ?? []).map((c: any) => Number(c.id)).filter(Boolean))];
     const nowIso = new Date().toISOString();
 
-    const [usersResult, { data: latestRows, error: latestErr }] = await Promise.all([
+    const [usersResult, { data: latestRows, error: latestErr }, paymentsResult] = await Promise.all([
       userIds.length
         ? supabase
             .from('users')
@@ -1053,6 +1053,14 @@ export function createAdminController(supabase: DbClient) {
             .in('chat_id', chatIds)
             .order('created_at', { ascending: false })
         : Promise.resolve({ data: [], error: null } as any),
+      userIds.length
+        ? supabase
+            .from('payments')
+            .select('user_id, status, product_code, tariff_type, amount, currency, created_at, approved_at')
+            .in('user_id', userIds)
+            .order('created_at', { ascending: false })
+            .limit(Math.min(userIds.length * 8, 2000))
+        : Promise.resolve({ data: [], error: null } as any),
     ]);
 
     const users = usersResult.data;
@@ -1060,12 +1068,39 @@ export function createAdminController(supabase: DbClient) {
 
     if (usersErr) return res.status(500).json({ error: usersErr.message });
     if (latestErr) return res.status(500).json({ error: latestErr.message });
+    if (paymentsResult.error) return res.status(500).json({ error: paymentsResult.error.message });
 
     const userMap = new Map((users ?? []).map((u: any) => [Number(u.id), u]));
     const latestByChat = new Map<number, any>();
     for (const row of latestRows ?? []) {
       const key = Number((row as any).chat_id);
       if (!latestByChat.has(key)) latestByChat.set(key, row);
+    }
+
+    type PaySnap = {
+      has_paid: boolean;
+      latest_status: string | null;
+      latest_product: string | null;
+      latest_tariff: string | null;
+      latest_at: string | null;
+    };
+    const payByUser = new Map<number, PaySnap>();
+    for (const row of (paymentsResult.data ?? []) as any[]) {
+      const uid = Number(row.user_id);
+      if (!Number.isFinite(uid) || uid <= 0) continue;
+      const existing = payByUser.get(uid);
+      const status = String(row.status ?? '');
+      if (!existing) {
+        payByUser.set(uid, {
+          has_paid: status === 'approved',
+          latest_status: status || null,
+          latest_product: row.product_code ? String(row.product_code) : null,
+          latest_tariff: row.tariff_type ? String(row.tariff_type) : null,
+          latest_at: row.created_at ? String(row.created_at) : null,
+        });
+      } else if (status === 'approved') {
+        existing.has_paid = true;
+      }
     }
 
     const unreadByChat = new Map<number, number>();
@@ -1089,6 +1124,19 @@ export function createAdminController(supabase: DbClient) {
       const user = userMap.get(Number(chat.user_id)) as any;
       const last = latestByChat.get(Number(chat.id));
       const isActiveSubscription = Boolean(user?.plan_expires_at && String(user.plan_expires_at) > nowIso);
+      const pay = payByUser.get(Number(chat.user_id)) ?? {
+        has_paid: false,
+        latest_status: null,
+        latest_product: null,
+        latest_tariff: null,
+        latest_at: null,
+      };
+      const displayName = user
+        ? [user.first_name, user.last_name].filter(Boolean).join(' ') ||
+          user.phone ||
+          user.email ||
+          `#${user.id}`
+        : '—';
       return {
         id: Number(chat.id),
         user_id: Number(chat.user_id),
@@ -1098,8 +1146,8 @@ export function createAdminController(supabase: DbClient) {
         last_message_at: chat.last_message_at ? String(chat.last_message_at) : null,
         unread_count: unreadByChat.get(Number(chat.id)) ?? 0,
         user: {
-          id: Number(user?.id ?? 0),
-          name: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email || '—' : '—',
+          id: Number(user?.id ?? chat.user_id ?? 0),
+          name: displayName,
           email: user?.email ?? null,
           phone: user?.phone ?? null,
           registration_date: user?.created_at ?? null,
@@ -1107,6 +1155,13 @@ export function createAdminController(supabase: DbClient) {
             plan_type: user?.plan_name ?? null,
             status: isActiveSubscription ? 'active' : 'inactive',
             expires_at: user?.plan_expires_at ?? null,
+          },
+          payment: {
+            has_paid: Boolean(pay.has_paid) || isActiveSubscription,
+            latest_status: pay.latest_status,
+            latest_product: pay.latest_product,
+            latest_tariff: pay.latest_tariff,
+            latest_at: pay.latest_at,
           },
           total_points: Number(user?.total_points ?? 0),
           referral_balance: Number(user?.referral_balance ?? 0),
