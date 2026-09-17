@@ -680,27 +680,29 @@ async function startServer() {
     if (parsed.ok === false) {
       return res.status(400).json({ error: parsed.error });
     }
+    // Talaba ro‘yxati — faqat telefon (ism/familiya ixtiyoriy).
+    if (!parsed.phone) {
+      return res.status(400).json({ error: 'Telefon raqam kiritilishi shart' });
+    }
     if (!password || typeof password !== 'string') {
       return res.status(400).json({ error: 'Parol kiritilishi shart' });
     }
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const insertRow: Record<string, unknown> = {
-        first_name: firstName ?? '',
-        last_name: lastName ?? '',
+        first_name: typeof firstName === 'string' ? firstName.trim() : '',
+        last_name: typeof lastName === 'string' ? lastName.trim() : '',
         email: parsed.email,
         phone: parsed.phone,
         password: hashedPassword,
         onboarded: 1,
         account_type: 'student',
       };
-      if (parsed.phone) {
-        insertRow.phone_raw = sanitizePhoneRaw(contactRaw);
-        insertRow.phone_normalized = parsed.phone;
-        insertRow.country_code = parsed.phoneCountryIso ?? null;
-        insertRow.phone_verified = false;
-        insertRow.phone_invalid = false;
-      }
+      insertRow.phone_raw = sanitizePhoneRaw(contactRaw);
+      insertRow.phone_normalized = parsed.phone;
+      insertRow.country_code = parsed.phoneCountryIso ?? null;
+      insertRow.phone_verified = false;
+      insertRow.phone_invalid = false;
       const { data: user, error } = await supabase
         .from('users')
         .insert(insertRow)

@@ -51,16 +51,22 @@ export async function loginWithPassword(identifier: string, password: string): P
 }
 
 export async function registerAccount(payload: {
-  firstName: string;
-  lastName: string;
   identifier: string;
   password: string;
+  firstName?: string;
+  lastName?: string;
   ref?: string;
 }): Promise<AuthResponse> {
   const res = await fetch(apiUrl('/api/auth/register'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      identifier: payload.identifier,
+      password: payload.password,
+      firstName: payload.firstName?.trim() || '',
+      lastName: payload.lastName?.trim() || '',
+      ref: payload.ref,
+    }),
   });
   const data = await parseAuthResponse(res);
   if (!res.ok) throw new Error(data.error || 'Xatolik yuz berdi');
