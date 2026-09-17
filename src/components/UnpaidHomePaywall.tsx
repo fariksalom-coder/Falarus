@@ -53,6 +53,8 @@ export default function UnpaidHomePaywall() {
   const [speed, setSpeed] = useState<SpeedStep>(1);
   const speedRef = useRef(speed);
   speedRef.current = speed;
+  /** Bitta marta start — StrictMode / canplay qayta chaqiruvlarini oldini oladi. */
+  const playAttemptedRef = useRef(false);
 
   const syncFromPlayback = useCallback(() => {
     const el = videoRef.current;
@@ -69,19 +71,25 @@ export default function UnpaidHomePaywall() {
   };
 
   /**
-   * Kirishda avtomatik boshlash:
+   * Kirishda avtomatik boshlash (faqat BIR marta):
    * 1) ovoz bilan play
-   * 2) bloklansa — muted play (video baribir yuradi), keyin unmute urinish
-   * 3) umuman play bo‘lmasa — bitta bosish overlay
+   * 2) bloklansa — muted play, keyin unmute
+   * 3) umuman bo‘lmasa — overlay
    */
   const tryAutoplay = useCallback(async () => {
     if (!PAYWALL_VIDEO_READY) return;
     const el = videoRef.current;
     if (!el) return;
+
+    // Allaqachon ijro — qayta play() qilmaymiz (ikki ovoz chiqmasin).
     if (!el.paused && !el.ended) {
       setNeedsGesture(false);
+      playAttemptedRef.current = true;
       return;
     }
+    if (playAttemptedRef.current) return;
+    playAttemptedRef.current = true;
+
     el.playbackRate = speedRef.current;
     try {
       el.muted = false;
@@ -95,24 +103,33 @@ export default function UnpaidHomePaywall() {
       el.muted = true;
       await el.play();
       setNeedsGesture(false);
-      try {
-        el.muted = false;
-      } catch {
-        /* ignore */
-      }
+      el.muted = false;
     } catch {
+      // Keyingi urinishga ruxsat (overlay bosilganda).
+      playAttemptedRef.current = false;
       setNeedsGesture(true);
     }
   }, []);
 
   useEffect(() => {
+    playAttemptedRef.current = false;
+    const el = videoRef.current;
     void tryAutoplay();
+    return () => {
+      if (!el) return;
+      try {
+        el.pause();
+      } catch {
+        /* ignore */
+      }
+    };
   }, [tryAutoplay]);
 
   useEffect(() => {
     if (!PAYWALL_VIDEO_READY) return;
     const el = videoRef.current;
     if (!el) return;
+    let lockingRate = false;
 
     const onTime = () => syncFromPlayback();
     const onMeta = () => {
@@ -120,34 +137,47 @@ export default function UnpaidHomePaywall() {
       void tryAutoplay();
     };
     const onCanPlay = () => {
-      if (el.paused) void tryAutoplay();
+      if (el.paused && !playAttemptedRef.current) void tryAutoplay();
     };
     const onEnded = () => {
       setShowTariffs(true);
       setHighlightThreeMonth(true);
+    };
+    // Brauzer playbackRate ni o‘zgartirib yubormasin.
+    const onRate = () => {
+      if (lockingRate) return;
+      if (el.playbackRate !== speedRef.current) {
+        lockingRate = true;
+        el.playbackRate = speedRef.current;
+        lockingRate = false;
+      }
     };
 
     el.addEventListener('timeupdate', onTime);
     el.addEventListener('loadedmetadata', onMeta);
     el.addEventListener('canplay', onCanPlay);
     el.addEventListener('ended', onEnded);
+    el.addEventListener('ratechange', onRate);
     return () => {
       el.removeEventListener('timeupdate', onTime);
       el.removeEventListener('loadedmetadata', onMeta);
       el.removeEventListener('canplay', onCanPlay);
       el.removeEventListener('ended', onEnded);
+      el.removeEventListener('ratechange', onRate);
     };
   }, [syncFromPlayback, tryAutoplay]);
 
   const startWithSound = async () => {
     const el = videoRef.current;
     if (!el) return;
+    playAttemptedRef.current = true;
     el.muted = false;
     el.playbackRate = speedRef.current;
     try {
       await el.play();
       setNeedsGesture(false);
     } catch {
+      playAttemptedRef.current = false;
       setNeedsGesture(true);
     }
   };
@@ -226,11 +256,10 @@ export default function UnpaidHomePaywall() {
                 ref={videoRef}
                 className="h-full w-full object-contain"
                 style={{ background: BG }}
-                src={`${PAYWALL_VIDEO_SRC}?v=2`}
+                src={`${PAYWALL_VIDEO_SRC}?v=3`}
                 playsInline
-                autoPlay
                 controls
-                controlsList="nodownload"
+                controlsList="nodownload noplaybackrate"
                 disablePictureInPicture
                 preload="auto"
                 onContextMenu={(e) => e.preventDefault()}
