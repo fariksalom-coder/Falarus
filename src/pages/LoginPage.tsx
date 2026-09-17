@@ -16,6 +16,7 @@ import { AuthTextField } from '../components/auth/AuthTextField';
 import { IntlPhoneInput, type IntlPhoneInputHandle } from '../components/auth/IntlPhoneInput';
 import { OrDivider } from '../components/auth/OrDivider';
 import { SocialAuthButton } from '../components/auth/SocialAuthButton';
+import { pathAfterAuth } from '../utils/postAuthPath';
 
 type ContactMode = 'phone' | 'email';
 
@@ -48,8 +49,15 @@ export default function LoginPage() {
       setFormError(null);
       try {
         const data = await loginWithGoogle(idToken, refFromUrl || undefined);
-        login(data.token!, normalizeAuthUser(data.user!));
-        navigate(data.isNewUser ? '/onboarding' : '/', { replace: true });
+        const user = normalizeAuthUser(data.user!);
+        login(data.token!, user);
+        navigate(
+          pathAfterAuth({
+            isRegistration: Boolean(data.isNewUser),
+            onboardingCompleted: user.onboardingCompleted,
+          }),
+          { replace: true },
+        );
       } catch (err) {
         setFormError(err instanceof Error ? err.message : t('auth.genericError'));
       } finally {
@@ -128,8 +136,15 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       const data = await loginWithPassword(identifier, password);
-      login(data.token!, normalizeAuthUser(data.user!));
-      navigate('/');
+      const user = normalizeAuthUser(data.user!);
+      login(data.token!, user);
+      navigate(
+        pathAfterAuth({
+          isRegistration: false,
+          onboardingCompleted: user.onboardingCompleted,
+        }),
+        { replace: true },
+      );
     } catch (err) {
       setFormError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {

@@ -9,10 +9,12 @@ import { buildQuestSlots, getRow, type QuestSlot } from '../utils/kunlikBloklar'
 import { TOTAL_DAYS } from '../data/dailyPlan';
 import { FREE_KUNLIK_DAY_LIMIT, canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
+import UnpaidHomePaywall from '../components/UnpaidHomePaywall';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
 import { rememberKunlikOpenedDay } from '../utils/kunlikLastDay';
 import { getLifeScene, type LifeScene } from '../data/lifeJourney';
 import LifeSceneOverlay from '../components/journey/LifeSceneOverlay';
+import { hasAppPremiumAccess } from '../utils/premiumNav';
 
 /** 6 stages of 30 days each (last one = 32 days to cover 182). */
 const STAGES = [
@@ -42,7 +44,7 @@ export default function DailyCourseMapPage() {
   const ildizdami = useLocation().pathname === '/';
   const { user } = useAuth();
   const { t } = useLocale();
-  const { access } = useAccess();
+  const { access, accessLoaded } = useAccess();
   // OLTIN A'ZO: 182 kunning hammasi ochiq — kelajak kunlar ham qulflanmaydi.
   const oltin = Boolean(access?.golden);
   const premium = Boolean(access?.subscription_active);
@@ -235,6 +237,16 @@ export default function DailyCourseMapPage() {
     }
     openDay(day);
   };
+
+  // Obunasiz / oltin bo'lmagan — video + tarif paywall (o'qituvchi hisobi bundan mustasno).
+  if (user?.accountType !== 'teacher') {
+    if (!accessLoaded) {
+      return <div className="min-h-[40vh] bg-[#0B1220]" aria-busy="true" />;
+    }
+    if (!hasAppPremiumAccess(access)) {
+      return <UnpaidHomePaywall />;
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#EEF1F8] pb-16">

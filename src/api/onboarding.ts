@@ -24,8 +24,8 @@ function authHeaders(token: string | null): HeadersInit {
 /*
  * Eslatma: bu yerda ilgari `onboardingShownThisSession`/`markOnboardingShown`
  * bor edi — ular `MainLayout` dagi umumiy yo'naltirish aylanib qolmasligi uchun
- * kerak edi. Yo'naltirish olib tashlandi (so'rovnoma faqat ro'yxatdan o'tishda
- * so'raladi), shuning uchun sessiya belgisi ham keraksiz bo'lib qoldi.
+ * kerak edi. Yo'naltirish olib tashlandi (so'rovnoma faqat KIRISHDA
+ * `LoginPage` orqali so'raladi), shuning uchun sessiya belgisi ham keraksiz.
  */
 
 const ATTRIBUTION_KEY = 'falarus:attribution:v1';

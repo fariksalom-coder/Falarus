@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import AppNavBar from './AppNavBar';
 import LiveCallOverlay from './live/LiveCallOverlay';
 import PushObunaFon from './live/PushObunaFon';
@@ -7,7 +7,9 @@ import UpdateNotice from './UpdateNotice';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
 import { useAuth } from '../context/AuthContext';
+import { useAccess } from '../context/AccessContext';
 import { useHeartbeat } from '../hooks/useHeartbeat';
+import { isPremiumNavPathLocked } from '../utils/premiumNav';
 
 /** Routes where we hide the global bottom nav — focus mode for lesson/exercise/game/course/payment drill-ins. */
 function hideNavBar(path: string): boolean {
@@ -39,18 +41,20 @@ function hideNavBar(path: string): boolean {
 export default function MainLayout() {
   const { pathname } = useLocation();
   const { token } = useAuth();
+  const { access, accessLoaded } = useAccess();
   useHeartbeat(token);
 
   /*
-   * So'rovnoma FAQAT RO'YXATDAN O'TISHDA so'raladi — `RegisterPage` muvaffaqiyatli
-   * ro'yxatdan o'tgach `/onboarding` ga o'zi olib boradi.
+   * So'rovnoma FAQAT KIRISHDA so'raladi (`LoginPage` / mavjud Google hisob).
+   * Ro'yxatdan o'tishdan keyin `/onboarding` ga olib borilmaydi.
    *
-   * Ilgari shu yerda umumiy yo'naltirish turardi: `onboardingCompleted === false`
-   * bo'lgan HAR QANDAY foydalanuvchi ilovaga kirganda so'rovnomaga tortilardi.
-   * Natijada so'rovnomani o'tkazib yuborgan (yoki u paydo bo'lishidan oldin
-   * ro'yxatdan o'tgan) odam HAR SAFAR tizimga kirganda qayta so'ralaverardi.
-   * Shu sababli yo'naltirish olib tashlandi.
+   * Bu yerda umumiy yo'naltirish YO'Q: aks holda so'rovnomani o'tkazib
+   * yuborgan (yoki eski) foydalanuvchi har safar qayta so'ralaverardi.
    */
+  if (accessLoaded && isPremiumNavPathLocked(pathname, access)) {
+    return <Navigate to="/" replace />;
+  }
+
   const showNavBar = !hideNavBar(pathname);
   const sectionIdx = mainSectionIndex(pathname);
   const motionKey = sectionIdx >= 0 ? `section-${sectionIdx}` : pathname;
@@ -96,7 +100,7 @@ export default function MainLayout() {
                 {/*
                   Yangilanish e'loni — kontent oqimida, sahifa tepasida.
                   Faqat asosiy ekranlarda: dars, o'yin va to'lov sahifalari
-                  "fokus rejimi" (nav yashiriladi), u yerda e'lon xalaqit beradi.
+                  "fokus rejimi" (nav yashiriladi), u yerda e'lon halaqit beradi.
                 */}
                 {showNavBar && <UpdateNotice />}
                 <div className="flex-1 panel-content">

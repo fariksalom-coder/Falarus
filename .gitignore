@@ -47,3 +47,6 @@ tmp/
 
 # Design QA screenshots (large; keep MD/JSON only in git)
 docs/design/**/*.png
+
+# Paywall sales video (~500MB) — not in GitHub; scp to VPS public/videos/ before build
+public/videos/*.mp4

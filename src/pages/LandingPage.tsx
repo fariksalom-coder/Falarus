@@ -966,7 +966,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-app-bg font-sans text-app-text lg:bg-[#FDF8F2] lg:text-[#121827]">
+    <div className="min-h-screen bg-[#0B2A6B] font-sans text-app-text lg:bg-[#FDF8F2] lg:text-[#121827]">
       <header className="sticky top-0 z-30 hidden h-[76px] bg-white lg:block">
         <div className="mx-auto flex h-full max-w-[1728px] items-center justify-between px-5 sm:px-10 lg:px-24">
           <Brand />
@@ -1091,7 +1091,7 @@ export default function LandingPage() {
         {/* Mobile hero (< lg) */}
         <section
           id="home-mobile"
-          className="relative overflow-hidden pb-[130px] text-white lg:hidden"
+          className="relative min-h-[100dvh] overflow-hidden pb-[140px] text-white lg:hidden"
           style={{ background: 'linear-gradient(160deg, #0B2A6B 0%, #123A8F 60%, #0B2A6B 100%)' }}
         >
           <div
@@ -1140,18 +1140,6 @@ export default function LandingPage() {
                   </div>
                 )}
               </div>
-              <button
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white ring-1 ring-white/20 backdrop-blur"
-                type="button"
-                aria-label="Menu"
-                aria-expanded={mobileMenuOpen}
-                onClick={() => {
-                  setLanguageMenuOpen(false);
-                  setMobileMenuOpen((open) => !open);
-                }}
-              >
-                {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-              </button>
             </div>
           </div>
 
@@ -1192,7 +1180,7 @@ export default function LandingPage() {
         </section>
 
         {/* Floating CTA card — overlaps hero (LIGHT 1A) */}
-        <div className="relative z-[5] -mt-[170px] px-[22px] lg:hidden">
+        <div className="relative z-[5] -mt-[170px] px-[22px] pb-8 lg:hidden">
           <div className="rounded-[22px] bg-white p-[18px] shadow-[0_24px_50px_-20px_rgba(11,42,107,0.4)]">
             <Link
               to="/register"
@@ -1216,8 +1204,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Mobile feature tiles + certificate (only < lg) */}
-        <section className="bg-app-bg px-[22px] pb-8 pt-6 lg:hidden">
+        {/* Mobile feature tiles — smartfonlarda ko‘rsatilmaydi */}
+        <section className="hidden">
           <div className="grid grid-cols-2 gap-[10px]">
             {[
               { icon: '🎮', label: t.mobile.tiles.games, tone: 'blue' as const },
@@ -1326,7 +1314,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="bg-[#FDF8F2] px-5 pb-14 pt-14 sm:px-10 lg:px-24 lg:pb-[84px] lg:pt-[84px]">
+        <section className="hidden bg-[#FDF8F2] px-5 pb-14 pt-14 sm:px-10 lg:block lg:px-24 lg:pb-[84px] lg:pt-[84px]">
           <div className="mx-auto max-w-[1308px] text-center">
             <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.featuresIntro.title}</h2>
             <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.featuresIntro.description}</p>
@@ -1364,7 +1352,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="pricing" className="bg-[#FDF8F2] px-5 py-14 sm:px-10 lg:px-24 lg:py-[120px]">
+        <section id="pricing" className="hidden bg-[#FDF8F2] px-5 py-14 sm:px-10 lg:block lg:px-24 lg:py-[120px]">
           <div className="mx-auto max-w-[1000px] text-center">
             <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.pricingIntro.title}</h2>
             <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.pricingIntro.description}</p>
@@ -1398,7 +1386,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="faq" className="bg-white px-5 py-14 sm:px-10 lg:px-24 lg:py-20">
+        <section id="faq" className="hidden bg-white px-5 py-14 sm:px-10 lg:block lg:px-24 lg:py-20">
           <div className="mx-auto max-w-[800px]">
             <h2 className="text-center text-[24px] font-semibold leading-tight sm:text-[32px]">{t.faq.title}</h2>
             <div className="mt-10 space-y-3">
@@ -1427,12 +1415,12 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="about" className="bg-[#FDF8F2] px-5 pb-14 pt-4 text-center sm:px-10 lg:px-24 lg:pb-[108px]">
+        <section id="about" className="hidden bg-[#FDF8F2] px-5 pb-14 pt-4 text-center sm:px-10 lg:block lg:px-24 lg:pb-[108px]">
           <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.about.title}</h2>
           <p className="mx-auto mt-4 max-w-[550px] text-base leading-snug text-[#4D4D4D] sm:mt-6 sm:text-xl sm:leading-tight">{t.about.description}</p>
         </section>
 
-        <section className="bg-[#0F172A] px-5 py-20 text-white sm:px-10 lg:px-24 lg:py-[92px]">
+        <section className="hidden bg-[#0F172A] px-5 py-20 text-white sm:px-10 lg:block lg:px-24 lg:py-[92px]">
           <div className="mx-auto grid max-w-[800px] items-center gap-8 md:grid-cols-[300px_1fr]">
             <picture className="contents">
               <source srcSet="/landing/founder.webp" type="image/webp" />
@@ -1461,7 +1449,7 @@ export default function LandingPage() {
           chaqiruvidan iborat. `id="support"` qoldi: yuqoridagi «Kontakt»
           havolasi shu yerga olib keladi.
         */}
-        <section id="support" className="bg-gradient-to-b from-[#FAF7F2] to-[#FDF8F2] px-5 py-10 sm:px-8 lg:px-16 lg:py-16">
+        <section id="support" className="hidden bg-gradient-to-b from-[#FAF7F2] to-[#FDF8F2] px-5 py-10 sm:px-8 lg:block lg:px-16 lg:py-16">
           <div className="mx-auto max-w-[1080px]">
             <TeacherRecruitBanner
               language={languageCode}
@@ -1472,7 +1460,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="bg-white px-5 pt-12 sm:px-10 lg:px-24 lg:pt-20">
+      <footer className="hidden bg-white px-5 pt-12 sm:px-10 lg:block lg:px-24 lg:pt-20">
         <div className="mx-auto grid max-w-[1728px] gap-8 border-b border-[#121827] pb-8 sm:gap-10 md:grid-cols-2 xl:grid-cols-[360px_220px_260px_280px] xl:justify-between">
           <div>
             <Brand />

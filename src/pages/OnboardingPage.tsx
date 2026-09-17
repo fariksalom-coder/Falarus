@@ -1,7 +1,7 @@
 /**
- * OnboardingPage — ro'yxatdan o'tgandan keyingi so'rovnoma.
+ * OnboardingPage — birinchi KIRISHdagi so'rovnoma (ro'yxatdan o'tishdan keyin emas).
  *
- * Har bir savol ALOHIDA ekranda: bitta ekranda 6 ta savol turса, ko'pchilik
+ * Har bir savol ALOHIDA ekranda: bitta ekranda 6 ta savol tursa, ko'pchilik
  * uni yopib yuboradi.
  *
  * BARCHA savol majburiy — o'tkazib yuborish yo'q. Javoblar oxirida BITTA
@@ -102,7 +102,7 @@ const QUESTIONS: Question[] = [
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, updateUser } = useAuth();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -126,10 +126,11 @@ export default function OnboardingPage() {
       try {
         const saved = await saveOnboarding(token, payload);
         if (!saved) throw new Error('Ro‘yxatdan o‘tish yakunlanmadi. Qayta saqlashni bosing.');
+        updateUser({ onboardingCompleted: true });
         navigate('/', { replace: true });
       } finally { setSaving(false); }
     },
-    [token, navigate],
+    [token, navigate, updateUser],
   );
 
   const choose = (value: string) => {

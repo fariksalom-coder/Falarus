@@ -18,6 +18,7 @@ import { IntlPhoneInput, type IntlPhoneInputHandle } from '../components/auth/In
 import { OrDivider } from '../components/auth/OrDivider';
 import { SocialAuthButton } from '../components/auth/SocialAuthButton';
 import { TermsCheckbox } from '../components/auth/TermsCheckbox';
+import { pathAfterAuth } from '../utils/postAuthPath';
 
 type ContactMode = 'phone' | 'email';
 
@@ -40,9 +41,16 @@ export default function RegisterPage() {
       setFormError(null);
       try {
         const data = await loginWithGoogle(idToken, refFromUrl || undefined);
-        login(data.token!, normalizeAuthUser(data.user!));
-        // Mavjud hisob bo'lsa so'rovnoma qayta chiqmasin.
-        navigate(data.isNewUser ? '/onboarding' : '/', { replace: true });
+        const user = normalizeAuthUser(data.user!);
+        login(data.token!, user);
+        // Yangi hisob — so'rovnoma keyingi KIRISHda; mavjud hisob — agar tugallanmagan bo'lsa.
+        navigate(
+          pathAfterAuth({
+            isRegistration: Boolean(data.isNewUser),
+            onboardingCompleted: user.onboardingCompleted,
+          }),
+          { replace: true },
+        );
       } catch (err) {
         setFormError(err instanceof Error ? err.message : t('auth.genericError'));
       } finally {
@@ -178,8 +186,8 @@ export default function RegisterPage() {
         ref: refFromUrl || undefined,
       });
       login(data.token!, normalizeAuthUser(data.user!));
-      // Yangi hisob — avval qisqa so'rovnoma (o'tkazib yuborish mumkin).
-      navigate('/onboarding', { replace: true });
+      // So'rovnoma ro'yxatdan o'tishda so'ralmaydi — keyingi kirishda.
+      navigate(pathAfterAuth({ isRegistration: true }), { replace: true });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {
