@@ -7,14 +7,13 @@ import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { useLocale } from '../context/LocaleContext';
-import { useRubUzsRate } from '../hooks/useRubUzsRate';
 import { openRahmatCheckout } from '../api/rahmat';
 import {
   formatRubAmount,
+  formatRussianTariffUzsMing,
   RUSSIAN_TARIFF_PLANS_RUB,
   type RussianTariffCode,
 } from '../../shared/russianTariffs';
-import { formatRubUzsPair } from '../../shared/rubUzs';
 
 const BENEFIT_KEYS = [
   'pricing.benefitGrammar',
@@ -74,20 +73,18 @@ const VOCAB_STEPS = [
 function buildRubPlans(
   features: string[],
   popularLabel: string,
-  rubUzsRate: number,
 ): PlanCard[] {
   return RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {
     const perMonth = Math.round(plan.priceRub / plan.months);
     const highlighted = plan.code === 'three_month';
     const hasSavings = plan.savingsRub > 0;
-    const { labelUzs } = formatRubUzsPair(plan.priceRub, rubUzsRate);
     return {
       tariffType: plan.code,
       duration: plan.labelUz,
       price: `${formatRubAmount(plan.priceRub)} ₽`,
       pricePerMonth: formatRubAmount(plan.priceRub),
       pricePerMonthUnit: '₽',
-      priceSecondary: labelUzs,
+      priceSecondary: formatRussianTariffUzsMing(plan.priceUzs),
       compareAtPrice: hasSavings ? `${formatRubAmount(plan.wasRub)} ₽` : undefined,
       discountPercent: hasSavings ? plan.discountPercent : undefined,
       savingsAmount: hasSavings ? `${formatRubAmount(plan.savingsRub)} ₽` : undefined,
@@ -111,15 +108,14 @@ export default function PricingPage() {
   const { token } = useAuth();
   const { access } = useAccess();
   const { hasPendingPayment, refreshPayments } = usePaymentStatus();
-  const { rate: rubUzsRate, asOf: rateAsOf } = useRubUzsRate();
   const hasActivePremium = Boolean(access?.subscription_active);
   const [paymentError, setPaymentError] = useState('');
   const [buyingTariff, setBuyingTariff] = useState<RussianTariffCode | null>(null);
 
   const benefits = useMemo(() => BENEFIT_KEYS.map((key) => t(key)), [t]);
   const plans = useMemo(
-    () => buildRubPlans(benefits, t('payment.popular'), rubUzsRate),
-    [benefits, t, rubUzsRate],
+    () => buildRubPlans(benefits, t('payment.popular')),
+    [benefits, t],
   );
 
   const handleSelectPlan = (plan: PlanCard) => {
@@ -184,9 +180,7 @@ export default function PricingPage() {
           ) : null}
 
           <p className="mb-5 text-center text-[12.5px] font-semibold text-pmn-text-muted">
-            Narxlar rublda. To‘lov Rahmat orqali so‘mda — Markaziy bank kursi
-            {rateAsOf && rateAsOf !== 'fallback' ? ` (${rateAsOf}: 1 ₽ ≈ ${rubUzsRate} so‘m)` : ` (1 ₽ ≈ ${rubUzsRate} so‘m)`}
-            .
+            Narxlar rublda ko‘rsatiladi. To‘lov Rahmat orqali so‘mda — ekrandagi so‘m summasi bo‘yicha.
           </p>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:max-w-5xl md:mx-auto md:gap-5">

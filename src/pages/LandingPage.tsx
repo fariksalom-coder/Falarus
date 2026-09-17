@@ -22,9 +22,7 @@ import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 import PricingCard from '../components/pricing/PricingCard';
 import { getLegalEntityMeta, LEGAL_PATHS } from '../config/legalPublic';
 import { useAuth } from '../context/AuthContext';
-import { useRubUzsRate } from '../hooks/useRubUzsRate';
-import { formatRubAmount, RUSSIAN_TARIFF_PLANS_RUB } from '../../shared/russianTariffs';
-import { formatRubUzsPair } from '../../shared/rubUzs';
+import { formatRubAmount, formatRussianTariffUzsMing, RUSSIAN_TARIFF_PLANS_RUB } from '../../shared/russianTariffs';
 
 type LanguageCode = 'en' | 'uz' | 'ru' | 'kk' | 'tg' | 'ky';
 type NavKey = 'home' | 'about' | 'certificates' | 'pricing' | 'contact';
@@ -941,7 +939,6 @@ function Brand({ light = false }: { light?: boolean }) {
 export default function LandingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { rate: rubUzsRate } = useRubUzsRate();
   const [activeNav, setActiveNav] = useState<NavKey>('home');
   const [languageCode, setLanguageCode] = useState<LanguageCode>('uz');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
@@ -1360,7 +1357,7 @@ export default function LandingPage() {
               {RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {
                 const hasSavings = plan.savingsRub > 0;
                 const perMonth = Math.round(plan.priceRub / plan.months);
-                const { labelUzs } = formatRubUzsPair(plan.priceRub, rubUzsRate);
+                const labelUzs = formatRussianTariffUzsMing(plan.priceUzs);
                 const highlighted = plan.code === 'three_month';
                 return (
                   <PricingCard

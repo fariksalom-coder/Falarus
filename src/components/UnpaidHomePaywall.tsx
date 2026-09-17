@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { openRahmatCheckout } from '../api/rahmat';
 import {
   formatRubAmount,
+  formatRussianTariffUzsMing,
   RUSSIAN_TARIFF_PLANS_RUB,
   type RussianTariffCode,
 } from '../../shared/russianTariffs';
@@ -32,23 +33,12 @@ export const PAYWALL_VIDEO_SRC = '/videos/paywall-intro.mp4';
  */
 export const PAYWALL_VIDEO_READY = true;
 
-/** Paywall uchun qat’iy UZS narxlar (ming so‘m). */
-const FIXED_UZS_MING: Record<RussianTariffCode, number> = {
-  month: 400,
-  three_month: 530,
-  six_month: 790,
-};
-
 const SPEED_STEPS = [1, 1.5, 2, 2.5] as const;
 type SpeedStep = (typeof SPEED_STEPS)[number];
 const BG = '#0B1220';
 
 function formatSpeed(rate: SpeedStep): string {
   return rate === 1 ? '1×' : rate === 1.5 ? '1.5×' : rate === 2 ? '2×' : '2.5×';
-}
-
-function formatFixedUzsMing(ming: number): string {
-  return `${ming} ming so‘m`;
 }
 
 export default function UnpaidHomePaywall() {
@@ -376,7 +366,7 @@ export default function UnpaidHomePaywall() {
                   const isGreen =
                     plan.code === 'three_month' && highlightThreeMonth;
                   const showWas = plan.wasRub > plan.priceRub;
-                  const uzsLabel = formatFixedUzsMing(FIXED_UZS_MING[plan.code]);
+                  const uzsLabel = formatRussianTariffUzsMing(plan.priceUzs);
 
                   return (
                     <div

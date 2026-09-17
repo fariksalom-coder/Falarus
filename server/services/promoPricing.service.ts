@@ -1,7 +1,6 @@
 import type { DbClient } from '../types/dbClient';
 import type { SubscriptionTariffType } from '../../shared/paymentProducts.js';
 import { getRussianTariffPlanRub } from '../../shared/russianTariffs.js';
-import { rubToUzs } from '../../shared/rubUzs.js';
 import { getRubToUzsRate } from './rubUzsRate.service.js';
 
 type Currency = 'UZS' | 'RUB' | 'USD';
@@ -22,7 +21,7 @@ export type RussianTariffQuote = {
 /**
  * Rus tili tarifi:
  *  — RUB: katalog (3000 / 4000 / 6000)
- *  — UZS: katalog × CBU kursi (soatlik yangilanadi)
+ *  — UZS: qat’iy katalog (400_000 / 530_000 / 790_000) — UI dagi summa bilan bir xil
  *  — boshqa: DB `tariff_prices` (legacy)
  */
 export async function resolveRussianTariffQuote(
@@ -48,8 +47,9 @@ export async function resolveRussianTariffQuote(
   }
 
   if (plan && params.currency === 'UZS') {
-    const fx = await getRubToUzsRate();
-    const amountUzs = rubToUzs(plan.priceRub, fx.rate);
+    const amountUzs = plan.priceUzs;
+    // Snapshot uchun kursni saqlab qo‘yamiz (hisob-kitob endi fiks).
+    const fx = await getRubToUzsRate().catch(() => null);
     return {
       tariffType: params.tariffType,
       currency: 'UZS',
@@ -57,8 +57,8 @@ export async function resolveRussianTariffQuote(
       finalAmount: amountUzs,
       discountAmount: 0,
       priceRub: plan.priceRub,
-      rubUzsRate: fx.rate,
-      rateAsOf: fx.asOf,
+      rubUzsRate: fx?.rate,
+      rateAsOf: fx?.asOf,
     };
   }
 
