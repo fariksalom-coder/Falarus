@@ -173,7 +173,8 @@ const contentSecurityPolicy = [
   `connect-src 'self' https: ${MEET_ORIGIN.replace('https://', 'wss://')}`,
   // `'self'` — o'qituvchilar lendingi (`/oqituvchilarga/`) bosh sahifadagi
   // oynacha ichida ochiladi.
-  `frame-src 'self' https://accounts.google.com ${MEET_ORIGIN}`,
+  // Rutube — unpaid paywall video (private embed).
+  `frame-src 'self' https://accounts.google.com https://rutube.ru ${MEET_ORIGIN}`,
   "frame-ancestors 'none'",
 ].join('; ') + ';';
 
