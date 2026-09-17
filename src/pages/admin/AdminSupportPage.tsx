@@ -119,6 +119,8 @@ export default function AdminSupportPage() {
   const [error, setError] = useState('');
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [roleFilter, setRoleFilter] = useState<'all' | 'teacher' | 'student'>('all');
+  /** Hammasi | o‘qilmagan | oxirgi xabar foydalanuvchidan (javob berilmagan). */
+  const [inboxFilter, setInboxFilter] = useState<'all' | 'unread' | 'awaiting'>('unread');
   const [messages, setMessages] = useState<AdminHelpChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [text, setText] = useState('');
@@ -158,6 +160,17 @@ export default function AdminSupportPage() {
   useEffect(() => {
     void reloadChats();
   }, [reloadChats]);
+
+  // Ro‘yxat ochiq bo‘lsa yangi kelgan xabarlarni ko‘rsatish uchun yangilab turamiz.
+  useEffect(() => {
+    if (activeChatId) return;
+    const timer = window.setInterval(() => {
+      void getAdminHelpChats()
+        .then((rows) => setChats(rows))
+        .catch(() => {});
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [activeChatId]);
 
   useEffect(() => {
     const p = new URLSearchParams(location.search);
@@ -325,9 +338,44 @@ export default function AdminSupportPage() {
   }
 
   const isTeacherChat = (c: AdminHelpChatListRow) => c.user.account_type === 'teacher';
-  const visibleChats = chats.filter(
-    (c) => roleFilter === 'all' || isTeacherChat(c) === (roleFilter === 'teacher'),
+  const isUnread = (c: AdminHelpChatListRow) => Number(c.unread_count ?? 0) > 0;
+  const isAwaitingReply = (c: AdminHelpChatListRow) => c.last_message?.sender_type === 'user';
+
+  const roleScopedChats = useMemo(
+    () => chats.filter((c) => roleFilter === 'all' || isTeacherChat(c) === (roleFilter === 'teacher')),
+    [chats, roleFilter],
   );
+
+  const inboxCounts = useMemo(() => {
+    let unread = 0;
+    let awaiting = 0;
+    for (const c of roleScopedChats) {
+      if (isUnread(c)) unread += 1;
+      if (isAwaitingReply(c)) awaiting += 1;
+    }
+    return { all: roleScopedChats.length, unread, awaiting };
+  }, [roleScopedChats]);
+
+  const visibleChats = useMemo(() => {
+    const filtered = roleScopedChats.filter((c) => {
+      if (inboxFilter === 'unread') return isUnread(c);
+      if (inboxFilter === 'awaiting') return isAwaitingReply(c);
+      return true;
+    });
+    // O‘qilmagan → javob kerak → qolganlari; ichida oxirgi xabar bo‘yicha.
+    return [...filtered].sort((a, b) => {
+      const score = (c: AdminHelpChatListRow) => {
+        if (isUnread(c)) return 2;
+        if (isAwaitingReply(c)) return 1;
+        return 0;
+      };
+      const diff = score(b) - score(a);
+      if (diff !== 0) return diff;
+      const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+      const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+      return tb - ta;
+    });
+  }, [roleScopedChats, inboxFilter]);
 
   return (
     <div>
@@ -415,7 +463,7 @@ export default function AdminSupportPage() {
         <aside>
           <div className="border-b border-app-border px-4 py-3">
             <div className="text-sm font-semibold text-app-text">Yozishmalar</div>
-            <div className="mt-2 flex gap-1.5">
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {([['all', 'Hammasi'], ['teacher', "O‘qituvchilar"], ['student', "O‘quvchilar"]] as const).map(
                 ([val, label]) => {
                   const count =
@@ -435,6 +483,35 @@ export default function AdminSupportPage() {
                 },
               )}
             </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {(
+                [
+                  ['unread', 'O‘qilmagan', inboxCounts.unread],
+                  ['awaiting', 'Javob kerak', inboxCounts.awaiting],
+                  ['all', 'Barcha xabarlar', inboxCounts.all],
+                ] as const
+              ).map(([val, label, count]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setInboxFilter(val)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                    inboxFilter === val
+                      ? val === 'unread'
+                        ? 'bg-blue-600 text-white'
+                        : val === 'awaiting'
+                          ? 'bg-amber-600 text-white'
+                          : 'bg-slate-700 text-white'
+                      : 'bg-app-bg-subtle text-app-text-muted hover:bg-slate-200'
+                  }`}
+                >
+                  {label} ({count})
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-app-text-muted">
+              O‘qilmagan — hali ochilmagan. Javob kerak — oxirgi xabar foydalanuvchidan (o‘qigan bo‘lsangiz ham).
+            </p>
           </div>
           {loading ? (
             <div className="p-4 text-sm text-app-text-muted">Yuklanmoqda...</div>
@@ -494,17 +571,32 @@ export default function AdminSupportPage() {
                         <p className="line-clamp-1 text-xs text-app-text-muted">
                           {previewMedia.isImage ? 'Rasm' : (chat.last_message?.content ?? 'Xabar yo‘q')}
                         </p>
-                        {chat.unread_count > 0 ? (
-                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-[10px] font-bold text-white">
-                            {chat.unread_count}
-                          </span>
-                        ) : null}
+                        <span className="flex shrink-0 items-center gap-1">
+                          {isAwaitingReply(chat) && !isUnread(chat) ? (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">
+                              Javob
+                            </span>
+                          ) : null}
+                          {chat.unread_count > 0 ? (
+                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-[10px] font-bold text-white">
+                              {chat.unread_count}
+                            </span>
+                          ) : null}
+                        </span>
                       </div>
                     </div>
                   </div>
                 );
               })}
-              {!visibleChats.length && <p className="p-4 text-center text-sm text-app-text-muted">Chatlar yo‘q</p>}
+              {!visibleChats.length && (
+                <p className="p-4 text-center text-sm text-app-text-muted">
+                  {inboxFilter === 'unread'
+                    ? 'O‘qilmagan xabar yo‘q'
+                    : inboxFilter === 'awaiting'
+                      ? 'Javob kutayotgan chat yo‘q'
+                      : 'Chatlar yo‘q'}
+                </p>
+              )}
             </div>
           )}
         </aside>
