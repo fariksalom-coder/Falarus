@@ -6,6 +6,10 @@ import {
 } from '../../shared/paymentProducts.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
 import { invalidateAccessCache } from './subscription.service.js';
+import {
+  isGooglePlaySource,
+  verifyGooglePlayPurchase,
+} from './googlePlayPurchase.service.js';
 
 const STORE_PRODUCT_MAP: Record<
   string,
@@ -228,6 +232,11 @@ export async function confirmStorePurchase(
   }
 
   const isApple = isAppleSource(verificationSource);
+  const isGoogle = isGooglePlaySource(verificationSource);
+  if (!isApple && !isGoogle) {
+    return { status: 400, json: { error: 'STORE_SOURCE_NOT_ALLOWED' } };
+  }
+
   const isSubscription = mapped.productCode === 'russian';
   const appleVerification = isApple
     ? await verifyAppleReceipt(verificationData, storeProductId, isSubscription)
@@ -239,7 +248,29 @@ export async function confirmStorePurchase(
     };
   }
 
-  const verifiedTransactionId = appleVerification?.transactionId ?? purchaseId;
+  const googleVerification = isGoogle
+    ? await verifyGooglePlayPurchase({
+        purchaseToken: verificationData,
+        productId: storeProductId,
+        isSubscription,
+      })
+    : null;
+  if (googleVerification && !googleVerification.ok) {
+    return {
+      status: googleVerification.status,
+      json: { error: googleVerification.error ?? 'GOOGLE_PLAY_RECEIPT_INVALID' },
+    };
+  }
+
+  const verifiedTransactionId =
+    appleVerification?.transactionId ??
+    googleVerification?.orderId ??
+    purchaseId;
+  const exactExpiresAt =
+    appleVerification?.expiresAt ??
+    (googleVerification?.expiryTimeMillis
+      ? new Date(Number(googleVerification.expiryTimeMillis)).toISOString()
+      : null);
   const proofUrl = `store:${verificationSource}:${verifiedTransactionId}:${storeProductId}`;
 
   const { data: existing, error: existingErr } = await supabase
@@ -274,14 +305,15 @@ export async function confirmStorePurchase(
       store_transaction_id: verifiedTransactionId,
       apple_status: appleVerification?.rawStatus ?? null,
       apple_expires_at: appleVerification?.expiresAt ?? null,
+      google_acknowledgement_state: googleVerification?.acknowledgementState ?? null,
+      google_expiry_time_millis: googleVerification?.expiryTimeMillis ?? null,
       transaction_date: body.transaction_date ?? null,
     },
     payment_proof_url: proofUrl,
     payment_time: nowIso,
     status: 'approved',
     approved_at: nowIso,
-    payment_channel:
-      isApple ? 'app_store' : 'google_play',
+    payment_channel: isApple ? 'app_store' : 'google_play',
   };
 
   const { data: row, error: insertErr } = await supabase
@@ -300,7 +332,7 @@ export async function confirmStorePurchase(
     userId,
     productCode: mapped.productCode,
     tariffType,
-    exactExpiresAt: appleVerification?.expiresAt ?? null,
+    exactExpiresAt,
   });
   invalidateAccessCache(userId);
 
