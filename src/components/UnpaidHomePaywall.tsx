@@ -1,15 +1,13 @@
 /**
- * Obunasiz foydalanuvchi uchun bosh sahifa: Rutube video + oxirgi 1:10 da tariflar.
+ * Obunasiz foydalanuvchi uchun bosh sahifa: video + oxirgi 1:10 da tariflar.
  *
- * Video: Rutube private embed (CDN — tez yuklanadi).
+ * Video: `public/videos/paywall-intro.mp4`. Tezlatish tugmasi video ostida.
  * 3 oy tarifi oxirgi 51 soniyada yashil bo‘ladi.
- *
- * Eslatma: Rutube iframe API da playbackRate yo‘q — tezlik tugmalari olib tashlangan.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Volume2 } from 'lucide-react';
+import { Gauge, Play, Volume2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRubUzsRate } from '../hooks/useRubUzsRate';
 import { openRahmatCheckout } from '../api/rahmat';
@@ -26,144 +24,162 @@ const TARIFF_REMAINING_SEC = 70;
 /** 3 oylik tarif shu qolgan vaqtda yashil bo‘ladi. */
 const THREE_MONTH_GREEN_REMAINING_SEC = 51;
 
-/** Rutube private video id + access key (`?p=`). */
-const RUTUBE_VIDEO_ID = 'f9cee4c403dd215dd760da9aac3b1d48';
-const RUTUBE_PRIVATE_KEY = '2QthcCmOPieaIkmSQJatiQ';
+/** Asosiy paywall video — fayl `public/videos/paywall-intro.mp4` ga qo‘yiladi. */
+export const PAYWALL_VIDEO_SRC = '/videos/paywall-intro.mp4';
 
 /**
- * Private embed: ID + `/?p=key` (Rutube Studio docs).
- * autoplay + muted start — brauzer ovozli autoplayni bloklamasligi uchun.
+ * Video hali tayyor emas — bo‘sh pleer ko‘rsatiladi.
+ * Fayl qo‘yilgach `true` qiling.
  */
-const RUTUBE_EMBED_SRC =
-  `https://rutube.ru/play/embed/${RUTUBE_VIDEO_ID}/?p=${encodeURIComponent(RUTUBE_PRIVATE_KEY)}` +
-  '&autoplay=true&autostartmute=true&skinColor=2563EB';
-
 export const PAYWALL_VIDEO_READY = true;
 
+const SPEED_STEPS = [1, 1.5, 2, 2.5] as const;
+type SpeedStep = (typeof SPEED_STEPS)[number];
 const BG = '#0B1220';
-const RUTUBE_ORIGIN = 'https://rutube.ru';
 
-type RutubeMessage = {
-  type?: string;
-  data?: {
-    time?: number;
-    duration?: number;
-    state?: string;
-  };
-};
-
-function postToRutube(
-  iframe: HTMLIFrameElement | null,
-  type: string,
-  data: Record<string, unknown> = {},
-) {
-  if (!iframe?.contentWindow) return;
-  iframe.contentWindow.postMessage(JSON.stringify({ type, data }), RUTUBE_ORIGIN);
+function formatSpeed(rate: SpeedStep): string {
+  return rate === 1 ? '1×' : rate === 1.5 ? '1.5×' : rate === 2 ? '2×' : '2.5×';
 }
 
 export default function UnpaidHomePaywall() {
   const { token } = useAuth();
   const { rate } = useRubUzsRate();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const durationRef = useRef(0);
-  const playAttemptedRef = useRef(false);
-  const playingSeenRef = useRef(false);
-
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [showTariffs, setShowTariffs] = useState(!PAYWALL_VIDEO_READY);
   const [highlightThreeMonth, setHighlightThreeMonth] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
   const [buying, setBuying] = useState<RussianTariffCode | null>(null);
+  const [speed, setSpeed] = useState<SpeedStep>(1);
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+  /** Bitta marta start — StrictMode / canplay qayta chaqiruvlarini oldini oladi. */
+  const playAttemptedRef = useRef(false);
 
-  const syncFromTime = useCallback((currentTime: number) => {
-    const duration = durationRef.current;
-    if (!Number.isFinite(duration) || duration <= 0) return;
-    const remaining = duration - currentTime;
+  const syncFromPlayback = useCallback(() => {
+    const el = videoRef.current;
+    if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return;
+    const remaining = el.duration - el.currentTime;
     if (remaining <= TARIFF_REMAINING_SEC) setShowTariffs(true);
     setHighlightThreeMonth(remaining <= THREE_MONTH_GREEN_REMAINING_SEC);
   }, []);
 
-  const tryPlay = useCallback((withSound: boolean) => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    if (withSound) {
-      postToRutube(iframe, 'player:unMute');
-      postToRutube(iframe, 'player:setVolume', { volume: 1 });
-    } else {
-      postToRutube(iframe, 'player:mute');
+  const setPlaybackSpeed = (next: SpeedStep) => {
+    setSpeed(next);
+    const el = videoRef.current;
+    if (el) el.playbackRate = next;
+  };
+
+  /**
+   * Kirishda avtomatik boshlash (faqat BIR marta):
+   * 1) ovoz bilan play
+   * 2) bloklansa — muted play, keyin unmute
+   * 3) umuman bo‘lmasa — overlay
+   */
+  const tryAutoplay = useCallback(async () => {
+    if (!PAYWALL_VIDEO_READY) return;
+    const el = videoRef.current;
+    if (!el) return;
+
+    // Allaqachon ijro — qayta play() qilmaymiz (ikki ovoz chiqmasin).
+    if (!el.paused && !el.ended) {
+      setNeedsGesture(false);
+      playAttemptedRef.current = true;
+      return;
     }
-    postToRutube(iframe, 'player:play');
+    if (playAttemptedRef.current) return;
+    playAttemptedRef.current = true;
+
+    el.playbackRate = speedRef.current;
+    try {
+      el.muted = false;
+      await el.play();
+      setNeedsGesture(false);
+      return;
+    } catch {
+      /* ovozli autoplay ko‘pincha bloklanadi */
+    }
+    try {
+      el.muted = true;
+      await el.play();
+      setNeedsGesture(false);
+      el.muted = false;
+    } catch {
+      // Keyingi urinishga ruxsat (overlay bosilganda).
+      playAttemptedRef.current = false;
+      setNeedsGesture(true);
+    }
   }, []);
 
   useEffect(() => {
-    if (!PAYWALL_VIDEO_READY) return;
-
-    const onMessage = (event: MessageEvent) => {
-      if (event.origin !== RUTUBE_ORIGIN) return;
-      let message: RutubeMessage;
+    playAttemptedRef.current = false;
+    const el = videoRef.current;
+    void tryAutoplay();
+    return () => {
+      if (!el) return;
       try {
-        message =
-          typeof event.data === 'string'
-            ? (JSON.parse(event.data) as RutubeMessage)
-            : (event.data as RutubeMessage);
+        el.pause();
       } catch {
-        return;
+        /* ignore */
       }
-      if (!message?.type) return;
+    };
+  }, [tryAutoplay]);
 
-      switch (message.type) {
-        case 'player:ready': {
-          if (!playAttemptedRef.current) {
-            playAttemptedRef.current = true;
-            // Avval muted — autoplay odatda o‘tadi; keyin unmute urinish.
-            tryPlay(false);
-            window.setTimeout(() => tryPlay(true), 400);
-            // Agar play umuman boshlanmasa — overlay.
-            window.setTimeout(() => {
-              if (!playingSeenRef.current) setNeedsGesture(true);
-            }, 2000);
-          }
-          break;
-        }
-        case 'player:durationChange': {
-          const d = message.data?.duration;
-          if (typeof d === 'number' && Number.isFinite(d) && d > 0) {
-            durationRef.current = d;
-          }
-          break;
-        }
-        case 'player:currentTime': {
-          const t = message.data?.time;
-          if (typeof t === 'number' && Number.isFinite(t)) {
-            syncFromTime(t);
-          }
-          break;
-        }
-        case 'player:changeState': {
-          if (message.data?.state === 'playing') {
-            playingSeenRef.current = true;
-            setNeedsGesture(false);
-          }
-          break;
-        }
-        case 'player:playComplete': {
-          setShowTariffs(true);
-          setHighlightThreeMonth(true);
-          break;
-        }
-        default:
-          break;
+  useEffect(() => {
+    if (!PAYWALL_VIDEO_READY) return;
+    const el = videoRef.current;
+    if (!el) return;
+    let lockingRate = false;
+
+    const onTime = () => syncFromPlayback();
+    const onMeta = () => {
+      syncFromPlayback();
+      void tryAutoplay();
+    };
+    const onCanPlay = () => {
+      if (el.paused && !playAttemptedRef.current) void tryAutoplay();
+    };
+    const onEnded = () => {
+      setShowTariffs(true);
+      setHighlightThreeMonth(true);
+    };
+    // Brauzer playbackRate ni o‘zgartirib yubormasin.
+    const onRate = () => {
+      if (lockingRate) return;
+      if (el.playbackRate !== speedRef.current) {
+        lockingRate = true;
+        el.playbackRate = speedRef.current;
+        lockingRate = false;
       }
     };
 
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [syncFromTime, tryPlay]);
+    el.addEventListener('timeupdate', onTime);
+    el.addEventListener('loadedmetadata', onMeta);
+    el.addEventListener('canplay', onCanPlay);
+    el.addEventListener('ended', onEnded);
+    el.addEventListener('ratechange', onRate);
+    return () => {
+      el.removeEventListener('timeupdate', onTime);
+      el.removeEventListener('loadedmetadata', onMeta);
+      el.removeEventListener('canplay', onCanPlay);
+      el.removeEventListener('ended', onEnded);
+      el.removeEventListener('ratechange', onRate);
+    };
+  }, [syncFromPlayback, tryAutoplay]);
 
-  const startWithSound = () => {
+  const startWithSound = async () => {
+    const el = videoRef.current;
+    if (!el) return;
     playAttemptedRef.current = true;
-    tryPlay(true);
-    setNeedsGesture(false);
+    el.muted = false;
+    el.playbackRate = speedRef.current;
+    try {
+      await el.play();
+      setNeedsGesture(false);
+    } catch {
+      playAttemptedRef.current = false;
+      setNeedsGesture(true);
+    }
   };
 
   const buy = async (tariffType: RussianTariffCode) => {
@@ -236,18 +252,22 @@ export default function UnpaidHomePaywall() {
         >
           {PAYWALL_VIDEO_READY ? (
             <>
-              <iframe
-                ref={iframeRef}
-                title="FalaRus video"
-                src={RUTUBE_EMBED_SRC}
-                className="absolute inset-0 h-full w-full border-0"
-                allow="clipboard-write; autoplay; encrypted-media; fullscreen; picture-in-picture"
-                allowFullScreen
+              <video
+                ref={videoRef}
+                className="h-full w-full object-contain"
+                style={{ background: BG }}
+                src={`${PAYWALL_VIDEO_SRC}?v=4`}
+                playsInline
+                controls
+                controlsList="nodownload noplaybackrate"
+                disablePictureInPicture
+                preload="metadata"
+                onContextMenu={(e) => e.preventDefault()}
               />
               {needsGesture ? (
                 <button
                   type="button"
-                  onClick={startWithSound}
+                  onClick={() => void startWithSound()}
                   className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-white"
                   style={{ background: `${BG}CC` }}
                 >
@@ -271,6 +291,36 @@ export default function UnpaidHomePaywall() {
             </div>
           )}
         </div>
+
+        {/* Tezlik — video ostida, alohida tugmalar */}
+        {PAYWALL_VIDEO_READY ? (
+          <div
+            className="flex flex-wrap items-center justify-center gap-2 px-4 pb-1 pt-3"
+            style={{ background: BG }}
+            role="group"
+            aria-label="Video tezligi"
+          >
+            {SPEED_STEPS.map((step) => {
+              const active = speed === step;
+              return (
+                <button
+                  key={step}
+                  type="button"
+                  onClick={() => setPlaybackSpeed(step)}
+                  aria-pressed={active}
+                  className={`inline-flex min-h-[44px] min-w-[64px] items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-[14px] font-black transition active:scale-[0.97] ${
+                    active
+                      ? 'bg-[#2563EB] text-white ring-2 ring-[#93C5FD]'
+                      : 'bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/16'
+                  }`}
+                >
+                  {step === 1 ? <Gauge className="h-3.5 w-3.5" aria-hidden /> : null}
+                  {formatSpeed(step)}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         <AnimatePresence>
           {showTariffs ? (
