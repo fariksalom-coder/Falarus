@@ -647,6 +647,69 @@ export function createAdminController(supabase: DbClient) {
     });
   }
 
+  async function lookupUserByPhone(req: Request, res: Response) {
+    try {
+      const phone = String(req.query.phone ?? req.query.q ?? '').trim();
+      if (phone.length < 7) {
+        return res.status(400).json({ error: 'Telefon raqamini kiriting (kamida 7 raqam)' });
+      }
+      const { lookupUserByPhone: lookup } = await import('../services/adminUserManage.service.js');
+      const snap = await lookup(supabase, phone);
+      if (!snap) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+      if (snap.is_golden) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+      return res.json(snap);
+    } catch (e: unknown) {
+      console.error('[admin/lookupUserByPhone]', e);
+      return res.status(500).json({ error: e instanceof Error ? e.message : 'Qidiruv xatosi' });
+    }
+  }
+
+  async function freezeUser(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'Invalid user id' });
+      const reason = req.body?.reason != null ? String(req.body.reason) : null;
+      const { freezeUserAccess } = await import('../services/adminUserManage.service.js');
+      const snap = await freezeUserAccess(supabase, id, reason);
+      if (!snap || snap.is_golden) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+      return res.json(snap);
+    } catch (e: unknown) {
+      console.error('[admin/freezeUser]', e);
+      return res.status(500).json({ error: e instanceof Error ? e.message : 'Muzlatib bo‘lmadi' });
+    }
+  }
+
+  async function unfreezeUser(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'Invalid user id' });
+      const { unfreezeUserAccess } = await import('../services/adminUserManage.service.js');
+      const snap = await unfreezeUserAccess(supabase, id);
+      if (!snap || snap.is_golden) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+      return res.json(snap);
+    } catch (e: unknown) {
+      console.error('[admin/unfreezeUser]', e);
+      return res.status(500).json({ error: e instanceof Error ? e.message : 'Ochib bo‘lmadi' });
+    }
+  }
+
+  async function revokeUserAccess(req: Request, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id) || id <= 0) return res.status(400).json({ error: 'Invalid user id' });
+      const { loadUserManageSnapshot, revokeUserPaidAccess } = await import(
+        '../services/adminUserManage.service.js'
+      );
+      const before = await loadUserManageSnapshot(supabase, id);
+      if (!before || before.is_golden) return res.status(404).json({ error: 'Foydalanuvchi topilmadi' });
+      const { snapshot, revoked_payments } = await revokeUserPaidAccess(supabase, id);
+      return res.json({ ...snapshot, revoked_payments });
+    } catch (e: unknown) {
+      console.error('[admin/revokeUserAccess]', e);
+      return res.status(500).json({ error: e instanceof Error ? e.message : 'To‘lov bekor qilinmadi' });
+    }
+  }
+
   // --- Payments (subscription_payment_requests)
   async function getPayments(_req: Request, res: Response) {
     const PAY_EXTENDED =
@@ -1748,6 +1811,10 @@ export function createAdminController(supabase: DbClient) {
     getUsers,
     createUser,
     getUserProfile,
+    lookupUserByPhone,
+    freezeUser,
+    unfreezeUser,
+    revokeUserAccess,
     getPayments,
     confirmPayment,
     rejectPayment,

@@ -135,4 +135,13 @@ describe('hasActiveAccess', () => {
     });
     assert.strictEqual(await hasActiveAccess(db, 1), false);
   });
+
+  it('muzlatilgan foydalanuvchida premium YO‘Q (to‘lov bo‘lsa ham)', async () => {
+    const db = fakeDb({
+      subscriptions: [{ id: 1, user_id: 1, status: 'active', expires_at: kunKeyin(10) }],
+      users: [{ plan_expires_at: kunKeyin(10), access_frozen_at: kunOldin(0) }],
+      payments: [{ id: 9, product_code: 'russian', tariff_type: 'three_month', approved_at: kunOldin(1) }],
+    });
+    assert.strictEqual(await hasActiveAccess(db, 1), false);
+  });
 });

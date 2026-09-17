@@ -20,6 +20,7 @@ import {
   GraduationCap,
   ClipboardList,
   Video,
+  UserCog,
 } from 'lucide-react';
 import { getAdminHelpChats } from '../../api/admin';
 
@@ -28,6 +29,7 @@ const nav = [
   { to: adminPath('/content'), label: 'Kurs kontenti', icon: BookOpen },
   { to: adminPath('/onboarding'), label: "So'rovnoma", icon: ClipboardList },
   { to: adminPath('/users'), label: 'Foydalanuvchilar', icon: Users },
+  { to: adminPath('/users/manage'), label: 'Qidiruv / muzlatish', icon: UserCog },
   { to: adminPath('/users/create'), label: 'Yangi foydalanuvchi', icon: UserPlus },
   { to: adminPath('/payments'), label: 'To‘lovlar', icon: CreditCard },
   { to: adminPath('/operators'), label: 'Operatorlar va cheklar', icon: Users },

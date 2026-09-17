@@ -369,6 +369,72 @@ export async function getUserProfile(id: number): Promise<AdminUserProfile> {
   return adminApi<AdminUserProfile>(`/users/${id}`);
 }
 
+export type AdminUserManageSnapshot = {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  registration_date: string | null;
+  last_seen_at: string | null;
+  account_type: string | null;
+  is_golden: boolean;
+  access_frozen: boolean;
+  access_frozen_at: string | null;
+  access_frozen_reason: string | null;
+  subscription: {
+    plan_type: string | null;
+    status: 'active' | 'inactive';
+    expires_at: string | null;
+  };
+  reached_day: number;
+  day_progress: {
+    day_number: number;
+    grammar_done: number;
+    grammar_total: number;
+    vocabulary_done: boolean;
+    reading_done: boolean;
+    speaking_level: number;
+    updated_at: string | null;
+  } | null;
+  payments: Array<{
+    id: number;
+    status: string;
+    product_code: string | null;
+    tariff_type: string | null;
+    amount: number | null;
+    currency: string | null;
+    created_at: string | null;
+    approved_at: string | null;
+  }>;
+  revoked_payments?: number;
+};
+
+export async function lookupAdminUserByPhone(phone: string): Promise<AdminUserManageSnapshot> {
+  const q = encodeURIComponent(phone.trim());
+  return adminApi<AdminUserManageSnapshot>(`/users/lookup?phone=${q}`);
+}
+
+export async function freezeAdminUser(id: number, reason?: string): Promise<AdminUserManageSnapshot> {
+  return adminApi<AdminUserManageSnapshot>(`/users/${id}/freeze`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason ?? null }),
+  });
+}
+
+export async function unfreezeAdminUser(id: number): Promise<AdminUserManageSnapshot> {
+  return adminApi<AdminUserManageSnapshot>(`/users/${id}/unfreeze`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+export async function revokeAdminUserAccess(id: number): Promise<AdminUserManageSnapshot> {
+  return adminApi<AdminUserManageSnapshot>(`/users/${id}/revoke-access`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
 export async function getPayments(): Promise<AdminPaymentRow[]> {
   return adminApi<AdminPaymentRow[]>('/payments');
 }

@@ -351,6 +351,9 @@ export interface Users {
   phone_verified: Generated<boolean>;
   plan_expires_at: Timestamp | null;
   plan_name: string | null;
+  /** Admin muzlatgan payt — premium yopiq. */
+  access_frozen_at: Timestamp | null;
+  access_frozen_reason: string | null;
   progress: Generated<number | null>;
   referral_balance: Generated<Numeric>;
   referral_code: string | null;

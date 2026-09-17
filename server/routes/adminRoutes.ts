@@ -212,6 +212,11 @@ export function createAdminRoutes(supabase: DbClient): Router {
   // user_kunlik_day_progress + streak + time. Safe to re-run.
   router.get('/users', (req, res, next) => ctrl.getUsers(req, res).catch(next));
   router.post('/users', (req, res, next) => ctrl.createUser(req, res).catch(next));
+  // `lookup` :id dan OLDIN — aks holda "lookup" id deb o‘qiladi.
+  router.get('/users/lookup', (req, res, next) => ctrl.lookupUserByPhone(req, res).catch(next));
+  router.post('/users/:id/freeze', (req, res, next) => ctrl.freezeUser(req, res).catch(next));
+  router.post('/users/:id/unfreeze', (req, res, next) => ctrl.unfreezeUser(req, res).catch(next));
+  router.post('/users/:id/revoke-access', (req, res, next) => ctrl.revokeUserAccess(req, res).catch(next));
   router.get('/users/:id', (req, res, next) => ctrl.getUserProfile(req, res).catch(next));
 
   /*

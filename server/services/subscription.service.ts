@@ -158,13 +158,17 @@ export async function hasActiveAccess(
 ): Promise<boolean> {
   const uid = Number(userId);
   if (!Number.isFinite(uid)) return false;
-  const sub = await getActiveSubscription(supabase, uid);
-  if (sub) return true;
   const { data: user, error } = await supabase
     .from('users')
-    .select('plan_expires_at')
+    .select('plan_expires_at, access_frozen_at')
     .eq('id', uid)
     .single();
+  // Admin muzlatgan — to‘lov saqlansa ham premium YO‘Q (to‘lamagandek).
+  if (!error && (user as { access_frozen_at?: string | null } | null)?.access_frozen_at) {
+    return false;
+  }
+  const sub = await getActiveSubscription(supabase, uid);
+  if (sub) return true;
   if (!error && user?.plan_expires_at != null && user.plan_expires_at !== '') {
     const expiry = new Date(user.plan_expires_at as string);
     if (Number.isFinite(expiry.getTime()) && expiry > new Date()) return true;
@@ -230,12 +234,26 @@ export async function getAccessInfo(
   /*
    * OLTIN A'ZO — ichki xizmat hisobi: hamma narsa to'liq ochiq.
    * Bu maqom o'quvchi, o'qituvchi va adminda ham yo'q.
+   * Admin muzlatgan bo‘lsa — hatto oltin ham premiumsiz (to‘lamagandek).
    */
   const { data: oltinRow } = await supabase
     .from('users')
-    .select('is_golden')
+    .select('is_golden, access_frozen_at')
     .eq('id', uid)
     .maybeSingle();
+  if ((oltinRow as { access_frozen_at?: string | null } | null)?.access_frozen_at) {
+    const frozen: AccessInfo = {
+      lessons_free_limit: LESSONS_FREE_LIMIT,
+      vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
+      vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
+      subscription_active: false,
+      patent_course_active: PATENT_COURSE_FREE_FOR_ALL,
+      vnzh_course_active: false,
+      subscription_expires_at: null,
+    };
+    setCachedAccess(uid, frozen);
+    return frozen;
+  }
   if ((oltinRow as { is_golden?: boolean } | null)?.is_golden) {
     const oltin: AccessInfo = {
       lessons_free_limit: Number.MAX_SAFE_INTEGER,
