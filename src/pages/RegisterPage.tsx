@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loginWithGoogle, registerAccount, type AuthUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
-import { useAuthLayoutMetrics } from '../hooks/useAuthLayoutMetrics';
 import { logGoogleOriginHint, useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { AuthButton } from '../components/auth/AuthButton';
 import { AuthFormBanner } from '../components/auth/AuthFormBanner';
@@ -14,7 +13,6 @@ import { AuthSwitchLink } from '../components/auth/AuthSwitchLink';
 import { IntlPhoneInput, type IntlPhoneInputHandle } from '../components/auth/IntlPhoneInput';
 import { OrDivider } from '../components/auth/OrDivider';
 import { SocialAuthButton } from '../components/auth/SocialAuthButton';
-import { TermsCheckbox } from '../components/auth/TermsCheckbox';
 import { pathAfterAuth } from '../utils/postAuthPath';
 
 function normalizeAuthUser(user: AuthUser) {
@@ -25,7 +23,6 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refFromUrl = searchParams.get('ref') ?? '';
-  const metrics = useAuthLayoutMetrics();
   const { login } = useAuth();
   const { t } = useLocale();
   const [socialLoading, setSocialLoading] = useState(false);
@@ -76,7 +73,6 @@ export default function RegisterPage() {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
   const [phoneE164, setPhoneE164] = useState<string | null>(null);
   const phoneRef = useRef<IntlPhoneInputHandle>(null);
@@ -93,7 +89,6 @@ export default function RegisterPage() {
 
   const canSubmit =
     !submitting &&
-    termsAccepted &&
     Boolean(phoneE164) &&
     password.length >= 6 &&
     confirmPassword.length > 0 &&
@@ -116,9 +111,6 @@ export default function RegisterPage() {
       hasError = true;
     }
     if (confirmMismatch) {
-      hasError = true;
-    }
-    if (!termsAccepted) {
       hasError = true;
     }
 
@@ -159,12 +151,12 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="flex flex-col pb-6">
           <AuthHero
             title={`${t('auth.createAccountTitle')} ✨`}
-            subtitle="Telefon va parol bilan ro‘yxatdan o‘ting"
             onBack={() => navigate('/')}
           />
 
           <IntlPhoneInput
             ref={phoneRef}
+            initialCountry="ru"
             error={identifierError ?? undefined}
             onChange={async () => {
               const e164 = await phoneRef.current?.getE164();
@@ -199,10 +191,6 @@ export default function RegisterPage() {
             onToggleShared={() => setShowPasswords((v) => !v)}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-
-          <div style={{ height: metrics.isCompact ? 6 : 10 }} />
-
-          <TermsCheckbox checked={termsAccepted} onChange={setTermsAccepted} />
 
           {formError ? (
             <>

@@ -25,13 +25,15 @@ type Props = {
   inputClassName?: string;
   error?: string;
   onChange?: () => void;
+  /** ISO2: uz | ru | kg | tj. Default: uz. */
+  initialCountry?: 'uz' | 'ru' | 'kg' | 'tj';
 };
 
 /**
  * UZ / RU / TJ / KG only — mirrors {@link shared/phoneE164} rules server-side.
  */
 export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function IntlPhoneInput(
-  { disabled, className = '', inputClassName = '', error, onChange },
+  { disabled, className = '', inputClassName = '', error, onChange, initialCountry = 'uz' },
   ref
 ) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,10 +60,15 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
     const input = inputRef.current;
     if (!input) return;
 
+    const countryOrder =
+      initialCountry === 'ru'
+        ? (['ru', 'uz', 'tj', 'kg'] as const)
+        : (['uz', 'ru', 'tj', 'kg'] as const);
+
     const iti = intlTelInput(input, {
-      initialCountry: 'uz',
+      initialCountry,
       onlyCountries: ['uz', 'ru', 'kg', 'tj'],
-      countryOrder: ['uz', 'ru', 'tj', 'kg'],
+      countryOrder: [...countryOrder],
       separateDialCode: true,
       strictMode: true,
       nationalMode: false,
@@ -84,7 +91,7 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
       iti.destroy();
       itiRef.current = null;
     };
-  }, []);
+  }, [initialCountry]);
 
   return (
     <div className={['intl-phone-field w-full', className].filter(Boolean).join(' ')}>
