@@ -1161,8 +1161,8 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* CTA — matndan darhol keyin (yuqoriga ko‘tarilgan) */}
-          <div className="relative z-[5] px-[22px] pb-2 pt-5">
+          {/* CTA — matndan darhol keyin */}
+          <div className="relative z-[5] px-[22px] pb-8 pt-5">
             <div className="rounded-[22px] bg-white p-[16px] shadow-[0_24px_50px_-20px_rgba(11,42,107,0.45)]">
               <Link
                 to="/register"
@@ -1185,20 +1185,6 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-
-          {/* Talabalar — pastga */}
-          <picture className="contents">
-            <source srcSet="/landing/hero-students.webp" type="image/webp" />
-            <img
-              src="/landing/hero-students-opt.png"
-              alt=""
-              aria-hidden
-              className="pointer-events-none relative z-[2] mx-auto mt-1 w-full max-h-[32dvh] object-contain object-bottom"
-              style={{ filter: 'drop-shadow(0 16px 24px rgba(0,0,0,0.3))' }}
-              decoding="async"
-              fetchPriority="high"
-            />
-          </picture>
         </section>
 
         {/* Mobile feature tiles — smartfonlarda ko‘rsatilmaydi */}
