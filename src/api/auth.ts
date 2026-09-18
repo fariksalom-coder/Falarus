@@ -53,8 +53,8 @@ export async function loginWithPassword(identifier: string, password: string): P
 export async function registerAccount(payload: {
   identifier: string;
   password: string;
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
   ref?: string;
 }): Promise<AuthResponse> {
   const res = await fetch(apiUrl('/api/auth/register'), {
@@ -63,8 +63,8 @@ export async function registerAccount(payload: {
     body: JSON.stringify({
       identifier: payload.identifier,
       password: payload.password,
-      firstName: payload.firstName?.trim() || '',
-      lastName: payload.lastName?.trim() || '',
+      firstName: payload.firstName.trim(),
+      lastName: payload.lastName.trim(),
       ref: payload.ref,
     }),
   });

@@ -1,18 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { loginWithGoogle, registerAccount, type AuthUser } from '../api/auth';
+import { registerAccount, type AuthUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
-import { logGoogleOriginHint, useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { AuthButton } from '../components/auth/AuthButton';
 import { AuthFormBanner } from '../components/auth/AuthFormBanner';
 import { AuthGap, AuthPageScaffold, AuthScrollBody } from '../components/auth/AuthPageScaffold';
 import { AuthPasswordField } from '../components/auth/AuthPasswordField';
 import { AuthHero } from '../components/auth/AuthHero';
 import { AuthSwitchLink } from '../components/auth/AuthSwitchLink';
+import { AuthTextField } from '../components/auth/AuthTextField';
 import { IntlPhoneInput, type IntlPhoneInputHandle } from '../components/auth/IntlPhoneInput';
-import { OrDivider } from '../components/auth/OrDivider';
-import { SocialAuthButton } from '../components/auth/SocialAuthButton';
 import { pathAfterAuth } from '../utils/postAuthPath';
 
 function normalizeAuthUser(user: AuthUser) {
@@ -25,58 +23,17 @@ export default function RegisterPage() {
   const refFromUrl = searchParams.get('ref') ?? '';
   const { login } = useAuth();
   const { t } = useLocale();
-  const [socialLoading, setSocialLoading] = useState(false);
 
-  const handleGoogleCredential = useCallback(
-    async (idToken: string) => {
-      setSocialLoading(true);
-      setFormError(null);
-      try {
-        const data = await loginWithGoogle(idToken, refFromUrl || undefined);
-        const user = normalizeAuthUser(data.user!);
-        login(data.token!, user);
-        // Yangi hisob — so'rovnoma keyingi KIRISHda; mavjud hisob — agar tugallanmagan bo'lsa.
-        navigate(
-          pathAfterAuth({
-            isRegistration: Boolean(data.isNewUser),
-            onboardingCompleted: user.onboardingCompleted,
-          }),
-          { replace: true },
-        );
-      } catch (err) {
-        setFormError(err instanceof Error ? err.message : t('auth.genericError'));
-      } finally {
-        setSocialLoading(false);
-      }
-    },
-    [refFromUrl, login, navigate, t],
-  );
-
-  const { triggerSignIn, googleButtonRef, googleButtonReady } = useGoogleSignIn(handleGoogleCredential);
-
-  useEffect(() => {
-    logGoogleOriginHint();
-  }, []);
-
-  const handleGoogleClick = async () => {
-    if (submitting || socialLoading) return;
-    setFormError(null);
-    try {
-      await triggerSignIn();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : t('auth.genericError');
-      if (!message.includes('bekor') && !message.includes('cancel')) {
-        setFormError(message);
-      }
-    }
-  };
-
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
   const [phoneE164, setPhoneE164] = useState<string | null>(null);
   const phoneRef = useRef<IntlPhoneInputHandle>(null);
 
+  const [firstNameError, setFirstNameError] = useState<string | null>(null);
+  const [lastNameError, setLastNameError] = useState<string | null>(null);
   const [identifierError, setIdentifierError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -89,6 +46,8 @@ export default function RegisterPage() {
 
   const canSubmit =
     !submitting &&
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
     Boolean(phoneE164) &&
     password.length >= 6 &&
     confirmPassword.length > 0 &&
@@ -97,6 +56,15 @@ export default function RegisterPage() {
   const validate = async (): Promise<{ identifier: string } | null> => {
     let hasError = false;
     let identifier: string | null = null;
+
+    if (!firstName.trim()) {
+      setFirstNameError(t('auth.nameRequired'));
+      hasError = true;
+    }
+    if (!lastName.trim()) {
+      setLastNameError(t('auth.surnameRequired'));
+      hasError = true;
+    }
 
     const e164 = await phoneRef.current?.getE164();
     if (!e164) {
@@ -121,6 +89,8 @@ export default function RegisterPage() {
     e.preventDefault();
     if (submitting) return;
 
+    setFirstNameError(null);
+    setLastNameError(null);
     setIdentifierError(null);
     setPasswordError(null);
     setFormError(null);
@@ -131,12 +101,13 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       const data = await registerAccount({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         identifier: validated.identifier,
         password,
         ref: refFromUrl || undefined,
       });
       login(data.token!, normalizeAuthUser(data.user!));
-      // So'rovnoma ro'yxatdan o'tishda so'ralmaydi — keyingi kirishda.
       navigate(pathAfterAuth({ isRegistration: true }), { replace: true });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : t('auth.genericError'));
@@ -153,6 +124,31 @@ export default function RegisterPage() {
             title={`${t('auth.createAccountTitle')} ✨`}
             onBack={() => navigate('/')}
           />
+
+          <div className="grid grid-cols-2 gap-3">
+            <AuthTextField
+              label={t('auth.name')}
+              autoComplete="given-name"
+              value={firstName}
+              error={firstNameError ?? undefined}
+              onChange={(e) => {
+                setFirstName(e.target.value);
+                setFirstNameError(null);
+              }}
+            />
+            <AuthTextField
+              label={t('auth.surname')}
+              autoComplete="family-name"
+              value={lastName}
+              error={lastNameError ?? undefined}
+              onChange={(e) => {
+                setLastName(e.target.value);
+                setLastNameError(null);
+              }}
+            />
+          </div>
+
+          <AuthGap />
 
           <IntlPhoneInput
             ref={phoneRef}
@@ -207,19 +203,6 @@ export default function RegisterPage() {
             loading={submitting}
             disabled={!canSubmit}
             variant="success"
-          />
-
-          <AuthGap />
-          <OrDivider />
-          <AuthGap />
-
-          <SocialAuthButton
-            label={t('auth.continueWithGoogle')}
-            loading={socialLoading}
-            disabled={submitting}
-            onClick={handleGoogleClick}
-            googleButtonRef={googleButtonRef}
-            googleButtonReady={googleButtonReady}
           />
 
           <AuthGap />

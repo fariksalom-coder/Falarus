@@ -670,19 +670,25 @@ async function startServer() {
   );
   app.post('/api/auth/register', authRateLimiter, async (req, res) => {
     const { firstName, lastName, password, ref: refCode, identifier, email: legacyEmail } = req.body ?? {};
-    const contactRaw =
-      typeof identifier === 'string' && identifier.trim()
-        ? identifier.trim()
-        : typeof legacyEmail === 'string' && legacyEmail.trim()
-          ? legacyEmail.trim()
-          : '';
+    // Email orqali ro'yxatdan o'tish taqiqlangan — faqat telefon.
+    if (typeof legacyEmail === 'string' && legacyEmail.trim() && !(typeof identifier === 'string' && identifier.trim())) {
+      return res.status(400).json({ error: 'Ro‘yxatdan o‘tish faqat telefon orqali' });
+    }
+    const contactRaw = typeof identifier === 'string' && identifier.trim() ? identifier.trim() : '';
     const parsed = parseContactIdentifier(contactRaw);
     if (parsed.ok === false) {
       return res.status(400).json({ error: parsed.error });
     }
-    // Talaba ro‘yxati — faqat telefon (ism/familiya ixtiyoriy).
-    if (!parsed.phone) {
-      return res.status(400).json({ error: 'Telefon raqam kiritilishi shart' });
+    if (!parsed.phone || parsed.email) {
+      return res.status(400).json({ error: 'Ro‘yxatdan o‘tish faqat telefon orqali' });
+    }
+    const first = typeof firstName === 'string' ? firstName.trim() : '';
+    const last = typeof lastName === 'string' ? lastName.trim() : '';
+    if (!first) {
+      return res.status(400).json({ error: 'Ism kiritilishi shart' });
+    }
+    if (!last) {
+      return res.status(400).json({ error: 'Familiya kiritilishi shart' });
     }
     if (!password || typeof password !== 'string') {
       return res.status(400).json({ error: 'Parol kiritilishi shart' });
@@ -690,9 +696,9 @@ async function startServer() {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const insertRow: Record<string, unknown> = {
-        first_name: typeof firstName === 'string' ? firstName.trim() : '',
-        last_name: typeof lastName === 'string' ? lastName.trim() : '',
-        email: parsed.email,
+        first_name: first,
+        last_name: last,
+        email: null,
         phone: parsed.phone,
         password: hashedPassword,
         onboarded: 1,
@@ -710,7 +716,7 @@ async function startServer() {
         .single();
       if (error) {
         if (error.code === '23505') {
-          return res.status(400).json({ error: "Bu email yoki telefon allaqachon ro'yxatdan o'tgan" });
+          return res.status(400).json({ error: "Bu telefon allaqachon ro'yxatdan o'tgan" });
         }
         throw error;
       }
@@ -725,7 +731,7 @@ async function startServer() {
       const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       res.json({
         token,
-        isNewUser: false,
+        isNewUser: true,
         user: {
           id: user.id,
           firstName: user.first_name,
