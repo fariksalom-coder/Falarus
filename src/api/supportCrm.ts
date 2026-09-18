@@ -116,6 +116,28 @@ export async function getSupportCrmQueue(
   );
 }
 
+export type SupportCrmContactedRow = {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  email: string | null;
+  plan_name: string | null;
+  plan_expires_at: string | null;
+  contact_id: number;
+  contact_at: string;
+  contact_channel: string;
+  contact_outcome: string;
+  contact_result: string | null;
+  agent_name: string | null;
+};
+
+export async function getSupportCrmContacted(date: string) {
+  return supportCrmApi<{ rows: SupportCrmContactedRow[]; total: number; date: string }>(
+    `/contacted?date=${encodeURIComponent(date)}&limit=300`
+  );
+}
+
 export type PremiumSort =
   | 'purchase_desc'
   | 'purchase_asc'

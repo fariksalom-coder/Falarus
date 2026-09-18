@@ -11,9 +11,11 @@ import {
   createSupportCrmContact,
   getSupportCrmStats,
   getSupportCrmUser,
+  listContactedOnDate,
   listPremiumUsers,
   listSupportCrmQueue,
   nextQueueUserId,
+  todayTashkentDate,
   type ContactChannel,
   type ContactOutcome,
   type ContactResult,
@@ -140,6 +142,23 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
       res.json(data);
     } catch (e) {
       console.error('[support-crm/queue]', e);
+      res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
+    }
+  });
+
+  router.get('/contacted', async (req, res) => {
+    try {
+      const dateRaw = req.query.date != null ? String(req.query.date) : todayTashkentDate();
+      const limit = Number(req.query.limit ?? 200);
+      const offset = Number(req.query.offset ?? 0);
+      const data = await listContactedOnDate({
+        date: dateRaw,
+        limit: Number.isFinite(limit) ? limit : 200,
+        offset: Number.isFinite(offset) ? offset : 0,
+      });
+      res.json(data);
+    } catch (e) {
+      console.error('[support-crm/contacted]', e);
       res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
     }
   });

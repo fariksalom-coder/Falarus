@@ -27,6 +27,22 @@ export type ContactResult = 'returned_ok' | 'helped_login' | 'needs_fix' | 'feed
 
 export type QueueFilter = 'needs_contact' | 'contacted_today' | 'in_progress';
 
+export type ContactedOnRow = {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  email: string | null;
+  plan_name: string | null;
+  plan_expires_at: string | null;
+  contact_id: number;
+  contact_at: string;
+  contact_channel: string;
+  contact_outcome: string;
+  contact_result: string | null;
+  agent_name: string | null;
+};
+
 export type QueueRow = {
   id: number;
   first_name: string | null;
@@ -221,6 +237,80 @@ export async function listSupportCrmQueue(opts: {
   );
 
   return { rows, total: Number(totalRes.rows[0]?.total ?? 0) };
+}
+
+/** YYYY-MM-DD (Asia/Tashkent) — shu kunda bog‘langanlar (har bir kontakt). */
+function parseTashkentDate(raw: string | undefined | null): string | null {
+  const s = String(raw ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || m < 1 || m > 12 || d < 1 || d > 31) return null;
+  return s;
+}
+
+export function todayTashkentDate(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tashkent',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+/**
+ * Tanlangan kunda (Toshkent) qayd etilgan bog‘lanishlar.
+ * Navbatdagi idle filter emas — shu kun kontakt jurnali.
+ */
+export async function listContactedOnDate(opts: {
+  date?: string | null;
+  limit?: number;
+  offset?: number;
+}): Promise<{ rows: ContactedOnRow[]; total: number; date: string }> {
+  const db = requirePool();
+  const date = parseTashkentDate(opts.date) ?? todayTashkentDate();
+  const limit = Math.min(Math.max(opts.limit ?? 200, 1), 500);
+  const offset = Math.max(opts.offset ?? 0, 0);
+
+  const { rows } = await db.query<ContactedOnRow>(
+    `
+    SELECT
+      u.id,
+      u.first_name,
+      u.last_name,
+      u.phone,
+      u.email,
+      u.plan_name,
+      u.plan_expires_at,
+      c.id AS contact_id,
+      c.created_at AS contact_at,
+      c.channel AS contact_channel,
+      c.outcome AS contact_outcome,
+      c.result AS contact_result,
+      a.name AS agent_name
+    FROM support_crm_contacts c
+    JOIN users u ON u.id = c.user_id
+    LEFT JOIN support_crm_agents a ON a.id = c.agent_id
+    WHERE (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
+    ORDER BY c.created_at DESC
+    LIMIT $2 OFFSET $3
+    `,
+    [date, limit, offset]
+  );
+
+  const totalRes = await db.query<{ total: number }>(
+    `
+    SELECT COUNT(*)::int AS total
+    FROM support_crm_contacts c
+    WHERE (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
+    `,
+    [date]
+  );
+
+  return {
+    rows: rows ?? [],
+    total: Number(totalRes.rows[0]?.total ?? 0),
+    date,
+  };
 }
 
 export async function getSupportCrmUser(userId: number): Promise<{
