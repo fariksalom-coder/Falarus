@@ -11,11 +11,13 @@ import {
   createSupportCrmContact,
   getSupportCrmStats,
   getSupportCrmUser,
+  listPremiumUsers,
   listSupportCrmQueue,
   nextQueueUserId,
   type ContactChannel,
   type ContactOutcome,
   type ContactResult,
+  type PremiumSort,
   type QueueFilter,
 } from '../services/supportCrm.service';
 
@@ -138,6 +140,29 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
       res.json(data);
     } catch (e) {
       console.error('[support-crm/queue]', e);
+      res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
+    }
+  });
+
+  router.get('/premium-users', async (req, res) => {
+    try {
+      const sortRaw = String(req.query.sort ?? 'purchase_desc');
+      const sort: PremiumSort =
+        sortRaw === 'purchase_asc' ||
+        sortRaw === 'last_seen_desc' ||
+        sortRaw === 'last_seen_asc'
+          ? sortRaw
+          : 'purchase_desc';
+      const limit = Number(req.query.limit ?? 200);
+      const offset = Number(req.query.offset ?? 0);
+      const data = await listPremiumUsers({
+        sort,
+        limit: Number.isFinite(limit) ? limit : 200,
+        offset: Number.isFinite(offset) ? offset : 0,
+      });
+      res.json(data);
+    } catch (e) {
+      console.error('[support-crm/premium-users]', e);
       res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
     }
   });

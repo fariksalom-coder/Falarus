@@ -21,8 +21,9 @@ import {
 
 const CHANNELS: { id: ContactChannel; label: string }[] = [
   { id: 'phone', label: 'Telefon' },
-  { id: 'telegram', label: 'Telegram' },
   { id: 'whatsapp', label: 'WhatsApp' },
+  { id: 'telegram', label: 'Telegram' },
+  { id: 'max', label: 'MAX' },
   { id: 'imo', label: 'IMO' },
   { id: 'email', label: 'Email' },
   { id: 'other', label: 'Boshqa' },
@@ -33,8 +34,8 @@ const OUTCOMES: { id: ContactOutcome; label: string }[] = [
   { id: 'no_pickup', label: 'Ko‘tarmadi' },
   { id: 'no_answer', label: 'Javob yo‘q' },
   { id: 'no_contact', label: 'Kontakt yo‘q' },
-  { id: 'no_telegram', label: 'Telegram yo‘q' },
   { id: 'no_whatsapp', label: 'WhatsApp yo‘q' },
+  { id: 'no_telegram', label: 'Telegram yo‘q' },
   { id: 'no_imo', label: 'IMO yo‘q' },
   { id: 'in_progress', label: 'Jarayonda' },
   { id: 'other', label: 'Boshqa' },

@@ -495,3 +495,104 @@ export async function nextQueueUserId(afterUserId?: number | null): Promise<numb
   if (idx < 0) return rows[0].id;
   return rows[idx + 1]?.id ?? rows[0]?.id ?? null;
 }
+
+export type PremiumSort =
+  | 'purchase_desc'
+  | 'purchase_asc'
+  | 'last_seen_desc'
+  | 'last_seen_asc';
+
+export type PremiumUserRow = {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  plan_name: string | null;
+  plan_expires_at: string;
+  last_seen_at: string | null;
+  purchased_at: string | null;
+  tariff_type: string | null;
+};
+
+/**
+ * Barcha faol premium (obunasi hali tugamagan) o‘quvchilar.
+ * Sort: xarid sanasi yoki oxirgi kirish.
+ */
+export async function listPremiumUsers(opts: {
+  sort?: PremiumSort;
+  limit?: number;
+  offset?: number;
+}): Promise<{ rows: PremiumUserRow[]; total: number }> {
+  const db = requirePool();
+  const sort: PremiumSort =
+    opts.sort === 'purchase_asc' ||
+    opts.sort === 'last_seen_desc' ||
+    opts.sort === 'last_seen_asc'
+      ? opts.sort
+      : 'purchase_desc';
+  const limit = Math.min(Math.max(opts.limit ?? 200, 1), 500);
+  const offset = Math.max(opts.offset ?? 0, 0);
+
+  const orderSql =
+    sort === 'purchase_asc'
+      ? 'purchased_at ASC NULLS LAST, u.id ASC'
+      : sort === 'last_seen_desc'
+        ? 'u.last_seen_at DESC NULLS LAST, u.id DESC'
+        : sort === 'last_seen_asc'
+          ? 'u.last_seen_at ASC NULLS LAST, u.id ASC'
+          : 'purchased_at DESC NULLS LAST, u.id DESC';
+
+  const { rows } = await db.query<PremiumUserRow>(
+    `
+    WITH latest_pay AS (
+      SELECT DISTINCT ON (p.user_id)
+        p.user_id,
+        p.approved_at AS purchased_at,
+        p.tariff_type
+      FROM payments p
+      WHERE p.status = 'approved'
+        AND (
+          p.product_code IS NULL
+          OR p.product_code = ''
+          OR p.product_code = 'russian'
+        )
+      ORDER BY p.user_id, p.approved_at DESC NULLS LAST, p.id DESC
+    )
+    SELECT
+      u.id,
+      u.first_name,
+      u.last_name,
+      u.phone,
+      u.plan_name,
+      u.plan_expires_at,
+      u.last_seen_at,
+      lp.purchased_at,
+      lp.tariff_type
+    FROM users u
+    LEFT JOIN latest_pay lp ON lp.user_id = u.id
+    WHERE u.plan_expires_at IS NOT NULL
+      AND u.plan_expires_at > now()
+      AND COALESCE(u.is_golden, false) = false
+      AND COALESCE(u.account_type, 'student') <> 'teacher'
+    ORDER BY ${orderSql}
+    LIMIT $1 OFFSET $2
+    `,
+    [limit, offset]
+  );
+
+  const totalRes = await db.query<{ total: number }>(
+    `
+    SELECT COUNT(*)::int AS total
+    FROM users u
+    WHERE u.plan_expires_at IS NOT NULL
+      AND u.plan_expires_at > now()
+      AND COALESCE(u.is_golden, false) = false
+      AND COALESCE(u.account_type, 'student') <> 'teacher'
+    `
+  );
+
+  return {
+    rows: rows ?? [],
+    total: Number(totalRes.rows[0]?.total ?? 0),
+  };
+}

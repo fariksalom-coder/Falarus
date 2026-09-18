@@ -116,6 +116,30 @@ export async function getSupportCrmQueue(
   );
 }
 
+export type PremiumSort =
+  | 'purchase_desc'
+  | 'purchase_asc'
+  | 'last_seen_desc'
+  | 'last_seen_asc';
+
+export type SupportCrmPremiumRow = {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  plan_name: string | null;
+  plan_expires_at: string;
+  last_seen_at: string | null;
+  purchased_at: string | null;
+  tariff_type: string | null;
+};
+
+export async function getSupportCrmPremiumUsers(sort: PremiumSort = 'purchase_desc') {
+  return supportCrmApi<{ rows: SupportCrmPremiumRow[]; total: number }>(
+    `/premium-users?sort=${encodeURIComponent(sort)}&limit=300`
+  );
+}
+
 export async function getSupportCrmUser(id: number) {
   return supportCrmApi<SupportCrmUserDetail>(`/users/${id}`);
 }

@@ -50,6 +50,42 @@ export function idleDaysFromHours(hours: number | null | undefined): number {
   return Math.floor(hours / 24);
 }
 
+/**
+ * Oxirgi kirish: < 24 soat → "N soat oldin", aks holda "N kun oldin".
+ * last_seen yo‘q bo‘lsa — "Hali kirmagan".
+ */
+export function formatLastSeenAgo(iso: string | null | undefined, nowMs = Date.now()): string {
+  if (!iso) return 'Hali kirmagan';
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return 'Hali kirmagan';
+  const diffMs = Math.max(0, nowMs - t);
+  const hours = Math.floor(diffMs / 3_600_000);
+  if (hours < 24) {
+    if (hours <= 0) {
+      const mins = Math.max(1, Math.floor(diffMs / 60_000));
+      return `${mins} daqiqa oldin`;
+    }
+    return `${hours} soat oldin`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days} kun oldin`;
+}
+
+export function formatTariffLabel(tariff: string | null | undefined, planName?: string | null): string {
+  const raw = String(tariff ?? '').toLowerCase().trim();
+  const map: Record<string, string> = {
+    month: '1 oy',
+    monthly: '1 oy',
+    three_month: '3 oy',
+    six_month: '6 oy',
+    year: '1 yil',
+    yearly: '1 yil',
+  };
+  if (raw && map[raw]) return map[raw];
+  if (planName && String(planName).trim()) return String(planName).trim();
+  return tariff || 'Tarif noma’lum';
+}
+
 export function daysLeftUntil(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const end = new Date(iso).getTime();
