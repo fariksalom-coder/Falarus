@@ -7,6 +7,7 @@ import {
   daysLeftUntil,
   formatCrmDate,
   formatDurationShort,
+  formatLastSeenAgo,
   idleDaysFromHours,
 } from '../../utils/supportCrmFormat';
 
@@ -78,6 +79,7 @@ export default function SupportCrmInProgressPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
                     <span>{idleDays} kun kirmagan</span>
+                    <span>{formatLastSeenAgo(row.last_seen_at ?? row.idle_since)}</span>
                     <span>{row.plan_name || 'Tarif'}</span>
                     <span>tugashi {formatCrmDate(row.plan_expires_at)}</span>
                     {left != null ? <span>{left} kun qoldi</span> : null}

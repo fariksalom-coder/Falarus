@@ -16,6 +16,7 @@ import { supportCrmPath } from '../../constants/supportCrmPath';
 import {
   formatCrmDate,
   formatDurationShort,
+  formatLastSeenAgo,
   idleDaysFromHours,
 } from '../../utils/supportCrmFormat';
 
@@ -210,16 +211,19 @@ export default function SupportCrmUserPage() {
         ) : null}
       </div>
 
-      {/* Asosiy: necha kundan beri kirmagan — aniq va katta */}
+      {/* Asosiy: platformaga oxirgi kirish (Premium bilan bir xil metrika) */}
       <div className="rounded-[22px] bg-amber-50 px-4 py-4 ring-1 ring-amber-100">
         <p className="text-xs font-medium uppercase tracking-wide text-amber-800/80">
-          Kirmagan
+          Platformaga kirmagan
         </p>
         <p className="mt-1 flex items-baseline gap-2">
           <span className="text-4xl font-bold tabular-nums text-amber-950">{idleDays}</span>
           <span className="text-base font-medium text-amber-900">kun</span>
         </p>
         <p className="mt-1 text-sm text-amber-900/70">
+          Oxirgi kirish: {formatLastSeenAgo(u.last_seen_at ?? u.idle_since)}
+        </p>
+        <p className="mt-0.5 text-sm text-amber-900/70">
           {u.last_kunlik_at
             ? `Oxirgi kunlik: ${formatCrmDate(u.last_kunlik_at)}`
             : 'Kunlik reja hali boshlanmagan'}

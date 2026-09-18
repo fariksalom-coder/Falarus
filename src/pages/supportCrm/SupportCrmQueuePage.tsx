@@ -12,6 +12,7 @@ import {
   daysLeftUntil,
   formatCrmDate,
   formatDurationShort,
+  formatLastSeenAgo,
   idleDaysFromHours,
 } from '../../utils/supportCrmFormat';
 
@@ -181,7 +182,11 @@ export default function SupportCrmQueuePage() {
                       </div>
                       <span
                         className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-sm font-semibold tabular-nums text-amber-900"
-                        title="Necha kun kirmagan"
+                        title={
+                          row.last_seen_at
+                            ? `Oxirgi kirish: ${new Date(row.last_seen_at).toLocaleString('uz')}`
+                            : 'Platformaga oxirgi kirish'
+                        }
                       >
                         {idleDays} kun
                       </span>
@@ -191,6 +196,7 @@ export default function SupportCrmQueuePage() {
                       <span>tugashi {formatCrmDate(row.plan_expires_at)}</span>
                       {left != null ? <span>{left} kun qoldi</span> : null}
                       <span>{formatDurationShort(row.total_time_seconds)}</span>
+                      <span>{formatLastSeenAgo(row.last_seen_at ?? row.idle_since)}</span>
                     </div>
                   </Link>
                 </li>

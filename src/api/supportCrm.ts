@@ -23,6 +23,7 @@ export type SupportCrmQueueRow = {
   plan_name: string | null;
   plan_expires_at: string;
   total_time_seconds: number;
+  last_seen_at?: string | null;
   last_kunlik_at: string | null;
   idle_since: string;
   idle_hours: number;
@@ -57,6 +58,7 @@ export type SupportCrmUserDetail = {
     plan_days_left: number | null;
     total_time_seconds: number;
     created_at: string;
+    last_seen_at?: string | null;
     last_kunlik_at: string | null;
     idle_since: string | null;
     idle_hours: number | null;

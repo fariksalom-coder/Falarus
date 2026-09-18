@@ -52,6 +52,7 @@ export type QueueRow = {
   plan_name: string | null;
   plan_expires_at: string;
   total_time_seconds: number;
+  last_seen_at: string | null;
   last_kunlik_at: string | null;
   idle_since: string;
   idle_hours: number;
@@ -78,7 +79,10 @@ function requirePool() {
   return pool;
 }
 
-/** Shared SELECT for premium + idle users. */
+/** Shared SELECT for premium + idle users.
+ * Idle = platformaga oxirgi kirish (last_seen_at). Yo‘q bo‘lsa kunlik, keyin created_at.
+ * Premium ro‘yxat bilan bir xil metrika.
+ */
 const QUEUE_BASE_SQL = `
   WITH last_kunlik AS (
     SELECT user_id, MAX(updated_at) AS last_kunlik_at
@@ -104,8 +108,9 @@ const QUEUE_BASE_SQL = `
       u.plan_name,
       u.plan_expires_at,
       COALESCE(u.total_time_seconds, 0)::bigint AS total_time_seconds,
+      u.last_seen_at,
       lk.last_kunlik_at,
-      COALESCE(lk.last_kunlik_at, u.created_at) AS idle_since,
+      COALESCE(u.last_seen_at, lk.last_kunlik_at, u.created_at) AS idle_since,
       lc.last_contact_at,
       lc.last_contact_channel,
       lc.last_contact_outcome
@@ -114,7 +119,7 @@ const QUEUE_BASE_SQL = `
     LEFT JOIN last_contact lc ON lc.user_id = u.id
     WHERE u.plan_expires_at IS NOT NULL
       AND u.plan_expires_at > now()
-      AND COALESCE(lk.last_kunlik_at, u.created_at) <= now() - ($1::text || ' hours')::interval
+      AND COALESCE(u.last_seen_at, lk.last_kunlik_at, u.created_at) <= now() - ($1::text || ' hours')::interval
   )
 `;
 
@@ -211,6 +216,7 @@ export async function listSupportCrmQueue(opts: {
        plan_name,
        plan_expires_at,
        total_time_seconds,
+       last_seen_at,
        last_kunlik_at,
        idle_since,
        GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (now() - idle_since)) / 3600))::int AS idle_hours,
@@ -326,6 +332,7 @@ export async function getSupportCrmUser(userId: number): Promise<{
     plan_days_left: number | null;
     total_time_seconds: number;
     created_at: string;
+    last_seen_at: string | null;
     last_kunlik_at: string | null;
     idle_since: string | null;
     idle_hours: number | null;
@@ -351,6 +358,7 @@ export async function getSupportCrmUser(userId: number): Promise<{
     plan_expires_at: string | null;
     total_time_seconds: number;
     created_at: string;
+    last_seen_at: string | null;
     last_kunlik_at: string | null;
     plan_started_at: string | null;
   }>(
@@ -364,6 +372,7 @@ export async function getSupportCrmUser(userId: number): Promise<{
        u.plan_expires_at,
        COALESCE(u.total_time_seconds, 0)::bigint AS total_time_seconds,
        u.created_at,
+       u.last_seen_at,
        (SELECT MAX(updated_at) FROM user_kunlik_day_progress p WHERE p.user_id = u.id) AS last_kunlik_at,
        (
          SELECT MIN(COALESCE(pay.approved_at, pay.created_at))
@@ -378,7 +387,8 @@ export async function getSupportCrmUser(userId: number): Promise<{
   const u = rows[0];
   if (!u) return null;
 
-  const idleSince = u.last_kunlik_at ?? u.created_at;
+  // Premium / Navbat bilan bir xil: oxirgi KIRISH (last_seen), keyin kunlik, keyin created.
+  const idleSince = u.last_seen_at ?? u.last_kunlik_at ?? u.created_at;
   const idleHours = Math.max(
     0,
     Math.floor((Date.now() - new Date(idleSince).getTime()) / 3_600_000)
