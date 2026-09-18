@@ -1,11 +1,12 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Crown, LayoutDashboard, ListOrdered, Loader, LogOut } from 'lucide-react';
+import { Activity, Crown, LayoutDashboard, ListOrdered, Loader, LogOut } from 'lucide-react';
 import { useSupportCrmAuth } from '../../context/SupportCrmAuthContext';
 import { supportCrmPath } from '../../constants/supportCrmPath';
 
 const nav = [
   { to: supportCrmPath('/dashboard'), label: 'Dashboard', icon: LayoutDashboard },
   { to: supportCrmPath('/queue'), label: 'Navbat', icon: ListOrdered },
+  { to: supportCrmPath('/return'), label: 'Qaytish', icon: Activity },
   { to: supportCrmPath('/premium'), label: 'Premium', icon: Crown },
   { to: supportCrmPath('/in-progress'), label: 'Jarayonda', icon: Loader },
 ];
@@ -34,7 +35,7 @@ export default function SupportCrmLayout() {
             Chiqish
           </button>
         </div>
-        <nav className="mx-auto flex max-w-3xl gap-1 px-4 pb-3">
+        <nav className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-4 pb-3">
           {nav.map((item) => {
             const Icon = item.icon;
             return (
@@ -42,15 +43,15 @@ export default function SupportCrmLayout() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl px-3 text-sm font-medium transition ${
+                  `inline-flex min-h-11 min-w-[4.5rem] flex-1 items-center justify-center gap-1.5 rounded-2xl px-2 text-xs font-medium transition sm:gap-2 sm:px-3 sm:text-sm ${
                     isActive
                       ? 'bg-[#2563EB] text-white shadow-sm'
                       : 'bg-white text-app-muted ring-1 ring-app-border hover:text-app-text'
                   }`
                 }
               >
-                <Icon size={18} />
-                {item.label}
+                <Icon size={16} className="shrink-0" />
+                <span className="truncate">{item.label}</span>
               </NavLink>
             );
           })}

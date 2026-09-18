@@ -686,3 +686,139 @@ export async function listPremiumUsers(opts: {
     total: Number(totalRes.rows[0]?.total ?? 0),
   };
 }
+
+export type ReturnTrackFilter = 'returned' | 'waiting' | 'all';
+
+export type ReturnTrackRow = {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  plan_name: string | null;
+  plan_expires_at: string | null;
+  last_seen_at: string | null;
+  contact_id: number;
+  contact_at: string;
+  contact_channel: string;
+  contact_outcome: string;
+  agent_name: string | null;
+  returned: boolean;
+  /** Kontakt dan keyin qayta kirishgacha soatlar (faqat returned). */
+  hours_to_return: number | null;
+};
+
+/**
+ * Bog‘lanishdan keyin platformaga qaytgan / hali qaytmagan o‘quvchilar.
+ * Har bir user uchun oxirgi kontakt olinadi; last_seen_at > contact_at → qaytdi.
+ */
+export async function listReturnTracking(opts: {
+  filter?: ReturnTrackFilter;
+  days?: number;
+  limit?: number;
+  offset?: number;
+}): Promise<{ rows: ReturnTrackRow[]; total: number; returned_count: number; waiting_count: number }> {
+  const db = requirePool();
+  const filter: ReturnTrackFilter =
+    opts.filter === 'returned' || opts.filter === 'waiting' ? opts.filter : 'all';
+  const days = Math.min(Math.max(opts.days ?? 30, 1), 180);
+  const limit = Math.min(Math.max(opts.limit ?? 200, 1), 500);
+  const offset = Math.max(opts.offset ?? 0, 0);
+
+  const statusFilter =
+    filter === 'returned'
+      ? `AND u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at`
+      : filter === 'waiting'
+        ? `AND (u.last_seen_at IS NULL OR u.last_seen_at <= lc.contact_at)`
+        : '';
+
+  const orderSql =
+    filter === 'returned'
+      ? 'u.last_seen_at DESC NULLS LAST'
+      : filter === 'waiting'
+        ? 'lc.contact_at DESC'
+        : 'CASE WHEN u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at THEN 0 ELSE 1 END, COALESCE(u.last_seen_at, lc.contact_at) DESC';
+
+  const { rows } = await db.query<ReturnTrackRow>(
+    `
+    WITH latest_contact AS (
+      SELECT DISTINCT ON (c.user_id)
+        c.user_id,
+        c.id AS contact_id,
+        c.created_at AS contact_at,
+        c.channel AS contact_channel,
+        c.outcome AS contact_outcome,
+        c.agent_id
+      FROM support_crm_contacts c
+      WHERE c.created_at >= now() - ($1::text || ' days')::interval
+      ORDER BY c.user_id, c.created_at DESC
+    )
+    SELECT
+      u.id,
+      u.first_name,
+      u.last_name,
+      u.phone,
+      u.plan_name,
+      u.plan_expires_at,
+      u.last_seen_at,
+      lc.contact_id,
+      lc.contact_at,
+      lc.contact_channel,
+      lc.contact_outcome,
+      a.name AS agent_name,
+      (u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at) AS returned,
+      CASE
+        WHEN u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at
+          THEN GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (u.last_seen_at - lc.contact_at)) / 3600))::int
+        ELSE NULL
+      END AS hours_to_return
+    FROM latest_contact lc
+    JOIN users u ON u.id = lc.user_id
+    LEFT JOIN support_crm_agents a ON a.id = lc.agent_id
+    WHERE COALESCE(u.is_golden, false) = false
+      ${statusFilter}
+    ORDER BY ${orderSql}
+    LIMIT $2 OFFSET $3
+    `,
+    [String(days), limit, offset]
+  );
+
+  const countsRes = await db.query<{ returned_count: number; waiting_count: number }>(
+    `
+    WITH latest_contact AS (
+      SELECT DISTINCT ON (c.user_id)
+        c.user_id,
+        c.created_at AS contact_at
+      FROM support_crm_contacts c
+      WHERE c.created_at >= now() - ($1::text || ' days')::interval
+      ORDER BY c.user_id, c.created_at DESC
+    )
+    SELECT
+      COUNT(*) FILTER (
+        WHERE u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at
+      )::int AS returned_count,
+      COUNT(*) FILTER (
+        WHERE u.last_seen_at IS NULL OR u.last_seen_at <= lc.contact_at
+      )::int AS waiting_count
+    FROM latest_contact lc
+    JOIN users u ON u.id = lc.user_id
+    WHERE COALESCE(u.is_golden, false) = false
+    `,
+    [String(days)]
+  );
+
+  const returnedCount = Number(countsRes.rows[0]?.returned_count ?? 0);
+  const waitingCount = Number(countsRes.rows[0]?.waiting_count ?? 0);
+  const total =
+    filter === 'returned' ? returnedCount : filter === 'waiting' ? waitingCount : returnedCount + waitingCount;
+
+  return {
+    rows: (rows ?? []).map((r) => ({
+      ...r,
+      returned: Boolean(r.returned),
+      hours_to_return: r.hours_to_return == null ? null : Number(r.hours_to_return),
+    })),
+    total,
+    returned_count: returnedCount,
+    waiting_count: waitingCount,
+  };
+}

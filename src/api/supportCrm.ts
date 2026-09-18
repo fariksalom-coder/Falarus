@@ -162,6 +162,37 @@ export async function getSupportCrmPremiumUsers(sort: PremiumSort = 'purchase_de
   );
 }
 
+export type ReturnTrackFilter = 'returned' | 'waiting' | 'all';
+
+export type SupportCrmReturnTrackRow = {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  plan_name: string | null;
+  plan_expires_at: string | null;
+  last_seen_at: string | null;
+  contact_id: number;
+  contact_at: string;
+  contact_channel: string;
+  contact_outcome: string;
+  agent_name: string | null;
+  returned: boolean;
+  hours_to_return: number | null;
+};
+
+export async function getSupportCrmReturnTracking(
+  filter: ReturnTrackFilter = 'returned',
+  days = 30
+) {
+  return supportCrmApi<{
+    rows: SupportCrmReturnTrackRow[];
+    total: number;
+    returned_count: number;
+    waiting_count: number;
+  }>(`/return-tracking?filter=${encodeURIComponent(filter)}&days=${days}&limit=300`);
+}
+
 export async function getSupportCrmUser(id: number) {
   return supportCrmApi<SupportCrmUserDetail>(`/users/${id}`);
 }

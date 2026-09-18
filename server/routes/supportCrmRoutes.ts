@@ -13,6 +13,7 @@ import {
   getSupportCrmUser,
   listContactedOnDate,
   listPremiumUsers,
+  listReturnTracking,
   listSupportCrmQueue,
   nextQueueUserId,
   todayTashkentDate,
@@ -21,6 +22,7 @@ import {
   type ContactResult,
   type PremiumSort,
   type QueueFilter,
+  type ReturnTrackFilter,
 } from '../services/supportCrm.service';
 
 const TOKEN_TTL = '12h';
@@ -182,6 +184,27 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
       res.json(data);
     } catch (e) {
       console.error('[support-crm/premium-users]', e);
+      res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
+    }
+  });
+
+  router.get('/return-tracking', async (req, res) => {
+    try {
+      const filterRaw = String(req.query.filter ?? 'returned');
+      const filter: ReturnTrackFilter =
+        filterRaw === 'waiting' || filterRaw === 'all' ? filterRaw : 'returned';
+      const days = Number(req.query.days ?? 30);
+      const limit = Number(req.query.limit ?? 200);
+      const offset = Number(req.query.offset ?? 0);
+      const data = await listReturnTracking({
+        filter,
+        days: Number.isFinite(days) ? days : 30,
+        limit: Number.isFinite(limit) ? limit : 200,
+        offset: Number.isFinite(offset) ? offset : 0,
+      });
+      res.json(data);
+    } catch (e) {
+      console.error('[support-crm/return-tracking]', e);
       res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
     }
   });
