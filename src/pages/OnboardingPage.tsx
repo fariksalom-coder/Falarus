@@ -8,7 +8,7 @@
  * so'rovda yuboriladi (yarim to'ldirilgan yozuv bazada qolib ketmasin),
  * reklama manbasi esa avtomat qo'shiladi.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Check } from 'lucide-react';
@@ -102,10 +102,18 @@ const QUESTIONS: Question[] = [
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const { token, updateUser } = useAuth();
+  const { token, user, updateUser, loading } = useAuth();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+
+  // Allaqachon to‘ldirilgan so‘rovnoma qayta so‘ralmasin.
+  useEffect(() => {
+    if (loading) return;
+    if (user?.onboardingCompleted) {
+      navigate('/', { replace: true });
+    }
+  }, [loading, user?.onboardingCompleted, navigate]);
 
   const q = QUESTIONS[step];
   const total = QUESTIONS.length + 1;
@@ -139,6 +147,14 @@ export default function OnboardingPage() {
     setAnswers(next);
     setStep((s) => Math.min(total - 1, s + 1));
   };
+
+  if (loading || user?.onboardingCompleted) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-app-bg-subtle">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-app-brand border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-app-bg-subtle px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))]">

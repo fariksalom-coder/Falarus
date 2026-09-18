@@ -175,7 +175,7 @@ export interface ResolvedSocialUser {
 }
 
 const AUTH_USER_COLUMNS =
-  'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at';
+  'id, first_name, last_name, email, phone, password, level, onboarded, onboarding_completed, plan_name, plan_expires_at, account_type, avatar_url, gender';
 
 /**
  * Find or create a local user for a verified social identity.

@@ -46,7 +46,7 @@ import { insertPointEvent } from './shared/pointEvents.ts';
 import { parseContactIdentifier, sanitizePhoneRaw } from './shared/authIdentifiers.ts';
 
 const AUTH_USER_SELECT =
-  'id, first_name, last_name, email, phone, password, level, onboarded, plan_name, plan_expires_at, account_type, avatar_url, gender';
+  'id, first_name, last_name, email, phone, password, level, onboarded, onboarding_completed, plan_name, plan_expires_at, account_type, avatar_url, gender';
 
 import { applyUserAccountPatch } from './shared/userAccountPatch.ts';
 import { resolvePaymentProductFromRow } from './shared/paymentsProofUrl.ts';
