@@ -140,6 +140,7 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
         filter,
         limit: Number.isFinite(limit) ? limit : 50,
         offset: Number.isFinite(offset) ? offset : 0,
+        q: typeof req.query.q === 'string' ? req.query.q : null,
       });
       res.json(data);
     } catch (e) {
@@ -157,6 +158,7 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
         date: dateRaw,
         limit: Number.isFinite(limit) ? limit : 200,
         offset: Number.isFinite(offset) ? offset : 0,
+        q: typeof req.query.q === 'string' ? req.query.q : null,
       });
       res.json(data);
     } catch (e) {

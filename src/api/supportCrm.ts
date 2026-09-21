@@ -111,10 +111,11 @@ export async function getSupportCrmStats() {
 }
 
 export async function getSupportCrmQueue(
-  filter: 'needs_contact' | 'contacted_today' | 'in_progress' = 'needs_contact'
+  filter: 'needs_contact' | 'contacted_today' | 'in_progress' = 'needs_contact',
+  q = ''
 ) {
   return supportCrmApi<{ rows: SupportCrmQueueRow[]; total: number }>(
-    `/queue?filter=${encodeURIComponent(filter)}&limit=100`
+    `/queue?filter=${encodeURIComponent(filter)}&limit=100&q=${encodeURIComponent(q)}`
   );
 }
 
@@ -134,9 +135,9 @@ export type SupportCrmContactedRow = {
   agent_name: string | null;
 };
 
-export async function getSupportCrmContacted(date: string) {
+export async function getSupportCrmContacted(date: string, q = '') {
   return supportCrmApi<{ rows: SupportCrmContactedRow[]; total: number; date: string }>(
-    `/contacted?date=${encodeURIComponent(date)}&limit=300`
+    `/contacted?date=${encodeURIComponent(date)}&limit=300&q=${encodeURIComponent(q)}`
   );
 }
 
