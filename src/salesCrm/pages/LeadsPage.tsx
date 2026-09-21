@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Columns3, List } from 'lucide-react';
+import { Columns3, List, Search, X } from 'lucide-react';
 import { salesCrmApi, type LeadRow } from '../api';
 import KanbanBoard, { type StageMovePayload } from '../components/KanbanBoard';
 import { SALES_CRM_STATUS_LABELS, type SalesCrmStatus } from '../../../shared/salesCrm';
@@ -10,12 +10,14 @@ export default function LeadsPage() {
   const view = params.get('view') === 'list' ? 'list' : 'board';
   const [items, setItems] = useState<LeadRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [q, setQ] = useState(params.get('q') || '');
+  const q = params.get('q') || '';
+  const requestId = useRef(0);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
+    const id = ++requestId.current;
     setLoading(true);
     setErr('');
     try {
@@ -28,18 +30,28 @@ export default function LeadsPage() {
       p.set('page', '1');
       p.set('pageSize', view === 'board' ? '500' : '40');
       const r = await salesCrmApi.leads(p.toString());
+      if (id !== requestId.current) return;
       setItems(r.items);
       setTotal(r.total);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Xato');
+      if (id === requestId.current) setErr(e instanceof Error ? e.message : 'Xato');
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }, [params, q, view]);
 
   useEffect(() => {
-    void load();
+    setLoading(true);
+    const timer = setTimeout(() => void load(), 250);
+    return () => { clearTimeout(timer); requestId.current++; };
   }, [load]);
+
+  function search(value: string) {
+    const next = new URLSearchParams(params);
+    if (value) next.set('q', value); else next.delete('q');
+    next.delete('page');
+    setParams(next, { replace: true });
+  }
 
   async function moveLead(payload: StageMovePayload) {
     const { leadId, status, comment, nextContactAt } = payload;
@@ -126,17 +138,19 @@ export default function LeadsPage() {
               Ro‘yxat
             </button>
           </div>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Ism yoki telefon…"
-            className="min-h-11 w-full max-w-xs rounded-2xl border border-slate-200 px-3 text-sm sm:w-auto"
-          />
+          <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 sm:w-80">
+            <Search size={18} className="shrink-0 text-slate-400" aria-hidden="true" />
+            <input type="search" value={q} onChange={e => search(e.target.value)} maxLength={160}
+              aria-label="Поиск по телефону, имени или фамилии" placeholder="Telefon, ism yoki familiya…"
+              className="min-h-11 min-w-0 flex-1 bg-transparent text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+            {q && <button type="button" onClick={() => search('')} aria-label="Очистить поиск" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500"><X size={18}/></button>}
+          </div>
         </div>
       </div>
 
       {err ? <p className="text-sm text-red-600">{err}</p> : null}
-      {loading ? <p className="text-sm text-slate-500">Yuklanmoqda…</p> : null}
+      {loading ? <p role="status" className="text-sm text-slate-500">Yuklanmoqda…</p> : <p role="status" className="text-sm text-slate-500">{q.trim() ? `Topildi: ${total} ta` : `${total} ta lid`}</p>}
+      {!loading && !err && q.trim() && items.length === 0 && view === 'board' && <p className="rounded-2xl bg-white p-6 text-center text-slate-500">Lid topilmadi. Ism, familiya yoki telefonni tekshiring.</p>}
 
       {view === 'board' ? (
         !loading ? <KanbanBoard leads={items} busyId={busyId} onMove={moveLead} /> : null
@@ -176,7 +190,7 @@ export default function LeadsPage() {
           </div>
 
           <div className="space-y-2">
-            {items.map((lead) => (
+            {!loading && items.map((lead) => (
               <Link
                 key={lead.id}
                 to={`/leads/${lead.id}`}
