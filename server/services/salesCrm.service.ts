@@ -2,8 +2,6 @@
  * salesCrm.service.ts — inbound lead pipeline (isolated from Support CRM).
  * Source of truth for identity: users. Pipeline state: sales_crm_*.
  */
-import type { Pool } from 'pg';
-import { salesLeadSearch } from './salesCrmSearch';
 import { pool } from '../lib/db.js';
 import {
   digitsOnlyPhone,
@@ -362,7 +360,8 @@ function dateBounds(preset: string | null | undefined): { from: string | null; t
   return { from: null, to: null };
 }
 
-export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'query'> = requirePool()) {
+export async function listSalesLeads(filters: LeadListFilters) {
+  const db = requirePool();
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(500, Math.max(1, filters.pageSize ?? 30));
   const offset = (page - 1) * pageSize;
@@ -403,8 +402,21 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
     where.push(`l.next_contact_at IS NULL AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED')`);
   }
 
-  const search = salesLeadSearch(filters.q, params);
-  if (search) where.push(search);
+  if (filters.q && filters.q.trim()) {
+    const q = filters.q.trim();
+    const digits = digitsOnlyPhone(q);
+    params.push(`%${q}%`);
+    const pName = `$${params.length}`;
+    if (digits.length >= 6) {
+      params.push(`%${digits}%`);
+      const pPhone = `$${params.length}`;
+      where.push(
+        `(u.first_name ILIKE ${pName} OR u.last_name ILIKE ${pName} OR COALESCE(l.phone_normalized,'') LIKE ${pPhone} OR regexp_replace(COALESCE(u.phone,''), '\\D', '', 'g') LIKE ${pPhone})`,
+      );
+    } else {
+      where.push(`(u.first_name ILIKE ${pName} OR u.last_name ILIKE ${pName})`);
+    }
+  }
 
   const whereSql = where.join(' AND ');
   const countRes = await db.query<{ n: string }>(
