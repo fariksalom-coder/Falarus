@@ -29,7 +29,8 @@
     "generate:kunlik-reading-lexeme-fill": "node scripts/writeKunlikLexemeFallbackExtra.mjs && node --import tsx scripts/offlineGenerate076ReadingLexemeFill.ts",
     "verify": "npm run lint && npm run test && npm run build",
     "design": "vite --config vite.design.config.ts --host 127.0.0.1",
-    "design:build": "vite build --config vite.design.config.ts"
+    "design:build": "vite build --config vite.design.config.ts",
+    "seed:sales-crm": "tsx server/scripts/seedSalesCrmAgent.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

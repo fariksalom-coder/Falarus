@@ -802,8 +802,17 @@ export function createAdminController(supabase: DbClient) {
       }
       await activateTeacherMarketplacePayment(supabase, { paymentId: id, userId, productCode });
       subscriptionService.invalidateAccessCache(userId);
-      try {
-      } catch {}
+      if (productCode === 'russian') {
+        void import('../services/salesCrm.service')
+          .then(({ markSalesLeadPaid }) =>
+            markSalesLeadPaid({
+              userId,
+              amount: Number((row as { amount?: number }).amount) || null,
+              currency: String((row as { currency?: string }).currency || '') || null,
+            }),
+          )
+          .catch((err) => console.warn('[sales-crm] mark paid', err));
+      }
       return res.json({ success: true });
     } catch (e: any) {
       console.error('[admin/confirmPayment]', e);

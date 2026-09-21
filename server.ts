@@ -489,6 +489,12 @@ async function startServer() {
     app.use('/api/admin', createAdminRoutes(supabase));
     const { createSupportCrmRoutes } = await import('./server/routes/supportCrmRoutes');
     app.use('/api/support-crm', createSupportCrmRoutes(supabase));
+    const { createSalesCrmRoutes } = await import('./server/routes/salesCrmRoutes');
+    app.use('/api/sales-crm', createSalesCrmRoutes(supabase));
+    const { createGoogleSheetsIntegrationRoutes } = await import(
+      './server/routes/googleSheetsIntegrationRoutes'
+    );
+    app.use('/api/integrations/google-sheets', createGoogleSheetsIntegrationRoutes(supabase));
     const { operatorBotRoutes } = await import('./server/operator/routes.js');
     app.use('/api/operator-bot', operatorBotRoutes(supabase));
     app.use('/api/operator-reset', operatorResetRoutes());
@@ -539,6 +545,8 @@ async function startServer() {
   });
     console.log('Admin API: /api/admin (login, dashboard, users, payments, etc.)');
     console.log('Support CRM API: /api/support-crm (retention queue)');
+    console.log('Sales CRM API: /api/sales-crm (inbound leads)');
+    console.log('Google Sheets → CRM: /api/integrations/google-sheets');
   } catch (err) {
     logError('express.admin.routes_failed_to_load', err);
   }
@@ -728,6 +736,17 @@ async function startServer() {
       }
       const { ensureUserInLeaderboard } = await import('./server/services/leaderboard.service');
       await ensureUserInLeaderboard(supabase, user.id).catch(() => {});
+      // Sales CRM lead ingest — must never block registration.
+      void import('./server/services/salesCrm.service')
+        .then(({ ingestUserAsSalesLead }) =>
+          ingestUserAsSalesLead({
+            userId: user.id,
+            phone: parsed.phone,
+            source: 'website',
+            landingPage: '/register',
+          }),
+        )
+        .catch((err) => console.warn('[sales-crm] ingest on register', err));
       const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       res.json({
         token,
@@ -3263,7 +3282,14 @@ async function startServer() {
         return res.status(404).type('text/plain').send('Not found');
       }
 
-      const indexFayl = path.resolve(__dirname, 'dist', 'index.html');
+      const host = String(req.headers.host || '').split(':')[0].toLowerCase();
+      const crmHost = String(process.env.SALES_CRM_HOST || 'crm.falarus.uz').toLowerCase();
+      const isCrmHost = host === crmHost || host.startsWith('crm.');
+      const wantsCrmPath = p === '/crm' || p.startsWith('/crm/');
+      const crmIndex = path.resolve(__dirname, 'dist', 'crm.html');
+      const mainIndex = path.resolve(__dirname, 'dist', 'index.html');
+      const indexFayl =
+        (isCrmHost || wantsCrmPath) && fs.existsSync(crmIndex) ? crmIndex : mainIndex;
 
       /*
        * YO'Q FAYL — 404, `index.html` EMAS.
