@@ -686,7 +686,17 @@ async function askJson<T extends Record<string, unknown>>(params: {
   temperature: number;
   maxTokens: number;
 }): Promise<T> {
-  return isOpenAIConfigured() ? openaiJson<T>(params) : geminiJson<T>(params);
+  if (!isOpenAIConfigured()) return geminiJson<T>(params);
+  try {
+    return await openaiJson<T>(params);
+  } catch (err) {
+    /*
+     * VPS dan api.openai.com ba'zan 10s connect timeout beradi — savollar
+     * 500 bo'lib, suhbat bo'sh/erta rejimga tushardi. Gemini zaxira.
+     */
+    console.warn('[ustozDoska] OpenAI xato, Gemini zaxira:', err instanceof Error ? err.message : err);
+    return geminiJson<T>(params);
+  }
 }
 
 /* ------------------------------------------------------------------ *

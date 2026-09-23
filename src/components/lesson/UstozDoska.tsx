@@ -844,18 +844,9 @@ export default function UstozDoska({
     );
   }
 
-  const jonliSuhbat = faza === 'suhbat' && !zaxiraSuhbat;
-
   const asosiy = (
-    <div
-      className={
-        jonliSuhbat
-          ? 'overflow-hidden bg-[#101728]'
-          : 'overflow-hidden rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)]'
-      }
-    >
-      {/* Sarlavha va boshqaruv — jonli suhbatda yashirin: bitta qorong'u ekran */}
-      {jonliSuhbat ? null : (
+    <div className="overflow-hidden rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)]">
+      {/* Sarlavha va boshqaruv */}
       <div className="flex items-start gap-2.5 px-4 pt-4 sm:px-5">
         <div className="min-w-0 flex-1">
           {/* Mavzu sarlavhasi sahifaning o'zida turibdi — bu yerda takrorlanmaydi. */}
@@ -881,7 +872,6 @@ export default function UstozDoska({
 
 
       </div>
-      )}
 
       {/*
         Jonli suhbatda o'lchanadigan qadam yo'q: gap ustozning savollari
@@ -901,7 +891,7 @@ export default function UstozDoska({
 
       {/* Dars to'xtatib turilgani ko'rinib tursin — jimlik "buzildi" degani emas. */}
       <AnimatePresence initial={false}>
-        {pauza && !jonliSuhbat ? (
+        {pauza ? (
           <motion.button
             type="button"
             key="pauza-banner"
@@ -916,7 +906,7 @@ export default function UstozDoska({
         ) : null}
       </AnimatePresence>
 
-      <div className={jonliSuhbat ? '' : faza === 'tushuntirish' ? 'p-2.5 sm:p-3.5' : 'p-4 sm:p-5'}>
+      <div className={faza === 'tushuntirish' ? 'p-2.5 sm:p-3.5' : 'p-4 sm:p-5'}>
         <AnimatePresence mode="wait">
           {/* ---------- 1. TUSHUNTIRISH ---------- */}
           {faza === 'tushuntirish' && joriy ? (
@@ -990,7 +980,7 @@ export default function UstozDoska({
 
           {/* ---------- 2a. SUHBAT — JONLI (Gemini Live) ---------- */}
           {faza === 'suhbat' && !zaxiraSuhbat ? (
-            <motion.div key="live" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+            <motion.div key="live" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <UstozLive
                 token={token}
                 mavzu={mavzu}

@@ -46,6 +46,8 @@ declare global {
 }
 
 let scriptPromise: Promise<void> | null = null;
+let initializedClientId: string | null = null;
+let activeCredentialHandler: ((token: string) => void) | null = null;
 function loadGoogleScript(): Promise<void> {
   if (window.google?.accounts?.id) return Promise.resolve();
   if (scriptPromise) return scriptPromise;
@@ -81,16 +83,22 @@ async function fetchClientIdFromServer(): Promise<string | null> {
   }
 }
 
-function ensureInitialized(clientId: string, onCredential: (token: string) => void): void {
+export function ensureInitialized(clientId: string, onCredential: (token: string) => void): void {
+  // GIS is a page-level singleton. Keep its callback current without calling
+  // initialize() again when React StrictMode, the button effect, or a click runs.
+  activeCredentialHandler = onCredential;
+  if (initializedClientId === clientId) return;
+
   window.google!.accounts!.id!.initialize({
     client_id: clientId,
     context: 'signin',
     cancel_on_tap_outside: true,
     use_fedcm_for_prompt: false,
     callback: (response) => {
-      if (response.credential) onCredential(response.credential);
+      if (response.credential) activeCredentialHandler?.(response.credential);
     },
   });
+  initializedClientId = clientId;
 }
 
 function googleSetupMessage(clientId: string): string {
@@ -120,6 +128,7 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
   );
   const [buttonHost, setButtonHost] = useState<HTMLDivElement | null>(null);
   const [buttonReady, setButtonReady] = useState(false);
+  const [clientIdResolved, setClientIdResolved] = useState(false);
   const pendingRef = useRef<{
     resolve: () => void;
     reject: (err: Error) => void;
@@ -131,13 +140,17 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     void fetchClientIdFromServer().then((fromServer) => {
-      if (fromServer && fromServer !== clientId) setClientId(fromServer);
+      if (cancelled) return;
+      if (fromServer) setClientId(fromServer);
+      setClientIdResolved(true);
     });
-  }, [clientId]);
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientIdResolved || !clientId) return;
     let cancelled = false;
     void loadGoogleScript()
       .then(() => {
@@ -153,10 +166,10 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
         if (!cancelled) setButtonReady(false);
       });
     return () => { cancelled = true; };
-  }, [clientId]);
+  }, [clientId, clientIdResolved]);
 
   useEffect(() => {
-    if (!clientId || !buttonHost) return;
+    if (!clientIdResolved || !clientId || !buttonHost) return;
     let cancelled = false;
 
     setButtonReady(false);
@@ -195,7 +208,7 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
     return () => {
       cancelled = true;
     };
-  }, [buttonHost, clientId]);
+  }, [buttonHost, clientId, clientIdResolved]);
 
   const triggerSignIn = useCallback(async (): Promise<void> => {
     if (!clientId) throw new Error('Google OAuth sozlanmagan');
@@ -221,7 +234,7 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
         }
       });
     });
-  }, [clientId]);
+  }, [clientId, buttonReady]);
 
   return { triggerSignIn, clientId, googleButtonRef, googleButtonReady: buttonReady };
 }

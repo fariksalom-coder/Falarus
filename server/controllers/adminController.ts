@@ -766,7 +766,7 @@ export function createAdminController(supabase: DbClient) {
 
       const { data: row, error: fetchErr } = await supabase
         .from('payments')
-        .select('user_id, tariff_type, product_code, payment_channel, payment_proof_url')
+        .select('user_id, tariff_type, product_code, amount, currency, payment_channel, payment_proof_url, discount_meta')
         .eq('id', id)
         .eq('status', 'pending')
         .single();
@@ -794,16 +794,33 @@ export function createAdminController(supabase: DbClient) {
         return res.status(500).json({ error: updatePayErr.message });
       }
 
-      if (productCode === 'russian' && isSubscriptionTariffType(tariffType)) {
+      if ((row as any).discount_meta?.welcome_video_offer === true) {
+        await supabase.from('welcome_video_offers')
+          .update({ status: 'claimed', updated_at: new Date().toISOString() })
+          .eq('user_id', userId).eq('payment_id', id);
+      }
+      const activationTariffType = isSubscriptionTariffType((row as any).discount_meta?.activation_tariff_type)
+        ? (row as any).discount_meta.activation_tariff_type
+        : tariffType;
+      if (productCode === 'russian' && isSubscriptionTariffType(activationTariffType)) {
         await activateRussianSubscription(supabase as any, {
           userId,
-          tariffType,
+          tariffType: activationTariffType,
         });
       }
       await activateTeacherMarketplacePayment(supabase, { paymentId: id, userId, productCode });
       subscriptionService.invalidateAccessCache(userId);
-      try {
-      } catch {}
+      if (productCode === 'russian') {
+        void import('../services/salesCrm.service')
+          .then(({ markSalesLeadPaid }) =>
+            markSalesLeadPaid({
+              userId,
+              amount: Number((row as { amount?: number }).amount) || null,
+              currency: String((row as { currency?: string }).currency || '') || null,
+            }),
+          )
+          .catch((err) => console.warn('[sales-crm] mark paid', err));
+      }
       return res.json({ success: true });
     } catch (e: any) {
       console.error('[admin/confirmPayment]', e);

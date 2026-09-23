@@ -172,7 +172,7 @@ export type TtsOhang = keyof typeof OHANGLAR;
  * Yosh va jonli: Leda, Aoede, Zephyr, Laomedeia. Boshqacha: Achernar, Sulafat.
  */
 const LIVE_TTS = {
-  model: process.env.GEMINI_LIVE_MODEL || 'gemini-3.1-flash-live-preview',
+  model: process.env.GEMINI_LIVE_MODEL || 'gemini-3.8-live',
   voice: process.env.GEMINI_LIVE_VOICE || 'Leda',
   korsatma:
     "Sen ovoz chiqaruvchi vositasan (text-to-speech). Foydalanuvchi bergan " +

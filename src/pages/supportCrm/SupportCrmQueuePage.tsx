@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Search, X } from 'lucide-react';
 import { Card } from '../../components/ui/Foundation';
 import {
   getSupportCrmContacted,
@@ -74,6 +75,9 @@ export default function SupportCrmQueuePage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [params, setParams] = useSearchParams();
+  const q = params.get('q') ?? '';
+  const requestId = useRef(0);
 
   const isToday = contactDate === todayTashkent();
 
@@ -83,37 +87,60 @@ export default function SupportCrmQueuePage() {
   }, [contactDate, isToday]);
 
   const reload = useCallback(async () => {
+    const id = ++requestId.current;
     setLoading(true);
     setError('');
     try {
       if (tab === 'needs_contact') {
-        const data = await getSupportCrmQueue('needs_contact');
+        const data = await getSupportCrmQueue('needs_contact', q);
         setQueueRows(data.rows);
         setContactedRows([]);
         setTotal(data.total);
       } else {
-        const data = await getSupportCrmContacted(contactDate);
+        const data = await getSupportCrmContacted(contactDate, q);
         setContactedRows(data.rows);
         setQueueRows([]);
         setTotal(data.total);
         if (data.date && data.date !== contactDate) setContactDate(data.date);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Xatolik');
+      if (id === requestId.current) setError(e instanceof Error ? e.message : 'Xatolik');
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
-  }, [tab, contactDate]);
+  }, [tab, contactDate, q]);
 
   useEffect(() => {
-    void reload();
+    setLoading(true);
+    const timer = window.setTimeout(() => void reload(), 250);
+    return () => { window.clearTimeout(timer); requestId.current += 1; };
   }, [reload]);
+
+  function updateSearch(value: string) {
+    const next = new URLSearchParams(params);
+    if (value.trim()) next.set('q', value); else next.delete('q');
+    setParams(next, { replace: true });
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-lg font-semibold text-app-text">Navbat</h1>
         <span className="text-sm tabular-nums text-app-muted">{total}</span>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-2xl border border-app-border bg-white px-3">
+        <Search size={18} className="shrink-0 text-app-muted" aria-hidden="true" />
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => updateSearch(e.target.value)}
+          maxLength={160}
+          aria-label="Поиск по телефону, имени или фамилии"
+          placeholder="Telefon, ism yoki familiya…"
+          className="min-h-12 min-w-0 flex-1 bg-transparent text-sm text-app-text outline-none"
+        />
+        {q ? <button type="button" onClick={() => updateSearch('')} aria-label="Очистить поиск" className="flex min-h-11 min-w-11 items-center justify-center text-app-muted"><X size={18} /></button> : null}
       </div>
 
       <div className="flex gap-2">

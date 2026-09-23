@@ -51,3 +51,4 @@ docs/design/**/*.png
 # Paywall sales video (~500MB) — not in GitHub; scp to VPS public/videos/ before build
 public/videos/*.mp4
 public/videos/*.web.mp4
+secrets/

@@ -36,8 +36,14 @@ function tone(context: AudioContext, freq: number, startAt: number, duration: nu
   osc.stop(startAt + duration + 0.05);
 }
 
+/** Resume within a user gesture, before awaiting answer verification. */
+export function prepareFeedbackSound() {
+  const c = getCtx();
+  if (c?.state === 'suspended') void c.resume().catch(() => {});
+}
+
 /** Two-note "ding-ding" chime (C6 → E6) — cheerful, unobtrusive. */
-export function playCorrectSound() {
+export function playCorrectSound(volume = 1) {
   // Ovoz bilan birga tebranish: telefon jimlik rejimida bo'lsa ovoz
   // eshitilmaydi, tebranish esa baribir tasdiq beradi.
   haptic('togri');
@@ -47,8 +53,8 @@ export function playCorrectSound() {
     c.resume().catch(() => {});
   }
   const now = c.currentTime;
-  tone(c, 1046.5, now, 0.18);          // C6
-  tone(c, 1318.5, now + 0.11, 0.22);   // E6
+  tone(c, 1046.5, now, 0.18, 0.14 * Math.max(0, Math.min(1, volume)));          // C6
+  tone(c, 1318.5, now + 0.11, 0.22, 0.14 * Math.max(0, Math.min(1, volume)));   // E6
 }
 
 /** Soft warm buzz for wrong answers — currently unused, kept for future symmetry. */

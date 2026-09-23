@@ -234,14 +234,20 @@ export function openAIUserFacingError(err: unknown): string {
   return "Tekshirishda xatolik yuz berdi. Qayta urinib ko'ring.";
 }
 
-/** Provayder tanlovi bitta joyda: kalit bor bo'lsa OpenAI, aks holda Gemini. */
-function aiJson<T = Record<string, unknown>>(params: {
+/** Provayder tanlovi: OpenAI birinchi; ulanish/timeout bo'lsa Gemini zaxira. */
+async function aiJson<T = Record<string, unknown>>(params: {
   system: string;
   user: string;
   temperature?: number;
   maxTokens?: number;
 }): Promise<T> {
-  return isOpenAIConfigured() ? openaiJson<T>(params) : geminiJson<T>(params);
+  if (!isOpenAIConfigured()) return geminiJson<T>(params);
+  try {
+    return await openaiJson<T>(params);
+  } catch (err) {
+    console.warn('[openai] OpenAI xato, Gemini zaxira:', err instanceof Error ? err.message : err);
+    return geminiJson<T>(params);
+  }
 }
 
 /**
@@ -592,7 +598,11 @@ export async function transcribeAudio(
           : 'audio/webm';
 
   if (isOpenAIConfigured()) {
-    return openaiTranscribe(audioBuffer, mimeType, filename, hint, model);
+    try {
+      return await openaiTranscribe(audioBuffer, mimeType, filename, hint, model);
+    } catch (err) {
+      console.warn('[openai] Whisper xato, Gemini zaxira:', err instanceof Error ? err.message : err);
+    }
   }
 
   return geminiTranscribe({

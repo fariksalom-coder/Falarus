@@ -73,6 +73,11 @@ export default defineConfig(({mode}) => {
     build: {
       sourcemap: true,
       rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          crm: path.resolve(__dirname, 'crm.html'),
+          exercise: path.resolve(__dirname, 'exercise.html'),
+        },
         output: {
           manualChunks(id) {
             if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {

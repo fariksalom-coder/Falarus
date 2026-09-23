@@ -5,6 +5,14 @@ import {
   type SubscriptionTariffType,
 } from './paymentProducts.js';
 
+export function resolveActivationTariffType(
+  tariffType: string | null | undefined,
+  activationTariffType: string | null | undefined,
+): SubscriptionTariffType | null {
+  if (isSubscriptionTariffType(activationTariffType)) return activationTariffType;
+  return isSubscriptionTariffType(tariffType) ? tariffType : null;
+}
+
 export type RussianSubscriptionExtras = {
   auto_payment_enabled?: boolean;
   next_payment_date?: string | null;
@@ -111,15 +119,17 @@ export async function activateApprovedPayment(
     userId: number;
     productCode: PaymentProductCode;
     tariffType?: string | null;
+    activationTariffType?: string | null;
     exactExpiresAt?: string | null;
   }
 ): Promise<void> {
   if (params.productCode !== 'russian') return;
-  if (!isSubscriptionTariffType(params.tariffType)) return;
+  const tariffType = resolveActivationTariffType(params.tariffType, params.activationTariffType);
+  if (!tariffType) return;
 
   await activateRussianSubscription(supabase, {
     userId: params.userId,
-    tariffType: params.tariffType as SubscriptionTariffType,
+    tariffType: tariffType as SubscriptionTariffType,
     extras: { exact_expires_at: params.exactExpiresAt ?? null },
   });
 }

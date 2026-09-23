@@ -8,9 +8,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gauge, Play, Volume2 } from 'lucide-react';
+import { Gauge, Gift, Play, Sparkles, Volume2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { openRahmatCheckout } from '../api/rahmat';
+import { completeWelcomeVideo, getWelcomeVideoOffer, type WelcomeVideoOfferState } from '../api/welcomeVideoOffer';
+import { WELCOME_VIDEO_BONUS_REVEAL_SECONDS, WELCOME_VIDEO_OFFER_MS } from '../../shared/welcomeVideoOffer';
 import {
   formatRubAmount,
   formatRussianTariffUzsMing,
@@ -24,8 +26,9 @@ const TARIFF_REMAINING_SEC = 70;
 /** 3 oylik tarif shu qolgan vaqtda yashil bo‘ladi (52.5 s). */
 const THREE_MONTH_GREEN_REMAINING_SEC = 52.5;
 
-/** Asosiy paywall video — fayl `public/videos/paywall-intro.mp4` ga qo‘yiladi. */
-export const PAYWALL_VIDEO_SRC = '/videos/paywall-intro.mp4';
+/** Registration sequence assets: intro, tariffs, then the one-time bonus explanation. */
+const WELCOME_VIDEO_SOURCES = ['/videos/welcome-intro.mp4', '/videos/welcome-tariffs.mp4', '/videos/welcome-bonus.mp4'] as const;
+export const PAYWALL_VIDEO_SRC = WELCOME_VIDEO_SOURCES[1];
 
 /**
  * Video hali tayyor emas — bo‘sh pleer ko‘rsatiladi.
@@ -36,6 +39,7 @@ export const PAYWALL_VIDEO_READY = true;
 const SPEED_STEPS = [1, 1.5, 2, 2.5] as const;
 type SpeedStep = (typeof SPEED_STEPS)[number];
 const BG = '#0B1220';
+const THREE_MONTH_PLAN = RUSSIAN_TARIFF_PLANS_RUB.find((plan) => plan.code === 'three_month')!;
 
 function formatSpeed(rate: SpeedStep): string {
   return rate === 1 ? '1×' : rate === 1.5 ? '1.5×' : rate === 2 ? '2×' : '2.5×';
@@ -44,11 +48,17 @@ function formatSpeed(rate: SpeedStep): string {
 export default function UnpaidHomePaywall() {
   const { token } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [showTariffs, setShowTariffs] = useState(!PAYWALL_VIDEO_READY);
+  const [showTariffs, setShowTariffs] = useState(false);
+  const [flowReady, setFlowReady] = useState(false);
+  const [flowMode, setFlowMode] = useState<WelcomeVideoOfferState['mode']>('standard');
+  const [videoIndex, setVideoIndex] = useState(1);
+  const [offerExpiresAt, setOfferExpiresAt] = useState<string | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [bonusRevealed, setBonusRevealed] = useState(false);
   const [highlightThreeMonth, setHighlightThreeMonth] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
-  const [buying, setBuying] = useState<RussianTariffCode | null>(null);
+  const [buying, setBuying] = useState<RussianTariffCode | 'welcome_offer' | null>(null);
   const [speed, setSpeed] = useState<SpeedStep>(1);
   const speedRef = useRef(speed);
   speedRef.current = speed;
@@ -57,14 +67,62 @@ export default function UnpaidHomePaywall() {
   /** Eng uzoq ko‘rilgan nuqta — oldinga seek qilishni bloklash uchun. */
   const maxPlayedRef = useRef(0);
   const seekingClampRef = useRef(false);
+  const videoSource = flowMode === 'sequence' ? WELCOME_VIDEO_SOURCES[videoIndex] : flowMode === 'offer' ? WELCOME_VIDEO_SOURCES[2] : WELCOME_VIDEO_SOURCES[1];
+  const bonusBeforeEnd = flowMode === 'sequence' && videoIndex === 2 && bonusRevealed;
+  const showBonusOffer = bonusBeforeEnd || (flowMode === 'offer' && secondsLeft > 0);
+  const displayedSeconds = bonusBeforeEnd ? WELCOME_VIDEO_OFFER_MS / 1000 : secondsLeft;
+
+  const applyOfferState = (state: WelcomeVideoOfferState) => {
+    setFlowMode(state.mode);
+    setOfferExpiresAt(state.offerExpiresAt);
+    if (state.offerExpiresAt) setSecondsLeft(Math.max(0, Math.ceil((Date.parse(state.offerExpiresAt) - Date.now()) / 1000)));
+    if (state.mode === 'sequence' && state.nextVideoIndex != null) setVideoIndex(state.nextVideoIndex);
+    else if (state.mode === 'offer') setVideoIndex(2);
+    else setVideoIndex(1);
+    if (state.mode === 'offer') setShowTariffs(true);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    setBonusRevealed(false);
+    if (!token) {
+      setFlowMode('standard');
+      setVideoIndex(1);
+      setFlowReady(true);
+      return;
+    }
+    void getWelcomeVideoOffer(token).then((state) => {
+      if (!cancelled) applyOfferState(state);
+    }).catch((error) => {
+      console.error('[welcome-video-offer]', error);
+      if (!cancelled) { setFlowMode('standard'); setVideoIndex(1); }
+    }).finally(() => { if (!cancelled) setFlowReady(true); });
+    return () => { cancelled = true; };
+  }, [token]);
+
+  useEffect(() => {
+    if (!offerExpiresAt || flowMode !== 'offer') return;
+    const refresh = () => {
+      const left = Math.max(0, Math.ceil((Date.parse(offerExpiresAt) - Date.now()) / 1000));
+      setSecondsLeft(left);
+      if (left === 0) { setFlowMode('standard'); setOfferExpiresAt(null); }
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 1000);
+    return () => window.clearInterval(timer);
+  }, [offerExpiresAt, flowMode]);
 
   const syncFromPlayback = useCallback(() => {
     const el = videoRef.current;
     if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return;
     const remaining = el.duration - el.currentTime;
-    if (remaining <= TARIFF_REMAINING_SEC) setShowTariffs(true);
-    setHighlightThreeMonth(remaining <= THREE_MONTH_GREEN_REMAINING_SEC);
-  }, []);
+    if (flowMode === 'sequence' && videoIndex === 2 && el.currentTime >= WELCOME_VIDEO_BONUS_REVEAL_SECONDS) {
+      setBonusRevealed(true);
+    }
+    const isTariffVideo = flowMode === 'standard' || (flowMode === 'sequence' && videoIndex === 1);
+    if (isTariffVideo && remaining <= TARIFF_REMAINING_SEC) setShowTariffs(true);
+    if (isTariffVideo) setHighlightThreeMonth(remaining <= THREE_MONTH_GREEN_REMAINING_SEC);
+  }, [flowMode, videoIndex]);
 
   const setPlaybackSpeed = (next: SpeedStep) => {
     setSpeed(next);
@@ -79,7 +137,7 @@ export default function UnpaidHomePaywall() {
    * 3) umuman bo‘lmasa — overlay
    */
   const tryAutoplay = useCallback(async () => {
-    if (!PAYWALL_VIDEO_READY) return;
+    if (!PAYWALL_VIDEO_READY || !flowReady) return;
     const el = videoRef.current;
     if (!el) return;
 
@@ -111,7 +169,7 @@ export default function UnpaidHomePaywall() {
       playAttemptedRef.current = false;
       setNeedsGesture(true);
     }
-  }, []);
+  }, [flowReady]);
 
   useEffect(() => {
     playAttemptedRef.current = false;
@@ -126,10 +184,10 @@ export default function UnpaidHomePaywall() {
         /* ignore */
       }
     };
-  }, [tryAutoplay]);
+  }, [tryAutoplay, flowReady]);
 
   useEffect(() => {
-    if (!PAYWALL_VIDEO_READY) return;
+    if (!PAYWALL_VIDEO_READY || !flowReady) return;
     const el = videoRef.current;
     if (!el) return;
     let lockingRate = false;
@@ -162,6 +220,31 @@ export default function UnpaidHomePaywall() {
     };
     const onEnded = () => {
       maxPlayedRef.current = Math.max(maxPlayedRef.current, el.duration || 0);
+      if (flowMode === 'sequence' && token) {
+        const finishedIndex = videoIndex;
+        if (finishedIndex < 2) {
+          maxPlayedRef.current = 0;
+          playAttemptedRef.current = false;
+          setNeedsGesture(false);
+          setVideoIndex(finishedIndex + 1);
+          if (finishedIndex === 1) { setShowTariffs(true); setHighlightThreeMonth(true); }
+        }
+        void completeWelcomeVideo(token, finishedIndex).then((state) => {
+          if (finishedIndex === 2 || state.mode !== 'sequence') {
+            applyOfferState(state);
+            setShowTariffs(true);
+            setHighlightThreeMonth(true);
+          }
+        }).catch((error) => {
+          console.error('[welcome-video-offer/video-complete]', error);
+          if (finishedIndex === 2) {
+            setFlowMode('standard');
+            setVideoIndex(1);
+            setShowTariffs(true);
+          }
+        });
+        return;
+      }
       setShowTariffs(true);
       setHighlightThreeMonth(true);
     };
@@ -191,7 +274,7 @@ export default function UnpaidHomePaywall() {
       el.removeEventListener('ended', onEnded);
       el.removeEventListener('ratechange', onRate);
     };
-  }, [syncFromPlayback, tryAutoplay]);
+  }, [syncFromPlayback, tryAutoplay, flowReady, flowMode, videoIndex, token]);
 
   const startWithSound = async () => {
     const el = videoRef.current;
@@ -229,6 +312,24 @@ export default function UnpaidHomePaywall() {
     }
   };
 
+  const buyWelcomeOffer = async () => {
+    if (!token || buying || !showBonusOffer) return;
+    setBuyError(null);
+    setBuying('welcome_offer');
+    try {
+      await openRahmatCheckout({
+        token,
+        productCode: 'russian',
+        tariffType: 'three_month',
+        welcomeOffer: true,
+      });
+    } catch (e) {
+      setBuyError(e instanceof Error ? e.message : 'To‘lovni ochib bo‘lmadi. Qayta urinib ko‘ring.');
+    } finally {
+      setBuying(null);
+    }
+  };
+
   return (
     <div
       className="relative flex min-h-full w-full flex-1 flex-col"
@@ -255,6 +356,28 @@ export default function UnpaidHomePaywall() {
 
         {/* Ogohlantirish — logodan keyin */}
         <div className="px-3 pb-2 pt-1 sm:px-4" style={{ background: BG }}>
+          {flowMode === 'sequence' ? (
+            <div
+              className="relative overflow-hidden rounded-[20px] border-2 border-yellow-200 px-3 py-3.5 text-center text-slate-950 sm:px-5 sm:py-4"
+              style={{
+                background: 'linear-gradient(120deg, #FBBF24 0%, #FEF08A 48%, #F59E0B 100%)',
+                boxShadow: '0 0 28px rgba(251, 191, 36, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.65)',
+              }}
+            >
+              <Sparkles aria-hidden="true" className="pointer-events-none absolute -right-2 -top-2 h-20 w-20 rotate-12 text-amber-600/15" />
+              <div className="relative mb-2 inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1.5 text-yellow-300 shadow-sm">
+                <Gift aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.5} />
+                <span className="text-[12px] font-black uppercase tracking-[0.1em] sm:text-[13px]">Siz uchun bonus</span>
+              </div>
+              <p className="relative text-[17px] font-extrabold leading-snug sm:text-[21px]">
+                Bonusni olish uchun videoni
+                <span className="mt-1.5 block">
+                  <span className="inline-block rounded-lg bg-slate-950 px-2 py-0.5 font-black text-yellow-300">OXIRIGACHA</span>{' '}
+                  ko‘ring!
+                </span>
+              </p>
+            </div>
+          ) : (
           <div
             className="rounded-[16px] px-3.5 py-3 text-center sm:rounded-[18px] sm:px-4 sm:py-3.5"
             style={{
@@ -266,28 +389,28 @@ export default function UnpaidHomePaywall() {
               Muhim
             </p>
             <p className="mt-1 text-[16px] font-black leading-snug text-white sm:text-[18px]">
-              Videoni <span className="underline decoration-2 underline-offset-2">OXIRIGACHA</span>{' '}
-              ko‘rish shart!
+              Videoni <span className="underline decoration-2 underline-offset-2">OXIRIGACHA</span> ko‘rish shart!
             </p>
           </div>
+          )}
         </div>
 
         <div
           className="relative aspect-video w-full overflow-hidden"
           style={{ background: BG }}
         >
-          {PAYWALL_VIDEO_READY ? (
+          {PAYWALL_VIDEO_READY && flowReady ? (
             <>
               <video
                 ref={videoRef}
                 className="h-full w-full object-contain"
                 style={{ background: BG }}
-                src={`${PAYWALL_VIDEO_SRC}?v=5`}
+                src={`${videoSource}?v=1`}
                 playsInline
                 controls
                 controlsList="nodownload noplaybackrate"
                 disablePictureInPicture
-                preload="metadata"
+                preload="auto"
                 onContextMenu={(e) => e.preventDefault()}
               />
               {needsGesture ? (
@@ -312,7 +435,7 @@ export default function UnpaidHomePaywall() {
                 <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20">
                   <Play className="h-7 w-7 text-white/80" fill="currentColor" aria-hidden />
                 </span>
-                <p className="text-center text-[15px] font-bold text-white/90">Video</p>
+                <p className="text-center text-[15px] font-bold text-white/90">{flowReady ? 'Video' : 'Yuklanmoqda…'}</p>
               </div>
             </div>
           )}
@@ -348,8 +471,20 @@ export default function UnpaidHomePaywall() {
           </div>
         ) : null}
 
+        {showBonusOffer ? (
+          <div className="mx-4 mt-3 rounded-2xl border border-amber-300/40 bg-gradient-to-r from-amber-300 to-yellow-200 p-4 text-center text-slate-950 shadow-lg" role="status" aria-live="polite">
+            <p className="text-sm font-bold">3 oy narxiga 6 oy o‘qing</p>
+            <p className="mt-1 text-sm font-extrabold">{formatRubAmount(THREE_MONTH_PLAN.priceRub)} ₽ · {formatRussianTariffUzsMing(THREE_MONTH_PLAN.priceUzs)}</p>
+            <p className="mt-2 text-xs font-semibold">Taklif tugashiga</p>
+            <p className="my-1 text-3xl font-black tabular-nums">{String(Math.floor(displayedSeconds / 60)).padStart(2, '0')}:{String(displayedSeconds % 60).padStart(2, '0')}</p>
+            <button type="button" disabled={Boolean(buying)} onClick={() => void buyWelcomeOffer()} className="mt-2 min-h-12 w-full rounded-xl bg-emerald-700 px-4 py-3 text-base font-black text-white transition hover:bg-emerald-800 disabled:opacity-60">
+              {buying === 'welcome_offer' ? '…' : 'Taklifdan foydalanish'}
+            </button>
+          </div>
+        ) : null}
+
         <AnimatePresence>
-          {showTariffs ? (
+          {showTariffs && !showBonusOffer ? (
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -435,14 +570,14 @@ export default function UnpaidHomePaywall() {
                 })}
               </div>
 
-              {buyError ? (
-                <p className="rounded-2xl bg-red-50 px-3 py-2 text-center text-[13px] font-semibold text-red-600">
-                  {buyError}
-                </p>
-              ) : null}
             </motion.div>
           ) : null}
         </AnimatePresence>
+        {buyError ? (
+          <p role="alert" className="mx-4 my-3 rounded-2xl bg-red-50 px-3 py-2 text-center text-[13px] font-semibold text-red-600">
+            {buyError}
+          </p>
+        ) : null}
       </div>
     </div>
   );

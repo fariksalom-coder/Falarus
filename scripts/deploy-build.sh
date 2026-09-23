@@ -8,6 +8,7 @@ NEW="$(mktemp -d "$PWD/.dist-build.XXXXXX")"
 trap 'if [[ -n "${NEW:-}" && -d "$NEW" ]]; then rm -rf -- "$NEW"; fi' EXIT
 ./node_modules/.bin/vite build --outDir "$NEW"
 test -s "$NEW/index.html"
+test -s "$NEW/crm.html"
 test -s "$NEW/sw.js"
 python3 scripts/activate-build.py "$NEW"
 NEW=''

@@ -27,6 +27,33 @@ export type ContactResult = 'returned_ok' | 'helped_login' | 'needs_fix' | 'feed
 
 export type QueueFilter = 'needs_contact' | 'contacted_today' | 'in_progress';
 
+type SupportSearch = { sql: string; values: string[] };
+
+export function buildSupportSearch(raw: string | null | undefined, startAt: number, alias = 'u'): SupportSearch | null {
+  const query = String(raw ?? '').normalize('NFC').trim().slice(0, 160);
+  if (!query) return null;
+  const values: string[] = [];
+  const bind = (value: string) => {
+    values.push(value);
+    return `$${startAt + values.length - 1}`;
+  };
+  if (/^[+\d\s().-]+$/.test(query) && /\d/.test(query)) {
+    const phone = bind(`%${query.replace(/\D/g, '')}%`);
+    return {
+      sql: `(regexp_replace(COALESCE(${alias}.phone, ''), '[^0-9]', '', 'g') LIKE ${phone})`,
+      values,
+    };
+  }
+  const words = query.split(/\s+/).filter(Boolean);
+  return {
+    sql: `(${words.map((word) => {
+      const value = bind(`%${word.replace(/[\\%_]/g, '\\$&')}%`);
+      return `(COALESCE(${alias}.first_name, '') ILIKE ${value} OR COALESCE(${alias}.last_name, '') ILIKE ${value})`;
+    }).join(' AND ')})`,
+    values,
+  };
+}
+
 export type ContactedOnRow = {
   id: number;
   first_name: string | null;
@@ -182,6 +209,7 @@ export async function listSupportCrmQueue(opts: {
   filter?: QueueFilter;
   limit?: number;
   offset?: number;
+  q?: string | null;
 }): Promise<{ rows: QueueRow[]; total: number }> {
   const db = requirePool();
   const filter: QueueFilter =
@@ -192,6 +220,10 @@ export async function listSupportCrmQueue(opts: {
         : 'needs_contact';
   const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
   const offset = Math.max(opts.offset ?? 0, 0);
+  const search = buildSupportSearch(opts.q, 4, 'c');
+  const countSearch = buildSupportSearch(opts.q, 2, 'c');
+  const searchSql = search ? `AND ${search.sql}` : '';
+  const countSearchSql = countSearch ? `AND ${countSearch.sql}` : '';
 
   const dayFilter =
     filter === 'in_progress'
@@ -223,23 +255,25 @@ export async function listSupportCrmQueue(opts: {
        last_contact_at,
        last_contact_channel,
        last_contact_outcome
-     FROM candidates
+     FROM candidates c
      WHERE TRUE
        ${dayFilter}
+       ${searchSql}
      ORDER BY idle_since ASC
      LIMIT $2 OFFSET $3
     `,
-    [String(IDLE_HOURS), limit, offset]
+    [String(IDLE_HOURS), limit, offset, ...(search?.values ?? [])]
   );
 
   const totalRes = await db.query<{ total: number }>(
     `${QUEUE_BASE_SQL}
      SELECT COUNT(*)::int AS total
-     FROM candidates
+     FROM candidates c
      WHERE TRUE
        ${dayFilter}
+       ${countSearchSql}
     `,
-    [String(IDLE_HOURS)]
+    [String(IDLE_HOURS), ...(countSearch?.values ?? [])]
   );
 
   return { rows, total: Number(totalRes.rows[0]?.total ?? 0) };
@@ -271,11 +305,16 @@ export async function listContactedOnDate(opts: {
   date?: string | null;
   limit?: number;
   offset?: number;
+  q?: string | null;
 }): Promise<{ rows: ContactedOnRow[]; total: number; date: string }> {
   const db = requirePool();
   const date = parseTashkentDate(opts.date) ?? todayTashkentDate();
   const limit = Math.min(Math.max(opts.limit ?? 200, 1), 500);
   const offset = Math.max(opts.offset ?? 0, 0);
+  const search = buildSupportSearch(opts.q, 4);
+  const countSearch = buildSupportSearch(opts.q, 2);
+  const searchSql = search ? `AND ${search.sql}` : '';
+  const countSearchSql = countSearch ? `AND ${countSearch.sql}` : '';
 
   const { rows } = await db.query<ContactedOnRow>(
     `
@@ -297,19 +336,22 @@ export async function listContactedOnDate(opts: {
     JOIN users u ON u.id = c.user_id
     LEFT JOIN support_crm_agents a ON a.id = c.agent_id
     WHERE (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
+      ${searchSql}
     ORDER BY c.created_at DESC
     LIMIT $2 OFFSET $3
     `,
-    [date, limit, offset]
+    [date, limit, offset, ...(search?.values ?? [])]
   );
 
   const totalRes = await db.query<{ total: number }>(
     `
     SELECT COUNT(*)::int AS total
     FROM support_crm_contacts c
+    JOIN users u ON u.id = c.user_id
     WHERE (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
+      ${countSearchSql}
     `,
-    [date]
+    [date, ...(countSearch?.values ?? [])]
   );
 
   return {

@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS operator_sessions (
 CREATE TABLE IF NOT EXISTS operator_contracts (
  id bigserial PRIMARY KEY, user_id bigint NOT NULL REFERENCES users(id),
  operator_id bigint NOT NULL REFERENCES operator_accounts(id),
- tariff text NOT NULL CHECK(tariff IN ('three_month','year')),
+ tariff text NOT NULL CHECK(tariff IN ('month','three_month','six_month','year')),
  currency text NOT NULL CHECK(currency IN ('UZS','RUB','USD')),
  total numeric(16,2) NOT NULL CHECK(total>0), source text NOT NULL,
  due_at timestamptz, activated_at timestamptz, created_at timestamptz NOT NULL DEFAULT now()

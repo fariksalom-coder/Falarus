@@ -20,6 +20,7 @@
     "deploy:vps": "bash scripts/vps-deploy.sh",
     "seed:admin": "tsx server/scripts/seedAdmin.ts",
     "seed:support-crm": "tsx server/scripts/seedSupportCrmAgent.ts",
+    "seed:sales-crm": "tsx server/scripts/seedSalesCrmAgent.ts",
     "seed:word-swipe": "tsx server/scripts/seedWordSwipeGame.ts",
     "import:patent": "python3 scripts/import_patent_exam.py",
     "generate:patent-hints": "python3 scripts/extract_patent_question_hints.py && tsx scripts/generate_patent_hints.ts",
@@ -29,7 +30,12 @@
     "generate:kunlik-reading-lexeme-fill": "node scripts/writeKunlikLexemeFallbackExtra.mjs && node --import tsx scripts/offlineGenerate076ReadingLexemeFill.ts",
     "verify": "npm run lint && npm run test && npm run build",
     "design": "vite --config vite.design.config.ts --host 127.0.0.1",
-    "design:build": "vite build --config vite.design.config.ts"
+    "design:build": "vite build --config vite.design.config.ts",
+    "dev:kiosk": "tsx scripts/dev/kioskPreview.ts",
+    "dev:exercise": "vite --config vite.exercise.config.ts",
+    "build:exercise": "vite build --config vite.exercise.config.ts",
+    "seed:dictation": "tsx server/scripts/seedDictation.ts",
+    "audio:dictation": "tsx server/scripts/generateDictationAudio.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

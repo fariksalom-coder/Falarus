@@ -1,3 +1,6 @@
+import { createAdminDictationRoutes } from './dictationRoutes';
+import { createAdminVideoLessonRoutes } from './videoLessonRoutes.js';
+import { createAdminKioskRoutes } from './kioskRoutes.js';
 import { Router } from 'express';
 import type { DbClient } from '../types/dbClient';
 import multer from 'multer';
@@ -72,6 +75,9 @@ export function createAdminRoutes(supabase: DbClient): Router {
   // Bundan keyingi HAMMA yo'l admin tokenini talab qiladi. `/login` ataylab
   // yuqorida — u token bermaydi, balki tokenni beradigan yagona yo'l.
   router.use(createAdminAuthMiddleware(supabase));
+  router.use('/kiosk', createAdminKioskRoutes());
+  router.use('/video-lessons', createAdminVideoLessonRoutes());
+  router.use('/dictation', createAdminDictationRoutes());
   if (operatorEnabled()) {
     router.use('/operator-bot', operatorAdminRoutes());
     router.get('/operator-bot/receipts/:id/file', operatorReceipt);
