@@ -1,5 +1,4 @@
 import { Router, type Request } from 'express';
-import type { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import type { DbClient } from '../types/dbClient';
@@ -60,7 +59,7 @@ function isCallResult(v: unknown): v is SalesCrmCallResult {
   );
 }
 
-export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'query'>): Router {
+export function createSalesCrmRoutes(supabase: DbClient): Router {
   const router = Router();
 
   router.post('/login', async (req, res) => {
@@ -187,7 +186,7 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
         createdTo: typeof req.query.to === 'string' ? req.query.to : null,
         page: Number(req.query.page) || 1,
         pageSize: Number(req.query.pageSize) || 30,
-      }, leadDb);
+      });
       res.json(data);
     } catch (e) {
       console.error('[sales-crm/leads]', e);
