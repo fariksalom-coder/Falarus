@@ -28,6 +28,8 @@ const THREE_MONTH_GREEN_REMAINING_SEC = 52.5;
 
 /** Registration sequence assets: intro, tariffs, then the one-time bonus explanation. */
 const WELCOME_VIDEO_SOURCES = ['/videos/welcome-intro.mp4', '/videos/welcome-tariffs.mp4', '/videos/welcome-bonus.mp4'] as const;
+// Rounded-up durations keep the promise visible even while the next clip is buffering.
+const WELCOME_VIDEO_DURATIONS_SECONDS = [18, 222, 61] as const;
 export const PAYWALL_VIDEO_SRC = WELCOME_VIDEO_SOURCES[1];
 
 /**
@@ -45,6 +47,11 @@ function formatSpeed(rate: SpeedStep): string {
   return rate === 1 ? '1×' : rate === 1.5 ? '1.5×' : rate === 2 ? '2×' : '2.5×';
 }
 
+function formatCountdown(totalSeconds: number): string {
+  const safe = Math.max(0, totalSeconds);
+  return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+}
+
 export default function UnpaidHomePaywall() {
   const { token } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -54,6 +61,7 @@ export default function UnpaidHomePaywall() {
   const [videoIndex, setVideoIndex] = useState(1);
   const [offerExpiresAt, setOfferExpiresAt] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [sequenceSecondsLeft, setSequenceSecondsLeft] = useState(0);
   const [bonusRevealed, setBonusRevealed] = useState(false);
   const [highlightThreeMonth, setHighlightThreeMonth] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
@@ -67,6 +75,7 @@ export default function UnpaidHomePaywall() {
   /** Eng uzoq ko‘rilgan nuqta — oldinga seek qilishni bloklash uchun. */
   const maxPlayedRef = useRef(0);
   const seekingClampRef = useRef(false);
+  const sequenceDeadlineRef = useRef<number | null>(null);
   const videoSource = flowMode === 'sequence' ? WELCOME_VIDEO_SOURCES[videoIndex] : flowMode === 'offer' ? WELCOME_VIDEO_SOURCES[2] : WELCOME_VIDEO_SOURCES[1];
   const bonusBeforeEnd = flowMode === 'sequence' && videoIndex === 2 && bonusRevealed;
   const showBonusOffer = bonusBeforeEnd || (flowMode === 'offer' && secondsLeft > 0);
@@ -76,7 +85,13 @@ export default function UnpaidHomePaywall() {
     setFlowMode(state.mode);
     setOfferExpiresAt(state.offerExpiresAt);
     if (state.offerExpiresAt) setSecondsLeft(Math.max(0, Math.ceil((Date.parse(state.offerExpiresAt) - Date.now()) / 1000)));
-    if (state.mode === 'sequence' && state.nextVideoIndex != null) setVideoIndex(state.nextVideoIndex);
+    if (state.mode === 'sequence' && state.nextVideoIndex != null) {
+      setVideoIndex(state.nextVideoIndex);
+      if (sequenceDeadlineRef.current == null) {
+        const remaining = WELCOME_VIDEO_DURATIONS_SECONDS.slice(state.nextVideoIndex).reduce((sum, value) => sum + value, 0);
+        sequenceDeadlineRef.current = Date.now() + remaining * 1000;
+      }
+    }
     else if (state.mode === 'offer') setVideoIndex(2);
     else setVideoIndex(1);
     if (state.mode === 'offer') setShowTariffs(true);
@@ -111,6 +126,21 @@ export default function UnpaidHomePaywall() {
     const timer = window.setInterval(refresh, 1000);
     return () => window.clearInterval(timer);
   }, [offerExpiresAt, flowMode]);
+
+  useEffect(() => {
+    if (flowMode !== 'sequence') {
+      setSequenceSecondsLeft(0);
+      return;
+    }
+    if (sequenceDeadlineRef.current == null) {
+      const remaining = WELCOME_VIDEO_DURATIONS_SECONDS.slice(videoIndex).reduce((sum, value) => sum + value, 0);
+      sequenceDeadlineRef.current = Date.now() + remaining * 1000;
+    }
+    const refresh = () => setSequenceSecondsLeft(Math.max(0, Math.ceil((sequenceDeadlineRef.current! - Date.now()) / 1000)));
+    refresh();
+    const timer = window.setInterval(refresh, 250);
+    return () => window.clearInterval(timer);
+  }, [flowMode, videoIndex]);
 
   const syncFromPlayback = useCallback(() => {
     const el = videoRef.current;
@@ -395,6 +425,13 @@ export default function UnpaidHomePaywall() {
           )}
         </div>
 
+        {flowMode === 'sequence' ? (
+          <div className="mx-3 mb-2 rounded-2xl border border-amber-200/30 bg-amber-300 px-4 py-2 text-center text-slate-950 shadow-lg sm:mx-4" role="timer" aria-live="polite">
+            <span className="text-xs font-bold uppercase tracking-wide">До получения бонуса осталось</span>
+            <span className="ml-2 text-xl font-black tabular-nums">{formatCountdown(sequenceSecondsLeft)}</span>
+          </div>
+        ) : null}
+
         <div
           className="relative aspect-video w-full overflow-hidden"
           style={{ background: BG }}
@@ -441,6 +478,16 @@ export default function UnpaidHomePaywall() {
             </div>
           )}
         </div>
+
+        {flowMode === 'sequence' && videoIndex < WELCOME_VIDEO_SOURCES.length - 1 ? (
+          <video
+            aria-hidden="true"
+            tabIndex={-1}
+            preload="auto"
+            src={`${WELCOME_VIDEO_SOURCES[videoIndex + 1]}?v=1`}
+            className="pointer-events-none absolute h-px w-px opacity-0"
+          />
+        ) : null}
 
         {/* Tezlik — video ostida, alohida tugmalar */}
         {PAYWALL_VIDEO_READY ? (
