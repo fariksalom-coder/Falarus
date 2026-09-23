@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Gauge, Gift, Play, Sparkles, Volume2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { openRahmatCheckout } from '../api/rahmat';
-import { completeWelcomeVideo, getWelcomeVideoOffer, type WelcomeVideoOfferState } from '../api/welcomeVideoOffer';
+import { completeWelcomeVideo, getWelcomeVideoOffer, startWelcomeVideoOffer, type WelcomeVideoOfferState } from '../api/welcomeVideoOffer';
 import { WELCOME_VIDEO_BONUS_REVEAL_SECONDS, WELCOME_VIDEO_OFFER_MS } from '../../shared/welcomeVideoOffer';
 import {
   formatRubAmount,
@@ -76,6 +76,7 @@ export default function UnpaidHomePaywall() {
   const maxPlayedRef = useRef(0);
   const seekingClampRef = useRef(false);
   const sequenceRemainingRef = useRef<number | null>(null);
+  const offerStartRequestedRef = useRef(false);
   const videoSource = flowMode === 'sequence' ? WELCOME_VIDEO_SOURCES[videoIndex] : flowMode === 'offer' ? WELCOME_VIDEO_SOURCES[2] : WELCOME_VIDEO_SOURCES[1];
   const bonusBeforeEnd = flowMode === 'sequence' && videoIndex === 2 && bonusRevealed;
   const showBonusOffer = bonusBeforeEnd || (flowMode === 'offer' && secondsLeft > 0);
@@ -162,6 +163,13 @@ export default function UnpaidHomePaywall() {
     const remaining = el.duration - el.currentTime;
     if (flowMode === 'sequence' && videoIndex === 2 && el.currentTime >= WELCOME_VIDEO_BONUS_REVEAL_SECONDS) {
       setBonusRevealed(true);
+      if (token && !offerStartRequestedRef.current) {
+        offerStartRequestedRef.current = true;
+        void startWelcomeVideoOffer(token).then(applyOfferState).catch((error) => {
+          offerStartRequestedRef.current = false;
+          console.error('[welcome-video-offer/start]', error);
+        });
+      }
     }
     const isTariffVideo = flowMode === 'standard' || (flowMode === 'sequence' && videoIndex === 1);
     if (isTariffVideo && remaining <= TARIFF_REMAINING_SEC) setShowTariffs(true);

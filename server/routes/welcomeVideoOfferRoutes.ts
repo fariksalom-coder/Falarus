@@ -71,6 +71,27 @@ export function createWelcomeVideoOfferRoutes(
     }
   });
 
+  router.post('/welcome-video-offer/start', authenticate, async (req: any, res: Response) => {
+    const userId = Number(req.userId);
+    try {
+      const row = await getOrCreateOffer(db, userId);
+      if (row.status !== 'sequence' || Number(row.next_video_index) !== 2) return res.json(toClientState(row));
+      const now = new Date();
+      const { data: updated, error } = await db.from('welcome_video_offers').update({
+        status: 'offer',
+        next_video_index: 3,
+        offer_expires_at: getWelcomeVideoOfferExpiresAt(now.getTime()),
+        updated_at: now.toISOString(),
+      }).eq('user_id', userId).eq('status', 'sequence').eq('next_video_index', 2)
+        .select('user_id, status, next_video_index, offer_expires_at, payment_id').maybeSingle();
+      if (error) throw error;
+      return res.json(toClientState(updated ?? await getOrCreateOffer(db, userId)));
+    } catch (error) {
+      console.error('[welcome-video-offer/start]', error);
+      return res.status(500).json({ error: 'WELCOME_OFFER_UNAVAILABLE' });
+    }
+  });
+
   router.post('/welcome-video-offer/video-complete', authenticate, async (req: any, res: Response) => {
     const userId = Number(req.userId);
     const index = Number(req.body?.videoIndex);
