@@ -420,6 +420,10 @@ export default function UnpaidHomePaywall() {
                   ko‘ring!
                 </span>
               </p>
+              <div className="relative mt-3 rounded-2xl bg-slate-950 px-4 py-2.5 text-yellow-300 shadow-md" role="timer" aria-live="polite">
+                <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-yellow-100/90 sm:text-xs">Bonusgacha qolgan vaqt</span>
+                <span className="mt-0.5 block text-4xl font-black leading-none tabular-nums tracking-wide sm:text-5xl">{formatCountdown(sequenceSecondsLeft)}</span>
+              </div>
             </div>
           ) : (
           <div
@@ -438,13 +442,6 @@ export default function UnpaidHomePaywall() {
           </div>
           )}
         </div>
-
-        {flowMode === 'sequence' ? (
-          <div className="mx-3 mb-2 rounded-2xl border border-amber-200/30 bg-amber-300 px-4 py-2 text-center text-slate-950 shadow-lg sm:mx-4" role="timer" aria-live="polite">
-            <span className="text-xs font-bold uppercase tracking-wide">До получения бонуса осталось</span>
-            <span className="ml-2 text-xl font-black tabular-nums">{formatCountdown(sequenceSecondsLeft)}</span>
-          </div>
-        ) : null}
 
         <div
           className="relative aspect-video w-full overflow-hidden"
