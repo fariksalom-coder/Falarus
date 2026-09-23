@@ -75,7 +75,7 @@ export default function UnpaidHomePaywall() {
   /** Eng uzoq ko‘rilgan nuqta — oldinga seek qilishni bloklash uchun. */
   const maxPlayedRef = useRef(0);
   const seekingClampRef = useRef(false);
-  const sequenceDeadlineRef = useRef<number | null>(null);
+  const sequenceRemainingRef = useRef<number | null>(null);
   const videoSource = flowMode === 'sequence' ? WELCOME_VIDEO_SOURCES[videoIndex] : flowMode === 'offer' ? WELCOME_VIDEO_SOURCES[2] : WELCOME_VIDEO_SOURCES[1];
   const bonusBeforeEnd = flowMode === 'sequence' && videoIndex === 2 && bonusRevealed;
   const showBonusOffer = bonusBeforeEnd || (flowMode === 'offer' && secondsLeft > 0);
@@ -87,9 +87,9 @@ export default function UnpaidHomePaywall() {
     if (state.offerExpiresAt) setSecondsLeft(Math.max(0, Math.ceil((Date.parse(state.offerExpiresAt) - Date.now()) / 1000)));
     if (state.mode === 'sequence' && state.nextVideoIndex != null) {
       setVideoIndex(state.nextVideoIndex);
-      if (sequenceDeadlineRef.current == null) {
+      if (sequenceRemainingRef.current == null) {
         const remaining = WELCOME_VIDEO_DURATIONS_SECONDS.slice(state.nextVideoIndex).reduce((sum, value) => sum + value, 0);
-        sequenceDeadlineRef.current = Date.now() + remaining * 1000;
+        sequenceRemainingRef.current = remaining;
       }
     }
     else if (state.mode === 'offer') setVideoIndex(2);
@@ -130,13 +130,27 @@ export default function UnpaidHomePaywall() {
   useEffect(() => {
     if (flowMode !== 'sequence') {
       setSequenceSecondsLeft(0);
+      sequenceRemainingRef.current = null;
       return;
     }
-    if (sequenceDeadlineRef.current == null) {
+    if (sequenceRemainingRef.current == null) {
       const remaining = WELCOME_VIDEO_DURATIONS_SECONDS.slice(videoIndex).reduce((sum, value) => sum + value, 0);
-      sequenceDeadlineRef.current = Date.now() + remaining * 1000;
+      sequenceRemainingRef.current = remaining;
     }
-    const refresh = () => setSequenceSecondsLeft(Math.max(0, Math.ceil((sequenceDeadlineRef.current! - Date.now()) / 1000)));
+    let previous = performance.now();
+    const refresh = () => {
+      const now = performance.now();
+      const elapsed = Math.max(0, (now - previous) / 1000);
+      previous = now;
+      const el = videoRef.current;
+      // Playing consumes media time at the selected speed. Buffering or a
+      // transition consumes wall-clock time so loading cannot add free time.
+      const multiplier = el && !el.paused && !el.ended && el.readyState >= 2
+        ? Math.max(0.25, el.playbackRate || speedRef.current)
+        : 1;
+      sequenceRemainingRef.current = Math.max(0, (sequenceRemainingRef.current ?? 0) - elapsed * multiplier);
+      setSequenceSecondsLeft(Math.ceil(sequenceRemainingRef.current));
+    };
     refresh();
     const timer = window.setInterval(refresh, 250);
     return () => window.clearInterval(timer);
