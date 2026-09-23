@@ -403,6 +403,7 @@ export default function UnpaidHomePaywall() {
             <>
               <video
                 ref={videoRef}
+                key={videoSource}
                 className="h-full w-full object-contain"
                 style={{ background: BG }}
                 src={`${videoSource}?v=1`}
