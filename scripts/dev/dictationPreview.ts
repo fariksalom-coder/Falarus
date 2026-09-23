@@ -1,0 +1,31 @@
+/** Loopback QA only. In-memory PostgreSQL, synthetic users; never mounted in production. */
+import express from 'express';
+import {PGlite} from '@electric-sql/pglite';
+import {readFile,readdir} from 'node:fs/promises';
+import {randomBytes} from 'node:crypto';
+import jwt from 'jsonwebtoken';
+import path from 'node:path';
+import type {Pool} from 'pg';
+process.env.DATABASE_URL='';process.env.REDIS_URL='';process.env.ADMIN_JWT_SECRET=randomBytes(32).toString('hex');
+const {DictationService}=await import('../../server/dictation/service');
+const {createDictationRoutes,createAdminDictationRoutes}=await import('../../server/routes/dictationRoutes');
+const {createAdminAuthMiddleware}=await import('../../server/middleware/adminAuth');
+const db=await PGlite.create();await db.exec('CREATE TABLE users(id BIGINT PRIMARY KEY);INSERT INTO users VALUES(1),(2);CREATE TABLE admins(id BIGINT PRIMARY KEY);INSERT INTO admins VALUES(1);');
+await db.exec(await readFile('db/migrations/187_dictation.sql','utf8'));
+const data=JSON.parse(await readFile('content/dictation/dictation_content.json','utf8'));
+for(const t of data.topics){await db.query('INSERT INTO dictation_topics(id,title_ru,title_uz,icon,description_ru,description_uz,sort_order,background_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[t.key,t.title_ru,t.title_uz,t.icon,t.description_ru,t.description_uz,t.sort_order,t.background_id]);let i=0;for(const item of t.items){i++;const id=`${t.key}-${String(i).padStart(3,'0')}`;const files=await readdir('/tmp/dictation-qa-assets/uploads/dictation/'+id).catch(()=>[]);const audio=files[0]?`/uploads/dictation/${id}/${files[0]}`:null;await db.query('INSERT INTO dictation_items(id,topic_id,type,text,translation_uz,difficulty,sort_order,audio_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[id,t.key,item.type,item.text,item.translation_uz,item.difficulty,i,audio]);}}
+let lock=Promise.resolve();const query=(sql:string,args?:any[])=>db.query(sql,args);const adapter={query,connect:async()=>{const old=lock;let release!:()=>void;lock=new Promise(r=>release=r);await old;return {query,release};}} as unknown as Pool;
+const service=new DictationService(adapter);const secret=randomBytes(32).toString('hex');const token=jwt.sign({id:1},secret,{expiresIn:'8h'});const adminToken=jwt.sign({adminId:1,role:'admin'},process.env.ADMIN_JWT_SECRET,{expiresIn:'8h'});
+const user={id:1,firstName:'Тест',lastName:'Диктант',email:null,level:'A1',onboarded:1,onboardingCompleted:true,progress:0,accountType:'student'};
+const app=express();app.use(express.json({limit:'100kb'}));
+app.get('/preview-user',(_req,res)=>res.type('html').send(`<script>localStorage.setItem('token',${JSON.stringify(token)});location.replace('/games/dictation')</script>`));
+app.get('/preview-admin',(_req,res)=>res.type('html').send(`<script>localStorage.setItem('adminToken',${JSON.stringify(adminToken)});location.replace('/secure-admin-a9k7x4p2/dictation')</script>`));
+const auth=(req:any,res:any,next:any)=>{try{const payload=jwt.verify(String(req.headers.authorization||'').replace('Bearer ',''),secret) as {id:number};req.userId=payload.id;next();}catch{res.status(401).json({error:'Unauthorized'});}};
+app.use('/api/games/dictation',createDictationRoutes(auth,service));
+const authDb={from:()=>({select:()=>({eq:(_k:string,id:number)=>({maybeSingle:async()=>({data:id===1?{id}:null,error:null})})})})} as any;
+app.use('/api/admin',createAdminAuthMiddleware(authDb));app.use('/api/admin/dictation',createAdminDictationRoutes(adapter));
+app.get('/api/user/me',auth,(_req,res)=>res.json(user));app.get('/api/user/access',(_req,res)=>res.json({subscription_active:true,golden:true}));app.all('/api/games/play',(_req,res)=>res.json({premium:true,allowed:true,used:0,limit:3}));app.get('/api/achievements',(_req,res)=>res.json({items:[],pending:[],total:0}));
+app.get('/api/user/payments',(_req,res)=>res.json([]));app.get('/api/admin/help-chats',(_req,res)=>res.json([]));app.all('/api/activity/heartbeat',(_req,res)=>res.json({ok:true}));
+app.use('/api',(_req,res)=>res.json([]));
+app.use('/uploads',express.static('/tmp/dictation-qa-assets/uploads'));app.use('/uploads',express.static(path.resolve('uploads')));app.use(express.static(path.resolve('dist')));app.get('*',(_req,res)=>res.sendFile(path.resolve('dist/index.html')));
+app.listen(5186,'127.0.0.1',()=>console.log('Dictation QA: http://127.0.0.1:5186/preview-user'));

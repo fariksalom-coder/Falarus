@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "errors": [],
+  "backendRequests": 0,
+  "checks": [
+    "missing media",
+    "local file",
+    "word boundaries and gaps",
+    "all five playback rates",
+    "actual playback clock",
+    "pause on mode change",
+    "speak hides and pauses video",
+    "self practice",
+    "word seek",
+    "loop",
+    "320px overflow"
+  ],
+  "media": "Existing silent clip used only for playback mechanics; requested phrase video is missing."
+}

@@ -1,0 +1,339 @@
+{
+  "id": "065b91d7-53cb-448b-a37f-9744b11c4781",
+  "phase": "ready",
+  "duration": 1127.932517,
+  "processingSeconds": 1330.52,
+  "sentences": 216,
+  "words": 761,
+  "missingTimes": 0,
+  "invalidTimes": 0,
+  "issues": [],
+  "firstSentences": [
+    {
+      "text": "Здравствуйте!",
+      "translation": "Salom!",
+      "start": 20.322,
+      "end": 22.424,
+      "words": [
+        {
+          "text": "Здравствуйте!",
+          "start": 20.322,
+          "end": 22.424
+        }
+      ]
+    },
+    {
+      "text": "Начинаем наши передачи, мы говорим по-русски.",
+      "translation": "Bizning dasturlarimizni boshlaymiz, biz rus tilida gaplashamiz.",
+      "start": 22.444,
+      "end": 27.148,
+      "words": [
+        {
+          "text": "Начинаем",
+          "start": 22.444,
+          "end": 22.964
+        },
+        {
+          "text": "наши",
+          "start": 23.004,
+          "end": 23.244
+        },
+        {
+          "text": "передачи,",
+          "start": 23.284,
+          "end": 24.706
+        },
+        {
+          "text": "мы",
+          "start": 24.746,
+          "end": 24.826
+        },
+        {
+          "text": "говорим",
+          "start": 24.886,
+          "end": 25.326
+        },
+        {
+          "text": "по-русски.",
+          "start": 25.366,
+          "end": 27.148
+        }
+      ]
+    },
+    {
+      "text": "В этих передачах вы познакомитесь с нашей страной, узнаете, как живут, о чем говорят русские люди на улице, дома, в гостях.",
+      "translation": "Ushbu dasturlarda siz bizning mamlakatimiz bilan tanishasiz, rus odamlarining ko‘chada, uyda, mehmonlikda qanday yashashini va nima haqida gaplashishini bilib olasiz.",
+      "start": 27.168,
+      "end": 37.096,
+      "words": [
+        {
+          "text": "В",
+          "start": 27.168,
+          "end": 27.208
+        },
+        {
+          "text": "этих",
+          "start": 27.228,
+          "end": 27.428
+        },
+        {
+          "text": "передачах",
+          "start": 27.448,
+          "end": 28.028
+        },
+        {
+          "text": "вы",
+          "start": 28.049,
+          "end": 28.109
+        },
+        {
+          "text": "познакомитесь",
+          "start": 28.149,
+          "end": 28.889
+        },
+        {
+          "text": "с",
+          "start": 28.909,
+          "end": 28.929
+        },
+        {
+          "text": "нашей",
+          "start": 28.989,
+          "end": 29.23
+        },
+        {
+          "text": "страной,",
+          "start": 29.25,
+          "end": 30.511
+        },
+        {
+          "text": "узнаете,",
+          "start": 30.551,
+          "end": 30.991
+        },
+        {
+          "text": "как",
+          "start": 31.011,
+          "end": 31.171
+        },
+        {
+          "text": "живут,",
+          "start": 31.231,
+          "end": 31.812
+        },
+        {
+          "text": "о",
+          "start": 31.852,
+          "end": 31.892
+        },
+        {
+          "text": "чем",
+          "start": 31.932,
+          "end": 32.112
+        },
+        {
+          "text": "говорят",
+          "start": 32.152,
+          "end": 32.532
+        },
+        {
+          "text": "русские",
+          "start": 32.572,
+          "end": 32.953
+        },
+        {
+          "text": "люди",
+          "start": 32.993,
+          "end": 33.893
+        },
+        {
+          "text": "на",
+          "start": 33.933,
+          "end": 34.034
+        },
+        {
+          "text": "улице,",
+          "start": 34.094,
+          "end": 35.014
+        },
+        {
+          "text": "дома,",
+          "start": 35.054,
+          "end": 35.775
+        },
+        {
+          "text": "в",
+          "start": 35.795,
+          "end": 35.815
+        },
+        {
+          "text": "гостях.",
+          "start": 35.855,
+          "end": 37.096
+        }
+      ]
+    },
+    {
+      "text": "Мы надеемся, что наши уроки помогут вам изучить русский язык.",
+      "translation": "Biz umid qilamizki, bizning darslarimiz sizga rus tilini o‘rganishga yordam beradi.",
+      "start": 37.136,
+      "end": 41.62,
+      "words": [
+        {
+          "text": "Мы",
+          "start": 37.136,
+          "end": 37.176
+        },
+        {
+          "text": "надеемся,",
+          "start": 37.216,
+          "end": 37.737
+        },
+        {
+          "text": "что",
+          "start": 37.777,
+          "end": 37.897
+        },
+        {
+          "text": "наши",
+          "start": 37.937,
+          "end": 38.177
+        },
+        {
+          "text": "уроки",
+          "start": 38.217,
+          "end": 38.557
+        },
+        {
+          "text": "помогут",
+          "start": 38.597,
+          "end": 39.038
+        },
+        {
+          "text": "вам",
+          "start": 39.078,
+          "end": 39.258
+        },
+        {
+          "text": "изучить",
+          "start": 39.318,
+          "end": 39.758
+        },
+        {
+          "text": "русский",
+          "start": 39.818,
+          "end": 40.179
+        },
+        {
+          "text": "язык.",
+          "start": 40.199,
+          "end": 41.62
+        }
+      ]
+    },
+    {
+      "text": "Наш первый урок — знакомство.",
+      "translation": "Bizning birinchi darsimiz — tanishuv.",
+      "start": 41.64,
+      "end": 44.062,
+      "words": [
+        {
+          "text": "Наш",
+          "start": 41.64,
+          "end": 41.86
+        },
+        {
+          "text": "первый",
+          "start": 41.92,
+          "end": 42.26
+        },
+        {
+          "text": "урок",
+          "start": 42.301,
+          "end": 43.181
+        },
+        {
+          "text": "—",
+          "start": 43.241,
+          "end": 43.261
+        },
+        {
+          "text": "знакомство.",
+          "start": 43.301,
+          "end": 44.062
+        }
+      ]
+    },
+    {
+      "text": "А вот и наши герои.",
+      "translation": "Mana, bizning qahramonlarimiz.",
+      "start": 51.446,
+      "end": 53.547,
+      "words": [
+        {
+          "text": "А",
+          "start": 51.446,
+          "end": 51.506
+        },
+        {
+          "text": "вот",
+          "start": 51.546,
+          "end": 51.746
+        },
+        {
+          "text": "и",
+          "start": 51.786,
+          "end": 51.806
+        },
+        {
+          "text": "наши",
+          "start": 51.866,
+          "end": 52.126
+        },
+        {
+          "text": "герои.",
+          "start": 52.167,
+          "end": 53.547
+        }
+      ]
+    },
+    {
+      "text": "Познакомьтесь, пожалуйста.",
+      "translation": "Iltimos, tanishing.",
+      "start": 53.567,
+      "end": 57.93,
+      "words": [
+        {
+          "text": "Познакомьтесь,",
+          "start": 53.567,
+          "end": 54.168
+        },
+        {
+          "text": "пожалуйста.",
+          "start": 54.208,
+          "end": 57.93
+        }
+      ]
+    },
+    {
+      "text": "Это Оля.",
+      "translation": "Bu Olya.",
+      "start": 57.991,
+      "end": 60.712,
+      "words": [
+        {
+          "text": "Это",
+          "start": 57.991,
+          "end": 58.231
+        },
+        {
+          "text": "Оля.",
+          "start": 58.291,
+          "end": 60.712
+        }
+      ]
+    }
+  ],
+  "status": "draft",
+  "productionDirectory": "/home/ubuntu/Falarus/var/video-lessons/065b91d7-53cb-448b-a37f-9744b11c4781"
+}

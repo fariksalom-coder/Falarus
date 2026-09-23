@@ -1,0 +1,35 @@
+{
+  "topics": 20,
+  "items": 1000,
+  "audio": 1000,
+  "audioBytes": 33146880,
+  "mediaRange": 206,
+  "userUnauthorized": 401,
+  "adminUnauthorized": 401,
+  "admin": 200,
+  "result": {
+    "id": "3950ba06-7204-4f2d-b19b-ceab8a164be3",
+    "topic_id": "work",
+    "position": 5,
+    "total": 10,
+    "lives": 0,
+    "combo": 0,
+    "best_combo": 2,
+    "score": 32,
+    "correct": 2,
+    "wrong": 3,
+    "finished": true,
+    "question": null,
+    "mistakes": [
+      "оплата",
+      "встреча",
+      "бригада"
+    ]
+  },
+  "progressAfterReview": {
+    "completed": 5,
+    "correct": 5,
+    "wrong": 0
+  },
+  "testedAt": "2026-09-20T09:11:18.339Z"
+}

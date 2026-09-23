@@ -1,0 +1,29 @@
+{
+  "id": "2851db95-0a6f-43eb-ba0b-1d00e78313ab",
+  "processingSeconds": 253.42,
+  "sentences": 27,
+  "words": 136,
+  "unauthorized": 401,
+  "draftStatus": 404,
+  "published": 200,
+  "mediaRange": 206,
+  "errors": [],
+  "firstSentence": {
+    "text": "Задание 18.",
+    "translation": "18-topshiriq.",
+    "start": 0.822,
+    "end": 3.564,
+    "words": [
+      {
+        "text": "Задание",
+        "start": 0.822,
+        "end": 1.623
+      },
+      {
+        "text": "18.",
+        "start": 2.563,
+        "end": 3.564
+      }
+    ]
+  }
+}
