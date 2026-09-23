@@ -20,6 +20,7 @@ export async function createRahmatPayment(
     productCode: PaymentProductCode;
     listingPlanCode?: TeacherListingPlanCode;
     trialId?: number;
+    welcomeOffer?: boolean;
   }
 ): Promise<RahmatPaymentCreateResponse> {
   const res = await fetch(apiUrl('/api/payments/rahmat/create'), {
@@ -33,6 +34,7 @@ export async function createRahmatPayment(
       product_code: payload.productCode,
       listing_plan_code: payload.listingPlanCode ?? null,
       trial_id: payload.trialId ?? null,
+      welcome_offer: payload.welcomeOffer === true,
     }),
   });
   const raw = await res.text();
@@ -76,6 +78,7 @@ export async function openRahmatCheckout(params: {
   tariffType?: SubscriptionTariffType | null;
   listingPlanCode?: TeacherListingPlanCode;
   trialId?: number;
+  welcomeOffer?: boolean;
   /** To‘lov yaratilgach, redirectdan oldin (masalan, modal yopish / cache yangilash) */
   afterCreate?: () => void | Promise<void>;
 }): Promise<void> {
@@ -95,6 +98,7 @@ export async function openRahmatCheckout(params: {
       productCode: params.productCode,
       listingPlanCode: params.listingPlanCode,
       trialId: params.trialId,
+      welcomeOffer: params.welcomeOffer,
     });
     await params.afterCreate?.();
     const url = result.payment_url;

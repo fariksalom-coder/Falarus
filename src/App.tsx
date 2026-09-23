@@ -34,6 +34,8 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/test-russkogo" element={renderLazyPage('./pages/KioskPage.tsx')} />
+      <Route path="/kiosk" element={<Navigate to="/test-russkogo" replace />} />
       <Route path="/operator-reset" element={renderLazyPage('./pages/OperatorResetPage.tsx')} />
       <Route path="/dev/robot-preview" element={renderLazyPage('./pages/RobotPreviewPage.tsx')} />
       <Route path="/huquqiy/ommaviy-oferta" element={renderLazyPage('./pages/legal/LegalOfferPage.tsx')} />
@@ -60,6 +62,9 @@ function AppRoutes() {
         */}
         <Route element={renderLazyPage('./pages/admin/AdminGuard.tsx')}>
           <Route element={renderLazyPage('./pages/admin/AdminLayout.tsx')}>
+            <Route path="dictation" element={renderLazyPage('./pages/admin/AdminDictationPage.tsx')} />
+            <Route path="video-lessons" element={renderLazyPage('./pages/admin/AdminVideoLessonsPage.tsx')} />
+            <Route path="kiosk" element={renderLazyPage('./pages/admin/AdminKioskPage.tsx')} />
             <Route path="dashboard" element={renderLazyPage('./pages/admin/AdminDashboardPage.tsx')} />
             <Route path="users" element={renderLazyPage('./pages/admin/AdminUsersPage.tsx')} />
             <Route path="users/manage" element={renderLazyPage('./pages/admin/AdminUserManagePage.tsx')} />
@@ -192,6 +197,8 @@ function AppRoutes() {
             <Route path="kunlik-reja/kun/:dayNum/:section" element={renderLazyPage('./pages/DailyKunSectionPage.tsx')} />
             <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
             <Route path="games" element={renderLazyPage('./pages/GamesPage.tsx')} />
+            <Route path="games/dictation" element={renderLazyPage('./pages/DictationPage.tsx')} />
+            <Route path="games/dictation/:topicId" element={<GameGate game="dictation">{renderLazyPage('./pages/DictationPage.tsx')}</GameGate>} />
             {/*
               O'yinlar to'lov qilmaganlar uchun 3 marta ochiladi — hisob
               serverda yuritiladi (`GameGate`). Xarita va yo'naltirish

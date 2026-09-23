@@ -1,0 +1,10 @@
+{
+  "score": "10/10\nправильных ответов",
+  "code": "FR-96537D420F40",
+  "unauthorized": 401,
+  "errors": [
+    "Uncaught (in promise) \"Error: WebSocket closed without opened.\\n    at WebSocket.<anonymous> (http://127.0.0.1:4176/@vite/client:454:22)\"",
+    "Uncaught (in promise) \"Error: WebSocket closed without opened.\\n    at WebSocket.<anonymous> (http://127.0.0.1:4176/@vite/client:454:22)\"",
+    "Uncaught (in promise) \"Error: WebSocket closed without opened.\\n    at WebSocket.<anonymous> (http://127.0.0.1:4176/@vite/client:454:22)\""
+  ]
+}

@@ -1,0 +1,5542 @@
+{
+  "id": "065b91d7-53cb-448b-a37f-9744b11c4781",
+  "title": "Урок 1 · Знакомство",
+  "video": "/api/video-lessons/065b91d7-53cb-448b-a37f-9744b11c4781/video",
+  "language": "ru",
+  "translationLanguage": "uz",
+  "sentences": [
+    {
+      "text": "Здравствуйте!",
+      "translation": "Salom!",
+      "start": 20.322,
+      "end": 22.424,
+      "words": [
+        {
+          "text": "Здравствуйте!",
+          "start": 20.322,
+          "end": 22.424
+        }
+      ]
+    },
+    {
+      "text": "Начинаем наши передачи, мы говорим по-русски.",
+      "translation": "Bizning dasturlarimizni boshlaymiz, biz rus tilida gaplashamiz.",
+      "start": 22.444,
+      "end": 27.148,
+      "words": [
+        {
+          "text": "Начинаем",
+          "start": 22.444,
+          "end": 22.964
+        },
+        {
+          "text": "наши",
+          "start": 23.004,
+          "end": 23.244
+        },
+        {
+          "text": "передачи,",
+          "start": 23.284,
+          "end": 24.706
+        },
+        {
+          "text": "мы",
+          "start": 24.746,
+          "end": 24.826
+        },
+        {
+          "text": "говорим",
+          "start": 24.886,
+          "end": 25.326
+        },
+        {
+          "text": "по-русски.",
+          "start": 25.366,
+          "end": 27.148
+        }
+      ]
+    },
+    {
+      "text": "В этих передачах вы познакомитесь с нашей страной, узнаете, как живут, о чем говорят русские люди на улице, дома, в гостях.",
+      "translation": "Ushbu dasturlarda siz bizning mamlakatimiz bilan tanishasiz, rus odamlarining ko‘chada, uyda, mehmonlikda qanday yashashini va nima haqida gaplashishini bilib olasiz.",
+      "start": 27.168,
+      "end": 37.096,
+      "words": [
+        {
+          "text": "В",
+          "start": 27.168,
+          "end": 27.208
+        },
+        {
+          "text": "этих",
+          "start": 27.228,
+          "end": 27.428
+        },
+        {
+          "text": "передачах",
+          "start": 27.448,
+          "end": 28.028
+        },
+        {
+          "text": "вы",
+          "start": 28.049,
+          "end": 28.109
+        },
+        {
+          "text": "познакомитесь",
+          "start": 28.149,
+          "end": 28.889
+        },
+        {
+          "text": "с",
+          "start": 28.909,
+          "end": 28.929
+        },
+        {
+          "text": "нашей",
+          "start": 28.989,
+          "end": 29.23
+        },
+        {
+          "text": "страной,",
+          "start": 29.25,
+          "end": 30.511
+        },
+        {
+          "text": "узнаете,",
+          "start": 30.551,
+          "end": 30.991
+        },
+        {
+          "text": "как",
+          "start": 31.011,
+          "end": 31.171
+        },
+        {
+          "text": "живут,",
+          "start": 31.231,
+          "end": 31.812
+        },
+        {
+          "text": "о",
+          "start": 31.852,
+          "end": 31.892
+        },
+        {
+          "text": "чем",
+          "start": 31.932,
+          "end": 32.112
+        },
+        {
+          "text": "говорят",
+          "start": 32.152,
+          "end": 32.532
+        },
+        {
+          "text": "русские",
+          "start": 32.572,
+          "end": 32.953
+        },
+        {
+          "text": "люди",
+          "start": 32.993,
+          "end": 33.893
+        },
+        {
+          "text": "на",
+          "start": 33.933,
+          "end": 34.034
+        },
+        {
+          "text": "улице,",
+          "start": 34.094,
+          "end": 35.014
+        },
+        {
+          "text": "дома,",
+          "start": 35.054,
+          "end": 35.775
+        },
+        {
+          "text": "в",
+          "start": 35.795,
+          "end": 35.815
+        },
+        {
+          "text": "гостях.",
+          "start": 35.855,
+          "end": 37.096
+        }
+      ]
+    },
+    {
+      "text": "Мы надеемся, что наши уроки помогут вам изучить русский язык.",
+      "translation": "Biz umid qilamizki, bizning darslarimiz sizga rus tilini o‘rganishga yordam beradi.",
+      "start": 37.136,
+      "end": 41.62,
+      "words": [
+        {
+          "text": "Мы",
+          "start": 37.136,
+          "end": 37.176
+        },
+        {
+          "text": "надеемся,",
+          "start": 37.216,
+          "end": 37.737
+        },
+        {
+          "text": "что",
+          "start": 37.777,
+          "end": 37.897
+        },
+        {
+          "text": "наши",
+          "start": 37.937,
+          "end": 38.177
+        },
+        {
+          "text": "уроки",
+          "start": 38.217,
+          "end": 38.557
+        },
+        {
+          "text": "помогут",
+          "start": 38.597,
+          "end": 39.038
+        },
+        {
+          "text": "вам",
+          "start": 39.078,
+          "end": 39.258
+        },
+        {
+          "text": "изучить",
+          "start": 39.318,
+          "end": 39.758
+        },
+        {
+          "text": "русский",
+          "start": 39.818,
+          "end": 40.179
+        },
+        {
+          "text": "язык.",
+          "start": 40.199,
+          "end": 41.62
+        }
+      ]
+    },
+    {
+      "text": "Наш первый урок — знакомство.",
+      "translation": "Bizning birinchi darsimiz — tanishuv.",
+      "start": 41.64,
+      "end": 44.062,
+      "words": [
+        {
+          "text": "Наш",
+          "start": 41.64,
+          "end": 41.86
+        },
+        {
+          "text": "первый",
+          "start": 41.92,
+          "end": 42.26
+        },
+        {
+          "text": "урок",
+          "start": 42.301,
+          "end": 43.181
+        },
+        {
+          "text": "—",
+          "start": 43.241,
+          "end": 43.261
+        },
+        {
+          "text": "знакомство.",
+          "start": 43.301,
+          "end": 44.062
+        }
+      ]
+    },
+    {
+      "text": "А вот и наши герои.",
+      "translation": "Mana, bizning qahramonlarimiz.",
+      "start": 51.446,
+      "end": 53.547,
+      "words": [
+        {
+          "text": "А",
+          "start": 51.446,
+          "end": 51.506
+        },
+        {
+          "text": "вот",
+          "start": 51.546,
+          "end": 51.746
+        },
+        {
+          "text": "и",
+          "start": 51.786,
+          "end": 51.806
+        },
+        {
+          "text": "наши",
+          "start": 51.866,
+          "end": 52.126
+        },
+        {
+          "text": "герои.",
+          "start": 52.167,
+          "end": 53.547
+        }
+      ]
+    },
+    {
+      "text": "Познакомьтесь, пожалуйста.",
+      "translation": "Iltimos, tanishing.",
+      "start": 53.567,
+      "end": 57.93,
+      "words": [
+        {
+          "text": "Познакомьтесь,",
+          "start": 53.567,
+          "end": 54.168
+        },
+        {
+          "text": "пожалуйста.",
+          "start": 54.208,
+          "end": 57.93
+        }
+      ]
+    },
+    {
+      "text": "Это Оля.",
+      "translation": "Bu Olya.",
+      "start": 57.991,
+      "end": 60.712,
+      "words": [
+        {
+          "text": "Это",
+          "start": 57.991,
+          "end": 58.231
+        },
+        {
+          "text": "Оля.",
+          "start": 58.291,
+          "end": 60.712
+        }
+      ]
+    },
+    {
+      "text": "Здравствуйте.",
+      "translation": "Salom.",
+      "start": 60.752,
+      "end": 62.414,
+      "words": [
+        {
+          "text": "Здравствуйте.",
+          "start": 60.752,
+          "end": 62.414
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Оля.",
+      "translation": "Mening ismim Olya.",
+      "start": 62.454,
+      "end": 64.335,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 62.454,
+          "end": 62.614
+        },
+        {
+          "text": "зовут",
+          "start": 62.654,
+          "end": 62.934
+        },
+        {
+          "text": "Оля.",
+          "start": 63.014,
+          "end": 64.335
+        }
+      ]
+    },
+    {
+      "text": "Я живу в Киеве, учусь в университете на третьем курсе.",
+      "translation": "Men Kiyevda yashayman, universitetda uchinchi kursda o‘qiyman.",
+      "start": 64.395,
+      "end": 67.857,
+      "words": [
+        {
+          "text": "Я",
+          "start": 64.395,
+          "end": 64.435
+        },
+        {
+          "text": "живу",
+          "start": 64.475,
+          "end": 64.655
+        },
+        {
+          "text": "в",
+          "start": 64.675,
+          "end": 64.735
+        },
+        {
+          "text": "Киеве,",
+          "start": 64.775,
+          "end": 65.095
+        },
+        {
+          "text": "учусь",
+          "start": 65.115,
+          "end": 65.336
+        },
+        {
+          "text": "в",
+          "start": 65.356,
+          "end": 65.396
+        },
+        {
+          "text": "университете",
+          "start": 65.416,
+          "end": 66.036
+        },
+        {
+          "text": "на",
+          "start": 66.056,
+          "end": 66.136
+        },
+        {
+          "text": "третьем",
+          "start": 66.176,
+          "end": 66.496
+        },
+        {
+          "text": "курсе.",
+          "start": 66.556,
+          "end": 67.857
+        }
+      ]
+    },
+    {
+      "text": "Я студентка.",
+      "translation": "Men talaba.",
+      "start": 67.917,
+      "end": 79.405,
+      "words": [
+        {
+          "text": "Я",
+          "start": 67.917,
+          "end": 67.977
+        },
+        {
+          "text": "студентка.",
+          "start": 68.017,
+          "end": 79.405
+        }
+      ]
+    },
+    {
+      "text": "А это мать Оли.",
+      "translation": "Bu Olining onasi.",
+      "start": 79.425,
+      "end": 80.446,
+      "words": [
+        {
+          "text": "А",
+          "start": 79.425,
+          "end": 79.465
+        },
+        {
+          "text": "это",
+          "start": 79.525,
+          "end": 79.705
+        },
+        {
+          "text": "мать",
+          "start": 79.746,
+          "end": 80.046
+        },
+        {
+          "text": "Оли.",
+          "start": 80.086,
+          "end": 80.446
+        }
+      ]
+    },
+    {
+      "text": "Наталья Сергеевна.",
+      "translation": "Natalya Sergeyevna.",
+      "start": 80.894,
+      "end": 83.875,
+      "words": [
+        {
+          "text": "Наталья",
+          "start": 80.894,
+          "end": 81.234
+        },
+        {
+          "text": "Сергеевна.",
+          "start": 81.294,
+          "end": 83.875
+        }
+      ]
+    },
+    {
+      "text": "Добрый день.",
+      "translation": "Salom.",
+      "start": 84.015,
+      "end": 85.336,
+      "words": [
+        {
+          "text": "Добрый",
+          "start": 84.015,
+          "end": 84.335
+        },
+        {
+          "text": "день.",
+          "start": 84.375,
+          "end": 85.336
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Наталья Сергеевна.",
+      "translation": "Mening ismim Natalya Sergeyevna.",
+      "start": 85.376,
+      "end": 87.557,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 85.376,
+          "end": 85.596
+        },
+        {
+          "text": "зовут",
+          "start": 85.656,
+          "end": 85.956
+        },
+        {
+          "text": "Наталья",
+          "start": 85.976,
+          "end": 86.316
+        },
+        {
+          "text": "Сергеевна.",
+          "start": 86.376,
+          "end": 87.557
+        }
+      ]
+    },
+    {
+      "text": "Я работаю в больнице.",
+      "translation": "Men kasalxonada ishlayman.",
+      "start": 87.637,
+      "end": 89.358,
+      "words": [
+        {
+          "text": "Я",
+          "start": 87.637,
+          "end": 87.697
+        },
+        {
+          "text": "работаю",
+          "start": 87.737,
+          "end": 88.117
+        },
+        {
+          "text": "в",
+          "start": 88.157,
+          "end": 88.177
+        },
+        {
+          "text": "больнице.",
+          "start": 88.217,
+          "end": 89.358
+        }
+      ]
+    },
+    {
+      "text": "Я врач.",
+      "translation": "Men shifokorman.",
+      "start": 89.418,
+      "end": 108.466,
+      "words": [
+        {
+          "text": "Я",
+          "start": 89.418,
+          "end": 89.478
+        },
+        {
+          "text": "врач.",
+          "start": 89.518,
+          "end": 108.466
+        }
+      ]
+    },
+    {
+      "text": "Отец Оли.",
+      "translation": "Olining otasi.",
+      "start": 108.526,
+      "end": 109.406,
+      "words": [
+        {
+          "text": "Отец",
+          "start": 108.526,
+          "end": 108.926
+        },
+        {
+          "text": "Оли.",
+          "start": 109.026,
+          "end": 109.406
+        }
+      ]
+    },
+    {
+      "text": "Вадим Петрович.",
+      "translation": "Vadim Petrovich.",
+      "start": 110.262,
+      "end": 113.825,
+      "words": [
+        {
+          "text": "Вадим",
+          "start": 110.262,
+          "end": 110.542
+        },
+        {
+          "text": "Петрович.",
+          "start": 110.562,
+          "end": 113.825
+        }
+      ]
+    },
+    {
+      "text": "Вадим Петрович.",
+      "translation": "Vadim Petrovich.",
+      "start": 113.865,
+      "end": 115.707,
+      "words": [
+        {
+          "text": "Вадим",
+          "start": 113.865,
+          "end": 114.106
+        },
+        {
+          "text": "Петрович.",
+          "start": 114.146,
+          "end": 115.707
+        }
+      ]
+    },
+    {
+      "text": "Работаю в проектном институте «Орхитектор».",
+      "translation": "Men «Orxitektor» loyiha institutida ishlayman.",
+      "start": 115.767,
+      "end": 121.393,
+      "words": [
+        {
+          "text": "Работаю",
+          "start": 115.767,
+          "end": 116.108
+        },
+        {
+          "text": "в",
+          "start": 116.128,
+          "end": 116.168
+        },
+        {
+          "text": "проектном",
+          "start": 116.208,
+          "end": 116.568
+        },
+        {
+          "text": "институте",
+          "start": 116.608,
+          "end": 117.649
+        },
+        {
+          "text": "«Орхитектор».",
+          "start": 117.669,
+          "end": 121.393
+        }
+      ]
+    },
+    {
+      "text": "Вот и все наши герои.",
+      "translation": "Mana, barcha qahramonlarimiz.",
+      "start": 121.433,
+      "end": 122.814,
+      "words": [
+        {
+          "text": "Вот",
+          "start": 121.433,
+          "end": 121.593
+        },
+        {
+          "text": "и",
+          "start": 121.653,
+          "end": 121.673
+        },
+        {
+          "text": "все",
+          "start": 121.713,
+          "end": 121.933
+        },
+        {
+          "text": "наши",
+          "start": 121.993,
+          "end": 122.273
+        },
+        {
+          "text": "герои.",
+          "start": 122.334,
+          "end": 122.814
+        }
+      ]
+    },
+    {
+      "text": "А это кто?",
+      "translation": "Bu kim?",
+      "start": 147.99,
+      "end": 150.612,
+      "words": [
+        {
+          "text": "А",
+          "start": 147.99,
+          "end": 148.03
+        },
+        {
+          "text": "это",
+          "start": 148.09,
+          "end": 148.27
+        },
+        {
+          "text": "кто?",
+          "start": 148.31,
+          "end": 150.612
+        }
+      ]
+    },
+    {
+      "text": "Давайте с ним познакомимся.",
+      "translation": "Keling, u bilan tanishamiz.",
+      "start": 150.652,
+      "end": 161.161,
+      "words": [
+        {
+          "text": "Давайте",
+          "start": 150.652,
+          "end": 150.973
+        },
+        {
+          "text": "с",
+          "start": 151.033,
+          "end": 151.073
+        },
+        {
+          "text": "ним",
+          "start": 151.113,
+          "end": 151.233
+        },
+        {
+          "text": "познакомимся.",
+          "start": 151.253,
+          "end": 161.161
+        }
+      ]
+    },
+    {
+      "text": "Амур, назад!",
+      "translation": "Amur, orqaga!",
+      "start": 161.221,
+      "end": 163.223,
+      "words": [
+        {
+          "text": "Амур,",
+          "start": 161.221,
+          "end": 161.502
+        },
+        {
+          "text": "назад!",
+          "start": 161.542,
+          "end": 163.223
+        }
+      ]
+    },
+    {
+      "text": "Амур, назад!",
+      "translation": "Amur, orqaga!",
+      "start": 163.283,
+      "end": 164.684,
+      "words": [
+        {
+          "text": "Амур,",
+          "start": 163.283,
+          "end": 163.924
+        },
+        {
+          "text": "назад!",
+          "start": 163.964,
+          "end": 164.684
+        }
+      ]
+    },
+    {
+      "text": "Не трогать!",
+      "translation": "Tegmang!",
+      "start": 164.724,
+      "end": 169.508,
+      "words": [
+        {
+          "text": "Не",
+          "start": 164.724,
+          "end": 164.784
+        },
+        {
+          "text": "трогать!",
+          "start": 164.824,
+          "end": 169.508
+        }
+      ]
+    },
+    {
+      "text": "Не бойтесь, Амур, умная собака.",
+      "translation": "Qo‘rqmang, Amur, aqlli it.",
+      "start": 169.528,
+      "end": 172.311,
+      "words": [
+        {
+          "text": "Не",
+          "start": 169.528,
+          "end": 169.608
+        },
+        {
+          "text": "бойтесь,",
+          "start": 169.648,
+          "end": 170.469
+        },
+        {
+          "text": "Амур,",
+          "start": 170.509,
+          "end": 170.729
+        },
+        {
+          "text": "умная",
+          "start": 170.749,
+          "end": 170.99
+        },
+        {
+          "text": "собака.",
+          "start": 171.03,
+          "end": 172.311
+        }
+      ]
+    },
+    {
+      "text": "А я не боюсь.",
+      "translation": "Men qo‘rqmayman.",
+      "start": 172.371,
+      "end": 174.312,
+      "words": [
+        {
+          "text": "А",
+          "start": 172.371,
+          "end": 172.411
+        },
+        {
+          "text": "я",
+          "start": 172.491,
+          "end": 172.591
+        },
+        {
+          "text": "не",
+          "start": 172.631,
+          "end": 172.711
+        },
+        {
+          "text": "боюсь.",
+          "start": 172.751,
+          "end": 174.312
+        }
+      ]
+    },
+    {
+      "text": "Я люблю собак.",
+      "translation": "Men itlarni yaxshi ko‘raman.",
+      "start": 174.493,
+      "end": 175.994,
+      "words": [
+        {
+          "text": "Я",
+          "start": 174.493,
+          "end": 175.393
+        },
+        {
+          "text": "люблю",
+          "start": 175.493,
+          "end": 175.714
+        },
+        {
+          "text": "собак.",
+          "start": 175.754,
+          "end": 175.994
+        }
+      ]
+    },
+    {
+      "text": "Давай познакомимся.",
+      "translation": "Keling, tanishamiz.",
+      "start": 177.194,
+      "end": 179.377,
+      "words": [
+        {
+          "text": "Давай",
+          "start": 177.194,
+          "end": 177.374
+        },
+        {
+          "text": "познакомимся.",
+          "start": 177.414,
+          "end": 179.377
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Дима.",
+      "translation": "Mening ismim Dima.",
+      "start": 179.397,
+      "end": 180.879,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 179.397,
+          "end": 179.557
+        },
+        {
+          "text": "зовут",
+          "start": 179.597,
+          "end": 179.857
+        },
+        {
+          "text": "Дима.",
+          "start": 179.897,
+          "end": 180.879
+        }
+      ]
+    },
+    {
+      "text": "А тебя как?",
+      "translation": "Sening isming nima?",
+      "start": 180.919,
+      "end": 182.821,
+      "words": [
+        {
+          "text": "А",
+          "start": 180.919,
+          "end": 180.959
+        },
+        {
+          "text": "тебя",
+          "start": 180.999,
+          "end": 181.239
+        },
+        {
+          "text": "как?",
+          "start": 181.279,
+          "end": 182.821
+        }
+      ]
+    },
+    {
+      "text": "Его зовут Амур.",
+      "translation": "Uni Amur deb atashadi.",
+      "start": 182.901,
+      "end": 186.105,
+      "words": [
+        {
+          "text": "Его",
+          "start": 182.901,
+          "end": 183.081
+        },
+        {
+          "text": "зовут",
+          "start": 183.141,
+          "end": 183.502
+        },
+        {
+          "text": "Амур.",
+          "start": 183.582,
+          "end": 186.105
+        }
+      ]
+    },
+    {
+      "text": "Амур, дай Диме лапу.",
+      "translation": "Amur, Dima bilan qo‘l ber.",
+      "start": 186.145,
+      "end": 192.693,
+      "words": [
+        {
+          "text": "Амур,",
+          "start": 186.145,
+          "end": 186.986
+        },
+        {
+          "text": "дай",
+          "start": 187.006,
+          "end": 187.106
+        },
+        {
+          "text": "Диме",
+          "start": 187.226,
+          "end": 187.427
+        },
+        {
+          "text": "лапу.",
+          "start": 187.487,
+          "end": 192.693
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Дима.",
+      "translation": "Mening ismim Dima.",
+      "start": 192.733,
+      "end": 194.675,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 192.733,
+          "end": 192.913
+        },
+        {
+          "text": "зовут",
+          "start": 192.953,
+          "end": 193.694
+        },
+        {
+          "text": "Дима.",
+          "start": 193.754,
+          "end": 194.675
+        }
+      ]
+    },
+    {
+      "text": "Я уже знаю.",
+      "translation": "Men allaqachon bilaman.",
+      "start": 194.735,
+      "end": 196.077,
+      "words": [
+        {
+          "text": "Я",
+          "start": 194.735,
+          "end": 194.816
+        },
+        {
+          "text": "уже",
+          "start": 194.856,
+          "end": 194.996
+        },
+        {
+          "text": "знаю.",
+          "start": 195.036,
+          "end": 196.077
+        }
+      ]
+    },
+    {
+      "text": "А я Оля.",
+      "translation": "Men Olya.",
+      "start": 196.117,
+      "end": 196.798,
+      "words": [
+        {
+          "text": "А",
+          "start": 196.117,
+          "end": 196.177
+        },
+        {
+          "text": "я",
+          "start": 196.257,
+          "end": 196.357
+        },
+        {
+          "text": "Оля.",
+          "start": 196.438,
+          "end": 196.798
+        }
+      ]
+    },
+    {
+      "text": "А хотите, я угадаю, где вы учитесь?",
+      "translation": "Xohlasangiz, men sizning qayerda o‘qiyotganingizni taxmin qilamanmi?",
+      "start": 236.394,
+      "end": 238.576,
+      "words": [
+        {
+          "text": "А",
+          "start": 236.394,
+          "end": 236.434
+        },
+        {
+          "text": "хотите,",
+          "start": 236.494,
+          "end": 236.794
+        },
+        {
+          "text": "я",
+          "start": 236.834,
+          "end": 236.914
+        },
+        {
+          "text": "угадаю,",
+          "start": 236.934,
+          "end": 237.295
+        },
+        {
+          "text": "где",
+          "start": 237.335,
+          "end": 237.475
+        },
+        {
+          "text": "вы",
+          "start": 237.495,
+          "end": 237.595
+        },
+        {
+          "text": "учитесь?",
+          "start": 237.655,
+          "end": 238.576
+        }
+      ]
+    },
+    {
+      "text": "Да.",
+      "translation": "Ha.",
+      "start": 238.616,
+      "end": 240.998,
+      "words": [
+        {
+          "text": "Да.",
+          "start": 238.616,
+          "end": 240.998
+        }
+      ]
+    },
+    {
+      "text": "Наверное, в университете.",
+      "translation": "Ehtimol, universitetda.",
+      "start": 241.038,
+      "end": 242.859,
+      "words": [
+        {
+          "text": "Наверное,",
+          "start": 241.038,
+          "end": 241.518
+        },
+        {
+          "text": "в",
+          "start": 241.538,
+          "end": 241.578
+        },
+        {
+          "text": "университете.",
+          "start": 241.598,
+          "end": 242.859
+        }
+      ]
+    },
+    {
+      "text": "Да.",
+      "translation": "Ha.",
+      "start": 242.899,
+      "end": 244.04,
+      "words": [
+        {
+          "text": "Да.",
+          "start": 242.899,
+          "end": 244.04
+        }
+      ]
+    },
+    {
+      "text": "А как вы догадались?",
+      "translation": "Qanday qilib buni taxmin qildingiz?",
+      "start": 244.06,
+      "end": 247.423,
+      "words": [
+        {
+          "text": "А",
+          "start": 244.06,
+          "end": 244.12
+        },
+        {
+          "text": "как",
+          "start": 244.161,
+          "end": 244.261
+        },
+        {
+          "text": "вы",
+          "start": 244.301,
+          "end": 244.341
+        },
+        {
+          "text": "догадались?",
+          "start": 244.381,
+          "end": 247.423
+        }
+      ]
+    },
+    {
+      "text": "На каком кусе вы учитесь?",
+      "translation": "Siz qaysi kursda o‘qiyapsiz?",
+      "start": 250.146,
+      "end": 252.367,
+      "words": [
+        {
+          "text": "На",
+          "start": 250.146,
+          "end": 250.206
+        },
+        {
+          "text": "каком",
+          "start": 250.246,
+          "end": 250.446
+        },
+        {
+          "text": "кусе",
+          "start": 250.526,
+          "end": 250.766
+        },
+        {
+          "text": "вы",
+          "start": 250.806,
+          "end": 250.866
+        },
+        {
+          "text": "учитесь?",
+          "start": 250.946,
+          "end": 252.367
+        }
+      ]
+    },
+    {
+      "text": "А как вы думаете, на каком?",
+      "translation": "Sizningcha, qaysi kursda?",
+      "start": 252.407,
+      "end": 254.929,
+      "words": [
+        {
+          "text": "А",
+          "start": 252.407,
+          "end": 252.467
+        },
+        {
+          "text": "как",
+          "start": 252.507,
+          "end": 252.668
+        },
+        {
+          "text": "вы",
+          "start": 252.688,
+          "end": 252.788
+        },
+        {
+          "text": "думаете,",
+          "start": 252.828,
+          "end": 253.228
+        },
+        {
+          "text": "на",
+          "start": 253.248,
+          "end": 253.308
+        },
+        {
+          "text": "каком?",
+          "start": 253.328,
+          "end": 254.929
+        }
+      ]
+    },
+    {
+      "text": "На втором.",
+      "translation": "Ikkinchi.",
+      "start": 254.97,
+      "end": 256.151,
+      "words": [
+        {
+          "text": "На",
+          "start": 254.97,
+          "end": 255.01
+        },
+        {
+          "text": "втором.",
+          "start": 255.05,
+          "end": 256.151
+        }
+      ]
+    },
+    {
+      "text": "А вот и не угадали, на третьем.",
+      "translation": "Ammo siz xato qildingiz, uchinchi.",
+      "start": 256.171,
+      "end": 261.335,
+      "words": [
+        {
+          "text": "А",
+          "start": 256.171,
+          "end": 256.211
+        },
+        {
+          "text": "вот",
+          "start": 256.251,
+          "end": 256.371
+        },
+        {
+          "text": "и",
+          "start": 256.431,
+          "end": 256.451
+        },
+        {
+          "text": "не",
+          "start": 256.491,
+          "end": 256.551
+        },
+        {
+          "text": "угадали,",
+          "start": 256.591,
+          "end": 257.051
+        },
+        {
+          "text": "на",
+          "start": 257.071,
+          "end": 257.151
+        },
+        {
+          "text": "третьем.",
+          "start": 257.191,
+          "end": 261.335
+        }
+      ]
+    },
+    {
+      "text": "Вы живете недалеко отсюда, правда?",
+      "translation": "Siz bu yerga yaqin yashaysiz, to‘g‘rimi?",
+      "start": 261.375,
+      "end": 264.578,
+      "words": [
+        {
+          "text": "Вы",
+          "start": 261.375,
+          "end": 261.455
+        },
+        {
+          "text": "живете",
+          "start": 261.495,
+          "end": 262.115
+        },
+        {
+          "text": "недалеко",
+          "start": 262.136,
+          "end": 262.496
+        },
+        {
+          "text": "отсюда,",
+          "start": 262.516,
+          "end": 262.856
+        },
+        {
+          "text": "правда?",
+          "start": 262.896,
+          "end": 264.578
+        }
+      ]
+    },
+    {
+      "text": "Правда.",
+      "translation": "To‘g‘ri.",
+      "start": 264.618,
+      "end": 265.118,
+      "words": [
+        {
+          "text": "Правда.",
+          "start": 264.618,
+          "end": 265.118
+        }
+      ]
+    },
+    {
+      "text": "Вот на этой улице.",
+      "translation": "Mana bu ko‘chada.",
+      "start": 265.91,
+      "end": 270.752,
+      "words": [
+        {
+          "text": "Вот",
+          "start": 265.91,
+          "end": 266.01
+        },
+        {
+          "text": "на",
+          "start": 266.05,
+          "end": 266.11
+        },
+        {
+          "text": "этой",
+          "start": 266.13,
+          "end": 266.33
+        },
+        {
+          "text": "улице.",
+          "start": 266.39,
+          "end": 270.752
+        }
+      ]
+    },
+    {
+      "text": "А вот скажите, в каком доме я живу?",
+      "translation": "Endi ayting, men qaysi uyda yashayman?",
+      "start": 270.792,
+      "end": 273.313,
+      "words": [
+        {
+          "text": "А",
+          "start": 270.792,
+          "end": 270.812
+        },
+        {
+          "text": "вот",
+          "start": 270.832,
+          "end": 270.932
+        },
+        {
+          "text": "скажите,",
+          "start": 271.012,
+          "end": 271.572
+        },
+        {
+          "text": "в",
+          "start": 271.592,
+          "end": 271.612
+        },
+        {
+          "text": "каком",
+          "start": 271.632,
+          "end": 271.953
+        },
+        {
+          "text": "доме",
+          "start": 271.993,
+          "end": 272.273
+        },
+        {
+          "text": "я",
+          "start": 272.353,
+          "end": 272.433
+        },
+        {
+          "text": "живу?",
+          "start": 272.473,
+          "end": 273.313
+        }
+      ]
+    },
+    {
+      "text": "Ну, это совсем не трудно.",
+      "translation": "Bu umuman qiyin emas.",
+      "start": 273.353,
+      "end": 274.994,
+      "words": [
+        {
+          "text": "Ну,",
+          "start": 273.353,
+          "end": 273.453
+        },
+        {
+          "text": "это",
+          "start": 273.473,
+          "end": 273.593
+        },
+        {
+          "text": "совсем",
+          "start": 273.653,
+          "end": 273.933
+        },
+        {
+          "text": "не",
+          "start": 273.973,
+          "end": 274.033
+        },
+        {
+          "text": "трудно.",
+          "start": 274.054,
+          "end": 274.994
+        }
+      ]
+    },
+    {
+      "text": "Сейчас.",
+      "translation": "Hozir.",
+      "start": 275.014,
+      "end": 277.315,
+      "words": [
+        {
+          "text": "Сейчас.",
+          "start": 275.014,
+          "end": 277.315
+        }
+      ]
+    },
+    {
+      "text": "Амур?",
+      "translation": "Amur?",
+      "start": 277.355,
+      "end": 280.616,
+      "words": [
+        {
+          "text": "Амур?",
+          "start": 277.355,
+          "end": 280.616
+        }
+      ]
+    },
+    {
+      "text": "Ко мне?",
+      "translation": "Menga?",
+      "start": 280.636,
+      "end": 283.017,
+      "words": [
+        {
+          "text": "Ко",
+          "start": 280.636,
+          "end": 280.716
+        },
+        {
+          "text": "мне?",
+          "start": 280.756,
+          "end": 283.017
+        }
+      ]
+    },
+    {
+      "text": "Амур, домой.",
+      "translation": "Amur, uyga.",
+      "start": 283.037,
+      "end": 283.538,
+      "words": [
+        {
+          "text": "Амур,",
+          "start": 283.037,
+          "end": 283.237
+        },
+        {
+          "text": "домой.",
+          "start": 283.297,
+          "end": 283.538
+        }
+      ]
+    },
+    {
+      "text": "Вот в этом.",
+      "translation": "Mana shu uyda.",
+      "start": 329.09,
+      "end": 331.292,
+      "words": [
+        {
+          "text": "Вот",
+          "start": 329.09,
+          "end": 329.27
+        },
+        {
+          "text": "в",
+          "start": 329.31,
+          "end": 329.35
+        },
+        {
+          "text": "этом.",
+          "start": 329.39,
+          "end": 331.292
+        }
+      ]
+    },
+    {
+      "text": "Совершенно верно.",
+      "translation": "Mutlaqo to‘g‘ri.",
+      "start": 331.332,
+      "end": 333.534,
+      "words": [
+        {
+          "text": "Совершенно",
+          "start": 331.332,
+          "end": 332.012
+        },
+        {
+          "text": "верно.",
+          "start": 332.092,
+          "end": 333.534
+        }
+      ]
+    },
+    {
+      "text": "На каком этаже?",
+      "translation": "Qaysi qavatda?",
+      "start": 333.594,
+      "end": 337.237,
+      "words": [
+        {
+          "text": "На",
+          "start": 333.594,
+          "end": 333.654
+        },
+        {
+          "text": "каком",
+          "start": 333.674,
+          "end": 333.914
+        },
+        {
+          "text": "этаже?",
+          "start": 333.974,
+          "end": 337.237
+        }
+      ]
+    },
+    {
+      "text": "На первом.",
+      "translation": "Birinchi.",
+      "start": 337.297,
+      "end": 339.058,
+      "words": [
+        {
+          "text": "На",
+          "start": 337.297,
+          "end": 337.377
+        },
+        {
+          "text": "первом.",
+          "start": 337.417,
+          "end": 339.058
+        }
+      ]
+    },
+    {
+      "text": "Втором.",
+      "translation": "Ikkinchi.",
+      "start": 339.098,
+      "end": 341.38,
+      "words": [
+        {
+          "text": "Втором.",
+          "start": 339.098,
+          "end": 341.38
+        }
+      ]
+    },
+    {
+      "text": "Третьим.",
+      "translation": "Uchinchisi.",
+      "start": 341.4,
+      "end": 342.961,
+      "words": [
+        {
+          "text": "Третьим.",
+          "start": 341.4,
+          "end": 342.961
+        }
+      ]
+    },
+    {
+      "text": "Четвертом.",
+      "translation": "To‘rtinchi.",
+      "start": 343.001,
+      "end": 345.343,
+      "words": [
+        {
+          "text": "Четвертом.",
+          "start": 343.001,
+          "end": 345.343
+        }
+      ]
+    },
+    {
+      "text": "На четвертом.",
+      "translation": "To‘rtinchida.",
+      "start": 345.383,
+      "end": 347.165,
+      "words": [
+        {
+          "text": "На",
+          "start": 345.383,
+          "end": 345.443
+        },
+        {
+          "text": "четвертом.",
+          "start": 345.483,
+          "end": 347.165
+        }
+      ]
+    },
+    {
+      "text": "На четвертом этаже живет Амур, Оля и вся ее семья.",
+      "translation": "To‘rtinchi qavatda Amur, Olya va uning butun oilasi yashaydi.",
+      "start": 347.185,
+      "end": 354.15,
+      "words": [
+        {
+          "text": "На",
+          "start": 347.185,
+          "end": 347.245
+        },
+        {
+          "text": "четвертом",
+          "start": 347.285,
+          "end": 347.645
+        },
+        {
+          "text": "этаже",
+          "start": 347.685,
+          "end": 348.306
+        },
+        {
+          "text": "живет",
+          "start": 348.366,
+          "end": 348.606
+        },
+        {
+          "text": "Амур,",
+          "start": 348.646,
+          "end": 349.166
+        },
+        {
+          "text": "Оля",
+          "start": 349.226,
+          "end": 349.647
+        },
+        {
+          "text": "и",
+          "start": 349.687,
+          "end": 349.727
+        },
+        {
+          "text": "вся",
+          "start": 349.747,
+          "end": 349.987
+        },
+        {
+          "text": "ее",
+          "start": 350.047,
+          "end": 350.187
+        },
+        {
+          "text": "семья.",
+          "start": 350.227,
+          "end": 354.15
+        }
+      ]
+    },
+    {
+      "text": "А вы Дима тоже студент?",
+      "translation": "Siz ham, Dima, talabsizmi?",
+      "start": 354.211,
+      "end": 355.692,
+      "words": [
+        {
+          "text": "А",
+          "start": 354.211,
+          "end": 354.251
+        },
+        {
+          "text": "вы",
+          "start": 354.291,
+          "end": 354.371
+        },
+        {
+          "text": "Дима",
+          "start": 354.411,
+          "end": 354.591
+        },
+        {
+          "text": "тоже",
+          "start": 354.631,
+          "end": 354.831
+        },
+        {
+          "text": "студент?",
+          "start": 354.871,
+          "end": 355.692
+        }
+      ]
+    },
+    {
+      "text": "Нет, я работаю.",
+      "translation": "Yo‘q, men ishlayman.",
+      "start": 355.732,
+      "end": 356.913,
+      "words": [
+        {
+          "text": "Нет,",
+          "start": 355.732,
+          "end": 355.912
+        },
+        {
+          "text": "я",
+          "start": 355.992,
+          "end": 356.052
+        },
+        {
+          "text": "работаю.",
+          "start": 356.072,
+          "end": 356.913
+        }
+      ]
+    },
+    {
+      "text": "Инженером на авиационном заводе.",
+      "translation": "Aviatsiya zavodida muhandis.",
+      "start": 356.973,
+      "end": 358.394,
+      "words": [
+        {
+          "text": "Инженером",
+          "start": 356.973,
+          "end": 357.393
+        },
+        {
+          "text": "на",
+          "start": 357.433,
+          "end": 357.493
+        },
+        {
+          "text": "авиационном",
+          "start": 357.533,
+          "end": 358.034
+        },
+        {
+          "text": "заводе.",
+          "start": 358.094,
+          "end": 358.394
+        }
+      ]
+    },
+    {
+      "text": "Облекаясь авиаспортом.",
+      "translation": "Aviatsiya sporti bilan shug‘ullanaman.",
+      "start": 359.759,
+      "end": 362.506,
+      "words": [
+        {
+          "text": "Облекаясь",
+          "start": 359.759,
+          "end": 360.241
+        },
+        {
+          "text": "авиаспортом.",
+          "start": 360.261,
+          "end": 362.506
+        }
+      ]
+    },
+    {
+      "text": "Хотите посмотреть?",
+      "translation": "Ko‘rmoqchimisiz?",
+      "start": 362.566,
+      "end": 365.513,
+      "words": [
+        {
+          "text": "Хотите",
+          "start": 362.566,
+          "end": 362.827
+        },
+        {
+          "text": "посмотреть?",
+          "start": 362.847,
+          "end": 365.513
+        }
+      ]
+    },
+    {
+      "text": "Да.",
+      "translation": "Ha.",
+      "start": 365.573,
+      "end": 366.014,
+      "words": [
+        {
+          "text": "Да.",
+          "start": 365.573,
+          "end": 366.014
+        }
+      ]
+    },
+    {
+      "text": "Забыла, куда мы идем сегодня вечером?",
+      "translation": "Bugun kechqurun qayerga borayotganimizni unutdingizmi?",
+      "start": 485.814,
+      "end": 489.535,
+      "words": [
+        {
+          "text": "Забыла,",
+          "start": 485.814,
+          "end": 486.094
+        },
+        {
+          "text": "куда",
+          "start": 486.114,
+          "end": 486.274
+        },
+        {
+          "text": "мы",
+          "start": 486.294,
+          "end": 486.374
+        },
+        {
+          "text": "идем",
+          "start": 486.394,
+          "end": 486.594
+        },
+        {
+          "text": "сегодня",
+          "start": 486.634,
+          "end": 486.934
+        },
+        {
+          "text": "вечером?",
+          "start": 486.974,
+          "end": 489.535
+        }
+      ]
+    },
+    {
+      "text": "Сегодня вечером мы идем к моей маме на чай.",
+      "translation": "Bugun kechqurun men onamga choy ichishga boramiz.",
+      "start": 489.575,
+      "end": 498.778,
+      "words": [
+        {
+          "text": "Сегодня",
+          "start": 489.575,
+          "end": 489.935
+        },
+        {
+          "text": "вечером",
+          "start": 489.975,
+          "end": 490.415
+        },
+        {
+          "text": "мы",
+          "start": 490.495,
+          "end": 490.635
+        },
+        {
+          "text": "идем",
+          "start": 490.675,
+          "end": 491.736
+        },
+        {
+          "text": "к",
+          "start": 491.776,
+          "end": 491.816
+        },
+        {
+          "text": "моей",
+          "start": 491.856,
+          "end": 492.056
+        },
+        {
+          "text": "маме",
+          "start": 492.076,
+          "end": 492.416
+        },
+        {
+          "text": "на",
+          "start": 492.456,
+          "end": 492.716
+        },
+        {
+          "text": "чай.",
+          "start": 492.776,
+          "end": 498.778
+        }
+      ]
+    },
+    {
+      "text": "Мама!",
+      "translation": "Ona!",
+      "start": 498.838,
+      "end": 500.578,
+      "words": [
+        {
+          "text": "Мама!",
+          "start": 498.838,
+          "end": 500.578
+        }
+      ]
+    },
+    {
+      "text": "Входи.",
+      "translation": "Kiring.",
+      "start": 500.658,
+      "end": 504.239,
+      "words": [
+        {
+          "text": "Входи.",
+          "start": 500.658,
+          "end": 504.239
+        }
+      ]
+    },
+    {
+      "text": "Мама!",
+      "translation": "Ona!",
+      "start": 504.299,
+      "end": 508.661,
+      "words": [
+        {
+          "text": "Мама!",
+          "start": 504.299,
+          "end": 508.661
+        }
+      ]
+    },
+    {
+      "text": "Добрый вечер.",
+      "translation": "Salom.",
+      "start": 508.701,
+      "end": 509.981,
+      "words": [
+        {
+          "text": "Добрый",
+          "start": 508.701,
+          "end": 508.961
+        },
+        {
+          "text": "вечер.",
+          "start": 508.981,
+          "end": 509.981
+        }
+      ]
+    },
+    {
+      "text": "Здравствуйте.",
+      "translation": "Assalomu alaykum.",
+      "start": 510.021,
+      "end": 510.481,
+      "words": [
+        {
+          "text": "Здравствуйте.",
+          "start": 510.021,
+          "end": 510.481
+        }
+      ]
+    },
+    {
+      "text": "Мама, это Дима.",
+      "translation": "Ona, bu Dima.",
+      "start": 510.521,
+      "end": 512.542,
+      "words": [
+        {
+          "text": "Мама,",
+          "start": 510.521,
+          "end": 510.721
+        },
+        {
+          "text": "это",
+          "start": 510.741,
+          "end": 510.881
+        },
+        {
+          "text": "Дима.",
+          "start": 510.941,
+          "end": 512.542
+        }
+      ]
+    },
+    {
+      "text": "Давайте познакомимся.",
+      "translation": "Tanishing.",
+      "start": 512.582,
+      "end": 513.822,
+      "words": [
+        {
+          "text": "Давайте",
+          "start": 512.582,
+          "end": 512.902
+        },
+        {
+          "text": "познакомимся.",
+          "start": 512.922,
+          "end": 513.822
+        }
+      ]
+    },
+    {
+      "text": "Наталья Сергеевна.",
+      "translation": "Natalya Sergeyevna.",
+      "start": 514.558,
+      "end": 515.739,
+      "words": [
+        {
+          "text": "Наталья",
+          "start": 514.558,
+          "end": 514.918
+        },
+        {
+          "text": "Сергеевна.",
+          "start": 514.978,
+          "end": 515.739
+        }
+      ]
+    },
+    {
+      "text": "Дмитрий.",
+      "translation": "Dmitriy.",
+      "start": 515.779,
+      "end": 516.819,
+      "words": [
+        {
+          "text": "Дмитрий.",
+          "start": 515.779,
+          "end": 516.819
+        }
+      ]
+    },
+    {
+      "text": "Очень рада вас видеть.",
+      "translation": "Sizni ko‘rganimdan juda xursandman.",
+      "start": 516.879,
+      "end": 518.82,
+      "words": [
+        {
+          "text": "Очень",
+          "start": 516.879,
+          "end": 517.139
+        },
+        {
+          "text": "рада",
+          "start": 517.179,
+          "end": 517.739
+        },
+        {
+          "text": "вас",
+          "start": 517.779,
+          "end": 517.959
+        },
+        {
+          "text": "видеть.",
+          "start": 517.979,
+          "end": 518.82
+        }
+      ]
+    },
+    {
+      "text": "А где папа?",
+      "translation": "Aytgancha, papa qayerda?",
+      "start": 518.86,
+      "end": 519.38,
+      "words": [
+        {
+          "text": "А",
+          "start": 518.86,
+          "end": 518.92
+        },
+        {
+          "text": "где",
+          "start": 518.94,
+          "end": 519.12
+        },
+        {
+          "text": "папа?",
+          "start": 519.16,
+          "end": 519.38
+        }
+      ]
+    },
+    {
+      "text": "Он дома?",
+      "translation": "U uyda?",
+      "start": 519.42,
+      "end": 520.541,
+      "words": [
+        {
+          "text": "Он",
+          "start": 519.42,
+          "end": 519.5
+        },
+        {
+          "text": "дома?",
+          "start": 519.54,
+          "end": 520.541
+        }
+      ]
+    },
+    {
+      "text": "Да, конечно.",
+      "translation": "Ha, albatta.",
+      "start": 520.601,
+      "end": 526.803,
+      "words": [
+        {
+          "text": "Да,",
+          "start": 520.601,
+          "end": 521.001
+        },
+        {
+          "text": "конечно.",
+          "start": 521.041,
+          "end": 526.803
+        }
+      ]
+    },
+    {
+      "text": "Это вам.",
+      "translation": "Bu sizga.",
+      "start": 526.863,
+      "end": 528.244,
+      "words": [
+        {
+          "text": "Это",
+          "start": 526.863,
+          "end": 527.023
+        },
+        {
+          "text": "вам.",
+          "start": 527.043,
+          "end": 528.244
+        }
+      ]
+    },
+    {
+      "text": "Спасибо, Дима.",
+      "translation": "Rahmat, Dima.",
+      "start": 528.304,
+      "end": 537.008,
+      "words": [
+        {
+          "text": "Спасибо,",
+          "start": 528.304,
+          "end": 529.104
+        },
+        {
+          "text": "Дима.",
+          "start": 529.184,
+          "end": 537.008
+        }
+      ]
+    },
+    {
+      "text": "Папа, познакомься, пожалуйста.",
+      "translation": "Papa, tanishing, iltimos.",
+      "start": 537.068,
+      "end": 539.048,
+      "words": [
+        {
+          "text": "Папа,",
+          "start": 537.068,
+          "end": 537.608
+        },
+        {
+          "text": "познакомься,",
+          "start": 537.648,
+          "end": 538.068
+        },
+        {
+          "text": "пожалуйста.",
+          "start": 538.088,
+          "end": 539.048
+        }
+      ]
+    },
+    {
+      "text": "Это Дима.",
+      "translation": "Bu Dima.",
+      "start": 539.088,
+      "end": 540.689,
+      "words": [
+        {
+          "text": "Это",
+          "start": 539.088,
+          "end": 539.248
+        },
+        {
+          "text": "Дима.",
+          "start": 539.308,
+          "end": 540.689
+        }
+      ]
+    },
+    {
+      "text": "Очень приятно, Вадим Петрович.",
+      "translation": "Juda yoqimli, Vadim Petrovich.",
+      "start": 540.729,
+      "end": 542.29,
+      "words": [
+        {
+          "text": "Очень",
+          "start": 540.729,
+          "end": 540.949
+        },
+        {
+          "text": "приятно,",
+          "start": 540.969,
+          "end": 541.369
+        },
+        {
+          "text": "Вадим",
+          "start": 541.389,
+          "end": 541.609
+        },
+        {
+          "text": "Петрович.",
+          "start": 541.649,
+          "end": 542.29
+        }
+      ]
+    },
+    {
+      "text": "Дмитрий.",
+      "translation": "Dmitriy.",
+      "start": 542.35,
+      "end": 542.91,
+      "words": [
+        {
+          "text": "Дмитрий.",
+          "start": 542.35,
+          "end": 542.91
+        }
+      ]
+    },
+    {
+      "text": "Проходите, пожалуйста.",
+      "translation": "O‘tishingizni iltimos.",
+      "start": 543.946,
+      "end": 548.128,
+      "words": [
+        {
+          "text": "Проходите,",
+          "start": 543.946,
+          "end": 544.386
+        },
+        {
+          "text": "пожалуйста.",
+          "start": 544.426,
+          "end": 548.128
+        }
+      ]
+    },
+    {
+      "text": "Одну минуточку, Дима.",
+      "translation": "Bir daqiqa, Dima.",
+      "start": 548.168,
+      "end": 553.652,
+      "words": [
+        {
+          "text": "Одну",
+          "start": 548.168,
+          "end": 548.369
+        },
+        {
+          "text": "минуточку,",
+          "start": 548.409,
+          "end": 548.929
+        },
+        {
+          "text": "Дима.",
+          "start": 548.969,
+          "end": 553.652
+        }
+      ]
+    },
+    {
+      "text": "Теперь вы знаете, кто этот молодой человек.",
+      "translation": "Endi siz bu yosh yigit kimligini bilasiz.",
+      "start": 553.692,
+      "end": 557.414,
+      "words": [
+        {
+          "text": "Теперь",
+          "start": 553.692,
+          "end": 553.892
+        },
+        {
+          "text": "вы",
+          "start": 553.912,
+          "end": 553.992
+        },
+        {
+          "text": "знаете,",
+          "start": 554.032,
+          "end": 554.972
+        },
+        {
+          "text": "кто",
+          "start": 554.992,
+          "end": 555.193
+        },
+        {
+          "text": "этот",
+          "start": 555.233,
+          "end": 555.393
+        },
+        {
+          "text": "молодой",
+          "start": 555.433,
+          "end": 555.773
+        },
+        {
+          "text": "человек.",
+          "start": 555.813,
+          "end": 557.414
+        }
+      ]
+    },
+    {
+      "text": "Ну вот мы и познакомились.",
+      "translation": "Mana tanishuvimiz bo‘ldi.",
+      "start": 557.454,
+      "end": 559.675,
+      "words": [
+        {
+          "text": "Ну",
+          "start": 557.454,
+          "end": 557.514
+        },
+        {
+          "text": "вот",
+          "start": 557.554,
+          "end": 557.674
+        },
+        {
+          "text": "мы",
+          "start": 557.714,
+          "end": 557.794
+        },
+        {
+          "text": "и",
+          "start": 557.814,
+          "end": 557.834
+        },
+        {
+          "text": "познакомились.",
+          "start": 557.874,
+          "end": 559.675
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Дима.",
+      "translation": "Mening ismim Dima.",
+      "start": 559.715,
+      "end": 562.177,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 559.715,
+          "end": 559.875
+        },
+        {
+          "text": "зовут",
+          "start": 559.915,
+          "end": 560.576
+        },
+        {
+          "text": "Дима.",
+          "start": 560.656,
+          "end": 562.177
+        }
+      ]
+    },
+    {
+      "text": "Я инженер работы на авиационном заводе.",
+      "translation": "Men aviatsiya zavodida muhandisman.",
+      "start": 562.257,
+      "end": 565.138,
+      "words": [
+        {
+          "text": "Я",
+          "start": 562.257,
+          "end": 562.317
+        },
+        {
+          "text": "инженер",
+          "start": 562.377,
+          "end": 562.717
+        },
+        {
+          "text": "работы",
+          "start": 562.777,
+          "end": 563.057
+        },
+        {
+          "text": "на",
+          "start": 563.097,
+          "end": 563.177
+        },
+        {
+          "text": "авиационном",
+          "start": 563.197,
+          "end": 563.678
+        },
+        {
+          "text": "заводе.",
+          "start": 563.718,
+          "end": 565.138
+        }
+      ]
+    },
+    {
+      "text": "Очень люблю свою работу.",
+      "translation": "Ishimni juda yaxshi ko‘raman.",
+      "start": 565.198,
+      "end": 568.38,
+      "words": [
+        {
+          "text": "Очень",
+          "start": 565.198,
+          "end": 565.459
+        },
+        {
+          "text": "люблю",
+          "start": 565.499,
+          "end": 565.719
+        },
+        {
+          "text": "свою",
+          "start": 565.779,
+          "end": 565.999
+        },
+        {
+          "text": "работу.",
+          "start": 566.059,
+          "end": 568.38
+        }
+      ]
+    },
+    {
+      "text": "И немножко Олю.",
+      "translation": "Va O‘lyani biroz.",
+      "start": 568.42,
+      "end": 570.562,
+      "words": [
+        {
+          "text": "И",
+          "start": 568.42,
+          "end": 568.46
+        },
+        {
+          "text": "немножко",
+          "start": 568.48,
+          "end": 569.041
+        },
+        {
+          "text": "Олю.",
+          "start": 569.101,
+          "end": 570.562
+        }
+      ]
+    },
+    {
+      "text": "Послушайте, пожалуйста, ещё раз реплики наших героев и повторите их.",
+      "translation": "Iltimos, qahramonlarimizning replikalarini yana bir bor tinglang va ularni takrorlang.",
+      "start": 575.926,
+      "end": 586.072,
+      "words": [
+        {
+          "text": "Послушайте,",
+          "start": 575.926,
+          "end": 576.406
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 576.446,
+          "end": 577.407
+        },
+        {
+          "text": "ещё",
+          "start": 577.487,
+          "end": 577.827
+        },
+        {
+          "text": "раз",
+          "start": 577.867,
+          "end": 578.387
+        },
+        {
+          "text": "реплики",
+          "start": 578.447,
+          "end": 578.848
+        },
+        {
+          "text": "наших",
+          "start": 578.868,
+          "end": 579.168
+        },
+        {
+          "text": "героев",
+          "start": 579.228,
+          "end": 580.248
+        },
+        {
+          "text": "и",
+          "start": 580.288,
+          "end": 580.328
+        },
+        {
+          "text": "повторите",
+          "start": 580.348,
+          "end": 580.909
+        },
+        {
+          "text": "их.",
+          "start": 580.989,
+          "end": 586.072
+        }
+      ]
+    },
+    {
+      "text": "Молодой человек, как вас зовут?",
+      "translation": "Yosh yigit, ismingiz nima?",
+      "start": 586.092,
+      "end": 590.874,
+      "words": [
+        {
+          "text": "Молодой",
+          "start": 586.092,
+          "end": 586.392
+        },
+        {
+          "text": "человек,",
+          "start": 586.432,
+          "end": 587.693
+        },
+        {
+          "text": "как",
+          "start": 587.733,
+          "end": 587.933
+        },
+        {
+          "text": "вас",
+          "start": 587.953,
+          "end": 588.093
+        },
+        {
+          "text": "зовут?",
+          "start": 588.133,
+          "end": 590.874
+        }
+      ]
+    },
+    {
+      "text": "Молодой человек, как вас зовут?",
+      "translation": "Yosh yigit, ismingiz nima?",
+      "start": 590.934,
+      "end": 594.436,
+      "words": [
+        {
+          "text": "Молодой",
+          "start": 590.934,
+          "end": 591.335
+        },
+        {
+          "text": "человек,",
+          "start": 591.375,
+          "end": 592.535
+        },
+        {
+          "text": "как",
+          "start": 592.555,
+          "end": 592.835
+        },
+        {
+          "text": "вас",
+          "start": 592.875,
+          "end": 593.096
+        },
+        {
+          "text": "зовут?",
+          "start": 593.136,
+          "end": 594.436
+        }
+      ]
+    },
+    {
+      "text": "А сейчас повторите, пожалуйста, эту фразу.",
+      "translation": "Endi, iltimos, bu iborani takrorlang.",
+      "start": 594.456,
+      "end": 602.921,
+      "words": [
+        {
+          "text": "А",
+          "start": 594.456,
+          "end": 594.496
+        },
+        {
+          "text": "сейчас",
+          "start": 594.516,
+          "end": 594.797
+        },
+        {
+          "text": "повторите,",
+          "start": 594.857,
+          "end": 595.377
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 595.417,
+          "end": 595.877
+        },
+        {
+          "text": "эту",
+          "start": 595.897,
+          "end": 595.997
+        },
+        {
+          "text": "фразу.",
+          "start": 596.057,
+          "end": 602.921
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Дима.",
+      "translation": "Mening ismim Dima.",
+      "start": 602.981,
+      "end": 604.542,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 602.981,
+          "end": 603.221
+        },
+        {
+          "text": "зовут",
+          "start": 603.261,
+          "end": 604.082
+        },
+        {
+          "text": "Дима.",
+          "start": 604.142,
+          "end": 604.542
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Дима.",
+      "translation": "Mening ismim Dima.",
+      "start": 606.15,
+      "end": 607.992,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 606.15,
+          "end": 606.41
+        },
+        {
+          "text": "зовут",
+          "start": 606.49,
+          "end": 606.851
+        },
+        {
+          "text": "Дима.",
+          "start": 606.951,
+          "end": 607.992
+        }
+      ]
+    },
+    {
+      "text": "А теперь скажите эту фразу вместо Димы.",
+      "translation": "Endi bu iborani Dima o‘rniga ayting.",
+      "start": 608.012,
+      "end": 615.158,
+      "words": [
+        {
+          "text": "А",
+          "start": 608.012,
+          "end": 608.072
+        },
+        {
+          "text": "теперь",
+          "start": 608.112,
+          "end": 608.392
+        },
+        {
+          "text": "скажите",
+          "start": 608.432,
+          "end": 608.852
+        },
+        {
+          "text": "эту",
+          "start": 608.892,
+          "end": 609.013
+        },
+        {
+          "text": "фразу",
+          "start": 609.073,
+          "end": 609.373
+        },
+        {
+          "text": "вместо",
+          "start": 609.393,
+          "end": 609.793
+        },
+        {
+          "text": "Димы.",
+          "start": 609.873,
+          "end": 615.158
+        }
+      ]
+    },
+    {
+      "text": "Мама, это Дима.",
+      "translation": "Ona, bu Dima.",
+      "start": 615.198,
+      "end": 619.181,
+      "words": [
+        {
+          "text": "Мама,",
+          "start": 615.198,
+          "end": 616.339
+        },
+        {
+          "text": "это",
+          "start": 616.359,
+          "end": 616.539
+        },
+        {
+          "text": "Дима.",
+          "start": 616.599,
+          "end": 619.181
+        }
+      ]
+    },
+    {
+      "text": "Мама, это Дима.",
+      "translation": "Ona, bu Dima.",
+      "start": 619.221,
+      "end": 621.123,
+      "words": [
+        {
+          "text": "Мама,",
+          "start": 619.221,
+          "end": 619.882
+        },
+        {
+          "text": "это",
+          "start": 619.922,
+          "end": 620.182
+        },
+        {
+          "text": "Дима.",
+          "start": 620.262,
+          "end": 621.123
+        }
+      ]
+    },
+    {
+      "text": "А теперь скажите эту фразу вместо Оли.",
+      "translation": "Endi bu jumlani Olining o‘rniga ayting.",
+      "start": 621.163,
+      "end": 628.289,
+      "words": [
+        {
+          "text": "А",
+          "start": 621.163,
+          "end": 621.203
+        },
+        {
+          "text": "теперь",
+          "start": 621.263,
+          "end": 621.543
+        },
+        {
+          "text": "скажите",
+          "start": 621.583,
+          "end": 621.984
+        },
+        {
+          "text": "эту",
+          "start": 622.024,
+          "end": 622.144
+        },
+        {
+          "text": "фразу",
+          "start": 622.204,
+          "end": 622.544
+        },
+        {
+          "text": "вместо",
+          "start": 622.584,
+          "end": 623.024
+        },
+        {
+          "text": "Оли.",
+          "start": 623.105,
+          "end": 628.289
+        }
+      ]
+    },
+    {
+      "text": "Давайте познакомимся.",
+      "translation": "Keling, tanishamiz.",
+      "start": 628.349,
+      "end": 630.991,
+      "words": [
+        {
+          "text": "Давайте",
+          "start": 628.349,
+          "end": 629.09
+        },
+        {
+          "text": "познакомимся.",
+          "start": 629.11,
+          "end": 630.991
+        }
+      ]
+    },
+    {
+      "text": "Наталья Сергеевна, очень рада вас видеть.",
+      "translation": "Natalya Sergeyevna, sizni ko‘rganimdan juda xursandman.",
+      "start": 631.011,
+      "end": 634.174,
+      "words": [
+        {
+          "text": "Наталья",
+          "start": 631.011,
+          "end": 631.372
+        },
+        {
+          "text": "Сергеевна,",
+          "start": 631.412,
+          "end": 632.893
+        },
+        {
+          "text": "очень",
+          "start": 632.913,
+          "end": 633.193
+        },
+        {
+          "text": "рада",
+          "start": 633.233,
+          "end": 633.413
+        },
+        {
+          "text": "вас",
+          "start": 633.433,
+          "end": 633.614
+        },
+        {
+          "text": "видеть.",
+          "start": 633.654,
+          "end": 634.174
+        }
+      ]
+    },
+    {
+      "text": "Давайте познакомимся.",
+      "translation": "Keling, tanishamiz.",
+      "start": 636.79,
+      "end": 639.191,
+      "words": [
+        {
+          "text": "Давайте",
+          "start": 636.79,
+          "end": 637.09
+        },
+        {
+          "text": "познакомимся.",
+          "start": 637.13,
+          "end": 639.191
+        }
+      ]
+    },
+    {
+      "text": "Наталья Сергеевна.",
+      "translation": "Natalya Sergeyevna.",
+      "start": 639.211,
+      "end": 641.712,
+      "words": [
+        {
+          "text": "Наталья",
+          "start": 639.211,
+          "end": 639.611
+        },
+        {
+          "text": "Сергеевна.",
+          "start": 639.631,
+          "end": 641.712
+        }
+      ]
+    },
+    {
+      "text": "Очень рада вас видеть.",
+      "translation": "Sizni ko‘rganimdan juda xursandman.",
+      "start": 641.772,
+      "end": 645.934,
+      "words": [
+        {
+          "text": "Очень",
+          "start": 641.772,
+          "end": 642.092
+        },
+        {
+          "text": "рада",
+          "start": 642.152,
+          "end": 642.352
+        },
+        {
+          "text": "вас",
+          "start": 642.392,
+          "end": 642.592
+        },
+        {
+          "text": "видеть.",
+          "start": 642.632,
+          "end": 645.934
+        }
+      ]
+    },
+    {
+      "text": "А теперь вы скажите эту фразу.",
+      "translation": "Endi siz bu jumlani ayting.",
+      "start": 645.974,
+      "end": 658.099,
+      "words": [
+        {
+          "text": "А",
+          "start": 645.974,
+          "end": 646.014
+        },
+        {
+          "text": "теперь",
+          "start": 646.054,
+          "end": 646.334
+        },
+        {
+          "text": "вы",
+          "start": 646.374,
+          "end": 647.334
+        },
+        {
+          "text": "скажите",
+          "start": 647.394,
+          "end": 648.055
+        },
+        {
+          "text": "эту",
+          "start": 648.115,
+          "end": 648.255
+        },
+        {
+          "text": "фразу.",
+          "start": 648.315,
+          "end": 658.099
+        }
+      ]
+    },
+    {
+      "text": "Папа, познакомься, пожалуйста.",
+      "translation": "Otam, tanishing, iltimos.",
+      "start": 658.139,
+      "end": 661.32,
+      "words": [
+        {
+          "text": "Папа,",
+          "start": 658.139,
+          "end": 659.379
+        },
+        {
+          "text": "познакомься,",
+          "start": 659.419,
+          "end": 659.939
+        },
+        {
+          "text": "пожалуйста.",
+          "start": 659.979,
+          "end": 661.32
+        }
+      ]
+    },
+    {
+      "text": "Это Дима.",
+      "translation": "Bu Dima.",
+      "start": 661.36,
+      "end": 662.58,
+      "words": [
+        {
+          "text": "Это",
+          "start": 661.36,
+          "end": 661.54
+        },
+        {
+          "text": "Дима.",
+          "start": 661.6,
+          "end": 662.58
+        }
+      ]
+    },
+    {
+      "text": "Папа, познакомься, пожалуйста.",
+      "translation": "Otam, tanishing, iltimos.",
+      "start": 662.621,
+      "end": 665.442,
+      "words": [
+        {
+          "text": "Папа,",
+          "start": 662.621,
+          "end": 663.841
+        },
+        {
+          "text": "познакомься,",
+          "start": 663.861,
+          "end": 664.521
+        },
+        {
+          "text": "пожалуйста.",
+          "start": 664.561,
+          "end": 665.442
+        }
+      ]
+    },
+    {
+      "text": "Это Дима.",
+      "translation": "Bu Dima.",
+      "start": 665.482,
+      "end": 666.302,
+      "words": [
+        {
+          "text": "Это",
+          "start": 665.482,
+          "end": 665.762
+        },
+        {
+          "text": "Дима.",
+          "start": 665.842,
+          "end": 666.302
+        }
+      ]
+    },
+    {
+      "text": "А теперь вы скажите эту фразу.",
+      "translation": "Endi siz bu jumlani ayting.",
+      "start": 667.018,
+      "end": 675.744,
+      "words": [
+        {
+          "text": "А",
+          "start": 667.018,
+          "end": 667.058
+        },
+        {
+          "text": "теперь",
+          "start": 667.118,
+          "end": 667.398
+        },
+        {
+          "text": "вы",
+          "start": 667.458,
+          "end": 667.919
+        },
+        {
+          "text": "скажите",
+          "start": 667.959,
+          "end": 668.379
+        },
+        {
+          "text": "эту",
+          "start": 668.419,
+          "end": 668.559
+        },
+        {
+          "text": "фразу.",
+          "start": 668.619,
+          "end": 675.744
+        }
+      ]
+    },
+    {
+      "text": "А теперь немного грамматики.",
+      "translation": "Endi biroz grammatika.",
+      "start": 675.764,
+      "end": 680.847,
+      "words": [
+        {
+          "text": "А",
+          "start": 675.764,
+          "end": 675.824
+        },
+        {
+          "text": "теперь",
+          "start": 675.864,
+          "end": 676.945
+        },
+        {
+          "text": "немного",
+          "start": 676.965,
+          "end": 677.285
+        },
+        {
+          "text": "грамматики.",
+          "start": 677.325,
+          "end": 680.847
+        }
+      ]
+    },
+    {
+      "text": "Где вы работаете?",
+      "translation": "Siz qayerda ishlaysiz?",
+      "start": 680.887,
+      "end": 684.049,
+      "words": [
+        {
+          "text": "Где",
+          "start": 680.887,
+          "end": 681.067
+        },
+        {
+          "text": "вы",
+          "start": 681.107,
+          "end": 681.187
+        },
+        {
+          "text": "работаете?",
+          "start": 681.227,
+          "end": 684.049
+        }
+      ]
+    },
+    {
+      "text": "Ольга Николаевна, где вы работаете?",
+      "translation": "Olga Nikolaevna, siz qayerda ishlaysiz?",
+      "start": 684.069,
+      "end": 688.372,
+      "words": [
+        {
+          "text": "Ольга",
+          "start": 684.069,
+          "end": 684.309
+        },
+        {
+          "text": "Николаевна,",
+          "start": 684.329,
+          "end": 685.95
+        },
+        {
+          "text": "где",
+          "start": 685.97,
+          "end": 686.111
+        },
+        {
+          "text": "вы",
+          "start": 686.151,
+          "end": 686.211
+        },
+        {
+          "text": "работаете?",
+          "start": 686.251,
+          "end": 688.372
+        }
+      ]
+    },
+    {
+      "text": "Я работаю в поликлинике.",
+      "translation": "Men poliklinikada ishlayman.",
+      "start": 688.452,
+      "end": 690.654,
+      "words": [
+        {
+          "text": "Я",
+          "start": 688.452,
+          "end": 688.512
+        },
+        {
+          "text": "работаю",
+          "start": 688.552,
+          "end": 688.892
+        },
+        {
+          "text": "в",
+          "start": 688.912,
+          "end": 688.952
+        },
+        {
+          "text": "поликлинике.",
+          "start": 688.992,
+          "end": 690.654
+        }
+      ]
+    },
+    {
+      "text": "Я врач.",
+      "translation": "Men shifokorman.",
+      "start": 690.714,
+      "end": 691.154,
+      "words": [
+        {
+          "text": "Я",
+          "start": 690.714,
+          "end": 690.774
+        },
+        {
+          "text": "врач.",
+          "start": 690.834,
+          "end": 691.154
+        }
+      ]
+    },
+    {
+      "text": "Она работает в поликлинике.",
+      "translation": "U poliklinikada ishlaydi.",
+      "start": 705.886,
+      "end": 708.187,
+      "words": [
+        {
+          "text": "Она",
+          "start": 705.886,
+          "end": 706.046
+        },
+        {
+          "text": "работает",
+          "start": 706.086,
+          "end": 706.526
+        },
+        {
+          "text": "в",
+          "start": 706.566,
+          "end": 706.606
+        },
+        {
+          "text": "поликлинике.",
+          "start": 706.646,
+          "end": 708.187
+        }
+      ]
+    },
+    {
+      "text": "Она врач.",
+      "translation": "U shifokor.",
+      "start": 708.227,
+      "end": 713.27,
+      "words": [
+        {
+          "text": "Она",
+          "start": 708.227,
+          "end": 709.068
+        },
+        {
+          "text": "врач.",
+          "start": 709.128,
+          "end": 713.27
+        }
+      ]
+    },
+    {
+      "text": "Володя, а где вы работаете?",
+      "translation": "Volodya, siz qayerda ishlaysiz?",
+      "start": 713.31,
+      "end": 717.393,
+      "words": [
+        {
+          "text": "Володя,",
+          "start": 713.31,
+          "end": 714.571
+        },
+        {
+          "text": "а",
+          "start": 714.591,
+          "end": 714.631
+        },
+        {
+          "text": "где",
+          "start": 714.671,
+          "end": 714.831
+        },
+        {
+          "text": "вы",
+          "start": 714.851,
+          "end": 714.971
+        },
+        {
+          "text": "работаете?",
+          "start": 714.991,
+          "end": 717.393
+        }
+      ]
+    },
+    {
+      "text": "Я работаю на почте.",
+      "translation": "Men pochta xizmatida ishlayman.",
+      "start": 717.453,
+      "end": 718.994,
+      "words": [
+        {
+          "text": "Я",
+          "start": 717.453,
+          "end": 717.493
+        },
+        {
+          "text": "работаю",
+          "start": 717.533,
+          "end": 717.833
+        },
+        {
+          "text": "на",
+          "start": 717.873,
+          "end": 717.933
+        },
+        {
+          "text": "почте.",
+          "start": 717.973,
+          "end": 718.994
+        }
+      ]
+    },
+    {
+      "text": "Я почитальон.",
+      "translation": "Men pochta xodimiman.",
+      "start": 719.034,
+      "end": 719.774,
+      "words": [
+        {
+          "text": "Я",
+          "start": 719.034,
+          "end": 719.094
+        },
+        {
+          "text": "почитальон.",
+          "start": 719.134,
+          "end": 719.774
+        }
+      ]
+    },
+    {
+      "text": "Он работает на почте.",
+      "translation": "U pochta da ishlaydi.",
+      "start": 734.262,
+      "end": 736.423,
+      "words": [
+        {
+          "text": "Он",
+          "start": 734.262,
+          "end": 734.382
+        },
+        {
+          "text": "работает",
+          "start": 734.442,
+          "end": 735.102
+        },
+        {
+          "text": "на",
+          "start": 735.182,
+          "end": 735.282
+        },
+        {
+          "text": "почте.",
+          "start": 735.342,
+          "end": 736.423
+        }
+      ]
+    },
+    {
+      "text": "Он по чтальон.",
+      "translation": "U pochta xodimi.",
+      "start": 736.463,
+      "end": 741.905,
+      "words": [
+        {
+          "text": "Он",
+          "start": 736.463,
+          "end": 737.023
+        },
+        {
+          "text": "по",
+          "start": 737.063,
+          "end": 737.163
+        },
+        {
+          "text": "чтальон.",
+          "start": 737.183,
+          "end": 741.905
+        }
+      ]
+    },
+    {
+      "text": "Теперь, пожалуйста, ответьте вы.",
+      "translation": "Endi, iltimos, siz javob bering.",
+      "start": 741.945,
+      "end": 746.748,
+      "words": [
+        {
+          "text": "Теперь,",
+          "start": 741.945,
+          "end": 742.266
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 742.306,
+          "end": 742.826
+        },
+        {
+          "text": "ответьте",
+          "start": 742.866,
+          "end": 743.386
+        },
+        {
+          "text": "вы.",
+          "start": 743.446,
+          "end": 746.748
+        }
+      ]
+    },
+    {
+      "text": "Вспомните, где она работает.",
+      "translation": "Qayerda ishlayotganini eslang.",
+      "start": 746.768,
+      "end": 756.492,
+      "words": [
+        {
+          "text": "Вспомните,",
+          "start": 746.768,
+          "end": 748.368
+        },
+        {
+          "text": "где",
+          "start": 748.408,
+          "end": 748.568
+        },
+        {
+          "text": "она",
+          "start": 748.608,
+          "end": 748.748
+        },
+        {
+          "text": "работает.",
+          "start": 748.789,
+          "end": 756.492
+        }
+      ]
+    },
+    {
+      "text": "Правильно, она работает в плеклинике.",
+      "translation": "To‘g‘ri, u poliklinikada ishlaydi.",
+      "start": 756.532,
+      "end": 760.114,
+      "words": [
+        {
+          "text": "Правильно,",
+          "start": 756.532,
+          "end": 757.793
+        },
+        {
+          "text": "она",
+          "start": 757.833,
+          "end": 757.973
+        },
+        {
+          "text": "работает",
+          "start": 758.013,
+          "end": 758.613
+        },
+        {
+          "text": "в",
+          "start": 758.633,
+          "end": 758.653
+        },
+        {
+          "text": "плеклинике.",
+          "start": 758.673,
+          "end": 760.114
+        }
+      ]
+    },
+    {
+      "text": "Она врач.",
+      "translation": "U shifokor.",
+      "start": 760.154,
+      "end": 760.894,
+      "words": [
+        {
+          "text": "Она",
+          "start": 760.154,
+          "end": 760.494
+        },
+        {
+          "text": "врач.",
+          "start": 760.574,
+          "end": 760.894
+        }
+      ]
+    },
+    {
+      "text": "А сейчас скажите, пожалуйста, где он работает?",
+      "translation": "Endi, iltimos, ayting, u qayerda ishlaydi?",
+      "start": 764.49,
+      "end": 775.195,
+      "words": [
+        {
+          "text": "А",
+          "start": 764.49,
+          "end": 764.53
+        },
+        {
+          "text": "сейчас",
+          "start": 764.57,
+          "end": 764.83
+        },
+        {
+          "text": "скажите,",
+          "start": 764.89,
+          "end": 765.29
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 765.33,
+          "end": 767.311
+        },
+        {
+          "text": "где",
+          "start": 767.351,
+          "end": 767.551
+        },
+        {
+          "text": "он",
+          "start": 767.611,
+          "end": 767.751
+        },
+        {
+          "text": "работает?",
+          "start": 767.811,
+          "end": 775.195
+        }
+      ]
+    },
+    {
+      "text": "Правильно, он работает на почте.",
+      "translation": "To‘g‘ri, u pochta da ishlaydi.",
+      "start": 775.235,
+      "end": 778.496,
+      "words": [
+        {
+          "text": "Правильно,",
+          "start": 775.235,
+          "end": 776.475
+        },
+        {
+          "text": "он",
+          "start": 776.495,
+          "end": 776.615
+        },
+        {
+          "text": "работает",
+          "start": 776.675,
+          "end": 777.196
+        },
+        {
+          "text": "на",
+          "start": 777.256,
+          "end": 777.336
+        },
+        {
+          "text": "почте.",
+          "start": 777.396,
+          "end": 778.496
+        }
+      ]
+    },
+    {
+      "text": "Он почтальон.",
+      "translation": "U pochta xodimi.",
+      "start": 778.516,
+      "end": 787.9,
+      "words": [
+        {
+          "text": "Он",
+          "start": 778.516,
+          "end": 778.976
+        },
+        {
+          "text": "почтальон.",
+          "start": 779.036,
+          "end": 787.9
+        }
+      ]
+    },
+    {
+      "text": "Теперь скажите, пожалуйста, вы, где вы работаете?",
+      "translation": "Endi, iltimos, siz ayting, qayerda ishlaysiz?",
+      "start": 787.94,
+      "end": 791.902,
+      "words": [
+        {
+          "text": "Теперь",
+          "start": 787.94,
+          "end": 788.24
+        },
+        {
+          "text": "скажите,",
+          "start": 788.28,
+          "end": 788.661
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 788.701,
+          "end": 789.241
+        },
+        {
+          "text": "вы,",
+          "start": 789.281,
+          "end": 790.762
+        },
+        {
+          "text": "где",
+          "start": 790.802,
+          "end": 790.982
+        },
+        {
+          "text": "вы",
+          "start": 791.002,
+          "end": 791.082
+        },
+        {
+          "text": "работаете?",
+          "start": 791.122,
+          "end": 791.902
+        }
+      ]
+    },
+    {
+      "text": "Где вы живете?",
+      "translation": "Siz qayerda yashaysiz?",
+      "start": 798.27,
+      "end": 803.374,
+      "words": [
+        {
+          "text": "Где",
+          "start": 798.27,
+          "end": 798.47
+        },
+        {
+          "text": "вы",
+          "start": 798.51,
+          "end": 798.59
+        },
+        {
+          "text": "живете?",
+          "start": 798.65,
+          "end": 803.374
+        }
+      ]
+    },
+    {
+      "text": "Наташа, где вы живете?",
+      "translation": "Natasha, siz qayerda yashaysiz?",
+      "start": 803.414,
+      "end": 807.257,
+      "words": [
+        {
+          "text": "Наташа,",
+          "start": 803.414,
+          "end": 804.555
+        },
+        {
+          "text": "где",
+          "start": 804.595,
+          "end": 804.755
+        },
+        {
+          "text": "вы",
+          "start": 804.775,
+          "end": 804.835
+        },
+        {
+          "text": "живете?",
+          "start": 804.875,
+          "end": 807.257
+        }
+      ]
+    },
+    {
+      "text": "Я живу в Москве.",
+      "translation": "Men Moskva shahrida yashayman.",
+      "start": 807.357,
+      "end": 822.409,
+      "words": [
+        {
+          "text": "Я",
+          "start": 807.357,
+          "end": 807.457
+        },
+        {
+          "text": "живу",
+          "start": 807.497,
+          "end": 807.717
+        },
+        {
+          "text": "в",
+          "start": 807.737,
+          "end": 807.797
+        },
+        {
+          "text": "Москве.",
+          "start": 807.838,
+          "end": 822.409
+        }
+      ]
+    },
+    {
+      "text": "Она живет в Москве.",
+      "translation": "U Moskva shahrida yashaydi.",
+      "start": 822.469,
+      "end": 823.87,
+      "words": [
+        {
+          "text": "Она",
+          "start": 822.469,
+          "end": 822.649
+        },
+        {
+          "text": "живет",
+          "start": 822.709,
+          "end": 823.129
+        },
+        {
+          "text": "в",
+          "start": 823.169,
+          "end": 823.209
+        },
+        {
+          "text": "Москве.",
+          "start": 823.25,
+          "end": 823.87
+        }
+      ]
+    },
+    {
+      "text": "Юра, а где вы живете?",
+      "translation": "Yura, siz qayerda yashaysiz?",
+      "start": 828.43,
+      "end": 832.293,
+      "words": [
+        {
+          "text": "Юра,",
+          "start": 828.43,
+          "end": 829.091
+        },
+        {
+          "text": "а",
+          "start": 829.151,
+          "end": 829.611
+        },
+        {
+          "text": "где",
+          "start": 829.671,
+          "end": 829.851
+        },
+        {
+          "text": "вы",
+          "start": 829.911,
+          "end": 830.051
+        },
+        {
+          "text": "живете?",
+          "start": 830.111,
+          "end": 832.293
+        }
+      ]
+    },
+    {
+      "text": "Я живу в Киеве.",
+      "translation": "Men Kiyevda yashayman.",
+      "start": 832.393,
+      "end": 847.406,
+      "words": [
+        {
+          "text": "Я",
+          "start": 832.393,
+          "end": 832.493
+        },
+        {
+          "text": "живу",
+          "start": 832.553,
+          "end": 833.394
+        },
+        {
+          "text": "в",
+          "start": 833.414,
+          "end": 833.434
+        },
+        {
+          "text": "Киеве.",
+          "start": 833.474,
+          "end": 847.406
+        }
+      ]
+    },
+    {
+      "text": "Он живет в Киеве.",
+      "translation": "U Kiyevda yashaydi.",
+      "start": 847.446,
+      "end": 855.733,
+      "words": [
+        {
+          "text": "Он",
+          "start": 847.446,
+          "end": 847.666
+        },
+        {
+          "text": "живет",
+          "start": 847.746,
+          "end": 848.527
+        },
+        {
+          "text": "в",
+          "start": 848.567,
+          "end": 848.627
+        },
+        {
+          "text": "Киеве.",
+          "start": 848.687,
+          "end": 855.733
+        }
+      ]
+    },
+    {
+      "text": "Теперь, пожалуйста, ответьте вы.",
+      "translation": "Endi, iltimos, siz javob bering.",
+      "start": 855.773,
+      "end": 857.534,
+      "words": [
+        {
+          "text": "Теперь,",
+          "start": 855.773,
+          "end": 856.093
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 856.113,
+          "end": 856.673
+        },
+        {
+          "text": "ответьте",
+          "start": 856.693,
+          "end": 857.174
+        },
+        {
+          "text": "вы.",
+          "start": 857.234,
+          "end": 857.534
+        }
+      ]
+    },
+    {
+      "text": "Помните, где она живет?",
+      "translation": "U qayerda yashayotganini eslayapsizmi?",
+      "start": 860.33,
+      "end": 869.834,
+      "words": [
+        {
+          "text": "Помните,",
+          "start": 860.33,
+          "end": 861.751
+        },
+        {
+          "text": "где",
+          "start": 861.791,
+          "end": 861.991
+        },
+        {
+          "text": "она",
+          "start": 862.031,
+          "end": 862.171
+        },
+        {
+          "text": "живет?",
+          "start": 862.211,
+          "end": 869.834
+        }
+      ]
+    },
+    {
+      "text": "Правильно, она живет в Москве.",
+      "translation": "To‘g‘ri, u Moskva shahrida yashaydi.",
+      "start": 869.874,
+      "end": 875.856,
+      "words": [
+        {
+          "text": "Правильно,",
+          "start": 869.874,
+          "end": 871.134
+        },
+        {
+          "text": "она",
+          "start": 871.174,
+          "end": 871.335
+        },
+        {
+          "text": "живет",
+          "start": 871.395,
+          "end": 871.895
+        },
+        {
+          "text": "в",
+          "start": 871.935,
+          "end": 871.975
+        },
+        {
+          "text": "Москве.",
+          "start": 872.035,
+          "end": 875.856
+        }
+      ]
+    },
+    {
+      "text": "А теперь ответьте, пожалуйста, где он живет?",
+      "translation": "Endi, iltimos, u qayerda yashayotganini javob bering?",
+      "start": 875.876,
+      "end": 886.461,
+      "words": [
+        {
+          "text": "А",
+          "start": 875.876,
+          "end": 875.936
+        },
+        {
+          "text": "теперь",
+          "start": 875.956,
+          "end": 876.237
+        },
+        {
+          "text": "ответьте,",
+          "start": 876.277,
+          "end": 876.657
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 876.697,
+          "end": 878.097
+        },
+        {
+          "text": "где",
+          "start": 878.117,
+          "end": 878.297
+        },
+        {
+          "text": "он",
+          "start": 878.357,
+          "end": 878.497
+        },
+        {
+          "text": "живет?",
+          "start": 878.577,
+          "end": 886.461
+        }
+      ]
+    },
+    {
+      "text": "Правильно, он живет в Киеве.",
+      "translation": "To‘g‘ri, u Kiyevda yashaydi.",
+      "start": 886.521,
+      "end": 889.662,
+      "words": [
+        {
+          "text": "Правильно,",
+          "start": 886.521,
+          "end": 887.821
+        },
+        {
+          "text": "он",
+          "start": 887.861,
+          "end": 888.001
+        },
+        {
+          "text": "живет",
+          "start": 888.061,
+          "end": 888.962
+        },
+        {
+          "text": "в",
+          "start": 889.002,
+          "end": 889.062
+        },
+        {
+          "text": "Киеве.",
+          "start": 889.122,
+          "end": 889.662
+        }
+      ]
+    },
+    {
+      "text": "Скажите, пожалуйста, вы где вы живете?",
+      "translation": "Iltimos, ayting, siz qayerda yashaysiz?",
+      "start": 900.45,
+      "end": 907.973,
+      "words": [
+        {
+          "text": "Скажите,",
+          "start": 900.45,
+          "end": 900.83
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 900.85,
+          "end": 901.37
+        },
+        {
+          "text": "вы",
+          "start": 901.41,
+          "end": 903.071
+        },
+        {
+          "text": "где",
+          "start": 903.111,
+          "end": 903.291
+        },
+        {
+          "text": "вы",
+          "start": 903.331,
+          "end": 903.391
+        },
+        {
+          "text": "живете?",
+          "start": 903.431,
+          "end": 907.973
+        }
+      ]
+    },
+    {
+      "text": "Теперь посмотрите внимательно еще раз в первую часть нашего урока и проверьте, пожалуйста, все ли вы поняли и запомнили.",
+      "translation": "Endi diqqat bilan birinchi qismimizga yana bir bor qarang va iltimos, hamma narsani tushunganingizni va eslab qolganingizni tekshiring.",
+      "start": 908.013,
+      "end": 926.661,
+      "words": [
+        {
+          "text": "Теперь",
+          "start": 908.013,
+          "end": 908.253
+        },
+        {
+          "text": "посмотрите",
+          "start": 908.273,
+          "end": 908.773
+        },
+        {
+          "text": "внимательно",
+          "start": 908.813,
+          "end": 910.054
+        },
+        {
+          "text": "еще",
+          "start": 910.154,
+          "end": 910.474
+        },
+        {
+          "text": "раз",
+          "start": 910.534,
+          "end": 910.714
+        },
+        {
+          "text": "в",
+          "start": 910.734,
+          "end": 910.754
+        },
+        {
+          "text": "первую",
+          "start": 910.814,
+          "end": 911.114
+        },
+        {
+          "text": "часть",
+          "start": 911.154,
+          "end": 911.414
+        },
+        {
+          "text": "нашего",
+          "start": 911.434,
+          "end": 911.775
+        },
+        {
+          "text": "урока",
+          "start": 911.835,
+          "end": 913.095
+        },
+        {
+          "text": "и",
+          "start": 913.135,
+          "end": 913.175
+        },
+        {
+          "text": "проверьте,",
+          "start": 913.235,
+          "end": 913.655
+        },
+        {
+          "text": "пожалуйста,",
+          "start": 913.695,
+          "end": 914.736
+        },
+        {
+          "text": "все",
+          "start": 914.756,
+          "end": 914.916
+        },
+        {
+          "text": "ли",
+          "start": 914.956,
+          "end": 915.016
+        },
+        {
+          "text": "вы",
+          "start": 915.036,
+          "end": 915.136
+        },
+        {
+          "text": "поняли",
+          "start": 915.196,
+          "end": 916.036
+        },
+        {
+          "text": "и",
+          "start": 916.076,
+          "end": 916.096
+        },
+        {
+          "text": "запомнили.",
+          "start": 916.136,
+          "end": 926.661
+        }
+      ]
+    },
+    {
+      "text": "Не бойтесь, а Мурунная собака.",
+      "translation": "Qo‘rqma, bu Murunli it.",
+      "start": 926.681,
+      "end": 928.862,
+      "words": [
+        {
+          "text": "Не",
+          "start": 926.681,
+          "end": 926.761
+        },
+        {
+          "text": "бойтесь,",
+          "start": 926.801,
+          "end": 927.481
+        },
+        {
+          "text": "а",
+          "start": 927.521,
+          "end": 927.581
+        },
+        {
+          "text": "Мурунная",
+          "start": 927.621,
+          "end": 928.061
+        },
+        {
+          "text": "собака.",
+          "start": 928.101,
+          "end": 928.862
+        }
+      ]
+    },
+    {
+      "text": "А я и не боюсь.",
+      "translation": "Men ham qo‘rqmayman.",
+      "start": 928.902,
+      "end": 929.822,
+      "words": [
+        {
+          "text": "А",
+          "start": 928.902,
+          "end": 928.962
+        },
+        {
+          "text": "я",
+          "start": 929.022,
+          "end": 929.122
+        },
+        {
+          "text": "и",
+          "start": 929.142,
+          "end": 929.162
+        },
+        {
+          "text": "не",
+          "start": 929.182,
+          "end": 929.262
+        },
+        {
+          "text": "боюсь.",
+          "start": 929.302,
+          "end": 929.822
+        }
+      ]
+    },
+    {
+      "text": "Я люблю собак.",
+      "translation": "Men itlarni yaxshi ko‘raman.",
+      "start": 930.098,
+      "end": 938.585,
+      "words": [
+        {
+          "text": "Я",
+          "start": 930.098,
+          "end": 930.158
+        },
+        {
+          "text": "люблю",
+          "start": 930.198,
+          "end": 930.398
+        },
+        {
+          "text": "собак.",
+          "start": 930.458,
+          "end": 938.585
+        }
+      ]
+    },
+    {
+      "text": "Давай познакомимся.",
+      "translation": "Keling, tanishaylik.",
+      "start": 938.625,
+      "end": 940.827,
+      "words": [
+        {
+          "text": "Давай",
+          "start": 938.625,
+          "end": 938.825
+        },
+        {
+          "text": "познакомимся.",
+          "start": 938.845,
+          "end": 940.827
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Дима.",
+      "translation": "Mening ismim Dima.",
+      "start": 940.847,
+      "end": 942.228,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 940.847,
+          "end": 941.007
+        },
+        {
+          "text": "зовут",
+          "start": 941.047,
+          "end": 941.307
+        },
+        {
+          "text": "Дима.",
+          "start": 941.367,
+          "end": 942.228
+        }
+      ]
+    },
+    {
+      "text": "А тебя как?",
+      "translation": "Sening isming nima?",
+      "start": 942.268,
+      "end": 944.09,
+      "words": [
+        {
+          "text": "А",
+          "start": 942.268,
+          "end": 942.308
+        },
+        {
+          "text": "тебя",
+          "start": 942.348,
+          "end": 942.649
+        },
+        {
+          "text": "как?",
+          "start": 942.689,
+          "end": 944.09
+        }
+      ]
+    },
+    {
+      "text": "Его зовут Амур.",
+      "translation": "Uni Amur deb atashadi.",
+      "start": 944.17,
+      "end": 946.212,
+      "words": [
+        {
+          "text": "Его",
+          "start": 944.17,
+          "end": 944.35
+        },
+        {
+          "text": "зовут",
+          "start": 944.41,
+          "end": 945.051
+        },
+        {
+          "text": "Амур.",
+          "start": 945.111,
+          "end": 946.212
+        }
+      ]
+    },
+    {
+      "text": "Амур.",
+      "translation": "Amur.",
+      "start": 946.252,
+      "end": 947.653,
+      "words": [
+        {
+          "text": "Амур.",
+          "start": 946.252,
+          "end": 947.653
+        }
+      ]
+    },
+    {
+      "text": "Дай Диме Лапу.",
+      "translation": "Dima, unga Poyini ber.",
+      "start": 947.693,
+      "end": 956.06,
+      "words": [
+        {
+          "text": "Дай",
+          "start": 947.693,
+          "end": 947.853
+        },
+        {
+          "text": "Диме",
+          "start": 947.893,
+          "end": 948.113
+        },
+        {
+          "text": "Лапу.",
+          "start": 948.133,
+          "end": 956.06
+        }
+      ]
+    },
+    {
+      "text": "Меня зовут Дима.",
+      "translation": "Mening ismim Dima.",
+      "start": 956.08,
+      "end": 957.961,
+      "words": [
+        {
+          "text": "Меня",
+          "start": 956.08,
+          "end": 956.24
+        },
+        {
+          "text": "зовут",
+          "start": 956.28,
+          "end": 956.5
+        },
+        {
+          "text": "Дима.",
+          "start": 956.54,
+          "end": 957.961
+        }
+      ]
+    },
+    {
+      "text": "Я уже знаю.",
+      "translation": "Men allaqachon bilaman.",
+      "start": 958.021,
+      "end": 958.782,
+      "words": [
+        {
+          "text": "Я",
+          "start": 958.021,
+          "end": 958.101
+        },
+        {
+          "text": "уже",
+          "start": 958.121,
+          "end": 958.262
+        },
+        {
+          "text": "знаю.",
+          "start": 958.322,
+          "end": 958.782
+        }
+      ]
+    },
+    {
+      "text": "А я Оля.",
+      "translation": "Men Olya.",
+      "start": 959.498,
+      "end": 970.225,
+      "words": [
+        {
+          "text": "А",
+          "start": 959.498,
+          "end": 959.578
+        },
+        {
+          "text": "я",
+          "start": 959.678,
+          "end": 959.938
+        },
+        {
+          "text": "Оля.",
+          "start": 960.018,
+          "end": 970.225
+        }
+      ]
+    },
+    {
+      "text": "А хотите, я угадаю, где вы учитесь?",
+      "translation": "Sizni qayerda o‘qiyotganingizni taxmin qilaymi?",
+      "start": 970.265,
+      "end": 973.107,
+      "words": [
+        {
+          "text": "А",
+          "start": 970.265,
+          "end": 970.285
+        },
+        {
+          "text": "хотите,",
+          "start": 970.345,
+          "end": 970.666
+        },
+        {
+          "text": "я",
+          "start": 970.726,
+          "end": 970.786
+        },
+        {
+          "text": "угадаю,",
+          "start": 970.826,
+          "end": 971.206
+        },
+        {
+          "text": "где",
+          "start": 971.226,
+          "end": 971.386
+        },
+        {
+          "text": "вы",
+          "start": 971.406,
+          "end": 971.546
+        },
+        {
+          "text": "учитесь?",
+          "start": 971.606,
+          "end": 973.107
+        }
+      ]
+    },
+    {
+      "text": "Да.",
+      "translation": "Ha.",
+      "start": 973.147,
+      "end": 974.188,
+      "words": [
+        {
+          "text": "Да.",
+          "start": 973.147,
+          "end": 974.188
+        }
+      ]
+    },
+    {
+      "text": "Наверное, в университете.",
+      "translation": "Ehtimol, universitetda.",
+      "start": 974.228,
+      "end": 976.53,
+      "words": [
+        {
+          "text": "Наверное,",
+          "start": 974.228,
+          "end": 974.628
+        },
+        {
+          "text": "в",
+          "start": 974.648,
+          "end": 974.688
+        },
+        {
+          "text": "университете.",
+          "start": 974.708,
+          "end": 976.53
+        }
+      ]
+    },
+    {
+      "text": "Да.",
+      "translation": "Ha.",
+      "start": 976.57,
+      "end": 977.851,
+      "words": [
+        {
+          "text": "Да.",
+          "start": 976.57,
+          "end": 977.851
+        }
+      ]
+    },
+    {
+      "text": "Как вы догадались?",
+      "translation": "Qanday qilib taxmin qildingiz?",
+      "start": 977.891,
+      "end": 979.472,
+      "words": [
+        {
+          "text": "Как",
+          "start": 977.891,
+          "end": 978.031
+        },
+        {
+          "text": "вы",
+          "start": 978.051,
+          "end": 978.111
+        },
+        {
+          "text": "догадались?",
+          "start": 978.151,
+          "end": 979.472
+        }
+      ]
+    },
+    {
+      "text": "А на каком курсе вы учитесь?",
+      "translation": "Siz qaysi kursda o‘qiyotganingiz?",
+      "start": 979.512,
+      "end": 985.616,
+      "words": [
+        {
+          "text": "А",
+          "start": 979.512,
+          "end": 980.793
+        },
+        {
+          "text": "на",
+          "start": 980.933,
+          "end": 980.993
+        },
+        {
+          "text": "каком",
+          "start": 981.013,
+          "end": 981.173
+        },
+        {
+          "text": "курсе",
+          "start": 981.273,
+          "end": 981.513
+        },
+        {
+          "text": "вы",
+          "start": 981.533,
+          "end": 981.613
+        },
+        {
+          "text": "учитесь?",
+          "start": 981.673,
+          "end": 985.616
+        }
+      ]
+    },
+    {
+      "text": "А как вы думаете, на каком?",
+      "translation": "Sizningcha, qaysi kursda?",
+      "start": 985.656,
+      "end": 988.118,
+      "words": [
+        {
+          "text": "А",
+          "start": 985.656,
+          "end": 985.696
+        },
+        {
+          "text": "как",
+          "start": 985.716,
+          "end": 985.876
+        },
+        {
+          "text": "вы",
+          "start": 985.916,
+          "end": 985.996
+        },
+        {
+          "text": "думаете,",
+          "start": 986.016,
+          "end": 986.296
+        },
+        {
+          "text": "на",
+          "start": 986.316,
+          "end": 986.376
+        },
+        {
+          "text": "каком?",
+          "start": 986.396,
+          "end": 988.118
+        }
+      ]
+    },
+    {
+      "text": "На втором.",
+      "translation": "Ikkinchi kursda.",
+      "start": 988.158,
+      "end": 988.638,
+      "words": [
+        {
+          "text": "На",
+          "start": 988.158,
+          "end": 988.198
+        },
+        {
+          "text": "втором.",
+          "start": 988.218,
+          "end": 988.638
+        }
+      ]
+    },
+    {
+      "text": "Не угадали, на третьем.",
+      "translation": "Taxmin qilmadingiz, uchinchi kursda.",
+      "start": 989.598,
+      "end": 995.402,
+      "words": [
+        {
+          "text": "Не",
+          "start": 989.598,
+          "end": 989.678
+        },
+        {
+          "text": "угадали,",
+          "start": 989.718,
+          "end": 990.158
+        },
+        {
+          "text": "на",
+          "start": 990.178,
+          "end": 990.279
+        },
+        {
+          "text": "третьем.",
+          "start": 990.339,
+          "end": 995.402
+        }
+      ]
+    },
+    {
+      "text": "Вы живете недалеко отсюда, правда?",
+      "translation": "Siz bu yerga yaqin yashaysiz, to‘g‘rimi?",
+      "start": 995.462,
+      "end": 999.905,
+      "words": [
+        {
+          "text": "Вы",
+          "start": 995.462,
+          "end": 995.562
+        },
+        {
+          "text": "живете",
+          "start": 995.622,
+          "end": 996.843
+        },
+        {
+          "text": "недалеко",
+          "start": 996.883,
+          "end": 997.223
+        },
+        {
+          "text": "отсюда,",
+          "start": 997.283,
+          "end": 997.563
+        },
+        {
+          "text": "правда?",
+          "start": 997.583,
+          "end": 999.905
+        }
+      ]
+    },
+    {
+      "text": "Правда?",
+      "translation": "To‘g‘rimi?",
+      "start": 999.945,
+      "end": 1001.006,
+      "words": [
+        {
+          "text": "Правда?",
+          "start": 999.945,
+          "end": 1001.006
+        }
+      ]
+    },
+    {
+      "text": "Вот на этой улице.",
+      "translation": "Mana shu ko‘chada.",
+      "start": 1001.026,
+      "end": 1005.909,
+      "words": [
+        {
+          "text": "Вот",
+          "start": 1001.026,
+          "end": 1001.166
+        },
+        {
+          "text": "на",
+          "start": 1001.206,
+          "end": 1001.286
+        },
+        {
+          "text": "этой",
+          "start": 1001.326,
+          "end": 1001.526
+        },
+        {
+          "text": "улице.",
+          "start": 1001.566,
+          "end": 1005.909
+        }
+      ]
+    },
+    {
+      "text": "А вот скажите, в каком доме я живу?",
+      "translation": "Qani, ayting, qaysi uyda yashayman?",
+      "start": 1005.929,
+      "end": 1008.071,
+      "words": [
+        {
+          "text": "А",
+          "start": 1005.929,
+          "end": 1005.949
+        },
+        {
+          "text": "вот",
+          "start": 1005.989,
+          "end": 1006.109
+        },
+        {
+          "text": "скажите,",
+          "start": 1006.149,
+          "end": 1006.53
+        },
+        {
+          "text": "в",
+          "start": 1006.55,
+          "end": 1006.59
+        },
+        {
+          "text": "каком",
+          "start": 1006.63,
+          "end": 1006.97
+        },
+        {
+          "text": "доме",
+          "start": 1007.03,
+          "end": 1007.33
+        },
+        {
+          "text": "я",
+          "start": 1007.37,
+          "end": 1007.45
+        },
+        {
+          "text": "живу?",
+          "start": 1007.49,
+          "end": 1008.071
+        }
+      ]
+    },
+    {
+      "text": "Ну, это совсем не трудно.",
+      "translation": "Bu juda qiyin emas.",
+      "start": 1008.111,
+      "end": 1009.692,
+      "words": [
+        {
+          "text": "Ну,",
+          "start": 1008.111,
+          "end": 1008.191
+        },
+        {
+          "text": "это",
+          "start": 1008.231,
+          "end": 1008.351
+        },
+        {
+          "text": "совсем",
+          "start": 1008.411,
+          "end": 1008.691
+        },
+        {
+          "text": "не",
+          "start": 1008.731,
+          "end": 1008.811
+        },
+        {
+          "text": "трудно.",
+          "start": 1008.831,
+          "end": 1009.692
+        }
+      ]
+    },
+    {
+      "text": "Сейчас.",
+      "translation": "Hozir.",
+      "start": 1009.712,
+      "end": 1018.358,
+      "words": [
+        {
+          "text": "Сейчас.",
+          "start": 1009.712,
+          "end": 1018.358
+        }
+      ]
+    },
+    {
+      "text": "Вот в этом.",
+      "translation": "Mana shu uyda.",
+      "start": 1018.378,
+      "end": 1019.038,
+      "words": [
+        {
+          "text": "Вот",
+          "start": 1018.378,
+          "end": 1018.558
+        },
+        {
+          "text": "в",
+          "start": 1018.598,
+          "end": 1018.618
+        },
+        {
+          "text": "этом.",
+          "start": 1018.658,
+          "end": 1019.038
+        }
+      ]
+    },
+    {
+      "text": "Совершенно верно.",
+      "translation": "To‘g‘ri.",
+      "start": 1020.054,
+      "end": 1021.895,
+      "words": [
+        {
+          "text": "Совершенно",
+          "start": 1020.054,
+          "end": 1020.694
+        },
+        {
+          "text": "верно.",
+          "start": 1020.774,
+          "end": 1021.895
+        }
+      ]
+    },
+    {
+      "text": "А на каком этаже?",
+      "translation": "Qaysi qavatda?",
+      "start": 1021.975,
+      "end": 1025.037,
+      "words": [
+        {
+          "text": "А",
+          "start": 1021.975,
+          "end": 1022.856
+        },
+        {
+          "text": "на",
+          "start": 1022.896,
+          "end": 1022.956
+        },
+        {
+          "text": "каком",
+          "start": 1022.976,
+          "end": 1023.216
+        },
+        {
+          "text": "этаже?",
+          "start": 1023.236,
+          "end": 1025.037
+        }
+      ]
+    },
+    {
+      "text": "На первом.",
+      "translation": "Birinchi.",
+      "start": 1025.077,
+      "end": 1026.918,
+      "words": [
+        {
+          "text": "На",
+          "start": 1025.077,
+          "end": 1025.157
+        },
+        {
+          "text": "первом.",
+          "start": 1025.197,
+          "end": 1026.918
+        }
+      ]
+    },
+    {
+      "text": "Втором.",
+      "translation": "Ikkinchi.",
+      "start": 1026.958,
+      "end": 1028.339,
+      "words": [
+        {
+          "text": "Втором.",
+          "start": 1026.958,
+          "end": 1028.339
+        }
+      ]
+    },
+    {
+      "text": "Третим.",
+      "translation": "Uchinchi.",
+      "start": 1028.399,
+      "end": 1029.88,
+      "words": [
+        {
+          "text": "Третим.",
+          "start": 1028.399,
+          "end": 1029.88
+        }
+      ]
+    },
+    {
+      "text": "Четвертым.",
+      "translation": "To‘rtinchi.",
+      "start": 1029.92,
+      "end": 1032.361,
+      "words": [
+        {
+          "text": "Четвертым.",
+          "start": 1029.92,
+          "end": 1032.361
+        }
+      ]
+    },
+    {
+      "text": "На четвертом.",
+      "translation": "To‘rtinchi qavatda.",
+      "start": 1032.401,
+      "end": 1033.842,
+      "words": [
+        {
+          "text": "На",
+          "start": 1032.401,
+          "end": 1032.461
+        },
+        {
+          "text": "четвертом.",
+          "start": 1032.481,
+          "end": 1033.842
+        }
+      ]
+    },
+    {
+      "text": "На четвертом этаже живет Амур, Оля и вся ее семья.",
+      "translation": "To‘rtinchi qavatda Amur, Olya va uning butun oilasi yashaydi.",
+      "start": 1033.862,
+      "end": 1044.569,
+      "words": [
+        {
+          "text": "На",
+          "start": 1033.862,
+          "end": 1033.922
+        },
+        {
+          "text": "четвертом",
+          "start": 1033.962,
+          "end": 1034.322
+        },
+        {
+          "text": "этаже",
+          "start": 1034.362,
+          "end": 1035.043
+        },
+        {
+          "text": "живет",
+          "start": 1035.123,
+          "end": 1035.303
+        },
+        {
+          "text": "Амур,",
+          "start": 1035.383,
+          "end": 1036.164
+        },
+        {
+          "text": "Оля",
+          "start": 1036.204,
+          "end": 1036.804
+        },
+        {
+          "text": "и",
+          "start": 1036.844,
+          "end": 1036.864
+        },
+        {
+          "text": "вся",
+          "start": 1036.884,
+          "end": 1037.064
+        },
+        {
+          "text": "ее",
+          "start": 1037.084,
+          "end": 1037.224
+        },
+        {
+          "text": "семья.",
+          "start": 1037.264,
+          "end": 1044.569
+        }
+      ]
+    },
+    {
+      "text": "Входи.",
+      "translation": "Kirish.",
+      "start": 1044.629,
+      "end": 1046.109,
+      "words": [
+        {
+          "text": "Входи.",
+          "start": 1044.629,
+          "end": 1046.109
+        }
+      ]
+    },
+    {
+      "text": "Ну, входи.",
+      "translation": "Xo‘p, kirish.",
+      "start": 1046.149,
+      "end": 1047.07,
+      "words": [
+        {
+          "text": "Ну,",
+          "start": 1046.149,
+          "end": 1046.209
+        },
+        {
+          "text": "входи.",
+          "start": 1046.23,
+          "end": 1047.07
+        }
+      ]
+    },
+    {
+      "text": "Мама!",
+      "translation": "Ona!",
+      "start": 1050.61,
+      "end": 1053.633,
+      "words": [
+        {
+          "text": "Мама!",
+          "start": 1050.61,
+          "end": 1053.633
+        }
+      ]
+    },
+    {
+      "text": "Добрый вечер.",
+      "translation": "Assalomu alaykum.",
+      "start": 1053.673,
+      "end": 1055.194,
+      "words": [
+        {
+          "text": "Добрый",
+          "start": 1053.673,
+          "end": 1053.913
+        },
+        {
+          "text": "вечер.",
+          "start": 1053.933,
+          "end": 1055.194
+        }
+      ]
+    },
+    {
+      "text": "Здравствуйте.",
+      "translation": "Salom.",
+      "start": 1055.214,
+      "end": 1056.335,
+      "words": [
+        {
+          "text": "Здравствуйте.",
+          "start": 1055.214,
+          "end": 1056.335
+        }
+      ]
+    },
+    {
+      "text": "Мама, это Дима.",
+      "translation": "Ona, bu Dima.",
+      "start": 1056.375,
+      "end": 1058.517,
+      "words": [
+        {
+          "text": "Мама,",
+          "start": 1056.375,
+          "end": 1056.616
+        },
+        {
+          "text": "это",
+          "start": 1056.636,
+          "end": 1056.776
+        },
+        {
+          "text": "Дима.",
+          "start": 1056.816,
+          "end": 1058.517
+        }
+      ]
+    },
+    {
+      "text": "Давайте познакомимся.",
+      "translation": "Tanishing.",
+      "start": 1058.577,
+      "end": 1060.219,
+      "words": [
+        {
+          "text": "Давайте",
+          "start": 1058.577,
+          "end": 1058.898
+        },
+        {
+          "text": "познакомимся.",
+          "start": 1058.938,
+          "end": 1060.219
+        }
+      ]
+    },
+    {
+      "text": "Наталия Серегеевна.",
+      "translation": "Natalya Sergeyevna.",
+      "start": 1060.239,
+      "end": 1060.9,
+      "words": [
+        {
+          "text": "Наталия",
+          "start": 1060.239,
+          "end": 1060.559
+        },
+        {
+          "text": "Серегеевна.",
+          "start": 1060.579,
+          "end": 1060.9
+        }
+      ]
+    },
+    {
+      "text": "Дмитрий.",
+      "translation": "Dmitriy.",
+      "start": 1060.94,
+      "end": 1061.72,
+      "words": [
+        {
+          "text": "Дмитрий.",
+          "start": 1060.94,
+          "end": 1061.72
+        }
+      ]
+    },
+    {
+      "text": "Очень рада вас видеть.",
+      "translation": "Sizni ko‘rganimdan juda xursandman.",
+      "start": 1061.76,
+      "end": 1063.282,
+      "words": [
+        {
+          "text": "Очень",
+          "start": 1061.76,
+          "end": 1062.001
+        },
+        {
+          "text": "рада",
+          "start": 1062.021,
+          "end": 1062.201
+        },
+        {
+          "text": "вас",
+          "start": 1062.221,
+          "end": 1062.421
+        },
+        {
+          "text": "видеть.",
+          "start": 1062.441,
+          "end": 1063.282
+        }
+      ]
+    },
+    {
+      "text": "А где папа?",
+      "translation": "Ota qayerda?",
+      "start": 1063.302,
+      "end": 1063.742,
+      "words": [
+        {
+          "text": "А",
+          "start": 1063.302,
+          "end": 1063.342
+        },
+        {
+          "text": "где",
+          "start": 1063.362,
+          "end": 1063.502
+        },
+        {
+          "text": "папа?",
+          "start": 1063.522,
+          "end": 1063.742
+        }
+      ]
+    },
+    {
+      "text": "Он дома?",
+      "translation": "U uyda?",
+      "start": 1063.762,
+      "end": 1064.683,
+      "words": [
+        {
+          "text": "Он",
+          "start": 1063.762,
+          "end": 1063.822
+        },
+        {
+          "text": "дома?",
+          "start": 1063.862,
+          "end": 1064.683
+        }
+      ]
+    },
+    {
+      "text": "Да, конечно.",
+      "translation": "Ha, albatta.",
+      "start": 1064.723,
+      "end": 1069.848,
+      "words": [
+        {
+          "text": "Да,",
+          "start": 1064.723,
+          "end": 1064.923
+        },
+        {
+          "text": "конечно.",
+          "start": 1064.983,
+          "end": 1069.848
+        }
+      ]
+    },
+    {
+      "text": "Это вам.",
+      "translation": "Bu sizga.",
+      "start": 1069.908,
+      "end": 1071.369,
+      "words": [
+        {
+          "text": "Это",
+          "start": 1069.908,
+          "end": 1070.068
+        },
+        {
+          "text": "вам.",
+          "start": 1070.108,
+          "end": 1071.369
+        }
+      ]
+    },
+    {
+      "text": "Спасибо, Дима.",
+      "translation": "Rahmat, Dima.",
+      "start": 1071.409,
+      "end": 1072.35,
+      "words": [
+        {
+          "text": "Спасибо,",
+          "start": 1071.409,
+          "end": 1071.91
+        },
+        {
+          "text": "Дима.",
+          "start": 1071.95,
+          "end": 1072.35
+        }
+      ]
+    },
+    {
+      "text": "Папа, познакомься, пожалуйста.",
+      "translation": "Ota, tanishing, iltimos.",
+      "start": 1081.506,
+      "end": 1083.569,
+      "words": [
+        {
+          "text": "Папа,",
+          "start": 1081.506,
+          "end": 1082.527
+        },
+        {
+          "text": "познакомься,",
+          "start": 1082.587,
+          "end": 1083.068
+        },
+        {
+          "text": "пожалуйста.",
+          "start": 1083.088,
+          "end": 1083.569
+        }
+      ]
+    },
+    {
+      "text": "Это Дима.",
+      "translation": "Bu Dima.",
+      "start": 1083.609,
+      "end": 1085.451,
+      "words": [
+        {
+          "text": "Это",
+          "start": 1083.609,
+          "end": 1083.789
+        },
+        {
+          "text": "Дима.",
+          "start": 1083.829,
+          "end": 1085.451
+        }
+      ]
+    },
+    {
+      "text": "Очень приятно.",
+      "translation": "Juda yoqimli.",
+      "start": 1085.491,
+      "end": 1086.592,
+      "words": [
+        {
+          "text": "Очень",
+          "start": 1085.491,
+          "end": 1085.691
+        },
+        {
+          "text": "приятно.",
+          "start": 1085.731,
+          "end": 1086.592
+        }
+      ]
+    },
+    {
+      "text": "Вадим Петрович.",
+      "translation": "Vadim Petrovich.",
+      "start": 1086.612,
+      "end": 1087.373,
+      "words": [
+        {
+          "text": "Вадим",
+          "start": 1086.612,
+          "end": 1086.812
+        },
+        {
+          "text": "Петрович.",
+          "start": 1086.853,
+          "end": 1087.373
+        }
+      ]
+    },
+    {
+      "text": "Дмитрий.",
+      "translation": "Dmitriy.",
+      "start": 1087.413,
+      "end": 1088.815,
+      "words": [
+        {
+          "text": "Дмитрий.",
+          "start": 1087.413,
+          "end": 1088.815
+        }
+      ]
+    },
+    {
+      "text": "Проходите, пожалуйста.",
+      "translation": "O‘tishingizni iltimos.",
+      "start": 1088.835,
+      "end": 1096.985,
+      "words": [
+        {
+          "text": "Проходите,",
+          "start": 1088.835,
+          "end": 1089.316
+        },
+        {
+          "text": "пожалуйста.",
+          "start": 1089.376,
+          "end": 1096.985
+        }
+      ]
+    },
+    {
+      "text": "Наш урок закончен.",
+      "translation": "Bizning dars tugadi.",
+      "start": 1097.025,
+      "end": 1098.767,
+      "words": [
+        {
+          "text": "Наш",
+          "start": 1097.025,
+          "end": 1097.225
+        },
+        {
+          "text": "урок",
+          "start": 1097.245,
+          "end": 1097.445
+        },
+        {
+          "text": "закончен.",
+          "start": 1097.486,
+          "end": 1098.767
+        }
+      ]
+    },
+    {
+      "text": "До свидания.",
+      "translation": "Xayr.",
+      "start": 1098.787,
+      "end": 1100.129,
+      "words": [
+        {
+          "text": "До",
+          "start": 1098.787,
+          "end": 1098.867
+        },
+        {
+          "text": "свидания.",
+          "start": 1098.927,
+          "end": 1100.129
+        }
+      ]
+    },
+    {
+      "text": "До новых встреч.",
+      "translation": "Yana ko‘rishguncha.",
+      "start": 1100.169,
+      "end": 1101.01,
+      "words": [
+        {
+          "text": "До",
+          "start": 1100.169,
+          "end": 1100.249
+        },
+        {
+          "text": "новых",
+          "start": 1100.309,
+          "end": 1100.609
+        },
+        {
+          "text": "встреч.",
+          "start": 1100.629,
+          "end": 1101.01
+        }
+      ]
+    }
+  ]
+}

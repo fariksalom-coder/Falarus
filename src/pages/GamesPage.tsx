@@ -1,3 +1,4 @@
+import { AudioLines, ArrowUpRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -359,6 +360,22 @@ export default function GamesPage() {
               </span>
             </div>
           </button>
+          <button type="button" onClick={() => navigate('/games/dictation')} className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#4c72f5] to-[#3450ba] p-5 text-left shadow-lg transition active:scale-[0.98]" aria-label="Диктант — слушай и пиши">
+            <span className="text-[32px]">🎧</span><p className="mt-3 text-[16px] font-black text-white">Диктант</p><p className="mt-1 text-[12px] text-white/80">Слушай и пиши · 20 тем</p><span className="mt-3 inline-block rounded-full bg-white/20 px-3 py-1 text-[10px] font-bold text-white">НОВАЯ ИГРА</span>
+          </button>
+          <a
+            href="/exercise.html"
+            className="group relative flex flex-col overflow-hidden rounded-[22px] bg-[#1B5AF2] p-4 text-left shadow-[0_16px_32px_-16px_rgba(27,90,242,0.5)] transition active:scale-[0.97]"
+            aria-label="Живая речь — новая игра"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[15px] bg-white text-[#1B5AF2]"><AudioLines size={25}/></span>
+              <span className="rounded-full bg-white/20 px-2 py-1 text-[10px] font-black text-white">Новая игра</span>
+            </div>
+            <p className="mt-3 text-[16px] font-black leading-tight text-white">Живая речь</p>
+            <p className="mt-0.5 text-[11.5px] font-bold leading-snug text-white/80">Слушай · Повторяй · Говори</p>
+            <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-white"><span>Пробный урок</span><ArrowUpRight size={17}/></div>
+          </a>
         </div>
 
       </main>

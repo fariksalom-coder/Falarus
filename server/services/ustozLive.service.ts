@@ -30,12 +30,20 @@ import jwt from 'jsonwebtoken';
 import { WebSocketServer, WebSocket } from 'ws';
 import { buildLiveLessonInstruction as tizimKorsatmasi, LiveQuestionProgress } from './liveLessonPrompt.js';
 import { pool } from '../lib/db.js';
+import { findUsedPraise } from './liveLessonPraise.js';
+import { loadPraiseProfile, saveUsedPraise } from './liveLessonPraise.service.js';
 import { kvotaOl, kvotaXabari } from './ustozKvota.service.js';
 
 const YOL = '/api/ustoz/live';
 
-/** Tez javob beradigan model — suhbatda kechikish eng muhim ko'rsatkich. */
-const MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-3.1-flash-live-preview';
+/**
+ * Tez javob beradigan Live model — suhbatda kechikish eng muhim ko'rsatkich.
+ *
+ * 2026-09-15: Google `gemini-3.1-flash-live-preview` ni eskirtdi va
+ * `gemini-3.8-live` ni tavsiya qildi. Eski preview sekinlashib, "erta
+ * versiya"dek gapira boshlagan — default shu yangi stabil model.
+ */
+const MODEL = process.env.GEMINI_LIVE_MODEL || 'gemini-3.8-live';
 /** Yosh, jonli ovoz — o'quvchilar tengdoshi bilan gaplashayotgandek his qilsin. */
 const VOICE = process.env.GEMINI_LIVE_VOICE || 'Leda';
 
@@ -129,7 +137,7 @@ type JonliSavol = { savol: string; manbaKun: number; manbaMavzu: string };
 const BAHOLASH_FUNKSIYASI = {
   name: 'javob_baholandi',
   description:
-    "Faqat savol yakunlanganda chaqir: to'g'ri javob yoki takror, ikki muvaffaqiyatsiz takror, yoxud aniq o'tkazish so'rovi. Birinchi bilmayman javobida namuna berib takrorni kut; hali chaqirma.",
+    "Faqat savol YAKUNLANGANDA chaqir: o'quvchi to'g'ri javob/takror qildi (togri:true) YOKI aniq «o'tkazamiz» dedi (togri:false). Xato, bilmayman, bo'lak mashqi yoki kutish — hali yakun emas, chaqirma. Ikki marta xato bo'ldi deb o'tkazma.",
   parameters: {
     type: 'OBJECT',
     properties: {
@@ -140,7 +148,7 @@ const BAHOLASH_FUNKSIYASI = {
       togri: {
         type: 'BOOLEAN',
         description:
-          "Mustaqil to'g'ri javob yoki namunani to'g'ri takrorlash — true. Faqat ikkita muvaffaqiyatsiz takrordan keyin yoki aniq o'tkazish so'rovida — false. Jimlik javob emas.",
+          "true — mustaqil to'g'ri yoki to'liq namunani to'g'ri takrorladi. false — FAQAT o'quvchi aniq o'tkazishni so'raganda. Xato urinishlar uchun false bilan o'tkazma.",
       },
       izoh: {
         type: 'STRING',
@@ -369,6 +377,19 @@ export function attachUstozLive(server: Server): void {
      * tekshiruv shunga qo'yiladi. Navbat tugagach tozalanadi.
      */
     let ustozMatni = '';
+    let praiseTranscript = '';
+    let starting = false;
+    const usedPhrases = new Set<string>();
+    let praiseWrites: Promise<void> = Promise.resolve();
+    const recordPraise = () => {
+      const fresh = findUsedPraise(praiseTranscript).filter(phrase => !usedPhrases.has(phrase));
+      for (const phrase of fresh) usedPhrases.add(phrase);
+      if (fresh.length) {
+        praiseWrites = praiseWrites.then(() => saveUsedPraise(userId, fresh)).catch(error => {
+          console.error('[ustozLive] Praise history save failed:', error);
+        });
+      }
+    };
     /** Shu suhbatda ochilgan kunlar: kun -> mavzu. Qaytarish faqat shularga. */
     const ruxsatKunlar = new Map<number, string>();
     /*
@@ -397,7 +418,9 @@ export function attachUstozLive(server: Server): void {
       clearTimeout(umrTaymer);
       clearTimeout(yakunTaymer);
       clearInterval(jimlikTaymer);
-      ochiqSessiyalar.delete(userId);
+      recordPraise();
+      // Keep the per-user lock until the next lesson can read the saved history.
+      void praiseWrites.finally(() => ochiqSessiyalar.delete(userId));
       umumiySessiya = Math.max(0, umumiySessiya - 1);
       /*
        * Tarix yozuvi yopiladi — sessiya qanday tugashidan qat'i nazar.
@@ -407,7 +430,7 @@ export function attachUstozLive(server: Server): void {
       void urinishKutish.then((id) => urinishYop(id));
       try { yuqori?.close(); } catch { /* allaqachon yopiq */ }
       try {
-        yubor({ type: 'end', sabab });
+        yubor({ type: 'end', sabab, used_phrases: [...usedPhrases] });
         klient.close();
       } catch { /* allaqachon yopiq */ }
     };
@@ -431,7 +454,8 @@ export function attachUstozLive(server: Server): void {
             role: 'user',
             parts: [{
               text: 'Vaqt tugayapti. Endi suhbatni yakunla: bir-ikki gapda '
-                + 'qisqacha xulosa qil, o\'quvchini maqta va xayrlash. '
+                + 'qisqacha xulosa qil; faqat haqiqiy natija yoki urinishni qayd et. '
+                + 'Bank 6 dan ishlatilmagan bitta ibora bilan xayrlash. '
                 + 'Yangi savol berma. Bu xabarni ovozga chiqarma.',
             }],
           }],
@@ -467,7 +491,9 @@ export function attachUstozLive(server: Server): void {
     });
 
     // --- Gemini bilan ulanish -------------------------------------------
-    const boshla = (cfg: Boshlash) => {
+    const boshla = async (cfg: Boshlash) => {
+      const praiseProfile = await loadPraiseProfile(userId);
+      if (tugadi) return;
       const mavzu = String(cfg.mavzu ?? '').trim().slice(0, 200) || 'Rus tili';
 
       /*
@@ -523,7 +549,7 @@ export function attachUstozLive(server: Server): void {
               responseModalities: ['AUDIO'],
               speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } },
             },
-            systemInstruction: { parts: [{ text: tizimKorsatmasi(mavzu, savollar) }] },
+            systemInstruction: { parts: [{ text: tizimKorsatmasi(mavzu, savollar, praiseProfile) }] },
             // Javob berilmagan savolni model shu funksiya orqali bildiradi.
             tools: [{ functionDeclarations: [BAHOLASH_FUNKSIYASI] }],
             // Ikkala tomonning matni ham kerak: doskada yozuv ko'rinib turadi,
@@ -535,6 +561,7 @@ export function attachUstozLive(server: Server): void {
       });
 
       yuqori.on('message', (xom) => {
+        if (tugadi) return;
         let msg: Record<string, any>;
         try {
           msg = JSON.parse(xom.toString());
@@ -574,7 +601,7 @@ export function attachUstozLive(server: Server): void {
                 keyingi_savol: progress.nextQuestion,
                 korsatma: progress.accepted || progress.reason === 'duplicate'
                   ? "Yakunlangan savolni qaytarma. Keyingi hali berilmagan savolga o't. Bu o'quvchi javobi emas."
-                  : "Hozirgi savolni yakunla; yordam berayotgan bo'lsang o'quvchining takrorini kut. Tartibni tashlama.",
+                  : "Hozirgi savolda QOL. Keyingi savolga o'tma. Xato/bilmayman bo'lsa to'liq namunani darhol o'zing aytib ketma — avval o'quvchini kut; so'ng gapni 2–3 so'zli bo'laklarga bo'lib takrorlat. Har bo'lakdan keyin TO'XTA. Bu o'quvchi javobi emas.",
               } });
               if (!progress.accepted) continue;
               const royxatdagi = savollar[raqam - 1];
@@ -622,12 +649,17 @@ export function attachUstozLive(server: Server): void {
         const sc = msg.serverContent;
         if (!sc) return;
 
-        if (sc.interrupted) yubor({ type: 'interrupted' });
+        if (sc.interrupted) {
+          recordPraise();
+          praiseTranscript = '';
+          yubor({ type: 'interrupted' });
+        }
         if (sc.inputTranscription?.text) {
           yubor({ type: 'text', kim: 'oquvchi', matn: sc.inputTranscription.text });
         }
         if (sc.outputTranscription?.text) {
           const matn = sc.outputTranscription.text;
+          praiseTranscript += matn;
           yubor({ type: 'text', kim: 'ustoz', matn });
           /*
            * Bo'laklar BO'SHLIQSIZ ulanadi. Oraga bo'shliq qo'shsak, ikkiga
@@ -658,7 +690,8 @@ export function attachUstozLive(server: Server): void {
                   role: 'user',
                   parts: [{
                     text: `Vaqt hali TUGAMADI — yana ${qolgan} daqiqacha bor. `
-                      + 'Xayrlashma. Agar takrorlashni kutayotgan bo\'lsang, o\'sha javobni kut; '
+                      + 'Xayrlashma. Agar takror/bo\'lak mashqida bo\'lsang — o\'quvchini kut, '
+                      + 'xato bo\'lsa keyingi savolga o\'tma, gapni bo\'laklab davom et; '
                       + 'aks holda hali berilmagan keyingi savol bilan davom et. Bu xabarni '
                       + 'ovozga chiqarma va u haqda gapirma.',
                   }],
@@ -672,6 +705,8 @@ export function attachUstozLive(server: Server): void {
           if (p.inlineData?.data) yubor({ type: 'audio', data: p.inlineData.data });
         }
         if (sc.turnComplete) {
+          recordPraise();
+          praiseTranscript = '';
           ustozMatni = '';
           yubor({ type: 'turnComplete' });
         }
@@ -696,8 +731,13 @@ export function attachUstozLive(server: Server): void {
       }
 
       if (msg.type === 'start') {
-        if (yuqori) return; // ikkinchi marta boshlanmasin
-        boshla(msg as Boshlash);
+        if (yuqori || starting || tugadi) return;
+        starting = true;
+        void boshla(msg as Boshlash).catch(error => {
+          console.error('[ustozLive] Lesson setup failed:', error);
+          yubor({ type: 'error', xato: "Jonli suhbatni ulab bo'lmadi" });
+          tugat('xato');
+        });
         return;
       }
 

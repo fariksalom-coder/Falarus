@@ -1,0 +1,9 @@
+{
+  "url": "https://falarus.uz/test-russkogo",
+  "logo": true,
+  "audiences": 3,
+  "defaultPhone": "+7",
+  "alternatePhone": "+998",
+  "unauthorized": 401,
+  "errors": []
+}

@@ -35,6 +35,7 @@ import {
 } from '../../shared/paymentsProofUrl.js';
 import { invalidateAccessCache } from './subscription.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
+import { canPurchaseWelcomeVideoOffer } from '../../shared/welcomeVideoOffer.js';
 import { recordPaymentEvent, extractRequestMeta } from '../lib/paymentEvents.js';
 import {
   isRahmatPartnerCallbackEnabled,
@@ -44,6 +45,7 @@ import {
 export type RahmatCreateBody = {
   tariff_type?: unknown;
   product_code?: unknown;
+  welcome_offer?: unknown;
 };
 
 export type RahmatCreateJson =
@@ -101,6 +103,46 @@ export async function createRahmatMulticardPayment(
   const russianTariffType = isSubscriptionTariffType(tariffTypeRaw) ? tariffTypeRaw : null;
   if (productCode === 'russian' && !russianTariffType) {
     return { status: 400, json: { error: 'tariff_type kerak: month, three_month, six_month' } };
+  }
+  const welcomeOfferRequested = body.welcome_offer === true;
+  if (welcomeOfferRequested && (productCode !== 'russian' || russianTariffType !== 'three_month')) {
+    return { status: 400, json: { error: 'INVALID_WELCOME_OFFER' } };
+  }
+  let welcomeOfferPaymentId: number | null = null;
+  if (welcomeOfferRequested) {
+    const { data: welcomeOffer, error: offerErr } = await supabase
+      .from('welcome_video_offers')
+      .select('status, next_video_index, offer_expires_at, payment_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (offerErr) return { status: 500, json: { error: offerErr.message } };
+    if (
+      !welcomeOffer ||
+      !canPurchaseWelcomeVideoOffer(welcomeOffer as any)
+    ) {
+      return { status: 409, json: { error: 'WELCOME_OFFER_EXPIRED', message: 'Taklif muddati tugagan.' } };
+    }
+    welcomeOfferPaymentId = Number((welcomeOffer as any).payment_id) || null;
+    if (welcomeOfferPaymentId) {
+      const { data: existingPromoPayment } = await supabase.from('payments')
+        .select('id, status, payment_proof_url, amount')
+        .eq('id', welcomeOfferPaymentId).eq('user_id', userId).maybeSingle();
+      if (existingPromoPayment && (existingPromoPayment as any).status === 'pending' && (existingPromoPayment as any).payment_proof_url) {
+        return { status: 200, json: {
+          success: true,
+          payment_id: welcomeOfferPaymentId,
+          payment_url: String((existingPromoPayment as any).payment_proof_url),
+          amount: Number((existingPromoPayment as any).amount),
+          currency: 'UZS',
+        } };
+      }
+      if (!existingPromoPayment || (existingPromoPayment as any).status !== 'pending') {
+        await supabase.from('welcome_video_offers')
+          .update({ payment_id: null, updated_at: new Date().toISOString() })
+          .eq('user_id', userId).in('status', ['sequence', 'offer']).eq('payment_id', welcomeOfferPaymentId);
+        welcomeOfferPaymentId = null;
+      }
+    }
   }
   const listingPlanCode =
     productCode === 'teacher_listing' ? parseTeacherListingPlanCode(body as Record<string, unknown>) : null;
@@ -185,6 +227,14 @@ export async function createRahmatMulticardPayment(
       rate_as_of: quote.rateAsOf ?? null,
       pricing_source: 'rub_catalog_x_cbu',
     };
+    if (welcomeOfferRequested) {
+      discountMeta = {
+        ...discountMeta,
+        welcome_video_offer: true,
+        activation_tariff_type: 'six_month',
+        offer_label: 'three_month_price_for_six_month_access',
+      };
+    }
   } else if (productCode === 'teacher_listing' && listingPlanCode) {
     amount = getTeacherListingPriceUzs(listingPlanCode);
     baseAmount = amount;
@@ -230,6 +280,23 @@ export async function createRahmatMulticardPayment(
   }
 
   const paymentId = Number((row as { id: number }).id);
+  if (welcomeOfferRequested) {
+    const { data: claimed, error: claimErr } = await supabase
+      .from('welcome_video_offers')
+      .update({ payment_id: paymentId, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('payment_id', null)
+      .or(`and(status.eq.sequence,next_video_index.eq.2),and(status.eq.offer,offer_expires_at.gt.${new Date().toISOString()})`)
+      .select('user_id')
+      .maybeSingle();
+    if (claimErr || !claimed) {
+      await supabase.from('payments').delete().eq('id', paymentId);
+      return {
+        status: 409,
+        json: { error: 'WELCOME_OFFER_ALREADY_USED', message: 'Taklif muddati tugagan yoki allaqachon ishlatilgan.' },
+      };
+    }
+  }
   if (productCode === 'teacher_listing' && listingPlanCode) {
     try {
       await ensureTeacherListingSubscription(supabase, userId, paymentId, listingPlanCode);
@@ -250,7 +317,7 @@ export async function createRahmatMulticardPayment(
   }
   const invoiceId = String(paymentId);
   const amountTiyin = soumToTiyin(amount);
-  const ofdName = getPaymentDisplayLabel(productCode, productCode === 'russian' ? russianTariffType : null);
+  const ofdName = getPaymentDisplayLabel(productCode, productCode === 'russian' ? (welcomeOfferRequested ? 'six_month' : russianTariffType) : null);
   const ofd: MulticardOfdLine[] = [
     {
       qty: 1,
@@ -292,6 +359,11 @@ export async function createRahmatMulticardPayment(
     };
   } catch (e) {
     await supabase.from('payments').delete().eq('id', paymentId);
+    if (welcomeOfferRequested) {
+      await supabase.from('welcome_video_offers')
+        .update({ payment_id: null, updated_at: new Date().toISOString() })
+        .eq('user_id', userId).in('status', ['sequence', 'offer']).eq('payment_id', paymentId);
+    }
     const msg = e instanceof Error ? e.message : 'Multicard xatolik';
     console.error('[rahmat/create]', msg);
     const ofdConfig = /^MULTICARD_OFD_(EMPTY|INVALID):/i.test(msg);
@@ -364,7 +436,7 @@ export async function handleRahmatMulticardCallback(
 
   const { data: payment, error } = await supabase
     .from('payments')
-    .select('id, user_id, tariff_type, product_code, amount, status, payment_channel, multicard_invoice_uuid')
+    .select('id, user_id, tariff_type, product_code, amount, currency, status, payment_channel, multicard_invoice_uuid, discount_meta')
     .eq('id', paymentId)
     .maybeSingle();
   if (error || !payment) {
@@ -381,6 +453,7 @@ export async function handleRahmatMulticardCallback(
     status: string;
     payment_channel?: string | null;
     multicard_invoice_uuid?: string | null;
+    discount_meta?: Record<string, unknown> | null;
   };
 
   if (row.payment_channel !== 'rahmat') {
@@ -467,11 +540,18 @@ export async function handleRahmatMulticardCallback(
     return { status: 200, json: { success: true } };
   }
 
+  if ((row.discount_meta as Record<string, unknown> | null)?.welcome_video_offer === true) {
+    await supabase.from('welcome_video_offers')
+      .update({ status: 'claimed', updated_at: new Date().toISOString() })
+      .eq('user_id', Number(row.user_id)).eq('payment_id', paymentId);
+  }
+
   try {
     await activateApprovedPayment(supabase, {
       userId: Number(row.user_id),
       productCode: productCodeForAccess,
       tariffType: row.tariff_type,
+      activationTariffType: typeof row.discount_meta?.activation_tariff_type === 'string' ? row.discount_meta.activation_tariff_type : null,
     });
     invalidateAccessCache(Number(row.user_id));
   } catch (activationErr) {
@@ -490,6 +570,22 @@ export async function handleRahmatMulticardCallback(
     });
   } catch (teacherErr) {
     console.error('[rahmat/callback teacher activation]', teacherErr);
+  }
+
+  if (productCodeForAccess === 'russian') {
+    const paidCurrency =
+      typeof (row as Record<string, unknown>).currency === 'string'
+        ? String((row as Record<string, unknown>).currency)
+        : null;
+    void import('./salesCrm.service.js')
+      .then(({ markSalesLeadPaid }) =>
+        markSalesLeadPaid({
+          userId: Number(row.user_id),
+          amount: Number(row.amount) || null,
+          currency: paidCurrency,
+        }),
+      )
+      .catch((err) => console.warn('[sales-crm] rahmat paid', err));
   }
 
   if (isRahmatPartnerCallbackEnabled()) {

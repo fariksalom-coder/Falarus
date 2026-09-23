@@ -25,7 +25,10 @@ import {
 import { getAdminHelpChats } from '../../api/admin';
 
 const nav = [
+  { to: adminPath('/dictation'), label: 'Диктант', icon: ClipboardList },
   { to: adminPath('/dashboard'), label: 'Umumiy holat', icon: LayoutDashboard },
+  { to: adminPath('/video-lessons'), label: 'Уроки из видео', icon: Video },
+  { to: adminPath('/kiosk'), label: 'Test va chegirmalar', icon: ClipboardList },
   { to: adminPath('/content'), label: 'Kurs kontenti', icon: BookOpen },
   { to: adminPath('/onboarding'), label: "So'rovnoma", icon: ClipboardList },
   { to: adminPath('/users'), label: 'Foydalanuvchilar', icon: Users },

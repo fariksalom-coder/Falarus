@@ -1,0 +1,24 @@
+{
+  "id": "065b91d7-53cb-448b-a37f-9744b11c4781",
+  "processingSeconds": 1330.52,
+  "sentences": 216,
+  "words": 761,
+  "highlight": {
+    "text": "Здравствуйте!",
+    "start": 20.322,
+    "end": 22.424
+  },
+  "rates": [
+    0.5,
+    0.8,
+    1,
+    1.25,
+    1.5
+  ],
+  "modes": [
+    "listen",
+    "repeat",
+    "speak"
+  ],
+  "errors": []
+}

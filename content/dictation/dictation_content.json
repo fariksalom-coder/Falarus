@@ -1,0 +1,6284 @@
+{
+  "topics": [
+    {
+      "key": "introduction",
+      "id": "introduction",
+      "title_ru": "Знакомство",
+      "title_uz": "Tanishuv",
+      "icon": "👋",
+      "description_ru": "Слова и короткие фразы: знакомство.",
+      "description_uz": "Tanishuv: so‘zlar va qisqa gaplar.",
+      "background_id": "city",
+      "sort_order": 1,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "имя",
+          "translation_uz": "ism",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "фамилия",
+          "translation_uz": "familiya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "отчество",
+          "translation_uz": "otasining ismi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "человек",
+          "translation_uz": "odam",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "друг",
+          "translation_uz": "do‘st",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "подруга",
+          "translation_uz": "dugona",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "знакомый",
+          "translation_uz": "tanish",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "сосед",
+          "translation_uz": "qo‘shni",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "гость",
+          "translation_uz": "mehmon",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "страна",
+          "translation_uz": "mamlakat",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "язык",
+          "translation_uz": "til",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "возраст",
+          "translation_uz": "yosh",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "адрес",
+          "translation_uz": "manzil",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "номер",
+          "translation_uz": "raqam",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "встреча",
+          "translation_uz": "uchrashuv",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "привет",
+          "translation_uz": "salom",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "спасибо",
+          "translation_uz": "rahmat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пожалуйста",
+          "translation_uz": "iltimos",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "извините",
+          "translation_uz": "kechirasiz",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "здравствуйте",
+          "translation_uz": "assalomu alaykum",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "приятно",
+          "translation_uz": "yoqimli",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "вместе",
+          "translation_uz": "birga",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рядом",
+          "translation_uz": "yonida",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "новый",
+          "translation_uz": "yangi",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "первый",
+          "translation_uz": "birinchi",
+          "difficulty": 1
+        },
+        {
+          "type": "sentence",
+          "text": "Меня зовут Али.",
+          "translation_uz": "Mening ismim Ali.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как вас зовут?",
+          "translation_uz": "Ismingiz nima?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Очень приятно познакомиться.",
+          "translation_uz": "Tanishganimdan juda xursandman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я из Узбекистана.",
+          "translation_uz": "Men O‘zbekistondanman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Откуда вы приехали?",
+          "translation_uz": "Siz qayerdan keldingiz?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я немного говорю по-русски.",
+          "translation_uz": "Men ruscha biroz gapiraman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Повторите, пожалуйста.",
+          "translation_uz": "Iltimos, takrorlang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Говорите, пожалуйста, медленнее.",
+          "translation_uz": "Iltimos, sekinroq gapiring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Это мой друг.",
+          "translation_uz": "Bu mening do‘stim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы работаем вместе.",
+          "translation_uz": "Biz birga ishlaymiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Рад вас видеть.",
+          "translation_uz": "Sizni ko‘rganimdan xursandman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как ваши дела?",
+          "translation_uz": "Ishlaringiz qanday?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня всё хорошо.",
+          "translation_uz": "Menda hammasi yaxshi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "А как ваша фамилия?",
+          "translation_uz": "Familiyangiz-chi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько вам лет?",
+          "translation_uz": "Yoshingiz nechada?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне двадцать пять лет.",
+          "translation_uz": "Men yigirma besh yoshdaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где вы живёте?",
+          "translation_uz": "Siz qayerda yashaysiz?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я живу рядом.",
+          "translation_uz": "Men yaqin joyda yashayman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Давайте познакомимся.",
+          "translation_uz": "Keling, tanishamiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Это моя соседка.",
+          "translation_uz": "Bu mening qo‘shnim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "До скорой встречи!",
+          "translation_uz": "Tez orada ko‘rishguncha!",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо за помощь.",
+          "translation_uz": "Yordamingiz uchun rahmat.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно ваш номер телефона?",
+          "translation_uz": "Telefon raqamingizni bersangiz bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я здесь первый раз.",
+          "translation_uz": "Men bu yerga birinchi marta keldim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Будем на связи.",
+          "translation_uz": "Aloqada bo‘lamiz.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "home",
+      "id": "home",
+      "title_ru": "Дом",
+      "title_uz": "Uy",
+      "icon": "🏠",
+      "description_ru": "Слова и короткие фразы: дом.",
+      "description_uz": "Uy: so‘zlar va qisqa gaplar.",
+      "background_id": "home",
+      "sort_order": 2,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "дом",
+          "translation_uz": "uy",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "квартира",
+          "translation_uz": "kvartira",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "комната",
+          "translation_uz": "xona",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "кухня",
+          "translation_uz": "oshxona",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "дверь",
+          "translation_uz": "eshik",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "окно",
+          "translation_uz": "deraza",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "пол",
+          "translation_uz": "pol",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "потолок",
+          "translation_uz": "shift",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "стена",
+          "translation_uz": "devor",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ключ",
+          "translation_uz": "kalit",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "кровать",
+          "translation_uz": "karavot",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "стол",
+          "translation_uz": "stol",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "стул",
+          "translation_uz": "stul",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "шкаф",
+          "translation_uz": "shkaf",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "диван",
+          "translation_uz": "divan",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "лампа",
+          "translation_uz": "chiroq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "розетка",
+          "translation_uz": "rozetka",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "кран",
+          "translation_uz": "jo‘mrak",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "душ",
+          "translation_uz": "dush",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ванная",
+          "translation_uz": "hammom",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "балкон",
+          "translation_uz": "balkon",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "лифт",
+          "translation_uz": "lift",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "подъезд",
+          "translation_uz": "podyezd",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "аренда",
+          "translation_uz": "ijara",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "хозяин",
+          "translation_uz": "uy egasi",
+          "difficulty": 1
+        },
+        {
+          "type": "sentence",
+          "text": "Я снимаю комнату.",
+          "translation_uz": "Men xona ijaraga olganman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько стоит аренда?",
+          "translation_uz": "Ijara qancha turadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Квартира очень тёплая.",
+          "translation_uz": "Kvartira juda iliq.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Закройте, пожалуйста, окно.",
+          "translation_uz": "Iltimos, derazani yoping.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Ключ лежит на столе.",
+          "translation_uz": "Kalit stol ustida turibdi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У нас нет горячей воды.",
+          "translation_uz": "Bizda issiq suv yo‘q.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "В ванной сломался кран.",
+          "translation_uz": "Hammomdagi jo‘mrak buzildi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно вызвать мастера.",
+          "translation_uz": "Ustani chaqirish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я заплатил за квартиру.",
+          "translation_uz": "Men kvartira uchun to‘ladim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Включите свет на кухне.",
+          "translation_uz": "Oshxonadagi chiroqni yoqing.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Лифт сегодня не работает.",
+          "translation_uz": "Bugun lift ishlamayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы живём на третьем этаже.",
+          "translation_uz": "Biz uchinchi qavatda yashaymiz.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Можно посмотреть комнату?",
+          "translation_uz": "Xonani ko‘rsam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Здесь есть стиральная машина?",
+          "translation_uz": "Bu yerda kir yuvish mashinasi bormi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Интернет входит в стоимость?",
+          "translation_uz": "Internet narxga kiradimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Когда можно заехать?",
+          "translation_uz": "Qachon ko‘chib kirsak bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дверь не закрывается.",
+          "translation_uz": "Eshik yopilmayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "В комнате холодно.",
+          "translation_uz": "Xona sovuq.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Поставь стул у окна.",
+          "translation_uz": "Stulni deraza yoniga qo‘y.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я потерял ключи.",
+          "translation_uz": "Men kalitlarimni yo‘qotdim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Соседи уже спят.",
+          "translation_uz": "Qo‘shnilar allaqachon uxlayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не шумите, пожалуйста.",
+          "translation_uz": "Iltimos, shovqin qilmang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мусор нужно вынести.",
+          "translation_uz": "Axlatni olib chiqish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я убираю квартиру.",
+          "translation_uz": "Men kvartirani tozalayapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Хозяин придёт вечером.",
+          "translation_uz": "Uy egasi kechqurun keladi.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "family",
+      "id": "family",
+      "title_ru": "Семья",
+      "title_uz": "Oila",
+      "icon": "👨‍👩‍👧",
+      "description_ru": "Слова и короткие фразы: семья.",
+      "description_uz": "Oila: so‘zlar va qisqa gaplar.",
+      "background_id": "home",
+      "sort_order": 3,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "семья",
+          "translation_uz": "oila",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "мама",
+          "translation_uz": "ona",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "папа",
+          "translation_uz": "ota",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "родители",
+          "translation_uz": "ota-ona",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "сын",
+          "translation_uz": "o‘g‘il",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "дочь",
+          "translation_uz": "qiz farzand",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "брат",
+          "translation_uz": "aka yoki uka",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сестра",
+          "translation_uz": "opa yoki singil",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "муж",
+          "translation_uz": "er",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "жена",
+          "translation_uz": "xotin",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ребёнок",
+          "translation_uz": "bola",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "дети",
+          "translation_uz": "bolalar",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "бабушка",
+          "translation_uz": "buvi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "дедушка",
+          "translation_uz": "buva",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "внук",
+          "translation_uz": "o‘g‘il nabira",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "внучка",
+          "translation_uz": "qiz nabira",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "дядя",
+          "translation_uz": "amaki yoki tog‘a",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "тётя",
+          "translation_uz": "amma yoki xola",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "родственник",
+          "translation_uz": "qarindosh",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "свадьба",
+          "translation_uz": "to‘y",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "праздник",
+          "translation_uz": "bayram",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "подарок",
+          "translation_uz": "sovg‘a",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "забота",
+          "translation_uz": "g‘amxo‘rlik",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "старший",
+          "translation_uz": "katta",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "младший",
+          "translation_uz": "kichik",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня большая семья.",
+          "translation_uz": "Mening oilam katta.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Моя семья живёт в Ташкенте.",
+          "translation_uz": "Mening oilam Toshkentda yashaydi.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я звоню маме каждый день.",
+          "translation_uz": "Men onamga har kuni qo‘ng‘iroq qilaman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мой брат работает водителем.",
+          "translation_uz": "Akam haydovchi bo‘lib ishlaydi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня двое детей.",
+          "translation_uz": "Mening ikki farzandim bor.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дочь ходит в школу.",
+          "translation_uz": "Qizim maktabga boradi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сын ещё маленький.",
+          "translation_uz": "O‘g‘lim hali kichkina.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как здоровье ваших родителей?",
+          "translation_uz": "Ota-onangizning sog‘lig‘i qanday?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы скучаем по дому.",
+          "translation_uz": "Biz uyimizni sog‘inyapmiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня у мамы день рождения.",
+          "translation_uz": "Bugun onamning tug‘ilgan kuni.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я купил подарок сестре.",
+          "translation_uz": "Men singlimga sovg‘a oldim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дети играют во дворе.",
+          "translation_uz": "Bolalar hovlida o‘ynayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Бабушка готовит ужин.",
+          "translation_uz": "Buvim kechki ovqat tayyorlayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Папа вернётся поздно.",
+          "translation_uz": "Dadam kech qaytadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы ужинаем всей семьёй.",
+          "translation_uz": "Biz butun oilamiz bilan kechki ovqatni yeymiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Позвони жене после работы.",
+          "translation_uz": "Ishdan keyin xotiningga qo‘ng‘iroq qil.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я помогаю родителям.",
+          "translation_uz": "Men ota-onamga yordam beraman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мой муж сейчас на работе.",
+          "translation_uz": "Erim hozir ishda.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "У сестры скоро свадьба.",
+          "translation_uz": "Opamning yaqinda to‘yi bo‘ladi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "К нам приехали родственники.",
+          "translation_uz": "Biznikiga qarindoshlar keldi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Ребёнок уже уснул.",
+          "translation_uz": "Bola allaqachon uxlab qoldi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно забрать сына из школы.",
+          "translation_uz": "O‘g‘limni maktabdan olib kelish kerak.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мы вместе смотрим фотографии.",
+          "translation_uz": "Biz birga suratlarni ko‘ryapmiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Передайте привет вашей семье.",
+          "translation_uz": "Oilangizga salom ayting.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На выходных я поеду к брату.",
+          "translation_uz": "Dam olish kunlari akamnikiga boraman.",
+          "difficulty": 3
+        }
+      ]
+    },
+    {
+      "key": "work",
+      "id": "work",
+      "title_ru": "Работа",
+      "title_uz": "Ish",
+      "icon": "💼",
+      "description_ru": "Слова и короткие фразы: работа.",
+      "description_uz": "Ish: so‘zlar va qisqa gaplar.",
+      "background_id": "construction",
+      "sort_order": 4,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "работа",
+          "translation_uz": "ish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "зарплата",
+          "translation_uz": "maosh",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "смена",
+          "translation_uz": "smena",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "начальник",
+          "translation_uz": "boshliq",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "коллега",
+          "translation_uz": "hamkasb",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "перерыв",
+          "translation_uz": "tanaffus",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "выходной",
+          "translation_uz": "dam olish kuni",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "отпуск",
+          "translation_uz": "ta’til",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "договор",
+          "translation_uz": "shartnoma",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "график",
+          "translation_uz": "jadval",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "задача",
+          "translation_uz": "vazifa",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "встреча",
+          "translation_uz": "uchrashuv",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "склад",
+          "translation_uz": "ombor",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "офис",
+          "translation_uz": "ofis",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "завод",
+          "translation_uz": "zavod",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "бригада",
+          "translation_uz": "brigada",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "мастер",
+          "translation_uz": "usta",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "опыт",
+          "translation_uz": "tajriba",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "должность",
+          "translation_uz": "lavozim",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "сотрудник",
+          "translation_uz": "xodim",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "оплата",
+          "translation_uz": "to‘lov",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "отчёт",
+          "translation_uz": "hisobot",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "заказ",
+          "translation_uz": "buyurtma",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "срочно",
+          "translation_uz": "zudlik bilan",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вовремя",
+          "translation_uz": "o‘z vaqtida",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я сегодня работаю.",
+          "translation_uz": "Men bugun ishlayapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Когда начинается смена?",
+          "translation_uz": "Smena qachon boshlanadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я приду к восьми.",
+          "translation_uz": "Men soat sakkizga kelaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно сделать перерыв?",
+          "translation_uz": "Tanaffus qilsam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где мой рабочий график?",
+          "translation_uz": "Mening ish jadvalim qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Когда будет зарплата?",
+          "translation_uz": "Maosh qachon beriladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я уже закончил работу.",
+          "translation_uz": "Men ishni tugatdim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Помогите мне, пожалуйста.",
+          "translation_uz": "Iltimos, menga yordam bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Покажите, как это сделать.",
+          "translation_uz": "Buni qanday qilishni ko‘rsating.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужен выходной.",
+          "translation_uz": "Menga dam olish kuni kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я немного опоздаю.",
+          "translation_uz": "Men biroz kechikaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Начальник сейчас занят.",
+          "translation_uz": "Boshliq hozir band.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы работаем в одной бригаде.",
+          "translation_uz": "Biz bir brigadada ishlaymiz.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я ищу работу.",
+          "translation_uz": "Men ish qidiryapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня есть опыт.",
+          "translation_uz": "Menda tajriba bor.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно посмотреть договор?",
+          "translation_uz": "Shartnomani ko‘rsam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько часов длится смена?",
+          "translation_uz": "Smena necha soat davom etadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня много заказов.",
+          "translation_uz": "Bugun buyurtmalar ko‘p.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно закончить до обеда.",
+          "translation_uz": "Tushlikkacha tugatish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Кто сегодня на смене?",
+          "translation_uz": "Bugun kim smenada?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я заменю коллегу завтра.",
+          "translation_uz": "Ertaga hamkasbimning o‘rniga ishlayman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Это входит в мои обязанности?",
+          "translation_uz": "Bu mening vazifalarimga kiradimi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужна рабочая одежда.",
+          "translation_uz": "Menga ish kiyimi kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо за вашу работу.",
+          "translation_uz": "Ishingiz uchun rahmat.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Завтра у меня выходной.",
+          "translation_uz": "Ertaga mening dam olish kunim.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "shop",
+      "id": "shop",
+      "title_ru": "Магазин",
+      "title_uz": "Do‘kon",
+      "icon": "🛒",
+      "description_ru": "Слова и короткие фразы: магазин.",
+      "description_uz": "Do‘kon: so‘zlar va qisqa gaplar.",
+      "background_id": "shop",
+      "sort_order": 5,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "магазин",
+          "translation_uz": "do‘kon",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "цена",
+          "translation_uz": "narx",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "касса",
+          "translation_uz": "kassa",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "чек",
+          "translation_uz": "chek",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сдача",
+          "translation_uz": "qaytim",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "скидка",
+          "translation_uz": "chegirma",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "товар",
+          "translation_uz": "tovar",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "покупка",
+          "translation_uz": "xarid",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "продавец",
+          "translation_uz": "sotuvchi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "покупатель",
+          "translation_uz": "xaridor",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "очередь",
+          "translation_uz": "navbat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пакет",
+          "translation_uz": "paket",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "корзина",
+          "translation_uz": "savat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "тележка",
+          "translation_uz": "aravacha",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "наличные",
+          "translation_uz": "naqd pul",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "карта",
+          "translation_uz": "karta",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "витрина",
+          "translation_uz": "vitrina",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "полка",
+          "translation_uz": "tokcha",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "отдел",
+          "translation_uz": "bo‘lim",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "упаковка",
+          "translation_uz": "qadoq",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "вес",
+          "translation_uz": "vazn",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "килограмм",
+          "translation_uz": "kilogramm",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "грамм",
+          "translation_uz": "gramm",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "дорого",
+          "translation_uz": "qimmat",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "дешёвый",
+          "translation_uz": "arzon",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько это стоит?",
+          "translation_uz": "Bu qancha turadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно оплатить картой?",
+          "translation_uz": "Karta bilan to‘lasam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужен пакет.",
+          "translation_uz": "Menga paket kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дайте, пожалуйста, чек.",
+          "translation_uz": "Iltimos, chek bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где находится касса?",
+          "translation_uz": "Kassa qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Кто последний в очереди?",
+          "translation_uz": "Navbatning oxiri kim?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У вас есть скидки?",
+          "translation_uz": "Sizlarda chegirmalar bormi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Это слишком дорого.",
+          "translation_uz": "Bu juda qimmat.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно посмотреть другой товар?",
+          "translation_uz": "Boshqa tovarni ko‘rsam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я возьму два пакета.",
+          "translation_uz": "Men ikkita paket olaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сдачу оставьте себе.",
+          "translation_uz": "Qaytimni o‘zingizga oling.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Вы дали мне неправильную сдачу.",
+          "translation_uz": "Siz menga qaytimni noto‘g‘ri berdingiz.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Эта касса работает?",
+          "translation_uz": "Bu kassa ishlayaptimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где можно взвесить яблоки?",
+          "translation_uz": "Olmalarni qayerda tortish mumkin?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне полкилограмма сыра.",
+          "translation_uz": "Menga yarim kilogramm pishloq bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Пакет нужен большой.",
+          "translation_uz": "Katta paket kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня есть карта магазина.",
+          "translation_uz": "Menda do‘kon kartasi bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу вернуть покупку.",
+          "translation_uz": "Men xaridimni qaytarmoqchiman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Чек у меня сохранился.",
+          "translation_uz": "Chek menda saqlanib qolgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Этот товар закончился?",
+          "translation_uz": "Bu tovar tugadimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Когда привезут свежий хлеб?",
+          "translation_uz": "Yangi nonni qachon olib kelishadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Магазин открыт до десяти.",
+          "translation_uz": "Do‘kon soat o‘ngacha ochiq.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я только посмотрю.",
+          "translation_uz": "Men faqat ko‘rib chiqaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На полке другая цена.",
+          "translation_uz": "Tokchada boshqa narx yozilgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо, больше ничего не нужно.",
+          "translation_uz": "Rahmat, boshqa hech narsa kerak emas.",
+          "difficulty": 3
+        }
+      ]
+    },
+    {
+      "key": "food",
+      "id": "food",
+      "title_ru": "Еда",
+      "title_uz": "Ovqat",
+      "icon": "🍲",
+      "description_ru": "Слова и короткие фразы: еда.",
+      "description_uz": "Ovqat: so‘zlar va qisqa gaplar.",
+      "background_id": "shop",
+      "sort_order": 6,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "хлеб",
+          "translation_uz": "non",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "молоко",
+          "translation_uz": "sut",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вода",
+          "translation_uz": "suv",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "чай",
+          "translation_uz": "choy",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "кофе",
+          "translation_uz": "qahva",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сахар",
+          "translation_uz": "shakar",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "соль",
+          "translation_uz": "tuz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "мясо",
+          "translation_uz": "go‘sht",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "курица",
+          "translation_uz": "tovuq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рыба",
+          "translation_uz": "baliq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рис",
+          "translation_uz": "guruch",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "суп",
+          "translation_uz": "sho‘rva",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "картошка",
+          "translation_uz": "kartoshka",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "лук",
+          "translation_uz": "piyoz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "морковь",
+          "translation_uz": "sabzi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "помидор",
+          "translation_uz": "pomidor",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "огурец",
+          "translation_uz": "bodring",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "яблоко",
+          "translation_uz": "olma",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "масло",
+          "translation_uz": "yog‘",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сыр",
+          "translation_uz": "pishloq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "яйцо",
+          "translation_uz": "tuxum",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "завтрак",
+          "translation_uz": "nonushta",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "обед",
+          "translation_uz": "tushlik",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ужин",
+          "translation_uz": "kechki ovqat",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "меню",
+          "translation_uz": "taomnoma",
+          "difficulty": 1
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу заказать суп.",
+          "translation_uz": "Men sho‘rva buyurtma qilmoqchiman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Принесите, пожалуйста, меню.",
+          "translation_uz": "Iltimos, taomnomani olib keling.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне чай без сахара.",
+          "translation_uz": "Menga shakarsiz choy bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно стакан воды?",
+          "translation_uz": "Bir stakan suv bersangiz bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Что у вас на обед?",
+          "translation_uz": "Tushlikka nima bor?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я не ем свинину.",
+          "translation_uz": "Men cho‘chqa go‘shti yemayman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "В этом блюде есть мясо?",
+          "translation_uz": "Bu taomda go‘sht bormi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне без острого перца.",
+          "translation_uz": "Menga achchiq qalampirsiz bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Это очень вкусно.",
+          "translation_uz": "Bu juda mazali.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я уже позавтракал.",
+          "translation_uz": "Men allaqachon nonushta qildim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Давайте вместе пообедаем.",
+          "translation_uz": "Keling, birga tushlik qilamiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Суп ещё горячий.",
+          "translation_uz": "Sho‘rva hali issiq.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Хлеб лежит на столе.",
+          "translation_uz": "Non stol ustida turibdi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Молоко нужно убрать в холодильник.",
+          "translation_uz": "Sutni muzlatkichga qo‘yish kerak.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "У вас есть еда с собой?",
+          "translation_uz": "Olib ketish uchun ovqat bormi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Можно счёт, пожалуйста?",
+          "translation_uz": "Iltimos, hisobni bersangiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я готовлю ужин.",
+          "translation_uz": "Men kechki ovqat tayyorlayapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нарежь, пожалуйста, овощи.",
+          "translation_uz": "Iltimos, sabzavotlarni to‘g‘ra.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Добавьте немного соли.",
+          "translation_uz": "Biroz tuz qo‘shing.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне две чашки чая.",
+          "translation_uz": "Menga ikki piyola choy bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу пить.",
+          "translation_uz": "Men chanqadim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я очень голоден.",
+          "translation_uz": "Men juda ochman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы купили свежую рыбу.",
+          "translation_uz": "Biz yangi baliq sotib oldik.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня аллергия на орехи.",
+          "translation_uz": "Menda yong‘oqqa allergiya bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Приятного аппетита!",
+          "translation_uz": "Yoqimli ishtaha!",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "transport",
+      "id": "transport",
+      "title_ru": "Транспорт",
+      "title_uz": "Transport",
+      "icon": "🚌",
+      "description_ru": "Слова и короткие фразы: транспорт.",
+      "description_uz": "Transport: so‘zlar va qisqa gaplar.",
+      "background_id": "transport",
+      "sort_order": 7,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "автобус",
+          "translation_uz": "avtobus",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "метро",
+          "translation_uz": "metro",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "поезд",
+          "translation_uz": "poyezd",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "такси",
+          "translation_uz": "taksi",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "трамвай",
+          "translation_uz": "tramvay",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "остановка",
+          "translation_uz": "bekat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "станция",
+          "translation_uz": "stansiya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "билет",
+          "translation_uz": "chipta",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "проезд",
+          "translation_uz": "yo‘l haqi",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "водитель",
+          "translation_uz": "haydovchi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пассажир",
+          "translation_uz": "yo‘lovchi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "маршрут",
+          "translation_uz": "yo‘nalish",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пересадка",
+          "translation_uz": "boshqa transportga o‘tish",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "вокзал",
+          "translation_uz": "vokzal",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "платформа",
+          "translation_uz": "platforma",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "вагон",
+          "translation_uz": "vagon",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "место",
+          "translation_uz": "joy",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "багаж",
+          "translation_uz": "yuk",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вход",
+          "translation_uz": "kirish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "выход",
+          "translation_uz": "chiqish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "расписание",
+          "translation_uz": "jadval",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пробка",
+          "translation_uz": "tirbandlik",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "скорость",
+          "translation_uz": "tezlik",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "дорога",
+          "translation_uz": "yo‘l",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "движение",
+          "translation_uz": "harakat",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где ближайшая остановка?",
+          "translation_uz": "Eng yaqin bekat qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Этот автобус идёт до вокзала?",
+          "translation_uz": "Bu avtobus vokzalgacha boradimi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько стоит проезд?",
+          "translation_uz": "Yo‘l haqi qancha?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужно выйти здесь.",
+          "translation_uz": "Men shu yerda tushishim kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Остановите у магазина, пожалуйста.",
+          "translation_uz": "Iltimos, do‘kon yonida to‘xtating.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как доехать до центра?",
+          "translation_uz": "Markazga qanday borsa bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Вам нужна пересадка.",
+          "translation_uz": "Siz boshqa transportga o‘tishingiz kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я еду на работу.",
+          "translation_uz": "Men ishga ketyapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Автобус уже ушёл.",
+          "translation_uz": "Avtobus allaqachon ketib qoldi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Следующий поезд через десять минут.",
+          "translation_uz": "Keyingi poyezd o‘n daqiqadan keyin.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Уступите место, пожалуйста.",
+          "translation_uz": "Iltimos, joy bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Вы выходите на следующей остановке?",
+          "translation_uz": "Keyingi bekatda tushasizmi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Билет можно купить здесь.",
+          "translation_uz": "Chiptani shu yerda sotib olish mumkin.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я оплатил проезд картой.",
+          "translation_uz": "Men yo‘l haqini karta bilan to‘ladim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На дороге большая пробка.",
+          "translation_uz": "Yo‘lda katta tirbandlik bor.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Такси приедет через пять минут.",
+          "translation_uz": "Taksi besh daqiqadan keyin keladi.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Где вход в метро?",
+          "translation_uz": "Metroga kirish qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужен второй вагон.",
+          "translation_uz": "Menga ikkinchi vagon kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Двери закрываются.",
+          "translation_uz": "Eshiklar yopilyapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не забудьте свой багаж.",
+          "translation_uz": "Yukingizni unutmang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Поезд отправляется вечером.",
+          "translation_uz": "Poyezd kechqurun jo‘naydi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы приехали вовремя.",
+          "translation_uz": "Biz vaqtida yetib keldik.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно открыть окно?",
+          "translation_uz": "Derazani ochsam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Этот маршрут мне подходит.",
+          "translation_uz": "Bu yo‘nalish menga mos.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я жду автобус.",
+          "translation_uz": "Men avtobus kutyapman.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "hospital",
+      "id": "hospital",
+      "title_ru": "Больница",
+      "title_uz": "Shifoxona",
+      "icon": "🏥",
+      "description_ru": "Слова и короткие фразы: больница.",
+      "description_uz": "Shifoxona: so‘zlar va qisqa gaplar.",
+      "background_id": "city",
+      "sort_order": 8,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "больница",
+          "translation_uz": "shifoxona",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "врач",
+          "translation_uz": "shifokor",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "медсестра",
+          "translation_uz": "hamshira",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пациент",
+          "translation_uz": "bemor",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "аптека",
+          "translation_uz": "dorixona",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "лекарство",
+          "translation_uz": "dori",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "рецепт",
+          "translation_uz": "retsept",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "таблетка",
+          "translation_uz": "tabletka",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "боль",
+          "translation_uz": "og‘riq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "голова",
+          "translation_uz": "bosh",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "горло",
+          "translation_uz": "tomoq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "живот",
+          "translation_uz": "qorin",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "спина",
+          "translation_uz": "bel",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рука",
+          "translation_uz": "qo‘l",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "нога",
+          "translation_uz": "oyoq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "зуб",
+          "translation_uz": "tish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "температура",
+          "translation_uz": "harorat",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "кашель",
+          "translation_uz": "yo‘tal",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "насморк",
+          "translation_uz": "burun oqishi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "давление",
+          "translation_uz": "qon bosimi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "анализ",
+          "translation_uz": "tahlil",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "приём",
+          "translation_uz": "qabul",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "полис",
+          "translation_uz": "sug‘urta polisi",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "справка",
+          "translation_uz": "ma’lumotnoma",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "здоровье",
+          "translation_uz": "sog‘liq",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня болит голова.",
+          "translation_uz": "Mening boshim og‘riyapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужен врач.",
+          "translation_uz": "Menga shifokor kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как записаться на приём?",
+          "translation_uz": "Qabulga qanday yozilsa bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня высокая температура.",
+          "translation_uz": "Mening haroratim baland.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где ближайшая аптека?",
+          "translation_uz": "Eng yaqin dorixona qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Это лекарство по рецепту?",
+          "translation_uz": "Bu dori retsept bilan beriladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько раз в день принимать?",
+          "translation_uz": "Kuniga necha marta ichish kerak?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Принимать до еды или после?",
+          "translation_uz": "Ovqatdan oldinmi yoki keyin ichish kerak?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "У меня болит горло.",
+          "translation_uz": "Mening tomog‘im og‘riyapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я кашляю уже три дня.",
+          "translation_uz": "Men uch kundan beri yo‘talyapman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне трудно дышать.",
+          "translation_uz": "Nafas olishim qiyin.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Вызовите скорую помощь.",
+          "translation_uz": "Tez yordam chaqiring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужна справка для работы.",
+          "translation_uz": "Menga ish uchun ma’lumotnoma kerak.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Когда будут готовы анализы?",
+          "translation_uz": "Tahlillar qachon tayyor bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня есть медицинский полис.",
+          "translation_uz": "Menda tibbiy sug‘urta polisi bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я плохо себя чувствую.",
+          "translation_uz": "Men o‘zimni yomon his qilyapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня аллергия на это лекарство.",
+          "translation_uz": "Menda bu doriga allergiya bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Измерьте, пожалуйста, давление.",
+          "translation_uz": "Iltimos, qon bosimimni o‘lchang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня мне уже лучше.",
+          "translation_uz": "Bugun ahvolim yaxshiroq.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно больше отдыхать.",
+          "translation_uz": "Ko‘proq dam olish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу записаться к стоматологу.",
+          "translation_uz": "Men tish shifokoriga yozilmoqchiman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "У меня сильно болит зуб.",
+          "translation_uz": "Tishim qattiq og‘riyapti.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Где находится регистратура?",
+          "translation_uz": "Ro‘yxatga olish bo‘limi qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно перенести запись на завтра?",
+          "translation_uz": "Qabulni ertaga ko‘chirsak bo‘ladimi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо, доктор.",
+          "translation_uz": "Rahmat, doktor.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "phone",
+      "id": "phone",
+      "title_ru": "Телефон",
+      "title_uz": "Telefon",
+      "icon": "📱",
+      "description_ru": "Слова и короткие фразы: телефон.",
+      "description_uz": "Telefon: so‘zlar va qisqa gaplar.",
+      "background_id": "home",
+      "sort_order": 9,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "телефон",
+          "translation_uz": "telefon",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "звонок",
+          "translation_uz": "qo‘ng‘iroq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сообщение",
+          "translation_uz": "xabar",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "экран",
+          "translation_uz": "ekran",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "зарядка",
+          "translation_uz": "quvvatlagich",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "батарея",
+          "translation_uz": "batareya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "интернет",
+          "translation_uz": "internet",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пароль",
+          "translation_uz": "parol",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "приложение",
+          "translation_uz": "ilova",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "контакт",
+          "translation_uz": "kontakt",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "камера",
+          "translation_uz": "kamera",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "фотография",
+          "translation_uz": "surat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "видео",
+          "translation_uz": "video",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "звук",
+          "translation_uz": "ovoz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "наушники",
+          "translation_uz": "quloqchin",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "микрофон",
+          "translation_uz": "mikrofon",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "связь",
+          "translation_uz": "aloqa",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сеть",
+          "translation_uz": "tarmoq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "тариф",
+          "translation_uz": "tarif",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "баланс",
+          "translation_uz": "balans",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "оператор",
+          "translation_uz": "operator",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "кнопка",
+          "translation_uz": "tugma",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ссылка",
+          "translation_uz": "havola",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "файл",
+          "translation_uz": "fayl",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "настройки",
+          "translation_uz": "sozlamalar",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я вам перезвоню.",
+          "translation_uz": "Men sizga qayta qo‘ng‘iroq qilaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Меня хорошо слышно?",
+          "translation_uz": "Meni yaxshi eshityapsizmi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я вас плохо слышу.",
+          "translation_uz": "Men sizni yaxshi eshitmayapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Связь здесь плохая.",
+          "translation_uz": "Bu yerda aloqa yomon.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Отправьте мне сообщение.",
+          "translation_uz": "Menga xabar yuboring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Телефон скоро разрядится.",
+          "translation_uz": "Telefonning quvvati tez orada tugaydi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У вас есть зарядка?",
+          "translation_uz": "Sizda quvvatlagich bormi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно подключиться к интернету?",
+          "translation_uz": "Internetga ulansam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Какой пароль от сети?",
+          "translation_uz": "Tarmoq paroli qanday?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я забыл свой пароль.",
+          "translation_uz": "Men parolimni unutdim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Пришлите адрес в сообщении.",
+          "translation_uz": "Manzilni xabar orqali yuboring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сохраните мой номер.",
+          "translation_uz": "Mening raqamimni saqlab qo‘ying.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я сейчас не могу говорить.",
+          "translation_uz": "Men hozir gaplasha olmayman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Позвоните через полчаса.",
+          "translation_uz": "Yarim soatdan keyin qo‘ng‘iroq qiling.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно пополнить баланс.",
+          "translation_uz": "Balansni to‘ldirish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня закончился интернет.",
+          "translation_uz": "Mening internetim tugadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Экран телефона разбился.",
+          "translation_uz": "Telefon ekrani sindi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где можно починить телефон?",
+          "translation_uz": "Telefonni qayerda tuzattirish mumkin?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Откройте это приложение.",
+          "translation_uz": "Shu ilovani oching.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нажмите на синюю кнопку.",
+          "translation_uz": "Ko‘k tugmani bosing.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я отправил вам фотографию.",
+          "translation_uz": "Men sizga surat yubordim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Ссылка не открывается.",
+          "translation_uz": "Havola ochilmayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Включите, пожалуйста, звук.",
+          "translation_uz": "Iltimos, ovozni yoqing.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Микрофон выключен.",
+          "translation_uz": "Mikrofon o‘chirilgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я не получил ваше сообщение.",
+          "translation_uz": "Men sizning xabaringizni olmadim.",
+          "difficulty": 3
+        }
+      ]
+    },
+    {
+      "key": "city",
+      "id": "city",
+      "title_ru": "Город",
+      "title_uz": "Shahar",
+      "icon": "🏙️",
+      "description_ru": "Слова и короткие фразы: город.",
+      "description_uz": "Shahar: so‘zlar va qisqa gaplar.",
+      "background_id": "city",
+      "sort_order": 10,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "город",
+          "translation_uz": "shahar",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "центр",
+          "translation_uz": "markaz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "район",
+          "translation_uz": "tuman",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "улица",
+          "translation_uz": "ko‘cha",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "площадь",
+          "translation_uz": "maydon",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "парк",
+          "translation_uz": "bog‘",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "мост",
+          "translation_uz": "ko‘prik",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "река",
+          "translation_uz": "daryo",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "здание",
+          "translation_uz": "bino",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рынок",
+          "translation_uz": "bozor",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "почта",
+          "translation_uz": "pochta",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "библиотека",
+          "translation_uz": "kutubxona",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "музей",
+          "translation_uz": "muzey",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "театр",
+          "translation_uz": "teatr",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "кинотеатр",
+          "translation_uz": "kinoteatr",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "кафе",
+          "translation_uz": "kafe",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ресторан",
+          "translation_uz": "restoran",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "гостиница",
+          "translation_uz": "mehmonxona",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "полиция",
+          "translation_uz": "politsiya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "парковка",
+          "translation_uz": "to‘xtash joyi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "тротуар",
+          "translation_uz": "trotuar",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "фонарь",
+          "translation_uz": "ko‘cha chirog‘i",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "двор",
+          "translation_uz": "hovli",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "памятник",
+          "translation_uz": "yodgorlik",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "житель",
+          "translation_uz": "yashovchi",
+          "difficulty": 1
+        },
+        {
+          "type": "sentence",
+          "text": "Я живу в этом районе.",
+          "translation_uz": "Men shu tumanda yashayman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Где находится почта?",
+          "translation_uz": "Pochta qayerda joylashgan?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "В центре много людей.",
+          "translation_uz": "Markazda odam ko‘p.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Давайте погуляем в парке.",
+          "translation_uz": "Keling, bog‘da sayr qilamiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Рядом открыли новое кафе.",
+          "translation_uz": "Yaqinda yangi kafe ochildi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Этот город мне нравится.",
+          "translation_uz": "Bu shahar menga yoqadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На площади проходит праздник.",
+          "translation_uz": "Maydonda bayram bo‘lyapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Библиотека работает до вечера.",
+          "translation_uz": "Kutubxona kechgacha ishlaydi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы встретились у метро.",
+          "translation_uz": "Biz metro yonida uchrashdik.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где здесь можно поесть?",
+          "translation_uz": "Bu yerda qayerda ovqatlansa bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "В нашем дворе тихо.",
+          "translation_uz": "Bizning hovlimiz tinch.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "За мостом есть рынок.",
+          "translation_uz": "Ko‘prikdan keyin bozor bor.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу сходить в музей.",
+          "translation_uz": "Men muzeyga bormoqchiman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня в кино новый фильм.",
+          "translation_uz": "Bugun kinoda yangi film bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Улица очень длинная.",
+          "translation_uz": "Ko‘cha juda uzun.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Это старое здание.",
+          "translation_uz": "Bu eski bino.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Вечером здесь красиво.",
+          "translation_uz": "Kechqurun bu yer chiroyli.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где можно припарковать машину?",
+          "translation_uz": "Mashinani qayerga qo‘ysa bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Парк находится за гостиницей.",
+          "translation_uz": "Bog‘ mehmonxona orqasida joylashgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы переехали в другой район.",
+          "translation_uz": "Biz boshqa tumanga ko‘chdik.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "До центра недалеко.",
+          "translation_uz": "Markazgacha uzoq emas.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На улице много машин.",
+          "translation_uz": "Ko‘chada mashina ko‘p.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я ещё плохо знаю город.",
+          "translation_uz": "Men hali shaharni yaxshi bilmayman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Здесь есть общественный туалет?",
+          "translation_uz": "Bu yerda jamoat hojatxonasi bormi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Встретимся возле памятника.",
+          "translation_uz": "Yodgorlik yonida uchrashamiz.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "bank",
+      "id": "bank",
+      "title_ru": "Банк",
+      "title_uz": "Bank",
+      "icon": "🏦",
+      "description_ru": "Слова и короткие фразы: банк.",
+      "description_uz": "Bank: so‘zlar va qisqa gaplar.",
+      "background_id": "city",
+      "sort_order": 11,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "банк",
+          "translation_uz": "bank",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "деньги",
+          "translation_uz": "pul",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рубль",
+          "translation_uz": "rubl",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сумма",
+          "translation_uz": "summa",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "счёт",
+          "translation_uz": "hisob",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "перевод",
+          "translation_uz": "pul o‘tkazmasi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "комиссия",
+          "translation_uz": "komissiya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "банкомат",
+          "translation_uz": "bankomat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "платёж",
+          "translation_uz": "to‘lov",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "квитанция",
+          "translation_uz": "kvitansiya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "кредит",
+          "translation_uz": "kredit",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "процент",
+          "translation_uz": "foiz",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "вклад",
+          "translation_uz": "omonat",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "валюта",
+          "translation_uz": "valyuta",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "обмен",
+          "translation_uz": "ayirboshlash",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "курс",
+          "translation_uz": "kurs",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "остаток",
+          "translation_uz": "qoldiq",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "паспорт",
+          "translation_uz": "pasport",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "подпись",
+          "translation_uz": "imzo",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "заявление",
+          "translation_uz": "ariza",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "получатель",
+          "translation_uz": "oluvchi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "отправитель",
+          "translation_uz": "yuboruvchi",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "реквизиты",
+          "translation_uz": "rekvizitlar",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "терминал",
+          "translation_uz": "terminal",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "отделение",
+          "translation_uz": "filial",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу открыть счёт.",
+          "translation_uz": "Men hisob ochmoqchiman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где ближайший банкомат?",
+          "translation_uz": "Eng yaqin bankomat qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужно снять деньги.",
+          "translation_uz": "Men pul yechishim kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно перевести деньги домой?",
+          "translation_uz": "Uyga pul yuborsam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Какая комиссия за перевод?",
+          "translation_uz": "Pul o‘tkazish komissiyasi qancha?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Деньги ещё не пришли.",
+          "translation_uz": "Pul hali kelmadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Проверьте, пожалуйста, мой баланс.",
+          "translation_uz": "Iltimos, balansimni tekshiring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я потерял банковскую карту.",
+          "translation_uz": "Men bank kartamni yo‘qotdim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно заблокировать карту.",
+          "translation_uz": "Kartani bloklash kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Когда будет готова новая карта?",
+          "translation_uz": "Yangi karta qachon tayyor bo‘ladi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужна квитанция.",
+          "translation_uz": "Menga kvitansiya kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу обменять валюту.",
+          "translation_uz": "Men valyuta almashtirmoqchiman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Какой сегодня курс?",
+          "translation_uz": "Bugungi kurs qancha?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Подпишите заявление здесь.",
+          "translation_uz": "Arizaga shu yerda imzo qo‘ying.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Покажите ваш паспорт.",
+          "translation_uz": "Pasportingizni ko‘rsating.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Этот банкомат не работает.",
+          "translation_uz": "Bu bankomat ishlamayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно внести наличные?",
+          "translation_uz": "Naqd pul qo‘ysam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Перевод отправлен вчера.",
+          "translation_uz": "Pul kecha yuborilgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я ошибся в номере счёта.",
+          "translation_uz": "Men hisob raqamida adashdim.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Как отменить платёж?",
+          "translation_uz": "To‘lovni qanday bekor qilish mumkin?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня не проходит оплата.",
+          "translation_uz": "Mening to‘lovim o‘tmayapti.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Карта осталась в банкомате.",
+          "translation_uz": "Karta bankomatda qolib ketdi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Отделение закрывается в шесть.",
+          "translation_uz": "Filial soat oltida yopiladi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужна выписка по счёту.",
+          "translation_uz": "Menga hisob ko‘chirmasi kerak.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо, деньги поступили.",
+          "translation_uz": "Rahmat, pul tushdi.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "study",
+      "id": "study",
+      "title_ru": "Учёба",
+      "title_uz": "O‘qish",
+      "icon": "📚",
+      "description_ru": "Слова и короткие фразы: учёба.",
+      "description_uz": "O‘qish: so‘zlar va qisqa gaplar.",
+      "background_id": "home",
+      "sort_order": 12,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "урок",
+          "translation_uz": "dars",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "учитель",
+          "translation_uz": "o‘qituvchi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "ученик",
+          "translation_uz": "o‘quvchi",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "студент",
+          "translation_uz": "talaba",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "школа",
+          "translation_uz": "maktab",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "университет",
+          "translation_uz": "universitet",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "тетрадь",
+          "translation_uz": "daftar",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "книга",
+          "translation_uz": "kitob",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ручка",
+          "translation_uz": "ruchka",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "карандаш",
+          "translation_uz": "qalam",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "доска",
+          "translation_uz": "doska",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "слово",
+          "translation_uz": "so‘z",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "предложение",
+          "translation_uz": "gap",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "буква",
+          "translation_uz": "harf",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "звук",
+          "translation_uz": "tovush",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вопрос",
+          "translation_uz": "savol",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ответ",
+          "translation_uz": "javob",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ошибка",
+          "translation_uz": "xato",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "правило",
+          "translation_uz": "qoida",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пример",
+          "translation_uz": "misol",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "упражнение",
+          "translation_uz": "mashq",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "задание",
+          "translation_uz": "topshiriq",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "экзамен",
+          "translation_uz": "imtihon",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "оценка",
+          "translation_uz": "baho",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "словарь",
+          "translation_uz": "lug‘at",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я учу русский язык.",
+          "translation_uz": "Men rus tilini o‘rganyapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Урок начинается в девять.",
+          "translation_uz": "Dars soat to‘qqizda boshlanadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Откройте тетради.",
+          "translation_uz": "Daftarlaringizni oching.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Запишите новое слово.",
+          "translation_uz": "Yangi so‘zni yozing.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Что означает это слово?",
+          "translation_uz": "Bu so‘z nimani anglatadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я не понял вопрос.",
+          "translation_uz": "Men savolni tushunmadim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно ещё один пример?",
+          "translation_uz": "Yana bitta misol bersangiz bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Повторим это правило.",
+          "translation_uz": "Shu qoidani takrorlaymiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Прочитайте предложение вслух.",
+          "translation_uz": "Gapni ovoz chiqarib o‘qing.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я сделал домашнее задание.",
+          "translation_uz": "Men uy vazifasini bajardim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня есть вопрос.",
+          "translation_uz": "Menda savol bor.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Проверьте мой ответ.",
+          "translation_uz": "Mening javobimni tekshiring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Здесь нужно исправить ошибку.",
+          "translation_uz": "Bu yerda xatoni tuzatish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как правильно написать это слово?",
+          "translation_uz": "Bu so‘zni qanday to‘g‘ri yozish kerak?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я занимаюсь каждый день.",
+          "translation_uz": "Men har kuni shug‘ullanaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне трудно запомнить слова.",
+          "translation_uz": "So‘zlarni eslab qolish menga qiyin.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно пользоваться словарём?",
+          "translation_uz": "Lug‘atdan foydalansam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня у нас экзамен.",
+          "translation_uz": "Bugun bizda imtihon.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу учиться дальше.",
+          "translation_uz": "Men o‘qishni davom ettirmoqchiman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Послушайте и повторите.",
+          "translation_uz": "Tinglang va takrorlang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Напишите ответ по-русски.",
+          "translation_uz": "Javobni ruscha yozing.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Урок уже закончился.",
+          "translation_uz": "Dars tugadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не забудьте вашу книгу.",
+          "translation_uz": "Kitobingizni unutmang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я пропустил вчерашнее занятие.",
+          "translation_uz": "Men kechagi darsni qoldirdim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Объясните, пожалуйста, ещё раз.",
+          "translation_uz": "Iltimos, yana bir marta tushuntiring.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "construction",
+      "id": "construction",
+      "title_ru": "Строительство",
+      "title_uz": "Qurilish",
+      "icon": "🏗️",
+      "description_ru": "Слова и короткие фразы: строительство.",
+      "description_uz": "Qurilish: so‘zlar va qisqa gaplar.",
+      "background_id": "construction",
+      "sort_order": 13,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "стройка",
+          "translation_uz": "qurilish maydoni",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "кирпич",
+          "translation_uz": "g‘isht",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "бетон",
+          "translation_uz": "beton",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "цемент",
+          "translation_uz": "sement",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "песок",
+          "translation_uz": "qum",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "доска",
+          "translation_uz": "taxta",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "гвоздь",
+          "translation_uz": "mix",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "молоток",
+          "translation_uz": "bolg‘a",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пила",
+          "translation_uz": "arra",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "дрель",
+          "translation_uz": "drel",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "лопата",
+          "translation_uz": "belkurak",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ведро",
+          "translation_uz": "chelak",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "лестница",
+          "translation_uz": "narvon",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "каска",
+          "translation_uz": "kaska",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "перчатки",
+          "translation_uz": "qo‘lqop",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "инструмент",
+          "translation_uz": "asbob",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "рулетка",
+          "translation_uz": "ruletka",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "уровень",
+          "translation_uz": "shayton",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "труба",
+          "translation_uz": "quvur",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "провод",
+          "translation_uz": "sim",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "краска",
+          "translation_uz": "bo‘yoq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "плитка",
+          "translation_uz": "kafel",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "крыша",
+          "translation_uz": "tom",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ремонт",
+          "translation_uz": "ta’mirlash",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "раствор",
+          "translation_uz": "qorishma",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Наденьте защитную каску.",
+          "translation_uz": "Himoya kaskasini kiying.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужны рабочие перчатки.",
+          "translation_uz": "Menga ish qo‘lqopi kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где лежит инструмент?",
+          "translation_uz": "Asbob qayerda turibdi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Принеси, пожалуйста, ведро.",
+          "translation_uz": "Iltimos, chelakni olib kel.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно замешать раствор.",
+          "translation_uz": "Qorishma tayyorlash kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Эта лестница неустойчивая.",
+          "translation_uz": "Bu narvon mustahkam turmayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Держите лестницу крепче.",
+          "translation_uz": "Narvonni mahkamroq ushlang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Отключите электричество.",
+          "translation_uz": "Elektrni o‘chiring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не трогайте этот провод.",
+          "translation_uz": "Bu simga tegmang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Стена ещё не высохла.",
+          "translation_uz": "Devor hali qurimadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно измерить длину.",
+          "translation_uz": "Uzunlikni o‘lchash kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько нужно кирпичей?",
+          "translation_uz": "Nechta g‘isht kerak?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Материалы привезут утром.",
+          "translation_uz": "Materiallarni ertalab olib kelishadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы сегодня красим стены.",
+          "translation_uz": "Biz bugun devorlarni bo‘yayapmiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Здесь нужно положить плитку.",
+          "translation_uz": "Bu yerga kafel yotqizish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дрель не работает.",
+          "translation_uz": "Drel ishlamayapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Проверьте размер по чертежу.",
+          "translation_uz": "O‘lchamni chizma bo‘yicha tekshiring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не стойте под грузом.",
+          "translation_uz": "Yuk tagida turmang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужна помощь с этой трубой.",
+          "translation_uz": "Bu quvur bilan menga yordam kerak.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Песок лежит у ворот.",
+          "translation_uz": "Qum darvoza yonida turibdi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Уберите мусор после работы.",
+          "translation_uz": "Ishdan keyin chiqindilarni yig‘ishtiring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Этот мешок очень тяжёлый.",
+          "translation_uz": "Bu qop juda og‘ir.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Давайте поднимем его вместе.",
+          "translation_uz": "Keling, uni birga ko‘taramiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Краска закончилась.",
+          "translation_uz": "Bo‘yoq tugadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Работу нужно проверить.",
+          "translation_uz": "Ishni tekshirish kerak.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "clothes",
+      "id": "clothes",
+      "title_ru": "Одежда",
+      "title_uz": "Kiyim",
+      "icon": "👕",
+      "description_ru": "Слова и короткие фразы: одежда.",
+      "description_uz": "Kiyim: so‘zlar va qisqa gaplar.",
+      "background_id": "shop",
+      "sort_order": 14,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "одежда",
+          "translation_uz": "kiyim",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "обувь",
+          "translation_uz": "oyoq kiyim",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "куртка",
+          "translation_uz": "kurtka",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "пальто",
+          "translation_uz": "palto",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рубашка",
+          "translation_uz": "ko‘ylak",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "футболка",
+          "translation_uz": "futbolka",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "брюки",
+          "translation_uz": "shim",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "джинсы",
+          "translation_uz": "jinsi shim",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "платье",
+          "translation_uz": "ko‘ylak",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "юбка",
+          "translation_uz": "yubka",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "свитер",
+          "translation_uz": "sviter",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "носки",
+          "translation_uz": "paypoq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "шапка",
+          "translation_uz": "qalpoq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "шарф",
+          "translation_uz": "sharf",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "перчатки",
+          "translation_uz": "qo‘lqop",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "ботинки",
+          "translation_uz": "botinka",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "кроссовки",
+          "translation_uz": "krossovka",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "размер",
+          "translation_uz": "o‘lcham",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "цвет",
+          "translation_uz": "rang",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ткань",
+          "translation_uz": "mato",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "карман",
+          "translation_uz": "cho‘ntak",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "пуговица",
+          "translation_uz": "tugma",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "молния",
+          "translation_uz": "fermuar",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ремень",
+          "translation_uz": "kamar",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "примерочная",
+          "translation_uz": "kiyib ko‘rish xonasi",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Можно примерить эту куртку?",
+          "translation_uz": "Bu kurtkani kiyib ko‘rsam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где находится примерочная?",
+          "translation_uz": "Kiyib ko‘rish xonasi qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужен размер побольше.",
+          "translation_uz": "Menga kattaroq o‘lcham kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Эти брюки мне малы.",
+          "translation_uz": "Bu shim menga kichik.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У вас есть другой цвет?",
+          "translation_uz": "Boshqa rangingiz bormi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужна тёплая обувь.",
+          "translation_uz": "Menga issiq oyoq kiyim kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Куртка хорошо сидит.",
+          "translation_uz": "Kurtka yaxshi yarashdi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Эта рубашка слишком длинная.",
+          "translation_uz": "Bu ko‘ylak juda uzun.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько стоят эти ботинки?",
+          "translation_uz": "Bu botinka qancha turadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я ищу зимнюю шапку.",
+          "translation_uz": "Men qishki qalpoq qidiryapman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Носки продаются по три пары.",
+          "translation_uz": "Paypoqlar uch juftdan sotiladi.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нравится синий цвет.",
+          "translation_uz": "Menga ko‘k rang yoqadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Эту одежду можно стирать?",
+          "translation_uz": "Bu kiyimni yuvsa bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Молния на куртке сломалась.",
+          "translation_uz": "Kurtkaning fermuari buzildi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно пришить пуговицу.",
+          "translation_uz": "Tugmani tikish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "В кармане лежат ключи.",
+          "translation_uz": "Kalitlar cho‘ntakda turibdi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Надень шарф, на улице холодно.",
+          "translation_uz": "Sharf taq, tashqarida sovuq.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "У меня промокла обувь.",
+          "translation_uz": "Oyoq kiyimim ho‘l bo‘ldi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Эти кроссовки очень удобные.",
+          "translation_uz": "Bu krossovka juda qulay.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно обменять размер?",
+          "translation_uz": "O‘lchamni almashtirsa bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужна рабочая форма.",
+          "translation_uz": "Menga ish formasi kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Пальто висит у двери.",
+          "translation_uz": "Palto eshik yonida osilib turibdi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я возьму эту футболку.",
+          "translation_uz": "Men shu futbolkani olaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Ремень слишком короткий.",
+          "translation_uz": "Kamar juda kalta.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Одежда уже высохла.",
+          "translation_uz": "Kiyim quridi.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "time",
+      "id": "time",
+      "title_ru": "Время и дни",
+      "title_uz": "Vaqt va kunlar",
+      "icon": "🕒",
+      "description_ru": "Слова и короткие фразы: время и дни.",
+      "description_uz": "Vaqt va kunlar: so‘zlar va qisqa gaplar.",
+      "background_id": "home",
+      "sort_order": 15,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "время",
+          "translation_uz": "vaqt",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "час",
+          "translation_uz": "soat",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "минута",
+          "translation_uz": "daqiqa",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "секунда",
+          "translation_uz": "soniya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "утро",
+          "translation_uz": "ertalab",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "день",
+          "translation_uz": "kun",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вечер",
+          "translation_uz": "kechqurun",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ночь",
+          "translation_uz": "tun",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сегодня",
+          "translation_uz": "bugun",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "завтра",
+          "translation_uz": "ertaga",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вчера",
+          "translation_uz": "kecha",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "неделя",
+          "translation_uz": "hafta",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "месяц",
+          "translation_uz": "oy",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "год",
+          "translation_uz": "yil",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "понедельник",
+          "translation_uz": "dushanba",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "вторник",
+          "translation_uz": "seshanba",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "среда",
+          "translation_uz": "chorshanba",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "четверг",
+          "translation_uz": "payshanba",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пятница",
+          "translation_uz": "juma",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "суббота",
+          "translation_uz": "shanba",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "воскресенье",
+          "translation_uz": "yakshanba",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "рано",
+          "translation_uz": "erta",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "поздно",
+          "translation_uz": "kech",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сейчас",
+          "translation_uz": "hozir",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "потом",
+          "translation_uz": "keyin",
+          "difficulty": 1
+        },
+        {
+          "type": "sentence",
+          "text": "Который сейчас час?",
+          "translation_uz": "Hozir soat necha?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Уже половина восьмого.",
+          "translation_uz": "Soat yetti yarim bo‘ldi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я приду через десять минут.",
+          "translation_uz": "Men o‘n daqiqadan keyin kelaman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Встреча назначена на понедельник.",
+          "translation_uz": "Uchrashuv dushanbaga belgilangan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня у меня мало времени.",
+          "translation_uz": "Bugun vaqtim kam.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Давайте встретимся завтра.",
+          "translation_uz": "Keling, ertaga uchrashamiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я работаю с утра до вечера.",
+          "translation_uz": "Men ertalabdan kechgacha ishlayman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "В пятницу я свободен.",
+          "translation_uz": "Juma kuni bo‘shman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Подождите одну минуту.",
+          "translation_uz": "Bir daqiqa kuting.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы договорились на шесть.",
+          "translation_uz": "Biz soat oltiga kelishganmiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сейчас без пяти девять.",
+          "translation_uz": "Hozir beshta kam to‘qqiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На следующей неделе я уезжаю.",
+          "translation_uz": "Keyingi hafta men ketaman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Вчера я пришёл поздно.",
+          "translation_uz": "Kecha men kech keldim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Завтра нужно встать рано.",
+          "translation_uz": "Ertaga erta turish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Какое сегодня число?",
+          "translation_uz": "Bugun oyning nechanchi kuni?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня встреча в полдень.",
+          "translation_uz": "Mening tush payti uchrashuvim bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Позвони мне вечером.",
+          "translation_uz": "Menga kechqurun qo‘ng‘iroq qil.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "В воскресенье магазин закрыт.",
+          "translation_uz": "Yakshanba kuni do‘kon yopiq.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Осталось пять минут.",
+          "translation_uz": "Besh daqiqa qoldi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я буду готов через час.",
+          "translation_uz": "Men bir soatdan keyin tayyor bo‘laman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Это было месяц назад.",
+          "translation_uz": "Bu bir oy oldin bo‘lgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не откладывай на завтра.",
+          "translation_uz": "Ertaga qoldirma.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мы увидимся через неделю.",
+          "translation_uz": "Biz bir haftadan keyin ko‘rishamiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня вторник, а не среда.",
+          "translation_uz": "Bugun chorshanba emas, seshanba.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Пора идти домой.",
+          "translation_uz": "Uyga ketish vaqti bo‘ldi.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "weather",
+      "id": "weather",
+      "title_ru": "Погода",
+      "title_uz": "Ob-havo",
+      "icon": "🌤️",
+      "description_ru": "Слова и короткие фразы: погода.",
+      "description_uz": "Ob-havo: so‘zlar va qisqa gaplar.",
+      "background_id": "city",
+      "sort_order": 16,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "погода",
+          "translation_uz": "ob-havo",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "солнце",
+          "translation_uz": "quyosh",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "дождь",
+          "translation_uz": "yomg‘ir",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "снег",
+          "translation_uz": "qor",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "ветер",
+          "translation_uz": "shamol",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "облако",
+          "translation_uz": "bulut",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "небо",
+          "translation_uz": "osmon",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "мороз",
+          "translation_uz": "ayoz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "жара",
+          "translation_uz": "jazirama",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "холод",
+          "translation_uz": "sovuq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "тепло",
+          "translation_uz": "iliqlik",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "туман",
+          "translation_uz": "tuman",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "гроза",
+          "translation_uz": "momaqaldiroq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "лёд",
+          "translation_uz": "muz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "лужа",
+          "translation_uz": "ko‘lmak",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "зонт",
+          "translation_uz": "soyabon",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "градус",
+          "translation_uz": "daraja",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "прогноз",
+          "translation_uz": "prognoz",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "весна",
+          "translation_uz": "bahor",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "лето",
+          "translation_uz": "yoz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "осень",
+          "translation_uz": "kuz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "зима",
+          "translation_uz": "qish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "солнечно",
+          "translation_uz": "quyoshli",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пасмурно",
+          "translation_uz": "bulutli",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "скользко",
+          "translation_uz": "sirpanchiq",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Какая сегодня погода?",
+          "translation_uz": "Bugun ob-havo qanday?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На улице идёт дождь.",
+          "translation_uz": "Tashqarida yomg‘ir yog‘yapti.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Возьми с собой зонт.",
+          "translation_uz": "O‘zing bilan soyabon ol.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня очень холодно.",
+          "translation_uz": "Bugun juda sovuq.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Завтра будет теплее.",
+          "translation_uz": "Ertaga iliqroq bo‘ladi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На улице сильный ветер.",
+          "translation_uz": "Tashqarida kuchli shamol bor.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Ночью выпал снег.",
+          "translation_uz": "Tunda qor yog‘di.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Осторожно, здесь скользко.",
+          "translation_uz": "Ehtiyot bo‘ling, bu yer sirpanchiq.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дорога покрылась льдом.",
+          "translation_uz": "Yo‘l muz bilan qoplandi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Летом здесь жарко.",
+          "translation_uz": "Yozda bu yer issiq bo‘ladi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нравится весенняя погода.",
+          "translation_uz": "Menga bahorgi ob-havo yoqadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько градусов на улице?",
+          "translation_uz": "Tashqarida necha daraja?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня минус десять.",
+          "translation_uz": "Bugun minus o‘n daraja.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дождь скоро закончится.",
+          "translation_uz": "Yomg‘ir tez orada to‘xtaydi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Солнце уже вышло.",
+          "translation_uz": "Quyosh chiqdi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "По прогнозу завтра снег.",
+          "translation_uz": "Prognozga ko‘ra, ertaga qor yog‘adi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Одевайтесь теплее.",
+          "translation_uz": "Issiqroq kiyining.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я промок под дождём.",
+          "translation_uz": "Men yomg‘irda ho‘l bo‘ldim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Утром был густой туман.",
+          "translation_uz": "Ertalab qalin tuman bor edi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "В такую погоду лучше остаться дома.",
+          "translation_uz": "Bunday ob-havoda uyda qolgan yaxshi.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "После дождя стало прохладно.",
+          "translation_uz": "Yomg‘irdan keyin salqin bo‘ldi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сегодня хорошая погода для прогулки.",
+          "translation_uz": "Bugun sayr uchun yaxshi ob-havo.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Зимой рано темнеет.",
+          "translation_uz": "Qishda erta qorong‘i tushadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На тротуаре большие лужи.",
+          "translation_uz": "Trotuarda katta ko‘lmaklar bor.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Ветер стал тише.",
+          "translation_uz": "Shamol pasaydi.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "travel",
+      "id": "travel",
+      "title_ru": "Путешествие",
+      "title_uz": "Sayohat",
+      "icon": "🧳",
+      "description_ru": "Слова и короткие фразы: путешествие.",
+      "description_uz": "Sayohat: so‘zlar va qisqa gaplar.",
+      "background_id": "transport",
+      "sort_order": 17,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "поездка",
+          "translation_uz": "safar",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "путешествие",
+          "translation_uz": "sayohat",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "отпуск",
+          "translation_uz": "ta’til",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "аэропорт",
+          "translation_uz": "aeroport",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "самолёт",
+          "translation_uz": "samolyot",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "рейс",
+          "translation_uz": "reys",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вылет",
+          "translation_uz": "uchib ketish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "прилёт",
+          "translation_uz": "uchib kelish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "посадка",
+          "translation_uz": "bortga chiqish",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "чемодан",
+          "translation_uz": "chamadon",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "сумка",
+          "translation_uz": "sumka",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рюкзак",
+          "translation_uz": "ryukzak",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "багаж",
+          "translation_uz": "yuk",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "паспорт",
+          "translation_uz": "pasport",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "виза",
+          "translation_uz": "viza",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "граница",
+          "translation_uz": "chegara",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "таможня",
+          "translation_uz": "bojxona",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "бронь",
+          "translation_uz": "band qilish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "отель",
+          "translation_uz": "mehmonxona",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "номер",
+          "translation_uz": "xona",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "экскурсия",
+          "translation_uz": "ekskursiya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "турист",
+          "translation_uz": "sayyoh",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "пляж",
+          "translation_uz": "sohil",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "море",
+          "translation_uz": "dengiz",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "обратный",
+          "translation_uz": "qaytish uchun",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я купил билет на самолёт.",
+          "translation_uz": "Men samolyotga chipta oldim.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Когда начинается посадка?",
+          "translation_uz": "Bortga chiqish qachon boshlanadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где регистрация на рейс?",
+          "translation_uz": "Reysga ro‘yxatdan o‘tish qayerda?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мой рейс задержали.",
+          "translation_uz": "Mening reysim kechiktirildi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня только ручная кладь.",
+          "translation_uz": "Menda faqat qo‘l yuki bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Где можно получить багаж?",
+          "translation_uz": "Yukni qayerdan olsa bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мой чемодан не приехал.",
+          "translation_uz": "Mening chamadonim kelmadi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужен обратный билет.",
+          "translation_uz": "Menga qaytish chiptasi kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я забронировал номер.",
+          "translation_uz": "Men xona band qilganman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "На какое имя оформлена бронь?",
+          "translation_uz": "Xona kimning nomiga band qilingan?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Завтрак входит в стоимость?",
+          "translation_uz": "Nonushta narxga kiradimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Во сколько нужно выехать из номера?",
+          "translation_uz": "Xonadan soat nechada chiqish kerak?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Можно оставить сумку здесь?",
+          "translation_uz": "Sumkani shu yerda qoldirsam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я приехал на неделю.",
+          "translation_uz": "Men bir haftaga keldim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как добраться до аэропорта?",
+          "translation_uz": "Aeroportga qanday borsa bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Паспорт держите при себе.",
+          "translation_uz": "Pasportni yoningizda saqlang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "До вылета ещё два часа.",
+          "translation_uz": "Uchishga hali ikki soat bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мы едем в отпуск.",
+          "translation_uz": "Biz ta’tilga ketyapmiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу посмотреть город.",
+          "translation_uz": "Men shaharni ko‘rmoqchiman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Сколько длится экскурсия?",
+          "translation_uz": "Ekskursiya qancha davom etadi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Здесь можно фотографировать?",
+          "translation_uz": "Bu yerda suratga olsa bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужен номер на двоих.",
+          "translation_uz": "Menga ikki kishilik xona kerak.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "В номере не работает душ.",
+          "translation_uz": "Xonadagi dush ishlamayapti.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я оставил зарядку в отеле.",
+          "translation_uz": "Men quvvatlagichni mehmonxonada qoldirdim.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Счастливого пути!",
+          "translation_uz": "Oq yo‘l!",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "communication",
+      "id": "communication",
+      "title_ru": "Общение",
+      "title_uz": "Muloqot",
+      "icon": "💬",
+      "description_ru": "Слова и короткие фразы: общение.",
+      "description_uz": "Muloqot: so‘zlar va qisqa gaplar.",
+      "background_id": "city",
+      "sort_order": 18,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "разговор",
+          "translation_uz": "suhbat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "просьба",
+          "translation_uz": "iltimos",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "помощь",
+          "translation_uz": "yordam",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "совет",
+          "translation_uz": "maslahat",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "мнение",
+          "translation_uz": "fikr",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "причина",
+          "translation_uz": "sabab",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "решение",
+          "translation_uz": "qaror",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "согласие",
+          "translation_uz": "rozilik",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "отказ",
+          "translation_uz": "rad javobi",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "обещание",
+          "translation_uz": "va’da",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "приглашение",
+          "translation_uz": "taklif",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "новость",
+          "translation_uz": "yangilik",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "шутка",
+          "translation_uz": "hazil",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "правда",
+          "translation_uz": "haqiqat",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "понятно",
+          "translation_uz": "tushunarli",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "конечно",
+          "translation_uz": "albatta",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "возможно",
+          "translation_uz": "ehtimol",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "обязательно",
+          "translation_uz": "albatta",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "удобно",
+          "translation_uz": "qulay",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "извините",
+          "translation_uz": "kechirasiz",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "спасибо",
+          "translation_uz": "rahmat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пожалуйста",
+          "translation_uz": "marhamat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "хорошо",
+          "translation_uz": "yaxshi",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "согласен",
+          "translation_uz": "roziman",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "внимание",
+          "translation_uz": "e’tibor",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно вас спросить?",
+          "translation_uz": "Sizdan so‘rasam bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Извините, я вас перебил.",
+          "translation_uz": "Kechirasiz, gapingizni bo‘ldim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я с вами согласен.",
+          "translation_uz": "Men sizga qo‘shilaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне кажется, это хорошая идея.",
+          "translation_uz": "Menimcha, bu yaxshi fikr.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я пока не знаю.",
+          "translation_uz": "Men hozircha bilmayman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Давайте решим это вместе.",
+          "translation_uz": "Keling, buni birga hal qilamiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо за совет.",
+          "translation_uz": "Maslahatingiz uchun rahmat.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не за что.",
+          "translation_uz": "Arzimaydi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Вы мне очень помогли.",
+          "translation_uz": "Siz menga juda yordam berdingiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно попросить вас о помощи?",
+          "translation_uz": "Sizdan yordam so‘rasam bo‘ladimi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я не хотел вас обидеть.",
+          "translation_uz": "Men sizni xafa qilmoqchi emasdim.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Давайте поговорим позже.",
+          "translation_uz": "Keling, keyinroq gaplashamiz.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Мне сейчас неудобно говорить.",
+          "translation_uz": "Hozir gaplashish menga noqulay.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Что вы об этом думаете?",
+          "translation_uz": "Siz bu haqda nima deb o‘ylaysiz?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я вас понимаю.",
+          "translation_uz": "Men sizni tushunaman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Объясните, в чём проблема.",
+          "translation_uz": "Muammo nimada ekanini tushuntiring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Ничего страшного.",
+          "translation_uz": "Hechqisi yo‘q.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я обязательно вам помогу.",
+          "translation_uz": "Men sizga albatta yordam beraman.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не волнуйтесь, всё хорошо.",
+          "translation_uz": "Xavotir olmang, hammasi yaxshi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно говорить по-русски?",
+          "translation_uz": "Ruscha gaplashsak bo‘ladimi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я не расслышал последнее слово.",
+          "translation_uz": "Men oxirgi so‘zni eshitmay qoldim.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Это была шутка.",
+          "translation_uz": "Bu hazil edi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Давайте не будем спорить.",
+          "translation_uz": "Keling, tortishmaylik.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо за приглашение.",
+          "translation_uz": "Taklif uchun rahmat.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я рад хорошим новостям.",
+          "translation_uz": "Yaxshi yangiliklardan xursandman.",
+          "difficulty": 2
+        }
+      ]
+    },
+    {
+      "key": "directions",
+      "id": "directions",
+      "title_ru": "Улица и ориентирование",
+      "title_uz": "Ko‘cha va yo‘l topish",
+      "icon": "🧭",
+      "description_ru": "Слова и короткие фразы: улица и ориентирование.",
+      "description_uz": "Ko‘cha va yo‘l topish: so‘zlar va qisqa gaplar.",
+      "background_id": "transport",
+      "sort_order": 19,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "налево",
+          "translation_uz": "chapga",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "направо",
+          "translation_uz": "o‘ngga",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "прямо",
+          "translation_uz": "to‘g‘riga",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "назад",
+          "translation_uz": "orqaga",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вперёд",
+          "translation_uz": "oldinga",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "рядом",
+          "translation_uz": "yonida",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "далеко",
+          "translation_uz": "uzoq",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "близко",
+          "translation_uz": "yaqin",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "напротив",
+          "translation_uz": "qarshisida",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "между",
+          "translation_uz": "orasida",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "поворот",
+          "translation_uz": "burilish",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "перекрёсток",
+          "translation_uz": "chorraha",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "переход",
+          "translation_uz": "piyodalar o‘tish joyi",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "светофор",
+          "translation_uz": "svetofor",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "указатель",
+          "translation_uz": "ko‘rsatkich",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "переулок",
+          "translation_uz": "tor ko‘cha",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "угол",
+          "translation_uz": "burchak",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "вход",
+          "translation_uz": "kirish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "выход",
+          "translation_uz": "chiqish",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "сторона",
+          "translation_uz": "tomon",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "расстояние",
+          "translation_uz": "masofa",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "путь",
+          "translation_uz": "yo‘l",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "карта",
+          "translation_uz": "xarita",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "навигатор",
+          "translation_uz": "navigator",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "пешеход",
+          "translation_uz": "piyoda",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как пройти к остановке?",
+          "translation_uz": "Bekatga qanday borsa bo‘ladi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Идите прямо до светофора.",
+          "translation_uz": "Svetoforgacha to‘g‘ri boring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Поверните направо у аптеки.",
+          "translation_uz": "Dorixona yonidan o‘ngga buriling.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "После моста поверните налево.",
+          "translation_uz": "Ko‘prikdan keyin chapga buriling.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Перейдите на другую сторону.",
+          "translation_uz": "Narigi tomonga o‘ting.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Магазин находится напротив банка.",
+          "translation_uz": "Do‘kon bank qarshisida joylashgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Это далеко отсюда?",
+          "translation_uz": "Bu yerdan uzoqmi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Пешком примерно десять минут.",
+          "translation_uz": "Piyoda taxminan o‘n daqiqa.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я заблудился.",
+          "translation_uz": "Men adashib qoldim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Покажите, пожалуйста, на карте.",
+          "translation_uz": "Iltimos, xaritada ko‘rsating.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Вы идёте не в ту сторону.",
+          "translation_uz": "Siz noto‘g‘ri tomonga ketyapsiz.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Нужно вернуться назад.",
+          "translation_uz": "Orqaga qaytish kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Вход с другой стороны.",
+          "translation_uz": "Kirish boshqa tomonda.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Пройдите через двор.",
+          "translation_uz": "Hovli orqali o‘ting.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дом стоит на углу.",
+          "translation_uz": "Uy burchakda joylashgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "До перекрёстка ещё далеко?",
+          "translation_uz": "Chorrahagacha hali uzoqmi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Переход находится за остановкой.",
+          "translation_uz": "O‘tish joyi bekatdan keyin joylashgan.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Дождитесь зелёного сигнала.",
+          "translation_uz": "Yashil chiroqni kuting.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Не переходите дорогу здесь.",
+          "translation_uz": "Bu yerdan yo‘lni kesib o‘tmang.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Следуйте по указателям.",
+          "translation_uz": "Ko‘rsatkichlar bo‘yicha yuring.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Почта между банком и магазином.",
+          "translation_uz": "Pochta bank bilan do‘kon orasida.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Обойдите здание справа.",
+          "translation_uz": "Binoni o‘ng tomondan aylanib o‘ting.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я встречу вас у входа.",
+          "translation_uz": "Men sizni kirishda kutib olaman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Здесь есть подземный переход.",
+          "translation_uz": "Bu yerda yerosti o‘tish yo‘li bor.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо, теперь я найду дорогу.",
+          "translation_uz": "Rahmat, endi yo‘lni topaman.",
+          "difficulty": 3
+        }
+      ]
+    },
+    {
+      "key": "russia",
+      "id": "russia",
+      "title_ru": "Жизнь в России",
+      "title_uz": "Rossiyadagi hayot",
+      "icon": "📄",
+      "description_ru": "Слова и короткие фразы: жизнь в россии.",
+      "description_uz": "Rossiyadagi hayot: so‘zlar va qisqa gaplar.",
+      "background_id": "city",
+      "sort_order": 20,
+      "is_active": true,
+      "items": [
+        {
+          "type": "word",
+          "text": "документ",
+          "translation_uz": "hujjat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "регистрация",
+          "translation_uz": "ro‘yxatdan o‘tish",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "патент",
+          "translation_uz": "patent",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "заявление",
+          "translation_uz": "ariza",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "анкета",
+          "translation_uz": "anketa",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "копия",
+          "translation_uz": "nusxa",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "оригинал",
+          "translation_uz": "asl nusxa",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "перевод",
+          "translation_uz": "tarjima",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "нотариус",
+          "translation_uz": "notarius",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "страховка",
+          "translation_uz": "sug‘urta",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "разрешение",
+          "translation_uz": "ruxsat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "срок",
+          "translation_uz": "muddat",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "продление",
+          "translation_uz": "uzaytirish",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "оплата",
+          "translation_uz": "to‘lov",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "квитанция",
+          "translation_uz": "kvitansiya",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "очередь",
+          "translation_uz": "navbat",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "талон",
+          "translation_uz": "talon",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "приём",
+          "translation_uz": "qabul",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "отдел",
+          "translation_uz": "bo‘lim",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "адрес",
+          "translation_uz": "manzil",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "гражданство",
+          "translation_uz": "fuqarolik",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "подпись",
+          "translation_uz": "imzo",
+          "difficulty": 2
+        },
+        {
+          "type": "word",
+          "text": "печать",
+          "translation_uz": "muhr",
+          "difficulty": 1
+        },
+        {
+          "type": "word",
+          "text": "уведомление",
+          "translation_uz": "xabarnoma",
+          "difficulty": 3
+        },
+        {
+          "type": "word",
+          "text": "консультация",
+          "translation_uz": "maslahat",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужно оформить регистрацию.",
+          "translation_uz": "Men ro‘yxatdan o‘tishim kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Какие документы нужны?",
+          "translation_uz": "Qanday hujjatlar kerak?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Где можно сделать копию паспорта?",
+          "translation_uz": "Pasport nusxasini qayerda olsa bo‘ladi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужен перевод документа.",
+          "translation_uz": "Menga hujjat tarjimasi kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Помогите заполнить анкету.",
+          "translation_uz": "Anketani to‘ldirishga yordam bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Здесь нужно поставить подпись?",
+          "translation_uz": "Bu yerga imzo qo‘yish kerakmi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я хочу записаться на приём.",
+          "translation_uz": "Men qabulga yozilmoqchiman.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Когда можно забрать документы?",
+          "translation_uz": "Hujjatlarni qachon olib ketish mumkin?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Срок действия скоро заканчивается.",
+          "translation_uz": "Amal qilish muddati tez orada tugaydi.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Как продлить регистрацию?",
+          "translation_uz": "Ro‘yxatdan o‘tish muddatini qanday uzaytirish mumkin?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Я оплатил патент.",
+          "translation_uz": "Men patent uchun to‘ladim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Квитанция об оплате у меня с собой.",
+          "translation_uz": "To‘lov kvitansiyasi yonimda.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Нужен оригинал или копия?",
+          "translation_uz": "Asl nusxa kerakmi yoki nusxasi?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "В документе ошибка в фамилии.",
+          "translation_uz": "Hujjatda familiya noto‘g‘ri yozilgan.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Куда мне обратиться?",
+          "translation_uz": "Men qayerga murojaat qilishim kerak?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Возьмите талон в терминале.",
+          "translation_uz": "Terminaldan talon oling.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Ждите, пока вызовут ваш номер.",
+          "translation_uz": "Raqamingiz chaqirilguncha kuting.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я сменил адрес проживания.",
+          "translation_uz": "Men yashash manzilimni o‘zgartirdim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "У меня есть трудовой договор.",
+          "translation_uz": "Menda mehnat shartnomasi bor.",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Мне нужна консультация.",
+          "translation_uz": "Menga maslahat kerak.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Напишите, пожалуйста, список документов.",
+          "translation_uz": "Iltimos, hujjatlar ro‘yxatini yozib bering.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Какой срок рассмотрения заявления?",
+          "translation_uz": "Arizani ko‘rib chiqish muddati qancha?",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Можно подать заявление через интернет?",
+          "translation_uz": "Arizani internet orqali topshirsa bo‘ladimi?",
+          "difficulty": 3
+        },
+        {
+          "type": "sentence",
+          "text": "Я принёс все документы.",
+          "translation_uz": "Men barcha hujjatlarni olib keldim.",
+          "difficulty": 2
+        },
+        {
+          "type": "sentence",
+          "text": "Спасибо за разъяснение.",
+          "translation_uz": "Tushuntirganingiz uchun rahmat.",
+          "difficulty": 2
+        }
+      ]
+    }
+  ]
+}

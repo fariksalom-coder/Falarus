@@ -593,7 +593,7 @@ export function createClickMerchantRoutes(
     const { data: payment, error } = await supabase
       .from('payments')
       .select(
-        'id, user_id, tariff_type, product_code, amount, status, payment_proof_url, click_merchant_payment_id'
+        'id, user_id, tariff_type, product_code, amount, status, payment_proof_url, click_merchant_payment_id, discount_meta'
       )
       .eq('id', paymentIdSafe)
       .maybeSingle();
@@ -715,11 +715,17 @@ export function createClickMerchantRoutes(
       );
     }
 
+    if ((payment as any).discount_meta?.welcome_video_offer === true) {
+      await supabase.from('welcome_video_offers')
+        .update({ status: 'claimed', updated_at: new Date().toISOString() })
+        .eq('user_id', Number((payment as any).user_id)).eq('payment_id', paymentIdSafe);
+    }
     try {
       await activateApprovedPayment(supabase, {
         userId: Number((payment as any).user_id),
         productCode,
         tariffType: (payment as any).tariff_type,
+        activationTariffType: (payment as any).discount_meta?.activation_tariff_type,
       });
       await activateTeacherMarketplacePayment(supabase, {
         paymentId: paymentIdSafe,
