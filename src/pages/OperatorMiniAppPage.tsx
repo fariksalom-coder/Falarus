@@ -35,7 +35,25 @@ type TariffItem = {
 type StatsResponse = {
   range: { label: string; from: string; to: string };
   payments: Array<{ currency: string; status: string; receipts: number; clients: number; amount: string }>;
-  debts: Array<{ currency: string; contracts: number; clients: number; debt: string; overdue: string }>;
+  debts: Array<{
+    currency: string;
+    contracts: number;
+    clients: number;
+    debt: string;
+    overdue: string;
+    debtors: Array<{
+      contract_id: number;
+      user_id: number;
+      tariff: string;
+      source: string;
+      due_at: string | null;
+      debt: string;
+      pending: string;
+      first_name: string | null;
+      last_name: string | null;
+      phone: string | null;
+    }>;
+  }>;
   history: Array<{
     id: number;
     amount: string;
@@ -225,6 +243,7 @@ export default function OperatorMiniAppPage() {
   const [customRange, setCustomRange] = useState({ from: todayAppDate(), to: todayAppDate() });
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [openDebtCurrency, setOpenDebtCurrency] = useState<string | null>(null);
 
   const hasTelegram = Boolean(initData());
   const activeUserId = selected?.id ?? null;
@@ -400,13 +419,17 @@ export default function OperatorMiniAppPage() {
     }
   }
 
-  const approvedTotal = stats?.payments
-    .filter((item) => item.status === 'approved')
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0) ?? 0;
+  const approvedByCurrency = useMemo(() => {
+    const rows = new Map<string, number>();
+    for (const item of stats?.payments ?? []) {
+      if (item.status !== 'approved') continue;
+      rows.set(item.currency, (rows.get(item.currency) ?? 0) + Number(item.amount || 0));
+    }
+    return [...rows.entries()].map(([currency, amount]) => ({ currency, amount }));
+  }, [stats?.payments]);
   const pendingCount = stats?.payments
     .filter((item) => item.status === 'pending')
     .reduce((sum, item) => sum + Number(item.receipts || 0), 0) ?? 0;
-  const debtTotal = stats?.debts.reduce((sum, item) => sum + Number(item.debt || 0), 0) ?? 0;
 
   if (!ready) return <div className="min-h-screen bg-[#071B3A] p-5 text-white">Yuklanmoqda...</div>;
 
@@ -627,7 +650,9 @@ export default function OperatorMiniAppPage() {
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-2xl bg-white p-3 shadow-sm">
                 <p className="text-[11px] font-black uppercase text-slate-400">Tasdiq</p>
-                <p className="mt-1 text-lg font-black text-emerald-600">{moneyText(approvedTotal)}</p>
+                {approvedByCurrency.length ? approvedByCurrency.map((item) => (
+                  <p key={item.currency} className="mt-1 text-sm font-black text-emerald-600">{moneyText(item.amount, item.currency)}</p>
+                )) : <p className="mt-1 text-lg font-black text-emerald-600">0</p>}
               </div>
               <div className="rounded-2xl bg-white p-3 shadow-sm">
                 <p className="text-[11px] font-black uppercase text-slate-400">Kutilmoqda</p>
@@ -635,7 +660,7 @@ export default function OperatorMiniAppPage() {
               </div>
               <div className="rounded-2xl bg-white p-3 shadow-sm">
                 <p className="text-[11px] font-black uppercase text-slate-400">Qarz</p>
-                <p className="mt-1 text-lg font-black text-red-600">{moneyText(debtTotal)}</p>
+                <p className="mt-1 text-lg font-black text-red-600">{stats?.debts.length || 0} valyuta</p>
               </div>
             </div>
             <section className="rounded-2xl border border-slate-200 bg-white p-3">
@@ -654,8 +679,29 @@ export default function OperatorMiniAppPage() {
               <div className="mt-2 space-y-2">
                 {stats?.debts.length ? stats.debts.map((item) => (
                   <div key={item.currency} className="rounded-xl bg-red-50 p-3 text-sm">
-                    <div className="flex justify-between gap-2"><strong>{item.clients} mijoz · {item.currency}</strong><strong>{moneyText(item.debt, item.currency)}</strong></div>
-                    <p className="mt-1 font-semibold text-red-700">Muddati o‘tgan: {moneyText(item.overdue, item.currency)}</p>
+                    <button
+                      className="w-full text-left"
+                      type="button"
+                      onClick={() => setOpenDebtCurrency(openDebtCurrency === item.currency ? null : item.currency)}
+                    >
+                      <div className="flex justify-between gap-2"><strong>{item.clients} mijoz · {item.currency}</strong><strong>{moneyText(item.debt, item.currency)}</strong></div>
+                      <p className="mt-1 font-semibold text-red-700">Muddati o‘tgan: {moneyText(item.overdue, item.currency)}</p>
+                      <p className="mt-1 text-xs font-black text-red-500">{openDebtCurrency === item.currency ? 'Yopish' : 'Kim qarzdorligini ko‘rish'}</p>
+                    </button>
+                    {openDebtCurrency === item.currency && (
+                      <div className="mt-3 space-y-2">
+                        {item.debtors.length ? item.debtors.map((debtor) => (
+                          <article key={debtor.contract_id} className="rounded-xl bg-white p-3">
+                            <div className="flex justify-between gap-2">
+                              <strong>#{debtor.user_id} · {debtor.first_name || 'Ism yo‘q'} {debtor.last_name || ''}</strong>
+                              <strong>{moneyText(debtor.debt, item.currency)}</strong>
+                            </div>
+                            <p className="mt-1 text-xs font-semibold text-slate-500">{debtor.phone || 'telefon yo‘q'} · {debtor.source || 'manba yo‘q'} · {debtor.tariff}</p>
+                            <p className="mt-1 text-xs font-bold text-red-700">Muddat: {fmtDate(debtor.due_at)}{Number(debtor.pending) > 0 ? ` · Tekshiruvda: ${moneyText(debtor.pending, item.currency)}` : ''}</p>
+                          </article>
+                        )) : <p className="rounded-xl bg-white p-3 text-xs font-bold text-slate-500">Bu valyutada qarzdorlar ro‘yxati bo‘sh.</p>}
+                      </div>
+                    )}
                   </div>
                 )) : <p className="text-sm font-semibold text-slate-500">Hozir qarz yo‘q.</p>}
               </div>

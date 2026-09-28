@@ -251,9 +251,28 @@ export function operatorMiniAppRoutes() {
        FROM operator_balances
        WHERE operator_id=$1 AND debt>0
        GROUP BY currency
-       ORDER BY currency`,
+      ORDER BY currency`,
       [op.id],
     )).rows;
+    const debtorRows = (await pool!.query(
+      `SELECT b.id contract_id,b.user_id,b.currency,b.tariff,b.source,b.due_at,
+              b.debt::text debt,b.pending::text pending,
+              u.first_name,u.last_name,u.phone
+       FROM operator_balances b
+       JOIN users u ON u.id=b.user_id
+       WHERE b.operator_id=$1 AND b.debt>0
+       ORDER BY b.currency,b.due_at NULLS LAST,b.id DESC
+       LIMIT 80`,
+      [op.id],
+    )).rows;
+    const debtorsByCurrency = new Map<string, any[]>();
+    for (const row of debtorRows) {
+      const currency = String(row.currency);
+      const list = debtorsByCurrency.get(currency) ?? [];
+      list.push(row);
+      debtorsByCurrency.set(currency, list);
+    }
+    for (const row of debts) row.debtors = debtorsByCurrency.get(String(row.currency)) ?? [];
     const history = (await pool!.query(
       `SELECT r.id,r.amount,r.status,r.created_at,r.decided_at,r.reason,
               c.id contract_id,c.user_id,c.currency,c.tariff,c.total,c.source,c.due_at,c.paid,c.debt,c.pending,
