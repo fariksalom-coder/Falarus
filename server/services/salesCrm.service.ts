@@ -13,6 +13,7 @@ import {
   type SalesCrmCallResult,
   type SalesCrmStatus,
 } from '../../shared/salesCrm.js';
+import { markPresentationIfImplied } from './salesCrmFunnel.service';
 
 function requirePool() {
   if (!pool) throw new Error('DATABASE_URL kerak');
@@ -96,9 +97,12 @@ export async function ingestUserAsSalesLead(params: {
   userId: number;
   phone?: string | null;
   source?: string | null;
+  utmSource?: string | null;
   medium?: string | null;
   campaign?: string | null;
   ad?: string | null;
+  utmContent?: string | null;
+  utmTerm?: string | null;
   landingPage?: string | null;
   actorId?: number | null;
   externalKey?: string | null;
@@ -120,8 +124,11 @@ export async function ingestUserAsSalesLead(params: {
          SET source = COALESCE($2, source),
              medium = COALESCE($3, medium),
              campaign = COALESCE($4, campaign),
-             sheet_row_number = COALESCE($5, sheet_row_number),
-             submitted_at = COALESCE($6::timestamptz, submitted_at),
+             utm_source = COALESCE($5, utm_source),
+             utm_content = COALESCE($6, utm_content),
+             utm_term = COALESCE($7, utm_term),
+             sheet_row_number = COALESCE($8, sheet_row_number),
+             submitted_at = COALESCE($9::timestamptz, submitted_at),
              last_action_at = now(),
              updated_at = now()
          WHERE id = $1`,
@@ -130,6 +137,9 @@ export async function ingestUserAsSalesLead(params: {
           params.source ?? null,
           params.medium ?? null,
           params.campaign ?? null,
+          params.utmSource ?? null,
+          params.utmContent ?? null,
+          params.utmTerm ?? null,
           params.sheetRowNumber ?? null,
           params.submittedAt ?? null,
         ],
@@ -169,9 +179,12 @@ export async function ingestUserAsSalesLead(params: {
              campaign = COALESCE($4, campaign),
              ad = COALESCE($5, ad),
              landing_page = COALESCE($6, landing_page),
-             external_key = COALESCE(external_key, $7),
-             sheet_row_number = COALESCE($8, sheet_row_number),
-             submitted_at = COALESCE($9::timestamptz, submitted_at),
+             utm_source = COALESCE($7, utm_source),
+             utm_content = COALESCE($8, utm_content),
+             utm_term = COALESCE($9, utm_term),
+             external_key = COALESCE(external_key, $10),
+             sheet_row_number = COALESCE($11, sheet_row_number),
+             submitted_at = COALESCE($12::timestamptz, submitted_at),
              last_action_at = now(),
              updated_at = now()
          WHERE id = $1`,
@@ -182,6 +195,9 @@ export async function ingestUserAsSalesLead(params: {
           params.campaign ?? null,
           params.ad ?? null,
           params.landingPage ?? null,
+          params.utmSource ?? null,
+          params.utmContent ?? null,
+          params.utmTerm ?? null,
           externalKey,
           params.sheetRowNumber ?? null,
           params.submittedAt ?? null,
@@ -204,9 +220,12 @@ export async function ingestUserAsSalesLead(params: {
            campaign = COALESCE($5, campaign),
            ad = COALESCE($6, ad),
            landing_page = COALESCE($7, landing_page),
-           external_key = COALESCE(external_key, $8),
-           sheet_row_number = COALESCE($9, sheet_row_number),
-           submitted_at = COALESCE($10::timestamptz, submitted_at),
+           utm_source = COALESCE($8, utm_source),
+           utm_content = COALESCE($9, utm_content),
+           utm_term = COALESCE($10, utm_term),
+           external_key = COALESCE(external_key, $11),
+           sheet_row_number = COALESCE($12, sheet_row_number),
+           submitted_at = COALESCE($13::timestamptz, submitted_at),
            last_action_at = now(),
            updated_at = now()
        WHERE id = $1`,
@@ -218,6 +237,9 @@ export async function ingestUserAsSalesLead(params: {
         params.campaign ?? null,
         params.ad ?? null,
         params.landingPage ?? null,
+        params.utmSource ?? null,
+        params.utmContent ?? null,
+        params.utmTerm ?? null,
         externalKey,
         params.sheetRowNumber ?? null,
         params.submittedAt ?? null,
@@ -240,8 +262,8 @@ export async function ingestUserAsSalesLead(params: {
     `INSERT INTO sales_crm_leads (
        user_id, phone_normalized, assigned_operator_id, status,
        source, medium, campaign, ad, landing_page, last_action_at,
-       external_key, sheet_row_number, submitted_at
-     ) VALUES ($1,$2,$3,'NEW',$4,$5,$6,$7,$8, now(), $9, $10, $11::timestamptz)
+       external_key, sheet_row_number, submitted_at, utm_source, utm_content, utm_term
+     ) VALUES ($1,$2,$3,'NEW',$4,$5,$6,$7,$8, now(), $9, $10, $11::timestamptz, $12, $13, $14)
      RETURNING id`,
     [
       params.userId,
@@ -255,6 +277,9 @@ export async function ingestUserAsSalesLead(params: {
       externalKey,
       params.sheetRowNumber ?? null,
       params.submittedAt ?? null,
+      params.utmSource ?? null,
+      params.utmContent ?? null,
+      params.utmTerm ?? null,
     ],
   );
   const leadId = inserted[0].id;
@@ -394,13 +419,13 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
   if (filters.createdTo) add('l.created_at <= ?::timestamptz', filters.createdTo);
 
   if (filters.nextContact === 'overdue') {
-    where.push(`l.next_contact_at IS NOT NULL AND l.next_contact_at < now() AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED')`);
+    where.push(`l.next_contact_at IS NOT NULL AND l.next_contact_at < now() AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`);
   } else if (filters.nextContact === 'today') {
     where.push(`l.next_contact_at::date = (now() AT TIME ZONE 'Asia/Tashkent')::date`);
   } else if (filters.nextContact === 'tomorrow') {
     where.push(`l.next_contact_at::date = ((now() AT TIME ZONE 'Asia/Tashkent')::date + 1)`);
   } else if (filters.nextContact === 'none') {
-    where.push(`l.next_contact_at IS NULL AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED')`);
+    where.push(`l.next_contact_at IS NULL AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`);
   }
 
   const search = salesLeadSearch(filters.q, params);
@@ -423,7 +448,7 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
 
   const { rows } = await db.query(
     `SELECT
-       l.id, l.user_id, l.status, l.source, l.medium, l.campaign,
+       l.id, l.user_id, l.status, l.source, l.utm_source, l.medium, l.campaign, l.ad, l.utm_content, l.utm_term,
        l.assigned_operator_id, l.phone_normalized,
        l.last_contact_at, l.next_contact_at, l.last_action_at,
        l.paid_amount, l.paid_currency, l.paid_at,
@@ -587,6 +612,7 @@ export async function changeLeadStatus(params: {
       from: old,
       to: params.status,
     });
+    await markPresentationIfImplied(params.leadId, { status: params.status });
   }
 
   if (comment) {
@@ -757,6 +783,8 @@ export async function logCall(params: {
     });
   }
 
+  await markPresentationIfImplied(params.leadId, { callResult: params.result });
+
   await addEvent(params.leadId, params.operatorId, 'call_logged', {
     answered: params.answered,
     result: params.result,
@@ -882,7 +910,7 @@ export async function getDashboard(params: {
     `SELECT count(*)::int AS n FROM sales_crm_leads
      WHERE ${w}
        AND next_contact_at IS NULL
-       AND status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED')`,
+       AND status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`,
     q,
   );
 
@@ -966,7 +994,7 @@ export async function getOperatorStats(params: {
        coalesce(sum(l.paid_amount) FILTER (WHERE l.status = 'PAID'), 0)::float AS paid_sum,
        count(DISTINCT l.id) FILTER (
          WHERE l.next_contact_at IS NULL
-           AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED')
+           AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')
        )::int AS no_next_action,
        (
          SELECT count(*)::int FROM sales_crm_tasks t
@@ -1007,6 +1035,51 @@ export async function listAgents(activeOnly = false) {
      ORDER BY role DESC, name ASC`,
   );
   return rows;
+}
+
+export async function createAgent(params: {
+  login: string;
+  name: string;
+  passwordHash: string;
+  role?: 'admin' | 'operator';
+}) {
+  const db = requirePool();
+  const { rows } = await db.query(
+    `INSERT INTO sales_crm_agents (login, name, password_hash, role, active)
+     VALUES ($1, $2, $3, $4, true)
+     RETURNING id, login, name, role, active, created_at`,
+    [params.login, params.name, params.passwordHash, params.role ?? 'operator'],
+  );
+  return rows[0];
+}
+
+export async function updateAgent(params: {
+  id: number;
+  name?: string;
+  login?: string;
+  passwordHash?: string;
+  active?: boolean;
+}) {
+  const db = requirePool();
+  const sets: string[] = ['updated_at = now()'];
+  const values: unknown[] = [params.id];
+  const add = (sql: string, value: unknown) => {
+    values.push(value);
+    sets.push(sql.replace('?', `$${values.length}`));
+  };
+  if (params.name != null) add('name = ?', params.name);
+  if (params.login != null) add('login = ?', params.login);
+  if (params.passwordHash != null) add('password_hash = ?', params.passwordHash);
+  if (params.active != null) add('active = ?', params.active);
+  const { rows } = await db.query(
+    `UPDATE sales_crm_agents
+     SET ${sets.join(', ')}
+     WHERE id = $1 AND role = 'operator'
+     RETURNING id, login, name, role, active, created_at`,
+    values,
+  );
+  if (!rows[0]) throw Object.assign(new Error('Operator topilmadi'), { status: 404 });
+  return rows[0];
 }
 
 export async function getAssignmentMode() {

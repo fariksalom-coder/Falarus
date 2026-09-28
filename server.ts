@@ -496,6 +496,8 @@ async function startServer() {
     app.use('/api/support-crm', createSupportCrmRoutes(supabase));
     const { createSalesCrmRoutes } = await import('./server/routes/salesCrmRoutes');
     app.use('/api/sales-crm', createSalesCrmRoutes(supabase));
+    const { createPromoLeadRoutes } = await import('./server/routes/promoLeadRoutes');
+    app.use('/api/promo', createPromoLeadRoutes());
     const { createGoogleSheetsIntegrationRoutes } = await import(
       './server/routes/googleSheetsIntegrationRoutes'
     );
@@ -3262,6 +3264,14 @@ async function startServer() {
         method: req.method,
         path: pathOnly,
       });
+    });
+    // Mirror production: /crm and /crm/* render the Sales CRM entry (crm.html).
+    app.use((req, _res, next) => {
+      const pathOnly = String(req.url || '').split('?')[0];
+      if (req.method === 'GET' && (pathOnly === '/crm' || pathOnly.startsWith('/crm/'))) {
+        req.url = '/crm.html';
+      }
+      next();
     });
     const vite = await createViteServer({
       server: { middlewareMode: true },

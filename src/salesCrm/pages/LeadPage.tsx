@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Phone } from 'lucide-react';
+import { Check, Phone } from 'lucide-react';
 import { salesCrmApi, type LeadDetail, type OperatorRow } from '../api';
 import { useSalesCrmAuth } from '../auth';
 import {
@@ -9,6 +9,7 @@ import {
   SALES_CRM_NO_ANSWER_RESULTS,
   SALES_CRM_STATUS_LABELS,
   SALES_CRM_STATUSES,
+  SALES_FUNNEL_STAGES,
   type SalesCrmCallResult,
   type SalesCrmStatus,
 } from '../../../shared/salesCrm';
@@ -113,7 +114,7 @@ export default function LeadPage() {
           </span>
         </div>
 
-        {!lead.next_contact_at && !['PAID', 'ARCHIVED', 'NOT_INTERESTED'].includes(String(lead.status)) ? (
+        {!lead.next_contact_at && !['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE'].includes(String(lead.status)) ? (
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
             ⚠ Keyingi amal yo‘q
           </p>
@@ -182,6 +183,18 @@ export default function LeadPage() {
           </label>
         ) : null}
       </div>
+
+      <MilestonesCard
+        milestones={data.milestones}
+        onToggle={async (stage, done) => {
+          try {
+            await salesCrmApi.setMilestone(leadId, stage, done);
+            await reload();
+          } catch (ex) {
+            setErr(ex instanceof Error ? ex.message : 'Xato');
+          }
+        }}
+      />
 
       <form onSubmit={onCallResult} className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200">
         <h3 className="text-sm font-bold">Qo‘ng‘iroq natijasi</h3>
@@ -309,6 +322,63 @@ export default function LeadPage() {
         </ul>
       </section>
     </div>
+  );
+}
+
+function MilestonesCard({
+  milestones,
+  onToggle,
+}: {
+  milestones: LeadDetail['milestones'];
+  onToggle: (stage: 'presentation' | 'support_group', done: boolean) => Promise<void>;
+}) {
+  const [pending, setPending] = useState<string | null>(null);
+  return (
+    <section className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      <h3 className="text-sm font-bold">Voronka</h3>
+      <ol className="mt-3 space-y-1">
+        {SALES_FUNNEL_STAGES.map((s, i) => {
+          const at = milestones?.[s.key] ?? null;
+          const done = Boolean(at);
+          const manualKey = s.manual ? (s.key as 'presentation' | 'support_group') : null;
+          return (
+            <li key={s.key} className="flex min-h-11 items-center gap-3">
+              <span
+                className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  done ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
+                }`}
+              >
+                {done ? <Check size={14} strokeWidth={3} /> : i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-semibold ${done ? 'text-slate-900' : 'text-slate-500'}`}>{s.label}</p>
+                <p className="text-[11px] text-slate-400">
+                  {at ? new Date(at).toLocaleString('uz-UZ') : s.hint}
+                </p>
+              </div>
+              {manualKey ? (
+                <button
+                  type="button"
+                  disabled={pending === manualKey}
+                  onClick={async () => {
+                    setPending(manualKey);
+                    await onToggle(manualKey, !done);
+                    setPending(null);
+                  }}
+                  className={`min-h-10 shrink-0 rounded-2xl px-3 text-xs font-bold transition active:scale-95 disabled:opacity-60 ${
+                    done
+                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {done ? 'Bekor qilish' : 'Belgilash'}
+                </button>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 

@@ -161,6 +161,7 @@ export default function LeadsPage() {
               { key: '', label: 'Hammasi' },
               { key: 'NEW', label: 'Yangi' },
               { key: 'NO_ANSWER', label: 'Ko‘tarmadi' },
+              { key: 'INVALID_PHONE', label: 'Noto‘g‘ri raqam' },
               { key: 'CALLBACK', label: 'Keyinroq' },
               { key: 'THINKING', label: 'O‘ylab' },
               { key: 'PAYMENT_PENDING', label: 'To‘laydi' },

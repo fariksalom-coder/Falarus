@@ -10,6 +10,7 @@ export const SALES_CRM_STATUSES = [
   'PAYMENT_PENDING',
   'PAID',
   'NO_ANSWER',
+  'INVALID_PHONE',
   'CALLBACK',
   'NOT_INTERESTED',
   'ARCHIVED',
@@ -27,6 +28,7 @@ export const SALES_CRM_STATUS_LABELS: Record<SalesCrmStatus, string> = {
   PAYMENT_PENDING: 'To‘laydi',
   PAID: 'To‘ladi',
   NO_ANSWER: 'Ko‘tarmadi',
+  INVALID_PHONE: 'Noto‘g‘ri raqam',
   CALLBACK: 'Keyinroq',
   NOT_INTERESTED: 'Rad etdi',
   ARCHIVED: 'Arxiv',
@@ -70,6 +72,17 @@ export const SALES_CRM_KANBAN_COLUMNS: SalesCrmKanbanColumn[] = [
     tone: 'slate',
     requireComment: false,
     requireNextContact: false,
+  },
+  {
+    id: 'invalid_phone',
+    title: 'Noto‘g‘ri raqam',
+    hint: 'Kontakt topilmadi',
+    dropStatus: 'INVALID_PHONE',
+    group: ['INVALID_PHONE'],
+    tone: 'slate',
+    requireComment: true,
+    requireNextContact: false,
+    commentPlaceholder: 'Masalan: raqam ishlamaydi, boshqa odam javob berdi…',
   },
   {
     id: 'later',
@@ -193,6 +206,33 @@ export const SALES_CRM_CALL_RESULT_LABELS: Record<SalesCrmCallResult, string> = 
   rejected_call: 'Tashlab yubordi',
   unavailable: 'Telefon ochiq emas',
 };
+
+/**
+ * Sales funnel milestones for the plan/fact report. Independent of the board
+ * status: each stage is the first moment a lead reached it.
+ * `manual` stages are marked by the operator; the rest are derived from calls,
+ * board moves, payments and user activity.
+ */
+export const SALES_FUNNEL_STAGES = [
+  { key: 'lead', label: 'Yangi lid', hint: 'Ro‘yxatdan o‘tdi', manual: false },
+  { key: 'attempt', label: 'Bog‘lanishga urinish', hint: 'Birinchi qo‘ng‘iroq', manual: false },
+  { key: 'reached', label: 'Gaplashildi', hint: 'Qo‘ng‘iroqqa javob berdi', manual: false },
+  { key: 'presentation', label: 'Taqdimot', hint: 'Kurs tushuntirildi', manual: true },
+  { key: 'payment_pending', label: 'To‘lov kutilmoqda', hint: '«To‘laydi» bosqichi', manual: false },
+  { key: 'paid', label: 'To‘ladi', hint: 'Sotuv yopildi', manual: false },
+  { key: 'access', label: 'Kirish berildi', hint: 'To‘lov tasdiqlandi', manual: false },
+  { key: 'first_login', label: 'Birinchi kirish', hint: 'To‘lovdan keyin platformaga kirdi', manual: false },
+  { key: 'support_group', label: 'Guruhga qo‘shildi', hint: 'Qo‘llab-quvvatlash guruhi', manual: true },
+] as const;
+
+export type SalesFunnelStage = (typeof SALES_FUNNEL_STAGES)[number]['key'];
+
+export const SALES_FUNNEL_MANUAL_STAGES = ['presentation', 'support_group'] as const;
+export type SalesFunnelManualStage = (typeof SALES_FUNNEL_MANUAL_STAGES)[number];
+
+export function isSalesFunnelStage(v: unknown): v is SalesFunnelStage {
+  return typeof v === 'string' && SALES_FUNNEL_STAGES.some((s) => s.key === v);
+}
 
 export function isSalesCrmStatus(v: unknown): v is SalesCrmStatus {
   return typeof v === 'string' && (SALES_CRM_STATUSES as readonly string[]).includes(v);

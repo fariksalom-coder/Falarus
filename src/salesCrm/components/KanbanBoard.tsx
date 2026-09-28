@@ -229,10 +229,20 @@ function KanbanCard({
   const name =
     [lead.first_name, lead.last_name].filter(Boolean).join(' ').trim() || 'Nomsiz';
   const phone = formatSalesPhone(lead.phone || lead.phone_normalized);
+  const sourceParts = [lead.source, lead.utm_source, lead.campaign || lead.utm_content || lead.ad].filter(Boolean);
+  const sourceLabel = sourceParts.join(' · ');
+  const created = lead.created_at
+    ? new Date(lead.created_at).toLocaleString('uz-UZ', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '';
   const overdue =
     lead.next_contact_at &&
     new Date(lead.next_contact_at).getTime() < Date.now() &&
-    !['PAID', 'ARCHIVED', 'NOT_INTERESTED'].includes(lead.status);
+    !['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE'].includes(lead.status);
 
   return (
     <article
@@ -258,10 +268,13 @@ function KanbanCard({
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
-        {lead.source ? (
+        {sourceLabel ? (
           <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
-            {lead.source}
+            {sourceLabel}
           </span>
+        ) : null}
+        {created ? (
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 font-bold text-blue-700">{created}</span>
         ) : null}
         {overdue ? (
           <span className="rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-700">Muddati o‘tgan</span>

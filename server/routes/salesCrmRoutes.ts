@@ -15,6 +15,7 @@ import {
   assignLead,
   changeLeadStatus,
   completeTask,
+  createAgent,
   getAssignmentMode,
   getDashboard,
   getOperatorStats,
@@ -27,15 +28,43 @@ import {
   scheduleTask,
   setAssignmentMode,
   syncRecentRegistrations,
+  updateAgent,
 } from '../services/salesCrm.service';
 import {
+  getFunnelReport,
+  getLeadMilestones,
+  normalizeMonth,
+  setFunnelPlans,
+  setLeadMilestone,
+} from '../services/salesCrmFunnel.service';
+import {
   isSalesCrmStatus,
+  isSalesFunnelStage,
+  SALES_FUNNEL_MANUAL_STAGES,
+  type SalesFunnelManualStage,
+  type SalesFunnelStage,
   SALES_CRM_ANSWERED_RESULTS,
   SALES_CRM_NO_ANSWER_RESULTS,
   type SalesCrmCallResult,
 } from '../../shared/salesCrm.js';
 
 const TOKEN_TTL = '12h';
+
+function isDbUnavailableError(e: unknown): boolean {
+  const message = e instanceof Error ? e.message : String(e ?? '');
+  return /ECONNREFUSED|timeout|Connection terminated|DATABASE_URL|connect/i.test(message);
+}
+
+function sendSalesCrmError(res: { status: (code: number) => { json: (body: unknown) => void } }, e: unknown): void {
+  if (isDbUnavailableError(e)) {
+    res.status(503).json({
+      error: 'CRM bazasi vaqtincha javob bermayapti',
+      code: 'CRM_DB_UNAVAILABLE',
+    });
+    return;
+  }
+  res.status(500).json({ error: 'Xatolik yuz berdi' });
+}
 
 function agentFromReq(req: Request): { id: number; role: SalesCrmAgentRole } {
   const r = req as Request & {
@@ -58,6 +87,25 @@ function isCallResult(v: unknown): v is SalesCrmCallResult {
     (SALES_CRM_ANSWERED_RESULTS as readonly string[]).includes(s) ||
     (SALES_CRM_NO_ANSWER_RESULTS as readonly string[]).includes(s)
   );
+}
+
+function normalizeAgentLogin(raw: unknown): string {
+  return String(raw ?? '').trim().toLowerCase();
+}
+
+function validateAgentInput(input: { login?: string; name?: string; password?: string }, opts: { passwordRequired: boolean }) {
+  if (input.login != null && !/^[a-z0-9_.-]{3,40}$/.test(input.login)) {
+    throw Object.assign(new Error('Login 3–40 belgi: a-z, 0-9, _, ., -'), { status: 400 });
+  }
+  if (input.name != null && (!input.name.trim() || input.name.trim().length > 100)) {
+    throw Object.assign(new Error('Ism 1–100 belgi bo‘lishi kerak'), { status: 400 });
+  }
+  if (opts.passwordRequired || input.password) {
+    const p = input.password ?? '';
+    if (p.length < 12 || p.length > 72 || !/[A-Za-z]/.test(p) || !/[0-9]/.test(p)) {
+      throw Object.assign(new Error('Parol 12–72 belgi, harf va raqamdan iborat bo‘lsin'), { status: 400 });
+    }
+  }
 }
 
 export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'query'>): Router {
@@ -156,7 +204,7 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
       res.json(data);
     } catch (e) {
       console.error('[sales-crm/dashboard]', e);
-      res.status(500).json({ error: 'Xatolik yuz berdi' });
+      sendSalesCrmError(res, e);
     }
   });
 
@@ -208,7 +256,7 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
         res.status(404).json({ error: 'Lead topilmadi' });
         return;
       }
-      res.json(data);
+      res.json({ ...data, milestones: await getLeadMilestones(leadId) });
     } catch (e) {
       console.error('[sales-crm/leads/:id]', e);
       res.status(500).json({ error: 'Xatolik yuz berdi' });
@@ -341,6 +389,71 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
     }
   });
 
+  router.post('/leads/:id/milestone', async (req, res) => {
+    try {
+      const { id, role } = agentFromReq(req);
+      const stage = String(req.body?.stage ?? '');
+      if (!(SALES_FUNNEL_MANUAL_STAGES as readonly string[]).includes(stage)) {
+        res.status(400).json({ error: 'Noto‘g‘ri bosqich' });
+        return;
+      }
+      await setLeadMilestone({
+        leadId: Number(req.params.id),
+        stage: stage as SalesFunnelManualStage,
+        done: Boolean(req.body?.done),
+        actorId: id,
+        scopeOperatorId: scopeOp(role, id),
+      });
+      res.json({ ok: true });
+    } catch (e) {
+      const err = e as Error & { status?: number };
+      res.status(err.status ?? 500).json({ error: err.message || 'Xatolik' });
+    }
+  });
+
+  // Plan / fact by funnel stage. Operators always get their own numbers.
+  router.get('/funnel', async (req, res) => {
+    try {
+      const { id, role } = agentFromReq(req);
+      const requested = Number(req.query.operatorId);
+      const operatorId =
+        role === 'admin' ? (Number.isFinite(requested) && requested > 0 ? requested : null) : id;
+      const report = await getFunnelReport({ month: normalizeMonth(req.query.month), operatorId });
+      if (role !== 'admin') report.operators = report.operators.filter((o) => o.id === id);
+      res.json(report);
+    } catch (e) {
+      console.error('[sales-crm/funnel]', e);
+      sendSalesCrmError(res, e);
+    }
+  });
+
+  router.put('/funnel/plans', requireSalesCrmAdmin, async (req, res) => {
+    try {
+      const rawOp = req.body?.operatorId;
+      const operatorId = rawOp == null || rawOp === '' ? null : Number(rawOp);
+      if (operatorId != null && !(Number.isFinite(operatorId) && operatorId > 0)) {
+        res.status(400).json({ error: 'Noto‘g‘ri operator' });
+        return;
+      }
+      const rawTargets = (req.body?.targets ?? {}) as Record<string, unknown>;
+      const targets: Partial<Record<SalesFunnelStage, number | null>> = {};
+      for (const [k, v] of Object.entries(rawTargets)) {
+        if (!isSalesFunnelStage(k)) continue;
+        if (v === null || v === '') targets[k] = null;
+        else if (Number.isFinite(Number(v)) && Number(v) >= 0) targets[k] = Number(v);
+        else {
+          res.status(400).json({ error: 'Reja musbat son bo‘lishi kerak' });
+          return;
+        }
+      }
+      await setFunnelPlans({ month: normalizeMonth(req.body?.month), operatorId, targets });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error('[sales-crm/funnel/plans]', e);
+      sendSalesCrmError(res, e);
+    }
+  });
+
   router.get('/tasks', async (req, res) => {
     try {
       const { id, role } = agentFromReq(req);
@@ -363,7 +476,7 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
       res.json({ items, summary });
     } catch (e) {
       console.error('[sales-crm/tasks]', e);
-      res.status(500).json({ error: 'Xatolik yuz berdi' });
+      sendSalesCrmError(res, e);
     }
   });
 
@@ -383,7 +496,31 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
       res.json({ items: await listAgents(false), assignment: await getAssignmentMode() });
     } catch (e) {
       console.error('[sales-crm/operators]', e);
-      res.status(500).json({ error: 'Xatolik yuz berdi' });
+      sendSalesCrmError(res, e);
+    }
+  });
+
+  router.post('/operators', requireSalesCrmAdmin, async (req, res) => {
+    try {
+      const login = normalizeAgentLogin(req.body?.login);
+      const name = String(req.body?.name ?? '').trim();
+      const password = String(req.body?.password ?? '');
+      validateAgentInput({ login, name, password }, { passwordRequired: true });
+      const passwordHash = await bcrypt.hash(password, 12);
+      const agent = await createAgent({ login, name, passwordHash, role: 'operator' });
+      res.status(201).json({ agent });
+    } catch (e) {
+      const err = e as Error & { status?: number; code?: string };
+      if (err.status) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      if (err.code === '23505') {
+        res.status(409).json({ error: 'Bu login band' });
+        return;
+      }
+      console.error('[sales-crm/operators:create]', e);
+      sendSalesCrmError(res, e);
     }
   });
 
@@ -397,7 +534,69 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
       res.json({ items });
     } catch (e) {
       console.error('[sales-crm/operators/stats]', e);
-      res.status(500).json({ error: 'Xatolik yuz berdi' });
+      sendSalesCrmError(res, e);
+    }
+  });
+
+  router.patch('/operators/:id', requireSalesCrmAdmin, async (req, res) => {
+    try {
+      const operatorId = Number(req.params.id);
+      if (!Number.isFinite(operatorId) || operatorId <= 0) {
+        res.status(400).json({ error: 'Noto‘g‘ri operator' });
+        return;
+      }
+      const body: {
+        name?: string;
+        login?: string;
+        password?: string;
+        active?: boolean;
+      } = {};
+      if (req.body?.name != null) body.name = String(req.body.name).trim();
+      if (req.body?.login != null) body.login = normalizeAgentLogin(req.body.login);
+      if (req.body?.password != null) body.password = String(req.body.password);
+      if (req.body?.active != null) body.active = Boolean(req.body.active);
+      validateAgentInput(body, { passwordRequired: false });
+      const passwordHash = body.password ? await bcrypt.hash(body.password, 12) : undefined;
+      const agent = await updateAgent({
+        id: operatorId,
+        name: body.name,
+        login: body.login,
+        passwordHash,
+        active: body.active,
+      });
+      res.json({ agent });
+    } catch (e) {
+      const err = e as Error & { status?: number; code?: string };
+      if (err.status) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      if (err.code === '23505') {
+        res.status(409).json({ error: 'Bu login band' });
+        return;
+      }
+      console.error('[sales-crm/operators:update]', e);
+      sendSalesCrmError(res, e);
+    }
+  });
+
+  router.delete('/operators/:id', requireSalesCrmAdmin, async (req, res) => {
+    try {
+      const operatorId = Number(req.params.id);
+      if (!Number.isFinite(operatorId) || operatorId <= 0) {
+        res.status(400).json({ error: 'Noto‘g‘ri operator' });
+        return;
+      }
+      const agent = await updateAgent({ id: operatorId, active: false });
+      res.json({ agent });
+    } catch (e) {
+      const err = e as Error & { status?: number };
+      if (err.status) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
+      console.error('[sales-crm/operators:delete]', e);
+      sendSalesCrmError(res, e);
     }
   });
 

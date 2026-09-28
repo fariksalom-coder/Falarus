@@ -1,3 +1,5 @@
+import type { SalesFunnelManualStage, SalesFunnelStage } from '../../shared/salesCrm';
+
 const TOKEN_KEY = 'salesCrmToken';
 
 export function getSalesCrmToken(): string | null {
@@ -92,11 +94,49 @@ export const salesCrmApi = {
       items: OperatorRow[];
       assignment: { mode: string };
     }>('/operators'),
+  createOperator: (body: { login: string; name: string; password: string }) =>
+    request<{ agent: OperatorRow }>('/operators', { method: 'POST', body: JSON.stringify(body) }),
+  updateOperator: (
+    id: number,
+    body: Partial<{ login: string; name: string; password: string; active: boolean }>,
+  ) =>
+    request<{ agent: OperatorRow }>(`/operators/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteOperator: (id: number) =>
+    request<{ agent: OperatorRow }>(`/operators/${id}`, { method: 'DELETE', body: '{}' }),
   operatorStats: (period = '30d') =>
     request<{ items: OperatorStatRow[] }>(`/operators/stats?period=${period}`),
   setAssignment: (mode: 'manual' | 'round_robin') =>
     request('/settings/assignment', { method: 'POST', body: JSON.stringify({ mode }) }),
   sync: () => request<{ synced: number }>('/sync', { method: 'POST', body: '{}' }),
+  funnel: (month: string, operatorId: number | null) =>
+    request<FunnelReport>(
+      `/funnel?month=${encodeURIComponent(month)}${operatorId ? `&operatorId=${operatorId}` : ''}`,
+    ),
+  setFunnelPlans: (
+    month: string,
+    operatorId: number | null,
+    targets: Partial<Record<SalesFunnelStage, number | null>>,
+  ) =>
+    request('/funnel/plans', {
+      method: 'PUT',
+      body: JSON.stringify({ month, operatorId, targets }),
+    }),
+  setMilestone: (id: number, stage: SalesFunnelManualStage, done: boolean) =>
+    request(`/leads/${id}/milestone`, { method: 'POST', body: JSON.stringify({ stage, done }) }),
+};
+
+export type FunnelReport = {
+  month: string;
+  days: number;
+  today: number | null;
+  operatorId: number | null;
+  stages: { key: SalesFunnelStage; plan: number | null; fact: number; daily: number[] }[];
+  operators: {
+    id: number;
+    name: string;
+    active: boolean;
+    stages: Record<SalesFunnelStage, { plan: number | null; fact: number }>;
+  }[];
 };
 
 async function sheetsRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -159,6 +199,12 @@ export type LeadRow = {
   user_id: number;
   status: string;
   source: string | null;
+  utm_source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+  ad?: string | null;
+  utm_content?: string | null;
+  utm_term?: string | null;
   phone_normalized: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -176,6 +222,7 @@ export type LeadDetail = {
   comments: { id: number; comment: string; created_at: string; agent_name: string | null }[];
   tasks: TaskRow[];
   calls: { id: number; result: string; answered: boolean; called_at: string; comment: string | null; operator_name: string | null }[];
+  milestones: Record<SalesFunnelStage, string | null>;
 };
 
 export type TaskRow = {
