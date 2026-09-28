@@ -41,7 +41,7 @@ export function operatorBotRoutes(supabase: DbClient) {
         const rows = await transaction(async (c) => {
             await c.query(`UPDATE operator_outbox q SET delivered_at=now(),last_error='operator_revoked' WHERE q.delivered_at IS NULL AND q.operator_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM operator_accounts o WHERE o.id=q.operator_id AND o.active AND o.telegram_id::text=q.payload->>'chat_id')`);
             // Cancel queued debt reminders after approved settlement or operator reassignment/revocation.
-            await c.query(`UPDATE operator_outbox q SET delivered_at=now() WHERE q.delivered_at IS NULL AND q.contract_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM operator_balances b JOIN operator_accounts o ON o.id=b.operator_id WHERE b.id=q.contract_id AND b.debt>0 AND o.active AND o.telegram_id::text=q.payload->>'chat_id')`);
+            await c.query(`UPDATE operator_outbox q SET delivered_at=now() WHERE q.delivered_at IS NULL AND q.contract_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM operator_balances b JOIN operator_accounts o ON o.id=b.operator_id WHERE b.id=q.contract_id AND b.debt>0 AND (b.paid>0 OR b.pending>0) AND o.active AND o.telegram_id::text=q.payload->>'chat_id')`);
             return (await c.query(`WITH batch AS (SELECT id FROM operator_outbox WHERE delivered_at IS NULL AND next_at<=now() ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 10) UPDATE operator_outbox q SET attempts=attempts+1,next_at=now()+interval '2 minutes' FROM batch WHERE q.id=batch.id RETURNING q.id,q.method,q.payload,q.attempts`)).rows;
         });
         res.json(rows);

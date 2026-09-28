@@ -35,6 +35,8 @@ type TariffItem = {
 type StatsResponse = {
   range: { label: string; from: string; to: string };
   payments: Array<{ currency: string; status: string; receipts: number; clients: number; amount: string }>;
+  salesDays: Array<{ day: string; currency: string; receipts: number; clients: number; amount: string }>;
+  salesMonth: Array<{ currency: string; receipts: number; clients: number; amount: string }>;
   debts: Array<{
     currency: string;
     contracts: number;
@@ -139,6 +141,12 @@ function moneyText(value: string | number, currency = '') {
   if (currency === 'RUB') return `${amount} ₽`;
   if (currency === 'USD') return `$${amount}`;
   return `${amount} ${currency}`.trim();
+}
+
+function dayText(value: string) {
+  const parsed = new Date(`${value}T00:00:00`);
+  if (!Number.isFinite(+parsed)) return value;
+  return parsed.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' });
 }
 
 function subscriptionText(customer: Customer) {
@@ -430,6 +438,15 @@ export default function OperatorMiniAppPage() {
   const pendingCount = stats?.payments
     .filter((item) => item.status === 'pending')
     .reduce((sum, item) => sum + Number(item.receipts || 0), 0) ?? 0;
+  const salesByDay = useMemo(() => {
+    const grouped = new Map<string, StatsResponse['salesDays']>();
+    for (const item of stats?.salesDays ?? []) {
+      const list = grouped.get(item.day) ?? [];
+      list.push(item);
+      grouped.set(item.day, list);
+    }
+    return [...grouped.entries()].map(([day, rows]) => ({ day, rows }));
+  }, [stats?.salesDays]);
 
   if (!ready) return <div className="min-h-screen bg-[#071B3A] p-5 text-white">Yuklanmoqda...</div>;
 
@@ -660,9 +677,41 @@ export default function OperatorMiniAppPage() {
               </div>
               <div className="rounded-2xl bg-white p-3 shadow-sm">
                 <p className="text-[11px] font-black uppercase text-slate-400">Qarz</p>
-                <p className="mt-1 text-lg font-black text-red-600">{stats?.debts.length || 0} valyuta</p>
+                <div className="mt-1 space-y-0.5">
+                  {stats?.debts.length ? stats.debts.map((item) => (
+                    <p key={item.currency} className="text-xs font-black text-red-600">{moneyText(item.debt, item.currency)}</p>
+                  )) : <p className="text-lg font-black text-red-600">0</p>}
+                </div>
               </div>
             </div>
+            <section className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-sm font-black text-[#071B3A]">Savdo statistikasi</h2>
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase text-slate-400">Oy jami</p>
+                  {stats?.salesMonth?.length ? stats.salesMonth.map((item) => (
+                    <p key={item.currency} className="text-xs font-black text-[#071B3A]">{moneyText(item.amount, item.currency)}</p>
+                  )) : <p className="text-xs font-black text-[#071B3A]">0</p>}
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                {salesByDay.length ? salesByDay.map((group) => (
+                  <div key={group.day} className="rounded-xl bg-slate-50 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <strong className="text-sm text-[#071B3A]">{dayText(group.day)}</strong>
+                      <span className="text-xs font-bold text-slate-500">{group.rows.reduce((sum, row) => sum + Number(row.receipts || 0), 0)} ta to‘lov</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {group.rows.map((row) => (
+                        <span key={`${group.day}-${row.currency}`} className="rounded-lg bg-white px-2 py-1 text-xs font-black text-[#071B3A]">
+                          {moneyText(row.amount, row.currency)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )) : <p className="text-sm font-semibold text-slate-500">Bu davrda tasdiqlangan savdo yo‘q.</p>}
+              </div>
+            </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-3">
               <h2 className="text-sm font-black text-[#071B3A]">To‘lovlar</h2>
               <div className="mt-2 space-y-2">
@@ -716,7 +765,7 @@ export default function OperatorMiniAppPage() {
                       <span className="font-black">{moneyText(item.amount, item.currency)}</span>
                     </div>
                     <p className="mt-1 text-xs font-semibold text-slate-500">{item.phone || 'telefon yo‘q'} · {item.source} · {fmtDate(item.created_at)}</p>
-                    <p className="mt-2 text-xs font-black text-[#071B3A]">{statusLabel[item.status] || item.status} · Qarz: {moneyText(item.debt, item.currency)} · Tekshiruvda: {moneyText(item.pending, item.currency)}</p>
+                    <p className="mt-2 text-xs font-black text-[#071B3A]">{statusLabel[item.status] || item.status} · Qarz: {moneyText(item.status === 'rejected' ? 0 : item.debt, item.currency)} · Tekshiruvda: {moneyText(item.status === 'rejected' ? 0 : item.pending, item.currency)}</p>
                   </article>
                 )) : <p className="text-sm font-semibold text-slate-500">Tarix bo‘sh.</p>}
               </div>

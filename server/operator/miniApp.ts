@@ -197,6 +197,11 @@ function statsRange(query: any): { from: string; to: string; label: string } {
   throw new Error('Davr noto‘g‘ri.');
 }
 
+function currentMonthRange(): { from: string; to: string } {
+  const today = appDate();
+  return { from: isoFromAppDate(`${today.slice(0, 8)}01`), to: isoFromAppDate(today, true) };
+}
+
 async function storeMiniReceipt(file: Express.Multer.File) {
   if (!file || !RECEIPT_MIMES.has(file.mimetype)) {
     throw new Error('Chekni JPG, PNG, WEBP yoki PDF qilib yuklang (8 MB gacha).');
@@ -249,7 +254,7 @@ export function operatorMiniAppRoutes() {
               COALESCE(sum(debt),0)::text debt,
               COALESCE(sum(debt) FILTER (WHERE due_at<now()),0)::text overdue
        FROM operator_balances
-       WHERE operator_id=$1 AND debt>0
+       WHERE operator_id=$1 AND debt>0 AND (paid>0 OR pending>0)
        GROUP BY currency
       ORDER BY currency`,
       [op.id],
@@ -260,7 +265,7 @@ export function operatorMiniAppRoutes() {
               u.first_name,u.last_name,u.phone
        FROM operator_balances b
        JOIN users u ON u.id=b.user_id
-       WHERE b.operator_id=$1 AND b.debt>0
+       WHERE b.operator_id=$1 AND b.debt>0 AND (b.paid>0 OR b.pending>0)
        ORDER BY b.currency,b.due_at NULLS LAST,b.id DESC
        LIMIT 80`,
       [op.id],
@@ -285,13 +290,45 @@ export function operatorMiniAppRoutes() {
        LIMIT 30`,
       [op.id, range.from, range.to],
     )).rows;
+    const salesDays = (await pool!.query(
+      `SELECT to_char((COALESCE(r.decided_at,r.created_at) AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') day,
+              c.currency,
+              count(*)::int receipts,
+              count(distinct c.user_id)::int clients,
+              COALESCE(sum(r.amount),0)::text amount
+       FROM operator_receipts r
+       JOIN operator_contracts c ON c.id=r.contract_id
+       WHERE r.operator_id=$1
+         AND r.status='approved'
+         AND COALESCE(r.decided_at,r.created_at)>=$2
+         AND COALESCE(r.decided_at,r.created_at)<$3
+       GROUP BY day,c.currency
+       ORDER BY day DESC,c.currency`,
+      [op.id, range.from, range.to],
+    )).rows;
+    const monthRange = currentMonthRange();
+    const salesMonth = (await pool!.query(
+      `SELECT c.currency,
+              count(*)::int receipts,
+              count(distinct c.user_id)::int clients,
+              COALESCE(sum(r.amount),0)::text amount
+       FROM operator_receipts r
+       JOIN operator_contracts c ON c.id=r.contract_id
+       WHERE r.operator_id=$1
+         AND r.status='approved'
+         AND COALESCE(r.decided_at,r.created_at)>=$2
+         AND COALESCE(r.decided_at,r.created_at)<$3
+       GROUP BY c.currency
+       ORDER BY c.currency`,
+      [op.id, monthRange.from, monthRange.to],
+    )).rows;
     const actions = (await pool!.query(
       `SELECT count(*)::int actions,count(distinct user_id)::int clients
        FROM operator_audit
        WHERE operator_id=$1 AND created_at>=$2 AND created_at<$3`,
       [op.id, range.from, range.to],
     )).rows[0] ?? { actions: 0, clients: 0 };
-    res.json({ range, payments, debts, history, actions });
+    res.json({ range, payments, debts, history, actions, salesDays, salesMonth });
   }));
 
   router.get('/customers', miniWrap(async (req, res) => {
@@ -314,7 +351,7 @@ export function operatorMiniAppRoutes() {
               COALESCE(sum(debt),0)::text debt,
               COALESCE(sum(pending),0)::text pending
        FROM operator_balances
-       WHERE user_id = ANY($1::bigint[]) AND debt>0
+       WHERE user_id = ANY($1::bigint[]) AND debt>0 AND (paid>0 OR pending>0)
        GROUP BY user_id,currency`,
       [ids],
     )).rows : [];

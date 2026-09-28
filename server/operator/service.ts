@@ -41,6 +41,43 @@ const buttons = (items: string[][]) => ({ inline_keyboard: items.map(([text, cal
 const date = (d: any) => d ? new Date(d).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' }) : '—';
 const userFields = 'id,first_name,last_name,phone,email,plan_name,plan_expires_at,created_at';
 const OPERATOR_MINI_APP_URL = 'https://falarus.uz/operator-app';
+const DUMMY_HASH = '$2b$12$C6UzMDM.H6dfI/f/IKcEe.6JCGzaMnIcZnlhxOTOBnIpJHFGoSl0q';
+
+async function authenticateOperator(c: PoolClient, login: string, password: string, telegramId: number) {
+    const botAccount = (await c.query('SELECT * FROM operator_accounts WHERE login=$1 FOR UPDATE', [login])).rows[0];
+    const crmAccount = (await c.query(
+        `SELECT id,login,name,password_hash,active
+         FROM sales_crm_agents
+         WHERE login=$1 AND role='operator'
+         LIMIT 1`,
+        [login],
+    )).rows[0];
+
+    const botPasswordOk = await bcrypt.compare(password, botAccount?.password_hash ?? DUMMY_HASH);
+    if (botPasswordOk) return botAccount;
+
+    const crmPasswordOk = await bcrypt.compare(password, crmAccount?.password_hash ?? DUMMY_HASH);
+    if (!crmPasswordOk || !crmAccount?.active) return null;
+    if (botAccount?.telegram_id && String(botAccount.telegram_id) !== String(telegramId)) return null;
+
+    if (botAccount) {
+        return (await c.query(
+            `UPDATE operator_accounts
+             SET name=$2,password_hash=$3,active=$4
+             WHERE id=$1
+             RETURNING *`,
+            [botAccount.id, crmAccount.name, crmAccount.password_hash, crmAccount.active],
+        )).rows[0];
+    }
+
+    return (await c.query(
+        `INSERT INTO operator_accounts(login,name,password_hash,active)
+         VALUES($1,$2,$3,$4)
+         RETURNING *`,
+        [crmAccount.login, crmAccount.name, crmAccount.password_hash, crmAccount.active],
+    )).rows[0];
+}
+
 export async function handleUpdate(update: any) {
     const m = update.message ?? update.callback_query?.message;
     const tg = update.callback_query?.from?.id ?? m?.from?.id;
@@ -69,10 +106,8 @@ export async function handleUpdate(update: any) {
             }
             if (state.step === 'login_password' && text && !text.startsWith('/')) {
                 await enqueue(c, 'deleteMessage', { chat_id: tg, message_id: m.message_id });
-                const a = (await c.query('SELECT * FROM operator_accounts WHERE login=$1 FOR UPDATE', [state.login])).rows[0];
-                // Constant-cost hash comparison even for an unknown login.
-                const ok = await bcrypt.compare(text, a?.password_hash ?? '$2b$12$C6UzMDM.H6dfI/f/IKcEe.6JCGzaMnIcZnlhxOTOBnIpJHFGoSl0q');
-                if (!ok || !a?.active || (a.telegram_id && String(a.telegram_id) !== String(tg))) {
+                const a = await authenticateOperator(c, state.login, text, tg);
+                if (!a?.active || (a.telegram_id && String(a.telegram_id) !== String(tg))) {
                     await c.query("UPDATE operator_sessions SET failures=failures+1, locked_until=CASE WHEN failures>=4 THEN now()+interval '15 minutes' ELSE locked_until END,state='{}' WHERE telegram_id=$1", [tg]);
                     await say('Login yoki parol noto‘g‘ri, hisob o‘chirilgan yoki boshqa Telegramga bog‘langan. /start');
                     return;
@@ -218,7 +253,7 @@ export async function handleUpdate(update: any) {
                 const period = action.split(':')[1] ?? 'all';
                 const day = new Date(Date.now() + 5 * 3600000).toISOString().slice(0, 10);
                 const from = period === 'today' ? day + 'T00:00:00+05:00' : period === 'month' ? day.slice(0, 7) + '-01T00:00:00+05:00' : null;
-                const rows = (await c.query(`SELECT b.currency,count(distinct b.user_id) clients,count(distinct b.id) contracts,coalesce(sum(b.debt),0) debt,coalesce(sum(b.debt) FILTER(WHERE b.due_at<now()),0) overdue FROM operator_balances b WHERE b.operator_id=$1 GROUP BY b.currency`, [oid])).rows;
+                const rows = (await c.query(`SELECT b.currency,count(distinct b.user_id) clients,count(distinct b.id) contracts,coalesce(sum(b.debt),0) debt,coalesce(sum(b.debt) FILTER(WHERE b.due_at<now()),0) overdue FROM operator_balances b WHERE b.operator_id=$1 AND (b.debt=0 OR b.paid>0 OR b.pending>0) GROUP BY b.currency`, [oid])).rows;
                 const payments = (await c.query(`SELECT c.currency,r.status,count(*) receipts,sum(r.amount) amount FROM operator_receipts r JOIN operator_contracts c ON c.id=r.contract_id WHERE r.operator_id=$1 AND ($2::timestamptz IS NULL OR r.created_at>=$2) GROUP BY c.currency,r.status`, [oid, from])).rows;
                 const actions = (await c.query('SELECT count(*) actions,count(distinct user_id) clients FROM operator_audit WHERE operator_id=$1 AND ($2::timestamptz IS NULL OR created_at>=$2)', [oid, from])).rows[0];
                 await say(`Hisobot — ${op.name} (${period === 'today' ? 'bugun' : period === 'month' ? 'shu oy' : 'barcha vaqt'})\nXizmat ko‘rsatilgan mijozlar: ${actions.clients}. Amallar: ${actions.actions}.\n` + rows.map(r => `${r.currency}: mijoz ${r.clients}, shartnoma ${r.contracts}, qarz ${r.debt}, muddati o‘tgan ${r.overdue}`).join('\n') + '\n' + payments.map(r => `${r.currency} · ${r.status}: ${r.receipts} chek, ${r.amount}`).join('\n'), [['Bugun', 'report:today'], ['Shu oy', 'report:month'], ['Barcha vaqt', 'report:all'], ['Menyu', 'menu']]);
@@ -226,7 +261,7 @@ export async function handleUpdate(update: any) {
             }
             if (action === 'debts' || action.startsWith('debts:')) {
                 const page = Math.max(0, Number(action.split(':')[1]) || 0);
-                const rows = (await c.query('SELECT * FROM operator_balances WHERE operator_id=$1 AND debt>0 ORDER BY due_at NULLS LAST,id LIMIT 9 OFFSET $2', [oid, page * 8])).rows;
+                const rows = (await c.query('SELECT * FROM operator_balances WHERE operator_id=$1 AND debt>0 AND (paid>0 OR pending>0) ORDER BY due_at NULLS LAST,id LIMIT 9 OFFSET $2', [oid, page * 8])).rows;
                 await say('Qarzlar (tasdiqlanmagan summalar qarzni kamaytirmaydi):\n' + rows.slice(0, 8).map(b => `#${b.id}: ${b.debt} ${b.currency}, muddat ${date(b.due_at)}`).join('\n'), [...rows.slice(0, 8).map(b => [`Mijoz #${b.user_id} · qarz #${b.id}`, `user:${b.user_id}`]), ...(page > 0 ? [['Oldingi', `debts:${page - 1}`]] : []), ...(rows.length > 8 ? [['Keyingi', `debts:${page + 1}`]] : []), ['Menyu', 'menu']]);
                 return;
             }
