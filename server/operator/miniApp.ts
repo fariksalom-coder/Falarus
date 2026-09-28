@@ -24,6 +24,7 @@ const TARIFFS = [
 const SOURCES = ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'] as const;
 const CURRENCIES = ['UZS', 'RUB', 'USD'] as const;
 const RECEIPT_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+const TZ_OFFSET_MS = 5 * 60 * 60 * 1000;
 
 type MiniOperator = {
   id: number;
@@ -114,6 +115,36 @@ function normalizeOptionalSource(raw: unknown): string {
   return value;
 }
 
+function appDate(value = Date.now()): string {
+  return new Date(value + TZ_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function isoFromAppDate(date: string, end = false): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Sana noto‘g‘ri.');
+  const local = new Date(`${date}T00:00:00.000Z`).getTime() - TZ_OFFSET_MS;
+  return new Date(local + (end ? 24 * 60 * 60 * 1000 : 0)).toISOString();
+}
+
+function statsRange(query: any): { from: string; to: string; label: string } {
+  const period = String(query.period ?? 'today');
+  const today = appDate();
+  if (period === 'today') return { from: isoFromAppDate(today), to: isoFromAppDate(today, true), label: 'Bugun' };
+  if (period === 'week') {
+    const from = appDate(Date.now() - 6 * 24 * 60 * 60 * 1000);
+    return { from: isoFromAppDate(from), to: isoFromAppDate(today, true), label: '7 kun' };
+  }
+  if (period === 'month') {
+    const from = `${today.slice(0, 8)}01`;
+    return { from: isoFromAppDate(from), to: isoFromAppDate(today, true), label: 'Shu oy' };
+  }
+  if (period === 'custom') {
+    const fromDate = String(query.from ?? '');
+    const toDate = String(query.to ?? '');
+    return { from: isoFromAppDate(fromDate), to: isoFromAppDate(toDate || fromDate, true), label: 'Tanlangan davr' };
+  }
+  throw new Error('Davr noto‘g‘ri.');
+}
+
 async function storeMiniReceipt(file: Express.Multer.File) {
   if (!file || !RECEIPT_MIMES.has(file.mimetype)) {
     throw new Error('Chekni JPG, PNG, WEBP yoki PDF qilib yuklang (8 MB gacha).');
@@ -146,6 +177,50 @@ export function operatorMiniAppRoutes() {
 
   router.get('/me', miniWrap(async (req, res) => {
     res.json({ operator: req.operator, tariffs: TARIFFS, sources: SOURCES, currencies: CURRENCIES });
+  }));
+
+  router.get('/stats', miniWrap(async (req, res) => {
+    const op = req.operator as MiniOperator;
+    const range = statsRange(req.query);
+    const payments = (await pool!.query(
+      `SELECT c.currency,r.status,count(*)::int receipts,count(distinct c.user_id)::int clients,
+              COALESCE(sum(r.amount),0)::text amount
+       FROM operator_receipts r
+       JOIN operator_contracts c ON c.id=r.contract_id
+       WHERE r.operator_id=$1 AND r.created_at>=$2 AND r.created_at<$3
+       GROUP BY c.currency,r.status
+       ORDER BY c.currency,r.status`,
+      [op.id, range.from, range.to],
+    )).rows;
+    const debts = (await pool!.query(
+      `SELECT currency,count(*)::int contracts,count(distinct user_id)::int clients,
+              COALESCE(sum(debt),0)::text debt,
+              COALESCE(sum(debt) FILTER (WHERE due_at<now()),0)::text overdue
+       FROM operator_balances
+       WHERE operator_id=$1 AND debt>0
+       GROUP BY currency
+       ORDER BY currency`,
+      [op.id],
+    )).rows;
+    const history = (await pool!.query(
+      `SELECT r.id,r.amount,r.status,r.created_at,r.decided_at,r.reason,
+              c.id contract_id,c.user_id,c.currency,c.tariff,c.total,c.source,c.due_at,c.paid,c.debt,c.pending,
+              u.first_name,u.last_name,u.phone
+       FROM operator_receipts r
+       JOIN operator_balances c ON c.id=r.contract_id
+       JOIN users u ON u.id=c.user_id
+       WHERE r.operator_id=$1 AND r.created_at>=$2 AND r.created_at<$3
+       ORDER BY r.id DESC
+       LIMIT 30`,
+      [op.id, range.from, range.to],
+    )).rows;
+    const actions = (await pool!.query(
+      `SELECT count(*)::int actions,count(distinct user_id)::int clients
+       FROM operator_audit
+       WHERE operator_id=$1 AND created_at>=$2 AND created_at<$3`,
+      [op.id, range.from, range.to],
+    )).rows[0] ?? { actions: 0, clients: 0 };
+    res.json({ range, payments, debts, history, actions });
   }));
 
   router.get('/customers', miniWrap(async (req, res) => {
