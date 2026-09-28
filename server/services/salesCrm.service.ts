@@ -89,6 +89,52 @@ async function pickRoundRobinOperator(): Promise<number | null> {
   return chosen;
 }
 
+async function pickFirstOperator(): Promise<number | null> {
+  const db = requirePool();
+  const { rows } = await db.query<{ id: number }>(
+    `SELECT id FROM sales_crm_agents
+     WHERE active = true AND role = 'operator'
+     ORDER BY id ASC
+     LIMIT 1`,
+  );
+  return rows[0]?.id ?? null;
+}
+
+async function pickPromoOperator(): Promise<number | null> {
+  const db = requirePool();
+  const firstOperatorId = await pickFirstOperator();
+  const { rows: ops } = await db.query<{ id: number }>(
+    `SELECT id FROM sales_crm_agents
+     WHERE active = true
+       AND role = 'operator'
+       AND ($1::bigint IS NULL OR id <> $1)
+     ORDER BY id ASC`,
+    [firstOperatorId],
+  );
+  if (!ops.length) return firstOperatorId;
+  const cursor = Number(await getSetting('promo_round_robin_cursor')) || 0;
+  const idx = Math.abs(cursor) % ops.length;
+  const chosen = ops[idx].id;
+  await setSetting('promo_round_robin_cursor', String(cursor + 1));
+  return chosen;
+}
+
+async function pickOperatorForLead(params: {
+  assignment?: 'default' | 'registration' | 'promo';
+}): Promise<{ operatorId: number | null; mode: string }> {
+  if (params.assignment === 'registration') {
+    return { operatorId: await pickFirstOperator(), mode: 'registration_first_operator' };
+  }
+  if (params.assignment === 'promo') {
+    return { operatorId: await pickPromoOperator(), mode: 'promo_round_robin' };
+  }
+  const mode = (await getSetting('assignment_mode')) || 'round_robin';
+  return {
+    operatorId: mode === 'round_robin' ? await pickRoundRobinOperator() : null,
+    mode,
+  };
+}
+
 /**
  * Create or refresh CRM lead for a registered user (phone required).
  * Duplicate phone → update existing lead + history event (no second card).
@@ -108,6 +154,7 @@ export async function ingestUserAsSalesLead(params: {
   externalKey?: string | null;
   sheetRowNumber?: number | null;
   submittedAt?: string | null;
+  assignment?: 'default' | 'registration' | 'promo';
 }): Promise<{ leadId: number; created: boolean }> {
   const db = requirePool();
   const phoneKey = normalizePhoneKey(params.phone);
@@ -252,11 +299,7 @@ export async function ingestUserAsSalesLead(params: {
     return { leadId: existing[0].id, created: false };
   }
 
-  const mode = (await getSetting('assignment_mode')) || 'round_robin';
-  let operatorId: number | null = null;
-  if (mode === 'round_robin') {
-    operatorId = await pickRoundRobinOperator();
-  }
+  const { operatorId, mode } = await pickOperatorForLead({ assignment: params.assignment ?? 'default' });
 
   const { rows: inserted } = await db.query<{ id: number }>(
     `INSERT INTO sales_crm_leads (
@@ -1111,6 +1154,7 @@ export async function syncRecentRegistrations(limit = 200): Promise<number> {
       userId: u.id,
       phone: u.phone_normalized || u.phone,
       source: 'backfill',
+      assignment: 'registration',
     });
     n += 1;
   }

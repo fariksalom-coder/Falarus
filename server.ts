@@ -751,6 +751,7 @@ async function startServer() {
             phone: parsed.phone,
             source: 'website',
             landingPage: '/register',
+            assignment: 'registration',
           }),
         )
         .catch((err) => console.warn('[sales-crm] ingest on register', err));

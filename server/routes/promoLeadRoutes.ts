@@ -144,6 +144,7 @@ export function createPromoLeadRoutes(): Router {
         landingPage,
         externalKey: `landing:${phone.e164}`,
         submittedAt: new Date().toISOString(),
+        assignment: 'promo',
       });
 
       res.status(lead.created ? 201 : 200).json({ ok: true, duplicate: !lead.created });
