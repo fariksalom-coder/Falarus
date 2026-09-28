@@ -29,6 +29,7 @@ import {
   setAssignmentMode,
   syncRecentRegistrations,
   updateAgent,
+  type SalesCrmLeadFlow,
 } from '../services/salesCrm.service';
 import {
   getFunnelReport,
@@ -53,6 +54,12 @@ const TOKEN_TTL = '12h';
 function isDbUnavailableError(e: unknown): boolean {
   const message = e instanceof Error ? e.message : String(e ?? '');
   return /ECONNREFUSED|timeout|Connection terminated|DATABASE_URL|connect/i.test(message);
+}
+
+function queryFlow(req: Request, role: SalesCrmAgentRole): SalesCrmLeadFlow | null {
+  if (role !== 'admin') return null;
+  if (req.query.flow === 'platform') return 'platform';
+  return 'promo';
 }
 
 function sendSalesCrmError(res: { status: (code: number) => { json: (body: unknown) => void } }, e: unknown): void {
@@ -200,6 +207,7 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
         period: typeof req.query.period === 'string' ? req.query.period : '30d',
         from: typeof req.query.from === 'string' ? req.query.from : null,
         to: typeof req.query.to === 'string' ? req.query.to : null,
+        flow: queryFlow(req, role),
       });
       res.json(data);
     } catch (e) {
@@ -222,6 +230,12 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
           role === 'admin' && typeof req.query.operatorId === 'string'
             ? Number(req.query.operatorId)
             : undefined,
+        flow:
+          role === 'admin' && req.query.flow === 'platform'
+            ? 'platform'
+            : role === 'admin' && req.query.flow === 'promo'
+              ? 'promo'
+              : null,
         status: statuses.length ? statuses : undefined,
         q: typeof req.query.q === 'string' ? req.query.q : undefined,
         nextContact:
@@ -418,7 +432,11 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
       const requested = Number(req.query.operatorId);
       const operatorId =
         role === 'admin' ? (Number.isFinite(requested) && requested > 0 ? requested : null) : id;
-      const report = await getFunnelReport({ month: normalizeMonth(req.query.month), operatorId });
+      const report = await getFunnelReport({
+        month: normalizeMonth(req.query.month),
+        operatorId,
+        flow: queryFlow(req, role),
+      });
       if (role !== 'admin') report.operators = report.operators.filter((o) => o.id === id);
       res.json(report);
     } catch (e) {
@@ -530,6 +548,7 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
         period: typeof req.query.period === 'string' ? req.query.period : '30d',
         from: typeof req.query.from === 'string' ? req.query.from : null,
         to: typeof req.query.to === 'string' ? req.query.to : null,
+        flow: queryFlow(req, 'admin'),
       });
       res.json({ items });
     } catch (e) {

@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import type { DbClient } from '../types/dbClient.js';
 import { pool } from '../lib/db.js';
 import { enabled, handleUpdate, transaction, enqueue } from './service.js';
+import { readMiniReceipt } from './miniApp.js';
 export function serviceAuthorized(value: unknown, secret = process.env.OPERATOR_SERVICE_SECRET): boolean {
     if (!secret || secret.length < 32 || typeof value !== 'string')
         return false;
@@ -59,6 +60,15 @@ export async function operatorReceipt(req: any, res: any) {
         const row = (await pool!.query('SELECT file_id,mime FROM operator_receipts WHERE id=$1', [Number(req.params.id)])).rows[0];
         if (!row)
             return res.status(404).end();
+        if (String(row.file_id).startsWith('miniapp:')) {
+            const receipt = await readMiniReceipt(String(row.file_id));
+            res.setHeader('Cache-Control', 'private, no-store');
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('Content-Type', receipt.mime);
+            res.setHeader('Content-Disposition', `attachment; filename="receipt-${Number(req.params.id)}.${receipt.mime === 'application/pdf' ? 'pdf' : receipt.mime === 'image/png' ? 'png' : receipt.mime === 'image/webp' ? 'webp' : 'jpg'}"`);
+            res.send(receipt.bytes);
+            return;
+        }
         const token = process.env.OPERATOR_BOT_TOKEN;
         if (!token)
             return res.status(503).end();

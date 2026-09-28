@@ -21,10 +21,32 @@ function requirePool() {
 }
 
 export type SalesCrmAgentRole = 'admin' | 'operator';
+export type SalesCrmLeadFlow = 'promo' | 'platform';
+
+function leadFlowSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
+  const p = alias ? `${alias}.` : '';
+  if (flow === 'promo') return `${p}source = 'landing'`;
+  if (flow === 'platform') return `coalesce(${p}source, '') IN ('website', 'backfill')`;
+  return '1=1';
+}
+
+function leadFlowOwnerSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
+  const p = alias ? `${alias}.` : '';
+  const firstOperator = `(
+    SELECT id FROM sales_crm_agents
+    WHERE active = true AND role = 'operator'
+    ORDER BY id ASC
+    LIMIT 1
+  )`;
+  if (flow === 'promo') return `${p}assigned_operator_id IS DISTINCT FROM ${firstOperator}`;
+  if (flow === 'platform') return `${p}assigned_operator_id = ${firstOperator}`;
+  return '1=1';
+}
 
 export type LeadListFilters = {
   status?: SalesCrmStatus | SalesCrmStatus[];
   operatorId?: number | null;
+  flow?: SalesCrmLeadFlow | null;
   q?: string;
   createdFrom?: string | null;
   createdTo?: string | null;
@@ -434,7 +456,7 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(500, Math.max(1, filters.pageSize ?? 30));
   const offset = (page - 1) * pageSize;
-  const where: string[] = ['1=1'];
+  const where: string[] = [leadFlowSql(filters.flow, 'l'), leadFlowOwnerSql(filters.flow, 'l')];
   const params: unknown[] = [];
   const add = (sql: string, v: unknown) => {
     params.push(v);
@@ -494,13 +516,44 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
        l.id, l.user_id, l.status, l.source, l.utm_source, l.medium, l.campaign, l.ad, l.utm_content, l.utm_term,
        l.assigned_operator_id, l.phone_normalized,
        l.last_contact_at, l.next_contact_at, l.last_action_at,
-       l.paid_amount, l.paid_currency, l.paid_at,
+       l.paid_amount, l.paid_currency, l.paid_at, l.support_group_at,
+       acc.access_at, fl.first_login_at,
        l.created_at, l.updated_at,
        u.first_name, u.last_name, u.phone, u.email,
        a.name AS operator_name
      FROM sales_crm_leads l
      JOIN users u ON u.id = l.user_id
      LEFT JOIN sales_crm_agents a ON a.id = l.assigned_operator_id
+     LEFT JOIN LATERAL (
+       SELECT min(x.at) AS access_at
+       FROM (
+         SELECT coalesce(p.approved_at, p.payment_time, p.created_at) AS at
+         FROM payments p
+         WHERE p.user_id = l.user_id AND p.status = 'approved'
+         UNION ALL
+         SELECT s.started_at
+         FROM subscriptions s
+         WHERE s.user_id = l.user_id
+       ) x
+       WHERE x.at IS NOT NULL
+     ) acc ON true
+     LEFT JOIN LATERAL (
+       SELECT min(x.at) AS first_login_at
+       FROM (
+         SELECT (d.activity_date::timestamp AT TIME ZONE 'Asia/Tashkent') AS at
+         FROM user_activity_dates d
+         WHERE d.user_id = l.user_id
+           AND acc.access_at IS NOT NULL
+           AND d.activity_date > (acc.access_at AT TIME ZONE 'Asia/Tashkent')::date
+         UNION ALL
+         SELECT t.updated_at
+         FROM user_daily_time t
+         WHERE t.user_id = l.user_id
+           AND acc.access_at IS NOT NULL
+           AND t.activity_date = (acc.access_at AT TIME ZONE 'Asia/Tashkent')::date
+           AND t.updated_at > acc.access_at
+       ) x
+     ) fl ON true
      WHERE ${whereSql}
      ORDER BY
        CASE WHEN l.next_contact_at IS NOT NULL AND l.next_contact_at < now() THEN 0 ELSE 1 END,
@@ -913,6 +966,7 @@ export async function getDashboard(params: {
   period?: string | null;
   from?: string | null;
   to?: string | null;
+  flow?: SalesCrmLeadFlow | null;
 }) {
   const db = requirePool();
   const bounds =
@@ -921,7 +975,7 @@ export async function getDashboard(params: {
       : dateBounds(params.period ?? '30d');
 
   const q: unknown[] = [];
-  const leadWhere: string[] = ['1=1'];
+  const leadWhere: string[] = [leadFlowSql(params.flow), leadFlowOwnerSql(params.flow)];
   if (params.scopeOperatorId) {
     q.push(params.scopeOperatorId);
     leadWhere.push(`assigned_operator_id = $${q.length}`);
@@ -996,6 +1050,7 @@ export async function getOperatorStats(params: {
   period?: string | null;
   from?: string | null;
   to?: string | null;
+  flow?: SalesCrmLeadFlow | null;
 }) {
   const db = requirePool();
   const bounds =
@@ -1004,8 +1059,14 @@ export async function getOperatorStats(params: {
       : dateBounds(params.period ?? '30d');
 
   const q: unknown[] = [];
-  let leadDate = '';
+  let leadDate = ` AND ${leadFlowSql(params.flow, 'l')}`;
   let callDate = '';
+  if (params.flow) {
+    callDate += ` AND EXISTS (
+      SELECT 1 FROM sales_crm_leads lc
+      WHERE lc.id = c.lead_id AND ${leadFlowSql(params.flow, 'lc')} AND ${leadFlowOwnerSql(params.flow, 'lc')}
+    )`;
+  }
   if (bounds.from) {
     q.push(bounds.from);
     leadDate += ` AND l.created_at >= $${q.length}::timestamptz`;
@@ -1016,6 +1077,22 @@ export async function getOperatorStats(params: {
     leadDate += ` AND l.created_at <= $${q.length}::timestamptz`;
     callDate += ` AND c.called_at <= $${q.length}::timestamptz`;
   }
+  const agentFlowWhere =
+    params.flow === 'promo'
+      ? `AND a.id IS DISTINCT FROM (
+          SELECT id FROM sales_crm_agents
+          WHERE active = true AND role = 'operator'
+          ORDER BY id ASC
+          LIMIT 1
+        )`
+      : params.flow === 'platform'
+        ? `AND a.id = (
+            SELECT id FROM sales_crm_agents
+            WHERE active = true AND role = 'operator'
+            ORDER BY id ASC
+            LIMIT 1
+          )`
+        : '';
 
   const { rows } = await db.query(
     `SELECT
@@ -1046,7 +1123,7 @@ export async function getOperatorStats(params: {
      FROM sales_crm_agents a
      LEFT JOIN sales_crm_leads l ON l.assigned_operator_id = a.id ${leadDate}
      LEFT JOIN sales_crm_calls c ON c.operator_id = a.id ${callDate}
-     WHERE a.role = 'operator'
+     WHERE a.role = 'operator' ${agentFlowWhere}
      GROUP BY a.id
      ORDER BY a.name ASC`,
     q,

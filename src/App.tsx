@@ -37,6 +37,7 @@ function AppRoutes() {
       <Route path="/test-russkogo" element={renderLazyPage('./pages/KioskPage.tsx')} />
       <Route path="/kiosk" element={<Navigate to="/test-russkogo" replace />} />
       <Route path="/operator-reset" element={renderLazyPage('./pages/OperatorResetPage.tsx')} />
+      <Route path="/operator-app" element={renderLazyPage('./pages/OperatorMiniAppPage.tsx')} />
       <Route path="/dev/robot-preview" element={renderLazyPage('./pages/RobotPreviewPage.tsx')} />
       <Route path="/huquqiy/ommaviy-oferta" element={renderLazyPage('./pages/legal/LegalOfferPage.tsx')} />
       <Route path="/huquqiy/maxfiylik" element={renderLazyPage('./pages/legal/LegalPrivacyPage.tsx')} />

@@ -20,6 +20,7 @@ import {
   type SalesFunnelManualStage,
   type SalesFunnelStage,
 } from '../../shared/salesCrm.js';
+import type { SalesCrmLeadFlow } from './salesCrm.service';
 
 const TZ = 'Asia/Tashkent';
 
@@ -38,6 +39,24 @@ function sqlList(values: readonly string[]): string {
 function requirePool() {
   if (!pool) throw new Error('DATABASE_URL kerak');
   return pool;
+}
+
+function flowFilterSql(flow?: SalesCrmLeadFlow | null): string {
+  if (flow === 'promo') return `source = 'landing'`;
+  if (flow === 'platform') return `coalesce(source, '') IN ('website', 'backfill')`;
+  return '1=1';
+}
+
+function flowOwnerSql(flow?: SalesCrmLeadFlow | null): string {
+  const firstOperator = `(
+    SELECT id FROM sales_crm_agents
+    WHERE active = true AND role = 'operator'
+    ORDER BY id ASC
+    LIMIT 1
+  )`;
+  if (flow === 'promo') return `assigned_operator_id IS DISTINCT FROM ${firstOperator}`;
+  if (flow === 'platform') return `assigned_operator_id = ${firstOperator}`;
+  return '1=1';
 }
 
 /** Per-lead stage timestamps. `$1` filters leads, see callers. */
@@ -147,6 +166,7 @@ export type FunnelReport = {
   /** Day of month "today" in Tashkent when viewing the current month, else null. */
   today: number | null;
   operatorId: number | null;
+  flow: SalesCrmLeadFlow | null;
   stages: FunnelStageFact[];
   operators: {
     id: number;
@@ -173,6 +193,7 @@ function emptyStageMap(): Record<SalesFunnelStage, { plan: number | null; fact: 
 export async function getFunnelReport(params: {
   month: string;
   operatorId: number | null;
+  flow?: SalesCrmLeadFlow | null;
 }): Promise<FunnelReport> {
   const db = requirePool();
   const month = normalizeMonth(params.month);
@@ -183,10 +204,26 @@ export async function getFunnelReport(params: {
     month === current
       ? Number(new Date().toLocaleString('en-US', { timeZone: TZ, day: 'numeric' }))
       : null;
+  const agentFlowWhere =
+    params.flow === 'promo'
+      ? `AND id IS DISTINCT FROM (
+          SELECT id FROM sales_crm_agents
+          WHERE active = true AND role = 'operator'
+          ORDER BY id ASC
+          LIMIT 1
+        )`
+      : params.flow === 'platform'
+        ? `AND id = (
+            SELECT id FROM sales_crm_agents
+            WHERE active = true AND role = 'operator'
+            ORDER BY id ASC
+            LIMIT 1
+          )`
+        : '';
 
   const [{ rows: facts }, { rows: plans }, { rows: agents }] = await Promise.all([
     db.query<{ op: number | null; stage: SalesFunnelStage; day: number; n: number }>(
-      `${milestonesSql(`created_at < (($1::date + interval '1 month')::timestamp AT TIME ZONE '${TZ}')`)}
+      `${milestonesSql(`created_at < (($1::date + interval '1 month')::timestamp AT TIME ZONE '${TZ}') AND ${flowFilterSql(params.flow)} AND ${flowOwnerSql(params.flow)}`)}
        SELECT m.op, v.stage, extract(day FROM v.at AT TIME ZONE '${TZ}')::int AS day, count(*)::int AS n
        FROM m ${UNPIVOT}
        WHERE v.at >= ($1::date::timestamp AT TIME ZONE '${TZ}')
@@ -199,7 +236,7 @@ export async function getFunnelReport(params: {
       [`${month}-01`],
     ),
     db.query<{ id: number; name: string; active: boolean }>(
-      `SELECT id, name, active FROM sales_crm_agents WHERE role = 'operator' ORDER BY name ASC`,
+      `SELECT id, name, active FROM sales_crm_agents WHERE role = 'operator' ${agentFlowWhere} ORDER BY name ASC`,
     ),
   ]);
 
@@ -259,7 +296,7 @@ export async function getFunnelReport(params: {
     }
   }
 
-  return { month, days, today, operatorId: params.operatorId, stages, operators };
+  return { month, days, today, operatorId: params.operatorId, flow: params.flow ?? null, stages, operators };
 }
 
 /** Upsert (or clear, when target is null) monthly targets for one scope. */

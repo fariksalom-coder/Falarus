@@ -8,6 +8,7 @@ import { SALES_CRM_STATUS_LABELS, type SalesCrmStatus } from '../../../shared/sa
 export default function LeadsPage() {
   const [params, setParams] = useSearchParams();
   const view = params.get('view') === 'list' ? 'list' : 'board';
+  const flow = params.get('flow') === 'platform' ? 'platform' : 'promo';
   const [items, setItems] = useState<LeadRow[]>([]);
   const [total, setTotal] = useState(0);
   const q = params.get('q') || '';
@@ -24,6 +25,7 @@ export default function LeadsPage() {
       const p = new URLSearchParams();
       const status = params.get('status');
       const nextContact = params.get('nextContact');
+      p.set('flow', flow);
       if (view === 'list' && status) p.set('status', status);
       if (nextContact) p.set('nextContact', nextContact);
       if (q.trim()) p.set('q', q.trim());
@@ -38,7 +40,7 @@ export default function LeadsPage() {
     } finally {
       if (id === requestId.current) setLoading(false);
     }
-  }, [params, q, view]);
+  }, [flow, params, q, view]);
 
   useEffect(() => {
     setLoading(true);
@@ -99,6 +101,19 @@ export default function LeadsPage() {
     }
   }
 
+  async function toggleSupportGroup(leadId: number, done: boolean) {
+    setBusyId(leadId);
+    setErr('');
+    try {
+      await salesCrmApi.setMilestone(leadId, 'support_group', done);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Bosqich o‘zgarmadi');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   function setView(next: 'board' | 'list') {
     const n = new URLSearchParams(params);
     if (next === 'list') n.set('view', 'list');
@@ -106,21 +121,51 @@ export default function LeadsPage() {
     setParams(n);
   }
 
+  function setFlow(nextFlow: 'promo' | 'platform') {
+    const n = new URLSearchParams(params);
+    if (nextFlow === 'platform') n.set('flow', 'platform');
+    else n.delete('flow');
+    n.delete('status');
+    n.delete('nextContact');
+    n.delete('page');
+    setParams(n);
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-black">Lidlar · voronka</h2>
-          <p className="text-sm text-slate-500">
-            {total} ta · torting → kerakli joyda izoh va aniq vaqt so‘raladi
-          </p>
+      <div className="space-y-3">
+        <div className="flex min-h-[36px] items-center justify-between gap-3">
+          <h2 className="text-xl font-black">Lidlar</h2>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black tabular-nums text-slate-700">
+            {loading ? '...' : total}
+          </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-2xl bg-white p-1 ring-1 ring-slate-200">
+        <div className="grid gap-2 lg:grid-cols-[minmax(260px,360px)_auto_minmax(260px,320px)] lg:items-center">
+          <div className="grid grid-cols-2 rounded-2xl bg-white p-1 ring-1 ring-slate-200">
+            <button
+              type="button"
+              onClick={() => setFlow('promo')}
+              className={`min-h-10 rounded-xl px-3 text-xs font-black transition ${
+                flow === 'promo' ? 'bg-[#071B3A] text-white' : 'text-slate-600'
+              }`}
+            >
+              Sayt lidlari
+            </button>
+            <button
+              type="button"
+              onClick={() => setFlow('platform')}
+              className={`min-h-10 rounded-xl px-3 text-xs font-black transition ${
+                flow === 'platform' ? 'bg-[#071B3A] text-white' : 'text-slate-600'
+              }`}
+            >
+              Platforma lidlari
+            </button>
+          </div>
+          <div className="grid grid-cols-2 rounded-2xl bg-white p-1 ring-1 ring-slate-200 lg:w-[184px]">
             <button
               type="button"
               onClick={() => setView('board')}
-              className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold ${
+              className={`inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-bold ${
                 view === 'board' ? 'bg-blue-600 text-white' : 'text-slate-600'
               }`}
             >
@@ -130,7 +175,7 @@ export default function LeadsPage() {
             <button
               type="button"
               onClick={() => setView('list')}
-              className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold ${
+              className={`inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-bold ${
                 view === 'list' ? 'bg-blue-600 text-white' : 'text-slate-600'
               }`}
             >
@@ -138,7 +183,7 @@ export default function LeadsPage() {
               Ro‘yxat
             </button>
           </div>
-          <div className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 sm:w-80">
+          <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3">
             <Search size={18} className="shrink-0 text-slate-400" aria-hidden="true" />
             <input type="search" value={q} onChange={e => search(e.target.value)} maxLength={160}
               aria-label="Поиск по телефону, имени или фамилии" placeholder="Telefon, ism yoki familiya…"
@@ -153,10 +198,18 @@ export default function LeadsPage() {
       {!loading && !err && q.trim() && items.length === 0 && view === 'board' && <p className="rounded-2xl bg-white p-6 text-center text-slate-500">Lid topilmadi. Ism, familiya yoki telefonni tekshiring.</p>}
 
       {view === 'board' ? (
-        !loading ? <KanbanBoard leads={items} busyId={busyId} onMove={moveLead} /> : null
+        !loading ? (
+          <KanbanBoard
+            leads={items}
+            busyId={busyId}
+            flow={flow}
+            onMove={moveLead}
+            onSupportGroup={toggleSupportGroup}
+          />
+        ) : null
       ) : (
         <>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto px-0.5 py-1.5 [scrollbar-width:thin]">
             {[
               { key: '', label: 'Hammasi' },
               { key: 'NEW', label: 'Yangi' },
@@ -179,10 +232,10 @@ export default function LeadsPage() {
                   next.delete('page');
                   setParams(next);
                 }}
-                className={`min-h-10 shrink-0 rounded-full px-3 text-xs font-bold ${
+                className={`min-h-9 shrink-0 rounded-xl px-4 text-[13px] font-black shadow-sm transition ${
                   (params.get('status') || '') === f.key
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-slate-600 ring-1 ring-slate-200'
+                    ? 'bg-[#071B3A] text-white ring-1 ring-[#071B3A]'
+                    : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 {f.label}

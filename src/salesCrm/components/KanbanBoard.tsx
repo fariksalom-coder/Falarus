@@ -12,6 +12,36 @@ import {
 } from '../../../shared/salesCrm';
 import type { LeadRow } from '../api';
 
+type SiteMilestoneColumn = {
+  id: 'access' | 'first_login' | 'support_group';
+  title: string;
+  hint: string;
+  tone: SalesCrmKanbanColumn['tone'];
+};
+
+const SITE_MILESTONE_COLUMNS: SiteMilestoneColumn[] = [
+  {
+    id: 'access',
+    title: 'Kirish berildi',
+    hint: 'To‘lovdan keyin platformaga kirish ochildi',
+    tone: 'emerald',
+  },
+  {
+    id: 'first_login',
+    title: 'Birinchi kirish',
+    hint: 'O‘quvchi platformaga birinchi marta kirdi',
+    tone: 'sky',
+  },
+  {
+    id: 'support_group',
+    title: 'Guruhga qo‘shildi',
+    hint: 'Premium qo‘llab-quvvatlash guruhida',
+    tone: 'violet',
+  },
+];
+
+type BoardColumn = SalesCrmKanbanColumn | SiteMilestoneColumn;
+
 const TONE: Record<
   SalesCrmKanbanColumn['tone'],
   { col: string; head: string; badge: string; drop: string }
@@ -76,7 +106,9 @@ export type StageMovePayload = {
 type Props = {
   leads: LeadRow[];
   busyId: number | null;
+  flow?: 'promo' | 'platform';
   onMove: (payload: StageMovePayload) => Promise<void>;
+  onSupportGroup?: (leadId: number, done: boolean) => Promise<void>;
 };
 
 type PendingMove = {
@@ -88,20 +120,30 @@ function defaultNextLocal(hoursFromNow = 2): string {
   return toDatetimeLocalValue(new Date(Date.now() + hoursFromNow * 3600_000));
 }
 
-export default function KanbanBoard({ leads, busyId, onMove }: Props) {
+export default function KanbanBoard({ leads, busyId, flow = 'platform', onMove, onSupportGroup }: Props) {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingMove | null>(null);
 
   const byColumn = useMemo(() => {
     const map = new Map<string, LeadRow[]>();
-    for (const col of SALES_CRM_KANBAN_COLUMNS) map.set(col.id, []);
+    const columns = flow === 'promo'
+      ? [...SALES_CRM_KANBAN_COLUMNS, ...SITE_MILESTONE_COLUMNS]
+      : SALES_CRM_KANBAN_COLUMNS;
+    for (const col of columns) map.set(col.id, []);
     for (const lead of leads) {
-      const id = kanbanColumnIdForStatus(lead.status);
+      const id =
+        flow === 'promo' && lead.support_group_at
+          ? 'support_group'
+          : flow === 'promo' && lead.first_login_at
+            ? 'first_login'
+            : flow === 'promo' && lead.access_at
+              ? 'access'
+              : kanbanColumnIdForStatus(lead.status);
       (map.get(id) ?? map.get('new')!).push(lead);
     }
     return map;
-  }, [leads]);
+  }, [flow, leads]);
 
   function requestMove(lead: LeadRow, column: SalesCrmKanbanColumn) {
     if (column.group.includes(lead.status as SalesCrmStatus) && lead.status === column.dropStatus) {
@@ -139,22 +181,26 @@ export default function KanbanBoard({ leads, busyId, onMove }: Props) {
 
   return (
     <>
-      <div className="flex gap-3 overflow-x-auto pb-4 pt-1 [scrollbar-width:thin]">
-        {SALES_CRM_KANBAN_COLUMNS.map((col) => {
+      <div className="flex h-[calc(100vh-245px)] min-h-[520px] max-h-[760px] gap-3 overflow-x-auto pb-3 pt-1 [scrollbar-width:thin]">
+        {(flow === 'promo' ? [...SALES_CRM_KANBAN_COLUMNS, ...SITE_MILESTONE_COLUMNS] : SALES_CRM_KANBAN_COLUMNS).map((col) => {
           const items = byColumn.get(col.id) ?? [];
           const tone = TONE[col.tone];
           const isOver = overCol === col.id;
+          const canDrop = 'dropStatus' in col;
           return (
             <section
               key={col.id}
               onDragOver={(e) => {
+                if (!canDrop) return;
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
                 setOverCol(col.id);
               }}
               onDragLeave={() => setOverCol((cur) => (cur === col.id ? null : cur))}
-              onDrop={(e) => dropOnColumn(col.id, e)}
-              className={`flex w-[min(82vw,260px)] shrink-0 flex-col rounded-[20px] ${tone.col} ${
+              onDrop={(e) => {
+                if (canDrop) dropOnColumn(col.id, e);
+              }}
+              className={`flex h-full w-[min(82vw,260px)] shrink-0 flex-col rounded-[20px] ${tone.col} ${
                 isOver ? tone.drop : 'ring-1 ring-black/5'
               } transition`}
             >
@@ -168,7 +214,7 @@ export default function KanbanBoard({ leads, busyId, onMove }: Props) {
                 <p className="mt-0.5 text-[11px] leading-snug text-slate-500">{col.hint}</p>
               </header>
 
-              <div className="flex max-h-[min(70vh,720px)] flex-1 flex-col gap-2 overflow-y-auto px-2 pb-3">
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-3">
                 {items.map((lead) => (
                   <KanbanCard
                     key={lead.id}
@@ -183,11 +229,16 @@ export default function KanbanBoard({ leads, busyId, onMove }: Props) {
                         SALES_CRM_KANBAN_COLUMNS.find((c) => c.group.includes(status));
                       if (target) requestMove(lead, { ...target, dropStatus: status });
                     }}
+                    onSupportGroup={
+                      flow === 'promo' && onSupportGroup
+                        ? (done) => onSupportGroup(Number(lead.id), done)
+                        : undefined
+                    }
                   />
                 ))}
                 {items.length === 0 ? (
                   <p className="rounded-2xl border border-dashed border-slate-300/80 px-3 py-8 text-center text-xs text-slate-400">
-                    Kartani shu yerga torting
+                    {canDrop ? 'Kartani shu yerga torting' : 'Avtomatik bosqich'}
                   </p>
                 ) : null}
               </div>
@@ -218,6 +269,7 @@ function KanbanCard({
   onDragStart,
   onDragEnd,
   onPickStage,
+  onSupportGroup,
 }: {
   lead: LeadRow;
   dragging: boolean;
@@ -225,6 +277,7 @@ function KanbanCard({
   onDragStart: (e: DragEvent, leadId: number) => void;
   onDragEnd: () => void;
   onPickStage: (status: SalesCrmStatus) => void;
+  onSupportGroup?: (done: boolean) => Promise<void>;
 }) {
   const name =
     [lead.first_name, lead.last_name].filter(Boolean).join(' ').trim() || 'Nomsiz';
@@ -311,6 +364,21 @@ function KanbanCard({
           ) : null}
         </select>
       </label>
+
+      {onSupportGroup && lead.first_login_at ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onSupportGroup(!lead.support_group_at)}
+          className={`mt-2 min-h-9 w-full rounded-xl px-3 text-xs font-black transition disabled:opacity-60 ${
+            lead.support_group_at
+              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              : 'bg-[#071B3A] text-white hover:bg-[#0B2550]'
+          }`}
+        >
+          {lead.support_group_at ? 'Guruhdan chiqarish' : 'Guruhga qo‘shildi'}
+        </button>
+      ) : null}
     </article>
   );
 }

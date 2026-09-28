@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import {
   salesCrmApi,
   sheetsApi,
@@ -37,7 +38,7 @@ export default function StatsPage() {
   useEffect(() => {
     if (agent?.role !== 'admin') return;
     void salesCrmApi
-      .operatorStats(period)
+      .operatorStats(period, 'promo')
       .then((r) => setItems(r.items))
       .catch((e) => setErr(e instanceof Error ? e.message : 'Xato'));
     void salesCrmApi.operators().then((r) => setMode(r.assignment.mode));
@@ -94,24 +95,32 @@ export default function StatsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-xl font-black">Statistika</h2>
-          <p className="text-sm text-slate-500">Operatorlar: lidlar, ishlov, konversiya</p>
+          <p className="text-sm text-slate-500">Faqat promo sahifadan kelgan arizalar: operatorlar, ishlov, konversiya</p>
         </div>
-        <select
-          className="min-h-11 rounded-2xl border border-slate-200 px-3 text-sm"
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-        >
-          <option value="today">Bugun</option>
-          <option value="yesterday">Kecha</option>
-          <option value="7d">7 kun</option>
-          <option value="30d">30 kun</option>
-          <option value="month">Shu oy</option>
-        </select>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/leads?flow=promo"
+            className="inline-flex min-h-11 items-center rounded-2xl bg-[#071B3A] px-4 text-sm font-black text-white"
+          >
+            Sayt lidlarini ochish
+          </Link>
+          <select
+            className="min-h-11 rounded-2xl border border-slate-200 px-3 text-sm"
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+          >
+            <option value="today">Bugun</option>
+            <option value="yesterday">Kecha</option>
+            <option value="7d">7 kun</option>
+            <option value="30d">30 kun</option>
+            <option value="month">Shu oy</option>
+          </select>
+        </div>
       </div>
 
       {/* KPI summary */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Berilgan lid" value={totals.leads} tone="blue" />
+        <Kpi label="Promo lid" value={totals.leads} tone="blue" />
         <Kpi label="Ishlangan" value={totals.processed} tone="sky" />
         <Kpi label="To‘lagan" value={totals.paid} tone="green" />
         <Kpi

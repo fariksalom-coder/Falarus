@@ -36,10 +36,11 @@ const TARIFF_CHOICES: [string, string][] = [
 ];
 const TARIFF_CODES = new Set(['month', 'three_month', 'six_month']);
 
-const menu = [['Yangi foydalanuvchi qo‘shish', 'create_customer'], ['Qidirish', 'search'], ['Barcha foydalanuvchilar', 'list:0'], ['Qarzlarim', 'debts'], ['Hisobotim', 'report'], ['Parolni almashtirish', 'password'], ['Chiqish', 'logout']];
+const menu = [['Mini ilova', 'mini_app'], ['Yangi foydalanuvchi qo‘shish', 'create_customer'], ['Qidirish', 'search'], ['Barcha foydalanuvchilar', 'list:0'], ['Qarzlarim', 'debts'], ['Hisobotim', 'report'], ['Parolni almashtirish', 'password'], ['Chiqish', 'logout']];
 const buttons = (items: string[][]) => ({ inline_keyboard: items.map(([text, callback_data]) => [{ text, callback_data }]) });
 const date = (d: any) => d ? new Date(d).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' }) : '—';
 const userFields = 'id,first_name,last_name,phone,email,plan_name,plan_expires_at,created_at';
+const OPERATOR_MINI_APP_URL = 'https://falarus.uz/operator-app';
 export async function handleUpdate(update: any) {
     const m = update.message ?? update.callback_query?.message;
     const tg = update.callback_query?.from?.id ?? m?.from?.id;
@@ -98,6 +99,15 @@ export async function handleUpdate(update: any) {
             if (text === '/start' || text === '/cancel' || action === 'menu') {
                 await save({});
                 await say('Operator menyusi', menu);
+                return;
+            }
+            if (text === '/app' || action === 'mini_app') {
+                await save({});
+                await enqueue(c, 'sendMessage', {
+                    chat_id: tg,
+                    text: 'Yangi foydalanuvchi va to‘lovni qulay forma orqali kiriting.',
+                    reply_markup: { inline_keyboard: [[{ text: 'Mini ilovani ochish', web_app: { url: OPERATOR_MINI_APP_URL } }], [{ text: 'Menyu', callback_data: 'menu' }]] }
+                });
                 return;
             }
             if (action === 'logout') {

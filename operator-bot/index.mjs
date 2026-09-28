@@ -3,6 +3,7 @@ const token=process.env.OPERATOR_BOT_TOKEN;
 const secret=process.env.OPERATOR_SERVICE_SECRET;
 const base=process.env.OPERATOR_API_URL||'http://127.0.0.1:3001/api/operator-bot';
 const dir=process.env.OPERATOR_STATE_DIR||'/var/lib/falarus-operator-bot';
+const miniAppUrl='https://falarus.uz/operator-app';
 if(!token||!secret||secret.length<32)throw new Error('Operator bot configuration missing');
 if(!/^http:\/\/127\.0\.0\.1:\d+\/api\/operator-bot$/.test(base))throw new Error('Only the local platform API is allowed');
 await mkdir(dir,{recursive:true,mode:0o700});
@@ -45,7 +46,8 @@ try{
  if(String(me.id)!==token.split(':')[0])throw new Error('Bot identity mismatch');
  const webhook=await telegram('getWebhookInfo',{});if(webhook.url)throw new Error('Webhook already configured; refusing to disturb it');
  await api('/health');
- await telegram('setMyCommands',{commands:[{command:'start',description:'Operator menyusi / kirish'},{command:'cancel',description:'Jarayonni bekor qilish'}]});
+ await telegram('setMyCommands',{commands:[{command:'start',description:'Operator menyusi / kirish'},{command:'app',description:'Mini ilovani ochish'},{command:'cancel',description:'Jarayonni bekor qilish'}]});
+ await telegram('setChatMenuButton',{menu_button:{type:'web_app',text:'Mini ilova',web_app:{url:miniAppUrl}}});
  console.log(`Operator bot @${me.username} ready; existing bot is separate`);
  let offset=Number(await readFile(`${dir}/offset`,'utf8').catch(()=> '0'));
  worker=deliver();

@@ -504,6 +504,8 @@ async function startServer() {
     app.use('/api/integrations/google-sheets', createGoogleSheetsIntegrationRoutes(supabase));
     const { operatorBotRoutes } = await import('./server/operator/routes.js');
     app.use('/api/operator-bot', operatorBotRoutes(supabase));
+    const { operatorMiniAppRoutes } = await import('./server/operator/miniApp.js');
+    app.use('/api/operator-mini', operatorMiniAppRoutes());
     app.use('/api/operator-reset', operatorResetRoutes());
 
   /*

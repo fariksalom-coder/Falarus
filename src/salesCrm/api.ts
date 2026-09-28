@@ -50,7 +50,8 @@ export const salesCrmApi = {
       role: 'admin' | 'operator';
       tasks: { overdue: number; today: number; done_today: number; open_total: number };
     }>('/me'),
-  dashboard: (period = '30d') => request<Record<string, unknown>>(`/dashboard?period=${period}`),
+  dashboard: (period = '30d', flow?: SalesCrmLeadFlow) =>
+    request<Record<string, unknown>>(`/dashboard?period=${period}${flow ? `&flow=${flow}` : ''}`),
   leads: (qs: string) =>
     request<{ items: LeadRow[]; total: number; page: number; pageSize: number }>(`/leads?${qs}`),
   lead: (id: number) => request<LeadDetail>(`/leads/${id}`),
@@ -103,14 +104,14 @@ export const salesCrmApi = {
     request<{ agent: OperatorRow }>(`/operators/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteOperator: (id: number) =>
     request<{ agent: OperatorRow }>(`/operators/${id}`, { method: 'DELETE', body: '{}' }),
-  operatorStats: (period = '30d') =>
-    request<{ items: OperatorStatRow[] }>(`/operators/stats?period=${period}`),
+  operatorStats: (period = '30d', flow?: SalesCrmLeadFlow) =>
+    request<{ items: OperatorStatRow[] }>(`/operators/stats?period=${period}${flow ? `&flow=${flow}` : ''}`),
   setAssignment: (mode: 'manual' | 'round_robin') =>
     request('/settings/assignment', { method: 'POST', body: JSON.stringify({ mode }) }),
   sync: () => request<{ synced: number }>('/sync', { method: 'POST', body: '{}' }),
-  funnel: (month: string, operatorId: number | null) =>
+  funnel: (month: string, operatorId: number | null, flow?: SalesCrmLeadFlow) =>
     request<FunnelReport>(
-      `/funnel?month=${encodeURIComponent(month)}${operatorId ? `&operatorId=${operatorId}` : ''}`,
+      `/funnel?month=${encodeURIComponent(month)}${operatorId ? `&operatorId=${operatorId}` : ''}${flow ? `&flow=${flow}` : ''}`,
     ),
   setFunnelPlans: (
     month: string,
@@ -125,11 +126,14 @@ export const salesCrmApi = {
     request(`/leads/${id}/milestone`, { method: 'POST', body: JSON.stringify({ stage, done }) }),
 };
 
+export type SalesCrmLeadFlow = 'promo' | 'platform';
+
 export type FunnelReport = {
   month: string;
   days: number;
   today: number | null;
   operatorId: number | null;
+  flow: SalesCrmLeadFlow | null;
   stages: { key: SalesFunnelStage; plan: number | null; fact: number; daily: number[] }[];
   operators: {
     id: number;
@@ -214,6 +218,9 @@ export type LeadRow = {
   next_contact_at: string | null;
   last_contact_at: string | null;
   created_at: string;
+  support_group_at?: string | null;
+  access_at?: string | null;
+  first_login_at?: string | null;
 };
 
 export type LeadDetail = {
@@ -255,6 +262,7 @@ export type OperatorRow = {
 export type OperatorStatRow = {
   id: number;
   name: string;
+  login: string;
   leads: number;
   processed: number;
   calls: number;
