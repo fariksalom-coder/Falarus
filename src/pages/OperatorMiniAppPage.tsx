@@ -112,6 +112,15 @@ function moneyText(value: string | number, currency = '') {
   return `${n.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${currency}`.trim();
 }
 
+function subscriptionText(customer: Customer) {
+  if (!customer.plan_name || !customer.plan_expires_at) return 'Pullik obuna yo‘q';
+  const expires = new Date(customer.plan_expires_at);
+  if (!Number.isFinite(+expires)) return `Obuna: ${customer.plan_name}`;
+  const active = +expires > Date.now();
+  const date = expires.toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric' });
+  return active ? `Faol obuna: ${customer.plan_name} · ${date} gacha` : `Obuna tugagan: ${customer.plan_name} · ${date}`;
+}
+
 function Field(props: {
   label: string;
   value: string;
@@ -126,7 +135,7 @@ function Field(props: {
       <span className="text-[13px] font-semibold text-slate-600">{props.label}</span>
       <input
         ref={props.innerRef}
-        className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-[16px] font-semibold text-slate-950 outline-none transition focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
+        className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-[16px] font-semibold text-slate-950 caret-[#071B3A] outline-none transition focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
         type={props.type || 'text'}
         inputMode={props.inputMode}
         value={props.value}
@@ -161,7 +170,7 @@ function PhoneField(props: {
           ))}
         </select>
         <input
-          className="h-12 rounded-xl border border-slate-200 bg-white px-3 text-[16px] font-semibold text-slate-950 outline-none transition focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
+          className="h-12 rounded-xl border border-slate-200 bg-white px-3 text-[16px] font-semibold text-slate-950 caret-[#071B3A] outline-none transition focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
           type="tel"
           inputMode="tel"
           value={props.local}
@@ -260,9 +269,7 @@ export default function OperatorMiniAppPage() {
       return;
     }
     const timer = window.setTimeout(() => {
-      api<{ items: Customer[] }>(`/customers?q=${encodeURIComponent(query)}`)
-        .then((res) => setResults(res.items))
-        .catch((e) => setError(e.message));
+      void searchCustomers(false);
     }, 250);
     return () => window.clearTimeout(timer);
   }, [query, mode, hasTelegram]);
@@ -296,6 +303,23 @@ export default function OperatorMiniAppPage() {
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('error');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function searchCustomers(showErrors = true) {
+    const term = query.trim();
+    if (term.length < 2) {
+      setResults([]);
+      if (showErrors) setError('Qidirish uchun kamida 2 ta belgi kiriting.');
+      return;
+    }
+    setError('');
+    try {
+      const res = await api<{ items: Customer[] }>(`/customers?q=${encodeURIComponent(term)}`);
+      setResults(res.items);
+      if (showErrors && !res.items.length) setNote('Bu so‘rov bo‘yicha o‘quvchi topilmadi.');
+    } catch (e: any) {
+      if (showErrors) setError(e.message);
     }
   }
 
@@ -413,7 +437,17 @@ export default function OperatorMiniAppPage() {
               </div>
             ) : (
               <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-3">
-                <Field label="Qidirish" value={query} onChange={setQuery} placeholder="Ism, telefon, email yoki ID" />
+                <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+                  <Field label="Qidirish" value={query} onChange={setQuery} placeholder="Ism, telefon, email yoki ID" />
+                  <button
+                    className="h-12 rounded-xl bg-[#071B3A] px-4 text-sm font-black text-white disabled:opacity-50"
+                    type="button"
+                    disabled={!hasTelegram || query.trim().length < 2}
+                    onClick={() => void searchCustomers(true)}
+                  >
+                    Topish
+                  </button>
+                </div>
                 <div className="max-h-64 space-y-2 overflow-auto">
                   {results.map((item) => (
                     <button
@@ -422,8 +456,11 @@ export default function OperatorMiniAppPage() {
                       type="button"
                       onClick={() => setSelected(item)}
                     >
-                      <strong>#{item.id} · {item.first_name} {item.last_name}</strong>
+                      <strong className="text-[#071B3A]">#{item.id} · {item.first_name || 'Ism yo‘q'} {item.last_name || ''}</strong>
                       <span className="mt-1 block text-sm font-semibold text-slate-500">{item.phone || item.email || 'kontakt yo‘q'}</span>
+                      <span className={`mt-2 inline-flex rounded-lg px-2 py-1 text-xs font-black ${item.plan_name && item.plan_expires_at && +new Date(item.plan_expires_at) > Date.now() ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                        {subscriptionText(item)}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -477,7 +514,7 @@ export default function OperatorMiniAppPage() {
                 <label className="block">
                   <span className="text-[13px] font-semibold text-slate-600">Qarz muddati</span>
                   <input
-                    className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-[16px] font-semibold text-slate-950 outline-none focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
+                    className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-[16px] font-semibold text-slate-950 caret-[#071B3A] outline-none focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
                     type="datetime-local"
                     value={payment.dueAt}
                     onChange={(e) => setPayment({ ...payment, dueAt: e.target.value })}
