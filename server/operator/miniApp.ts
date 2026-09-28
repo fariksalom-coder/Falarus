@@ -9,6 +9,7 @@ import { audit, enabled, transaction } from './service.js';
 import { createOperatorCustomer, customerEmail, customerName, customerPhone, matchingCustomer } from './customer.js';
 import { issueOperatorReset } from './passwordReset.js';
 import { dueDate, money, paymentFits } from './domain.js';
+import { getRussianTariffPlanRub } from '../../shared/russianTariffs.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -16,9 +17,9 @@ const upload = multer({
 });
 
 const TARIFFS = [
-  { code: 'month', label: '1 oy', price: '3 000 ₽' },
-  { code: 'three_month', label: '3 oy', price: '4 000 ₽' },
-  { code: 'six_month', label: '6 oy', price: '6 000 ₽' },
+  { code: 'month', label: '1 oy' },
+  { code: 'three_month', label: '3 oy' },
+  { code: 'six_month', label: '6 oy' },
 ] as const;
 
 const SOURCES = ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'] as const;
@@ -32,6 +33,9 @@ type MiniOperator = {
   telegram_id: string;
 };
 
+type Currency = typeof CURRENCIES[number];
+type TariffCode = typeof TARIFFS[number]['code'];
+
 function phoneSearchPatterns(value: string): string[] {
   const digits = value.replace(/\D/g, '');
   if (!digits) return [];
@@ -43,6 +47,41 @@ function phoneSearchPatterns(value: string): string[] {
   if (digits.length > 9) variants.add(digits.slice(-9));
   if (digits.length > 10) variants.add(digits.slice(-10));
   return [...variants].filter((item) => item.length >= 2).map((item) => `%${item}%`);
+}
+
+function formatAmount(amount: number, currency: string): string {
+  const rounded = Math.round(amount * 100) / 100;
+  const formatted = rounded.toLocaleString(currency === 'UZS' ? 'uz-UZ' : 'ru-RU', { maximumFractionDigits: 2 });
+  if (currency === 'UZS') return `${formatted} so‘m`;
+  if (currency === 'RUB') return `${formatted} ₽`;
+  if (currency === 'USD') return `$${formatted}`;
+  return `${formatted} ${currency}`;
+}
+
+function fallbackTariffAmount(code: TariffCode, currency: Currency): number {
+  const plan = getRussianTariffPlanRub(code);
+  if (!plan) return 0;
+  if (currency === 'RUB') return plan.priceRub;
+  if (currency === 'UZS') return plan.priceUzs;
+  return 0;
+}
+
+async function tariffCatalog() {
+  const dbRows = (await pool!.query(
+    `SELECT tariff_type,currency,price
+     FROM tariff_prices
+     WHERE tariff_type = ANY($1::text[]) AND currency = ANY($2::text[])`,
+    [TARIFFS.map((item) => item.code), CURRENCIES],
+  )).rows as Array<{ tariff_type: string; currency: Currency; price: string | number }>;
+  const fromDb = new Map(dbRows.map((row) => [`${row.tariff_type}:${row.currency}`, Number(row.price)]));
+  return TARIFFS.map((tariff) => ({
+    ...tariff,
+    prices: CURRENCIES.map((currency) => {
+      const dbPrice = fromDb.get(`${tariff.code}:${currency}`);
+      const amount = Number.isFinite(dbPrice) && Number(dbPrice) > 0 ? Number(dbPrice) : fallbackTariffAmount(tariff.code, currency);
+      return { currency, amount, display: amount > 0 ? formatAmount(amount, currency) : '' };
+    }),
+  }));
 }
 
 function receiptDir(): string {
@@ -189,7 +228,7 @@ export function operatorMiniAppRoutes() {
   router.use(miniAuth);
 
   router.get('/me', miniWrap(async (req, res) => {
-    res.json({ operator: req.operator, tariffs: TARIFFS, sources: SOURCES, currencies: CURRENCIES });
+    res.json({ operator: req.operator, tariffs: await tariffCatalog(), sources: SOURCES, currencies: CURRENCIES });
   }));
 
   router.get('/stats', miniWrap(async (req, res) => {
@@ -250,6 +289,23 @@ export function operatorMiniAppRoutes() {
        ORDER BY id DESC LIMIT 12`,
       [pattern, q, digitPatterns],
     )).rows;
+    const ids = rows.map((row) => Number(row.id)).filter(Number.isSafeInteger);
+    const debts = ids.length ? (await pool!.query(
+      `SELECT user_id,currency,
+              COALESCE(sum(debt),0)::text debt,
+              COALESCE(sum(pending),0)::text pending
+       FROM operator_balances
+       WHERE user_id = ANY($1::bigint[]) AND debt>0
+       GROUP BY user_id,currency`,
+      [ids],
+    )).rows : [];
+    const byUser = new Map<number, Array<{ currency: string; debt: string; pending: string }>>();
+    for (const row of debts) {
+      const list = byUser.get(Number(row.user_id)) ?? [];
+      list.push({ currency: String(row.currency), debt: String(row.debt), pending: String(row.pending) });
+      byUser.set(Number(row.user_id), list);
+    }
+    for (const row of rows) row.debts = byUser.get(Number(row.id)) ?? [];
     res.json({ items: rows });
   }));
 
@@ -278,7 +334,12 @@ export function operatorMiniAppRoutes() {
     const source = sourceChoice === 'Boshqa' ? normalizeOptionalSource(req.body.otherSource) : sourceChoice;
     const currency = String(req.body.currency ?? '');
     if (!CURRENCIES.includes(currency as any)) throw new Error('Valyuta noto‘g‘ri.');
-    const total = money(req.body.total);
+    const catalog = await tariffCatalog();
+    const catalogTotal = catalog
+      .find((item) => item.code === tariff)
+      ?.prices.find((item) => item.currency === currency)?.amount ?? 0;
+    if (!catalogTotal) throw new Error('Bu valyuta uchun tarif narxi topilmadi.');
+    const total = money(catalogTotal);
     const amount = money(req.body.amount);
     if (!paymentFits(amount, total)) throw new Error('To‘lov jami summadan oshmasligi kerak.');
     const due = Number(amount) < Number(total) ? dueDate(String(req.body.dueAt ?? '')) : null;

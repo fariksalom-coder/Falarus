@@ -23,6 +23,13 @@ type Customer = {
   email: string | null;
   plan_name?: string | null;
   plan_expires_at?: string | null;
+  debts?: Array<{ currency: string; debt: string; pending: string }>;
+};
+
+type TariffItem = {
+  code: string;
+  label: string;
+  prices: Array<{ currency: string; amount: number; display: string }>;
 };
 
 type StatsResponse = {
@@ -49,13 +56,13 @@ type StatsResponse = {
   actions: { actions: number; clients: number };
 };
 
-const tariffs = [
-  { code: 'month', label: '1 oy', hint: '3 000 ₽', amount: '3000' },
-  { code: 'three_month', label: '3 oy', hint: '4 000 ₽', amount: '4000' },
-  { code: 'six_month', label: '6 oy', hint: '6 000 ₽', amount: '6000' },
+const fallbackTariffs: TariffItem[] = [
+  { code: 'month', label: '1 oy', prices: [{ currency: 'RUB', amount: 3000, display: '3 000 ₽' }, { currency: 'UZS', amount: 400000, display: '400 000 so‘m' }] },
+  { code: 'three_month', label: '3 oy', prices: [{ currency: 'RUB', amount: 4000, display: '4 000 ₽' }, { currency: 'UZS', amount: 530000, display: '530 000 so‘m' }] },
+  { code: 'six_month', label: '6 oy', prices: [{ currency: 'RUB', amount: 6000, display: '6 000 ₽' }, { currency: 'UZS', amount: 790000, display: '790 000 so‘m' }] },
 ];
 const sources = ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'];
-const currencies = ['RUB', 'UZS', 'USD'];
+const fallbackCurrencies = ['RUB', 'UZS', 'USD'];
 const countries = [
   { code: 'UZ', label: 'O‘zbekiston', dial: '+998', placeholder: '90 123 45 67', groups: [2, 3, 2, 2] },
   { code: 'RU', label: 'Rossiya', dial: '+7', placeholder: '900 123 45 67', groups: [3, 3, 2, 2] },
@@ -109,7 +116,11 @@ function fmtDate(value?: string | null) {
 function moneyText(value: string | number, currency = '') {
   const n = Number(value);
   if (!Number.isFinite(n)) return `${value} ${currency}`.trim();
-  return `${n.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${currency}`.trim();
+  const amount = n.toLocaleString(currency === 'UZS' ? 'uz-UZ' : 'ru-RU', { maximumFractionDigits: 2 });
+  if (currency === 'UZS') return `${amount} so‘m`;
+  if (currency === 'RUB') return `${amount} ₽`;
+  if (currency === 'USD') return `$${amount}`;
+  return `${amount} ${currency}`.trim();
 }
 
 function subscriptionText(customer: Customer) {
@@ -191,6 +202,8 @@ export default function OperatorMiniAppPage() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [searchBusy, setSearchBusy] = useState(false);
+  const [tariffList, setTariffList] = useState<TariffItem[]>(fallbackTariffs);
+  const [currencyList, setCurrencyList] = useState<string[]>(fallbackCurrencies);
   const [tab, setTab] = useState<'payment' | 'stats'>('payment');
   const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [query, setQuery] = useState('');
@@ -216,6 +229,8 @@ export default function OperatorMiniAppPage() {
   const hasTelegram = Boolean(initData());
   const activeUserId = selected?.id ?? null;
   const isPartial = Number(payment.amount) > 0 && Number(payment.total) > Number(payment.amount);
+  const currentTariff = tariffList.find((item) => item.code === payment.tariff) ?? tariffList[0];
+  const currentPrice = currentTariff?.prices.find((item) => item.currency === payment.currency);
 
   const selectedLabel = useMemo(() => {
     if (!selected) return '';
@@ -226,6 +241,18 @@ export default function OperatorMiniAppPage() {
     const country = countries.find((item) => item.code === customer.country) ?? countries[0];
     return `${country.dial} ${customer.phoneLocal}`.trim();
   }, [customer.country, customer.phoneLocal]);
+
+  function tariffPrice(tariffCode: string, currency: string) {
+    return tariffList.find((item) => item.code === tariffCode)?.prices.find((item) => item.currency === currency);
+  }
+
+  function applyCatalogPrice(next: Partial<typeof payment>) {
+    const tariffCode = next.tariff ?? payment.tariff;
+    const currency = next.currency ?? payment.currency;
+    const price = tariffPrice(tariffCode, currency);
+    const total = price?.amount ? String(price.amount) : payment.total;
+    setPayment({ ...payment, ...next, total, amount: total });
+  }
 
   async function loadStats() {
     if (!hasTelegram) return;
@@ -252,8 +279,16 @@ export default function OperatorMiniAppPage() {
       setReady(true);
       return;
     }
-    api<{ operator: { name: string } }>('/me')
-      .then((res) => setOperatorName(res.operator.name))
+    api<{ operator: { name: string }; tariffs: TariffItem[]; currencies: string[] }>('/me')
+      .then((res) => {
+        setOperatorName(res.operator.name);
+        if (res.tariffs?.length) {
+          setTariffList(res.tariffs);
+          const price = res.tariffs.find((item) => item.code === payment.tariff)?.prices.find((item) => item.currency === payment.currency);
+          if (price?.amount) setPayment((prev) => ({ ...prev, total: String(price.amount), amount: String(price.amount) }));
+        }
+        if (res.currencies?.length) setCurrencyList(res.currencies);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setReady(true));
   }, [hasTelegram]);
@@ -471,6 +506,15 @@ export default function OperatorMiniAppPage() {
                       <span className={`mt-2 inline-flex rounded-lg px-2 py-1 text-xs font-black ${item.plan_name && item.plan_expires_at && +new Date(item.plan_expires_at) > Date.now() ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
                         {subscriptionText(item)}
                       </span>
+                      {item.debts?.length ? (
+                        <span className="mt-2 block space-y-1">
+                          {item.debts.map((debt) => (
+                            <span key={debt.currency} className="block rounded-lg bg-red-50 px-2 py-1 text-xs font-black text-red-700">
+                              Qarz {debt.currency}: {moneyText(debt.debt, debt.currency)}
+                            </span>
+                          ))}
+                        </span>
+                      ) : null}
                     </button>
                   ))}
                 </div>
@@ -482,6 +526,16 @@ export default function OperatorMiniAppPage() {
                 <p className="text-xs font-black uppercase text-blue-500">Tanlangan o‘quvchi</p>
                 <p className="mt-1 text-lg font-black text-[#071B3A]">{selectedLabel}</p>
                 <p className="text-sm font-semibold text-slate-600">{selected.phone || selected.email || ''}</p>
+                {selected.debts?.length ? (
+                  <div className="mt-3 space-y-2">
+                    {selected.debts.map((debt) => (
+                      <div key={debt.currency} className="rounded-xl bg-white p-3 text-sm font-bold text-red-700">
+                        Qarz {debt.currency}: {moneyText(debt.debt, debt.currency)}
+                        {Number(debt.pending) > 0 ? <span className="block text-xs text-amber-700">Tekshiruvda: {moneyText(debt.pending, debt.currency)}</span> : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 {resetLink && <textarea className="mt-3 h-24 w-full rounded-xl border border-blue-200 bg-white p-2 text-xs font-semibold text-slate-700" readOnly value={resetLink} />}
               </div>
             )}
@@ -489,17 +543,24 @@ export default function OperatorMiniAppPage() {
             <div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-3">
               <p className="text-sm font-black uppercase tracking-[0.12em] text-slate-500">To‘lov</p>
               <div className="grid grid-cols-3 gap-2">
-                {tariffs.map((item) => (
+                {tariffList.map((item) => {
+                  const price = item.prices.find((p) => p.currency === payment.currency);
+                  return (
                   <button
                     className={`rounded-xl border p-3 text-left ${payment.tariff === item.code ? 'border-[#0B2A6B] bg-[#071B3A] text-white' : 'border-slate-200 bg-slate-50 text-slate-700'}`}
                     key={item.code}
                     type="button"
-                    onClick={() => setPayment({ ...payment, tariff: item.code, total: item.amount, amount: item.amount })}
+                    disabled={!price?.amount}
+                    onClick={() => applyCatalogPrice({ tariff: item.code })}
                   >
                     <strong className="block text-sm">{item.label}</strong>
-                    <span className="text-xs opacity-80">{item.hint}</span>
+                    <span className="text-xs opacity-80">{price?.display || 'Narx yo‘q'}</span>
                   </button>
-                ))}
+                  );
+                })}
+              </div>
+              <div className="rounded-xl bg-slate-50 p-3 text-sm font-bold text-slate-600">
+                Kurs narxi: <span className="text-[#071B3A]">{currentPrice?.display || 'bu valyutada narx yo‘q'}</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <label className="block">
@@ -510,8 +571,8 @@ export default function OperatorMiniAppPage() {
                 </label>
                 <label className="block">
                   <span className="text-[13px] font-semibold text-slate-600">Valyuta</span>
-                  <select className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 font-bold" value={payment.currency} onChange={(e) => setPayment({ ...payment, currency: e.target.value })}>
-                    {currencies.map((currency) => <option key={currency}>{currency}</option>)}
+                  <select className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 font-bold" value={payment.currency} onChange={(e) => applyCatalogPrice({ currency: e.target.value })}>
+                    {currencyList.map((currency) => <option key={currency}>{currency}</option>)}
                   </select>
                 </label>
               </div>
