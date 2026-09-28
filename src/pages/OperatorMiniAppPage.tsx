@@ -190,6 +190,7 @@ export default function OperatorMiniAppPage() {
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [searchBusy, setSearchBusy] = useState(false);
   const [tab, setTab] = useState<'payment' | 'stats'>('payment');
   const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [query, setQuery] = useState('');
@@ -313,13 +314,22 @@ export default function OperatorMiniAppPage() {
       if (showErrors) setError('Qidirish uchun kamida 2 ta belgi kiriting.');
       return;
     }
+    if (!hasTelegram) {
+      setResults([]);
+      if (showErrors) setError('Qidirish Telegram mini ilovasi ichida ishlaydi.');
+      return;
+    }
+    setSearchBusy(true);
     setError('');
+    setNote('');
     try {
       const res = await api<{ items: Customer[] }>(`/customers?q=${encodeURIComponent(term)}`);
       setResults(res.items);
       if (showErrors && !res.items.length) setNote('Bu so‘rov bo‘yicha o‘quvchi topilmadi.');
     } catch (e: any) {
       if (showErrors) setError(e.message);
+    } finally {
+      setSearchBusy(false);
     }
   }
 
@@ -442,10 +452,10 @@ export default function OperatorMiniAppPage() {
                   <button
                     className="h-12 rounded-xl bg-[#071B3A] px-4 text-sm font-black text-white disabled:opacity-50"
                     type="button"
-                    disabled={!hasTelegram || query.trim().length < 2}
+                    disabled={searchBusy || query.trim().length < 2}
                     onClick={() => void searchCustomers(true)}
                   >
-                    Topish
+                    {searchBusy ? 'Izlanmoqda...' : 'Topish'}
                   </button>
                 </div>
                 <div className="max-h-64 space-y-2 overflow-auto">

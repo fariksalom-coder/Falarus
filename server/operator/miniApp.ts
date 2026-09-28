@@ -32,6 +32,19 @@ type MiniOperator = {
   telegram_id: string;
 };
 
+function phoneSearchPatterns(value: string): string[] {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return [];
+  const variants = new Set<string>([digits]);
+  if (digits.startsWith('998') && digits.length > 9) variants.add(digits.slice(3));
+  if (digits.startsWith('992') && digits.length > 9) variants.add(digits.slice(3));
+  if (digits.startsWith('995') && digits.length > 9) variants.add(digits.slice(3));
+  if (digits.startsWith('7') && digits.length > 10) variants.add(digits.slice(1));
+  if (digits.length > 9) variants.add(digits.slice(-9));
+  if (digits.length > 10) variants.add(digits.slice(-10));
+  return [...variants].filter((item) => item.length >= 2).map((item) => `%${item}%`);
+}
+
 function receiptDir(): string {
   return path.resolve(process.env.OPERATOR_RECEIPT_DIR || 'uploads/operator-receipts');
 }
@@ -226,16 +239,16 @@ export function operatorMiniAppRoutes() {
   router.get('/customers', miniWrap(async (req, res) => {
     const q = String(req.query.q ?? '').trim().slice(0, 80);
     if (q.length < 2) return res.json({ items: [] });
-    const digits = q.replace(/\D/g, '');
+    const digitPatterns = phoneSearchPatterns(q);
     const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
     const rows = (await pool!.query(
       `SELECT id,first_name,last_name,phone,email,plan_name,plan_expires_at,created_at
        FROM users
        WHERE concat_ws(' ',first_name,last_name,email,phone) ILIKE $1
           OR id::text=$2
-          OR ($3::text<>'' AND regexp_replace(COALESCE(phone,''),'[^0-9]','','g') LIKE '%'||$3||'%')
+          OR (cardinality($3::text[]) > 0 AND regexp_replace(COALESCE(phone,''),'[^0-9]','','g') LIKE ANY($3::text[]))
        ORDER BY id DESC LIMIT 12`,
-      [pattern, q, digits],
+      [pattern, q, digitPatterns],
     )).rows;
     res.json({ items: rows });
   }));
