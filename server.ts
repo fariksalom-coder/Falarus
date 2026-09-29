@@ -701,14 +701,9 @@ async function startServer() {
     if (!parsed.phone || parsed.email) {
       return res.status(400).json({ error: 'Ro‘yxatdan o‘tish faqat telefon orqali' });
     }
-    const first = typeof firstName === 'string' ? firstName.trim() : '';
-    const last = typeof lastName === 'string' ? lastName.trim() : '';
-    if (!first) {
-      return res.status(400).json({ error: 'Ism kiritilishi shart' });
-    }
-    if (!last) {
-      return res.status(400).json({ error: 'Familiya kiritilishi shart' });
-    }
+    // Ism/familiya ixtiyoriy: mobil ilovada bu maydonlar yo'q, keyin profilda to'ldiriladi.
+    const first = typeof firstName === 'string' ? firstName.trim().slice(0, 80) : '';
+    const last = typeof lastName === 'string' ? lastName.trim().slice(0, 80) : '';
     if (!password || typeof password !== 'string') {
       return res.status(400).json({ error: 'Parol kiritilishi shart' });
     }
