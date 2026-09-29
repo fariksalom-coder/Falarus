@@ -57,6 +57,13 @@ function webhookSecret(): string {
   return String(process.env.GOOGLE_SHEETS_WEBHOOK_SECRET || '').trim();
 }
 
+let autoSyncTimer: ReturnType<typeof setInterval> | null = null;
+let autoSyncRunning = false;
+
+function apiSyncConfigured(): boolean {
+  return Boolean(spreadsheetId() && (parseServiceAccountJson() || process.env.GOOGLE_APPLICATION_CREDENTIALS));
+}
+
 function normalizePhoneE164(raw: string | null | undefined): string | null {
   // Meta lead forms often prefix: p:+998...
   let cleaned = String(raw || '').trim().replace(/^p:/i, '');
@@ -552,15 +559,57 @@ export async function syncGoogleSheetsLeads(source: 'api_sync' | 'manual' = 'man
   }
 }
 
+export function startGoogleSheetsAutoSync(): boolean {
+  if (autoSyncTimer) return true;
+  if (String(process.env.GOOGLE_SHEETS_AUTO_SYNC ?? 'true').toLowerCase() === 'false') {
+    console.warn('[sheets-auto-sync] disabled by GOOGLE_SHEETS_AUTO_SYNC=false');
+    return false;
+  }
+  if (!apiSyncConfigured()) {
+    console.warn('[sheets-auto-sync] disabled: Google Sheets API sync is not configured');
+    return false;
+  }
+
+  const intervalMs = Math.max(
+    30_000,
+    Number(process.env.GOOGLE_SHEETS_AUTO_SYNC_INTERVAL_MS || 60_000) || 60_000,
+  );
+  const run = async () => {
+    if (autoSyncRunning) return;
+    autoSyncRunning = true;
+    try {
+      const result = await syncGoogleSheetsLeads('api_sync');
+      if (result.newLeads || result.errors || !result.ok) {
+        console.log('[sheets-auto-sync]', JSON.stringify({
+          ok: result.ok,
+          rowsChecked: result.rowsChecked,
+          newLeads: result.newLeads,
+          duplicates: result.duplicates,
+          errors: result.errors,
+          errorMessage: result.errorMessage ?? null,
+        }));
+      }
+    } catch (e) {
+      console.error('[sheets-auto-sync]', e instanceof Error ? e.message : e);
+    } finally {
+      autoSyncRunning = false;
+    }
+  };
+
+  autoSyncTimer = setInterval(run, intervalMs);
+  autoSyncTimer.unref?.();
+  setTimeout(run, 5_000).unref?.();
+  console.log(`[sheets-auto-sync] scheduled every ${Math.round(intervalMs / 1000)}s`);
+  return true;
+}
+
 export async function getSheetsIntegrationStatus() {
   const lastSyncAt = (await getSetting('sheets_last_sync_at')) || null;
   const lastError = (await getSetting('sheets_last_error')) || null;
   const connected = (await getSetting('sheets_connected')) === '1';
-  const apiSyncConfigured = Boolean(
-    spreadsheetId() && (parseServiceAccountJson() || process.env.GOOGLE_APPLICATION_CREDENTIALS),
-  );
+  const apiSyncConfiguredNow = apiSyncConfigured();
   const webhookConfigured = webhookSecret().length >= 16;
-  const configured = Boolean(spreadsheetId() && (apiSyncConfigured || webhookConfigured));
+  const configured = Boolean(spreadsheetId() && (apiSyncConfiguredNow || webhookConfigured));
   const db = requirePool();
   const { rows: logs } = await db.query(
     `SELECT id, source, started_at, finished_at, ok, rows_checked, new_leads, duplicates, errors, error_message
@@ -577,11 +626,11 @@ export async function getSheetsIntegrationStatus() {
     spreadsheetId: spreadsheetId() || null,
     range: sheetRange(),
     webhookConfigured,
-    apiSyncConfigured,
+    apiSyncConfigured: apiSyncConfiguredNow,
     crmLeadCount: leadCount[0]?.n ?? 0,
     lastSyncAt,
     lastError: lastError || null,
-    hint: apiSyncConfigured
+    hint: apiSyncConfiguredNow
       ? null
       : 'Admin sync uchun Service Account kerak. Mavjud 40+ qatorlar: Apps Script → backfillAllRows().',
     logs,
