@@ -22,6 +22,16 @@ function pct(a: number, b: number) {
   return `${Math.round((a / b) * 100)}%`;
 }
 
+const monthShort = ['yan', 'fev', 'mar', 'apr', 'may', 'iyun', 'iyul', 'avg', 'sen', 'okt', 'noy', 'dek'];
+
+function shortDay(value: string) {
+  const [, monthRaw, dayRaw] = value.split('-');
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  if (!month || !day) return value;
+  return `${day} ${monthShort[month - 1] ?? ''}`.trim();
+}
+
 export default function PromoAnalyticsPage() {
   const { agent } = useSalesCrmAuth();
   const [period, setPeriod] = useState('30d');
@@ -112,27 +122,21 @@ export default function PromoAnalyticsPage() {
           <table className="min-w-[920px] w-full text-left text-sm">
             <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-4 py-3">Kun</th>
-                <th className="px-4 py-3">Ochdi</th>
-                <th className="px-4 py-3">Ism</th>
-                <th className="px-4 py-3">Telefon</th>
-                <th className="px-4 py-3">Yuborish</th>
-                <th className="px-4 py-3">Qabul</th>
-                <th className="px-4 py-3">CRM lid</th>
-                <th className="px-4 py-3">Platforma</th>
+                <th className="sticky left-0 z-10 bg-slate-50 px-4 py-3">Ko‘rsatkich</th>
+                <th className="px-4 py-3 text-right">Jami</th>
+                {(data?.daily ?? []).map((row) => (
+                  <th key={row.day} className="px-3 py-3 text-right whitespace-nowrap">{shortDay(row.day)}</th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {(data?.daily ?? []).map((row) => (
-                <tr key={row.day} className="font-bold text-slate-800">
-                  <td className="px-4 py-3 text-slate-950">{row.day}</td>
-                  <td className="px-4 py-3">{n(row.page_views)}</td>
-                  <td className="px-4 py-3">{n(row.name_inputs)}</td>
-                  <td className="px-4 py-3">{n(row.phone_inputs)}</td>
-                  <td className="px-4 py-3">{n(row.submit_clicks)}</td>
-                  <td className="px-4 py-3">{n(row.accepted)}</td>
-                  <td className="px-4 py-3">{n(row.db_leads)}</td>
-                  <td className="px-4 py-3">{n(row.platform_clicks)}</td>
+              {metrics.map(([key, label]) => (
+                <tr key={key} className="font-bold text-slate-800">
+                  <td className="sticky left-0 z-10 bg-white px-4 py-3 text-slate-950">{label}</td>
+                  <td className="px-4 py-3 text-right text-slate-950">{n(totals?.[key])}</td>
+                  {(data?.daily ?? []).map((row) => (
+                    <td key={`${key}-${row.day}`} className="px-3 py-3 text-right">{n(row[key])}</td>
+                  ))}
                 </tr>
               ))}
             </tbody>
