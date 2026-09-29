@@ -181,7 +181,7 @@ export default function KanbanBoard({ leads, busyId, flow = 'platform', onMove, 
 
   return (
     <>
-      <div className="flex h-[calc(100vh-245px)] min-h-[520px] max-h-[760px] gap-3 overflow-x-auto pb-3 pt-1 [scrollbar-width:thin]">
+      <div className="flex h-[calc(100svh-250px)] min-h-[360px] max-h-[680px] gap-3 overflow-x-auto pb-3 pt-1 [scrollbar-width:thin] md:h-[calc(100vh-245px)] md:min-h-[520px] md:max-h-[760px]">
         {(flow === 'promo' ? [...SALES_CRM_KANBAN_COLUMNS, ...SITE_MILESTONE_COLUMNS] : SALES_CRM_KANBAN_COLUMNS).map((col) => {
           const items = byColumn.get(col.id) ?? [];
           const tone = TONE[col.tone];
@@ -200,7 +200,7 @@ export default function KanbanBoard({ leads, busyId, flow = 'platform', onMove, 
               onDrop={(e) => {
                 if (canDrop) dropOnColumn(col.id, e);
               }}
-              className={`flex h-full w-[min(82vw,260px)] shrink-0 flex-col rounded-[20px] ${tone.col} ${
+              className={`flex h-full w-[min(78vw,250px)] shrink-0 flex-col rounded-2xl md:w-[260px] ${tone.col} ${
                 isOver ? tone.drop : 'ring-1 ring-black/5'
               } transition`}
             >

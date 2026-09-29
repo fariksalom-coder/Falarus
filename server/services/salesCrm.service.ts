@@ -23,6 +23,8 @@ function requirePool() {
 export type SalesCrmAgentRole = 'admin' | 'operator';
 export type SalesCrmLeadFlow = 'promo' | 'platform';
 
+const SALES_CRM_TERMINAL_STATUSES = ['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE'] as const;
+
 function leadFlowSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
   const p = alias ? `${alias}.` : '';
   if (flow === 'promo') return `coalesce(${p}source, '') NOT IN ('website', 'backfill', 'payment')`;
@@ -771,6 +773,15 @@ export async function changeLeadStatus(params: {
     await markPresentationIfImplied(params.leadId, { status: params.status });
   }
 
+  if ((SALES_CRM_TERMINAL_STATUSES as readonly string[]).includes(params.status)) {
+    await db.query(
+      `UPDATE sales_crm_tasks
+       SET status = 'cancelled', completed_at = now()
+       WHERE lead_id = $1 AND status = 'open'`,
+      [params.leadId],
+    );
+  }
+
   if (comment) {
     await addLeadComment(params.leadId, params.actorId, comment, params.scopeOperatorId);
   }
@@ -967,7 +978,9 @@ export async function listTasks(params: {
   if (op) {
     add('t.operator_id = ?', op);
     where.push(operatorVisibleLeadSql('l'));
+    if (params.scopeOperatorId) add('l.assigned_operator_id = ?', params.scopeOperatorId);
   }
+  where.push(`l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`);
 
   if (params.bucket === 'overdue') {
     where.push(`t.status = 'open' AND t.scheduled_at < now()`);
@@ -1005,7 +1018,15 @@ export async function getTaskSummary(scopeOperatorId?: number | null) {
   if (scopeOperatorId) {
     params.push(scopeOperatorId);
     opFilter = ` AND t.operator_id = $1`;
-    leadJoin = `JOIN sales_crm_leads l ON l.id = t.lead_id AND ${operatorVisibleLeadSql('l')}`;
+    leadJoin = `JOIN sales_crm_leads l
+      ON l.id = t.lead_id
+     AND l.assigned_operator_id = $1
+     AND ${operatorVisibleLeadSql('l')}
+     AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`;
+  } else {
+    leadJoin = `JOIN sales_crm_leads l
+      ON l.id = t.lead_id
+     AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`;
   }
   const { rows } = await db.query(
     `SELECT

@@ -111,7 +111,7 @@ export default function SalesCrmLayout() {
         </div>
       </aside>
 
-      <main className="mx-auto max-w-[1440px] px-4 py-4 pb-28 lg:ml-[244px] lg:px-6 lg:py-6">
+      <main className="mx-auto max-w-[1440px] px-3 py-3 pb-8 sm:px-4 sm:py-4 lg:ml-[244px] lg:px-6 lg:py-6">
         <Outlet />
       </main>
     </div>
