@@ -63,11 +63,13 @@ async function ensureLandingUser(params: {
     await db.query(
       `UPDATE users
        SET first_name = CASE WHEN COALESCE(first_name, '') IN ('', 'Lead') THEN $2 ELSE first_name END,
+           phone = COALESCE(phone, $5),
+           phone_normalized = COALESCE(phone_normalized, $5),
            phone_raw = COALESCE(phone_raw, $3),
            country_code = COALESCE(country_code, $4),
            phone_invalid = false
        WHERE id = $1`,
-      [existing.rows[0].id, params.name, params.phoneRaw.slice(0, 80), params.countryCode],
+      [existing.rows[0].id, params.name, params.phoneRaw.slice(0, 80), params.countryCode, params.phone],
     );
     return existing.rows[0].id;
   }

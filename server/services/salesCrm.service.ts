@@ -181,6 +181,7 @@ export async function ingestUserAsSalesLead(params: {
   const db = requirePool();
   const phoneKey = normalizePhoneKey(params.phone);
   const externalKey = params.externalKey?.trim() || null;
+  const resurfacePromo = params.assignment === 'promo';
 
   if (externalKey) {
     const { rows: byExt } = await db.query<{ id: number }>(
@@ -193,11 +194,16 @@ export async function ingestUserAsSalesLead(params: {
          SET source = COALESCE($2, source),
              medium = COALESCE($3, medium),
              campaign = COALESCE($4, campaign),
-             utm_source = COALESCE($5, utm_source),
-             utm_content = COALESCE($6, utm_content),
-             utm_term = COALESCE($7, utm_term),
-             sheet_row_number = COALESCE($8, sheet_row_number),
-             submitted_at = COALESCE($9::timestamptz, submitted_at),
+             ad = COALESCE($5, ad),
+             landing_page = COALESCE($6, landing_page),
+             phone_normalized = COALESCE($7, phone_normalized),
+             utm_source = COALESCE($8, utm_source),
+             utm_content = COALESCE($9, utm_content),
+             utm_term = COALESCE($10, utm_term),
+             sheet_row_number = COALESCE($11, sheet_row_number),
+             submitted_at = COALESCE($12::timestamptz, submitted_at),
+             status = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
+             next_contact_at = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
              last_action_at = now(),
              updated_at = now()
          WHERE id = $1`,
@@ -206,16 +212,21 @@ export async function ingestUserAsSalesLead(params: {
           params.source ?? null,
           params.medium ?? null,
           params.campaign ?? null,
+          params.ad ?? null,
+          params.landingPage ?? null,
+          phoneKey,
           params.utmSource ?? null,
           params.utmContent ?? null,
           params.utmTerm ?? null,
           params.sheetRowNumber ?? null,
           params.submittedAt ?? null,
+          resurfacePromo,
         ],
       );
       await addEvent(byExt[0].id, params.actorId ?? null, 'lead_refreshed', {
         external_key: externalKey,
         source: params.source ?? null,
+        resurfaced: resurfacePromo,
       });
       return { leadId: byExt[0].id, created: false };
     }
@@ -254,6 +265,8 @@ export async function ingestUserAsSalesLead(params: {
              external_key = COALESCE(external_key, $10),
              sheet_row_number = COALESCE($11, sheet_row_number),
              submitted_at = COALESCE($12::timestamptz, submitted_at),
+             status = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
+             next_contact_at = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
              last_action_at = now(),
              updated_at = now()
          WHERE id = $1`,
@@ -270,8 +283,15 @@ export async function ingestUserAsSalesLead(params: {
           externalKey,
           params.sheetRowNumber ?? null,
           params.submittedAt ?? null,
+          resurfacePromo,
         ],
       );
+      await addEvent(byPhone[0].id, params.actorId ?? null, 'lead_refreshed', {
+        attempted_user_id: params.userId,
+        source: params.source ?? null,
+        external_key: externalKey,
+        resurfaced: resurfacePromo,
+      });
       return { leadId: byPhone[0].id, created: false };
     }
   }
@@ -295,6 +315,8 @@ export async function ingestUserAsSalesLead(params: {
            external_key = COALESCE(external_key, $11),
            sheet_row_number = COALESCE($12, sheet_row_number),
            submitted_at = COALESCE($13::timestamptz, submitted_at),
+           status = CASE WHEN $14::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
+           next_contact_at = CASE WHEN $14::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
            last_action_at = now(),
            updated_at = now()
        WHERE id = $1`,
@@ -312,11 +334,13 @@ export async function ingestUserAsSalesLead(params: {
         externalKey,
         params.sheetRowNumber ?? null,
         params.submittedAt ?? null,
+        resurfacePromo,
       ],
     );
     await addEvent(existing[0].id, params.actorId ?? null, 'lead_refreshed', {
       source: params.source ?? null,
       external_key: externalKey,
+      resurfaced: resurfacePromo,
     });
     return { leadId: existing[0].id, created: false };
   }
