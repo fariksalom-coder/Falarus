@@ -3,6 +3,12 @@ import { pool } from '../lib/db.js';
 import { clientIpFromRequest, enforceRateLimit } from '../lib/rateLimit.js';
 import { normalizePhoneInputToE164, sanitizePhoneRaw } from '../../shared/authIdentifiers.js';
 import { ingestUserAsSalesLead } from '../services/salesCrm.service.js';
+import {
+  cleanPromoLandingPath,
+  cleanPromoSessionId,
+  cleanPromoUtm,
+  recordPromoLandingEvent,
+} from '../services/promoLandingAnalytics.service.js';
 
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
 type UtmKey = (typeof UTM_KEYS)[number];
@@ -88,6 +94,24 @@ async function ensureLandingUser(params: {
 export function createPromoLeadRoutes(): Router {
   const router = Router();
 
+  router.post('/russian-event', async (req: Request, res) => {
+    try {
+      const ip = clientIpFromRequest(req);
+      if (!(await enforceRateLimit(res, `promo:russian:event:${ip}`, 120, 60 * 60, 'Juda ko‘p so‘rov.'))) {
+        return;
+      }
+      await recordPromoLandingEvent({
+        sessionId: cleanPromoSessionId(req.body?.sessionId),
+        eventType: String(req.body?.eventType ?? ''),
+        landingPage: cleanPromoLandingPath(req.body?.landingPage),
+        utm: cleanPromoUtm(req.body ?? {}),
+      });
+      res.status(202).json({ ok: true });
+    } catch {
+      res.status(202).json({ ok: true });
+    }
+  });
+
   router.post('/russian-lead', async (req: Request, res) => {
     try {
       const ip = clientIpFromRequest(req);
@@ -125,6 +149,9 @@ export function createPromoLeadRoutes(): Router {
       const utm: Partial<Record<UtmKey, string | null>> = {};
       for (const key of UTM_KEYS) utm[key] = cleanUtm(req.body?.[key]);
       const landingPage = safeLandingPath(req.body?.landingPage, utm);
+      const sessionId = (() => {
+        try { return cleanPromoSessionId(req.body?.sessionId); } catch { return null; }
+      })();
       const phoneSnapshot = sanitizePhoneRaw(phoneRaw) ?? phone.e164;
       const userId = await ensureLandingUser({
         name,
@@ -148,6 +175,17 @@ export function createPromoLeadRoutes(): Router {
         submittedAt: new Date().toISOString(),
         assignment: 'promo',
       });
+      if (sessionId) {
+        await recordPromoLandingEvent({
+          sessionId,
+          eventType: 'crm_lead_saved',
+          landingPage,
+          utm,
+          leadId: lead.leadId,
+          userId,
+          metadata: { created: lead.created },
+        }).catch(() => undefined);
+      }
 
       res.status(lead.created ? 201 : 200).json({ ok: true, duplicate: !lead.created });
     } catch (e) {

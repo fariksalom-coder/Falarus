@@ -52,6 +52,8 @@ export const salesCrmApi = {
     }>('/me'),
   dashboard: (period = '30d', flow?: SalesCrmLeadFlow) =>
     request<Record<string, unknown>>(`/dashboard?period=${period}${flow ? `&flow=${flow}` : ''}`),
+  promoAnalytics: (period = '30d') =>
+    request<PromoAnalytics>(`/promo-analytics?period=${encodeURIComponent(period)}`),
   leads: (qs: string) =>
     request<{ items: LeadRow[]; total: number; page: number; pageSize: number }>(`/leads?${qs}`),
   lead: (id: number) => request<LeadDetail>(`/leads/${id}`),
@@ -127,6 +129,24 @@ export const salesCrmApi = {
 };
 
 export type SalesCrmLeadFlow = 'promo' | 'platform';
+
+export type PromoAnalyticsRow = {
+  day: string;
+  page_views: number;
+  name_inputs: number;
+  phone_inputs: number;
+  submit_clicks: number;
+  accepted: number;
+  crm_saved_leads: number;
+  db_leads: number;
+  platform_clicks: number;
+};
+
+export type PromoAnalytics = {
+  period: string;
+  totals: Omit<PromoAnalyticsRow, 'day'> & { crm_saved_sessions: number };
+  daily: PromoAnalyticsRow[];
+};
 
 export type FunnelReport = {
   month: string;

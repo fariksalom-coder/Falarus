@@ -38,6 +38,7 @@ import {
   setFunnelPlans,
   setLeadMilestone,
 } from '../services/salesCrmFunnel.service';
+import { getPromoLandingAnalytics } from '../services/promoLandingAnalytics.service';
 import {
   isSalesCrmStatus,
   isSalesFunnelStage,
@@ -212,6 +213,16 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
       res.json(data);
     } catch (e) {
       console.error('[sales-crm/dashboard]', e);
+      sendSalesCrmError(res, e);
+    }
+  });
+
+  router.get('/promo-analytics', requireSalesCrmAdmin, async (req, res) => {
+    try {
+      const period = typeof req.query.period === 'string' ? req.query.period : '30d';
+      res.json(await getPromoLandingAnalytics(period, leadDb));
+    } catch (e) {
+      console.error('[sales-crm/promo-analytics]', e);
       sendSalesCrmError(res, e);
     }
   });

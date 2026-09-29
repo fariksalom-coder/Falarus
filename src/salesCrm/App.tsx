@@ -11,6 +11,7 @@ import StatsPage from './pages/StatsPage';
 import FunnelPage from './pages/FunnelPage';
 import OperatorsPage from './pages/OperatorsPage';
 import PlatformPage from './pages/PlatformPage';
+import PromoAnalyticsPage from './pages/PromoAnalyticsPage';
 
 function Guard({ children }: { children: React.ReactNode }) {
   const { agent, loading, authError, refresh, logout } = useSalesCrmAuth();
@@ -73,6 +74,7 @@ export default function SalesCrmApp() {
         <Route path="tasks" element={<TasksPage />} />
         <Route path="plan" element={<FunnelPage />} />
         <Route path="stats" element={<StatsPage />} />
+        <Route path="promo" element={<PromoAnalyticsPage />} />
         <Route path="platform" element={<PlatformPage />} />
         <Route path="operators" element={<OperatorsPage />} />
       </Route>

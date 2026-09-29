@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, Home, ListOrdered, LogOut, Menu, PhoneCall, Target, UserCheck, Users, X } from 'lucide-react';
+import { BarChart3, Home, ListOrdered, LogOut, Menu, MousePointerClick, PhoneCall, Target, UserCheck, Users, X } from 'lucide-react';
 import { useSalesCrmAuth } from './auth';
 
 const nav = [
@@ -9,6 +9,7 @@ const nav = [
   { to: '/tasks', label: 'Qo‘ng‘iroqlar', icon: PhoneCall },
   { to: '/plan', label: 'Reja', icon: Target },
   { to: '/stats', label: 'Hisobot', icon: BarChart3 },
+  { to: '/promo', label: 'Promo', icon: MousePointerClick, adminOnly: true },
   { to: '/platform', label: 'Platforma', icon: UserCheck, adminOnly: true },
   { to: '/operators', label: 'Operatorlar', icon: Users, adminOnly: true },
 ];

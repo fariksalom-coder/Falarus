@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { apiUrl } from '../api';
 
@@ -18,6 +18,19 @@ function utmPayload() {
     utm_term: params.get('utm_term') || '',
     landingPage: `${window.location.pathname}${window.location.search}`,
   };
+}
+
+function promoSessionId() {
+  const key = 'promoRussianSessionId';
+  try {
+    const existing = sessionStorage.getItem(key);
+    if (existing) return existing;
+    const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem(key, id);
+    return id;
+  } catch {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
 }
 
 function formatUzPhone(raw: string): string {
@@ -49,6 +62,23 @@ export default function PromoRussianPage() {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const source = useMemo(() => utmPayload(), []);
+  const sessionId = useMemo(() => promoSessionId(), []);
+  const tracked = useRef(new Set<string>());
+
+  function track(eventType: string) {
+    if (eventType !== 'submit_click' && tracked.current.has(eventType)) return;
+    tracked.current.add(eventType);
+    void fetch(apiUrl('/api/promo/russian-event'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventType, sessionId, ...source }),
+      keepalive: true,
+    }).catch(() => undefined);
+  }
+
+  useEffect(() => {
+    track('page_view');
+  }, []);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -71,11 +101,13 @@ export default function PromoRussianPage() {
           name: form.name,
           phone: form.phone,
           website: form.website,
+          sessionId,
           ...source,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(String(data.error || 'Ariza yuborilmadi.'));
+      track('lead_saved');
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ariza yuborilmadi.');
@@ -103,6 +135,7 @@ export default function PromoRussianPage() {
                 </p>
                 <a
                   href="/"
+                  onClick={() => track('platform_click')}
                   className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-[#071B3A] px-4 text-sm font-black text-white transition active:scale-[0.99]"
                 >
                   Platformaga o‘tish
@@ -123,7 +156,10 @@ export default function PromoRussianPage() {
                   <span className="text-xs font-black uppercase tracking-wide text-slate-500">Ism</span>
                   <input
                     value={form.name}
-                    onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                    onChange={(e) => {
+                      setForm((s) => ({ ...s, name: e.target.value }));
+                      if (e.target.value.trim().length >= 2) track('name_input');
+                    }}
                     autoComplete="name"
                     className="mt-1 h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[16px] font-bold outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     placeholder="Ismingiz"
@@ -134,7 +170,11 @@ export default function PromoRussianPage() {
                   <span className="text-xs font-black uppercase tracking-wide text-slate-500">Telefon raqam</span>
                   <input
                     value={form.phone}
-                    onChange={(e) => setForm((s) => ({ ...s, phone: formatUzPhone(e.target.value) }))}
+                    onChange={(e) => {
+                      const value = formatUzPhone(e.target.value);
+                      setForm((s) => ({ ...s, phone: value }));
+                      if (uzPhoneDigits(value).length >= 9) track('phone_input');
+                    }}
                     onFocus={() => setForm((s) => ({ ...s, phone: formatUzPhone(s.phone) }))}
                     autoComplete="tel"
                     inputMode="tel"
@@ -162,6 +202,7 @@ export default function PromoRussianPage() {
                   <button
                     type="submit"
                     disabled={busy}
+                    onClick={() => track('submit_click')}
                     className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-[15px] font-black text-white shadow-lg shadow-blue-600/25 transition active:scale-[0.99] disabled:opacity-65"
                   >
                     {busy ? 'Yuborilmoqda…' : 'Ariza yuborish'}
