@@ -37,6 +37,21 @@ type StatsResponse = {
   payments: Array<{ currency: string; status: string; receipts: number; clients: number; amount: string }>;
   salesDays: Array<{ day: string; currency: string; receipts: number; clients: number; amount: string }>;
   salesMonth: Array<{ currency: string; receipts: number; clients: number; amount: string }>;
+  salary: {
+    currency: 'UZS';
+    soldCourses: number;
+    perCourseAmount: number;
+    baseAmount: number;
+    bonusAmount: number;
+    totalAmount: number;
+    bonusTier: { courses: number; amount: number } | null;
+    nextTarget: number | null;
+    nextBonusAmount: number | null;
+    remainingToNext: number;
+    tiers: Array<{ courses: number; amount: number }>;
+  };
+  salaryDays: Array<{ day: string; soldCourses: number; baseAmount: number; bonusAmount: number; totalAmount: number }>;
+  salaryTariffs: Array<{ tariff: string; sold_courses: number }>;
   debts: Array<{
     currency: string;
     contracts: number;
@@ -230,7 +245,7 @@ export default function OperatorMiniAppPage() {
   const [searchBusy, setSearchBusy] = useState(false);
   const [tariffList, setTariffList] = useState<TariffItem[]>(fallbackTariffs);
   const [currencyList, setCurrencyList] = useState<string[]>(fallbackCurrencies);
-  const [tab, setTab] = useState<'payment' | 'stats'>('payment');
+  const [tab, setTab] = useState<'payment' | 'stats' | 'salary'>('payment');
   const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Customer[]>([]);
@@ -247,7 +262,7 @@ export default function OperatorMiniAppPage() {
     dueAt: '',
   });
   const [receipt, setReceipt] = useState<File | null>(null);
-  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'custom'>('today');
+  const [period, setPeriod] = useState<'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom'>('today');
   const [customRange, setCustomRange] = useState({ from: todayAppDate(), to: todayAppDate() });
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -338,7 +353,7 @@ export default function OperatorMiniAppPage() {
   }, [query, mode, hasTelegram]);
 
   useEffect(() => {
-    if (tab === 'stats') void loadStats();
+    if (tab !== 'payment') void loadStats();
   }, [tab, period, customRange.from, customRange.to]);
 
   async function createCustomer() {
@@ -418,7 +433,7 @@ export default function OperatorMiniAppPage() {
       setNote(`Chek #${res.receiptId} adminga yuborildi. Holat: tekshiruvda.`);
       setReceipt(null);
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('success');
-      if (tab === 'stats') void loadStats();
+      if (tab !== 'payment') void loadStats();
     } catch (e: any) {
       setError(e.message);
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('error');
@@ -465,15 +480,16 @@ export default function OperatorMiniAppPage() {
         {error && <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}
         {note && <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">{note}</div>}
 
-        <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-200 p-1">
+        <div className="mb-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-200 p-1">
           {[
             ['payment', 'To‘lov'],
             ['stats', 'Hisobot'],
+            ['salary', 'Maosh'],
           ].map(([key, label]) => (
             <button
               key={key}
               className={`h-11 rounded-xl text-sm font-black ${tab === key ? 'bg-white text-[#071B3A] shadow-sm' : 'text-slate-500'}`}
-              onClick={() => setTab(key as 'payment' | 'stats')}
+              onClick={() => setTab(key as 'payment' | 'stats' | 'salary')}
               type="button"
             >
               {label}
@@ -643,11 +659,13 @@ export default function OperatorMiniAppPage() {
           </>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-4 gap-1 rounded-2xl bg-slate-200 p-1">
+            <div className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-200 p-1">
               {[
                 ['today', 'Kun'],
+                ['yesterday', 'Kecha'],
                 ['week', 'Hafta'],
                 ['month', 'Oy'],
+                ['all', 'Jami'],
                 ['custom', 'Davr'],
               ].map(([key, label]) => (
                 <button key={key} className={`h-10 rounded-xl text-xs font-black ${period === key ? 'bg-white text-[#071B3A] shadow-sm' : 'text-slate-500'}`} type="button" onClick={() => setPeriod(key as typeof period)}>
@@ -664,112 +682,191 @@ export default function OperatorMiniAppPage() {
             <button className="h-11 w-full rounded-xl border border-slate-200 bg-white text-sm font-black text-[#071B3A]" type="button" disabled={statsLoading} onClick={loadStats}>
               {statsLoading ? 'Yangilanmoqda...' : 'Yangilash'}
             </button>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-2xl bg-white p-3 shadow-sm">
-                <p className="text-[11px] font-black uppercase text-slate-400">Tasdiq</p>
-                {approvedByCurrency.length ? approvedByCurrency.map((item) => (
-                  <p key={item.currency} className="mt-1 text-sm font-black text-emerald-600">{moneyText(item.amount, item.currency)}</p>
-                )) : <p className="mt-1 text-lg font-black text-emerald-600">0</p>}
-              </div>
-              <div className="rounded-2xl bg-white p-3 shadow-sm">
-                <p className="text-[11px] font-black uppercase text-slate-400">Kutilmoqda</p>
-                <p className="mt-1 text-lg font-black text-amber-600">{pendingCount}</p>
-              </div>
-              <div className="rounded-2xl bg-white p-3 shadow-sm">
-                <p className="text-[11px] font-black uppercase text-slate-400">Qarz</p>
-                <div className="mt-1 space-y-0.5">
-                  {stats?.debts.length ? stats.debts.map((item) => (
-                    <p key={item.currency} className="text-xs font-black text-red-600">{moneyText(item.debt, item.currency)}</p>
-                  )) : <p className="text-lg font-black text-red-600">0</p>}
-                </div>
-              </div>
-            </div>
-            <section className="rounded-2xl border border-slate-200 bg-white p-3">
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="text-sm font-black text-[#071B3A]">Savdo statistikasi</h2>
-                <div className="text-right">
-                  <p className="text-[10px] font-black uppercase text-slate-400">Oy jami</p>
-                  {stats?.salesMonth?.length ? stats.salesMonth.map((item) => (
-                    <p key={item.currency} className="text-xs font-black text-[#071B3A]">{moneyText(item.amount, item.currency)}</p>
-                  )) : <p className="text-xs font-black text-[#071B3A]">0</p>}
-                </div>
-              </div>
-              <div className="mt-3 space-y-2">
-                {salesByDay.length ? salesByDay.map((group) => (
-                  <div key={group.day} className="rounded-xl bg-slate-50 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <strong className="text-sm text-[#071B3A]">{dayText(group.day)}</strong>
-                      <span className="text-xs font-bold text-slate-500">{group.rows.reduce((sum, row) => sum + Number(row.receipts || 0), 0)} ta to‘lov</span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {group.rows.map((row) => (
-                        <span key={`${group.day}-${row.currency}`} className="rounded-lg bg-white px-2 py-1 text-xs font-black text-[#071B3A]">
-                          {moneyText(row.amount, row.currency)}
-                        </span>
-                      ))}
-                    </div>
+            {tab === 'salary' ? (
+              <>
+                <section className="rounded-2xl bg-[#071B3A] p-4 text-white shadow-lg shadow-slate-900/15">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-blue-100/70">{stats?.range.label || 'Davr'} maoshi</p>
+                  <p className="mt-2 text-4xl font-black">{moneyText(stats?.salary.totalAmount ?? 0, 'UZS')}</p>
+                  <p className="mt-1 text-sm font-bold text-blue-100/80">
+                    {stats?.salary.soldCourses ?? 0} ta kurs · {moneyText(stats?.salary.perCourseAmount ?? 30000, 'UZS')} / kurs
+                  </p>
+                </section>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-2xl bg-white p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase text-slate-400">Kurs</p>
+                    <p className="mt-1 text-xl font-black text-[#071B3A]">{stats?.salary.soldCourses ?? 0}</p>
                   </div>
-                )) : <p className="text-sm font-semibold text-slate-500">Bu davrda tasdiqlangan savdo yo‘q.</p>}
-              </div>
-            </section>
-            <section className="rounded-2xl border border-slate-200 bg-white p-3">
-              <h2 className="text-sm font-black text-[#071B3A]">To‘lovlar</h2>
-              <div className="mt-2 space-y-2">
-                {stats?.payments.length ? stats.payments.map((item, index) => (
-                  <div key={`${item.currency}-${item.status}-${index}`} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 text-sm">
-                    <span className="font-bold">{statusLabel[item.status] || item.status} · {item.currency}</span>
-                    <span className="font-black">{item.receipts} ta · {moneyText(item.amount, item.currency)}</span>
+                  <div className="rounded-2xl bg-white p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase text-slate-400">Asosiy</p>
+                    <p className="mt-1 text-sm font-black text-[#071B3A]">{moneyText(stats?.salary.baseAmount ?? 0, 'UZS')}</p>
                   </div>
-                )) : <p className="text-sm font-semibold text-slate-500">Bu davrda to‘lov yo‘q.</p>}
-              </div>
-            </section>
-            <section className="rounded-2xl border border-slate-200 bg-white p-3">
-              <h2 className="text-sm font-black text-[#071B3A]">Qarzlar</h2>
-              <div className="mt-2 space-y-2">
-                {stats?.debts.length ? stats.debts.map((item) => (
-                  <div key={item.currency} className="rounded-xl bg-red-50 p-3 text-sm">
-                    <button
-                      className="w-full text-left"
-                      type="button"
-                      onClick={() => setOpenDebtCurrency(openDebtCurrency === item.currency ? null : item.currency)}
-                    >
-                      <div className="flex justify-between gap-2"><strong>{item.clients} mijoz · {item.currency}</strong><strong>{moneyText(item.debt, item.currency)}</strong></div>
-                      <p className="mt-1 font-semibold text-red-700">Muddati o‘tgan: {moneyText(item.overdue, item.currency)}</p>
-                      <p className="mt-1 text-xs font-black text-red-500">{openDebtCurrency === item.currency ? 'Yopish' : 'Kim qarzdorligini ko‘rish'}</p>
-                    </button>
-                    {openDebtCurrency === item.currency && (
-                      <div className="mt-3 space-y-2">
-                        {item.debtors.length ? item.debtors.map((debtor) => (
-                          <article key={debtor.contract_id} className="rounded-xl bg-white p-3">
-                            <div className="flex justify-between gap-2">
-                              <strong>#{debtor.user_id} · {debtor.first_name || 'Ism yo‘q'} {debtor.last_name || ''}</strong>
-                              <strong>{moneyText(debtor.debt, item.currency)}</strong>
-                            </div>
-                            <p className="mt-1 text-xs font-semibold text-slate-500">{debtor.phone || 'telefon yo‘q'} · {debtor.source || 'manba yo‘q'} · {debtor.tariff}</p>
-                            <p className="mt-1 text-xs font-bold text-red-700">Muddat: {fmtDate(debtor.due_at)}{Number(debtor.pending) > 0 ? ` · Tekshiruvda: ${moneyText(debtor.pending, item.currency)}` : ''}</p>
-                          </article>
-                        )) : <p className="rounded-xl bg-white p-3 text-xs font-bold text-slate-500">Bu valyutada qarzdorlar ro‘yxati bo‘sh.</p>}
-                      </div>
+                  <div className="rounded-2xl bg-white p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase text-slate-400">Bonus</p>
+                    <p className="mt-1 text-sm font-black text-emerald-600">{moneyText(stats?.salary.bonusAmount ?? 0, 'UZS')}</p>
+                  </div>
+                </div>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <h2 className="text-sm font-black text-[#071B3A]">Hisob-kitob</h2>
+                  <div className="mt-3 space-y-2 text-sm font-bold text-slate-700">
+                    <div className="flex justify-between rounded-xl bg-slate-50 p-3">
+                      <span>{stats?.salary.soldCourses ?? 0} kurs × {moneyText(stats?.salary.perCourseAmount ?? 30000, 'UZS')}</span>
+                      <strong>{moneyText(stats?.salary.baseAmount ?? 0, 'UZS')}</strong>
+                    </div>
+                    <div className="flex justify-between rounded-xl bg-emerald-50 p-3 text-emerald-700">
+                      <span>Bonus</span>
+                      <strong>{moneyText(stats?.salary.bonusAmount ?? 0, 'UZS')}</strong>
+                    </div>
+                    {stats?.salary.nextTarget ? (
+                      <p className="rounded-xl bg-blue-50 p-3 text-xs font-black text-blue-700">
+                        Keyingi bonus: yana {stats.salary.remainingToNext} ta kurs → {moneyText(stats.salary.nextBonusAmount ?? 0, 'UZS')}
+                      </p>
+                    ) : (
+                      <p className="rounded-xl bg-emerald-50 p-3 text-xs font-black text-emerald-700">Eng yuqori bonus olindi.</p>
                     )}
                   </div>
-                )) : <p className="text-sm font-semibold text-slate-500">Hozir qarz yo‘q.</p>}
-              </div>
-            </section>
-            <section className="rounded-2xl border border-slate-200 bg-white p-3">
-              <h2 className="text-sm font-black text-[#071B3A]">Tarix</h2>
-              <div className="mt-2 space-y-2">
-                {stats?.history.length ? stats.history.map((item) => (
-                  <article key={item.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                    <div className="flex justify-between gap-2">
-                      <strong>#{item.user_id} · {item.first_name} {item.last_name}</strong>
-                      <span className="font-black">{moneyText(item.amount, item.currency)}</span>
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <h2 className="text-sm font-black text-[#071B3A]">Bonus jadvali</h2>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {(stats?.salary.tiers ?? []).map((tier) => (
+                      <div key={tier.courses} className={`rounded-xl p-3 text-center ${Number(stats?.salary.soldCourses ?? 0) >= tier.courses ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-500'}`}>
+                        <p className="text-lg font-black">{tier.courses} ta</p>
+                        <p className="text-xs font-black">{moneyText(tier.amount, 'UZS')}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <h2 className="text-sm font-black text-[#071B3A]">Kunlar bo‘yicha</h2>
+                  <div className="mt-2 space-y-2">
+                    {stats?.salaryDays.length ? stats.salaryDays.map((item) => (
+                      <div key={item.day} className="rounded-xl bg-slate-50 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <strong className="text-sm text-[#071B3A]">{dayText(item.day)}</strong>
+                          <strong>{moneyText(item.totalAmount, 'UZS')}</strong>
+                        </div>
+                        <p className="mt-1 text-xs font-bold text-slate-500">
+                          {item.soldCourses} ta kurs · asosiy {moneyText(item.baseAmount, 'UZS')} · bonus {moneyText(item.bonusAmount, 'UZS')}
+                        </p>
+                      </div>
+                    )) : <p className="text-sm font-semibold text-slate-500">Bu davrda tasdiqlangan kurs yo‘q.</p>}
+                  </div>
+                </section>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-2xl bg-white p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase text-slate-400">Tasdiq</p>
+                    {approvedByCurrency.length ? approvedByCurrency.map((item) => (
+                      <p key={item.currency} className="mt-1 text-sm font-black text-emerald-600">{moneyText(item.amount, item.currency)}</p>
+                    )) : <p className="mt-1 text-lg font-black text-emerald-600">0</p>}
+                  </div>
+                  <div className="rounded-2xl bg-white p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase text-slate-400">Kutilmoqda</p>
+                    <p className="mt-1 text-lg font-black text-amber-600">{pendingCount}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white p-3 shadow-sm">
+                    <p className="text-[11px] font-black uppercase text-slate-400">Qarz</p>
+                    <div className="mt-1 space-y-0.5">
+                      {stats?.debts.length ? stats.debts.map((item) => (
+                        <p key={item.currency} className="text-xs font-black text-red-600">{moneyText(item.debt, item.currency)}</p>
+                      )) : <p className="text-lg font-black text-red-600">0</p>}
                     </div>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">{item.phone || 'telefon yo‘q'} · {item.source} · {fmtDate(item.created_at)}</p>
-                    <p className="mt-2 text-xs font-black text-[#071B3A]">{statusLabel[item.status] || item.status} · Qarz: {moneyText(item.status === 'rejected' ? 0 : item.debt, item.currency)} · Tekshiruvda: {moneyText(item.status === 'rejected' ? 0 : item.pending, item.currency)}</p>
-                  </article>
-                )) : <p className="text-sm font-semibold text-slate-500">Tarix bo‘sh.</p>}
-              </div>
-            </section>
+                  </div>
+                </div>
+                <section className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-sm font-black text-[#071B3A]">Savdo statistikasi</h2>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black uppercase text-slate-400">Oy jami</p>
+                      {stats?.salesMonth?.length ? stats.salesMonth.map((item) => (
+                        <p key={item.currency} className="text-xs font-black text-[#071B3A]">{moneyText(item.amount, item.currency)}</p>
+                      )) : <p className="text-xs font-black text-[#071B3A]">0</p>}
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {salesByDay.length ? salesByDay.map((group) => (
+                      <div key={group.day} className="rounded-xl bg-slate-50 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <strong className="text-sm text-[#071B3A]">{dayText(group.day)}</strong>
+                          <span className="text-xs font-bold text-slate-500">{group.rows.reduce((sum, row) => sum + Number(row.receipts || 0), 0)} ta to‘lov</span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {group.rows.map((row) => (
+                            <span key={`${group.day}-${row.currency}`} className="rounded-lg bg-white px-2 py-1 text-xs font-black text-[#071B3A]">
+                              {moneyText(row.amount, row.currency)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )) : <p className="text-sm font-semibold text-slate-500">Bu davrda tasdiqlangan savdo yo‘q.</p>}
+                  </div>
+                </section>
+                <section className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <h2 className="text-sm font-black text-[#071B3A]">To‘lovlar</h2>
+                  <div className="mt-2 space-y-2">
+                    {stats?.payments.length ? stats.payments.map((item, index) => (
+                      <div key={`${item.currency}-${item.status}-${index}`} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 text-sm">
+                        <span className="font-bold">{statusLabel[item.status] || item.status} · {item.currency}</span>
+                        <span className="font-black">{item.receipts} ta · {moneyText(item.amount, item.currency)}</span>
+                      </div>
+                    )) : <p className="text-sm font-semibold text-slate-500">Bu davrda to‘lov yo‘q.</p>}
+                  </div>
+                </section>
+                <section className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <h2 className="text-sm font-black text-[#071B3A]">Qarzlar</h2>
+                  <div className="mt-2 space-y-2">
+                    {stats?.debts.length ? stats.debts.map((item) => (
+                      <div key={item.currency} className="rounded-xl bg-red-50 p-3 text-sm">
+                        <button
+                          className="w-full text-left"
+                          type="button"
+                          onClick={() => setOpenDebtCurrency(openDebtCurrency === item.currency ? null : item.currency)}
+                        >
+                          <div className="flex justify-between gap-2"><strong>{item.clients} mijoz · {item.currency}</strong><strong>{moneyText(item.debt, item.currency)}</strong></div>
+                          <p className="mt-1 font-semibold text-red-700">Muddati o‘tgan: {moneyText(item.overdue, item.currency)}</p>
+                          <p className="mt-1 text-xs font-black text-red-500">{openDebtCurrency === item.currency ? 'Yopish' : 'Kim qarzdorligini ko‘rish'}</p>
+                        </button>
+                        {openDebtCurrency === item.currency && (
+                          <div className="mt-3 space-y-2">
+                            {item.debtors.length ? item.debtors.map((debtor) => (
+                              <article key={debtor.contract_id} className="rounded-xl bg-white p-3">
+                                <div className="flex justify-between gap-2">
+                                  <strong>#{debtor.user_id} · {debtor.first_name || 'Ism yo‘q'} {debtor.last_name || ''}</strong>
+                                  <strong>{moneyText(debtor.debt, item.currency)}</strong>
+                                </div>
+                                <p className="mt-1 text-xs font-semibold text-slate-500">{debtor.phone || 'telefon yo‘q'} · {debtor.source || 'manba yo‘q'} · {debtor.tariff}</p>
+                                <p className="mt-1 text-xs font-bold text-red-700">Muddat: {fmtDate(debtor.due_at)}{Number(debtor.pending) > 0 ? ` · Tekshiruvda: ${moneyText(debtor.pending, item.currency)}` : ''}</p>
+                              </article>
+                            )) : <p className="rounded-xl bg-white p-3 text-xs font-bold text-slate-500">Bu valyutada qarzdorlar ro‘yxati bo‘sh.</p>}
+                          </div>
+                        )}
+                      </div>
+                    )) : <p className="text-sm font-semibold text-slate-500">Hozir qarz yo‘q.</p>}
+                  </div>
+                </section>
+                <section className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <h2 className="text-sm font-black text-[#071B3A]">Tarix</h2>
+                  <div className="mt-2 space-y-2">
+                    {stats?.history.length ? stats.history.map((item) => (
+                      <article key={item.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                        <div className="flex justify-between gap-2">
+                          <strong>#{item.user_id} · {item.first_name} {item.last_name}</strong>
+                          <span className="font-black">{moneyText(item.amount, item.currency)}</span>
+                        </div>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">{item.phone || 'telefon yo‘q'} · {item.source} · {fmtDate(item.created_at)}</p>
+                        <p className="mt-2 text-xs font-black text-[#071B3A]">{statusLabel[item.status] || item.status} · Qarz: {moneyText(item.status === 'rejected' ? 0 : item.debt, item.currency)} · Tekshiruvda: {moneyText(item.status === 'rejected' ? 0 : item.pending, item.currency)}</p>
+                      </article>
+                    )) : <p className="text-sm font-semibold text-slate-500">Tarix bo‘sh.</p>}
+                  </div>
+                </section>
+              </>
+            )}
           </div>
         )}
       </section>

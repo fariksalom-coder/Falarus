@@ -26,6 +26,12 @@ const SOURCES = ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'] as
 const CURRENCIES = ['UZS', 'RUB', 'USD'] as const;
 const RECEIPT_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 const TZ_OFFSET_MS = 5 * 60 * 60 * 1000;
+const SALARY_PER_COURSE_UZS = 30000;
+const SALARY_BONUSES_UZS = [
+  { courses: 3, amount: 50000 },
+  { courses: 5, amount: 100000 },
+  { courses: 8, amount: 150000 },
+] as const;
 
 type MiniOperator = {
   id: number;
@@ -181,6 +187,10 @@ function statsRange(query: any): { from: string; to: string; label: string } {
   const period = String(query.period ?? 'today');
   const today = appDate();
   if (period === 'today') return { from: isoFromAppDate(today), to: isoFromAppDate(today, true), label: 'Bugun' };
+  if (period === 'yesterday') {
+    const date = appDate(Date.now() - 24 * 60 * 60 * 1000);
+    return { from: isoFromAppDate(date), to: isoFromAppDate(date, true), label: 'Kecha' };
+  }
   if (period === 'week') {
     const from = appDate(Date.now() - 6 * 24 * 60 * 60 * 1000);
     return { from: isoFromAppDate(from), to: isoFromAppDate(today, true), label: '7 kun' };
@@ -194,12 +204,34 @@ function statsRange(query: any): { from: string; to: string; label: string } {
     const toDate = String(query.to ?? '');
     return { from: isoFromAppDate(fromDate), to: isoFromAppDate(toDate || fromDate, true), label: 'Tanlangan davr' };
   }
+  if (period === 'all') return { from: '1970-01-01T00:00:00.000Z', to: isoFromAppDate(today, true), label: 'Barcha vaqt' };
   throw new Error('Davr noto‘g‘ri.');
 }
 
 function currentMonthRange(): { from: string; to: string } {
   const today = appDate();
   return { from: isoFromAppDate(`${today.slice(0, 8)}01`), to: isoFromAppDate(today, true) };
+}
+
+function salaryForCourses(courses: number) {
+  const soldCourses = Math.max(0, Math.floor(Number(courses) || 0));
+  const bonus = [...SALARY_BONUSES_UZS].reverse().find((tier) => soldCourses >= tier.courses) ?? null;
+  const next = SALARY_BONUSES_UZS.find((tier) => soldCourses < tier.courses) ?? null;
+  const baseAmount = soldCourses * SALARY_PER_COURSE_UZS;
+  const bonusAmount = bonus?.amount ?? 0;
+  return {
+    currency: 'UZS',
+    soldCourses,
+    perCourseAmount: SALARY_PER_COURSE_UZS,
+    baseAmount,
+    bonusAmount,
+    totalAmount: baseAmount + bonusAmount,
+    bonusTier: bonus,
+    nextTarget: next?.courses ?? null,
+    nextBonusAmount: next?.amount ?? null,
+    remainingToNext: next ? Math.max(0, next.courses - soldCourses) : 0,
+    tiers: SALARY_BONUSES_UZS,
+  };
 }
 
 async function storeMiniReceipt(file: Express.Multer.File) {
@@ -322,13 +354,56 @@ export function operatorMiniAppRoutes() {
        ORDER BY c.currency`,
       [op.id, monthRange.from, monthRange.to],
     )).rows;
+    const salaryRow = (await pool!.query(
+      `SELECT count(*)::int sold_courses
+       FROM operator_contracts
+       WHERE operator_id=$1
+         AND activated_at IS NOT NULL
+         AND activated_at>=$2
+         AND activated_at<$3`,
+      [op.id, range.from, range.to],
+    )).rows[0] ?? { sold_courses: 0 };
+    const salary = salaryForCourses(Number(salaryRow.sold_courses || 0));
+    const salaryDaysRaw = (await pool!.query(
+      `SELECT to_char((activated_at AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') day,
+              count(*)::int sold_courses
+       FROM operator_contracts
+       WHERE operator_id=$1
+         AND activated_at IS NOT NULL
+         AND activated_at>=$2
+         AND activated_at<$3
+       GROUP BY day
+       ORDER BY day DESC`,
+      [op.id, range.from, range.to],
+    )).rows;
+    const salaryDays = salaryDaysRaw.map((row) => {
+      const calc = salaryForCourses(Number(row.sold_courses || 0));
+      return {
+        day: row.day,
+        soldCourses: calc.soldCourses,
+        baseAmount: calc.baseAmount,
+        bonusAmount: calc.bonusAmount,
+        totalAmount: calc.totalAmount,
+      };
+    });
+    const salaryTariffs = (await pool!.query(
+      `SELECT tariff,count(*)::int sold_courses
+       FROM operator_contracts
+       WHERE operator_id=$1
+         AND activated_at IS NOT NULL
+         AND activated_at>=$2
+         AND activated_at<$3
+       GROUP BY tariff
+       ORDER BY sold_courses DESC,tariff`,
+      [op.id, range.from, range.to],
+    )).rows;
     const actions = (await pool!.query(
       `SELECT count(*)::int actions,count(distinct user_id)::int clients
        FROM operator_audit
        WHERE operator_id=$1 AND created_at>=$2 AND created_at<$3`,
       [op.id, range.from, range.to],
     )).rows[0] ?? { actions: 0, clients: 0 };
-    res.json({ range, payments, debts, history, actions, salesDays, salesMonth });
+    res.json({ range, payments, debts, history, actions, salesDays, salesMonth, salary, salaryDays, salaryTariffs });
   }));
 
   router.get('/customers', miniWrap(async (req, res) => {
