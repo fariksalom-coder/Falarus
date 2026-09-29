@@ -43,6 +43,14 @@ function leadFlowOwnerSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
   return '1=1';
 }
 
+function operatorVisibleLeadSql(alias = ''): string {
+  const p = alias ? `${alias}.` : '';
+  return `(
+    coalesce(${p}source, '') IN ('website', 'backfill', 'payment')
+    OR coalesce(${p}submitted_at, ${p}created_at) >= ((now() AT TIME ZONE 'Asia/Tashkent')::date::timestamp AT TIME ZONE 'Asia/Tashkent')
+  )`;
+}
+
 export type LeadListFilters = {
   status?: SalesCrmStatus | SalesCrmStatus[];
   operatorId?: number | null;
@@ -516,6 +524,7 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
 
   if (filters.scopeOperatorId) {
     add('l.assigned_operator_id = ?', filters.scopeOperatorId);
+    where.push(operatorVisibleLeadSql('l'));
   } else if (filters.operatorId != null) {
     if (filters.operatorId === 0) where.push('l.assigned_operator_id IS NULL');
     else add('l.assigned_operator_id = ?', filters.operatorId);
@@ -623,7 +632,7 @@ export async function getSalesLead(leadId: number, scopeOperatorId?: number | nu
   let scope = '';
   if (scopeOperatorId) {
     params.push(scopeOperatorId);
-    scope = ` AND l.assigned_operator_id = $2`;
+    scope = ` AND l.assigned_operator_id = $2 AND ${operatorVisibleLeadSql('l')}`;
   }
   const { rows } = await db.query(
     `SELECT
@@ -955,7 +964,10 @@ export async function listTasks(params: {
     where.push(sql.replace('?', `$${q.length}`));
   };
   const op = params.scopeOperatorId ?? params.operatorId;
-  if (op) add('t.operator_id = ?', op);
+  if (op) {
+    add('t.operator_id = ?', op);
+    where.push(operatorVisibleLeadSql('l'));
+  }
 
   if (params.bucket === 'overdue') {
     where.push(`t.status = 'open' AND t.scheduled_at < now()`);
@@ -989,23 +1001,26 @@ export async function getTaskSummary(scopeOperatorId?: number | null) {
   const db = requirePool();
   const params: unknown[] = [];
   let opFilter = '';
+  let leadJoin = '';
   if (scopeOperatorId) {
     params.push(scopeOperatorId);
-    opFilter = ` AND operator_id = $1`;
+    opFilter = ` AND t.operator_id = $1`;
+    leadJoin = `JOIN sales_crm_leads l ON l.id = t.lead_id AND ${operatorVisibleLeadSql('l')}`;
   }
   const { rows } = await db.query(
     `SELECT
-       count(*) FILTER (WHERE status = 'open' AND scheduled_at < now())::int AS overdue,
+       count(*) FILTER (WHERE t.status = 'open' AND t.scheduled_at < now())::int AS overdue,
        count(*) FILTER (
-         WHERE status = 'open'
-           AND scheduled_at::date = (now() AT TIME ZONE 'Asia/Tashkent')::date
+         WHERE t.status = 'open'
+           AND t.scheduled_at::date = (now() AT TIME ZONE 'Asia/Tashkent')::date
        )::int AS today,
        count(*) FILTER (
-         WHERE status = 'done'
-           AND completed_at::date = (now() AT TIME ZONE 'Asia/Tashkent')::date
+         WHERE t.status = 'done'
+           AND t.completed_at::date = (now() AT TIME ZONE 'Asia/Tashkent')::date
        )::int AS done_today,
-       count(*) FILTER (WHERE status = 'open')::int AS open_total
-     FROM sales_crm_tasks
+       count(*) FILTER (WHERE t.status = 'open')::int AS open_total
+     FROM sales_crm_tasks t
+     ${leadJoin}
      WHERE 1=1${opFilter}`,
     params,
   );
@@ -1030,6 +1045,7 @@ export async function getDashboard(params: {
   if (params.scopeOperatorId) {
     q.push(params.scopeOperatorId);
     leadWhere.push(`assigned_operator_id = $${q.length}`);
+    leadWhere.push(operatorVisibleLeadSql());
   }
   if (bounds.from) {
     q.push(bounds.from);
