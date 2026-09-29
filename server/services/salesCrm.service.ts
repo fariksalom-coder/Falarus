@@ -25,7 +25,7 @@ export type SalesCrmLeadFlow = 'promo' | 'platform';
 
 function leadFlowSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
   const p = alias ? `${alias}.` : '';
-  if (flow === 'promo') return `${p}source = 'landing'`;
+  if (flow === 'promo') return `coalesce(${p}source, '') NOT IN ('website', 'backfill', 'payment')`;
   if (flow === 'platform') return `coalesce(${p}source, '') IN ('website', 'backfill')`;
   return '1=1';
 }
@@ -182,6 +182,12 @@ export async function ingestUserAsSalesLead(params: {
   const phoneKey = normalizePhoneKey(params.phone);
   const externalKey = params.externalKey?.trim() || null;
   const resurfacePromo = params.assignment === 'promo';
+  let resurfacedOperatorId: number | null | undefined;
+  const getResurfacedOperatorId = async () => {
+    if (!resurfacePromo) return null;
+    if (resurfacedOperatorId === undefined) resurfacedOperatorId = await pickPromoOperator();
+    return resurfacedOperatorId;
+  };
 
   if (externalKey) {
     const { rows: byExt } = await db.query<{ id: number }>(
@@ -189,6 +195,7 @@ export async function ingestUserAsSalesLead(params: {
       [externalKey],
     );
     if (byExt[0]) {
+      const targetOperatorId = await getResurfacedOperatorId();
       await db.query(
         `UPDATE sales_crm_leads
          SET source = COALESCE($2, source),
@@ -204,6 +211,10 @@ export async function ingestUserAsSalesLead(params: {
              submitted_at = COALESCE($12::timestamptz, submitted_at),
              status = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
              next_contact_at = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
+             assigned_operator_id = CASE
+               WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN COALESCE($14::bigint, assigned_operator_id)
+               ELSE assigned_operator_id
+             END,
              last_action_at = now(),
              updated_at = now()
          WHERE id = $1`,
@@ -221,12 +232,14 @@ export async function ingestUserAsSalesLead(params: {
           params.sheetRowNumber ?? null,
           params.submittedAt ?? null,
           resurfacePromo,
+          targetOperatorId,
         ],
       );
       await addEvent(byExt[0].id, params.actorId ?? null, 'lead_refreshed', {
         external_key: externalKey,
         source: params.source ?? null,
         resurfaced: resurfacePromo,
+        reassigned_operator_id: targetOperatorId,
       });
       return { leadId: byExt[0].id, created: false };
     }
@@ -248,6 +261,7 @@ export async function ingestUserAsSalesLead(params: {
       [phone],
     );
     if (byPhone[0] && byPhone[0].user_id !== params.userId) {
+      const targetOperatorId = await getResurfacedOperatorId();
       await addEvent(byPhone[0].id, params.actorId ?? null, 'duplicate_registration', {
         attempted_user_id: params.userId,
         source: params.source ?? null,
@@ -267,6 +281,10 @@ export async function ingestUserAsSalesLead(params: {
              submitted_at = COALESCE($12::timestamptz, submitted_at),
              status = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
              next_contact_at = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
+             assigned_operator_id = CASE
+               WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN COALESCE($14::bigint, assigned_operator_id)
+               ELSE assigned_operator_id
+             END,
              last_action_at = now(),
              updated_at = now()
          WHERE id = $1`,
@@ -284,6 +302,7 @@ export async function ingestUserAsSalesLead(params: {
           params.sheetRowNumber ?? null,
           params.submittedAt ?? null,
           resurfacePromo,
+          targetOperatorId,
         ],
       );
       await addEvent(byPhone[0].id, params.actorId ?? null, 'lead_refreshed', {
@@ -291,6 +310,7 @@ export async function ingestUserAsSalesLead(params: {
         source: params.source ?? null,
         external_key: externalKey,
         resurfaced: resurfacePromo,
+        reassigned_operator_id: targetOperatorId,
       });
       return { leadId: byPhone[0].id, created: false };
     }
@@ -301,6 +321,7 @@ export async function ingestUserAsSalesLead(params: {
     [params.userId],
   );
   if (existing[0]) {
+    const targetOperatorId = await getResurfacedOperatorId();
     await db.query(
       `UPDATE sales_crm_leads
        SET phone_normalized = COALESCE($2, phone_normalized),
@@ -317,6 +338,10 @@ export async function ingestUserAsSalesLead(params: {
            submitted_at = COALESCE($13::timestamptz, submitted_at),
            status = CASE WHEN $14::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
            next_contact_at = CASE WHEN $14::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
+           assigned_operator_id = CASE
+             WHEN $14::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN COALESCE($15::bigint, assigned_operator_id)
+             ELSE assigned_operator_id
+           END,
            last_action_at = now(),
            updated_at = now()
        WHERE id = $1`,
@@ -335,12 +360,14 @@ export async function ingestUserAsSalesLead(params: {
         params.sheetRowNumber ?? null,
         params.submittedAt ?? null,
         resurfacePromo,
+        targetOperatorId,
       ],
     );
     await addEvent(existing[0].id, params.actorId ?? null, 'lead_refreshed', {
       source: params.source ?? null,
       external_key: externalKey,
       resurfaced: resurfacePromo,
+      reassigned_operator_id: targetOperatorId,
     });
     return { leadId: existing[0].id, created: false };
   }

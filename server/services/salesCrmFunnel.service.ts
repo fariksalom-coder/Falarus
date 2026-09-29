@@ -42,7 +42,7 @@ function requirePool() {
 }
 
 function flowFilterSql(flow?: SalesCrmLeadFlow | null): string {
-  if (flow === 'promo') return `source = 'landing'`;
+  if (flow === 'promo') return `coalesce(source, '') NOT IN ('website', 'backfill', 'payment')`;
   if (flow === 'platform') return `coalesce(source, '') IN ('website', 'backfill')`;
   return '1=1';
 }
