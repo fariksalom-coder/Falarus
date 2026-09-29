@@ -6,9 +6,11 @@ const EVENT_TYPES = new Set([
   'name_input',
   'phone_input',
   'submit_click',
+  'form_error',
   'lead_saved',
   'crm_lead_saved',
   'platform_click',
+  'page_exit',
 ]);
 
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
@@ -47,6 +49,22 @@ export function cleanPromoLandingPath(raw: unknown): string {
 export function cleanPromoUtm(body: Record<string, unknown>): Partial<Record<UtmKey, string | null>> {
   const result: Partial<Record<UtmKey, string | null>> = {};
   for (const key of UTM_KEYS) result[key] = cleanText(body[key]);
+  return result;
+}
+
+export function cleanPromoMetadata(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const source = raw as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  const textKeys = ['device', 'lang', 'referrerHost', 'step', 'errorCode'];
+  for (const key of textKeys) {
+    const value = cleanText(source[key], 80);
+    if (value) result[key] = value;
+  }
+  for (const key of ['width', 'height', 'timeMs']) {
+    const value = Number(source[key]);
+    if (Number.isFinite(value) && value >= 0 && value <= 24 * 60 * 60 * 1000) result[key] = Math.round(value);
+  }
   return result;
 }
 
@@ -126,11 +144,12 @@ export async function getPromoLandingAnalytics(period = '30d', db?: Pick<Pool, '
        COALESCE((SELECT sessions FROM event_totals WHERE event_type='name_input'),0)::int name_inputs,
        COALESCE((SELECT sessions FROM event_totals WHERE event_type='phone_input'),0)::int phone_inputs,
        COALESCE((SELECT sessions FROM event_totals WHERE event_type='submit_click'),0)::int submit_clicks,
-       COALESCE((SELECT sessions FROM event_totals WHERE event_type='lead_saved'),0)::int accepted,
-       COALESCE((SELECT sessions FROM event_totals WHERE event_type='crm_lead_saved'),0)::int crm_saved_sessions,
-       COALESCE((SELECT count(DISTINCT lead_id)::int FROM filtered WHERE event_type='crm_lead_saved' AND lead_id IS NOT NULL),0)::int crm_saved_leads,
-       COALESCE((SELECT leads FROM db_leads),0)::int db_leads,
-       COALESCE((SELECT sessions FROM event_totals WHERE event_type='platform_click'),0)::int platform_clicks`,
+      COALESCE((SELECT sessions FROM event_totals WHERE event_type='lead_saved'),0)::int accepted,
+      COALESCE((SELECT sessions FROM event_totals WHERE event_type='crm_lead_saved'),0)::int crm_saved_sessions,
+      COALESCE((SELECT count(DISTINCT lead_id)::int FROM filtered WHERE event_type='crm_lead_saved' AND lead_id IS NOT NULL),0)::int crm_saved_leads,
+      COALESCE((SELECT leads FROM db_leads),0)::int db_leads,
+      COALESCE((SELECT sessions FROM event_totals WHERE event_type='form_error'),0)::int form_errors,
+      COALESCE((SELECT sessions FROM event_totals WHERE event_type='platform_click'),0)::int platform_clicks`,
     [safePeriod],
   )).rows[0];
 
@@ -172,6 +191,7 @@ export async function getPromoLandingAnalytics(period = '30d', db?: Pick<Pool, '
        COALESCE(max(sessions) FILTER (WHERE event_type='lead_saved'),0)::int accepted,
        COALESCE(max(leads) FILTER (WHERE event_type='crm_lead_saved'),0)::int crm_saved_leads,
        COALESCE(d.db_leads,0)::int db_leads,
+       COALESCE(max(sessions) FILTER (WHERE event_type='form_error'),0)::int form_errors,
        COALESCE(max(sessions) FILTER (WHERE event_type='platform_click'),0)::int platform_clicks
      FROM all_days a
      LEFT JOIN event_days e ON e.day=a.day
@@ -180,5 +200,89 @@ export async function getPromoLandingAnalytics(period = '30d', db?: Pick<Pool, '
      ORDER BY a.day DESC`,
   )).rows;
 
-  return { period: safePeriod, totals: rows, daily };
+  const sessions = (await target.query(
+    `WITH bounds AS (
+       SELECT
+         CASE $1
+           WHEN 'today' THEN (now() AT TIME ZONE 'Asia/Tashkent')::date::timestamp AT TIME ZONE 'Asia/Tashkent'
+           WHEN 'yesterday' THEN (((now() AT TIME ZONE 'Asia/Tashkent')::date - 1)::timestamp AT TIME ZONE 'Asia/Tashkent')
+           WHEN '7d' THEN (((now() AT TIME ZONE 'Asia/Tashkent')::date - 6)::timestamp AT TIME ZONE 'Asia/Tashkent')
+           WHEN '30d' THEN (((now() AT TIME ZONE 'Asia/Tashkent')::date - 29)::timestamp AT TIME ZONE 'Asia/Tashkent')
+           WHEN 'month' THEN (date_trunc('month', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent')
+           ELSE NULL::timestamptz
+         END AS from_at,
+         CASE $1
+           WHEN 'yesterday' THEN ((now() AT TIME ZONE 'Asia/Tashkent')::date::timestamp AT TIME ZONE 'Asia/Tashkent')
+           ELSE NULL::timestamptz
+         END AS to_at
+     ),
+     filtered AS (
+       SELECT e.*
+       FROM promo_landing_events e, bounds b
+       WHERE (b.from_at IS NULL OR e.created_at >= b.from_at)
+         AND (b.to_at IS NULL OR e.created_at < b.to_at)
+     ),
+     grouped AS (
+       SELECT
+         session_id,
+         min(created_at) first_at,
+         max(created_at) last_at,
+         max(utm_source) FILTER (WHERE utm_source IS NOT NULL) utm_source,
+         max(utm_campaign) FILTER (WHERE utm_campaign IS NOT NULL) utm_campaign,
+         max(utm_content) FILTER (WHERE utm_content IS NOT NULL) utm_content,
+         max((metadata->>'device')) FILTER (WHERE metadata ? 'device') device,
+         max((metadata->>'lang')) FILTER (WHERE metadata ? 'lang') lang,
+         max((metadata->>'referrerHost')) FILTER (WHERE metadata ? 'referrerHost') referrer_host,
+         bool_or(event_type='page_view') page_view,
+         bool_or(event_type='name_input') name_input,
+         bool_or(event_type='phone_input') phone_input,
+         bool_or(event_type='submit_click') submit_click,
+         bool_or(event_type='form_error') form_error,
+         bool_or(event_type='lead_saved') lead_saved,
+         bool_or(event_type='crm_lead_saved') crm_lead_saved,
+         bool_or(event_type='platform_click') platform_click,
+         max((metadata->>'errorCode')) FILTER (WHERE event_type='form_error') error_code,
+         max((metadata->>'timeMs')::int) FILTER (WHERE event_type='page_exit' AND (metadata->>'timeMs') ~ '^[0-9]+$') time_ms
+       FROM filtered
+       GROUP BY session_id
+     )
+     SELECT
+       session_id,
+       first_at,
+       last_at,
+       GREATEST(0, EXTRACT(EPOCH FROM (last_at-first_at))::int) duration_seconds,
+       COALESCE(time_ms,0)::int time_ms,
+       utm_source,
+       utm_campaign,
+       utm_content,
+       device,
+       lang,
+       referrer_host,
+       error_code,
+       jsonb_build_object(
+         'page_view', page_view,
+         'name_input', name_input,
+         'phone_input', phone_input,
+         'submit_click', submit_click,
+         'form_error', form_error,
+         'lead_saved', lead_saved,
+         'crm_lead_saved', crm_lead_saved,
+         'platform_click', platform_click
+       ) steps,
+       CASE
+         WHEN crm_lead_saved THEN 'crm'
+         WHEN lead_saved THEN 'accepted'
+         WHEN form_error THEN 'error'
+         WHEN submit_click THEN 'submit'
+         WHEN phone_input THEN 'phone'
+         WHEN name_input THEN 'name'
+         ELSE 'open'
+       END last_step
+     FROM grouped
+     ORDER BY first_at DESC
+     LIMIT 80`,
+    [safePeriod],
+  )).rows;
+
+  return { period: safePeriod, totals: rows, daily, sessions };
 }

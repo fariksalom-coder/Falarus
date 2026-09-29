@@ -64,20 +64,51 @@ export default function PromoRussianPage() {
   const source = useMemo(() => utmPayload(), []);
   const sessionId = useMemo(() => promoSessionId(), []);
   const tracked = useRef(new Set<string>());
+  const startedAt = useRef(Date.now());
+  const lastStep = useRef('open');
+  const exitTracked = useRef(false);
 
-  function track(eventType: string) {
-    if (eventType !== 'submit_click' && tracked.current.has(eventType)) return;
+  function sessionMetadata(extra: Record<string, unknown> = {}) {
+    let referrerHost = '';
+    try {
+      referrerHost = document.referrer ? new URL(document.referrer).host : '';
+    } catch {
+      referrerHost = '';
+    }
+    return {
+      device: window.innerWidth <= 640 ? 'mobile' : 'desktop',
+      width: window.innerWidth,
+      height: window.innerHeight,
+      lang: navigator.language || '',
+      referrerHost,
+      step: lastStep.current,
+      ...extra,
+    };
+  }
+
+  function track(eventType: string, metadata: Record<string, unknown> = {}) {
+    if (!['submit_click', 'form_error', 'page_exit'].includes(eventType) && tracked.current.has(eventType)) return;
     tracked.current.add(eventType);
     void fetch(apiUrl('/api/promo/russian-event'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventType, sessionId, ...source }),
+      body: JSON.stringify({ eventType, sessionId, ...source, metadata: sessionMetadata(metadata) }),
       keepalive: true,
     }).catch(() => undefined);
   }
 
   useEffect(() => {
     track('page_view');
+    const onPageHide = () => {
+      if (exitTracked.current) return;
+      exitTracked.current = true;
+      track('page_exit', { timeMs: Date.now() - startedAt.current });
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      onPageHide();
+    };
   }, []);
 
   async function submit(e: FormEvent) {
@@ -86,10 +117,12 @@ export default function PromoRussianPage() {
     setError('');
     if (form.name.trim().length < 2) {
       setError('Ismingizni kiriting.');
+      track('form_error', { errorCode: 'name_required' });
       return;
     }
     if (uzPhoneDigits(form.phone).length !== 9) {
       setError('Telefon raqamini to‘liq kiriting.');
+      track('form_error', { errorCode: 'phone_incomplete' });
       return;
     }
     setBusy(true);
@@ -107,10 +140,12 @@ export default function PromoRussianPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(String(data.error || 'Ariza yuborilmadi.'));
+      lastStep.current = 'accepted';
       track('lead_saved');
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ariza yuborilmadi.');
+      track('form_error', { errorCode: 'server_error' });
     } finally {
       setBusy(false);
     }
@@ -158,7 +193,10 @@ export default function PromoRussianPage() {
                     value={form.name}
                     onChange={(e) => {
                       setForm((s) => ({ ...s, name: e.target.value }));
-                      if (e.target.value.trim().length >= 2) track('name_input');
+                      if (e.target.value.trim().length >= 2) {
+                        lastStep.current = 'name';
+                        track('name_input');
+                      }
                     }}
                     autoComplete="name"
                     className="mt-1 h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[16px] font-bold outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
@@ -173,7 +211,10 @@ export default function PromoRussianPage() {
                     onChange={(e) => {
                       const value = formatUzPhone(e.target.value);
                       setForm((s) => ({ ...s, phone: value }));
-                      if (uzPhoneDigits(value).length >= 9) track('phone_input');
+                      if (uzPhoneDigits(value).length >= 9) {
+                        lastStep.current = 'phone';
+                        track('phone_input');
+                      }
                     }}
                     onFocus={() => setForm((s) => ({ ...s, phone: formatUzPhone(s.phone) }))}
                     autoComplete="tel"
@@ -202,7 +243,10 @@ export default function PromoRussianPage() {
                   <button
                     type="submit"
                     disabled={busy}
-                    onClick={() => track('submit_click')}
+                    onClick={() => {
+                      lastStep.current = 'submit';
+                      track('submit_click');
+                    }}
                     className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-[15px] font-black text-white shadow-lg shadow-blue-600/25 transition active:scale-[0.99] disabled:opacity-65"
                   >
                     {busy ? 'Yuborilmoqda…' : 'Ariza yuborish'}

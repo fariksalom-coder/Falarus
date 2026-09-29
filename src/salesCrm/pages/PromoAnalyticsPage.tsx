@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, RefreshCw } from 'lucide-react';
-import { salesCrmApi, type PromoAnalytics } from '../api';
+import { salesCrmApi, type PromoAnalytics, type PromoSession } from '../api';
 import { useSalesCrmAuth } from '../auth';
 
 const metrics = [
@@ -10,6 +10,7 @@ const metrics = [
   { key: 'submit_clicks', label: 'Yuborish' },
   { key: 'accepted', label: 'Qabul' },
   { key: 'db_leads', label: 'CRM lid' },
+  { key: 'form_errors', label: 'Xato' },
   { key: 'platform_clicks', label: 'Platforma' },
 ] as const;
 
@@ -60,10 +61,38 @@ function dayValue(row: PromoAnalytics['daily'][number], key: MetricKey, todayKey
   return n(value);
 }
 
+const stepLabels: Record<PromoSession['last_step'], { label: string; className: string }> = {
+  open: { label: 'Faqat ochdi', className: 'bg-slate-100 text-slate-600' },
+  name: { label: 'Ism yozdi', className: 'bg-blue-50 text-blue-700' },
+  phone: { label: 'Telefon yozdi', className: 'bg-indigo-50 text-indigo-700' },
+  submit: { label: 'Yubordi', className: 'bg-amber-50 text-amber-700' },
+  error: { label: 'Xato', className: 'bg-red-50 text-red-700' },
+  accepted: { label: 'Qabul', className: 'bg-emerald-50 text-emerald-700' },
+  crm: { label: 'CRM lid', className: 'bg-[#071B3A] text-white' },
+};
+
+function timeText(session: PromoSession) {
+  const seconds = Math.max(session.duration_seconds || 0, Math.round((session.time_ms || 0) / 1000));
+  if (!seconds) return '−';
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}
+
+function dateTime(value: string) {
+  return new Date(value).toLocaleString('uz-UZ', {
+    timeZone: 'Asia/Tashkent',
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export default function PromoAnalyticsPage() {
   const { agent } = useSalesCrmAuth();
   const [period, setPeriod] = useState('30d');
   const [data, setData] = useState<PromoAnalytics | null>(null);
+  const [view, setView] = useState<'summary' | 'sessions'>('summary');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
@@ -97,6 +126,8 @@ export default function PromoAnalyticsPage() {
   const primaryTotal = Number(totals?.page_views || 0);
   const crmTotal = Number(totals?.db_leads || 0);
   const platformTotal = Number(totals?.platform_clicks || 0);
+  const sessions = data?.sessions ?? [];
+  const openedOnly = sessions.filter((session) => session.last_step === 'open').length;
 
   return (
     <div className="space-y-4">
@@ -132,6 +163,101 @@ export default function PromoAnalyticsPage() {
 
       {err ? <div className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{err}</div> : null}
 
+      <div className="grid w-full grid-cols-2 gap-1 rounded-2xl bg-slate-200 p-1 md:w-[360px]">
+        {[
+          ['summary', 'Umumiy'],
+          ['sessions', 'Sessiyalar'],
+        ].map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setView(key as 'summary' | 'sessions')}
+            className={`h-10 rounded-xl text-sm font-black ${view === key ? 'bg-white text-[#071B3A] shadow-sm' : 'text-slate-500'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'sessions' ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+              <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">Sessiya</p>
+              <p className="mt-2 text-2xl font-black text-slate-950">{countText(sessions.length)}</p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+              <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">Faqat ochdi</p>
+              <p className="mt-2 text-2xl font-black text-red-600">{countText(openedOnly)}</p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+              <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">Xato</p>
+              <p className="mt-2 text-2xl font-black text-amber-600">{countText(totals?.form_errors)}</p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+              <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">CRM lid</p>
+              <p className="mt-2 text-2xl font-black text-emerald-600">{countText(totals?.db_leads)}</p>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-[22px] bg-white shadow-sm ring-1 ring-slate-200">
+            <div className="border-b border-slate-100 px-4 py-3">
+              <h3 className="text-base font-black text-slate-950">Oxirgi sessiyalar</h3>
+              <p className="text-xs font-bold text-slate-400">Shaxsiy ma’lumotlarsiz: faqat qadamlar, UTM va qurilma.</p>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {sessions.length ? sessions.map((session) => {
+                const badge = stepLabels[session.last_step] ?? stepLabels.open;
+                return (
+                  <article key={session.session_id} className="p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-3 py-1 text-xs font-black ${badge.className}`}>{badge.label}</span>
+                          <span className="text-xs font-bold text-slate-400">{dateTime(session.first_at)} · {timeText(session)}</span>
+                        </div>
+                        <p className="mt-2 text-sm font-black text-slate-950">
+                          {session.utm_source || 'source yo‘q'} · {session.utm_campaign || 'campaign yo‘q'}
+                        </p>
+                        <p className="mt-1 text-xs font-bold text-slate-400">
+                          {session.device || 'device yo‘q'} · {session.lang || 'lang yo‘q'} · {session.referrer_host || 'referrer yo‘q'}
+                        </p>
+                      </div>
+                      {session.error_code ? (
+                        <span className="rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-700">{session.error_code}</span>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {[
+                        ['page_view', 'Ochdi'],
+                        ['name_input', 'Ism'],
+                        ['phone_input', 'Telefon'],
+                        ['submit_click', 'Yuborish'],
+                        ['lead_saved', 'Qabul'],
+                        ['crm_lead_saved', 'CRM'],
+                      ].map(([key, label]) => (
+                        <span
+                          key={key}
+                          className={`rounded-lg px-2 py-1 text-[11px] font-black ${
+                            session.steps?.[key as keyof PromoSession['steps']]
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-100 text-slate-400'
+                          }`}
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </article>
+                );
+              }) : (
+                <p className="p-4 text-sm font-semibold text-slate-500">Bu davrda sessiya yo‘q.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="rounded-[22px] bg-[#071B3A] p-4 text-white shadow-sm">
         <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-center">
           <div className="rounded-2xl bg-white/8 p-4 ring-1 ring-white/10">
@@ -167,8 +293,10 @@ export default function PromoAnalyticsPage() {
           <p className="mt-2 text-2xl font-black text-slate-950">{countText(platformTotal)}</p>
         </div>
       </div>
+        </>
+      )}
 
-      <div className="overflow-hidden rounded-[22px] bg-white shadow-sm ring-1 ring-slate-200">
+      {view === 'summary' ? <div className="overflow-hidden rounded-[22px] bg-white shadow-sm ring-1 ring-slate-200">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
           <div>
             <h3 className="text-base font-black text-slate-950">Kunlar bo‘yicha</h3>
@@ -212,7 +340,7 @@ export default function PromoAnalyticsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> : null}
     </div>
   );
 }

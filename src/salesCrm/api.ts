@@ -139,13 +139,32 @@ export type PromoAnalyticsRow = {
   accepted: number;
   crm_saved_leads: number;
   db_leads: number;
+  form_errors: number;
   platform_clicks: number;
+};
+
+export type PromoSession = {
+  session_id: string;
+  first_at: string;
+  last_at: string;
+  duration_seconds: number;
+  time_ms: number;
+  utm_source: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  device: string | null;
+  lang: string | null;
+  referrer_host: string | null;
+  error_code: string | null;
+  steps: Partial<Record<'page_view' | 'name_input' | 'phone_input' | 'submit_click' | 'form_error' | 'lead_saved' | 'crm_lead_saved' | 'platform_click', boolean>>;
+  last_step: 'open' | 'name' | 'phone' | 'submit' | 'error' | 'accepted' | 'crm';
 };
 
 export type PromoAnalytics = {
   period: string;
   totals: Omit<PromoAnalyticsRow, 'day'> & { crm_saved_sessions: number };
   daily: PromoAnalyticsRow[];
+  sessions: PromoSession[];
 };
 
 export type FunnelReport = {

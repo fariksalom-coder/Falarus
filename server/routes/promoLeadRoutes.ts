@@ -5,6 +5,7 @@ import { normalizePhoneInputToE164, sanitizePhoneRaw } from '../../shared/authId
 import { ingestUserAsSalesLead } from '../services/salesCrm.service.js';
 import {
   cleanPromoLandingPath,
+  cleanPromoMetadata,
   cleanPromoSessionId,
   cleanPromoUtm,
   recordPromoLandingEvent,
@@ -105,6 +106,7 @@ export function createPromoLeadRoutes(): Router {
         eventType: String(req.body?.eventType ?? ''),
         landingPage: cleanPromoLandingPath(req.body?.landingPage),
         utm: cleanPromoUtm(req.body ?? {}),
+        metadata: cleanPromoMetadata(req.body?.metadata),
       });
       res.status(202).json({ ok: true });
     } catch {
