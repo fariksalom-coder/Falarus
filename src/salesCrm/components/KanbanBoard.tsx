@@ -11,6 +11,7 @@ import {
   type SalesCrmStatus,
 } from '../../../shared/salesCrm';
 import type { LeadRow } from '../api';
+import RetryStatus from './RetryStatus';
 
 type SiteMilestoneColumn = {
   id: 'access' | 'first_login' | 'support_group';
@@ -324,7 +325,7 @@ function KanbanCard({
   const overdue =
     lead.next_contact_at &&
     new Date(lead.next_contact_at).getTime() < Date.now() &&
-    !['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE'].includes(lead.status);
+    !['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE', 'LOW_QUALITY', 'NO_ANSWER'].includes(lead.status);
 
   return (
     <article
@@ -361,7 +362,7 @@ function KanbanCard({
         ) : null}
         {overdue ? (
           <span className="rounded-full bg-red-50 px-2 py-0.5 font-bold text-red-700">Muddati o‘tgan</span>
-        ) : lead.next_contact_at ? (
+        ) : lead.next_contact_at && lead.status !== 'NO_ANSWER' ? (
           <span className="rounded-full bg-slate-50 px-2 py-0.5 text-slate-600">
             {new Date(lead.next_contact_at).toLocaleString('uz-UZ', {
               day: '2-digit',
@@ -373,6 +374,7 @@ function KanbanCard({
         ) : null}
       </div>
 
+      <RetryStatus lead={lead} />
       <label className="mt-2 block md:opacity-0 md:transition md:group-hover:opacity-100 md:group-focus-within:opacity-100 md:pointer-coarse:opacity-100">
         <span className="sr-only">Bosqich</span>
         <select

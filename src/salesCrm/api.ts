@@ -255,6 +255,8 @@ export type LeadRow = {
   operator_name: string | null;
   assigned_operator_id: number | null;
   next_contact_at: string | null;
+  no_answer_attempts?: number;
+  no_answer_retry_at?: string | null;
   last_contact_at: string | null;
   created_at: string;
   support_group_at?: string | null;

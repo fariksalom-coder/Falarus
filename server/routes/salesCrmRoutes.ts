@@ -297,7 +297,7 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
         res.status(400).json({ error: 'Noto‘g‘ri status' });
         return;
       }
-      await changeLeadStatus({
+      const result = await changeLeadStatus({
         leadId,
         status,
         actorId: id,
@@ -306,7 +306,7 @@ export function createSalesCrmRoutes(supabase: DbClient, leadDb?: Pick<Pool, 'qu
         comment: req.body?.comment != null ? String(req.body.comment) : null,
         nextContactAt: req.body?.nextContactAt != null ? String(req.body.nextContactAt) : null,
       });
-      res.json({ ok: true });
+      res.json({ ok: true, ...result });
     } catch (e) {
       const err = e as Error & { status?: number; code?: string };
       if (err.status === 400) {

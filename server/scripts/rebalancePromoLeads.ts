@@ -13,7 +13,7 @@ import 'dotenv/config';
 import { pool } from '../lib/db';
 import { PROMO_LEADS_SINCE } from '../services/salesCrm.service';
 
-const FINAL_STATUSES = ['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE'];
+const FINAL_STATUSES = ['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE', 'LOW_QUALITY'];
 const apply = process.argv.includes('--apply');
 
 const PROMO_SINCE_SQL = `

@@ -2,7 +2,7 @@
  * salesCrm.service.ts — inbound lead pipeline (isolated from Support CRM).
  * Source of truth for identity: users. Pipeline state: sales_crm_*.
  */
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { salesLeadSearch } from './salesCrmSearch';
 import { pool } from '../lib/db.js';
 import {
@@ -20,10 +20,25 @@ function requirePool() {
   return pool;
 }
 
+async function leadTransaction<T>(run: (db: PoolClient) => Promise<T>): Promise<T> {
+  const db = await requirePool().connect();
+  try {
+    await db.query('BEGIN');
+    const result = await run(db);
+    await db.query('COMMIT');
+    return result;
+  } catch (error) {
+    await db.query('ROLLBACK');
+    throw error;
+  } finally {
+    db.release();
+  }
+}
+
 export type SalesCrmAgentRole = 'admin' | 'operator';
 export type SalesCrmLeadFlow = 'promo' | 'platform';
 
-const SALES_CRM_TERMINAL_STATUSES = ['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE'] as const;
+const SALES_CRM_TERMINAL_STATUSES = ['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE', 'LOW_QUALITY'] as const;
 
 function leadFlowSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
   const p = alias ? `${alias}.` : '';
@@ -82,8 +97,8 @@ async function addEvent(
   actorId: number | null,
   eventType: string,
   payload: Record<string, unknown> = {},
+  db: Pick<Pool, 'query'> = requirePool(),
 ): Promise<void> {
-  const db = requirePool();
   await db.query(
     `INSERT INTO sales_crm_events (lead_id, actor_id, event_type, payload)
      VALUES ($1, $2, $3, $4::jsonb)`,
@@ -578,13 +593,13 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
   if (filters.createdTo) add('l.created_at <= ?::timestamptz', filters.createdTo);
 
   if (filters.nextContact === 'overdue') {
-    where.push(`l.next_contact_at IS NOT NULL AND l.next_contact_at < now() AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`);
+    where.push(`l.next_contact_at IS NOT NULL AND l.next_contact_at < now() AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE','LOW_QUALITY','NO_ANSWER')`);
   } else if (filters.nextContact === 'today') {
     where.push(`l.next_contact_at::date = (now() AT TIME ZONE 'Asia/Tashkent')::date`);
   } else if (filters.nextContact === 'tomorrow') {
     where.push(`l.next_contact_at::date = ((now() AT TIME ZONE 'Asia/Tashkent')::date + 1)`);
   } else if (filters.nextContact === 'none') {
-    where.push(`l.next_contact_at IS NULL AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`);
+    where.push(`l.next_contact_at IS NULL AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE','LOW_QUALITY')`);
   }
 
   const search = salesLeadSearch(filters.q, params);
@@ -610,6 +625,7 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
        l.id, l.user_id, l.status, l.source, l.utm_source, l.medium, l.campaign, l.ad, l.utm_content, l.utm_term,
        l.assigned_operator_id, l.phone_normalized,
        l.last_contact_at, l.next_contact_at, l.last_action_at,
+       l.no_answer_attempts, l.no_answer_retry_at,
        l.paid_amount, l.paid_currency, l.paid_at, l.support_group_at,
        acc.access_at, fl.first_login_at,
        l.created_at, l.updated_at,
@@ -751,87 +767,91 @@ export async function changeLeadStatus(params: {
   comment?: string | null;
   nextContactAt?: string | null;
 }) {
-  const db = requirePool();
-  const scopeParams: unknown[] = [params.leadId];
-  let scope = '';
-  if (params.scopeOperatorId) {
-    scopeParams.push(params.scopeOperatorId);
-    scope = ` AND assigned_operator_id = $2`;
-  }
-  const { rows } = await db.query<{ status: string; assigned_operator_id: number | null }>(
-    `SELECT status, assigned_operator_id FROM sales_crm_leads WHERE id = $1${scope}`,
-    scopeParams,
-  );
-  if (!rows[0]) throw Object.assign(new Error('Lead topilmadi'), { status: 404 });
-  const old = rows[0].status;
-  const reqs = stageMoveRequirements(params.status);
-  const comment = String(params.comment || '').trim();
-  const nextRaw = params.nextContactAt ? String(params.nextContactAt).trim() : '';
+  return leadTransaction(async (db) => {
+    const scopeParams: unknown[] = [params.leadId];
+    let scope = '';
+    if (params.scopeOperatorId) {
+      scopeParams.push(params.scopeOperatorId);
+      scope = ` AND assigned_operator_id = $2`;
+    }
+    const { rows } = await db.query<{ status: string; assigned_operator_id: number | null }>(
+      `SELECT status, assigned_operator_id FROM sales_crm_leads WHERE id = $1${scope} FOR UPDATE`,
+      scopeParams,
+    );
+    if (!rows[0]) throw Object.assign(new Error('Lead topilmadi'), { status: 404 });
+    const old = rows[0].status;
+    const reqs = stageMoveRequirements(params.status);
+    const comment = String(params.comment || '').trim();
+    const nextRaw = params.status === 'NO_ANSWER' ? '' : String(params.nextContactAt || '').trim();
+    let effectiveStatus: string = params.status;
 
-  if (reqs.requireComment && comment.length < 2) {
-    throw Object.assign(new Error('Bu bosqich uchun izoh majburiy'), {
-      status: 400,
-      code: 'COMMENT_REQUIRED',
-    });
-  }
-  if (reqs.requireNextContact) {
-    const when = new Date(nextRaw);
-    if (!nextRaw || Number.isNaN(when.getTime())) {
-      throw Object.assign(new Error('Keyingi kontakt vaqti aniq ko‘rsatilishi shart'), {
+    if (reqs.requireComment && comment.length < 2) {
+      throw Object.assign(new Error('Bu bosqich uchun izoh majburiy'), {
         status: 400,
-        code: 'NEXT_CONTACT_REQUIRED',
+        code: 'COMMENT_REQUIRED',
       });
     }
-  }
+    if (reqs.requireNextContact) {
+      const when = new Date(nextRaw);
+      if (!nextRaw || Number.isNaN(when.getTime())) {
+        throw Object.assign(new Error('Keyingi kontakt vaqti aniq ko‘rsatilishi shart'), {
+          status: 400,
+          code: 'NEXT_CONTACT_REQUIRED',
+        });
+      }
+    }
 
-  if (old === 'PAID' && params.status !== 'PAID' && !params.confirmPaidDowngrade) {
-    throw Object.assign(new Error('PAID statusni o‘zgartirish uchun tasdiq kerak'), {
-      status: 409,
-      code: 'CONFIRM_PAID_DOWNGRADE',
-    });
-  }
+    if (old === 'PAID' && params.status !== 'PAID' && !params.confirmPaidDowngrade) {
+      throw Object.assign(new Error('PAID statusni o‘zgartirish uchun tasdiq kerak'), {
+        status: 409,
+        code: 'CONFIRM_PAID_DOWNGRADE',
+      });
+    }
 
-  if (old !== params.status) {
-    await db.query(
-      `UPDATE sales_crm_leads
-       SET status = $2, last_action_at = now(), updated_at = now()
-       WHERE id = $1`,
-      [params.leadId, params.status],
-    );
-    await addEvent(params.leadId, params.actorId, 'status_changed', {
-      from: old,
-      to: params.status,
-    });
-    await markPresentationIfImplied(params.leadId, { status: params.status });
-  }
+    if (old !== params.status) {
+      const changed = await db.query<{ status: string }>(
+        `UPDATE sales_crm_leads
+         SET status = $2, last_action_at = now(), updated_at = now()
+         WHERE id = $1 RETURNING status`,
+        [params.leadId, params.status],
+      );
+      effectiveStatus = changed.rows[0].status;
+      await addEvent(params.leadId, params.actorId, 'status_changed', {
+        from: old,
+        to: effectiveStatus,
+      }, db);
+      await markPresentationIfImplied(params.leadId, { status: effectiveStatus }, db);
+    }
 
-  if ((SALES_CRM_TERMINAL_STATUSES as readonly string[]).includes(params.status)) {
-    await db.query(
-      `UPDATE sales_crm_tasks
-       SET status = 'cancelled', completed_at = now()
-       WHERE lead_id = $1 AND status = 'open'`,
-      [params.leadId],
-    );
-  }
+    const terminal = (SALES_CRM_TERMINAL_STATUSES as readonly string[]).includes(effectiveStatus);
+    if (terminal) {
+      await db.query(
+        `UPDATE sales_crm_tasks
+         SET status = 'cancelled', completed_at = now()
+         WHERE lead_id = $1 AND status = 'open'`,
+        [params.leadId],
+      );
+    }
 
-  if (comment) {
-    await addLeadComment(params.leadId, params.actorId, comment, params.scopeOperatorId);
-  }
+    if (comment) {
+      await addLeadComment(params.leadId, params.actorId, comment, params.scopeOperatorId, db);
+    }
 
-  if (nextRaw) {
-    const operatorId = rows[0].assigned_operator_id || params.actorId;
-    await scheduleTask({
-      leadId: params.leadId,
-      operatorId,
-      scheduledAt: nextRaw,
-      note: comment || `Bosqich: ${params.status}`,
-      actorId: params.actorId,
-    });
-  }
+    if (nextRaw && !terminal) {
+      const operatorId = rows[0].assigned_operator_id || params.actorId;
+      await scheduleTask({
+        leadId: params.leadId,
+        operatorId,
+        scheduledAt: nextRaw,
+        note: comment || `Bosqich: ${params.status}`,
+        actorId: params.actorId,
+      }, db);
+    }
+    return { status: effectiveStatus };
+  });
 }
 
-export async function addLeadComment(leadId: number, agentId: number, comment: string, scopeOperatorId?: number | null) {
-  const db = requirePool();
+export async function addLeadComment(leadId: number, agentId: number, comment: string, scopeOperatorId?: number | null, db: Pick<Pool, 'query'> = requirePool()) {
   const text = comment.trim();
   if (!text) throw Object.assign(new Error('Izoh bo‘sh'), { status: 400 });
   if (scopeOperatorId) {
@@ -849,7 +869,7 @@ export async function addLeadComment(leadId: number, agentId: number, comment: s
     `UPDATE sales_crm_leads SET last_action_at = now(), updated_at = now() WHERE id = $1`,
     [leadId],
   );
-  await addEvent(leadId, agentId, 'comment', { preview: text.slice(0, 120) });
+  await addEvent(leadId, agentId, 'comment', { preview: text.slice(0, 120) }, db);
 }
 
 export async function scheduleTask(params: {
@@ -859,11 +879,16 @@ export async function scheduleTask(params: {
   note?: string | null;
   actorId: number;
   cancelOpenDuplicates?: boolean;
-}) {
-  const db = requirePool();
+}, db?: Pick<Pool, 'query'>): Promise<number> {
+  if (!db) return leadTransaction((tx) => scheduleTask(params, tx));
   const when = new Date(params.scheduledAt);
   if (Number.isNaN(when.getTime())) {
     throw Object.assign(new Error('Noto‘g‘ri sana'), { status: 400 });
+  }
+  const { rows: leads } = await db.query<{ status: string }>('SELECT status FROM sales_crm_leads WHERE id = $1 FOR UPDATE', [params.leadId]);
+  if (!leads[0]) throw Object.assign(new Error('Lead topilmadi'), { status: 404 });
+  if (leads[0].status === 'NO_ANSWER' || (SALES_CRM_TERMINAL_STATUSES as readonly string[]).includes(leads[0].status)) {
+    throw Object.assign(new Error('Bu bosqichda qo‘lda qo‘ng‘iroq rejalashtirib bo‘lmaydi'), { status: 400 });
   }
   if (params.cancelOpenDuplicates !== false) {
     await db.query(
@@ -887,7 +912,7 @@ export async function scheduleTask(params: {
   await addEvent(params.leadId, params.actorId, 'task_scheduled', {
     task_id: rows[0].id,
     scheduled_at: when.toISOString(),
-  });
+  }, db);
   return rows[0].id;
 }
 
@@ -921,77 +946,80 @@ export async function logCall(params: {
   nextContactAt?: string | null;
   scopeOperatorId?: number | null;
 }) {
-  const db = requirePool();
-  const scopeParams: unknown[] = [params.leadId];
-  let scope = '';
-  if (params.scopeOperatorId) {
-    scopeParams.push(params.scopeOperatorId);
-    scope = ` AND assigned_operator_id = $2`;
-  }
-  const { rows: leadRows } = await db.query<{ id: number; status: string; assigned_operator_id: number | null }>(
-    `SELECT id, status, assigned_operator_id FROM sales_crm_leads WHERE id = $1${scope}`,
-    scopeParams,
-  );
-  if (!leadRows[0]) throw Object.assign(new Error('Lead topilmadi'), { status: 404 });
+  return leadTransaction(async (db) => {
+    const scopeParams: unknown[] = [params.leadId];
+    let scope = '';
+    if (params.scopeOperatorId) {
+      scopeParams.push(params.scopeOperatorId);
+      scope = ` AND assigned_operator_id = $2`;
+    }
+    const { rows: leadRows } = await db.query<{ id: number; status: string; assigned_operator_id: number | null; next_contact_at: string | null }>(
+      `SELECT id, status, assigned_operator_id, next_contact_at FROM sales_crm_leads WHERE id = $1${scope} FOR UPDATE`,
+      scopeParams,
+    );
+    if (!leadRows[0]) throw Object.assign(new Error('Lead topilmadi'), { status: 404 });
 
-  const nextStatus = statusAfterCallResult(params.result);
-  let nextAt: string | null = null;
-  if (params.nextContactAt) {
-    const d = new Date(params.nextContactAt);
-    if (Number.isNaN(d.getTime())) throw Object.assign(new Error('Noto‘g‘ri sana'), { status: 400 });
-    nextAt = d.toISOString();
-  }
+    let nextStatus: SalesCrmStatus = statusAfterCallResult(params.result);
+    const automaticRetry = nextStatus === 'NO_ANSWER';
+    if (automaticRetry && ['NO_ANSWER', 'LOW_QUALITY'].includes(leadRows[0].status)) {
+      return { status: leadRows[0].status, nextContactAt: leadRows[0].next_contact_at };
+    }
+    if (leadRows[0].status === 'PAID') {
+      throw Object.assign(new Error('To‘langan lid bosqichini avval tasdiqlab o‘zgartiring'), { status: 409 });
+    }
+    let nextAt: string | null = null;
+    if (params.nextContactAt && !automaticRetry) {
+      const d = new Date(params.nextContactAt);
+      if (Number.isNaN(d.getTime())) throw Object.assign(new Error('Noto‘g‘ri sana'), { status: 400 });
+      nextAt = d.toISOString();
+    }
 
-  await db.query(
-    `INSERT INTO sales_crm_calls (lead_id, operator_id, answered, result, comment, next_contact_at)
-     VALUES ($1,$2,$3,$4,$5,$6)`,
-    [
-      params.leadId,
-      params.operatorId,
-      params.answered,
-      params.result,
-      params.comment?.slice(0, 2000) ?? null,
-      nextAt,
-    ],
-  );
+    await db.query(
+      `UPDATE sales_crm_tasks SET status = 'done', completed_at = now()
+       WHERE lead_id = $1 AND status = 'open' AND scheduled_at <= now() + interval '2 hours'`,
+      [params.leadId],
+    );
+    const changed = await db.query<{ status: SalesCrmStatus; next_contact_at: string | null }>(
+      `UPDATE sales_crm_leads
+       SET status = $2,
+           last_contact_at = now(),
+           next_contact_at = $3,
+           last_action_at = now(),
+           updated_at = now()
+       WHERE id = $1 RETURNING status, next_contact_at`,
+      [params.leadId, nextStatus, nextAt],
+    );
+    nextStatus = changed.rows[0].status;
+    nextAt = changed.rows[0].next_contact_at;
 
-  await db.query(
-    `UPDATE sales_crm_leads
-     SET status = $2,
-         last_contact_at = now(),
-         next_contact_at = $3,
-         last_action_at = now(),
-         updated_at = now()
-     WHERE id = $1`,
-    [params.leadId, nextStatus, nextAt],
-  );
+    await db.query(
+      `INSERT INTO sales_crm_calls (lead_id, operator_id, answered, result, comment, next_contact_at)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [params.leadId, params.operatorId, params.answered, params.result,
+        params.comment?.slice(0, 2000) ?? null, nextAt],
+    );
 
-  await db.query(
-    `UPDATE sales_crm_tasks SET status = 'done', completed_at = now()
-     WHERE lead_id = $1 AND status = 'open' AND scheduled_at <= now() + interval '2 hours'`,
-    [params.leadId],
-  );
+    if (nextAt && !automaticRetry) {
+      await scheduleTask({
+        leadId: params.leadId,
+        operatorId: leadRows[0].assigned_operator_id || params.operatorId,
+        scheduledAt: nextAt,
+        note: params.comment ?? null,
+        actorId: params.operatorId,
+      }, db);
+    }
 
-  if (nextAt) {
-    await scheduleTask({
-      leadId: params.leadId,
-      operatorId: params.operatorId,
-      scheduledAt: nextAt,
-      note: params.comment ?? null,
-      actorId: params.operatorId,
-    });
-  }
+    await markPresentationIfImplied(params.leadId, { callResult: params.result }, db);
 
-  await markPresentationIfImplied(params.leadId, { callResult: params.result });
+    await addEvent(params.leadId, params.operatorId, 'call_logged', {
+      answered: params.answered,
+      result: params.result,
+      status: nextStatus,
+      next_contact_at: nextAt,
+    }, db);
 
-  await addEvent(params.leadId, params.operatorId, 'call_logged', {
-    answered: params.answered,
-    result: params.result,
-    status: nextStatus,
-    next_contact_at: nextAt,
+    return { status: nextStatus, nextContactAt: nextAt };
   });
-
-  return { status: nextStatus, nextContactAt: nextAt };
 }
 
 export async function listTasks(params: {
@@ -1012,7 +1040,7 @@ export async function listTasks(params: {
     where.push(operatorVisibleLeadSql('l'));
     if (params.scopeOperatorId) add('l.assigned_operator_id = ?', params.scopeOperatorId);
   }
-  where.push(`l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`);
+  where.push(`l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE','LOW_QUALITY')`);
 
   if (params.bucket === 'overdue') {
     where.push(`t.status = 'open' AND t.scheduled_at < now()`);
@@ -1054,11 +1082,11 @@ export async function getTaskSummary(scopeOperatorId?: number | null) {
       ON l.id = t.lead_id
      AND l.assigned_operator_id = $1
      AND ${operatorVisibleLeadSql('l')}
-     AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`;
+     AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE','LOW_QUALITY')`;
   } else {
     leadJoin = `JOIN sales_crm_leads l
       ON l.id = t.lead_id
-     AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`;
+     AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE','LOW_QUALITY')`;
   }
   const { rows } = await db.query(
     `SELECT
@@ -1127,7 +1155,7 @@ export async function getDashboard(params: {
     `SELECT count(*)::int AS n FROM sales_crm_leads
      WHERE ${w}
        AND next_contact_at IS NULL
-       AND status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')`,
+       AND status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE','LOW_QUALITY')`,
     q,
   );
 
@@ -1234,7 +1262,7 @@ export async function getOperatorStats(params: {
        coalesce(sum(l.paid_amount) FILTER (WHERE l.status = 'PAID'), 0)::float AS paid_sum,
        count(DISTINCT l.id) FILTER (
          WHERE l.next_contact_at IS NULL
-           AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE')
+           AND l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE','LOW_QUALITY')
        )::int AS no_next_action,
        (
          SELECT count(*)::int FROM sales_crm_tasks t

@@ -5,6 +5,7 @@ import { salesCrmApi, type LeadRow } from '../api';
 import KanbanBoard, { OperatorBadge, type StageMovePayload } from '../components/KanbanBoard';
 import { useSalesCrmAuth } from '../auth';
 import { SALES_CRM_STATUS_LABELS, type SalesCrmStatus } from '../../../shared/salesCrm';
+import RetryStatus from '../components/RetryStatus';
 
 export default function LeadsPage() {
   const [params, setParams] = useSearchParams();
@@ -20,9 +21,9 @@ export default function LeadsPage() {
   const { agent } = useSalesCrmAuth();
   const isAdmin = agent?.role === 'admin';
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     const id = ++requestId.current;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setErr('');
     try {
       const p = new URLSearchParams();
@@ -50,6 +51,15 @@ export default function LeadsPage() {
     const timer = setTimeout(() => void load(), 250);
     return () => { clearTimeout(timer); requestId.current++; };
   }, [load]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible' && busyId === null) void load(true);
+    };
+    const timer = window.setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [load, busyId]);
 
   function search(value: string) {
     const next = new URLSearchParams(params);
@@ -218,6 +228,7 @@ export default function LeadsPage() {
               { key: '', label: 'Hammasi' },
               { key: 'NEW', label: 'Yangi' },
               { key: 'NO_ANSWER', label: 'Ko‘tarmadi' },
+              { key: 'LOW_QUALITY', label: 'Sifatsiz lidlar' },
               { key: 'INVALID_PHONE', label: 'Noto‘g‘ri raqam' },
               { key: 'CALLBACK', label: 'Keyinroq' },
               { key: 'THINKING', label: 'O‘ylab' },
@@ -259,6 +270,7 @@ export default function LeadsPage() {
                     <p className="font-bold">
                       {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Nomsiz'}
                     </p>
+                    <RetryStatus lead={lead} />
                     <p className="mt-0.5 text-sm text-slate-500">
                       {lead.phone || lead.phone_normalized}
                     </p>

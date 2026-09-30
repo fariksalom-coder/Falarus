@@ -386,12 +386,13 @@ export async function setLeadMilestone(params: {
 export async function markPresentationIfImplied(
   leadId: number,
   signal: { callResult?: string; status?: string },
+  db: Pick<NonNullable<typeof pool>, 'query'> = requirePool(),
 ): Promise<void> {
   const implied =
     (signal.callResult && PRESENTATION_CALL_RESULTS.includes(signal.callResult)) ||
     (signal.status && PRESENTATION_STATUSES.includes(signal.status));
   if (!implied) return;
-  await requirePool().query(
+  await db.query(
     `UPDATE sales_crm_leads SET presentation_at = now()
      WHERE id = $1 AND presentation_at IS NULL`,
     [leadId],

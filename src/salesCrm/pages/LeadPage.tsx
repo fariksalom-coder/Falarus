@@ -4,6 +4,7 @@ import { Check, Phone } from 'lucide-react';
 import { salesCrmApi, type LeadDetail, type OperatorRow } from '../api';
 import { useSalesCrmAuth } from '../auth';
 import { StageMoveModal, type PendingMove, type StageMovePayload } from '../components/KanbanBoard';
+import RetryStatus from '../components/RetryStatus';
 import {
   SALES_CRM_ANSWERED_RESULTS,
   SALES_CRM_CALL_RESULT_LABELS,
@@ -12,6 +13,7 @@ import {
   SALES_CRM_STATUS_LABELS,
   SALES_CRM_STATUSES,
   SALES_FUNNEL_STAGES,
+  statusAfterCallResult,
   type SalesCrmCallResult,
   type SalesCrmStatus,
 } from '../../../shared/salesCrm';
@@ -49,6 +51,7 @@ export default function LeadPage() {
   const [statusErr, setStatusErr] = useState('');
   const [statusBusy, setStatusBusy] = useState(false);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  const automaticRetry = statusAfterCallResult(result) === 'NO_ANSWER';
 
   const tel = useMemo(() => {
     const raw = String(data?.lead.phone || data?.lead.phone_normalized || '');
@@ -69,8 +72,17 @@ export default function LeadPage() {
     }
   }, [leadId, agent?.role]);
 
+  useEffect(() => {
+    if (data?.lead.status !== 'NO_ANSWER' || busy || statusBusy) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void reload().catch(() => {});
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [leadId, data?.lead.status, busy, statusBusy]);
+
   async function onCallResult(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setErr('');
     try {
@@ -79,7 +91,7 @@ export default function LeadPage() {
         answered,
         result,
         comment: comment || undefined,
-        nextContactAt: nextAt || null,
+        nextContactAt: automaticRetry ? null : nextAt || null,
       });
       setComment('');
       setNextAt('');
@@ -151,7 +163,8 @@ export default function LeadPage() {
           </span>
         </div>
 
-        {!lead.next_contact_at && !['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE'].includes(String(lead.status)) ? (
+        <RetryStatus lead={lead} />
+        {!lead.next_contact_at && !['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE', 'LOW_QUALITY'].includes(String(lead.status)) ? (
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
             ⚠ Keyingi amal yo‘q
           </p>
@@ -243,7 +256,7 @@ export default function LeadPage() {
           </optgroup>
         </select>
 
-        {(SALES_CRM_NO_ANSWER_RESULTS as readonly string[]).includes(result) ? (
+        {result === 'busy' ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {[
               { label: '2 soat', at: plusHours(2) },
@@ -266,7 +279,15 @@ export default function LeadPage() {
           </div>
         ) : null}
 
-        <label className="mt-3 block text-xs font-bold text-slate-600">
+        {automaticRetry ? (
+          <p className="mt-3 text-sm font-medium text-slate-600">
+            {['NO_ANSWER', 'LOW_QUALITY'].includes(lead.status)
+              ? SALES_CRM_STATUS_LABELS[lead.status as SalesCrmStatus]
+              : Number(lead.no_answer_attempts || 0) >= 4
+                ? '5-urinish: Sifatsiz lidlar'
+                : `Qayta urinish: ${[2, 4, 12, 24][Number(lead.no_answer_attempts || 0)]} soat`}
+          </p>
+        ) : <label className="mt-3 block text-xs font-bold text-slate-600">
           Keyingi kontakt
           <input
             type="datetime-local"
@@ -274,7 +295,7 @@ export default function LeadPage() {
             value={nextAt ? toLocalInput(nextAt) : ''}
             onChange={(e) => setNextAt(e.target.value ? new Date(e.target.value).toISOString() : '')}
           />
-        </label>
+        </label>}
 
         <label className="mt-3 block text-xs font-bold text-slate-600">
           Izoh
@@ -289,7 +310,7 @@ export default function LeadPage() {
 
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || (automaticRetry && ['NO_ANSWER', 'LOW_QUALITY'].includes(lead.status))}
           className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-blue-600 text-sm font-bold text-white disabled:opacity-60"
         >
           Saqlash
@@ -305,7 +326,9 @@ export default function LeadPage() {
                 {new Date(ev.created_at).toLocaleString('uz-UZ')}
                 {ev.actor_name ? ` · ${ev.actor_name}` : ''}
               </p>
-              <p className="font-semibold">{ev.event_type}</p>
+              <p className="font-semibold">{ev.event_type === 'no_answer_retry'
+                ? 'Javobsiz qo‘ng‘iroq'
+                : ev.event_type === 'no_answer_returned' ? 'Yangi lidlarga qaytarildi' : ev.event_type}</p>
             </li>
           ))}
         </ul>

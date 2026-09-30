@@ -11,6 +11,7 @@ export const SALES_CRM_STATUSES = [
   'PAID',
   'NO_ANSWER',
   'INVALID_PHONE',
+  'LOW_QUALITY',
   'CALLBACK',
   'NOT_INTERESTED',
   'ARCHIVED',
@@ -29,6 +30,7 @@ export const SALES_CRM_STATUS_LABELS: Record<SalesCrmStatus, string> = {
   PAID: 'To‘ladi',
   NO_ANSWER: 'Ko‘tarmadi',
   INVALID_PHONE: 'Noto‘g‘ri raqam',
+  LOW_QUALITY: 'Sifatsiz lidlar',
   CALLBACK: 'Keyinroq',
   NOT_INTERESTED: 'Rad etdi',
   ARCHIVED: 'Arxiv',
@@ -148,6 +150,16 @@ export const SALES_CRM_KANBAN_COLUMNS: SalesCrmKanbanColumn[] = [
     requireComment: true,
     requireNextContact: false,
     commentPlaceholder: 'Nima uchun rad etdi…',
+  },
+  {
+    id: 'low_quality',
+    title: 'Sifatsiz lidlar',
+    hint: '5 marta javob bermadi',
+    dropStatus: 'LOW_QUALITY',
+    group: ['LOW_QUALITY'],
+    tone: 'slate',
+    requireComment: false,
+    requireNextContact: false,
   },
 ];
 
