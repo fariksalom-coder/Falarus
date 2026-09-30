@@ -1,4 +1,4 @@
-import { useMemo, useState, type DragEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type DragEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   SALES_CRM_KANBAN_COLUMNS,
@@ -383,6 +383,20 @@ function KanbanCard({
   );
 }
 
+const QUICK_TIMES: { label: string; at: () => Date }[] = [
+  { label: '+1 soat', at: () => new Date(Date.now() + 3600_000) },
+  { label: '+3 soat', at: () => new Date(Date.now() + 3 * 3600_000) },
+  { label: 'Ertaga 10:00', at: () => tomorrowAt(10) },
+  { label: 'Ertaga 18:00', at: () => tomorrowAt(18) },
+];
+
+function tomorrowAt(hour: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(hour, 0, 0, 0);
+  return d;
+}
+
 export function StageMoveModal({
   pending,
   busy,
@@ -399,6 +413,27 @@ export function StageMoveModal({
   const [comment, setComment] = useState('');
   const [nextLocal, setNextLocal] = useState(defaultNextLocal(column.id === 'later' ? 2 : 24));
   const [err, setErr] = useState('');
+  // On phones autofocus pops the keyboard over the whole sheet before the operator reads it.
+  const [focusComment] = useState(() => {
+    try {
+      return window.matchMedia('(pointer: fine)').matches;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busy) onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [busy, onClose]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -424,82 +459,85 @@ export function StageMoveModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !busy) onClose();
+      }}
+    >
       <form
         onSubmit={(e) => void submit(e)}
-        className="w-full max-w-md rounded-[24px] bg-white p-5 shadow-xl ring-1 ring-slate-200"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stage-move-title"
+        className="flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-[24px] bg-white shadow-xl ring-1 ring-slate-200 sm:rounded-[24px]"
       >
-        <p className="text-xs font-bold uppercase tracking-wide text-blue-600">{column.title}</p>
-        <h3 className="mt-1 text-lg font-black text-slate-900">{name}</h3>
-        <p className="mt-1 text-sm text-slate-500">{column.hint}</p>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4 pt-3 sm:pt-5">
+          <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" aria-hidden="true" />
+          <p className="text-xs font-bold uppercase tracking-wide text-blue-600">{column.title}</p>
+          <h3 id="stage-move-title" className="mt-1 break-words text-lg font-black text-slate-900">
+            {name}
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">{column.hint}</p>
 
-        {column.requireComment ? (
-          <label className="mt-4 block">
-            <span className="text-xs font-bold text-slate-600">Izoh *</span>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              placeholder={column.commentPlaceholder || 'Qisqa izoh…'}
-              className="mt-1 min-h-[88px] w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm"
-              autoFocus
-            />
-          </label>
-        ) : null}
+          {column.requireComment ? (
+            <label className="mt-4 block">
+              <span className="text-xs font-bold text-slate-600">Izoh *</span>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={3}
+                placeholder={column.commentPlaceholder || 'Qisqa izoh…'}
+                className="mt-1 min-h-[96px] w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:text-sm"
+                autoFocus={focusComment}
+              />
+            </label>
+          ) : null}
 
-        {column.requireNextContact ? (
-          <label className="mt-3 block">
-            <span className="text-xs font-bold text-slate-600">Keyingi kontakt (aniq vaqt) *</span>
-            <input
-              type="datetime-local"
-              value={nextLocal}
-              onChange={(e) => setNextLocal(e.target.value)}
-              className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 px-3 text-sm"
-            />
-            <div className="mt-2 flex flex-wrap gap-2">
-              {[
-                { label: '+1 soat', h: 1 },
-                { label: '+3 soat', h: 3 },
-                { label: 'Ertaga 18:00', h: -1 },
-              ].map((q) => (
-                <button
-                  key={q.label}
-                  type="button"
-                  className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700"
-                  onClick={() => {
-                    if (q.h < 0) {
-                      const d = new Date();
-                      d.setDate(d.getDate() + 1);
-                      d.setHours(18, 0, 0, 0);
-                      setNextLocal(toDatetimeLocalValue(d));
-                    } else {
-                      setNextLocal(defaultNextLocal(q.h));
-                    }
-                  }}
-                >
-                  {q.label}
-                </button>
-              ))}
+          {column.requireNextContact ? (
+            <div className="mt-4">
+              <label className="block">
+                <span className="text-xs font-bold text-slate-600">Keyingi kontakt (aniq vaqt) *</span>
+                <input
+                  type="datetime-local"
+                  value={nextLocal}
+                  onChange={(e) => setNextLocal(e.target.value)}
+                  className="mt-1 block min-h-12 w-full min-w-0 appearance-none rounded-2xl border border-slate-200 bg-white px-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:text-sm"
+                />
+              </label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {QUICK_TIMES.map((q) => (
+                  <button
+                    key={q.label}
+                    type="button"
+                    className="min-h-11 rounded-xl bg-slate-100 px-2 text-xs font-bold text-slate-700 transition hover:bg-slate-200 active:scale-[0.97]"
+                    onClick={() => setNextLocal(toDatetimeLocalValue(q.at()))}
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </label>
-        ) : null}
+          ) : null}
 
-        {err ? <p className="mt-3 text-sm text-red-600">{err}</p> : null}
+          {err ? <p className="mt-3 text-sm font-semibold text-red-600">{err}</p> : null}
+        </div>
 
-        <div className="mt-5 flex gap-2">
+        <div className="flex gap-2 border-t border-slate-100 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 flex-1 rounded-2xl bg-slate-100 text-sm font-bold text-slate-700"
+            disabled={busy}
+            className="min-h-12 flex-1 rounded-2xl bg-slate-100 text-sm font-bold text-slate-700 transition active:scale-[0.98] disabled:opacity-60"
           >
             Bekor
           </button>
           <button
             type="submit"
             disabled={busy}
-            className="min-h-11 flex-1 rounded-2xl bg-blue-600 text-sm font-bold text-white disabled:opacity-60"
+            className="min-h-12 flex-1 rounded-2xl bg-blue-600 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
           >
-            Saqlash
+            {busy ? 'Saqlanmoqda…' : 'Saqlash'}
           </button>
         </div>
       </form>
