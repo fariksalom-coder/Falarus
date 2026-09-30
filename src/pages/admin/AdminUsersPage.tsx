@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getUsers, type AdminUserRow } from '../../api/admin';
-import { AlertCircle, UserPlus, MessageSquareText, KeyRound, Check, Copy, X } from 'lucide-react';
+import { AlertCircle, UserPlus, MessageSquareText, KeyRound, Check, Copy, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { adminParolTiklashById } from '../../api/parolTiklash';
 import { adminPath } from '../../constants/adminPath';
 
@@ -9,6 +9,17 @@ export default function AdminUsersPage() {
   const [list, setList] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [params, setParams] = useSearchParams();
+  const page = Math.max(1, Number(params.get('page')) || 1);
+  const date = params.get('date') || '';
+  const query = params.get('q') || '';
+  const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
+  function filter(key: string, value: string) {
+    const next = new URLSearchParams(params);
+    if (value) next.set(key, value); else next.delete(key);
+    next.delete('page'); setParams(next, { replace: true });
+  }
   const [registered, setRegistered] = useState('');
   const [subscription, setSubscription] = useState('');
   const [referralOnly, setReferralOnly] = useState(false);
@@ -45,21 +56,27 @@ export default function AdminUsersPage() {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
-    getUsers({
+    setList([]);
+    setTotal(0);
+    setError('');
+    const timer = window.setTimeout(() => getUsers({
+      page, date, q: query,
       registered: registered || undefined,
       subscription: subscription || undefined,
       referral: referralOnly || undefined,
-    })
-      .then(setList)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [registered, subscription, referralOnly]);
+    }, controller.signal)
+      .then(r => { if (!controller.signal.aborted) { setList(r.items); setTotal(r.total); setPageSize(r.pageSize); } })
+      .catch((e) => { if (!controller.signal.aborted) setError(e.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); }), 250);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [registered, subscription, referralOnly, page, date, query]);
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h1 className="text-2xl font-semibold text-app-text">Users</h1>
+        <h1 className="text-2xl font-semibold text-app-text">Foydalanuvchilar</h1>
         <Link
           to={adminPath('/users/create')}
           className="inline-flex items-center gap-2 rounded-xl bg-app-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-app-primary-deep"
@@ -70,9 +87,13 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
+        <input type="search" aria-label="Ism, telefon yoki email" placeholder="Ism, telefon yoki email" value={query} onChange={e => filter('q', e.target.value)} className="min-h-11 min-w-0 rounded-lg border border-slate-300 px-3 text-sm" />
+        <label className="text-xs text-app-text-muted">Ro‘yxatdan o‘tgan sana
+          <input type="date" value={date} onChange={e => filter('date', e.target.value)} className="ml-2 min-h-11 rounded-lg border border-slate-300 px-2 text-sm" />
+        </label>
         <select
           value={registered}
-          onChange={(e) => setRegistered(e.target.value)}
+          onChange={(e) => { setRegistered(e.target.value); filter('date', ''); }}
           className="rounded-lg border border-slate-300 bg-app-surface px-3 py-2 text-sm"
         >
           <option value="">All time</option>
@@ -82,7 +103,7 @@ export default function AdminUsersPage() {
         </select>
         <select
           value={subscription}
-          onChange={(e) => setSubscription(e.target.value)}
+          onChange={(e) => { setSubscription(e.target.value); filter('page', ''); }}
           className="rounded-lg border border-slate-300 bg-app-surface px-3 py-2 text-sm"
         >
           <option value="">All</option>
@@ -94,7 +115,7 @@ export default function AdminUsersPage() {
           <input
             type="checkbox"
             checked={referralOnly}
-            onChange={(e) => setReferralOnly(e.target.checked)}
+            onChange={(e) => { setReferralOnly(e.target.checked); filter('page', ''); }}
             className="rounded border-slate-300"
           />
           Referral users only
@@ -141,7 +162,7 @@ export default function AdminUsersPage() {
                     <td className="py-3 px-4 text-app-text">{u.email ?? '—'}</td>
                     <td className="py-3 px-4 text-app-text-muted">{u.phone ?? '—'}</td>
                     <td className="py-3 px-4 text-app-text-muted">
-                      {u.registration_date ? new Date(u.registration_date).toLocaleDateString() : '—'}
+                      {u.registration_date ? new Date(u.registration_date).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : '—'}
                     </td>
                     <td className="py-3 px-4">{u.subscription_type}</td>
                     <td className="py-3 px-4">
@@ -201,6 +222,15 @@ export default function AdminUsersPage() {
         {!loading && list.length === 0 && (
           <div className="p-8 text-center text-app-text-muted">No users found.</div>
         )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <span>{total.toLocaleString()} ta · Toshkent vaqti (UTC+5)</span>
+        <div className="flex items-center gap-3">
+          <button type="button" title="Oldingi sahifa" aria-label="Oldingi sahifa" disabled={loading || page <= 1} onClick={() => { const p = new URLSearchParams(params); p.set('page', String(page - 1)); setParams(p); }} className="min-h-11 min-w-11 rounded-lg border bg-white disabled:opacity-40"><ChevronLeft className="mx-auto" size={18} /></button>
+          <span>{page} / {Math.max(1, Math.ceil(total / pageSize))}</span>
+          <button type="button" title="Keyingi sahifa" aria-label="Keyingi sahifa" disabled={loading || page * pageSize >= total} onClick={() => { const p = new URLSearchParams(params); p.set('page', String(page + 1)); setParams(p); }} className="min-h-11 min-w-11 rounded-lg border bg-white disabled:opacity-40"><ChevronRight className="mx-auto" size={18} /></button>
+        </div>
       </div>
 
       {/* Parol tiklash oynasi. Amal qaytmaydi, shuning uchun tasdiq so'raladi. */}

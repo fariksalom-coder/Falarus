@@ -319,17 +319,29 @@ export async function getDashboard(): Promise<DashboardStats> {
 }
 
 export async function getUsers(params?: {
+  page?: number;
+  q?: string;
+  date?: string;
   registered?: string;
   subscription?: string;
   referral?: boolean;
-}): Promise<AdminUserRow[]> {
+}, signal?: AbortSignal): Promise<{ items: AdminUserRow[]; total: number; page: number; pageSize: number }> {
   const sp = new URLSearchParams();
+  if (params?.page) sp.set('page', String(params.page));
+  if (params?.q) sp.set('q', params.q);
+  if (params?.date) sp.set('date', params.date);
   if (params?.registered) sp.set('registered', params.registered);
   if (params?.subscription) sp.set('subscription', params.subscription);
   if (params?.referral) sp.set('referral', 'true');
   const q = sp.toString();
-  return adminApi<AdminUserRow[]>(`/users${q ? `?${q}` : ''}`);
+  return adminApi(`/users${q ? `?${q}` : ''}`, { signal });
 }
+
+export function getRegistrations(month: string, signal?: AbortSignal) {
+  return adminApi<{ days: { day: string; count: number }[]; total: number; timezone: string }>(`/registrations?month=${encodeURIComponent(month)}`, { signal });
+}
+
+export function getAdminUnreadCount() { return adminApi<{ count: number }>('/help/unread-count'); }
 
 export type AdminCreateUserResponse = {
   user: {
@@ -412,6 +424,10 @@ export type AdminUserManageSnapshot = {
 export async function lookupAdminUserByPhone(phone: string): Promise<AdminUserManageSnapshot> {
   const q = encodeURIComponent(phone.trim());
   return adminApi<AdminUserManageSnapshot>(`/users/lookup?phone=${q}`);
+}
+
+export function getAdminUserManage(id: number): Promise<AdminUserManageSnapshot> {
+  return adminApi(`/users/${id}/manage`);
 }
 
 export async function freezeAdminUser(id: number, reason?: string): Promise<AdminUserManageSnapshot> {

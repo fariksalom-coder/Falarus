@@ -14,6 +14,8 @@ import { ochirXabarMediasi } from '../services/mediaTozalash.service.js';
 import { operatorAdminRoutes } from '../operator/admin.js';
 import { operatorReceipt } from '../operator/routes.js';
 import { enabled as operatorEnabled } from '../operator/service.js';
+import { readAdminUsers, readAdminRegistrations, readAdminUnreadCount } from '../services/adminUsersRead.service.js';
+import { loadUserManageSnapshot } from '../services/adminUserManage.service.js';
 
 const TEACHER_OWNER_SELECT = [
   'user_id',
@@ -75,6 +77,7 @@ export function createAdminRoutes(supabase: DbClient): Router {
   // Bundan keyingi HAMMA yo'l admin tokenini talab qiladi. `/login` ataylab
   // yuqorida — u token bermaydi, balki tokenni beradigan yagona yo'l.
   router.use(createAdminAuthMiddleware(supabase));
+  router.get('/me', (_req, res) => res.json({ ok: true }));
   router.use('/kiosk', createAdminKioskRoutes());
   router.use('/video-lessons', createAdminVideoLessonRoutes());
   router.use('/dictation', createAdminDictationRoutes());
@@ -216,10 +219,19 @@ export function createAdminRoutes(supabase: DbClient): Router {
 
   // One-shot XP backfill — iterates all users, recomputes total_points from
   // user_kunlik_day_progress + streak + time. Safe to re-run.
-  router.get('/users', (req, res, next) => ctrl.getUsers(req, res).catch(next));
+  router.get('/users', (req, res, next) => readAdminUsers(req.query).then(data => res.json(data)).catch(error => {
+    if (error.status === 400) res.status(400).json({ error: error.message }); else next(error);
+  }));
+  router.get('/registrations', (req, res, next) => readAdminRegistrations(req.query.month ? String(req.query.month) : undefined).then(data => res.json(data)).catch(error => {
+    if (error.status === 400) res.status(400).json({ error: error.message }); else next(error);
+  }));
+  router.get('/help/unread-count', (_req, res, next) => readAdminUnreadCount().then(data => res.json(data)).catch(next));
   router.post('/users', (req, res, next) => ctrl.createUser(req, res).catch(next));
   // `lookup` :id dan OLDIN — aks holda "lookup" id deb o‘qiladi.
   router.get('/users/lookup', (req, res, next) => ctrl.lookupUserByPhone(req, res).catch(next));
+  router.get('/users/:id/manage', (req, res, next) => loadUserManageSnapshot(supabase, Number(req.params.id)).then(data => {
+    if (!data) res.status(404).json({ error: 'Foydalanuvchi topilmadi' }); else res.json(data);
+  }).catch(next));
   router.post('/users/:id/freeze', (req, res, next) => ctrl.freezeUser(req, res).catch(next));
   router.post('/users/:id/unfreeze', (req, res, next) => ctrl.unfreezeUser(req, res).catch(next));
   router.post('/users/:id/revoke-access', (req, res, next) => ctrl.revokeUserAccess(req, res).catch(next));

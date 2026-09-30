@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import RegistrationReport from './RegistrationReport';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle,
@@ -342,6 +343,14 @@ function DailyPaymentsChart({ rows: rowsInput }: { rows: DailyPaymentRow[] }) {
 }
 
 export default function AdminDashboardPage() {
+  return <div className="space-y-6">
+    <h1 className="text-2xl font-semibold text-app-text">Umumiy holat</h1>
+    <RegistrationReport />
+    <DashboardSummary />
+  </div>;
+}
+
+function DashboardSummary() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -423,10 +432,9 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="ui-page-header flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-app-text">Umumiy holat</h1>
-          <p className="ui-description">Foydalanuvchilar, to'lovlar, support va referral holati.</p>
+          <h2 className="text-lg font-semibold text-app-text">Platforma ko‘rsatkichlari</h2>
         </div>
         <Link
           to={adminPath('/users/create')}

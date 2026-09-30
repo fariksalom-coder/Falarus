@@ -96,7 +96,7 @@ export async function loadUserManageSnapshot(
     .eq('id', uid)
     .maybeSingle();
   if (error) throw error;
-  if (!user) return null;
+  if (!user || (user as { is_golden?: boolean }).is_golden) return null;
 
   const nowIso = new Date().toISOString();
   const planExpires = (user as { plan_expires_at?: string | null }).plan_expires_at ?? null;

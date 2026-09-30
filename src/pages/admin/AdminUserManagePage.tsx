@@ -1,8 +1,11 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Ban, Search, Snowflake, Sun, Undo2 } from 'lucide-react';
+import { AlertCircle, Ban, Search, Snowflake, Sun, Undo2, UserRound, CreditCard, MessageSquare } from 'lucide-react';
+import ParolTiklashPanel from '../../components/support/ParolTiklashPanel';
+import { adminParolTiklashById } from '../../api/parolTiklash';
 import {
   freezeAdminUser,
+  getAdminUserManage,
   lookupAdminUserByPhone,
   revokeAdminUserAccess,
   unfreezeAdminUser,
@@ -12,10 +15,10 @@ import { adminPath } from '../../constants/adminPath';
 
 function fmt(date: string | null | undefined): string {
   if (!date) return '—';
-  return new Date(date).toLocaleString('uz');
+  return new Date(date).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', hourCycle: 'h23' });
 }
 
-export default function AdminUserManagePage() {
+export default function AdminUserManagePage({ userId }: { userId?: number } = {}) {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(false);
@@ -23,19 +26,30 @@ export default function AdminUserManagePage() {
   const [info, setInfo] = useState('');
   const [user, setUser] = useState<AdminUserManageSnapshot | null>(null);
   const [freezeReason, setFreezeReason] = useState('');
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    setUser(null); setError(''); setLoading(true);
+    getAdminUserManage(userId).then(r => { if (!cancelled) setUser(r); })
+      .catch(e => { if (!cancelled) setError(e.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [userId]);
 
   async function handleSearch(e?: FormEvent) {
     e?.preventDefault();
+    if (acting || loading) return;
     const q = phone.trim();
-    if (q.length < 7) {
+    if (!userId && q.length < 7) {
       setError('Telefon raqamini kiriting (kamida 7 raqam)');
       return;
     }
     setLoading(true);
     setError('');
     setInfo('');
+    setUser(null); setFreezeReason('');
     try {
-      const snap = await lookupAdminUserByPhone(q);
+      const snap = userId ? await getAdminUserManage(userId) : await lookupAdminUserByPhone(q);
       setUser(snap);
     } catch (err) {
       setUser(null);
@@ -81,11 +95,9 @@ export default function AdminUserManagePage() {
   const day = user?.day_progress;
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
+      {!userId ? <>
       <h1 className="mb-2 text-2xl font-semibold text-app-text">Foydalanuvchini boshqarish</h1>
-      <p className="mb-6 text-sm text-app-text-muted">
-        Telefon bo‘yicha toping: oxirgi kirish, kunlik progress, muzlatish yoki to‘lovni bekor qilish.
-      </p>
 
       <form onSubmit={handleSearch} className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex-1 text-xs font-medium text-app-text-muted">
@@ -101,13 +113,15 @@ export default function AdminUserManagePage() {
         </label>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || acting}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-app-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-app-primary-deep disabled:opacity-50"
         >
           <Search className="h-4 w-4" />
           {loading ? 'Qidirilmoqda...' : 'Qidirish'}
         </button>
       </form>
+      </> : null}
+      {loading ? <p role="status" className="py-4 text-sm text-app-text-muted">Yuklanmoqda…</p> : null}
 
       {error ? (
         <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
@@ -121,7 +135,7 @@ export default function AdminUserManagePage() {
 
       {user ? (
         <div className="space-y-4">
-          <section className="rounded-xl border border-app-border bg-app-surface p-5">
+          <section className="border-b border-app-border pb-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold text-app-text">{user.name}</h2>
@@ -153,7 +167,7 @@ export default function AdminUserManagePage() {
               </div>
               <div>
                 <dt className="text-app-text-muted">Email</dt>
-                <dd className="font-medium text-app-text">{user.email ?? '—'}</dd>
+                <dd className="break-all font-medium text-app-text">{user.email ?? '—'}</dd>
               </div>
               <div>
                 <dt className="text-app-text-muted">Ro‘yxatdan o‘tgan</dt>
@@ -196,16 +210,27 @@ export default function AdminUserManagePage() {
               ) : null}
             </dl>
 
-            <Link
+            {!userId ? <Link
               to={adminPath(`/users/${user.id}`)}
-              className="mt-4 inline-block text-sm font-medium text-app-primary hover:underline"
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-app-border bg-white px-4 text-sm font-semibold text-app-primary"
             >
-              To‘liq profil →
-            </Link>
+              <UserRound size={18} /> To‘liq profil
+            </Link> : null}
           </section>
 
-          <section className="rounded-xl border border-app-border bg-app-surface p-5">
-            <h3 className="mb-3 text-sm font-semibold text-app-text">Amallar</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div key={user.id} className="[&>div]:rounded-lg [&>section]:rounded-lg"><ParolTiklashPanel boshlangich={user.phone ?? user.email ?? `#${user.id}`} qulf onTikla={() => adminParolTiklashById(user.id)} /></div>
+            <section className="rounded-lg border border-app-border bg-app-surface p-5">
+              <h3 className="flex items-center gap-2 font-semibold"><CreditCard size={18} /> Tarif va obuna</h3>
+              <p className="mt-3 text-lg font-semibold">{user.subscription.plan_type || 'Obuna yo‘q'}</p>
+              <p className="mt-1 text-sm text-app-text-muted">{user.subscription.expires_at ? fmt(user.subscription.expires_at) : '—'}</p>
+              <a href="#user-access" className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-app-primary">Kirishni boshqarish</a>
+              <Link to={`${adminPath('/support')}?userId=${user.id}`} className="mt-2 flex min-h-11 items-center gap-2 text-sm font-semibold text-app-primary"><MessageSquare size={16} /> Xabar yuborish</Link>
+            </section>
+          </div>
+
+          <section id="user-access" className="rounded-lg border border-app-border bg-app-surface p-5">
+            <h3 className="mb-3 text-sm font-semibold text-app-text">Kirish va to‘lov boshqaruvi</h3>
             <label className="mb-3 block text-xs font-medium text-app-text-muted">
               Muzlatish izohi (ixtiyoriy)
               <input

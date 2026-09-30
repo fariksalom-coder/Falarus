@@ -20,7 +20,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    adminApi('/dashboard', { skipAuthRedirect: true })
+    adminApi('/me', { skipAuthRedirect: true })
       .then(() => {
         setIsAdmin(true);
       })

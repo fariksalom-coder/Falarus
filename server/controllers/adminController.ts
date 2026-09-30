@@ -18,6 +18,7 @@ import { ensureSupportChatForUser } from '../lib/ensureSupportChat.js';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
 import { activateTeacherMarketplacePayment } from '../services/teacherMarketplace.service.js';
 import { activateRussianSubscription } from '../../shared/paymentActivation.js';
+import { readAdminUserTotals } from '../services/adminUsersRead.service.js';
 
 const BROADCAST_FILTERS = [
   'subscription_active',
@@ -202,6 +203,7 @@ export function createAdminController(supabase: DbClient) {
 
   // --- Dashboard analytics
   async function getDashboard(_req: Request, res: Response) {
+    const userTotals = readAdminUserTotals();
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const weekStart = new Date(now);
@@ -250,12 +252,12 @@ export function createAdminController(supabase: DbClient) {
       recentPayments,
       paymentsLast30Rows,
     ] = await Promise.all([
-      supabase.from('users').select('id', { count: 'exact', head: true }),
-      supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
-      supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', weekStartStr),
-      supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
-      supabase.from('users').select('id', { count: 'exact', head: true }).gt('plan_expires_at', now.toISOString()),
-      supabase.from('users').select('id', { count: 'exact', head: true }).or(`plan_expires_at.is.null,plan_expires_at.lt.${now.toISOString()}`),
+      userTotals.then(r => ({ count: r.total })),
+      userTotals.then(r => ({ count: r.today })),
+      userTotals.then(r => ({ count: r.week })),
+      userTotals.then(r => ({ count: r.month })),
+      userTotals.then(r => ({ count: r.active })),
+      userTotals.then(r => ({ count: r.inactive })),
       supabase.from('payments').select('amount, currency, product_code, tariff_type').eq('status', 'approved').gte('approved_at', todayStart),
       supabase.from('payments').select('amount, currency, product_code, tariff_type').eq('status', 'approved').gte('approved_at', monthStart),
       supabase.from('payments').select('amount, currency').eq('status', 'approved'),

@@ -22,27 +22,28 @@ import {
   Video,
   UserCog,
 } from 'lucide-react';
-import { getAdminHelpChats } from '../../api/admin';
+import { getAdminUnreadCount } from '../../api/admin';
+import './admin-workspace.css';
 
 const nav = [
-  { to: adminPath('/dictation'), label: 'Диктант', icon: ClipboardList },
   { to: adminPath('/dashboard'), label: 'Umumiy holat', icon: LayoutDashboard },
-  { to: adminPath('/video-lessons'), label: 'Уроки из видео', icon: Video },
-  { to: adminPath('/kiosk'), label: 'Test va chegirmalar', icon: ClipboardList },
-  { to: adminPath('/content'), label: 'Kurs kontenti', icon: BookOpen },
-  { to: adminPath('/onboarding'), label: "So'rovnoma", icon: ClipboardList },
   { to: adminPath('/users'), label: 'Foydalanuvchilar', icon: Users },
-  { to: adminPath('/users/manage'), label: 'Qidiruv / muzlatish', icon: UserCog },
-  { to: adminPath('/users/create'), label: 'Yangi foydalanuvchi', icon: UserPlus },
+  { to: adminPath('/users/manage'), label: 'Foydalanuvchi boshqaruvi', icon: UserCog },
   { to: adminPath('/payments'), label: 'To‘lovlar', icon: CreditCard },
   { to: adminPath('/operators'), label: 'Operatorlar va cheklar', icon: Users },
+  { to: adminPath('/support'), label: 'Yozishmalar', icon: MessageSquare },
+  { to: adminPath('/users/create'), label: 'Yangi foydalanuvchi', icon: UserPlus },
+  { to: adminPath('/referrals'), label: 'Takliflar', icon: Wallet },
+  { to: adminPath('/content'), label: 'Kurs kontenti', icon: BookOpen },
+  { to: adminPath('/dictation'), label: 'Диктант', icon: ClipboardList },
+  { to: adminPath('/video-lessons'), label: 'Уроки из видео', icon: Video },
+  { to: adminPath('/onboarding'), label: "So'rovnoma", icon: ClipboardList },
+  { to: adminPath('/kiosk'), label: 'Test va chegirmalar', icon: ClipboardList },
   { to: adminPath('/teachers'), label: "O'qituvchilar", icon: GraduationCap },
   { to: adminPath('/teacher-trials'), label: 'Sinov darslari', icon: ClipboardList },
   { to: adminPath('/meet-rooms'), label: 'Video xonalar', icon: Video },
   { to: adminPath('/teacher-documents'), label: 'Hujjat tekshiruvi', icon: ClipboardList },
   { to: adminPath('/click-logs'), label: 'Click jurnali', icon: ScrollText },
-  { to: adminPath('/referrals'), label: 'Takliflar', icon: Wallet },
-  { to: adminPath('/support'), label: 'Yozishmalar', icon: MessageSquare },
   { to: adminPath('/chat-moderation'), label: 'Chat nazorati', icon: ShieldBan },
   { to: adminPath('/payment-methods'), label: 'To‘lov usullari', icon: Banknote },
   { to: adminPath('/tariff-pricing'), label: 'Tarif narxlari', icon: DollarSign },
@@ -61,13 +62,14 @@ export default function AdminLayout() {
 
     const run = async () => {
       try {
-        const chats = await getAdminHelpChats();
-        const totalUnread = (chats ?? []).reduce((acc, c) => acc + Number(c.unread_count ?? 0), 0);
-        if (!cancelled) setUnreadSupportCount(totalUnread);
+        if (document.visibilityState !== 'hidden') {
+          const result = await getAdminUnreadCount();
+          if (!cancelled) setUnreadSupportCount(result.count);
+        }
       } catch {
         // Keep previous counter on transient errors.
       } finally {
-        if (!cancelled) timer = window.setTimeout(() => void run(), 10_000);
+        if (!cancelled) timer = window.setTimeout(() => void run(), 30_000);
       }
     };
 
@@ -76,7 +78,7 @@ export default function AdminLayout() {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, [location.pathname]);
+  }, []);
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
@@ -126,7 +128,7 @@ export default function AdminLayout() {
               }
             >
               <Icon className="h-[17px] w-[17px] shrink-0" />
-              <span className="min-w-0 flex-1 truncate">{label}</span>
+              <span className="min-w-0 flex-1 leading-snug">{label}</span>
               {to === adminPath('/support') && unreadSupportCount > 0 ? (
                 <span
                   className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[7px] text-[10px] font-extrabold text-white"
