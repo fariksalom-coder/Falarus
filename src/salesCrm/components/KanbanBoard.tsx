@@ -181,7 +181,7 @@ export default function KanbanBoard({ leads, busyId, flow = 'platform', onMove, 
 
   return (
     <>
-      <div className="flex h-[calc(100svh-250px)] min-h-[360px] max-h-[680px] gap-3 overflow-x-auto pb-3 pt-1 [scrollbar-width:thin] md:h-[calc(100vh-245px)] md:min-h-[520px] md:max-h-[760px]">
+      <div className="relative flex h-[calc(100svh-250px)] min-h-[360px] max-h-[680px] gap-3 overflow-x-auto pb-3 pt-1 [scrollbar-width:thin] md:h-[calc(100vh-245px)] md:min-h-[520px] md:max-h-[760px]">
         {(flow === 'promo' ? [...SALES_CRM_KANBAN_COLUMNS, ...SITE_MILESTONE_COLUMNS] : SALES_CRM_KANBAN_COLUMNS).map((col) => {
           const items = byColumn.get(col.id) ?? [];
           const tone = TONE[col.tone];
@@ -302,7 +302,7 @@ function KanbanCard({
       draggable={!busy}
       onDragStart={(e) => onDragStart(e, Number(lead.id))}
       onDragEnd={onDragEnd}
-      className={`group rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200/80 transition ${
+      className={`group relative rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200/80 transition ${
         dragging ? 'scale-[0.98] opacity-40' : 'hover:shadow-md active:scale-[0.99]'
       } ${busy ? 'opacity-60' : ''} cursor-grab active:cursor-grabbing`}
     >
