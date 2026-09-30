@@ -4,7 +4,7 @@
  * For each lead that is in NEW now and was reset by the sync AFTER an operator
  * last worked it, restore from the lead's own history:
  *   - status:    the operator's last stage move or call result;
- *   - operator:  whoever did that (if still an active operator);
+ *   - operator:  whoever did that, if they are a promo operator (2nd+ active one);
  *   - next call: the lead's latest open task.
  * Leads worked again after the reset are left alone.
  *
@@ -36,8 +36,14 @@ async function main() {
       `SELECT id, name, role, active FROM sales_crm_agents`,
     );
     const operatorName = new Map(agents.map((a) => [Number(a.id), a.name]));
-    const activeOperators = new Set(
-      agents.filter((a) => a.active && a.role === 'operator').map((a) => Number(a.id)),
+    // Ad leads belong to promo operators (every active operator except the first,
+    // who owns platform leads); a lead given back to operator 1 would vanish from both boards.
+    const promoOperators = new Set(
+      agents
+        .filter((a) => a.active && a.role === 'operator')
+        .map((a) => Number(a.id))
+        .sort((a, b) => a - b)
+        .slice(1),
     );
 
     const { rows } = await db.query<Row>(
@@ -85,7 +91,7 @@ async function main() {
 
     const plan = rows.map((r) => {
       const actor = Number(r.actor_id);
-      const toOperator = activeOperators.has(actor) ? actor : r.assigned_operator_id;
+      const toOperator = promoOperators.has(actor) ? actor : r.assigned_operator_id;
       return { ...r, toOperator };
     });
 
