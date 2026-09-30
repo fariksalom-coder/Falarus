@@ -176,6 +176,7 @@ export function createPromoLeadRoutes(): Router {
         externalKey: `landing:${phone.e164}`,
         submittedAt: new Date().toISOString(),
         assignment: 'promo',
+        resurfaceOn: 'submit',
       });
       if (sessionId) {
         await recordPromoLandingEvent({

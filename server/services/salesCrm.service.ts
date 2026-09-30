@@ -187,14 +187,34 @@ export async function ingestUserAsSalesLead(params: {
   sheetRowNumber?: number | null;
   submittedAt?: string | null;
   assignment?: 'default' | 'registration' | 'promo';
+  /**
+   * When an existing lead is sent back to "Yangi" and re-assigned:
+   * - 'submit': every call is a fresh form submission (promo landing);
+   * - 'new_external_key': only for a source record this lead has not seen yet.
+   *   Google Sheets sync re-reads every row each minute, so re-reading the same
+   *   row must not reset the operator's work.
+   */
+  resurfaceOn?: 'submit' | 'new_external_key';
 }): Promise<{ leadId: number; created: boolean }> {
   const db = requirePool();
   const phoneKey = normalizePhoneKey(params.phone);
   const externalKey = params.externalKey?.trim() || null;
-  const resurfacePromo = params.assignment === 'promo';
+  const shouldResurface = async (leadId: number, matchedByExternalKey: boolean): Promise<boolean> => {
+    if (params.resurfaceOn === 'submit') return true;
+    if (params.resurfaceOn !== 'new_external_key' || !externalKey || matchedByExternalKey) return false;
+    const { rows } = await db.query(
+      `SELECT 1 FROM sales_crm_events
+       WHERE lead_id = $1 AND payload->>'external_key' = $2
+       LIMIT 1`,
+      [leadId, externalKey],
+    );
+    return rows.length === 0;
+  };
+  // The same sheet row re-read by sync: nothing new happened, keep lead history clean.
+  const isSheetReread = (resurfaced: boolean) => params.resurfaceOn === 'new_external_key' && !resurfaced;
   let resurfacedOperatorId: number | null | undefined;
-  const getResurfacedOperatorId = async () => {
-    if (!resurfacePromo) return null;
+  const getResurfacedOperatorId = async (resurface: boolean) => {
+    if (!resurface) return null;
     if (resurfacedOperatorId === undefined) resurfacedOperatorId = await pickPromoOperator();
     return resurfacedOperatorId;
   };
@@ -205,7 +225,8 @@ export async function ingestUserAsSalesLead(params: {
       [externalKey],
     );
     if (byExt[0]) {
-      const targetOperatorId = await getResurfacedOperatorId();
+      const resurfacePromo = await shouldResurface(byExt[0].id, true);
+      const targetOperatorId = await getResurfacedOperatorId(resurfacePromo);
       await db.query(
         `UPDATE sales_crm_leads
          SET source = COALESCE($2, source),
@@ -245,7 +266,7 @@ export async function ingestUserAsSalesLead(params: {
           targetOperatorId,
         ],
       );
-      await addEvent(byExt[0].id, params.actorId ?? null, 'lead_refreshed', {
+      if (!isSheetReread(resurfacePromo)) await addEvent(byExt[0].id, params.actorId ?? null, 'lead_refreshed', {
         external_key: externalKey,
         source: params.source ?? null,
         resurfaced: resurfacePromo,
@@ -271,11 +292,14 @@ export async function ingestUserAsSalesLead(params: {
       [phone],
     );
     if (byPhone[0] && byPhone[0].user_id !== params.userId) {
-      const targetOperatorId = await getResurfacedOperatorId();
-      await addEvent(byPhone[0].id, params.actorId ?? null, 'duplicate_registration', {
-        attempted_user_id: params.userId,
-        source: params.source ?? null,
-      });
+      const resurfacePromo = await shouldResurface(byPhone[0].id, false);
+      const targetOperatorId = await getResurfacedOperatorId(resurfacePromo);
+      if (!isSheetReread(resurfacePromo)) {
+        await addEvent(byPhone[0].id, params.actorId ?? null, 'duplicate_registration', {
+          attempted_user_id: params.userId,
+          source: params.source ?? null,
+        });
+      }
       await db.query(
         `UPDATE sales_crm_leads
          SET source = COALESCE($2, source),
@@ -315,7 +339,7 @@ export async function ingestUserAsSalesLead(params: {
           targetOperatorId,
         ],
       );
-      await addEvent(byPhone[0].id, params.actorId ?? null, 'lead_refreshed', {
+      if (!isSheetReread(resurfacePromo)) await addEvent(byPhone[0].id, params.actorId ?? null, 'lead_refreshed', {
         attempted_user_id: params.userId,
         source: params.source ?? null,
         external_key: externalKey,
@@ -331,7 +355,8 @@ export async function ingestUserAsSalesLead(params: {
     [params.userId],
   );
   if (existing[0]) {
-    const targetOperatorId = await getResurfacedOperatorId();
+    const resurfacePromo = await shouldResurface(existing[0].id, false);
+    const targetOperatorId = await getResurfacedOperatorId(resurfacePromo);
     await db.query(
       `UPDATE sales_crm_leads
        SET phone_normalized = COALESCE($2, phone_normalized),
@@ -373,7 +398,7 @@ export async function ingestUserAsSalesLead(params: {
         targetOperatorId,
       ],
     );
-    await addEvent(existing[0].id, params.actorId ?? null, 'lead_refreshed', {
+    if (!isSheetReread(resurfacePromo)) await addEvent(existing[0].id, params.actorId ?? null, 'lead_refreshed', {
       source: params.source ?? null,
       external_key: externalKey,
       resurfaced: resurfacePromo,

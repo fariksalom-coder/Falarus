@@ -270,6 +270,7 @@ export async function ingestSheetLeadRow(
     sheetRowNumber: payload.rowNumber ?? null,
     submittedAt: payload.submittedAt ?? null,
     assignment: 'promo',
+    resurfaceOn: 'new_external_key',
   });
 
   return result;
