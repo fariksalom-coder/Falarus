@@ -45,11 +45,15 @@ function leadFlowOwnerSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
   return '1=1';
 }
 
+/** Ad leads that arrived before this day (Asia/Tashkent) are no longer worked. */
+export const PROMO_LEADS_SINCE = '2026-09-25';
+
+/** Platform leads are always shown; ad leads only from PROMO_LEADS_SINCE on. */
 function operatorVisibleLeadSql(alias = ''): string {
   const p = alias ? `${alias}.` : '';
   return `(
     coalesce(${p}source, '') IN ('website', 'backfill', 'payment')
-    OR coalesce(${p}submitted_at, ${p}created_at) >= ((now() AT TIME ZONE 'Asia/Tashkent')::date::timestamp AT TIME ZONE 'Asia/Tashkent')
+    OR coalesce(${p}submitted_at, ${p}created_at) >= (TIMESTAMP '${PROMO_LEADS_SINCE} 00:00' AT TIME ZONE 'Asia/Tashkent')
   )`;
 }
 
@@ -549,9 +553,10 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
     where.push(sql.replace('?', `$${params.length}`));
   };
 
+  // Old ad leads are hidden from the board for admins too.
+  where.push(operatorVisibleLeadSql('l'));
   if (filters.scopeOperatorId) {
     add('l.assigned_operator_id = ?', filters.scopeOperatorId);
-    where.push(operatorVisibleLeadSql('l'));
   } else if (filters.operatorId != null) {
     if (filters.operatorId === 0) where.push('l.assigned_operator_id IS NULL');
     else add('l.assigned_operator_id = ?', filters.operatorId);
