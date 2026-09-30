@@ -192,7 +192,9 @@ export async function ingestUserAsSalesLead(params: {
   submittedAt?: string | null;
   assignment?: 'default' | 'registration' | 'promo';
   /**
-   * When an existing lead is sent back to "Yangi" and re-assigned:
+   * A repeat submission sends an idle lead (no answer / refused / wrong number /
+   * archived) back to "Yangi"; leads an operator is working keep their stage,
+   * and the owner never changes (unowned leads get one). When it applies:
    * - 'submit': every call is a fresh form submission (promo landing);
    * - 'new_external_key': only for a source record this lead has not seen yet.
    *   Google Sheets sync re-reads every row each minute, so re-reading the same
@@ -244,10 +246,10 @@ export async function ingestUserAsSalesLead(params: {
              utm_term = COALESCE($10, utm_term),
              sheet_row_number = COALESCE($11, sheet_row_number),
              submitted_at = COALESCE($12::timestamptz, submitted_at),
-             status = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
-             next_contact_at = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
+             status = CASE WHEN $13::boolean AND status IN ('NO_ANSWER','NOT_INTERESTED','INVALID_PHONE','ARCHIVED') THEN 'NEW' ELSE status END,
+             next_contact_at = CASE WHEN $13::boolean AND status IN ('NO_ANSWER','NOT_INTERESTED','INVALID_PHONE','ARCHIVED') THEN NULL ELSE next_contact_at END,
              assigned_operator_id = CASE
-               WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN COALESCE($14::bigint, assigned_operator_id)
+               WHEN $13::boolean THEN COALESCE(assigned_operator_id, $14::bigint)
                ELSE assigned_operator_id
              END,
              last_action_at = now(),
@@ -317,10 +319,10 @@ export async function ingestUserAsSalesLead(params: {
              external_key = COALESCE(external_key, $10),
              sheet_row_number = COALESCE($11, sheet_row_number),
              submitted_at = COALESCE($12::timestamptz, submitted_at),
-             status = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
-             next_contact_at = CASE WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
+             status = CASE WHEN $13::boolean AND status IN ('NO_ANSWER','NOT_INTERESTED','INVALID_PHONE','ARCHIVED') THEN 'NEW' ELSE status END,
+             next_contact_at = CASE WHEN $13::boolean AND status IN ('NO_ANSWER','NOT_INTERESTED','INVALID_PHONE','ARCHIVED') THEN NULL ELSE next_contact_at END,
              assigned_operator_id = CASE
-               WHEN $13::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN COALESCE($14::bigint, assigned_operator_id)
+               WHEN $13::boolean THEN COALESCE(assigned_operator_id, $14::bigint)
                ELSE assigned_operator_id
              END,
              last_action_at = now(),
@@ -375,10 +377,10 @@ export async function ingestUserAsSalesLead(params: {
            external_key = COALESCE(external_key, $11),
            sheet_row_number = COALESCE($12, sheet_row_number),
            submitted_at = COALESCE($13::timestamptz, submitted_at),
-           status = CASE WHEN $14::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN 'NEW' ELSE status END,
-           next_contact_at = CASE WHEN $14::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN NULL ELSE next_contact_at END,
+           status = CASE WHEN $14::boolean AND status IN ('NO_ANSWER','NOT_INTERESTED','INVALID_PHONE','ARCHIVED') THEN 'NEW' ELSE status END,
+           next_contact_at = CASE WHEN $14::boolean AND status IN ('NO_ANSWER','NOT_INTERESTED','INVALID_PHONE','ARCHIVED') THEN NULL ELSE next_contact_at END,
            assigned_operator_id = CASE
-             WHEN $14::boolean AND status NOT IN ('PAID','PAYMENT_PENDING') THEN COALESCE($15::bigint, assigned_operator_id)
+             WHEN $14::boolean THEN COALESCE(assigned_operator_id, $15::bigint)
              ELSE assigned_operator_id
            END,
            last_action_at = now(),
