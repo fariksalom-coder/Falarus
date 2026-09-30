@@ -3,9 +3,11 @@ import { Link, useParams } from 'react-router-dom';
 import { Check, Phone } from 'lucide-react';
 import { salesCrmApi, type LeadDetail, type OperatorRow } from '../api';
 import { useSalesCrmAuth } from '../auth';
+import { StageMoveModal, type PendingMove, type StageMovePayload } from '../components/KanbanBoard';
 import {
   SALES_CRM_ANSWERED_RESULTS,
   SALES_CRM_CALL_RESULT_LABELS,
+  SALES_CRM_KANBAN_COLUMNS,
   SALES_CRM_NO_ANSWER_RESULTS,
   SALES_CRM_STATUS_LABELS,
   SALES_CRM_STATUSES,
@@ -44,6 +46,9 @@ export default function LeadPage() {
   const [result, setResult] = useState<SalesCrmCallResult>('no_answer');
   const [nextAt, setNextAt] = useState('');
   const [busy, setBusy] = useState(false);
+  const [statusErr, setStatusErr] = useState('');
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
 
   const tel = useMemo(() => {
     const raw = String(data?.lead.phone || data?.lead.phone_normalized || '');
@@ -84,6 +89,38 @@ export default function LeadPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Throws so the stage modal can show the error inline. */
+  async function applyStatus(payload: StageMovePayload) {
+    setStatusBusy(true);
+    setStatusErr('');
+    const opts = { comment: payload.comment, nextContactAt: payload.nextContactAt };
+    try {
+      try {
+        await salesCrmApi.setStatus(leadId, payload.status, opts);
+      } catch (ex) {
+        if ((ex as { code?: string }).code !== 'CONFIRM_PAID_DOWNGRADE') throw ex;
+        if (!window.confirm('PAID statusni o‘zgartirasizmi?')) return;
+        await salesCrmApi.setStatus(leadId, payload.status, { ...opts, confirmPaidDowngrade: true });
+      }
+      await reload();
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
+  function pickStatus(status: SalesCrmStatus) {
+    if (!data || status === data.lead.status) return;
+    // Stages that need a comment / next contact go through the same modal as the board.
+    const column = SALES_CRM_KANBAN_COLUMNS.find((c) => c.dropStatus === status);
+    if (column && (column.requireComment || column.requireNextContact)) {
+      setPendingMove({ lead: data.lead, column });
+      return;
+    }
+    void applyStatus({ leadId, status }).catch((ex) =>
+      setStatusErr(ex instanceof Error ? ex.message : 'Status o‘zgarmadi'),
+    );
   }
 
   if (!data) {
@@ -134,25 +171,10 @@ export default function LeadPage() {
             </span>
           )}
           <select
-            className="min-h-12 rounded-2xl border border-slate-200 px-3 text-sm font-semibold"
+            className="min-h-12 rounded-2xl border border-slate-200 px-3 text-sm font-semibold disabled:opacity-60"
             value={String(lead.status)}
-            onChange={(e) => {
-              const status = e.target.value;
-              void (async () => {
-                try {
-                  await salesCrmApi.setStatus(leadId, status);
-                  await reload();
-                } catch (ex) {
-                  const errObj = ex as Error & { code?: string };
-                  if (errObj.code === 'CONFIRM_PAID_DOWNGRADE') {
-                    if (window.confirm('PAID statusni o‘zgartirasizmi?')) {
-                      await salesCrmApi.setStatus(leadId, status, { confirmPaidDowngrade: true });
-                      await reload();
-                    }
-                  } else setErr(errObj.message);
-                }
-              })();
-            }}
+            disabled={statusBusy}
+            onChange={(e) => pickStatus(e.target.value as SalesCrmStatus)}
           >
             {SALES_CRM_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -161,6 +183,8 @@ export default function LeadPage() {
             ))}
           </select>
         </div>
+
+        {statusErr ? <p className="mt-2 text-sm font-semibold text-red-600">{statusErr}</p> : null}
 
         {agent?.role === 'admin' ? (
           <label className="mt-3 block text-xs font-bold text-slate-600">
@@ -321,6 +345,18 @@ export default function LeadPage() {
           ))}
         </ul>
       </section>
+
+      {pendingMove ? (
+        <StageMoveModal
+          pending={pendingMove}
+          busy={statusBusy}
+          onClose={() => setPendingMove(null)}
+          onSubmit={async (payload) => {
+            await applyStatus(payload);
+            setPendingMove(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

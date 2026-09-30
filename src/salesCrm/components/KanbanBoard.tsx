@@ -111,7 +111,7 @@ type Props = {
   onSupportGroup?: (leadId: number, done: boolean) => Promise<void>;
 };
 
-type PendingMove = {
+export type PendingMove = {
   lead: LeadRow;
   column: SalesCrmKanbanColumn;
 };
@@ -343,7 +343,7 @@ function KanbanCard({
         ) : null}
       </div>
 
-      <label className="mt-2 block md:opacity-0 md:transition md:group-hover:opacity-100">
+      <label className="mt-2 block md:opacity-0 md:transition md:group-hover:opacity-100 md:group-focus-within:opacity-100 md:pointer-coarse:opacity-100">
         <span className="sr-only">Bosqich</span>
         <select
           value={lead.status}
@@ -383,7 +383,7 @@ function KanbanCard({
   );
 }
 
-function StageMoveModal({
+export function StageMoveModal({
   pending,
   busy,
   onClose,
