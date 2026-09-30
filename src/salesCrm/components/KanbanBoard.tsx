@@ -109,7 +109,33 @@ type Props = {
   flow?: 'promo' | 'platform';
   onMove: (payload: StageMovePayload) => Promise<void>;
   onSupportGroup?: (leadId: number, done: boolean) => Promise<void>;
+  /** Admin view: show which operator owns each lead. */
+  showOperator?: boolean;
 };
+
+const OPERATOR_TONES = [
+  'bg-violet-50 text-violet-800 ring-violet-200',
+  'bg-sky-50 text-sky-800 ring-sky-200',
+  'bg-emerald-50 text-emerald-800 ring-emerald-200',
+  'bg-orange-50 text-orange-800 ring-orange-200',
+];
+
+/** Who works this lead. Colour is stable per operator id so owners are easy to tell apart. */
+export function OperatorBadge({ lead }: { lead: Pick<LeadRow, 'assigned_operator_id' | 'operator_name'> }) {
+  if (lead.assigned_operator_id == null) {
+    return (
+      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-200">
+        Operator yo‘q
+      </span>
+    );
+  }
+  const tone = OPERATOR_TONES[Number(lead.assigned_operator_id) % OPERATOR_TONES.length];
+  return (
+    <span className={`max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${tone}`}>
+      {lead.operator_name || `Operator #${lead.assigned_operator_id}`}
+    </span>
+  );
+}
 
 export type PendingMove = {
   lead: LeadRow;
@@ -120,7 +146,7 @@ function defaultNextLocal(hoursFromNow = 2): string {
   return toDatetimeLocalValue(new Date(Date.now() + hoursFromNow * 3600_000));
 }
 
-export default function KanbanBoard({ leads, busyId, flow = 'platform', onMove, onSupportGroup }: Props) {
+export default function KanbanBoard({ leads, busyId, flow = 'platform', onMove, onSupportGroup, showOperator = false }: Props) {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingMove | null>(null);
@@ -221,6 +247,7 @@ export default function KanbanBoard({ leads, busyId, flow = 'platform', onMove, 
                     lead={lead}
                     dragging={draggingId === Number(lead.id)}
                     busy={busyId === Number(lead.id)}
+                    showOperator={showOperator}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
                     onPickStage={(status) => {
@@ -270,10 +297,12 @@ function KanbanCard({
   onDragEnd,
   onPickStage,
   onSupportGroup,
+  showOperator,
 }: {
   lead: LeadRow;
   dragging: boolean;
   busy: boolean;
+  showOperator: boolean;
   onDragStart: (e: DragEvent, leadId: number) => void;
   onDragEnd: () => void;
   onPickStage: (status: SalesCrmStatus) => void;
@@ -321,6 +350,7 @@ function KanbanCard({
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
+        {showOperator ? <OperatorBadge lead={lead} /> : null}
         {sourceLabel ? (
           <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
             {sourceLabel}

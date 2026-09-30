@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Columns3, List, Search, X } from 'lucide-react';
 import { salesCrmApi, type LeadRow } from '../api';
-import KanbanBoard, { type StageMovePayload } from '../components/KanbanBoard';
+import KanbanBoard, { OperatorBadge, type StageMovePayload } from '../components/KanbanBoard';
+import { useSalesCrmAuth } from '../auth';
 import { SALES_CRM_STATUS_LABELS, type SalesCrmStatus } from '../../../shared/salesCrm';
 
 export default function LeadsPage() {
@@ -16,6 +17,8 @@ export default function LeadsPage() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const { agent } = useSalesCrmAuth();
+  const isAdmin = agent?.role === 'admin';
 
   const load = useCallback(async () => {
     const id = ++requestId.current;
@@ -205,6 +208,7 @@ export default function LeadsPage() {
             flow={flow}
             onMove={moveLead}
             onSupportGroup={toggleSupportGroup}
+            showOperator={isAdmin}
           />
         ) : null
       ) : (
@@ -258,6 +262,11 @@ export default function LeadsPage() {
                     <p className="mt-0.5 text-sm text-slate-500">
                       {lead.phone || lead.phone_normalized}
                     </p>
+                    {isAdmin ? (
+                      <div className="mt-1.5 flex">
+                        <OperatorBadge lead={lead} />
+                      </div>
+                    ) : null}
                   </div>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
                     {SALES_CRM_STATUS_LABELS[lead.status as SalesCrmStatus] || lead.status}
