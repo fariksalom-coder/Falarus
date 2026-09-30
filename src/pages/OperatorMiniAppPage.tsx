@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CheckCircle2, X } from 'lucide-react';
 import { apiUrl } from '../api';
 import { operatorTariffCatalog, OPERATOR_CURRENCIES } from '../../shared/operatorTariffs';
 
@@ -243,6 +244,11 @@ function PhoneField(props: {
 
 export default function OperatorMiniAppPage() {
   const firstNameRef = useRef<HTMLInputElement>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const successDialogRef = useRef<HTMLDialogElement>(null);
+  const submittingRef = useRef(false);
+  const statsRequestRef = useRef<AbortController | null>(null);
+  const [submission, setSubmission] = useState<{ receiptId: number; customer: string; amount: string; currency: string } | null>(null);
   const [ready, setReady] = useState(false);
   const [operatorName, setOperatorName] = useState('');
   const [error, setError] = useState('');
@@ -272,6 +278,8 @@ export default function OperatorMiniAppPage() {
   const [customRange, setCustomRange] = useState({ from: todayAppDate(), to: todayAppDate() });
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
+  const [statsRevision, setStatsRevision] = useState(0);
   const [openDebtCurrency, setOpenDebtCurrency] = useState<string | null>(null);
 
   const hasTelegram = Boolean(initData());
@@ -302,23 +310,35 @@ export default function OperatorMiniAppPage() {
     setPayment({ ...payment, ...next, total, amount: total });
   }
 
-  async function loadStats() {
-    if (!hasTelegram) return;
+  const loadStats = useCallback(async (silent = false) => {
+    if (!hasTelegram) {
+      setStatsError('Hisobotni Telegram mini ilovasida oching.');
+      return;
+    }
+    if (silent && statsRequestRef.current) return;
+    statsRequestRef.current?.abort();
+    const controller = new AbortController();
+    statsRequestRef.current = controller;
     setStatsLoading(true);
-    setError('');
+    setStatsError('');
+    if (!silent) setStats(null);
     try {
       const params = new URLSearchParams({ period });
       if (period === 'custom') {
         params.set('from', customRange.from);
         params.set('to', customRange.to);
       }
-      setStats(await api<StatsResponse>(`/stats?${params}`));
+      const result = await api<StatsResponse>(`/stats?${params}`, { signal: controller.signal, cache: 'no-store' });
+      if (!controller.signal.aborted) setStats(result);
     } catch (e: any) {
-      setError(e.message);
+      if (!controller.signal.aborted) setStatsError(e.message || 'Hisobot yuklanmadi. Qayta urinib ko‘ring.');
     } finally {
-      setStatsLoading(false);
+      if (statsRequestRef.current === controller) {
+        statsRequestRef.current = null;
+        setStatsLoading(false);
+      }
     }
-  }
+  }, [hasTelegram, period, customRange.from, customRange.to]);
 
   useEffect(() => {
     window.Telegram?.WebApp?.ready?.();
@@ -359,8 +379,33 @@ export default function OperatorMiniAppPage() {
   }, [query, mode, hasTelegram]);
 
   useEffect(() => {
-    if (tab !== 'payment') void loadStats();
-  }, [tab, period, customRange.from, customRange.to]);
+    if (!ready || tab === 'payment') return;
+    setOpenDebtCurrency(null);
+    void loadStats();
+    const refresh = () => { if (document.visibilityState === 'visible') void loadStats(true); };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+      statsRequestRef.current?.abort();
+      statsRequestRef.current = null;
+    };
+  }, [ready, tab, loadStats, statsRevision]);
+
+  useEffect(() => {
+    if (!submission) return;
+    const dialog = successDialogRef.current;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialog?.showModal();
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = overflow;
+    };
+  }, [submission]);
 
   async function createCustomer() {
     setBusy(true);
@@ -417,6 +462,7 @@ export default function OperatorMiniAppPage() {
   }
 
   async function submitPayment() {
+    if (submittingRef.current) return;
     if (!activeUserId) {
       setError('Avval o‘quvchini tanlang yoki yarating.');
       return;
@@ -425,6 +471,7 @@ export default function OperatorMiniAppPage() {
       setError('Chek rasmini yoki PDF faylni yuklang.');
       return;
     }
+    submittingRef.current = true;
     setBusy(true);
     setError('');
     setNote('');
@@ -437,13 +484,17 @@ export default function OperatorMiniAppPage() {
       form.set('receipt', receipt);
       const res = await api<{ receiptId: number }>('/payments', { method: 'POST', body: form });
       setNote(`Chek #${res.receiptId} adminga yuborildi. Holat: tekshiruvda.`);
+      setSubmission({ receiptId: res.receiptId, customer: selectedLabel, amount: payment.amount, currency: payment.currency });
+      setStats(null);
+      setStatsRevision((value) => value + 1);
       setReceipt(null);
+      if (receiptInputRef.current) receiptInputRef.current.value = '';
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('success');
-      if (tab !== 'payment') void loadStats();
     } catch (e: any) {
       setError(e.message);
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('error');
     } finally {
+      submittingRef.current = false;
       setBusy(false);
     }
   }
@@ -484,7 +535,7 @@ export default function OperatorMiniAppPage() {
 
         {!hasTelegram && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900">Mini ilova Telegram ichida ochilganda ishlaydi.</div>}
         {error && <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}
-        {note && <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">{note}</div>}
+        {note && tab === 'payment' && <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">{note}</div>}
 
         <div className="mb-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-200 p-1">
           {[
@@ -656,10 +707,10 @@ export default function OperatorMiniAppPage() {
               )}
               <label className="block">
                 <span className="text-[13px] font-semibold text-slate-600">Chek</span>
-                <input className="mt-1 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm font-semibold" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} />
+                <input ref={receiptInputRef} className="mt-1 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm font-semibold" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} />
               </label>
-              <button className="h-13 w-full rounded-xl bg-[#1E5BFF] py-4 text-[16px] font-black text-white shadow-lg shadow-blue-900/20 disabled:opacity-50" disabled={busy || !hasTelegram || !activeUserId || !currentPrice?.amount} onClick={submitPayment} type="button">
-                Chekni adminga yuborish
+              <button className="h-13 w-full rounded-xl bg-[#1E5BFF] py-4 text-[16px] font-black text-white shadow-lg shadow-blue-900/20 disabled:opacity-50" disabled={busy || !hasTelegram || !activeUserId || !currentPrice?.amount || !receipt} onClick={submitPayment} type="button">
+                {busy ? 'Yuborilmoqda...' : 'Chekni adminga yuborish'}
               </button>
             </div>
           </>
@@ -685,14 +736,18 @@ export default function OperatorMiniAppPage() {
                 <Field label="Tugash" type="date" value={customRange.to} onChange={(v) => setCustomRange({ ...customRange, to: v })} />
               </div>
             )}
-            <button className="h-11 w-full rounded-xl border border-slate-200 bg-white text-sm font-black text-[#071B3A]" type="button" disabled={statsLoading} onClick={loadStats}>
+            <button className="h-11 w-full rounded-xl border border-slate-200 bg-white text-sm font-black text-[#071B3A]" type="button" disabled={statsLoading} onClick={() => void loadStats()}>
               {statsLoading ? 'Yangilanmoqda...' : 'Yangilash'}
             </button>
-            {tab === 'salary' ? (
+            {statsError ? (
+              <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{statsError}</p>
+            ) : !stats ? (
+              <p role="status" className="py-8 text-center text-sm text-slate-500">Yuklanmoqda...</p>
+            ) : tab === 'salary' ? (
               <>
                 <section className="rounded-2xl bg-[#071B3A] p-4 text-white shadow-lg shadow-slate-900/15">
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-blue-100/70">{stats?.range.label || 'Davr'} maoshi</p>
-                  <p className="mt-2 text-4xl font-black">{moneyText(stats?.salary.totalAmount ?? 0, 'UZS')}</p>
+                  <p className="mt-2 break-words text-2xl font-black">{moneyText(stats?.salary.totalAmount ?? 0, 'UZS')}</p>
                   <p className="mt-1 text-sm font-bold text-blue-100/80">
                     {stats?.salary.soldCourses ?? 0} ta kurs · {moneyText(stats?.salary.perCourseAmount ?? 30000, 'UZS')} / kurs
                   </p>
@@ -724,21 +779,21 @@ export default function OperatorMiniAppPage() {
                       <span>Bonus</span>
                       <strong>{moneyText(stats?.salary.bonusAmount ?? 0, 'UZS')}</strong>
                     </div>
-                    {stats?.salary.nextTarget ? (
+                    {period === 'today' && (stats?.salary.nextTarget ? (
                       <p className="rounded-xl bg-blue-50 p-3 text-xs font-black text-blue-700">
                         Keyingi bonus: yana {stats.salary.remainingToNext} ta kurs → {moneyText(stats.salary.nextBonusAmount ?? 0, 'UZS')}
                       </p>
                     ) : (
                       <p className="rounded-xl bg-emerald-50 p-3 text-xs font-black text-emerald-700">Eng yuqori bonus olindi.</p>
-                    )}
+                    ))}
                   </div>
                 </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <h2 className="text-sm font-black text-[#071B3A]">Bonus jadvali</h2>
+                  <h2 className="text-sm font-black text-[#071B3A]">Kunlik bonus</h2>
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     {(stats?.salary.tiers ?? []).map((tier) => (
-                      <div key={tier.courses} className={`rounded-xl p-3 text-center ${Number(stats?.salary.soldCourses ?? 0) >= tier.courses ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-500'}`}>
+                      <div key={tier.courses} className={`rounded-xl p-3 text-center ${period === 'today' && Number(stats?.salary.soldCourses ?? 0) >= tier.courses ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-500'}`}>
                         <p className="text-lg font-black">{tier.courses} ta</p>
                         <p className="text-xs font-black">{moneyText(tier.amount, 'UZS')}</p>
                       </div>
@@ -777,7 +832,7 @@ export default function OperatorMiniAppPage() {
                     <p className="mt-1 text-lg font-black text-amber-600">{pendingCount}</p>
                   </div>
                   <div className="rounded-2xl bg-white p-3 shadow-sm">
-                    <p className="text-[11px] font-black uppercase text-slate-400">Qarz</p>
+                    <p className="text-[11px] font-black uppercase text-slate-400">Joriy qarz</p>
                     <div className="mt-1 space-y-0.5">
                       {stats?.debts.length ? stats.debts.map((item) => (
                         <p key={item.currency} className="text-xs font-black text-red-600">{moneyText(item.debt, item.currency)}</p>
@@ -825,7 +880,7 @@ export default function OperatorMiniAppPage() {
                   </div>
                 </section>
                 <section className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <h2 className="text-sm font-black text-[#071B3A]">Qarzlar</h2>
+                  <h2 className="text-sm font-black text-[#071B3A]">Joriy qarzlar</h2>
                   <div className="mt-2 space-y-2">
                     {stats?.debts.length ? stats.debts.map((item) => (
                       <div key={item.currency} className="rounded-xl bg-red-50 p-3 text-sm">
@@ -865,7 +920,7 @@ export default function OperatorMiniAppPage() {
                           <strong>#{item.user_id} · {item.first_name} {item.last_name}</strong>
                           <span className="font-black">{moneyText(item.amount, item.currency)}</span>
                         </div>
-                        <p className="mt-1 text-xs font-semibold text-slate-500">{item.phone || 'telefon yo‘q'} · {item.source} · {fmtDate(item.created_at)}</p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">{item.phone || 'telefon yo‘q'} · {item.source} · {fmtDate(item.status === 'pending' ? item.created_at : item.decided_at || item.created_at)}</p>
                         <p className="mt-2 text-xs font-black text-[#071B3A]">{statusLabel[item.status] || item.status} · Qarz: {moneyText(item.status === 'rejected' ? 0 : item.debt, item.currency)} · Tekshiruvda: {moneyText(item.status === 'rejected' ? 0 : item.pending, item.currency)}</p>
                       </article>
                     )) : <p className="text-sm font-semibold text-slate-500">Tarix bo‘sh.</p>}
@@ -876,6 +931,32 @@ export default function OperatorMiniAppPage() {
           </div>
         )}
       </section>
+      <dialog
+        ref={successDialogRef}
+        aria-labelledby="receipt-success-title"
+        aria-describedby="receipt-success-description"
+        onCancel={() => setSubmission(null)}
+        className="fixed inset-0 m-auto max-h-[90svh] w-[calc(100%-32px)] max-w-sm overflow-auto rounded-lg border border-slate-200 bg-white p-5 text-slate-950 shadow-xl backdrop:bg-black/50"
+      >
+        <button type="button" aria-label="Yopish" title="Yopish" className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-lg text-slate-500" onClick={() => setSubmission(null)}><X size={20} /></button>
+        <CheckCircle2 className="mb-3 text-emerald-600" size={36} aria-hidden="true" />
+        <h2 id="receipt-success-title" className="pr-7 text-xl font-bold">To‘lov yuborildi</h2>
+        <p id="receipt-success-description" className="mt-2 text-sm text-slate-600">Chek #{submission?.receiptId} administratorga yuborildi. Tasdiqlash kutilmoqda.</p>
+        <p className="mt-4 break-words text-sm font-semibold">{submission?.customer}</p>
+        <p className="mt-1 text-lg font-bold">{submission && moneyText(submission.amount, submission.currency)}</p>
+        <button type="button" className="mt-5 h-12 w-full rounded-lg bg-[#071B3A] font-bold text-white" onClick={() => { setSubmission(null); setPeriod('today'); setTab('stats'); }}>Hisobotni ko‘rish</button>
+        <button type="button" className="mt-2 h-12 w-full rounded-lg border border-slate-200 font-semibold" onClick={() => {
+          setSubmission(null);
+          setSelected(null);
+          setInitialPassword('');
+          setCustomer({ firstName: '', lastName: '', country: 'UZ', phoneLocal: '', email: '' });
+          setQuery('');
+          setResults([]);
+          setNote('');
+          setPayment((prev) => ({ ...prev, amount: prev.total, dueAt: '' }));
+          setTab('payment');
+        }}>Yangi to‘lov</button>
+      </dialog>
     </main>
   );
 }

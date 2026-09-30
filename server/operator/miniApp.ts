@@ -154,7 +154,9 @@ function appDate(value = Date.now()): string {
 
 function isoFromAppDate(date: string, end = false): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Sana noto‘g‘ri.');
-  const local = new Date(`${date}T00:00:00.000Z`).getTime() - TZ_OFFSET_MS;
+  const parsed = new Date(`${date}T00:00:00.000Z`);
+  if (!Number.isFinite(+parsed) || parsed.toISOString().slice(0, 10) !== date) throw new Error('Sana noto‘g‘ri.');
+  const local = parsed.getTime() - TZ_OFFSET_MS;
   return new Date(local + (end ? 24 * 60 * 60 * 1000 : 0)).toISOString();
 }
 
@@ -177,7 +179,10 @@ function statsRange(query: any): { from: string; to: string; label: string } {
   if (period === 'custom') {
     const fromDate = String(query.from ?? '');
     const toDate = String(query.to ?? '');
-    return { from: isoFromAppDate(fromDate), to: isoFromAppDate(toDate || fromDate, true), label: 'Tanlangan davr' };
+    const from = isoFromAppDate(fromDate);
+    const to = isoFromAppDate(toDate || fromDate, true);
+    if (from >= to) throw new Error('Tugash sanasi boshlanishdan oldin bo‘lmasin.');
+    return { from, to, label: 'Tanlangan davr' };
   }
   if (period === 'all') return { from: '1970-01-01T00:00:00.000Z', to: isoFromAppDate(today, true), label: 'Barcha vaqt' };
   throw new Error('Davr noto‘g‘ri.');
@@ -246,12 +251,14 @@ export function operatorMiniAppRoutes() {
   router.get('/stats', miniWrap(async (req, res) => {
     const op = req.operator as MiniOperator;
     const range = statsRange(req.query);
+    res.set('Cache-Control', 'no-store');
+    const receiptDate = "CASE WHEN r.status='pending' THEN r.created_at ELSE COALESCE(r.decided_at,r.created_at) END";
     const payments = (await pool!.query(
       `SELECT c.currency,r.status,count(*)::int receipts,count(distinct c.user_id)::int clients,
               COALESCE(sum(r.amount),0)::text amount
        FROM operator_receipts r
        JOIN operator_contracts c ON c.id=r.contract_id
-       WHERE r.operator_id=$1 AND r.created_at>=$2 AND r.created_at<$3
+       WHERE r.operator_id=$1 AND (${receiptDate})>=$2 AND (${receiptDate})<$3
        GROUP BY c.currency,r.status
        ORDER BY c.currency,r.status`,
       [op.id, range.from, range.to],
@@ -292,13 +299,13 @@ export function operatorMiniAppRoutes() {
        FROM operator_receipts r
        JOIN operator_balances c ON c.id=r.contract_id
        JOIN users u ON u.id=c.user_id
-       WHERE r.operator_id=$1 AND r.created_at>=$2 AND r.created_at<$3
-       ORDER BY r.id DESC
+       WHERE r.operator_id=$1 AND (${receiptDate})>=$2 AND (${receiptDate})<$3
+       ORDER BY (${receiptDate}) DESC,r.id DESC
        LIMIT 30`,
       [op.id, range.from, range.to],
     )).rows;
     const salesDays = (await pool!.query(
-      `SELECT to_char((COALESCE(r.decided_at,r.created_at) AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') day,
+      `SELECT to_char((COALESCE(r.decided_at,r.created_at) AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",
               c.currency,
               count(*)::int receipts,
               count(distinct c.user_id)::int clients,
@@ -309,8 +316,8 @@ export function operatorMiniAppRoutes() {
          AND r.status='approved'
          AND COALESCE(r.decided_at,r.created_at)>=$2
          AND COALESCE(r.decided_at,r.created_at)<$3
-       GROUP BY day,c.currency
-       ORDER BY day DESC,c.currency`,
+       GROUP BY "day",c.currency
+       ORDER BY "day" DESC,c.currency`,
       [op.id, range.from, range.to],
     )).rows;
     const monthRange = currentMonthRange();
@@ -329,49 +336,46 @@ export function operatorMiniAppRoutes() {
        ORDER BY c.currency`,
       [op.id, monthRange.from, monthRange.to],
     )).rows;
-    const salaryRow = (await pool!.query(
-      `SELECT count(*)::int sold_courses
-       FROM operator_contracts
-       WHERE operator_id=$1
-         AND activated_at IS NOT NULL
-         AND activated_at>=$2
-         AND activated_at<$3`,
-      [op.id, range.from, range.to],
-    )).rows[0] ?? { sold_courses: 0 };
-    const salary = salaryForCourses(Number(salaryRow.sold_courses || 0));
-    const salaryDaysRaw = (await pool!.query(
-      `SELECT to_char((activated_at AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') day,
-              count(*)::int sold_courses
-       FROM operator_contracts
-       WHERE operator_id=$1
-         AND activated_at IS NOT NULL
-         AND activated_at>=$2
-         AND activated_at<$3
-       GROUP BY day
-       ORDER BY day DESC`,
+    // Credit a course once to its first approved receipt's operator, even if
+    // the contract is later reassigned for debt collection.
+    const salaryRows = (await pool!.query(
+      `SELECT to_char((COALESCE(sale.decided_at,c.activated_at) AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",
+              c.tariff,count(*)::int sold_courses
+       FROM operator_contracts c
+       JOIN LATERAL (
+         SELECT r.operator_id,r.decided_at FROM operator_receipts r
+         WHERE r.contract_id=c.id AND r.status='approved'
+         ORDER BY r.decided_at ASC NULLS LAST,r.id ASC LIMIT 1
+       ) sale ON true
+       WHERE sale.operator_id=$1 AND c.activated_at IS NOT NULL
+         AND COALESCE(sale.decided_at,c.activated_at)>=$2
+         AND COALESCE(sale.decided_at,c.activated_at)<$3
+       GROUP BY "day",c.tariff ORDER BY "day" DESC,c.tariff`,
       [op.id, range.from, range.to],
     )).rows;
-    const salaryDays = salaryDaysRaw.map((row) => {
-      const calc = salaryForCourses(Number(row.sold_courses || 0));
+    const coursesByDay = new Map<string, number>();
+    const coursesByTariff = new Map<string, number>();
+    for (const row of salaryRows) {
+      coursesByDay.set(row.day, (coursesByDay.get(row.day) ?? 0) + Number(row.sold_courses));
+      coursesByTariff.set(row.tariff, (coursesByTariff.get(row.tariff) ?? 0) + Number(row.sold_courses));
+    }
+    const salaryDays = [...coursesByDay].map(([day, courses]) => {
+      const calc = salaryForCourses(courses);
       return {
-        day: row.day,
+        day,
         soldCourses: calc.soldCourses,
         baseAmount: calc.baseAmount,
         bonusAmount: calc.bonusAmount,
         totalAmount: calc.totalAmount,
       };
     });
-    const salaryTariffs = (await pool!.query(
-      `SELECT tariff,count(*)::int sold_courses
-       FROM operator_contracts
-       WHERE operator_id=$1
-         AND activated_at IS NOT NULL
-         AND activated_at>=$2
-         AND activated_at<$3
-       GROUP BY tariff
-       ORDER BY sold_courses DESC,tariff`,
-      [op.id, range.from, range.to],
-    )).rows;
+    const soldCourses = salaryDays.reduce((sum, day) => sum + day.soldCourses, 0);
+    const salary = {
+      ...salaryForCourses(soldCourses),
+      bonusAmount: salaryDays.reduce((sum, day) => sum + day.bonusAmount, 0),
+      totalAmount: salaryDays.reduce((sum, day) => sum + day.totalAmount, 0),
+    };
+    const salaryTariffs = [...coursesByTariff].map(([tariff, sold_courses]) => ({ tariff, sold_courses }));
     const actions = (await pool!.query(
       `SELECT count(*)::int actions,count(distinct user_id)::int clients
        FROM operator_audit

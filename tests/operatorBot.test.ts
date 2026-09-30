@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
 import { money, dueDate, paymentFits, receiptFile } from '../server/operator/domain.js';
 test('operator money/date validation preserves currency minor units and real Tashkent dates', () => {
@@ -50,7 +52,13 @@ test('operator conversation + admin workflow: authorization, replay, installment
     const { pool } = await import('../server/lib/db.js');
     assert.ok(pool);
     const originalConnect = pool.connect, originalQuery = pool.query;
-    const adapter = async (sql: string, args: any[] = []) => { const r = await db.query(sql, args); return { ...r, rowCount: r.rows.length || r.affectedRows || 0 }; };
+    const receiptDir = await mkdtemp(join(tmpdir(), 'falarus-mini-receipts-'));
+    process.env.OPERATOR_RECEIPT_DIR = receiptDir;
+    let lastDbError: unknown;
+    const adapter = async (sql: string, args: any[] = []) => {
+        try { const r = await db.query(sql, args); return { ...r, rowCount: r.rows.length || r.affectedRows || 0 }; }
+        catch (e) { lastDbError = e; throw e; }
+    };
     (pool as any).query = adapter;
     (pool as any).connect = async () => ({ query: adapter, release() { } });
     try {
@@ -208,11 +216,12 @@ test('operator conversation + admin workflow: authorization, replay, installment
         assert.equal((await db.query<any>('SELECT operator_id FROM operator_sessions WHERE telegram_id=456')).rows[0].operator_id, null);
         const { operatorMiniAppRoutes } = await import('../server/operator/miniApp.js');
         const miniRouter = operatorMiniAppRoutes() as any;
-        const invokeMini = (method: string, path: string, body = {}) => new Promise<any>((resolve, reject) => {
+        const invokeMini = (method: string, path: string, body = {}, file?: any) => new Promise<any>((resolve, reject) => {
+            lastDbError = undefined;
             const layer = miniRouter.stack.find((x: any) => x.route?.path === path && x.route.methods[method]);
-            layer.route.stack.at(-1).handle({ body, operator: { id: 1, name: 'Operator One' } }, {
+            layer.route.stack.at(-1).handle({ body, query: body, file, operator: { id: 1, name: 'Operator One' } }, {
                 set() {}, json: resolve,
-                status: (status: number) => ({ json: (data: any) => reject(new Error(status + ':' + data.error)) }),
+                status: (status: number) => ({ json: (data: any) => reject(new Error(path + ':' + status + ':' + data.error, { cause: lastDbError })) }),
             }, reject);
         });
         const catalog = await invokeMini('get', '/me');
@@ -227,6 +236,47 @@ test('operator conversation + admin workflow: authorization, replay, installment
         assert.equal(miniStored.plan_expires_at, null);
         await assert.rejects(invokeMini('post', '/customers', miniInput), /foydalanuvchi mavjud/);
         await assert.rejects(invokeMini('post', '/payments', { userId: miniStudent.user.id, tariff: 'month', source: 'Telegram', currency: 'UZS', total: '450000', amount: '400000' }), /Tarif narxi yangilangan/);
+        const initialStats = await invokeMini('get', '/stats', { period: 'today' });
+        const uploadPayment = { userId: miniStudent.user.id, tariff: 'month', source: 'Telegram', currency: 'UZS', total: '400000', amount: '400000' };
+        const submittedMini = await invokeMini('post', '/payments', uploadPayment, { mimetype: 'application/pdf', buffer: Buffer.from('%PDF-isolated-test-one') });
+        const pendingStats = await invokeMini('get', '/stats', { period: 'today' });
+        assert.ok(pendingStats.history.some((r: any) => Number(r.id) === Number(submittedMini.receiptId) && r.status === 'pending'));
+        assert.equal(pendingStats.salary.soldCourses, initialStats.salary.soldCourses, 'pending receipts earn no salary');
+        await decideReceipt(Number(submittedMini.receiptId), 1, 'approved', '');
+        const approvedStats = await invokeMini('get', '/stats', { period: 'today' });
+        assert.equal(approvedStats.salary.soldCourses, initialStats.salary.soldCourses + 1);
+        assert.ok(approvedStats.history.some((r: any) => Number(r.id) === Number(submittedMini.receiptId) && r.status === 'approved'));
+        const rejectedMini = await invokeMini('post', '/payments', uploadPayment, { mimetype: 'application/pdf', buffer: Buffer.from('%PDF-isolated-test-two') });
+        await decideReceipt(Number(rejectedMini.receiptId), 1, 'rejected', 'Invalid receipt');
+        const rejectedStats = await invokeMini('get', '/stats', { period: 'today' });
+        assert.equal(rejectedStats.salary.soldCourses, approvedStats.salary.soldCourses);
+        assert.ok(!rejectedStats.debts.flatMap((d: any) => d.debtors).some((d: any) => Number(d.contract_id) === Number(rejectedMini.contractId)));
+
+        await db.exec("INSERT INTO operator_accounts(login,name,password_hash) VALUES('other','Other Operator','hash')");
+        let firstContract: number | undefined;
+        for (let i = 0; i < 6; i++) {
+            const timestamp = i < 3 ? '2026-08-28T08:00:00Z' : '2026-08-29T08:00:00Z';
+            const currency = i < 3 ? 'RUB' : 'UZS';
+            const amount = i < 3 ? 500 : 500000;
+            const contract = (await db.query<any>("INSERT INTO operator_contracts(user_id,operator_id,tariff,currency,total,source,activated_at) VALUES(1,1,'month',$1,$2,'Telegram',$3) RETURNING id", [currency, amount * 2, timestamp])).rows[0].id;
+            firstContract ??= contract;
+            await db.query("INSERT INTO operator_receipts(contract_id,operator_id,amount,file_id,file_unique_id,mime,status,created_at,decided_at) VALUES($1,1,$2,'test',$3,'image/jpeg','approved','2026-08-27T08:00:00Z',$4)", [contract, amount, 'stats-' + i, timestamp]);
+        }
+        await db.query("INSERT INTO operator_receipts(contract_id,operator_id,amount,file_id,file_unique_id,mime,status,created_at,decided_at) VALUES($1,1,100,'test','stats-installment','image/jpeg','approved','2026-08-29T08:00:00Z','2026-08-29T08:00:00Z')", [firstContract]);
+        await db.query('UPDATE operator_contracts SET operator_id=2 WHERE id=$1', [firstContract]);
+        const rangeStats = await invokeMini('get', '/stats', { period: 'custom', from: '2026-08-28', to: '2026-08-29' });
+        assert.equal(rangeStats.salary.soldCourses, 6, 'installments are not another sold course; reassigning debt does not move earned salary');
+        assert.equal(rangeStats.salary.baseAmount, 180000);
+        assert.equal(rangeStats.salary.bonusAmount, 100000, 'two daily bonuses of 50000');
+        assert.equal(rangeStats.salary.totalAmount, 280000);
+        assert.equal(rangeStats.salary.totalAmount, rangeStats.salaryDays.reduce((sum: number, day: any) => sum + day.totalAmount, 0));
+        for (const currency of ['RUB', 'UZS']) {
+            const approved = rangeStats.payments.find((r: any) => r.status === 'approved' && r.currency === currency);
+            assert.equal(Number(approved.amount), rangeStats.salesDays.filter((r: any) => r.currency === currency).reduce((sum: number, r: any) => sum + Number(r.amount), 0));
+        }
+        assert.equal(rangeStats.history.length, 7, 'history follows the approval date, including receipts submitted on an earlier day');
+        await assert.rejects(invokeMini('get', '/stats', { period: 'custom', from: '2026-02-30', to: '2026-03-02' }), /Sana/);
+        await assert.rejects(invokeMini('get', '/stats', { period: 'custom', from: '2026-08-29', to: '2026-08-28' }), /Tugash/);
         await db.exec('UPDATE operator_accounts SET active=false WHERE id=1');
         await click('list:0');
         assert.equal((await db.query<any>('SELECT operator_id FROM operator_sessions WHERE telegram_id=123')).rows[0].operator_id, null);
@@ -236,5 +286,7 @@ test('operator conversation + admin workflow: authorization, replay, installment
         (pool as any).connect = originalConnect;
         await pool.end();
         await db.close();
+        await rm(receiptDir, { recursive: true, force: true });
+        delete process.env.OPERATOR_RECEIPT_DIR;
     }
 });
