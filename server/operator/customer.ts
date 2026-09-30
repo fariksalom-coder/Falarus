@@ -1,8 +1,9 @@
 import bcrypt from 'bcryptjs';
-import { randomBytes } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { parseContactIdentifier, sanitizePhoneRaw } from '../../shared/authIdentifiers.js';
 import { audit } from './service.js';
+
+export const OPERATOR_INITIAL_CUSTOMER_PASSWORD = '12345678';
 
 export function customerName(raw: string): string {
     const name = raw.trim();
@@ -34,7 +35,7 @@ export async function createOperatorCustomer(c: PoolClient, operator: number, in
     // PostgreSQL's existing unique contact indexes also guard concurrent registration.
     if ((await matchingCustomer(c, contact.phone, email)).length)
         throw new Error('Bu telefon yoki email bilan hisob mavjud. Qidirish orqali mavjud foydalanuvchini tanlang.');
-    const password = await bcrypt.hash(randomBytes(32).toString('base64url'), 12);
+    const password = await bcrypt.hash(OPERATOR_INITIAL_CUSTOMER_PASSWORD, 12);
     const row = (await c.query(`INSERT INTO users
         (first_name,last_name,phone,phone_raw,phone_normalized,country_code,phone_verified,phone_invalid,
          email,password,account_type,onboarded,plan_name,plan_expires_at)

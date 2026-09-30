@@ -56,6 +56,7 @@ test('operator conversation + admin workflow: authorization, replay, installment
     try {
         await db.exec(`CREATE TABLE users(id bigserial PRIMARY KEY,first_name text,last_name text,phone text UNIQUE,phone_raw text,phone_normalized text UNIQUE,country_code text,phone_verified boolean,phone_invalid boolean,account_type text,onboarded integer,email text UNIQUE,password text DEFAULT 'original',plan_name text,plan_expires_at timestamptz,created_at timestamptz DEFAULT now());
    CREATE TABLE admins(id bigint PRIMARY KEY);CREATE TABLE payments(id bigint PRIMARY KEY);
+   CREATE TABLE sales_crm_agents(id bigserial PRIMARY KEY,login text,name text,password_hash text,active boolean,role text);
    CREATE TABLE leaderboard(user_id bigint PRIMARY KEY,total_points integer,rank integer,updated_at timestamptz);
    CREATE TABLE subscriptions(id bigserial PRIMARY KEY,user_id bigint,plan_type text,expires_at timestamptz,status text,started_at timestamptz DEFAULT now());
    INSERT INTO users(id,first_name,last_name,phone,email) VALUES(1,'Test','Mijoz','+998900000000','synthetic@example.invalid');INSERT INTO admins VALUES(1);`);
@@ -177,6 +178,8 @@ test('operator conversation + admin workflow: authorization, replay, installment
         assert.equal(student.account_type, 'student');
         assert.equal(student.phone_normalized, '+998901234567');
         assert.equal(student.plan_expires_at, null);
+        assert.notEqual(student.password, '12345678');
+        assert.ok(await bcrypt.compare('12345678', student.password), 'new operator-created student can sign in with the displayed initial password');
         assert.equal((await db.query<any>("SELECT count(*) n FROM operator_audit WHERE user_id=$1 AND operator_id=1 AND action='customer_created'", [student.id])).rows[0].n, 1);
         const message = (await db.query<any>("SELECT payload FROM operator_outbox WHERE dedupe=$1", ['reset-link:' + creation.update_id])).rows[0].payload.text;
         const studentToken = message.match(/#token=([A-Za-z0-9_-]{43})/)[1];
@@ -203,6 +206,27 @@ test('operator conversation + admin workflow: authorization, replay, installment
         await send('op1', 456);
         await send('Testpassword123!', 456);
         assert.equal((await db.query<any>('SELECT operator_id FROM operator_sessions WHERE telegram_id=456')).rows[0].operator_id, null);
+        const { operatorMiniAppRoutes } = await import('../server/operator/miniApp.js');
+        const miniRouter = operatorMiniAppRoutes() as any;
+        const invokeMini = (method: string, path: string, body = {}) => new Promise<any>((resolve, reject) => {
+            const layer = miniRouter.stack.find((x: any) => x.route?.path === path && x.route.methods[method]);
+            layer.route.stack.at(-1).handle({ body, operator: { id: 1, name: 'Operator One' } }, {
+                set() {}, json: resolve,
+                status: (status: number) => ({ json: (data: any) => reject(new Error(status + ':' + data.error)) }),
+            }, reject);
+        });
+        const catalog = await invokeMini('get', '/me');
+        assert.deepEqual(catalog.tariffs.map((t: any) => t.prices.find((p: any) => p.currency === 'UZS').amount), [400000, 530000, 790000]);
+        assert.deepEqual(catalog.tariffs.map((t: any) => t.prices.find((p: any) => p.currency === 'RUB').amount), [3000, 4000, 6000]);
+        const miniInput = { firstName: 'Mini', lastName: 'Student', phone: '+7 916 123 45 67', email: '-' };
+        const miniStudent = await invokeMini('post', '/customers', miniInput);
+        assert.equal(miniStudent.initialPassword, '12345678');
+        const miniStored = (await db.query<any>('SELECT phone_normalized,password,plan_expires_at FROM users WHERE id=$1', [miniStudent.user.id])).rows[0];
+        assert.equal(miniStored.phone_normalized, '+79161234567');
+        assert.ok(await bcrypt.compare(miniStudent.initialPassword, miniStored.password));
+        assert.equal(miniStored.plan_expires_at, null);
+        await assert.rejects(invokeMini('post', '/customers', miniInput), /foydalanuvchi mavjud/);
+        await assert.rejects(invokeMini('post', '/payments', { userId: miniStudent.user.id, tariff: 'month', source: 'Telegram', currency: 'UZS', total: '450000', amount: '400000' }), /Tarif narxi yangilangan/);
         await db.exec('UPDATE operator_accounts SET active=false WHERE id=1');
         await click('list:0');
         assert.equal((await db.query<any>('SELECT operator_id FROM operator_sessions WHERE telegram_id=123')).rows[0].operator_id, null);

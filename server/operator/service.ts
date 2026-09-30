@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { customerName, customerPhone, customerEmail, matchingCustomer, createOperatorCustomer } from './customer.js';
+import { customerName, customerPhone, customerEmail, matchingCustomer, createOperatorCustomer, OPERATOR_INITIAL_CUSTOMER_PASSWORD } from './customer.js';
 import { issueOperatorReset } from './passwordReset.js';
 import type { PoolClient } from 'pg';
 import { pool } from '../lib/db.js';
@@ -204,7 +204,7 @@ export async function handleUpdate(update: any) {
                 const uid = await createOperatorCustomer(c, oid, state);
                 const link = await issueOperatorReset(c, uid, oid);
                 await enqueue(c, 'sendMessage', { chat_id: tg,
-                    text: `O‘quvchi #${uid} yaratildi: ${state.firstName} ${state.lastName}\nKirish: ${state.phone}${state.email ? ' yoki ' + state.email : ''}\nO‘quvchi o‘z parolini o‘rnatishi uchun havola (30 daqiqa, bir marta):\n${link}\nFaqat shu o‘quvchiga yuboring. Tarif hali faollashtirilmagan.`,
+                    text: `O‘quvchi #${uid} yaratildi: ${state.firstName} ${state.lastName}\nKirish: ${state.phone}${state.email ? ' yoki ' + state.email : ''}\nParol: ${OPERATOR_INITIAL_CUSTOMER_PASSWORD}\nParolni almashtirish uchun havola (30 daqiqa, bir marta):\n${link}\nFaqat shu o‘quvchiga yuboring. Tarif hali faollashtirilmagan.`,
                     link_preview_options: { is_disabled: true } }, `reset-link:${update.update_id}`);
                 await save({ step: 'tariff', uid });
                 await say('Endi shu o‘quvchi uchun tarifni tanlang:', [...TARIFF_CHOICES, ['Mijoz kartasi', `user:${uid}`]]);

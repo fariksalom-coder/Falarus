@@ -6,10 +6,9 @@ import { createHmac, createHash, randomUUID, timingSafeEqual } from 'node:crypto
 import { pool } from '../lib/db.js';
 import { createIpRateLimitMiddleware } from '../lib/rateLimit.js';
 import { audit, enabled, transaction } from './service.js';
-import { createOperatorCustomer, customerEmail, customerName, customerPhone, matchingCustomer } from './customer.js';
-import { issueOperatorReset } from './passwordReset.js';
+import { createOperatorCustomer, customerEmail, customerName, customerPhone, matchingCustomer, OPERATOR_INITIAL_CUSTOMER_PASSWORD } from './customer.js';
 import { dueDate, money, paymentFits } from './domain.js';
-import { getRussianTariffPlanRub } from '../../shared/russianTariffs.js';
+import { operatorTariffCatalog, OPERATOR_CURRENCIES } from '../../shared/operatorTariffs.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -23,7 +22,7 @@ const TARIFFS = [
 ] as const;
 
 const SOURCES = ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'] as const;
-const CURRENCIES = ['UZS', 'RUB', 'USD'] as const;
+const CURRENCIES = OPERATOR_CURRENCIES;
 const RECEIPT_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 const TZ_OFFSET_MS = 5 * 60 * 60 * 1000;
 const SALARY_PER_COURSE_UZS = 30000;
@@ -39,8 +38,6 @@ type MiniOperator = {
   telegram_id: string;
 };
 
-type Currency = typeof CURRENCIES[number];
-type TariffCode = typeof TARIFFS[number]['code'];
 
 function phoneSearchPatterns(value: string): string[] {
   const digits = value.replace(/\D/g, '');
@@ -64,30 +61,8 @@ function formatAmount(amount: number, currency: string): string {
   return `${formatted} ${currency}`;
 }
 
-function fallbackTariffAmount(code: TariffCode, currency: Currency): number {
-  const plan = getRussianTariffPlanRub(code);
-  if (!plan) return 0;
-  if (currency === 'RUB') return plan.priceRub;
-  if (currency === 'UZS') return plan.priceUzs;
-  return 0;
-}
-
 async function tariffCatalog() {
-  const dbRows = (await pool!.query(
-    `SELECT tariff_type,currency,price
-     FROM tariff_prices
-     WHERE tariff_type = ANY($1::text[]) AND currency = ANY($2::text[])`,
-    [TARIFFS.map((item) => item.code), CURRENCIES],
-  )).rows as Array<{ tariff_type: string; currency: Currency; price: string | number }>;
-  const fromDb = new Map(dbRows.map((row) => [`${row.tariff_type}:${row.currency}`, Number(row.price)]));
-  return TARIFFS.map((tariff) => ({
-    ...tariff,
-    prices: CURRENCIES.map((currency) => {
-      const dbPrice = fromDb.get(`${tariff.code}:${currency}`);
-      const amount = Number.isFinite(dbPrice) && Number(dbPrice) > 0 ? Number(dbPrice) : fallbackTariffAmount(tariff.code, currency);
-      return { currency, amount, display: amount > 0 ? formatAmount(amount, currency) : '' };
-    }),
-  }));
+  return operatorTariffCatalog();
 }
 
 function receiptDir(): string {
@@ -451,8 +426,8 @@ export function operatorMiniAppRoutes() {
       if (matches.length) throw new Error(`Bu kontakt bilan foydalanuvchi mavjud: #${matches[0].id}`);
       return createOperatorCustomer(c, op.id, { firstName, lastName, phone: phone.phone, phoneRaw: phone.phoneRaw, email });
     });
-    const resetLink = await transaction((c) => issueOperatorReset(c, uid, op.id));
-    res.json({ user: { id: uid }, resetLink });
+    res.set('Cache-Control', 'no-store');
+    res.json({ user: { id: uid }, initialPassword: OPERATOR_INITIAL_CUSTOMER_PASSWORD });
   }));
 
   router.post('/payments', upload.single('receipt'), miniWrap(async (req, res) => {
@@ -471,6 +446,7 @@ export function operatorMiniAppRoutes() {
       ?.prices.find((item) => item.currency === currency)?.amount ?? 0;
     if (!catalogTotal) throw new Error('Bu valyuta uchun tarif narxi topilmadi.');
     const total = money(catalogTotal);
+    if (money(req.body.total) !== total) throw new Error('Tarif narxi yangilangan. Mini ilovani qayta oching.');
     const amount = money(req.body.amount);
     if (!paymentFits(amount, total)) throw new Error('To‘lov jami summadan oshmasligi kerak.');
     const due = Number(amount) < Number(total) ? dueDate(String(req.body.dueAt ?? '')) : null;

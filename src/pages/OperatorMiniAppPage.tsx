@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { apiUrl } from '../api';
+import { operatorTariffCatalog, OPERATOR_CURRENCIES } from '../../shared/operatorTariffs';
 
 declare global {
   interface Window {
@@ -91,13 +92,9 @@ type StatsResponse = {
   actions: { actions: number; clients: number };
 };
 
-const fallbackTariffs: TariffItem[] = [
-  { code: 'month', label: '1 oy', prices: [{ currency: 'RUB', amount: 3000, display: '3 000 ₽' }, { currency: 'UZS', amount: 400000, display: '400 000 so‘m' }] },
-  { code: 'three_month', label: '3 oy', prices: [{ currency: 'RUB', amount: 4000, display: '4 000 ₽' }, { currency: 'UZS', amount: 530000, display: '530 000 so‘m' }] },
-  { code: 'six_month', label: '6 oy', prices: [{ currency: 'RUB', amount: 6000, display: '6 000 ₽' }, { currency: 'UZS', amount: 790000, display: '790 000 so‘m' }] },
-];
+const fallbackTariffs: TariffItem[] = operatorTariffCatalog();
 const sources = ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'];
-const fallbackCurrencies = ['RUB', 'UZS', 'USD'];
+const fallbackCurrencies = [...OPERATOR_CURRENCIES];
 const countries = [
   { code: 'UZ', label: 'O‘zbekiston', dial: '+998', placeholder: '90 123 45 67', groups: [2, 3, 2, 2] },
   { code: 'RU', label: 'Rossiya', dial: '+7', placeholder: '900 123 45 67', groups: [3, 3, 2, 2] },
@@ -125,7 +122,7 @@ function digitsOnly(value: string) {
 }
 
 function formatByGroups(value: string, groups: readonly number[]) {
-  const digits = digitsOnly(value);
+  const digits = digitsOnly(value).slice(0, groups.reduce((sum, size) => sum + size, 0));
   const parts: string[] = [];
   let pos = 0;
   for (const size of groups) {
@@ -134,8 +131,6 @@ function formatByGroups(value: string, groups: readonly number[]) {
     parts.push(part);
     pos += size;
   }
-  const rest = digits.slice(pos);
-  if (rest) parts.push(rest);
   return parts.join(' ');
 }
 
@@ -181,6 +176,7 @@ function Field(props: {
   type?: string;
   inputMode?: 'text' | 'tel' | 'decimal' | 'numeric';
   innerRef?: React.Ref<HTMLInputElement>;
+  readOnly?: boolean;
 }) {
   return (
     <label className="block">
@@ -190,6 +186,7 @@ function Field(props: {
         className="mt-1 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-[16px] font-semibold text-slate-950 caret-[#071B3A] outline-none transition focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
         type={props.type || 'text'}
         inputMode={props.inputMode}
+        readOnly={props.readOnly}
         value={props.value}
         placeholder={props.placeholder}
         onChange={(e) => props.onChange(e.target.value)}
@@ -208,29 +205,38 @@ function PhoneField(props: {
   return (
     <div>
       <span className="text-[13px] font-semibold text-slate-600">Telefon</span>
-      <div className="mt-1 grid grid-cols-[118px_1fr] gap-2">
+      <div className="mt-1 space-y-2">
         <select
-          className="h-12 rounded-xl border border-slate-200 bg-white px-2 text-sm font-black text-slate-900 outline-none focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
+          aria-label="Davlat"
+          className="h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
           value={props.countryCode}
-          onChange={(e) => {
-            props.onCountry(e.target.value);
-            props.onLocal('');
-          }}
+          onChange={(e) => props.onCountry(e.target.value)}
         >
           {countries.map((item) => (
-            <option key={item.code} value={item.code}>{item.dial} {item.code}</option>
+            <option key={item.code} value={item.code}>{item.label}</option>
           ))}
         </select>
+        <div className="flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-[#0B2A6B] focus-within:ring-4 focus-within:ring-blue-100">
+        <span className="shrink-0 border-r border-slate-200 px-3 font-semibold text-slate-900">{country.dial}</span>
         <input
-          className="h-12 rounded-xl border border-slate-200 bg-white px-3 text-[16px] font-semibold text-slate-950 caret-[#071B3A] outline-none transition focus:border-[#0B2A6B] focus:ring-4 focus:ring-blue-100"
+          aria-label="Telefon raqami"
+          autoComplete="tel-national"
+          className="h-12 min-w-0 w-full rounded-xl bg-white px-3 text-[16px] font-semibold text-slate-950 caret-[#071B3A] outline-none"
           type="tel"
           inputMode="tel"
           value={props.local}
           placeholder={country.placeholder}
-          onChange={(e) => props.onLocal(formatByGroups(e.target.value, country.groups))}
+          onChange={(e) => {
+            let digits = e.target.value.replace(/\D/g, '');
+            const length = country.groups.reduce((sum, size) => sum + size, 0);
+            const dial = country.dial.slice(1);
+            if (digits.startsWith(dial) && (e.target.value.trim().startsWith('+') || digits.length > length)) digits = digits.slice(dial.length);
+            else if ((country.code === 'RU' || country.code === 'KZ') && digits.length === 11 && digits.startsWith('8')) digits = digits.slice(1);
+            props.onLocal(formatByGroups(digits, country.groups));
+          }}
         />
+        </div>
       </div>
-      <p className="mt-1 text-xs font-semibold text-slate-500">{country.label} · {country.dial} {props.local || country.placeholder}</p>
     </div>
   );
 }
@@ -250,15 +256,15 @@ export default function OperatorMiniAppPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Customer[]>([]);
   const [selected, setSelected] = useState<Customer | null>(null);
-  const [resetLink, setResetLink] = useState('');
+  const [initialPassword, setInitialPassword] = useState('');
   const [customer, setCustomer] = useState({ firstName: '', lastName: '', country: 'UZ', phoneLocal: '', email: '' });
   const [payment, setPayment] = useState({
     tariff: 'three_month',
     source: 'Instagram',
     otherSource: '',
     currency: 'RUB',
-    total: '4000',
-    amount: '4000',
+    total: String(fallbackTariffs.find((item) => item.code === 'three_month')!.prices.find((item) => item.currency === 'RUB')!.amount),
+    amount: String(fallbackTariffs.find((item) => item.code === 'three_month')!.prices.find((item) => item.currency === 'RUB')!.amount),
     dueAt: '',
   });
   const [receipt, setReceipt] = useState<File | null>(null);
@@ -292,7 +298,7 @@ export default function OperatorMiniAppPage() {
     const tariffCode = next.tariff ?? payment.tariff;
     const currency = next.currency ?? payment.currency;
     const price = tariffPrice(tariffCode, currency);
-    const total = price?.amount ? String(price.amount) : payment.total;
+    const total = price?.amount ? String(price.amount) : '';
     setPayment({ ...payment, ...next, total, amount: total });
   }
 
@@ -361,7 +367,7 @@ export default function OperatorMiniAppPage() {
     setError('');
     setNote('');
     try {
-      const res = await api<{ user: { id: number }; resetLink: string }>('/customers', {
+      const res = await api<{ user: { id: number }; initialPassword: string }>('/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ firstName: customer.firstName, lastName: customer.lastName, phone, email: customer.email.trim() || '-' }),
@@ -373,7 +379,7 @@ export default function OperatorMiniAppPage() {
         phone,
         email: customer.email || null,
       });
-      setResetLink(res.resetLink);
+      setInitialPassword(res.initialPassword);
       setNote('O‘quvchi yaratildi. Endi to‘lov chekini yuboring.');
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('success');
     } catch (e: any) {
@@ -510,7 +516,7 @@ export default function OperatorMiniAppPage() {
                   onClick={() => {
                     setMode(key as 'new' | 'existing');
                     setSelected(null);
-                    setResetLink('');
+                    setInitialPassword('');
                   }}
                   type="button"
                 >
@@ -528,8 +534,8 @@ export default function OperatorMiniAppPage() {
                 <PhoneField
                   countryCode={customer.country}
                   local={customer.phoneLocal}
-                  onCountry={(v) => setCustomer({ ...customer, country: v })}
-                  onLocal={(v) => setCustomer({ ...customer, phoneLocal: v })}
+                  onCountry={(v) => setCustomer((prev) => ({ ...prev, country: v, phoneLocal: '' }))}
+                  onLocal={(v) => setCustomer((prev) => ({ ...prev, phoneLocal: v }))}
                 />
                 <Field label="Email" value={customer.email} onChange={(v) => setCustomer({ ...customer, email: v })} placeholder="email bo‘lmasa bo‘sh qoldiring" />
                 <button className="h-12 w-full rounded-xl bg-[#0B2A6B] text-[15px] font-black text-white disabled:opacity-50" disabled={busy || !hasTelegram} onClick={createCustomer} type="button">
@@ -592,7 +598,7 @@ export default function OperatorMiniAppPage() {
                     ))}
                   </div>
                 ) : null}
-                {resetLink && <textarea className="mt-3 h-24 w-full rounded-xl border border-blue-200 bg-white p-2 text-xs font-semibold text-slate-700" readOnly value={resetLink} />}
+                {initialPassword && <p className="mt-3 rounded-lg border border-blue-200 bg-white p-3 text-sm">Parol: <strong className="select-all font-mono text-base">{initialPassword}</strong></p>}
               </div>
             )}
 
@@ -634,7 +640,7 @@ export default function OperatorMiniAppPage() {
               </div>
               {payment.source === 'Boshqa' && <Field label="Manba nomi" value={payment.otherSource} onChange={(v) => setPayment({ ...payment, otherSource: v })} />}
               <div className="grid grid-cols-2 gap-2">
-                <Field label="Jami summa" value={payment.total} onChange={(v) => setPayment({ ...payment, total: v })} inputMode="decimal" />
+                <Field label="Jami summa" value={payment.total} readOnly onChange={() => {}} inputMode="decimal" />
                 <Field label="To‘langan" value={payment.amount} onChange={(v) => setPayment({ ...payment, amount: v })} inputMode="decimal" />
               </div>
               {isPartial && (
@@ -652,7 +658,7 @@ export default function OperatorMiniAppPage() {
                 <span className="text-[13px] font-semibold text-slate-600">Chek</span>
                 <input className="mt-1 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm font-semibold" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} />
               </label>
-              <button className="h-13 w-full rounded-xl bg-[#1E5BFF] py-4 text-[16px] font-black text-white shadow-lg shadow-blue-900/20 disabled:opacity-50" disabled={busy || !hasTelegram || !activeUserId} onClick={submitPayment} type="button">
+              <button className="h-13 w-full rounded-xl bg-[#1E5BFF] py-4 text-[16px] font-black text-white shadow-lg shadow-blue-900/20 disabled:opacity-50" disabled={busy || !hasTelegram || !activeUserId || !currentPrice?.amount} onClick={submitPayment} type="button">
                 Chekni adminga yuborish
               </button>
             </div>
