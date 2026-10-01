@@ -1,4 +1,3 @@
-import TrialDayFeedback from '../components/TrialDayFeedback';
 import { SkeletonKarta } from '../components/ui/Skeleton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
@@ -430,7 +429,6 @@ export default function HomePage() {
 
   return (
     <div className="bg-app-bg">
-      {displayDay === 0 && <TrialDayFeedback />}
       <main className="mx-auto w-full max-w-[1180px]">
         <HomeHeader premium={premium} t={t} />
         {/* Jonli efir ketayotgan bo'lsa — eng tepada. Efir bo'lmasa

@@ -1,3 +1,4 @@
+import '../styles/course-special-offer.css';
 import '../styles/course-info-responsive.css';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Play, RotateCcw } from 'lucide-react';
@@ -9,6 +10,7 @@ import { COURSE_VIDEO_SRC, COURSE_VIDEO_DURATION_SECONDS, secondsUntilCourseBonu
 import { RUSSIAN_TARIFF_PLANS_RUB, formatRubAmount, formatRussianTariffUzsMing, type RussianTariffCode } from '../../shared/russianTariffs';
 
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+const monthlyPlan = RUSSIAN_TARIFF_PLANS_RUB.find(p => p.code === 'month')!;
 const offerPlan = RUSSIAN_TARIFF_PLANS_RUB.find(p => p.code === 'three_month')!;
 
 export default function CourseInfoPage() {
@@ -86,7 +88,7 @@ export default function CourseInfoPage() {
       </select>
     </div>
     {mediaError && <p role="alert" className="p-4 text-center">Video yuklanmadi. <button className="underline" onClick={() => { setMediaError(false); video.current?.load(); }}>Qayta urinish</button></p>}
-    <section aria-label="Tariflar" className="course-info-plans px-4 pb-2 pt-3">
+    {left <= 0 && <section aria-label="Tariflar" className="course-info-plans px-4 pb-2 pt-3">
       <fieldset disabled={buying} className="min-w-0"><legend className="mb-2 text-base font-bold">Tarifni tanlang</legend>
         <div className="flex flex-col gap-2">{RUSSIAN_TARIFF_PLANS_RUB.map(plan => {
           const selected = selectedTariff === plan.code;
@@ -102,12 +104,17 @@ export default function CourseInfoPage() {
         })}</div>
       </fieldset>
       <button disabled={buying} onClick={() => void purchase(selectedTariff)} className="mt-3 flex min-h-14 w-full items-center justify-center gap-3 rounded-[22px] border-b-4 border-blue-800 bg-[#2563FF] px-4 py-3 text-lg font-extrabold text-white shadow-[0_5px_12px_rgba(37,99,235,0.2)] transition-colors hover:bg-blue-600 active:border-b-2 disabled:opacity-50">{buying ? '…' : 'Sotib olish · ' + formatRubAmount(selectedPlan.priceRub) + ' ₽'}<ArrowRight size={22} className="shrink-0" /></button>
-    </section>
-    {left > 0 && <section aria-label="Maxsus taklif" className="mx-4 mb-4 flex flex-col gap-4 rounded-2xl bg-[#1E40AF] p-5 text-white shadow-lg">
-      <div><p className="text-xs font-bold text-blue-200">MAXSUS TAKLIF</p><h2 className="mt-1 text-[28px] font-extrabold leading-tight">+3 oy bepul</h2><p className="mt-1 text-sm text-blue-100">3 oy narxiga 6 oy o'qing</p></div>
-      <div className="tabular-nums"><p className="text-[34px] font-extrabold leading-tight text-[#FFC83D]">{formatRubAmount(offerPlan.priceRub)} ₽</p><p className="mt-1 text-sm font-semibold text-[#FFC83D]">{offerPlan.priceUzs.toLocaleString('ru-RU')} so'm</p></div>
-      <div className="flex items-center justify-between gap-2 border-y border-white/15 py-3"><span className="text-sm font-semibold text-blue-100">Taklif tugashiga</span><div role="timer" aria-label="Taklif tugashiga" className="flex items-center gap-1 text-xl font-bold tabular-nums"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">{String(Math.floor(left / 60)).padStart(2, '0')}</span>:<span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">{String(left % 60).padStart(2, '0')}</span></div></div>
-      <button disabled={buying} onClick={() => void purchase('three_month', true)} className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#FFC83D] px-3 py-3 text-base font-bold text-[#0A1120] disabled:opacity-50">{buying ? '…' : 'Taklifdan foydalanish'}</button>
+    </section>}
+    {left > 0 && <section aria-label="Maxsus taklif" className="fr-offer">
+      <div className="fr-ring" aria-hidden="true" />
+      <div className="fr-sticker" title="Olti oy uchun oylik RUB tarifiga nisbatan">−{Math.round((1 - offerPlan.priceRub / (monthlyPlan.priceRub * 6)) * 100)}%</div>
+      <div className="fr-head"><span className="fr-eyebrow">MAXSUS TAKLIF</span><h2 className="fr-title">+3 oy bepul</h2></div>
+      <div className="fr-prices">
+        <div className="fr-line"><span className="fr-new">{formatRubAmount(offerPlan.priceRub)} ₽</span><span className="fr-old">{formatRubAmount(monthlyPlan.priceRub * 6)} ₽</span></div>
+        <div className="fr-line"><span className="fr-new-sm">{formatRubAmount(offerPlan.priceUzs)} so'm</span><span className="fr-old-sm">{formatRubAmount(monthlyPlan.priceUzs * 6)} so'm</span></div>
+      </div>
+      <div className="fr-row"><span className="fr-label">Taklif tugashiga</span><div className="fr-timer" role="timer" aria-label="Taklif tugashiga"><span className="box">{String(Math.floor(left / 60)).padStart(2, '0')}</span><span className="sep">:</span><span className="box">{String(left % 60).padStart(2, '0')}</span></div></div>
+      <button disabled={buying} onClick={() => void purchase('three_month', true)} className="fr-cta">{buying ? '…' : 'Taklifdan foydalanish'}<ArrowRight size={20} strokeWidth={2.4} /></button>
     </section>}
     {offerLoading && <p role="status" className="px-4 pb-3 text-center">Taklif tayyorlanmoqda…</p>}
     {offerError && <p role="alert" className="px-4 pb-3 text-center text-red-700">Taklifni yuklab bo'lmadi. <button className="underline" onClick={() => void reveal()}>Qayta urinish</button></p>}

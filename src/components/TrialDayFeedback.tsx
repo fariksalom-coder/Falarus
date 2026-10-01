@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
@@ -23,7 +24,8 @@ export default function TrialDayFeedback() {
     setDismissed(true); dialog.current?.close();
   };
   return <dialog ref={dialog} onCancel={close} aria-labelledby="trial-feedback-title" className="fixed inset-0 m-auto w-[calc(100%_-_32px)] max-w-sm rounded-lg border border-app-border bg-app-surface p-6 text-app-text shadow-xl backdrop:bg-black/60">
-    <h2 id="trial-feedback-title" className="text-xl font-bold">Sinov darsi sizga yoqdimi?</h2>
-    <div className="mt-5 flex flex-col gap-3"><button onClick={() => { close(); navigate('/kurs-haqida'); }} className="min-h-12 rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white">Ha, yoqdi</button><button onClick={close} className="min-h-11 rounded-lg border border-app-border px-4">Hozir emas</button></div>
+    <button type="button" aria-label="Yopish" onClick={close} className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-xl text-slate-500"><X size={22} /></button>
+    <h2 id="trial-feedback-title" className="pr-8 text-xl font-bold">Sinov darsi sizga yoqdimi?</h2>
+    <div className="mt-5 flex flex-col gap-3"><button onClick={() => { close(); navigate('/kurs-haqida'); }} className="min-h-12 rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white">Ha, yoqdi</button></div>
   </dialog>;
 }

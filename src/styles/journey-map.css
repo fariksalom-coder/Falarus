@@ -54,3 +54,5 @@
   .journey-tariff-copy small { font-size: 12px; }
 }
 @media (max-width: 360px) { .journey-summary { padding: 14px; } .journey-summary-top { gap: 8px; } .journey-summary h1 { font-size: 19px; } .journey-progress { width: 60px; height: 60px; } .journey-tariffs { gap: 10px; padding: 12px; } .journey-tariff-copy small { font-size: 12px; } }
+
+.journey-day-hand { position:absolute; left:50%; bottom:calc(100% - 6px); transform:translateX(-50%); height:64px; }

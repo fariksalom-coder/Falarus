@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, Check, Lock, Sparkles, Flag, LocateFixed } from 'lucide-react';
 import '../styles/trial-day-cue.css';
 import '../styles/journey-map.css';
+import TrialDayFeedback from '../components/TrialDayFeedback';
 import TrialHandAnimation from '../components/TrialHandAnimation';
 import { useAccess } from '../context/AccessContext';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
@@ -12,6 +13,7 @@ import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
 import { rememberKunlikOpenedDay } from '../utils/kunlikLastDay';
+import { journeyFocusDay } from '../../shared/journeyFocusDay';
 
 const DAYS = Array.from({ length: TOTAL_DAYS }, (_, i) => i + 1);
 // Source mockup coordinates; alternate the same road rhythm through day 182.
@@ -36,7 +38,9 @@ export default function DailyCourseMapPage() {
   const currentSlots = loaded ? buildQuestSlots(getRow(rows, currentDay), practicePromptCountByDay.get(currentDay) ?? 0, golden) : [];
   const fraction = completed.has(currentDay) ? 0 : currentSlots.filter(slot => slot.state === 'done').length / Math.max(1, currentSlots.length);
   const pct = Math.min(100, Math.round((completed.size + fraction) / TOTAL_DAYS * 1000) / 10);
-  const focusDay = premium || golden ? currentDay : 0;
+  const trialRow = rows.get(0);
+  const trialComplete = Boolean(trialRow && isKunlikDayRowFullyComplete(trialRow, practicePromptCountByDay));
+  const focusDay = journeyFocusDay(trialComplete, premium || golden, currentDay);
 
   useEffect(() => {
     if (!toast) return;
@@ -87,8 +91,8 @@ export default function DailyCourseMapPage() {
       <main className="journey-road" aria-label="Yo'l xaritasi" style={{ height: dayY(TOTAL_DAYS) + 150 }}>
         <div className="journey-trial" ref={focusDay === 0 ? currentRef : undefined}>
           <h2>Sinov darsi</h2>
-          <div className="journey-hand"><TrialHandAnimation /></div>
-          <div className="journey-trial-ring"><button disabled={!loaded || !accessLoaded} onClick={() => openDay(0)} className="journey-trial-button trial-day-beacon" aria-label="0-kun · Sinov darsi"><BookOpen size={30} /></button></div>
+          <div className="journey-hand">{loaded && focusDay === 0 && <TrialHandAnimation />}</div>
+          <div className="journey-trial-ring"><button disabled={!loaded || !accessLoaded} onClick={() => openDay(0)} className={'journey-trial-button' + (focusDay === 0 ? ' trial-day-beacon' : '')} aria-label="0-kun · Sinov darsi"><BookOpen size={30} /></button></div>
         </div>
         {DAYS.map(day => {
           const done = completed.has(day);
@@ -100,6 +104,7 @@ export default function DailyCourseMapPage() {
           return <div key={day}>
             <svg className="journey-connector" style={{ top: day === 1 ? 200 : y - 110, height: day === 1 ? 100 : 110 }} viewBox={`0 0 390 ${day === 1 ? 100 : 110}`} preserveAspectRatio="none" aria-hidden="true"><path d={path} fill="none" stroke={done ? '#B5DBCD' : '#DCE3EE'} strokeWidth="26" strokeLinecap="round" /><path d={path} fill="none" stroke="#FFFFFF" strokeWidth="3" strokeDasharray="2 12" strokeLinecap="round" /></svg>
             <div ref={day === focusDay ? currentRef : undefined} className="journey-day" style={{ left: `${x / 390 * 100}%`, top: y - 32 }}>
+              {loaded && day === focusDay && !done && <div className="journey-hand journey-day-hand"><TrialHandAnimation /></div>}
               <button disabled={!loaded || !accessLoaded} onClick={() => openDay(day)} aria-label={`Kun ${day}${available ? '' : ' (yopiq)'}`} aria-current={active ? 'step' : undefined} className={`journey-node${done ? ' is-done' : active ? ' is-current' : available ? ' is-available' : ''}`}>
                 {done ? <Check size={25} /> : available ? day : <Lock size={22} />}
               </button><span>{day}-kun</span>
@@ -109,6 +114,7 @@ export default function DailyCourseMapPage() {
         <div className="journey-finish" style={{ top: dayY(TOTAL_DAYS) + 65 }}><Flag size={24} /><span>Tugagach — sertifikat</span></div>
       </main>
     </div>
+    <TrialDayFeedback />
     {paywall && <KunlikFreeLimitModal onClose={() => setPaywall(false)} />}
     {currentHidden && <button className="journey-return" onClick={() => currentRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })}><LocateFixed size={18} />{focusDay === 0 ? 'Sinov darsiga qaytish' : 'Bugunga qaytish'}</button>}
     {toast && <div className="journey-toast" role="status">{toast}</div>}

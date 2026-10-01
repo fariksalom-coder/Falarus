@@ -78,3 +78,13 @@ Comparison history: initial hand overlapped START; shifted it left. Final screen
 Checks: TypeScript passed; DOM has 182 paid-day nodes ending at 182-kun plus trial day. Trial button opens the five-stage day hub. Locked day opens subscription dialog. Tariff action opens course video. Preview DB only; no deployment. Paid/golden browser states and exact 390px matching remain additional verification gaps.
 
 final result: passed
+
+
+## Special Offer and Trial Completion (2026-10-01)
+
+Source: Downloads/falarus-video-offer.html, special-offer section only.
+Compared reference and implementation simultaneously in two 440px-wide iframes in the same browser screenshot. Final screenshot after normalizing line-height confirms matching 408px card width, 28px corners, 20px padding, badge, price hierarchy, countdown row and yellow action. Existing video controls/header intentionally remain unchanged. Letter spacing follows app policy (0); crossed-out UZS reference uses actual monthly price x 6 (2,400,000), not the mock's 2,385,000. Timer values differ because the app uses server expiry.
+
+Browser checks: active offer hides all standard tariff radios; feedback has only Yes and accessible close control; Yes opens course video; close remains on map; a completed unpaid trial points the animated hand at locked day 1. Desktop layout also inspected. Live payment and microphone conversation not exercised.
+
+final result: passed

@@ -1517,7 +1517,8 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
         */
         onTugadi={() => {
           void patchDay(dayNumber, { suhbat_done: true }).finally(() => {
-            setCompletionPath(xaritaYoli());
+            if (dayNumber === 0) navigate(xaritaYoli());
+            else setCompletionPath(xaritaYoli());
           });
         }}
       />

@@ -643,7 +643,7 @@ export default function UstozDoska({
    * kelardi; alohida bosqichda esa keyingi qadamni sahifa aytadi.
    */
   const suhbatYakuniNomi = suhbatRejimi
-    ? (keyingiNomi ? `Davom etish: ${keyingiNomi}` : 'Davom etish')
+    ? (keyingiNomi === 'Tugatish' ? 'Tugatish' : keyingiNomi ? `Davom etish: ${keyingiNomi}` : 'Davom etish')
     : (keyingiNomi ?? 'Yakunlash');
 
   /*
