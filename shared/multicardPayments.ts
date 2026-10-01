@@ -182,12 +182,22 @@ function summarizeMulticardBody(json: unknown, fallbackText: string, httpStatus:
   return snippet || `HTTP ${httpStatus}`;
 }
 
-async function multicardFetch(url: string, init: RequestInit): Promise<Response> {
-  try {
-    return await fetch(url, init);
-  } catch (err) {
-    const cause = err instanceof Error ? err.message : String(err);
-    throw new Error(`Tarmoq xatosi (${url}): ${cause}`);
+export async function multicardFetch(url: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetch(url, init);
+    } catch (err) {
+      const cause = (err as { cause?: { code?: unknown } } | null)?.cause;
+      const code = typeof cause?.code === 'string' ? cause.code : '';
+      // A connection timeout happens before HTTP is sent. Never retry ambiguous
+      // socket/read failures: the provider may already have created the invoice.
+      if (attempt === 0 && code === 'UND_ERR_CONNECT_TIMEOUT' && !init.signal?.aborted) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        continue;
+      }
+      const message = err instanceof Error ? err.message : 'Network request failed';
+      throw new Error(`Tarmoq xatosi (${url}): ${message}${code ? ` [${code}]` : ''}`, { cause: err });
+    }
   }
 }
 

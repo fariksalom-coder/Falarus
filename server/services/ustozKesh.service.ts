@@ -68,6 +68,7 @@ export function darsKeshKaliti(body: Record<string, unknown>): string {
     .join('|');
 
   return [
+    ...(body.kun === 0 || body.kun === '0' ? ['trial-board-v1'] : []),
     String(body.mavzu ?? ''),
     `kun:${String(body.kun ?? '')}`,
     `nazariya:${String(body.nazariya ?? '')}`,

@@ -28,7 +28,7 @@ export default function HomeDiscountTimerLink({ className = '' }: { className?: 
 
   return (
     <Link
-      to="/tariflar"
+      to="/kurs-haqida"
       className={`block rounded-[18px] p-3 transition active:scale-[0.985] ${className}`}
       style={{
         background: 'linear-gradient(135deg, #F97316 0%, #EF4444 48%, #DC2626 100%)',

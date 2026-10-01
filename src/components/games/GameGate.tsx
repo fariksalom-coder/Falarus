@@ -81,7 +81,7 @@ export default function GameGate({ game, children }: { game: string; children: R
 
       <button
         type="button"
-        onClick={() => navigate('/tariflar')}
+        onClick={() => navigate('/kurs-haqida')}
         className="mt-6 min-h-[54px] w-full rounded-2xl bg-app-primary text-[15px] font-black text-white transition active:scale-[0.98]"
       >
         Premium sotib olish

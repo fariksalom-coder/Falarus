@@ -121,7 +121,7 @@ export default function ObunaMuddatBanner() {
         </p>
         <button
           type="button"
-          onClick={() => navigate('/tariflar')}
+          onClick={() => navigate('/kurs-haqida')}
           className={`mt-3 min-h-[44px] w-full rounded-2xl px-4 text-[14px] font-bold text-white transition active:scale-[0.98] sm:w-auto ${
             tugagan ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
           }`}

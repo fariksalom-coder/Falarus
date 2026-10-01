@@ -626,7 +626,7 @@ export default function StatistikaPage() {
 
   return (
     <div className="profile-premium min-h-screen" style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}>
-      <main className="mx-auto max-w-4xl px-4 py-4 md:px-5 md:py-5">
+      <main className="mx-auto max-w-6xl px-4 py-4 md:px-5 md:py-5">
         <PageHeader title={t('stats.title')} />
 
         <div className="space-y-4">

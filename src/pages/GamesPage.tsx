@@ -107,7 +107,7 @@ export default function GamesPage() {
 
   return (
     <div className="min-h-screen bg-app-bg pb-[84px]">
-      <main className="mx-auto w-full max-w-[820px] px-5 pt-2.5">
+      <main className="mx-auto w-full max-w-[1180px] px-5 pt-2.5">
         <h1 className="text-[26px] font-black leading-tight tracking-tight text-app-text">
           {t('games.title') || "O'yinlar"} 🎮
         </h1>
@@ -119,7 +119,7 @@ export default function GamesPage() {
         {quota && !quota.premium ? (
           <button
             type="button"
-            onClick={() => navigate('/tariflar')}
+            onClick={() => navigate('/kurs-haqida')}
             className={`mt-3 flex w-full items-center gap-2.5 rounded-2xl px-4 py-3 text-left ${
               quota.allowed ? 'bg-[#FFF7E6]' : 'bg-[#FDECEC]'
             }`}
@@ -151,7 +151,7 @@ export default function GamesPage() {
           kenglikni egallab, ekranni to'ldirib yuborardi va yangi o'yin
           qo'shilsa sahifa cho'zilib ketardi.
         */}
-        <div className="mt-[18px] grid grid-cols-2 gap-3">
+        <div className="mt-[18px] grid grid-cols-2 gap-3 md:gap-5 lg:grid-cols-3">
           {/* So'zni yig'ing — bosqichlar xaritasi */}
           <button
             type="button"

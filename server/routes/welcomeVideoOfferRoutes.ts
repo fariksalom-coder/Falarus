@@ -8,6 +8,7 @@ type OfferRow = {
   next_video_index: number;
   offer_expires_at: string | null;
   payment_id: number | null;
+  updated_at: string;
 };
 
 function toClientState(row: OfferRow) {
@@ -23,7 +24,7 @@ function toClientState(row: OfferRow) {
 async function getOrCreateOffer(db: DbClient, userId: number): Promise<OfferRow> {
   const { data: current, error: readErr } = await db
     .from('welcome_video_offers')
-    .select('user_id, status, next_video_index, offer_expires_at, payment_id')
+    .select('user_id, status, next_video_index, offer_expires_at, payment_id, updated_at')
     .eq('user_id', userId)
     .maybeSingle();
   if (readErr) throw readErr;
@@ -56,12 +57,37 @@ export function createWelcomeVideoOfferRoutes(
 ) {
   const router = Router();
 
+  // New web flow; legacy three-video endpoints remain available to installed apps.
+  router.post('/welcome-video-offer/replay', authenticate, async (req: any, res: Response) => {
+    const userId = Number(req.userId);
+    try {
+      const row = await getOrCreateOffer(db, userId);
+      if (row.status === 'claimed' || (row.status === 'offer' && row.offer_expires_at && isWelcomeVideoOfferOpen(row.offer_expires_at))) {
+        return res.json(toClientState(row));
+      }
+      const now = new Date();
+      let query = db.from('welcome_video_offers').update({
+        status: 'offer', next_video_index: 3,
+        offer_expires_at: getWelcomeVideoOfferExpiresAt(now.getTime()),
+        updated_at: now.toISOString(),
+      }).eq('user_id', userId).eq('status', row.status);
+      // Compare the prior expiry too: simultaneous refreshes cannot extend the window.
+      query = row.offer_expires_at ? query.eq('offer_expires_at', row.offer_expires_at) : query.is('offer_expires_at', null);
+      const { data, error } = await query.select('user_id, status, next_video_index, offer_expires_at, payment_id').maybeSingle();
+      if (error) throw error;
+      return res.json(toClientState((data ?? await getOrCreateOffer(db, userId)) as OfferRow));
+    } catch (error) {
+      console.error('[welcome-video-offer/replay]', error);
+      return res.status(500).json({ error: 'WELCOME_OFFER_UNAVAILABLE' });
+    }
+  });
+
   router.get('/welcome-video-offer', authenticate, async (req: any, res: Response) => {
     try {
       let row = await getOrCreateOffer(db, Number(req.userId));
       if (row.status === 'offer' && row.offer_expires_at && !isWelcomeVideoOfferOpen(row.offer_expires_at)) {
         await db.from('welcome_video_offers').update({ status: 'expired', updated_at: new Date().toISOString() })
-          .eq('user_id', Number(req.userId)).eq('status', 'offer');
+          .eq('user_id', Number(req.userId)).eq('status', 'offer').eq('offer_expires_at', row.offer_expires_at);
         row = { ...row, status: 'expired' };
       }
       return res.json(toClientState(row));

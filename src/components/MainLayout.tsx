@@ -28,7 +28,6 @@ function hideNavBar(path: string): boolean {
   if (path === '/jonli-efir') return true;
   // Kunlik reja: hide on any drilled-in lesson (grammar, lug'at, o'qish, gapirish).
   if (/^\/kunlik-reja\/kun\/\d+\/.+/.test(path)) return true;
-  if (path === '/kunlik-reja/xarita') return true;
   if (path === '/games/word-swipe/xarita') return true;
   if (path.startsWith('/profile/')) return true;
   if (path.startsWith('/u/')) return true;

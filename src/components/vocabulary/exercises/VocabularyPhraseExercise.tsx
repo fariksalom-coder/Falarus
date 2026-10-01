@@ -38,6 +38,7 @@ type Props = {
   onNext: () => void;
   onFinish: () => void;
   onRetry: () => void;
+  onComplete?: () => void;
 };
 
 export function VocabularyPhraseExercise({
@@ -52,6 +53,7 @@ export function VocabularyPhraseExercise({
   onNext,
   onFinish,
   onRetry,
+  onComplete,
 }: Props) {
   const { token } = useAuth();
   const current = phrases[index];
@@ -215,6 +217,7 @@ export function VocabularyPhraseExercise({
             </div>
           </div>
         ) : null}
+        {onComplete && <button type="button" onClick={onComplete} className="mt-5 min-h-12 w-full rounded-2xl bg-[#2563EB] px-5 py-3 font-bold text-white">Tugatish</button>}
         <button
           type="button"
           onClick={onRetry}

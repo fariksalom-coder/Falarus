@@ -224,7 +224,7 @@ export default function TeachersPage() {
 
   return (
     <div className="min-h-full bg-app-bg-subtle px-4 pb-6 pt-2">
-      <main className="mx-auto w-full max-w-[820px]">
+      <main className="mx-auto w-full max-w-[1180px]">
         <header className="mb-4">
           <h1 className="text-[30px] font-black leading-tight tracking-tight text-app-text sm:text-[38px]">
             {t('teachers.title')}
@@ -302,7 +302,7 @@ export default function TeachersPage() {
         ) : null}
 
         {loading ? (
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="aspect-[3/4] animate-pulse rounded-[18px] bg-app-surface" />
             ))}
@@ -312,7 +312,7 @@ export default function TeachersPage() {
             {error}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             {visible.length === 0 ? (
               query ? (
                 <EmptyState title={t('teachers.noResults')} desc={t('teachers.emptyDesc')} />

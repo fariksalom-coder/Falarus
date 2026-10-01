@@ -12,7 +12,7 @@ export default function KunlikFreeLimitModal({ onClose }: KunlikFreeLimitModalPr
 
   const openPricing = () => {
     onClose();
-    navigate('/tariflar');
+    navigate('/kurs-haqida');
   };
 
   return (

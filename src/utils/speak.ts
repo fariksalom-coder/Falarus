@@ -104,6 +104,7 @@ export type SpeakOptions = {
    * tugagach boshlanadi. Berilmasa — hech narsa o'zgarmaydi.
    */
   onEnd?: () => void;
+  onError?: () => void;
   /**
    * `ustoz` — doskadagi dars ovozi: muloyimroq va tiniqroq. Berilmasa lug'at
    * kartochkalarining odatdagi ovozi ishlatiladi.
@@ -198,7 +199,7 @@ export async function speakText(text: string, opts: SpeakOptions): Promise<void>
   if (!url) {
     // Server ovozi kelmadi. Darsda robot ovoz chalinmaydi — jim o'tamiz va
     // keyingi bo'lakka o'tishga ruxsat beramiz.
-    if (opts.zaxira === false) opts.onEnd?.();
+    if (opts.zaxira === false) (opts.onError ?? opts.onEnd)?.();
     else browserFallback(clean, lang, speed, opts.onEnd);
     return;
   }
@@ -212,7 +213,7 @@ export async function speakText(text: string, opts: SpeakOptions): Promise<void>
         if (meniki === avlod) opts.onEnd?.();
       };
       audio.onerror = () => {
-        if (meniki === avlod) opts.onEnd?.();
+        if (meniki === avlod) (opts.onError ?? opts.onEnd)?.();
       };
     }
     if (meniki !== avlod) return;

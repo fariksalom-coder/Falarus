@@ -203,10 +203,10 @@ export default function DailyReadingQuestionsPage() {
             {passed ? (
               <button
                 type="button"
-                onClick={() => navigate(xaritaYoli())}
+                onClick={() => navigate(xaritaYoli(dayNumber))}
                 className="mt-6 flex h-13 w-full items-center justify-center rounded-full bg-[#0FA598] py-3.5 text-[15px] font-black text-white active:scale-[0.99]"
               >
-                Kun rejasiga qaytish →
+                Tugatish
               </button>
             ) : (
               <>

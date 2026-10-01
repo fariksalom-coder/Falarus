@@ -244,7 +244,7 @@ export function VocabularyFlashcardExercise({
           onClick={onContinueToTest}
           className="grammar-heading mt-6 w-full rounded-full bg-[#5B4CE0] px-5 py-3.5 text-[15px] text-white shadow-[0_14px_28px_-12px_rgba(91,76,224,0.55)]"
         >
-          2-bosqichga o'tish (test) →
+          Davom etish
         </button>
       </div>
     </div>

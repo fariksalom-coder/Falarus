@@ -363,10 +363,10 @@ export default function DailyGrammarSentenceArrangePage() {
             <p className="mt-2 text-sm font-black text-[#0F7C3A]">Barcha gaplar tuzildi.</p>
             <button
               type="button"
-              onClick={handleBack}
+              onClick={() => navigate(xaritaYoli(dayNumber))}
               className="grammar-heading mt-5 min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)]"
             >
-              Grammatikaga qaytish
+              Tugatish
             </button>
           </div>
         )}

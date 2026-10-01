@@ -270,6 +270,7 @@ export default function DailyVocabPhrasesPage() {
           onNext={onNext}
           onFinish={onFinish}
           onRetry={onRetry}
+          onComplete={() => navigate(`/kunlik-reja/kun/${dayNumber}`)}
         />
       </main>
     </div>

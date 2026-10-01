@@ -17,7 +17,7 @@
  */
 import { isOpenAIConfigured, openaiJson, transcribeAudio } from '../lib/openai.js';
 import { geminiJson } from '../lib/gemini.js';
-import { qoldaDars } from '../data/doskaDarslari.js';
+import { qoldaDars, TRIAL_BOARD_LESSON } from '../data/doskaDarslari.js';
 import type {
   DoskaAyrilish,
   DoskaIkonka,
@@ -709,6 +709,7 @@ export async function buildLesson(p: {
   kun?: number;
   vazifalar?: DoskaVazifa[];
 }): Promise<DoskaDars> {
+  if (p.kun === 0) return TRIAL_BOARD_LESSON;
   /*
    * QO'LDA YOZILGAN DARS — endi faqat ZAXIRA, AI'dan ustun EMAS.
    *

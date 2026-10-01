@@ -14,7 +14,11 @@ const freeAccess: AccessInfo = {
 };
 
 describe('kunlik free day access', () => {
-  it('has no free kunlik days without subscription', () => {
+  it('opens only the trial day without subscription', () => {
+    assert.strictEqual(isFreeKunlikDay(0), true);
+    assert.strictEqual(canAccessKunlikDay(0, freeAccess), true);
+    assert.strictEqual(isFreeKunlikDay(-1), false);
+    assert.strictEqual(isFreeKunlikDay(0.5), false);
     assert.strictEqual(FREE_KUNLIK_DAY_LIMIT, 0);
     assert.strictEqual(isFreeKunlikDay(1), false);
     assert.strictEqual(canAccessKunlikDay(1, freeAccess), false);

@@ -193,7 +193,7 @@ export function createKunlikProgressRoutes(
 
     const wasFullyComplete = isKunlikDayRowFullyComplete(slice(prevRow), practicePromptCountByDay);
     const nowFullyComplete = isKunlikDayRowFullyComplete(slice(merged), practicePromptCountByDay);
-    await applyKunlikDayCompletionSideEffects(supabase, userId, wasFullyComplete, nowFullyComplete);
+    if (dayNumber > 0) await applyKunlikDayCompletionSideEffects(supabase, userId, wasFullyComplete, nowFullyComplete);
 
     // Recompute XP for this user so the leaderboard/level reflect the update.
     try {
@@ -218,8 +218,8 @@ export function createKunlikProgressRoutes(
   // PATCH /api/kunlik-progress/:dayNumber  →  partial upsert for one day
   router.patch('/kunlik-progress/:dayNumber', authenticate, async (req: any, res: any) => {
     try {
-      const dayNumber = parseInt(req.params.dayNumber);
-      if (!Number.isFinite(dayNumber) || dayNumber < 1 || dayNumber > 182) {
+      const dayNumber = Number(req.params.dayNumber);
+      if (!Number.isInteger(dayNumber) || dayNumber < 0 || dayNumber > 182) {
         return res.status(400).json({ error: 'Invalid day_number' });
       }
 
@@ -279,8 +279,8 @@ export function createKunlikProgressRoutes(
 
   /** Kun raqami + ruxsatni tekshiradi; xato bo'lsa javob yuborib `null` qaytaradi. */
   async function requirePhraseDayAccess(req: any, res: any): Promise<number | null> {
-    const dayNumber = parseInt(req.params.dayNumber);
-    if (!Number.isFinite(dayNumber) || dayNumber < 1 || dayNumber > 182) {
+    const dayNumber = Number(req.params.dayNumber);
+    if (!Number.isInteger(dayNumber) || dayNumber < 0 || dayNumber > 182) {
       res.status(400).json({ error: 'Invalid day_number' });
       return null;
     }

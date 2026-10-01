@@ -16,10 +16,10 @@ export default function KunlikFreeLimitCta() {
     >
       <motion.button
         type="button"
-        onClick={() => navigate('/tariflar')}
-        onMouseEnter={() => prefetchRoutePath('/tariflar')}
-        onTouchStart={() => prefetchRoutePath('/tariflar')}
-        onFocus={() => prefetchRoutePath('/tariflar')}
+        onClick={() => navigate('/kurs-haqida')}
+        onMouseEnter={() => prefetchRoutePath('/kurs-haqida')}
+        onTouchStart={() => prefetchRoutePath('/kurs-haqida')}
+        onFocus={() => prefetchRoutePath('/kurs-haqida')}
         animate={{
           scale: [1, 1.03, 1],
           boxShadow: [

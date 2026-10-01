@@ -27,7 +27,7 @@ export default function PaywallModal({
       onAction();
       return;
     }
-    navigate('/tariflar');
+    navigate('/kurs-haqida');
   };
 
   return (

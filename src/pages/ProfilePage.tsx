@@ -188,7 +188,7 @@ export default function ProfilePage() {
       className="profile-premium min-h-full px-4 pt-2"
       style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}
     >
-      <main className="mx-auto w-full max-w-[820px]">
+      <main className="mx-auto w-full max-w-[1024px]">
         <PageHeader title={t('nav.profile')} />
 
         {banner ? (
@@ -247,7 +247,7 @@ export default function ProfilePage() {
         ) : (
           <button
             type="button"
-            onClick={() => navigate('/tariflar')}
+            onClick={() => navigate('/kurs-haqida')}
             className="mb-6 flex w-full items-center gap-3 rounded-xl bg-pmn-card px-4 py-3.5 text-left shadow-none ring-1 ring-pmn-border transition hover:bg-app-bg-muted"
           >
             <span
@@ -343,7 +343,7 @@ export default function ProfilePage() {
 
         <ProfileGroup title={t('profile.groups.help')}>
           <ProfileRow icon={<CircleHelp />} label={t('profile.rows.help')} onClick={() => navigate('/help')} />
-          <ProfileRow icon={<CircleDollarSign />} label={t('profile.rows.pricing')} onClick={() => navigate('/tariflar')} />
+          <ProfileRow icon={<CircleDollarSign />} label={t('profile.rows.pricing')} onClick={() => navigate('/kurs-haqida')} />
           <ProfileRow icon={<History />} label={t('profile.rows.paymentHistory')} onClick={() => navigate('/payment-history')} />
           <ProfileRow icon={<LogOut />} label={t('profile.rows.logout')} danger onClick={handleLogout} />
         </ProfileGroup>

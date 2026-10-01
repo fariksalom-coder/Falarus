@@ -192,7 +192,8 @@ export function createUstozRoutes(
           }
         }
 
-        if (!isUstozConfigured()) {
+        const trialLesson = path === '/ustoz/dars' && (body.kun === 0 || body.kun === '0');
+        if (!trialLesson && !isUstozConfigured()) {
           return res.status(503).json({
             error: "Ustoz hozir ishlamayapti, mashqlarni davom ettiring",
           });
@@ -231,7 +232,7 @@ export function createUstozRoutes(
    */
   doskaRoute('/ustoz/kun-savollari', 10, async (body, userId) => {
     const kun = Number(body.kun);
-    if (!Number.isInteger(kun) || kun < 1 || kun > 182) {
+    if (!Number.isInteger(kun) || kun < 0 || kun > 182) {
       throw Object.assign(new Error('Kun raqami noto\'g\'ri'), { status: 400 });
     }
 
@@ -364,7 +365,7 @@ export function createUstozRoutes(
     const dars = await buildLesson({
       mavzu: mavzu.slice(0, 200),
       nazariya: String(body.nazariya ?? '').trim() || undefined,
-      kun: Number(body.kun) || undefined,
+      kun: body.kun != null && Number.isInteger(Number(body.kun)) ? Number(body.kun) : undefined,
       vazifalar,
     });
 

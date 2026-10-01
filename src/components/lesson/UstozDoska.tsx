@@ -249,6 +249,7 @@ export default function UstozDoska({
    */
   const rejaniOqi = useCallback(
     (reja: NutqQadam[], keyin?: () => void) => {
+      setError(null);
       ijroRef.current += 1;
       const tk = ijroRef.current;
       const bolaklar = reja.map((q) => q.matn);
@@ -283,6 +284,15 @@ export default function UstozDoska({
           // Dars ovozi bir xil bo'lsin: server ovozi kelmasa ham brauzerning
           // robot ovoziga o'tmaydi.
           zaxira: false,
+          onError: () => {
+            if (ijroRef.current !== tk) return;
+            setError("Ovoz yuklanmadi. Darsni qayta eshitish tugmasini bosing yoki matnni o'qib davom eting.");
+            ijroRef.current += 1;
+            setOqilmoqda(false);
+            setTayyorlanmoqda(false);
+            setFaolSatr(-1);
+            setOchiqSatr(Number.MAX_SAFE_INTEGER);
+          },
           onEnd: () => yur(i + 1),
         }).then(() => {
           if (ijroRef.current !== tk) return;

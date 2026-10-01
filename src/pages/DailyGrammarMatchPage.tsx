@@ -96,6 +96,7 @@ export default function DailyGrammarMatchPage() {
   const [matchLocked, setMatchLocked] = useState(false);
   const [blockComplete, setBlockComplete] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [hasNextExercise, setHasNextExercise] = useState(false);
   /** Oxirgi blokdan keyin progress serverga yozilmoqda — tugma ikki marta bosilmasin. */
   const [advancing, setAdvancing] = useState(false);
   const [hint, setHint] = useState('');
@@ -111,6 +112,7 @@ export default function DailyGrammarMatchPage() {
     setError(null);
     try {
       const bundle = await getDailyCourseDay(token, dayNumber);
+      setHasNextExercise(Boolean(bundle.grammar?.sentenceArrange.some(s => s.wordBank.length > 0 && String(s.answerRu ?? '').trim())));
       setRuleMcqsCount(bundle.grammar?.ruleMcqs?.length ?? 0);
       const sets = bundle.grammar?.matchSets ?? [];
       const nonEmpty = sets.filter((s) => s.pairs.length > 0);
@@ -261,7 +263,7 @@ export default function DailyGrammarMatchPage() {
     // shuning uchun patch yozilib bo'lgunicha o'tilmaydi.
     setAdvancing(true);
     await patchDay(dayNumber, { grammar_2: true });
-    navigate(`/kunlik-reja/kun/${dayNumber}/grammatika/gap-tuzish`, { replace: true });
+    setFinished(true);
   };
 
   const nextButtonLabel = (() => {
@@ -438,10 +440,10 @@ export default function DailyGrammarMatchPage() {
             <p className="mt-2 text-sm font-black text-[#0F7C3A]">Barcha juftliklar topildi.</p>
             <button
               type="button"
-              onClick={handleBack}
+              onClick={() => navigate(hasNextExercise ? `/kunlik-reja/kun/${dayNumber}/grammatika/gap-tuzish` : xaritaYoli(dayNumber), { replace: true })}
               className="grammar-heading mt-5 min-h-[50px] rounded-full bg-[#22C55E] px-8 py-3 text-[15px] text-white shadow-[0_14px_28px_-10px_rgba(34,197,94,0.55)]"
             >
-              Grammatikaga qaytish
+              {hasNextExercise ? 'Davom etish' : 'Tugatish'}
             </button>
           </div>
         )}

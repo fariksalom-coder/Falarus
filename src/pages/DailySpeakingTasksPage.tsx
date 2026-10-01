@@ -238,7 +238,7 @@ export default function DailySpeakingTasksPage() {
           <p className="text-sm text-amber-950">{error ?? t('common.noData')}</p>
           <button
             type="button"
-            onClick={() => navigate(xaritaYoli())}
+            onClick={() => navigate(xaritaYoli(dayNumber))}
             className="mt-4 rounded-xl border bg-white px-4 py-2 text-sm font-semibold"
           >
             {t('common.back')}
@@ -260,10 +260,10 @@ export default function DailySpeakingTasksPage() {
           </p>
           <button
             type="button"
-            onClick={() => navigate(xaritaYoli())}
+            onClick={() => navigate(xaritaYoli(dayNumber))}
             className="mt-6 w-full rounded-2xl bg-[#12A150] px-5 py-3.5 text-[15px] font-black text-white"
           >
-            Kun rejasiga qaytish
+            Tugatish
           </button>
         </main>
       </div>
@@ -291,7 +291,7 @@ export default function DailySpeakingTasksPage() {
         <div className="mb-4 flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate(xaritaYoli())}
+            onClick={() => navigate(xaritaYoli(dayNumber))}
             aria-label={t('common.back')}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white text-app-text shadow-app-soft ring-1 ring-app-border"
           >

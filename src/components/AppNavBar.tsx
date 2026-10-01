@@ -133,11 +133,11 @@ export default function AppNavBar() {
 
   const isActive = (paths: string[]) =>
     paths.some((p) =>
-      p === "/" ? path === "/" : path === p || path.startsWith(p + "/"),
+      p === "/" ? path === "/" || path.startsWith('/kunlik-reja') : path === p || path.startsWith(p + "/"),
     );
 
   return (
-    <header className="app-navigation blue-navigation">
+    <header className="app-navigation blue-navigation light-navigation">
       <a
         className="app-navigation-brand"
         href="/"

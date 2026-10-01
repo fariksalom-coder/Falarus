@@ -61,3 +61,20 @@ The local preview uses sample progress and a labelled demonstration lesson dialo
 ## Fixed viewport interaction correction
 
 The document and map viewport no longer scroll. Wheel, pointer/touch drag, arrow keys, PageUp/PageDown and Home/End translate only the world inside a fixed screen. The logo header stays stationary, later days enter from the lower edge, and the current-day button returns to the active day. Bounds are clamped; dragging suppresses accidental button clicks; keyboard focus keeps targets in view. Browser checks at 390 and 1440px confirmed document and viewport scrollTop remain zero, touch drag works, day 182 is reachable and back/current navigation work. TypeScript passed. Post-pan screenshots inspected at `docs/design/reference-map/pan-390.png` and `pan-1440.png`.
+
+
+## Journey.dc.html Map Update (2026-10-01)
+
+Source: /Users/kamronbekfaxriddinov/Downloads/182 kunlik sayohat-html/Journey.dc.html
+Implementation: http://localhost:3002/kunlik-reja/xarita
+Evidence: source and implementation screenshots displayed together in the final browser comparison in this task; captures were not exported to disk.
+Source size: 390 x 844 CSS pixels. Implementation: 469 x 814 CSS pixels; responsive width differs, no pixel-exact equivalence claimed.
+State: unpaid preview account, zero completed days.
+
+Matched: blue rounded summary, two statistics, white tariff row with gold icon, blue trial node, light dotted winding road, white locked nodes and light navigation. Road repeated through day 182. Existing Telegram hand retained as requested. Real 0% progress is intentionally an empty ring instead of the mockup's full gold ring. Existing app navigation and lack of decorative header circle are minor reference differences.
+
+Comparison history: initial hand overlapped START; shifted it left. Final screenshot confirms readable badge. Home navigation now selected on map and day routes. No visible text overlap or horizontal overflow in the inspected mobile state.
+
+Checks: TypeScript passed; DOM has 182 paid-day nodes ending at 182-kun plus trial day. Trial button opens the five-stage day hub. Locked day opens subscription dialog. Tariff action opens course video. Preview DB only; no deployment. Paid/golden browser states and exact 390px matching remain additional verification gaps.
+
+final result: passed

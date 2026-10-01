@@ -437,6 +437,10 @@ export function resolveRouteSeo(
     };
   }
 
+  if (raw === '/kurs-haqida') {
+    return { title: clipTitle('Kurs haqida — video va tariflar'), description: clipDescription('FalaRus rus tili kursi haqida video va obuna tariflari.'), canonicalPath: '/kurs-haqida', noindex: true };
+  }
+
   if (raw === '/kunlik-reja/xarita') {
     return {
       title: clipTitle("Kunlik reja xaritasi — 182 kunlik yo'l"),

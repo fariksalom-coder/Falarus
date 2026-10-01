@@ -23,6 +23,7 @@ type Props = {
   onPickLeft: (id: string) => void;
   onPickRight: (id: string) => void;
   onNextGroup: () => void;
+  finishLabel?: string;
   onFinish: () => void;
 };
 
@@ -46,6 +47,7 @@ export function VocabularyPairsExercise({
   onPickLeft,
   onPickRight,
   onNextGroup,
+  finishLabel = 'Tugatish',
   onFinish,
 }: Props) {
   const current = pairGroups[pairGroupIndex];
@@ -195,7 +197,7 @@ export function VocabularyPairsExercise({
               onClick={pairGroupIndex + 1 === pairGroups.length ? onFinish : onNextGroup}
               className="grammar-heading mt-4 h-[54px] w-full rounded-full bg-[#22C55E] text-[16px] text-white shadow-[0_14px_26px_-12px_rgba(34,197,94,0.55)] active:scale-[0.99]"
             >
-              {pairGroupIndex + 1 === pairGroups.length ? 'Tugatish 🎯' : 'Keyingi guruh →'}
+              {pairGroupIndex + 1 === pairGroups.length ? finishLabel : 'Keyingi guruh →'}
             </button>
           </div>
         ) : null}
@@ -217,7 +219,7 @@ export function VocabularyPairsExercise({
           onClick={onFinish}
           className="mt-6 h-[54px] w-full rounded-[16px] bg-[#0B2A6B] px-5 text-[16px] font-extrabold text-white shadow-[0_14px_28px_-10px_rgba(11,42,107,0.5)]"
         >
-          Vazifalar ro'yxatiga qaytish
+          {finishLabel}
         </button>
       </div>
     </div>

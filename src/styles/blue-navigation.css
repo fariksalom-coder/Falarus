@@ -14,3 +14,10 @@ body .app-navigation.blue-navigation {
 .app-navigation.blue-navigation .app-navigation-active { background: rgb(255 255 255 / .19); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .2); }
 .app-navigation.blue-navigation .app-navigation-link:hover { background: rgb(255 255 255 / .1); }
 .app-navigation.blue-navigation .app-navigation-link:focus-visible { outline-color: #bce6ff; }
+body .app-navigation.blue-navigation.light-navigation { background: #fff; border-color: #e2e8f0; box-shadow: 0 -2px 12px rgb(15 23 42 / .04); }
+.app-navigation.blue-navigation.light-navigation :is(.text-app-brand, .text-app-text-muted, .app-navigation-brand, .app-navigation-brand small) { color: #64748b; }
+.app-navigation.blue-navigation.light-navigation [aria-current='page'] :is(.text-app-brand, .app-navigation-label) { color: #2563eb; }
+.app-navigation.blue-navigation.light-navigation .app-navigation-active { background: #eff6ff; box-shadow: none; }
+.app-navigation.blue-navigation.light-navigation .app-navigation-link:hover { background: #f1f5f9; }
+.app-navigation.blue-navigation.light-navigation .app-navigation-link:focus-visible { outline-color: #2563eb; }
+.app-navigation.blue-navigation.light-navigation .app-navigation-brand img { filter: none; }

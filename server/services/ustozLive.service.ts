@@ -187,7 +187,7 @@ async function urinishOch(
   kun: number,
   savollar: JonliSavol[],
 ): Promise<number | null> {
-  if (!pool || !kun || savollar.length === 0) return null;
+  if (!pool || !Number.isInteger(kun) || kun < 0 || savollar.length === 0) return null;
   try {
     const { rows } = await pool.query<{ id: string }>(
       `INSERT INTO kun_suhbat_urinish (user_id, day_number, savol_soni)
@@ -201,7 +201,7 @@ async function urinishOch(
       const s = savollar[i];
       // `manba_kun` da CHECK bor (1..182) — noto'g'ri qiymat butun
       // yozuvni yiqitmasin uchun joriy kunga tushiriladi.
-      const manba = s.manbaKun >= 1 && s.manbaKun <= 182 ? s.manbaKun : kun;
+      const manba = s.manbaKun >= 0 && s.manbaKun <= 182 ? s.manbaKun : kun;
       await pool.query(
         `INSERT INTO kun_suhbat_savol (urinish_id, tartib, savol, manba_kun, manba_mavzu)
               VALUES ($1, $2, $3, $4, $5)
@@ -528,7 +528,7 @@ export function attachUstozLive(server: Server): void {
        * kunlar. Qaytarish faqat shulardan biriga bo'lishi mumkin.
        */
       ruxsatKunlar.clear();
-      if (kun >= 1 && kun <= 182) ruxsatKunlar.set(kun, mavzu);
+      if (kun >= 0 && kun <= 182) ruxsatKunlar.set(kun, mavzu);
       for (const s of savollar) {
         if (s.manbaKun >= 1 && s.manbaKun <= 182) {
           ruxsatKunlar.set(s.manbaKun, s.manbaMavzu || mavzu);

@@ -39,7 +39,7 @@ export default function NotFoundPage() {
           {t('notFound.footerVnzh')}
         </Link>
         {' · '}
-        <Link className="font-medium text-[#0B2A6B] underline-offset-2 hover:underline" to="/tariflar">
+        <Link className="font-medium text-[#0B2A6B] underline-offset-2 hover:underline" to="/kurs-haqida">
           {t('notFound.footerPricing')}
         </Link>
       </p>

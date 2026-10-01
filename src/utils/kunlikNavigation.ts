@@ -27,6 +27,7 @@ export function kunlikRejaPath(dayNum?: number): string {
  * `kunlikRejaPath()` dan farqi: u KUNNING SAHIFASIga (beshta karta) olib
  * boradi va endi faqat takrorlash uchun kerak — asosiy oqimda emas.
  */
-export function xaritaYoli(): string {
-  return '/';
+export function xaritaYoli(dayNumber?: number): string {
+  if (dayNumber != null && isValidDailyCourseDay(dayNumber)) return kunlikRejaPath(dayNumber);
+  return '/kunlik-reja/xarita';
 }

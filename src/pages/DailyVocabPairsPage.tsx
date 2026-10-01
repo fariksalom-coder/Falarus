@@ -33,6 +33,7 @@ export default function DailyVocabPairsPage() {
   const { patchDay, getDay } = useKunlikProgress();
   const hubPath = `/kunlik-reja/kun/${dayNumber}/lugat`;
 
+  const [hasPhrases, setHasPhrases] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [entries, setEntries] = useState<VocabularyEntry[]>([]);
@@ -73,6 +74,7 @@ export default function DailyVocabPairsPage() {
     setError(null);
     try {
       const bundle = await getDailyCourseDay(token, dayNumber);
+      setHasPhrases(Boolean(bundle.vocabulary?.phrases?.length));
       const mapped = dailyWordsToEntries(bundle.vocabulary?.words ?? []);
       setEntries(mapped);
       if (mapped.length === 0) {
@@ -107,8 +109,8 @@ export default function DailyVocabPairsPage() {
 
   const handleFinishPairsHub = useCallback(() => {
     persistStep3IfNeeded();
-    navigate(hubPath);
-  }, [persistStep3IfNeeded, navigate, hubPath]);
+    navigate(hasPhrases ? `/kunlik-reja/kun/${dayNumber}/lugat/iboralar` : `/kunlik-reja/kun/${dayNumber}`);
+  }, [persistStep3IfNeeded, navigate, hasPhrases, dayNumber]);
 
   const currentGroup = pairGroups[pairGroupIndex];
 
@@ -236,6 +238,7 @@ export default function DailyVocabPairsPage() {
           onPickLeft={(id) => setPairSelectedLeft(id)}
           onPickRight={onPickRight}
           onNextGroup={onNextPairGroup}
+          finishLabel={hasPhrases ? 'Davom etish' : 'Tugatish'}
           onFinish={handleFinishPairsHub}
         />
       </main>

@@ -43,6 +43,7 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/kurslar/patent',
     '/kurslar/vnzh',
     '/tariflar',
+    '/kurs-haqida',
     '/pricing',
     '/payment',
     '/payment/rahmat/done',

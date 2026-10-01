@@ -151,10 +151,10 @@ export type DailyCourseDayBundle = {
   speakingTasks: DailySpeakingTask[];
 };
 
-export const DAILY_COURSE_DAY_MIN = 1;
+export const DAILY_COURSE_DAY_MIN = 0;
 export const DAILY_COURSE_DAY_MAX = 182;
 
-/** Obunasiz kunlik kurs: bepul kun YO'Q (0). Avval 1-kun bepul edi. */
+/** Day zero is the free trial; paid course days remain 1–182. */
 export const FREE_KUNLIK_DAY_LIMIT = 0;
 
 export function isFreeKunlikDay(dayNumber: number): boolean {

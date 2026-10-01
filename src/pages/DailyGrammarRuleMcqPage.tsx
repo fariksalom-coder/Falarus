@@ -41,6 +41,7 @@ export default function DailyGrammarRuleMcqPage() {
   const { gatePending } = useKunlikSequentialGate(dayNumber, gateEnabled);
   const { patchDay } = useKunlikProgress();
   const grammar1PatchSent = useRef(false);
+  const advancedQuestion = useRef<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +60,7 @@ export default function DailyGrammarRuleMcqPage() {
   /** Variant matni takrorlansa ham tugma va kalit noyob bo‘lishi uchun indeks. */
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
 
+  const [nextExercise, setNextExercise] = useState<string | null>(null);
   const backPath = `/kunlik-reja/kun/${dayNumber}/grammatika`;
 
   const load = useCallback(async () => {
@@ -71,6 +73,8 @@ export default function DailyGrammarRuleMcqPage() {
     setError(null);
     try {
       const bundle = await getDailyCourseDay(token, dayNumber);
+      const g = bundle.grammar;
+      setNextExercise(g?.matchSets.some(s => s.pairs.length > 0) ? 'juftlik' : g?.sentenceArrange.some(s => s.wordBank.length > 0 && String(s.answerRu ?? '').trim()) ? 'gap-tuzish' : null);
       const mcqs = bundle.grammar?.ruleMcqs ?? [];
       const norm = dailyMcqsToChoiceTasks(mcqs);
       setTasks(norm);
@@ -108,6 +112,7 @@ export default function DailyGrammarRuleMcqPage() {
     setMessage('');
     setSelectedOptionIndex(null);
     grammar1PatchSent.current = false;
+    advancedQuestion.current = null;
   }, [tasks]);
 
   useEffect(() => {
@@ -132,9 +137,11 @@ export default function DailyGrammarRuleMcqPage() {
 
   const handleBack = () => navigate(backPath);
 
-  const handleNext = () => {
-    if (status !== 'correct') return;
+  const handleNext = useCallback(() => {
+    if (status !== 'correct' || finished || advancedQuestion.current === currentIndex) return;
+    advancedQuestion.current = currentIndex;
     if (currentIndex < tasks.length - 1) {
+      setStatus('idle');
       setCurrentIndex((p) => p + 1);
       return;
     }
@@ -159,7 +166,13 @@ export default function DailyGrammarRuleMcqPage() {
         /* xatolar ro'yxati qo'shimcha imkoniyat */
       }
     })();
-  };
+  }, [status, finished, currentIndex, tasks.length, patchDay, dayNumber, token]);
+
+  useEffect(() => {
+    if (status !== 'correct' || finished) return;
+    const timer = window.setTimeout(handleNext, 1000);
+    return () => window.clearTimeout(timer);
+  }, [status, finished, handleNext]);
 
   if (!isValidDailyCourseDay(dayNumber)) {
     return (
@@ -423,10 +436,10 @@ export default function DailyGrammarRuleMcqPage() {
 
             <button
               type="button"
-              onClick={() => navigate(`/kunlik-reja/kun/${dayNumber}/grammatika/juftlik`, { replace: true })}
+              onClick={() => navigate(nextExercise ? `/kunlik-reja/kun/${dayNumber}/grammatika/${nextExercise}` : xaritaYoli(dayNumber), { replace: true })}
               className="min-h-[54px] w-full rounded-[16px] bg-[#22C55E] px-6 py-3 text-[16px] font-black text-white shadow-[0_10px_22px_-10px_rgba(34,197,94,0.5)]"
             >
-              Keyingi vazifa →
+              {nextExercise ? 'Davom etish' : 'Tugatish'}
             </button>
             <button
               type="button"

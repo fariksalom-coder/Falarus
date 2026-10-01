@@ -154,7 +154,8 @@ function AppRoutes() {
               (`HomePage`) ochiladi — ular endi bir pog'ona pastda.
               `kunlik-reja/xarita` eski havolalar uchun qoldirildi.
             */}
-            <Route index element={renderLazyPage('./pages/DailyCourseMapPage.tsx')} />
+            <Route index element={renderLazyPage('./pages/LearningStartPage.tsx')} />
+            <Route path="kurs-haqida" element={renderLazyPage('./pages/CourseInfoPage.tsx')} />
             <Route path="kunlik-reja" element={<KunlikRejaRedirect />} />
             <Route path="kunlik-reja/xarita" element={renderLazyPage('./pages/DailyCourseMapPage.tsx')} />
             <Route path="kunlik-reja/kun/:dayNum" element={renderLazyPage('./pages/HomePage.tsx')} />
@@ -259,8 +260,8 @@ function AppRoutes() {
             <Route path="kurslar/vnzh" element={renderLazyPage('./pages/VnzhCoursePage.tsx')} />
             <Route path="kurslar/vnzh/:sectionSlug" element={renderLazyPage('./pages/VnzhCourseSectionPage.tsx')} />
             <Route path="kurslar/vnzh/:sectionSlug/:taskSlug" element={renderLazyPage('./pages/VnzhCourseTaskPage.tsx')} />
-            <Route path="tariflar" element={renderLazyPage('./pages/PricingPage.tsx')} />
-            <Route path="pricing" element={renderLazyPage('./pages/PricingPage.tsx')} />
+            <Route path="tariflar" element={<Navigate to="/kurs-haqida" replace />} />
+            <Route path="pricing" element={<Navigate to="/kurs-haqida" replace />} />
             <Route path="payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
             <Route path="payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
             <Route path="payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />

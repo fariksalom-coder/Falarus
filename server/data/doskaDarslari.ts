@@ -22,6 +22,41 @@
  */
 import type { DoskaDars } from '../services/ustozDoska.service.js';
 
+/** A short, fixed introduction to the trial day's uploaded material. */
+export const TRIAL_BOARD_LESSON: DoskaDars = {
+  sarlavha: 'Birinchi suhbat',
+  kalitSavol: 'Что сказать? — Nima deyish kerak?',
+  maqsad: "Salomlashish, iltimos qilish va yordam so'rash.",
+  bosqichlar: [
+    {
+      sarlavha: 'Suhbatni boshlaymiz',
+      tushuntirish: "Do'konga kirdingiz. Sotuvchiga hurmat bilan salom bering. Do'stingizga esa qisqa salom aytishingiz mumkin. Begona odam bilan birinchi variantni tanlang.",
+      qoida: '', taqqoslash: null, xato: null, vazifa: null,
+      misollar: [{ ru: 'Здравствуйте!', uz: 'Assalomu alaykum!' }, { ru: 'Привет!', uz: 'Salom!' }],
+    },
+    {
+      sarlavha: 'Nima xohlaysiz?',
+      tushuntirish: "Men xohlayman deyish uchun ya xachu ishlatiladi. Suv so'raganda voda so'zi vodu bo'ladi. Iltimos so'zi gapni muloyim qiladi. Endi misollarni ovoz chiqarib ayting.",
+      qoida: '', taqqoslash: null, xato: null, vazifa: null,
+      misollar: [{ ru: 'Я хочу воду.', uz: 'Men suv xohlayman.' }, { ru: 'Дайте хлеб, пожалуйста.', uz: 'Non bering, iltimos.' }],
+    },
+    {
+      sarlavha: 'Tushunmasangiz',
+      tushuntirish: "Hammasini darhol tushunish shart emas. Tushunmadim deng va qaytarishni so'rang. Bu ikki gap suhbatni davom ettirishga yordam beradi.",
+      qoida: '', taqqoslash: null, xato: null, vazifa: null,
+      misollar: [{ ru: 'Я не понимаю.', uz: 'Men tushunmayapman.' }, { ru: 'Повторите, пожалуйста.', uz: 'Takrorlang, iltimos.' }],
+    },
+    {
+      sarlavha: 'Savol bering',
+      tushuntirish: "Gde joyni, skolko esa miqdor yoki narxni so'raydi. Savol oldidan kechirasiz deyishingiz mumkin. Javob olgach rahmat ayting. Endi shu iboralarni mashqlarda sinab ko'ramiz.",
+      qoida: '', taqqoslash: null, xato: null, vazifa: null,
+      misollar: [{ ru: 'Где остановка?', uz: 'Bekat qayerda?' }, { ru: 'Сколько стоит хлеб?', uz: 'Non qancha turadi?' }, { ru: 'Спасибо!', uz: 'Rahmat!' }],
+    },
+  ],
+  savollar: [], nazorat: null,
+  xulosa: "Endi salomlashib, oddiy iltimos va savol bilan murojaat qila olasiz.",
+};
+
 /**
  * 1-KUN — Shaxs olmoshlari va tanishuv.
  *

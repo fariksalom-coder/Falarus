@@ -97,7 +97,7 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
       <div className="flex min-h-screen flex-col bg-[#F5F7FA] px-4 py-6">
         <button
           type="button"
-          onClick={() => navigate(xaritaYoli())}
+          onClick={() => navigate(xaritaYoli(dayNumber))}
           className="mb-6 flex items-center gap-2 text-sm font-medium text-gray-600"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -138,7 +138,7 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
         </p>
         <button
           type="button"
-          onClick={() => navigate('/tariflar')}
+          onClick={() => navigate('/kurs-haqida')}
           className="mt-5 flex min-h-[48px] w-full max-w-[300px] items-center justify-center gap-2 rounded-[14px] bg-[#0B2A6B] px-4 text-[14px] font-black text-white shadow-[0_10px_24px_-12px_rgba(11,42,107,0.8)] transition active:scale-[0.99]"
         >
           To'lov qilish
@@ -146,7 +146,7 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
         </button>
         <button
           type="button"
-          onClick={() => navigate(xaritaYoli())}
+          onClick={() => navigate(xaritaYoli(dayNumber))}
           className="mt-3 min-h-[44px] text-[13.5px] font-bold text-slate-500"
         >
           Xaritaga qaytish
@@ -168,7 +168,7 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
         {isOqish ? null : (
           <button
             type="button"
-            onClick={() => navigate(xaritaYoli())}
+            onClick={() => navigate(xaritaYoli(dayNumber))}
             className={`flex min-h-[44px] items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition-colors ${
               usePurpleTheme
                 ? 'border border-[#DDD7F5] bg-[color:var(--rd-white)] text-[#2D1B69] shadow-[0_4px_10px_rgba(91,76,224,0.08)]'
@@ -394,7 +394,7 @@ function GrammarFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: D
 
   // Bir ekranda bitta blok. Kunda bo'lmagan blok bosqich sifatida ham chiqmaydi.
   const steps: GrammarStep[] = [];
-  if (g.topic?.title) {
+  if (dayNumber !== 0 && g.topic?.title) {
     steps.push({
       key: 'doska',
       label: 'Video dars',
@@ -1233,6 +1233,7 @@ function GrammarStepFlow({
   const tanlovgaQaytish = useQurilmaOrqaga(tanlandi === true, () => setTanlandi(false));
 
   if (steps.length === 0) return null;
+  if (dayNumber === 0) return <>{steps[vazifaJoyi]?.node({ keyingiga: null, bosqichga: () => {}, tanlovga: () => {} })}</>;
 
   /*
    * VAZIFALAR QULFI: video darsga KIRMAGUNCHA mashqlar yopiq.
@@ -1371,8 +1372,17 @@ function GrammarStepFlow({
  * Ekran va uning mantig'i o'zgarmadi — aynan o'sha `UstozDoska qism="suhbat"`,
  * faqat endi kunning mustaqil bloki sifatida o'z sahifasida ochiladi.
  */
+function ExerciseCompletion({ next, onContinue }: { next: boolean; onContinue: () => void }) {
+  return <section className="mx-auto max-w-xl rounded-2xl border border-emerald-200 bg-white p-8 text-center">
+    <h2 className="text-2xl font-bold text-emerald-700">Barakalla!</h2>
+    <p className="mt-2 text-app-text">Mashqni yakunladingiz.</p>
+    <button type="button" onClick={onContinue} className="mt-6 min-h-12 w-full rounded-2xl bg-blue-600 px-5 py-3 font-bold text-white">{next ? 'Davom etish' : 'Tugatish'}</button>
+  </section>;
+}
+
 function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: DailyCourseDayBundle }) {
   const navigate = useNavigate();
+  const [completionPath, setCompletionPath] = useState<string | null>(null);
   const { token } = useAuth();
   const { patchDay, getDay, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
   const { access } = useAccess();
@@ -1436,6 +1446,8 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
    * boshlardi — ya'ni yopiq bo'lishi kerak bo'lgan suhbat bir zumga
    * ochilib ketardi.
    */
+  if (completionPath) return <ExerciseCompletion next={false} onContinue={() => navigate(completionPath)} />;
+
   if (!kunlikLoaded || !savollarYuklandi) {
     return <SkeletonRoyxat soni={2} className="py-4" />;
   }
@@ -1449,7 +1461,7 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
         </p>
         <button
           type="button"
-          onClick={() => navigate(xaritaYoli())}
+          onClick={() => navigate(xaritaYoli(dayNumber))}
           className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
         >
           Kunlik rejaga qaytish
@@ -1465,7 +1477,7 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
         <p className="text-[14px] font-bold text-[#2D1B69]">Bu kunda suhbat mavzusi yo'q.</p>
         <button
           type="button"
-          onClick={() => navigate(xaritaYoli())}
+          onClick={() => navigate(xaritaYoli(dayNumber))}
           className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl bg-[#5B3FA8] px-4 text-[14px] font-bold text-white transition active:scale-[0.98]"
         >
           Kunlik reja
@@ -1496,8 +1508,8 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
           kunlik rejaga qaytariladi. Aks holda o'quvchi bitta ham savolga
           javob bermay turib kunni yopib olardi.
         */
-        onSavolYoq={() => navigate(xaritaYoli())}
-        keyingiNomi="Kunlik reja"
+        onSavolYoq={() => navigate(xaritaYoli(dayNumber))}
+        keyingiNomi="Tugatish"
         /*
           Belgi SAQLANIB BO'LGACH qaytamiz: bosh sahifa progressni darhol
           o'qiydi va patch yetib bormasa kun yana "tugallanmagan" bo'lib
@@ -1505,7 +1517,7 @@ function SuhbatFromBundle({ dayNumber, bundle }: { dayNumber: number; bundle: Da
         */
         onTugadi={() => {
           void patchDay(dayNumber, { suhbat_done: true }).finally(() => {
-            navigate(xaritaYoli());
+            setCompletionPath(xaritaYoli());
           });
         }}
       />
@@ -1842,6 +1854,7 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
 function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle; dayNumber: number }) {
   const { t } = useLocale();
   const navigate = useNavigate();
+  const [completionPath, setCompletionPath] = useState<string | null>(null);
   const { patchDay, getDay } = useKunlikProgress();
   const r = bundle.reading;
   const dayRow = getDay(dayNumber);
@@ -1857,6 +1870,8 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
     const id = window.setTimeout(() => setFinishReady(true), 10_000);
     return () => window.clearTimeout(id);
   }, [oqishDone, dayNumber]);
+
+  if (completionPath) return <ExerciseCompletion next={completionPath.endsWith('/savollar')} onContinue={() => navigate(completionPath)} />;
 
   if (!r?.bodyRu && !(r?.lexemes?.length)) {
     return (
@@ -1891,13 +1906,13 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
 
   const finishReading = async () => {
     if (hasQuestions) {
-      navigate(`/kunlik-reja/kun/${dayNumber}/oqish/savollar`);
+      setCompletionPath(`/kunlik-reja/kun/${dayNumber}/oqish/savollar`);
       return;
     }
     // Grammatikadagi kabi: reja sahifasi mount bo'lishi bilan progressni
     // serverdan qayta o'qiydi, shuning uchun patch yozilib bo'lgunicha kutiladi.
     await patchDay(dayNumber, { oqish_done: true });
-    navigate(xaritaYoli());
+    setCompletionPath(xaritaYoli(dayNumber));
   };
 
   const title = r.title?.trim() || 'Matn';
@@ -1908,7 +1923,7 @@ function ReadingFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle
       <div className="flex items-start gap-3">
         <button
           type="button"
-          onClick={() => navigate(xaritaYoli())}
+          onClick={() => navigate(xaritaYoli(dayNumber))}
           aria-label={t('common.back')}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[color:var(--rd-white)] text-[color:var(--rd-text)] shadow-[0_6px_16px_-6px_rgba(15,165,152,0.28)] ring-1 ring-[#DCEBE7] transition active:scale-[0.97]"
         >
@@ -2111,6 +2126,7 @@ function SpeakingTopicList({
 function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundle; dayNumber: number }) {
   const { t } = useLocale();
   const navigate = useNavigate();
+  const [completionPath, setCompletionPath] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { patchDay, getDay, loaded: kunlikLoaded } = useKunlikProgress();
   const [forceRetry, setForceRetry] = useState(() => searchParams.get('retry') === '1');
@@ -2178,11 +2194,13 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
     const extra = bundle.speakingTasks ?? [];
     const extraDone = (getDay(dayNumber).speaking_tasks_done ?? 0) >= extra.length;
     if (extra.length > 0 && !extraDone) {
-      navigate(`/kunlik-reja/kun/${dayNumber}/gapirish`);
+      setCompletionPath(`/kunlik-reja/kun/${dayNumber}/gapirish/topshiriqlar`);
       return;
     }
-    navigate(xaritaYoli());
+    setCompletionPath(xaritaYoli(dayNumber));
   };
+
+  if (completionPath) return <ExerciseCompletion next={completionPath.includes("/topshiriqlar")} onContinue={() => navigate(completionPath)} />;
 
   if (!p?.length) {
     return (
@@ -2212,13 +2230,13 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
           onClick={() =>
             navigate(
               hasSecondTopic
-                ? `/kunlik-reja/kun/${dayNumber}/gapirish`
-                : xaritaYoli(),
+                ? `/kunlik-reja/kun/${dayNumber}/gapirish/topshiriqlar`
+                : xaritaYoli(dayNumber),
             )
           }
           className="mt-4 min-h-[44px] w-full rounded-2xl border border-emerald-300 bg-[color:var(--rd-white)] px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm hover:bg-emerald-50"
         >
-          {hasSecondTopic ? 'Mavzularga qaytish' : t('kunlik.backToPlan')}
+          {hasSecondTopic ? 'Davom etish' : 'Tugatish'}
         </button>
         <button
           type="button"
@@ -2248,7 +2266,7 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
           if (!forceRetry) patchDay(dayNumber, { speaking_level: completed });
         }}
         onFinish={finishSpeaking}
-        onBack={() => navigate(xaritaYoli())}
+        onBack={() => navigate(xaritaYoli(dayNumber))}
       />
     </>
   );

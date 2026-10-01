@@ -211,7 +211,7 @@ export function VocabularyTestExercise({
           className="mt-6 h-[54px] w-full rounded-[16px] px-5 text-[16px] font-extrabold text-white shadow-[0_14px_26px_-10px_rgba(11,42,107,0.55)] transition-colors active:scale-[0.99]"
           style={{ backgroundColor: passed ? '#0B2A6B' : '#D14343' }}
         >
-          {passed ? "3-bosqichga o'tish (juftlar)" : 'Qayta urinish'}
+          {passed ? 'Davom etish' : 'Qayta urinish'}
         </button>
       </div>
     </div>
