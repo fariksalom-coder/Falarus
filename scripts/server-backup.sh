@@ -99,7 +99,8 @@ echo "[2/3] Kod…"
 tar czf "$DIR/app-files.tar.gz" -C "$APP" \
   --exclude=node_modules --exclude=.git --exclude=dist --exclude='dist.*' \
   --exclude='.dist-build.*' --exclude='.deploy-build.lock' --exclude=tmp \
-  --exclude=uploads --exclude='python/venv' --exclude='__pycache__' .
+  --exclude=uploads --exclude='python/venv' --exclude='__pycache__' \
+  --exclude=.server-backups --exclude=dist-eski --exclude=dist-design .
 cp "$APP/.env" "$DIR/.env.bak"
 
 echo "[3/3] Media (video, avatar, hujjat)…"
