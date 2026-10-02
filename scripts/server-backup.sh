@@ -104,14 +104,16 @@ tar czf "$DIR/app-files.tar.gz" -C "$APP" \
 cp "$APP/.env" "$DIR/.env.bak"
 
 echo "[3/3] Media (video, avatar, hujjat)…"
-PREV="$(ls -1dt "$MEDIA_ROOT"/*/ 2>/dev/null | head -1 || true)"
+# Papka nomi = sana (YYYYMMDD-HHMMSS). mtime ga tayanmaymiz: rsync -a papkaga
+# manba (uploads) ning eski sanasini qo'yadi va yangi surat "eng eski" ko'rinadi.
+PREV="$(ls -1d "$MEDIA_ROOT"/*/ 2>/dev/null | sort -r | head -1 || true)"
 mkdir -p "$MEDIA_ROOT/$TS"
 rsync -a --delete --exclude=tts-cache \
   ${PREV:+--link-dest="$PREV"} \
   "$APP/uploads/" "$MEDIA_ROOT/$TS/"
 
 # Eski media suratlari — faqat oxirgi KEEP_MEDIA tasi qoladi.
-ls -1dt "$MEDIA_ROOT"/*/ 2>/dev/null | tail -n +$((KEEP_MEDIA + 1)) | xargs -r rm -rf
+ls -1d "$MEDIA_ROOT"/*/ 2>/dev/null | sort -r | tail -n +$((KEEP_MEDIA + 1)) | xargs -r rm -rf
 
 # Eski zaxiralar: oxirgi KEEP_BACKUPS ta + har oydan bittasi.
 prune_backups run
