@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Play, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { openRahmatCheckout } from '../api/rahmat';
+import RussiaPaymentGuide from '../components/pricing/RussiaPaymentGuide';
 import { getWelcomeVideoOffer, replayWelcomeVideoOffer } from '../api/welcomeVideoOffer';
 import { COURSE_VIDEO_SRC, COURSE_VIDEO_DURATION_SECONDS, secondsUntilCourseBonus } from '../../shared/courseOfferPlayback';
 import { RUSSIAN_TARIFF_PLANS_RUB, formatRubAmount, formatRussianTariffUzsMing, type RussianTariffCode } from '../../shared/russianTariffs';
@@ -30,6 +31,7 @@ export default function CourseInfoPage() {
   const [needsPlay, setNeedsPlay] = useState(true);
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState(false);
+  const [guide, setGuide] = useState<{ tariffType: RussianTariffCode; welcomeOffer: boolean } | null>(null);
   const left = expiresAt ? Math.max(0, Math.ceil((Date.parse(expiresAt) - now) / 1000)) : 0;
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
   useEffect(() => {
@@ -67,10 +69,14 @@ export default function CourseInfoPage() {
   const purchase = async (tariffType: RussianTariffCode, welcomeOffer = false) => {
     if (!token || buying || (welcomeOffer && left <= 0)) return;
     setBuying(true); setBuyError(false);
-    try { await openRahmatCheckout({ token, productCode: 'russian', tariffType, welcomeOffer }); }
+    try { await openRahmatCheckout({ token, productCode: 'russian', tariffType, welcomeOffer }); setGuide(null); }
     catch { setBuyError(true); }
     finally { setBuying(false); }
   };
+  const openGuide = (tariffType: RussianTariffCode, welcomeOffer = false) => { setBuyError(false); setGuide({ tariffType, welcomeOffer }); };
+  const guidePlan = guide && RUSSIAN_TARIFF_PLANS_RUB.find(plan => plan.code === guide.tariffType);
+  // A welcome offer that expires while the guide is open falls back to the regular tariff list.
+  useEffect(() => { if (guide?.welcomeOffer && left <= 0) setGuide(null); }, [guide, left]);
   return <main className="min-h-[calc(100dvh-80px)] bg-[#F2F5FA] pb-2 text-[#0F172A]"><div className="course-info-shell">
     <header className="flex items-center justify-between gap-4 px-4 py-1"><Link to="/" className="inline-flex min-h-11 items-center gap-2"><ArrowLeft size={20} />Orqaga</Link><Link to="/" className="flex items-center gap-2 text-2xl font-bold"><img src="/landing/falarus-mark.svg" className="h-9 w-10" alt="" />FalaRus</Link></header>
     <div className="course-info-countdown mx-4 mb-3 flex min-h-[60px] flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-2xl border-2 border-[#2443B3] bg-white px-3 py-2 text-[#2443B3] shadow-sm">
@@ -103,7 +109,7 @@ export default function CourseInfoPage() {
           </label>;
         })}</div>
       </fieldset>
-      <button disabled={buying} onClick={() => void purchase(selectedTariff)} className="mt-3 flex min-h-14 w-full items-center justify-center gap-3 rounded-[22px] border-b-4 border-blue-800 bg-[#2563FF] px-4 py-3 text-lg font-extrabold text-white shadow-[0_5px_12px_rgba(37,99,235,0.2)] transition-colors hover:bg-blue-600 active:border-b-2 disabled:opacity-50">{buying ? '…' : 'Sotib olish · ' + formatRubAmount(selectedPlan.priceRub) + ' ₽'}<ArrowRight size={22} className="shrink-0" /></button>
+      <button disabled={buying} onClick={() => openGuide(selectedTariff)} className="mt-3 flex min-h-14 w-full items-center justify-center gap-3 rounded-[22px] border-b-4 border-blue-800 bg-[#2563FF] px-4 py-3 text-lg font-extrabold text-white shadow-[0_5px_12px_rgba(37,99,235,0.2)] transition-colors hover:bg-blue-600 active:border-b-2 disabled:opacity-50">{buying ? '…' : 'Sotib olish · ' + formatRubAmount(selectedPlan.priceRub) + ' ₽'}<ArrowRight size={22} className="shrink-0" /></button>
     </section>}
     {left > 0 && <section aria-label="Maxsus taklif" className="fr-offer">
       <div className="fr-ring" aria-hidden="true" />
@@ -114,12 +120,19 @@ export default function CourseInfoPage() {
         <div className="fr-line"><span className="fr-new-sm">{formatRubAmount(offerPlan.priceUzs)} so'm</span><span className="fr-old-sm">{formatRubAmount(monthlyPlan.priceUzs * 6)} so'm</span></div>
       </div>
       <div className="fr-row"><span className="fr-label">Taklif tugashiga</span><div className="fr-timer" role="timer" aria-label="Taklif tugashiga"><span className="box">{String(Math.floor(left / 60)).padStart(2, '0')}</span><span className="sep">:</span><span className="box">{String(left % 60).padStart(2, '0')}</span></div></div>
-      <button disabled={buying} onClick={() => void purchase('three_month', true)} className="fr-cta">{buying ? '…' : 'Taklifdan foydalanish'}<ArrowRight size={20} strokeWidth={2.4} /></button>
+      <button disabled={buying} onClick={() => openGuide('three_month', true)} className="fr-cta">{buying ? '…' : 'Taklifdan foydalanish'}<ArrowRight size={20} strokeWidth={2.4} /></button>
     </section>}
     {offerLoading && <p role="status" className="px-4 pb-3 text-center">Taklif tayyorlanmoqda…</p>}
     {offerError && <p role="alert" className="px-4 pb-3 text-center text-red-700">Taklifni yuklab bo'lmadi. <button className="underline" onClick={() => void reveal()}>Qayta urinish</button></p>}
     {expiresAt && left === 0 && <div className="px-4 pb-4 text-center"><p>Taklif muddati tugadi.</p><button onClick={() => { requested.current = false; maxPlayed.current = 0; setOfferError(false); if (video.current) { video.current.currentTime = 0; sync(); void play(); } }} className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4"><RotateCcw size={18} />Qayta ko'rish</button></div>}
 
-    {buyError && <p role="alert" className="mx-4 mt-4 rounded-2xl bg-red-50 p-3 text-red-700">To'lovni ochib bo'lmadi. Qayta urinib ko'ring.</p>}
+    {guide && guidePlan && <RussiaPaymentGuide
+      payLabel={'To‘lash · ' + formatRubAmount(guidePlan.priceRub) + ' ₽'}
+      paying={buying}
+      error={buyError}
+      onPay={() => void purchase(guide.tariffType, guide.welcomeOffer)}
+      onClose={() => setGuide(null)}
+    />}
+    {buyError && !guide && <p role="alert" className="mx-4 mt-4 rounded-2xl bg-red-50 p-3 text-red-700">To'lovni ochib bo'lmadi. Qayta urinib ko'ring.</p>}
   </div></main>;
 }
