@@ -13,14 +13,14 @@ case "${1:-}" in
   *) echo 'Usage: vps-deploy-rsync.sh [--dry-run]' >&2; exit 2 ;;
 esac
 [[ "$APP_DIR" =~ ^/[a-zA-Z0-9_./-]+$ && "$PM2_APP" =~ ^[a-zA-Z0-9_-]+$ ]] || exit 2
-SSH=(ssh -o BatchMode=yes -o ConnectTimeout=15)
+SSH=(ssh -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=6)
 "${SSH[@]}" "$VPS_SSH" 'true'
 if [[ ${#DRY_RUN[@]} -eq 0 ]]; then
   npm run lint
   npm test
   "${SSH[@]}" "$VPS_SSH" "cd '$APP_DIR' && bash scripts/server-backup.sh"
 fi
-rsync -rlpc --itemize-changes "${DRY_RUN[@]}" \
+rsync -rlpc --itemize-changes ${DRY_RUN[@]+"${DRY_RUN[@]}"} \
   --exclude='.env' --exclude='.env.*' --exclude='.git' \
   --exclude=node_modules --exclude=dist --exclude='dist.*' --exclude='.dist-build.*' \
   --exclude='.deploy-build.lock' --exclude='.server-backups' --exclude=uploads --exclude='public/courses' \
@@ -32,7 +32,7 @@ rsync -rlpc --itemize-changes "${DRY_RUN[@]}" \
 # ma'lumotlar, muhit va boshqa kataloglar bu sinxronlashga kirmaydi.
 rsync -rlpc --delete-delay --backup \
   --backup-dir="${APP_DIR%/*}/backups/retired-code-$(date -u +%Y%m%d-%H%M%S)" \
-  --itemize-changes "${DRY_RUN[@]}" --exclude='__pycache__' --exclude='*.pyc' \
+  --itemize-changes ${DRY_RUN[@]+"${DRY_RUN[@]}"} --exclude='__pycache__' --exclude='*.pyc' \
   src server shared scripts tests "$VPS_SSH:$APP_DIR/"
 [[ ${#DRY_RUN[@]} -eq 0 ]] || exit 0
 "${SSH[@]}" "$VPS_SSH" "bash -s -- '$APP_DIR' '$PM2_APP'" <<'REMOTE'
