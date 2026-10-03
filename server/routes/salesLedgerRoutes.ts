@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import type { Pool } from 'pg';
 import { pool } from '../lib/db';
+import { getRubToUzsRate } from '../services/rubUzsRate.service.js';
 import {
   isCurrency,
   isIsoDate,
@@ -87,7 +88,9 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
       return;
     }
     try {
-      const [operators, contracts, gateway, receipts, debts] = await Promise.all([
+      const [rate, operators, contracts, gateway, receipts, debts] = await Promise.all([
+        // Faqat ulush (%) hisobi uchun; kurs kelmasa diagramma so'mdagi qismini ko'rsatadi.
+        getRubToUzsRate().then((info) => info.rate).catch(() => null),
         database.query('SELECT id, name, active FROM operator_accounts ORDER BY id'),
         // Barcha cheklari rad etilgan shartnoma sotuv emas (bot ham shunday hisoblaydi).
         database.query(`${CONTRACT_SELECT} WHERE ${inDay('b.created_at')} AND (b.paid > 0 OR b.pending > 0) ORDER BY b.created_at`, [day]),
@@ -164,6 +167,7 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
 
       const body: AnalyticsDay = {
         date: day,
+        rub_uzs_rate: rate,
         operators: operators.rows.map((row: Row) => ({ id: num(row.id), name: text(row.name), active: row.active === true })),
         sales: [...contracts.rows.map(contractSale), ...gatewaySales].sort((a, b) => a.sale_at.localeCompare(b.sale_at)),
         payments: [...receiptPayments, ...gatewayPayments].sort((a, b) => a.paid_at.localeCompare(b.paid_at)),

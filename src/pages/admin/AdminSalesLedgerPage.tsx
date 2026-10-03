@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Clock3, HandCoins, PieChart, ReceiptText, RefreshCw, Users, Wallet } from 'lucide-react';
+import { AlertCircle, CalendarDays, ChartColumnIncreasing, ChevronLeft, ChevronRight, Clock3, HandCoins, PieChart, ReceiptText, RefreshCw, Users, Wallet } from 'lucide-react';
 import { salesLedgerApi } from '../../api/salesLedger';
 import { adminPath } from '../../constants/adminPath';
 import {
@@ -10,6 +10,8 @@ import {
   SOURCE_LABELS,
   addDays,
   daysBetween,
+  moneyInUzs,
+  zeroMoney,
   saleStatus,
   summarizeAnalyticsDay,
   tariffLabel,
@@ -18,6 +20,7 @@ import {
   type AnalyticsDay,
   type AnalyticsSale,
   type Money,
+  type SaleSource,
 } from '../../../shared/salesLedger';
 import { Skeleton } from '../../components/ui/Skeleton';
 import {
@@ -34,14 +37,17 @@ import {
   formatTime,
   isEmptyMoney,
   secondaryButton,
+  TARIFF_COLORS,
+  channelColor,
 } from '../../components/admin/salesLedger/ui';
+import { Donut } from '../../components/admin/salesLedger/Donut';
 
-const TARIFF_TONES: Record<string, { head: string; cell: string; bar: string }> = {
-  month: { head: 'bg-blue-50 text-blue-800', cell: 'bg-blue-50/40', bar: '#2563EB' },
-  three_month: { head: 'bg-emerald-50 text-emerald-800', cell: 'bg-emerald-50/40', bar: '#16A34A' },
-  six_month: { head: 'bg-violet-50 text-violet-800', cell: 'bg-violet-50/40', bar: '#7C3AED' },
-  year: { head: 'bg-amber-50 text-amber-800', cell: 'bg-amber-50/40', bar: '#D97706' },
-  none: { head: 'bg-slate-50 text-slate-700', cell: 'bg-slate-50/40', bar: '#64748B' },
+const TARIFF_TONES: Record<string, { head: string; cell: string }> = {
+  month: { head: 'bg-blue-50 text-blue-800', cell: 'bg-blue-50/40' },
+  three_month: { head: 'bg-emerald-50 text-emerald-800', cell: 'bg-emerald-50/40' },
+  six_month: { head: 'bg-violet-50 text-violet-800', cell: 'bg-violet-50/40' },
+  year: { head: 'bg-amber-50 text-amber-800', cell: 'bg-amber-50/40' },
+  none: { head: 'bg-slate-50 text-slate-700', cell: 'bg-slate-50/40' },
 };
 const tone = (code: string | null) => TARIFF_TONES[code ?? 'none'] ?? TARIFF_TONES.none;
 
@@ -55,6 +61,13 @@ function dueLabel(dueAt: string | null, today: string): { text: string; overdue:
 
 const channelName = (sale: Pick<AnalyticsSale, 'source' | 'operator_name'>) =>
   sale.source === 'operator' ? sale.operator_name : SOURCE_LABELS[sale.source];
+
+/** Halqa markazi uchun qisqa yozuv: «3,82 млн» + birligi alohida. */
+function compactUzs(value: number): { value: string; unit: string } {
+  if (value >= 1_000_000) return { value: (value / 1_000_000).toLocaleString('ru-RU', { maximumFractionDigits: 2 }), unit: 'млн сум' };
+  if (value >= 1_000) return { value: String(Math.round(value / 1_000)), unit: 'тыс. сум' };
+  return { value: String(Math.round(value)), unit: 'сум' };
+}
 
 /** Ko'p valyutali summa bir qatorda: «12 000 ₽ + 1 590 000 сум». */
 function MoneyInline({ value }: { value: Money }) {
@@ -92,7 +105,9 @@ function Kpi({ label, value, hint, toneClass, icon }: { label: string; value: Re
   );
 }
 
-function SalesTable({ sales, tariffs, today }: { sales: AnalyticsSale[]; tariffs: string[]; today: string }) {
+type ColorOf = (source: SaleSource, operatorId: number | null) => string;
+
+function SalesTable({ sales, tariffs, today, colorOf }: { sales: AnalyticsSale[]; tariffs: string[]; today: string; colorOf: ColorOf }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[1040px] border-collapse text-left text-[13.5px] [&_th]:whitespace-nowrap">
@@ -126,7 +141,7 @@ function SalesTable({ sales, tariffs, today }: { sales: AnalyticsSale[]; tariffs
                   <ClientCell userId={sale.user_id} name={sale.client_name} sub={[sale.phone, formatTime(sale.sale_at)].filter(Boolean).join(' · ')} />
                 </td>
                 <td className="px-3 py-3">
-                  <ChannelBadge source={sale.source} operatorId={sale.operator_id} name={channelName(sale)} />
+                  <ChannelBadge source={sale.source} color={colorOf(sale.source, sale.operator_id)} name={channelName(sale)} />
                   {sale.lead_source && <span className="mt-0.5 block pl-8 text-[11.5px] text-slate-400">{sale.lead_source}</span>}
                 </td>
                 {tariffs.map((code) => (
@@ -220,6 +235,24 @@ export default function AdminSalesLedgerPage() {
     return [...MAIN_TARIFFS.map((t) => t.code), ...extra];
   }, [summary]);
 
+  const colorOf = useCallback<ColorOf>(
+    (source, operatorId) => channelColor(source, operatorId, (visibleDay?.operators ?? []).map((o) => o.id)),
+    [visibleDay],
+  );
+
+  const compactReceived = compactUzs(summary ? moneyInUzs(summary.received, visibleDay?.rub_uzs_rate ?? null) : 0);
+
+  const soldByTariff = useMemo(() => {
+    const map = new Map<string, Money>();
+    for (const sale of visibleDay?.sales ?? []) {
+      const key = sale.tariff ?? 'none';
+      const money = map.get(key) ?? zeroMoney();
+      money[sale.currency] += sale.total;
+      map.set(key, money);
+    }
+    return map;
+  }, [visibleDay]);
+
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4 pb-10 text-slate-900">
       <header className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#0b2445] via-[#123a72] to-[#1d4ed8] px-5 py-5 text-white shadow-[0_18px_44px_rgba(37,99,235,0.22)] sm:px-6">
@@ -309,86 +342,101 @@ export default function AdminSalesLedgerPage() {
             action={<span className="text-[12.5px] text-slate-500">{summary.salesCount ? `${summary.salesCount} продаж` : ''}</span>}
           >
             {visibleDay.sales.length ? (
-              <SalesTable sales={visibleDay.sales} tariffs={tariffColumns} today={today} />
+              <SalesTable sales={visibleDay.sales} tariffs={tariffColumns} today={today} colorOf={colorOf} />
             ) : (
               <EmptyState title="За этот день продаж нет" hint="Здесь появятся продажи операторов из бота, автоплатежи Rahmat и оплаты, подтверждённые админом." />
             )}
           </Card>
 
-          <div className="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
-            <Card title="По операторам и каналам" icon={<Users className="h-5 w-5 text-blue-600" />}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-[13px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-[12px] font-semibold text-slate-500">
-                      <th className="px-4 py-2.5">Оператор / канал</th>
-                      <th className="px-3 py-2.5 text-right">Продаж</th>
-                      <th className="px-3 py-2.5 text-right">Сумма продаж</th>
-                      <th className="px-3 py-2.5 text-right">Поступило</th>
-                      <th className="px-3 py-2.5 text-right">Собрано долгов</th>
-                      <th className="px-3 py-2.5 text-right">Открытый долг</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.channels.map((s) => (
-                      <tr key={s.key} className={`border-b border-slate-100 align-top last:border-0 ${s.active ? '' : 'opacity-60'}`}>
-                        <td className="px-4 py-2.5">
-                          <ChannelBadge source={s.source} operatorId={s.source === 'operator' ? Number(s.key.slice(3)) : null} name={s.label} />
-                        </td>
-                        <td className="px-3 py-2.5 text-right font-semibold tabular-nums">{s.salesCount}</td>
-                        <td className="px-3 py-2.5 text-right"><MoneyCell value={s.sold} /></td>
-                        <td className="px-3 py-2.5 text-right">
-                          <MoneyCell value={s.received} tone="success" />
-                          {!isEmptyMoney(s.pendingReview) && <span className="block text-[11px] text-slate-500">+ <MoneyInline value={s.pendingReview} /> на проверке</span>}
-                        </td>
-                        <td className="px-3 py-2.5 text-right"><MoneyCell value={s.collectedDebt} /></td>
-                        <td className="px-3 py-2.5 text-right"><MoneyCell value={s.openDebt} tone="danger" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t border-slate-200 bg-slate-50/70 align-top font-bold">
-                      <td className="px-4 py-2.5">Итого</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">{summary.salesCount}</td>
-                      <td className="px-3 py-2.5 text-right"><MoneyCell value={summary.sold} /></td>
-                      <td className="px-3 py-2.5 text-right"><MoneyCell value={summary.received} tone="success" /></td>
-                      <td className="px-3 py-2.5 text-right"><MoneyCell value={summary.collectedDebt} /></td>
-                      <td className="px-3 py-2.5 text-right"><MoneyCell value={summary.openDebt} tone="danger" /></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card title="Продажи по тарифам" icon={<ChartColumnIncreasing className="h-5 w-5 text-blue-600" />}>
+              <Donut
+                ariaLabel="Доля продаж по тарифам"
+                centerValue={summary.salesCount}
+                centerLabel="продаж"
+                emptyText="За этот день продаж нет."
+                segments={tariffColumns.map((code) => {
+                  const sold = soldByTariff.get(code);
+                  return {
+                    key: code,
+                    label: tariffLabel(code === 'none' ? null : code),
+                    value: summary.byTariff[code] ?? 0,
+                    color: TARIFF_COLORS[code] ?? TARIFF_COLORS.none,
+                    detail: <>{summary.byTariff[code] ?? 0} шт.{sold ? <> · <MoneyInline value={sold} /></> : null}</>,
+                  };
+                })}
+              />
             </Card>
 
-            <Card title="Продажи по тарифам" icon={<PieChart className="h-5 w-5 text-blue-600" />}>
-              <ul className="flex flex-col gap-3 p-4 sm:p-5">
-                {tariffColumns.map((code) => {
-                  const count = summary.byTariff[code] ?? 0;
-                  const share = summary.salesCount ? Math.round((count / summary.salesCount) * 100) : 0;
-                  return (
-                    <li key={code} className="flex flex-col gap-1.5">
-                      <div className="flex items-baseline justify-between gap-2 text-[13px]">
-                        <span className="font-semibold text-slate-800">{tariffLabel(code === 'none' ? null : code)}</span>
-                        <span className="tabular-nums text-slate-600"><b className="text-slate-900">{count}</b> ({share}%)</span>
-                      </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                        <motion.div className="h-full rounded-full" style={{ background: tone(code).bar }} initial={{ width: 0 }} animate={{ width: `${share}%` }} transition={{ duration: 0.5, ease: 'easeOut' }} />
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="mx-4 mb-4 flex flex-col gap-2 rounded-2xl bg-slate-50 p-3 text-[12.5px] sm:mx-5">
-                <p className="font-semibold text-slate-700">Поступления по каналам</p>
-                {(['operator', 'rahmat', 'manual'] as const).map((source) => (
-                  <div key={source} className="flex items-start justify-between gap-3">
-                    <span className="text-slate-600">{source === 'operator' ? 'Операторы (бот)' : SOURCE_LABELS[source]}</span>
-                    <MoneyCell value={summary.receivedBySource[source]} tone="success" />
-                  </div>
-                ))}
-              </div>
+            <Card title="Доля в обороте по каналам" icon={<ChartColumnIncreasing className="h-5 w-5 text-blue-600" />}>
+              <Donut
+                ariaLabel="Доля операторов и каналов в поступлениях за день"
+                centerValue={compactReceived.value}
+                centerLabel={`${summary.received.RUB > 0 ? '≈ ' : ''}${compactReceived.unit}`}
+                emptyText="Поступлений за этот день нет."
+                segments={summary.channels.map((c) => ({
+                  key: c.key,
+                  label: c.label,
+                  value: moneyInUzs(c.received, visibleDay.rub_uzs_rate),
+                  color: colorOf(c.source, c.operatorId),
+                  detail: <MoneyInline value={c.received} />,
+                }))}
+              />
+              <p className="border-t border-slate-100 px-4 py-2.5 text-[11.5px] leading-snug text-slate-500 sm:px-5">
+                Доля считается по поступлениям за день.{' '}
+                {summary.received.RUB > 0 && visibleDay.rub_uzs_rate
+                  ? `Рубли пересчитаны в сумы по курсу ЦБ: 1 ₽ = ${visibleDay.rub_uzs_rate.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} сум.`
+                  : summary.received.RUB > 0
+                    ? 'Курс ЦБ недоступен — рублёвые поступления в долю не вошли.'
+                    : ''}
+                {summary.received.USD > 0 ? ' Поступления в $ в долю не входят.' : ''}
+              </p>
             </Card>
           </div>
+
+          <Card title="По операторам и каналам" icon={<Users className="h-5 w-5 text-blue-600" />}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-[13px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[12px] font-semibold text-slate-500">
+                    <th className="px-4 py-2.5">Оператор / канал</th>
+                    <th className="px-3 py-2.5 text-right">Продаж</th>
+                    <th className="px-3 py-2.5 text-right">Сумма продаж</th>
+                    <th className="px-3 py-2.5 text-right">Поступило</th>
+                    <th className="px-3 py-2.5 text-right">Собрано долгов</th>
+                    <th className="px-3 py-2.5 text-right">Открытый долг</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.channels.map((s) => (
+                    <tr key={s.key} className={`border-b border-slate-100 align-top last:border-0 ${s.active ? '' : 'opacity-60'}`}>
+                      <td className="px-4 py-2.5">
+                        <ChannelBadge source={s.source} color={colorOf(s.source, s.operatorId)} name={s.label} />
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-semibold tabular-nums">{s.salesCount}</td>
+                      <td className="px-3 py-2.5 text-right"><MoneyCell value={s.sold} /></td>
+                      <td className="px-3 py-2.5 text-right">
+                        <MoneyCell value={s.received} tone="success" />
+                        {!isEmptyMoney(s.pendingReview) && <span className="block text-[11px] text-slate-500">+ <MoneyInline value={s.pendingReview} /> на проверке</span>}
+                      </td>
+                      <td className="px-3 py-2.5 text-right"><MoneyCell value={s.collectedDebt} /></td>
+                      <td className="px-3 py-2.5 text-right"><MoneyCell value={s.openDebt} tone="danger" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-slate-200 bg-slate-50/70 align-top font-bold">
+                    <td className="px-4 py-2.5">Итого</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{summary.salesCount}</td>
+                    <td className="px-3 py-2.5 text-right"><MoneyCell value={summary.sold} /></td>
+                    <td className="px-3 py-2.5 text-right"><MoneyCell value={summary.received} tone="success" /></td>
+                    <td className="px-3 py-2.5 text-right"><MoneyCell value={summary.collectedDebt} /></td>
+                    <td className="px-3 py-2.5 text-right"><MoneyCell value={summary.openDebt} tone="danger" /></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </Card>
 
           <div className="grid gap-4 xl:grid-cols-2">
             <Card

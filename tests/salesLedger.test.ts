@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   MAIN_TARIFFS,
+  moneyInUzs,
   daysBetween,
   isIsoDate,
   saleStatus,
@@ -51,6 +52,7 @@ test('status: pending-only receipt is "checking", not a debt-paid sale', () => {
 test('day summary keeps currencies apart and splits sources, debts and pending receipts', () => {
   const day: AnalyticsDay = {
     date: '2026-10-02',
+    rub_uzs_rate: 150,
     operators,
     sales: [
       sale({ key: 'c:1' }),
@@ -97,7 +99,15 @@ test('day summary keeps currencies apart and splits sources, debts and pending r
   assert.equal(sarvinoz.salesCount, 2);
   assert.deepEqual(sarvinoz.pendingReview, { RUB: 4000, UZS: 0, USD: 0 });
   const laziz = s.channels.find((c) => c.key === 'op:1')!;
+  assert.equal(laziz.operatorId, 1);
+  assert.equal(s.channels.find((c) => c.key === 'rahmat')!.operatorId, null);
   assert.deepEqual(laziz.collectedDebt, { RUB: 0, UZS: 250000, USD: 0 });
+});
+
+test('share of turnover converts rubles at the given rate and never invents a USD rate', () => {
+  assert.equal(moneyInUzs({ RUB: 4000, UZS: 780000, USD: 0 }, 150), 1380000);
+  assert.equal(moneyInUzs({ RUB: 4000, UZS: 780000, USD: 0 }, null), 780000);
+  assert.equal(moneyInUzs({ RUB: 0, UZS: 0, USD: 100 }, 150), 0);
 });
 
 test('date helpers use Tashkent time', () => {

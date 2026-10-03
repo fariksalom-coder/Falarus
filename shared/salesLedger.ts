@@ -94,6 +94,8 @@ export type AnalyticsPayment = {
 
 export type AnalyticsDay = {
   date: string;
+  /** Markaziy bank kursi (1 ₽ = N so'm) — faqat kanallar ulushini hisoblash uchun. */
+  rub_uzs_rate: number | null;
   operators: AnalyticsOperator[];
   sales: AnalyticsSale[];
   payments: AnalyticsPayment[];
@@ -112,6 +114,7 @@ export type ChannelStats = {
   key: string;
   label: string;
   source: SaleSource;
+  operatorId: number | null;
   active: boolean;
   salesCount: number;
   sold: Money;
@@ -189,6 +192,7 @@ export function summarizeAnalyticsDay(day: AnalyticsDay, now = new Date()): Anal
         key,
         label: source === 'operator' ? (operator?.name ?? name) : SOURCE_LABELS[source],
         source,
+        operatorId: source === 'operator' ? operatorId : null,
         active: source !== 'operator' || (operator?.active ?? false),
         salesCount: 0,
         sold: zeroMoney(),
@@ -248,6 +252,14 @@ export function summarizeAnalyticsDay(day: AnalyticsDay, now = new Date()): Anal
     (a, b) => order[a.source] - order[b.source] || a.label.localeCompare(b.label, 'ru'),
   );
   return summary;
+}
+
+/**
+ * Ko'p valyutali summa so'm ekvivalentida — faqat ulush (%) uchun. Kurs yo'q
+ * bo'lsa RUB hisobga olinmaydi; USD kursi saqlanmagani uchun hech qachon qo'shilmaydi.
+ */
+export function moneyInUzs(value: Money, rubUzsRate: number | null): number {
+  return value.UZS + (rubUzsRate && rubUzsRate > 0 ? value.RUB * rubUzsRate : 0);
 }
 
 export function isIsoDate(value: unknown): value is string {

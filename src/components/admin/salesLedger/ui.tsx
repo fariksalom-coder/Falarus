@@ -50,14 +50,38 @@ export function Amount({ value, currency, tone = 'default' }: { value: number; c
   return <span className={`whitespace-nowrap font-semibold tabular-nums ${color}`}>{formatMoney(value, currency)}</span>;
 }
 
-const AVATAR_COLORS = ['#2563EB', '#16A34A', '#7C3AED', '#EA580C', '#DB2777', '#0891B2', '#CA8A04', '#4F46E5'];
+/**
+ * Kategorik ranglar — tekshirilgan qat'iy tartib (validate_palette: CVD va oddiy
+ * ko'rish uchun qo'shnilar ajraladi). Rang sub'ektga bog'liq: operator jadvalda,
+ * belgida va diagrammada bir xil rangda.
+ */
+const OPERATOR_COLORS = ['#2a78d6', '#eb6834', '#4a3aa7', '#e87ba4', '#eda100', '#e34948'];
+export const RAHMAT_COLOR = '#1baf7a';
+export const MANUAL_COLOR = '#008300';
+/** 6 tadan ortiq operator bo'lsa — yangi rang uydirilmaydi, neytral kulrang. */
+const OVERFLOW_COLOR = '#94a3b8';
+
+export const TARIFF_COLORS: Record<string, string> = {
+  month: '#2563eb',
+  three_month: '#22a552',
+  six_month: '#8b5cf6',
+  year: '#eda100',
+  none: '#94a3b8',
+};
+
+/** Operator rangi uning ro'yxatdagi o'rniga (id tartibi) qarab — filtrlansa ham o'zgarmaydi. */
+export function channelColor(source: SaleSource, operatorId: number | null, operatorIds: number[]): string {
+  if (source === 'rahmat') return RAHMAT_COLOR;
+  if (source === 'manual') return MANUAL_COLOR;
+  const index = operatorIds.indexOf(operatorId ?? -1);
+  return index >= 0 && index < OPERATOR_COLORS.length ? OPERATOR_COLORS[index] : OVERFLOW_COLOR;
+}
 
 /** Operator — ism bosh harfi; Rahmat — robot; qo'lda — admin belgisi. */
-export function ChannelBadge({ source, operatorId, name, compact = false }: { source: SaleSource; operatorId: number | null; name: string; compact?: boolean }) {
-  const background = source === 'operator' ? AVATAR_COLORS[(operatorId ?? 0) % AVATAR_COLORS.length] : source === 'rahmat' ? '#0F766E' : '#64748B';
+export function ChannelBadge({ source, color, name, compact = false }: { source: SaleSource; color: string; name: string; compact?: boolean }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-2">
-      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white" style={{ background }} aria-hidden="true">
+      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white" style={{ background: color }} aria-hidden="true">
         {source === 'operator' ? name.trim().charAt(0).toUpperCase() || '?' : source === 'rahmat' ? <Bot className="h-3.5 w-3.5" /> : <UserCog className="h-3.5 w-3.5" />}
       </span>
       {!compact && <span className="truncate whitespace-nowrap text-[13.5px] text-slate-800">{name}</span>}
