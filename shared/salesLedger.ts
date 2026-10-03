@@ -88,18 +88,20 @@ export type AnalyticsPayment = {
   tariff: string | null;
   currency: Currency;
   amount: number;
-  /** Sotuv tuzilgan kun (Toshkent) — undan oldingi bo'lsa, bu qarz undirish. */
+  /** Sotuv tuzilgan kun (Toshkent) — davr boshidan oldin bo'lsa, bu eski qarzni undirish. */
   sale_date: string;
 };
 
-export type AnalyticsDay = {
-  date: string;
+/** Davr — bir kun (from === to), oy yoki ixtiyoriy oraliq; ikkala chegara ham kiradi. */
+export type AnalyticsPeriod = {
+  from: string;
+  to: string;
   /** Markaziy bank kursi (1 ₽ = N so'm) — faqat kanallar ulushini hisoblash uchun. */
   rub_uzs_rate: number | null;
   operators: AnalyticsOperator[];
   sales: AnalyticsSale[];
   payments: AnalyticsPayment[];
-  /** Shu kun oxirigacha tuzilgan va hali yopilmagan operator shartnomalari. */
+  /** Davr oxirigacha tuzilgan va hozir ham yopilmagan operator shartnomalari (joriy qoldiq). */
   debts: AnalyticsSale[];
 };
 
@@ -117,6 +119,8 @@ export type ChannelStats = {
   operatorId: number | null;
   active: boolean;
   salesCount: number;
+  /** Shu kanal sotgan tariflar soni. */
+  byTariff: Record<string, number>;
   sold: Money;
   received: Money;
   collectedDebt: Money;
@@ -161,7 +165,7 @@ export function tashkentToday(now = new Date()): string {
   return tashkentDate(now);
 }
 
-export function summarizeAnalyticsDay(day: AnalyticsDay, now = new Date()): AnalyticsSummary {
+export function summarizeAnalytics(day: AnalyticsPeriod, now = new Date()): AnalyticsSummary {
   const summary: AnalyticsSummary = {
     salesCount: day.sales.length,
     byTariff: Object.fromEntries(MAIN_TARIFFS.map((t) => [t.code, 0])),
@@ -195,6 +199,7 @@ export function summarizeAnalyticsDay(day: AnalyticsDay, now = new Date()): Anal
         operatorId: source === 'operator' ? operatorId : null,
         active: source !== 'operator' || (operator?.active ?? false),
         salesCount: 0,
+        byTariff: {},
         sold: zeroMoney(),
         received: zeroMoney(),
         collectedDebt: zeroMoney(),
@@ -219,6 +224,7 @@ export function summarizeAnalyticsDay(day: AnalyticsDay, now = new Date()): Anal
     else summary.checkingCount += 1;
     const stats = channel(sale.source, sale.operator_id, sale.operator_name);
     stats.salesCount += 1;
+    stats.byTariff[tariff] = (stats.byTariff[tariff] ?? 0) + 1;
     add(stats.sold, sale.currency, sale.total);
   }
 
@@ -233,7 +239,7 @@ export function summarizeAnalyticsDay(day: AnalyticsDay, now = new Date()): Anal
     add(summary.received, payment.currency, payment.amount);
     add(summary.receivedBySource[payment.source], payment.currency, payment.amount);
     add(stats.received, payment.currency, payment.amount);
-    if (payment.sale_date < day.date) {
+    if (payment.sale_date < day.from) {
       add(summary.collectedDebt, payment.currency, payment.amount);
       add(stats.collectedDebt, payment.currency, payment.amount);
     } else {
@@ -260,6 +266,17 @@ export function summarizeAnalyticsDay(day: AnalyticsDay, now = new Date()): Anal
  */
 export function moneyInUzs(value: Money, rubUzsRate: number | null): number {
   return value.UZS + (rubUzsRate && rubUzsRate > 0 ? value.RUB * rubUzsRate : 0);
+}
+
+/** Bitta so'rovda ko'pi bilan shuncha kun (yil + kabisa). */
+export const MAX_PERIOD_DAYS = 366;
+
+/** Sana tushgan oyning birinchi va oxirgi kuni. */
+export function monthRange(date: string): { from: string; to: string } {
+  const from = `${date.slice(0, 7)}-01`;
+  const next = new Date(`${from}T00:00:00Z`);
+  next.setUTCMonth(next.getUTCMonth() + 1);
+  return { from, to: addDays(next.toISOString().slice(0, 10), -1) };
 }
 
 export function isIsoDate(value: unknown): value is string {

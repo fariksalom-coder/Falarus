@@ -2,14 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   MAIN_TARIFFS,
+  monthRange,
   moneyInUzs,
   daysBetween,
   isIsoDate,
   saleStatus,
-  summarizeAnalyticsDay,
+  summarizeAnalytics,
   tashkentDate,
   tashkentToday,
-  type AnalyticsDay,
+  type AnalyticsPeriod,
   type AnalyticsPayment,
   type AnalyticsSale,
 } from '../shared/salesLedger';
@@ -50,8 +51,9 @@ test('status: pending-only receipt is "checking", not a debt-paid sale', () => {
 });
 
 test('day summary keeps currencies apart and splits sources, debts and pending receipts', () => {
-  const day: AnalyticsDay = {
-    date: '2026-10-02',
+  const day: AnalyticsPeriod = {
+    from: '2026-10-02',
+    to: '2026-10-02',
     rub_uzs_rate: 150,
     operators,
     sales: [
@@ -75,7 +77,7 @@ test('day summary keeps currencies apart and splits sources, debts and pending r
       sale({ key: 'c:9', debt: 280000, paid: 250000, due_at: '2026-10-01T10:00:00Z' }),
     ],
   };
-  const s = summarizeAnalyticsDay(day, new Date('2026-10-02T12:00:00Z'));
+  const s = summarizeAnalytics(day, new Date('2026-10-02T12:00:00Z'));
   assert.equal(s.salesCount, 5);
   assert.equal(s.byTariff.three_month, 3);
   assert.equal(s.byTariff.six_month, 1);
@@ -100,6 +102,7 @@ test('day summary keeps currencies apart and splits sources, debts and pending r
   assert.deepEqual(sarvinoz.pendingReview, { RUB: 4000, UZS: 0, USD: 0 });
   const laziz = s.channels.find((c) => c.key === 'op:1')!;
   assert.equal(laziz.operatorId, 1);
+  assert.deepEqual(sarvinoz.byTariff, { six_month: 1, three_month: 1 });
   assert.equal(s.channels.find((c) => c.key === 'rahmat')!.operatorId, null);
   assert.deepEqual(laziz.collectedDebt, { RUB: 0, UZS: 250000, USD: 0 });
 });
@@ -108,6 +111,27 @@ test('share of turnover converts rubles at the given rate and never invents a US
   assert.equal(moneyInUzs({ RUB: 4000, UZS: 780000, USD: 0 }, 150), 1380000);
   assert.equal(moneyInUzs({ RUB: 4000, UZS: 780000, USD: 0 }, null), 780000);
   assert.equal(moneyInUzs({ RUB: 0, UZS: 0, USD: 100 }, 150), 0);
+});
+
+test('a month-long period counts only payments on pre-period sales as collected debt', () => {
+  const period: AnalyticsPeriod = {
+    from: '2026-10-01',
+    to: '2026-10-31',
+    rub_uzs_rate: null,
+    operators,
+    sales: [sale({ key: 'c:1', sale_at: '2026-10-05T06:00:00Z', total: 530000, paid: 530000 })],
+    payments: [
+      payment({ key: 'r:1', amount: 300000, sale_date: '2026-10-05' }),
+      payment({ key: 'r:2', amount: 230000, sale_date: '2026-10-12' }),
+      payment({ key: 'r:3', amount: 100000, sale_date: '2026-09-28' }),
+    ],
+    debts: [],
+  };
+  const s = summarizeAnalytics(period);
+  assert.equal(s.collectedDebt.UZS, 100000);
+  assert.equal(s.receivedFromNewSales.UZS, 530000);
+  assert.deepEqual(monthRange('2026-02-14'), { from: '2026-02-01', to: '2026-02-28' });
+  assert.deepEqual(monthRange('2026-12-31'), { from: '2026-12-01', to: '2026-12-31' });
 });
 
 test('date helpers use Tashkent time', () => {

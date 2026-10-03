@@ -3,18 +3,21 @@ import type { Pool } from 'pg';
 import { pool } from '../lib/db';
 import { getRubToUzsRate } from '../services/rubUzsRate.service.js';
 import {
+  MAX_PERIOD_DAYS,
+  daysBetween,
   isCurrency,
   isIsoDate,
-  type AnalyticsDay,
+  tashkentDate,
+  type AnalyticsPeriod,
   type AnalyticsPayment,
   type AnalyticsSale,
   type Currency,
   type SaleSource,
 } from '../../shared/salesLedger';
 
-/** Kun chegarasi Toshkent vaqtida: [$1 00:00, $1+1 00:00). */
-const inDay = (column: string) =>
-  `${column} >= ($1::date::timestamp AT TIME ZONE 'Asia/Tashkent') AND ${column} < (($1::date + 1)::timestamp AT TIME ZONE 'Asia/Tashkent')`;
+/** Davr chegarasi Toshkent vaqtida: [$1 00:00, $2+1 00:00). */
+const inPeriod = (column: string) =>
+  `${column} >= ($1::date::timestamp AT TIME ZONE 'Asia/Tashkent') AND ${column} < (($2::date + 1)::timestamp AT TIME ZONE 'Asia/Tashkent')`;
 
 /** ISO (UTC) satr: pg TIMESTAMPTZ ni xom matn qilib qaytaradi, brauzerlar uni turlicha o'qiydi. */
 const iso = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
@@ -33,7 +36,7 @@ const GATEWAY_PAYMENTS = `
   WHERE p.status = 'approved'
     AND COALESCE(p.product_code, 'russian') = 'russian'
     AND p.amount > 1
-    AND ${inDay('COALESCE(p.payment_time, p.created_at)')}
+    AND ${inPeriod('COALESCE(p.payment_time, p.created_at)')}
   ORDER BY paid_at`;
 
 const CONTRACT_SELECT = `
@@ -76,13 +79,18 @@ const gatewaySource = (channel: unknown): SaleSource => (channel === 'rahmat' ? 
 export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Router {
   const router = Router();
 
-  router.get('/day', async (req: Request, res: Response) => {
+  router.get('/period', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
-    const day = req.query.date;
-    if (!isIsoDate(day)) {
-      res.status(400).json({ error: 'Проверьте дату.' });
+    const { from, to } = req.query;
+    if (!isIsoDate(from) || !isIsoDate(to) || to < from) {
+      res.status(400).json({ error: 'Проверьте даты периода.' });
       return;
     }
+    if (daysBetween(from, to) >= MAX_PERIOD_DAYS) {
+      res.status(400).json({ error: `Период — не больше ${MAX_PERIOD_DAYS} дней.` });
+      return;
+    }
+    const range = [from, to];
     if (!database) {
       res.status(503).json({ error: 'База данных недоступна.' });
       return;
@@ -93,8 +101,8 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
         getRubToUzsRate().then((info) => info.rate).catch(() => null),
         database.query('SELECT id, name, active FROM operator_accounts ORDER BY id'),
         // Barcha cheklari rad etilgan shartnoma sotuv emas (bot ham shunday hisoblaydi).
-        database.query(`${CONTRACT_SELECT} WHERE ${inDay('b.created_at')} AND (b.paid > 0 OR b.pending > 0) ORDER BY b.created_at`, [day]),
-        database.query(GATEWAY_PAYMENTS, [day]),
+        database.query(`${CONTRACT_SELECT} WHERE ${inPeriod('b.created_at')} AND (b.paid > 0 OR b.pending > 0) ORDER BY b.created_at`, range),
+        database.query(GATEWAY_PAYMENTS, range),
         database.query(
           `SELECT r.id, r.amount, r.status, ${iso('r.created_at')} AS created_at, r.operator_id, o.name AS operator_name,
                   c.tariff, c.currency, (c.created_at AT TIME ZONE 'Asia/Tashkent')::date::text AS contract_day, ${CLIENT_COLUMNS}
@@ -102,16 +110,16 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
            JOIN operator_contracts c ON c.id = r.contract_id
            JOIN operator_accounts o ON o.id = r.operator_id
            JOIN users u ON u.id = c.user_id
-           WHERE r.status IN ('approved', 'pending') AND ${inDay('r.created_at')}
+           WHERE r.status IN ('approved', 'pending') AND ${inPeriod('r.created_at')}
            ORDER BY r.created_at`,
-          [day],
+          range,
         ),
         database.query(
           `${CONTRACT_SELECT}
            WHERE b.debt > 0 AND (b.paid > 0 OR b.pending > 0)
              AND b.created_at < (($1::date + 1)::timestamp AT TIME ZONE 'Asia/Tashkent')
            ORDER BY b.due_at NULLS LAST, b.created_at`,
-          [day],
+          [to],
         ),
       ]);
 
@@ -162,11 +170,12 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
         tariff: sale.tariff,
         currency: sale.currency,
         amount: sale.total,
-        sale_date: day,
+        sale_date: tashkentDate(sale.sale_at),
       }));
 
-      const body: AnalyticsDay = {
-        date: day,
+      const body: AnalyticsPeriod = {
+        from,
+        to,
         rub_uzs_rate: rate,
         operators: operators.rows.map((row: Row) => ({ id: num(row.id), name: text(row.name), active: row.active === true })),
         sales: [...contracts.rows.map(contractSale), ...gatewaySales].sort((a, b) => a.sale_at.localeCompare(b.sale_at)),

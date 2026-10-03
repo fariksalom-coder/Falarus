@@ -1,6 +1,7 @@
 import { adminApi } from '../lib/adminApi';
-import type { AnalyticsDay } from '../../shared/salesLedger';
+import type { AnalyticsPeriod } from '../../shared/salesLedger';
 
 export const salesLedgerApi = {
-  day: (date: string) => adminApi<AnalyticsDay>(`/sales-ledger/day?date=${encodeURIComponent(date)}`),
+  period: (from: string, to: string) =>
+    adminApi<AnalyticsPeriod>(`/sales-ledger/period?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
 };
