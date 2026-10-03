@@ -1,232 +1,253 @@
 /**
- * Sotuvlar jurnali (admin «Аналитика продаж»): operatorlar qo'lda kiritadigan
- * sotuvlar, bo'lib to'lovlar va qarzlar. Bot (operator_contracts) va Rahmat
- * shlyuzidan mustaqil — faqat hisobot uchun, obunaga tegmaydi.
+ * Sotuvlar tahlili (admin «Аналитика продаж») — bazadagi haqiqiy ma'lumotdan:
+ *   • operatorlar: operator boti / mini ilova (operator_contracts + operator_receipts);
+ *   • avtoto'lov: Rahmat shlyuzi (payments, payment_channel='rahmat');
+ *   • qo'lda: admin tasdiqlagan to'lovlar (payments, boshqa kanallar).
  *
- * Asosiy hisob RUB da: qarz va status RUB qoldig'idan aniqlanadi. UZS summa
- * har yozuvda yonma-yon saqlanadi (tarif so'mdagi narxi qat'iy, kursga bog'liq emas).
+ * Summalar KONVERTATSIYA QILINMAYDI — har biri o'z valyutasida yig'iladi
+ * (operator so'mda ham, rublda ham sotishi mumkin; uydirma kurs ishlatmaymiz).
  */
-import { RUSSIAN_TARIFF_PLANS_RUB, type RussianTariffCode } from './russianTariffs';
+import { RUSSIAN_TARIFF_PLANS_RUB } from './russianTariffs';
 
-export type SalesLedgerTariff = RussianTariffCode;
+export const CURRENCIES = ['RUB', 'UZS', 'USD'] as const;
+export type Currency = (typeof CURRENCIES)[number];
+export type Money = Record<Currency, number>;
 
-export const SALES_LEDGER_TARIFFS: readonly {
-  code: SalesLedgerTariff;
-  label: string;
-  priceRub: number;
-  priceUzs: number;
-}[] = RUSSIAN_TARIFF_PLANS_RUB.map((plan) => ({
+export const zeroMoney = (): Money => ({ RUB: 0, UZS: 0, USD: 0 });
+
+export function isCurrency(value: unknown): value is Currency {
+  return CURRENCIES.includes(value as Currency);
+}
+
+export type SaleSource = 'operator' | 'rahmat' | 'manual';
+
+export const SOURCE_LABELS: Record<SaleSource, string> = {
+  operator: 'Оператор',
+  rahmat: 'Автоплатёж (Rahmat)',
+  manual: 'Вручную (админ)',
+};
+
+export type TariffInfo = { code: string; label: string; priceRub: number | null; priceUzs: number | null };
+
+const TARIFF_LABELS: Record<string, string> = {
+  month: '1 месяц',
+  three_month: '3 месяца',
+  six_month: '6 месяцев',
+  year: '1 год',
+};
+
+/** Asosiy uchta tarif — jadvalda doim ko'rinadi; «1 год» faqat uchrasa. */
+export const MAIN_TARIFFS: readonly TariffInfo[] = RUSSIAN_TARIFF_PLANS_RUB.map((plan) => ({
   code: plan.code,
-  label: plan.months === 1 ? '1 месяц' : plan.months < 5 ? `${plan.months} месяца` : `${plan.months} месяцев`,
+  label: TARIFF_LABELS[plan.code],
   priceRub: plan.priceRub,
   priceUzs: plan.priceUzs,
 }));
 
-export function isSalesLedgerTariff(value: unknown): value is SalesLedgerTariff {
-  return SALES_LEDGER_TARIFFS.some((t) => t.code === value);
+export function tariffLabel(code: string | null): string {
+  if (!code) return 'Без тарифа';
+  return TARIFF_LABELS[code] ?? code;
 }
 
-export function salesLedgerTariff(code: SalesLedgerTariff) {
-  return SALES_LEDGER_TARIFFS.find((t) => t.code === code)!;
-}
-
-export type SalesLedgerOperator = {
-  id: number;
-  name: string;
-  is_auto: boolean;
-  active: boolean;
-  sort_order: number;
-};
-
-/** Sotuv + uning hozirgi balansi (sales_ledger_balances view). */
-export type SalesLedgerSale = {
-  id: number;
-  sale_date: string;
-  client_name: string;
-  phone: string;
-  operator_id: number;
-  operator_name: string;
-  tariff: SalesLedgerTariff;
-  quantity: number;
-  price_rub: number;
-  price_uzs: number;
-  due_date: string | null;
-  note: string;
-  paid_rub: number;
-  paid_uzs: number;
-  debt_rub: number;
-  debt_uzs: number;
-  payments_count: number;
-};
-
-export type SalesLedgerPayment = {
-  id: number;
-  sale_id: number;
-  paid_on: string;
-  amount_rub: number;
-  amount_uzs: number;
-  note: string;
-  client_name: string;
-  tariff: SalesLedgerTariff;
-  sale_date: string;
-  operator_id: number;
-  operator_name: string;
-};
-
-export type SalesLedgerDay = {
-  date: string;
-  operators: SalesLedgerOperator[];
-  /** Shu kuni tuzilgan sotuvlar. */
-  sales: SalesLedgerSale[];
-  /** Shu kuni tushgan barcha to'lovlar (yangi sotuv + qarz undirish). */
-  payments: SalesLedgerPayment[];
-  /** Shu kungacha tuzilgan va hali yopilmagan sotuvlar. */
-  debts: SalesLedgerSale[];
-};
-
-export type SaleStatus = 'paid' | 'partial' | 'waiting';
-
-export function saleStatus(sale: Pick<SalesLedgerSale, 'paid_rub' | 'debt_rub'>): SaleStatus {
-  if (sale.debt_rub <= 0) return 'paid';
-  return sale.paid_rub > 0 ? 'partial' : 'waiting';
-}
-
-export type Money = { rub: number; uzs: number };
-
-const zero = (): Money => ({ rub: 0, uzs: 0 });
-const add = (m: Money, rub: number, uzs: number) => {
-  m.rub += rub;
-  m.uzs += uzs;
-};
+export type AnalyticsOperator = { id: number; name: string; active: boolean };
 
 /**
- * RUB to'lovga mos so'm summasi: sotuvning o'z RUB/UZS nisbatida. Qarzni
- * to'liq yopadigan to'lov qolgan so'mni oladi — yaxlitlash qoldig'i qolmasin.
+ * Bitta sotuv: operator shartnomasi yoki shlyuz/admin to'lovi (u to'liq sotuv).
+ * `paid` — tasdiqlangan, `pending` — tekshiruvdagi cheklar, `debt` = total − paid.
  */
-export function uzsForRub(amountRub: number, sale: { price_rub: number; price_uzs: number; debt_rub: number; debt_uzs: number }): number {
-  if (amountRub >= sale.debt_rub) return Math.max(0, sale.debt_uzs);
-  if (sale.price_rub <= 0) return 0;
-  return Math.round((amountRub / sale.price_rub) * sale.price_uzs);
+export type AnalyticsSale = {
+  key: string;
+  source: SaleSource;
+  sale_at: string;
+  user_id: number;
+  client_name: string;
+  phone: string;
+  operator_id: number | null;
+  operator_name: string;
+  tariff: string | null;
+  currency: Currency;
+  total: number;
+  paid: number;
+  pending: number;
+  debt: number;
+  due_at: string | null;
+  /** Mijoz qayerdan kelgan (operator tanlagan manba). */
+  lead_source: string;
+};
+
+/** Kun ichida tushgan pul: operator cheki yoki shlyuz/admin to'lovi. */
+export type AnalyticsPayment = {
+  key: string;
+  source: SaleSource;
+  status: 'approved' | 'pending';
+  paid_at: string;
+  user_id: number;
+  client_name: string;
+  operator_id: number | null;
+  operator_name: string;
+  tariff: string | null;
+  currency: Currency;
+  amount: number;
+  /** Sotuv tuzilgan kun (Toshkent) — undan oldingi bo'lsa, bu qarz undirish. */
+  sale_date: string;
+};
+
+export type AnalyticsDay = {
+  date: string;
+  operators: AnalyticsOperator[];
+  sales: AnalyticsSale[];
+  payments: AnalyticsPayment[];
+  /** Shu kun oxirigacha tuzilgan va hali yopilmagan operator shartnomalari. */
+  debts: AnalyticsSale[];
+};
+
+export type SaleStatus = 'paid' | 'partial' | 'checking';
+
+export function saleStatus(sale: Pick<AnalyticsSale, 'paid' | 'debt'>): SaleStatus {
+  if (sale.debt <= 0) return 'paid';
+  return sale.paid > 0 ? 'partial' : 'checking';
 }
 
-/** Teskari yo'nalish: so'mda kiritilgan summani RUB ga. */
-export function rubForUzs(amountUzs: number, sale: { price_rub: number; price_uzs: number; debt_rub: number; debt_uzs: number }): number {
-  if (sale.debt_uzs > 0 && amountUzs >= sale.debt_uzs) return Math.max(0, sale.debt_rub);
-  if (sale.price_uzs <= 0) return 0;
-  return Math.round((amountUzs / sale.price_uzs) * sale.price_rub);
-}
-
-export type OperatorDayStats = {
-  operator: SalesLedgerOperator;
+export type ChannelStats = {
+  key: string;
+  label: string;
+  source: SaleSource;
+  active: boolean;
   salesCount: number;
-  /** Shu kungi sotuvlarning to'liq qiymati. */
   sold: Money;
-  /** Shu kuni tushgan pul (yangi sotuvlardan + qarzlardan). */
   received: Money;
-  /** Ulardan: oldingi kunlardagi qarzlardan undirilgani. */
   collectedDebt: Money;
-  /** Hozir ochiq turgan qarz (shu kungacha tuzilgan sotuvlar bo'yicha). */
+  pendingReview: Money;
   openDebt: Money;
 };
 
-export type SalesLedgerSummary = {
+export type AnalyticsSummary = {
   salesCount: number;
-  units: number;
-  byTariff: Record<SalesLedgerTariff, number>;
+  byTariff: Record<string, number>;
   sold: Money;
   received: Money;
+  receivedBySource: Record<SaleSource, Money>;
   receivedFromNewSales: Money;
   collectedDebt: Money;
-  /** Bugungi sotuvlardan qolgan qarz. */
+  pendingReview: Money;
+  pendingReviewCount: number;
   newDebt: Money;
   openDebt: Money;
   openDebtCount: number;
-  waitingCount: number;
-  partialCount: number;
+  overdueDebt: Money;
   paidCount: number;
-  perOperator: OperatorDayStats[];
+  partialCount: number;
+  checkingCount: number;
+  channels: ChannelStats[];
 };
 
-export function summarizeSalesDay(day: SalesLedgerDay): SalesLedgerSummary {
-  const byTariff = Object.fromEntries(SALES_LEDGER_TARIFFS.map((t) => [t.code, 0])) as Record<SalesLedgerTariff, number>;
-  const summary: SalesLedgerSummary = {
+const add = (target: Money, currency: Currency, amount: number) => {
+  target[currency] += amount;
+};
+
+export const channelKey = (source: SaleSource, operatorId: number | null) =>
+  source === 'operator' ? `op:${operatorId}` : source;
+
+/** Toshkent vaqti bo'yicha sana (YYYY-MM-DD). */
+export function tashkentDate(iso: string | Date): string {
+  const time = typeof iso === 'string' ? Date.parse(iso) : iso.getTime();
+  return new Date(time + 5 * 3_600_000).toISOString().slice(0, 10);
+}
+
+export function tashkentToday(now = new Date()): string {
+  return tashkentDate(now);
+}
+
+export function summarizeAnalyticsDay(day: AnalyticsDay, now = new Date()): AnalyticsSummary {
+  const summary: AnalyticsSummary = {
     salesCount: day.sales.length,
-    units: 0,
-    byTariff,
-    sold: zero(),
-    received: zero(),
-    receivedFromNewSales: zero(),
-    collectedDebt: zero(),
-    newDebt: zero(),
-    openDebt: zero(),
+    byTariff: Object.fromEntries(MAIN_TARIFFS.map((t) => [t.code, 0])),
+    sold: zeroMoney(),
+    received: zeroMoney(),
+    receivedBySource: { operator: zeroMoney(), rahmat: zeroMoney(), manual: zeroMoney() },
+    receivedFromNewSales: zeroMoney(),
+    collectedDebt: zeroMoney(),
+    pendingReview: zeroMoney(),
+    pendingReviewCount: 0,
+    newDebt: zeroMoney(),
+    openDebt: zeroMoney(),
     openDebtCount: day.debts.length,
-    waitingCount: 0,
-    partialCount: 0,
+    overdueDebt: zeroMoney(),
     paidCount: 0,
-    perOperator: [],
+    partialCount: 0,
+    checkingCount: 0,
+    channels: [],
   };
 
-  const perOperator = new Map<number, OperatorDayStats>();
-  const statsFor = (operatorId: number, fallbackName: string) => {
-    let stats = perOperator.get(operatorId);
+  const channels = new Map<string, ChannelStats>();
+  const channel = (source: SaleSource, operatorId: number | null, name: string) => {
+    const key = channelKey(source, operatorId);
+    let stats = channels.get(key);
     if (!stats) {
-      const operator = day.operators.find((o) => o.id === operatorId) ?? {
-        id: operatorId,
-        name: fallbackName,
-        is_auto: false,
-        active: false,
-        sort_order: 0,
+      const operator = day.operators.find((o) => o.id === operatorId);
+      stats = {
+        key,
+        label: source === 'operator' ? (operator?.name ?? name) : SOURCE_LABELS[source],
+        source,
+        active: source !== 'operator' || (operator?.active ?? false),
+        salesCount: 0,
+        sold: zeroMoney(),
+        received: zeroMoney(),
+        collectedDebt: zeroMoney(),
+        pendingReview: zeroMoney(),
+        openDebt: zeroMoney(),
       };
-      stats = { operator, salesCount: 0, sold: zero(), received: zero(), collectedDebt: zero(), openDebt: zero() };
-      perOperator.set(operatorId, stats);
+      channels.set(key, stats);
     }
     return stats;
   };
-  for (const operator of day.operators) if (operator.active) statsFor(operator.id, operator.name);
+  for (const operator of day.operators) if (operator.active) channel('operator', operator.id, operator.name);
+  channel('rahmat', null, '');
 
   for (const sale of day.sales) {
-    summary.units += sale.quantity;
-    summary.byTariff[sale.tariff] += sale.quantity;
-    add(summary.sold, sale.price_rub, sale.price_uzs);
-    add(summary.newDebt, Math.max(0, sale.debt_rub), Math.max(0, sale.debt_uzs));
+    const tariff = sale.tariff ?? 'none';
+    summary.byTariff[tariff] = (summary.byTariff[tariff] ?? 0) + 1;
+    add(summary.sold, sale.currency, sale.total);
+    add(summary.newDebt, sale.currency, Math.max(0, sale.debt));
     const status = saleStatus(sale);
     if (status === 'paid') summary.paidCount += 1;
     else if (status === 'partial') summary.partialCount += 1;
-    else summary.waitingCount += 1;
-    const stats = statsFor(sale.operator_id, sale.operator_name);
+    else summary.checkingCount += 1;
+    const stats = channel(sale.source, sale.operator_id, sale.operator_name);
     stats.salesCount += 1;
-    add(stats.sold, sale.price_rub, sale.price_uzs);
+    add(stats.sold, sale.currency, sale.total);
   }
 
   for (const payment of day.payments) {
-    add(summary.received, payment.amount_rub, payment.amount_uzs);
-    const stats = statsFor(payment.operator_id, payment.operator_name);
-    add(stats.received, payment.amount_rub, payment.amount_uzs);
+    const stats = channel(payment.source, payment.operator_id, payment.operator_name);
+    if (payment.status === 'pending') {
+      summary.pendingReviewCount += 1;
+      add(summary.pendingReview, payment.currency, payment.amount);
+      add(stats.pendingReview, payment.currency, payment.amount);
+      continue;
+    }
+    add(summary.received, payment.currency, payment.amount);
+    add(summary.receivedBySource[payment.source], payment.currency, payment.amount);
+    add(stats.received, payment.currency, payment.amount);
     if (payment.sale_date < day.date) {
-      add(summary.collectedDebt, payment.amount_rub, payment.amount_uzs);
-      add(stats.collectedDebt, payment.amount_rub, payment.amount_uzs);
+      add(summary.collectedDebt, payment.currency, payment.amount);
+      add(stats.collectedDebt, payment.currency, payment.amount);
     } else {
-      add(summary.receivedFromNewSales, payment.amount_rub, payment.amount_uzs);
+      add(summary.receivedFromNewSales, payment.currency, payment.amount);
     }
   }
 
   for (const debt of day.debts) {
-    add(summary.openDebt, debt.debt_rub, debt.debt_uzs);
-    add(statsFor(debt.operator_id, debt.operator_name).openDebt, debt.debt_rub, debt.debt_uzs);
+    add(summary.openDebt, debt.currency, debt.debt);
+    if (debt.due_at && Date.parse(debt.due_at) < now.getTime()) add(summary.overdueDebt, debt.currency, debt.debt);
+    add(channel(debt.source, debt.operator_id, debt.operator_name).openDebt, debt.currency, debt.debt);
   }
 
-  summary.perOperator = [...perOperator.values()].sort(
-    (a, b) =>
-      Number(a.operator.is_auto) - Number(b.operator.is_auto) ||
-      a.operator.sort_order - b.operator.sort_order ||
-      a.operator.id - b.operator.id,
+  const order: Record<SaleSource, number> = { operator: 0, rahmat: 1, manual: 2 };
+  summary.channels = [...channels.values()].sort(
+    (a, b) => order[a.source] - order[b.source] || a.label.localeCompare(b.label, 'ru'),
   );
   return summary;
-}
-
-/** Toshkent vaqti bo'yicha bugungi sana (YYYY-MM-DD). */
-export function tashkentToday(now = new Date()): string {
-  return new Date(now.getTime() + 5 * 3_600_000).toISOString().slice(0, 10);
 }
 
 export function isIsoDate(value: unknown): value is string {

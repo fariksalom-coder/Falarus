@@ -1,96 +1,110 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SALES_LEDGER_TARIFFS,
+  MAIN_TARIFFS,
   daysBetween,
   isIsoDate,
-  rubForUzs,
   saleStatus,
-  summarizeSalesDay,
+  summarizeAnalyticsDay,
+  tashkentDate,
   tashkentToday,
-  uzsForRub,
-  type SalesLedgerDay,
-  type SalesLedgerSale,
+  type AnalyticsDay,
+  type AnalyticsPayment,
+  type AnalyticsSale,
 } from '../shared/salesLedger';
 
 const operators = [
-  { id: 1, name: 'Алина', is_auto: false, active: true, sort_order: 1 },
-  { id: 2, name: 'Дилшод', is_auto: false, active: true, sort_order: 2 },
-  { id: 9, name: 'Автопродажи', is_auto: true, active: true, sort_order: 1000 },
+  { id: 1, name: 'Laziz', active: true },
+  { id: 2, name: 'Sarvinoz', active: true },
+  { id: 3, name: 'Old', active: false },
 ];
 
-function sale(partial: Partial<SalesLedgerSale>): SalesLedgerSale {
+function sale(partial: Partial<AnalyticsSale>): AnalyticsSale {
   return {
-    id: 1, sale_date: '2026-10-01', client_name: 'Клиент', phone: '', operator_id: 1, operator_name: 'Алина',
-    tariff: 'month', quantity: 1, price_rub: 3000, price_uzs: 400000, due_date: null, note: '',
-    paid_rub: 3000, paid_uzs: 400000, debt_rub: 0, debt_uzs: 0, payments_count: 1, ...partial,
+    key: 'c:1', source: 'operator', sale_at: '2026-10-02T06:00:00Z', user_id: 10, client_name: 'Клиент', phone: '',
+    operator_id: 1, operator_name: 'Laziz', tariff: 'three_month', currency: 'UZS', total: 530000,
+    paid: 530000, pending: 0, debt: 0, due_at: null, lead_source: 'Instagram', ...partial,
   };
 }
 
-test('tariffs come from the shared Russian price list', () => {
+function payment(partial: Partial<AnalyticsPayment>): AnalyticsPayment {
+  return {
+    key: 'r:1', source: 'operator', status: 'approved', paid_at: '2026-10-02T06:00:00Z', user_id: 10, client_name: 'Клиент',
+    operator_id: 1, operator_name: 'Laziz', tariff: 'three_month', currency: 'UZS', amount: 530000,
+    sale_date: '2026-10-02', ...partial,
+  };
+}
+
+test('main tariffs come from the shared Russian price list', () => {
   assert.deepEqual(
-    SALES_LEDGER_TARIFFS.map((t) => [t.label, t.priceRub, t.priceUzs]),
-    [['1 месяц', 3000, 400000], ['3 месяца', 4000, 530000], ['6 месяцев', 6000, 790000]],
+    MAIN_TARIFFS.map((t) => [t.code, t.label, t.priceRub, t.priceUzs]),
+    [['month', '1 месяц', 3000, 400000], ['three_month', '3 месяца', 4000, 530000], ['six_month', '6 месяцев', 6000, 790000]],
   );
 });
 
-test('status follows the ruble balance', () => {
-  assert.equal(saleStatus({ paid_rub: 3000, debt_rub: 0 }), 'paid');
-  assert.equal(saleStatus({ paid_rub: 1500, debt_rub: 1500 }), 'partial');
-  assert.equal(saleStatus({ paid_rub: 0, debt_rub: 4000 }), 'waiting');
+test('status: pending-only receipt is "checking", not a debt-paid sale', () => {
+  assert.equal(saleStatus({ paid: 530000, debt: 0 }), 'paid');
+  assert.equal(saleStatus({ paid: 200000, debt: 590000 }), 'partial');
+  assert.equal(saleStatus({ paid: 0, debt: 4000 }), 'checking');
 });
 
-test('so‘m amount is proportional and the closing payment takes the remainder', () => {
-  const fresh = { price_rub: 4000, price_uzs: 530000, debt_rub: 4000, debt_uzs: 530000 };
-  assert.equal(uzsForRub(2000, fresh), 265000);
-  assert.equal(rubForUzs(265000, fresh), 2000);
-  // 1/3 to'langandan keyin qolgan qarzni yopish — yaxlitlash qoldig'i qolmaydi.
-  const afterThird = { price_rub: 4000, price_uzs: 530000, debt_rub: 2667, debt_uzs: 353333 };
-  assert.equal(uzsForRub(2667, afterThird), 353333);
-  assert.equal(rubForUzs(353333, afterThird), 2667);
-});
-
-test('day summary splits new-sale money from collected debts per operator', () => {
-  const day: SalesLedgerDay = {
-    date: '2026-10-01',
+test('day summary keeps currencies apart and splits sources, debts and pending receipts', () => {
+  const day: AnalyticsDay = {
+    date: '2026-10-02',
     operators,
     sales: [
-      sale({ id: 1 }),
-      sale({ id: 2, operator_id: 2, operator_name: 'Дилшод', tariff: 'three_month', price_rub: 4000, price_uzs: 530000, paid_rub: 2000, paid_uzs: 265000, debt_rub: 2000, debt_uzs: 265000 }),
-      sale({ id: 3, operator_id: 9, operator_name: 'Автопродажи', tariff: 'six_month', quantity: 2, price_rub: 12000, price_uzs: 1580000, paid_rub: 0, paid_uzs: 0, debt_rub: 12000, debt_uzs: 1580000 }),
+      sale({ key: 'c:1' }),
+      sale({ key: 'c:2', operator_id: 2, operator_name: 'Sarvinoz', tariff: 'six_month', currency: 'RUB', total: 6000, paid: 3000, debt: 3000 }),
+      sale({ key: 'c:3', operator_id: 2, operator_name: 'Sarvinoz', currency: 'RUB', total: 4000, paid: 0, pending: 4000, debt: 4000 }),
+      sale({ key: 'p:7', source: 'rahmat', operator_id: null, operator_name: '', total: 530000, paid: 530000 }),
+      sale({ key: 'p:8', source: 'manual', operator_id: null, operator_name: '', tariff: 'year', currency: 'RUB', total: 7970, paid: 7970 }),
     ],
     payments: [
-      { id: 10, sale_id: 1, paid_on: '2026-10-01', amount_rub: 3000, amount_uzs: 400000, note: '', client_name: 'A', tariff: 'month', sale_date: '2026-10-01', operator_id: 1, operator_name: 'Алина' },
-      { id: 11, sale_id: 2, paid_on: '2026-10-01', amount_rub: 2000, amount_uzs: 265000, note: '', client_name: 'B', tariff: 'three_month', sale_date: '2026-10-01', operator_id: 2, operator_name: 'Дилшод' },
-      { id: 12, sale_id: 7, paid_on: '2026-10-01', amount_rub: 1500, amount_uzs: 200000, note: '', client_name: 'Old', tariff: 'month', sale_date: '2026-09-26', operator_id: 1, operator_name: 'Алина' },
+      payment({ key: 'r:1' }),
+      payment({ key: 'r:2', operator_id: 2, operator_name: 'Sarvinoz', currency: 'RUB', amount: 3000 }),
+      payment({ key: 'r:3', operator_id: 2, operator_name: 'Sarvinoz', currency: 'RUB', amount: 4000, status: 'pending' }),
+      // Kecha tuzilgan shartnomaga bugungi to'lov — qarz undirish.
+      payment({ key: 'r:4', amount: 250000, sale_date: '2026-09-30' }),
+      payment({ key: 'p:7', source: 'rahmat', operator_id: null, operator_name: '' }),
+      payment({ key: 'p:8', source: 'manual', operator_id: null, operator_name: '', currency: 'RUB', amount: 7970, tariff: 'year' }),
     ],
     debts: [
-      sale({ id: 2, operator_id: 2, operator_name: 'Дилшод', debt_rub: 2000, debt_uzs: 265000, paid_rub: 2000 }),
-      sale({ id: 3, operator_id: 9, operator_name: 'Автопродажи', debt_rub: 12000, debt_uzs: 1580000, paid_rub: 0 }),
+      sale({ key: 'c:2', operator_id: 2, operator_name: 'Sarvinoz', currency: 'RUB', total: 6000, paid: 3000, debt: 3000, due_at: '2026-10-10T10:00:00Z' }),
+      sale({ key: 'c:9', debt: 280000, paid: 250000, due_at: '2026-10-01T10:00:00Z' }),
     ],
   };
-  const s = summarizeSalesDay(day);
-  assert.equal(s.salesCount, 3);
-  assert.equal(s.units, 4);
-  assert.deepEqual(s.byTariff, { month: 1, three_month: 1, six_month: 2 });
-  assert.deepEqual([s.paidCount, s.partialCount, s.waitingCount], [1, 1, 1]);
-  assert.deepEqual(s.received, { rub: 6500, uzs: 865000 });
-  assert.deepEqual(s.receivedFromNewSales, { rub: 5000, uzs: 665000 });
-  assert.deepEqual(s.collectedDebt, { rub: 1500, uzs: 200000 });
-  assert.deepEqual(s.newDebt, { rub: 14000, uzs: 1845000 });
-  assert.deepEqual(s.openDebt, { rub: 14000, uzs: 1845000 });
+  const s = summarizeAnalyticsDay(day, new Date('2026-10-02T12:00:00Z'));
+  assert.equal(s.salesCount, 5);
+  assert.equal(s.byTariff.three_month, 3);
+  assert.equal(s.byTariff.six_month, 1);
+  assert.equal(s.byTariff.year, 1);
+  assert.deepEqual([s.paidCount, s.partialCount, s.checkingCount], [3, 1, 1]);
+  assert.deepEqual(s.sold, { RUB: 17970, UZS: 1060000, USD: 0 });
+  assert.deepEqual(s.received, { RUB: 10970, UZS: 1310000, USD: 0 });
+  assert.deepEqual(s.collectedDebt, { RUB: 0, UZS: 250000, USD: 0 });
+  assert.deepEqual(s.receivedFromNewSales, { RUB: 10970, UZS: 1060000, USD: 0 });
+  assert.deepEqual(s.pendingReview, { RUB: 4000, UZS: 0, USD: 0 });
+  assert.equal(s.pendingReviewCount, 1);
+  assert.deepEqual(s.receivedBySource.rahmat, { RUB: 0, UZS: 530000, USD: 0 });
+  assert.deepEqual(s.receivedBySource.manual, { RUB: 7970, UZS: 0, USD: 0 });
+  assert.deepEqual(s.receivedBySource.operator, { RUB: 3000, UZS: 780000, USD: 0 });
+  assert.deepEqual(s.openDebt, { RUB: 3000, UZS: 280000, USD: 0 });
+  assert.deepEqual(s.overdueDebt, { RUB: 0, UZS: 280000, USD: 0 });
 
-  const alina = s.perOperator.find((o) => o.operator.id === 1)!;
-  assert.deepEqual(alina.received, { rub: 4500, uzs: 600000 });
-  assert.deepEqual(alina.collectedDebt, { rub: 1500, uzs: 200000 });
-  // Avtosotuv ro'yxat oxirida.
-  assert.equal(s.perOperator.at(-1)!.operator.id, 9);
+  // Operatorlar avval, keyin Rahmat, keyin qo'lda; nofaol operator ro'yxatga kirmaydi.
+  assert.deepEqual(s.channels.map((c) => c.key), ['op:1', 'op:2', 'rahmat', 'manual']);
+  const sarvinoz = s.channels.find((c) => c.key === 'op:2')!;
+  assert.equal(sarvinoz.salesCount, 2);
+  assert.deepEqual(sarvinoz.pendingReview, { RUB: 4000, UZS: 0, USD: 0 });
+  const laziz = s.channels.find((c) => c.key === 'op:1')!;
+  assert.deepEqual(laziz.collectedDebt, { RUB: 0, UZS: 250000, USD: 0 });
 });
 
-test('date helpers', () => {
+test('date helpers use Tashkent time', () => {
   assert.equal(isIsoDate('2026-02-29'), false);
   assert.equal(isIsoDate('2026-10-01'), true);
   assert.equal(daysBetween('2026-10-01', '2026-10-06'), 5);
   assert.equal(daysBetween('2026-10-03', '2026-10-01'), -2);
   assert.equal(tashkentToday(new Date('2026-09-30T20:30:00Z')), '2026-10-01');
+  assert.equal(tashkentDate('2026-10-02T20:15:06Z'), '2026-10-03');
 });
