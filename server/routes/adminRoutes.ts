@@ -1,6 +1,7 @@
 import { createAdminDictationRoutes } from './dictationRoutes';
 import { createAdminVideoLessonRoutes } from './videoLessonRoutes.js';
 import { createAdminKioskRoutes } from './kioskRoutes.js';
+import { createAdminSalesLedgerRoutes } from './salesLedgerRoutes';
 import { Router } from 'express';
 import type { DbClient } from '../types/dbClient';
 import multer from 'multer';
@@ -81,6 +82,7 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.use('/kiosk', createAdminKioskRoutes());
   router.use('/video-lessons', createAdminVideoLessonRoutes());
   router.use('/dictation', createAdminDictationRoutes());
+  router.use('/sales-ledger', createAdminSalesLedgerRoutes());
   if (operatorEnabled()) {
     router.use('/operator-bot', operatorAdminRoutes());
     router.get('/operator-bot/receipts/:id/file', operatorReceipt);

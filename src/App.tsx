@@ -73,6 +73,7 @@ function AppRoutes() {
             <Route path="users/create" element={renderLazyPage('./pages/admin/AdminCreateUserPage.tsx')} />
             <Route path="users/:id" element={renderLazyPage('./pages/admin/AdminUserProfilePage.tsx')} />
             <Route path="payments" element={renderLazyPage('./pages/admin/AdminPaymentsPage.tsx')} />
+            <Route path="sales-ledger" element={renderLazyPage('./pages/admin/AdminSalesLedgerPage.tsx')} />
             <Route path="operators" element={renderLazyPage('./pages/admin/AdminOperatorsPage.tsx')} />
             <Route path="click-logs" element={renderLazyPage('./pages/admin/AdminClickLogsPage.tsx')} />
             <Route path="referrals" element={renderLazyPage('./pages/admin/AdminReferralsPage.tsx')} />

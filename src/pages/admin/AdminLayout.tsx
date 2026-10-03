@@ -21,6 +21,7 @@ import {
   ClipboardList,
   Video,
   UserCog,
+  ChartColumn,
 } from 'lucide-react';
 import { getAdminUnreadCount } from '../../api/admin';
 import './admin-workspace.css';
@@ -30,6 +31,7 @@ const nav = [
   { to: adminPath('/users'), label: 'Foydalanuvchilar', icon: Users },
   { to: adminPath('/users/manage'), label: 'Foydalanuvchi boshqaruvi', icon: UserCog },
   { to: adminPath('/payments'), label: 'To‘lovlar', icon: CreditCard },
+  { to: adminPath('/sales-ledger'), label: 'Аналитика продаж', icon: ChartColumn },
   { to: adminPath('/operators'), label: 'Operatorlar va cheklar', icon: Users },
   { to: adminPath('/support'), label: 'Yozishmalar', icon: MessageSquare },
   { to: adminPath('/users/create'), label: 'Yangi foydalanuvchi', icon: UserPlus },
