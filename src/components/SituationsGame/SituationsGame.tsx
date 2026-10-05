@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {answerDialogue, startDialogue, DialogueApiError} from '../../api/situations';
 import type {DialogueRound, SituationCatalog} from '../../../shared/situations';
 import s from "./SituationsGame.module.css";
@@ -14,8 +14,9 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
   const [screen,setScreen]=useState<Screen>('topics');
   const [ti,setTi]=useState(0),[si,setSi]=useState(0);
   const [round,setRound]=useState<DialogueRound|null>(null);
-  const [typing,setTyping]=useState(false),[busy,setBusy]=useState(false);
-  const speech=useDialogueSpeech(round,screen==='chat',typing,token);
+  const [busy,setBusy]=useState(false);
+  const speech=useDialogueSpeech(token);
+  const typing=speech.phase==='answer';
   const [wrong,setWrong]=useState<string|null>(null);
   const [showUz,setShowUz]=useState(true);
   const [done,setDone]=useState(()=>new Set(data.completed));
@@ -23,29 +24,28 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
   const [error,setError]=useState(''),[paywall,setPaywall]=useState(false);
   const lock=useRef(false),generation=useRef(0);
   const pending=useRef<{key:string;id:string}|null>(null);
-  const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
-  const clearTimers=useCallback(()=>{if(timer.current)clearTimeout(timer.current);},[]);
-  useEffect(()=>()=>{generation.current++;clearTimers();},[clearTimers]);
+  useEffect(()=>()=>{generation.current++;},[]);
   const topic=topics[ti],sit=topic.situations[si];
-  const finished=round?.finished??false,mistakes=round?.mistakes??0;
-  const awaiting=!!round?.question&&!busy&&!typing;
-  const msgs=round ? [...round.messages,...(!typing&&round.question?[{from:'partner' as const,ru:round.question.partnerRu,uz:round.question.partnerUz}]:[])] : [];
+  const finished=speech.finished,mistakes=round?.mistakes??0;
+  const awaiting=!!round?.question&&!busy&&speech.ready&&speech.round?.id===round.id&&speech.round?.position===round.position;
+  const shownRound=speech.round;
+  const msgs=shownRound ? [...shownRound.messages,...(speech.questionVisible&&shownRound.question?[{from:'partner' as const,ru:shownRound.question.partnerRu,uz:shownRound.question.partnerUz}]:[])] : [];
   const answered=round?.position??0;
   const options=awaiting ? round!.question!.options.map(o=>({orig:o.id,text:o.text})) : [];
   const doneIn=(i:number)=>topics[i].situations.filter(x=>done.has(x.id)).length;
   const openTopic=(i:number)=>{setTi(i);setSi(0);setScreen('situations');setError('');};
-  const leaveChat=(to:Screen)=>{speech.stop();generation.current++;clearTimers();setTyping(false);setScreen(to);setError('');setPaywall(false);setWrong(null);};
+  const leaveChat=(to:Screen)=>{speech.stop();generation.current++;setScreen(to);setError('');setPaywall(false);setWrong(null);};
   const showError=(e:unknown)=>{setError(e instanceof Error?e.message:'Internet aloqasini tekshiring.');if(e instanceof DialogueApiError&&e.status===402)setPaywall(true);};
   const requestId=(key:string)=>{if(pending.current?.key!==key)pending.current={key,id:crypto.randomUUID()};return pending.current.id;};
   const startSituation=async(topicIndex:number,sitIndex:number)=>{
     if(lock.current)return;lock.current=true;setBusy(true);setError('');setPaywall(false);
-    speech.stop();clearTimers();const gen=++generation.current;
+    const gen=++generation.current;
     const id=topics[topicIndex].situations[sitIndex].id;
     try {
       const next=await startDialogue(token,id,requestId(`start:${id}`));
       pending.current=null;
       if(gen!==generation.current)return;
-      setTi(topicIndex);setSi(sitIndex);setRound(next);setWrong(null);setTyping(false);setScreen('chat');
+      setTi(topicIndex);setSi(sitIndex);setRound(next);setWrong(null);speech.start(next);setScreen('chat');
     }catch(e){if(gen===generation.current)showError(e);}
     finally{lock.current=false;setBusy(false);}
   };
@@ -55,10 +55,9 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
     try {
       const result=await answerDialogue(token,round.id,round.position,orig,requestId(`${round.id}:${round.position}:${orig}`));
       pending.current=null;if(gen!==generation.current)return;
-      setRound(result.round);setWrong(result.correct?null:orig);
+      setRound(result.round);setWrong(result.correct?null:orig);speech.accept(result.round,result.correct);
       if(result.completed)setDone(new Set(result.completed));
       if(result.totalStars!==undefined)setStars(result.totalStars);
-      if(result.correct&&!result.round.finished){setTyping(true);timer.current=setTimeout(()=>setTyping(false),800);}
     }catch(e){if(gen===generation.current)showError(e);}
     finally{lock.current=false;setBusy(false);}
   };
@@ -257,12 +256,12 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
                     <div className={s.bubblePartner}>
                       <span>{m.ru}</span>
                       {showUz && m.uz && <span className={s.translation}>{m.uz}</span>}
-                      <button type="button" className={s.voiceReplay} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru,m.from)}><Volume2 size={17}/> Tinglash</button>
+                      <button type="button" className={s.voiceReplay} disabled={!speech.ready} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru,m.from)}><Volume2 size={17}/> Tinglash</button>
                     </div>
                   </div>
                 ) : (
                   <div key={i} className={s.rowMe}>
-                    <div className={s.bubbleMe}>{m.ru}<button type="button" className={s.voiceReplay} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru,m.from)}><Volume2 size={17}/> Tinglash</button></div>
+                    <div className={s.bubbleMe}>{m.ru}<button type="button" className={s.voiceReplay} disabled={!speech.ready} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru,m.from)}><Volume2 size={17}/> Tinglash</button></div>
                   </div>
                 ),
               )}
@@ -323,7 +322,7 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
                   <path d="M4 5h16v11H8l-4 4z" />
                 </svg>
-                {busy ? "Saqlanmoqda…" : "Suhbatdosh javob yozmoqda…"}
+                {busy ? "Saqlanmoqda…" : speech.phase==='answer' ? "Javobingiz oʻqilmoqda…" : "Suhbatdosh gapirmoqda…"}
               </div>
             )}
           </div>

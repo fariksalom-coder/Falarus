@@ -55,6 +55,16 @@ translation toggle, completion sheet and resume at mobile widths and short heigh
 
 ## Automatic Russian speech
 
+Screen progression follows actual audio completion: the partner message appears
+and plays in the female voice, then three choices become visible. After the
+server accepts a correct answer, its message appears and plays in the male voice.
+Only after that audio ends does the next partner message appear and start playing.
+The result sheet also waits for the last learner answer to finish. A turn with
+multiple audio chunks unlocks choices only after the last chunk. There is no
+fixed 800 ms timer. Muting or a speech failure releases the flow; blocked mobile
+autoplay waits for a user gesture. Historical replay hides choices while playing.
+`tests/dialogueTurnPlayback.test.ts` verifies this complete order and cancellation.
+
 Partner lines use the female `nova` voice (`dialogue-female`); accepted learner
 replies use the male `onyx` voice (`dialogue-male`). Replaying a message preserves
 its speaker. Both client and server caches separate the voice profiles, including

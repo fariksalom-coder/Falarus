@@ -1,38 +1,24 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {DialogueRound} from '../../shared/situations';
-import {DialogueSpeechQueue} from '../utils/dialogueSpeech';
+import {DialogueTurnPlayback,type DialoguePlaybackView} from '../utils/dialogueTurnPlayback';
 import {speakText,stopSpeaking} from '../utils/speak';
 
-export function useDialogueSpeech(round:DialogueRound|null,active:boolean,typing:boolean,token:string){
-  const [enabled,setEnabled]=useState(true),[error,setError]=useState(false);
+export function useDialogueSpeech(token:string){
+  const [view,setView]=useState<DialoguePlaybackView>({round:null,phase:'idle',enabled:true,error:false,ready:false,questionVisible:false,finished:false});
   const [blocked,setBlocked]=useState(false);
-  const queue=useRef<DialogueSpeechQueue|null>(null);
-  const seen=useRef({session:'',messages:0,question:-1});
+  const player=useRef<DialogueTurnPlayback|null>(null);
   useEffect(()=>{
-    const player=new DialogueSpeechQueue((text,done,fail,voice)=>{
-      void speakText(text,{token,ohang:voice,lang:'ru-RU',speed:1,zaxira:false,onEnd:done,onError:fail,onAutoplayBlocked:()=>setBlocked(true),onStart:()=>setBlocked(false)});
-    },stopSpeaking,()=>setError(true));
-    queue.current=player;
-    return()=>{player.clear();queue.current=null;};
+    let alive=true;
+    const playback=new DialogueTurnPlayback((text,done,fail,voice)=>{
+      void speakText(text,{token,ohang:voice,lang:'ru-RU',speed:1,zaxira:false,onEnd:done,onError:fail,onAutoplayBlocked:()=>{if(alive)setBlocked(true);},onStart:()=>{if(alive)setBlocked(false);}});
+    },stopSpeaking,next=>{if(alive)setView(next);});
+    player.current=playback;
+    return()=>{alive=false;playback.stop();player.current=null;};
   },[token]);
-  useEffect(()=>{
-    if(!active||!enabled||!round){queue.current?.clear();seen.current={session:'',messages:0,question:-1};return;}
-    const previous=seen.current;
-    if(previous.session!==round.id){
-      queue.current?.clear();previous.session=round.id;previous.messages=round.messages.length;previous.question=-1;setError(false);
-    }
-    for(const message of round.messages.slice(previous.messages)){
-      if(message.from==='me')queue.current?.enqueue(message.ru,'dialogue-male');
-    }
-    previous.messages=round.messages.length;
-    if(!typing&&round.question&&previous.question!==round.position){
-      previous.question=round.position;queue.current?.enqueue(round.question.partnerRu);
-    }
-  },[round,active,typing,enabled]);
-  const stop=useCallback(()=>queue.current?.clear(),[]);
-  const repeat=useCallback((text:string,from:'partner'|'me')=>{
-    if(round)seen.current={session:round.id,messages:round.messages.length,question:!typing&&round.question?round.position:-1};
-    setEnabled(true);setError(false);queue.current?.clear();queue.current?.enqueue(text,from==='me'?'dialogue-male':'dialogue-female');
-  },[round,typing]);
-  return {enabled,error,blocked,stop,repeat,toggle:()=>{queue.current?.clear();setEnabled(v=>!v);setError(false);setBlocked(false);}};
+  const start=useCallback((round:DialogueRound)=>{setBlocked(false);player.current?.start(round);},[]);
+  const accept=useCallback((round:DialogueRound,correct:boolean)=>player.current?.accept(round,correct),[]);
+  const stop=useCallback(()=>{setBlocked(false);player.current?.stop();},[]);
+  const repeat=useCallback((text:string,from:'partner'|'me')=>{setBlocked(false);player.current?.repeat(text,from);},[]);
+  const toggle=useCallback(()=>{setBlocked(false);player.current?.toggle();},[]);
+  return {...view,blocked,start,accept,stop,repeat,toggle};
 }
