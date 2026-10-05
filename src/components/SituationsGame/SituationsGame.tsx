@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {answerDialogue, startDialogue, DialogueApiError} from '../../api/situations';
 import type {DialogueRound, SituationCatalog} from '../../../shared/situations';
 import s from "./SituationsGame.module.css";
+import {Volume2,VolumeX} from 'lucide-react';
+import {useDialogueSpeech} from '../../hooks/useDialogueSpeech';
 
 type Screen = "topics" | "situations" | "chat";
 const LETTERS = ["A", "B", "C"];
@@ -13,6 +15,7 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
   const [ti,setTi]=useState(0),[si,setSi]=useState(0);
   const [round,setRound]=useState<DialogueRound|null>(null);
   const [typing,setTyping]=useState(false),[busy,setBusy]=useState(false);
+  const speech=useDialogueSpeech(round,screen==='chat',typing,token);
   const [wrong,setWrong]=useState<string|null>(null);
   const [showUz,setShowUz]=useState(true);
   const [done,setDone]=useState(()=>new Set(data.completed));
@@ -31,12 +34,12 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
   const options=awaiting ? round!.question!.options.map(o=>({orig:o.id,text:o.text})) : [];
   const doneIn=(i:number)=>topics[i].situations.filter(x=>done.has(x.id)).length;
   const openTopic=(i:number)=>{setTi(i);setSi(0);setScreen('situations');setError('');};
-  const leaveChat=(to:Screen)=>{generation.current++;clearTimers();setTyping(false);setScreen(to);setError('');setPaywall(false);setWrong(null);};
+  const leaveChat=(to:Screen)=>{speech.stop();generation.current++;clearTimers();setTyping(false);setScreen(to);setError('');setPaywall(false);setWrong(null);};
   const showError=(e:unknown)=>{setError(e instanceof Error?e.message:'Internet aloqasini tekshiring.');if(e instanceof DialogueApiError&&e.status===402)setPaywall(true);};
   const requestId=(key:string)=>{if(pending.current?.key!==key)pending.current={key,id:crypto.randomUUID()};return pending.current.id;};
   const startSituation=async(topicIndex:number,sitIndex:number)=>{
     if(lock.current)return;lock.current=true;setBusy(true);setError('');setPaywall(false);
-    clearTimers();const gen=++generation.current;
+    speech.stop();clearTimers();const gen=++generation.current;
     const id=topics[topicIndex].situations[sitIndex].id;
     try {
       const next=await startDialogue(token,id,requestId(`start:${id}`));
@@ -219,6 +222,9 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
                 </svg>
                 UZ
               </button>
+              <button type="button" className={s.iconBtn} aria-label={speech.enabled?'Выключить озвучку':'Включить озвучку'} aria-pressed={speech.enabled} onClick={speech.toggle}>
+                {speech.enabled?<Volume2 size={21}/>:<VolumeX size={21}/>}
+              </button>
             </div>
             <div className={s.segments} style={{ gridTemplateColumns: `repeat(${sit.steps.length}, minmax(0, 1fr))` }}>
               {sit.steps.map((_, i) => (
@@ -251,11 +257,12 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
                     <div className={s.bubblePartner}>
                       <span>{m.ru}</span>
                       {showUz && m.uz && <span className={s.translation}>{m.uz}</span>}
+                      <button type="button" className={s.voiceReplay} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru)}><Volume2 size={17}/> Tinglash</button>
                     </div>
                   </div>
                 ) : (
                   <div key={i} className={s.rowMe}>
-                    <div className={s.bubbleMe}>{m.ru}</div>
+                    <div className={s.bubbleMe}>{m.ru}<button type="button" className={s.voiceReplay} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru)}><Volume2 size={17}/> Tinglash</button></div>
                   </div>
                 ),
               )}
@@ -274,6 +281,8 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
           </div>
 
           <div className={s.answerPanel}>
+            {speech.enabled&&speech.blocked&&<p className={s.voiceNotice} role="status">Ovozni eshitish uchun ekranga teging. / Коснитесь экрана, чтобы включить звук.</p>}
+            {speech.error&&<p className={s.voiceNotice} role="status">Ovoz yuklanmadi. Xabardagi «Tinglash» tugmasini bosing.</p>}
             {awaiting && !finished ? (
               <div className={s.answers}>
                 <div className={s.answersHead}>

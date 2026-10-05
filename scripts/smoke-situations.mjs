@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import pg from 'pg';
 import jwt from 'jsonwebtoken';
+import {execFileSync} from 'node:child_process';
 const database=new pg.Client({connectionString:process.env.DATABASE_URL});
 const base=process.env.DIALOGUE_SMOKE_URL||'http://127.0.0.1:3001';
 let user;
@@ -27,6 +28,16 @@ try {
   assert.equal((await call('/sessions',{situationId:'street-01',requestId})).id,round.id);
   assert.equal((await call('/sessions',{situationId:'street-01',requestId:randomUUID()})).id,round.id);
   const content=(await database.query('SELECT content FROM dialogue_situations WHERE id=$1',['street-01'])).rows[0].content;
+  const voices=[];
+  for(const text of [content.steps[0].partnerRu,content.steps[0].correct]){
+    const response=await fetch(`${base}/api/tts?text=${encodeURIComponent(text)}&speed=1`,{headers:{Authorization:`Bearer ${token}`}});
+    assert.equal(response.status,200,'Server speech unavailable');assert.ok(response.headers.get('content-type')?.startsWith('audio/'));
+    const audio=Buffer.from(await response.arrayBuffer());assert.ok(audio.length>1000);
+    const probe=JSON.parse(execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_name,codec_type','-of','json','pipe:0'],{input:audio,timeout:10000}).toString());
+    assert.ok(probe.streams.some(s=>s.codec_type==='audio'));
+    voices.push({bytes:audio.length,mime:response.headers.get('content-type'),cache:response.headers.get('x-tts-cache')});
+  }
+  console.log(JSON.stringify({dialogueSpeech:voices}));
   let previous;
   while(!round.finished){
     const option=round.question.options.find(o=>o.text===content.steps[round.position].correct);

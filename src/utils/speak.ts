@@ -48,13 +48,13 @@ let pauzada = false;
  * tekkanda AYNAN SHU ovozni chalamiz. Robot ovozga o'tmaymiz — dars
  * o'rtasida ovoz o'zgarib ketmasin.
  */
-function tegishniKutibChal(audio: HTMLAudioElement, meniki: number): void {
+function tegishniKutibChal(audio: HTMLAudioElement, meniki: number, onStart?: () => void): void {
   if (typeof window === 'undefined') return;
   const hodisalar = ['pointerdown', 'keydown', 'touchstart'] as const;
   const chal = () => {
     hodisalar.forEach((h) => window.removeEventListener(h, chal));
     if (meniki !== avlod) return;
-    void audio.play().catch(() => undefined);
+    void audio.play().then(() => { if (meniki === avlod) onStart?.(); }).catch(() => undefined);
   };
   hodisalar.forEach((h) => window.addEventListener(h, chal, { once: true, passive: true }));
 }
@@ -105,6 +105,9 @@ export type SpeakOptions = {
    */
   onEnd?: () => void;
   onError?: () => void;
+  /** Allows the dialogue UI to explain mobile autoplay restrictions. */
+  onAutoplayBlocked?: () => void;
+  onStart?: () => void;
   /**
    * `ustoz` — doskadagi dars ovozi: muloyimroq va tiniqroq. Berilmasa lug'at
    * kartochkalarining odatdagi ovozi ishlatiladi.
@@ -221,12 +224,14 @@ export async function speakText(text: string, opts: SpeakOptions): Promise<void>
     // Pauza bosilgan: ovoz tayyor turadi, "Davom etish" bosilganda chalinadi.
     if (pauzada) return;
     await audio.play();
+    if (meniki === avlod) opts.onStart?.();
   } catch {
     // Avtomatik ijro bloklangan (foydalanuvchi hali ekranga tegmagan).
     if (meniki !== avlod) return;
     if (opts.zaxira === false) {
+      opts.onAutoplayBlocked?.();
       // Robotga o'tmaymiz: birinchi tegishda shu ovozning o'zi chalinadi.
-      tegishniKutibChal(current ?? new Audio(url), meniki);
+      tegishniKutibChal(current ?? new Audio(url), meniki, opts.onStart);
     } else {
       browserFallback(clean, lang, speed, opts.onEnd);
     }

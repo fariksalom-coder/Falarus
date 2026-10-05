@@ -52,3 +52,22 @@ Do not restore an entire database backup over payments or other new production d
 Browser visual verification is pending: this session exposes no browser tool.
 Inspect the topic grid, long situation names, scrolling chat, wrong-answer state,
 translation toggle, completion sheet and resume at mobile widths and short heights.
+
+## Automatic Russian speech
+
+The game uses the existing authenticated `/api/tts` service, its native Russian
+pronunciation instructions and server audio cache, at speed 1. Incoming partner
+lines and server-accepted learner replies play through a sequential queue.
+Wrong answers are never spoken. Resuming a session reads its current question,
+not the entire history. Long messages are split into chunks of at most 200 characters.
+
+Each message has a replay button; the header has a sound toggle. Leaving the
+chat, switching situations, muting, or replaying cancels the previous queue and
+ignores delayed callbacks. A mobile autoplay prompt asks the learner to touch the
+screen when required. Server failures show a retry notice; device speech synthesis
+is disabled for this game so the pronunciation voice stays consistent.
+
+`tests/dialogueSpeech.test.ts` checks the server character limit, playback order,
+errors and cancellation. `scripts/smoke-situations.mjs` requests a partner line
+and a correct reply from the deployed TTS API and verifies their audio codecs
+with ffprobe in addition to the existing game checks.
