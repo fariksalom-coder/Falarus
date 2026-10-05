@@ -3,11 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Card } from '../../components/ui/Foundation';
 import CrmDayProgress from '../../components/supportCrm/CrmDayProgress';
+import CrmSearchResultCard from '../../components/supportCrm/CrmSearchResultCard';
 import {
   getSupportCrmContacted,
   getSupportCrmQueue,
+  searchSupportCrmUsers,
   type SupportCrmContactedRow,
   type SupportCrmQueueRow,
+  type SupportCrmSearchRow,
 } from '../../api/supportCrm';
 import { supportCrmPath } from '../../constants/supportCrmPath';
 import {
@@ -73,6 +76,8 @@ export default function SupportCrmQueuePage() {
   const [contactDate, setContactDate] = useState(todayTashkent);
   const [queueRows, setQueueRows] = useState<SupportCrmQueueRow[]>([]);
   const [contactedRows, setContactedRows] = useState<SupportCrmContactedRow[]>([]);
+  // Navbat filtri bilan birga: qidiruv so'zi bo'lsa, butun bazadan ham qidiriladi.
+  const [globalRows, setGlobalRows] = useState<SupportCrmSearchRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -92,6 +97,10 @@ export default function SupportCrmQueuePage() {
     setLoading(true);
     setError('');
     try {
+      // Butun baza bo'yicha qidiruv xatosi navbat ro'yxatini buzmasin.
+      const globalSearch = q.trim()
+        ? searchSupportCrmUsers(q).catch(() => ({ rows: [] as SupportCrmSearchRow[] }))
+        : Promise.resolve({ rows: [] as SupportCrmSearchRow[] });
       if (tab === 'needs_contact') {
         const data = await getSupportCrmQueue('needs_contact', q);
         setQueueRows(data.rows);
@@ -104,6 +113,8 @@ export default function SupportCrmQueuePage() {
         setTotal(data.total);
         if (data.date && data.date !== contactDate) setContactDate(data.date);
       }
+      const global = await globalSearch;
+      if (id === requestId.current) setGlobalRows(global.rows);
     } catch (e) {
       if (id === requestId.current) setError(e instanceof Error ? e.message : 'Xatolik');
     } finally {
@@ -116,6 +127,11 @@ export default function SupportCrmQueuePage() {
     const timer = window.setTimeout(() => void reload(), 250);
     return () => { window.clearTimeout(timer); requestId.current += 1; };
   }, [reload]);
+
+  const listedIds = new Set<number>(
+    tab === 'needs_contact' ? queueRows.map((r) => r.id) : contactedRows.map((r) => r.id)
+  );
+  const otherRows = q.trim() ? globalRows.filter((r) => !listedIds.has(r.id)) : [];
 
   function updateSearch(value: string) {
     const next = new URLSearchParams(params);
@@ -191,7 +207,7 @@ export default function SupportCrmQueuePage() {
         </p>
       ) : tab === 'needs_contact' ? (
         queueRows.length === 0 ? (
-          <Card className="p-5 text-sm text-app-muted">Hozircha bo‘sh.</Card>
+          <Card className="p-5 text-sm text-app-muted">{q.trim() ? 'Navbatda topilmadi.' : 'Hozircha bo‘sh.'}</Card>
         ) : (
           <ul className="space-y-2.5">
             {queueRows.map((row) => {
@@ -236,7 +252,7 @@ export default function SupportCrmQueuePage() {
           </ul>
         )
       ) : contactedRows.length === 0 ? (
-        <Card className="p-5 text-sm text-app-muted">Shu kunda bog‘lanish yo‘q.</Card>
+        <Card className="p-5 text-sm text-app-muted">{q.trim() ? 'Shu kunda bog‘langanlar orasida topilmadi.' : 'Shu kunda bog‘lanish yo‘q.'}</Card>
       ) : (
         <ul className="space-y-2.5">
           {contactedRows.map((row) => (
@@ -271,6 +287,22 @@ export default function SupportCrmQueuePage() {
           ))}
         </ul>
       )}
+
+      {!loading && !error && otherRows.length > 0 ? (
+        <section className="space-y-2.5 pt-2">
+          <div>
+            <h2 className="text-sm font-semibold text-app-text">Barcha o‘quvchilar orasidan</h2>
+            <p className="mt-0.5 text-xs text-app-muted">Navbatda yo‘q, lekin «{q.trim()}» ga mos keladi.</p>
+          </div>
+          <ul className="space-y-2.5">
+            {otherRows.map((row) => (
+              <li key={row.id}>
+                <CrmSearchResultCard row={row} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
