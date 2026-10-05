@@ -28,6 +28,11 @@ type Customer = {
   debts?: Array<{ currency: string; debt: string; pending: string }>;
 };
 
+type DebtNotification = Customer & {
+  contract_id: number; user_id: number; currency: string; total: string;
+  paid: string; debt: string; pending: string; due_at: string; tariff: string; source: string;
+};
+
 type TariffItem = {
   code: string;
   label: string;
@@ -249,6 +254,9 @@ export default function OperatorMiniAppPage() {
   const submittingRef = useRef(false);
   const statsRequestRef = useRef<AbortController | null>(null);
   const [submission, setSubmission] = useState<{ receiptId: number; customer: string; amount: string; currency: string } | null>(null);
+  const [notifications, setNotifications] = useState<DebtNotification[]>([]);
+  const [notificationError, setNotificationError] = useState('');
+  const notificationSlot = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
   const [operatorName, setOperatorName] = useState('');
   const [error, setError] = useState('');
@@ -339,6 +347,30 @@ export default function OperatorMiniAppPage() {
       }
     }
   }, [hasTelegram, period, customRange.from, customRange.to]);
+
+  useEffect(() => {
+    if (!ready || !hasTelegram) return;
+    const controller = new AbortController();
+    const refresh = async () => {
+      if (document.visibilityState === 'hidden') return;
+      try {
+        const result = await api<{ slot: string | null; debts: DebtNotification[] }>('/notifications', { signal: controller.signal, cache: 'no-store' });
+        if (controller.signal.aborted) return;
+        setNotifications(result.debts);
+        setNotificationError('');
+        if (result.slot && notificationSlot.current !== result.slot && result.debts.length) {
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('warning');
+        }
+        notificationSlot.current = result.slot;
+      } catch {
+        if (!controller.signal.aborted) setNotificationError('Qarz eslatmalarini yangilab bo‘lmadi.');
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 20 * 60 * 1000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { controller.abort(); window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
+  }, [ready, hasTelegram, statsRevision]);
 
   useEffect(() => {
     window.Telegram?.WebApp?.ready?.();
@@ -532,6 +564,22 @@ export default function OperatorMiniAppPage() {
           </div>
           <div className="rounded-2xl bg-[#071B3A] px-3 py-2 text-right text-xs font-bold text-white">{operatorName || 'Mini app'}</div>
         </header>
+
+        {notificationError && <p role="status" className="mb-3 text-sm text-red-700">{notificationError}</p>}
+        {notifications.length > 0 && <details className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-3">
+          <summary className="cursor-pointer text-sm font-black text-amber-900">Qarz eslatmasi: {notifications.length} ta shartnoma · bugun va muddati o‘tgan</summary>
+          <p className="mt-2 text-xs text-amber-800">Har kuni 09:00, 14:00, 18:00 · Toshkent vaqti</p>
+          <div aria-live="polite" className="mt-3 space-y-3">{notifications.map(item => <article key={item.contract_id} className="rounded-xl bg-white p-3 text-sm">
+            <strong>#{item.user_id} · {item.first_name || '—'} {item.last_name || ''}</strong>
+            <p>{item.phone ? <a href={`tel:${item.phone}`}>{item.phone}</a> : 'Telefon yo‘q'}</p>
+            {item.email && <p>{item.email}</p>}
+            <p className="font-black text-red-700">Qarz: {moneyText(item.debt, item.currency)}</p>
+            <p>Jami: {moneyText(item.total, item.currency)} · To‘langan: {moneyText(item.paid, item.currency)}</p>
+            <p>Tekshiruvda: {moneyText(item.pending, item.currency)}</p>
+            <p>Muddat: {fmtDate(item.due_at)}</p>
+            <p className="text-xs text-slate-500">Shartnoma #{item.contract_id} · {item.tariff} · {item.source}</p>
+          </article>)}</div>
+        </details>}
 
         {!hasTelegram && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900">Mini ilova Telegram ichida ochilganda ishlaydi.</div>}
         {error && <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}

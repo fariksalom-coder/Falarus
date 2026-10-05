@@ -1,3 +1,4 @@
+import { dueDebts, reminderSlot, REMINDER_HOURS } from './reminders.js';
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'node:path';
@@ -246,6 +247,19 @@ export function operatorMiniAppRoutes() {
 
   router.get('/me', miniWrap(async (req, res) => {
     res.json({ operator: req.operator, tariffs: await tariffCatalog(), sources: SOURCES, currencies: CURRENCIES });
+  }));
+
+  router.get('/notifications', miniWrap(async (req, res) => {
+    const now = new Date();
+    const slot = reminderSlot(now);
+    const rows = await dueDebts(pool!, now, req.operator.id);
+    res.set('Cache-Control', 'no-store');
+    res.json({ slot, hours: REMINDER_HOURS, debts: rows.map(b => ({
+      id: `${slot ?? 'today'}:${b.id}`, contract_id: b.id, user_id: b.user_id,
+      first_name: b.first_name, last_name: b.last_name, phone: b.phone,
+      email: b.email, tariff: b.tariff, source: b.source, currency: b.currency,
+      total: b.total, paid: b.paid, debt: b.debt, pending: b.pending, due_at: b.due_at,
+    })) });
   }));
 
   router.get('/stats', miniWrap(async (req, res) => {

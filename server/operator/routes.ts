@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import type { DbClient } from '../types/dbClient.js';
 import { pool } from '../lib/db.js';
 import { enabled, handleUpdate, transaction, enqueue } from './service.js';
+import { dueDebts, reminderSlot, debtReminderText } from './reminders.js';
 import { readMiniReceipt } from './miniApp.js';
 export function serviceAuthorized(value: unknown, secret = process.env.OPERATOR_SERVICE_SECRET): boolean {
     if (!secret || secret.length < 32 || typeof value !== 'string')
@@ -10,13 +11,14 @@ export function serviceAuthorized(value: unknown, secret = process.env.OPERATOR_
     const a = Buffer.from(value), b = Buffer.from(`Bearer ${secret}`);
     return a.length === b.length && timingSafeEqual(a, b);
 }
-export async function reminders() {
+export async function reminders(now = new Date()) {
+    const slot = reminderSlot(now);
+    if (!slot) return;
     await transaction(async (c) => {
-        const rows = (await c.query(`SELECT b.*,o.telegram_id FROM operator_balances b JOIN operator_accounts o ON o.id=b.operator_id WHERE b.activated_at IS NOT NULL AND b.debt>0 AND b.due_at<=now() AND o.active AND o.telegram_id IS NOT NULL`)).rows;
+        const rows = await dueDebts(c, now);
         for (const b of rows) {
-            const overdue = +new Date(b.due_at) + 72 * 3600000 <= Date.now();
-            const stage = overdue ? 'overdue' : 'due';
-            await enqueue(c, 'sendMessage', { chat_id: b.telegram_id, text: `${overdue ? '72 SOATDAN OSHGAN QARZ' : 'TO‘LOV MUDDATI KELDI'}\nMijoz #${b.user_id}, shartnoma #${b.id}\nQarz ${b.debt} ${b.currency}\nTekshiruvdagi to‘lov ${b.pending} ${b.currency}\nMuddat: ${new Date(b.due_at).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' })}\n${overdue ? 'To‘lov hali tasdiqlanmagan. Mijoz kartasidan qarzni tekshiring.' : 'Mijoz bilan bog‘laning.'}`, reply_markup: { inline_keyboard: [[{ text: 'Mijozni ko‘rish', callback_data: `user:${b.user_id}` }]] } }, `${stage}:${b.id}:${b.operator_id}`, b.id);
+            if (!b.telegram_id) continue;
+            await enqueue(c, 'sendMessage', { chat_id: b.telegram_id, text: debtReminderText(b), reply_markup: { inline_keyboard: [[{ text: 'Mijozni ko‘rish', callback_data: `user:${b.user_id}` }]] } }, `daily-debt:${slot}:${b.id}:${b.operator_id}`, b.id);
         }
     });
 }
