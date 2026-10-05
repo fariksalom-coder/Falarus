@@ -22,6 +22,8 @@ test('isolated operator ledger: pending/rejected do not settle debt, duplicate r
     const db = await PGlite.create();
     try {
         await db.exec(`CREATE TABLE users(id bigint PRIMARY KEY);CREATE TABLE admins(id bigint PRIMARY KEY);CREATE TABLE payments(id bigint PRIMARY KEY);INSERT INTO users VALUES(1);INSERT INTO admins VALUES(1);`);
+        await db.exec(await readFile(new URL('../db/migrations/201_operator_debt_deferrals.sql', import.meta.url), 'utf8'));
+        assert.equal((await db.query<any>("SELECT to_regclass('operator_debt_deferrals') table_name")).rows[0].table_name,null,'generic migrations can run without the optional operator ledger');
         await db.exec(await readFile(new URL('../server/operator/schema.sql', import.meta.url), 'utf8'));
         await db.exec(await readFile(new URL('../db/migrations/201_operator_debt_deferrals.sql', import.meta.url), 'utf8'));
         await db.exec(await readFile(new URL('../db/migrations/201_operator_debt_deferrals.sql', import.meta.url), 'utf8'));

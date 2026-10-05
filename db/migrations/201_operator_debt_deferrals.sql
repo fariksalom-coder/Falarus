@@ -1,5 +1,12 @@
 -- Apply to installations using the operator ledger before deploying debt deferrals.
 BEGIN;
+DO $migration$
+BEGIN
+ -- The operator ledger is optional and installed through server/operator/schema.sql.
+ IF to_regclass('operator_contracts') IS NULL THEN
+  RAISE NOTICE 'Operator ledger is not installed; deferrals will be created by operator/schema.sql';
+  RETURN;
+ END IF;
 CREATE TABLE IF NOT EXISTS operator_debt_deferrals (
  id bigserial PRIMARY KEY,
  contract_id bigint NOT NULL REFERENCES operator_contracts(id),
@@ -14,4 +21,6 @@ CREATE TABLE IF NOT EXISTS operator_debt_deferrals (
 CREATE UNIQUE INDEX IF NOT EXISTS operator_debt_deferrals_pending_idx
  ON operator_debt_deferrals(contract_id) WHERE status='pending';
 CREATE INDEX IF NOT EXISTS operator_debt_deferrals_contract_idx ON operator_debt_deferrals(contract_id,id DESC);
+END
+$migration$;
 COMMIT;
