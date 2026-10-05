@@ -14,7 +14,13 @@ export type SupportCrmStats = {
   no_pickup_today: number;
 };
 
-export type SupportCrmQueueRow = {
+/** Kurs bo'yicha qayerga yetgani (1-kundan ketma-ket yopilgan kunlar). */
+export type SupportCrmDayProgress = {
+  completed_days: number;
+  current_day: number;
+};
+
+export type SupportCrmQueueRow = SupportCrmDayProgress & {
   id: number;
   first_name: string | null;
   last_name: string | null;
@@ -119,7 +125,7 @@ export async function getSupportCrmQueue(
   );
 }
 
-export type SupportCrmContactedRow = {
+export type SupportCrmContactedRow = SupportCrmDayProgress & {
   id: number;
   first_name: string | null;
   last_name: string | null;
@@ -133,6 +139,7 @@ export type SupportCrmContactedRow = {
   contact_outcome: string;
   contact_result: string | null;
   agent_name: string | null;
+  last_seen_at: string | null;
 };
 
 export async function getSupportCrmContacted(date: string, q = '') {
@@ -147,7 +154,7 @@ export type PremiumSort =
   | 'last_seen_desc'
   | 'last_seen_asc';
 
-export type SupportCrmPremiumRow = {
+export type SupportCrmPremiumRow = SupportCrmDayProgress & {
   id: number;
   first_name: string | null;
   last_name: string | null;
@@ -167,7 +174,7 @@ export async function getSupportCrmPremiumUsers(sort: PremiumSort = 'purchase_de
 
 export type ReturnTrackFilter = 'returned' | 'waiting' | 'all';
 
-export type SupportCrmReturnTrackRow = {
+export type SupportCrmReturnTrackRow = SupportCrmDayProgress & {
   id: number;
   first_name: string | null;
   last_name: string | null;
@@ -194,6 +201,24 @@ export async function getSupportCrmReturnTracking(
     returned_count: number;
     waiting_count: number;
   }>(`/return-tracking?filter=${encodeURIComponent(filter)}&days=${days}&limit=300`);
+}
+
+export type SupportCrmSearchRow = SupportCrmDayProgress & {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  email: string | null;
+  created_at: string;
+  last_seen_at: string | null;
+  plan_name: string | null;
+  plan_expires_at: string | null;
+};
+
+export async function searchSupportCrmUsers(q: string) {
+  return supportCrmApi<{ rows: SupportCrmSearchRow[]; limit: number }>(
+    `/search?q=${encodeURIComponent(q)}`
+  );
 }
 
 export async function getSupportCrmUser(id: number) {

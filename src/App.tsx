@@ -105,6 +105,7 @@ function AppRoutes() {
         <Route element={renderLazyPage('./pages/supportCrm/SupportCrmGuard.tsx')}>
           <Route element={renderLazyPage('./pages/supportCrm/SupportCrmLayout.tsx')}>
             <Route path="dashboard" element={renderLazyPage('./pages/supportCrm/SupportCrmDashboardPage.tsx')} />
+            <Route path="search" element={renderLazyPage('./pages/supportCrm/SupportCrmSearchPage.tsx')} />
             <Route path="queue" element={renderLazyPage('./pages/supportCrm/SupportCrmQueuePage.tsx')} />
             <Route path="return" element={renderLazyPage('./pages/supportCrm/SupportCrmReturnPage.tsx')} />
             <Route path="premium" element={renderLazyPage('./pages/supportCrm/SupportCrmPremiumPage.tsx')} />

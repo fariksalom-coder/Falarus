@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Card } from '../../components/ui/Foundation';
+import CrmDayProgress from '../../components/supportCrm/CrmDayProgress';
 import {
   getSupportCrmContacted,
   getSupportCrmQueue,
@@ -218,7 +219,10 @@ export default function SupportCrmQueuePage() {
                         {idleDays} kun
                       </span>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
+                    <div className="mt-3">
+                      <CrmDayProgress current_day={row.current_day} completed_days={row.completed_days} />
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
                       <span>{row.plan_name || 'Tarif'}</span>
                       <span>tugashi {formatCrmDate(row.plan_expires_at)}</span>
                       {left != null ? <span>{left} kun qoldi</span> : null}
@@ -250,11 +254,17 @@ export default function SupportCrmQueuePage() {
                     {formatContactTime(row.contact_at)}
                   </span>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
+                <div className="mt-3">
+                  <CrmDayProgress current_day={row.current_day} completed_days={row.completed_days} />
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
                   <span>{CHANNEL_LABEL[row.contact_channel] ?? row.contact_channel}</span>
                   <span>{OUTCOME_LABEL[row.contact_outcome] ?? row.contact_outcome}</span>
                   {row.agent_name ? <span>{row.agent_name}</span> : null}
                   {row.plan_name ? <span>{row.plan_name}</span> : null}
+                  <span className="font-medium text-app-text">
+                    oxirgi kirish: {formatLastSeenAgo(row.last_seen_at)}
+                  </span>
                 </div>
               </Link>
             </li>

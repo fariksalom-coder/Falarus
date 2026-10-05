@@ -16,6 +16,7 @@ import {
   listReturnTracking,
   listSupportCrmQueue,
   nextQueueUserId,
+  searchSupportCrmUsers,
   todayTashkentDate,
   type ContactChannel,
   type ContactOutcome,
@@ -208,6 +209,16 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
     } catch (e) {
       console.error('[support-crm/return-tracking]', e);
       res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
+    }
+  });
+
+  router.get('/search', async (req, res) => {
+    try {
+      const q = typeof req.query.q === 'string' ? req.query.q : '';
+      res.json(await searchSupportCrmUsers(q));
+    } catch (e) {
+      console.error('[support-crm/search]', e);
+      res.status(500).json({ error: 'Qidiruvda xatolik' });
     }
   });
 

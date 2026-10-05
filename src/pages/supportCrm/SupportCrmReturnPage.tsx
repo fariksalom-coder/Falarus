@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Foundation';
+import CrmDayProgress from '../../components/supportCrm/CrmDayProgress';
 import {
   getSupportCrmReturnTracking,
   type ReturnTrackFilter,
@@ -152,7 +153,10 @@ export default function SupportCrmReturnPage() {
                     {row.returned ? 'Qaytdi' : 'Kutyapti'}
                   </span>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
+                <div className="mt-3">
+                  <CrmDayProgress current_day={row.current_day} completed_days={row.completed_days} />
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
                   <span>bog‘lanish {formatCrmDate(row.contact_at)}</span>
                   <span>{CHANNEL_LABEL[row.contact_channel] ?? row.contact_channel}</span>
                   {row.agent_name ? <span>{row.agent_name}</span> : null}

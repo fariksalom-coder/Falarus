@@ -1,10 +1,11 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Activity, Crown, LayoutDashboard, ListOrdered, Loader, LogOut } from 'lucide-react';
+import { Activity, Crown, LayoutDashboard, ListOrdered, Loader, LogOut, Search } from 'lucide-react';
 import { useSupportCrmAuth } from '../../context/SupportCrmAuthContext';
 import { supportCrmPath } from '../../constants/supportCrmPath';
 
 const nav = [
   { to: supportCrmPath('/dashboard'), label: 'Dashboard', icon: LayoutDashboard },
+  { to: supportCrmPath('/search'), label: 'Qidiruv', icon: Search },
   { to: supportCrmPath('/queue'), label: 'Navbat', icon: ListOrdered },
   { to: supportCrmPath('/return'), label: 'Qaytish', icon: Activity },
   { to: supportCrmPath('/premium'), label: 'Premium', icon: Crown },

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Foundation';
+import CrmDayProgress from '../../components/supportCrm/CrmDayProgress';
 import { getSupportCrmQueue, type SupportCrmQueueRow } from '../../api/supportCrm';
 import { supportCrmPath } from '../../constants/supportCrmPath';
 import {
@@ -77,7 +78,10 @@ export default function SupportCrmInProgressPage() {
                       Jarayonda
                     </span>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
+                  <div className="mt-3">
+                    <CrmDayProgress current_day={row.current_day} completed_days={row.completed_days} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
                     <span>{idleDays} kun kirmagan</span>
                     <span>{formatLastSeenAgo(row.last_seen_at ?? row.idle_since)}</span>
                     <span>{row.plan_name || 'Tarif'}</span>

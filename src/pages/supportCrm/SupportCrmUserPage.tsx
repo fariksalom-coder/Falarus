@@ -275,6 +275,9 @@ export default function SupportCrmUserPage() {
             {u.last_kunlik_at ? formatCrmDate(u.last_kunlik_at) : 'Boshlanmagan'}
           </span>
         </MiniCard>
+        <MiniCard label="Ro‘yxatdan o‘tgan" className="col-span-2">
+          <span className="font-semibold text-app-text">{formatCrmDate(u.created_at)}</span>
+        </MiniCard>
       </div>
 
       {progress ? (

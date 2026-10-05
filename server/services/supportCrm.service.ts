@@ -54,7 +54,38 @@ export function buildSupportSearch(raw: string | null | undefined, startAt: numb
   };
 }
 
-export type ContactedOnRow = {
+/**
+ * Kurs bo'yicha qayerga yetgani: 1-kundan boshlab ketma-ket to'liq yopilgan kunlar soni.
+ * Foydalanuvchi kartasidagi `progress` bilan bir xil qoida (0-sinov kuni hisobga olinmaydi).
+ */
+const COURSE_TOTAL_DAYS = 182;
+
+function dayProgressJoin(alias: string): string {
+  return `
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*)::int AS completed_days
+      FROM (
+        SELECT p.day_number, ROW_NUMBER() OVER (ORDER BY p.day_number) AS rn
+        FROM user_kunlik_day_progress p
+        WHERE p.user_id = ${alias}.id
+          AND p.day_number >= 1
+          AND p.grammar_1 AND p.grammar_2 AND p.grammar_3
+          AND p.words_match AND p.oqish_done AND p.suhbat_done IS TRUE
+      ) done_days
+      WHERE done_days.day_number = done_days.rn
+    ) dp ON TRUE`;
+}
+
+const DAY_PROGRESS_COLUMNS = `
+  COALESCE(dp.completed_days, 0)::int AS completed_days,
+  LEAST(COALESCE(dp.completed_days, 0) + 1, ${COURSE_TOTAL_DAYS})::int AS current_day`;
+
+export type DayProgressFields = {
+  completed_days: number;
+  current_day: number;
+};
+
+export type ContactedOnRow = DayProgressFields & {
   id: number;
   first_name: string | null;
   last_name: string | null;
@@ -68,9 +99,10 @@ export type ContactedOnRow = {
   contact_outcome: string;
   contact_result: string | null;
   agent_name: string | null;
+  last_seen_at: string | null;
 };
 
-export type QueueRow = {
+export type QueueRow = DayProgressFields & {
   id: number;
   first_name: string | null;
   last_name: string | null;
@@ -254,8 +286,10 @@ export async function listSupportCrmQueue(opts: {
        GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (now() - idle_since)) / 3600))::int AS idle_hours,
        last_contact_at,
        last_contact_channel,
-       last_contact_outcome
+       last_contact_outcome,
+       ${DAY_PROGRESS_COLUMNS}
      FROM candidates c
+     ${dayProgressJoin('c')}
      WHERE TRUE
        ${dayFilter}
        ${searchSql}
@@ -331,10 +365,13 @@ export async function listContactedOnDate(opts: {
       c.channel AS contact_channel,
       c.outcome AS contact_outcome,
       c.result AS contact_result,
-      a.name AS agent_name
+      a.name AS agent_name,
+      u.last_seen_at,
+      ${DAY_PROGRESS_COLUMNS}
     FROM support_crm_contacts c
     JOIN users u ON u.id = c.user_id
     LEFT JOIN support_crm_agents a ON a.id = c.agent_id
+    ${dayProgressJoin('u')}
     WHERE (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
       ${searchSql}
     ORDER BY c.created_at DESC
@@ -459,7 +496,7 @@ export async function getSupportCrmUser(userId: number): Promise<{
     [userId]
   );
 
-  const TOTAL_DAYS = 182;
+  const TOTAL_DAYS = COURSE_TOTAL_DAYS;
   const dayRows = progressRes.rows;
   let completedDays = 0;
   let currentDay = 1;
@@ -644,7 +681,7 @@ export type PremiumSort =
   | 'last_seen_desc'
   | 'last_seen_asc';
 
-export type PremiumUserRow = {
+export type PremiumUserRow = DayProgressFields & {
   id: number;
   first_name: string | null;
   last_name: string | null;
@@ -709,9 +746,11 @@ export async function listPremiumUsers(opts: {
       u.plan_expires_at,
       u.last_seen_at,
       lp.purchased_at,
-      lp.tariff_type
+      lp.tariff_type,
+      ${DAY_PROGRESS_COLUMNS}
     FROM users u
     LEFT JOIN latest_pay lp ON lp.user_id = u.id
+    ${dayProgressJoin('u')}
     WHERE u.plan_expires_at IS NOT NULL
       AND u.plan_expires_at > now()
       AND COALESCE(u.is_golden, false) = false
@@ -741,7 +780,7 @@ export async function listPremiumUsers(opts: {
 
 export type ReturnTrackFilter = 'returned' | 'waiting' | 'all';
 
-export type ReturnTrackRow = {
+export type ReturnTrackRow = DayProgressFields & {
   id: number;
   first_name: string | null;
   last_name: string | null;
@@ -822,10 +861,12 @@ export async function listReturnTracking(opts: {
         WHEN u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at
           THEN GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (u.last_seen_at - lc.contact_at)) / 3600))::int
         ELSE NULL
-      END AS hours_to_return
+      END AS hours_to_return,
+      ${DAY_PROGRESS_COLUMNS}
     FROM latest_contact lc
     JOIN users u ON u.id = lc.user_id
     LEFT JOIN support_crm_agents a ON a.id = lc.agent_id
+    ${dayProgressJoin('u')}
     WHERE COALESCE(u.is_golden, false) = false
       ${statusFilter}
     ORDER BY ${orderSql}
@@ -873,4 +914,57 @@ export async function listReturnTracking(opts: {
     returned_count: returnedCount,
     waiting_count: waitingCount,
   };
+}
+
+export type SearchUserRow = DayProgressFields & {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  email: string | null;
+  created_at: string;
+  last_seen_at: string | null;
+  plan_name: string | null;
+  plan_expires_at: string | null;
+};
+
+const SEARCH_LIMIT = 30;
+
+/**
+ * Barcha o'quvchilar bo'yicha qidiruv (navbatdan tashqari ham): telefon, ism yoki familiya.
+ * Telefon raqamlari faqat raqamlar bo'yicha solishtiriladi (+998, probel, tire farqi yo'q).
+ */
+export async function searchSupportCrmUsers(rawQuery: string | null | undefined): Promise<{
+  rows: SearchUserRow[];
+  limit: number;
+}> {
+  const db = requirePool();
+  const query = String(rawQuery ?? '').trim();
+  if (query.replace(/[\s+().-]/g, '').length < 2) return { rows: [], limit: SEARCH_LIMIT };
+  const search = buildSupportSearch(query, 2, 'u');
+  if (!search) return { rows: [], limit: SEARCH_LIMIT };
+
+  const { rows } = await db.query<SearchUserRow>(
+    `
+    SELECT
+      u.id,
+      u.first_name,
+      u.last_name,
+      u.phone,
+      u.email,
+      u.created_at,
+      u.last_seen_at,
+      u.plan_name,
+      u.plan_expires_at,
+      ${DAY_PROGRESS_COLUMNS}
+    FROM users u
+    ${dayProgressJoin('u')}
+    WHERE COALESCE(u.is_golden, false) = false
+      AND ${search.sql}
+    ORDER BY u.last_seen_at DESC NULLS LAST, u.id DESC
+    LIMIT $1
+    `,
+    [SEARCH_LIMIT, ...search.values]
+  );
+  return { rows: rows ?? [], limit: SEARCH_LIMIT };
 }
