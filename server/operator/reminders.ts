@@ -1,3 +1,4 @@
+import { latestDeferralSql } from './debtActions.js';
 import type { PoolClient } from 'pg';
 
 export const REMINDER_HOURS = [9, 14, 18] as const;
@@ -9,11 +10,13 @@ export function reminderSlot(now = new Date()) {
 
 // Include the whole local due date, even if the deadline is later today.
 export async function dueDebts(c: Pick<PoolClient, 'query'>, now: Date, operatorId: number | null = null) {
-    return (await c.query(`SELECT b.*,u.first_name,u.last_name,u.phone,u.email,o.telegram_id
+    return (await c.query(`SELECT b.*,${latestDeferralSql} deferral,u.first_name,u.last_name,u.phone,u.email,o.telegram_id
         FROM operator_balances b JOIN users u ON u.id=b.user_id
         JOIN operator_accounts o ON o.id=b.operator_id
         WHERE b.debt>0 AND (b.paid>0 OR b.pending>0) AND o.active
         AND b.due_at < ((($1::timestamptz AT TIME ZONE 'Asia/Tashkent')::date + 1)::timestamp AT TIME ZONE 'Asia/Tashkent')
+        AND NOT EXISTS (SELECT 1 FROM operator_debt_deferrals d WHERE d.contract_id=b.id
+            AND d.status='approved' AND d.requested_due_at=b.due_at AND d.requested_due_at>$1::timestamptz)
         AND ($2::bigint IS NULL OR b.operator_id=$2)
         ORDER BY b.due_at,b.id`, [now, operatorId])).rows;
 }

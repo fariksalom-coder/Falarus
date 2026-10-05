@@ -1,8 +1,9 @@
+import { latestDeferralSql, requestDebtDeferral, submitDebtReceipt } from './debtActions.js';
 import { dueDebts, reminderSlot, REMINDER_HOURS } from './reminders.js';
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'node:path';
-import { mkdir, writeFile, readFile, stat } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, stat, unlink } from 'node:fs/promises';
 import { createHmac, createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { pool } from '../lib/db.js';
 import { createIpRateLimitMiddleware } from '../lib/rateLimit.js';
@@ -258,7 +259,7 @@ export function operatorMiniAppRoutes() {
       id: `${slot ?? 'today'}:${b.id}`, contract_id: b.id, user_id: b.user_id,
       first_name: b.first_name, last_name: b.last_name, phone: b.phone,
       email: b.email, tariff: b.tariff, source: b.source, currency: b.currency,
-      total: b.total, paid: b.paid, debt: b.debt, pending: b.pending, due_at: b.due_at,
+      deferral: b.deferral, total: b.total, paid: b.paid, debt: b.debt, pending: b.pending, due_at: b.due_at,
     })) });
   }));
 
@@ -289,7 +290,7 @@ export function operatorMiniAppRoutes() {
     )).rows;
     const debtorRows = (await pool!.query(
       `SELECT b.id contract_id,b.user_id,b.currency,b.tariff,b.source,b.due_at,
-              b.debt::text debt,b.pending::text pending,
+              b.debt::text debt,b.pending::text pending,${latestDeferralSql} deferral,
               u.first_name,u.last_name,u.phone
        FROM operator_balances b
        JOIN users u ON u.id=b.user_id
@@ -446,6 +447,24 @@ export function operatorMiniAppRoutes() {
     });
     res.set('Cache-Control', 'no-store');
     res.json({ user: { id: uid }, initialPassword: OPERATOR_INITIAL_CUSTOMER_PASSWORD });
+  }));
+
+  router.post('/contracts/:id/deferrals', miniWrap(async (req, res) => {
+    const id = await requestDebtDeferral(asPositiveId(req.params.id), req.operator.id, String(req.body.dueAt ?? ''), req.body.reason);
+    res.json({ ok: true, id, status: 'pending' });
+  }));
+
+  router.post('/contracts/:id/payments', upload.single('receipt'), miniWrap(async (req, res) => {
+    const contractId = asPositiveId(req.params.id);
+    const amount = money(req.body.amount);
+    const receipt = await storeMiniReceipt(req.file);
+    try {
+      const receiptId = await submitDebtReceipt(contractId, req.operator.id, amount, receipt);
+      res.json({ ok: true, contractId, receiptId, status: 'pending' });
+    } catch (error) {
+      await unlink(path.join(receiptDir(), receipt.fileId.slice('miniapp:'.length))).catch(() => {});
+      throw error;
+    }
   }));
 
   router.post('/payments', upload.single('receipt'), miniWrap(async (req, res) => {

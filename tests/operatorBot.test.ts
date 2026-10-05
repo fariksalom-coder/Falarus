@@ -23,6 +23,8 @@ test('isolated operator ledger: pending/rejected do not settle debt, duplicate r
     try {
         await db.exec(`CREATE TABLE users(id bigint PRIMARY KEY);CREATE TABLE admins(id bigint PRIMARY KEY);CREATE TABLE payments(id bigint PRIMARY KEY);INSERT INTO users VALUES(1);INSERT INTO admins VALUES(1);`);
         await db.exec(await readFile(new URL('../server/operator/schema.sql', import.meta.url), 'utf8'));
+        await db.exec(await readFile(new URL('../db/migrations/201_operator_debt_deferrals.sql', import.meta.url), 'utf8'));
+        await db.exec(await readFile(new URL('../db/migrations/201_operator_debt_deferrals.sql', import.meta.url), 'utf8'));
         // Applying the additive migration twice is safe.
         await db.exec(await readFile(new URL('../server/operator/schema.sql', import.meta.url), 'utf8'));
         await db.exec(`INSERT INTO operator_accounts(login,name,password_hash) VALUES('operator','Operator','hash');
@@ -159,7 +161,7 @@ test('operator conversation + admin workflow: authorization, replay, installment
         const adminRouter = operatorAdminRoutes();
         const invoke = (path: string, query: any) => new Promise<any>((resolve, reject) => {
             const layer = (adminRouter as any).stack.find((x: any) => x.route?.path === path);
-            layer.route.stack[0].handle({query, adminId: 1}, {json: resolve, status: (status: number) => ({json: (body: any) => reject(new Error(status + ':' + JSON.stringify(body)))})}, reject);
+            layer.route.stack[0].handle({query, adminId: 1}, {set() {}, json: resolve, status: (status: number) => ({json: (body: any) => reject(new Error(status + ':' + JSON.stringify(body)))})}, reject);
         });
         const overview = await invoke('/overview', {});
         assert.equal(overview.rows.length, 3);
@@ -234,10 +236,10 @@ test('operator conversation + admin workflow: authorization, replay, installment
         assert.equal((await db.query<any>('SELECT operator_id FROM operator_sessions WHERE telegram_id=456')).rows[0].operator_id, null);
         const { operatorMiniAppRoutes } = await import('../server/operator/miniApp.js');
         const miniRouter = operatorMiniAppRoutes() as any;
-        const invokeMini = (method: string, path: string, body = {}, file?: any) => new Promise<any>((resolve, reject) => {
+        const invokeMini = (method: string, path: string, body = {}, file?: any, params = {}, operatorId = 1) => new Promise<any>((resolve, reject) => {
             lastDbError = undefined;
             const layer = miniRouter.stack.find((x: any) => x.route?.path === path && x.route.methods[method]);
-            layer.route.stack.at(-1).handle({ body, query: body, file, operator: { id: 1, name: 'Operator One' } }, {
+            layer.route.stack.at(-1).handle({ body, query: body, file, params, operator: { id: operatorId, name: 'Operator One' } }, {
                 set() {}, json: resolve,
                 status: (status: number) => ({ json: (data: any) => reject(new Error(path + ':' + status + ':' + data.error, { cause: lastDbError })) }),
             }, reject);
@@ -295,6 +297,97 @@ test('operator conversation + admin workflow: authorization, replay, installment
         assert.equal(rangeStats.history.length, 7, 'history follows the approval date, including receipts submitted on an earlier day');
         await assert.rejects(invokeMini('get', '/stats', { period: 'custom', from: '2026-02-30', to: '2026-03-02' }), /Sana/);
         await assert.rejects(invokeMini('get', '/stats', { period: 'custom', from: '2026-08-29', to: '2026-08-28' }), /Tugash/);
+        // Debt actions in the mini app: admin-gated deferrals and installments on the existing contract.
+        const { decideDebtDeferral, requestDebtDeferral } = await import('../server/operator/debtActions.js');
+        const futureDate = (days: number) => new Date(Date.now() + days * 86400000 + 5 * 3600000).toISOString().slice(0,16).replace('T',' ');
+        const debtContract = (await db.query<any>("INSERT INTO operator_contracts(user_id,operator_id,tariff,currency,total,source,activated_at,due_at) VALUES(1,1,'month','RUB',1000,'Telegram',now(),now()-interval '1 day') RETURNING id")).rows[0].id;
+        await db.query("INSERT INTO operator_receipts(contract_id,operator_id,amount,file_id,file_unique_id,mime,status) VALUES($1,1,500,'base-debt','base-debt','image/jpeg','approved')", [debtContract]);
+        const params = { id: debtContract };
+        const dueBefore = (await db.query<any>('SELECT due_at FROM operator_contracts WHERE id=$1',[debtContract])).rows[0].due_at;
+        const isNotified = async () => (await invokeMini('get','/notifications')).debts.some((d: any) => Number(d.contract_id) === Number(debtContract));
+        assert.equal(await isNotified(),true);
+        await assert.rejects(invokeMini('post','/contracts/:id/deferrals',{dueAt:futureDate(1),reason:'Mijoz bilan kelishildi'},undefined,params,2),/Shartnoma topilmadi/);
+        await assert.rejects(invokeMini('post','/contracts/:id/deferrals',{dueAt:'2026-02-30 15:30',reason:'Mijoz bilan kelishildi'},undefined,params));
+        await assert.rejects(invokeMini('post','/contracts/:id/deferrals',{dueAt:futureDate(1),reason:'x'},undefined,params),/Sabab/);
+        const firstDeferral = await invokeMini('post','/contracts/:id/deferrals',{dueAt:futureDate(1),reason:'Mijoz bilan ertaga kelishildi'},undefined,params);
+        assert.deepEqual((await db.query<any>('SELECT due_at FROM operator_contracts WHERE id=$1',[debtContract])).rows[0].due_at,dueBefore,'request does not change deadline');
+        assert.equal(await isNotified(),true,'pending request does not suppress reminders');
+        await assert.rejects(requestDebtDeferral(Number(debtContract),1,futureDate(2),'Yana kelishildi'),/allaqachon/);
+        const pendingDeferrals = await invoke('/deferrals',{status:'pending',operator:'1'});
+        assert.ok(pendingDeferrals.rows.some((d:any) => Number(d.id) === Number(firstDeferral.id) && d.phone === '+998900000000'));
+        await assert.rejects(decideDebtDeferral(firstDeferral.id,1,'rejected',''),/Sabab/);
+        await decideDebtDeferral(firstDeferral.id,1,'rejected','Kelishuv tasdiqlanmadi');
+        assert.deepEqual((await db.query<any>('SELECT due_at FROM operator_contracts WHERE id=$1',[debtContract])).rows[0].due_at,dueBefore);
+        assert.equal(await isNotified(),true,'rejection keeps old reminders');
+        await assert.rejects(decideDebtDeferral(firstDeferral.id,1,'approved',''));
+        const accepted = await requestDebtDeferral(Number(debtContract),1,futureDate(2),'Mijoz bilan qayta kelishildi');
+        await db.query("INSERT INTO operator_outbox(method,payload,dedupe,contract_id) VALUES('sendMessage','{}',$1,$2)", [`daily-debt:queued:${debtContract}`,debtContract]);
+        await decideDebtDeferral(accepted,1,'approved','Kelishuv tasdiqlandi');
+        assert.equal(await isNotified(),false,'approved new future date suppresses notifications');
+        assert.ok((await db.query<any>("SELECT delivered_at FROM operator_outbox WHERE dedupe=$1",[`daily-debt:queued:${debtContract}`])).rows[0].delivered_at,'approval cancels queued reminders');
+        assert.equal((await db.query<any>('SELECT debt FROM operator_balances WHERE id=$1',[debtContract])).rows[0].debt,'500.00');
+        await assert.rejects(decideDebtDeferral(accepted,1,'approved',''),'admin replay rejected');
+        const newDue = (await db.query<any>('SELECT due_at FROM operator_contracts WHERE id=$1',[debtContract])).rows[0].due_at;
+        assert.ok(!(await dueDebts(pool!,new Date(+new Date(newDue)-1000),1)).some(d=>Number(d.id)===Number(debtContract)),'same-day deferral waits until agreed time');
+        assert.ok((await dueDebts(pool!,new Date(newDue),1)).some(d=>Number(d.id)===Number(debtContract)),'reminders resume at new deadline');
+        const debtStats = await invokeMini('get','/stats',{period:'today'});
+        assert.equal(debtStats.debts.flatMap((d:any)=>d.debtors).find((d:any)=>Number(d.contract_id)===Number(debtContract)).deferral.status,'approved');
+        await assert.rejects(requestDebtDeferral(Number(debtContract),1,futureDate(1),'Oldingi sana'),/joriy muddatdan keyin/);
+        const repeated = await requestDebtDeferral(Number(debtContract),1,futureDate(3),'Ikkinchi kelishuv');
+        await decideDebtDeferral(repeated,1,'approved','');
+        assert.equal((await db.query<any>('SELECT count(*) n FROM operator_debt_deferrals WHERE contract_id=$1',[debtContract])).rows[0].n,3,'all agreements preserved');
+        assert.ok((await db.query<any>("SELECT count(*) n FROM operator_audit WHERE action='debt_deferral_approved' AND user_id=1")).rows[0].n>=2);
+        assert.ok((await db.query<any>("SELECT count(*) n FROM operator_outbox WHERE dedupe LIKE 'deferral-decision:%'")).rows[0].n>=3,'operator receives admin decision');
+        const settledLater = await requestDebtDeferral(Number(debtContract),1,futureDate(4),'Uchinchi kelishuv');
+        const debtUpload = {mimetype:'application/pdf',buffer:Buffer.from('%PDF-debt-installment')};
+        await assert.rejects(invokeMini('post','/contracts/:id/payments',{amount:'500'},debtUpload,params,2),/Shartnoma topilmadi/);
+        await assert.rejects(invokeMini('post','/contracts/:id/payments',{amount:'501'},debtUpload,params),/Summa/);
+        const contractsBefore = await count('operator_contracts');
+        const subscriptionsBefore = await count('subscriptions');
+        const debtPayment = await invokeMini('post','/contracts/:id/payments',{amount:'500'},debtUpload,params);
+        assert.equal(await count('operator_contracts'),contractsBefore,'installment uses the existing contract');
+        assert.equal((await db.query<any>('SELECT debt FROM operator_balances WHERE id=$1',[debtContract])).rows[0].debt,'500.00','receipt remains pending');
+        await assert.rejects(invokeMini('post','/contracts/:id/payments',{amount:'1'},debtUpload,params),/Summa/,'pending payment reserves balance');
+        await decideReceipt(Number(debtPayment.receiptId),1,'approved','');
+        assert.equal((await db.query<any>('SELECT debt FROM operator_balances WHERE id=$1',[debtContract])).rows[0].debt,'0.00');
+        assert.equal(await count('subscriptions'),subscriptionsBefore,'settlement does not activate another tariff');
+        await assert.rejects(decideDebtDeferral(settledLater,1,'approved',''),/yopilgan/,'settled debt cannot be deferred');
+        await decideDebtDeferral(settledLater,1,'rejected','Qarz to‘landi');
+        await assert.rejects(requestDebtDeferral(Number(debtContract),1,futureDate(5),'Qayta kelishuv'),/qarz yo‘q/);
+
+        const staleContract = (await db.query<any>("INSERT INTO operator_contracts(user_id,operator_id,tariff,currency,total,source,due_at) VALUES(1,1,'month','RUB',1000,'Telegram',now()-interval '1 day') RETURNING id")).rows[0].id;
+        await db.query("INSERT INTO operator_receipts(contract_id,operator_id,amount,file_id,file_unique_id,mime,status) VALUES($1,1,500,'stale','stale','image/jpeg','approved')",[staleContract]);
+        const staleRequest = await requestDebtDeferral(Number(staleContract),1,futureDate(1),'Kelishuv');
+        await db.query('UPDATE operator_contracts SET operator_id=2 WHERE id=$1',[staleContract]);
+        await assert.rejects(decideDebtDeferral(staleRequest,1,'approved',''),/operator o‘zgargan/);
+        await decideDebtDeferral(staleRequest,1,'rejected','Mas’ul operator o‘zgardi');
+        await db.query('UPDATE operator_contracts SET operator_id=1 WHERE id=$1',[staleContract]);
+        const expiredRequest = await requestDebtDeferral(Number(staleContract),1,futureDate(1),'Kelishuv');
+        await db.query("UPDATE operator_debt_deferrals SET requested_due_at=now()-interval '1 hour' WHERE id=$1",[expiredRequest]);
+        await assert.rejects(decideDebtDeferral(expiredRequest,1,'approved',''),/muddat o‘tgan/);
+        await decideDebtDeferral(expiredRequest,1,'rejected','Muddat o‘tdi');
+        const changedRequest = await requestDebtDeferral(Number(staleContract),1,futureDate(1),'Kelishuv');
+        await db.query("UPDATE operator_contracts SET due_at=due_at+interval '1 minute' WHERE id=$1",[staleContract]);
+        await assert.rejects(decideDebtDeferral(changedRequest,1,'approved',''),/muddat o‘zgargan/);
+        await decideDebtDeferral(changedRequest,1,'rejected','Muddat o‘zgardi');
+
+        // A concurrent reminder using the old deadline must be cancelled even if queued after approval.
+        await db.query("UPDATE operator_contracts SET due_at=now()-interval '1 hour' WHERE id=$1",[staleContract]);
+        await db.query(`INSERT INTO operator_debt_deferrals(contract_id,operator_id,previous_due_at,requested_due_at,reason,status,admin_id,decided_at)
+          SELECT id,1,due_at-interval '1 day',due_at,'Kelishildi','approved',1,now()-interval '10 seconds' FROM operator_contracts WHERE id=$1`,[staleContract]);
+        const outboxDue = (await db.query<any>('SELECT due_at FROM operator_contracts WHERE id=$1',[staleContract])).rows[0].due_at;
+        const queueReminder = async (key: string) => (await db.query<any>("INSERT INTO operator_outbox(method,payload,dedupe,contract_id) VALUES('sendMessage','{\"chat_id\":123}', $1,$2) RETURNING id",[key,staleContract])).rows[0].id;
+        const outdated = await queueReminder(`daily-debt:old:${staleContract}:2026-01-01T00:00:00.000Z`);
+        const current = await queueReminder(`daily-debt:current:${staleContract}:${new Date(outboxDue).toISOString()}`);
+        const { operatorBotRoutes } = await import('../server/operator/routes.js');
+        const outboxRouter = operatorBotRoutes({} as any) as any;
+        await new Promise((resolve,reject) => {
+          const layer = outboxRouter.stack.find((x:any)=>x.route?.path==='/outbox');
+          layer.route.stack.at(-1).handle({}, {json:resolve,status:(status:number)=>({json:(data:any)=>reject(new Error(status+':'+JSON.stringify(data)))})},reject);
+        });
+        assert.equal((await db.query<any>('SELECT last_error FROM operator_outbox WHERE id=$1',[outdated])).rows[0].last_error,'debt_deferred');
+        assert.equal((await db.query<any>('SELECT delivered_at,last_error FROM operator_outbox WHERE id=$1',[current])).rows[0].delivered_at,null,'reminder for the approved current deadline remains eligible');
+
         await db.exec('UPDATE operator_accounts SET active=false WHERE id=1');
         await click('list:0');
         assert.equal((await db.query<any>('SELECT operator_id FROM operator_sessions WHERE telegram_id=123')).rows[0].operator_id, null);

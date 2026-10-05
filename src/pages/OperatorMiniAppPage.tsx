@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, X } from 'lucide-react';
+import DebtActions from '../components/operator/DebtActions';
+import type { DebtDeferral } from '../../shared/operatorDebt';
 import { apiUrl } from '../api';
 import { operatorTariffCatalog, OPERATOR_CURRENCIES } from '../../shared/operatorTariffs';
 
@@ -30,7 +32,7 @@ type Customer = {
 
 type DebtNotification = Customer & {
   contract_id: number; user_id: number; currency: string; total: string;
-  paid: string; debt: string; pending: string; due_at: string; tariff: string; source: string;
+  paid: string; debt: string; pending: string; due_at: string; tariff: string; source: string; deferral?: DebtDeferral | null;
 };
 
 type TariffItem = {
@@ -67,6 +69,7 @@ type StatsResponse = {
     overdue: string;
     debtors: Array<{
       contract_id: number;
+      deferral?: DebtDeferral | null;
       user_id: number;
       tariff: string;
       source: string;
@@ -289,6 +292,11 @@ export default function OperatorMiniAppPage() {
   const [statsError, setStatsError] = useState('');
   const [statsRevision, setStatsRevision] = useState(0);
   const [openDebtCurrency, setOpenDebtCurrency] = useState<string | null>(null);
+
+  function debtActionSubmitted(message: string) {
+    setNote(message);
+    setStatsRevision(value => value + 1);
+  }
 
   const hasTelegram = Boolean(initData());
   const activeUserId = selected?.id ?? null;
@@ -578,12 +586,13 @@ export default function OperatorMiniAppPage() {
             <p>Tekshiruvda: {moneyText(item.pending, item.currency)}</p>
             <p>Muddat: {fmtDate(item.due_at)}</p>
             <p className="text-xs text-slate-500">Shartnoma #{item.contract_id} · {item.tariff} · {item.source}</p>
+            <DebtActions debt={item} onSubmitted={debtActionSubmitted} />
           </article>)}</div>
         </details>}
 
         {!hasTelegram && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900">Mini ilova Telegram ichida ochilganda ishlaydi.</div>}
         {error && <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}
-        {note && tab === 'payment' && <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">{note}</div>}
+        {note && <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">{note}</div>}
 
         <div className="mb-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-200 p-1">
           {[
@@ -951,6 +960,7 @@ export default function OperatorMiniAppPage() {
                                 </div>
                                 <p className="mt-1 text-xs font-semibold text-slate-500">{debtor.phone || 'telefon yo‘q'} · {debtor.source || 'manba yo‘q'} · {debtor.tariff}</p>
                                 <p className="mt-1 text-xs font-bold text-red-700">Muddat: {fmtDate(debtor.due_at)}{Number(debtor.pending) > 0 ? ` · Tekshiruvda: ${moneyText(debtor.pending, item.currency)}` : ''}</p>
+                                <DebtActions debt={{ ...debtor, currency: item.currency }} onSubmitted={debtActionSubmitted} />
                               </article>
                             )) : <p className="rounded-xl bg-white p-3 text-xs font-bold text-slate-500">Bu valyutada qarzdorlar ro‘yxati bo‘sh.</p>}
                           </div>

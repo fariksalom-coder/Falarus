@@ -1,3 +1,4 @@
+import { decideDebtDeferral } from './debtActions.js';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { pool } from '../lib/db.js';
@@ -106,6 +107,22 @@ export function operatorAdminRoutes() {
         const debts = (await pool!.query(`SELECT c.operator_id,o.name,c.currency,count(*) contracts,count(distinct c.user_id) clients,sum(c.debt) debt,sum(c.debt) FILTER(WHERE c.due_at<now()) overdue,count(*) FILTER(WHERE c.debt=0) settled,count(*) FILTER(WHERE EXISTS(SELECT 1 FROM operator_freezes f WHERE f.contract_id=c.id)) frozen FROM operator_balances c JOIN operator_accounts o ON o.id=c.operator_id WHERE ($1::bigint IS NULL OR c.operator_id=$1) AND ($2::text IS NULL OR c.source=$2) AND ($3::text IS NULL OR c.tariff=$3) AND (c.debt=0 OR c.paid>0 OR c.pending>0) GROUP BY c.operator_id,o.name,c.currency`, [op, source, tariff])).rows;
         const activity = (await pool!.query(`SELECT a.operator_id,o.name,count(*) actions,count(distinct a.user_id) clients FROM operator_audit a JOIN operator_accounts o ON o.id=a.operator_id WHERE ($1::bigint IS NULL OR a.operator_id=$1) AND ($2::date IS NULL OR a.created_at>=($2::date::timestamp AT TIME ZONE 'Asia/Tashkent')) AND ($3::date IS NULL OR a.created_at<(($3::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent')) GROUP BY a.operator_id,o.name`, [op, from || null, to || null])).rows;
         res.json({ rows: rows.slice(0, 50), more: rows.length > 50, summary, debts, activity });
+    }));
+    router.get('/deferrals', wrap(async (req: any, res: any) => {
+        const op = Number(req.query.operator) || null;
+        const status = ['pending', 'approved', 'rejected'].includes(req.query.status) ? req.query.status : null;
+        const offset = Math.max(0, Math.min(100000, Number(req.query.offset) || 0));
+        const rows = (await pool!.query(`SELECT d.*,o.name operator_name,b.user_id,b.currency,b.debt,b.pending,b.due_at,
+            u.first_name,u.last_name,u.phone,u.email FROM operator_debt_deferrals d
+            JOIN operator_accounts o ON o.id=d.operator_id JOIN operator_balances b ON b.id=d.contract_id
+            JOIN users u ON u.id=b.user_id WHERE ($1::bigint IS NULL OR d.operator_id=$1)
+            AND ($2::text IS NULL OR d.status=$2) ORDER BY d.id DESC LIMIT 51 OFFSET $3`, [op,status,offset])).rows;
+        res.set('Cache-Control', 'no-store');
+        res.json({ rows: rows.slice(0,50), more: rows.length>50 });
+    }));
+    router.post('/deferrals/:id/decision', wrap(async (req: any, res: any) => {
+        await decideDebtDeferral(Number(req.params.id), req.adminId, String(req.body.decision), req.body.reason);
+        res.json({ ok: true });
     }));
     router.post('/receipts/:id/decision', wrap(async (req: any, res: any) => {
         const uid = await decideReceipt(Number(req.params.id), req.adminId, String(req.body.decision), String(req.body.reason ?? ''));

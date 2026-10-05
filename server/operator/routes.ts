@@ -18,7 +18,7 @@ export async function reminders(now = new Date()) {
         const rows = await dueDebts(c, now);
         for (const b of rows) {
             if (!b.telegram_id) continue;
-            await enqueue(c, 'sendMessage', { chat_id: b.telegram_id, text: debtReminderText(b), reply_markup: { inline_keyboard: [[{ text: 'Mijozni ko‘rish', callback_data: `user:${b.user_id}` }]] } }, `daily-debt:${slot}:${b.id}:${b.operator_id}`, b.id);
+            await enqueue(c, 'sendMessage', { chat_id: b.telegram_id, text: debtReminderText(b), reply_markup: { inline_keyboard: [[{ text: 'Mijozni ko‘rish', callback_data: `user:${b.user_id}` }]] } }, `daily-debt:${slot}:${b.id}:${b.operator_id}:${new Date(b.due_at).toISOString()}`, b.id);
         }
     });
 }
@@ -44,6 +44,13 @@ export function operatorBotRoutes(supabase: DbClient) {
             await c.query(`UPDATE operator_outbox q SET delivered_at=now(),last_error='operator_revoked' WHERE q.delivered_at IS NULL AND q.operator_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM operator_accounts o WHERE o.id=q.operator_id AND o.active AND o.telegram_id::text=q.payload->>'chat_id')`);
             // Cancel queued debt reminders after approved settlement or operator reassignment/revocation.
             await c.query(`UPDATE operator_outbox q SET delivered_at=now() WHERE q.delivered_at IS NULL AND q.contract_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM operator_balances b JOIN operator_accounts o ON o.id=b.operator_id WHERE b.id=q.contract_id AND b.debt>0 AND (b.paid>0 OR b.pending>0) AND o.active AND o.telegram_id::text=q.payload->>'chat_id')`);
+            // Also catch old reminders queued concurrently with an approved deadline change.
+            await c.query(`UPDATE operator_outbox q SET delivered_at=now(),last_error='debt_deferred'
+                WHERE q.delivered_at IS NULL AND q.dedupe LIKE 'daily-debt:%'
+                AND EXISTS (SELECT 1 FROM operator_balances b JOIN operator_debt_deferrals d ON d.contract_id=b.id
+                    WHERE b.id=q.contract_id AND d.status='approved' AND d.requested_due_at=b.due_at
+                    AND (d.requested_due_at>now() OR q.created_at<=d.decided_at
+                        OR right(q.dedupe,24)<>to_char(b.due_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')))`);
             return (await c.query(`WITH batch AS (SELECT id FROM operator_outbox WHERE delivered_at IS NULL AND next_at<=now() ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 10) UPDATE operator_outbox q SET attempts=attempts+1,next_at=now()+interval '2 minutes' FROM batch WHERE q.id=batch.id RETURNING q.id,q.method,q.payload,q.attempts`)).rows;
         });
         res.json(rows);
