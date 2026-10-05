@@ -167,9 +167,9 @@ export function isFreeKunlikDay(dayNumber: number): boolean {
 }
 
 /** Whether a user may open lesson content for this day (API + section routes). */
-export function canEnterKunlikDayContent(dayNumber: number, subscriptionActive: boolean): boolean {
-  if (subscriptionActive) return true;
-  return isFreeKunlikDay(dayNumber);
+export function canEnterKunlikDayContent(dayNumber: number, subscriptionActive: boolean, reviewDays: readonly number[] = []): boolean {
+  if (!isValidDailyCourseDay(dayNumber)) return false;
+  return subscriptionActive || isFreeKunlikDay(dayNumber) || reviewDays.includes(dayNumber);
 }
 
 export function isValidDailyCourseDay(n: number): boolean {

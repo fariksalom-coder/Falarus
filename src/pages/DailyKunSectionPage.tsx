@@ -120,7 +120,7 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
    * qo'lda yozib yoki eski havola orqali kelgan odam ham nima uchun
    * ochilmayotganini bilishi kerak.
    */
-  if (!canEnterKunlikDayContent(dayNumber, premiumOchiq)) {
+  if (!canEnterKunlikDayContent(dayNumber, premiumOchiq, kirishHuquqi?.kunlik_review_days)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#F5F7FA] px-5 text-center">
         <span

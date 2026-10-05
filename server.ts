@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { canAccessKunlikDay } from './server/services/accessControl.service';
 import { checkOperatorAccess } from './server/operator/freeze.js';
 import { serviceAuthorized } from './server/operator/routes.js';
 import { operatorResetRoutes } from './server/operator/passwordReset.js';
@@ -65,7 +66,6 @@ import {
 import {
   DAILY_COURSE_DAY_MAX,
   DAILY_COURSE_DAY_MIN,
-  isFreeKunlikDay,
   isValidDailyCourseDay,
 } from './shared/dailyCourseDay.ts';
 import { getAccessInfo, getActiveSubscription } from './server/services/subscription.service.ts';
@@ -2482,7 +2482,7 @@ async function startServer() {
       return res.status(401).json({ error: 'Yaroqsiz foydalanuvchi' });
     }
     const access = await getAccessInfo(supabase, userId);
-    if (!access.subscription_active && !isFreeKunlikDay(dayNumber)) {
+    if (!canAccessKunlikDay(dayNumber, access)) {
       return res.status(403).json({ error: 'Obuna kerak' });
     }
     const result = await fetchDailyCourseDayBundle(supabase, dayNumber);
@@ -3048,16 +3048,16 @@ async function startServer() {
 
     const kunlikDayRaw = Number(req.body?.day_number);
     const kunlikDayNumber =
-      Number.isFinite(kunlikDayRaw) && isValidDailyCourseDay(Math.floor(kunlikDayRaw))
-        ? Math.floor(kunlikDayRaw)
+      Number.isFinite(kunlikDayRaw) && isValidDailyCourseDay(kunlikDayRaw)
+        ? kunlikDayRaw
         : null;
 
     if (!access.subscription_active) {
       const kunlikAiRoute =
         (s0 === 'check' || s0 === 'transcribe') && req.method === 'POST';
-      const freeKunlikDay =
-        kunlikDayNumber != null && isFreeKunlikDay(kunlikDayNumber);
-      if (!kunlikAiRoute || !freeKunlikDay) {
+      const accessibleKunlikDay =
+        kunlikDayNumber != null && canAccessKunlikDay(kunlikDayNumber, access);
+      if (!kunlikAiRoute || !accessibleKunlikDay) {
         return res.status(403).json({ error: 'Obuna kerak' });
       }
     }
@@ -3143,8 +3143,15 @@ async function startServer() {
         let persistTaskId: number | null = null;
 
         if (uzInline) {
+          if (!access.subscription_active && kunlikDayNumber != null && kunlikDayNumber > 0) {
+            const { data: prompt, error } = await supabase.from('daily_practice_prompts').select('id')
+              .eq('day_number',kunlikDayNumber).eq('uz_text',uzInline).limit(1).maybeSingle();
+            if (error) throw error;
+            if (!prompt) return res.status(403).json({ error: 'Faqat o‘tilgan kunning topshiriqlarini takrorlash mumkin' });
+          }
           uzText = uzInline;
         } else {
+          if (!access.subscription_active && kunlikDayNumber != null && kunlikDayNumber > 0) return res.status(403).json({ error: 'Obuna kerak' });
           const taskId = Number(body.task_id);
           if (!Number.isFinite(taskId)) return res.status(400).json({ error: 'task_id kerak' });
 

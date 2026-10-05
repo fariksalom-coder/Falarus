@@ -1,3 +1,4 @@
+import { getKunlikReviewDays } from './kunlikReview.service';
 import type { DbClient } from '../types/dbClient';
 import { resolveFreeVocabularyIds } from '../lib/freeVocabularyIds';
 import {
@@ -30,6 +31,8 @@ export type AccessInfo = {
   vocabulary_free_topic: number;
   vocabulary_free_subtopic: number;
   subscription_active: boolean;
+  /** Completed Russian-course days retained after expiry; does not grant premium. */
+  kunlik_review_days?: number[];
   patent_course_active: boolean;
   vnzh_course_active: boolean;
   vocabulary_free_topic_id?: string | null;
@@ -71,7 +74,12 @@ export function invalidateAccessCache(userId: number): void {
 }
 
 function getCachedAccess(userId: number): AccessInfo | null {
-  return accessCache.get(Number(userId));
+  const cached = accessCache.get(Number(userId));
+  if (cached?.subscription_active && cached.subscription_expires_at && Date.parse(cached.subscription_expires_at) <= Date.now()) {
+    accessCache.delete(Number(userId));
+    return null;
+  }
+  return cached;
 }
 
 function setCachedAccess(userId: number, access: AccessInfo): void {
@@ -282,21 +290,21 @@ export async function getAccessInfo(
   } catch {
     expiresAt = null;
   }
-  if (!subscriptionActive) {
-    const { data: user } = await supabase
-      .from('users')
-      .select('plan_expires_at')
-      .eq('id', uid)
-      .maybeSingle();
-    const planExpiresAt = user?.plan_expires_at;
-    if (planExpiresAt != null && planExpiresAt !== '') {
-      const expiry = new Date(planExpiresAt as string);
-      if (Number.isFinite(expiry.getTime()) && expiry > new Date()) {
-        subscriptionActive = true;
-        if (!expiresAt) expiresAt = String(planExpiresAt);
-      }
-    }
+  const { data: profile } = await supabase.from('users').select('plan_expires_at').eq('id',uid).maybeSingle();
+  const planExpiresAt = profile?.plan_expires_at;
+  if (planExpiresAt && Number.isFinite(Date.parse(String(planExpiresAt)))) {
+    if (!expiresAt) expiresAt = String(planExpiresAt);
+    if (Date.parse(String(planExpiresAt)) > Date.now()) subscriptionActive = true;
   }
+  if (subscriptionActive && (!expiresAt || Date.parse(expiresAt) <= Date.now())) {
+    const { data: payments, error } = await supabase.from('payments').select('product_code,approved_at,tariff_type')
+      .eq('user_id',uid).eq('status','approved').order('approved_at',{ascending:false}).limit(10);
+    if (error) throw error;
+    const expiries = (payments ?? []).filter(p => isRussianSubscriptionPayment(p.product_code) && approvedPaymentStillCovers(p.approved_at,p.tariff_type))
+      .map(p => new Date(Date.parse(p.approved_at) + (FALLBACK_DAYS_BY_TARIFF[String(p.tariff_type ?? '').toLowerCase()] ?? FALLBACK_DAYS_DEFAULT) * 86400000).toISOString());
+    if (expiries.length) expiresAt = expiries.sort().at(-1)!;
+  }
+  const reviewDays = await getKunlikReviewDays(supabase,uid);
 
   const { vocabulary_free_topic_id, vocabulary_free_subtopic_id } =
     await resolveFreeVocabularyIds(supabase);
@@ -306,6 +314,7 @@ export async function getAccessInfo(
     vocabulary_free_topic: VOCABULARY_FREE_TOPIC,
     vocabulary_free_subtopic: VOCABULARY_FREE_SUBTOPIC,
     subscription_active: subscriptionActive,
+    kunlik_review_days: reviewDays,
     patent_course_active: PATENT_COURSE_FREE_FOR_ALL ? true : patentCourseActive,
     vnzh_course_active: vnzhCourseActive,
     vocabulary_free_topic_id: vocabulary_free_topic_id ?? undefined,

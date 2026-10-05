@@ -1,11 +1,10 @@
 import type { AccessInfo } from './subscription.service';
-import { isFreeKunlikDay } from '../../shared/dailyCourseDay';
+import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 
 /**
  * Check if user can access a kunlik reja day (grammar, vocab, reading, speaking).
- * Free kunlik days: none (subscription required for all days).
+ * Day zero is free; completed paid days remain available for review.
  */
 export function canAccessKunlikDay(dayNumber: number, access: AccessInfo): boolean {
-  if (access.subscription_active) return true;
-  return isFreeKunlikDay(dayNumber);
+  return canEnterKunlikDayContent(dayNumber, access.subscription_active, access.kunlik_review_days);
 }

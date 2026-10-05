@@ -1,3 +1,5 @@
+import { recordKunlikReviewDay } from '../services/kunlikReview.service.js';
+import { invalidateAccessCache } from '../services/subscription.service.js';
 import { Router } from 'express';
 import type { DatabaseClient } from '../types/progress';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js';
@@ -142,33 +144,35 @@ export function createKunlikProgressRoutes(
       : defaults;
 
     const diff = mergeKunlikDayPatch(prevRow, patch);
-    if (Object.keys(diff).length === 0) return { noop: true };
+    const noop = Object.keys(diff).length === 0;
 
     const merged: KunlikDayRow = { ...prevRow, ...diff, day_number: dayNumber };
 
-    const { error } = await supabase.from('user_kunlik_day_progress').upsert(
-      {
-        user_id: userId,
-        day_number: dayNumber,
-        grammar_1: merged.grammar_1,
-        grammar_2: merged.grammar_2,
-        grammar_3: merged.grammar_3,
-        grammar_correct: merged.grammar_correct,
-        words_learned: merged.words_learned,
-        words_correct: merged.words_correct,
-        words_match: merged.words_match,
-        phrases_done: merged.phrases_done,
-        phrases_correct: merged.phrases_correct,
-        text_questions_correct: merged.text_questions_correct,
-        speaking_tasks_done: merged.speaking_tasks_done,
-        oqish_done: merged.oqish_done,
-        suhbat_done: merged.suhbat_done,
-        speaking_level: merged.speaking_level,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id,day_number' },
-    );
-    if (error) throw error;
+    if (!noop) {
+      const { error } = await supabase.from('user_kunlik_day_progress').upsert(
+        {
+          user_id: userId,
+          day_number: dayNumber,
+          grammar_1: merged.grammar_1,
+          grammar_2: merged.grammar_2,
+          grammar_3: merged.grammar_3,
+          grammar_correct: merged.grammar_correct,
+          words_learned: merged.words_learned,
+          words_correct: merged.words_correct,
+          words_match: merged.words_match,
+          phrases_done: merged.phrases_done,
+          phrases_correct: merged.phrases_correct,
+          text_questions_correct: merged.text_questions_correct,
+          speaking_tasks_done: merged.speaking_tasks_done,
+          oqish_done: merged.oqish_done,
+          suhbat_done: merged.suhbat_done,
+          speaking_level: merged.speaking_level,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,day_number' },
+      );
+      if (error) throw error;
+    }
 
     const { data: promptsRows, error: promptsErr } = await supabase
       .from('daily_practice_prompts')
@@ -193,6 +197,14 @@ export function createKunlikProgressRoutes(
 
     const wasFullyComplete = isKunlikDayRowFullyComplete(slice(prevRow), practicePromptCountByDay);
     const nowFullyComplete = isKunlikDayRowFullyComplete(slice(merged), practicePromptCountByDay);
+    if (dayNumber > 0 && nowFullyComplete) {
+      const access = await getAccessForRequest(supabase,userId);
+      if (access.subscription_active && !access.golden) {
+        await recordKunlikReviewDay(supabase,userId,dayNumber);
+        invalidateAccessCache(userId);
+      }
+    }
+    if (noop) return { noop: true };
     if (dayNumber > 0) await applyKunlikDayCompletionSideEffects(supabase, userId, wasFullyComplete, nowFullyComplete);
 
     // Recompute XP for this user so the leaderboard/level reflect the update.
@@ -724,7 +736,8 @@ export function createKunlikProgressRoutes(
       const KERAK = 10;
       const boshlanish = Math.max(1, dayNumber - 6);
 
-      const mcqs = await loadMcqRows(boshlanish, dayNumber);
+      const access = await getAccessForRequest(supabase,userId);
+      const mcqs = (await loadMcqRows(boshlanish, dayNumber)).filter(m => accessControlService.canAccessKunlikDay(Number(m.day_number),access));
       const wrong = await loadWrongAnswers(userId, mcqs.map((m) => Number(m.id)));
 
       const xatolar = mcqs.filter((m) => wrong.has(Number(m.id)));

@@ -35,3 +35,17 @@ describe('kunlik free day access', () => {
     assert.strictEqual(canAccessKunlikDay(182, premium), true);
   });
 });
+
+describe('expired premium review access', () => {
+  const expired = { ...freeAccess, kunlik_review_days: Array.from({length:90},(_,i)=>i+1) };
+  it('retains days 1–90 and blocks new day 91 and day 182', () => {
+    for(let day=1;day<=90;day++) assert.equal(canAccessKunlikDay(day,expired),true);
+    assert.equal(canAccessKunlikDay(91,expired),false);
+    assert.equal(canAccessKunlikDay(182,expired),false);
+    assert.equal(expired.subscription_active,false);
+  });
+  it('does not unlock gaps or invalid days even with an active subscription', () => {
+    assert.equal(canAccessKunlikDay(2,{...freeAccess,kunlik_review_days:[1,3]}),false);
+    for(const day of [-1,0.5,183,NaN]) assert.equal(canAccessKunlikDay(day,{...expired,subscription_active:true}),false);
+  });
+});

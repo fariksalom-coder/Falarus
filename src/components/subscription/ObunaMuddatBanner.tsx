@@ -24,21 +24,21 @@ import { useLocale } from '../../context/LocaleContext';
 const MATNLAR = {
   uz: {
     tugadi: 'Obunangiz tugadi',
-    tugadiIzoh: 'Darslarni davom ettirish uchun obunani yangilang. Progressingiz saqlanib turibdi.',
+    tugadiIzoh: 'Yangi kunlar uchun obunani yangilang. O‘tilgan kunlarni qayta ishlash imkoniyati va progressingiz saqlanadi.',
     qoldi: (kun: number) => (kun === 1 ? 'Obunangiz ertaga tugaydi' : `Obunangizga ${kun} kun qoldi`),
     qoldiIzoh: 'Darslaringiz uzilib qolmasligi uchun obunani yangilab qo‘ying.',
     tugma: 'Obunani yangilash',
   },
   ru: {
     tugadi: 'Подписка закончилась',
-    tugadiIzoh: 'Чтобы продолжить занятия, продлите подписку. Ваш прогресс сохранён.',
+    tugadiIzoh: 'Продлите подписку для новых дней. Пройденные дни доступны для повторения, прогресс сохранён.',
     qoldi: (kun: number) => (kun === 1 ? 'Подписка заканчивается завтра' : `До конца подписки ${kun} дн.`),
     qoldiIzoh: 'Продлите подписку, чтобы занятия не прервались.',
     tugma: 'Продлить подписку',
   },
   en: {
     tugadi: 'Your subscription has ended',
-    tugadiIzoh: 'Renew to continue your lessons. Your progress is saved.',
+    tugadiIzoh: 'Renew to unlock new days. Completed days remain available for review and your progress is saved.',
     qoldi: (kun: number) => (kun === 1 ? 'Your subscription ends tomorrow' : `${kun} days left on your subscription`),
     qoldiIzoh: 'Renew now so your lessons are not interrupted.',
     tugma: 'Renew subscription',

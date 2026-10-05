@@ -39,7 +39,7 @@ function normalizeAccessForExpiredPlan(
 ): AccessInfo {
   // OLTIN A'ZOda tarif muddati degan tushuncha yo'q.
   if (access.golden) return access;
-  if (!isExpiredByProfile(planExpiresAt)) return access;
+  if (!isExpiredByProfile(planExpiresAt) && !isExpiredByProfile(access.subscription_expires_at)) return access;
   return {
     ...access,
     subscription_active: false,
@@ -97,6 +97,14 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
       .catch(() => setAccessState(defaultAccess))
       .finally(() => setAccessLoaded(true));
   }, [token, user?.planExpiresAt]);
+
+  useEffect(() => {
+    if (!access?.subscription_active || access.golden || !access.subscription_expires_at) return;
+    const expiry = Date.parse(access.subscription_expires_at);
+    if (!Number.isFinite(expiry)) return;
+    const timer = window.setTimeout(() => void refreshAccess(), Math.max(0, Math.min(86400000, expiry - Date.now() + 50)));
+    return () => window.clearTimeout(timer);
+  }, [access, refreshAccess]);
 
   return (
     <AccessContext.Provider value={{ access, accessLoaded, refreshAccess }}>

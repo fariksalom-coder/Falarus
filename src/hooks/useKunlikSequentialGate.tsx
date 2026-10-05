@@ -60,8 +60,9 @@ export function useKunlikSequentialGate(dayNumber: number, enabled = true) {
     [reviewVisits, kunlikRows, practicePromptCountByDay, vocabTick],
   );
 
-  const sequentiallyAllowed = oltin || dayNumber <= maxSequentialDay;
-  const contentAllowed = oltin || canEnterKunlikDayContent(dayNumber, premium);
+  const retainedReview = Boolean(access?.kunlik_review_days?.includes(dayNumber));
+  const sequentiallyAllowed = oltin || retainedReview || dayNumber <= maxSequentialDay;
+  const contentAllowed = oltin || canEnterKunlikDayContent(dayNumber, premium, access?.kunlik_review_days);
   const dayAllowed = sequentiallyAllowed && contentAllowed;
 
   const bootstrapReady = Boolean(token && kunlikLoaded && accessLoaded);

@@ -1,0 +1,80 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { PGlite } from '@electric-sql/pglite';
+import { createPostgresFacade } from '../server/lib/postgresFacade';
+import { getAccessInfo, invalidateAccessCache } from '../server/services/subscription.service';
+import { canAccessKunlikDay } from '../server/services/accessControl.service';
+import { createKunlikProgressRoutes } from '../server/routes/kunlikProgressRoutes';
+import { createAccessRoutes } from '../server/routes/accessRoutes';
+import { recordKunlikReviewDay } from '../server/services/kunlikReview.service';
+
+test('expired premium: retain completed days, deny new days, preserve review through repeats and content edits', async () => {
+ const db=await PGlite.create();
+ const facade=createPostgresFacade({query:async(sql:string,args:any[]=[])=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length||r.affectedRows||0};}} as any);
+ const migration=await readFile(new URL('../db/migrations/202_kunlik_completed_day_review.sql',import.meta.url),'utf8');
+ try {
+  await db.exec(`CREATE TABLE users(id bigint PRIMARY KEY,is_golden boolean DEFAULT false,access_frozen_at timestamptz,plan_expires_at timestamptz);
+   CREATE TABLE subscriptions(id bigserial PRIMARY KEY,user_id bigint,plan_type text,started_at timestamptz,expires_at timestamptz,status text);
+   CREATE TABLE payments(id bigserial PRIMARY KEY,user_id bigint,product_code text,approved_at timestamptz,tariff_type text,status text,payment_proof_url text,amount numeric,currency text);
+   CREATE TABLE daily_practice_prompts(id bigserial PRIMARY KEY,day_number int,uz_text text);
+   CREATE TABLE vocabulary_subtopics(id text,topic_id text); CREATE TABLE vocabulary_topics(id text);
+   CREATE TABLE user_kunlik_day_progress(user_id bigint,day_number int,grammar_1 boolean DEFAULT true,grammar_2 boolean DEFAULT true,grammar_3 boolean DEFAULT true,words_match boolean DEFAULT true,oqish_done boolean DEFAULT true,suhbat_done boolean DEFAULT true,speaking_level int DEFAULT 1,
+    grammar_correct int DEFAULT 0,words_learned int DEFAULT 0,words_correct int DEFAULT 0,phrases_done boolean DEFAULT false,phrases_correct int DEFAULT 0,text_questions_correct int DEFAULT 0,speaking_tasks_done int DEFAULT 0,updated_at timestamptz DEFAULT now(),PRIMARY KEY(user_id,day_number));
+   CREATE TABLE user_text_question_answers(user_id bigint,question_id bigint,chosen_index int,correct boolean,PRIMARY KEY(user_id,question_id));
+   CREATE TABLE daily_text_questions(id bigserial PRIMARY KEY,day_number int,question_ru text,option_a text,option_b text,option_c text,option_d text,correct_index int,sort_order int);
+   INSERT INTO users VALUES(9001,false,null,now()-interval '1 day'),(9002,false,null,null),(9003,false,now(),now()-interval '1 day'),(9004,true,null,null),(9005,false,null,null),(9006,false,null,null),(9007,false,null,null);
+   INSERT INTO subscriptions(user_id,plan_type,started_at,expires_at,status) VALUES(9001,'three_month',now()-interval '91 days',now()-interval '1 day','expired'),(9005,'three_month',now()-interval '91 days',now()-interval '1 day','expired');
+   INSERT INTO payments(user_id,product_code,approved_at,tariff_type,status) VALUES(9006,'patent',now()-interval '91 days','three_month','approved'),(9007,'russian',now()-interval '91 days','three_month','approved');
+   INSERT INTO daily_practice_prompts(day_number,uz_text) SELECT n,'Prompt' FROM generate_series(1,182)n;
+   INSERT INTO user_kunlik_day_progress(user_id,day_number) SELECT 9001,n FROM generate_series(1,90)n;
+   INSERT INTO user_kunlik_day_progress(user_id,day_number,suhbat_done) VALUES(9001,91,false);
+   INSERT INTO user_kunlik_day_progress(user_id,day_number) VALUES(9002,1),(9003,1),(9004,1),(9005,1),(9006,1),(9007,1);
+   INSERT INTO daily_text_questions(day_number,question_ru,option_a,option_b,option_c,option_d,correct_index,sort_order) VALUES(90,'Question','A','B','C','D',0,0),(91,'New question','A','B','C','D',0,0);`);
+  await db.exec(migration);
+  await db.exec(migration);
+  const access=await getAccessInfo(facade,9001);
+  assert.equal(access.subscription_active,false);
+  assert.deepEqual(access.kunlik_review_days,Array.from({length:90},(_,i)=>i+1));
+  assert.equal(canAccessKunlikDay(90,access),true);
+  assert.equal(canAccessKunlikDay(91,access),false);
+  assert.deepEqual((await getAccessInfo(facade,9002)).kunlik_review_days,[],'no premium history grants no review');
+  assert.equal(canAccessKunlikDay(1,await getAccessInfo(facade,9003)),false,'admin freeze denies retained review');
+  assert.equal((await getAccessInfo(facade,9004)).golden,true);
+  assert.deepEqual((await getAccessInfo(facade,9005)).kunlik_review_days,[1],'expired subscription history is backfilled');
+  assert.deepEqual((await getAccessInfo(facade,9006)).kunlik_review_days,[],'another product payment is not Russian premium');
+  assert.deepEqual((await getAccessInfo(facade,9007)).kunlik_review_days,[1],'expired approved Russian payment is backfilled');
+  const authenticate=(_req:any,_res:any,next:any)=>next();
+  const router=createKunlikProgressRoutes(facade,authenticate) as any;
+  const invoke=(path:string,req:any)=>new Promise<any>((resolve,reject)=>{
+    const layer=router.stack.find((x:any)=>x.route?.path===path);
+    layer.route.stack.at(-1).handle({userId:9001,body:{},...req},{json:(data:any)=>resolve({status:200,data}),status:(status:number)=>({json:(data:any)=>resolve({status,data})})},reject);
+  });
+  assert.equal((await invoke('/kunlik-progress/:dayNumber/text-questions/start',{params:{dayNumber:'90'}})).status,200);
+  assert.equal((await invoke('/kunlik-progress/:dayNumber/text-questions/start',{params:{dayNumber:'91'}})).status,403,'direct API access cannot open a new day');
+  assert.equal((await invoke('/kunlik-progress/:dayNumber',{params:{dayNumber:'91'},body:{suhbat_done:true,review_unlocked:true}})).status,403,'expired user cannot finish or unlock another day');
+  assert.equal((await invoke('/kunlik-progress/:dayNumber',{params:{dayNumber:'90'},body:{grammar_1:false,speaking_level:0}})).status,200);
+  const row=(await db.query<any>('SELECT grammar_1,speaking_level,review_unlocked FROM user_kunlik_day_progress WHERE user_id=9001 AND day_number=90')).rows[0];
+  assert.deepEqual(row,{grammar_1:true,speaking_level:1,review_unlocked:true},'repeat cannot reduce progress or remove review');
+  await db.exec("UPDATE users SET plan_expires_at=now()+interval '1 day' WHERE id=9001; UPDATE user_kunlik_day_progress SET suhbat_done=true WHERE user_id=9001 AND day_number=91");
+  invalidateAccessCache(9001);
+  assert.equal((await invoke('/kunlik-progress/:dayNumber',{params:{dayNumber:'91'},body:{suhbat_done:true}})).status,200,'completion retry records retained access');
+  assert.equal((await db.query<any>('SELECT review_unlocked FROM user_kunlik_day_progress WHERE user_id=9001 AND day_number=91')).rows[0].review_unlocked,true);
+  await db.exec("UPDATE users SET plan_expires_at=now()-interval '1 minute' WHERE id=9001; INSERT INTO daily_practice_prompts(day_number,uz_text) VALUES(90,'New material');");
+  invalidateAccessCache(9001);
+  assert.equal(canAccessKunlikDay(90,await getAccessInfo(facade,9001)),true,'later content edits cannot remove retained access');
+  await db.exec("UPDATE users SET plan_expires_at=now()+interval '800 milliseconds' WHERE id=9001");
+  invalidateAccessCache(9001);
+  assert.equal((await getAccessInfo(facade,9001)).subscription_active,true);
+  await new Promise(resolve=>setTimeout(resolve,900));
+  assert.equal((await getAccessInfo(facade,9001)).subscription_active,false,'warm access cache cannot keep premium past its deadline');
+  await recordKunlikReviewDay(facade,9001,0);
+  const accessRouter=createAccessRoutes(facade,authenticate) as any;
+  const response=await new Promise<any>((resolve,reject)=>accessRouter.stack.find((x:any)=>x.route?.path==='/user/access').route.stack.at(-1).handle({userId:9001},{json:resolve,status:()=>({json:reject})},reject));
+  assert.equal(response.subscription_active,false);
+  assert.ok(response.kunlik_review_days.includes(90));
+ } finally {
+  for(let id=9001;id<=9007;id++)invalidateAccessCache(id);
+  await db.close();
+ }
+});

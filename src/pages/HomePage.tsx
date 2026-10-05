@@ -140,6 +140,7 @@ function QuestCard({
   index,
   day,
   premium,
+  reviewDays,
   onPurchaseRequired,
   wide = false,
   t,
@@ -154,6 +155,7 @@ function QuestCard({
    * QATOR bo'lib chiziladi. Yolg'iz qolgan kvadrat yonida bo'shliq qoldirar
    * va bosh sahifani 188px ga uzaytirardi; qator esa 72px.
    */
+  reviewDays?: readonly number[];
   wide?: boolean;
   t: TranslateFn;
 }) {
@@ -161,7 +163,7 @@ function QuestCard({
   const done = slot.state === 'done';
   const active = slot.state === 'active';
   const locked = slot.state === 'locked';
-  const requiresPurchase = !canEnterKunlikDayContent(day, premium);
+  const requiresPurchase = !canEnterKunlikDayContent(day, premium, reviewDays);
 
   const emoji = slot.id === 'grammar'
     ? '📖'
@@ -424,7 +426,7 @@ export default function HomePage() {
   const slots = row ? buildQuestSlots(row, promptCount, oltin) : [];
   const done = slots.filter((slot) => slot.state === 'done').length;
   const showFreeLimitCta =
-    !premium && displayDay > FREE_KUNLIK_DAY_LIMIT;
+    !canEnterKunlikDayContent(displayDay, premium || oltin, access?.kunlik_review_days);
 
 
   return (
@@ -474,6 +476,7 @@ export default function HomePage() {
                   index={index + 1}
                   day={displayDay}
                   premium={premium}
+                  reviewDays={access?.kunlik_review_days}
                   onPurchaseRequired={() => setFreeLimitModalOpen(true)}
                   wide={index === slots.length - 1 && slots.length % 2 === 1}
                   t={t}

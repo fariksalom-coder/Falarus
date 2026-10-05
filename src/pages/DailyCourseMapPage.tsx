@@ -61,8 +61,8 @@ export default function DailyCourseMapPage() {
 
   const openDay = (day: number) => {
     if (!loaded || !accessLoaded) return;
-    if (!golden && !canEnterKunlikDayContent(day, premium)) { setPaywall(true); return; }
-    if (day > currentDay && !golden && !completed.has(day)) {
+    if (!golden && !canEnterKunlikDayContent(day, premium, access?.kunlik_review_days)) { setPaywall(true); return; }
+    if (day > currentDay && !golden && !access?.kunlik_review_days?.includes(day) && !completed.has(day)) {
       setToast(`Bu kunga hali yetib bormadingiz. Hozir Kun ${currentDay}.`);
       return;
     }
@@ -88,6 +88,7 @@ export default function DailyCourseMapPage() {
         <span className="journey-tariff-copy"><strong>Tariflarni ko'rish</strong><small>1 / 3 / 6 oy · Rahmat orqali to'lov</small></span>
         <span className="journey-tariff-arrow"><ArrowRight size={18} /></span>
       </button>}
+      {!premium && Boolean(access?.kunlik_review_days?.length) && <p role="status" className="mx-4 rounded-xl bg-white p-3 text-sm text-slate-700">Obunangiz tugadi. O‘tilgan {access!.kunlik_review_days!.length} kunni qayta ishlashingiz mumkin. Yangi kunlar uchun obunani yangilang.</p>}
       <main className="journey-road" aria-label="Yo'l xaritasi" style={{ height: dayY(TOTAL_DAYS) + 150 }}>
         <div className="journey-trial" ref={focusDay === 0 ? currentRef : undefined}>
           <h2>Sinov darsi</h2>
@@ -96,7 +97,7 @@ export default function DailyCourseMapPage() {
         </div>
         {DAYS.map(day => {
           const done = completed.has(day);
-          const available = golden || (premium && (day <= currentDay || done));
+          const available = golden || Boolean(access?.kunlik_review_days?.includes(day)) || (premium && (day <= currentDay || done));
           const active = available && day === currentDay;
           const x = dayX(day), y = dayY(day);
           const prevX = dayX(day - 1);
