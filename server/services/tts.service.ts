@@ -145,6 +145,8 @@ const LIVE_TIMEOUT_MS = Number(process.env.TTS_LIVE_TIMEOUT_MS || 30_000);
  */
 const OHANGLAR = {
   sozlar: { model: MODEL, voice: VOICE, instructions: RU_KORSATMA },
+  'dialogue-female': { model: MODEL, voice: 'nova', instructions: RU_KORSATMA },
+  'dialogue-male': { model: MODEL, voice: 'onyx', instructions: RU_KORSATMA },
   ustoz: {
     model: process.env.OPENAI_TTS_USTOZ_MODEL || 'tts-1-hd',
     voice: process.env.OPENAI_TTS_USTOZ_VOICE || 'nova',
@@ -504,8 +506,8 @@ function cacheKalit(text: string, speed: number, ohang: TtsOhang, manba: Manba):
       .digest('hex');
   }
   if (manba === 'openai') {
-    const { model, voice } = OHANGLAR[ohang];
-    return createHash('sha256').update(`${model}|${voice}|${speed}|${text}`).digest('hex');
+    const { model, voice, instructions } = OHANGLAR[ohang];
+    return createHash('sha256').update(`${model}|${voice}|${speed}|${text}${ohang.startsWith('dialogue-') ? '|dialogue-v1|' + instructions : ''}`).digest('hex');
   }
   if (manba === 'speechify') {
     return createHash('sha256')
@@ -846,7 +848,7 @@ export async function speak(
     throw err;
   }
 
-  const ohang: TtsOhang = opts.ohang === 'ustoz' ? 'ustoz' : 'sozlar';
+  const ohang: TtsOhang = opts.ohang && Object.hasOwn(OHANGLAR, opts.ohang) ? opts.ohang : 'sozlar';
   /*
    * Quyi chegara `sozlar` uchun modelga qarab ko'tariladi (izohga qarang).
    * Kesh kalitiga AYNAN shu yakuniy qiymat kiradi, shuning uchun tuzatish

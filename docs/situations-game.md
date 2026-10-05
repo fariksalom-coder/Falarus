@@ -55,6 +55,12 @@ translation toggle, completion sheet and resume at mobile widths and short heigh
 
 ## Automatic Russian speech
 
+Partner lines use the female `nova` voice (`dialogue-female`); accepted learner
+replies use the male `onyx` voice (`dialogue-male`). Replaying a message preserves
+its speaker. Both client and server caches separate the voice profiles, including
+when the two speakers say exactly the same phrase. Other TTS profiles retain
+their existing voices.
+
 The game uses the existing authenticated `/api/tts` service, its native Russian
 pronunciation instructions and server audio cache, at speed 1. Incoming partner
 lines and server-accepted learner replies play through a sequential queue.

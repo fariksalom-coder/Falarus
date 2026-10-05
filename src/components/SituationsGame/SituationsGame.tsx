@@ -257,12 +257,12 @@ export default function SituationsGame({data,token,onExit,onPremium}: {data:Situ
                     <div className={s.bubblePartner}>
                       <span>{m.ru}</span>
                       {showUz && m.uz && <span className={s.translation}>{m.uz}</span>}
-                      <button type="button" className={s.voiceReplay} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru)}><Volume2 size={17}/> Tinglash</button>
+                      <button type="button" className={s.voiceReplay} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru,m.from)}><Volume2 size={17}/> Tinglash</button>
                     </div>
                   </div>
                 ) : (
                   <div key={i} className={s.rowMe}>
-                    <div className={s.bubbleMe}>{m.ru}<button type="button" className={s.voiceReplay} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru)}><Volume2 size={17}/> Tinglash</button></div>
+                    <div className={s.bubbleMe}>{m.ru}<button type="button" className={s.voiceReplay} aria-label={`Прослушать: ${m.ru}`} onClick={()=>speech.repeat(m.ru,m.from)}><Volume2 size={17}/> Tinglash</button></div>
                   </div>
                 ),
               )}

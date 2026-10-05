@@ -16,6 +16,13 @@ test('partner, correct answer and next partner play sequentially; cancellation i
   queue.clear();queue.enqueue('Новый диалог');callbacks[2].done();assert.equal(played.length,4);assert.equal(stopped,1);
   queue.enqueue('Следующая реплика');callbacks[3].fail();assert.equal(errors,1);assert.equal(played[4],'Следующая реплика');
 });
+test('queue retains the speaker voice across chunks and alternating replies',()=>{
+  const voices:string[]=[];const callbacks:(()=>void)[]=[];
+  const queue=new DialogueSpeechQueue((_text,done,_fail,voice)=>{voices.push(voice);callbacks.push(done);},()=>{},()=>{});
+  queue.enqueue('Здравствуйте!','dialogue-female');queue.enqueue('Да, спасибо. '.repeat(30),'dialogue-male');queue.enqueue('До свидания!','dialogue-female');
+  for(let i=0;i<callbacks.length;i++)callbacks[i]();
+  assert.equal(voices[0],'dialogue-female');assert.equal(voices.at(-1),'dialogue-female');assert.ok(voices.slice(1,-1).every(v=>v==='dialogue-male'));assert.ok(voices.length>3);
+});
 test('server audio reports autoplay restriction, resumes on a gesture and ignores cancelled playback',async(t)=>{
   const global=globalThis as any;
   const old={fetch:global.fetch,window:global.window,Audio:global.Audio};

@@ -2994,7 +2994,8 @@ async function startServer() {
       const speed = req.query.speed ? Number(req.query.speed) : undefined;
       // `ohang=ustoz` — doskadagi dars uchun muloyimroq ovoz. Boshqa har qanday
       // qiymatda lug'at kartochkalarining eski ovozi o'zgarishsiz qoladi.
-      const ohang = req.query.ohang === 'ustoz' ? ('ustoz' as const) : undefined;
+      const profile = req.query.ohang;
+      const ohang = profile === 'ustoz' || profile === 'dialogue-female' || profile === 'dialogue-male' ? profile : undefined;
       const { speak } = await import('./server/services/tts.service.js');
       // Gemini ovozi ffmpeg bo'lmagan serverda WAV bo'lib qaytadi, shuning
       // uchun tur qat'iy yozilmaydi — xizmat qaytargani ishlatiladi.

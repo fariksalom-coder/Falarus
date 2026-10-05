@@ -112,7 +112,7 @@ export type SpeakOptions = {
    * `ustoz` — doskadagi dars ovozi: muloyimroq va tiniqroq. Berilmasa lug'at
    * kartochkalarining odatdagi ovozi ishlatiladi.
    */
-  ohang?: 'ustoz';
+  ohang?: 'ustoz' | 'dialogue-female' | 'dialogue-male';
   /**
    * Server ovozi kelmasa brauzerning o'z sintezatori (ROBOT ovoz) ishlatilsinmi.
    *
