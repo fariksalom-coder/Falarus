@@ -1274,6 +1274,8 @@ async function startServer() {
   // O'yinlar: to'lov qilmaganlar uchun 3 ta bepul ochish
   const { createGameRoutes } = await import('./server/routes/gameRoutes');
   app.use('/api', createGameRoutes(supabase, authenticate));
+  const { createSituationsRoutes } = await import('./server/routes/situationsRoutes');
+  app.use('/api/games/dialogue', createSituationsRoutes(supabase, authenticate));
 
   // Teacher marketplace (public list, teacher cabinet, trial lessons, chat, reviews)
   const { createTeacherRoutes } = await import('./server/routes/teacherRoutes');

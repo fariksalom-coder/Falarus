@@ -202,6 +202,7 @@ function AppRoutes() {
             <Route path="kunlik-reja/kun/:dayNum/:section" element={renderLazyPage('./pages/DailyKunSectionPage.tsx')} />
             <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
             <Route path="games" element={renderLazyPage('./pages/GamesPage.tsx')} />
+            <Route path="games/dialogue" element={renderLazyPage('./pages/SituationsGamePage.tsx')} />
             <Route path="games/dictation" element={renderLazyPage('./pages/DictationPage.tsx')} />
             <Route path="games/dictation/:topicId" element={<GameGate game="dictation">{renderLazyPage('./pages/DictationPage.tsx')}</GameGate>} />
             {/*

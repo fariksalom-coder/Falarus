@@ -152,6 +152,12 @@ export default function GamesPage() {
           qo'shilsa sahifa cho'zilib ketardi.
         */}
         <div className="mt-[18px] grid grid-cols-2 gap-3 md:gap-5 lg:grid-cols-3">
+          <button type="button" onClick={()=>navigate(token?'/games/dialogue':'/login',token?undefined:{state:{from:'/games/dialogue'}})} onMouseEnter={()=>prefetchRoutePath('/games/dialogue')} onFocus={()=>prefetchRoutePath('/games/dialogue')} className="relative flex flex-col overflow-hidden rounded-[22px] bg-[#2563eb] p-4 text-left shadow-lg transition active:scale-[0.97]" aria-label="Диалоги — игра с выбором ответа">
+            <img src="/situations-game/avatars/passerby.svg" alt="" className="h-[46px] w-[46px] rounded-[15px]"/>
+            <p className="mt-3 text-[16px] font-black text-white">Диалоги</p>
+            <p className="mt-1 text-[11.5px] font-bold text-white/80">Vaziyatlar · Ruscha suhbatlashing</p>
+            <span className="mt-3 text-[11px] font-bold text-white">11 mavzu · 88 vaziyat</span>
+          </button>
           {/* So'zni yig'ing — bosqichlar xaritasi */}
           <button
             type="button"

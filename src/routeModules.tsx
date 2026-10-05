@@ -81,6 +81,7 @@ const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
   '/games/word-swipe': ['./pages/WordSwipeRedirectPage.tsx', './pages/WordSwipeGamePage.tsx'],
   '/games/word-swipe/xarita': ['./pages/WordSwipeMapPage.tsx', './pages/WordSwipeGamePage.tsx'],
   '/games/fel-ustasi': ['./pages/VerbConjugationGamePage.tsx'],
+  '/games/dialogue': ['./pages/SituationsGamePage.tsx'],
   '/teachers': ['./pages/TeachersPage.tsx', './pages/TeacherProfilePage.tsx'],
   '/teacher-cabinet': ['./pages/TeacherPanelPage.tsx'],
   '/help': ['./pages/HelpPage.tsx'],

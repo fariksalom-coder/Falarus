@@ -1,0 +1,205 @@
+{
+  "turn_plan": [3, 5, 7, 9, 12, 15, 19, 24],
+  "topics": [
+    {"slug": "street", "icon": "🧭", "ru": "На улице: ищу дорогу", "uz": "Ko'chada: yo'l qidirish", "situations": [
+      ["Где метро?", "Metro qayerda?"],
+      ["Ищу продуктовый магазин", "Oziq-ovqat do'konini qidiryapman"],
+      ["Как пройти к остановке", "Bekatga qanday borsa bo'ladi"],
+      ["Ищу дом по адресу", "Manzil bo'yicha uyni qidiryapman"],
+      ["Заблудился, телефон разрядился", "Adashib qoldim, telefonim o'chib qoldi"],
+      ["Ищу миграционный центр", "Migratsiya markazini qidiryapman"],
+      ["Спрашиваю дорогу у полицейского", "Politsiyachidan yo'l so'rayman"],
+      ["Ищу стройку: бригадир объясняет дорогу", "Qurilishni qidiryapman: brigadir yo'l ko'rsatadi"]
+    ]},
+    {"slug": "transport", "icon": "🚇", "ru": "Транспорт: метро, автобус, такси", "uz": "Transport: metro, avtobus, taksi", "situations": [
+      ["Покупаю карту «Тройка»", "«Troyka» kartasini sotib olaman"],
+      ["Где мне выходить?", "Qayerda tushishim kerak?"],
+      ["Оплата проезда в автобусе", "Avtobusda yo'l haqini to'lash"],
+      ["Вызываю такси", "Taksi chaqiraman"],
+      ["Разговор с таксистом", "Taksichi bilan suhbat"],
+      ["Сел не на тот автобус", "Boshqa avtobusga o'tirib qoldim"],
+      ["Пересадка в метро", "Metroda boshqa liniyaga o'tish"],
+      ["Контролёр в электричке", "Elektrichkada nazoratchi"]
+    ]},
+    {"slug": "shop", "icon": "🛒", "ru": "В магазине", "uz": "Do'konda", "situations": [
+      ["Где здесь хлеб?", "Non qayerda?"],
+      ["На кассе", "Kassada"],
+      ["Покупаю продукты на неделю", "Bir haftalik oziq-ovqat olaman"],
+      ["Ищу свой размер одежды", "O'z o'lchamimdagi kiyimni qidiryapman"],
+      ["Примеряю обувь", "Poyabzal kiyib ko'raman"],
+      ["Скидки и акции", "Chegirmalar va aksiyalar"],
+      ["Возврат товара", "Tovarni qaytarish"],
+      ["Покупаю телефон", "Telefon sotib olaman"]
+    ]},
+    {"slug": "market", "icon": "🍉", "ru": "На рынке", "uz": "Bozorda", "situations": [
+      ["Сколько стоит?", "Qancha turadi?"],
+      ["Покупаю фрукты на вес", "Mevani tortib olaman"],
+      ["Торгуюсь с продавцом", "Sotuvchi bilan savdolashaman"],
+      ["Покупаю мясо", "Go'sht sotib olaman"],
+      ["Мне неправильно дали сдачу", "Qaytimni noto'g'ri berishdi"],
+      ["Покупаю продукты для плова", "Osh uchun masalliq olaman"],
+      ["Покупаю зимнюю куртку", "Qishki kurtka sotib olaman"],
+      ["Продавец обманул с весом", "Sotuvchi tarozida aldadi"]
+    ]},
+    {"slug": "bank", "icon": "🏦", "ru": "В банке", "uz": "Bankda", "situations": [
+      ["Обмен валюты", "Valyuta ayirboshlash"],
+      ["Отправляю деньги домой", "Uyga pul jo'nataman"],
+      ["Получаю перевод", "Pul o'tkazmasini olaman"],
+      ["Открываю банковскую карту", "Bank kartasini ochaman"],
+      ["Банкомат не вернул карту", "Bankomat kartani qaytarmadi"],
+      ["Забыл PIN-код", "PIN-kodni unutdim"],
+      ["Перевод не пришёл", "O'tkazma kelmadi"],
+      ["Карту заблокировали", "Kartani bloklashdi"]
+    ]},
+    {"slug": "post", "icon": "📮", "ru": "На почте", "uz": "Pochtada", "situations": [
+      ["Покупаю конверт и марки", "Konvert va marka olaman"],
+      ["Отправляю письмо", "Xat jo'nataman"],
+      ["Получаю посылку", "Posilka olaman"],
+      ["Заполняю бланк", "Blanka to'ldiraman"],
+      ["Отправляю посылку в Узбекистан", "O'zbekistonga posilka jo'nataman"],
+      ["Оплачиваю коммунальные услуги", "Kommunal xizmatlarni to'layman"],
+      ["Получаю заказное письмо", "Buyurtma xatni olaman"],
+      ["Посылка потерялась", "Posilka yo'qolib qoldi"]
+    ]},
+    {"slug": "airport", "icon": "✈️", "ru": "В аэропорту", "uz": "Aeroportda", "situations": [
+      ["Где регистрация?", "Ro'yxatdan o'tish qayerda?"],
+      ["Регистрация на рейс", "Reysga ro'yxatdan o'tish"],
+      ["Досмотр", "Ko'rikdan o'tish"],
+      ["Перевес багажа", "Yuk og'irligi oshib ketdi"],
+      ["Паспортный контроль", "Pasport nazorati"],
+      ["Рейс задержали", "Reys kechiktirildi"],
+      ["Потерялся багаж", "Yuk yo'qolib qoldi"],
+      ["Опоздал на самолёт", "Samolyotga kechikdim"]
+    ]},
+    {"slug": "train", "icon": "🚆", "ru": "На вокзале и в поезде", "uz": "Vokzalda va poyezdda", "situations": [
+      ["Покупаю билет", "Chipta sotib olaman"],
+      ["Ищу платформу", "Platformani qidiryapman"],
+      ["Ищу своё место в вагоне", "Vagonda joyimni qidiryapman"],
+      ["Разговор с проводником", "Provodnik bilan suhbat"],
+      ["Попутчик в купе", "Kupedagi hamroh"],
+      ["Поезд опаздывает", "Poyezd kechikyapti"],
+      ["Билет на поезд в Ташкент", "Toshkentga poyezd chiptasi"],
+      ["Потерял билет", "Chiptamni yo'qotib qo'ydim"]
+    ]},
+    {"slug": "migration", "icon": "🪪", "ru": "Миграционный центр и патент", "uz": "Migratsiya markazi va patent", "situations": [
+      ["Где здесь очередь?", "Navbat qayerda?"],
+      ["Дактилоскопия", "Barmoq izini topshirish"],
+      ["Медосмотр", "Tibbiy ko'rik"],
+      ["Экзамен по русскому языку", "Rus tili imtihoni"],
+      ["Подаю документы на патент", "Patentga hujjat topshiraman"],
+      ["Оплата патента", "Patent to'lovi"],
+      ["Продление регистрации", "Registratsiyani uzaytirish"],
+      ["Ошибка в документах", "Hujjatlarda xato"]
+    ]},
+    {"slug": "job-search", "icon": "💼", "ru": "Поиск работы", "uz": "Ish qidirish", "situations": [
+      ["Звоню по объявлению", "E'lon bo'yicha qo'ng'iroq qilaman"],
+      ["Спрашиваю о зарплате", "Maosh haqida so'rayman"],
+      ["Собеседование: рассказ о себе", "Suhbat: o'zim haqimda"],
+      ["Мой опыт работы", "Ish tajribam"],
+      ["График и условия", "Ish jadvali va shartlar"],
+      ["Документы для работы", "Ish uchun hujjatlar"],
+      ["Испытательный срок", "Sinov muddati"],
+      ["Подписываю трудовой договор", "Mehnat shartnomasini imzolayman"]
+    ]},
+    {"slug": "work", "icon": "👷", "ru": "На работе", "uz": "Ishda", "situations": [
+      ["Знакомство с коллегами", "Hamkasblar bilan tanishuv"],
+      ["Получаю задание", "Topshiriq olaman"],
+      ["Прошу инструмент", "Asbob so'rayman"],
+      ["Не понял задание", "Topshiriqni tushunmadim"],
+      ["Отпрашиваюсь у начальника", "Boshliqdan javob so'rayman"],
+      ["Техника безопасности", "Xavfsizlik texnikasi"],
+      ["Зарплата задерживается", "Maosh kechikyapti"],
+      ["Травма на работе", "Ishda jarohat"]
+    ]},
+    {"slug": "doctor", "icon": "🩺", "ru": "У врача", "uz": "Shifokor qabulida", "situations": [
+      ["Записываюсь к врачу", "Shifokorga yozilaman"],
+      ["В регистратуре", "Registraturada"],
+      ["Болит голова", "Boshim og'riyapti"],
+      ["Болит зуб", "Tishim og'riyapti"],
+      ["Сдаю анализы", "Tahlil topshiraman"],
+      ["Полис ДМС", "DMS polisi"],
+      ["Больничный лист", "Kasallik varaqasi"],
+      ["Вызываю скорую помощь", "Tez yordam chaqiraman"]
+    ]},
+    {"slug": "pharmacy", "icon": "💊", "ru": "В аптеке", "uz": "Dorixonada", "situations": [
+      ["Лекарство от простуды", "Shamollashga qarshi dori"],
+      ["Как принимать лекарство?", "Dorini qanday ichish kerak?"],
+      ["Есть дешевле?", "Arzonrog'i bormi?"],
+      ["Лекарство по рецепту", "Retsept bo'yicha dori"],
+      ["Лекарство для ребёнка", "Bola uchun dori"],
+      ["Аптечка для работы", "Ish uchun aptechka"],
+      ["Нужного лекарства нет", "Kerakli dori yo'q"],
+      ["Аллергия", "Allergiya"]
+    ]},
+    {"slug": "housing", "icon": "🏠", "ru": "Аренда жилья", "uz": "Uy ijarasi", "situations": [
+      ["Звоню по объявлению", "E'lon bo'yicha qo'ng'iroq qilaman"],
+      ["Сколько стоит комната?", "Xona qancha turadi?"],
+      ["Смотрю квартиру", "Kvartirani ko'raman"],
+      ["Условия договора", "Shartnoma shartlari"],
+      ["Соседи по квартире", "Kvartiradagi qo'shnilar"],
+      ["Сломался кран", "Jo'mrak buzildi"],
+      ["Хозяин повышает цену", "Uy egasi narxni oshiryapti"],
+      ["Съезжаю с квартиры", "Kvartiradan ko'chaman"]
+    ]},
+    {"slug": "cafe", "icon": "☕", "ru": "В кафе и столовой", "uz": "Kafe va oshxonada", "situations": [
+      ["Заказываю чай", "Choy buyurtma qilaman"],
+      ["Обед в столовой", "Oshxonada tushlik"],
+      ["Читаю меню", "Menyuni o'qiyman"],
+      ["Прошу счёт", "Hisobni so'rayman"],
+      ["Заказ еды на дом", "Uyga ovqat buyurtmasi"],
+      ["Принесли не то блюдо", "Boshqa taom olib kelishdi"],
+      ["Бронирую столик", "Stol band qilaman"],
+      ["День рождения друга в кафе", "Kafeda do'stning tug'ilgan kuni"]
+    ]},
+    {"slug": "police", "icon": "👮", "ru": "Полиция и документы", "uz": "Politsiya va hujjatlar", "situations": [
+      ["Проверка документов", "Hujjat tekshiruvi"],
+      ["Потерял паспорт", "Pasportimni yo'qotdim"],
+      ["Украли телефон", "Telefonimni o'g'irlashdi"],
+      ["Пишу заявление", "Ariza yozaman"],
+      ["Штраф", "Jarima"],
+      ["Я свидетель аварии", "Men avariya guvohiman"],
+      ["В отделении полиции", "Politsiya bo'limida"],
+      ["Звоню в консульство", "Konsullikka qo'ng'iroq qilaman"]
+    ]},
+    {"slug": "mobile", "icon": "📱", "ru": "Связь: телефон и интернет", "uz": "Aloqa: telefon va internet", "situations": [
+      ["Покупаю SIM-карту", "SIM-karta sotib olaman"],
+      ["Пополняю баланс", "Balansni to'ldiraman"],
+      ["Выбираю тариф", "Tarif tanlayman"],
+      ["Не работает интернет", "Internet ishlamayapti"],
+      ["Звоню в поддержку", "Qo'llab-quvvatlash xizmatiga qo'ng'iroq"],
+      ["Ремонт телефона", "Telefon ta'miri"],
+      ["Восстанавливаю SIM-карту", "SIM-kartani tiklayman"],
+      ["Перевод через приложение", "Ilova orqali pul o'tkazish"]
+    ]},
+    {"slug": "neighbors", "icon": "🤝", "ru": "Знакомство и соседи", "uz": "Tanishuv va qo'shnilar", "situations": [
+      ["Приветствие", "Salomlashish"],
+      ["Знакомство", "Tanishuv"],
+      ["Рассказываю о семье", "Oilam haqida gapiraman"],
+      ["Сосед просит помочь", "Qo'shni yordam so'rayapti"],
+      ["Шумные соседи", "Shovqinli qo'shnilar"],
+      ["Приглашаю в гости", "Mehmonga taklif qilaman"],
+      ["Праздник Навруз", "Navro'z bayrami"],
+      ["Разговор с соседом о жизни", "Qo'shni bilan hayot haqida suhbat"]
+    ]},
+    {"slug": "services", "icon": "✂️", "ru": "Услуги: парикмахерская, ремонт", "uz": "Xizmatlar: sartaroshxona, ta'mir", "situations": [
+      ["Стрижка", "Soch oldirish"],
+      ["Ремонт обуви", "Poyabzal ta'miri"],
+      ["Прачечная", "Kir yuvish xizmati"],
+      ["Ателье: подшить брюки", "Atelye: shimni qisqartirish"],
+      ["Записываюсь онлайн", "Onlayn yozilaman"],
+      ["Вызываю мастера", "Usta chaqiraman"],
+      ["Недоволен работой", "Ishdan noroziman"],
+      ["Химчистка", "Kimyoviy tozalash"]
+    ]},
+    {"slug": "emergency", "icon": "🚨", "ru": "Экстренные ситуации", "uz": "Favqulodda vaziyatlar", "situations": [
+      ["Звоню 112", "112 ga qo'ng'iroq qilaman"],
+      ["Человеку плохо на улице", "Ko'chada odamning ahvoli yomon"],
+      ["Застрял в лифте", "Liftda qolib ketdim"],
+      ["Пожар", "Yong'in"],
+      ["Затопило квартиру", "Kvartirani suv bosdi"],
+      ["Авария на дороге", "Yo'lda avariya"],
+      ["Потерял друга в толпе", "Olomonda do'stimni yo'qotdim"],
+      ["Ночью нужна помощь", "Kechasi yordam kerak"]
+    ]}
+  ]
+}

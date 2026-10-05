@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { DbClient } from '../types/dbClient';
 import * as subscriptionService from '../services/subscription.service';
+import { pool } from '../lib/db';
 
 /**
  * O'YINLARDAN BEPUL FOYDALANISH.
@@ -54,26 +55,40 @@ export function createGameRoutes(
    * Chek tugagan bo'lsa 402 qaytadi: klient to'lov oynasini ko'rsatadi.
    */
   router.post('/games/play', authenticate, async (req: any, res) => {
+    const userId = Number(req.userId);
+    let premium: boolean;
+    try { premium = (await subscriptionService.getAccessInfo(supabase, userId)).subscription_active; }
+    catch { return res.status(503).json({ error: 'Hisob holatini tekshirib bo‘lmadi' }); }
+    const client = pool ? await pool.connect().catch(() => null) : null;
+    if (!client) return res.status(503).json({ error: 'Maʼlumotlar bazasi mavjud emas' });
     try {
-      const userId = Number(req.userId);
       const game = String(req.body?.game ?? '').trim().slice(0, 40) || 'game';
-      const oldingi = await holat(userId);
+      // All games share the same user lock with dialogue sessions.
+      await client.query('BEGIN');
+      await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [userId]);
+      const usedBefore = premium ? 0 : Number((await client.query('SELECT count(*) FROM user_game_plays WHERE user_id=$1', [userId])).rows[0].count);
+      const oldingi = { premium, used: usedBefore, limit: BEPUL_OYIN, allowed: premium || usedBefore < BEPUL_OYIN };
 
-      if (oldingi.premium) return res.json(oldingi);
+      if (oldingi.premium) {
+        await client.query('COMMIT');
+        return res.json(oldingi);
+      }
       if (!oldingi.allowed) {
+        await client.query('COMMIT');
         return res.status(402).json({ ...oldingi, error: 'Bepul urinishlar tugadi' });
       }
 
-      const { error } = await supabase
-        .from('user_game_plays')
-        .insert({ user_id: userId, game });
-      if (error) throw error;
+      await client.query('INSERT INTO user_game_plays(user_id,game) VALUES($1,$2)', [userId,game]);
+      await client.query('COMMIT');
 
       const used = oldingi.used + 1;
       res.json({ premium: false, used, limit: BEPUL_OYIN, allowed: true });
     } catch (e) {
+      await client.query('ROLLBACK').catch(() => undefined);
       console.error('[POST /api/games/play]', e);
       res.status(500).json({ error: 'Amal bajarilmadi' });
+    } finally {
+      client.release();
     }
   });
 
