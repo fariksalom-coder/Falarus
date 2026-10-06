@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, X } from 'lucide-react';
+import RahmatClaimForm from '../components/operator/RahmatClaimForm';
 import DebtActions from '../components/operator/DebtActions';
 import type { DebtDeferral } from '../../shared/operatorDebt';
 import { apiUrl } from '../api';
@@ -43,6 +44,7 @@ type TariffItem = {
 
 type StatsResponse = {
   range: { label: string; from: string; to: string };
+  rahmatClaims: Array<{id:number;status:string;reason:string|null;payment_id:number;user_id:number;first_name:string|null;last_name:string|null;amount:string;currency:string;payment_status:string}>;
   payments: Array<{ currency: string; status: string; receipts: number; clients: number; amount: string }>;
   salesDays: Array<{ day: string; currency: string; receipts: number; clients: number; amount: string }>;
   salesMonth: Array<{ currency: string; receipts: number; clients: number; amount: string }>;
@@ -268,7 +270,7 @@ export default function OperatorMiniAppPage() {
   const [searchBusy, setSearchBusy] = useState(false);
   const [tariffList, setTariffList] = useState<TariffItem[]>(fallbackTariffs);
   const [currencyList, setCurrencyList] = useState<string[]>(fallbackCurrencies);
-  const [tab, setTab] = useState<'payment' | 'stats' | 'salary'>('payment');
+  const [tab, setTab] = useState<'payment' | 'rahmat' | 'stats' | 'salary'>('payment');
   const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Customer[]>([]);
@@ -419,7 +421,7 @@ export default function OperatorMiniAppPage() {
   }, [query, mode, hasTelegram]);
 
   useEffect(() => {
-    if (!ready || tab === 'payment') return;
+    if (!ready || tab === 'payment' || tab === 'rahmat') return;
     setOpenDebtCurrency(null);
     void loadStats();
     const refresh = () => { if (document.visibilityState === 'visible') void loadStats(true); };
@@ -594,16 +596,17 @@ export default function OperatorMiniAppPage() {
         {error && <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}
         {note && <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">{note}</div>}
 
-        <div className="mb-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-200 p-1">
+        <div className="mb-4 grid grid-cols-4 gap-2 rounded-2xl bg-slate-200 p-1">
           {[
             ['payment', 'To‘lov'],
+            ['rahmat','Rahmat'],
             ['stats', 'Hisobot'],
             ['salary', 'Maosh'],
           ].map(([key, label]) => (
             <button
               key={key}
               className={`h-11 rounded-xl text-sm font-black ${tab === key ? 'bg-white text-[#071B3A] shadow-sm' : 'text-slate-500'}`}
-              onClick={() => setTab(key as 'payment' | 'stats' | 'salary')}
+              onClick={() => setTab(key as 'payment' | 'rahmat' | 'stats' | 'salary')}
               type="button"
             >
               {label}
@@ -611,7 +614,7 @@ export default function OperatorMiniAppPage() {
           ))}
         </div>
 
-        {tab === 'payment' ? (
+        {tab==='rahmat' ? <RahmatClaimForm api={api} onSubmitted={()=>setStatsRevision(v=>v+1)}/> : tab === 'payment' ? (
           <>
             <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-200 p-1">
               {[
@@ -810,6 +813,13 @@ export default function OperatorMiniAppPage() {
                   </p>
                 </section>
 
+                {stats?.rahmatClaims?.length ? <section className="space-y-2 rounded-2xl bg-white p-3">
+                  <h2 className="font-black">Rahmat so‘rovlari</h2>
+                  {stats.rahmatClaims.map(r=><div key={r.id} className="rounded-xl bg-slate-50 p-3 text-sm">
+                    <strong>#{r.id} · {statusLabel[r.status]||r.status}</strong><p>#{r.user_id} {r.first_name} {r.last_name} · {r.amount} {r.currency}</p>
+                    <p>To‘lov #{r.payment_id}{r.payment_status!=='approved' ? ` · ${r.payment_status} — maoshga kirmaydi` : ''}</p>{r.reason&&<p>{r.reason}</p>}
+                  </div>)}
+                </section>:null}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-2xl bg-white p-3 shadow-sm">
                     <p className="text-[11px] font-black uppercase text-slate-400">Kurs</p>

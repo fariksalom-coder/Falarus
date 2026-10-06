@@ -67,12 +67,13 @@ test('operator conversation + admin workflow: authorization, replay, installment
     (pool as any).connect = async () => ({ query: adapter, release() { } });
     try {
         await db.exec(`CREATE TABLE users(id bigserial PRIMARY KEY,first_name text,last_name text,phone text UNIQUE,phone_raw text,phone_normalized text UNIQUE,country_code text,phone_verified boolean,phone_invalid boolean,account_type text,onboarded integer,email text UNIQUE,password text DEFAULT 'original',plan_name text,plan_expires_at timestamptz,created_at timestamptz DEFAULT now());
-   CREATE TABLE admins(id bigint PRIMARY KEY);CREATE TABLE payments(id bigint PRIMARY KEY);
+   CREATE TABLE admins(id bigint PRIMARY KEY);CREATE TABLE payments(id bigint PRIMARY KEY,user_id bigint,amount numeric,currency text,tariff_type text,payment_channel text,status text,product_code text,payment_time timestamptz,created_at timestamptz DEFAULT now());
    CREATE TABLE sales_crm_agents(id bigserial PRIMARY KEY,login text,name text,password_hash text,active boolean,role text);
    CREATE TABLE leaderboard(user_id bigint PRIMARY KEY,total_points integer,rank integer,updated_at timestamptz);
    CREATE TABLE subscriptions(id bigserial PRIMARY KEY,user_id bigint,plan_type text,expires_at timestamptz,status text,started_at timestamptz DEFAULT now());
    INSERT INTO users(id,first_name,last_name,phone,email) VALUES(1,'Test','Mijoz','+998900000000','synthetic@example.invalid');INSERT INTO admins VALUES(1);`);
         await db.exec(await readFile(new URL('../server/operator/schema.sql', import.meta.url), 'utf8'));
+        await db.exec(await readFile(new URL('../db/migrations/204_operator_rahmat_attribution.sql', import.meta.url), 'utf8'));
         const bcrypt = (await import('bcryptjs')).default;
         await db.query('INSERT INTO operator_accounts(login,name,password_hash) VALUES($1,$2,$3)', ['op1', 'Operator One', await bcrypt.hash('Testpassword123!', 4)]);
         const { handleUpdate } = await import('../server/operator/service.js');

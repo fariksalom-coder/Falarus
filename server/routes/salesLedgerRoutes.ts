@@ -29,10 +29,12 @@ const CLIENT_COLUMNS = `u.id AS user_id, concat_ws(' ', u.first_name, u.last_nam
  * o'xshash sinov to'lovlari (amount <= 1) hisobga olinmaydi.
  */
 const GATEWAY_PAYMENTS = `
-  SELECT p.id, p.amount, p.currency, p.tariff_type, p.payment_channel,
+  SELECT p.id, p.amount, p.currency, p.tariff_type, p.payment_channel, a.operator_id, o.name operator_name,
          ${iso('COALESCE(p.payment_time, p.created_at)')} AS paid_at, ${CLIENT_COLUMNS}
   FROM payments p
   JOIN users u ON u.id = p.user_id
+  LEFT JOIN operator_rahmat_sales a ON a.payment_id=p.id
+  LEFT JOIN operator_accounts o ON o.id=a.operator_id
   WHERE p.status = 'approved'
     AND COALESCE(p.product_code, 'russian') = 'russian'
     AND p.amount > 1
@@ -126,13 +128,13 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
       // Shlyuz/admin to'lovi — bir martalik to'liq sotuv: ham sotuv, ham tushum.
       const gatewaySales: AnalyticsSale[] = gateway.rows.map((row: Row) => ({
         key: `p:${row.id}`,
-        source: gatewaySource(row.payment_channel),
+        source: row.operator_id ? 'operator' : gatewaySource(row.payment_channel),
         sale_at: String(row.paid_at),
         user_id: num(row.user_id),
         client_name: clientName(row),
         phone: text(row.phone),
-        operator_id: null,
-        operator_name: '',
+        operator_id: row.operator_id ? num(row.operator_id) : null,
+        operator_name: text(row.operator_name),
         tariff: text(row.tariff_type) || null,
         currency: currency(row.currency),
         total: num(row.amount),
@@ -140,7 +142,7 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
         pending: 0,
         debt: 0,
         due_at: null,
-        lead_source: '',
+        lead_source: row.operator_id ? 'Rahmat' : '',
       }));
 
       const receiptPayments: AnalyticsPayment[] = receipts.rows.map((row: Row) => ({
@@ -165,8 +167,8 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
         paid_at: sale.sale_at,
         user_id: sale.user_id,
         client_name: sale.client_name,
-        operator_id: null,
-        operator_name: '',
+        operator_id: sale.operator_id,
+        operator_name: sale.operator_name,
         tariff: sale.tariff,
         currency: sale.currency,
         amount: sale.total,

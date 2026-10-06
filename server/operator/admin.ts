@@ -1,3 +1,5 @@
+import { decideRahmatClaim } from './rahmatClaims.js';
+import { readMiniReceipt } from './miniApp.js';
 import { decideDebtDeferral } from './debtActions.js';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
@@ -107,6 +109,30 @@ export function operatorAdminRoutes() {
         const debts = (await pool!.query(`SELECT c.operator_id,o.name,c.currency,count(*) contracts,count(distinct c.user_id) clients,sum(c.debt) debt,sum(c.debt) FILTER(WHERE c.due_at<now()) overdue,count(*) FILTER(WHERE c.debt=0) settled,count(*) FILTER(WHERE EXISTS(SELECT 1 FROM operator_freezes f WHERE f.contract_id=c.id)) frozen FROM operator_balances c JOIN operator_accounts o ON o.id=c.operator_id WHERE ($1::bigint IS NULL OR c.operator_id=$1) AND ($2::text IS NULL OR c.source=$2) AND ($3::text IS NULL OR c.tariff=$3) AND (c.debt=0 OR c.paid>0 OR c.pending>0) GROUP BY c.operator_id,o.name,c.currency`, [op, source, tariff])).rows;
         const activity = (await pool!.query(`SELECT a.operator_id,o.name,count(*) actions,count(distinct a.user_id) clients FROM operator_audit a JOIN operator_accounts o ON o.id=a.operator_id WHERE ($1::bigint IS NULL OR a.operator_id=$1) AND ($2::date IS NULL OR a.created_at>=($2::date::timestamp AT TIME ZONE 'Asia/Tashkent')) AND ($3::date IS NULL OR a.created_at<(($3::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent')) GROUP BY a.operator_id,o.name`, [op, from || null, to || null])).rows;
         res.json({ rows: rows.slice(0, 50), more: rows.length > 50, summary, debts, activity });
+    }));
+    router.get('/rahmat-claims', wrap(async (req:any,res:any)=>{
+        const op=Number(req.query.operator)||null;
+        const status=['pending','approved','rejected'].includes(req.query.status)?req.query.status:null;
+        const offset=Math.max(0,Math.min(100000,Number(req.query.offset)||0));
+        const rows=(await pool!.query(`SELECT a.id,a.operator_id,a.status,a.reason,a.created_at,a.decided_at,a.admin_id,
+          p.id payment_id,p.user_id,p.amount,p.currency,p.tariff_type,p.status payment_status,
+          COALESCE(p.payment_time,p.created_at) paid_at,o.name operator_name,u.first_name,u.last_name,u.phone,u.email
+          FROM operator_rahmat_claims a JOIN payments p ON p.id=a.payment_id JOIN operator_accounts o ON o.id=a.operator_id
+          JOIN users u ON u.id=p.user_id WHERE ($1::bigint IS NULL OR a.operator_id=$1)
+          AND ($2::text IS NULL OR a.status=$2) ORDER BY a.id DESC LIMIT 51 OFFSET $3`,[op,status,offset])).rows;
+        res.set('Cache-Control','no-store');res.json({rows:rows.slice(0,50),more:rows.length>50});
+    }));
+    router.get('/rahmat-claims/:id/file',wrap(async(req:any,res:any)=>{
+        const a=(await pool!.query('SELECT file_id FROM operator_rahmat_claims WHERE id=$1',[Number(req.params.id)])).rows[0];
+        if(!a) return res.status(404).end();
+        const file=await readMiniReceipt(a.file_id);
+        res.set({'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Type':file.mime,
+          'Content-Disposition':`attachment; filename="rahmat-${Number(req.params.id)}.${file.mime==='application/pdf'?'pdf':file.mime==='image/png'?'png':file.mime==='image/webp'?'webp':'jpg'}"`});
+        res.send(file.bytes);
+    }));
+    router.post('/rahmat-claims/:id/decision',wrap(async(req:any,res:any)=>{
+        await transaction(c=>decideRahmatClaim(c,Number(req.params.id),req.adminId,String(req.body.decision),req.body.reason));
+        res.json({ok:true});
     }));
     router.get('/deferrals', wrap(async (req: any, res: any) => {
         const op = Number(req.query.operator) || null;

@@ -5,6 +5,7 @@ const base = '/operator-bot';
 const fmt = (x: any) => x ? new Date(x).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' }) : '—';
 const names: Record<string, string> = { pending: 'Tekshiruvda', approved: 'Tasdiqlangan', rejected: 'Rad etilgan' };
 export default function AdminOperatorsPage() {
+    const [rahmatClaims,setRahmatClaims]=useState<any>({rows:[],more:false});
     const [deferrals, setDeferrals] = useState<any>({ rows: [], more: false });
     const [ops, setOps] = useState<any[]>([]), [data, setData] = useState<any>({ rows: [], summary: [], debts: [], activity: [] }), [audit, setAudit] = useState<any[]>([]);
     const [tab, setTab] = useState('receipts'), [filter, setFilter] = useState({ operator: '', status: 'pending', from: '', to: '', source: '', tariff: '' }), [offset, setOffset] = useState(0);
@@ -17,6 +18,7 @@ export default function AdminOperatorsPage() {
             const [o, d] = await Promise.all([adminApi<any[]>(base + '/operators'), adminApi<any>(base + '/overview?' + new URLSearchParams({ ...filter, offset: String(offset) }))]);
             setOps(o);
             setData(d);
+            if(tab==='rahmat') setRahmatClaims(await adminApi<any>(base+'/rahmat-claims?'+new URLSearchParams({operator:filter.operator,status:filter.status,offset:String(offset)})));
             if (tab === 'deferrals') setDeferrals(await adminApi<any>(base + '/deferrals?' + new URLSearchParams({ operator: filter.operator, status: filter.status, offset: String(offset) })));
             if (tab === 'audit')
                 setAudit(await adminApi<any[]>(base + '/audit?offset=' + offset));
@@ -43,13 +45,13 @@ export default function AdminOperatorsPage() {
     } };
     const post = (path: string, body: any) => adminApi(base + path, { method: 'POST', body: JSON.stringify(body) });
     const change = (key: string, value: string) => { setOffset(0); setFilter(f => ({ ...f, [key]: value })); };
-    const download = async (id: number) => {
-        await run(async () => { const res = await fetch(apiUrl('/api/admin' + base + `/receipts/${id}/file`), { headers: { Authorization: `Bearer ${getAdminToken()}` } }); if (!res.ok)
+    const download = async (id: number, kind='receipts') => {
+        await run(async () => { const res = await fetch(apiUrl('/api/admin' + base + `/${kind}/${id}/file`), { headers: { Authorization: `Bearer ${getAdminToken()}` } }); if (!res.ok)
             throw new Error('Chekni yuklab bo‘lmadi.'); const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `chek-${id}.${blob.type === 'application/pdf' ? 'pdf' : blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg'}`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 60000); }, 'Chek yuklandi.');
     };
     return <div className="space-y-5 p-4 md:p-6 max-w-[1500px] mx-auto">
   <div><h1 className="text-2xl font-bold">Operatorlar va to‘lovlar</h1><p className="text-sm opacity-70 mt-1">Telegramdan kelgan cheklar. To‘lovni faqat shu yerda admin tasdiqlaydi. Vaqt: Toshkent.</p></div>
-  <div className="flex flex-wrap gap-2">{[['receipts', 'Cheklar'], ['deferrals', 'Muddatni ko‘chirish'], ['reports', 'Hisobotlar'], ['accounts', 'Operator hisoblari'], ['audit', 'Amallar jurnali']].map(([key, label]) => <button className={`ui-button ${tab === key ? 'ui-button--primary' : 'ui-button--secondary'}`} key={key} onClick={() => { setTab(key); setOffset(0); }}>{label}</button>)}<button className="ui-button ui-button--secondary" disabled={busy || loading} onClick={() => void load()}>Yangilash</button></div>
+  <div className="flex flex-wrap gap-2">{[['receipts', 'Cheklar'], ['rahmat','Rahmat sotuvlari'], ['deferrals', 'Muddatni ko‘chirish'], ['reports', 'Hisobotlar'], ['accounts', 'Operator hisoblari'], ['audit', 'Amallar jurnali']].map(([key, label]) => <button className={`ui-button ${tab === key ? 'ui-button--primary' : 'ui-button--secondary'}`} key={key} onClick={() => { setTab(key); setOffset(0); }}>{label}</button>)}<button className="ui-button ui-button--secondary" disabled={busy || loading} onClick={() => void load()}>Yangilash</button></div>
   {error && <p role="alert" className="rounded-xl bg-red-50 border border-red-300 text-red-800 p-3">{error}</p>}{note && <p role="status" className="rounded-xl bg-green-50 text-green-800 p-3">{note}</p>}
   {['receipts', 'reports'].includes(tab) && <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">{[
                 <select aria-label="Operator" value={filter.operator} onChange={e => change('operator', e.target.value)}><option value="">Barcha operatorlar</option>{ops.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>,
@@ -65,10 +67,26 @@ export default function AdminOperatorsPage() {
                   <option value="year">1 yil (eski)</option>
                 </select>
             ].map((el, i) => <div key={i} className="[&>*]:w-full [&>*]:p-2 [&>*]:rounded-lg [&>*]:border [&>*]:bg-white [&>*]:text-slate-900">{el}</div>)}</div>}
-  {tab === 'deferrals' && <div className="flex flex-wrap gap-3">
+  {['deferrals','rahmat'].includes(tab) && <div className="flex flex-wrap gap-3">
     <select aria-label="So‘rov operatori" value={filter.operator} onChange={e => change('operator',e.target.value)} className="rounded-lg border bg-white p-2 text-slate-900"><option value="">Barcha operatorlar</option>{ops.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
     <select aria-label="So‘rov holati" value={filter.status} onChange={e => change('status',e.target.value)} className="rounded-lg border bg-white p-2 text-slate-900"><option value="">Barcha holatlar</option>{Object.entries(names).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select>
   </div>}
+  {tab==='rahmat' && !loading && <>
+    <p className="rounded-xl bg-blue-50 p-3 text-sm text-blue-900">Rahmat to‘lovi allaqachon hisobga olingan. Tasdiq faqat operatorga biriktiradi; yangi to‘lov yoki premium yaratmaydi. Maosh asl to‘lov sanasi bo‘yicha hisoblanadi.</p>
+    <div className="grid gap-4 lg:grid-cols-2">{rahmatClaims.rows.map((r:any)=><article key={r.id} className="space-y-3 rounded-2xl border border-app-border bg-app-surface p-5">
+      <strong>Rahmat #{r.id} · {names[r.status]}</strong>
+      <p>#{r.user_id} {r.first_name} {r.last_name}<br/>{r.phone||'—'} · {r.email||'—'}</p>
+      <p>Operator: {r.operator_name}<br/>To‘lov #{r.payment_id}: {r.amount} {r.currency} · {r.tariff_type}<br/>To‘lov holati: {r.payment_status} · {fmt(r.paid_at)}</p>
+      <p>So‘rov: {fmt(r.created_at)} · Qaror: {fmt(r.decided_at)}{r.admin_id && ` · Admin #${r.admin_id}`}</p>
+      {r.reason && <p>Sabab: {r.reason}</p>}
+      <div className="flex gap-2 flex-wrap"><button disabled={busy} className="ui-button ui-button--secondary" onClick={()=>void download(r.id,'rahmat-claims')}>Chekni yuklash</button>
+        {r.status==='pending' && <><button disabled={busy} className="ui-button ui-button--primary" onClick={()=>{setDecision({r,kind:'approved',type:'rahmat'});setReason('');}}>Operatorga biriktirish</button>
+        <button disabled={busy} className="ui-button ui-button--secondary" onClick={()=>{setDecision({r,kind:'rejected',type:'rahmat'});setReason('');}}>Rad etish</button></>}
+      </div>
+    </article>)}</div>
+    {!rahmatClaims.rows.length && <p>Rahmat so‘rovlari yo‘q.</p>}
+    <div className="flex gap-2"><button disabled={!offset||loading} className="ui-button ui-button--secondary" onClick={()=>setOffset(Math.max(0,offset-50))}>Oldingi</button><button disabled={!rahmatClaims.more||loading} className="ui-button ui-button--secondary" onClick={()=>setOffset(offset+50)}>Keyingi</button></div>
+  </>}
   {tab === 'deferrals' && !loading && <>
     <div className="grid gap-4 lg:grid-cols-2">{deferrals.rows.map((r: any) => <article key={r.id} className="space-y-3 rounded-2xl border border-app-border bg-app-surface p-5">
       <strong>So‘rov #{r.id} · {names[r.status]}</strong>
@@ -110,6 +128,6 @@ export default function AdminOperatorsPage() {
             void run(() => post(`/operators/${o.id}`, { action }), 'Operator yangilandi.'); }}>{label}</button>)}</div></div>)}
   </>}
   {tab === 'audit' && !loading && <><div className="overflow-auto"><table className="text-sm w-full"><thead><tr>{['Vaqt', 'Operator', 'Admin', 'Mijoz', 'Amal', 'Tafsilot'].map(x => <th className="text-left p-2" key={x}>{x}</th>)}</tr></thead><tbody>{audit.map(a => <tr className="border-t" key={a.id}>{[fmt(a.created_at), a.operator_name || '—', a.admin_id || '—', a.user_id || '—', a.action, JSON.stringify(a.detail)].map((x, i) => <td className="p-2 max-w-xs break-words" key={i}>{x}</td>)}</tr>)}</tbody></table></div><button disabled={!offset} className="ui-button ui-button--secondary" onClick={() => setOffset(Math.max(0, offset - 100))}>Oldingi</button><button disabled={audit.length < 100} className="ui-button ui-button--secondary" onClick={() => setOffset(offset + 100)}>Keyingi</button></>}
-  {decision && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><form role="dialog" aria-modal="true" aria-label={decision.type === 'deferral' ? 'Muddatni ko‘chirish qarori' : 'To‘lov qarori'} className="bg-white text-slate-900 rounded-2xl p-6 max-w-md w-full space-y-4" onSubmit={e => { e.preventDefault(); void run(async () => { await post(`/${decision.type === 'deferral' ? 'deferrals' : 'receipts'}/${decision.r.id}/decision`, { decision: decision.kind, reason }); setDecision(null); }, 'Qaror saqlandi. Operatorga xabar yuboriladi.'); }}><h2 className="font-bold">{decision.type === 'deferral' ? `Muddatni ko‘chirish #${decision.r.id}` : `Chek #${decision.r.id} — ${decision.r.amount} ${decision.r.currency}`}</h2><p>{decision.type === 'deferral' ? (decision.kind === 'approved' ? `Yangi muddat: ${fmt(decision.r.requested_due_at)}. Qarz miqdori o‘zgarmaydi.` : 'So‘rov rad etiladi. Joriy muddat saqlanadi.') : decision.kind === 'approved' ? 'Tasdiqlash haqiqiy to‘lovni hisobga oladi. Birinchi tasdiq tarifni faollashtiradi.' : 'Chek rad etiladi, qarz kamaymaydi.'}</p><textarea className="border rounded p-2 w-full" maxLength={500} required={decision.kind === 'rejected'} minLength={decision.kind === 'rejected' ? 3 : undefined} value={reason} onChange={e => setReason(e.target.value)} placeholder="Sabab / izoh"/><div className="flex gap-2"><button className="ui-button ui-button--primary" disabled={busy}>{busy ? 'Saqlanmoqda…' : decision.kind === 'approved' ? (decision.type === 'deferral' ? 'Muddatni tasdiqlash' : 'To‘lovni tasdiqlash') : 'Rad etish'}</button><button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={() => setDecision(null)}>Bekor qilish</button></div></form></div>}
+  {decision && <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"><form role="dialog" aria-modal="true" aria-label={decision.type === 'deferral' ? 'Muddatni ko‘chirish qarori' : 'To‘lov qarori'} className="bg-white text-slate-900 rounded-2xl p-6 max-w-md w-full space-y-4" onSubmit={e => { e.preventDefault(); void run(async () => { await post(`/${decision.type === 'deferral' ? 'deferrals' : decision.type==='rahmat' ? 'rahmat-claims' : 'receipts'}/${decision.r.id}/decision`, { decision: decision.kind, reason }); setDecision(null); }, 'Qaror saqlandi. Operatorga xabar yuboriladi.'); }}><h2 className="font-bold">{decision.type === 'deferral' ? `Muddatni ko‘chirish #${decision.r.id}` : `Chek #${decision.r.id} — ${decision.r.amount} ${decision.r.currency}`}</h2><p>{decision.type === 'deferral' ? (decision.kind === 'approved' ? `Yangi muddat: ${fmt(decision.r.requested_due_at)}. Qarz miqdori o‘zgarmaydi.` : 'So‘rov rad etiladi. Joriy muddat saqlanadi.') : decision.type==='rahmat' ? 'Faqat mavjud Rahmat to‘lovi operatorga biriktiriladi. Premium va umumiy tushum o‘zgarmaydi.' : decision.kind === 'approved' ? 'Tasdiqlash haqiqiy to‘lovni hisobga oladi. Birinchi tasdiq tarifni faollashtiradi.' : 'Chek rad etiladi, qarz kamaymaydi.'}</p><textarea className="border rounded p-2 w-full" maxLength={500} required={decision.kind === 'rejected'} minLength={decision.kind === 'rejected' ? 3 : undefined} value={reason} onChange={e => setReason(e.target.value)} placeholder="Sabab / izoh"/><div className="flex gap-2"><button className="ui-button ui-button--primary" disabled={busy}>{busy ? 'Saqlanmoqda…' : decision.kind === 'approved' ? (decision.type === 'deferral' ? 'Muddatni tasdiqlash' : 'To‘lovni tasdiqlash') : 'Rad etish'}</button><button type="button" className="ui-button ui-button--secondary" disabled={busy} onClick={() => setDecision(null)}>Bekor qilish</button></div></form></div>}
  </div>;
 }

@@ -1,3 +1,4 @@
+import { eligibleRahmatSql, submitRahmatClaim } from './rahmatClaims.js';
 import { latestDeferralSql, requestDebtDeferral, submitDebtReceipt } from './debtActions.js';
 import { dueDebts, reminderSlot, REMINDER_HOURS } from './reminders.js';
 import { Router } from 'express';
@@ -269,13 +270,17 @@ export function operatorMiniAppRoutes() {
     res.set('Cache-Control', 'no-store');
     const receiptDate = "CASE WHEN r.status='pending' THEN r.created_at ELSE COALESCE(r.decided_at,r.created_at) END";
     const payments = (await pool!.query(
-      `SELECT c.currency,r.status,count(*)::int receipts,count(distinct c.user_id)::int clients,
+      `SELECT r.currency,r.status,count(*)::int receipts,count(distinct r.user_id)::int clients,
               COALESCE(sum(r.amount),0)::text amount
-       FROM operator_receipts r
-       JOIN operator_contracts c ON c.id=r.contract_id
-       WHERE r.operator_id=$1 AND (${receiptDate})>=$2 AND (${receiptDate})<$3
-       GROUP BY c.currency,r.status
-       ORDER BY c.currency,r.status`,
+       FROM (
+         SELECT r.operator_id,c.user_id,c.currency,r.status,r.amount,
+           CASE WHEN r.status='pending' THEN r.created_at ELSE COALESCE(r.decided_at,r.created_at) END at
+         FROM operator_receipts r JOIN operator_contracts c ON c.id=r.contract_id
+         UNION ALL SELECT operator_id,user_id,currency,'approved',amount,paid_at FROM operator_rahmat_sales
+       ) r
+       WHERE r.operator_id=$1 AND r.at>=$2 AND r.at<$3
+       GROUP BY r.currency,r.status
+       ORDER BY r.currency,r.status`,
       [op.id, range.from, range.to],
     )).rows;
     const debts = (await pool!.query(
@@ -320,52 +325,56 @@ export function operatorMiniAppRoutes() {
       [op.id, range.from, range.to],
     )).rows;
     const salesDays = (await pool!.query(
-      `SELECT to_char((COALESCE(r.decided_at,r.created_at) AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",
-              c.currency,
+      `SELECT to_char((r.at AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",
+              r.currency,
               count(*)::int receipts,
-              count(distinct c.user_id)::int clients,
+              count(distinct r.user_id)::int clients,
               COALESCE(sum(r.amount),0)::text amount
-       FROM operator_receipts r
-       JOIN operator_contracts c ON c.id=r.contract_id
+       FROM (
+         SELECT r.operator_id,c.user_id,c.currency,r.status,r.amount,COALESCE(r.decided_at,r.created_at) at
+         FROM operator_receipts r JOIN operator_contracts c ON c.id=r.contract_id
+         UNION ALL SELECT operator_id,user_id,currency,'approved',amount,paid_at FROM operator_rahmat_sales
+       ) r
        WHERE r.operator_id=$1
          AND r.status='approved'
-         AND COALESCE(r.decided_at,r.created_at)>=$2
-         AND COALESCE(r.decided_at,r.created_at)<$3
-       GROUP BY "day",c.currency
-       ORDER BY "day" DESC,c.currency`,
+         AND r.at>=$2
+         AND r.at<$3
+       GROUP BY "day",r.currency
+       ORDER BY "day" DESC,r.currency`,
       [op.id, range.from, range.to],
     )).rows;
     const monthRange = currentMonthRange();
     const salesMonth = (await pool!.query(
-      `SELECT c.currency,
+      `SELECT r.currency,
               count(*)::int receipts,
-              count(distinct c.user_id)::int clients,
+              count(distinct r.user_id)::int clients,
               COALESCE(sum(r.amount),0)::text amount
-       FROM operator_receipts r
-       JOIN operator_contracts c ON c.id=r.contract_id
+       FROM (
+         SELECT r.operator_id,c.user_id,c.currency,r.status,r.amount,COALESCE(r.decided_at,r.created_at) at
+         FROM operator_receipts r JOIN operator_contracts c ON c.id=r.contract_id
+         UNION ALL SELECT operator_id,user_id,currency,'approved',amount,paid_at FROM operator_rahmat_sales
+       ) r
        WHERE r.operator_id=$1
          AND r.status='approved'
-         AND COALESCE(r.decided_at,r.created_at)>=$2
-         AND COALESCE(r.decided_at,r.created_at)<$3
-       GROUP BY c.currency
-       ORDER BY c.currency`,
+         AND r.at>=$2
+         AND r.at<$3
+       GROUP BY r.currency
+       ORDER BY r.currency`,
       [op.id, monthRange.from, monthRange.to],
     )).rows;
     // Credit a course once to its first approved receipt's operator, even if
     // the contract is later reassigned for debt collection.
     const salaryRows = (await pool!.query(
-      `SELECT to_char((COALESCE(sale.decided_at,c.activated_at) AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",
-              c.tariff,count(*)::int sold_courses
-       FROM operator_contracts c
-       JOIN LATERAL (
-         SELECT r.operator_id,r.decided_at FROM operator_receipts r
-         WHERE r.contract_id=c.id AND r.status='approved'
-         ORDER BY r.decided_at ASC NULLS LAST,r.id ASC LIMIT 1
-       ) sale ON true
-       WHERE sale.operator_id=$1 AND c.activated_at IS NOT NULL
-         AND COALESCE(sale.decided_at,c.activated_at)>=$2
-         AND COALESCE(sale.decided_at,c.activated_at)<$3
-       GROUP BY "day",c.tariff ORDER BY "day" DESC,c.tariff`,
+      `SELECT to_char((sold_at AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",tariff,count(*)::int sold_courses
+       FROM (
+         SELECT c.tariff,sale.operator_id,COALESCE(sale.decided_at,c.activated_at) sold_at
+         FROM operator_contracts c JOIN LATERAL (
+           SELECT r.operator_id,r.decided_at FROM operator_receipts r WHERE r.contract_id=c.id AND r.status='approved'
+           ORDER BY r.decided_at ASC NULLS LAST,r.id ASC LIMIT 1
+         ) sale ON true WHERE c.activated_at IS NOT NULL
+         UNION ALL SELECT tariff,operator_id,paid_at FROM operator_rahmat_sales
+       ) credited WHERE operator_id=$1 AND sold_at>=$2 AND sold_at<$3
+       GROUP BY "day",tariff ORDER BY "day" DESC,tariff`,
       [op.id, range.from, range.to],
     )).rows;
     const coursesByDay = new Map<string, number>();
@@ -397,7 +406,11 @@ export function operatorMiniAppRoutes() {
        WHERE operator_id=$1 AND created_at>=$2 AND created_at<$3`,
       [op.id, range.from, range.to],
     )).rows[0] ?? { actions: 0, clients: 0 };
-    res.json({ range, payments, debts, history, actions, salesDays, salesMonth, salary, salaryDays, salaryTariffs });
+    const rahmatClaims=(await pool!.query(`SELECT a.id,a.status,a.reason,a.created_at,p.id payment_id,p.user_id,
+      p.amount,p.currency,p.tariff_type,COALESCE(p.payment_time,p.created_at) paid_at,p.status payment_status,
+      u.first_name,u.last_name FROM operator_rahmat_claims a JOIN payments p ON p.id=a.payment_id JOIN users u ON u.id=p.user_id
+      WHERE a.operator_id=$1 AND a.created_at>=$2 AND a.created_at<$3 ORDER BY a.id DESC LIMIT 50`,[op.id,range.from,range.to])).rows;
+    res.json({ range, payments, debts, history, actions, salesDays, salesMonth, salary, salaryDays, salaryTariffs, rahmatClaims });
   }));
 
   router.get('/customers', miniWrap(async (req, res) => {
@@ -432,6 +445,34 @@ export function operatorMiniAppRoutes() {
     }
     for (const row of rows) row.debts = byUser.get(Number(row.id)) ?? [];
     res.json({ items: rows });
+  }));
+
+  router.get('/customers/:id/rahmat-payments', miniWrap(async (req, res) => {
+    const userId=asPositiveId(req.params.id);
+    res.set('Cache-Control','no-store');
+    const rows=(await pool!.query(`SELECT p.id,p.amount,p.currency,p.tariff_type,
+      COALESCE(p.payment_time,p.created_at) paid_at,a.status claim_status
+      FROM payments p LEFT JOIN operator_rahmat_claims a ON a.payment_id=p.id AND a.status IN ('pending','approved')
+      WHERE p.user_id=$1 AND ${eligibleRahmatSql} ORDER BY COALESCE(p.payment_time,p.created_at) DESC,p.id DESC LIMIT 100`,[userId])).rows;
+    res.json({items:rows});
+  }));
+
+  router.post('/rahmat-claims', upload.single('receipt'), miniWrap(async (req,res) => {
+    const userId=asPositiveId(req.body.userId), paymentId=asPositiveId(req.body.paymentId);
+    const receipt=await storeMiniReceipt(req.file);
+    try {
+      const {claimId,saved}=await transaction(async c=>{
+        const claimId=await submitRahmatClaim(c,req.operator.id,userId,paymentId,receipt);
+        const saved=(await c.query('SELECT file_id,status FROM operator_rahmat_claims WHERE id=$1',[claimId])).rows[0];
+        return {claimId,saved};
+      });
+      // On an identical retry the original file is retained; remove the newly uploaded copy.
+      if(saved.file_id!==receipt.fileId) await unlink(path.join(receiptDir(),receipt.fileId.slice(8))).catch(()=>{});
+      res.json({ok:true,claimId,status:saved.status});
+    } catch(e) {
+      await unlink(path.join(receiptDir(),receipt.fileId.slice(8))).catch(()=>{});
+      throw e;
+    }
   }));
 
   router.post('/customers', miniWrap(async (req, res) => {
