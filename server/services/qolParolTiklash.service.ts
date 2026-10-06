@@ -22,7 +22,7 @@
  */
 import bcrypt from 'bcryptjs';
 import type { DbClient } from '../types/dbClient';
-import { generateSecurePassword } from '../../shared/generateSecurePassword.js';
+import { generateNumericPassword } from '../../shared/generateSecurePassword.js';
 
 export type QolParolNatija =
   | {
@@ -135,7 +135,7 @@ async function tikla(
     };
   }
 
-  const yangiParol = generateSecurePassword(10);
+  const yangiParol = generateNumericPassword(10);
   const hash = await bcrypt.hash(yangiParol, 10);
   const { error } = await supabase.from('users').update({ password: hash }).eq('id', user.id);
   if (error) {
