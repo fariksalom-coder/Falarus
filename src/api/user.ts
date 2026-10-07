@@ -17,6 +17,7 @@ export type UserMe = {
   planName?: string | null;
   planExpiresAt?: string | null;
   billingNoticeUz?: string | null;
+  accessFrozen?: boolean;
   accountType?: string | null;
   avatarUrl?: string | null;
   gender?: UserGender;

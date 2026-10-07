@@ -21,6 +21,7 @@ interface User {
   planName?: string | null;
   planExpiresAt?: string | null;
   billingNoticeUz?: string | null;
+  accessFrozen?: boolean;
   accountType?: string | null;
   avatarUrl?: string | null;
   gender?: 'male' | 'female' | null;

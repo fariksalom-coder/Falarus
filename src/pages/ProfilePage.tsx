@@ -36,7 +36,7 @@ import { usePwaInstall } from '../hooks/usePwaInstall';
 import { languageMeta } from '../../shared/i18n/languages';
 import UserAvatar from '../components/UserAvatar';
 import { resolveAssetUrl } from '../api';
-import { bustAvatarUrl, patchUserAccount, uploadUserAvatar } from '../api/user';
+import { bustAvatarUrl, getMe, patchUserAccount, uploadUserAvatar } from '../api/user';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
 
 function premiumDaysLeft(planExpiresAt: string | null | undefined): number | null {
@@ -73,6 +73,24 @@ export default function ProfilePage() {
   const { isInstalled: appInstalled, promptInstall } = usePwaInstall();
   const [streakDays, setStreakDays] = useState(() => getCachedStreak()?.streak_days ?? 0);
   const [points, setPoints] = useState(() => getCachedMyRank()?.points ?? 0);
+  const [accessFrozen, setAccessFrozen] = useState(Boolean(user?.accessFrozen));
+
+  useEffect(() => {
+    let cancelled = false;
+    setAccessFrozen(Boolean(user?.accessFrozen));
+    if (!token) return;
+    const refresh = () => {
+      void getMe(token).then(profile => {
+        if (!cancelled) setAccessFrozen(Boolean(profile.accessFrozen));
+      }).catch(() => { /* Keep the last known status during a network failure. */ });
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', refresh);
+    };
+  }, [token, user?.id, user?.accessFrozen]);
 
   useEffect(() => {
     setFirstName(user?.firstName ?? '');
@@ -190,6 +208,14 @@ export default function ProfilePage() {
     >
       <main className="mx-auto w-full max-w-[1024px]">
         <PageHeader title={t('nav.profile')} />
+
+        {accessFrozen && (
+          <div role="status" className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+            <p className="font-bold">To‘lov tarifingiz muzlatilgan</p>
+            <p className="mt-2 text-sm">Tarifingizni qayta faollashtirish va o‘qishni davom ettirish uchun adminga yozing.</p>
+            <Button className="mt-3" variant="secondary" onClick={() => navigate('/help')}>Adminga yozish</Button>
+          </div>
+        )}
 
         {banner ? (
           <div

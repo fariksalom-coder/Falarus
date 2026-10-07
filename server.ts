@@ -246,7 +246,7 @@ const HELP_CHAT_ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/
 const HELP_CHAT_MAX_SIZE = 4 * 1024 * 1024; // 4 MB
 const HELP_IMAGE_PREFIX = '__image__:';
 const USER_PROFILE_SELECT_FULL =
-  'id, first_name, last_name, email, phone, level, onboarded, onboarding_completed, progress, plan_name, plan_expires_at, billing_notice_uz, account_type, avatar_url, gender, password';
+  'id, first_name, last_name, email, phone, level, onboarded, onboarding_completed, progress, plan_name, plan_expires_at, billing_notice_uz, account_type, avatar_url, gender, password, access_frozen_at';
 function isDatabaseNoRowsError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const code = 'code' in error ? (error as { code?: unknown }).code : null;
@@ -279,6 +279,7 @@ function mapUserProfile(user: Record<string, any>) {
     planName: user.plan_name ?? null,
     planExpiresAt: user.plan_expires_at ?? null,
     billingNoticeUz: user.billing_notice_uz ?? null,
+    accessFrozen: Boolean(user.access_frozen_at),
     accountType: user.account_type ?? 'student',
     avatarUrl: user.avatar_url ? toAbsolutePublicUrl(String(user.avatar_url)) : null,
     gender: user.gender === 'male' || user.gender === 'female' ? user.gender : null,
@@ -1303,6 +1304,13 @@ async function startServer() {
       return res.status(404).json({ error: 'User topilmadi' });
     }
     const profile = mapUserProfile(user);
+    try {
+      const { isOperatorFrozen } = await import('./server/operator/freeze.js');
+      profile.accessFrozen = profile.accessFrozen || await isOperatorFrozen(req.userId);
+    } catch (error) {
+      console.error('[GET /api/user/me] freeze status', error);
+      return res.status(503).json({ error: 'Hisob holatini tekshirib bo‘lmadi.' });
+    }
     res.json(await mergeProfileWithActiveSubscription(req.userId, profile));
   });
 
