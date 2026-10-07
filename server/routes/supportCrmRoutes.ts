@@ -1,3 +1,7 @@
+import { crmVisibilitySql, supportCrmDatabase, runWithSupportCrmScope } from '../services/supportCrmScope.js';
+import { pool } from '../lib/db.js';
+import type { Pool } from 'pg';
+import { createSupportCrmCalendarRoutes } from './supportCrmCalendarRoutes.js';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -13,7 +17,6 @@ import {
   getSupportCrmUser,
   listContactedOnDate,
   listPremiumUsers,
-  listReturnTracking,
   listSupportCrmQueue,
   nextQueueUserId,
   searchSupportCrmUsers,
@@ -23,7 +26,6 @@ import {
   type ContactResult,
   type PremiumSort,
   type QueueFilter,
-  type ReturnTrackFilter,
 } from '../services/supportCrm.service';
 
 const TOKEN_TTL = '12h';
@@ -34,7 +36,7 @@ function agentIdFromReq(req: { supportCrmAgentId?: number }): number {
   return id;
 }
 
-export function createSupportCrmRoutes(supabase: DbClient): Router {
+export function createSupportCrmRoutes(supabase: DbClient,database:Pick<Pool,'query'>|null=pool): Router {
   const router = Router();
 
   router.post('/login', async (req, res) => {
@@ -94,7 +96,9 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
     }
   });
 
+  router.use((_req,_res,next)=>runWithSupportCrmScope(null,()=>next(),database??undefined));
   router.use(createSupportCrmAuthMiddleware(supabase));
+  router.use(createSupportCrmCalendarRoutes(database));
 
   router.get('/me', async (req, res) => {
     try {
@@ -129,12 +133,8 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
   router.get('/queue', async (req, res) => {
     try {
       const filterRaw = String(req.query.filter ?? 'needs_contact');
-      const filter: QueueFilter =
-        filterRaw === 'contacted_today'
-          ? 'contacted_today'
-          : filterRaw === 'in_progress'
-            ? 'in_progress'
-            : 'needs_contact';
+      const filter: QueueFilter = filterRaw==='contacted'||filterRaw==='no_contact_needed'?filterRaw:'needs_contact';
+      if(!['needs_contact','contacted','no_contact_needed'].includes(filterRaw)){res.status(400).json({error:'Navbat filtri noto‘g‘ri'});return;}
       const limit = Number(req.query.limit ?? 50);
       const offset = Number(req.query.offset ?? 0);
       const data = await listSupportCrmQueue({
@@ -187,27 +187,6 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
       res.json(data);
     } catch (e) {
       console.error('[support-crm/premium-users]', e);
-      res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
-    }
-  });
-
-  router.get('/return-tracking', async (req, res) => {
-    try {
-      const filterRaw = String(req.query.filter ?? 'returned');
-      const filter: ReturnTrackFilter =
-        filterRaw === 'waiting' || filterRaw === 'all' ? filterRaw : 'returned';
-      const days = Number(req.query.days ?? 30);
-      const limit = Number(req.query.limit ?? 200);
-      const offset = Number(req.query.offset ?? 0);
-      const data = await listReturnTracking({
-        filter,
-        days: Number.isFinite(days) ? days : 30,
-        limit: Number.isFinite(limit) ? limit : 200,
-        offset: Number.isFinite(offset) ? offset : 0,
-      });
-      res.json(data);
-    } catch (e) {
-      console.error('[support-crm/return-tracking]', e);
       res.status(500).json({ error: e instanceof Error ? e.message : 'Xatolik' });
     }
   });
@@ -282,6 +261,11 @@ export function createSupportCrmRoutes(supabase: DbClient): Router {
         res.status(400).json({ error: 'Noto‘g‘ri foydalanuvchi' });
         return;
       }
+
+      const db=supportCrmDatabase()??database;
+      if(!db)throw new Error('DATABASE_URL kerak');
+      const accessible=await db.query(`SELECT id FROM users WHERE id=$1 AND ${crmVisibilitySql('users.id')}`,[userId]);
+      if(!accessible.rows.length){res.status(404).json({error:'Foydalanuvchi topilmadi'});return;}
 
       const { qolParolTiklashById } = await import('../services/qolParolTiklash.service.js');
       const natija = await qolParolTiklashById(supabase, userId, `support-crm:${agentId}`);

@@ -1,308 +1,56 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Search, X } from 'lucide-react';
-import { Card } from '../../components/ui/Foundation';
+import {useEffect,useRef,useState} from 'react';
+import {Link,useSearchParams} from 'react-router-dom';
+import {Search,X} from 'lucide-react';
+import {Card} from '../../components/ui/Foundation';
 import CrmDayProgress from '../../components/supportCrm/CrmDayProgress';
-import CrmSearchResultCard from '../../components/supportCrm/CrmSearchResultCard';
-import {
-  getSupportCrmContacted,
-  getSupportCrmQueue,
-  searchSupportCrmUsers,
-  type SupportCrmContactedRow,
-  type SupportCrmQueueRow,
-  type SupportCrmSearchRow,
-} from '../../api/supportCrm';
-import { supportCrmPath } from '../../constants/supportCrmPath';
-import {
-  daysLeftUntil,
-  formatCrmDate,
-  formatDurationShort,
-  formatLastSeenAgo,
-  idleDaysFromHours,
-} from '../../utils/supportCrmFormat';
+import {getSupportCrmQueue,type SupportCrmQueueFilter,type SupportCrmQueueRow,type SupportCrmStats} from '../../api/supportCrm';
+import {supportCrmPath} from '../../constants/supportCrmPath';
+import {formatCrmDate,formatLastSeenAgo} from '../../utils/supportCrmFormat';
 
-function fullName(row: { first_name: string | null; last_name: string | null; id: number }): string {
-  return [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || `User #${row.id}`;
-}
-
-/** Asia/Tashkent YYYY-MM-DD */
-function todayTashkent(): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Tashkent',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
-}
-
-const CHANNEL_LABEL: Record<string, string> = {
-  phone: 'Telefon',
-  telegram: 'Telegram',
-  whatsapp: 'WhatsApp',
-  max: 'MAX',
-  imo: 'IMO',
-  email: 'Email',
-  other: 'Boshqa',
-};
-
-const OUTCOME_LABEL: Record<string, string> = {
-  reached: 'Bog‘landi',
-  no_pickup: 'Ko‘tarmadi',
-  no_answer: 'Javob yo‘q',
-  no_contact: 'Kontakt yo‘q',
-  no_telegram: 'Telegram yo‘q',
-  no_whatsapp: 'WhatsApp yo‘q',
-  no_imo: 'IMO yo‘q',
-  in_progress: 'Jarayonda',
-  other: 'Boshqa',
-};
-
-type Tab = 'needs_contact' | 'contacted';
-
-function formatContactTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleTimeString('uz', {
-      timeZone: 'Asia/Tashkent',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return '';
-  }
-}
-
-export default function SupportCrmQueuePage() {
-  const [tab, setTab] = useState<Tab>('needs_contact');
-  const [contactDate, setContactDate] = useState(todayTashkent);
-  const [queueRows, setQueueRows] = useState<SupportCrmQueueRow[]>([]);
-  const [contactedRows, setContactedRows] = useState<SupportCrmContactedRow[]>([]);
-  // Navbat filtri bilan birga: qidiruv so'zi bo'lsa, butun bazadan ham qidiriladi.
-  const [globalRows, setGlobalRows] = useState<SupportCrmSearchRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [params, setParams] = useSearchParams();
-  const q = params.get('q') ?? '';
-  const requestId = useRef(0);
-
-  const isToday = contactDate === todayTashkent();
-
-  const contactedTitle = useMemo(() => {
-    if (isToday) return 'Bugun bog‘langanlar';
-    return `${formatCrmDate(`${contactDate}T12:00:00+05:00`)} bog‘langanlar`;
-  }, [contactDate, isToday]);
-
-  const reload = useCallback(async () => {
-    const id = ++requestId.current;
-    setLoading(true);
-    setError('');
-    try {
-      // Butun baza bo'yicha qidiruv xatosi navbat ro'yxatini buzmasin.
-      const globalSearch = q.trim()
-        ? searchSupportCrmUsers(q).catch(() => ({ rows: [] as SupportCrmSearchRow[] }))
-        : Promise.resolve({ rows: [] as SupportCrmSearchRow[] });
-      if (tab === 'needs_contact') {
-        const data = await getSupportCrmQueue('needs_contact', q);
-        setQueueRows(data.rows);
-        setContactedRows([]);
-        setTotal(data.total);
-      } else {
-        const data = await getSupportCrmContacted(contactDate, q);
-        setContactedRows(data.rows);
-        setQueueRows([]);
-        setTotal(data.total);
-        if (data.date && data.date !== contactDate) setContactDate(data.date);
-      }
-      const global = await globalSearch;
-      if (id === requestId.current) setGlobalRows(global.rows);
-    } catch (e) {
-      if (id === requestId.current) setError(e instanceof Error ? e.message : 'Xatolik');
-    } finally {
-      if (id === requestId.current) setLoading(false);
-    }
-  }, [tab, contactDate, q]);
-
-  useEffect(() => {
-    setLoading(true);
-    const timer = window.setTimeout(() => void reload(), 250);
-    return () => { window.clearTimeout(timer); requestId.current += 1; };
-  }, [reload]);
-
-  const listedIds = new Set<number>(
-    tab === 'needs_contact' ? queueRows.map((r) => r.id) : contactedRows.map((r) => r.id)
-  );
-  const otherRows = q.trim() ? globalRows.filter((r) => !listedIds.has(r.id)) : [];
-
-  function updateSearch(value: string) {
-    const next = new URLSearchParams(params);
-    if (value.trim()) next.set('q', value); else next.delete('q');
-    setParams(next, { replace: true });
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-lg font-semibold text-app-text">Navbat</h1>
-        <span className="text-sm tabular-nums text-app-muted">{total}</span>
-      </div>
-
-      <div className="flex items-center gap-2 rounded-2xl border border-app-border bg-white px-3">
-        <Search size={18} className="shrink-0 text-app-muted" aria-hidden="true" />
-        <input
-          type="search"
-          value={q}
-          onChange={(e) => updateSearch(e.target.value)}
-          maxLength={160}
-          aria-label="Поиск по телефону, имени или фамилии"
-          placeholder="Telefon, ism yoki familiya…"
-          className="min-h-12 min-w-0 flex-1 bg-transparent text-sm text-app-text outline-none"
-        />
-        {q ? <button type="button" onClick={() => updateSearch('')} aria-label="Очистить поиск" className="flex min-h-11 min-w-11 items-center justify-center text-app-muted"><X size={18} /></button> : null}
-      </div>
-
-      <div className="flex gap-2">
-        {(
-          [
-            { id: 'needs_contact' as const, label: 'Bog‘lanish kerak' },
-            { id: 'contacted' as const, label: 'Bog‘langanlar' },
-          ] as const
-        ).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setTab(item.id)}
-            className={`min-h-10 flex-1 rounded-2xl px-3 text-sm font-medium ${
-              tab === item.id
-                ? 'bg-[#2563EB] text-white'
-                : 'bg-white text-app-muted ring-1 ring-app-border'
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'contacted' ? (
-        <div className="rounded-[20px] bg-white p-4 shadow-sm ring-1 ring-app-border">
-          <label className="block text-xs font-medium text-app-muted">
-            Sana (Toshkent)
-            <input
-              type="date"
-              value={contactDate}
-              max={todayTashkent()}
-              onChange={(e) => setContactDate(e.target.value || todayTashkent())}
-              className="mt-1.5 w-full min-h-11 rounded-2xl border border-app-border bg-app-bg-muted px-3 text-sm text-app-text outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100"
-            />
-          </label>
-          <p className="mt-2 text-sm text-app-text">{contactedTitle}</p>
-          <p className="mt-0.5 text-xs text-app-muted">Shu kunda qayd etilgan barcha bog‘lanishlar.</p>
-        </div>
-      ) : null}
-
-      {loading ? (
-        <p className="text-sm text-app-muted">Yuklanmoqda…</p>
-      ) : error ? (
-        <p role="alert" className="text-sm text-app-danger">
-          {error}
-        </p>
-      ) : tab === 'needs_contact' ? (
-        queueRows.length === 0 ? (
-          <Card className="p-5 text-sm text-app-muted">{q.trim() ? 'Navbatda topilmadi.' : 'Hozircha bo‘sh.'}</Card>
-        ) : (
-          <ul className="space-y-2.5">
-            {queueRows.map((row) => {
-              const idleDays = idleDaysFromHours(row.idle_hours);
-              const left = daysLeftUntil(row.plan_expires_at);
-              return (
-                <li key={row.id}>
-                  <Link
-                    to={supportCrmPath(`/users/${row.id}`)}
-                    className="block rounded-[20px] bg-white p-4 shadow-sm ring-1 ring-app-border transition hover:ring-[#2563EB]/40"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-app-text">{fullName(row)}</p>
-                        <p className="mt-1 text-sm font-medium text-app-text">{row.phone || 'Telefon yo‘q'}</p>
-                      </div>
-                      <span
-                        className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-sm font-semibold tabular-nums text-amber-900"
-                        title={
-                          row.last_seen_at
-                            ? `Oxirgi kirish: ${new Date(row.last_seen_at).toLocaleString('uz')}`
-                            : 'Platformaga oxirgi kirish'
-                        }
-                      >
-                        {idleDays} kun
-                      </span>
-                    </div>
-                    <div className="mt-3">
-                      <CrmDayProgress current_day={row.current_day} completed_days={row.completed_days} />
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
-                      <span>{row.plan_name || 'Tarif'}</span>
-                      <span>tugashi {formatCrmDate(row.plan_expires_at)}</span>
-                      {left != null ? <span>{left} kun qoldi</span> : null}
-                      <span>{formatDurationShort(row.total_time_seconds)}</span>
-                      <span>{formatLastSeenAgo(row.last_seen_at ?? row.idle_since)}</span>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )
-      ) : contactedRows.length === 0 ? (
-        <Card className="p-5 text-sm text-app-muted">{q.trim() ? 'Shu kunda bog‘langanlar orasida topilmadi.' : 'Shu kunda bog‘lanish yo‘q.'}</Card>
-      ) : (
-        <ul className="space-y-2.5">
-          {contactedRows.map((row) => (
-            <li key={row.contact_id}>
-              <Link
-                to={supportCrmPath(`/users/${row.id}`)}
-                className="block rounded-[20px] bg-white p-4 shadow-sm ring-1 ring-app-border transition hover:ring-[#2563EB]/40"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-app-text">{fullName(row)}</p>
-                    <p className="mt-1 text-sm font-medium text-app-text">{row.phone || 'Telefon yo‘q'}</p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-sm font-semibold tabular-nums text-emerald-900">
-                    {formatContactTime(row.contact_at)}
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <CrmDayProgress current_day={row.current_day} completed_days={row.completed_days} />
-                </div>
-                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
-                  <span>{CHANNEL_LABEL[row.contact_channel] ?? row.contact_channel}</span>
-                  <span>{OUTCOME_LABEL[row.contact_outcome] ?? row.contact_outcome}</span>
-                  {row.agent_name ? <span>{row.agent_name}</span> : null}
-                  {row.plan_name ? <span>{row.plan_name}</span> : null}
-                  <span className="font-medium text-app-text">
-                    oxirgi kirish: {formatLastSeenAgo(row.last_seen_at)}
-                  </span>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {!loading && !error && otherRows.length > 0 ? (
-        <section className="space-y-2.5 pt-2">
-          <div>
-            <h2 className="text-sm font-semibold text-app-text">Barcha o‘quvchilar orasidan</h2>
-            <p className="mt-0.5 text-xs text-app-muted">Navbatda yo‘q, lekin «{q.trim()}» ga mos keladi.</p>
-          </div>
-          <ul className="space-y-2.5">
-            {otherRows.map((row) => (
-              <li key={row.id}>
-                <CrmSearchResultCard row={row} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-    </div>
-  );
+const tabs:{id:SupportCrmQueueFilter;label:string;count:keyof SupportCrmStats}[]=[
+ {id:'needs_contact',label:'Bog‘lanish kerak',count:'needs_contact_count'},
+ {id:'contacted',label:'Bog‘langanlar',count:'contacted_count'},
+ {id:'no_contact_needed',label:'Bog‘lanish shart emas',count:'no_contact_needed_count'},
+];
+const channels:Record<string,string>={phone:'Telefon',telegram:'Telegram',whatsapp:'WhatsApp',max:'MAX',imo:'IMO',email:'Email',other:'Boshqa'};
+export default function SupportCrmQueuePage(){
+ const [params,setParams]=useSearchParams(),query=params.get('q')??'';
+ const rawTab=params.get('tab'),tab:SupportCrmQueueFilter=rawTab==='contacted'||rawTab==='no_contact_needed'?rawTab:'needs_contact';
+ const [rows,setRows]=useState<SupportCrmQueueRow[]>([]),[counts,setCounts]=useState<SupportCrmStats|null>(null),[total,setTotal]=useState(0),[offset,setOffset]=useState(0);
+ const [loading,setLoading]=useState(true),[error,setError]=useState(''),[revision,setRevision]=useState(0);
+ const request=useRef(0);
+ useEffect(()=>{
+  const id=++request.current;setLoading(true);setError('');
+  const timer=window.setTimeout(()=>{
+   getSupportCrmQueue(tab,query,offset).then(data=>{if(id!==request.current)return;setRows(previous=>offset?previous.concat(data.rows):data.rows);setTotal(data.total);setCounts(data.counts);})
+    .catch(e=>{if(id===request.current)setError(e instanceof Error?e.message:'Xatolik');})
+    .finally(()=>{if(id===request.current)setLoading(false);});
+  },250);
+  return()=>{clearTimeout(timer);request.current++;};
+ },[tab,query,offset,revision]);
+ useEffect(()=>{
+  const refresh=()=>{if(document.visibilityState==='visible'){setOffset(0);setRevision(value=>value+1);}};
+  const timer=window.setInterval(refresh,60000);window.addEventListener('focus',refresh);
+  return()=>{clearInterval(timer);window.removeEventListener('focus',refresh);};
+ },[]);
+ function update(key:string,value:string){setOffset(0);setRows([]);const next=new URLSearchParams(params);if(value)next.set(key,value);else next.delete(key);setParams(next,{replace:true});}
+ return <div className="space-y-4">
+  <div className="flex items-center justify-between gap-3"><h1 className="text-lg font-semibold">Navbat</h1><span className="text-sm text-app-muted">Jami premium: <strong>{counts?.total_premium??'—'}</strong></span></div>
+  <div role="tablist" aria-label="O‘quvchilar guruhlari" className="grid grid-cols-3 gap-2">
+   {tabs.map(item=><button key={item.id} type="button" role="tab" aria-selected={tab===item.id} onClick={()=>update('tab',item.id)} className={`min-h-20 rounded-2xl px-2 py-3 text-xs font-medium sm:text-sm ${tab===item.id?'bg-blue-600 text-white':'bg-white text-app-muted ring-1 ring-app-border'}`}><strong className="mb-1 block text-xl tabular-nums">{counts?.[item.count]??'—'}</strong>{item.label}</button>)}
+  </div>
+  <p className="text-xs text-app-muted">Bog‘langanlar — oxirgi 24 soat. Bog‘lanish kerak — 3 kundan beri kirmagan yoki hali kirish qayd etilmagan. Eng uzoq kirmaganlar birinchi turadi.</p>
+  <div className="flex items-center gap-2 rounded-2xl border border-app-border bg-white px-3"><Search size={18} aria-hidden="true"/><input type="search" aria-label="Telefon, ism yoki familiya" placeholder="Telefon, ism yoki familiya…" maxLength={160} value={query} onChange={event=>update('q',event.target.value)} className="min-h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"/>{query&&<button type="button" aria-label="Qidiruvni tozalash" onClick={()=>update('q','')} className="min-h-11 min-w-11"><X size={18}/></button>}</div>
+  {error?<p role="alert" className="text-sm text-app-danger">{error}</p>:loading&&offset===0?<p role="status" className="text-sm text-app-muted">Yuklanmoqda…</p>:<>
+   <p className="text-xs text-app-muted">{query?'Qidiruv natijalari: ':'Ro‘yxatda: '}{total}</p>
+   {!rows.length?<Card className="p-5 text-sm text-app-muted">{query?'Topilmadi.':'Bu guruh hozircha bo‘sh.'}</Card>:<ul className="space-y-3">
+    {rows.map(row=><li key={row.id}><Link to={supportCrmPath(`/users/${row.id}`)} className="block rounded-2xl bg-white p-4 ring-1 ring-app-border hover:ring-blue-500">
+     <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{[row.first_name,row.last_name].filter(Boolean).join(' ')||`User #${row.id}`}</p><p className="mt-1 text-sm">{row.phone||'—'}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-xs ${tab==='needs_contact'?'bg-amber-50 text-amber-900':'bg-blue-50 text-blue-900'}`}>{formatLastSeenAgo(row.last_seen_at)}</span></div>
+     <div className="mt-3"><CrmDayProgress current_day={row.current_day} completed_days={row.completed_days}/></div>
+     <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted"><span>{row.plan_name||'—'}</span>{row.last_contact_at&&<span>{formatCrmDate(row.last_contact_at)} · {channels[row.last_contact_channel??'']??row.last_contact_channel}{row.last_contact_channel_other?` (${row.last_contact_channel_other})`:''}</span>}</div>
+    </Link></li>)}
+   </ul>}
+  </>}
+  {!error&&rows.length<total&&<button type="button" disabled={loading} className="min-h-11 w-full rounded-xl bg-white text-sm ring-1 ring-app-border" onClick={()=>setOffset(rows.length)}>{loading?'Yuklanmoqda…':'Yana ko‘rsatish'}</button>}
+ </div>;
 }

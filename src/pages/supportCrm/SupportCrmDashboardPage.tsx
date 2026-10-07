@@ -1,3 +1,4 @@
+import CrmPremiumActivityCalendar from '../../components/supportCrm/CrmPremiumActivityCalendar';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Foundation';
@@ -38,7 +39,9 @@ export default function SupportCrmDashboardPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-semibold text-app-text">Bugun</h1>
+      <h1 className="text-lg font-semibold text-app-text">Dashboard</h1>
+      <CrmPremiumActivityCalendar/>
+      <h2 className="text-sm font-semibold text-app-text">O‘quvchilar</h2>
 
       {loading ? (
         <p className="text-sm text-app-muted">Yuklanmoqda…</p>
@@ -48,11 +51,10 @@ export default function SupportCrmDashboardPage() {
         </p>
       ) : stats ? (
         <div className="grid grid-cols-2 gap-2.5">
-          <StatCard label="Navbat" value={stats.queue_count} />
-          <StatCard label="Jarayonda" value={stats.in_progress_count} />
-          <StatCard label="Bugun qo‘ng‘iroq" value={stats.contacted_today} />
-          <StatCard label="Bog‘landi" value={stats.reached_today} />
-          <StatCard label="Ko‘tarmadi" value={stats.no_pickup_today} />
+          <StatCard label="Bog‘lanish kerak" value={stats.needs_contact_count}/>
+          <StatCard label="Bog‘langanlar" value={stats.contacted_count}/>
+          <StatCard label="Bog‘lanish shart emas" value={stats.no_contact_needed_count}/>
+          <StatCard label="Jami premium" value={stats.total_premium}/>
         </div>
       ) : null}
 
@@ -63,12 +65,7 @@ export default function SupportCrmDashboardPage() {
         >
           Navbatni ochish
         </Link>
-        <Link
-          to={supportCrmPath('/in-progress')}
-          className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-amber-50 text-base font-semibold text-amber-950 ring-1 ring-amber-200"
-        >
-          Jarayondagilar
-        </Link>
+
       </div>
     </div>
   );

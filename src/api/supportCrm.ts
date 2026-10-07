@@ -7,12 +7,12 @@ export type SupportCrmAgent = {
 };
 
 export type SupportCrmStats = {
-  queue_count: number;
-  in_progress_count: number;
-  contacted_today: number;
-  reached_today: number;
-  no_pickup_today: number;
+  needs_contact_count:number;
+  contacted_count:number;
+  no_contact_needed_count:number;
+  total_premium:number;
 };
+export type SupportCrmQueueFilter = 'needs_contact'|'contacted'|'no_contact_needed';
 
 /** Kurs bo'yicha qayerga yetgani (1-kundan ketma-ket yopilgan kunlar). */
 export type SupportCrmDayProgress = {
@@ -35,7 +35,8 @@ export type SupportCrmQueueRow = SupportCrmDayProgress & {
   idle_hours: number;
   last_contact_at: string | null;
   last_contact_channel: string | null;
-  last_contact_outcome: string | null;
+  last_contact_channel_other: string | null;
+  bucket:SupportCrmQueueFilter;
 };
 
 export type SupportCrmContact = {
@@ -96,7 +97,6 @@ export type ContactOutcome =
   | 'no_telegram'
   | 'no_whatsapp'
   | 'no_imo'
-  | 'in_progress'
   | 'other';
 export type ContactResult = 'returned_ok' | 'helped_login' | 'needs_fix' | 'feedback' | 'other';
 
@@ -116,13 +116,10 @@ export async function getSupportCrmStats() {
   return supportCrmApi<SupportCrmStats>('/stats');
 }
 
-export async function getSupportCrmQueue(
-  filter: 'needs_contact' | 'contacted_today' | 'in_progress' = 'needs_contact',
-  q = ''
-) {
-  return supportCrmApi<{ rows: SupportCrmQueueRow[]; total: number }>(
-    `/queue?filter=${encodeURIComponent(filter)}&limit=100&q=${encodeURIComponent(q)}`
-  );
+export async function getSupportCrmQueue(filter:SupportCrmQueueFilter='needs_contact',q='',offset=0) {
+ return supportCrmApi<{rows:SupportCrmQueueRow[];total:number;counts:SupportCrmStats}>(
+  `/queue?filter=${encodeURIComponent(filter)}&limit=100&offset=${offset}&q=${encodeURIComponent(q)}`
+ );
 }
 
 export type SupportCrmContactedRow = SupportCrmDayProgress & {
@@ -172,37 +169,6 @@ export async function getSupportCrmPremiumUsers(sort: PremiumSort = 'purchase_de
   );
 }
 
-export type ReturnTrackFilter = 'returned' | 'waiting' | 'all';
-
-export type SupportCrmReturnTrackRow = SupportCrmDayProgress & {
-  id: number;
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  plan_name: string | null;
-  plan_expires_at: string | null;
-  last_seen_at: string | null;
-  contact_id: number;
-  contact_at: string;
-  contact_channel: string;
-  contact_outcome: string;
-  agent_name: string | null;
-  returned: boolean;
-  hours_to_return: number | null;
-};
-
-export async function getSupportCrmReturnTracking(
-  filter: ReturnTrackFilter = 'returned',
-  days = 30
-) {
-  return supportCrmApi<{
-    rows: SupportCrmReturnTrackRow[];
-    total: number;
-    returned_count: number;
-    waiting_count: number;
-  }>(`/return-tracking?filter=${encodeURIComponent(filter)}&days=${days}&limit=300`);
-}
-
 export type SupportCrmSearchRow = SupportCrmDayProgress & {
   id: number;
   first_name: string | null;
@@ -248,4 +214,11 @@ export async function supportCrmParolTiklash(userId: number) {
     method: 'POST',
     body: JSON.stringify({}),
   });
+}
+
+export async function getSupportCrmPremiumCalendar(month:string,cohort:import('../../shared/supportCrmCalendar').PremiumCohort='historical',signal?:AbortSignal) {
+  return supportCrmApi<import('../../shared/supportCrmCalendar').CrmPremiumCalendar>(`/calendar?month=${encodeURIComponent(month)}&cohort=${cohort}`,{signal});
+}
+export async function getSupportCrmStudentCalendar(id:number,month:string,signal?:AbortSignal) {
+  return supportCrmApi<import('../../shared/supportCrmCalendar').CrmStudentCalendar>(`/users/${id}/calendar?month=${encodeURIComponent(month)}`,{signal});
 }

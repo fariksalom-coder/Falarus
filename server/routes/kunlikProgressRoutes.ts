@@ -1,3 +1,4 @@
+import { recordKunlikTaskActivity } from '../services/learningTaskActivity.service.js';
 import { recordKunlikReviewDay } from '../services/kunlikReview.service.js';
 import { invalidateAccessCache } from '../services/subscription.service.js';
 import { Router } from 'express';
@@ -204,6 +205,9 @@ export function createKunlikProgressRoutes(
         invalidateAccessCache(userId);
       }
     }
+    // Analytics must not invalidate a saved learner result if its migration/service is unavailable.
+    try { await recordKunlikTaskActivity(userId,dayNumber,patch); }
+    catch (error) { console.warn('[kunlik-progress] activity recording failed',error instanceof Error?error.message:'unknown'); }
     if (noop) return { noop: true };
     if (dayNumber > 0) await applyKunlikDayCompletionSideEffects(supabase, userId, wasFullyComplete, nowFullyComplete);
 

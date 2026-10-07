@@ -1,9 +1,9 @@
+import { crmVisibilitySql, supportCrmDatabase } from './supportCrmScope.js';
 /**
  * supportCrm.service.ts — retention queue + contact logs for Support CRM.
  */
 import { pool } from '../lib/db.js';
 
-const IDLE_HOURS = 72;
 
 export type ContactChannel =
   | 'phone'
@@ -21,11 +21,11 @@ export type ContactOutcome =
   | 'no_telegram'
   | 'no_whatsapp'
   | 'no_imo'
-  | 'in_progress'
   | 'other';
 export type ContactResult = 'returned_ok' | 'helped_login' | 'needs_fix' | 'feedback' | 'other';
 
-export type QueueFilter = 'needs_contact' | 'contacted_today' | 'in_progress';
+export type QueueFilter = 'needs_contact' | 'contacted' | 'no_contact_needed';
+export type QueueCounts = {needs_contact_count:number;contacted_count:number;no_contact_needed_count:number;total_premium:number};
 
 type SupportSearch = { sql: string; values: string[] };
 
@@ -117,7 +117,8 @@ export type QueueRow = DayProgressFields & {
   idle_hours: number;
   last_contact_at: string | null;
   last_contact_channel: string | null;
-  last_contact_outcome: string | null;
+  last_contact_channel_other: string | null;
+  bucket: QueueFilter;
 };
 
 export type ContactRow = {
@@ -134,183 +135,54 @@ export type ContactRow = {
 };
 
 function requirePool() {
-  if (!pool) throw new Error('DATABASE_URL kerak');
-  return pool;
+  const db=supportCrmDatabase()??pool;
+  if (!db) throw new Error('DATABASE_URL kerak');
+  return db;
 }
 
-/** Shared SELECT for premium + idle users.
- * Idle = platformaga oxirgi kirish (last_seen_at). Yo‘q bo‘lsa kunlik, keyin created_at.
- * Premium ro‘yxat bilan bir xil metrika.
- */
-const QUEUE_BASE_SQL = `
-  WITH last_kunlik AS (
-    SELECT user_id, MAX(updated_at) AS last_kunlik_at
-    FROM user_kunlik_day_progress
-    GROUP BY user_id
-  ),
-  last_contact AS (
-    SELECT DISTINCT ON (user_id)
-      user_id,
-      created_at AS last_contact_at,
-      channel AS last_contact_channel,
-      outcome AS last_contact_outcome
-    FROM support_crm_contacts
-    ORDER BY user_id, created_at DESC
-  ),
-  candidates AS (
-    SELECT
-      u.id,
-      u.first_name,
-      u.last_name,
-      u.phone,
-      u.email,
-      u.plan_name,
-      u.plan_expires_at,
-      COALESCE(u.total_time_seconds, 0)::bigint AS total_time_seconds,
-      u.last_seen_at,
-      lk.last_kunlik_at,
-      COALESCE(u.last_seen_at, lk.last_kunlik_at, u.created_at) AS idle_since,
-      lc.last_contact_at,
-      lc.last_contact_channel,
-      lc.last_contact_outcome
-    FROM users u
-    LEFT JOIN last_kunlik lk ON lk.user_id = u.id
-    LEFT JOIN last_contact lc ON lc.user_id = u.id
-    WHERE u.plan_expires_at IS NOT NULL
-      AND u.plan_expires_at > now()
-      AND COALESCE(u.last_seen_at, lk.last_kunlik_at, u.created_at) <= now() - ($1::text || ' hours')::interval
-  )
+/** One exclusive bucket per active premium student. Historical workflow flags never block a student. */
+const queueBaseSql = () => `
+ WITH last_kunlik AS (
+  SELECT user_id,MAX(updated_at) last_kunlik_at FROM user_kunlik_day_progress GROUP BY user_id
+ ),last_contact AS (
+  SELECT DISTINCT ON (user_id) user_id,created_at last_contact_at,channel last_contact_channel,
+   channel_other last_contact_channel_other
+  FROM support_crm_contacts WHERE outcome <> 'in_progress'
+  ORDER BY user_id,created_at DESC,id DESC
+ ),candidates AS (
+  SELECT u.id,u.first_name,u.last_name,u.phone,u.email,u.plan_name,u.plan_expires_at,
+   COALESCE(u.total_time_seconds,0)::bigint total_time_seconds,u.last_seen_at,lk.last_kunlik_at,
+   COALESCE(u.last_seen_at,u.created_at) idle_since,lc.last_contact_at,lc.last_contact_channel,lc.last_contact_channel_other,
+   CASE WHEN lc.last_contact_at > $1::timestamptz - interval '24 hours' THEN 'contacted'
+    WHEN u.last_seen_at > $1::timestamptz - interval '72 hours' THEN 'no_contact_needed'
+    ELSE 'needs_contact' END bucket
+  FROM users u LEFT JOIN last_kunlik lk ON lk.user_id=u.id LEFT JOIN last_contact lc ON lc.user_id=u.id
+  WHERE ${crmVisibilitySql('u.id')} AND u.plan_expires_at>$1::timestamptz
+   AND COALESCE(u.is_golden,false)=false AND COALESCE(u.account_type,'student')<>'teacher'
+ )
 `;
-
-export async function getSupportCrmStats(): Promise<{
-  queue_count: number;
-  in_progress_count: number;
-  contacted_today: number;
-  reached_today: number;
-  no_pickup_today: number;
-}> {
-  const db = requirePool();
-  const { rows } = await db.query<{
-    queue_count: number;
-    in_progress_count: number;
-    contacted_today: number;
-    reached_today: number;
-    no_pickup_today: number;
-  }>(
-    `${QUEUE_BASE_SQL}
-    SELECT
-      (
-        SELECT COUNT(*)::int FROM candidates
-        WHERE last_contact_outcome IS NULL OR last_contact_outcome <> 'in_progress'
-      ) AS queue_count,
-      (
-        SELECT COUNT(*)::int FROM candidates
-        WHERE last_contact_outcome = 'in_progress'
-      ) AS in_progress_count,
-      (
-        SELECT COUNT(*)::int FROM support_crm_contacts
-        WHERE created_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent')
-              AT TIME ZONE 'Asia/Tashkent'
-      ) AS contacted_today,
-      (
-        SELECT COUNT(*)::int FROM support_crm_contacts
-        WHERE outcome = 'reached'
-          AND created_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent')
-                AT TIME ZONE 'Asia/Tashkent'
-      ) AS reached_today,
-      (
-        SELECT COUNT(*)::int FROM support_crm_contacts
-        WHERE outcome IN ('no_pickup', 'no_answer')
-          AND created_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent')
-                AT TIME ZONE 'Asia/Tashkent'
-      ) AS no_pickup_today
-    `,
-    [String(IDLE_HOURS)]
-  );
-  const r = rows[0];
-  return {
-    queue_count: Number(r?.queue_count ?? 0),
-    in_progress_count: Number(r?.in_progress_count ?? 0),
-    contacted_today: Number(r?.contacted_today ?? 0),
-    reached_today: Number(r?.reached_today ?? 0),
-    no_pickup_today: Number(r?.no_pickup_today ?? 0),
-  };
+const countColumns = `COUNT(*) FILTER(WHERE bucket='needs_contact')::int needs_contact_count,
+ COUNT(*) FILTER(WHERE bucket='contacted')::int contacted_count,
+ COUNT(*) FILTER(WHERE bucket='no_contact_needed')::int no_contact_needed_count,
+ COUNT(*)::int total_premium`;
+export async function getSupportCrmStats(now=new Date()):Promise<QueueCounts> {
+ const result=await requirePool().query(`${queueBaseSql()} SELECT ${countColumns} FROM candidates`,[now.toISOString()]);
+ return result.rows[0] as QueueCounts;
 }
-
-export async function listSupportCrmQueue(opts: {
-  filter?: QueueFilter;
-  limit?: number;
-  offset?: number;
-  q?: string | null;
-}): Promise<{ rows: QueueRow[]; total: number }> {
-  const db = requirePool();
-  const filter: QueueFilter =
-    opts.filter === 'contacted_today'
-      ? 'contacted_today'
-      : opts.filter === 'in_progress'
-        ? 'in_progress'
-        : 'needs_contact';
-  const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
-  const offset = Math.max(opts.offset ?? 0, 0);
-  const search = buildSupportSearch(opts.q, 4, 'c');
-  const countSearch = buildSupportSearch(opts.q, 2, 'c');
-  const searchSql = search ? `AND ${search.sql}` : '';
-  const countSearchSql = countSearch ? `AND ${countSearch.sql}` : '';
-
-  const dayFilter =
-    filter === 'in_progress'
-      ? `AND last_contact_outcome = 'in_progress'`
-      : filter === 'contacted_today'
-        ? `AND last_contact_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'
-           AND (last_contact_outcome IS NULL OR last_contact_outcome <> 'in_progress')`
-        : `AND (
-             last_contact_at IS NULL
-             OR last_contact_at < date_trunc('day', now() AT TIME ZONE 'Asia/Tashkent') AT TIME ZONE 'Asia/Tashkent'
-           )
-           AND (last_contact_outcome IS NULL OR last_contact_outcome <> 'in_progress')`;
-
-  const { rows } = await db.query<QueueRow>(
-    `${QUEUE_BASE_SQL}
-     SELECT
-       id,
-       first_name,
-       last_name,
-       phone,
-       email,
-       plan_name,
-       plan_expires_at,
-       total_time_seconds,
-       last_seen_at,
-       last_kunlik_at,
-       idle_since,
-       GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (now() - idle_since)) / 3600))::int AS idle_hours,
-       last_contact_at,
-       last_contact_channel,
-       last_contact_outcome,
-       ${DAY_PROGRESS_COLUMNS}
-     FROM candidates c
-     ${dayProgressJoin('c')}
-     WHERE TRUE
-       ${dayFilter}
-       ${searchSql}
-     ORDER BY idle_since ASC
-     LIMIT $2 OFFSET $3
-    `,
-    [String(IDLE_HOURS), limit, offset, ...(search?.values ?? [])]
-  );
-
-  const totalRes = await db.query<{ total: number }>(
-    `${QUEUE_BASE_SQL}
-     SELECT COUNT(*)::int AS total
-     FROM candidates c
-     WHERE TRUE
-       ${dayFilter}
-       ${countSearchSql}
-    `,
-    [String(IDLE_HOURS), ...(countSearch?.values ?? [])]
-  );
-
-  return { rows, total: Number(totalRes.rows[0]?.total ?? 0) };
+export async function listSupportCrmQueue(opts:{filter?:QueueFilter;limit?:number;offset?:number;q?:string|null;now?:Date}):Promise<{rows:QueueRow[];total:number;counts:QueueCounts}> {
+ const db=requirePool(),now=(opts.now??new Date()).toISOString();
+ const filter:QueueFilter=opts.filter==='contacted'||opts.filter==='no_contact_needed'?opts.filter:'needs_contact';
+ const limit=Math.min(Math.max(opts.limit??50,1),500),offset=Math.max(opts.offset??0,0);
+ const search=buildSupportSearch(opts.q,4,'c'),countSearch=buildSupportSearch(opts.q,2,'c');
+ const ordering=filter==='contacted'?'last_contact_at DESC,c.id ASC':filter==='no_contact_needed'?'last_seen_at DESC,c.id ASC':'idle_since ASC,c.id ASC';
+ const result=await db.query<QueueRow>(`${queueBaseSql()} SELECT c.*,
+  GREATEST(0,FLOOR(EXTRACT(EPOCH FROM ($1::timestamptz-idle_since))/3600))::int idle_hours,
+  ${DAY_PROGRESS_COLUMNS}
+  FROM candidates c ${dayProgressJoin('c')} WHERE bucket='${filter}' ${search?`AND ${search.sql}`:''}
+  ORDER BY ${ordering} LIMIT $2 OFFSET $3`,[now,limit,offset,...(search?.values??[])]);
+ const count=await db.query(`${queueBaseSql()} SELECT COUNT(*)::int total FROM candidates c WHERE bucket='${filter}' ${countSearch?`AND ${countSearch.sql}`:''}`,[now,...(countSearch?.values??[])]);
+ const counts=await getSupportCrmStats(new Date(now));
+ return {rows:result.rows,total:Number(count.rows[0]?.total??0),counts};
 }
 
 /** YYYY-MM-DD (Asia/Tashkent) — shu kunda bog‘langanlar (har bir kontakt). */
@@ -372,7 +244,7 @@ export async function listContactedOnDate(opts: {
     JOIN users u ON u.id = c.user_id
     LEFT JOIN support_crm_agents a ON a.id = c.agent_id
     ${dayProgressJoin('u')}
-    WHERE (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
+    WHERE ${crmVisibilitySql('u.id')} AND (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
       ${searchSql}
     ORDER BY c.created_at DESC
     LIMIT $2 OFFSET $3
@@ -385,7 +257,7 @@ export async function listContactedOnDate(opts: {
     SELECT COUNT(*)::int AS total
     FROM support_crm_contacts c
     JOIN users u ON u.id = c.user_id
-    WHERE (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
+    WHERE ${crmVisibilitySql('u.id')} AND (c.created_at AT TIME ZONE 'Asia/Tashkent')::date = $1::date
       ${countSearchSql}
     `,
     [date, ...(countSearch?.values ?? [])]
@@ -460,7 +332,7 @@ export async function getSupportCrmUser(userId: number): Promise<{
            AND pay.status = 'approved'
        ) AS plan_started_at
      FROM users u
-     WHERE u.id = $1`,
+     WHERE u.id = $1 AND ${crmVisibilitySql('u.id')}`,
     [userId]
   );
   const u = rows[0];
@@ -627,7 +499,6 @@ export async function createSupportCrmContact(input: {
     'no_telegram',
     'no_whatsapp',
     'no_imo',
-    'in_progress',
     'other',
   ];
   const results: ContactResult[] = ['returned_ok', 'helped_login', 'needs_fix', 'feedback', 'other'];
@@ -650,7 +521,7 @@ export async function createSupportCrmContact(input: {
 
   const comment = String(input.commentText ?? '').trim().slice(0, 2000) || null;
 
-  const userCheck = await db.query(`SELECT id FROM users WHERE id = $1`, [input.userId]);
+  const userCheck = await db.query(`SELECT id FROM users WHERE id = $1 AND ${crmVisibilitySql('users.id')}`, [input.userId]);
   if (!userCheck.rowCount) throw new Error('Foydalanuvchi topilmadi');
 
   const { rows } = await db.query<ContactRow>(
@@ -751,7 +622,7 @@ export async function listPremiumUsers(opts: {
     FROM users u
     LEFT JOIN latest_pay lp ON lp.user_id = u.id
     ${dayProgressJoin('u')}
-    WHERE u.plan_expires_at IS NOT NULL
+    WHERE ${crmVisibilitySql('u.id')} AND u.plan_expires_at IS NOT NULL
       AND u.plan_expires_at > now()
       AND COALESCE(u.is_golden, false) = false
       AND COALESCE(u.account_type, 'student') <> 'teacher'
@@ -765,7 +636,7 @@ export async function listPremiumUsers(opts: {
     `
     SELECT COUNT(*)::int AS total
     FROM users u
-    WHERE u.plan_expires_at IS NOT NULL
+    WHERE ${crmVisibilitySql('u.id')} AND u.plan_expires_at IS NOT NULL
       AND u.plan_expires_at > now()
       AND COALESCE(u.is_golden, false) = false
       AND COALESCE(u.account_type, 'student') <> 'teacher'
@@ -775,144 +646,6 @@ export async function listPremiumUsers(opts: {
   return {
     rows: rows ?? [],
     total: Number(totalRes.rows[0]?.total ?? 0),
-  };
-}
-
-export type ReturnTrackFilter = 'returned' | 'waiting' | 'all';
-
-export type ReturnTrackRow = DayProgressFields & {
-  id: number;
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  plan_name: string | null;
-  plan_expires_at: string | null;
-  last_seen_at: string | null;
-  contact_id: number;
-  contact_at: string;
-  contact_channel: string;
-  contact_outcome: string;
-  agent_name: string | null;
-  returned: boolean;
-  /** Kontakt dan keyin qayta kirishgacha soatlar (faqat returned). */
-  hours_to_return: number | null;
-};
-
-/**
- * Bog‘lanishdan keyin platformaga qaytgan / hali qaytmagan o‘quvchilar.
- * Har bir user uchun oxirgi kontakt olinadi; last_seen_at > contact_at → qaytdi.
- */
-export async function listReturnTracking(opts: {
-  filter?: ReturnTrackFilter;
-  days?: number;
-  limit?: number;
-  offset?: number;
-}): Promise<{ rows: ReturnTrackRow[]; total: number; returned_count: number; waiting_count: number }> {
-  const db = requirePool();
-  const filter: ReturnTrackFilter =
-    opts.filter === 'returned' || opts.filter === 'waiting' ? opts.filter : 'all';
-  const days = Math.min(Math.max(opts.days ?? 30, 1), 180);
-  const limit = Math.min(Math.max(opts.limit ?? 200, 1), 500);
-  const offset = Math.max(opts.offset ?? 0, 0);
-
-  const statusFilter =
-    filter === 'returned'
-      ? `AND u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at`
-      : filter === 'waiting'
-        ? `AND (u.last_seen_at IS NULL OR u.last_seen_at <= lc.contact_at)`
-        : '';
-
-  const orderSql =
-    filter === 'returned'
-      ? 'u.last_seen_at DESC NULLS LAST'
-      : filter === 'waiting'
-        ? 'lc.contact_at DESC'
-        : 'CASE WHEN u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at THEN 0 ELSE 1 END, COALESCE(u.last_seen_at, lc.contact_at) DESC';
-
-  const { rows } = await db.query<ReturnTrackRow>(
-    `
-    WITH latest_contact AS (
-      SELECT DISTINCT ON (c.user_id)
-        c.user_id,
-        c.id AS contact_id,
-        c.created_at AS contact_at,
-        c.channel AS contact_channel,
-        c.outcome AS contact_outcome,
-        c.agent_id
-      FROM support_crm_contacts c
-      WHERE c.created_at >= now() - ($1::text || ' days')::interval
-      ORDER BY c.user_id, c.created_at DESC
-    )
-    SELECT
-      u.id,
-      u.first_name,
-      u.last_name,
-      u.phone,
-      u.plan_name,
-      u.plan_expires_at,
-      u.last_seen_at,
-      lc.contact_id,
-      lc.contact_at,
-      lc.contact_channel,
-      lc.contact_outcome,
-      a.name AS agent_name,
-      (u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at) AS returned,
-      CASE
-        WHEN u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at
-          THEN GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (u.last_seen_at - lc.contact_at)) / 3600))::int
-        ELSE NULL
-      END AS hours_to_return,
-      ${DAY_PROGRESS_COLUMNS}
-    FROM latest_contact lc
-    JOIN users u ON u.id = lc.user_id
-    LEFT JOIN support_crm_agents a ON a.id = lc.agent_id
-    ${dayProgressJoin('u')}
-    WHERE COALESCE(u.is_golden, false) = false
-      ${statusFilter}
-    ORDER BY ${orderSql}
-    LIMIT $2 OFFSET $3
-    `,
-    [String(days), limit, offset]
-  );
-
-  const countsRes = await db.query<{ returned_count: number; waiting_count: number }>(
-    `
-    WITH latest_contact AS (
-      SELECT DISTINCT ON (c.user_id)
-        c.user_id,
-        c.created_at AS contact_at
-      FROM support_crm_contacts c
-      WHERE c.created_at >= now() - ($1::text || ' days')::interval
-      ORDER BY c.user_id, c.created_at DESC
-    )
-    SELECT
-      COUNT(*) FILTER (
-        WHERE u.last_seen_at IS NOT NULL AND u.last_seen_at > lc.contact_at
-      )::int AS returned_count,
-      COUNT(*) FILTER (
-        WHERE u.last_seen_at IS NULL OR u.last_seen_at <= lc.contact_at
-      )::int AS waiting_count
-    FROM latest_contact lc
-    JOIN users u ON u.id = lc.user_id
-    WHERE COALESCE(u.is_golden, false) = false
-    `,
-    [String(days)]
-  );
-
-  const returnedCount = Number(countsRes.rows[0]?.returned_count ?? 0);
-  const waitingCount = Number(countsRes.rows[0]?.waiting_count ?? 0);
-  const total =
-    filter === 'returned' ? returnedCount : filter === 'waiting' ? waitingCount : returnedCount + waitingCount;
-
-  return {
-    rows: (rows ?? []).map((r) => ({
-      ...r,
-      returned: Boolean(r.returned),
-      hours_to_return: r.hours_to_return == null ? null : Number(r.hours_to_return),
-    })),
-    total,
-    returned_count: returnedCount,
-    waiting_count: waitingCount,
   };
 }
 
@@ -959,7 +692,7 @@ export async function searchSupportCrmUsers(rawQuery: string | null | undefined)
       ${DAY_PROGRESS_COLUMNS}
     FROM users u
     ${dayProgressJoin('u')}
-    WHERE COALESCE(u.is_golden, false) = false
+    WHERE ${crmVisibilitySql('u.id')} AND COALESCE(u.is_golden, false) = false
       AND ${search.sql}
     ORDER BY u.last_seen_at DESC NULLS LAST, u.id DESC
     LIMIT $1

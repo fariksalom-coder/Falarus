@@ -1,24 +1,18 @@
+import CrmStudentActivityCalendar from '../../components/supportCrm/CrmStudentActivityCalendar';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft,Copy } from 'lucide-react';
 import { Button, Card } from '../../components/ui/Foundation';
 import {
   getSupportCrmUser,
   postSupportCrmContact,
   supportCrmParolTiklash,
   type ContactChannel,
-  type ContactOutcome,
-  type ContactResult,
   type SupportCrmUserDetail,
 } from '../../api/supportCrm';
 import ParolTiklashPanel from '../../components/support/ParolTiklashPanel';
 import { supportCrmPath } from '../../constants/supportCrmPath';
-import {
-  formatCrmDate,
-  formatDurationShort,
-  formatLastSeenAgo,
-  idleDaysFromHours,
-} from '../../utils/supportCrmFormat';
+import { formatCrmDate } from '../../utils/supportCrmFormat';
 
 const CHANNELS: { id: ContactChannel; label: string }[] = [
   { id: 'phone', label: 'Telefon' },
@@ -27,26 +21,6 @@ const CHANNELS: { id: ContactChannel; label: string }[] = [
   { id: 'max', label: 'MAX' },
   { id: 'imo', label: 'IMO' },
   { id: 'email', label: 'Email' },
-  { id: 'other', label: 'Boshqa' },
-];
-
-const OUTCOMES: { id: ContactOutcome; label: string }[] = [
-  { id: 'reached', label: 'Bog‘landi' },
-  { id: 'no_pickup', label: 'Ko‘tarmadi' },
-  { id: 'no_answer', label: 'Javob yo‘q' },
-  { id: 'no_contact', label: 'Kontakt yo‘q' },
-  { id: 'no_whatsapp', label: 'WhatsApp yo‘q' },
-  { id: 'no_telegram', label: 'Telegram yo‘q' },
-  { id: 'no_imo', label: 'IMO yo‘q' },
-  { id: 'in_progress', label: 'Jarayonda' },
-  { id: 'other', label: 'Boshqa' },
-];
-
-const RESULTS: { id: ContactResult; label: string }[] = [
-  { id: 'returned_ok', label: 'Muammo yo‘q' },
-  { id: 'helped_login', label: 'Kirishga yordam' },
-  { id: 'needs_fix', label: 'Yaxshilash kerak' },
-  { id: 'feedback', label: 'Fikr' },
   { id: 'other', label: 'Boshqa' },
 ];
 
@@ -63,6 +37,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`min-h-10 rounded-2xl px-3 text-sm font-medium transition ${
         active
           ? 'bg-[#2563EB] text-white shadow-sm'
@@ -89,19 +64,18 @@ function stageWord(status: 'done' | 'active' | 'todo'): string {
 export default function SupportCrmUserPage() {
   const { id } = useParams();
   const userId = Number(id);
-  const navigate = useNavigate();
 
   const [data, setData] = useState<SupportCrmUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [calendarRevision,setCalendarRevision]=useState(0);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
   const [channel, setChannel] = useState<ContactChannel>('phone');
   const [channelOther, setChannelOther] = useState('');
-  const [outcome, setOutcome] = useState<ContactOutcome>('reached');
-  const [result, setResult] = useState<ContactResult>('returned_ok');
-  const [comment, setComment] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [copyMessage,setCopyMessage]=useState('');
 
   useEffect(() => {
     if (!Number.isInteger(userId) || userId <= 0) {
@@ -131,41 +105,25 @@ export default function SupportCrmUserPage() {
     return [data.user.first_name, data.user.last_name].filter(Boolean).join(' ').trim() || `User #${data.user.id}`;
   }, [data]);
 
-  async function save(goNext: boolean, forcedOutcome?: ContactOutcome) {
-    setFormError('');
+  async function save() {
+    if (saving) return;
+    setFormError('');setSaved(false);
     if (channel === 'other' && !channelOther.trim()) {
-      setFormError('Boshqa kanal nomini yozing');
-      return;
+      setFormError('Boshqa kanal nomini yozing');return;
     }
-    const saveOutcome = forcedOutcome ?? outcome;
     setSaving(true);
     try {
-      const res = await postSupportCrmContact({
-        userId,
-        channel,
+      const response = await postSupportCrmContact({
+        userId, channel,
         channelOther: channel === 'other' ? channelOther.trim() : undefined,
-        outcome: saveOutcome,
-        result: saveOutcome === 'reached' ? result : null,
-        commentText: comment.trim() || undefined,
+        // A channel log records an attempt, without claiming the student answered.
+        outcome: 'other',
       });
-      if (forcedOutcome === 'in_progress') {
-        navigate(supportCrmPath('/in-progress'), { replace: true });
-        return;
-      }
-      if (goNext && res.nextUserId && res.nextUserId !== userId) {
-        navigate(supportCrmPath(`/users/${res.nextUserId}`), { replace: true });
-      } else if (goNext) {
-        navigate(supportCrmPath('/queue'), { replace: true });
-      } else {
-        const fresh = await getSupportCrmUser(userId);
-        setData(fresh);
-        setComment('');
-      }
+      setData(previous => previous ? {...previous,contacts:[response.contact,...previous.contacts]} : previous);
+      setCalendarRevision(value=>value+1);setSaved(true);
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Saqlash amalga oshmadi');
-    } finally {
-      setSaving(false);
-    }
+    } finally {setSaving(false);}
   }
 
   if (loading) {
@@ -185,101 +143,23 @@ export default function SupportCrmUserPage() {
   }
 
   const u = data.user;
-  const idleDays = u.idle_days ?? idleDaysFromHours(u.idle_hours);
   const progress = data.progress;
-  const isInProgress = data.contacts[0]?.outcome === 'in_progress';
-  const backTo = isInProgress ? supportCrmPath('/in-progress') : supportCrmPath('/queue');
-  const backLabel = isInProgress ? 'Jarayonda' : 'Navbat';
-
   return (
     <div className="space-y-4 pb-8">
-      <Link
-        to={backTo}
-        className="inline-flex min-h-10 items-center gap-2 text-sm text-app-muted hover:text-app-text"
-      >
-        <ArrowLeft size={18} />
-        {backLabel}
-      </Link>
-
-      <div>
-        <h1 className="text-xl font-semibold text-app-text">{name}</h1>
-        <p className="mt-0.5 text-xs text-app-muted">#{u.id}</p>
-        {isInProgress ? (
-          <span className="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-amber-200">
-            Jarayonda
-          </span>
-        ) : null}
+      <Link to={supportCrmPath('/queue')} className="inline-flex min-h-10 items-center gap-2 text-sm text-app-muted hover:text-app-text"><ArrowLeft size={18}/>Navbat</Link>
+      <h1 className="text-xl font-semibold text-app-text">{name}</h1>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <MiniCard label="Telefon">{u.phone?<><a href={`tel:${u.phone}`} className="break-all font-semibold text-blue-600">{u.phone}</a><button type="button" aria-label="Telefon raqamini nusxalash" className="inline-flex min-h-10 items-center gap-2 text-xs text-blue-600" onClick={async()=>{try{await navigator.clipboard.writeText(u.phone!);setCopyMessage('Nusxalandi');}catch{setCopyMessage('Raqamni belgilang va nusxalang');}}}><Copy size={14}/>{copyMessage||'Nusxalash'}</button></>:'—'}</MiniCard>
+        <MiniCard label="Email">{u.email?<a href={`mailto:${u.email}`} className="break-all font-semibold text-blue-600">{u.email}</a>:'—'}</MiniCard>
+        <MiniCard label="Tarif"><strong>{u.plan_name||'—'}</strong></MiniCard>
+        <MiniCard label="Sotib olgan sana"><strong>{u.plan_started_at?formatCrmDate(u.plan_started_at):'—'}</strong></MiniCard>
+        <MiniCard label="Qolgan kunlar"><strong className="text-lg tabular-nums">{u.plan_days_left!=null?`${Math.max(0,u.plan_days_left)} kun`:'—'}</strong></MiniCard>
+        <MiniCard label="Ro‘yxatdan o‘tgan"><strong>{formatCrmDate(u.created_at)}</strong></MiniCard>
       </div>
 
-      {/* Asosiy: platformaga oxirgi kirish (Premium bilan bir xil metrika) */}
-      <div className="rounded-[22px] bg-amber-50 px-4 py-4 ring-1 ring-amber-100">
-        <p className="text-xs font-medium uppercase tracking-wide text-amber-800/80">
-          Platformaga kirmagan
-        </p>
-        <p className="mt-1 flex items-baseline gap-2">
-          <span className="text-4xl font-bold tabular-nums text-amber-950">{idleDays}</span>
-          <span className="text-base font-medium text-amber-900">kun</span>
-        </p>
-        <p className="mt-1 text-sm text-amber-900/70">
-          Oxirgi kirish: {formatLastSeenAgo(u.last_seen_at ?? u.idle_since)}
-        </p>
-        <p className="mt-0.5 text-sm text-amber-900/70">
-          {u.last_kunlik_at
-            ? `Oxirgi kunlik: ${formatCrmDate(u.last_kunlik_at)}`
-            : 'Kunlik reja hali boshlanmagan'}
-        </p>
-      </div>
+      <CrmStudentActivityCalendar key={userId} userId={userId} revision={calendarRevision}/>
 
-      <div className="grid grid-cols-2 gap-2.5">
-        <MiniCard label="Telefon">
-          {u.phone ? (
-            <a href={`tel:${u.phone}`} className="break-all font-semibold text-[#2563EB] hover:underline">
-              {u.phone}
-            </a>
-          ) : (
-            <span className="font-semibold text-app-muted">—</span>
-          )}
-        </MiniCard>
-        <MiniCard label="Email">
-          {u.email ? (
-            <a href={`mailto:${u.email}`} className="break-all font-semibold text-[#2563EB] hover:underline">
-              {u.email}
-            </a>
-          ) : (
-            <span className="font-semibold text-app-muted">—</span>
-          )}
-        </MiniCard>
-        <MiniCard label="Tarif">
-          <span className="font-semibold text-app-text">{u.plan_name || '—'}</span>
-        </MiniCard>
-        <MiniCard label="Platformada">
-          <span className="font-semibold text-app-text">{formatDurationShort(u.total_time_seconds)}</span>
-        </MiniCard>
-        <MiniCard label="Obuna tugashi" className="col-span-2">
-          <span className="font-semibold text-app-text">
-            {u.plan_expires_at ? formatCrmDate(u.plan_expires_at) : '—'}
-          </span>
-          {u.plan_days_left != null ? (
-            <span className="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-              {u.plan_days_left} kun qoldi
-            </span>
-          ) : null}
-        </MiniCard>
-        <MiniCard label="Boshlagan">
-          <span className="font-semibold text-app-text">
-            {u.plan_started_at ? formatCrmDate(u.plan_started_at) : '—'}
-          </span>
-        </MiniCard>
-        <MiniCard label="Oxirgi kunlik">
-          <span className="font-semibold text-app-text">
-            {u.last_kunlik_at ? formatCrmDate(u.last_kunlik_at) : 'Boshlanmagan'}
-          </span>
-        </MiniCard>
-        <MiniCard label="Ro‘yxatdan o‘tgan" className="col-span-2">
-          <span className="font-semibold text-app-text">{formatCrmDate(u.created_at)}</span>
-        </MiniCard>
-      </div>
-
+      <div className="grid items-start gap-4 lg:grid-cols-2">
       {progress ? (
         <Card className="space-y-3 p-4">
           <div className="flex items-baseline justify-between gap-2">
@@ -291,7 +171,7 @@ export default function SupportCrmUserPage() {
           <p className="text-sm text-app-muted">
             {progress.completed_days} kun tugagan · hozir {progress.current_day}-kun
           </p>
-          <ul className="space-y-1.5">
+          <ul className="grid gap-2 sm:grid-cols-2">
             {progress.stages.map((s, i) => (
               <li
                 key={s.id}
@@ -307,109 +187,35 @@ export default function SupportCrmUserPage() {
         </Card>
       ) : null}
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-app-text">Oldingi aloqalar</h2>
-        {data.contacts.length === 0 ? (
-          <Card className="p-4 text-sm text-app-muted">Hali yozuv yo‘q.</Card>
-        ) : (
-          <ul className="space-y-2">
-            {data.contacts.map((c) => (
-              <li key={c.id} className="rounded-2xl bg-white p-3 text-sm ring-1 ring-app-border">
-                <p className="font-medium text-app-text">
-                  {CHANNELS.find((x) => x.id === c.channel)?.label ?? c.channel}
-                  {c.channel === 'other' && c.channel_other ? ` (${c.channel_other})` : ''}
-                  {' · '}
-                  {OUTCOMES.find((x) => x.id === c.outcome)?.label ?? c.outcome}
-                </p>
-                <p className="mt-0.5 text-app-muted">
-                  {c.result ? RESULTS.find((x) => x.id === c.result)?.label ?? c.result : '—'}
-                  {' · '}
-                  {formatCrmDate(c.created_at)}
-                </p>
-                {c.comment_text ? <p className="mt-2 text-app-text">{c.comment_text}</p> : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
+        <Card className="space-y-3 p-4">
+          <h2 className="text-sm font-semibold text-app-text">Oldingi aloqalar</h2>
+          {data.contacts.length===0?<p className="text-sm text-app-muted">Hali yozuv yo‘q.</p>:<ul className="max-h-80 space-y-2 overflow-y-auto">
+            {data.contacts.map(contact=><li key={contact.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm">
+              <time dateTime={contact.created_at} className="text-app-muted">{formatCrmDate(contact.created_at)}</time>
+              <span className="font-medium">{CHANNELS.find(item=>item.id===contact.channel)?.label??contact.channel}{contact.channel==='other'&&contact.channel_other?` (${contact.channel_other})`:''}</span>
+            </li>)}
+          </ul>}
+        </Card>
+      </div>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
       <ParolTiklashPanel
         boshlangich={u.phone ?? u.email ?? `#${u.id}`}
         qulf
         onTikla={() => supportCrmParolTiklash(userId)}
       />
 
-      <Card className="space-y-3 p-4">
-        <h2 className="text-sm font-semibold text-app-text">Aloqa yozish</h2>
-
-        <div>
-          <p className="mb-2 text-xs font-medium text-app-muted">Kanal</p>
-          <div className="flex flex-wrap gap-2">
-            {CHANNELS.map((c) => (
-              <Chip key={c.id} label={c.label} active={channel === c.id} onClick={() => setChannel(c.id)} />
-            ))}
+        <Card className="space-y-3 p-4">
+          <h2 className="text-sm font-semibold text-app-text">Aloqa qayd etish</h2>
+          <p className="text-xs text-app-muted">Foydalanilgan kanalni tanlang va saqlang.</p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Aloqa kanali">
+            {CHANNELS.map(item=><Chip key={item.id} label={item.label} active={channel===item.id} onClick={()=>{setChannel(item.id);setSaved(false);}}/>)}
           </div>
-          {channel === 'other' ? (
-            <input
-              className="mt-2 w-full min-h-11 rounded-2xl border border-app-border bg-white px-4 text-base outline-none focus:border-[#2563EB]"
-              placeholder="Masalan: Instagram"
-              value={channelOther}
-              onChange={(e) => setChannelOther(e.target.value)}
-            />
-          ) : null}
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-medium text-app-muted">Natija</p>
-          <div className="flex flex-wrap gap-2">
-            {OUTCOMES.map((o) => (
-              <Chip key={o.id} label={o.label} active={outcome === o.id} onClick={() => setOutcome(o.id)} />
-            ))}
-          </div>
-        </div>
-
-        {outcome === 'reached' ? (
-          <div>
-            <p className="mb-2 text-xs font-medium text-app-muted">Gaplashuv</p>
-            <div className="flex flex-wrap gap-2">
-              {RESULTS.map((r) => (
-                <Chip key={r.id} label={r.label} active={result === r.id} onClick={() => setResult(r.id)} />
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <textarea
-          className="min-h-[64px] w-full resize-none rounded-2xl border border-app-border bg-white px-4 py-3 text-base outline-none focus:border-[#2563EB]"
-          placeholder="Qisqa izoh"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          maxLength={2000}
-        />
-
-        {formError ? (
-          <p role="alert" className="text-sm text-app-danger">
-            {formError}
-          </p>
-        ) : null}
-
-        <div className="flex gap-2 pt-1">
-          <Button variant="secondary" loading={saving} className="min-h-12 flex-1" onClick={() => void save(false)}>
-            Saqlash
-          </Button>
-          <Button loading={saving} className="min-h-12 flex-[1.4]" onClick={() => void save(true)}>
-            Saqlash → keyingi
-          </Button>
-        </div>
-        <Button
-          variant="secondary"
-          loading={saving}
-          className="min-h-12 w-full !bg-amber-50 !text-amber-950 ring-1 ring-amber-200 hover:!bg-amber-100"
-          onClick={() => void save(false, 'in_progress')}
-        >
-          Jarayonga olish
-        </Button>
-      </Card>
+          {channel==='other'&&<input aria-label="Boshqa kanal" className="min-h-11 w-full rounded-xl border border-app-border px-3" placeholder="Masalan: Instagram" maxLength={100} value={channelOther} onChange={event=>{setChannelOther(event.target.value);setSaved(false);}}/>}
+          {formError&&<p role="alert" className="text-sm text-app-danger">{formError}</p>}
+          {saved&&<p role="status" className="text-sm text-emerald-700">Aloqa saqlandi. O‘quvchi 24 soatga «Bog‘langanlar» ro‘yxatiga o‘tdi. <Link className="underline" to={supportCrmPath('/queue?tab=contacted')}>Ro‘yxatni ochish</Link></p>}
+          <Button loading={saving} disabled={saving} className="min-h-12 w-full" onClick={()=>void save()}>Saqlash</Button>
+        </Card>
+      </div>
     </div>
   );
 }

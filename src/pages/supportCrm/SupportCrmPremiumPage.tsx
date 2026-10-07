@@ -57,7 +57,7 @@ export default function SupportCrmPremiumPage() {
         <span className="text-sm tabular-nums text-app-muted">{total}</span>
       </div>
       <p className="text-sm text-app-muted">
-        Faol obunali barcha o‘quvchilar. Oxirgi kirish: 24 soatdan kam — soatlar, undan ko‘p — kunlar.
+        Faol obunali o‘quvchilar ro‘yxati. Oxirgi kirish: 24 soatdan kam — soatlar, undan ko‘p — kunlar.
       </p>
 
       <div className="flex flex-wrap gap-2">

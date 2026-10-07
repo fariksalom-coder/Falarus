@@ -1,3 +1,4 @@
+import { runWithSupportCrmScope } from '../services/supportCrmScope.js';
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import type { DbClient } from '../types/dbClient';
@@ -21,21 +22,21 @@ export interface SupportCrmPayload {
 }
 
 const AGENT_CACHE_MS = 60_000;
-const agentCache = new Map<number, number>();
+const agentCache = new Map<number, {until:number;isManager:boolean}>();
 
 export function clearSupportCrmAgentCache(agentId?: number): void {
   if (agentId == null) agentCache.clear();
   else agentCache.delete(agentId);
 }
 
-async function agentActive(supabase: DbClient, agentId: number): Promise<boolean> {
+async function agentActive(supabase: DbClient, agentId: number): Promise<{isManager:boolean}|null> {
   const now = Date.now();
-  const until = agentCache.get(agentId);
-  if (until != null && until > now) return true;
+  const cached = agentCache.get(agentId);
+  if (cached && cached.until > now) return cached;
 
   const { data, error } = await supabase
     .from('support_crm_agents')
-    .select('id')
+    .select('id, is_manager')
     .eq('id', agentId)
     .eq('active', true)
     .maybeSingle();
@@ -43,10 +44,11 @@ async function agentActive(supabase: DbClient, agentId: number): Promise<boolean
   if (error) throw new Error(error.message);
   if (!data) {
     agentCache.delete(agentId);
-    return false;
+    return null;
   }
-  agentCache.set(agentId, now + AGENT_CACHE_MS);
-  return true;
+  const agent={until:now+AGENT_CACHE_MS,isManager:(data as {is_manager?:boolean}).is_manager===true};
+  agentCache.set(agentId,agent);
+  return agent;
 }
 
 export function createSupportCrmAuthMiddleware(supabase: DbClient) {
@@ -85,7 +87,7 @@ export function createSupportCrmAuthMiddleware(supabase: DbClient) {
         }
         (req as Request & { supportCrmAgentId?: number }).supportCrmAgentId = agentId;
         (req as Request & { supportCrmLogin?: unknown }).supportCrmLogin = decoded.login;
-        next();
+        runWithSupportCrmScope(ok.isManager?null:agentId,()=>next());
       })
       .catch((err: Error) => {
         console.error('[supportCrmAuth]', err.message);
