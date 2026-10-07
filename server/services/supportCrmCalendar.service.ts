@@ -41,7 +41,7 @@ export async function getPremiumActivityCalendar(rawMonth:unknown,cohort:Premium
     FROM days d LEFT JOIN counts c ON c.day_date=d.day_date ORDER BY d.day_date`,[from,to,now.toISOString(),cohort])).rows;
   return {month,today,cohort,current_premium:Number(current),tracking_since:since,days:rows.map(r=>({date:r.date,future:r.date>today,
     coverage:r.date>crmToday(new Date(since))?'complete':'partial',premium:Number(r.premium),active:Number(r.active),
-    percent:r.date>today||(r.date<=crmToday(new Date(since))&&Number(r.active)===0)?null:participationPercent(Number(r.active),Number(r.premium))}))};
+    percent:r.date>today?null:(participationPercent(Number(r.active),Number(r.premium))??0)}))};
 }
 
 export async function getStudentActivityCalendar(userId:number,rawMonth:unknown,database:Database|null=pool,now=new Date()):Promise<CrmStudentCalendar|null> {

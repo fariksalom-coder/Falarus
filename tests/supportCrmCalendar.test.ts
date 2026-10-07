@@ -50,8 +50,8 @@ test('CRM calendars: historical premium, unique students/tasks, contacts, partia
     const calendar=await getPremiumActivityCalendar('2026-10','historical',adapter as any,now);
     const first=calendar.days[0];assert.equal(first.premium,2);assert.equal(first.active,2);assert.equal(first.percent,100);
     assert.equal(calendar.days[3].premium,2); // user 2 expired; user 3 started Tashkent October 4
-    assert.equal(calendar.days[1].active,0);assert.equal(calendar.days[1].percent,null); // Missing historic tasks are not a measured 0%.assert.equal(calendar.days[7].percent,null);assert.equal(calendar.days[7].future,true);
-    assert.equal((await getPremiumActivityCalendar('2025-01','historical',adapter as any,now)).days[0].percent,null);
+    assert.equal(calendar.days[1].active,0);assert.equal(calendar.days[1].percent,0); // Explicit zero from the saved completion journal, coverage remains partial.assert.equal(calendar.days[7].percent,null);assert.equal(calendar.days[7].future,true);
+    assert.equal((await getPremiumActivityCalendar('2025-01','historical',adapter as any,now)).days[0].percent,0);
     const student=await getStudentActivityCalendar(1,'2026-10',adapter as any,now);assert.ok(student);
     assert.equal(student.days[0].tasks,3);assert.equal(student.days[0].visited,true);assert.equal(student.days[0].coverage,'partial');
     assert.equal(student.days[1].contacts.length,2);assert.deepEqual(student.days[1].contacts.map(c=>c.agent_name),['Оператор 1','Оператор 2']);assert.equal(student.days[1].contacts[1].outcome,'no_pickup');
