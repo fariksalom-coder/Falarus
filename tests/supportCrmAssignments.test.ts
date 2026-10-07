@@ -17,7 +17,7 @@ test('CRM operators: permanent assignments, scoped API, exclusive queue groups, 
  CREATE TABLE user_kunlik_day_progress(user_id bigint,day_number int,grammar_1 boolean,grammar_2 boolean,grammar_3 boolean,words_match boolean,phrases_done boolean,oqish_done boolean,suhbat_done boolean,speaking_level int,speaking_tasks_done int,updated_at timestamptz);
  CREATE TABLE user_tasks(user_id bigint,task_id bigint,status text,completed_at timestamptz);
  CREATE TABLE user_activity_dates(user_id bigint,activity_date date);
- CREATE TABLE user_daily_time(user_id bigint,activity_date date,seconds int);
+ CREATE TABLE user_daily_time(user_id bigint,activity_date date,seconds int,updated_at timestamptz);
  CREATE TABLE support_crm_contacts(id bigserial PRIMARY KEY,agent_id bigint,user_id bigint,channel text,channel_other text,outcome text,result text,comment_text text,created_at timestamptz DEFAULT now());
  INSERT INTO users(id,plan_expires_at) SELECT n,now()+interval '3 months' FROM generate_series(1,5) n;
  INSERT INTO users(id,plan_expires_at,is_golden,account_type) VALUES(6,now()+interval '3 months',true,'student'),(7,now()+interval '3 months',false,'teacher');
@@ -106,5 +106,15 @@ test('CRM operators: permanent assignments, scoped API, exclusive queue groups, 
   const active=await listSupportCrmQueue({filter:'no_contact_needed',now:new Date(reference.getTime()+1)});assert.ok(active.rows.some(row=>Number(row.id)===4));
  },adapter as any);
 
+ // A legacy student with six completed days must not be shown as having never visited.
+ await db.query("INSERT INTO user_kunlik_day_progress(user_id,day_number,grammar_1,updated_at) VALUES(9,6,true,$1)",[date(5*24*hour)]);
+ await runWithSupportCrmScope(2,async()=>{
+  const needed=await listSupportCrmQueue({filter:'needs_contact',now:reference});const row=needed.rows.find(r=>Number(r.id)===9)!;
+  assert.equal(new Date(row.last_activity_at!).toISOString(),date(5*24*hour));assert.equal(row.idle_hours,120);
+  assert.equal(row.contact_activity,null); // The old in-progress record is not a contact.
+  const contacted=await listSupportCrmQueue({filter:'contacted',now:reference});assert.equal(contacted.rows.find(r=>Number(r.id)===1)!.contact_activity,'not_recorded');
+  await db.query('INSERT INTO user_daily_time(user_id,activity_date,seconds,updated_at) VALUES(1,$1,60,$2)',[reference.toISOString().slice(0,10),date(1000)]);
+  const after=await listSupportCrmQueue({filter:'contacted',now:reference});assert.equal(after.rows.find(r=>Number(r.id)===1)!.contact_activity,'after_contact');
+ },adapter as any);
  }finally{if(server)await new Promise<void>(resolve=>server.close(()=>resolve()));await db.close();}
 });

@@ -52,12 +52,12 @@ export function idleDaysFromHours(hours: number | null | undefined): number {
 
 /**
  * Oxirgi kirish: < 24 soat → "N soat oldin", aks holda "N kun oldin".
- * last_seen yo‘q bo‘lsa — "Hali kirmagan".
+ * last_seen yo‘q bo‘lsa — "Faollik sanasi noma’lum".
  */
 export function formatLastSeenAgo(iso: string | null | undefined, nowMs = Date.now()): string {
-  if (!iso) return 'Hali kirmagan';
+  if (!iso) return 'Faollik sanasi noma’lum';
   const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return 'Hali kirmagan';
+  if (!Number.isFinite(t)) return 'Faollik sanasi noma’lum';
   const diffMs = Math.max(0, nowMs - t);
   const hours = Math.floor(diffMs / 3_600_000);
   if (hours < 24) {

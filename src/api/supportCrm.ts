@@ -37,6 +37,8 @@ export type SupportCrmQueueRow = SupportCrmDayProgress & {
   last_contact_channel: string | null;
   last_contact_channel_other: string | null;
   bucket:SupportCrmQueueFilter;
+  last_activity_at:string|null;
+  contact_activity:'after_contact'|'not_recorded'|null;
 };
 
 export type SupportCrmContact = {

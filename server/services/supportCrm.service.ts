@@ -119,6 +119,8 @@ export type QueueRow = DayProgressFields & {
   last_contact_channel: string | null;
   last_contact_channel_other: string | null;
   bucket: QueueFilter;
+  last_activity_at:string|null;
+  contact_activity:'after_contact'|'not_recorded'|null;
 };
 
 export type ContactRow = {
@@ -144,6 +146,8 @@ function requirePool() {
 const queueBaseSql = () => `
  WITH last_kunlik AS (
   SELECT user_id,MAX(updated_at) last_kunlik_at FROM user_kunlik_day_progress GROUP BY user_id
+ ),last_time AS (
+  SELECT user_id,MAX(updated_at) last_time_at FROM user_daily_time WHERE seconds>0 GROUP BY user_id
  ),last_contact AS (
   SELECT DISTINCT ON (user_id) user_id,created_at last_contact_at,channel last_contact_channel,
    channel_other last_contact_channel_other
@@ -152,11 +156,13 @@ const queueBaseSql = () => `
  ),candidates AS (
   SELECT u.id,u.first_name,u.last_name,u.phone,u.email,u.plan_name,u.plan_expires_at,
    COALESCE(u.total_time_seconds,0)::bigint total_time_seconds,u.last_seen_at,lk.last_kunlik_at,
-   COALESCE(u.last_seen_at,u.created_at) idle_since,lc.last_contact_at,lc.last_contact_channel,lc.last_contact_channel_other,
+   GREATEST(u.last_seen_at,lk.last_kunlik_at,lt.last_time_at) last_activity_at,
+   COALESCE(GREATEST(u.last_seen_at,lk.last_kunlik_at,lt.last_time_at),u.created_at) idle_since,
+   CASE WHEN lc.last_contact_at IS NULL THEN NULL WHEN GREATEST(u.last_seen_at,lk.last_kunlik_at,lt.last_time_at)>lc.last_contact_at THEN 'after_contact' ELSE 'not_recorded' END contact_activity,lc.last_contact_at,lc.last_contact_channel,lc.last_contact_channel_other,
    CASE WHEN lc.last_contact_at > $1::timestamptz - interval '24 hours' THEN 'contacted'
-    WHEN u.last_seen_at > $1::timestamptz - interval '72 hours' THEN 'no_contact_needed'
+    WHEN GREATEST(u.last_seen_at,lk.last_kunlik_at,lt.last_time_at) > $1::timestamptz - interval '72 hours' THEN 'no_contact_needed'
     ELSE 'needs_contact' END bucket
-  FROM users u LEFT JOIN last_kunlik lk ON lk.user_id=u.id LEFT JOIN last_contact lc ON lc.user_id=u.id
+  FROM users u LEFT JOIN last_kunlik lk ON lk.user_id=u.id LEFT JOIN last_contact lc ON lc.user_id=u.id LEFT JOIN last_time lt ON lt.user_id=u.id
   WHERE ${crmVisibilitySql('u.id')} AND u.plan_expires_at>$1::timestamptz
    AND COALESCE(u.is_golden,false)=false AND COALESCE(u.account_type,'student')<>'teacher'
  )
@@ -174,7 +180,7 @@ export async function listSupportCrmQueue(opts:{filter?:QueueFilter;limit?:numbe
  const filter:QueueFilter=opts.filter==='contacted'||opts.filter==='no_contact_needed'?opts.filter:'needs_contact';
  const limit=Math.min(Math.max(opts.limit??50,1),500),offset=Math.max(opts.offset??0,0);
  const search=buildSupportSearch(opts.q,4,'c'),countSearch=buildSupportSearch(opts.q,2,'c');
- const ordering=filter==='contacted'?'last_contact_at DESC,c.id ASC':filter==='no_contact_needed'?'last_seen_at DESC,c.id ASC':'idle_since ASC,c.id ASC';
+ const ordering=filter==='contacted'?'last_contact_at DESC,c.id ASC':filter==='no_contact_needed'?'last_activity_at DESC,c.id ASC':'idle_since ASC,c.id ASC';
  const result=await db.query<QueueRow>(`${queueBaseSql()} SELECT c.*,
   GREATEST(0,FLOOR(EXTRACT(EPOCH FROM ($1::timestamptz-idle_since))/3600))::int idle_hours,
   ${DAY_PROGRESS_COLUMNS}
