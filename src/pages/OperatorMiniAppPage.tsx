@@ -60,6 +60,7 @@ type StatsResponse = {
     nextBonusAmount: number | null;
     remainingToNext: number;
     tiers: Array<{ courses: number; amount: number }>;
+    pendingCourses: number;
   };
   salaryDays: Array<{ day: string; soldCourses: number; baseAmount: number; bonusAmount: number; totalAmount: number }>;
   salaryTariffs: Array<{ tariff: string; sold_courses: number }>;
@@ -811,6 +812,11 @@ export default function OperatorMiniAppPage() {
                   <p className="mt-1 text-sm font-bold text-blue-100/80">
                     {stats?.salary.soldCourses ?? 0} ta kurs · {moneyText(stats?.salary.perCourseAmount ?? 30000, 'UZS')} / kurs
                   </p>
+                  {stats?.salary.pendingCourses ? (
+                    <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-blue-50">
+                      Tekshiruvda yana {stats.salary.pendingCourses} ta kurs — admin tasdiqlasa, chek yuborilgan kunga qo‘shiladi.
+                    </p>
+                  ) : null}
                 </section>
 
                 {stats?.rahmatClaims?.length ? <section className="space-y-2 rounded-2xl bg-white p-3">

@@ -1,4 +1,5 @@
 import { decideRahmatClaim } from './rahmatClaims.js';
+import { operatorSalaries, SALARY_BONUSES_UZS, SALARY_PER_COURSE_UZS } from './salary.js';
 import { readMiniReceipt } from './miniApp.js';
 import { decideDebtDeferral } from './debtActions.js';
 import { Router } from 'express';
@@ -109,6 +110,20 @@ export function operatorAdminRoutes() {
         const debts = (await pool!.query(`SELECT c.operator_id,o.name,c.currency,count(*) contracts,count(distinct c.user_id) clients,sum(c.debt) debt,sum(c.debt) FILTER(WHERE c.due_at<now()) overdue,count(*) FILTER(WHERE c.debt=0) settled,count(*) FILTER(WHERE EXISTS(SELECT 1 FROM operator_freezes f WHERE f.contract_id=c.id)) frozen FROM operator_balances c JOIN operator_accounts o ON o.id=c.operator_id WHERE ($1::bigint IS NULL OR c.operator_id=$1) AND ($2::text IS NULL OR c.source=$2) AND ($3::text IS NULL OR c.tariff=$3) AND (c.debt=0 OR c.paid>0 OR c.pending>0) GROUP BY c.operator_id,o.name,c.currency`, [op, source, tariff])).rows;
         const activity = (await pool!.query(`SELECT a.operator_id,o.name,count(*) actions,count(distinct a.user_id) clients FROM operator_audit a JOIN operator_accounts o ON o.id=a.operator_id WHERE ($1::bigint IS NULL OR a.operator_id=$1) AND ($2::date IS NULL OR a.created_at>=($2::date::timestamp AT TIME ZONE 'Asia/Tashkent')) AND ($3::date IS NULL OR a.created_at<(($3::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent')) GROUP BY a.operator_id,o.name`, [op, from || null, to || null])).rows;
         res.json({ rows: rows.slice(0, 50), more: rows.length > 50, summary, debts, activity });
+    }));
+    router.get('/salary', wrap(async (req: any, res: any) => {
+        const from = String(req.query.from ?? ''), to = String(req.query.to ?? '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || to < from)
+            throw new Error('Sana noto‘g‘ri.');
+        // Tashkent calendar days, both ends inclusive.
+        const range = (await pool!.query(`SELECT ($1::date::timestamp AT TIME ZONE 'Asia/Tashkent') "from",(($2::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent') "to"`, [from, to])).rows[0];
+        const salaries = await operatorSalaries(pool!, range.from, range.to);
+        const operators = (await pool!.query('SELECT id,name,active FROM operator_accounts ORDER BY id')).rows;
+        const rows = operators
+            .map((o: any) => ({ operator_id: Number(o.id), name: o.name, active: o.active, ...salaries.get(Number(o.id)) }))
+            .filter((r: any) => r.active || r.soldCourses || r.pendingCourses);
+        res.set('Cache-Control', 'no-store');
+        res.json({ from, to, perCourse: SALARY_PER_COURSE_UZS, tiers: SALARY_BONUSES_UZS, rows });
     }));
     router.get('/rahmat-claims', wrap(async (req:any,res:any)=>{
         const op=Number(req.query.operator)||null;

@@ -25,14 +25,14 @@ function sale(partial: Partial<AnalyticsSale>): AnalyticsSale {
   return {
     key: 'c:1', source: 'operator', sale_at: '2026-10-02T06:00:00Z', user_id: 10, client_name: 'Клиент', phone: '',
     operator_id: 1, operator_name: 'Laziz', tariff: 'three_month', currency: 'UZS', total: 530000,
-    paid: 530000, pending: 0, debt: 0, due_at: null, lead_source: 'Instagram', ...partial,
+    paid: 530000, pending: 0, debt: 0, due_at: null, via_rahmat: false, lead_source: 'Instagram', ...partial,
   };
 }
 
 function payment(partial: Partial<AnalyticsPayment>): AnalyticsPayment {
   return {
     key: 'r:1', source: 'operator', status: 'approved', paid_at: '2026-10-02T06:00:00Z', user_id: 10, client_name: 'Клиент',
-    operator_id: 1, operator_name: 'Laziz', tariff: 'three_month', currency: 'UZS', amount: 530000,
+    operator_id: 1, operator_name: 'Laziz', via_rahmat: false, tariff: 'three_month', currency: 'UZS', amount: 530000,
     sale_date: '2026-10-02', ...partial,
   };
 }

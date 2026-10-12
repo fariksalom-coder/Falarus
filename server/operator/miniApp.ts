@@ -1,5 +1,6 @@
 import { eligibleRahmatSql, submitRahmatClaim } from './rahmatClaims.js';
 import { latestDeferralSql, requestDebtDeferral, submitDebtReceipt } from './debtActions.js';
+import { operatorSalaries, salaryForCourses } from './salary.js';
 import { dueDebts, reminderSlot, REMINDER_HOURS } from './reminders.js';
 import { Router } from 'express';
 import multer from 'multer';
@@ -28,13 +29,6 @@ const SOURCES = ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'] as
 const CURRENCIES = OPERATOR_CURRENCIES;
 const RECEIPT_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 const TZ_OFFSET_MS = 5 * 60 * 60 * 1000;
-const SALARY_PER_COURSE_UZS = 30000;
-const SALARY_BONUSES_UZS = [
-  { courses: 3, amount: 50000 },
-  { courses: 5, amount: 100000 },
-  { courses: 8, amount: 150000 },
-] as const;
-
 type MiniOperator = {
   id: number;
   name: string;
@@ -196,27 +190,6 @@ function currentMonthRange(): { from: string; to: string } {
   return { from: isoFromAppDate(`${today.slice(0, 8)}01`), to: isoFromAppDate(today, true) };
 }
 
-function salaryForCourses(courses: number) {
-  const soldCourses = Math.max(0, Math.floor(Number(courses) || 0));
-  const bonus = [...SALARY_BONUSES_UZS].reverse().find((tier) => soldCourses >= tier.courses) ?? null;
-  const next = SALARY_BONUSES_UZS.find((tier) => soldCourses < tier.courses) ?? null;
-  const baseAmount = soldCourses * SALARY_PER_COURSE_UZS;
-  const bonusAmount = bonus?.amount ?? 0;
-  return {
-    currency: 'UZS',
-    soldCourses,
-    perCourseAmount: SALARY_PER_COURSE_UZS,
-    baseAmount,
-    bonusAmount,
-    totalAmount: baseAmount + bonusAmount,
-    bonusTier: bonus,
-    nextTarget: next?.courses ?? null,
-    nextBonusAmount: next?.amount ?? null,
-    remainingToNext: next ? Math.max(0, next.courses - soldCourses) : 0,
-    tiers: SALARY_BONUSES_UZS,
-  };
-}
-
 async function storeMiniReceipt(file: Express.Multer.File) {
   if (!file || !RECEIPT_MIMES.has(file.mimetype)) {
     throw new Error('Chekni JPG, PNG, WEBP yoki PDF qilib yuklang (8 MB gacha).');
@@ -362,44 +335,15 @@ export function operatorMiniAppRoutes() {
        ORDER BY r.currency`,
       [op.id, monthRange.from, monthRange.to],
     )).rows;
-    // Credit a course once to its first approved receipt's operator, even if
-    // the contract is later reassigned for debt collection.
-    const salaryRows = (await pool!.query(
-      `SELECT to_char((sold_at AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",tariff,count(*)::int sold_courses
-       FROM (
-         SELECT c.tariff,sale.operator_id,COALESCE(sale.decided_at,c.activated_at) sold_at
-         FROM operator_contracts c JOIN LATERAL (
-           SELECT r.operator_id,r.decided_at FROM operator_receipts r WHERE r.contract_id=c.id AND r.status='approved'
-           ORDER BY r.decided_at ASC NULLS LAST,r.id ASC LIMIT 1
-         ) sale ON true WHERE c.activated_at IS NOT NULL
-         UNION ALL SELECT tariff,operator_id,paid_at FROM operator_rahmat_sales
-       ) credited WHERE operator_id=$1 AND sold_at>=$2 AND sold_at<$3
-       GROUP BY "day",tariff ORDER BY "day" DESC,tariff`,
-      [op.id, range.from, range.to],
-    )).rows;
-    const coursesByDay = new Map<string, number>();
-    const coursesByTariff = new Map<string, number>();
-    for (const row of salaryRows) {
-      coursesByDay.set(row.day, (coursesByDay.get(row.day) ?? 0) + Number(row.sold_courses));
-      coursesByTariff.set(row.tariff, (coursesByTariff.get(row.tariff) ?? 0) + Number(row.sold_courses));
-    }
-    const salaryDays = [...coursesByDay].map(([day, courses]) => {
-      const calc = salaryForCourses(courses);
-      return {
-        day,
-        soldCourses: calc.soldCourses,
-        baseAmount: calc.baseAmount,
-        bonusAmount: calc.bonusAmount,
-        totalAmount: calc.totalAmount,
-      };
-    });
-    const soldCourses = salaryDays.reduce((sum, day) => sum + day.soldCourses, 0);
+    const credited = (await operatorSalaries(pool!, range.from, range.to, op.id)).get(op.id);
+    const salaryDays = credited?.days ?? [];
     const salary = {
-      ...salaryForCourses(soldCourses),
-      bonusAmount: salaryDays.reduce((sum, day) => sum + day.bonusAmount, 0),
-      totalAmount: salaryDays.reduce((sum, day) => sum + day.totalAmount, 0),
+      ...salaryForCourses(credited?.soldCourses ?? 0),
+      bonusAmount: credited?.bonusAmount ?? 0,
+      totalAmount: credited?.totalAmount ?? 0,
+      pendingCourses: credited?.pendingCourses ?? 0,
     };
-    const salaryTariffs = [...coursesByTariff].map(([tariff, sold_courses]) => ({ tariff, sold_courses }));
+    const salaryTariffs = credited?.tariffs ?? [];
     const actions = (await pool!.query(
       `SELECT count(*)::int actions,count(distinct user_id)::int clients
        FROM operator_audit

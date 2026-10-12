@@ -7,7 +7,7 @@ import { adminPath } from '../../constants/adminPath';
 import {
   CURRENCIES,
   MAIN_TARIFFS,
-  SOURCE_LABELS,
+  channelName,
   addDays,
   daysBetween,
   moneyInUzs,
@@ -60,8 +60,6 @@ function dueLabel(dueAt: string | null, today: string): { text: string; overdue:
   return { text: `просрочено ${-days} дн.`, overdue: true };
 }
 
-const channelName = (sale: Pick<AnalyticsSale, 'source' | 'operator_name'>) =>
-  sale.source === 'operator' ? sale.operator_name : SOURCE_LABELS[sale.source];
 
 /** Halqa markazi uchun qisqa yozuv: «3,82 млн» + birligi alohida. */
 function compactUzs(value: number): { value: string; unit: string } {
@@ -497,7 +495,7 @@ export default function AdminSalesLedgerPage() {
                             <ClientCell
                               userId={p.user_id}
                               name={p.client_name}
-                              sub={`${whenLabel(p.paid_at, multiDay)} · ${tariffLabel(p.tariff)} · ${p.source === 'operator' ? p.operator_name : SOURCE_LABELS[p.source]}`}
+                              sub={`${whenLabel(p.paid_at, multiDay)} · ${tariffLabel(p.tariff)} · ${channelName(p)}`}
                             />
                           </div>
                           <span className={`whitespace-nowrap rounded-lg px-2 py-1 text-[11.5px] font-semibold ${badge.cls}`}>{badge.text}</span>

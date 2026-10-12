@@ -283,21 +283,25 @@ test('operator conversation + admin workflow: authorization, replay, installment
             const amount = i < 3 ? 500 : 500000;
             const contract = (await db.query<any>("INSERT INTO operator_contracts(user_id,operator_id,tariff,currency,total,source,activated_at) VALUES(1,1,'month',$1,$2,'Telegram',$3) RETURNING id", [currency, amount * 2, timestamp])).rows[0].id;
             firstContract ??= contract;
-            await db.query("INSERT INTO operator_receipts(contract_id,operator_id,amount,file_id,file_unique_id,mime,status,created_at,decided_at) VALUES($1,1,$2,'test',$3,'image/jpeg','approved','2026-08-27T08:00:00Z',$4)", [contract, amount, 'stats-' + i, timestamp]);
+            await db.query("INSERT INTO operator_receipts(contract_id,operator_id,amount,file_id,file_unique_id,mime,status,created_at,decided_at) VALUES($1,1,$2,'test',$3,'image/jpeg','approved',$4,'2026-08-30T08:00:00Z')", [contract, amount, 'stats-' + i, timestamp]);
         }
         await db.query("INSERT INTO operator_receipts(contract_id,operator_id,amount,file_id,file_unique_id,mime,status,created_at,decided_at) VALUES($1,1,100,'test','stats-installment','image/jpeg','approved','2026-08-29T08:00:00Z','2026-08-29T08:00:00Z')", [firstContract]);
         await db.query('UPDATE operator_contracts SET operator_id=2 WHERE id=$1', [firstContract]);
         const rangeStats = await invokeMini('get', '/stats', { period: 'custom', from: '2026-08-28', to: '2026-08-29' });
-        assert.equal(rangeStats.salary.soldCourses, 6, 'installments are not another sold course; reassigning debt does not move earned salary');
+        assert.equal(rangeStats.salary.soldCourses, 6, 'courses count on the submission day; installments and debt reassignment change nothing');
+        const approvalDayStats = await invokeMini('get', '/stats', { period: 'custom', from: '2026-08-30', to: '2026-08-30' });
+        assert.equal(approvalDayStats.salary.soldCourses, 0, 'admin approval day does not move salary');
         assert.equal(rangeStats.salary.baseAmount, 180000);
         assert.equal(rangeStats.salary.bonusAmount, 100000, 'two daily bonuses of 50000');
         assert.equal(rangeStats.salary.totalAmount, 280000);
         assert.equal(rangeStats.salary.totalAmount, rangeStats.salaryDays.reduce((sum: number, day: any) => sum + day.totalAmount, 0));
+        // Money received still follows the approval date.
+        const moneyStats = await invokeMini('get', '/stats', { period: 'custom', from: '2026-08-28', to: '2026-08-30' });
         for (const currency of ['RUB', 'UZS']) {
-            const approved = rangeStats.payments.find((r: any) => r.status === 'approved' && r.currency === currency);
-            assert.equal(Number(approved.amount), rangeStats.salesDays.filter((r: any) => r.currency === currency).reduce((sum: number, r: any) => sum + Number(r.amount), 0));
+            const approved = moneyStats.payments.find((r: any) => r.status === 'approved' && r.currency === currency);
+            assert.equal(Number(approved.amount), moneyStats.salesDays.filter((r: any) => r.currency === currency).reduce((sum: number, r: any) => sum + Number(r.amount), 0));
         }
-        assert.equal(rangeStats.history.length, 7, 'history follows the approval date, including receipts submitted on an earlier day');
+        assert.equal(moneyStats.history.length, 7, 'history follows the approval date, including receipts submitted on an earlier day');
         await assert.rejects(invokeMini('get', '/stats', { period: 'custom', from: '2026-02-30', to: '2026-03-02' }), /Sana/);
         await assert.rejects(invokeMini('get', '/stats', { period: 'custom', from: '2026-08-29', to: '2026-08-28' }), /Tugash/);
         // Debt actions in the mini app: admin-gated deferrals and installments on the existing contract.

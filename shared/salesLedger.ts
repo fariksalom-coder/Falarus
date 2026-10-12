@@ -71,6 +71,8 @@ export type AnalyticsSale = {
   pending: number;
   debt: number;
   due_at: string | null;
+  /** Operator o'ziniki deb biriktirgan Rahmat avtoto'lovi (bitta to'lov, operator kanalida). */
+  via_rahmat: boolean;
   /** Mijoz qayerdan kelgan (operator tanlagan manba). */
   lead_source: string;
 };
@@ -85,6 +87,7 @@ export type AnalyticsPayment = {
   client_name: string;
   operator_id: number | null;
   operator_name: string;
+  via_rahmat: boolean;
   tariff: string | null;
   currency: Currency;
   amount: number;
@@ -151,6 +154,12 @@ export type AnalyticsSummary = {
 const add = (target: Money, currency: Currency, amount: number) => {
   target[currency] += amount;
 };
+
+/** «Ism (автоплатёж Rahmat)» — operator biriktirgan Rahmat to'lovi alohida to'lov emas. */
+export function channelName(item: { source: SaleSource; operator_name: string; via_rahmat: boolean }): string {
+  if (item.source !== 'operator') return SOURCE_LABELS[item.source];
+  return item.via_rahmat ? `${item.operator_name} (автоплатёж Rahmat)` : item.operator_name;
+}
 
 export const channelKey = (source: SaleSource, operatorId: number | null) =>
   source === 'operator' ? `op:${operatorId}` : source;

@@ -30,11 +30,14 @@ const CLIENT_COLUMNS = `u.id AS user_id, concat_ws(' ', u.first_name, u.last_nam
  */
 const GATEWAY_PAYMENTS = `
   SELECT p.id, p.amount, p.currency, p.tariff_type, p.payment_channel, a.operator_id, o.name operator_name,
+         po.name AS claim_operator_name,
          ${iso('COALESCE(p.payment_time, p.created_at)')} AS paid_at, ${CLIENT_COLUMNS}
   FROM payments p
   JOIN users u ON u.id = p.user_id
   LEFT JOIN operator_rahmat_sales a ON a.payment_id=p.id
   LEFT JOIN operator_accounts o ON o.id=a.operator_id
+  LEFT JOIN operator_rahmat_claims pc ON pc.payment_id=p.id AND pc.status='pending'
+  LEFT JOIN operator_accounts po ON po.id=pc.operator_id
   WHERE p.status = 'approved'
     AND COALESCE(p.product_code, 'russian') = 'russian'
     AND p.amount > 1
@@ -72,6 +75,7 @@ function contractSale(row: Row): AnalyticsSale {
     pending: num(row.pending),
     debt: num(row.debt),
     due_at: row.due_at ? String(row.due_at) : null,
+    via_rahmat: false,
     lead_source: text(row.lead_source),
   };
 }
@@ -142,7 +146,9 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
         pending: 0,
         debt: 0,
         due_at: null,
-        lead_source: row.operator_id ? 'Rahmat' : '',
+        // Bitta to'lov: operator biriktirgan Rahmat to'lovi operator qatorida, belgisi bilan.
+        via_rahmat: Boolean(row.operator_id),
+        lead_source: row.claim_operator_name ? `Заявка оператора ${text(row.claim_operator_name)} на проверке` : '',
       }));
 
       const receiptPayments: AnalyticsPayment[] = receipts.rows.map((row: Row) => ({
@@ -154,6 +160,7 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
         client_name: clientName(row),
         operator_id: num(row.operator_id),
         operator_name: text(row.operator_name),
+        via_rahmat: false,
         tariff: text(row.tariff) || null,
         currency: currency(row.currency),
         amount: num(row.amount),
@@ -169,6 +176,7 @@ export function createAdminSalesLedgerRoutes(database: Pool | null = pool): Rout
         client_name: sale.client_name,
         operator_id: sale.operator_id,
         operator_name: sale.operator_name,
+        via_rahmat: sale.via_rahmat,
         tariff: sale.tariff,
         currency: sale.currency,
         amount: sale.total,

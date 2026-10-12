@@ -7,7 +7,7 @@ import { createHmac } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import express from 'express';
 import type { PoolClient } from 'pg';
-import { summarizeAnalytics } from '../shared/salesLedger';
+import { channelName, summarizeAnalytics } from '../shared/salesLedger';
 
 test('Rahmat attribution: authenticated submission, admin approval, single revenue/salary, refunds and unchanged premium',async()=>{
   process.env.DATABASE_URL='postgresql://test:test@127.0.0.1:1/test';
@@ -66,13 +66,15 @@ test('Rahmat attribution: authenticated submission, admin approval, single reven
     const review=await (await get('/admin/rahmat-claims')).json();assert.equal(review.rows[0].amount,'530000');
     const file=await get(`/admin/rahmat-claims/${claimId}/file`);assert.equal(file.status,200);assert.equal(file.headers.get('content-type'),'image/png');
     const period=async()=>{const r=await get('/analytics/period?from=2026-10-03&to=2026-10-03');assert.equal(r.status,200);return r.json();};
-    const unassigned=await period();assert.equal(unassigned.sales.length,1);assert.equal(unassigned.sales[0].source,'rahmat');
+    const unassigned=await period();assert.equal(unassigned.sales.length,1);assert.equal(unassigned.sales[0].source,'rahmat');assert.match(unassigned.sales[0].lead_source,/на проверке/);assert.equal(pending.salary.pendingCourses,1);
     await decideRahmatClaim(c,claimId,1,'approved','');
     await assert.rejects(decideRahmatClaim(c,claimId,1,'approved',''),/oldin/);
-    const assigned=await period();assert.equal(assigned.sales.length,1);assert.equal(assigned.payments.length,1);assert.equal(assigned.sales[0].source,'operator');assert.equal(assigned.sales[0].lead_source,'Rahmat');assert.equal(assigned.sales[0].operator_id,1);
+    const assigned=await period();assert.equal(assigned.sales.length,1);assert.equal(assigned.payments.length,1);assert.equal(assigned.sales[0].source,'operator');assert.equal(assigned.sales[0].via_rahmat,true);assert.equal(assigned.payments[0].via_rahmat,true);assert.equal(channelName(assigned.payments[0]),'One (автоплатёж Rahmat)');assert.equal(assigned.sales[0].operator_id,1);
     assert.deepEqual(summarizeAnalytics(assigned).received,summarizeAnalytics(unassigned).received);
     const stats=await (await get('/mini/stats?period=custom&from=2026-10-03&to=2026-10-03')).json();
-    assert.equal(stats.salary.soldCourses,1);assert.equal(stats.salary.totalAmount,30000);assert.equal(stats.salesDays[0].amount,'530000');assert.equal(stats.payments[0].amount,'530000');
+    assert.equal(stats.salary.soldCourses,1);assert.equal(stats.salary.totalAmount,30000);
+    const adminSalary=await (await get('/admin/salary?from=2026-10-03&to=2026-10-03')).json();const one=adminSalary.rows.find((r:any)=>r.operator_id===1);
+    assert.equal(one.soldCourses,1);assert.equal(one.baseAmount,30000);assert.equal(one.bonusAmount,0);assert.equal(one.totalAmount,30000);assert.deepEqual(one.sold,{UZS:530000});assert.equal(stats.salesDays[0].amount,'530000');assert.equal(stats.payments[0].amount,'530000');
     assert.deepEqual((await db.query('SELECT * FROM users ORDER BY id')).rows,before);assert.equal((await db.query<any>('SELECT count(*) n FROM subscriptions')).rows[0].n,0);
     assert.equal((await db.query<any>('SELECT count(*) n FROM payments')).rows[0].n,5);assert.equal((await db.query<any>('SELECT count(*) n FROM operator_contracts')).rows[0].n,0);
     assert.equal((await db.query<any>('SELECT count(*) n FROM operator_outbox')).rows[0].n,2);
