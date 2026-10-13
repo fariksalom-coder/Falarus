@@ -13,6 +13,7 @@ import { createAdminMeetController } from '../controllers/adminMeetController';
 import { blockUser, listBlocks, unblockUser } from '../services/chatBlock.service.js';
 import { ochirXabarMediasi } from '../services/mediaTozalash.service.js';
 import { operatorAdminRoutes } from '../operator/admin.js';
+import { salesHeadAdminRoutes } from '../salesHead/routes.js';
 import { operatorReceipt } from '../operator/routes.js';
 import { enabled as operatorEnabled } from '../operator/service.js';
 import { readAdminUsers, readAdminRegistrations, readAdminUnreadCount } from '../services/adminUsersRead.service.js';
@@ -85,6 +86,7 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.use('/sales-ledger', createAdminSalesLedgerRoutes());
   if (operatorEnabled()) {
     router.use('/operator-bot', operatorAdminRoutes());
+    router.use('/sales-head', salesHeadAdminRoutes());
     router.get('/operator-bot/receipts/:id/file', operatorReceipt);
   }
 

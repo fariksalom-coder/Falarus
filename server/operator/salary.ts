@@ -36,32 +36,48 @@ export function salaryForCourses(courses: number) {
  * Pending rows are courses still waiting for an admin.
  */
 const CREDITED_SALES_SQL = `
-  SELECT sale.operator_id,c.tariff,c.currency,c.total amount,sale.created_at sold_at,'approved' status
+  SELECT sale.operator_id,c.tariff,c.currency,c.total amount,sale.created_at sold_at,'approved' status,'contract' kind
   FROM operator_contracts c JOIN LATERAL (
     SELECT r.operator_id,r.created_at FROM operator_receipts r WHERE r.contract_id=c.id AND r.status='approved'
     ORDER BY r.created_at ASC,r.id ASC LIMIT 1
   ) sale ON true WHERE c.activated_at IS NOT NULL
   UNION ALL
-  SELECT sale.operator_id,c.tariff,c.currency,c.total,sale.created_at,'pending'
+  SELECT sale.operator_id,c.tariff,c.currency,c.total,sale.created_at,'pending','contract'
   FROM operator_contracts c JOIN LATERAL (
     SELECT r.operator_id,r.created_at FROM operator_receipts r WHERE r.contract_id=c.id AND r.status='pending'
     ORDER BY r.created_at ASC,r.id ASC LIMIT 1
   ) sale ON true WHERE c.activated_at IS NULL
   UNION ALL
-  SELECT operator_id,tariff,currency,amount,paid_at,'approved' FROM operator_rahmat_sales
+  SELECT operator_id,tariff,currency,amount,paid_at,'approved','rahmat' FROM operator_rahmat_sales
   UNION ALL
-  SELECT a.operator_id,p.tariff_type,p.currency,p.amount,COALESCE(p.payment_time,p.created_at),'pending'
+  SELECT a.operator_id,p.tariff_type,p.currency,p.amount,COALESCE(p.payment_time,p.created_at),'pending','rahmat'
   FROM operator_rahmat_claims a JOIN payments p ON p.id=a.payment_id WHERE a.status='pending'`;
 
-type SalaryRow = {
+export type CreditedSaleRow = {
   operator_id: string;
   day: string;
   status: 'approved' | 'pending';
+  /** contract: operator's own receipt; rahmat: Rahmat autopayment claimed by the operator. */
+  kind: 'contract' | 'rahmat';
   tariff: string;
   currency: string;
   courses: number;
   amount: string;
 };
+
+/** Credited courses in [from, to) grouped by operator, Tashkent day, status, kind, tariff and currency. */
+export async function creditedSales(db: Pool | PoolClient, from: string, to: string, operatorId: number | null = null) {
+  return (await db.query(
+    `SELECT operator_id::text,status,kind,tariff,currency,
+            to_char((sold_at AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",
+            count(*)::int courses,COALESCE(sum(amount),0)::text amount
+     FROM (${CREDITED_SALES_SQL}) credited
+     WHERE ($3::bigint IS NULL OR operator_id=$3) AND sold_at>=$1 AND sold_at<$2
+     GROUP BY operator_id,status,kind,tariff,currency,"day"`,
+    [from, to, operatorId],
+  )).rows as CreditedSaleRow[];
+}
+
 
 export type OperatorSalary = {
   operatorId: number;
@@ -79,15 +95,7 @@ export type OperatorSalary = {
 
 /** Salary per operator for [from, to); bonus tiers apply per Tashkent day. */
 export async function operatorSalaries(db: Pool | PoolClient, from: string, to: string, operatorId: number | null = null) {
-  const rows = (await db.query(
-    `SELECT operator_id::text,status,tariff,currency,
-            to_char((sold_at AT TIME ZONE 'Asia/Tashkent'),'YYYY-MM-DD') AS "day",
-            count(*)::int courses,COALESCE(sum(amount),0)::text amount
-     FROM (${CREDITED_SALES_SQL}) credited
-     WHERE ($3::bigint IS NULL OR operator_id=$3) AND sold_at>=$1 AND sold_at<$2
-     GROUP BY operator_id,status,tariff,currency,"day"`,
-    [from, to, operatorId],
-  )).rows as SalaryRow[];
+  const rows = await creditedSales(db, from, to, operatorId);
 
   const byOperator = new Map<number, { days: Map<string, number>; tariffs: Map<string, number>; salary: OperatorSalary }>();
   for (const row of rows) {

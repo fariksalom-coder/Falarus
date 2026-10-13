@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminApi, getAdminToken } from '../../lib/adminApi';
 import { apiUrl } from '../../api';
 import OperatorSalaryReport from '../../components/admin/OperatorSalaryReport';
+import SalesHeadAdmin from '../../components/admin/SalesHeadAdmin';
 const base = '/operator-bot';
 const fmt = (x: any) => x ? new Date(x).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' }) : '—';
 const names: Record<string, string> = { pending: 'Tekshiruvda', approved: 'Tasdiqlangan', rejected: 'Rad etilgan' };
@@ -52,7 +53,7 @@ export default function AdminOperatorsPage() {
     };
     return <div className="space-y-5 p-4 md:p-6 max-w-[1500px] mx-auto">
   <div><h1 className="text-2xl font-bold">Operatorlar va to‘lovlar</h1><p className="text-sm opacity-70 mt-1">Telegramdan kelgan cheklar. To‘lovni faqat shu yerda admin tasdiqlaydi. Vaqt: Toshkent.</p></div>
-  <div className="flex flex-wrap gap-2">{[['receipts', 'Cheklar'], ['rahmat','Rahmat sotuvlari'], ['deferrals', 'Muddatni ko‘chirish'], ['reports', 'Hisobotlar'], ['salary', 'Maosh va bonuslar'], ['accounts', 'Operator hisoblari'], ['audit', 'Amallar jurnali']].map(([key, label]) => <button className={`ui-button ${tab === key ? 'ui-button--primary' : 'ui-button--secondary'}`} key={key} onClick={() => { setTab(key); setOffset(0); }}>{label}</button>)}<button className="ui-button ui-button--secondary" disabled={busy || loading} onClick={() => void load()}>Yangilash</button></div>
+  <div className="flex flex-wrap gap-2">{[['receipts', 'Cheklar'], ['rahmat','Rahmat sotuvlari'], ['deferrals', 'Muddatni ko‘chirish'], ['reports', 'Hisobotlar'], ['salary', 'Maosh va bonuslar'], ['sales-head', 'Sotuv rahbari'], ['accounts', 'Operator hisoblari'], ['audit', 'Amallar jurnali']].map(([key, label]) => <button className={`ui-button ${tab === key ? 'ui-button--primary' : 'ui-button--secondary'}`} key={key} onClick={() => { setTab(key); setOffset(0); }}>{label}</button>)}<button className="ui-button ui-button--secondary" disabled={busy || loading} onClick={() => void load()}>Yangilash</button></div>
   {error && <p role="alert" className="rounded-xl bg-red-50 border border-red-300 text-red-800 p-3">{error}</p>}{note && <p role="status" className="rounded-xl bg-green-50 text-green-800 p-3">{note}</p>}
   {['receipts', 'reports'].includes(tab) && <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">{[
                 <select aria-label="Operator" value={filter.operator} onChange={e => change('operator', e.target.value)}><option value="">Barcha operatorlar</option>{ops.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>,
@@ -120,6 +121,7 @@ export default function AdminOperatorsPage() {
    <h2 className="font-bold">Xizmat ko‘rsatish — tanlangan davr</h2>{data.activity.map((r: any) => <p key={r.operator_id}>{r.name}: {r.clients} mijoz, {r.actions} amal</p>)}
   </div>}
   {tab === 'salary' && <OperatorSalaryReport />}
+  {tab === 'sales-head' && <SalesHeadAdmin />}
   {tab === 'accounts' && <><form className="border rounded-xl p-4 grid md:grid-cols-4 gap-3" onSubmit={e => { e.preventDefault(); void run(async () => { await post('/operators', form); setForm({ name: '', login: '', password: '' }); }, 'Operator yaratildi. Login va parolni operatorga shaxsiy yetkazing.'); }}>{(['name', 'login', 'password'] as const).map(k => <input className="p-2 border rounded text-slate-900 bg-white" required key={k} type={k === 'password' ? 'password' : 'text'} autoComplete="off" minLength={k === 'password' ? 12 : 3} maxLength={k === 'password' ? 72 : 100} placeholder={k === 'name' ? 'Operator ismi' : k === 'login' ? 'Login' : 'Parol (12+ belgi)'} value={form[k]} onChange={e => setForm({ ...form, [k]: e.target.value })}/>)}<button className="ui-button ui-button--primary" disabled={busy}>Operator yaratish</button></form>
    {ops.map(o => <div key={o.id} className="border rounded-xl p-4 space-y-2"><strong>{o.name} · {o.login}</strong><p>Telegram ID: {o.telegram_id || 'Hali kirmagan'} · {o.active ? 'Faol' : 'O‘chirilgan'}</p><div className="flex flex-wrap gap-2">{[[o.active ? 'disable' : 'enable', o.active ? 'O‘chirish' : 'Faollashtirish'], ['unbind', 'Telegram bog‘lanishini uzish'], ['password', 'Parolni yangilash']].map(([action, label]) => <button className="ui-button ui-button--secondary" disabled={busy} key={action} onClick={() => { if (action === 'password') {
             const password = window.prompt('Yangi parol (12–72 belgi, harf va raqam):');

@@ -11,6 +11,7 @@ export function isKnownAppRoute(pathname: string): boolean {
   const exact = new Set([
     '/',
     '/login',
+    '/sotuv-rahbari',
     '/register',
     '/teacher-login',
     '/teacher-register',

@@ -307,6 +307,14 @@ export function resolveRouteSeo(
     return base;
   }
 
+  if (raw === '/sotuv-rahbari') {
+    return {
+      title: clipTitle('Отдел продаж — FalaRus'),
+      description: clipDescription('Кабинет руководителя отдела продаж.'),
+      noindex: true,
+    };
+  }
+
   if (raw === '/payment' || raw === '/payment-history') {
     return {
       title: clipTitle('To\'lov — FalaRus'),

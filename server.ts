@@ -512,6 +512,8 @@ async function startServer() {
     const { operatorMiniAppRoutes } = await import('./server/operator/miniApp.js');
     app.use('/api/operator-mini', operatorMiniAppRoutes());
     app.use('/api/operator-reset', operatorResetRoutes());
+    const { createSalesHeadRoutes } = await import('./server/salesHead/routes.js');
+    app.use('/api/sales-head', createSalesHeadRoutes());
 
   /*
    * BRAUZERDAGI XATO MAYOG'I.

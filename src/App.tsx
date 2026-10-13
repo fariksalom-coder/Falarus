@@ -113,6 +113,8 @@ function AppRoutes() {
         </Route>
       </Route>
 
+      <Route path="/sotuv-rahbari" element={renderLazyPage('./pages/SalesHeadPage.tsx')} />
+
       {!user ? (
         <>
           <Route path="/" element={renderLazyPage('./pages/LandingPage.tsx')} />
