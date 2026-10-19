@@ -73,7 +73,7 @@ export default function AdminVideoLessonsPage() {
     {error&&<div className="vl-alert error" role="alert">{error}</div>}{message&&<div className="vl-alert" role="status">{message}</div>}
     <div className="vl-layout"><aside className="vl-source">
       <div className={`vl-drop ${drag?'drag':''}`} onDragOver={e=>{e.preventDefault();if(!disabled)setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={e=>{e.preventDefault();setDrag(false);choose(e.dataTransfer.files[0]);}}>
-        <FileVideo size={34}/><strong>{file?.name||record?.filename||'Перетащите видео сюда'}</strong><p>{file||record?`${((file?.size||record?.bytes||0)/1024/1024).toFixed(1)} МБ · ${duration.toFixed(1)} сек`:'MP4, WebM, MOV · до 100 МБ · до 30 минут'}</p><button onClick={()=>input.current?.click()} disabled={disabled}>Выбрать файл</button>
+        <FileVideo size={34}/><strong>{file?.name||record?.filename||'Перетащите видео сюда'}</strong><p>{file||record?`${((file?.size||record?.bytes||0)/1024/1024).toFixed(1)} МБ · ${duration.toFixed(1)} сек`:'MP4, WebM, MOV · до 100 МБ · до 3 часов'}</p><button onClick={()=>input.current?.click()} disabled={disabled}>Выбрать файл</button>
       </div>
       <input ref={input} type="file" accept="video/mp4,video/webm,video/quicktime" hidden onChange={e=>{choose(e.target.files?.[0]);e.target.value='';}}/>
       {url&&<video ref={video} src={url} controls playsInline preload="metadata" onLoadedMetadata={()=>setDuration(video.current?.duration||0)} onTimeUpdate={()=>{if(stopAt.current!==null&&video.current&&video.current.currentTime>=stopAt.current){video.current.pause();stopAt.current=null;}}}/>}

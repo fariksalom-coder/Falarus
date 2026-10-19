@@ -1,3 +1,4 @@
+import { startLessonConversation, type LessonConversationSession } from '../../api/ustozDoska';
 import { acquireConversationAudio } from '../../utils/conversationAudio';
 /**
  * UstozDoska — grammatika bo'limidagi jonli dars.
@@ -455,6 +456,7 @@ export default function UstozDoska({
   // Yozuv tugadi -> transkripsiya + baho -> ustoz ovoz bilan javob qaytaradi.
   useEffect(() => {
     if (!recorder.audioBlob || recorder.isRecording || !token || !joriySavol) return;
+    if (lessonSession && Date.now() >= lessonSession.expiresAt) { recorder.reset(); return; }
     const blob = recorder.audioBlob;
     let bekor = false;
 
@@ -464,6 +466,7 @@ export default function UstozDoska({
       try {
         const audioBase64 = await blobToBase64(blob);
         const r = await suhbatJavobi(token, {
+          lessonSession: lessonSession?.lessonSession,
           savol: joriySavol.savol,
           mavzu,
           audioBase64,
@@ -507,11 +510,41 @@ export default function UstozDoska({
    * yerdagina ma'noli.
    */
   useEffect(() => {
-    if (faza !== 'suhbat' || !zaxiraSuhbat || !token) return;
+    if (suhbatRejimi || faza !== 'suhbat' || !zaxiraSuhbat || !token) return;
     let bekor = false;
     void doskaKvota(token).then((k) => { if (!bekor) setKvota(k); });
     return () => { bekor = true; };
-  }, [faza, zaxiraSuhbat, token, savolIdx]);
+  }, [suhbatRejimi, faza, zaxiraSuhbat, token, savolIdx]);
+
+  const [lessonSession, setLessonSession] = useState<LessonConversationSession | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionRetry, setSessionRetry] = useState(0);
+  const [sessionSeconds, setSessionSeconds] = useState(300);
+  useEffect(() => {
+    if (!suhbatRejimi || !token || kun === undefined) return;
+    let cancelled = false;
+    setSessionError(null);
+    setLessonSession(null);
+    void startLessonConversation(token, kun).then(session => {
+      if (!cancelled) setLessonSession(session);
+    }).catch(error => {
+      if (!cancelled) setSessionError(error instanceof Error ? error.message : 'Suhbat ochilmadi');
+    });
+    return () => { cancelled = true; };
+  }, [suhbatRejimi, token, kun, sessionRetry]);
+  useEffect(() => {
+    if (!lessonSession) return;
+    const update = () => setSessionSeconds(Math.max(0, Math.ceil((lessonSession.expiresAt - Date.now()) / 1000)));
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [lessonSession]);
+
+  useEffect(() => {
+    if (lessonSession && sessionSeconds === 0) { recorder.reset(); toxtat(); }
+    // Audio must stop when the shared server deadline expires.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonSession, sessionSeconds === 0]);
 
   function keyingiSavol() {
     toxtat();
@@ -683,6 +716,14 @@ export default function UstozDoska({
    * ekraniga tushib qolardi; savollar KELMAGANDA esa ishlardi — ya'ni
    * xatti-harakat teskari edi.
    */
+  if (suhbatRejimi && kun !== undefined && (!lessonSession || sessionSeconds === 0)) {
+    return <div className="rounded-2xl border p-5 text-center">
+      <p>{sessionError ?? (lessonSession ? 'Suhbat yakunlandi.' : 'Suhbat tayyorlanmoqda…')}</p>
+      {sessionError ? <button className="min-h-12" onClick={() => setSessionRetry(n => n + 1)}>Qayta urinish</button> : null}
+      {lessonSession ? <button className="min-h-12" onClick={() => { toxtat(); onTugadi?.(); }}>Davom etish</button> : null}
+    </div>;
+  }
+
   if (!dars && !savollarManbasi) {
     return (
       <div className="rounded-[24px] border border-[#DDD7F5] bg-[color:var(--rd-white)] p-5 shadow-[0_10px_28px_-14px_rgba(45,27,105,0.14)]">
@@ -980,7 +1021,7 @@ export default function UstozDoska({
           ) : null}
 
           {/* Qolgan savol soni — faqat ZAXIRA suhbatda va oz qolganda. */}
-          {faza === 'suhbat' && zaxiraSuhbat && kvota && kvota.qolgan <= 5 ? (
+          {faza === 'suhbat' && !suhbatRejimi && zaxiraSuhbat && kvota && kvota.qolgan <= 5 ? (
             <p className="mb-2.5 rounded-xl bg-[#FEF3E2] px-3 py-2 text-[12.5px] font-semibold leading-snug text-[#B45309]">
               {kvota.ruxsat
                 ? `Ustoz bilan suhbat: yana ${kvota.qolgan} ta savol qoldi (${kvota.jami} tadan).`
@@ -989,10 +1030,12 @@ export default function UstozDoska({
           ) : null}
 
           {/* ---------- 2a. SUHBAT — JONLI (Gemini Live) ---------- */}
+          {faza === 'suhbat' && zaxiraSuhbat && lessonSession ? <p className="text-center font-semibold">Suhbat: {Math.floor(sessionSeconds / 60)}:{String(sessionSeconds % 60).padStart(2, '0')}</p> : null}
           {faza === 'suhbat' && !zaxiraSuhbat ? (
             <motion.div key="live" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <UstozLive
                 token={token}
+                lessonSession={lessonSession?.lessonSession}
                 mavzu={mavzu}
                 savollar={savollar}
                 kun={kun}

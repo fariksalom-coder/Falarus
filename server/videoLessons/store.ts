@@ -20,12 +20,12 @@ export class LessonStore {
 }
 export function parseDocument(value: unknown, previous: VideoLessonDocument): VideoLessonDocument {
   const raw = value as VideoLessonDocument;
-  if (!raw || typeof raw.title !== 'string' || raw.title.length > 180 || !Array.isArray(raw.sentences) || raw.sentences.length > 1000) throw new LessonError(400, 'Некорректный lesson JSON.');
+  if (!raw || typeof raw.title !== 'string' || raw.title.length > 180 || !Array.isArray(raw.sentences) || raw.sentences.length > 5000) throw new LessonError(400, 'Некорректный lesson JSON.');
   let count = 0;
   const text = (v: unknown, max: number) => { if (typeof v !== 'string' || v.length > max) throw new LessonError(400, 'Некорректное текстовое поле.'); return v.trim(); };
   const timing = (v: unknown) => { if (v === null) return null; if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > MAX_VIDEO_SECONDS + .1) throw new LessonError(400, 'Некорректный timestamp.'); return v; };
   return { ...previous, title: raw.title.trim(), sentences: raw.sentences.map(s => {
-    if (!s || !Array.isArray(s.words) || (count += s.words.length) > 10000) throw new LessonError(400, 'Слишком много слов.');
+    if (!s || !Array.isArray(s.words) || (count += s.words.length) > 50000) throw new LessonError(400, 'Слишком много слов.');
     return { text: text(s.text, 5000), translation: text(s.translation, 5000), start: timing(s.start), end: timing(s.end), words: s.words.map(w => { if (!w) throw new LessonError(400, 'Некорректное слово.'); return { text: text(w.text, 250), start: timing(w.start), end: timing(w.end) }; }) };
   }) };
 }

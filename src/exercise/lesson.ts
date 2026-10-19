@@ -27,7 +27,7 @@ export function sentenceAt(lesson: Lesson, time: number) {
 export function lessonFromDocument(document: import('../../shared/videoLesson').VideoLessonDocument, videoSrc = document.video): Lesson {
   if (!document.sentences.length) throw new Error('В уроке пока нет предложений.');
   return {
-    id: document.id, title: document.title, label: 'Живая речь', language: document.language, video: { src: videoSrc },
+    id: document.id, title: document.title, label: 'Фильм с субтитрами', language: document.language, video: { src: videoSrc },
     sentences: document.sentences.map((s, i) => ({
       id: `s${i}`, text: s.text, translation: s.translation, start: s.start ?? 0, end: s.end ?? 0,
       words: s.words.map((w, j) => ({ id: `s${i}w${j}`, text: w.text, start: w.start ?? -1, end: w.end ?? -1 })),

@@ -22,6 +22,9 @@ test('upload → async processing → correction → preview → publish; auth a
     const upload=await fetch(origin+'/api/admin/video-lessons/upload',{method:'POST',headers:{Authorization:'Bearer test-admin'},body:form});assert.equal(upload.status,201);let record=await upload.json() as VideoLessonRecord;const url='/api/admin/video-lessons/'+record.id;
     assert.equal((await request('/api/video-lessons/'+record.id,'GET',undefined,false)).status,404);
     assert.equal((await request('/api/video-lessons/'+record.id+'/video','GET',undefined,false)).status,404);
+    await writeFile(path.join(store.dir(record.id),'poster.jpg'),Buffer.from([0xff,0xd8,0xff,0xd9]));
+    assert.equal((await request('/api/video-lessons/'+record.id+'/poster','GET',undefined,false)).status,404);
+    assert.deepEqual(await(await request('/api/video-lessons','GET',undefined,false)).json(),[]);
     const started=await request(url+'/process','POST',{revision:record.revision,kind:'recognize'});assert.equal(started.status,202);record=await started.json() as VideoLessonRecord;
     assert.equal((await request(url+'/process','POST',{revision:record.revision,kind:'recognize'})).status,409);
     assert.equal((await request(url,'PUT',{revision:record.revision,lesson:record.lesson})).status,409);
@@ -30,11 +33,16 @@ test('upload → async processing → correction → preview → publish; auth a
     assert.equal((await request(url,'PUT',{revision,lesson:record.lesson})).status,409);
     assert.equal((await request(url+'/publish','POST',{revision:record.revision})).status,200);
     const published=await request('/api/video-lessons/'+record.id,'GET',undefined,false);assert.equal(published.status,200);assert.deepEqual((await published.json()).sentences,[sentence]);
+    const catalog=await(await request('/api/video-lessons','GET',undefined,false)).json();
+    assert.deepEqual(catalog,[{id:record.id,title:'Знакомство',duration:4,kind:'lesson',poster:`/api/video-lessons/${record.id}/poster`}]);
+    const poster=await request('/api/video-lessons/'+record.id+'/poster','GET',undefined,false);assert.equal(poster.status,200);assert.match(poster.headers.get('content-type')||'',/image\/jpeg/);assert.equal((await poster.arrayBuffer()).byteLength,4);
     const media=await fetch(origin+'/api/video-lessons/'+record.id+'/video',{headers:{Range:'bytes=0-3'}});assert.equal(media.status,206);
     record=await(await request(url)).json() as VideoLessonRecord;record.lesson.sentences[0].words[1].start=null;
     record=await(await request(url,'PUT',{revision:record.revision,lesson:record.lesson})).json() as VideoLessonRecord;
     assert.equal(record.status,'draft');assert.equal((await request(url+'/publish','POST',{revision:record.revision})).status,400);
     assert.equal((await request('/api/video-lessons/'+record.id,'GET',undefined,false)).status,404);
+    assert.equal((await request('/api/video-lessons/'+record.id+'/poster','GET',undefined,false)).status,404);
+    assert.deepEqual(await(await request('/api/video-lessons','GET',undefined,false)).json(),[]);
     assert.throws(()=>store.dir('../../etc/passwd'));
   }finally{unlock();await new Promise<void>(resolve=>server.close(()=>resolve()));await rm(root,{recursive:true,force:true});}
 });

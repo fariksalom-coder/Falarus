@@ -1,3 +1,4 @@
+import { readLessonSession } from './lessonConversationSession.js';
 import { isOperatorFrozen } from '../operator/freeze.js';
 /**
  * ustozLive.service.ts — doskadagi JONLI ovozli savol-javob (Gemini Live API).
@@ -316,8 +317,14 @@ export function attachUstozLive(server: Server): void {
         const token = new URL(info.req.url ?? '', 'http://localhost').searchParams.get('token') ?? '';
         const payload = jwt.verify(token, String(process.env.JWT_SECRET)) as { id?: number };
         if (!payload.id) return done(false, 401, 'Unauthorized');
-        void isOperatorFrozen(Number(payload.id)).then(
-          frozen => done(!frozen, frozen ? 403 : undefined, frozen ? 'Debt frozen' : undefined),
+        void Promise.all([
+          pool.query('SELECT id FROM users WHERE id = $1', [Number(payload.id)]),
+          isOperatorFrozen(Number(payload.id)),
+        ]).then(
+          ([account, frozen]) => {
+            if (!account.rows.length) return done(false, 401, 'Unauthorized');
+            done(!frozen, frozen ? 403 : undefined, frozen ? 'Debt frozen' : undefined);
+          },
           () => done(false, 503, 'Account check unavailable'),
         );
       } catch { done(false, 401, 'Unauthorized'); }
@@ -339,6 +346,16 @@ export function attachUstozLive(server: Server): void {
       klient.close(4401, 'Avtorizatsiya kerak');
       return;
     }
+
+    let lessonSession: ReturnType<typeof readLessonSession> | null = null;
+    try {
+      const sessionToken = new URL(req.url ?? '', 'http://localhost').searchParams.get('lessonSession');
+      if (sessionToken) lessonSession = readLessonSession(sessionToken, userId);
+    } catch {
+      klient.close(4410, 'Suhbat yakunlandi.');
+      return;
+    }
+    const sessionDuration = lessonSession ? Math.max(0, lessonSession.expiresAt - Date.now()) : MAX_SESSIYA_MS;
 
     // --- Cheklovlar ------------------------------------------------------
     if (umumiySessiya >= MAX_UMUMIY) {
@@ -406,7 +423,7 @@ export function attachUstozLive(server: Server): void {
     const boshlanish = Date.now();
     /** O'quvchiga ko'rsatiladigan qolgan vaqt (soniya). */
     const qolganSoniya = () =>
-      Math.max(0, Math.round((MAX_SESSIYA_MS - (Date.now() - boshlanish)) / 1000));
+      Math.max(0, Math.round((sessionDuration - (Date.now() - boshlanish)) / 1000));
 
     const yubor = (obj: unknown) => {
       if (klient.readyState === WebSocket.OPEN) klient.send(JSON.stringify(obj));
@@ -414,6 +431,7 @@ export function attachUstozLive(server: Server): void {
 
     const tugat = (sabab: string) => {
       if (tugadi) return;
+      console.info('[ustozLive] session ended', { userId, reason: sabab, lesson: Boolean(lessonSession) });
       tugadi = true;
       clearTimeout(umrTaymer);
       clearTimeout(yakunTaymer);
@@ -435,7 +453,7 @@ export function attachUstozLive(server: Server): void {
       } catch { /* allaqachon yopiq */ }
     };
 
-    const umrTaymer = setTimeout(() => tugat('vaqt tugadi'), MAX_SESSIYA_MS);
+    const umrTaymer = setTimeout(() => tugat('vaqt tugadi'), sessionDuration);
 
     /*
      * YAKUNDAN OLDIN OGOHLANTIRISH.
@@ -462,7 +480,7 @@ export function attachUstozLive(server: Server): void {
           turnComplete: true,
         },
       }));
-    }, Math.max(0, MAX_SESSIYA_MS - YAKUN_OGOH_MS));
+    }, Math.max(0, sessionDuration - YAKUN_OGOH_MS));
     const jimlikTaymer = setInterval(() => {
       if (Date.now() - sonChaqiruv > MAX_JIM_MS) tugat('jimlik');
     }, 15_000);
@@ -474,7 +492,7 @@ export function attachUstozLive(server: Server): void {
      * o'quvchi shu vaqt ichida xohlagancha savol berib, xohlagancha gapira
      * oladi. Eski xatti-harakat `USTOZ_LIVE_KVOTA=1` bilan qaytariladi.
      */
-    if (KVOTA_HISOBLANADI) void kvotaOl(userId).then((kvota) => {
+    if (KVOTA_HISOBLANADI && !lessonSession) void kvotaOl(userId).then((kvota) => {
       if (!kvota.ruxsat) {
         /*
          * `kod` — xatoning SABABI, matndan alohida.
@@ -674,7 +692,7 @@ export function attachUstozLive(server: Server): void {
            * ustoz xayrlashsa — bu xato. Unga yashirin xabar yuboramiz:
            * xayrlashma, keyingi savolga o't. Xabar ovozga chiqmaydi.
            */
-          const yakunSignaliBerildi = Date.now() - boshlanish >= MAX_SESSIYA_MS - YAKUN_OGOH_MS;
+          const yakunSignaliBerildi = Date.now() - boshlanish >= sessionDuration - YAKUN_OGOH_MS;
           if (
             !yakunSignaliBerildi &&
             tuzatishSoni < MAX_TUZATISH &&

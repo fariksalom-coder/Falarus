@@ -271,9 +271,10 @@ export async function fetchKunSavollari(token: string, kun: number): Promise<Kun
 /** Og'zaki javobni baholaydi: ovoz yuboriladi, matn va baho qaytadi. */
 export function suhbatJavobi(
   token: string,
-  params: { savol: string; mavzu: string; audioBase64?: string; mimeType?: string; javob?: string },
+  params: { lessonSession?: string; savol: string; mavzu: string; audioBase64?: string; mimeType?: string; javob?: string },
 ): Promise<DoskaBaho> {
   return post<DoskaBaho>(token, '/api/ustoz/suhbat', {
+    lessonSession: params.lessonSession,
     savol: params.savol,
     mavzu: params.mavzu,
     audio: params.audioBase64,
@@ -313,4 +314,9 @@ export function buildDoskaExercise(
   params: { mavzu: string; nazariya?: string; soni?: number },
 ): Promise<DoskaMashq> {
   return post<DoskaMashq>(token, '/api/ustoz/mashq', params);
+}
+
+export type LessonConversationSession = { lessonSession: string; expiresAt: number };
+export function startLessonConversation(token: string, kun: number): Promise<LessonConversationSession> {
+  return post(token, '/api/ustoz/lesson-session', { kun });
 }

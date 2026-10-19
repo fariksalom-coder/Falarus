@@ -52,3 +52,7 @@ docs/design/**/*.png
 public/videos/*.mp4
 public/videos/*.web.mp4
 secrets/
+
+# Private film media/subtitles and standalone generated builds
+var/video-lessons/
+/dist-exercise/

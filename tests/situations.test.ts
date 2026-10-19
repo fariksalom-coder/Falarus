@@ -9,10 +9,10 @@ import {DialogueService} from '../server/situations/service';
 import type {DialogueRound} from '../shared/situations';
 
 test('all supplied complete topics follow the turn plan and have distinct answers',()=>{
-  const topics=loadDialogueContent();assert.equal(topics.length,11);
-  assert.equal(topics.reduce((n,t)=>n+t.situations.length,0),88);
-  assert.equal(topics.reduce((n,t)=>n+t.situations.reduce((m,s)=>m+s.steps.length,0),0),1034);
-  assert.equal(new Set(topics.flatMap(t=>t.situations.map(s=>s.id))).size,88);
+  const topics=loadDialogueContent();assert.equal(topics.length,20);
+  assert.equal(topics.reduce((n,t)=>n+t.situations.length,0),160);
+  assert.equal(topics.reduce((n,t)=>n+t.situations.reduce((m,s)=>m+s.steps.length,0),0),1880);
+  assert.equal(new Set(topics.flatMap(t=>t.situations.map(s=>s.id))).size,160);
 });
 
 test('isolated migration, repeatable import, grading, replay, quota, resume and user isolation',async()=>{
@@ -23,9 +23,9 @@ test('isolated migration, repeatable import, grading, replay, quota, resume and 
     const migration=await readFile('db/migrations/203_situations_game.sql','utf8');await db.exec(migration);await db.exec(migration);
     const adapter={query:q,connect:async()=>({query:q,release(){}})} as unknown as Pool;
     const seeder={query:q} as any;
-    assert.deepEqual(await seedDialogueContent(seeder),{topics:11,situations:88,turns:1034});
+    assert.deepEqual(await seedDialogueContent(seeder),{topics:20,situations:160,turns:1880});
     const paid=new Set<number>([1]);const service=new DialogueService(adapter,async u=>paid.has(u));
-    const catalog=await service.catalog(1);assert.equal(catalog.topics.length,11);assert.equal(catalog.stars,0);
+    const catalog=await service.catalog(1);assert.equal(catalog.topics.length,20);assert.equal(catalog.stars,0);
     assert.ok(!JSON.stringify(catalog).includes('correct'));
     const startRequest=randomUUID();let round=await service.start(1,'street-01',startRequest);
     assert.equal(round.id,(await service.start(1,'street-01',startRequest)).id);
@@ -54,7 +54,7 @@ test('isolated migration, repeatable import, grading, replay, quota, resume and 
     assert.equal((await service.answer(1,round.id,finalPosition,finalOption,finalRequest)).totalStars,2);
     assert.equal((await q('SELECT attempts FROM dialogue_progress WHERE user_id=1')).rows[0].attempts,1);
     await seedDialogueContent(seeder);
-    assert.equal((await q('SELECT count(*)::int n FROM dialogue_situations')).rows[0].n,88);
+    assert.equal((await q('SELECT count(*)::int n FROM dialogue_situations')).rows[0].n,160);
     assert.equal((await service.catalog(1)).stars,2);
     let replay=await service.start(1,'street-01',randomUUID());replay=await finish(replay);
     assert.equal(replay.stars,3);assert.equal(replay.earned,1);

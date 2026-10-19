@@ -2,6 +2,7 @@ import {readFileSync, readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import type {PoolClient} from 'pg';
+import {topicVisuals} from './topicVisuals';
 import type {Topic, Situation} from '../../shared/situations';
 
 export function loadDialogueContent(): Topic[] {
@@ -16,17 +17,18 @@ export function loadDialogueContent(): Topic[] {
   return catalog.topics.filter((t: any) => dialogs.has(t.slug)).map((t: any) => {
     const source = dialogs.get(t.slug);
     if (source.situations.length !== t.situations.length) throw new Error(`Incomplete topic: ${t.slug}`);
-    const scene = t.slug === 'bank' ? 'bank' : ['transport','migration'].includes(t.slug) ? 'airport' : 'street';
+    const visual = topicVisuals[t.slug];
+    if (!visual) throw new Error(`Missing topic visual: ${t.slug}`);
     return {
-      id: t.slug, titleRu: t.ru, titleUz: t.uz, scene: `scenes/${scene}.svg`,
-      color: t.slug === 'bank' ? '#1d4ed8' : '#0f766e', colorSoft: t.slug === 'bank' ? '#dbeafe' : '#ccfbf1',
+      id: t.slug, titleRu: t.ru, titleUz: t.uz, scene: `scenes/topic-${t.slug}.svg`,
+      ...visual,
       situations: source.situations.map((s: any, i: number): Situation => {
         if (s.n !== i + 1 || s.turns.length !== catalog.turn_plan[i]) throw new Error(`Invalid situation: ${t.slug}-${s.n}`);
         const steps = s.turns.map((r: any) => {
           if (![r.p,r.p_uz,r.ok,r.ok_uz].every(v => typeof v === 'string' && v.trim()) || !Array.isArray(r.bad) || r.bad.length !== 2 || !r.bad.every((v: any) => typeof v === 'string' && v.trim()) || new Set([r.ok,...r.bad]).size !== 3) throw new Error(`Invalid answers: ${t.slug}-${s.n}`);
           return {partnerRu:r.p,partnerUz:r.p_uz,correct:r.ok,correctUz:r.ok_uz,wrong:r.bad};
         });
-        return {id:`${t.slug}-${String(s.n).padStart(2,'0')}`,titleRu:t.situations[i][0],titleUz:t.situations[i][1],partnerRu:s.partner,partnerUz:'Suhbatdosh',icon:`icons/${t.slug === 'bank' ? 'card' : 'map'}.svg`,avatar:`avatars/${/жен|девуш|бабуш|хозяйк|медсестр/i.test(s.partner) ? 'woman' : 'passerby'}.svg`,steps,closing:null};
+        return {id:`${t.slug}-${String(s.n).padStart(2,'0')}`,titleRu:t.situations[i][0],titleUz:t.situations[i][1],partnerRu:s.partner,partnerUz:'Suhbatdosh',icon:`icons/topic-${t.slug}.svg`,avatar:`avatars/${/жен|девуш|бабуш|хозяйк|медсестр/i.test(s.partner) ? 'woman' : 'passerby'}.svg`,steps,closing:null};
       }),
     };
   });

@@ -8,6 +8,7 @@
  * POST /api/ustoz/mashq — mavzu bo'yicha qo'shimcha grammatika mashqi tuzadi.
  * POST /api/ustoz/suhbat — o'quvchining OG'ZAKI javobini baholaydi.
  */
+import { createLessonSession, readLessonSession } from '../services/lessonConversationSession.js';
 import { Router } from 'express';
 import { enforceRateLimit } from '../lib/rateLimit.js';
 import {
@@ -180,7 +181,9 @@ export function createUstozRoutes(
         }
         res.setHeader('X-Ustoz-Cache', 'miss');
 
-        if (suhbatmi) {
+        const lessonSession = path === '/ustoz/suhbat' && body.lessonSession
+          ? readLessonSession(String(body.lessonSession), userId) : null;
+        if (suhbatmi && !lessonSession) {
           const kvota = await kvotaOl(userId);
           res.setHeader('X-Ustoz-Quota-Remaining', String(kvota.qolgan));
           if (!kvota.ruxsat) {
@@ -206,7 +209,7 @@ export function createUstozRoutes(
       } catch (err) {
         console.error(`[POST /api/ustoz${path.replace('/ustoz', '')}]`, err);
         const status = (err as { status?: number }).status;
-        if (status === 400 || status === 502) {
+        if (status === 400 || status === 403 || status === 410 || status === 502) {
           return res.status(status).json({ error: (err as Error).message });
         }
         const { openAIUserFacingError } = await import('../lib/openai.js');
@@ -230,7 +233,7 @@ export function createUstozRoutes(
    * kerak, klient yuborgan narsadan emas. Shu sabab so'rovda faqat kun
    * raqami bo'ladi va kesh kaliti ham o'sha kun.
    */
-  doskaRoute('/ustoz/kun-savollari', 10, async (body, userId) => {
+  const requireConversationDay = async (body: Record<string, unknown>, userId: number) => {
     const kun = Number(body.kun);
     if (!Number.isInteger(kun) || kun < 0 || kun > 182) {
       throw Object.assign(new Error('Kun raqami noto\'g\'ri'), { status: 400 });
@@ -280,6 +283,22 @@ export function createUstozRoutes(
         );
       }
     }
+    return kun;
+  };
+
+  router.post('/ustoz/lesson-session', authenticate, async (req: any, res: any) => {
+    try {
+      if (!(await enforceRateLimit(res, `lesson-session:${req.userId}`, 10, 60))) return;
+      const kun = await requireConversationDay(req.body ?? {}, req.userId);
+      res.json(createLessonSession(req.userId, kun));
+    } catch (error) {
+      const e = error as Error & { status?: number };
+      res.status(e.status ?? 503).json({ error: e.message });
+    }
+  });
+
+  doskaRoute('/ustoz/kun-savollari', 10, async (body, userId) => {
+    const kun = await requireConversationDay(body, userId);
 
     /** Kun bandini savol tuzish uchun qisqartirilgan materialga aylantiradi. */
     const materialOl = async (n: number): Promise<KunMateriali | null> => {

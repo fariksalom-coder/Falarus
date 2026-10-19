@@ -23,6 +23,7 @@ type Holat = 'kutmoqda' | 'ulanmoqda' | 'jonli' | 'tugadi' | 'xato' | 'kvota';
 /** Javob berilmagan savol — o'quvchi shu kunga qaytariladi. */
 type Props = {
   token: string | null;
+  lessonSession?: string;
   mavzu: string;
   savollar: KunSavol[];
   /** Joriy kun — suhbat tarixi shu kunga yoziladi. */
@@ -46,6 +47,7 @@ type Props = {
 
 export default function UstozLive({
   token,
+  lessonSession,
   mavzu,
   savollar,
   kun,
@@ -126,6 +128,7 @@ export default function UstozLive({
     const manzil = new URL(apiUrl('/api/ustoz/live'), window.location.origin);
     manzil.protocol = manzil.protocol === 'https:' ? 'wss:' : 'ws:';
     manzil.searchParams.set('token', token);
+    if (lessonSession) manzil.searchParams.set('lessonSession', lessonSession);
     const ws = new WebSocket(manzil);
     wsRef.current = ws;
     connectionTimerRef.current = setTimeout(() => {
@@ -254,7 +257,7 @@ export default function UstozLive({
       tozala(); setHolat('xato');
       onZaxira('Jonli ulanish uzildi. Ovozli javob rejimida davom eting.');
     };
-  }, [token, mavzu, savollar, kun, onZaxira, tozala]);
+  }, [token, lessonSession, mavzu, savollar, kun, onZaxira, tozala]);
 
   const yakunla = useCallback(() => {
     try { wsRef.current?.send(JSON.stringify({ type: 'end' })); } catch { /* yopiq */ }

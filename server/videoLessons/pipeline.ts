@@ -20,7 +20,7 @@ export async function probe(file: string) {
   const data = JSON.parse(await command('ffprobe', ['-v', 'error', '-show_entries', 'format=duration:stream=codec_type,codec_name,start_time', '-of', 'json', file]));
   const duration = Number(data.format?.duration);
   if (data.streams?.some(s => s.codec_type === 'video' && !['h264','vp8','vp9','av1'].includes(s.codec_name))) throw new Error('Видеокодек не поддерживается браузером. Экспортируйте MP4 с H.264 и AAC.');
-  if (!data.streams?.some(s => s.codec_type === 'video') || !data.streams?.some(s => s.codec_type === 'audio') || !Number.isFinite(duration) || duration <= 0 || duration > MAX_VIDEO_SECONDS) throw new Error('Нужно видео с аудиодорожкой длительностью до 30 минут.');
+  if (!data.streams?.some(s => s.codec_type === 'video') || !data.streams?.some(s => s.codec_type === 'audio') || !Number.isFinite(duration) || duration <= 0 || duration > MAX_VIDEO_SECONDS) throw new Error('Нужно видео с аудиодорожкой длительностью до 3 часов.');
   // Word times must map directly to HTMLMediaElement.currentTime.
   if (data.streams.some(s => Math.abs(Number(s.start_time || 0)) > .05)) throw new Error('У аудио/видео смещено начало. Экспортируйте файл с нулевым началом дорожек.');
   return duration;

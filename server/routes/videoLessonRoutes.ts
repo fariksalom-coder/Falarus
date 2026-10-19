@@ -37,7 +37,21 @@ export function createAdminVideoLessonRoutes(service: VideoLessonService = video
 }
 export function createPublicVideoLessonRoutes(service: VideoLessonService = videoLessons) {
   const router = Router(); router.use((_req,res,next) => { res.setHeader('Cache-Control','no-store'); next(); });
-  router.get('/', handle(async (_req,res) => res.json((await service.store.list()).filter(r=>r.status==='published').map(r=>({id:r.id,title:r.lesson.title,duration:r.duration})))));
+  router.get('/', handle(async (_req,res) => {
+    const published = (await service.store.list()).filter(r => r.status === 'published');
+    res.json(await Promise.all(published.map(async r => {
+      const hasPoster = await fs.access(path.join(service.store.dir(r.id), 'poster.jpg')).then(() => true, () => false);
+      return {id:r.id, title:r.lesson.title, duration:r.duration, kind:r.lesson.kind ?? 'lesson', ...(hasPoster ? {poster:`/api/video-lessons/${r.id}/poster`} : {})};
+    })));
+  }));
+  router.get('/:id/poster', handle(async (req,res) => {
+    const record = await service.get(String(req.params.id));
+    if (record.status !== 'published') throw new LessonError(404, 'Видео не найдено.');
+    const poster = path.join(service.store.dir(record.id), 'poster.jpg');
+    if (!(await fs.access(poster).then(() => true, () => false))) throw new LessonError(404, 'Обложка не найдена.');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.type('image/jpeg').sendFile(poster);
+  }));
   router.get('/:id', handle(async (req,res) => { const record = await service.get(String(req.params.id)); if(record.status!=='published') throw new LessonError(404,'Урок не найден.'); res.json(record.lesson); }));
   router.get('/:id/video', handle(async (req,res) => { const record = await service.get(String(req.params.id)); if(record.status!=='published') throw new LessonError(404,'Видео не найдено.'); res.type(record.mime).sendFile(path.join(service.store.dir(record.id),'video.mp4')); }));
   router.use(errorHandler); return router;

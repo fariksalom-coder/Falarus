@@ -1,0 +1,1001 @@
+{
+ "topic": "cafe",
+ "situations": [
+  {
+   "n": 1,
+   "partner": "Официантка",
+   "icon": "☕",
+   "turns": [
+    {
+     "p": "Добрый день! Что будете заказывать?",
+     "p_uz": "Xayrli kun! Nima buyurtma qilasiz?",
+     "ok": "Добрый день! Чёрный чай, пожалуйста.",
+     "ok_uz": "Xayrli kun! Qora choy, iltimos.",
+     "bad": [
+      "Добрый день! Чёрная чай, пожалуйста.",
+      "Добрый день! Мне всё меню."
+     ]
+    },
+    {
+     "p": "Чай с сахаром или без?",
+     "p_uz": "Choy shakarlimi yoki shakarsizmi?",
+     "ok": "Без сахара, но с лимоном.",
+     "ok_uz": "Shakarsiz, lekin limon bilan.",
+     "bad": [
+      "Без сахара, но с лимона.",
+      "С солью, пожалуйста."
+     ]
+    },
+    {
+     "p": "Хорошо. Сейчас принесу.",
+     "p_uz": "Yaxshi. Hozir olib kelaman.",
+     "ok": "Спасибо!",
+     "ok_uz": "Rahmat!",
+     "bad": [
+      "Спасибо вас!",
+      "Не надо, я передумал."
+     ]
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "partner": "Повар на раздаче",
+   "icon": "🍲",
+   "turns": [
+    {
+     "p": "Что вам положить?",
+     "p_uz": "Sizga nima solay?",
+     "ok": "Суп, пожалуйста. Какой сегодня суп?",
+     "ok_uz": "Sho'rva, iltimos. Bugun qanday sho'rva?",
+     "bad": [
+      "Суп, пожалуйста. Какая сегодня суп?",
+      "Всё, что есть, в одну тарелку."
+     ]
+    },
+    {
+     "p": "Борщ и куриный суп с лапшой.",
+     "p_uz": "Borsh va lapshali tovuq sho'rvasi.",
+     "ok": "Куриный суп, пожалуйста. А что на второе?",
+     "ok_uz": "Tovuq sho'rvasi, iltimos. Ikkinchi ovqatga nima bor?",
+     "bad": [
+      "Куриный суп, пожалуйста. А что на второй?",
+      "Борщ без свёклы и без борща."
+     ]
+    },
+    {
+     "p": "Гречка с котлетой или рис с курицей.",
+     "p_uz": "Kotletli grechka yoki tovuqli guruch.",
+     "ok": "Рис с курицей. В котлете какое мясо?",
+     "ok_uz": "Tovuqli guruch. Kotletda qanday go'sht bor?",
+     "bad": [
+      "Рис с курицу. В котлете какое мясо?",
+      "Дайте котлету без мяса."
+     ]
+    },
+    {
+     "p": "Свинина с говядиной.",
+     "p_uz": "Cho'chqa va mol go'shti.",
+     "ok": "Тогда хорошо, что я взял курицу. Я не ем свинину.",
+     "ok_uz": "Unda tovuq olganim yaxshi bo'libdi. Men cho'chqa go'shti yemayman.",
+     "bad": [
+      "Тогда хорошо, что я взял курицей. Я не ем свинину.",
+      "Тогда дайте две котлеты."
+     ]
+    },
+    {
+     "p": "Хлеб и компот берёте? Всё вместе — триста двадцать рублей.",
+     "p_uz": "Non va kompot olasizmi? Hammasi birga — uch yuz yigirma rubl.",
+     "ok": "Да, хлеб и компот. Вот карта.",
+     "ok_uz": "Ha, non va kompot. Mana karta.",
+     "bad": [
+      "Да, хлеба и компот. Вот карта.",
+      "Да, но платить будет следующий."
+     ]
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "partner": "Официант",
+   "icon": "📖",
+   "turns": [
+    {
+     "p": "Добрый вечер! Вот меню. Вы уже выбрали?",
+     "p_uz": "Xayrli kech! Mana menyu. Tanladingizmi?",
+     "ok": "Ещё нет. Что вы можете посоветовать?",
+     "ok_uz": "Hali yo'q. Nima maslahat bera olasiz?",
+     "bad": [
+      "Ещё нет. Что вы можете посоветует?",
+      "Принесите то, что дороже всего."
+     ]
+    },
+    {
+     "p": "Попробуйте наш фирменный бефстроганов.",
+     "p_uz": "Bizning firmaviy befstroganovimizni tatib ko'ring.",
+     "ok": "А что это за блюдо?",
+     "ok_uz": "Bu qanday taom?",
+     "bad": [
+      "А что это за блюдом?",
+      "Бефстроганов? Это человек?"
+     ]
+    },
+    {
+     "p": "Кусочки говядины в сливочном соусе. С картофельным пюре.",
+     "p_uz": "Qaymoqli sousdagi mol go'shti bo'laklari. Kartoshka pyuresi bilan.",
+     "ok": "Звучит вкусно. А он острый?",
+     "ok_uz": "Mazali eshitiladi. U achchiqmi?",
+     "bad": [
+      "Звучит вкусная. А он острый?",
+      "Звучит громко."
+     ]
+    },
+    {
+     "p": "Нет, совсем не острый.",
+     "p_uz": "Yo'q, umuman achchiq emas.",
+     "ok": "Хорошо, беру бефстроганов. И салат из овощей.",
+     "ok_uz": "Yaxshi, befstroganov olaman. Va sabzavotli salat.",
+     "bad": [
+      "Хорошо, беру бефстроганов. И салат из овощами.",
+      "Хорошо, беру меню, оно красивое."
+     ]
+    },
+    {
+     "p": "Что будете пить?",
+     "p_uz": "Nima ichasiz?",
+     "ok": "Зелёный чай, большой чайник.",
+     "ok_uz": "Ko'k choy, katta choynak.",
+     "bad": [
+      "Зелёную чай, большой чайник.",
+      "Воду из-под крана, бесплатно."
+     ]
+    },
+    {
+     "p": "Хорошо. Бефстроганов будет готов через двадцать минут.",
+     "p_uz": "Yaxshi. Befstroganov yigirma daqiqada tayyor bo'ladi.",
+     "ok": "Хорошо, я подожду. Чай можно принести сразу?",
+     "ok_uz": "Yaxshi, kutaman. Choyni darhol olib kelsa bo'ladimi?",
+     "bad": [
+      "Хорошо, я подожду. Чай можно принесёт сразу?",
+      "Двадцать минут? Тогда я ухожу."
+     ]
+    },
+    {
+     "p": "Конечно, чай сейчас принесу.",
+     "p_uz": "Albatta, choyni hozir olib kelaman.",
+     "ok": "Спасибо большое!",
+     "ok_uz": "Katta rahmat!",
+     "bad": [
+      "Спасибо большая!",
+      "Спасибо. А можно чай без воды?"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 4,
+   "partner": "Официант",
+   "icon": "🧾",
+   "turns": [
+    {
+     "p": "Вам всё понравилось?",
+     "p_uz": "Sizga hammasi yoqdimi?",
+     "ok": "Да, всё было очень вкусно. Принесите, пожалуйста, счёт.",
+     "ok_uz": "Ha, hammasi juda mazali edi. Iltimos, hisobni olib keling.",
+     "bad": [
+      "Да, всё было очень вкусная. Принесите, пожалуйста, счёт.",
+      "Нет, но платить я всё равно не буду."
+     ]
+    },
+    {
+     "p": "Вот, пожалуйста. Тысяча двести сорок рублей.",
+     "p_uz": "Mana, marhamat. Ming ikki yuz qirq rubl.",
+     "ok": "Подождите, я проверю… Здесь два салата, а я заказывал один.",
+     "ok_uz": "Kuting, tekshiraman… Bu yerda ikkita salat, men esa bitta buyurtma qilgandim.",
+     "bad": [
+      "Подождите, я проверю… Здесь два салатов, а я заказывал один.",
+      "Хорошо, сколько написано, столько и заплачу."
+     ]
+    },
+    {
+     "p": "Ой, извините! Сейчас исправлю.",
+     "p_uz": "Voy, kechirasiz! Hozir tuzataman.",
+     "ok": "Ничего страшного, бывает.",
+     "ok_uz": "Hechqisi yo'q, bo'lib turadi.",
+     "bad": [
+      "Ничего страшный, бывает.",
+      "Тогда ужин бесплатно!"
+     ]
+    },
+    {
+     "p": "Вот новый счёт: тысяча сорок рублей.",
+     "p_uz": "Mana yangi hisob: ming qirq rubl.",
+     "ok": "Теперь правильно. Можно картой?",
+     "ok_uz": "Endi to'g'ri. Karta bilan bo'ladimi?",
+     "bad": [
+      "Теперь правильный. Можно картой?",
+      "Теперь правильно, но заплачу сто."
+     ]
+    },
+    {
+     "p": "Конечно. Сейчас принесу терминал.",
+     "p_uz": "Albatta. Hozir terminal olib kelaman.",
+     "ok": "А обслуживание входит в счёт?",
+     "ok_uz": "Xizmat haqi hisobga kiradimi?",
+     "bad": [
+      "А обслуживания входит в счёт?",
+      "А вы входите в счёт?"
+     ]
+    },
+    {
+     "p": "Нет, чаевые — на ваше усмотрение.",
+     "p_uz": "Yo'q, choy puli — o'z xohishingizga ko'ra.",
+     "ok": "Что такое «чаевые»?",
+     "ok_uz": "«Chayevye» nima?",
+     "bad": [
+      "Кто такие «чаевые»?",
+      "Чаевые? Это деньги за чай?"
+     ]
+    },
+    {
+     "p": "Это деньги официанту за хорошую работу. Обычно около десяти процентов.",
+     "p_uz": "Bu ofitsiantga yaxshi ishi uchun beriladigan pul. Odatda o'n foiz atrofida.",
+     "ok": "Понятно. Тогда я оставлю сто рублей.",
+     "ok_uz": "Tushunarli. Unda yuz rubl qoldiraman.",
+     "bad": [
+      "Понятно. Тогда я оставлю сто рубля.",
+      "Понятно. А вы мне дадите чаевые?"
+     ]
+    },
+    {
+     "p": "Спасибо большое! Приятно.",
+     "p_uz": "Katta rahmat! Yoqimli.",
+     "ok": "Вам спасибо. Всё было вкусно.",
+     "ok_uz": "Sizga rahmat. Hammasi mazali edi.",
+     "bad": [
+      "Вас спасибо. Всё было вкусно.",
+      "Не за что. Салат был лишний, но ладно."
+     ]
+    },
+    {
+     "p": "Приходите ещё! Хорошего вечера.",
+     "p_uz": "Yana keling! Kechingiz yaxshi o'tsin.",
+     "ok": "Обязательно приду. До свидания!",
+     "ok_uz": "Albatta kelaman. Xayr!",
+     "bad": [
+      "Обязательно прийду. До свидания!",
+      "Никогда не приду."
+     ]
+    }
+   ]
+  },
+  {
+   "n": 5,
+   "partner": "Оператор доставки",
+   "icon": "🛵",
+   "turns": [
+    {
+     "p": "Доставка «Плов-Хаус», здравствуйте!",
+     "p_uz": "«Plov-Xaus» yetkazib berish xizmati, assalomu alaykum!",
+     "ok": "Здравствуйте! Я хочу заказать еду домой.",
+     "ok_uz": "Assalomu alaykum! Uyga ovqat buyurtma qilmoqchiman.",
+     "bad": [
+      "Здравствуйте! Я хочу заказать еду домом.",
+      "Здравствуйте! Я хочу заказать повара домой."
+     ]
+    },
+    {
+     "p": "Что будете заказывать?",
+     "p_uz": "Nima buyurtma qilasiz?",
+     "ok": "Два плова, одну шурпу и две лепёшки.",
+     "ok_uz": "Ikkita osh, bitta sho'rva va ikkita non.",
+     "bad": [
+      "Два плова, одну шурпу и два лепёшки.",
+      "Всё меню, два раза."
+     ]
+    },
+    {
+     "p": "Плов большой или маленький?",
+     "p_uz": "Osh kattami yoki kichikmi?",
+     "ok": "Большой. А сколько грамм в большой порции?",
+     "ok_uz": "Katta. Katta porsiyada necha gramm?",
+     "bad": [
+      "Большая. А сколько грамм в большой порции?",
+      "Самый маленький, на одну ложку."
+     ]
+    },
+    {
+     "p": "Четыреста граммов.",
+     "p_uz": "To'rt yuz gramm.",
+     "ok": "Хорошо, подходит. Какой адрес нужно сказать?",
+     "ok_uz": "Yaxshi, to'g'ri keladi. Qanday manzil aytishim kerak?",
+     "bad": [
+      "Хорошо, подходит. Какая адрес нужно сказать?",
+      "Хорошо. Адрес — где-то в Москве."
+     ]
+    },
+    {
+     "p": "Улица, дом, подъезд, этаж, квартира и код домофона.",
+     "p_uz": "Ko'cha, uy, podyezd, qavat, xonadon va domofon kodi.",
+     "ok": "Улица Мира, двадцать один, подъезд два, пятый этаж, квартира сорок семь. Домофон — сорок семь.",
+     "ok_uz": "Mira ko'chasi, 21, ikkinchi podyezd, beshinchi qavat, 47-xonadon. Domofon — qirq yetti.",
+     "bad": [
+      "Улица Мира, двадцать одна, подъезд два, пятый этаж, квартира сорок семь. Домофон — сорок семь.",
+      "Улица… не помню. Найдёте сами."
+     ]
+    },
+    {
+     "p": "Спасибо. Номер телефона?",
+     "p_uz": "Rahmat. Telefon raqami?",
+     "ok": "Восемь, девятьсот шестнадцать, двести тридцать, сорок пять, шестьдесят семь.",
+     "ok_uz": "8-916-230-45-67.",
+     "bad": [
+      "Восемь, девятьсот шестнадцать, двести тридцать, сорок пять, шестьдесят семи.",
+      "Номер не дам, курьер найдёт по запаху."
+     ]
+    },
+    {
+     "p": "Оплата картой курьеру или наличными?",
+     "p_uz": "To'lov kuryerga karta bilanmi yoki naqdmi?",
+     "ok": "Картой курьеру.",
+     "ok_uz": "Kuryerga karta bilan.",
+     "bad": [
+      "Карту курьеру.",
+      "Обещанием. Заплачу потом."
+     ]
+    },
+    {
+     "p": "Сумма заказа — тысяча семьсот рублей. Доставка бесплатная.",
+     "p_uz": "Buyurtma summasi — ming yetti yuz rubl. Yetkazish bepul.",
+     "ok": "Отлично. Сколько ждать?",
+     "ok_uz": "Ajoyib. Qancha kutish kerak?",
+     "bad": [
+      "Отлично. Сколько ждут?",
+      "Отлично. Можно через пять секунд?"
+     ]
+    },
+    {
+     "p": "Около часа. Сейчас много заказов.",
+     "p_uz": "Bir soatcha. Hozir buyurtmalar ko'p.",
+     "ok": "Хорошо. А можно положить острый соус?",
+     "ok_uz": "Yaxshi. Achchiq sous qo'shsa bo'ladimi?",
+     "bad": [
+      "Хорошо. А можно положить острого соус?",
+      "Час? Тогда я приготовлю сам и отменю."
+     ]
+    },
+    {
+     "p": "Конечно, положим бесплатно. И приборы нужны?",
+     "p_uz": "Albatta, bepul qo'shamiz. Vilka-qoshiq ham kerakmi?",
+     "ok": "Нет, приборы не нужны, у меня есть.",
+     "ok_uz": "Yo'q, kerak emas, menda bor.",
+     "bad": [
+      "Нет, приборы не нужна, у меня есть.",
+      "Да, двадцать комплектов, для коллекции."
+     ]
+    },
+    {
+     "p": "Отлично. Заказ принят. Курьер позвонит, когда подъедет.",
+     "p_uz": "Zo'r. Buyurtma qabul qilindi. Kuryer yetib kelganda qo'ng'iroq qiladi.",
+     "ok": "Спасибо! Буду ждать.",
+     "ok_uz": "Rahmat! Kutaman.",
+     "bad": [
+      "Спасибо! Буду ждёт.",
+      "Спасибо! Но я уйду гулять."
+     ]
+    },
+    {
+     "p": "Приятного аппетита!",
+     "p_uz": "Yoqimli ishtaha!",
+     "ok": "Спасибо! До свидания!",
+     "ok_uz": "Rahmat! Xayr!",
+     "bad": [
+      "Спасибо! До свиданию!",
+      "Спасибо! Аппетит у меня уже пропал."
+     ]
+    }
+   ]
+  },
+  {
+   "n": 6,
+   "partner": "Официантка",
+   "icon": "🍽️",
+   "turns": [
+    {
+     "p": "Вот ваш заказ, пожалуйста. Приятного аппетита!",
+     "p_uz": "Mana buyurtmangiz, marhamat. Yoqimli ishtaha!",
+     "ok": "Извините, это не моё блюдо. Я заказывал лагман, а это плов.",
+     "ok_uz": "Kechirasiz, bu mening taomim emas. Men lag'mon buyurtma qilgandim, bu esa osh.",
+     "bad": [
+      "Извините, это не моё блюдо. Я заказывал лагмана, а это плов.",
+      "Спасибо! Плов тоже хорошо, хотя я его не заказывал."
+     ]
+    },
+    {
+     "p": "Ой, правда? Сейчас проверю заказ.",
+     "p_uz": "Voy, rostdanmi? Hozir buyurtmani tekshiraman.",
+     "ok": "Да, пожалуйста. Я сидел за этим столиком, номер семь.",
+     "ok_uz": "Ha, iltimos. Men shu stolda o'tirgandim, yettinchi raqam.",
+     "bad": [
+      "Да, пожалуйста. Я сидел за этот столик, номер семь.",
+      "Проверяйте сколько хотите, я ухожу."
+     ]
+    },
+    {
+     "p": "Вы правы, лагман. Плов — для соседнего столика. Извините!",
+     "p_uz": "Haqsiz, lag'mon. Osh — qo'shni stol uchun. Kechirasiz!",
+     "ok": "Ничего. А лагман долго ждать?",
+     "ok_uz": "Hechqisi yo'q. Lag'monni uzoq kutish kerakmi?",
+     "bad": [
+      "Ничего. А лагмана долго ждать?",
+      "Ничего. Плов я всё равно съем, раз принесли."
+     ]
+    },
+    {
+     "p": "Минут пятнадцать. Я попрошу повара сделать быстрее.",
+     "p_uz": "O'n besh daqiqacha. Oshpazdan tezroq qilishni so'rayman.",
+     "ok": "Хорошо, спасибо. Я не тороплюсь.",
+     "ok_uz": "Yaxshi, rahmat. Shoshmayapman.",
+     "bad": [
+      "Хорошо, спасибо. Я не торопится.",
+      "Пятнадцать минут? Я буду кричать!"
+     ]
+    },
+    {
+     "p": "Пока ждёте — вот хлеб и салат, бесплатно, от нас.",
+     "p_uz": "Kutguningizcha — mana non va salat, bepul, bizdan.",
+     "ok": "Спасибо, очень приятно!",
+     "ok_uz": "Rahmat, juda yoqimli!",
+     "bad": [
+      "Спасибо, очень приятный!",
+      "Только салат? Мало."
+     ]
+    },
+    {
+     "p": "Вот ваш лагман. Ещё раз извините!",
+     "p_uz": "Mana lag'moningiz. Yana bir bor uzr!",
+     "ok": "Спасибо… Ой, а он очень острый. Я просил не острый.",
+     "ok_uz": "Rahmat… Voy, u juda achchiq ekan. Achchiq bo'lmasin deb so'ragandim.",
+     "bad": [
+      "Спасибо… Ой, а он очень острая. Я просил не острый.",
+      "Спасибо. Острый, но я не скажу, буду страдать."
+     ]
+    },
+    {
+     "p": "Ох, в заказе это не отметили. Простите! Можем приготовить новый.",
+     "p_uz": "Oh, buyurtmada buni belgilashmabdi. Kechiring! Yangisini tayyorlashimiz mumkin.",
+     "ok": "Если можно, да. Острое мне нельзя.",
+     "ok_uz": "Iloji bo'lsa, ha. Achchiq menga mumkin emas.",
+     "bad": [
+      "Если можно, да. Острая мне нельзя.",
+      "Нет, давайте лучше скидку сто процентов."
+     ]
+    },
+    {
+     "p": "Конечно. Десять минут, и будет новый, не острый.",
+     "p_uz": "Albatta. O'n daqiqa, va yangisi, achchiq emas, tayyor bo'ladi.",
+     "ok": "Спасибо за понимание.",
+     "ok_uz": "Tushunganingiz uchun rahmat.",
+     "bad": [
+      "Спасибо за пониманием.",
+      "Десять минут — это слишком долго, это скандал!"
+     ]
+    },
+    {
+     "p": "Вот, пожалуйста. Попробуйте.",
+     "p_uz": "Mana, marhamat. Tatib ko'ring.",
+     "ok": "Теперь отлично! Очень вкусно.",
+     "ok_uz": "Endi zo'r! Juda mazali.",
+     "bad": [
+      "Теперь отличная! Очень вкусно.",
+      "Вкусно, но я всё равно недоволен."
+     ]
+    },
+    {
+     "p": "Рада, что понравилось. За ожидание сделаем скидку десять процентов.",
+     "p_uz": "Yoqqanidan xursandman. Kutganingiz uchun o'n foiz chegirma qilamiz.",
+     "ok": "Спасибо, это очень мило.",
+     "ok_uz": "Rahmat, bu juda yoqimli.",
+     "bad": [
+      "Спасибо, это очень милый.",
+      "Только десять? Давайте пятьдесят."
+     ]
+    },
+    {
+     "p": "Что-нибудь ещё? Десерт, чай?",
+     "p_uz": "Yana biror narsa? Desert, choy?",
+     "ok": "Чай, пожалуйста. И потом счёт.",
+     "ok_uz": "Choy, iltimos. Keyin hisob.",
+     "bad": [
+      "Чай, пожалуйста. И потом счётом.",
+      "Нет, на сегодня ошибок хватит."
+     ]
+    },
+    {
+     "p": "Хорошо. Вы так спокойно всё сказали, спасибо.",
+     "p_uz": "Yaxshi. Hammasini juda xotirjam aytdingiz, rahmat.",
+     "ok": "Ошибки бывают у всех. Главное — их исправить.",
+     "ok_uz": "Xatolar hammada bo'ladi. Asosiysi — ularni tuzatish.",
+     "bad": [
+      "Ошибки бывают у всех. Главное — их исправит.",
+      "Да, но в следующий раз буду кричать."
+     ]
+    },
+    {
+     "p": "Вот ваш чай и счёт. Со скидкой — пятьсот сорок рублей.",
+     "p_uz": "Mana choyingiz va hisob. Chegirma bilan — besh yuz qirq rubl.",
+     "ok": "Спасибо. Вот карта.",
+     "ok_uz": "Rahmat. Mana karta.",
+     "bad": [
+      "Спасибо. Вот картой.",
+      "Спасибо. Пусть заплатит соседний столик."
+     ]
+    },
+    {
+     "p": "Оплата прошла. Будем рады видеть вас снова!",
+     "p_uz": "To'lov o'tdi. Sizni yana ko'rishdan xursand bo'lamiz!",
+     "ok": "Спасибо. Обязательно приду ещё.",
+     "ok_uz": "Rahmat. Albatta yana kelaman.",
+     "bad": [
+      "Спасибо. Обязательно прийду ещё.",
+      "Спасибо, но больше не приду."
+     ]
+    },
+    {
+     "p": "Хорошего дня!",
+     "p_uz": "Kuningiz yaxshi o'tsin!",
+     "ok": "И вам хорошего дня!",
+     "ok_uz": "Sizga ham!",
+     "bad": [
+      "И вам хороший день!",
+      "И вам. И повару тоже — меньше перца!"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 7,
+   "partner": "Администратор ресторана",
+   "icon": "📞",
+   "turns": [
+    {
+     "p": "Ресторан «Самарканд», здравствуйте!",
+     "p_uz": "«Samarqand» restorani, assalomu alaykum!",
+     "ok": "Здравствуйте! Я хочу забронировать столик.",
+     "ok_uz": "Assalomu alaykum! Stol band qilmoqchiman.",
+     "bad": [
+      "Здравствуйте! Я хочу забронировать столиком.",
+      "Здравствуйте! Я хочу забронировать весь ресторан бесплатно."
+     ]
+    },
+    {
+     "p": "На какой день и время?",
+     "p_uz": "Qaysi kun va vaqtga?",
+     "ok": "На субботу, на семь вечера.",
+     "ok_uz": "Shanbaga, kechqurun yettiga.",
+     "bad": [
+      "На субботу, на семи вечера.",
+      "На вчера, на утро."
+     ]
+    },
+    {
+     "p": "Сколько будет человек?",
+     "p_uz": "Necha kishi bo'ladi?",
+     "ok": "Десять человек. У друга день рождения.",
+     "ok_uz": "O'n kishi. Do'stimning tug'ilgan kuni.",
+     "bad": [
+      "Десять человека. У друга день рождения.",
+      "Не знаю, сколько придёт. Может, сто."
+     ]
+    },
+    {
+     "p": "Хорошо. Для десяти человек есть отдельный зал или большой стол в общем зале.",
+     "p_uz": "Yaxshi. O'n kishi uchun alohida zal yoki umumiy zalda katta stol bor.",
+     "ok": "А сколько стоит отдельный зал?",
+     "ok_uz": "Alohida zal qancha turadi?",
+     "bad": [
+      "А сколько стоят отдельный зал?",
+      "А можно стол на крыше?"
+     ]
+    },
+    {
+     "p": "Зал бесплатный, но минимальный заказ — двадцать пять тысяч.",
+     "p_uz": "Zal bepul, lekin minimal buyurtma — yigirma besh ming.",
+     "ok": "Что значит «минимальный заказ»?",
+     "ok_uz": "«Minimal buyurtma» nima degani?",
+     "bad": [
+      "Что значат «минимальный заказ»?",
+      "Значит, можно заказать ничего?"
+     ]
+    },
+    {
+     "p": "Это значит, что еды и напитков нужно заказать минимум на эту сумму.",
+     "p_uz": "Bu kamida shu summaga ovqat va ichimlik buyurtma qilish kerak degani.",
+     "ok": "Понятно. Нас десять человек, это две с половиной тысячи на человека.",
+     "ok_uz": "Tushunarli. Biz o'n kishimiz, bu bir kishiga ikki yarim ming.",
+     "bad": [
+      "Понятно. Нас десять человек, это две с половиной тысячи на человеку.",
+      "Понятно. Тогда закажем одну лепёшку на всех."
+     ]
+    },
+    {
+     "p": "Да, обычно у нас так и получается.",
+     "p_uz": "Ha, odatda bizda shunday bo'ladi.",
+     "ok": "Хорошо, берём отдельный зал. Там можно включить свою музыку?",
+     "ok_uz": "Yaxshi, alohida zalni olamiz. U yerda o'z musiqamizni qo'ysak bo'ladimi?",
+     "bad": [
+      "Хорошо, берём отдельный зал. Там можно включить свой музыку?",
+      "Хорошо. Там можно спать до утра?"
+     ]
+    },
+    {
+     "p": "Можно, у нас есть колонка. Только до одиннадцати вечера.",
+     "p_uz": "Mumkin, bizda kolonka bor. Faqat kechki o'n birgacha.",
+     "ok": "Хорошо. А торт можно принести свой?",
+     "ok_uz": "Yaxshi. O'z tortimizni olib kelsak bo'ladimi?",
+     "bad": [
+      "Хорошо. А торт можно принести своя?",
+      "Хорошо. А повара можно принести своего?"
+     ]
+    },
+    {
+     "p": "Можно, но есть сбор — триста рублей за подачу.",
+     "p_uz": "Mumkin, lekin yig'im bor — tortni berish uchun uch yuz rubl.",
+     "ok": "Понятно, это нормально.",
+     "ok_uz": "Tushunarli, bu normal.",
+     "bad": [
+      "Понятно, это нормальный.",
+      "Триста? Тогда торт съедим на улице."
+     ]
+    },
+    {
+     "p": "Ещё вопрос: есть особые пожелания по еде? Например, что-то гости не едят?",
+     "p_uz": "Yana bir savol: ovqat bo'yicha alohida istaklar bormi? Masalan, mehmonlar nimanidir yemaydimi?",
+     "ok": "Да, двое не едят свинину. И один друг не ест острое.",
+     "ok_uz": "Ha, ikki kishi cho'chqa go'shti yemaydi. Bir do'stim esa achchiq yemaydi.",
+     "bad": [
+      "Да, двое не едят свинину. И один друг не едят острое.",
+      "Нет, пусть едят всё, что дадут."
+     ]
+    },
+    {
+     "p": "Хорошо. Нужна предоплата — пять тысяч. Можно перевести по ссылке.",
+     "p_uz": "Yaxshi. Oldindan to'lov kerak — besh ming. Havola orqali o'tkazish mumkin.",
+     "ok": "А если кто-то не придёт, предоплату вернут?",
+     "ok_uz": "Agar kimdir kelmasa, oldindan to'lov qaytariladimi?",
+     "bad": [
+      "А если кто-то не придёт, предоплату вернёт?",
+      "А если никто не придёт, вы нам заплатите?"
+     ]
+    },
+    {
+     "p": "Предоплата войдёт в общий счёт. Если отмените бронь меньше чем за сутки — не вернём.",
+     "p_uz": "Oldindan to'lov umumiy hisobga kiradi. Bronni bir sutkadan kam qolganda bekor qilsangiz — qaytarmaymiz.",
+     "ok": "Понятно. Мы точно придём.",
+     "ok_uz": "Tushunarli. Albatta kelamiz.",
+     "bad": [
+      "Понятно. Мы точно придут.",
+      "Понятно. Тогда отменим за пять минут."
+     ]
+    },
+    {
+     "p": "Хорошо. На чьё имя бронь?",
+     "p_uz": "Yaxshi. Bron kimning nomiga?",
+     "ok": "На моё имя: Фарход Каримов.",
+     "ok_uz": "Mening nomimga: Farhod Karimov.",
+     "bad": [
+      "На моё имени: Фарход Каримов.",
+      "На имя президента."
+     ]
+    },
+    {
+     "p": "И номер телефона?",
+     "p_uz": "Telefon raqami?",
+     "ok": "Восемь, девятьсот шестнадцать, двести тридцать, сорок пять, шестьдесят семь.",
+     "ok_uz": "8-916-230-45-67.",
+     "bad": [
+      "Восемь, девятьсот шестнадцать, двести тридцать, сорок пять, шестьдесят семи.",
+      "Телефона нет, я пишу письма."
+     ]
+    },
+    {
+     "p": "Отправила ссылку для предоплаты. Проверьте, пожалуйста.",
+     "p_uz": "Oldindan to'lov havolasini yubordim. Iltimos, tekshiring.",
+     "ok": "Пришла. Оплатил. Можно чек на почту?",
+     "ok_uz": "Keldi. To'ladim. Chekni pochtaga yuborsa bo'ladimi?",
+     "bad": [
+      "Пришла. Оплатила. Можно чек на почту?",
+      "Пришла, но я её удалил."
+     ]
+    },
+    {
+     "p": "Конечно. Чек придёт в течение часа.",
+     "p_uz": "Albatta. Chek bir soat ichida keladi.",
+     "ok": "Отлично. А можно заранее заказать плов на всех?",
+     "ok_uz": "Ajoyib. Hammaga oldindan osh buyurtma qilsa bo'ladimi?",
+     "bad": [
+      "Отлично. А можно заранее заказать плова на всех?",
+      "Отлично. А можно плов без риса?"
+     ]
+    },
+    {
+     "p": "Да, большой казан плова на десять человек. Приготовим к семи.",
+     "p_uz": "Ha, o'n kishilik katta qozon osh. Yettiga tayyorlaymiz.",
+     "ok": "Прекрасно! Это будет сюрприз для именинника.",
+     "ok_uz": "Ajoyib! Bu tug'ilgan kun egasi uchun syurpriz bo'ladi.",
+     "bad": [
+      "Прекрасно! Это будет сюрприз для именинником.",
+      "Прекрасно! Плов съем я один, остальным салат."
+     ]
+    },
+    {
+     "p": "Отлично. Ждём вас в субботу в семь!",
+     "p_uz": "Zo'r. Shanba kuni yettida kutamiz!",
+     "ok": "Спасибо! Если что-то изменится, я позвоню.",
+     "ok_uz": "Rahmat! Biror narsa o'zgarsa, qo'ng'iroq qilaman.",
+     "bad": [
+      "Спасибо! Если что-то изменится, я позвонит.",
+      "Спасибо! Если что-то изменится, просто не приду."
+     ]
+    },
+    {
+     "p": "Хорошо. До встречи!",
+     "p_uz": "Yaxshi. Ko'rishguncha!",
+     "ok": "До встречи! Хорошего дня!",
+     "ok_uz": "Ko'rishguncha! Kuningiz yaxshi o'tsin!",
+     "bad": [
+      "До встречу! Хорошего дня!",
+      "До встречи! Готовьте десять казанов."
+     ]
+    }
+   ]
+  },
+  {
+   "n": 8,
+   "partner": "Друг Шерзод",
+   "icon": "🎂",
+   "turns": [
+    {
+     "p": "Фарход! Ничего себе! Это всё для меня?",
+     "p_uz": "Farhod! Voy-bo'! Bularning hammasi men uchunmi?",
+     "ok": "Да, Шерзод! С днём рождения тебя!",
+     "ok_uz": "Ha, Sherzod! Tug'ilgan kuning bilan!",
+     "bad": [
+      "Да, Шерзод! С днём рождением тебя!",
+      "Нет, это для официанта."
+     ]
+    },
+    {
+     "p": "Спасибо, брат! Я даже не знал, что вы готовите праздник.",
+     "p_uz": "Rahmat, uka! Bayram tayyorlayotganingizni bilmagan ham edim.",
+     "ok": "Это был сюрприз. Мы готовились две недели.",
+     "ok_uz": "Bu syurpriz edi. Ikki hafta tayyorlandik.",
+     "bad": [
+      "Это был сюрпризом. Мы готовились две недели.",
+      "Это была случайность."
+     ]
+    },
+    {
+     "p": "А кто всё организовал?",
+     "p_uz": "Hammasini kim tashkil qildi?",
+     "ok": "Я забронировал зал, а ребята с работы помогли.",
+     "ok_uz": "Men zalni band qildim, ishxonadagi yigitlar yordam berishdi.",
+     "bad": [
+      "Я забронировал зал, а ребят с работы помогли.",
+      "Президент лично."
+     ]
+    },
+    {
+     "p": "О, и Сергей пришёл, наш бригадир!",
+     "p_uz": "O, Sergey ham keldi, brigadirimiz!",
+     "ok": "Да, я его пригласил. Он сказал, что очень уважает тебя.",
+     "ok_uz": "Ha, uni taklif qildim. U seni juda hurmat qilishini aytdi.",
+     "bad": [
+      "Да, я его пригласил. Он сказал, что очень уважает тебе.",
+      "Да, но он пришёл только поесть."
+     ]
+    },
+    {
+     "p": "Как приятно! Садитесь все, садитесь!",
+     "p_uz": "Qanday yoqimli! Hamma o'tirsin, o'tiringlar!",
+     "ok": "Давайте сначала скажем тост за именинника!",
+     "ok_uz": "Avval tug'ilgan kun egasi uchun qadah so'zi aytaylik!",
+     "bad": [
+      "Давайте сначала скажем тостом за именинника!",
+      "Давайте сначала поедим, а потом подумаем."
+     ]
+    },
+    {
+     "p": "Фарход, ты начинай!",
+     "p_uz": "Farhod, sen boshla!",
+     "ok": "Шерзод, ты настоящий друг. Желаю тебе здоровья, счастья и успехов!",
+     "ok_uz": "Sherzod, sen haqiqiy do'stsan. Senga sog'lik, baxt va omad tilayman!",
+     "bad": [
+      "Шерзод, ты настоящий друг. Желаю тебе здоровье, счастье и успехи!",
+      "Шерзод, желаю тебе меньше есть плова."
+     ]
+    },
+    {
+     "p": "Спасибо, брат! Ты меня растрогал.",
+     "p_uz": "Rahmat, uka! Meni ta'sirlantirding.",
+     "ok": "И ещё желаю скорее увидеть семью!",
+     "ok_uz": "Yana oilangni tezroq ko'rishingni tilayman!",
+     "bad": [
+      "И ещё желаю скорее увидеть семьи!",
+      "И ещё желаю не опаздывать на работу. Ха-ха!"
+     ]
+    },
+    {
+     "p": "Да, через месяц лечу домой. Дочка уже ждёт.",
+     "p_uz": "Ha, bir oydan keyin uyga uchaman. Qizim kutyapti.",
+     "ok": "Сколько ей уже лет?",
+     "ok_uz": "U necha yoshga to'ldi?",
+     "bad": [
+      "Сколько ей уже год?",
+      "А она тебя помнит?"
+     ]
+    },
+    {
+     "p": "Пять лет! Вот фото. Смотри, какая большая.",
+     "p_uz": "Besh yosh! Mana surat. Qara, qanday katta bo'lib qolgan.",
+     "ok": "Какая красивая! Очень похожа на тебя.",
+     "ok_uz": "Qanday chiroyli! Senga juda o'xshaydi.",
+     "bad": [
+      "Какой красивая! Очень похожа на тебя.",
+      "Обычная девочка."
+     ]
+    },
+    {
+     "p": "О, несут плов! Вы и плов заказали?!",
+     "p_uz": "O, osh olib kelishyapti! Osh ham buyurtma qildinglarmi?!",
+     "ok": "Конечно! Какой день рождения без плова?",
+     "ok_uz": "Albatta! Oshsiz qanday tug'ilgan kun?",
+     "bad": [
+      "Конечно! Какой день рождения без пловом?",
+      "Нет, это чужой плов, но давайте съедим."
+     ]
+    },
+    {
+     "p": "Пахнет как дома! Девзира?",
+     "p_uz": "Uydagidek hid kelyapti! Devzirami?",
+     "ok": "Да, я специально попросил девзиру.",
+     "ok_uz": "Ha, atayin devzira so'ragandim.",
+     "bad": [
+      "Да, я специально попросил девзирой.",
+      "Не знаю, какой-то рис."
+     ]
+    },
+    {
+     "p": "Ребята, накладывайте! Сергей, вы пробовали настоящий плов?",
+     "p_uz": "Bolalar, solinglar! Sergey, haqiqiy osh yeb ko'rganmisiz?",
+     "ok": "Сергей, попробуйте. Это лучший плов в Москве!",
+     "ok_uz": "Sergey, tatib ko'ring. Bu Moskvadagi eng zo'r osh!",
+     "bad": [
+      "Сергей, попробуйте. Это лучшая плов в Москве!",
+      "Сергей, вам не дадим, плов только для своих."
+     ]
+    },
+    {
+     "p": "Ой, официант несёт торт со свечами!",
+     "p_uz": "Voy, ofitsiant shamli tort olib kelyapti!",
+     "ok": "Загадай желание и задуй свечи!",
+     "ok_uz": "Niyat qil va shamlarni o'chir!",
+     "bad": [
+      "Загадай желанием и задуй свечи!",
+      "Задуй свечи, а торт я заберу домой."
+     ]
+    },
+    {
+     "p": "Загадал! Ура! Спасибо всем!",
+     "p_uz": "Niyat qildim! Ura! Hammaga rahmat!",
+     "ok": "А теперь подарок от всех нас.",
+     "ok_uz": "Endi esa hammamizdan sovg'a.",
+     "bad": [
+      "А теперь подарком от всех нас.",
+      "А теперь счёт, плати сам."
+     ]
+    },
+    {
+     "p": "Что это? Новые наушники? Как вы узнали?!",
+     "p_uz": "Bu nima? Yangi quloqchinmi? Qanday bildinglar?!",
+     "ok": "Ты говорил, что старые сломались. Мы запомнили.",
+     "ok_uz": "Eskisi buzilganini aytgan eding. Esda saqlab qoldik.",
+     "bad": [
+      "Ты говорил, что старые сломалась. Мы запомнили.",
+      "Случайно купили, хотели себе."
+     ]
+    },
+    {
+     "p": "Вы лучшие друзья на свете!",
+     "p_uz": "Sizlar dunyodagi eng zo'r do'stlarsiz!",
+     "ok": "Ты тоже, Шерзод. Ты всегда нам помогаешь.",
+     "ok_uz": "Sen ham, Sherzod. Sen doim bizga yordam berasan.",
+     "bad": [
+      "Ты тоже, Шерзод. Ты всегда нам помогает.",
+      "Знаем, знаем."
+     ]
+    },
+    {
+     "p": "Давайте сфотографируемся все вместе!",
+     "p_uz": "Keling, hammamiz birga suratga tushaylik!",
+     "ok": "Давайте! Попросим официанта нас сфотографировать.",
+     "ok_uz": "Keling! Ofitsiantdan bizni suratga olishini so'raymiz.",
+     "bad": [
+      "Давайте! Попросим официанту нас сфотографировать.",
+      "Нет, я плохо выгляжу, не буду."
+     ]
+    },
+    {
+     "p": "Отличное фото! Отправлю семье.",
+     "p_uz": "Zo'r surat! Oilamga yuboraman.",
+     "ok": "Передай им от нас привет!",
+     "ok_uz": "Ularga bizdan salom ayt!",
+     "bad": [
+      "Передай их от нас привет!",
+      "Не отправляй, там я некрасивый."
+     ]
+    },
+    {
+     "p": "Обязательно! Фарход, сколько я должен за праздник?",
+     "p_uz": "Albatta! Farhod, bayram uchun qancha berishim kerak?",
+     "ok": "Нисколько! Это наш подарок. Мы всё уже оплатили.",
+     "ok_uz": "Hech qancha! Bu bizning sovg'amiz. Hammasini to'lab bo'ldik.",
+     "bad": [
+      "Нисколько! Это наш подарок. Мы всё уже оплатила.",
+      "Двадцать пять тысяч, и побыстрее."
+     ]
+    },
+    {
+     "p": "Ребята, я не знаю, что сказать… Спасибо!",
+     "p_uz": "Bolalar, nima deyishni bilmayman… Rahmat!",
+     "ok": "Ничего не говори. Просто отдыхай и радуйся.",
+     "ok_uz": "Hech narsa dema. Shunchaki dam ol va xursand bo'l.",
+     "bad": [
+      "Ничего не говори. Просто отдыхай и радуется.",
+      "Скажи хотя бы речь на час."
+     ]
+    },
+    {
+     "p": "Уже одиннадцать… Ресторан скоро закрывается.",
+     "p_uz": "Soat o'n bir bo'libdi… Restoran tez orada yopiladi.",
+     "ok": "Да, нужно попросить счёт и проверить его.",
+     "ok_uz": "Ha, hisobni so'rab, tekshirish kerak.",
+     "bad": [
+      "Да, нужно попросить счёт и проверить его счётом.",
+      "Да, давайте уйдём, не заплатив."
+     ]
+    },
+    {
+     "p": "Ты и счёт проверяешь? Молодец!",
+     "p_uz": "Hisobni ham tekshirasanmi? Barakalla!",
+     "ok": "Всегда проверяю. Предоплату пять тысяч должны вычесть.",
+     "ok_uz": "Doim tekshiraman. Besh ming oldindan to'lovni ayirishlari kerak.",
+     "bad": [
+      "Всегда проверяю. Предоплата пять тысяч должны вычесть.",
+      "Никогда не проверяю, но сегодня решил."
+     ]
+    },
+    {
+     "p": "Ну что, всё правильно?",
+     "p_uz": "Xo'sh, hammasi to'g'rimi?",
+     "ok": "Да, всё правильно. Предоплату учли.",
+     "ok_uz": "Ha, hammasi to'g'ri. Oldindan to'lov hisobga olingan.",
+     "bad": [
+      "Да, всё правильная. Предоплату учли.",
+      "Нет, но я заплачу в два раза больше."
+     ]
+    },
+    {
+     "p": "Фарход, спасибо тебе за этот вечер. Я его никогда не забуду!",
+     "p_uz": "Farhod, bu oqshom uchun rahmat. Uni hech qachon unutmayman!",
+     "ok": "Пожалуйста, брат! Ещё раз с днём рождения!",
+     "ok_uz": "Arzimaydi, uka! Yana bir bor tug'ilgan kuning bilan!",
+     "bad": [
+      "Пожалуйста, брат! Ещё раз с днём рождением!",
+      "Ладно, ладно. В следующий раз — твоя очередь платить."
+     ]
+    }
+   ]
+  }
+ ]
+}
