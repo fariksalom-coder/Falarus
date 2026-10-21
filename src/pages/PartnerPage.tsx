@@ -145,7 +145,7 @@ export default function PartnerPage() {
   const outgoingCount = status?.outgoingRequestsCount ?? 0;
 
   return (
-    <div className="min-h-screen bg-app-bg pb-24">
+    <div className="bg-app-bg">
       <main
         className={
           overlay === 'partner-chat'

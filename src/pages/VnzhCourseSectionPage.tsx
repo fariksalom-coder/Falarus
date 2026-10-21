@@ -23,6 +23,7 @@ import { useLocale } from '../context/LocaleContext';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { COURSE_PRODUCT_META } from '../../shared/paymentProducts';
 import { openRahmatCheckout } from '../api/rahmat';
+import { isNativeIOS } from '../native/platform';
 
 const vnzhMeta = COURSE_PRODUCT_META.vnzh;
 
@@ -322,7 +323,7 @@ export default function VnzhCourseSectionPage() {
             </div>
             <button
               type="button"
-              onClick={() => setCurrencyModalOpen(true)}
+              onClick={() => isNativeIOS() ? navigate('/payment', { state: { productCode: 'vnzh' } }) : setCurrencyModalOpen(true)}
               className="vnzh-gold-cta flex h-[46px] shrink-0 items-center justify-center gap-1 rounded-full px-5 text-[14px] font-black transition hover:brightness-[1.03] active:scale-[0.99]"
             >
               <span>Sotib olish</span>
@@ -335,7 +336,7 @@ export default function VnzhCourseSectionPage() {
       {paywallOpen ? (
         <PaywallModal
           onClose={() => setPaywallOpen(false)}
-          onAction={() => setCurrencyModalOpen(true)}
+          onAction={() => isNativeIOS() ? navigate('/payment', { state: { productCode: 'vnzh' } }) : setCurrencyModalOpen(true)}
           title={t('patent.paywallTitle')}
           description={`${vnzhMeta.paywallDescription}\n${vnzhMeta.freeDescription}`}
           buttonText={t('patent.paywallBuy')}

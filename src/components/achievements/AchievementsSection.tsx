@@ -74,12 +74,12 @@ export default function AchievementsSection({ token }: Props) {
 
   return (
     <div
-      className="rounded-[24px] bg-pmn-card p-5 shadow-[0_14px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border"
+      className="shrink-0 rounded-[24px] bg-pmn-card px-4 py-3.5 shadow-[0_14px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border"
     >
       {/* Header */}
       <div className="flex items-center gap-3">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-[13px]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px]"
           style={{
             background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)',
             boxShadow: '0 6px 14px -6px rgba(212,172,92,0.55)',
@@ -144,8 +144,8 @@ function SectionBlock({
   const unlockedCount = items.filter((it) => it.unlocked).length;
 
   return (
-    <div className="mt-5">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="mt-3.5">
+      <div className="mb-2 flex items-center justify-between">
         <h3
           className="text-[13px] font-black uppercase tracking-[0.14em]"
           style={{ color: '#9E9787' }}
@@ -164,18 +164,18 @@ function SectionBlock({
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-4 gap-2">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="h-[76px] animate-pulse rounded-[16px] bg-pmn-cream-strong"
+              className="h-[62px] animate-pulse rounded-[16px] bg-pmn-cream-strong"
             />
           ))}
         </div>
       ) : items.length === 0 ? (
         <p className="text-[12.5px] font-semibold text-pmn-text-muted">{emptyHint}</p>
       ) : (
-        <div className="grid grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-4 gap-2">
           {visible.map((it) => (
             <MedalTile key={it.key} item={it} />
           ))}
@@ -183,7 +183,7 @@ function SectionBlock({
             <button
               type="button"
               onClick={onToggle}
-              className="flex h-[76px] flex-col items-center justify-center gap-1 rounded-[16px] border border-dashed border-pmn-cream-border bg-pmn-cream/50 transition-transform active:scale-95"
+              className="flex h-[62px] flex-col items-center justify-center gap-1 rounded-[16px] border border-dashed border-pmn-cream-border bg-pmn-cream/50 transition-transform active:scale-95"
             >
               <span
                 className="flex h-8 w-8 items-center justify-center rounded-[10px]"
@@ -200,7 +200,7 @@ function SectionBlock({
             <button
               type="button"
               onClick={onToggle}
-              className="flex h-[76px] flex-col items-center justify-center gap-1 rounded-[16px] border border-dashed border-pmn-cream-border bg-pmn-cream/50 transition-transform active:scale-95"
+              className="flex h-[62px] flex-col items-center justify-center gap-1 rounded-[16px] border border-dashed border-pmn-cream-border bg-pmn-cream/50 transition-transform active:scale-95"
             >
               <span className="text-[10.5px] font-black text-pmn-text-muted">
                 yopish
@@ -224,8 +224,8 @@ function MedalTile({ item }: { item: AchievementItem }) {
     <div
       className={
         isUnlocked
-          ? 'flex h-[76px] flex-col items-center justify-center gap-1 rounded-[16px] transition-transform'
-          : 'flex h-[76px] flex-col items-center justify-center gap-1 rounded-[16px] bg-pmn-cream transition-transform'
+          ? 'flex h-[62px] flex-col items-center justify-center gap-1 rounded-[16px] transition-transform'
+          : 'flex h-[62px] flex-col items-center justify-center gap-1 rounded-[16px] bg-pmn-cream transition-transform'
       }
       style={
         isUnlocked

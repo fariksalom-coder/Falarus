@@ -24,9 +24,11 @@ type RowStatProps = {
 
 export type KunlikTodayStatsCardProps = {
   token: string | null;
+  /** Bir ekranli Statistika uchun ixcham ko'rinish. */
+  compact?: boolean;
 };
 
-export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
+export function KunlikTodayStatsCard({ token, compact = false }: KunlikTodayStatsCardProps) {
   const navigate = useNavigate();
   const { t } = useLocale();
   const { rows: kunlikRows, loaded: kunlikLoaded, practicePromptCountByDay } = useKunlikProgress();
@@ -199,21 +201,21 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
   const gaugeC = 2 * Math.PI * gaugeRadius;
 
   return (
-    <div className="overflow-hidden rounded-[26px] bg-pmn-card shadow-[0_18px_36px_-18px_rgba(15,27,59,0.28)] ring-1 ring-pmn-border">
+    <div className={`${compact ? 'fit-grow ' : ''}overflow-hidden rounded-[26px] bg-pmn-card shadow-[0_18px_36px_-18px_rgba(15,27,59,0.28)] ring-1 ring-pmn-border`}>
       {/* Navy hero with gold guilloche + circular progress */}
-      <div className="profile-guilloche relative overflow-hidden px-5 pt-5 pb-5 text-white">
+      <div className={`profile-guilloche relative shrink-0 overflow-hidden text-white ${compact ? 'px-4 py-3' : 'px-5 pt-5 pb-5'}`}>
         <div className="relative z-[2] flex items-start justify-between gap-3">
           <div className="min-w-0">
             <span className="profile-gold-pill inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.18em]">
               Bugun · {focusDay}-kun
             </span>
-            <h3 className="profile-heading mt-3 text-[26px] leading-none text-white">Kunlik reja</h3>
-            <p className="mt-2 text-[12.5px] font-bold text-[#D4AC5C]">
+            <h3 className={`profile-heading leading-none text-white ${compact ? 'mt-1.5 text-[21px]' : 'mt-3 text-[26px]'}`}>Kunlik reja</h3>
+            <p className={`text-[12.5px] font-bold text-[#D4AC5C] ${compact ? 'mt-1' : 'mt-2'}`}>
               {doneCount} / {totalBlocks} blok bajarildi{remainingMin > 0 ? ` · ~${remainingMin} daqiqa qoldi` : ''}
             </p>
           </div>
           {/* Circular progress */}
-          <div className="relative flex h-[76px] w-[76px] shrink-0 items-center justify-center">
+          <div className={`relative flex shrink-0 items-center justify-center ${compact ? 'h-[60px] w-[60px]' : 'h-[76px] w-[76px]'}`}>
             <svg viewBox="0 0 72 72" className="absolute inset-0 h-full w-full -rotate-90">
               <circle cx="36" cy="36" r={gaugeRadius} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="6" />
               <circle
@@ -241,19 +243,19 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
       {loadingCard ? (
         <p className="py-8 text-center text-sm text-app-text-muted">{t('common.loading')}</p>
       ) : (
-        <div className="px-4 pt-4 pb-4">
+        <div className={compact ? 'flex min-h-0 flex-1 flex-col px-3.5 py-3' : 'px-4 pt-4 pb-4'}>
           {/* Prev days chip — cream */}
           {showPrevChip ? (
             <div
-              className="mb-3 flex items-center justify-between rounded-[16px] px-4 py-3 ring-1 ring-[#F1E5C0]"
+              className={`flex shrink-0 items-center justify-between rounded-[16px] px-4 ring-1 ring-[#F1E5C0] ${compact ? 'mb-2 py-1.5' : 'mb-3 py-3'}`}
               style={{ background: 'linear-gradient(90deg, rgba(245,212,143,0.16), rgba(212,172,92,0.10))' }}
             >
               <div className="flex items-center gap-2.5">
                 <span
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-[#0A1638]"
+                  className={`flex items-center justify-center rounded-full text-[#0A1638] ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}
                   style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
                 >
-                  <CheckCircle2 className="h-4 w-4" strokeWidth={2.6} aria-hidden />
+                  <CheckCircle2 className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} strokeWidth={2.6} aria-hidden />
                 </span>
                 <p className="text-[13px] font-black text-pmn-text">
                   {focusDay - 1 === 1
@@ -265,8 +267,8 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
             </div>
           ) : null}
 
-          {/* Vertical timeline */}
-          <div className="relative">
+          {/* Vertical timeline — ixcham rejimda sig'masa faqat shu qism skroll qiladi, tugma doim ko'rinadi */}
+          <div className={compact ? 'relative min-h-0 flex-1 overflow-y-auto overscroll-contain' : 'relative'}>
             <div
               aria-hidden
               className="absolute left-[15px] top-4 bottom-4 w-px"
@@ -274,7 +276,7 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
                 background: 'linear-gradient(to bottom, transparent, #E5E7EB 12px, #E5E7EB calc(100% - 12px), transparent)',
               }}
             />
-            <div className="space-y-2.5">
+            <div className={compact ? 'space-y-1' : 'space-y-2.5'}>
               {blocks.map((b, i) => {
                 const isDone = b.done === true;
                 const isCurrent = i === currentIdx;
@@ -306,7 +308,7 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
 
                     {/* Block card */}
                     <div
-                      className={`flex flex-1 items-center gap-3 rounded-[16px] px-3 py-3 ring-1 ${
+                      className={`flex min-w-0 flex-1 items-center gap-3 rounded-[16px] px-3 ring-1 ${compact ? 'py-1.5' : 'py-3'} ${
                         isCurrent
                           ? 'bg-pmn-pill ring-[#0F1B3B]/25'
                           : isDone
@@ -315,7 +317,7 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
                       }`}
                     >
                       <span
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] text-[18px]"
+                        className={`flex shrink-0 items-center justify-center rounded-[12px] ${compact ? 'h-8 w-8 text-[15px]' : 'h-10 w-10 text-[18px]'}`}
                         style={{
                           background: isDone
                             ? 'linear-gradient(150deg, #F5D48F 0%, #F1E5C0 100%)'
@@ -327,11 +329,11 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
                         {b.emoji}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className={`flex items-center gap-2 text-[14px] font-black ${isLocked ? 'text-pmn-text-soft' : 'text-pmn-text'}`}>
-                          <span>{b.label}</span>
+                        <p className={`flex min-w-0 items-center gap-2 text-[14px] font-black ${isLocked ? 'text-pmn-text-soft' : 'text-pmn-text'}`}>
+                          <span className="truncate">{b.label}</span>
                           {isCurrent ? (
                             <span
-                              className="rounded-full px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.14em] text-[#0A1638]"
+                              className="shrink-0 rounded-full px-2 py-0.5 text-[9.5px] font-black uppercase tracking-[0.14em] text-[#0A1638]"
                               style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
                             >
                               Hozir
@@ -349,12 +351,8 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
                           Bajarildi
                         </span>
                       ) : isCurrent ? (
-                        <span
-                          className="shrink-0 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#0A1638] ring-1 ring-[#E4C88A]"
-                          style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #E4C88A 100%)' }}
-                        >
-                          Sizning navbat
-                        </span>
+                        /* "Hozir" belgisi navbatni ko'rsatadi; uzun yorliq tor ekranda kartadan chiqib ketardi. */
+                        <ChevronRight className="h-4 w-4 shrink-0 text-pmn-text-muted" strokeWidth={2.6} aria-hidden />
                       ) : (
                         <span aria-hidden className="text-[15px] text-[#B5AE97]">🔒</span>
                       )}
@@ -369,7 +367,7 @@ export function KunlikTodayStatsCard({ token }: KunlikTodayStatsCardProps) {
           <button
             type="button"
             onClick={primaryAction.onClick}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[14.5px] font-black text-white shadow-[0_14px_28px_-12px_rgba(15,27,59,0.45)] transition hover:brightness-[1.03] active:scale-[0.99]"
+            className={`flex w-full shrink-0 items-center justify-center gap-2 rounded-full text-[14.5px] ${compact ? 'mt-3 py-3' : 'mt-4 py-3.5'} font-black text-white shadow-[0_14px_28px_-12px_rgba(15,27,59,0.45)] transition hover:brightness-[1.03] active:scale-[0.99]`}
             style={{ background: 'linear-gradient(155deg, #16244A 0%, #0F1B3B 55%, #0A1638 100%)' }}
           >
             {primaryAction.label}

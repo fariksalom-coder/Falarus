@@ -1,3 +1,4 @@
+import { PaymentReturnSync } from './native/PaymentReturnSync';
 import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AnalyticsScripts } from './components/AnalyticsScripts';
@@ -292,6 +293,7 @@ export default function App() {
           <AnalyticsScripts />
           <AccessProvider>
             <PaymentStatusProvider>
+              <PaymentReturnSync />
                 <AchievementCelebrationProvider>
                   <PanelSceneProvider><AppRoutes /></PanelSceneProvider>
                 </AchievementCelebrationProvider>

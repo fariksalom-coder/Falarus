@@ -18,6 +18,7 @@ import { operatorReceipt } from '../operator/routes.js';
 import { enabled as operatorEnabled } from '../operator/service.js';
 import { readAdminUsers, readAdminRegistrations, readAdminUnreadCount } from '../services/adminUsersRead.service.js';
 import { loadUserManageSnapshot } from '../services/adminUserManage.service.js';
+import { createReferralAdminRoutes } from './referralAdminRoutes.js';
 
 const TEACHER_OWNER_SELECT = [
   'user_id',
@@ -454,9 +455,7 @@ export function createAdminRoutes(supabase: DbClient): Router {
   });
   router.get('/card-tokens', (req, res, next) => ctrl.getCardTokens(req, res).catch(next));
   router.get('/click-payment-logs', (req, res, next) => ctrl.getClickPaymentLogs(req, res).catch(next));
-  router.get('/referrals/withdrawals', (req, res, next) => ctrl.getWithdrawals(req, res).catch(next));
-  router.post('/referrals/:id/approve', (req, res, next) => ctrl.approveWithdrawal(req, res).catch(next));
-  router.post('/referrals/:id/reject', (req, res, next) => ctrl.rejectWithdrawal(req, res).catch(next));
+  router.use('/referrals', createReferralAdminRoutes());
   router.get('/help/broadcast-preview', (req, res, next) => ctrl.getHelpBroadcastPreview(req, res).catch(next));
   router.post('/help/broadcast', (req, res, next) => ctrl.postHelpBroadcast(req, res).catch(next));
   router.post('/help/users/:userId/messages', (req, res, next) => ctrl.sendHelpDirectUserMessage(req, res).catch(next));

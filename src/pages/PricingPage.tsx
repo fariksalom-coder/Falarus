@@ -97,7 +97,12 @@ function buildRubPlans(
   });
 }
 
+
 export default function PricingPage() {
+  return <WebPricingPage />;
+}
+
+function WebPricingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const ortga = () => {

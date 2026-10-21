@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { resolveAssetUrl } from '../api';
 import { ArrowLeft, ImagePlus, MessageCircle, Send } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -272,7 +273,7 @@ export default function HelpPage() {
                         >
                           {media.isImage && media.imageUrl ? (
                             <img
-                              src={media.imageUrl}
+                              src={resolveAssetUrl(media.imageUrl) ?? undefined}
                               alt={t('help.image')}
                               className="max-h-64 w-full rounded-xl object-cover"
                               loading="lazy"

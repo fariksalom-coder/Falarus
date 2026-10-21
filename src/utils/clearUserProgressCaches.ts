@@ -19,6 +19,9 @@ function clearSessionStorageCaches(): void {
         key === 'activity_streak' ||
         key === 'vocab_access' ||
         key === 'lessons_list' ||
+        key.startsWith('kunlik:') ||
+        key.startsWith('falarus:') ||
+        key.startsWith('falarus_google_') ||
         key.startsWith('vocab_subtopics_') ||
         key.startsWith('vocab_word_groups_') ||
         key.startsWith('vocab_tasks_') ||
@@ -40,6 +43,10 @@ function clearLocalStorageProgress(): void {
       if (LOCAL_STORAGE_KEEP.has(key)) continue;
       if (
         key === 'lessonTaskResults' ||
+        key === 'falarus.wordSwipe.stars' ||
+        key === 'falarus.verbGame.best' ||
+        key === 'falarus:dailyVocabProgress:v1' ||
+        key === 'falarus:ai-consent:v1' ||
         key.startsWith('vocab-') ||
         key.startsWith('vocab_stats_')
       ) {

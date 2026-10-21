@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { resolveAssetUrl } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { CalendarClock, Clock, Search, Star, Users, X } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -23,10 +24,13 @@ function experienceMonths(teacher: TeacherProfile): number {
 }
 
 function TeacherAvatar({ teacher }: { teacher: TeacherProfile }) {
-  if (teacher.avatar_url) {
+  const url = resolveAssetUrl(teacher.avatar_url);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  if (url && failedUrl !== url) {
     return (
       <img
-        src={teacher.avatar_url}
+        src={url}
+        onError={() => setFailedUrl(url)}
         alt={teacherDisplayName(teacher)}
         className="h-full w-full object-cover object-[center_35%]"
         decoding="async"
@@ -80,7 +84,7 @@ function TeacherCard({ teacher, t }: { teacher: TeacherProfile; t: T }) {
       transition={{ type: 'spring', stiffness: 260, damping: 26 }}
       className="flex flex-col rounded-[18px] bg-app-surface p-2 shadow-app-soft ring-1 ring-app-border/60"
     >
-      <div className="relative aspect-[4/5] overflow-hidden rounded-[13px] bg-app-bg-subtle">
+      <div className="relative aspect-square overflow-hidden rounded-[13px] bg-app-bg-subtle sm:aspect-[4/5]">
         <TeacherAvatar teacher={teacher} />
         <div className="absolute left-1.5 top-1.5 rounded-full bg-app-surface/90 px-2 py-0.5 backdrop-blur">
           <TeacherRating teacher={teacher} t={t} />
@@ -225,7 +229,7 @@ export default function TeachersPage() {
   return (
     <div className="min-h-full bg-app-bg-subtle px-4 pb-6 pt-2">
       <main className="mx-auto w-full max-w-[1180px]">
-        <header className="mb-4">
+        <header className="mb-3">
           <h1 className="text-[30px] font-black leading-tight tracking-tight text-app-text sm:text-[38px]">
             {t('teachers.title')}
           </h1>
@@ -233,7 +237,7 @@ export default function TeachersPage() {
         </header>
 
         {/* Ikki panel: o'qituvchi tanlash / mening darslarim */}
-        <div className="mb-5 grid grid-cols-2 gap-1.5 rounded-2xl bg-app-bg-muted p-1">
+        <div className="mb-3 grid grid-cols-2 gap-1.5 rounded-2xl bg-app-bg-muted p-1">
           <button
             type="button"
             onClick={() => setView('choose')}
@@ -304,7 +308,7 @@ export default function TeachersPage() {
         {loading ? (
           <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="aspect-[3/4] animate-pulse rounded-[18px] bg-app-surface" />
+              <div key={i} className="aspect-[4/5] animate-pulse rounded-[18px] bg-app-surface" />
             ))}
           </div>
         ) : error ? (

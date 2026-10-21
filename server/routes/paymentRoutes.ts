@@ -42,6 +42,8 @@ import {
   handleRahmatMulticardCallback,
 } from '../services/rahmatMulticardPayment.service.js';
 import { confirmStorePurchase } from '../services/storePurchasePayment.service.js';
+import { queueReferralSource } from '../services/referralProgram.service.js';
+import { appleAccountToken } from '../services/appleStore.service';
 import {
   activateTeacherMarketplacePayment,
   ensureTeacherListingSubscription,
@@ -440,6 +442,11 @@ export function createPaymentRoutes(
     return res.status(out.status).json(out.json);
   });
 
+  router.get('/store/account', authenticate, (req: any, res: Response) => {
+    try { return res.json({ appAccountToken: appleAccountToken(Number(req.userId)) }); }
+    catch { return res.status(503).json({ error: 'APPLE_STORE_NOT_CONFIGURED' }); }
+  });
+
   router.post('/store/confirm', authenticate, async (req: any, res: Response) => {
     const out = await confirmStorePurchase(supabase, req.userId, req.body ?? {});
     return res.status(out.status).json(out.json);
@@ -714,6 +721,8 @@ export function createClickMerchantRoutes(
         buildClickSuccessResponse({ payload, merchantPrepareId: paymentIdSafe, merchantConfirmId: paymentIdSafe })
       );
     }
+
+    queueReferralSource('payment', paymentIdSafe);
 
     if ((payment as any).discount_meta?.welcome_video_offer === true) {
       await supabase.from('welcome_video_offers')

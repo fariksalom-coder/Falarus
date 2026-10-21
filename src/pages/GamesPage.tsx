@@ -1,3 +1,4 @@
+import '../styles/mobile-fit.css';
 import { Clapperboard, ArrowUpRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +12,7 @@ import { getGameQuota, type GameQuota } from '../api/games';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { prefetchRoutePath } from '../routeModules';
+import { isNativeApp } from '../native/platform';
 
 const TOTAL_STAGES = 5;
 const FALLBACK_LEVELS = 6;
@@ -106,7 +108,7 @@ export default function GamesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-app-bg pb-[84px]">
+    <div className="games-screen bg-app-bg">
       <main className="mx-auto w-full max-w-[1180px] px-5 pt-2.5">
         <h1 className="text-[26px] font-black leading-tight tracking-tight text-app-text">
           {t('games.title') || "O'yinlar"} 🎮
@@ -370,7 +372,7 @@ export default function GamesPage() {
             <span className="text-[32px]">🎧</span><p className="mt-3 text-[16px] font-black text-white">Диктант</p><p className="mt-1 text-[12px] text-white/80">Слушай и пиши · 20 тем</p><span className="mt-3 inline-block rounded-full bg-white/20 px-3 py-1 text-[10px] font-bold text-white">НОВАЯ ИГРА</span>
           </button>
           <a
-            href="/exercise.html"
+            href={isNativeApp() ? 'https://falarus.uz/exercise.html' : '/exercise.html'}
             className="group relative flex flex-col overflow-hidden rounded-[22px] bg-[#1B5AF2] p-4 text-left shadow-[0_16px_32px_-16px_rgba(27,90,242,0.5)] transition active:scale-[0.97]"
             aria-label="Фильм с субтитрами — выбрать видео"
           >

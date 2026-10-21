@@ -1,3 +1,5 @@
+import '../styles/lesson-overview.css';
+import { useFitScreenPanel } from '../components/ui/FitScreen';
 import { SkeletonKarta } from '../components/ui/Skeleton';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
@@ -35,18 +37,10 @@ import { canEnterKunlikDayContent } from '../../shared/dailyCourseDay';
 
 type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
 
-function HomeHeader({ premium, t }: { premium: boolean; t: TranslateFn }) {
-  const navigate = useNavigate();
-  return (
-    <header className="flex items-center justify-between gap-3 px-4 pb-1 pt-3">
-      <button type="button" onClick={() => navigate('/kunlik-reja/xarita')} aria-label="Xaritaga qaytish" className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-app-text hover:bg-app-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">
-        <ArrowLeft size={20} aria-hidden="true" />Orqaga
-      </button>
-      {!premium && <button type="button" onClick={() => navigate('/kurs-haqida')} onMouseEnter={() => prefetchRoutePath('/kurs-haqida')} onFocus={() => prefetchRoutePath('/kurs-haqida')} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg bg-[#2563EB] px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
-        <Crown size={18} aria-hidden="true" />{t('home.premium')}
-      </button>}
-    </header>
-  );
+/** Kun sahifasini mavjud joyga mahkamlaydi: kontent sig'sa — skroll yo'q (Statistika bilan bir xil usul). */
+function FitPanelMarker() {
+  const ref = useFitScreenPanel<HTMLSpanElement>();
+  return <span ref={ref} hidden />;
 }
 
 function DayNavigator({
@@ -56,6 +50,7 @@ function DayNavigator({
   total,
   onPrevious,
   onNext,
+  premium,
   t,
 }: {
   selectedDay: number;
@@ -71,11 +66,34 @@ function DayNavigator({
   t: TranslateFn;
 }) {
   const currentStep = done >= total ? total : done + 1;
+  const navigate = useNavigate();
 
   return (
-    <section className="px-4 pt-2">
-      <div className="rounded-[22px] bg-app-surface px-[22px] py-3 shadow-[0_10px_28px_-16px_rgba(15,23,42,0.18)] ring-1 ring-app-border/70">
-        <div className="flex items-center justify-center gap-[18px]">
+    <section className="lesson-day-navigator px-4 pt-3">
+      <div className="rounded-[22px] bg-app-surface px-3 py-3 shadow-[0_10px_28px_-16px_rgba(15,23,42,0.18)] ring-1 ring-app-border/70">
+        <div className="relative flex min-h-11 items-center justify-center gap-3">
+          {/* Orqaga — xaritaga (kartaning chap bo'sh joyida) */}
+          <button
+            type="button"
+            onClick={() => navigate('/kunlik-reja/xarita')}
+            aria-label="Xaritaga qaytish"
+            className="absolute left-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-app-bg-muted text-app-text transition active:scale-95"
+          >
+            <ArrowLeft size={20} aria-hidden="true" />
+          </button>
+          {/* Premium — faqat premium olmaganlarga (kartaning o'ng bo'sh joyida) */}
+          {!premium && (
+            <button
+              type="button"
+              onClick={() => navigate('/kurs-haqida')}
+              onFocus={() => prefetchRoutePath('/kurs-haqida')}
+              aria-label={t('home.premium')}
+              className="absolute right-0 top-1/2 flex h-11 min-w-[56px] -translate-y-1/2 flex-col items-center justify-center rounded-xl bg-[#2563EB] px-1.5 text-white shadow-sm transition active:scale-95"
+            >
+              <Crown size={16} aria-hidden="true" />
+              <span className="text-[10.5px] font-bold leading-tight">{t('home.premium')}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onPrevious}
@@ -430,9 +448,9 @@ export default function HomePage() {
 
 
   return (
-    <div className="bg-app-bg">
+    <div className="bg-app-bg lesson-overview">
+      <FitPanelMarker />
       <main className="mx-auto w-full max-w-[1180px]">
-        <HomeHeader premium={premium} t={t} />
         {/* Jonli efir ketayotgan bo'lsa — eng tepada. Efir bo'lmasa
             komponent hech narsa chizmaydi. */}
         <div className="px-4">
@@ -467,7 +485,7 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-              className="grid grid-cols-2 gap-3 px-4 pt-2 md:gap-5 lg:grid-cols-3"
+              className="lesson-overview-grid grid grid-cols-2 gap-3 px-4 pt-2 md:gap-5 lg:grid-cols-3"
             >
               {slots.map((slot, index) => (
                 <QuestCard

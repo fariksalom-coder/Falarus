@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, Volume2, X } from 'lucide-react';
+import { resolveAssetUrl } from '../../api';
+import { isNativeApp } from '../../native/platform';
 
-export const RUSSIA_PAYMENT_GUIDE_VIDEO = '/payment-guide/russia.mp4';
-const RUSSIA_PAYMENT_GUIDE_POSTER = '/payment-guide/russia.jpg';
+// Serverdan olinadi — serverda almashtirilsa, ilovada ham yangilanadi.
+export const RUSSIA_PAYMENT_GUIDE_VIDEO = isNativeApp() ? '/payment-guide/russia.mp4' : (resolveAssetUrl('/payment-guide/russia.mp4') ?? '/payment-guide/russia.mp4');
+const RUSSIA_PAYMENT_GUIDE_POSTER = isNativeApp() ? '/payment-guide/russia.jpg' : (resolveAssetUrl('/payment-guide/russia.jpg') ?? '/payment-guide/russia.jpg');
 
 const STEPS = [
-  '«To‘lash» tugmasini bosing — Rahmat to‘lov sahifasi ochiladi.',
+  '«Sotib olish» tugmasini bosing — Rahmat to‘lov sahifasi ochiladi.',
   '«Способы оплаты» bo‘limidan o‘z bankingizni tanlang (Sber, T-Bank, VTB…).',
   'Bank ilovasida to‘lovni tasdiqlang — kurs avtomatik ochiladi.',
 ];
@@ -24,6 +27,7 @@ type RussiaPaymentGuideProps = {
 export default function RussiaPaymentGuide({ payLabel, paying, error, onPay, onClose }: RussiaPaymentGuideProps) {
   const video = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     const el = video.current;
@@ -86,6 +90,8 @@ export default function RussiaPaymentGuide({ payLabel, paying, error, onPay, onC
         <div className="relative my-3 flex min-h-0 flex-1 items-center justify-center">
           <video
             ref={video}
+            onError={() => setVideoFailed(true)}
+            onPlaying={() => setVideoFailed(false)}
             src={RUSSIA_PAYMENT_GUIDE_VIDEO}
             poster={RUSSIA_PAYMENT_GUIDE_POSTER}
             className="h-full max-h-full w-auto max-w-full rounded-2xl bg-black object-contain shadow-sm"
@@ -95,7 +101,11 @@ export default function RussiaPaymentGuide({ payLabel, paying, error, onPay, onC
             controls
             preload="auto"
           />
-          {muted && (
+          {videoFailed && <div role="alert" className="absolute inset-x-4 rounded-xl bg-white p-4 text-center text-sm">
+            Video yuklanmadi. Yuqoridagi ko‘rsatma orqali to‘lov qilishingiz mumkin.
+            <button type="button" className="block min-h-11 w-full font-bold underline" onClick={() => { setVideoFailed(false); video.current?.load(); void video.current?.play().catch(() => setMuted(true)); }}>Videoni qayta ochish</button>
+          </div>}
+          {muted && !videoFailed && (
             <button type="button" onClick={unmute} className="absolute left-1/2 top-3 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-full bg-slate-950/75 px-4 text-sm font-bold text-white shadow-lg active:scale-95">
               <Volume2 size={18} />Ovozni yoqish
             </button>

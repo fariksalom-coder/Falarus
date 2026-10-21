@@ -1,4 +1,5 @@
-import { Badge, Button, Card, Field, PageHeader } from '../components/ui/Foundation';
+import { Badge, Button, Card, Field } from '../components/ui/Foundation';
+import '../styles/profile-compact.css';
 import { useEffect, useId, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
@@ -207,8 +208,6 @@ export default function ProfilePage() {
       style={{ paddingBottom: `calc(${appMainBottomOffsetCss()} + 24px)` }}
     >
       <main className="mx-auto w-full max-w-[1024px]">
-        <PageHeader title={t('nav.profile')} />
-
         {accessFrozen && (
           <div role="status" className="mb-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
             <p className="font-bold">To‘lov tarifingiz muzlatilgan</p>
@@ -229,15 +228,14 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
-        <Card className="academic-profile-card mb-5">
+        <Card className="academic-profile-card profile-compact-card mb-3">
           <div className="academic-profile-identity">
             <label htmlFor={avatarInputId} className="academic-avatar" aria-label="Profil rasmini tanlash">
               <UserAvatar avatarUrl={localPreviewUrl ?? avatarDisplayUrl(user?.avatarUrl)} gender={user?.gender ?? null} name={fullName} className="h-16 w-16" />
               <span className="academic-avatar-edit"><Camera size={13} aria-hidden /></span>
               <input id={avatarInputId} type="file" accept="image/*" className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={handlePickAvatar} disabled={uploadingAvatar} />
             </label>
-            <div className="min-w-0 flex-1"><h2 className="text-xl font-bold text-app-text">{fullName}</h2><p className="ui-description">{user?.email || user?.phone || "Shaxsiy o'quvchi hisobi"}</p>{uploadingAvatar && <p role="status" className="ui-description">Rasm yuklanmoqda…</p>}</div>
-            <Button variant="secondary" onClick={() => setEditingName(!editingName)} aria-expanded={editingName}><Pencil size={15} /> Tahrirlash</Button>
+            <div className="min-w-0 flex-1"><div className="profile-name-row"><h2 className="text-xl font-bold text-app-text">{fullName}</h2><button type="button" className="profile-name-edit" onClick={() => setEditingName(!editingName)} aria-expanded={editingName} aria-label="Tahrirlash"><Pencil size={15} aria-hidden /></button></div><p className="ui-description">{user?.email || user?.phone || "Shaxsiy o'quvchi hisobi"}</p>{uploadingAvatar && <p role="status" className="ui-description">Rasm yuklanmoqda…</p>}</div>
           </div>
           {editingName && <form className="academic-profile-form" onSubmit={e => { e.preventDefault(); void handleSaveName(); }}>
             <Field label={t('profile.firstName')} value={firstName} onChange={e => setFirstName(e.target.value)} autoComplete="given-name" required />
@@ -247,16 +245,16 @@ export default function ProfilePage() {
           <div className="academic-profile-stats"><div><strong>{streakDays}</strong><span>Kunlik faollik</span></div><div><strong>{oltin ? CHEKSIZ : level}</strong><span>Faollik darajasi</span></div><div><strong>{oltin ? CHEKSIZ : formattedPoints}</strong><span>To'plangan ball</span></div></div>
           {oltin && <Badge>Oltin a'zo</Badge>}
         </Card>
-        <button type="button" onClick={() => navigate('/kurslar')} onMouseEnter={() => prefetchRoutePath('/kurslar')} onFocus={() => prefetchRoutePath('/kurslar')} className="academic-profile-course">
+        <button type="button" onClick={() => navigate('/kurslar')} onMouseEnter={() => prefetchRoutePath('/kurslar')} onFocus={() => prefetchRoutePath('/kurslar')} className="academic-profile-course profile-compact-course">
           <GraduationCap size={22} aria-hidden /><span><strong>Kurslarim</strong><small>Patent va ВНЖ imtihoniga tayyorgarlik</small></span><ChevronRight size={18} aria-hidden />
         </button>
 
         {/* Premium sotib olish / status tile */}
         {showActivePremium ? (
-          <div className="mb-6 flex items-center gap-3 rounded-xl bg-pmn-card px-4 py-3.5 shadow-none ring-1 ring-pmn-border">
+          <div className="mb-1 flex items-center gap-3 rounded-xl bg-pmn-card px-4 py-2.5 shadow-none ring-1 ring-pmn-border">
             <span
               aria-hidden
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[20px]"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] text-[20px]"
               style={{ background: 'var(--app-icon-bg)', color: 'var(--app-brand)' }}
             >
               <BookOpen size={21} />
@@ -274,11 +272,11 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => navigate('/kurs-haqida')}
-            className="mb-6 flex w-full items-center gap-3 rounded-xl bg-pmn-card px-4 py-3.5 text-left shadow-none ring-1 ring-pmn-border transition hover:bg-app-bg-muted"
+            className="mb-1 flex w-full items-center gap-3 rounded-xl bg-pmn-card px-4 py-2.5 text-left shadow-none ring-1 ring-pmn-border transition hover:bg-app-bg-muted"
           >
             <span
               aria-hidden
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[20px]"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] text-[20px]"
               style={{ background: 'var(--app-icon-bg)', color: 'var(--app-brand)' }}
             >
               <BookOpen size={21} />
@@ -382,8 +380,8 @@ export default function ProfilePage() {
 
 function ProfileGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-5">
-      <h3 className="mb-2.5 px-1 text-xs font-semibold tracking-wide text-pmn-text-soft">
+    <section className="mt-3.5">
+      <h3 className="mb-2 px-1 text-xs font-semibold tracking-wide text-pmn-text-soft">
         {title}
       </h3>
       <div className="overflow-hidden rounded-xl bg-pmn-card shadow-none ring-1 ring-pmn-border">
@@ -417,7 +415,7 @@ function ProfileRow({
         danger ? 'text-[#B4282E]' : 'text-pmn-text'
       }`}
     >
-      <span className="flex min-h-[62px] w-full items-center gap-3.5 px-4 py-2">
+      <span className="flex min-h-[52px] w-full items-center gap-3.5 px-4 py-1.5">
         <span
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-pmn-pill ${
             danger

@@ -74,7 +74,12 @@ function formatAmount(price: number, currency: Currency): string {
   return `$${price}`;
 }
 
+
 export default function PaymentPage() {
+  return <WebPaymentPage />;
+}
+
+function WebPaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLocale();

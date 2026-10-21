@@ -25,11 +25,61 @@ export type LeaderboardResponse = {
 
 export type LeaderboardPeriod = 'daily' | 'weekly' | 'all';
 
-export async function fetchLeaderboard(
+/*
+ * Reyting keshi: Statistika ochilganda oxirgi natija DARHOL ko'rinadi,
+ * yangisi fonda yuklanadi. Bir vaqtdagi takroriy so'rovlar (oldindan yuklash +
+ * sahifa) bitta so'rovga birlashtiriladi.
+ */
+const LEADERBOARD_CACHE_PREFIX = 'leaderboard_cache_';
+const inflight = new Map<LeaderboardPeriod, Promise<LeaderboardResponse>>();
+
+function cacheKey(token: string, period: LeaderboardPeriod): string {
+  // Foydalanuvchiga bog'liq: boshqa hisob bilan kirilsa, eski reyting ko'rinmaydi.
+  return `${LEADERBOARD_CACHE_PREFIX}${period}:${token.slice(-24)}`;
+}
+
+export function getCachedLeaderboard(token: string | null, period: LeaderboardPeriod): LeaderboardResponse | null {
+  if (!token) return null;
+  try {
+    const raw = localStorage.getItem(cacheKey(token, period));
+    if (!raw) return null;
+    const data = JSON.parse(raw) as LeaderboardResponse;
+    return Array.isArray(data?.top) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedLeaderboard(token: string, period: LeaderboardPeriod, data: LeaderboardResponse): void {
+  try {
+    // Faqat birinchi 300 kishi — kesh tez o'qiladi; to'liq ro'yxat fonda keladi.
+    localStorage.setItem(cacheKey(token, period), JSON.stringify({ top: data.top.slice(0, 300), myRank: data.myRank }));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function fetchLeaderboard(
   token: string | null,
   period: LeaderboardPeriod
 ): Promise<LeaderboardResponse> {
-  if (!token) return { top: [], myRank: null };
+  if (!token) return Promise.resolve({ top: [], myRank: null });
+  const pending = inflight.get(period);
+  if (pending) return pending;
+  const request = requestLeaderboard(token, period)
+    .then((res) => {
+      if (!res.error) setCachedLeaderboard(token, period, res);
+      return res;
+    })
+    .finally(() => inflight.delete(period));
+  inflight.set(period, request);
+  return request;
+}
+
+async function requestLeaderboard(
+  token: string,
+  period: LeaderboardPeriod
+): Promise<LeaderboardResponse> {
   try {
     const res = await fetch(
       apiUrl(`/api/leaderboard?period=${period}`),

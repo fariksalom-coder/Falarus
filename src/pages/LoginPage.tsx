@@ -17,6 +17,9 @@ import { IntlPhoneInput, type IntlPhoneInputHandle } from '../components/auth/In
 import { OrDivider } from '../components/auth/OrDivider';
 import { SocialAuthButton } from '../components/auth/SocialAuthButton';
 import { pathAfterAuth } from '../utils/postAuthPath';
+import { forgetReferralCode, referralCode } from '../utils/referralCode';
+import { AppleSignInButton } from '../components/auth/AppleSignInButton';
+import { isNativeIOS } from '../native/platform';
 
 type ContactMode = 'phone' | 'email';
 
@@ -48,7 +51,8 @@ export default function LoginPage() {
       setSocialLoading(true);
       setFormError(null);
       try {
-        const data = await loginWithGoogle(idToken, refFromUrl || undefined);
+        const data = await loginWithGoogle(idToken, referralCode(refFromUrl));
+        if (data.isNewUser) forgetReferralCode();
         const user = normalizeAuthUser(data.user!);
         login(data.token!, user);
         navigate(
@@ -238,14 +242,16 @@ export default function LoginPage() {
           <OrDivider />
           <AuthGap />
 
-          <SocialAuthButton
+          {(!isNativeIOS() || import.meta.env.VITE_GOOGLE_OAUTH_IOS_CLIENT_ID) && <SocialAuthButton
             label={t('auth.continueWithGoogle')}
             loading={socialLoading}
             disabled={submitting}
             onClick={handleGoogleClick}
             googleButtonRef={googleButtonRef}
             googleButtonReady={googleButtonReady}
-          />
+          />}
+
+          <AppleSignInButton disabled={submitting || socialLoading} onError={setFormError} />
 
           <AuthGap />
 

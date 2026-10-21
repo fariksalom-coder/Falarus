@@ -1,6 +1,7 @@
 import captureWorkletUrl from './liveCapture.worklet?worker&url';
 import { PcmResampler } from './pcmResampler';
 import { PcmPlaybackResampler } from './pcmPlayback';
+import { requireAIConsent } from './aiConsent';
 
 const CHIQISH_HZ = 24_000;
 /** Legacy capture block; both capture paths send 100 ms PCM packets. */
@@ -38,6 +39,8 @@ export class MikrofonOqimi {
   async boshla(bolak: (base64: string) => void, sharedContext?: AudioContext): Promise<void> {
     this.toxtat();
     const generation = this.generation;
+    await requireAIConsent();
+    if (generation !== this.generation) return;
     const stream = await navigator.mediaDevices.getUserMedia({ audio: {
       echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1,
     } });

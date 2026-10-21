@@ -105,6 +105,10 @@ function PaywallPriceCard({ plan, bonus = false, secondsLeft = 0, disabled, busy
 }
 
 export default function UnpaidHomePaywall() {
+  return <WebUnpaidHomePaywall />;
+}
+
+function WebUnpaidHomePaywall() {
   const { token } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showTariffs, setShowTariffs] = useState(false);

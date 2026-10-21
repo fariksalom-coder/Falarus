@@ -1,0 +1,62 @@
+/* Profil — ixcham ko'rinish: kartalar kichikroq, oralar qisqa, tahrirlash ism yonida. */
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.profile-name-row h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.profile-name-edit {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--app-icon-bg);
+  color: var(--app-brand);
+  -webkit-tap-highlight-color: transparent;
+}
+.profile-name-edit:active {
+  transform: scale(0.94);
+}
+.profile-name-edit:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .profile-compact-card.ui-card {
+    padding: 14px 16px;
+  }
+  .profile-compact-card .academic-profile-identity {
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  .profile-compact-card .academic-avatar,
+  .profile-compact-card .academic-avatar > :first-child {
+    width: 52px;
+    height: 52px;
+  }
+  .profile-compact-card .academic-avatar-edit {
+    padding: 3px;
+  }
+  .profile-compact-card .academic-profile-form {
+    gap: 10px;
+    padding-top: 12px;
+  }
+  .profile-compact-card .academic-profile-stats {
+    margin-top: 12px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .profile-compact-course.academic-profile-course {
+    padding: 10px 14px;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+}

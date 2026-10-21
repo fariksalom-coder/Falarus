@@ -1,3 +1,5 @@
+import { isNativeApp } from '../native/platform';
+import '../styles/native-welcome.css';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
@@ -961,6 +963,27 @@ export default function LandingPage() {
     setMobileMenuOpen(false);
     setLanguageMenuOpen(false);
   };
+
+  if (isNativeApp()) return (
+    <main className="native-welcome">
+      <div className="native-welcome-language">
+        <button type="button" aria-expanded={languageMenuOpen} onClick={() => setLanguageMenuOpen(open => !open)}>
+          {languageCode === 'uz' ? "O‘zbek (lotin)" : language.label}<ChevronDown size={16} />
+        </button>
+        {languageMenuOpen && <div className="native-welcome-menu">
+          {languages.map(item => <button key={item.code} type="button" aria-pressed={languageCode === item.code} onClick={() => selectLanguage(item.code)}>{item.label}</button>)}
+        </div>}
+      </div>
+      <div className="native-welcome-brand">
+        <div className="native-welcome-mark"><img src="/landing/falarus-mark.svg" alt="" /></div>
+        <h1>FalaRus</h1>
+      </div>
+      <div className="native-welcome-actions">
+        <Link to="/register">{t.mobile.register}</Link>
+        <Link to="/login">{t.auth.login}</Link>
+      </div>
+    </main>
+  );
 
   return (
     <div className="min-h-screen bg-[#0B2A6B] font-sans text-app-text lg:bg-[#FDF8F2] lg:text-[#121827]">

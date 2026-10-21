@@ -25,10 +25,14 @@ export function createReferralRoutes(
   router.get('/referral/link', authenticate, referralController.getLink(supabase));
   router.get('/referral/stats', authenticate, referralController.getStats(supabase));
   router.get('/referral/list', authenticate, referralController.getList(supabase));
-  router.post('/referral/withdraw', authenticate, referralController.postWithdraw(supabase));
-  router.post('/referral', authenticate, (req: any, res) => {
-    return referralController.postWithdraw(supabase)(req, res);
-  });
+  router.get('/referral/history', authenticate, referralController.getHistory());
+  router.get('/referral/minimums', authenticate, referralController.getMinimums());
+  router.get('/referral/bonus-prices', authenticate, referralController.getBonusPrices());
+  // The user id always comes from the verified token, never from the body.
+  router.post('/referral/withdraw', authenticate, referralController.postWithdraw());
+  router.post('/referral/purchase', authenticate, referralController.postBonusPurchase(supabase));
+  // Legacy alias of /referral/withdraw used by older app builds.
+  router.post('/referral', authenticate, referralController.postWithdraw());
   /*
    * BU YERDA `POST /payments` BOR EDI — O'CHIRILDI (2026-08-17).
    *

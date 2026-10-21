@@ -19,6 +19,7 @@ import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion.js
 import { activateTeacherMarketplacePayment } from '../services/teacherMarketplace.service.js';
 import { activateRussianSubscription } from '../../shared/paymentActivation.js';
 import { readAdminUserTotals } from '../services/adminUsersRead.service.js';
+import { queueReferralSource, registerRefund } from '../services/referralProgram.service.js';
 
 const BROADCAST_FILTERS = [
   'subscription_active',
@@ -787,14 +788,20 @@ export function createAdminController(supabase: DbClient) {
       const productCode = resolvePaymentProductFromRow(row as any);
       const now = new Date();
 
-      const { error: updatePayErr } = await supabase
+      // Only pending → approved: a double click or a parallel request must not activate twice.
+      const { data: confirmed, error: updatePayErr } = await supabase
         .from('payments')
         .update({ status: 'approved', admin_id: adminId ?? null, approved_at: now.toISOString() })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle();
       if (updatePayErr) {
         console.error('[admin/confirmPayment] payments update', updatePayErr);
         return res.status(500).json({ error: updatePayErr.message });
       }
+      if (!confirmed) return res.status(409).json({ error: 'To\'lov allaqachon tasdiqlangan yoki rad etilgan' });
+      queueReferralSource('payment', id);
 
       if ((row as any).discount_meta?.welcome_video_offer === true) {
         await supabase.from('welcome_video_offers')
@@ -860,7 +867,7 @@ export function createAdminController(supabase: DbClient) {
 
       const { data: row, error: fetchErr } = await supabase
         .from('payments')
-        .select('id, user_id, status, product_code, click_merchant_payment_id')
+        .select('id, user_id, status, product_code, click_merchant_payment_id, amount')
         .eq('id', id)
         .maybeSingle();
       if (fetchErr || !row) return res.status(404).json({ error: 'To\'lov topilmadi' });
@@ -905,6 +912,12 @@ export function createAdminController(supabase: DbClient) {
           refunded_at: new Date().toISOString(),
         })
         .eq('id', id);
+
+      // Money went back through Click: reverse the referral reward of this payment once.
+      await registerRefund({
+        sourceType: 'payment', sourceId: id, refundAmount: Number((row as any).amount), reference: `click:${clickPaymentId}`,
+        origin: 'click', adminId: (req as any).adminId ?? null,
+      }).catch((e) => console.error('[admin/refundPayment] referral reversal', e instanceof Error ? e.message : e));
 
       const productCode = resolvePaymentProductFromRow(row as any);
       if (productCode === 'russian') {
@@ -1020,90 +1033,6 @@ export function createAdminController(supabase: DbClient) {
       };
     });
     return res.json(list);
-  }
-
-  // --- Referral withdrawals
-  async function getWithdrawals(_req: Request, res: Response) {
-    const { data: rows, error } = await supabase
-      .from('referral_withdrawals')
-      .select('id, user_id, amount, card_number, phone, full_name, status, created_at, processed_at, admin_receipt')
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('[admin/withdrawals]', error);
-      return res.status(500).json({ error: error.message });
-    }
-    const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id))];
-    const { data: users } = await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds);
-    const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
-
-    const list = (rows ?? []).map((r: any) => ({
-      id: r.id,
-      user_id: r.user_id,
-      user: userMap.get(r.user_id) ? [userMap.get(r.user_id)!.first_name, userMap.get(r.user_id)!.last_name].filter(Boolean).join(' ') || (userMap.get(r.user_id) as any).email : '—',
-      amount: r.amount,
-      card_number: r.card_number ?? '—',
-      phone: r.phone ?? '—',
-      full_name: r.full_name ?? '—',
-      status: r.status,
-      created_at: r.created_at,
-      processed_at: r.processed_at,
-      admin_receipt: r.admin_receipt,
-    }));
-    return res.json(list);
-  }
-
-  async function approveWithdrawal(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    const { admin_receipt } = req.body || {};
-    if (!id) return res.status(400).json({ error: 'Invalid id' });
-
-    const { data: row, error: fetchErr } = await supabase
-      .from('referral_withdrawals')
-      .select('user_id, amount, status')
-      .eq('id', id)
-      .single();
-    if (fetchErr || !row) return res.status(404).json({ error: 'Topilmadi' });
-    if ((row as any).status !== 'pending') return res.status(400).json({ error: 'Allaqachon qayta ishlangan' });
-
-    const now = new Date().toISOString();
-    const { error: updateErr } = await supabase
-      .from('referral_withdrawals')
-      .update({
-        status: 'approved',
-        processed_at: now,
-        admin_receipt: admin_receipt != null ? String(admin_receipt) : null,
-      })
-      .eq('id', id);
-    if (updateErr) return res.status(500).json({ error: updateErr.message });
-    return res.json({ success: true });
-  }
-
-  async function rejectWithdrawal(req: Request, res: Response) {
-    const id = Number(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid id' });
-
-    const { data: row, error: fetchErr } = await supabase
-      .from('referral_withdrawals')
-      .select('user_id, amount, status')
-      .eq('id', id)
-      .single();
-    if (fetchErr || !row) return res.status(404).json({ error: 'Topilmadi' });
-    if ((row as any).status !== 'pending') return res.status(400).json({ error: 'Allaqachon qayta ishlangan' });
-
-    const userId = (row as any).user_id;
-    const amount = Number((row as any).amount);
-
-    const { data: user, error: userErr } = await supabase.from('users').select('referral_balance').eq('id', userId).single();
-    if (userErr || !user) return res.status(500).json({ error: 'User topilmadi' });
-    const balance = Number((user as any).referral_balance ?? 0) + amount;
-
-    await supabase.from('users').update({ referral_balance: balance }).eq('id', userId);
-    await supabase
-      .from('referral_withdrawals')
-      .update({ status: 'rejected', processed_at: new Date().toISOString() })
-      .eq('id', id);
-
-    return res.json({ success: true });
   }
 
   // --- Support chats (Telegram-like)
@@ -1841,9 +1770,7 @@ export function createAdminController(supabase: DbClient) {
     getSubscriptions,
     getCardTokens,
     getClickPaymentLogs,
-    getWithdrawals,
-    approveWithdrawal,
-    rejectWithdrawal,
+
     getSupportChats,
     getSupportChatMessages,
     sendSupportChatMessage,

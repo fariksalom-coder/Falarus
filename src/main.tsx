@@ -1,3 +1,6 @@
+import { apiUrl } from './api';
+import { bootstrapNativeShell } from './native/bootstrap';
+import { isNativeApp } from './native/platform';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
@@ -6,6 +9,7 @@ import './index.css';
 import './styles/text-scale-overrides.css';
 import './styles/motion.css';
 import './styles/platform-theme.css';
+import './styles/fit-screen.css';
 import { audioUnlockInit } from './utils/audioUnlock';
 import { haptikaniUlash } from './utils/haptic';
 import { captureAttributionOnce } from './api/onboarding';
@@ -60,7 +64,7 @@ if (typeof window !== 'undefined' && !import.meta.env.DEV) {
         ua: navigator.userAgent.slice(0, 200),
       });
       // `keepalive` — sahifa yopilayotgan bo'lsa ham yetib boradi.
-      void fetch('/api/client-error', {
+      void fetch(apiUrl('/api/client-error'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,
@@ -78,9 +82,10 @@ if (typeof window !== 'undefined' && !import.meta.env.DEV) {
 
 // «Bosh ekranga chiqarish» hodisasini render'dan OLDIN ushlaymiz: u sahifa
 // yuklangach darhol otiladi va React ulgurmasa, o'rnatish tugmasi ishlamaydi.
-initPwaInstall();
+if (!isNativeApp()) initPwaInstall();
+void bootstrapNativeShell();
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && !isNativeApp()) {
   if (import.meta.env.DEV) {
     // In dev, SW breaks Vite HMR/websocket and can serve stale chunks.
     window.addEventListener('load', async () => {
@@ -144,7 +149,7 @@ if ('serviceWorker' in navigator) {
  * uni o'chirib qo'ygan brauzerlarda ham ishlashi uchun shu yerda, SW
  * tekshiruvidan TASHQARIDA chaqiriladi.
  */
-if (!import.meta.env.DEV) {
+if (!import.meta.env.DEV && !isNativeApp()) {
   initAutoUpdate();
 }
 

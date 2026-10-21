@@ -527,7 +527,7 @@ export function Documents() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <a
-                    href={d.file_url}
+                    href={resolveAssetUrl(d.file_url) ?? undefined}
                     target="_blank"
                     rel="noreferrer"
                     className="block truncate text-[13px] font-medium text-app-text hover:text-app-brand"

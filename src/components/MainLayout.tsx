@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { fetchLeaderboard } from '../api/leaderboard';
 import AppNavBar from './AppNavBar';
 import LiveCallOverlay from './live/LiveCallOverlay';
 import PushObunaFon from './live/PushObunaFon';
@@ -42,6 +44,12 @@ export default function MainLayout() {
   const { token, user } = useAuth();
   const { access, accessLoaded } = useAccess();
   useHeartbeat(token);
+  // Reytingni oldindan yuklab qo'yamiz — Statistika ochilganda kutish bo'lmasin.
+  useEffect(() => {
+    if (!token) return;
+    const timer = window.setTimeout(() => void fetchLeaderboard(token, 'all'), 2500);
+    return () => window.clearTimeout(timer);
+  }, [token]);
 
   /*
    * So'rovnoma FAQAT KIRISHDA so'raladi (`LoginPage` / mavjud Google hisob).

@@ -6,6 +6,7 @@ import {
 } from '../../shared/paymentProducts.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
 import { invalidateAccessCache } from './subscription.service.js';
+import { AppleStoreError, confirmAppleStorePurchase } from './appleStore.service';
 import {
   isGooglePlaySource,
   verifyGooglePlayPurchase,
@@ -194,6 +195,14 @@ export async function confirmStorePurchase(
   const userId = Number(userIdRaw);
   if (!Number.isFinite(userId)) {
     return { status: 401, json: { error: 'USER_REQUIRED' } };
+  }
+
+  if (isAppleSource(String(body.verification_source ?? ''))) {
+    try { return await confirmAppleStorePurchase(userId, body as Record<string, unknown>); }
+    catch (error) {
+      return { status: error instanceof AppleStoreError ? error.status : 503,
+        json: { error: error instanceof AppleStoreError ? error.code : 'APPLE_STORE_TEMPORARILY_UNAVAILABLE' } };
+    }
   }
 
   const storeProductId = String(body.store_product_id ?? '').trim();

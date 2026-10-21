@@ -1,3 +1,4 @@
+import { apiUrl } from '../api';
 import type { SalesFunnelManualStage, SalesFunnelStage } from '../../shared/salesCrm';
 
 const TOKEN_KEY = 'salesCrmToken';
@@ -24,7 +25,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  const res = await fetch(`/api/sales-crm${path}`, { ...init, headers });
+  const res = await fetch(apiUrl(`/api/sales-crm${path}`), { ...init, headers });
   const data = (await res.json().catch(() => ({}))) as T & { error?: string; code?: string };
   if (!res.ok) {
     const err = new Error(data.error || `HTTP ${res.status}`) as Error & {
@@ -187,7 +188,7 @@ async function sheetsRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  const res = await fetch(`/api/integrations/google-sheets${path}`, { ...init, headers });
+  const res = await fetch(apiUrl(`/api/integrations/google-sheets${path}`), { ...init, headers });
   const data = (await res.json().catch(() => ({}))) as T & { error?: string; errorMessage?: string };
   if (!res.ok) {
     throw new Error(data.errorMessage || data.error || `HTTP ${res.status}`);

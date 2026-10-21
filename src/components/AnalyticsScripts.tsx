@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { isNativeApp } from '../native/platform';
 
 /**
  * Loads GA4 / Yandex Metrika once when env IDs are set.
@@ -6,6 +7,7 @@ import { useEffect } from 'react';
  */
 export function AnalyticsScripts() {
   useEffect(() => {
+    if (isNativeApp()) return;
     if (typeof document === 'undefined') return;
 
     const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim();

@@ -38,6 +38,7 @@ import {
 import { invalidateAccessCache } from './subscription.service.js';
 import { fiscalizePayment } from './clickFiscal.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
+import { queueReferralSource } from './referralProgram.service.js';
 
 const MAX_CHARGE_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 1600;
@@ -501,7 +502,14 @@ export async function handleClickCardTokenPayment(
     approved_at: new Date().toISOString(),
     click_merchant_payment_id: charge.paymentId,
   };
-  await supabase.from('payments').update(approvePatch).eq('id', paymentId);
+  const { data: flipped } = await supabase
+    .from('payments')
+    .update(approvePatch)
+    .eq('id', paymentId)
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle();
+  if (flipped) queueReferralSource('payment', paymentId);
 
   try {
     if (productCode === 'russian' && tariffType && cardTokenId) {
@@ -770,14 +778,18 @@ export async function runClickAutoRenewalCron(
       continue;
     }
 
-    await supabase
+    const { data: autoApproved } = await supabase
       .from('payments')
       .update({
         status: 'approved',
         approved_at: new Date().toISOString(),
         click_merchant_payment_id: charge.paymentId,
       })
-      .eq('id', paymentId);
+      .eq('id', paymentId)
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
+    if (autoApproved) queueReferralSource('payment', paymentId);
 
     void fiscalizePayment(supabase, paymentId);
 

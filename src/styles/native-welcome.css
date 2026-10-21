@@ -1,0 +1,18 @@
+
+.native-welcome { position:fixed; inset:0; box-sizing:border-box; overflow:hidden; isolation:isolate; display:grid; grid-template-rows:64px minmax(220px,1fr) auto; gap:16px; padding:calc(40px + env(safe-area-inset-top, 0px)) 20px calc(140px + env(safe-area-inset-bottom, 0px)); background:#102e6b; color:white; overflow:hidden; }
+.native-welcome::before,.native-welcome::after { content:""; position:absolute; z-index:-1; border-radius:50%; background:rgba(255,255,255,.08); pointer-events:none; }
+.native-welcome::before { width:220px; height:220px; right:-60px; top:-58px; }
+.native-welcome::after { width:260px; height:260px; left:-82px; bottom:80px; }
+.native-welcome-language { justify-self:end; position:relative; z-index:2; }
+.native-welcome-language > button { display:flex; align-items:center; gap:8px; min-height:44px; padding:8px 14px; border:1px solid #ffffff40; border-radius:28px; background:#ffffff10; font-weight:600; font-size:14px; }
+.native-welcome-menu { position:absolute; right:0; top:50px; width:180px; padding:6px; border-radius:14px; background:white; color:#102e6b; box-shadow:0 8px 30px #0003; }
+.native-welcome-menu button { display:block; width:100%; min-height:44px; border-radius:8px; text-align:left; padding:8px 12px; }
+.native-welcome-menu button[aria-pressed=true] { background:#e8effc; }
+.native-welcome-brand { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding-bottom:56px; }
+.native-welcome-mark { width:96px; height:96px; display:grid; place-items:center; border-radius:50%; background:white; }
+.native-welcome-mark img { width:54px; height:54px; object-fit:contain; }
+.native-welcome-brand h1 { margin:0; font-size:34px; font-weight:600; line-height:1.2; }
+.native-welcome-actions { display:grid; gap:12px; }
+.native-welcome-actions a { display:flex; min-height:56px; align-items:center; justify-content:center; border-radius:36px; font-size:17px; font-weight:700; border:2px solid #ffffffb3; }
+.native-welcome-actions a:first-child { background:white; color:#15335b; border-color:white; }
+.native-welcome a:focus-visible,.native-welcome button:focus-visible { outline:3px solid #f4d66a; outline-offset:3px; }

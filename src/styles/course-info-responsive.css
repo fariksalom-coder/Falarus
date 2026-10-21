@@ -18,3 +18,14 @@
   .course-info-countdown { gap: 8px; padding: 8px; }
   .course-info-plans label { padding-left: 8px; padding-right: 8px; }
 }
+
+@media (max-width: 767px) {
+  .course-info-shell { padding-bottom: 8px; }
+  .course-info-countdown { flex-wrap: nowrap; min-height: 56px; margin-bottom: 8px; gap: 8px; }
+  .course-info-countdown > span:first-child { flex: 1; font-size: 13px !important; }
+  .course-info-countdown [role="timer"] > span:not([aria-hidden]) { width: 36px; height: 40px; }
+  .course-info-plans { padding-top: 8px; }
+  .course-info-plans label { min-height: 56px; padding-top: 5px; padding-bottom: 5px; border-radius: 16px; }
+  .course-info-plans label p { margin-top: 2px; }
+  .course-info-plans > button { min-height: 48px; margin-top: 8px; padding-top: 8px; padding-bottom: 8px; }
+}

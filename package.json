@@ -35,9 +35,23 @@
     "dev:exercise": "vite --config vite.exercise.config.ts",
     "build:exercise": "vite build --config vite.exercise.config.ts",
     "seed:dictation": "tsx server/scripts/seedDictation.ts",
-    "audio:dictation": "tsx server/scripts/generateDictationAudio.ts"
+    "audio:dictation": "tsx server/scripts/generateDictationAudio.ts",
+    "apple:server:check": "node scripts/apple-server-setup.mjs",
+    "apple:server:apply": "node scripts/apple-server-setup.mjs --apply",
+    "ios:archive": "bash scripts/apple-archive.sh"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/browser": "^7.0.2",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/haptics": "^7.0.2",
+    "@capacitor/ios": "^7.6.9",
+    "@capacitor/keyboard": "^7.0.3",
+    "@capacitor/splash-screen": "^7.0.3",
+    "@capacitor/status-bar": "^7.0.3",
+    "@capgo/capacitor-social-login": "^7.11.0",
+    "@capgo/native-purchases": "^7.19.3",
     "@tailwindcss/vite": "^4.1.14",
     "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^5.0.4",
@@ -71,6 +85,8 @@
     "ws": "^8.21.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.4.4",
     "@electric-sql/pglite": "^0.5.4",
     "@electric-sql/pglite-socket": "^0.2.7",
     "@types/bcryptjs": "^2.4.6",
@@ -86,6 +102,7 @@
     "@types/ws": "^8.18.1",
     "cross-env": "^10.1.0",
     "kysely-codegen": "^0.20.0",
+    "react-test-renderer": "^19.2.4",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

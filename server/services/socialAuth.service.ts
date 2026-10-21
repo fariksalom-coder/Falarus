@@ -31,6 +31,7 @@ export interface VerifiedSocialIdentity {
   /** Provider-supplied name (Google only; Apple sends name once on first sign-in). */
   firstName: string | null;
   lastName: string | null;
+  appleClientId?: string;
 }
 
 export class SocialAuthError extends Error {
@@ -130,6 +131,8 @@ export async function verifyAppleIdentityToken(
     const result = await jwtVerify(identityToken, APPLE_JWKS, {
       issuer: APPLE_ISSUER,
       audience: audiences,
+      algorithms: ['RS256'],
+      requiredClaims: ['sub', 'iat', 'exp'],
     });
     payload = result.payload;
   } catch (err) {
@@ -154,6 +157,7 @@ export async function verifyAppleIdentityToken(
   const rawEmail = typeof payload.email === 'string' ? payload.email.toLowerCase() : null;
   return {
     provider: 'apple',
+    appleClientId: typeof payload.aud === 'string' ? payload.aud : undefined,
     providerUserId: payload.sub,
     // Apple sends `email_verified: "true"` for both real and private-relay
     // addresses. Trust it for linking; ignore otherwise.

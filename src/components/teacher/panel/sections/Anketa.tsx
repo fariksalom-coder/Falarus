@@ -684,7 +684,7 @@ function VideoStep({ doc, onChanged }: { doc: DocRow | null; onChanged: () => Pr
     <div className="flex flex-col gap-4">
       {doc ? (
         <video
-          src={doc.file_url}
+          src={resolveAssetUrl(doc.file_url) ?? undefined}
           controls
           playsInline
           className="w-full max-h-[380px] rounded-[18px] bg-black"

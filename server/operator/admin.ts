@@ -8,6 +8,7 @@ import { pool } from '../lib/db.js';
 import { audit, enqueue, transaction } from './service.js';
 import { paymentFits } from './domain.js';
 import { invalidateAccessCache } from '../services/subscription.service.js';
+import { queueReferralSource } from '../services/referralProgram.service.js';
 export async function decideReceipt(id: number, admin: number, decision: string, reason: string) {
     if (!['approved', 'rejected'].includes(decision))
         throw new Error('Qaror noto‘g‘ri.');
@@ -26,7 +27,8 @@ export async function decideReceipt(id: number, admin: number, decision: string,
             const balance = (await c.query('SELECT debt FROM operator_balances WHERE id=$1', [b.id])).rows[0];
             if (!paymentFits(r.amount, balance.debt))
                 throw new Error('To‘lov qoldiqdan oshib ketadi.');
-            if (!b.activated_at) {
+            // Patent / VNZh contracts must never activate the Russian course subscription.
+            if (!b.activated_at && (b.product_code ?? 'russian') === 'russian') {
                 const u = (await c.query('SELECT plan_expires_at FROM users WHERE id=$1 FOR UPDATE', [b.user_id])).rows[0];
                 const days =
                   b.tariff === 'six_month' ? 180
@@ -57,7 +59,7 @@ export async function decideReceipt(id: number, admin: number, decision: string,
         const balanceAfterDecision = (await c.query('SELECT debt,paid,pending FROM operator_balances WHERE id=$1', [b.id])).rows[0];
         if (Number(balanceAfterDecision.debt) === 0 || (decision === 'rejected' && Number(balanceAfterDecision.paid) === 0 && Number(balanceAfterDecision.pending) === 0))
             await c.query('UPDATE operator_outbox SET delivered_at=now() WHERE contract_id=$1 AND delivered_at IS NULL', [b.id]);
-        return Number(b.user_id);
+        return { userId: Number(b.user_id), receiptId: id, approved: decision === 'approved' };
     });
 }
 export function operatorAdminRoutes() {
@@ -166,8 +168,10 @@ export function operatorAdminRoutes() {
         res.json({ ok: true });
     }));
     router.post('/receipts/:id/decision', wrap(async (req: any, res: any) => {
-        const uid = await decideReceipt(Number(req.params.id), req.adminId, String(req.body.decision), String(req.body.reason ?? ''));
-        invalidateAccessCache(uid);
+        const decided = await decideReceipt(Number(req.params.id), req.adminId, String(req.body.decision), String(req.body.reason ?? ''));
+        invalidateAccessCache(decided.userId);
+        // After the commit: every confirmed installment of the first contract is rewarded once.
+        if (decided.approved) queueReferralSource('operator_receipt', decided.receiptId);
         res.json({ ok: true });
     }));
     router.post('/contracts/:id/assign', wrap(async (req: any, res: any) => {

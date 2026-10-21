@@ -28,6 +28,8 @@ export type ActivityCalendarCardProps = {
   onPrev: () => void;
   onNext: () => void;
   onMonthChange: (year: number, month: number) => void;
+  /** Bir ekranli Statistika uchun ixcham ko'rinish. */
+  compact?: boolean;
 };
 
 export default function ActivityCalendarCard({
@@ -38,6 +40,7 @@ export default function ActivityCalendarCard({
   onPrev,
   onNext,
   onMonthChange,
+  compact = false,
 }: ActivityCalendarCardProps) {
   const { t } = useLocale();
   const today = new Date().toISOString().split('T')[0];
@@ -57,7 +60,11 @@ export default function ActivityCalendarCard({
   }, [calendar, year, month]);
 
   return (
-    <div className="rounded-[24px] bg-pmn-card p-4 shadow-[0_14px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border sm:p-5">
+    <div
+      className={`rounded-[24px] bg-pmn-card shadow-[0_14px_28px_-16px_rgba(15,27,59,0.18)] ring-1 ring-pmn-border ${
+        compact ? 'shrink-0 px-4 py-3.5' : 'p-4 sm:p-5'
+      }`}
+    >
       {/* Header: serif title + Iyul pill + arrows */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="profile-heading text-[20px] leading-none text-pmn-text sm:text-[22px]">
@@ -116,7 +123,7 @@ export default function ActivityCalendarCard({
       </div>
 
       {/* Weekday header row */}
-      <div className="mt-5 grid grid-cols-7 gap-y-3">
+      <div className={`${compact ? 'mt-3' : 'mt-5'} grid grid-cols-7 gap-y-3`}>
         {WEEKDAY_LABELS.map((d) => (
           <div
             key={d}
@@ -129,14 +136,19 @@ export default function ActivityCalendarCard({
 
       {/* Grid */}
       {loading ? (
-        <div className="mt-4 flex h-40 items-center justify-center">
+        <div className={`mt-4 flex items-center justify-center ${compact ? 'h-[268px]' : 'h-40'}`}>
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#D4AC5C] border-t-transparent" />
         </div>
       ) : (
-        <div className="mt-2 grid grid-cols-7 gap-y-3">
+        <div className={`mt-2 grid grid-cols-7 ${compact ? 'gap-y-1.5' : 'gap-y-3'}`}>
           {cells.map((cell, idx) => {
             if (!cell) {
-              return <div key={`empty-${idx}`} className="flex h-[52px] items-center justify-center" />;
+              return (
+                <div
+                  key={`empty-${idx}`}
+                  className={`flex items-center justify-center ${compact ? 'h-[42px]' : 'h-[52px]'}`}
+                />
+              );
             }
 
             const { date, status, extra } = cell;
@@ -149,7 +161,7 @@ export default function ActivityCalendarCard({
             if (isDone) {
               bubble = (
                 <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#0A1638] shadow-[0_6px_14px_-6px_rgba(212,172,92,0.55)] ${
+                  className={`flex shrink-0 items-center justify-center rounded-full text-[#0A1638] shadow-[0_6px_14px_-6px_rgba(212,172,92,0.55)] ${compact ? 'h-7 w-7' : 'h-8 w-8'} ${
                     isToday ? 'ring-2 ring-[#0F1B3B] ring-offset-2 ring-offset-white' : ''
                   }`}
                   style={{ background: 'linear-gradient(150deg, #F5D48F 0%, #D4AC5C 100%)' }}
@@ -165,7 +177,7 @@ export default function ActivityCalendarCard({
               // Missed / future / none — dashed circle (empty ring)
               bubble = (
                 <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed ${
+                  className={`flex shrink-0 items-center justify-center rounded-full border border-dashed ${compact ? 'h-7 w-7' : 'h-8 w-8'} ${
                     isToday ? 'border-[#0F1B3B]' : 'border-[#D8D6CE]'
                   }`}
                   aria-hidden
@@ -198,7 +210,11 @@ export default function ActivityCalendarCard({
       )}
 
       {/* Legend */}
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-pmn-border pt-4">
+      <div
+        className={`flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-pmn-border ${
+          compact ? 'mt-3 pt-2.5' : 'mt-5 pt-4'
+        }`}
+      >
         <span className="flex items-center gap-2 text-[11.5px] font-bold text-pmn-text">
           <span
             className="flex h-6 w-6 items-center justify-center rounded-full text-[#0A1638]"

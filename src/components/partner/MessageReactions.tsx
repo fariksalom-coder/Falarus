@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { resolveAssetUrl } from '../../api';
 import { SmilePlus } from 'lucide-react';
 import type { MessageReaction, ReactionOption } from '../../api/communityChat';
 
@@ -32,7 +33,7 @@ function Belgi({ emoji, imageUrl, olcham }: { emoji: string; imageUrl?: string |
   if (imageUrl) {
     return (
       <img
-        src={imageUrl}
+        src={resolveAssetUrl(imageUrl) ?? undefined}
         alt={emoji.replace(/:/g, '')}
         loading="lazy"
         decoding="async"

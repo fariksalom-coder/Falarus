@@ -1,3 +1,5 @@
+import { Browser } from '@capacitor/browser';
+import { isNativeApp } from '../native/platform';
 import { apiUrl } from '../api';
 import type {
   PaymentProductCode,
@@ -91,7 +93,7 @@ export async function openRahmatCheckout(params: {
   if (params.productCode === 'teacher_trial' && params.trialId == null) {
     throw new Error('Sinov darsi topilmadi. Qayta urinib ko‘ring.');
   }
-  const popup = window.open('', '_blank');
+  const popup = isNativeApp() ? null : window.open('', '_blank');
   try {
     const result = await createRahmatPayment(params.token, {
       tariffType: params.productCode === 'russian' ? params.tariffType ?? null : null,
@@ -102,7 +104,9 @@ export async function openRahmatCheckout(params: {
     });
     await params.afterCreate?.();
     const url = result.payment_url;
-    if (popup && !popup.closed) {
+    if (isNativeApp()) {
+      await Browser.open({ url });
+    } else if (popup && !popup.closed) {
       popup.location.href = url;
     } else {
       window.location.href = url;

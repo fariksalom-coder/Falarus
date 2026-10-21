@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { resolveAssetUrl } from '../../api';
 import { createPortal } from 'react-dom';
 import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react';
 import ChatMedia from './ChatMedia';
@@ -1119,7 +1120,7 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
                       >
                         {o.image_url ? (
                           <img
-                            src={o.image_url}
+                            src={resolveAssetUrl(o.image_url) ?? undefined}
                             alt={o.label || o.emoji}
                             className="h-[18px] w-[18px] object-contain"
                           />

@@ -11,6 +11,7 @@ import {
 import { activateRussianSubscription } from '../../shared/paymentActivation.js';
 import * as subscriptionService from './subscription.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
+import { queueReferralSource } from './referralProgram.service.js';
 
 const MIN_PASSWORD_LEN = 8;
 const ADMIN_WEEK_TRIAL_DAYS = 7;
@@ -217,10 +218,11 @@ async function insertApprovedPayment(
     payment_channel: 'manual',
   };
 
-  const { error } = await supabase.from('payments').insert(row);
+  const { data: inserted, error } = await supabase.from('payments').insert(row).select('id').single();
   if (error) {
     throw new Error(error.message || "To'lov yozilmadi");
   }
+  queueReferralSource('payment', Number((inserted as { id?: number } | null)?.id));
 }
 
 /** Admin: 7 kunlik bepul sinov — to‘lov yozilmaydi (aks holda doimiy kirish qoladi). */

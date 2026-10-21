@@ -1,3 +1,4 @@
+import { requireAIConsent } from '../../utils/aiConsent';
 import { ConversationMicGate } from '../../utils/conversationAudio';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
@@ -89,6 +90,7 @@ export default function UstozLive({
   useEffect(() => tozala, [tozala]);
 
   const boshla = useCallback(async () => {
+    try { await requireAIConsent(); } catch { onZaxira('AI ma’lumot yuborishga ruxsat berilmadi.'); return; }
     if (!token) { onZaxira('token yo\'q'); return; }
     tozala();
     const generation = generationRef.current;

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { registerAccount, type AuthUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,8 @@ import { AuthSwitchLink } from '../components/auth/AuthSwitchLink';
 import { AuthTextField } from '../components/auth/AuthTextField';
 import { IntlPhoneInput, type IntlPhoneInputHandle } from '../components/auth/IntlPhoneInput';
 import { pathAfterAuth } from '../utils/postAuthPath';
+import { forgetReferralCode, referralCode, rememberReferralCode } from '../utils/referralCode';
+import { AppleSignInButton } from '../components/auth/AppleSignInButton';
 
 function normalizeAuthUser(user: AuthUser) {
   return { ...user, progress: user.progress ?? 0, totalPoints: user.totalPoints ?? 0 };
@@ -21,6 +23,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refFromUrl = searchParams.get('ref') ?? '';
+  useEffect(() => { rememberReferralCode(refFromUrl); }, [refFromUrl]);
   const { login } = useAuth();
   const { t } = useLocale();
 
@@ -105,8 +108,9 @@ export default function RegisterPage() {
         lastName: lastName.trim(),
         identifier: validated.identifier,
         password,
-        ref: refFromUrl || undefined,
+        ref: referralCode(refFromUrl),
       });
+      forgetReferralCode();
       login(data.token!, normalizeAuthUser(data.user!));
       navigate(pathAfterAuth({ isRegistration: true }), { replace: true });
     } catch (err) {
@@ -212,6 +216,7 @@ export default function RegisterPage() {
             action={t('auth.logIn')}
             onAction={() => navigate('/login')}
           />
+          <AppleSignInButton disabled={submitting} onError={setFormError} />
         </form>
       </AuthScrollBody>
     </AuthPageScaffold>

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type RefCallback } from 'react';
 import { apiUrl } from '../api';
 import { resolveGoogleWebClientId } from '../../shared/googleOAuth';
+import { GoogleOAuthRedirectError, nativeGoogleIdToken } from '../native/googleAuth';
+import { isNativeApp } from '../native/platform';
 
 type GoogleCredentialResponse = {
   credential?: string;
@@ -84,11 +86,8 @@ async function fetchClientIdFromServer(): Promise<string | null> {
 }
 
 export function ensureInitialized(clientId: string, onCredential: (token: string) => void): void {
-  // GIS is a page-level singleton. Keep its callback current without calling
-  // initialize() again when React StrictMode, the button effect, or a click runs.
   activeCredentialHandler = onCredential;
   if (initializedClientId === clientId) return;
-
   window.google!.accounts!.id!.initialize({
     client_id: clientId,
     context: 'signin',
@@ -140,6 +139,7 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
   }, []);
 
   useEffect(() => {
+    if (isNativeApp()) return;
     let cancelled = false;
     void fetchClientIdFromServer().then((fromServer) => {
       if (cancelled) return;
@@ -150,7 +150,7 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
   }, []);
 
   useEffect(() => {
-    if (!clientIdResolved || !clientId) return;
+    if (!clientIdResolved || !clientId || isNativeApp()) return;
     let cancelled = false;
     void loadGoogleScript()
       .then(() => {
@@ -169,7 +169,7 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
   }, [clientId, clientIdResolved]);
 
   useEffect(() => {
-    if (!clientIdResolved || !clientId || !buttonHost) return;
+    if (!clientIdResolved || !clientId || !buttonHost || isNativeApp()) return;
     let cancelled = false;
 
     setButtonReady(false);
@@ -211,6 +211,17 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
   }, [buttonHost, clientId, clientIdResolved]);
 
   const triggerSignIn = useCallback(async (): Promise<void> => {
+    if (isNativeApp()) {
+      try {
+        const idToken = await nativeGoogleIdToken();
+        onCredentialRef.current(idToken);
+      } catch (err) {
+        if (err instanceof GoogleOAuthRedirectError) return;
+        throw err;
+      }
+      return;
+    }
+
     if (!clientId) throw new Error('Google OAuth sozlanmagan');
 
     await loadGoogleScript();
@@ -236,5 +247,10 @@ export function useGoogleSignIn(onCredential: (idToken: string) => void) {
     });
   }, [clientId, buttonReady]);
 
-  return { triggerSignIn, clientId, googleButtonRef, googleButtonReady: buttonReady };
+  return {
+    triggerSignIn,
+    clientId,
+    googleButtonRef: isNativeApp() ? undefined : googleButtonRef,
+    googleButtonReady: isNativeApp() ? true : buttonReady,
+  };
 }

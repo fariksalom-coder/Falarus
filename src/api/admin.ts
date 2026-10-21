@@ -224,20 +224,6 @@ export type AdminTeacherTrialRow = {
   updated_at: string;
 };
 
-export type AdminWithdrawalRow = {
-  id: number;
-  user_id: number;
-  user: string;
-  amount: number;
-  card_number: string;
-  phone: string;
-  full_name: string;
-  status: string;
-  created_at: string;
-  processed_at: string | null;
-  admin_receipt: string | null;
-};
-
 export type AdminSupportRow = {
   id: number;
   user_id: number;
@@ -531,23 +517,63 @@ export async function getAdminTeacherTrials(): Promise<AdminTeacherTrialRow[]> {
   return adminApi<AdminTeacherTrialRow[]>('/teacher-trials');
 }
 
-export async function getWithdrawals(): Promise<AdminWithdrawalRow[]> {
-  return adminApi<AdminWithdrawalRow[]>('/referrals/withdrawals');
-}
+// --- Referral program
+export type ReferralCurrency = 'UZS' | 'RUB' | 'USD';
+export type AdminReferralOverview = {
+  settings: { enabled: boolean; launch_at: string | null; reward_percent: number; min_withdrawal_rub: number };
+  totals: { currency: ReferralCurrency; available: number; pending: number; reserved: number; debt: number; earned: number; paid_out: number; spent: number }[];
+  events: { status: string; n: number }[];
+  stuck_events: number;
+  open_flags: number;
+  withdrawals: { status: string; currency: ReferralCurrency; count: number; amount: number }[];
+  ledger_mismatches: number;
+};
+export type AdminReferralLink = {
+  id: number; created_at: string; status: string; outcome: string | null; outcome_reason: string | null;
+  review_status: 'none' | 'pending' | 'cleared' | 'rejected'; review_note: string | null;
+  first_source_type: string | null; first_source_id: number | null; first_confirmed_at: string | null;
+  referrer_id: number; referred_user_id: number; referrer_name: string; referrer_phone: string | null;
+  referred_name: string; referred_phone: string | null; rewards: { currency: ReferralCurrency; amount: number }[] | null;
+};
+export type AdminReferralWithdrawal = {
+  id: number; user_id: number; user_name: string; amount: number; currency: ReferralCurrency;
+  status: 'pending' | 'approved' | 'paid' | 'rejected'; card: string; full_name: string | null; created_at: string;
+  approved_at: string | null; paid_at: string | null; payout_reference: string | null; reject_reason: string | null;
+  min_amount: number | null; rate_as_of: string | null; debt: number; flagged: boolean;
+};
+export type AdminReferralLedgerRow = {
+  id: number; user_id: number; user_name: string; currency: ReferralCurrency; entry_type: string; amount: number;
+  d_available: number; d_held: number; d_reserved: number; d_debt: number; source_type: string | null; source_id: number | null;
+  base_amount: number | null; rate_percent: number | null; actor_admin_id: number | null; note: string | null; created_at: string;
+};
+export type AdminReferralFlag = {
+  id: number; kind: string; user_id: number | null; referral_id: number | null; withdrawal_id: number | null;
+  details: Record<string, unknown>; status: string; created_at: string;
+};
 
-export async function approveWithdrawal(id: number, adminReceipt?: string): Promise<void> {
-  await adminApi(`/referrals/${id}/approve`, {
-    method: 'POST',
-    body: JSON.stringify({ admin_receipt: adminReceipt ?? null }),
-  });
-}
+const post = (body: unknown) => ({ method: 'POST', body: JSON.stringify(body) });
 
-export async function rejectWithdrawal(id: number): Promise<void> {
-  await adminApi(`/referrals/${id}/reject`, {
-    method: 'POST',
-    body: JSON.stringify({}),
-  });
-}
+export const referralAdmin = {
+  overview: () => adminApi<AdminReferralOverview>('/referrals/overview'),
+  setEnabled: (enabled: boolean, confirm: string, launchAt?: string) =>
+    adminApi<{ enabled: boolean; launch_at: string | null }>('/referrals/settings', { method: 'PUT', body: JSON.stringify({ enabled, confirm, launch_at: launchAt }) }),
+  links: (review?: string, q?: string) =>
+    adminApi<AdminReferralLink[]>(`/referrals/links?${new URLSearchParams({ ...(review ? { review } : {}), ...(q ? { q } : {}) })}`),
+  review: (id: number, decision: 'cleared' | 'rejected', note: string) => adminApi(`/referrals/links/${id}/review`, post({ decision, note })),
+  flagLink: (id: number, note: string) => adminApi(`/referrals/links/${id}/flag`, post({ note })),
+  flags: (status = 'open') => adminApi<AdminReferralFlag[]>(`/referrals/flags?status=${status}`),
+  closeFlag: (id: number, status: 'cleared' | 'confirmed', note: string) => adminApi(`/referrals/flags/${id}/close`, post({ status, note })),
+  ledger: (userId?: number) => adminApi<AdminReferralLedgerRow[]>(`/referrals/ledger${userId ? `?user_id=${userId}` : ''}`),
+  withdrawals: (status?: string) => adminApi<AdminReferralWithdrawal[]>(`/referrals/withdrawals${status ? `?status=${status}` : ''}`),
+  withdrawalDetails: (id: number) => adminApi<{ id: number; card_number: string; full_name: string; phone: string; status: string }>(`/referrals/withdrawals/${id}/details`),
+  approve: (id: number) => adminApi(`/referrals/withdrawals/${id}/approve`, post({})),
+  paid: (id: number, payoutReference: string) => adminApi(`/referrals/withdrawals/${id}/paid`, post({ payout_reference: payoutReference })),
+  reject: (id: number, reason: string) => adminApi(`/referrals/withdrawals/${id}/reject`, post({ reason })),
+  refund: (body: { source_type: 'payment' | 'operator_receipt'; source_id: number; amount: number; reference: string; note?: string }) =>
+    adminApi<{ reversed: number; debt: number; duplicate: boolean }>('/referrals/refunds', post(body)),
+  cancelBonusPurchase: (paymentId: number, reason: string) => adminApi(`/referrals/bonus-purchases/${paymentId}/cancel`, post({ reason })),
+  reconcile: () => adminApi<{ disabled: boolean; processed: number; failed: number }>('/referrals/reconcile', post({})),
+};
 
 export async function getAdminHelpChats(): Promise<AdminHelpChatListRow[]> {
   return adminApi<AdminHelpChatListRow[]>('/help/chats');

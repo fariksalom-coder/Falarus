@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { isNativeApp } from '../native/platform';
 
 /**
  * Ilovani bosh ekranga chiqarish (PWA o'rnatish) holati.
@@ -54,6 +55,8 @@ export function initPwaInstall(): void {
 
 export function isStandaloneMode(): boolean {
   if (typeof window === 'undefined') return false;
+  // Play Market ilovasi ichida PWA o'rnatish taklifi kerak emas.
+  if (isNativeApp()) return true;
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
     window.matchMedia('(display-mode: fullscreen)').matches ||

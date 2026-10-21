@@ -183,7 +183,7 @@ export async function hasActiveAccess(
   }
   const { data: approvedPayment } = await supabase
     .from('payments')
-    .select('id, product_code, approved_at, tariff_type')
+    .select('id, product_code, approved_at, tariff_type, payment_channel')
     .eq('user_id', uid)
     .eq('status', 'approved')
     .order('approved_at', { ascending: false })
@@ -193,7 +193,9 @@ export async function hasActiveAccess(
       product_code?: string | null;
       approved_at?: string | null;
       tariff_type?: string | null;
+      payment_channel?: string | null;
     }) =>
+      row.payment_channel !== 'app_store' &&
       isRussianSubscriptionPayment(row.product_code) &&
       approvedPaymentStillCovers(row.approved_at, row.tariff_type)
   );

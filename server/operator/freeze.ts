@@ -9,7 +9,7 @@ export async function isOperatorFrozen(userId: number): Promise<boolean> {
 }
 export async function checkOperatorAccess(req: any, res: any, next: any) {
     // Billing, own account and help remain available to resolve the debt.
-    if (/^\/api\/(user\/(me|tariff-prices|payments|avatar)$|payments?(?:\/|$)|(?:support|help)(?:\/|$)|auth(?:\/|$))/.test(String(req.originalUrl || req.path).split('?')[0]))
+    if (/^\/api\/(user\/(me|account|tariff-prices|payments|avatar)$|payments?(?:\/|$)|(?:support|help)(?:\/|$)|auth(?:\/|$))/.test(String(req.originalUrl || req.path).split('?')[0]))
         return next();
     try {
         if (await isOperatorFrozen(req.userId))

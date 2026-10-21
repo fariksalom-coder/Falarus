@@ -95,10 +95,12 @@ function formatMeetingTime(iso: string | null): string {
 
 function ProfileAvatar({ profile }: { profile: TeacherProfile }) {
   const url = resolveAssetUrl(profile.avatar_url);
-  if (url) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  if (url && failedUrl !== url) {
     return (
       <img
         src={url}
+        onError={() => setFailedUrl(url)}
         alt={teacherDisplayName(profile)}
         className="h-full w-full object-cover object-[center_35%]"
         decoding="async"
@@ -663,7 +665,7 @@ export default function TeacherProfilePage() {
             </h2>
             {/* Videoni admin tekshirib tasdiqlagan bo'lsagina shu yerga tushadi. */}
             <video
-              src={profile.video_url}
+              src={resolveAssetUrl(profile.video_url) ?? undefined}
               controls
               playsInline
               preload="metadata"

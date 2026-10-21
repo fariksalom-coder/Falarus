@@ -1,3 +1,4 @@
+import { requireAIConsent } from '../utils/aiConsent';
 import { apiUrl } from '../api';
 import type {
   DoskaAyrilish,
@@ -115,6 +116,7 @@ async function post<T>(
   body: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<T> {
+  await requireAIConsent();
   const res = await fetch(apiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

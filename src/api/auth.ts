@@ -24,6 +24,19 @@ type AuthResponse = {
   error?: string;
 };
 
+export async function loginWithApple(credential: {
+  identityToken: string; authorizationCode: string; nonce: string;
+  firstName?: string | null; lastName?: string | null;
+}): Promise<AuthResponse> {
+  const response = await fetch(apiUrl('/api/auth/apple'), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credential),
+  });
+  const data = await parseAuthResponse(response);
+  if (!response.ok || !data.token || !data.user) throw new Error(data.error || 'Apple orqali kirib bo‘lmadi.');
+  return data;
+}
+
 async function parseAuthResponse(res: Response): Promise<AuthResponse> {
   const contentType = res.headers.get('content-type');
   if (!contentType?.includes('application/json')) {

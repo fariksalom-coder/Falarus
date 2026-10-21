@@ -37,6 +37,7 @@ import { invalidateAccessCache } from './subscription.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
 import { canPurchaseWelcomeVideoOffer } from '../../shared/welcomeVideoOffer.js';
 import { recordPaymentEvent, extractRequestMeta } from '../lib/paymentEvents.js';
+import { queueReferralSource } from './referralProgram.service.js';
 import {
   isRahmatPartnerCallbackEnabled,
   postRahmatPaymentAppSuccessCallback,
@@ -540,6 +541,9 @@ export async function handleRahmatMulticardCallback(
     });
     return { status: 200, json: { success: true } };
   }
+
+  // Only the request that flipped the payment reaches this point; the referral service is idempotent anyway.
+  queueReferralSource('payment', paymentId);
 
   if ((row.discount_meta as Record<string, unknown> | null)?.welcome_video_offer === true) {
     await supabase.from('welcome_video_offers')

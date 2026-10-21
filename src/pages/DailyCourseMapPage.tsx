@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookOpen, Check, Lock, Sparkles, Flag, LocateFixed } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, Gift, Lock, Sparkles, Flag, LocateFixed } from 'lucide-react';
 import '../styles/trial-day-cue.css';
 import '../styles/journey-map.css';
 import TrialDayFeedback from '../components/TrialDayFeedback';
@@ -74,7 +74,7 @@ export default function DailyCourseMapPage() {
     <div className="journey-shell">
       <header className="journey-summary">
         <div className="journey-summary-top">
-          <button className="journey-back" onClick={() => navigate('/')} aria-label="Orqaga"><ArrowLeft size={20} /></button>
+          {accessLoaded && !premium && !golden && <button className="journey-back" onClick={() => navigate('/')} aria-label="Orqaga"><ArrowLeft size={20} /></button>}
           <h1>{TOTAL_DAYS} kunlik sayohat</h1>
           <div className="journey-progress" role="progressbar" aria-label="Bosib o'tilgan yo'l" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
             <svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="7" /><circle cx="36" cy="36" r="30" fill="none" stroke="#FFC83D" strokeWidth="7" strokeLinecap="round" strokeDasharray={2 * Math.PI * 30} strokeDashoffset={2 * Math.PI * 30 * (1 - pct / 100)} transform="rotate(-90 36 36)" /></svg>
@@ -83,11 +83,18 @@ export default function DailyCourseMapPage() {
         </div>
         <dl className="journey-stats"><div><dt>Hozir</dt><dd>{currentDay}-kun</dd></div><div><dt>O'tilgan</dt><dd>{completed.size} <small>/ {TOTAL_DAYS}</small></dd></div></dl>
       </header>
-      {!premium && !golden && <button className="journey-tariffs" onClick={() => navigate('/kurs-haqida')}>
-        <span className="journey-tariff-icon"><Sparkles size={22} /></span>
-        <span className="journey-tariff-copy"><strong>Tariflarni ko'rish</strong><small>1 / 3 / 6 oy · Rahmat orqali to'lov</small></span>
-        <span className="journey-tariff-arrow"><ArrowRight size={18} /></span>
-      </button>}
+      <div className="journey-side">
+        {!premium && !golden && <button className="journey-tariffs" onClick={() => navigate('/kurs-haqida')}>
+          <span className="journey-tariff-icon"><Sparkles size={22} /></span>
+          <span className="journey-tariff-copy"><strong>Tariflarni ko'rish</strong><small>1 / 3 / 6 oy · Rahmat orqali to'lov</small></span>
+          <span className="journey-tariff-arrow"><ArrowRight size={18} /></span>
+        </button>}
+        <button className="journey-tariffs journey-invite" onClick={() => navigate('/invite')}>
+          <span className="journey-tariff-icon"><Gift size={22} /></span>
+          <span className="journey-tariff-copy"><strong>Do'stingizni taklif qiling</strong><small>Birinchi xaridi uchun 10% bonus</small></span>
+          <span className="journey-tariff-arrow"><ArrowRight size={18} /></span>
+        </button>
+      </div>
       {!premium && Boolean(access?.kunlik_review_days?.length) && <p role="status" className="mx-4 rounded-xl bg-white p-3 text-sm text-slate-700">Obunangiz tugadi. O‘tilgan {access!.kunlik_review_days!.length} kunni qayta ishlashingiz mumkin. Yangi kunlar uchun obunani yangilang.</p>}
       <main className="journey-road" aria-label="Yo'l xaritasi" style={{ height: dayY(TOTAL_DAYS) + 150 }}>
         <div className="journey-trial" ref={focusDay === 0 ? currentRef : undefined}>

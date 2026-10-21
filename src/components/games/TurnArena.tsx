@@ -12,6 +12,7 @@
  * ko'rinadi; tezligi ataylab pasaytirilgan — o'yinchi ko'rib ulgursin.
  */
 import { forwardRef, useEffect, useState } from 'react';
+import { resolveAssetUrl } from '../../api';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Send } from 'lucide-react';
 
@@ -275,7 +276,7 @@ export const TurnArena = forwardRef<HTMLInputElement, Props>(function TurnArena(
 
         <CornerAvatar active={isPlayer} reduce={reduce}>
           {playerAvatarUrl ? (
-            <img src={playerAvatarUrl} alt="" className="h-full w-full object-cover" />
+            <img src={resolveAssetUrl(playerAvatarUrl) ?? undefined} alt="" className="h-full w-full object-cover" />
           ) : (
             <span>🙋</span>
           )}

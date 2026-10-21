@@ -1,4 +1,5 @@
 import { apiUrl } from '../api';
+import { requireAIConsent } from '../utils/aiConsent';
 
 function authHeaders(token: string | null): HeadersInit {
   const h: HeadersInit = { 'Content-Type': 'application/json' };
@@ -65,6 +66,7 @@ export async function checkSpeakingAnswer(
   attempt: number = 1,
   shownAnswer: string = ''
 ): Promise<CheckResult> {
+  await requireAIConsent();
   const res = await fetch(apiUrl('/api/speaking/check'), {
     method: 'POST',
     headers: authHeaders(token),
@@ -97,6 +99,7 @@ export async function checkSpeakingPromptAnswer(
   kunlikDayNumber?: number,
   shownAnswer: string = ''
 ): Promise<CheckResult> {
+  await requireAIConsent();
   const res = await fetch(apiUrl('/api/speaking/check'), {
     method: 'POST',
     headers: authHeaders(token),
@@ -124,6 +127,7 @@ export async function transcribeSpeakingAudio(
   kunlikDayNumber?: number,
   mimeType?: string
 ): Promise<string> {
+  await requireAIConsent();
   const res = await fetch(apiUrl('/api/speaking/transcribe'), {
     method: 'POST',
     headers: authHeaders(token),
@@ -137,4 +141,3 @@ export async function transcribeSpeakingAudio(
   const data = await res.json();
   return data.text;
 }
-

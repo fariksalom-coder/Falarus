@@ -4,8 +4,10 @@ import { Check, ChevronLeft, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { apiUrl, resolveAssetUrl } from '../api';
-import { bustAvatarUrl, patchUserAccount, removeUserAvatar, uploadUserAvatar } from '../api/user';
+import { bustAvatarUrl, deleteUserAccount, patchUserAccount, removeUserAvatar, uploadUserAvatar } from '../api/user';
 import UserAvatar, { type UserGender } from '../components/UserAvatar';
+import { isNativeIOS } from '../native/platform';
+import { revokeAIConsent } from '../utils/aiConsent';
 
 type MeResponse = {
   id: number;
@@ -326,8 +328,80 @@ export default function ProfileSettingsPage() {
             </p>
           ) : null}
         </form>
+
+        <DeleteAccountSection />
+        {isNativeIOS() && <section className="mx-4 mt-4 rounded-2xl border border-app-border p-4">
+          <h2 className="font-bold">Maxfiylik</h2>
+          <button onClick={() => navigate('/huquqiy/maxfiylik')} className="block min-h-11 underline">Maxfiylik siyosati</button>
+          <button onClick={event => { revokeAIConsent(); event.currentTarget.textContent = 'AI ruxsati bekor qilindi'; }} className="block min-h-11 underline">AI ma’lumot yuborish ruxsatini bekor qilish</button>
+        </section>}
       </main>
     </div>
+  );
+}
+
+/** Hisobni butunlay o'chirish — ikki bosqichli tasdiq bilan (Google Play talabi). */
+function DeleteAccountSection() {
+  const { token, logout } = useAuth();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete() {
+    if (!token || deleting) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteUserAccount(token);
+      logout();
+      navigate('/', { replace: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Hisobni o‘chirib bo‘lmadi');
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <section className="mx-4 mt-6 rounded-[24px] border border-red-200 bg-app-surface px-4 py-5">
+      <h2 className="text-base font-extrabold text-red-700">Hisobni o‘chirish</h2>
+      <p className="mt-2 text-[13px] font-medium leading-snug text-app-text-muted">
+        Hisobingiz va unga bog‘liq barcha ma’lumotlar — o‘qish natijalari, ballar, obuna — butunlay o‘chiriladi.
+        Bu amalni qaytarib bo‘lmaydi.
+      </p>
+      {error ? <p role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-[13px] font-semibold text-red-700">{error}</p> : null}
+      {confirming ? (
+        <div className="mt-4 rounded-2xl bg-red-50 p-3">
+          <p className="text-[13px] font-bold text-red-800">Rostdan ham hisobingizni butunlay o‘chirmoqchimisiz?</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => { setConfirming(false); setError(null); }}
+              disabled={deleting}
+              className="h-12 rounded-xl border border-app-border bg-app-surface text-sm font-bold text-app-text disabled:opacity-50"
+            >
+              Yo‘q, qoldirish
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={deleting}
+              className="h-12 rounded-xl bg-red-600 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {deleting ? 'O‘chirilmoqda…' : 'Ha, o‘chirish'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="mt-4 h-12 w-full rounded-xl border border-red-300 text-sm font-bold text-red-700 transition active:scale-[0.99]"
+        >
+          Hisobni o‘chirish
+        </button>
+      )}
+    </section>
   );
 }
 

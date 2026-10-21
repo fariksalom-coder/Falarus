@@ -110,3 +110,15 @@ export async function removeUserAvatar(token: string): Promise<UserMe> {
   }
   return data as UserMe;
 }
+
+/** Hisobni va unga bog'liq barcha ma'lumotlarni butunlay o'chiradi (Google Play talabi). */
+export async function deleteUserAccount(token: string): Promise<void> {
+  const res = await fetch(apiUrl('/api/user/account'), {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(typeof data.error === 'string' ? data.error : 'Hisobni o‘chirib bo‘lmadi');
+  }
+}

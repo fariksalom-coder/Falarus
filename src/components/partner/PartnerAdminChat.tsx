@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { resolveAssetUrl } from '../../api';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, Headphones, ImagePlus, Send } from 'lucide-react';
 import {
@@ -151,7 +152,7 @@ export default function PartnerAdminChat({ onBack }: Props) {
                     }`}
                   >
                     {media.isImage ? (
-                      <img src={media.imageUrl ?? ''} alt="" className="max-h-56 rounded-xl" />
+                      <img src={resolveAssetUrl(media.imageUrl) ?? ''} alt="" className="max-h-56 rounded-xl" />
                     ) : (
                       <p className="whitespace-pre-wrap break-words text-[15px]">{msg.content}</p>
                     )}

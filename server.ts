@@ -59,6 +59,8 @@ import {
   verifyGoogleIdToken,
 } from './server/services/socialAuth.service.ts';
 import { resolveGoogleWebClientId } from './shared/googleOAuth.ts';
+import { createAppleChallenge, consumeAppleChallenge, exchangeAppleCode, saveAppleGrant } from './server/services/appleSignIn.service';
+import { deleteAccount, processAccountDeletionJobs } from './server/services/accountDeletion.service';
 import {
   DAILY_COURSE_BUNDLE_FETCH_REV,
   fetchDailyCourseDayBundle,
@@ -407,6 +409,8 @@ async function startServer() {
   });
   app.use('/uploads', (_req, res, next) => {
     res.setHeader('Cache-Control', 'public, max-age=300, must-revalidate');
+    // Public media must also load from the Capacitor application's origin.
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
   });
   app.use('/uploads', express.static(UPLOADS_DIR, { fallthrough: false }));
@@ -692,6 +696,17 @@ async function startServer() {
   const { attachReferralOnRegister, resolveReferrerFromCode } = await import(
     './server/services/referral.service'
   );
+  /** Links a newly created account to its inviter; a failure never breaks sign-up. */
+  async function attachReferralCode(refCode: unknown, userId: number): Promise<void> {
+    if (typeof refCode !== 'string' || !refCode.trim()) return;
+    try {
+      const referrerId = await resolveReferrerFromCode(supabase, refCode.slice(0, 32), userId);
+      if (referrerId != null && referrerId !== userId) await attachReferralOnRegister(supabase, referrerId, userId);
+    } catch (e) {
+      console.error('[referral] attach on register', e instanceof Error ? e.message : e);
+    }
+  }
+
   app.post('/api/auth/register', authRateLimiter, async (req, res) => {
     const { firstName, lastName, password, ref: refCode, identifier, email: legacyEmail } = req.body ?? {};
     // Email orqali ro'yxatdan o'tish taqiqlangan — faqat telefon.
@@ -739,12 +754,7 @@ async function startServer() {
         }
         throw error;
       }
-      if (refCode && typeof refCode === 'string') {
-        const referrerId = await resolveReferrerFromCode(supabase, refCode, user.id);
-        if (referrerId != null && referrerId !== user.id) {
-          await attachReferralOnRegister(supabase, referrerId, user.id);
-        }
-      }
+      await attachReferralCode(refCode, user.id);
       const { ensureUserInLeaderboard } = await import('./server/services/leaderboard.service');
       await ensureUserInLeaderboard(supabase, user.id).catch(() => {});
       // Sales CRM lead ingest — must never block registration.
@@ -1026,6 +1036,8 @@ async function startServer() {
       const identity = await verifyGoogleIdToken(idToken);
       const { user, isNewUser } = await findOrCreateUserForSocial(supabase, identity);
       const userId = Number((user as { id: number }).id);
+      // Only a brand-new account can be linked: an existing user keeps their history.
+      if (isNewUser) await attachReferralCode(req.body?.ref, userId);
       const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       const sub = await getActiveSubscription(supabase, userId);
       const planFields = mergeRussianPlanForMeResponse({
@@ -1053,6 +1065,14 @@ async function startServer() {
     }
   });
 
+  app.post('/api/auth/apple/challenge', authRateLimiter, async (_req, res) => {
+    try { res.json({ nonce: await createAppleChallenge(supabase) }); }
+    catch (error) {
+      res.status(error instanceof SocialAuthError ? error.httpStatus : 503)
+        .json({ error: 'Apple orqali kirishni boshlab bo‘lmadi. Qayta urinib ko‘ring.' });
+    }
+  });
+
   // POST /api/auth/apple — verify Apple identity token, find/create local user,
   // return the same social auth shape as /api/auth/google.
   app.post('/api/auth/apple', authRateLimiter, async (req, res) => {
@@ -1062,8 +1082,9 @@ async function startServer() {
         : '';
     const nonce =
       typeof req.body?.nonce === 'string' ? req.body.nonce.trim() : '';
-    if (!identityToken) {
-      return res.status(400).json({ error: 'identityToken kerak' });
+    const authorizationCode = typeof req.body?.authorizationCode === 'string' ? req.body.authorizationCode.trim() : '';
+    if (!identityToken || !nonce || !authorizationCode) {
+      return res.status(400).json({ error: 'Apple kirish ma’lumotlari kerak.' });
     }
     try {
       const identity = await verifyAppleIdentityToken(identityToken, {
@@ -1073,11 +1094,16 @@ async function startServer() {
         lastName:
           typeof req.body?.lastName === 'string' ? req.body.lastName : null,
       });
+      await consumeAppleChallenge(supabase, nonce);
+      if (!identity.appleClientId) throw new SocialAuthError(401, 'Apple identifikatsiyasi tasdiqlanmadi');
+      const encryptedGrant = await exchangeAppleCode(authorizationCode, identity.providerUserId, identity.appleClientId);
       const { user, isNewUser } = await findOrCreateUserForSocial(
         supabase,
         identity
       );
       const userId = Number((user as { id: number }).id);
+      await saveAppleGrant(supabase, userId, identity.providerUserId, identity.appleClientId, encryptedGrant);
+      if (isNewUser) await attachReferralCode(req.body?.ref, userId);
       const token = jwt.sign({ id: userId }, JWT_SECRET, {
         expiresIn: TOKEN_TTL_SECONDS,
       });
@@ -1119,7 +1145,7 @@ async function startServer() {
     }
   });
 
-  const authenticate = (req: any, res: any, next: any) => {
+  const authenticate = async (req: any, res: any, next: any) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!token) return res.status(401).json({ error: 'Ruxsat berilmagan' });
@@ -1128,6 +1154,9 @@ async function startServer() {
       const rawId = decoded.id ?? decoded.sub;
       const userId = Number(rawId);
       if (!Number.isFinite(userId) || userId < 1) return res.status(401).json({ error: 'Yaroqsiz token' });
+      const account = await supabase.from('users').select('id').eq('id', userId).maybeSingle();
+      if (account.error) return res.status(503).json({ error: 'Hisob holatini tekshirib bo‘lmadi.' });
+      if (!account.data) return res.status(401).json({ error: 'Hisob mavjud emas.' });
       req.userId = userId;
       /*
        * "Qachon onlayn bo'lgan" belgisi. Aynan shu yerda, chunki bu —
@@ -1779,14 +1808,11 @@ async function startServer() {
       return res.status(400).json({ error: 'Notoʻgʻri foydalanuvchi' });
     }
     try {
-      const { error: delErr } = await supabase.from('users').delete().eq('id', userId);
-      if (delErr) {
-        console.error('[DELETE /api/user/account]', delErr);
-        return res.status(500).json({ error: 'Hisobni oʻchirib boʻlmadi' });
-      }
+      await deleteAccount(supabase, path.join(UPLOADS_DIR, 'storage'), userId);
       return res.json({ success: true });
     } catch (e) {
-      console.error('[DELETE /api/user/account]', e);
+      if (e instanceof SocialAuthError) return res.status(e.httpStatus).json({ error: e.publicMessage });
+      console.error('[DELETE /api/user/account] Account deletion failed');
       return res.status(500).json({ error: 'Hisobni oʻchirib boʻlmadi' });
     }
   });
@@ -3425,6 +3451,18 @@ async function startServer() {
   }
 
   const port = Number(process.env.PORT) || 3000;
+  const { startAppleReconciliation } = await import('./server/services/appleReconciliation.service');
+  startAppleReconciliation();
+  let accountCleanupRunning = false;
+  const retryAccountCleanup = async () => {
+    if (accountCleanupRunning) return;
+    accountCleanupRunning = true;
+    try { await processAccountDeletionJobs(supabase, path.join(UPLOADS_DIR, 'storage')); }
+    catch { /* Jobs remain durable; retry after transient DB/disk failure. */ }
+    finally { accountCleanupRunning = false; }
+  };
+  void retryAccountCleanup();
+  setInterval(() => void retryAccountCleanup(), 60_000).unref();
   const host = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0.0.1' : '0.0.0.0');
   const httpServer = app.listen(port, host, () => {
     console.log('Server running on http://localhost:' + port);

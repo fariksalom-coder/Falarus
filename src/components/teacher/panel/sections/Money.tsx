@@ -192,7 +192,13 @@ export default function Income() {
 
 /* ---------------------------------- Obuna ---------------------------------- */
 
+import { isNativeIOS } from '../../../../native/platform';
+
 export function Subscription() {
+  return isNativeIOS() ? <p className="p-5">O‘qituvchi obunasini ilova ichida sotib olish hozircha mavjud emas.</p> : <WebSubscription />;
+}
+
+function WebSubscription() {
   const { token, t, lang, cabinet, refresh } = usePanel();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
