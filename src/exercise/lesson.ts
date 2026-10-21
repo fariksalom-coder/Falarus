@@ -1,6 +1,6 @@
 export interface LessonWord { id: string; text: string; start: number; end: number }
 export interface LessonSentence { id: string; text: string; translation?: string; start: number; end: number; words: LessonWord[] }
-export interface Lesson { id: string; title: string; label: string; language: string; video: { src: string; poster?: string }; sentences: LessonSentence[] }
+export interface Lesson { kind?: 'lesson' | 'film'; startAt?: number; id: string; title: string; label: string; language: string; video: { src: string; poster?: string }; sentences: LessonSentence[] }
 export interface LessonRepository { getLesson(id: string): Promise<Lesson> }
 
 export const demoLesson: Lesson = {
@@ -23,11 +23,22 @@ export function sentenceAt(lesson: Lesson, time: number) {
   return next >= 0 ? next : lesson.sentences.length - 1;
 }
 
+/** A caption bridges a pause shorter than FILM_CAPTION_BRIDGE; in a longer one it clears after FILM_CAPTION_HOLD. */
+export const FILM_CAPTION_HOLD = 1.2, FILM_CAPTION_BRIDGE = 3;
+export function filmCaptionAt(lesson: Lesson, time: number) {
+  const next = lesson.sentences.findIndex(sentence => time < sentence.end);
+  if (next < 0) return time - (lesson.sentences.at(-1)?.end ?? 0) < FILM_CAPTION_HOLD ? lesson.sentences.length - 1 : -1;
+  if (time >= lesson.sentences[next].start) return next;
+  if (next === 0) return -1;
+  const pause = lesson.sentences[next].start - lesson.sentences[next - 1].end;
+  return pause < FILM_CAPTION_BRIDGE || time - lesson.sentences[next - 1].end < FILM_CAPTION_HOLD ? next - 1 : -1;
+}
+
 /** Wire format stays independent of the player's view model. */
 export function lessonFromDocument(document: import('../../shared/videoLesson').VideoLessonDocument, videoSrc = document.video): Lesson {
   if (!document.sentences.length) throw new Error('В уроке пока нет предложений.');
   return {
-    id: document.id, title: document.title, label: 'Фильм с субтитрами', language: document.language, video: { src: videoSrc },
+    kind: document.kind, startAt: document.playbackStart, id: document.id, title: document.title, label: 'Фильм с субтитрами', language: document.language, video: { src: videoSrc },
     sentences: document.sentences.map((s, i) => ({
       id: `s${i}`, text: s.text, translation: s.translation, start: s.start ?? 0, end: s.end ?? 0,
       words: s.words.map((w, j) => ({ id: `s${i}w${j}`, text: w.text, start: w.start ?? -1, end: w.end ?? -1 })),

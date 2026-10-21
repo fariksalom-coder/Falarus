@@ -1,7 +1,8 @@
 export interface PublishedVideo { id: string; title: string; duration: number; kind: 'lesson' | 'film'; poster?: string }
 export interface VideoWord { text: string; start: number | null; end: number | null }
 export interface VideoSentence { text: string; translation: string; start: number | null; end: number | null; words: VideoWord[] }
-export interface VideoLessonDocument { kind?: 'lesson' | 'film'; id: string; title: string; video: string; language: 'ru'; translationLanguage: 'uz'; sentences: VideoSentence[] }
+/** `playbackStart` skips logos and credits: the player opens there, the timeline still reaches 0. */
+export interface VideoLessonDocument { kind?: 'lesson' | 'film'; playbackStart?: number; id: string; title: string; video: string; language: 'ru'; translationLanguage: 'uz'; sentences: VideoSentence[] }
 export type PreparationPhase = 'uploaded' | 'recognizing' | 'translating' | 'ready' | 'error';
 export interface VideoLessonRecord {
   id: string; revision: number; status: 'draft' | 'published'; phase: PreparationPhase;
@@ -16,16 +17,18 @@ export function lessonIssues(lesson: VideoLessonDocument, duration: number): str
   const issues: string[] = [];
   if (!lesson.title.trim()) issues.push('Укажите название урока.');
   if (!lesson.sentences.length) issues.push('Добавьте хотя бы одно предложение.');
+  if (lesson.playbackStart !== undefined && !(Number.isFinite(lesson.playbackStart) && lesson.playbackStart >= 0 && lesson.playbackStart < duration)) issues.push('Неверное время начала просмотра.');
   let priorEnd = 0;
   lesson.sentences.forEach((sentence, i) => {
     const label = `Предложение ${i + 1}`;
     if (!sentence.text.trim() || (lesson.kind !== 'film' && !/[а-яё]/i.test(sentence.text))) issues.push(`${label}: нужен русский текст.`);
     if (!sentence.translation.trim() || /[а-яё]/i.test(sentence.translation) || sentence.translation.includes('[Tushunarsiz parcha]')) issues.push(`${label}: нужен перевод на узбекский Latin.`);
-    if (!sentence.words.length) issues.push(`${label}: нет слов.`);
-    if (normalized(sentence.text) !== normalized(sentence.words.map(w => w.text).join(' '))) issues.push(`${label}: текст не совпадает со словами. Обновите слова или выполните перепривязку.`);
+    if (!sentence.words.length && lesson.kind !== 'film') issues.push(`${label}: нет слов.`);
+    if ((sentence.words.length > 0 || lesson.kind !== 'film') && normalized(sentence.text) !== normalized(sentence.words.map(w => w.text).join(' '))) issues.push(`${label}: текст не совпадает со словами. Обновите слова или выполните перепривязку.`);
     const valid = (start: number | null, end: number | null): boolean => typeof start === 'number' && typeof end === 'number' && Number.isFinite(start) && Number.isFinite(end) && start >= 0 && start < end && end <= duration + .05;
     if (!valid(sentence.start, sentence.end)) issues.push(`${label}: неверные границы предложения.`);
     if (sentence.start !== null && sentence.start < priorEnd - .001) issues.push(`${label}: предложения пересекаются во времени.`);
+    if (!sentence.words.length && lesson.kind === 'film') priorEnd = sentence.end ?? priorEnd;
     let wordEnd = sentence.start ?? 0;
     for (const [j, word] of sentence.words.entries()) {
       if (!word.text.trim() || !valid(word.start, word.end)) issues.push(`${label}, слово ${j + 1}: проверьте текст и start/end.`);

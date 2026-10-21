@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Pause, Play, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
-import { activeWord, sentenceAt, type Lesson } from './lesson';
+import { FilmSubtitles } from './FilmSubtitles';
+import { activeWord, filmCaptionAt, sentenceAt, type Lesson } from './lesson';
 
 const speeds = [0.5, 0.8, 1, 1.25, 1.5];
 const formatTime = (value: number) => {
@@ -21,6 +22,7 @@ export function LessonScreen({ lesson }: { lesson: Lesson }) {
   const [error, setError] = useState('');
   const currentIndex = lesson.sentences.findIndex(sentence => time >= sentence.start && time < sentence.end);
   const index = currentIndex >= 0 ? currentIndex : sentenceAt(lesson, time);
+  const startAt = lesson.startAt ?? 0;
 
   // A film can contain thousands of subtitles. Render the nearby dialogue only.
   const firstVisible = lesson.sentences.length > 100 ? Math.max(0, index - 3) : 0;
@@ -55,7 +57,7 @@ export function LessonScreen({ lesson }: { lesson: Lesson }) {
   const play = async () => {
     const player = video.current;
     if (!player || !ready) return;
-    if (player.ended) player.currentTime = 0;
+    if (player.ended) player.currentTime = startAt;
     try { await player.play(); setError(''); }
     catch { setError('Нажмите ▶, чтобы продолжить видео.'); }
   };
@@ -75,6 +77,7 @@ export function LessonScreen({ lesson }: { lesson: Lesson }) {
           const player = video.current!;
           setDuration(Number.isFinite(player.duration) ? player.duration : 0);
           player.playbackRate = speed;
+          if (player.currentTime < startAt) player.currentTime = startAt;
           setTime(player.currentTime);
           setReady(true);
           setError('');
@@ -88,7 +91,7 @@ export function LessonScreen({ lesson }: { lesson: Lesson }) {
         aria-label={`Видео: ${lesson.title}`}/>
       {!ready && <div className="ex-media-status" role="status">{error || 'Загружаем видео…'}</div>}
     </section>
-    <ol className="ex-sentences" ref={list} aria-label="Текст видео" tabIndex={0} translate="no">
+    {lesson.kind === 'film' ? <FilmSubtitles sentence={lesson.sentences[filmCaptionAt(lesson, time)]}/> : <ol className="ex-sentences" ref={list} aria-label="Текст видео" tabIndex={0} translate="no">
       {visibleSentences.map((item, visibleIndex) => {
         const i = firstVisible + visibleIndex;
         const wordIndex = i === currentIndex ? activeWord(item, time) : -1;
@@ -99,12 +102,12 @@ export function LessonScreen({ lesson }: { lesson: Lesson }) {
           </div>{item.translation && <p className="ex-translation" lang="uz">{item.translation}</p>}</div>
         </li>;
       })}
-    </ol>
+    </ol>}
     <section className="ex-player" aria-label="Управление воспроизведением">
       {error && ready && <p className="ex-error" role="alert">{error}</p>}
       <div className="ex-timeline"><span>{formatTime(time)}</span><input type="range" min="0" max={duration || 1} step="0.01" value={Math.min(time, duration || 1)} disabled={!ready} onChange={e => seek(Number(e.target.value))} aria-label="Позиция видео"/><span>{formatTime(duration)}</span></div>
       <div className="ex-controls">
-        <button className="ex-icon" onClick={() => seek(0)} disabled={!ready} aria-label="Видео с начала" title="С начала"><RotateCcw size={21}/></button>
+        <button className="ex-icon" onClick={() => seek(startAt)} disabled={!ready} aria-label="Видео с начала" title="С начала"><RotateCcw size={21}/></button>
         <button className="ex-icon" disabled={!ready || index <= 0} onClick={() => seek(lesson.sentences[index - 1].start)} aria-label="Предыдущее предложение" title="Назад"><SkipBack size={21}/></button>
         <button className="ex-play" onClick={() => playing ? video.current?.pause() : void play()} disabled={!ready} aria-label={playing ? 'Пауза' : 'Воспроизвести'}>{playing ? <Pause fill="currentColor"/> : <Play fill="currentColor"/>}</button>
         <button className="ex-icon" disabled={!ready || index >= lesson.sentences.length - 1} onClick={() => seek(lesson.sentences[index + 1].start)} aria-label="Следующее предложение" title="Далее"><SkipForward size={21}/></button>
