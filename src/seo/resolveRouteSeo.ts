@@ -555,6 +555,20 @@ export function resolveRouteSeo(
       canonicalPath: '/huquqiy/maxfiylik',
     };
   }
+  if (raw === '/privacy') {
+    return {
+      title: clipTitle('Политика конфиденциальности — FalaRus'),
+      description: clipDescription('Как FalaRus.uz обрабатывает данные сайта, приложения и переписки в Instagram.'),
+      canonicalPath: '/privacy',
+    };
+  }
+  if (raw === '/data-deletion') {
+    return {
+      title: clipTitle('Удаление данных — FalaRus'),
+      description: clipDescription('Как удалить свои данные и переписку с FalaRus.uz в Instagram.'),
+      canonicalPath: '/data-deletion',
+    };
+  }
   if (raw === '/huquqiy/qaytarish') {
     return {
       title: clipTitle('Pul qaytarish siyosati — FalaRus'),

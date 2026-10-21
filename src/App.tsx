@@ -43,6 +43,8 @@ function AppRoutes() {
       <Route path="/huquqiy/ommaviy-oferta" element={renderLazyPage('./pages/legal/LegalOfferPage.tsx')} />
       <Route path="/huquqiy/maxfiylik" element={renderLazyPage('./pages/legal/LegalPrivacyPage.tsx')} />
       <Route path="/huquqiy/qaytarish" element={renderLazyPage('./pages/legal/LegalRefundPage.tsx')} />
+      <Route path="/privacy" element={renderLazyPage('./pages/legal/InstagramPrivacyPage.tsx')} />
+      <Route path="/data-deletion" element={renderLazyPage('./pages/legal/DataDeletionPage.tsx')} />
       <Route path="/promo/russian" element={renderLazyPage('./pages/PromoRussianPage.tsx')} />
       <Route path="/teacher-login" element={renderLazyPage('./pages/TeacherLoginPage.tsx')} />
       <Route path="/teacher-register" element={renderLazyPage('./pages/TeacherRegisterPage.tsx')} />

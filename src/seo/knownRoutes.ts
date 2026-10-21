@@ -51,6 +51,8 @@ export function isKnownAppRoute(pathname: string): boolean {
     '/huquqiy/ommaviy-oferta',
     '/huquqiy/maxfiylik',
     '/huquqiy/qaytarish',
+    '/privacy',
+    '/data-deletion',
     '/payment-history',
     '/reyting',
     '/jonli-efir',
