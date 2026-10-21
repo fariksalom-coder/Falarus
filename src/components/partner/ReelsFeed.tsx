@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Heart, MessageCircle, Plus, Send, ShieldAlert, Trash2, Video, VolumeX, Volume2, X } from 'lucide-react';
+import { resolveAssetUrl } from '../../api';
+import { ArrowLeft, Heart, MessageCircle, Plus, Send, Trash2, Video, VolumeX, Volume2, X } from 'lucide-react';
 import {
   addReelComment,
   deleteReel,
@@ -26,40 +27,6 @@ import ChatAvatar from '../ChatAvatar';
  * ovozli video ko'pincha avtomatik o'ynamaydi.
  */
 
-/**
- * RELS QOIDALARI — joylash tugmasi bosilganda HAR SAFAR ko'rsatiladi.
- *
- * Nima uchun har safar, bir marta emas: bu shunchaki eslatma emas, balki
- * oqibati bor ogohlantirish. Bir marta ko'rsatilib, keyin unutilsa,
- * "men bilmasdim" degan da'voga o'rin qoladi. Har yuklashdan oldin
- * ko'rinsa esa, har bir video ongli ravishda joylanadi.
- *
- * Admin va support bundan mustasno — moderatsiya ishida bu har safar
- * to'sqinlik qilardi.
- */
-const QOIDALAR: Array<{ sarlavha: string; matn: string }> = [
-  {
-    sarlavha: '18+ va behayo mazmun',
-    matn: "Yalang'och yoki jinsiy mazmundagi, shuningdek shama qiluvchi videolar butunlay taqiqlanadi. Platformada o'quvchilar bor.",
-  },
-  {
-    sarlavha: "Targ'ibot va reklama",
-    matn: "Boshqa kurs, kanal, mahsulot yoki xizmat reklamasi; siyosiy, diniy va mafkuraviy targ'ibot — ruxsat etilmaydi.",
-  },
-  {
-    sarlavha: "Zo'ravonlik va haqorat",
-    matn: "Qo'rquv soluvchi, zo'ravonlik ko'rsatuvchi videolar; millat, din yoki jins bo'yicha kamsitish taqiqlanadi.",
-  },
-  {
-    sarlavha: 'Aldov va firibgarlik',
-    matn: "Pul yig'ish, soxta yutuq, «tez boyish» va shunga o'xshash da'volar darhol o'chiriladi.",
-  },
-  {
-    sarlavha: "O'zganing mehnati",
-    matn: "Boshqa muallifning videosini o'zingiznikidek joylamang. Mualliflik huquqi buzilishi shikoyatga sabab bo'ladi.",
-  },
-];
-
 function vaqt(ms: number | null | undefined): string {
   const j = Math.max(0, Math.round((ms ?? 0) / 1000));
   return `${Math.floor(j / 60)}:${String(j % 60).padStart(2, '0')}`;
@@ -80,13 +47,7 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
   const [caption, setCaption] = useState('');
   const [panel, setPanel] = useState(false);
 
-  /*
-   * Qoida oynasi. `moderator` aniqlanmaguncha `null` — shu holatda ham
-   * qoida KO'RSATILADI. Xato tomon ataylab shunday tanlangan: moderator
-   * qoidani ortiqcha bir marta ko'rsa zarari yo'q, oddiy foydalanuvchi
-   * uni ko'rmay qolsa esa butun ogohlantirishning ma'nosi yo'qoladi.
-   */
-  const [qoida, setQoida] = useState(false);
+  /** Faqat support (oltin hisob) video joylay oladi; aniqlanmaguncha `null`. */
   const [moderator, setModerator] = useState<boolean | null>(null);
 
   /*
@@ -111,7 +72,7 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
         if (tirik) setModerator(s.can_moderate === true);
       })
       .catch(() => {
-        if (tirik) setModerator(false); // shubhada — qoida ko'rsatiladi
+        if (tirik) setModerator(false);
       });
     return () => {
       tirik = false;
@@ -269,14 +230,14 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
         >
           {ovozli ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
         </button>
-        <button
+        {moderator === true ? <button
           type="button"
-          onClick={() => (moderator === true ? setPanel(true) : setQoida(true))}
+          onClick={() => setPanel(true)}
           className="flex h-[38px] items-center gap-1.5 rounded-[12px] bg-[#0EA5A5] px-3 text-[13px] font-black text-white"
         >
           <Plus className="h-4 w-4" />
           Joylash
-        </button>
+        </button> : null}
       </header>
 
       {error ? (
@@ -299,9 +260,9 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
           <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
             <Video className="h-10 w-10 text-white/40" />
             <p className="text-[15px] font-bold text-white">Hali rels yo'q</p>
-            <p className="text-[13px] text-white/60">
+            {moderator === true ? <p className="text-[13px] text-white/60">
               Birinchi bo'lib video joylang — «Joylash» tugmasi yuqorida.
-            </p>
+            </p> : null}
           </div>
         ) : (
           reels.map((r) => (
@@ -314,8 +275,8 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
                   if (el) videoRefs.current.set(r.id, el);
                   else videoRefs.current.delete(r.id);
                 }}
-                src={r.video_url}
-                poster={r.poster_url ?? undefined}
+                src={resolveAssetUrl(r.video_url) ?? undefined}
+                poster={resolveAssetUrl(r.poster_url) ?? undefined}
                 loop
                 muted={!ovozli}
                 playsInline
@@ -472,82 +433,6 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
               <p className="mt-1.5 text-[11px] text-pmn-text-muted">
                 Kommentariyangiz savol-javob guruhida ham ko'rinadi.
               </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* QOIDALAR — joylashdan oldin har safar. */}
-      {qoida ? (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
-          <div className="flex max-h-[86vh] w-full max-w-sm flex-col overflow-hidden rounded-[24px] bg-pmn-card">
-            <div className="flex shrink-0 items-center gap-2.5 border-b border-pmn-border px-5 py-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-amber-100 text-amber-600 dark:bg-amber-400/15 dark:text-amber-300">
-                <ShieldAlert className="h-[18px] w-[18px]" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[15px] font-black leading-tight text-pmn-text">Rels joylash qoidalari</p>
-                <p className="text-[11.5px] text-pmn-text-muted">Yuklashdan oldin diqqat bilan o‘qing</p>
-              </div>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-              <ol className="flex flex-col gap-3.5">
-                {QOIDALAR.map((q, i) => (
-                  <li key={q.sarlavha} className="flex gap-2.5">
-                    <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-pmn-pill text-[11.5px] font-black text-pmn-text">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[13.5px] font-black leading-snug text-pmn-text">{q.sarlavha}</p>
-                      <p className="mt-0.5 text-[12.5px] leading-relaxed text-pmn-text-muted">{q.matn}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-
-              {/*
-                Oqibat alohida va qizil ramkada: yuqoridagi ro'yxat "nima
-                mumkin emas" ni aytadi, bu blok esa "buzilsa nima bo'ladi"
-                ni. Ikkisi bir xil ko'rinsa, ogohlantirish ko'zga tashlanmay
-                matn ichida yo'qolib ketardi.
-              */}
-              <div className="mt-4 rounded-[14px] border border-red-200 bg-red-50 p-3.5 dark:border-red-400/25 dark:bg-red-500/10">
-                <p className="flex items-center gap-1.5 text-[12.5px] font-black text-red-700 dark:text-red-300">
-                  <AlertTriangle className="h-[15px] w-[15px] shrink-0" />
-                  Qoida buzilsa
-                </p>
-                <ul className="mt-2 flex flex-col gap-1.5 text-[12.5px] leading-relaxed text-red-700 dark:text-red-300">
-                  <li>· Video ogohlantirishsiz o‘chiriladi.</li>
-                  <li>· Akkauntingiz butunlay bloklanadi.</li>
-                  <li className="font-black">· To‘lagan pulingiz QAYTARILMAYDI.</li>
-                </ul>
-              </div>
-
-              <p className="mt-3 text-[11.5px] leading-relaxed text-pmn-text-muted">
-                «Tushundim» tugmasini bosish orqali siz ushbu qoidalarga rozilik
-                bildirasiz va joylagan videongiz uchun to‘liq javobgar bo‘lasiz.
-              </p>
-            </div>
-
-            <div className="flex shrink-0 gap-2 border-t border-pmn-border px-5 py-3.5">
-              <button
-                type="button"
-                onClick={() => setQoida(false)}
-                className="flex-1 rounded-[12px] bg-pmn-pill py-2.5 text-[13.5px] font-black text-pmn-text"
-              >
-                Bekor
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setQoida(false);
-                  setPanel(true);
-                }}
-                className="flex-1 rounded-[12px] bg-[#0EA5A5] py-2.5 text-[13.5px] font-black text-white"
-              >
-                Tushundim
-              </button>
             </div>
           </div>
         </div>

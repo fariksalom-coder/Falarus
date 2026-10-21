@@ -1268,7 +1268,8 @@ export function createCommunityRoutes(
   /*
    * RELS — suhbatlar panelidagi qisqa videolar.
    *
-   * Joylash: har qanday foydalanuvchi (bloklanmagan bo'lsa).
+   * Joylash: faqat support (oltin hisob). Oddiy foydalanuvchilar 2026-10-21 dan
+ * video joylay olmaydi — faqat ko'radi, layk va kommentariya qoldiradi.
    * O'chirish: muallif, support (oltin hisob) yoki admin.
    */
   router.get('/community/reels', authenticate, async (req: any, res) => {
@@ -1355,6 +1356,7 @@ export function createCommunityRoutes(
     '/community/reels',
     authenticate,
     yozishRuxsati,
+    moderatorRuxsati,
     faylQabul('file'),
     async (req: any, res) => {
       try {
