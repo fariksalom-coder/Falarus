@@ -1,8 +1,9 @@
-import { ArrowRight, BookOpen, Gift, Play } from 'lucide-react';
+import { ArrowRight, BookOpen, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAccess } from '../context/AccessContext';
 import { hasAppPremiumAccess } from '../utils/premiumNav';
 import DailyCourseMapPage from './DailyCourseMapPage';
+import ReferralPromoCard from '../components/ReferralPromoCard';
 import '../styles/learning-start.css';
 
 export default function LearningStartPage() {
@@ -16,7 +17,7 @@ export default function LearningStartPage() {
         <Link to="/kunlik-reja/xarita" className="learning-choice learning-choice-trial"><span className="learning-free">BEPUL</span><span className="learning-choice-icon"><BookOpen aria-hidden /></span><div className="learning-choice-bottom"><h2>Sinov<br />darsi</h2><span className="learning-choice-cta">Boshlash <ArrowRight size={22} /></span></div></Link>
         <Link to="/kurs-haqida" className="learning-choice learning-choice-course"><span className="learning-choice-icon"><Play aria-hidden /></span><div className="learning-choice-bottom"><h2>Kurs<br />haqida</h2><span className="learning-choice-cta">Videoni ko'rish <ArrowRight size={22} /></span></div></Link>
       </div>
-      <Link to="/invite" className="learning-invite"><Gift aria-hidden /><span><strong>Do'stingizni taklif qiling</strong><small>Birinchi xaridi uchun 10% bonus — o'zingiz kurs olmagan bo'lsangiz ham</small></span><ArrowRight size={20} aria-hidden /></Link>
+      <div className="learning-start-promo"><ReferralPromoCard /></div>
     </div>
   </main>;
 }

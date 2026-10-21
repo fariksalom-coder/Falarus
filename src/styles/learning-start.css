@@ -16,15 +16,7 @@
 @media (max-width: 360px) { .learning-choice { padding: 18px; } .learning-choice h2 { font-size: 26px; } .learning-choice-cta { padding: 12px; font-size: 13px; gap: 6px; } }
 @media (max-height: 760px) { .learning-start { padding-top: 14px; } .learning-start h1 { font-size: 32px; margin-bottom: 20px; } .learning-choice { min-height: 210px; } .learning-choice-icon { width: 76px; height: 76px; top: 20px; } .learning-choice-icon svg { width: 42px; height: 42px; } }
 body:has(.learning-start) { background: #f2f5fa; }
-.learning-invite { display: flex; align-items: center; gap: 14px; margin-top: 18px; min-height: 64px; padding: 14px 16px; border-radius: 24px; background: #fff; color: #0f172a; text-decoration: none; box-shadow: 0 14px 34px rgba(148,163,184,.12); transition: transform .15s ease, box-shadow .15s ease; }
-.learning-invite:hover { box-shadow: 0 18px 40px rgba(148,163,184,.2); }
-.learning-invite:active { transform: scale(.98); }
-.learning-invite:focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
-.learning-invite > svg:first-child { flex-shrink: 0; width: 44px; height: 44px; padding: 11px; border-radius: 14px; background: #e8efff; color: #2563eb; }
-.learning-invite > svg:last-child { flex-shrink: 0; color: #2563eb; }
-.learning-invite span { flex: 1; min-width: 0; }
-.learning-invite strong { display: block; font-size: 16px; font-weight: 800; }
-.learning-invite small { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: #64748b; }
+.learning-start-promo { margin-top: 18px; }
 @media (min-width: 768px) {
   .learning-start { padding: 32px 28px; }
   .learning-start-inner { max-width: 1180px; }

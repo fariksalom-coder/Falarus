@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookOpen, Check, Gift, Lock, Sparkles, Flag, LocateFixed } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Check, Lock, Sparkles, Flag, LocateFixed } from 'lucide-react';
 import '../styles/trial-day-cue.css';
 import '../styles/journey-map.css';
+import ReferralPromoCard from '../components/ReferralPromoCard';
 import TrialDayFeedback from '../components/TrialDayFeedback';
 import TrialHandAnimation from '../components/TrialHandAnimation';
 import { useAccess } from '../context/AccessContext';
@@ -89,11 +90,7 @@ export default function DailyCourseMapPage() {
           <span className="journey-tariff-copy"><strong>Tariflarni ko'rish</strong><small>1 / 3 / 6 oy · Rahmat orqali to'lov</small></span>
           <span className="journey-tariff-arrow"><ArrowRight size={18} /></span>
         </button>}
-        <button className="journey-tariffs journey-invite" onClick={() => navigate('/invite')}>
-          <span className="journey-tariff-icon"><Gift size={22} /></span>
-          <span className="journey-tariff-copy"><strong>Do'stingizni taklif qiling</strong><small>Birinchi xaridi uchun 10% bonus</small></span>
-          <span className="journey-tariff-arrow"><ArrowRight size={18} /></span>
-        </button>
+        <ReferralPromoCard />
       </div>
       {!premium && Boolean(access?.kunlik_review_days?.length) && <p role="status" className="mx-4 rounded-xl bg-white p-3 text-sm text-slate-700">Obunangiz tugadi. O‘tilgan {access!.kunlik_review_days!.length} kunni qayta ishlashingiz mumkin. Yangi kunlar uchun obunani yangilang.</p>}
       <main className="journey-road" aria-label="Yo'l xaritasi" style={{ height: dayY(TOTAL_DAYS) + 150 }}>
