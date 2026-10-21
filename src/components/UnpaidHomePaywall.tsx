@@ -1,24 +1,25 @@
 /**
- * Obunasiz foydalanuvchi uchun bosh sahifa: video + oxirgi 1:10 da tariflar.
+ * Obunasiz foydalanuvchi uchun har kirishda video ketma-ketligi va bonus.
  *
- * Video: `public/videos/paywall-intro.mp4`. Tezlatish tugmasi video ostida.
+ * Videolar: kirish, tariflar, bonus. Tezlatish tugmasi video ostida.
  * Oldinga o‘tkazish taqiqlangan (faqat orqaga).
  * 3 oy tarifi oxirgi 52.5 soniyada yashil bo‘ladi.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gauge, Gift, Play, Sparkles, Volume2 } from 'lucide-react';
+import { ArrowRight, Gift, Play, Sparkles, Volume2 } from 'lucide-react';
+import './paywallOffers.css';
 import { useAuth } from '../context/AuthContext';
 import { openRahmatCheckout } from '../api/rahmat';
-import { completeWelcomeVideo, getWelcomeVideoOffer, startWelcomeVideoOffer, type WelcomeVideoOfferState } from '../api/welcomeVideoOffer';
-import { WELCOME_VIDEO_BONUS_REVEAL_SECONDS, WELCOME_VIDEO_OFFER_MS } from '../../shared/welcomeVideoOffer';
+import { completeWelcomeVideo, beginWelcomeVideoVisit, type WelcomeVideoOfferState } from '../api/welcomeVideoOffer';
 import {
   formatRubAmount,
-  formatRussianTariffUzsMing,
   RUSSIAN_TARIFF_PLANS_RUB,
   type RussianTariffCode,
+  type RussianTariffRubPlan,
 } from '../../shared/russianTariffs';
+import { formatUzsAmount } from '../../shared/rubUzs';
 
 /** Tariflar shu qolgan vaqtda chiqadi (1 daqiqa 10 soniya). */
 const TARIFF_REMAINING_SEC = 70;
@@ -26,10 +27,10 @@ const TARIFF_REMAINING_SEC = 70;
 /** 3 oylik tarif shu qolgan vaqtda yashil bo‘ladi (52.5 s). */
 const THREE_MONTH_GREEN_REMAINING_SEC = 52.5;
 
-/** Registration sequence assets: intro, tariffs, then the one-time bonus explanation. */
+/** Each visit replays intro, tariffs, then the bonus explanation. */
 const WELCOME_VIDEO_SOURCES = ['/videos/welcome-intro.mp4', '/videos/welcome-tariffs.mp4', '/videos/welcome-bonus.mp4'] as const;
-// Rounded-up durations keep the promise visible even while the next clip is buffering.
-const WELCOME_VIDEO_DURATIONS_SECONDS = [18, 222, 61] as const;
+// Actual asset durations; the active clip uses its loaded media metadata.
+const WELCOME_VIDEO_DURATIONS_SECONDS = [17.019002, 221.238005, 60.486009] as const;
 export const PAYWALL_VIDEO_SRC = WELCOME_VIDEO_SOURCES[1];
 
 /**
@@ -52,6 +53,57 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
 }
 
+function PaywallPriceCard({ plan, bonus = false, secondsLeft = 0, disabled, busy, recommended = false, onBuy }: {
+  plan: RussianTariffRubPlan;
+  bonus?: boolean;
+  secondsLeft?: number;
+  disabled: boolean;
+  busy: boolean;
+  recommended?: boolean;
+  onBuy: () => void;
+}) {
+  const months = bonus ? 6 : plan.months;
+  const wasRub = plan.wasRub / plan.months * months;
+  const wasUzs = RUSSIAN_TARIFF_PLANS_RUB[0].priceUzs * months;
+  const discountPercent = Math.round((1 - plan.priceRub / wasRub) * 100);
+  const showWas = wasRub > plan.priceRub;
+  return (
+    <section className={`paywall-offer${bonus ? ' paywall-offer__bonus' : ''}${recommended ? ' paywall-offer--recommended' : ''}`} aria-label={bonus ? 'Maxsus bonus taklifi' : `${months} oylik tarif`}>
+      <img src="/paywall/offer-decoration.webp" className="paywall-offer__decoration" alt="" aria-hidden="true" />
+      <div className="paywall-offer__heading">
+        <p className="paywall-offer__eyebrow">{bonus ? 'Maxsus taklif' : 'Rus tili kursi'}</p>
+        <h2 className="paywall-offer__title">{bonus ? '+3 oy bepul' : `${months} oylik obuna`}</h2>
+      </div>
+      <span className="paywall-offer__badge">{discountPercent > 0 ? `−${discountPercent}%` : `${months} oy`}</span>
+      <div className="paywall-offer__prices">
+        <div className="paywall-offer__rub">
+          <p className="paywall-offer__price">{formatRubAmount(plan.priceRub)} ₽</p>
+          {showWas && <s className="paywall-offer__was">{formatRubAmount(wasRub)} ₽</s>}
+        </div>
+        <div className="paywall-offer__uzs">
+          <span>{formatUzsAmount(plan.priceUzs)} so‘m</span>
+          {showWas && <s className="paywall-offer__was">{formatUzsAmount(wasUzs)} so‘m</s>}
+        </div>
+        {bonus && <p className="paywall-offer__bonus-caption">3 oy narxiga 6 oy o‘qing</p>}
+      </div>
+      <div className="paywall-offer__summary">
+        <span>{bonus ? 'Taklif tugashiga' : 'Kursga kirish'}</span>
+        {bonus ? (
+          <div className="paywall-offer__clock" role="timer" aria-label="Taklif tugashiga qolgan vaqt">
+            <span>{String(Math.floor(secondsLeft / 60)).padStart(2, '0')}</span>
+            <b aria-hidden="true">:</b>
+            <span>{String(secondsLeft % 60).padStart(2, '0')}</span>
+          </div>
+        ) : <span className="paywall-offer__duration">{months} oy</span>}
+      </div>
+      <button type="button" className="paywall-offer__button" disabled={disabled} onClick={onBuy}>
+        {busy ? 'Yuklanmoqda…' : bonus ? 'Taklifdan foydalanish' : `${months} oyga olish`}
+        {!busy && <ArrowRight size={18} strokeWidth={2.5} aria-hidden="true" />}
+      </button>
+    </section>
+  );
+}
+
 export default function UnpaidHomePaywall() {
   const { token } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -62,7 +114,6 @@ export default function UnpaidHomePaywall() {
   const [offerExpiresAt, setOfferExpiresAt] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [sequenceSecondsLeft, setSequenceSecondsLeft] = useState(0);
-  const [bonusRevealed, setBonusRevealed] = useState(false);
   const [highlightThreeMonth, setHighlightThreeMonth] = useState(false);
   const [needsGesture, setNeedsGesture] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
@@ -75,23 +126,19 @@ export default function UnpaidHomePaywall() {
   /** Eng uzoq ko‘rilgan nuqta — oldinga seek qilishni bloklash uchun. */
   const maxPlayedRef = useRef(0);
   const seekingClampRef = useRef(false);
-  const sequenceRemainingRef = useRef<number | null>(null);
-  const offerStartRequestedRef = useRef(false);
+  const visitRequestRef = useRef<{ token: string; request: Promise<WelcomeVideoOfferState> } | null>(null);
   const videoSource = flowMode === 'sequence' ? WELCOME_VIDEO_SOURCES[videoIndex] : flowMode === 'offer' ? WELCOME_VIDEO_SOURCES[2] : WELCOME_VIDEO_SOURCES[1];
-  const bonusBeforeEnd = flowMode === 'sequence' && videoIndex === 2 && bonusRevealed;
-  const showBonusOffer = bonusBeforeEnd || (flowMode === 'offer' && secondsLeft > 0);
-  const displayedSeconds = bonusBeforeEnd ? WELCOME_VIDEO_OFFER_MS / 1000 : secondsLeft;
+  const showBonusOffer = flowMode === 'offer' && secondsLeft > 0;
+  const displayedSeconds = secondsLeft;
 
   const applyOfferState = (state: WelcomeVideoOfferState) => {
+    setBuyError(null);
     setFlowMode(state.mode);
     setOfferExpiresAt(state.offerExpiresAt);
     if (state.offerExpiresAt) setSecondsLeft(Math.max(0, Math.ceil((Date.parse(state.offerExpiresAt) - Date.now()) / 1000)));
     if (state.mode === 'sequence' && state.nextVideoIndex != null) {
       setVideoIndex(state.nextVideoIndex);
-      if (sequenceRemainingRef.current == null) {
-        const remaining = WELCOME_VIDEO_DURATIONS_SECONDS.slice(state.nextVideoIndex).reduce((sum, value) => sum + value, 0);
-        sequenceRemainingRef.current = remaining;
-      }
+      setSequenceSecondsLeft(Math.ceil(WELCOME_VIDEO_DURATIONS_SECONDS.slice(state.nextVideoIndex).reduce((sum, value) => sum + value, 0)));
     }
     else if (state.mode === 'offer') setVideoIndex(2);
     else setVideoIndex(1);
@@ -100,18 +147,31 @@ export default function UnpaidHomePaywall() {
 
   useEffect(() => {
     let cancelled = false;
-    setBonusRevealed(false);
+    setFlowReady(false);
+    setShowTariffs(false);
+    setHighlightThreeMonth(false);
+    setOfferExpiresAt(null);
+    setSecondsLeft(0);
     if (!token) {
+      visitRequestRef.current = null;
       setFlowMode('standard');
       setVideoIndex(1);
       setFlowReady(true);
       return;
     }
-    void getWelcomeVideoOffer(token).then((state) => {
+    // Share the request across StrictMode's effect replay; a real remount
+    // creates a new ref and therefore starts a new visit.
+    if (visitRequestRef.current?.token !== token) {
+      visitRequestRef.current = { token, request: beginWelcomeVideoVisit(token) };
+    }
+    void visitRequestRef.current.request.then((state) => {
       if (!cancelled) applyOfferState(state);
     }).catch((error) => {
       console.error('[welcome-video-offer]', error);
-      if (!cancelled) { setFlowMode('standard'); setVideoIndex(1); }
+      if (!cancelled) {
+        setFlowMode('standard'); setVideoIndex(1);
+        setBuyError('Bonusni yuklab bo‘lmadi. Sahifani yangilab qayta urinib ko‘ring.');
+      }
     }).finally(() => { if (!cancelled) setFlowReady(true); });
     return () => { cancelled = true; };
   }, [token]);
@@ -131,26 +191,16 @@ export default function UnpaidHomePaywall() {
   useEffect(() => {
     if (flowMode !== 'sequence') {
       setSequenceSecondsLeft(0);
-      sequenceRemainingRef.current = null;
       return;
     }
-    if (sequenceRemainingRef.current == null) {
-      const remaining = WELCOME_VIDEO_DURATIONS_SECONDS.slice(videoIndex).reduce((sum, value) => sum + value, 0);
-      sequenceRemainingRef.current = remaining;
-    }
-    let previous = performance.now();
     const refresh = () => {
-      const now = performance.now();
-      const elapsed = Math.max(0, (now - previous) / 1000);
-      previous = now;
       const el = videoRef.current;
-      // Playing consumes media time at the selected speed. Buffering or a
-      // transition consumes wall-clock time so loading cannot add free time.
-      const multiplier = el && !el.paused && !el.ended && el.readyState >= 2
-        ? Math.max(0.25, el.playbackRate || speedRef.current)
-        : 1;
-      sequenceRemainingRef.current = Math.max(0, (sequenceRemainingRef.current ?? 0) - elapsed * multiplier);
-      setSequenceSecondsLeft(Math.ceil(sequenceRemainingRef.current));
+      // Media time already follows playback speed and stops during pauses
+      // and buffering. Never spend bonus waiting time using the wall clock.
+      const duration = el && Number.isFinite(el.duration) && el.duration > 0
+        ? el.duration : WELCOME_VIDEO_DURATIONS_SECONDS[videoIndex];
+      const laterVideos = WELCOME_VIDEO_DURATIONS_SECONDS.slice(videoIndex + 1).reduce((sum, value) => sum + value, 0);
+      setSequenceSecondsLeft(Math.ceil(Math.max(0, duration - (el?.currentTime ?? 0)) + laterVideos));
     };
     refresh();
     const timer = window.setInterval(refresh, 250);
@@ -161,16 +211,6 @@ export default function UnpaidHomePaywall() {
     const el = videoRef.current;
     if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return;
     const remaining = el.duration - el.currentTime;
-    if (flowMode === 'sequence' && videoIndex === 2 && el.currentTime >= WELCOME_VIDEO_BONUS_REVEAL_SECONDS) {
-      setBonusRevealed(true);
-      if (token && !offerStartRequestedRef.current) {
-        offerStartRequestedRef.current = true;
-        void startWelcomeVideoOffer(token).then(applyOfferState).catch((error) => {
-          offerStartRequestedRef.current = false;
-          console.error('[welcome-video-offer/start]', error);
-        });
-      }
-    }
     const isTariffVideo = flowMode === 'standard' || (flowMode === 'sequence' && videoIndex === 1);
     if (isTariffVideo && remaining <= TARIFF_REMAINING_SEC) setShowTariffs(true);
     if (isTariffVideo) setHighlightThreeMonth(remaining <= THREE_MONTH_GREEN_REMAINING_SEC);
@@ -274,26 +314,19 @@ export default function UnpaidHomePaywall() {
       maxPlayedRef.current = Math.max(maxPlayedRef.current, el.duration || 0);
       if (flowMode === 'sequence' && token) {
         const finishedIndex = videoIndex;
-        if (finishedIndex < 2) {
+        if (finishedIndex === 2) setSequenceSecondsLeft(0);
+        void completeWelcomeVideo(token, finishedIndex).then((state) => {
           maxPlayedRef.current = 0;
           playAttemptedRef.current = false;
           setNeedsGesture(false);
-          setVideoIndex(finishedIndex + 1);
-          if (finishedIndex === 1) { setShowTariffs(true); setHighlightThreeMonth(true); }
-        }
-        void completeWelcomeVideo(token, finishedIndex).then((state) => {
-          if (finishedIndex === 2 || state.mode !== 'sequence') {
-            applyOfferState(state);
+          applyOfferState(state);
+          if (finishedIndex >= 1 || state.mode !== 'sequence') {
             setShowTariffs(true);
             setHighlightThreeMonth(true);
           }
         }).catch((error) => {
           console.error('[welcome-video-offer/video-complete]', error);
-          if (finishedIndex === 2) {
-            setFlowMode('standard');
-            setVideoIndex(1);
-            setShowTariffs(true);
-          }
+          setBuyError('Keyingi video yoki bonusni yuklab bo‘lmadi. Sahifani yangilab qayta urinib ko‘ring.');
         });
         return;
       }
@@ -508,46 +541,26 @@ export default function UnpaidHomePaywall() {
           />
         ) : null}
 
-        {/* Tezlik — video ostida, alohida tugmalar */}
+        {/* Rasmga mos tezlik tanlovi; video o‘lchami saqlanadi. */}
         {PAYWALL_VIDEO_READY ? (
-          <div
-            className="flex flex-wrap items-center justify-center gap-2 px-4 pb-1 pt-3"
-            style={{ background: BG }}
-            role="group"
-            aria-label="Video tezligi"
-          >
-            {SPEED_STEPS.map((step) => {
-              const active = speed === step;
-              return (
-                <button
-                  key={step}
-                  type="button"
-                  onClick={() => setPlaybackSpeed(step)}
-                  aria-pressed={active}
-                  className={`inline-flex min-h-[44px] min-w-[64px] items-center justify-center gap-1 rounded-2xl px-3.5 py-2 text-[14px] font-black transition active:scale-[0.97] ${
-                    active
-                      ? 'bg-[#2563EB] text-white ring-2 ring-[#93C5FD]'
-                      : 'bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/16'
-                  }`}
-                >
-                  {step === 1 ? <Gauge className="h-3.5 w-3.5" aria-hidden /> : null}
-                  {formatSpeed(step)}
-                </button>
-              );
-            })}
+          <div className="paywall-speed" role="group" aria-label="Video tezligi">
+            {SPEED_STEPS.map((step) => (
+              <button key={step} type="button" onClick={() => setPlaybackSpeed(step)} aria-pressed={speed === step}>
+                {formatSpeed(step)}
+              </button>
+            ))}
           </div>
         ) : null}
 
         {showBonusOffer ? (
-          <div className="mx-4 mt-3 rounded-2xl border border-amber-300/40 bg-gradient-to-r from-amber-300 to-yellow-200 p-4 text-center text-slate-950 shadow-lg" role="status" aria-live="polite">
-            <p className="text-sm font-bold">3 oy narxiga 6 oy o‘qing</p>
-            <p className="mt-1 text-sm font-extrabold">{formatRubAmount(THREE_MONTH_PLAN.priceRub)} ₽ · {formatRussianTariffUzsMing(THREE_MONTH_PLAN.priceUzs)}</p>
-            <p className="mt-2 text-xs font-semibold">Taklif tugashiga</p>
-            <p className="my-1 text-3xl font-black tabular-nums">{String(Math.floor(displayedSeconds / 60)).padStart(2, '0')}:{String(displayedSeconds % 60).padStart(2, '0')}</p>
-            <button type="button" disabled={Boolean(buying)} onClick={() => void buyWelcomeOffer()} className="mt-2 min-h-12 w-full rounded-xl bg-emerald-700 px-4 py-3 text-base font-black text-white transition hover:bg-emerald-800 disabled:opacity-60">
-              {buying === 'welcome_offer' ? '…' : 'Taklifdan foydalanish'}
-            </button>
-          </div>
+          <PaywallPriceCard
+            plan={THREE_MONTH_PLAN}
+            bonus
+            secondsLeft={displayedSeconds}
+            disabled={Boolean(buying)}
+            busy={buying === 'welcome_offer'}
+            onBuy={() => void buyWelcomeOffer()}
+          />
         ) : null}
 
         <AnimatePresence>
@@ -560,81 +573,17 @@ export default function UnpaidHomePaywall() {
               className="relative z-20 flex-1 space-y-3 px-4 pb-8 pt-4"
               style={{ background: BG }}
             >
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                {RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {
-                  const busy = buying === plan.code;
-                  const monthsLabel =
-                    plan.months === 1 ? '1 oy' : plan.months === 3 ? '3 oy' : '6 oy';
-                  const isGreen =
-                    plan.code === 'three_month' && highlightThreeMonth;
-                  const showWas = plan.wasRub > plan.priceRub;
-                  const uzsLabel = formatRussianTariffUzsMing(plan.priceUzs);
-
-                  return (
-                    <div
-                      key={plan.code}
-                      className={`flex flex-col rounded-[18px] p-2.5 shadow-[0_14px_34px_rgba(15,23,42,0.28)] transition sm:rounded-[22px] sm:p-3.5 ${
-                        isGreen
-                          ? 'border-[3px] border-[#16A34A] bg-[#ECFDF5] ring-4 ring-[#86EFAC]/70 shadow-[0_0_0_2px_rgba(22,163,74,0.35),0_18px_40px_rgba(22,163,74,0.28)] scale-[1.03]'
-                          : 'border border-white/10 bg-white'
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-center gap-1">
-                        <p
-                          className={`text-[10px] font-bold uppercase tracking-[0.12em] sm:text-[11px] ${
-                            isGreen ? 'text-[#15803D]' : 'text-[#2563EB]'
-                          }`}
-                        >
-                          {monthsLabel}
-                        </p>
-                        {plan.discountPercent > 0 ? (
-                          <span className="rounded-md bg-[#16A34A] px-1.5 py-0.5 text-[10px] font-black text-white sm:text-[11px]">
-                            −{plan.discountPercent}%
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {/* 3/6 oy: to‘liq narx — joriy narxning yuqorisida */}
-                      {showWas ? (
-                        <p className="mt-1.5 text-[11px] font-semibold leading-snug text-slate-400 sm:text-[12px]">
-                          <span className="line-through decoration-[#DC2626] decoration-2">
-                            {formatRubAmount(plan.wasRub)} ₽
-                          </span>
-                        </p>
-                      ) : (
-                        <div className="mt-1.5 min-h-[1.1rem]" aria-hidden />
-                      )}
-
-                      <p
-                        className={`text-[15px] font-black tabular-nums leading-tight sm:text-[18px] ${
-                          isGreen ? 'text-[#14532D]' : 'text-slate-900'
-                        }`}
-                      >
-                        {formatRubAmount(plan.priceRub)} ₽
-                      </p>
-                      <p
-                        className={`mt-0.5 text-[10px] font-semibold leading-snug sm:text-[12px] ${
-                          isGreen ? 'text-[#166534]' : 'text-slate-500'
-                        }`}
-                      >
-                        {uzsLabel}
-                      </p>
-
-                      <button
-                        type="button"
-                        disabled={Boolean(buying)}
-                        onClick={() => void buy(plan.code)}
-                        className={`mt-auto flex min-h-[40px] w-full items-center justify-center rounded-xl px-1.5 py-2 text-center text-[11px] font-bold leading-tight text-white transition disabled:opacity-60 sm:min-h-[44px] sm:rounded-2xl sm:text-[12px] ${
-                          isGreen
-                            ? 'bg-[#16A34A] hover:bg-[#15803D]'
-                            : 'bg-[#2563EB] hover:bg-[#1D4ED8]'
-                        }`}
-                      >
-                        {busy ? '…' : `${monthsLabel}ga olish`}
-                      </button>
-                    </div>
-                  );
-                })}
+              <div className="paywall-offer-grid">
+                {RUSSIAN_TARIFF_PLANS_RUB.map((plan) => (
+                  <PaywallPriceCard
+                    key={plan.code}
+                    plan={plan}
+                    recommended={plan.code === 'three_month' && highlightThreeMonth}
+                    disabled={Boolean(buying)}
+                    busy={buying === plan.code}
+                    onBuy={() => void buy(plan.code)}
+                  />
+                ))}
               </div>
 
             </motion.div>

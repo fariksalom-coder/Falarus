@@ -17,6 +17,7 @@ View your app in AI Studio: https://ai.studio/apps/949bd97b-2cb7-4a22-88ac-fe7c9
 2. Copy [.env.example](.env.example) to `.env` and set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `GEMINI_API_KEY`.
 3. Run the app:
    - `npm run dev` — local backend and DB (your test data).
+     If the existing `tmp/pglite-data` database is present and local PostgreSQL is stopped, this command starts that database together with the app. Closing the app also closes its local database. An already running PostgreSQL or SSH tunnel is reused.
    - `npm run dev:prod` — local UI, but API = **falarus.uz** (same data as online for the same account).
 
 ## Verification
@@ -26,4 +27,3 @@ View your app in AI Studio: https://ai.studio/apps/949bd97b-2cb7-4a22-88ac-fe7c9
 - `npm run test:smoke` — smoke-check deployed API using login or bearer token.
 - `npm run test` — unit tests for access/progress rules.
 - `npm run verify` — lint + tests + production build.
-

@@ -82,6 +82,29 @@ export function createWelcomeVideoOfferRoutes(
     }
   });
 
+  // Each paywall visit starts a fresh sequence, even for older registrations
+  // and previously expired offers. Keep payment_id so a pending checkout can
+  // still be reused instead of creating another invoice on a return visit.
+  router.post('/welcome-video-offer/visit', authenticate, async (req: any, res: Response) => {
+    const userId = Number(req.userId);
+    try {
+      await getOrCreateOffer(db, userId);
+      const { data: updated, error } = await db.from('welcome_video_offers').update({
+        status: 'sequence',
+        next_video_index: 0,
+        offer_expires_at: null,
+        updated_at: new Date().toISOString(),
+      }).eq('user_id', userId)
+        .select('user_id, status, next_video_index, offer_expires_at, payment_id').maybeSingle();
+      if (error) throw error;
+      if (!updated) throw new Error('Welcome offer visit could not be started');
+      return res.json(toClientState(updated));
+    } catch (error) {
+      console.error('[welcome-video-offer/visit]', error);
+      return res.status(500).json({ error: 'WELCOME_OFFER_UNAVAILABLE' });
+    }
+  });
+
   router.get('/welcome-video-offer', authenticate, async (req: any, res: Response) => {
     try {
       let row = await getOrCreateOffer(db, Number(req.userId));
@@ -93,27 +116,6 @@ export function createWelcomeVideoOfferRoutes(
       return res.json(toClientState(row));
     } catch (error) {
       console.error('[welcome-video-offer/status]', error);
-      return res.status(500).json({ error: 'WELCOME_OFFER_UNAVAILABLE' });
-    }
-  });
-
-  router.post('/welcome-video-offer/start', authenticate, async (req: any, res: Response) => {
-    const userId = Number(req.userId);
-    try {
-      const row = await getOrCreateOffer(db, userId);
-      if (row.status !== 'sequence' || Number(row.next_video_index) !== 2) return res.json(toClientState(row));
-      const now = new Date();
-      const { data: updated, error } = await db.from('welcome_video_offers').update({
-        status: 'offer',
-        next_video_index: 3,
-        offer_expires_at: getWelcomeVideoOfferExpiresAt(now.getTime()),
-        updated_at: now.toISOString(),
-      }).eq('user_id', userId).eq('status', 'sequence').eq('next_video_index', 2)
-        .select('user_id, status, next_video_index, offer_expires_at, payment_id').maybeSingle();
-      if (error) throw error;
-      return res.json(toClientState(updated ?? await getOrCreateOffer(db, userId)));
-    } catch (error) {
-      console.error('[welcome-video-offer/start]', error);
       return res.status(500).json({ error: 'WELCOME_OFFER_UNAVAILABLE' });
     }
   });

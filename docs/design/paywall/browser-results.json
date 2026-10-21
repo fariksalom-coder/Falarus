@@ -1,0 +1,28 @@
+{
+  "viewports": [
+    397,
+    320,
+    1280
+  ],
+  "checkouts": [
+    {
+      "tariff": "month",
+      "bonus": false
+    },
+    {
+      "tariff": "three_month",
+      "bonus": false
+    },
+    {
+      "tariff": "six_month",
+      "bonus": false
+    },
+    {
+      "tariff": "three_month",
+      "bonus": true
+    }
+  ],
+  "runtimeErrors": [],
+  "videoPreserved": true,
+  "overflow": false
+}

@@ -9,13 +9,68 @@ import {
   canPurchaseWelcomeVideoOffer,
 } from '../shared/welcomeVideoOffer.ts';
 import { resolveActivationTariffType } from '../shared/paymentActivation.ts';
+import { createWelcomeVideoOfferRoutes } from '../server/routes/welcomeVideoOfferRoutes.ts';
+import type { DbClient } from '../server/types/dbClient.ts';
 
 const now = Date.parse('2026-09-22T12:00:00.000Z');
 
-test('bonus purchase is available during the third video without starting its deadline', () => {
+test('each visit renews the video bonus and preserves a pending payment', async () => {
+  for (const status of ['standard', 'expired', 'claimed', 'offer', 'sequence']) {
+    let row = { user_id: 1, status, next_video_index: 3, offer_expires_at: new Date(now).toISOString(), payment_id: 42 };
+    const db = {
+      from: () => {
+        let patch: Record<string, unknown> | undefined;
+        const query = {
+          select: () => query,
+          eq: () => query,
+          update: (value: Record<string, unknown>) => { patch = value; return query; },
+          maybeSingle: async () => {
+            if (patch) row = { ...row, ...patch };
+            return { data: { ...row }, error: null };
+          },
+        };
+        return query;
+      },
+    } as unknown as DbClient;
+    const router = createWelcomeVideoOfferRoutes(db, (_req, _res, next) => next());
+    const invoke = async (path: string, bodyInput?: unknown) => {
+      const layer = router.stack.find((item: any) => item.route?.path === path)!;
+      let body: any;
+      let statusCode = 200;
+      const response = {
+        json: (value: unknown) => { body = value; },
+        status: (value: number) => { statusCode = value; return response; },
+      };
+      const handle = layer.route.stack.at(-1).handle as unknown as
+        (request: { userId: number; body: unknown }, response: unknown, next: () => void) => Promise<void>;
+      await handle({ userId: 1, body: bodyInput }, response, () => {});
+      assert.equal(statusCode, 200);
+      return body;
+    };
+    for (let visit = 0; visit < 2; visit++) {
+      assert.deepEqual(await invoke('/welcome-video-offer/visit'), {
+        mode: 'sequence', nextVideoIndex: 0, offerExpiresAt: null, offerUsed: false,
+      });
+      assert.equal(row.payment_id, 42);
+      const second = await invoke('/welcome-video-offer/video-complete', { videoIndex: 0 });
+      assert.equal(second.mode, 'sequence');
+      assert.equal(second.nextVideoIndex, 1);
+      const third = await invoke('/welcome-video-offer/video-complete', { videoIndex: 1 });
+      assert.equal(third.mode, 'sequence');
+      assert.equal(third.offerExpiresAt, null);
+      assert.equal(canPurchaseWelcomeVideoOffer(row), false);
+      const started = await invoke('/welcome-video-offer/video-complete', { videoIndex: 2 });
+      assert.equal(started.mode, 'offer');
+      assert.equal(isWelcomeVideoOfferOpen(started.offerExpiresAt), true);
+      assert.equal(row.payment_id, 42);
+    }
+  }
+});
+
+test('bonus purchase requires the final video to finish and an open deadline', () => {
   const offer = {status: 'sequence', next_video_index: 2, offer_expires_at: null};
-  assert.equal(canPurchaseWelcomeVideoOffer(offer, now), true);
-  assert.equal(canPurchaseWelcomeVideoOffer(offer, now + 30 * 60_000), true);
+  assert.equal(canPurchaseWelcomeVideoOffer(offer, now), false);
+  assert.equal(canPurchaseWelcomeVideoOffer(offer, now + 30 * 60_000), false);
   for (const next_video_index of [0, 1]) {
     assert.equal(canPurchaseWelcomeVideoOffer({...offer, next_video_index}, now), false);
   }

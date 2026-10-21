@@ -24,8 +24,8 @@ export function getWelcomeVideoOffer(token: string): Promise<WelcomeVideoOfferSt
   return request(token, '/api/welcome-video-offer');
 }
 
-export function startWelcomeVideoOffer(token: string): Promise<WelcomeVideoOfferState> {
-  return request(token, '/api/welcome-video-offer/start', { method: 'POST' });
+export function beginWelcomeVideoVisit(token: string): Promise<WelcomeVideoOfferState> {
+  return request(token, '/api/welcome-video-offer/visit', { method: 'POST' });
 }
 
 export function replayWelcomeVideoOffer(token: string): Promise<WelcomeVideoOfferState> {

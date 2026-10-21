@@ -1,3 +1,48 @@
+# Paywall pricing and playback controls · 2026-10-01
+
+final result: passed
+
+Scope: adapt the supplied blue/yellow pricing-card reference to the existing unpaid-course screen. The user explicitly requested preserving the current large video region and applying the same visual style to the bonus and all 1/3/6-month tariffs. Local changes only.
+
+Source visual truth: `docs/design/paywall/reference.png` (397 × 634 pixels). Browser implementation evidence: `docs/design/paywall/mobile-bonus.png`, `mobile-tariffs.png` (397 × 950); `desktop-bonus.png`, `desktop-tariffs.png` (1280 × 950). Chrome CDP, deviceScaleFactor 1; all screenshots use CSS pixels with no density resampling. Narrow-width evidence: `mobile-bonus-320.png` from a 320 × 900 viewport. The existing authenticated layout, large video and dark page background are intentional retained product constraints.
+
+Full-view comparison: source and mobile/desktop captures opened and reviewed together. The source's pricing panel and speed selector are the fidelity targets; existing branding, warnings, native video controls and app navigation are retained by scope. The bonus is shown after the final video-complete response, with 2.5× selected for the mobile view. Live deadline values differ naturally from the static source.
+
+Focused comparison evidence: `comparison-bonus.png` places the source's 367 × 279 card next to the browser's 365 × 305 card at 1× density. `comparison-speed.png` places the source's 348 × 42 selector next to the browser's 365 × 48 selector. Additional detail captures: `mobile-tariff-cards.png`, `mobile-six-month-card.png`, and `mobile-speed.png`.
+
+**Findings**
+
+No actionable P0/P1/P2 issues remain in the requested scope.
+
+- Fonts/typography: locally hosted Inter; matched bold white title, uppercase muted-blue eyebrow, large yellow price, smaller crossed-out reference prices, and bold yellow-button text. Prices remain readable without truncation at 320px.
+- Spacing/layout: 28px card corners, 18px horizontal padding, 74px yellow badge, 16px inner panel/button corners. The bonus adds a short explanation of the actual 3-for-6 benefit, increasing card height by 26px. This preserves existing purchase meaning and is an intentional content adaptation. Speed selector uses four equal-width targets and a raised white active segment; its 48px height supports touch use. Mobile tariffs stack; desktop tariffs share a three-column grid.
+- Colors/tokens: royal-blue card, yellow prices/badge/CTA, white headings, muted-blue comparison prices and dark-blue countdown row match the source's hierarchy. Yellow outline preserves the existing recommended three-month state.
+- Image quality/assets: actual course videos and official logo retained. `public/paywall/offer-decoration.webp` is a generated raster decoration grounded in the source ring, inspected and optimized to 2.8KB. No placeholder video or fake brand asset. ArrowRight uses the established icon library.
+- Copy/content: current prices remain 400,000 / 530,000 / 790,000 UZS and 3,000 / 4,000 / 6,000 RUB. Bonus remains 530,000 UZS / 4,000 RUB for six months. Crossed-out UZS baseline comes from the actual monthly catalog rather than copying the mock's outdated 2,385,000 value. Bonus discount is 78%, and normal three-/six-month discounts are 56%/67%.
+
+**Comparison History**
+
+1. Initial capture: an existing notification-permission modal appeared over the mobile bonus. This was a capture-state mismatch, not a paywall change. The QA browser exercised the existing deferred-notification state and captured the unobstructed screen again.
+2. Final comparison: unobstructed source and implementation reviewed together in the full view and focused comparison images. Requested card hierarchy and active speed state match. Intentional retained layout and dynamic-content differences are listed above. No P0/P1/P2 styling fix was required.
+
+**Implementation Checklist**
+
+- [x] Shared card component for bonus and all three tariffs.
+- [x] Existing video dimensions and sequence behavior retained.
+- [x] Equal-width speed selector with active, focus and pressed states.
+- [x] Bonus countdown rendered as separate minute/second cells.
+- [x] Checked 320px, 397px and 1280px layouts; no horizontal overflow; final mobile tariff CTA reachable above navigation.
+- [x] Checked all four purchase actions: month, three_month, six_month, and welcome_offer + three_month payloads.
+- [x] Browser purchase transport replaced with test responses; no real invoice or payment created in this design check.
+- [x] Browser runtime exceptions: zero. Pre-existing background API errors from the old local schema are outside this styling scope.
+- [x] TypeScript and production build passed; git diff whitespace check passed.
+
+**Follow-up Polish**
+
+None required for this scoped change. Backend payment correctness was verified in the preceding task with the real local schema and mocked provider responses; live checkout was not repeated during this styling pass.
+
+---
+
 # Диктант · 2026-09-20
 
 [Проверки UI и игровых сценариев](docs/design/dictation/README.md). [Архитектура и эксплуатация](docs/dictation/README.md).

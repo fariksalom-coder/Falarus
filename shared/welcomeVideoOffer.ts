@@ -1,16 +1,14 @@
 export const WELCOME_VIDEO_ELIGIBILITY_MS = 10 * 60_000;
 export const WELCOME_VIDEO_OFFER_MS = 10 * 60_000;
-export const WELCOME_VIDEO_BONUS_REVEAL_SECONDS = 25;
 
 export function canPurchaseWelcomeVideoOffer(offer: {
   status: string;
   next_video_index: number;
   offer_expires_at: string | null;
 }, now = Date.now()): boolean {
-  // During the bonus video the countdown has not started yet.
-  return (offer.status === 'sequence' && Number(offer.next_video_index) === 2)
-    || (offer.status === 'offer' && Boolean(offer.offer_expires_at)
-      && isWelcomeVideoOfferOpen(offer.offer_expires_at!, now));
+  // The final video must finish before the 10-minute purchase window opens.
+  return offer.status === 'offer' && Boolean(offer.offer_expires_at)
+    && isWelcomeVideoOfferOpen(offer.offer_expires_at!, now);
 }
 
 export function isWelcomeVideoSequenceEligible(registeredAt: string | number | Date, now = Date.now()): boolean {
