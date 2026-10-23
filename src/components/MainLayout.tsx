@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { useHeartbeat } from '../hooks/useHeartbeat';
 import { hasAppPremiumAccess, isPremiumNavPathLocked } from '../utils/premiumNav';
+import { TEACHERS_LIST_PATH } from '../constants/teacherPaths';
 
 /** Routes where we hide the global bottom nav — focus mode for lesson/exercise/game/course/payment drill-ins. */
 function hideNavBar(path: string): boolean {
@@ -33,7 +34,7 @@ function hideNavBar(path: string): boolean {
   if (path === '/games/word-swipe/xarita') return true;
   if (path.startsWith('/profile/')) return true;
   if (path.startsWith('/u/')) return true;
-  if (path.startsWith('/teachers/')) return true;
+  if (path.startsWith(`${TEACHERS_LIST_PATH}/`)) return true;
   if (path.startsWith('/help/') || path === '/help') return true;
   if (path.startsWith('/huquqiy')) return true;
   return false;

@@ -44,6 +44,7 @@ import {
 import { DEMO_TEACHER_PROFILE, DEMO_TEACHER_REVIEWS } from '../components/teacher/teacherDemoProfile';
 import TeacherReviewForm from '../components/teacher/TeacherReviewForm';
 import BookLessonCard from '../components/teacher/BookLessonCard';
+import { TEACHERS_LIST_PATH, teacherProfilePath } from '../constants/teacherPaths';
 
 const WEEKDAY_UZ = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
 const MONTH_UZ = [
@@ -307,7 +308,7 @@ export default function TeacherProfilePage() {
           productLabel: 'Sinov darsi',
           trialId: id,
           currency: 'RUB',
-          returnTo: `/teachers/${profile.user_id}`,
+          returnTo: teacherProfilePath(profile.user_id),
         },
       });
     } catch (e) {
@@ -329,7 +330,7 @@ export default function TeacherProfilePage() {
       <div className="min-h-full bg-app-bg-subtle px-4 py-8">
         <button
           type="button"
-          onClick={() => navigate('/teachers')}
+          onClick={() => navigate(TEACHERS_LIST_PATH)}
           className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text"
           aria-label={t('common.back')}
         >
@@ -354,7 +355,7 @@ export default function TeacherProfilePage() {
         <header className="px-4 pt-2">
           <button
             type="button"
-            onClick={() => navigate('/teachers')}
+            onClick={() => navigate(TEACHERS_LIST_PATH)}
             className="flex h-12 w-12 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text transition hover:bg-app-row-hover"
             aria-label={t('common.back')}
           >

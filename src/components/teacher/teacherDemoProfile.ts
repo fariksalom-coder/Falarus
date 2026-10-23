@@ -1,7 +1,7 @@
 import type { TeacherProfile, TeacherStudentReview } from '../../api/teachers';
 
 /**
- * Namuna (demo) o'qituvchi profili — `/teachers/namuna` orqali dizaynni to'liq
+ * Namuna (demo) o'qituvchi profili — `/ustozlar/namuna` orqali dizaynni to'liq
  * ma'lumot bilan ko'rish uchun (production'da hali o'qituvchilar yo'q). Faqat UI preview.
  */
 export const DEMO_TEACHER_PROFILE: TeacherProfile = {

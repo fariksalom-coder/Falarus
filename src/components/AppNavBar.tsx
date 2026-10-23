@@ -22,6 +22,7 @@ import {
   isPremiumNavPathLocked,
   PREMIUM_LOCK_TOAST_UZ,
 } from "../utils/premiumNav";
+import { TEACHERS_LIST_PATH, TEACHER_CABINET_PATH } from '../constants/teacherPaths';
 
 type NavItem = {
   to: string;
@@ -56,8 +57,8 @@ const NAV_ITEMS: NavItem[] = [
     icon: MessagesSquare,
   },
   {
-    to: "/teachers",
-    paths: ["/teachers"],
+    to: TEACHERS_LIST_PATH,
+    paths: [TEACHERS_LIST_PATH],
     labelKey: "nav.teachers",
     short: "Ustozlar",
     icon: GraduationCap,
@@ -108,7 +109,7 @@ export default function AppNavBar() {
   // Support hisobida efir bandi qo'shiladi; qolganlarda menyu o'zgarmaydi.
   const items = access?.golden ? [...NAV_ITEMS, SUPPORT_NAV_ITEM] : NAV_ITEMS;
   const profilePath =
-    user?.accountType === "teacher" ? "/teacher-cabinet" : "/profile";
+    user?.accountType === "teacher" ? TEACHER_CABINET_PATH : "/profile";
   const { count: mentionCount, refresh: refreshMentions } =
     useSavolJavobMentions();
   const [lockToast, setLockToast] = useState<string | null>(null);
@@ -156,7 +157,7 @@ export default function AppNavBar() {
           const itemTo = item.to === "/profile" ? profilePath : item.to;
           const itemPaths =
             item.to === "/profile"
-              ? ["/profile", "/teacher-cabinet"]
+              ? ["/profile", TEACHER_CABINET_PATH]
               : item.paths;
           const active = isActive(itemPaths);
           const Icon = item.icon;

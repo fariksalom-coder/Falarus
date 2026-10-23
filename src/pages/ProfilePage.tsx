@@ -39,6 +39,7 @@ import UserAvatar from '../components/UserAvatar';
 import { resolveAssetUrl } from '../api';
 import { bustAvatarUrl, getMe, patchUserAccount, uploadUserAvatar } from '../api/user';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
+import { TEACHER_CABINET_PATH } from '../constants/teacherPaths';
 
 function premiumDaysLeft(planExpiresAt: string | null | undefined): number | null {
   if (!planExpiresAt) return null;
@@ -129,7 +130,7 @@ export default function ProfilePage() {
   const CHEKSIZ = '\u221E';
 
   if (user?.accountType === 'teacher') {
-    return <Navigate to="/teacher-cabinet" replace />;
+    return <Navigate to={TEACHER_CABINET_PATH} replace />;
   }
 
   const fullName =

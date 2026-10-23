@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { loginTeacherWithPassword, type AuthUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
+import { TEACHER_BRAND_GRADIENT, TEACHER_CABINET_PATH, TEACHER_REGISTER_PATH } from '../constants/teacherPaths';
 
 function normalizeAuthUser(user: AuthUser) {
   return { ...user, progress: user.progress ?? 0, totalPoints: user.totalPoints ?? 0 };
@@ -50,7 +51,7 @@ export default function TeacherLoginPage() {
     try {
       const data = await loginTeacherWithPassword(identifier.trim(), password);
       login(data.token!, normalizeAuthUser(data.user!));
-      navigate('/teacher-cabinet', { replace: true });
+      navigate(TEACHER_CABINET_PATH, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('teachers.loginError'));
     } finally {
@@ -70,7 +71,7 @@ export default function TeacherLoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-md overflow-hidden rounded-[24px] bg-app-surface shadow-app-card ring-1 ring-app-border"
       >
-        <div className="px-6 pb-6 pt-6 text-white" style={{ background: 'var(--app-brand-gradient)' }}>
+        <div className="px-6 pb-6 pt-6 text-white" style={{ background: TEACHER_BRAND_GRADIENT }}>
           <button
             type="button"
             onClick={orqaga}
@@ -82,7 +83,7 @@ export default function TeacherLoginPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
             <GraduationCap className="h-6 w-6" />
           </div>
-          <p className="mt-3 text-[11px] font-black uppercase tracking-[0.2em] text-white/70">FalaRus</p>
+          <p className="mt-3 text-[11px] font-black uppercase tracking-[0.2em] text-white/80">FalaRus Ustoz · oʻqituvchilar uchun</p>
           <h1 className="text-2xl font-black leading-tight">{t('teachers.loginTitle')}</h1>
         </div>
 
@@ -125,7 +126,7 @@ export default function TeacherLoginPage() {
 
           <p className="mt-5 text-center text-sm font-semibold text-app-text-muted">
             {t('auth.noAccount')}{' '}
-            <Link to="/teacher-register" className="font-black text-app-primary-deep hover:underline">
+            <Link to={TEACHER_REGISTER_PATH} className="font-black text-app-primary-deep hover:underline">
               {t('auth.signUp')}
             </Link>
           </p>

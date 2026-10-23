@@ -4,7 +4,7 @@ import type { AccessInfo } from '../api/access';
 export const PREMIUM_LOCKED_NAV_PATHS = [
   '/games',
   '/partner',
-  '/teachers',
+  '/ustozlar',
   '/statistika',
 ] as const;
 

@@ -6,7 +6,7 @@ export const MAIN_SECTION_PATHS = [
   '/',
   '/games',
   '/partner',
-  '/teachers',
+  '/ustozlar',
   '/statistika',
   '/profile',
 ] as const;

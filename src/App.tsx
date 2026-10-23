@@ -20,6 +20,8 @@ import { renderLazyPage } from './routeModules';
 import { ADMIN_BASE_PATH, adminPath } from './constants/adminPath';
 import { SUPPORT_CRM_BASE_PATH, supportCrmPath } from './constants/supportCrmPath';
 import { SupportCrmAuthProvider } from './context/SupportCrmAuthContext';
+import LegacyTeacherRedirect from './components/LegacyTeacherRedirect';
+import { TEACHER_CABINET_PATH } from './constants/teacherPaths';
 
 
 function AppRoutes() {
@@ -46,9 +48,13 @@ function AppRoutes() {
       <Route path="/privacy" element={renderLazyPage('./pages/legal/InstagramPrivacyPage.tsx')} />
       <Route path="/data-deletion" element={renderLazyPage('./pages/legal/DataDeletionPage.tsx')} />
       <Route path="/promo/russian" element={renderLazyPage('./pages/PromoRussianPage.tsx')} />
-      <Route path="/teacher-login" element={renderLazyPage('./pages/TeacherLoginPage.tsx')} />
-      <Route path="/teacher-register" element={renderLazyPage('./pages/TeacherRegisterPage.tsx')} />
-      <Route path="/teacher-cabinet" element={renderLazyPage('./pages/TeacherPanelPage.tsx')} />
+      {/* O'qituvchi platformasi — alohida manzil: /ustoz (o'quvchilar ro'yxati — /ustozlar). */}
+      <Route path="/ustoz" element={renderLazyPage('./pages/TeacherLoginPage.tsx')} />
+      <Route path="/ustoz/royxat" element={renderLazyPage('./pages/TeacherRegisterPage.tsx')} />
+      <Route path="/ustoz/kabinet" element={renderLazyPage('./pages/TeacherPanelPage.tsx')} />
+      <Route path="/teacher-login" element={<LegacyTeacherRedirect to="login" />} />
+      <Route path="/teacher-register" element={<LegacyTeacherRedirect to="register" />} />
+      <Route path="/teacher-cabinet" element={<LegacyTeacherRedirect to="cabinet" />} />
       <Route
         path={ADMIN_BASE_PATH}
         element={
@@ -129,8 +135,10 @@ function AppRoutes() {
           <Route path="/login" element={renderLazyPage('./pages/LoginPage.tsx')} />
           <Route path="/register" element={renderLazyPage('./pages/RegisterPage.tsx')} />
           <Route path="/forgot-password" element={renderLazyPage('./pages/ForgotPasswordPage.tsx')} />
-          <Route path="/teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
-          <Route path="/teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+          <Route path="/ustozlar" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+          <Route path="/ustozlar/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+          <Route path="/teachers" element={<LegacyTeacherRedirect to="list" />} />
+          <Route path="/teachers/:teacherId" element={<LegacyTeacherRedirect to="profile" />} />
           <Route path="*" element={<NotFoundPage />} />
         </>
       ) : user.accountType === 'teacher' ? (
@@ -142,8 +150,10 @@ function AppRoutes() {
          */
         <>
           <Route path="/" element={renderLazyPage('./pages/LandingPage.tsx')} />
-          <Route path="/teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
-          <Route path="/teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+          <Route path="/ustozlar" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+          <Route path="/ustozlar/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+          <Route path="/teachers" element={<LegacyTeacherRedirect to="list" />} />
+          <Route path="/teachers/:teacherId" element={<LegacyTeacherRedirect to="profile" />} />
           <Route path="/payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
           <Route path="/payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
           <Route path="/payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
@@ -151,7 +161,7 @@ function AppRoutes() {
           <Route path="/dars/l/:lessonId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="/dars/t/:trialId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
-          <Route path="*" element={<Navigate to="/teacher-cabinet" replace />} />
+          <Route path="*" element={<Navigate to={TEACHER_CABINET_PATH} replace />} />
         </>
       ) : (
         <>
@@ -252,8 +262,10 @@ function AppRoutes() {
                 </GameGate>
               }
             />
-            <Route path="teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
-            <Route path="teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+            <Route path="ustozlar" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+            <Route path="ustozlar/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+            <Route path="teachers" element={<LegacyTeacherRedirect to="list" />} />
+            <Route path="teachers/:teacherId" element={<LegacyTeacherRedirect to="profile" />} />
             <Route path="help" element={renderLazyPage('./pages/HelpPage.tsx')} />
             <Route path="jonli-efir" element={renderLazyPage('./pages/LiveStreamPage.tsx')} />
             <Route path="support/parol" element={renderLazyPage('./pages/SupportParolPage.tsx')} />

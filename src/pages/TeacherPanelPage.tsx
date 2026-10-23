@@ -49,6 +49,7 @@ import Commission from '../components/teacher/onboarding/Commission';
 import Messages, { NotificationsDrawer, Reviews } from '../components/teacher/panel/sections/Communication';
 import Class from '../components/teacher/panel/sections/Class';
 import Settings, { Help } from '../components/teacher/panel/sections/SettingsHelp';
+import { TEACHER_LOGIN_PATH, TEACHER_REGISTER_PATH } from '../constants/teacherPaths';
 
 /**
  * O'qituvchi paneli — prototip ("Кабинет преподавателя") asosida qayta yozilgan.
@@ -195,8 +196,8 @@ export default function TeacherPanelPage() {
       <Gate
         title={t.gateTitle}
         text={t.gateText}
-        primary={{ label: t.gateLogin, onClick: () => navigate('/teacher-login') }}
-        secondary={{ label: t.gateRegister, onClick: () => navigate('/teacher-register') }}
+        primary={{ label: t.gateLogin, onClick: () => navigate(TEACHER_LOGIN_PATH) }}
+        secondary={{ label: t.gateRegister, onClick: () => navigate(TEACHER_REGISTER_PATH) }}
       />
     );
   }
@@ -206,7 +207,7 @@ export default function TeacherPanelPage() {
         title={t.gateStudentTitle}
         text={t.gateStudentText}
         primary={{ label: t.gateHome, onClick: () => navigate('/') }}
-        secondary={{ label: t.gateLogin, onClick: () => navigate('/teacher-login') }}
+        secondary={{ label: t.gateLogin, onClick: () => navigate(TEACHER_LOGIN_PATH) }}
       />
     );
   }

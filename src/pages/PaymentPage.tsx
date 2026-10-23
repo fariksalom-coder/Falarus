@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { PaymentLegalConsentCheckbox } from '../components/legal/PaymentLegalConsent';
 import { useLocale } from '../context/LocaleContext';
+import { TEACHERS_LIST_PATH, TEACHER_CABINET_PATH } from '../constants/teacherPaths';
 
 const FALLBACK_CARD = 'XXXX XXXX XXXX XXXX';
 const FALLBACK_PHONE = '+7 XXX XXX XX XX';
@@ -122,7 +123,7 @@ function WebPaymentPage() {
   const tariffLabel = state?.tariffLabel ?? t('payment.buyThreeMonth');
   const productLabel = state?.productLabel ?? getPaymentProductLabel(productCode);
   const afterPayPath =
-    state?.returnTo ?? (isTeacherListing ? '/teacher-cabinet' : isTeacherTrial ? '/teachers' : '/profile');
+    state?.returnTo ?? (isTeacherListing ? TEACHER_CABINET_PATH : isTeacherTrial ? TEACHERS_LIST_PATH : '/profile');
   const backPath =
     state?.returnTo ??
     (productCode === 'patent'
@@ -130,9 +131,9 @@ function WebPaymentPage() {
       : productCode === 'vnzh'
         ? '/kurslar/vnzh'
         : isTeacherListing
-          ? '/teacher-cabinet'
+          ? TEACHER_CABINET_PATH
           : isTeacherTrial
-            ? '/teachers'
+            ? TEACHERS_LIST_PATH
             : '/tariflar');
 
   useEffect(() => {

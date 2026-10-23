@@ -1,6 +1,7 @@
 import { createContext, useContext, useLayoutEffect, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ADMIN_BASE_PATH } from '../../constants/adminPath';
+import { TEACHERS_LIST_PATH, TEACHER_CABINET_PATH } from '../../constants/teacherPaths';
 
 export type PanelScene = 'learning' | 'games' | 'statistics' | 'conversation' | 'teachers' | 'profile' | 'courses' | 'game-letters' | 'game-basket' | 'game-chain' | 'game-verbs';
 
@@ -9,7 +10,7 @@ export function panelSceneForPath(path: string): PanelScene | null {
   if (path === '/games' || path.startsWith('/games/')) return null;
   if (path === '/statistika' || path.startsWith(ADMIN_BASE_PATH + '/')) return 'statistics';
   if (path === '/partner' || path === '/help' || path.startsWith('/help/')) return 'conversation';
-  if (path === '/teachers' || path.startsWith('/teachers/') || path === '/teacher-cabinet') return 'teachers';
+  if (path === TEACHERS_LIST_PATH || path.startsWith(`${TEACHERS_LIST_PATH}/`) || path.startsWith(TEACHER_CABINET_PATH)) return 'teachers';
   if (path === '/profile' || path.startsWith('/profile/') || path.startsWith('/u/')) return 'profile';
   if (path === '/kurslar' || path.startsWith('/kurslar/')) return 'courses';
   if (path === '/' || path.startsWith('/kunlik-reja')) return 'learning';

@@ -11,6 +11,7 @@ import {
   joinLessonRoom,
 } from '../api/meet';
 import { useAuth } from '../context/AuthContext';
+import { TEACHERS_LIST_PATH, TEACHER_CABINET_PATH } from '../constants/teacherPaths';
 
 type RoomView = {
   domain: string;
@@ -50,7 +51,7 @@ export default function MeetRoomPage() {
   const [opensAt, setOpensAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const backTo = user?.accountType === 'teacher' ? '/teacher-cabinet' : '/teachers';
+  const backTo = user?.accountType === 'teacher' ? TEACHER_CABINET_PATH : TEACHERS_LIST_PATH;
 
   useEffect(() => {
     if (!token) return;

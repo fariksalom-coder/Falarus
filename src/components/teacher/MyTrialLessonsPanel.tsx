@@ -22,6 +22,7 @@ import { lessonCountdown, needsCountdown } from '../../utils/lessonCountdown';
 import { formatTeacherPrice } from '../../utils/teacherDisplay';
 import { useAuth } from '../../context/AuthContext';
 import TeacherChatModal from './TeacherChatModal';
+import { teacherProfilePath } from '../../constants/teacherPaths';
 
 // Qisqa shakl: yonida taymer chipi ham turadi, to'liq nom bir qatorga sig'maydi.
 // Sana raqami baribir yozilgani uchun ma'no yo'qolmaydi.
@@ -246,7 +247,7 @@ export default function MyTrialLessonsPanel({ token }: { token: string | null })
                   onClick={() =>
                     item.conversationId != null
                       ? setChat({ conversationId: item.conversationId, name })
-                      : navigate(`/teachers/${item.teacherUserId}`)
+                      : navigate(teacherProfilePath(item.teacherUserId))
                   }
                   className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#2563EB] text-[13.5px] font-black text-white transition active:scale-[0.98]"
                 >
@@ -255,7 +256,7 @@ export default function MyTrialLessonsPanel({ token }: { token: string | null })
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate(`/teachers/${item.teacherUserId}`)}
+                  onClick={() => navigate(teacherProfilePath(item.teacherUserId))}
                   className="flex h-11 items-center justify-center gap-1.5 rounded-2xl border-2 border-app-border bg-white text-[13.5px] font-black text-app-text transition active:scale-[0.98]"
                 >
                   <User className="h-4 w-4" strokeWidth={2.5} />

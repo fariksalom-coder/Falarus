@@ -114,7 +114,7 @@ export async function bootstrapNativeShell(): Promise<void> {
 }
 
 /** Pastki menyudagi asosiy bo'limlar va xarita — bu yerda «Orqaga» ilovadan chiqadi. */
-const MAIN_ROOT_PATHS = new Set(['/', '/games', '/partner', '/teachers', '/statistika', '/profile', '/kunlik-reja/xarita']);
+const MAIN_ROOT_PATHS = new Set(['/', '/games', '/partner', '/ustozlar', '/statistika', '/profile', '/kunlik-reja/xarita']);
 
 /** Kunlik dars yo'lidagi ota sahifa: `/kunlik-reja/kun/3/...` → `/kunlik-reja/kun/3` → xarita. */
 function courseParentPath(path: string): string | null {

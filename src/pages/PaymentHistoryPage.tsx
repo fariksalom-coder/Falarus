@@ -8,6 +8,7 @@ import { adminContact } from '../config/adminContact';
 import { ArrowLeft } from 'lucide-react';
 import { getPaymentDisplayLabel } from '../../shared/paymentProducts';
 import { useLocale } from '../context/LocaleContext';
+import { TEACHER_CABINET_PATH } from '../constants/teacherPaths';
 
 function formatPaymentAmount(amount: number, currency: string): { value: string; unit: string } {
   if (currency === 'UZS')
@@ -77,7 +78,7 @@ export default function PaymentHistoryPage() {
   const navigate = useNavigate();
   const { payments, loading } = usePaymentStatus();
   const isTeacher = user?.accountType === 'teacher';
-  const backPath = isTeacher ? '/teacher-cabinet' : '/profile';
+  const backPath = isTeacher ? TEACHER_CABINET_PATH : '/profile';
   const visiblePayments = isTeacher
     ? payments.filter((p) => p.product_code === 'teacher_listing')
     : payments;

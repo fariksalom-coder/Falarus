@@ -17,6 +17,7 @@ import {
   teacherDisplayName,
   teacherInitials,
 } from '../utils/teacherDisplay';
+import { teacherProfilePath } from '../constants/teacherPaths';
 
 type SortKey = 'relevance' | 'priceLow' | 'priceHigh' | 'experience' | 'rating';
 type T = (key: string, values?: Record<string, string | number>) => string;
@@ -120,7 +121,7 @@ function TeacherCard({ teacher, t }: { teacher: TeacherProfile; t: T }) {
         </p>
         <button
           type="button"
-          onClick={() => navigate(`/teachers/${teacher.user_id}`)}
+          onClick={() => navigate(teacherProfilePath(teacher.user_id))}
           className="mt-3 flex h-9 w-full items-center justify-center rounded-full bg-app-primary-deep text-[14px] font-extrabold text-white transition active:scale-[0.98]"
         >
           {t('teachers.details')}
