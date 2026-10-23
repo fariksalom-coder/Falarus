@@ -22,6 +22,7 @@ import {
   Video,
   UserCog,
   ChartColumn,
+  Route as RouteIcon,
 } from 'lucide-react';
 import { getAdminUnreadCount } from '../../api/admin';
 import './admin-workspace.css';
@@ -29,6 +30,7 @@ import './admin-workspace.css';
 const nav = [
   { to: adminPath('/dashboard'), label: 'Umumiy holat', icon: LayoutDashboard },
   { to: adminPath('/users'), label: 'Foydalanuvchilar', icon: Users },
+  { to: adminPath('/user-journey'), label: "Foydalanuvchi yo'li", icon: RouteIcon },
   { to: adminPath('/users/manage'), label: 'Foydalanuvchi boshqaruvi', icon: UserCog },
   { to: adminPath('/payments'), label: 'To‘lovlar', icon: CreditCard },
   { to: adminPath('/sales-ledger'), label: 'Аналитика продаж', icon: ChartColumn },

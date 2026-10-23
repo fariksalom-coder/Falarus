@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { openRahmatCheckout } from '../api/rahmat';
 import RussiaPaymentGuide from '../components/pricing/RussiaPaymentGuide';
 import { getWelcomeVideoOffer, replayWelcomeVideoOffer } from '../api/welcomeVideoOffer';
+import { createVideoTracker, trackJourneyStep } from '../api/journey';
 import { COURSE_VIDEO_SRC, COURSE_VIDEO_DURATION_SECONDS, secondsUntilCourseBonus } from '../../shared/courseOfferPlayback';
 import { RUSSIAN_TARIFF_PLANS_RUB, formatRubAmount, formatRussianTariffUzsMing, type RussianTariffCode } from '../../shared/russianTariffs';
 
@@ -26,6 +27,17 @@ function WebCourseInfoPage() {
   const video = useRef<HTMLVideoElement>(null);
   const requested = useRef(false);
   const maxPlayed = useRef(0);
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+  const [tracker] = useState(() => createVideoTracker(() => tokenRef.current, 'course_intro'));
+  useEffect(() => { trackJourneyStep(token, 'course_video_page'); }, [token]);
+  useEffect(() => {
+    tracker.attach(video.current);
+    // Sahifa yopilsa yoki ilova fonga ketsa — ko'rilgan soniyalar yo'qolmasin.
+    const hide = () => { if (document.visibilityState === 'hidden') tracker.leave(); };
+    document.addEventListener('visibilitychange', hide);
+    return () => { document.removeEventListener('visibilitychange', hide); tracker.leave(); tracker.attach(null); };
+  }, [tracker]);
   const [selectedTariff, setSelectedTariff] = useState<RussianTariffCode>('six_month');
   const selectedPlan = RUSSIAN_TARIFF_PLANS_RUB.find(plan => plan.code === selectedTariff)!;
   const [speed, setSpeed] = useState(1);
@@ -103,7 +115,7 @@ function WebCourseInfoPage() {
         <span className="flex h-12 w-12 flex-col items-center justify-center rounded-xl border border-blue-100 bg-[#F2F5FF]"><span className="text-2xl font-bold leading-none">{untilBonus == null ? '—' : String(untilBonus % 60).padStart(2, '0')}</span><span className="mt-1 text-[9px] font-semibold leading-none text-slate-500">SEK</span></span>
       </span>
     </div>
-    <div className="course-info-player relative mx-auto aspect-video w-[calc(100%_-_32px)] overflow-hidden rounded-2xl bg-white ring-2 ring-white shadow-sm"><video ref={video} src={videoSource} poster="/videos/welcome-poster.jpg" className="h-full w-full object-contain" controls controlsList="noplaybackrate" playsInline preload="metadata" onSeeking={() => { const el = video.current; if (el && el.currentTime > maxPlayed.current + 0.35) el.currentTime = maxPlayed.current; }} onDurationChange={sync} onLoadedData={sync} onLoadedMetadata={() => { applySpeed(); sync(); }} onTimeUpdate={sync} onEnded={sync} onError={() => setMediaError(true)} onPlay={() => { applySpeed(); setNeedsPlay(false); }} onPlaying={() => setMediaError(false)} />
+    <div className="course-info-player relative mx-auto aspect-video w-[calc(100%_-_32px)] overflow-hidden rounded-2xl bg-white ring-2 ring-white shadow-sm"><video ref={video} src={videoSource} poster="/videos/welcome-poster.jpg" className="h-full w-full object-contain" controls controlsList="noplaybackrate" playsInline preload="metadata" onSeeking={() => { tracker.onSeeking(); const el = video.current; if (el && el.currentTime > maxPlayed.current + 0.35) el.currentTime = maxPlayed.current; }} onDurationChange={sync} onLoadedData={sync} onLoadedMetadata={() => { applySpeed(); sync(); }} onTimeUpdate={() => { sync(); tracker.onTimeUpdate(); }} onEnded={() => { sync(); tracker.onEnded(); }} onPause={() => tracker.onPause()} onError={() => setMediaError(true)} onPlay={() => { applySpeed(); setNeedsPlay(false); tracker.onPlay(); }} onPlaying={() => setMediaError(false)} />
       {(needsPlay || mediaError) && <img src="/videos/welcome-poster.jpg" alt="Kurs videosidan lavha" className="pointer-events-none absolute inset-0 h-full w-full object-contain bg-white" />}
       {needsPlay && !mediaError && <button onClick={() => void play()} aria-label="Videoni boshlash" className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg ring-8 ring-blue-500/25"><Play size={28} fill="currentColor" /></button>}
       <div className="absolute right-2 top-2 z-20">

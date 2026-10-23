@@ -76,6 +76,7 @@ import { createIpRateLimitMiddleware, enforceRateLimit } from './server/lib/rate
 import { routePartnerRequest } from './server/services/partner.service.ts';
 import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
 import { createWelcomeVideoOfferRoutes } from './server/routes/welcomeVideoOfferRoutes.ts';
+import { createUserJourneyRoutes, noteLogin } from './server/routes/userJourneyRoutes.ts';
 import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
 import { runClickFiscalRetryCron } from './server/services/clickFiscal.service.ts';
 import { resolveRussianTariffQuote } from './server/services/promoPricing.service.ts';
@@ -769,6 +770,7 @@ async function startServer() {
           }),
         )
         .catch((err) => console.warn('[sales-crm] ingest on register', err));
+      noteLogin(Number(user.id));
       const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       res.json({
         token,
@@ -916,6 +918,7 @@ async function startServer() {
     if ((user.account_type as string | null | undefined) === 'teacher') {
       return res.status(403).json({ error: "O'qituvchi kabinetiga alohida login orqali kiring" });
     }
+    noteLogin(Number(user.id));
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
     const sub = await getActiveSubscription(supabase, Number(user.id));
     const planFields = mergeRussianPlanForMeResponse({
@@ -1038,6 +1041,7 @@ async function startServer() {
       const userId = Number((user as { id: number }).id);
       // Only a brand-new account can be linked: an existing user keeps their history.
       if (isNewUser) await attachReferralCode(req.body?.ref, userId);
+      noteLogin(userId);
       const token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });
       const sub = await getActiveSubscription(supabase, userId);
       const planFields = mergeRussianPlanForMeResponse({
@@ -1104,6 +1108,7 @@ async function startServer() {
       const userId = Number((user as { id: number }).id);
       await saveAppleGrant(supabase, userId, identity.providerUserId, identity.appleClientId, encryptedGrant);
       if (isNewUser) await attachReferralCode(req.body?.ref, userId);
+      noteLogin(userId);
       const token = jwt.sign({ id: userId }, JWT_SECRET, {
         expiresIn: TOKEN_TTL_SECONDS,
       });
@@ -1269,6 +1274,8 @@ async function startServer() {
   // Payment submission (manual proof + Click)
   app.use('/api/payments', createPaymentRoutes(supabase, authenticate));
   app.use('/api', createWelcomeVideoOfferRoutes(supabase, authenticate));
+  // Foydalanuvchi yo'li: 0-kun qadamlari va kurs videosini ko'rish (admin hisoboti uchun)
+  app.use('/api', createUserJourneyRoutes(authenticate));
   app.use('/api/click', createClickMerchantRoutes(supabase));
 
   // Activity / streak (Ketma-ket kunlar)

@@ -7,6 +7,7 @@ import type { DbClient } from '../types/dbClient';
 import multer from 'multer';
 import { createAdminAuthMiddleware } from '../middleware/adminAuth';
 import { createAdminOnboardingRoutes } from './onboardingRoutes.js';
+import { createAdminUserJourneyRoutes } from './userJourneyRoutes.js';
 import { createAdminController } from '../controllers/adminController';
 import { createAdminGrammarController } from '../controllers/adminGrammarController';
 import { createAdminMeetController } from '../controllers/adminMeetController';
@@ -95,6 +96,8 @@ export function createAdminRoutes(supabase: DbClient): Router {
 
   // Ro'yxatdan o'tish so'rovnomasi hisobotlari
   router.use(createAdminOnboardingRoutes());
+  // Foydalanuvchi yo'li: kirish, 0-kun, kurs videosi
+  router.use('/user-journey', createAdminUserJourneyRoutes());
 
   // ─────────────────────────────────────────────────────────────
   // Kunlik kurs kontenti (nazariya, testlar, juftlik, gap tuzish,

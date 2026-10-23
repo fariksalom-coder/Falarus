@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAccess } from '../context/AccessContext';
 import { useLocale } from '../context/LocaleContext';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
+import { trackJourneyStep } from '../api/journey';
 import { prefetchRoutePath } from '../routeModules';
 import { TOTAL_DAYS } from '../data/dailyPlan';
 import {
@@ -421,6 +422,9 @@ export default function HomePage() {
       setSelectedDay(currentDay);
     }
   }, [currentDay, kunParam, rows, practicePromptCountByDay, oltin]);
+
+  // 0-kun (sinov darsi) ochilgani — admin «Foydalanuvchi yo'li» hisoboti uchun.
+  useEffect(() => { if (selectedDay === 0) trackJourneyStep(token, 'day0_open'); }, [selectedDay, token]);
 
   // Effect 3: clamp selectedDay — faqat QULFLANGAN kelajak kunni currentDay'ga tushiradi.
   // TUGALLANGAN kunlar (currentDay'dan keyin bo'lsa ham) OCHIQ — tegilmaydi.

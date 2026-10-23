@@ -4,6 +4,7 @@ import { getUserProfile, type AdminUserProfile } from '../../api/admin';
 import { ArrowLeft } from 'lucide-react';
 import { adminPath } from '../../constants/adminPath';
 import AdminUserManagePage from './AdminUserManagePage';
+import UserJourneyCard from '../../components/admin/journey/UserJourneyCard';
 
 export default function AdminUserProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ export default function AdminUserProfilePage() {
     <h1 className="text-2xl font-semibold">Foydalanuvchi profili</h1>
     {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
     <AdminUserManagePage key={id} userId={Number(id)} />
+    <UserJourneyCard userId={Number(id)} />
     {profile ? <div className="grid gap-4 sm:grid-cols-2">
       <section className="rounded-lg border border-app-border bg-app-surface p-5"><h2 className="font-semibold">O‘quv natijalari</h2><p className="mt-3 text-xl tabular-nums">{profile.statistics.total_points.toLocaleString()} ball</p></section>
       <section className="rounded-lg border border-app-border bg-app-surface p-5"><h2 className="font-semibold">Takliflar</h2><p className="mt-3 text-xl tabular-nums">{profile.referral.referral_balance.toLocaleString()} so‘m</p><p className="mt-1 text-sm text-app-text-muted">{profile.referral.invited_users} ta foydalanuvchi</p></section>

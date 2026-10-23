@@ -29,6 +29,7 @@ import {
   useKunlikSequentialGate,
 } from '../hooks/useKunlikSequentialGate';
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
+import { trackJourneyStep } from '../api/journey';
 import { useQurilmaOrqaga } from '../hooks/useQurilmaOrqaga';
 import { useAccess } from '../context/AccessContext';
 
@@ -60,6 +61,10 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
   const dayNumber = Number(dayNum ?? '');
   const sec = (sectionOverride ?? section) as KunlikSection;
   useRememberKunlikDay(dayNumber);
+  // 0-kunning qaysi bloklariga kirgani — admin «Foydalanuvchi yo'li» hisoboti uchun.
+  useEffect(() => {
+    if (dayNumber === 0 && SECTIONS.includes(sec)) trackJourneyStep(token, `day0:${sec}`);
+  }, [dayNumber, sec, token]);
 
   const [bundle, setBundle] = useState<DailyCourseDayBundle | null>(null);
   const [loading, setLoading] = useState(true);
