@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type WheelEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Loader2, Minus, Plus, X } from 'lucide-react';
+import { apiUrl } from '../../../api';
 import { ONBOARDING_TEXT } from './text';
 
 const OUT = 800;
@@ -28,33 +29,81 @@ function openImage(blob: Blob): Promise<{ img: HTMLImageElement; url: string } |
   });
 }
 
-/** HEIC/HEIF (iPhone) — faylning 8–12 baytidagi «brand» bo'yicha; turi ko'pincha bo'sh keladi. */
-async function isHeic(file: File) {
-  if (/\.(heic|heif)$/i.test(file.name) || /^image\/hei[cf]/.test(file.type)) return true;
-  const brand = new TextDecoder().decode(await file.slice(8, 12).arrayBuffer());
-  return ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1'].includes(brand);
+/** Faylning boshidagi baytlar: turi (file.type) ko'pincha bo'sh yoki «octet-stream» keladi. */
+async function signature(file: File) {
+  const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  const hex = [...head].map((x) => x.toString(16).padStart(2, '0')).join('');
+  const brand = new TextDecoder().decode(head.slice(8, 12));
+  const heic = /\.(heic|heif)$/i.test(file.name) || /^image\/hei[cf]/.test(file.type) || ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1'].includes(brand);
+  return { hex, heic };
+}
+
+/** Juda katta suratni (telefonlarda 48 MP) 3000 px gacha kichraytiradi — eski telefonda xotira yetmay qolmasin. */
+async function shrink(source: CanvasImageSource, width: number, height: number) {
+  const k = Math.min(1, 3000 / Math.max(width, height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(width * k); canvas.height = Math.round(height * k);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));
+  return blob ? openImage(blob) : null;
+}
+
+/** Ochilmagan surat haqida anonim xabar: faqat turi, hajmi, kengaytmasi, birinchi baytlari — nom va mazmunsiz. */
+function reportFailure(file: File, stage: string, hex: string) {
+  try {
+    const ext = (file.name.match(/\.([a-z0-9]{1,5})$/i)?.[1] ?? '').toLowerCase();
+    void fetch(apiUrl('/api/client-error'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `[teacher-photo] ${stage} type=${file.type || '-'} ext=${ext || '-'} size=${file.size} sig=${hex.slice(0, 24)}`,
+        url: window.location.pathname,
+        ua: navigator.userAgent.slice(0, 200),
+      }),
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch { /* diagnostika ixtiyoriy */ }
 }
 
 /**
- * Faylni rasm sifatida ochadi. JPG, PNG, WEBP, GIF, AVIF, BMP ni brauzer o'zi ochadi;
+ * Faylni rasm sifatida ochadi. Nisbat (kvadrat yoki yo'q) ahamiyatsiz — kvadratni
+ * o'qituvchi o'zi tanlaydi. JPG, PNG, WEBP, GIF, AVIF, BMP ni brauzer o'zi ochadi;
  * HEIC'ni faqat Safari — boshqa brauzerda u libheif (WebAssembly, ~3 MB, faqat
  * kerak bo'lganda yuklanadi) bilan JPEG ga aylantiriladi.
  */
 export async function loadCropImage(file: File, lang: Lang): Promise<{ img: HTMLImageElement; url: string }> {
   const t = ONBOARDING_TEXT[lang];
   if (file.size > CROP_SOURCE_MAX_BYTES) throw new Error(t.cropTooBig);
-  const heic = await isHeic(file).catch(() => false);
-  if (!heic && file.type && !file.type.startsWith('image/')) throw new Error(t.cropNotImage);
-  const direct = await openImage(file);
-  if (direct) return direct;
-  if (!heic) throw new Error(t.cropCantOpen);
-  try {
-    const lib = (await import(/* @vite-ignore */ new URL(HEIC_LIB, window.location.origin).href)) as { heicTo: (o: { blob: Blob; type: string; quality: number }) => Promise<Blob> };
-    const jpeg = await lib.heicTo({ blob: file, type: 'image/jpeg', quality: 0.92 });
-    const converted = await openImage(jpeg);
-    if (converted) return converted;
-  } catch { /* pastdagi umumiy xato */ }
-  throw new Error(t.cropCantOpen);
+  const { hex, heic } = await signature(file).catch(() => ({ hex: '', heic: false }));
+
+  let opened = await openImage(file);
+  if (!opened) {
+    // Ba'zi brauzerlar <img> da ochmaydigan faylni createImageBitmap bilan ochadi.
+    try {
+      const bmp = await createImageBitmap(file);
+      opened = await shrink(bmp, bmp.width, bmp.height);
+      bmp.close();
+    } catch { /* keyingi usul */ }
+  }
+  if (!opened && heic) {
+    try {
+      const lib = (await import(/* @vite-ignore */ new URL(HEIC_LIB, window.location.origin).href)) as { heicTo: (o: { blob: Blob; type: string; quality: number }) => Promise<Blob> };
+      opened = await openImage(await lib.heicTo({ blob: file, type: 'image/jpeg', quality: 0.92 }));
+    } catch { /* pastdagi umumiy xato */ }
+  }
+  if (!opened) {
+    reportFailure(file, heic ? 'heic-failed' : 'decode-failed', hex);
+    throw new Error(t.cropCantOpen);
+  }
+
+  const { img, url } = opened;
+  if (Math.max(img.naturalWidth, img.naturalHeight) > 3000) {
+    const small = await shrink(img, img.naturalWidth, img.naturalHeight).catch(() => null);
+    if (small) { URL.revokeObjectURL(url); return small; }
+  }
+  return opened;
 }
 
 function frameSize() {
