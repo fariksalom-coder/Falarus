@@ -52,7 +52,24 @@ await db.exec(`INSERT INTO users (id, account_type, phone, first_name, last_name
   INSERT INTO teacher_review_events (teacher_user_id, action, actor, created_at) VALUES (11, 'approved', 'admin', now() - interval '5 days'), (11, 'catalog_on', 'admin', now() - interval '5 days');
   INSERT INTO teacher_withdrawals (teacher_user_id, amount_uzs, card_number, card_holder) VALUES (11, 60000, '8600123412341234', 'SHAHLO KARIMOVA');
   INSERT INTO teacher_lessons (teacher_user_id, student_user_id, starts_at, ends_at, price_uzs, status, room_slug)
-    VALUES (11, 20, date_trunc('day', now() + interval '1 day') + interval '5 hours', date_trunc('day', now() + interval '1 day') + interval '6 hours', 90000, 'paid', 'demo-c');`);
+    VALUES (11, 20, date_trunc('day', now() + interval '1 day') + interval '5 hours', date_trunc('day', now() + interval '1 day') + interval '6 hours', 90000, 'paid', 'demo-c'),
+      (12, 20, date_trunc('day', now() + interval '1 day') + interval '5 hours', date_trunc('day', now() + interval '1 day') + interval '6 hours', 85000, 'paid', 'demo-d'),
+      (11, 20, now() - interval '10 minutes', now() + interval '50 minutes', 90000, 'paid', 'demo-live');
+  INSERT INTO teacher_trial_lessons (teacher_user_id, student_user_id, status, scheduled_starts_at, scheduled_ends_at)
+    VALUES (12, 20, 'scheduled', date_trunc('day', now() + interval '2 day') + interval '9 hours', date_trunc('day', now() + interval '2 day') + interval '10 hours');`);
+// ONB_SEED=revision: teacher 10 has a complete application that the admin sent back to step 5.
+if (process.env.ONB_SEED === 'revision') {
+  const about = 'Men rus tilini oʻn yildan beri oʻrgataman. '.repeat(10);
+  const answers = JSON.stringify({ who: 'Toshkentdan', background: 'Maktabda ishlaganman', years: '10 yil', students: 'Kattalar', method: 'Suhbat orqali', why: 'Tajribam katta' });
+  await db.query(`INSERT INTO teacher_profiles (user_id, first_name, last_name, birth_country, subject, proficiency, onboarding_path, avatar_url, about, about_answers,
+      video_url, video_duration_sec, schedule, lesson_price_uzs, terms_version, terms_accepted_at, onboarding_step, onboarding_submitted_at, profile_status,
+      review_step, review_comment, contact_phone, contact_telegram)
+    VALUES (10, 'Dilnoza', 'Saidova', 'UZ', 'russian', 'C2', 'experienced', '/uploads/demo.jpg', $1, $2::jsonb, '/uploads/demo.mp4', 95,
+      '{"timezone":"Asia/Tashkent","slots":[{"weekday":1,"start":"09:00","end":"12:00"}]}', 80000,
+      (SELECT terms_version FROM teacher_onboarding_settings LIMIT 1), now(), 5, now() - interval '1 day', 'needs_revision', 5,
+      'Oʻzingiz haqingizda matnni aniqroq yozing', '+998901234567', '@dilnoza_rus')`, [about, answers]);
+  await db.query(`INSERT INTO teacher_review_events (teacher_user_id, action, step, comment, actor) VALUES (10, 'needs_revision', 5, 'Oʻzingiz haqingizda matnni aniqroq yozing', 'admin')`);
+}
 const q: OnboardingQuery = (sql, params) => db.query(sql, params as unknown[]);
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'onb-preview-'));
 const deps = { q, uploadsDir: path.join(tmp, 'public'), privateDir: path.join(tmp, 'private'), generateAbout: null };

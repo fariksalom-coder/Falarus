@@ -91,6 +91,7 @@ function AppRoutes() {
             <Route path="payment-methods" element={renderLazyPage('./pages/admin/AdminPaymentMethodsPage.tsx')} />
             <Route path="tariff-pricing" element={renderLazyPage('./pages/admin/AdminTariffPricingPage.tsx')} />
             <Route path="teachers" element={renderLazyPage('./pages/admin/AdminTeacherHubPage.tsx')} />
+            <Route path="teachers/dars/:kind/:id" element={renderLazyPage('./pages/admin/AdminLessonRoomPage.tsx')} />
             {/* Eski bo'limlar yagona «O'qituvchilar» bo'limiga birlashtirildi (2026-10-23). */}
             <Route path="teacher-applications" element={<Navigate to="../teachers?tab=review" replace />} />
             <Route path="teacher-documents" element={<Navigate to="../teachers?tab=review" replace />} />

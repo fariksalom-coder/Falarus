@@ -389,6 +389,7 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
 export function createAdminTeacherMoneyRoutes(deps: LessonDeps = {}): Router {
   const q = deps.q === undefined ? poolQuery : deps.q;
   const tx = deps.tx === undefined ? poolTx : deps.tx;
+  const meetDomain = deps.meetDomain ?? MEET_DOMAIN;
   const router = Router();
   const h = (fn: (req: any, res: Response) => Promise<unknown>) => (req: Request, res: Response) =>
     fn(req, res).catch((e) => {
@@ -457,6 +458,31 @@ export function createAdminTeacherMoneyRoutes(deps: LessonDeps = {}): Router {
       ORDER BY x.starts_at ASC LIMIT 500`, [from, to, teacher]);
     const teachers = (await db().q(`SELECT user_id, first_name, last_name FROM teacher_profiles WHERE profile_status IN ('active', 'paused') ORDER BY first_name, last_name`)).rows;
     res.json({ from, to, rows, teachers });
+  }));
+
+  /**
+   * Admin darsga kiradi (nazorat): vaqt cheklovisiz, «FalaRus nazorat» nomi bilan, mikrofon o'chiq.
+   * Sinov darsida xona hali ochilmagan bo'lsa — ishtirokchilar bilan bir xil usulda yaratiladi.
+   */
+  router.get('/join/:kind(paid|trial)/:id', h(async (req, res) => {
+    const { q } = db();
+    const id = Number(req.params.id);
+    let slug: string | null = null;
+    if (req.params.kind === 'paid') {
+      slug = (await q('SELECT room_slug FROM teacher_lessons WHERE id = $1', [id])).rows[0]?.room_slug ?? null;
+    } else {
+      const t = (await q('SELECT id, room_slug FROM teacher_trial_lessons WHERE id = $1', [id])).rows[0];
+      if (t) {
+        slug = t.room_slug;
+        if (!slug) {
+          const fresh = `falarus-sinov-${crypto.randomBytes(10).toString('hex')}`;
+          slug = (await q(`UPDATE teacher_trial_lessons SET room_slug = $2 WHERE id = $1 AND room_slug IS NULL RETURNING room_slug`, [id, fresh])).rows[0]?.room_slug
+            ?? (await q('SELECT room_slug FROM teacher_trial_lessons WHERE id = $1', [id])).rows[0]?.room_slug ?? null;
+        }
+      }
+    }
+    if (!slug) throw new HttpError(404, 'Dars topilmadi');
+    res.json({ domain: meetDomain, room_slug: slug, display_name: 'FalaRus nazorat' });
   }));
 
   router.get('/lessons', h(async (req, res) => {

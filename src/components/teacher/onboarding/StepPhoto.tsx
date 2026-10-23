@@ -13,7 +13,7 @@ import PhotoCropper, { loadCropImage } from './PhotoCropper';
 import PhotoExamples from './PhotoExamples';
 import type { StepProps } from './OnboardingWizard';
 
-export default function StepPhoto({ state, setState, lang, token, onNext }: StepProps & { onNext: () => void }) {
+export default function StepPhoto({ state, setState, lang, token, onNext, nextLabel }: StepProps & { onNext: () => void }) {
   const t = ONBOARDING_TEXT[lang];
   const [crop, setCrop] = useState<{ img: HTMLImageElement; url: string } | null>(null);
   const [error, setError] = useState('');
@@ -53,7 +53,7 @@ export default function StepPhoto({ state, setState, lang, token, onNext }: Step
             <input type="file" accept="image/*" className="sr-only" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
           </label>
           <p className="text-[11.5px] text-app-text-muted">{t.photoTypes}</p>
-          {current && <GhostButton onClick={onNext}>{t.next}</GhostButton>}
+          {current && <GhostButton onClick={onNext}>{nextLabel ?? t.next}</GhostButton>}
         </div>
       </div>
       {error && <ErrorNote text={error} />}

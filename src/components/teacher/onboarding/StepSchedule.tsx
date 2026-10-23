@@ -10,7 +10,7 @@ type Props = StepProps & { busy: boolean; onSubmit: (body: unknown) => void; ini
 
 const sortSlots = (s: ScheduleSlot[]) => [...s].sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start));
 
-export default function StepSchedule({ state, onDraft, errors, lang, busy, onSubmit, initial }: Props) {
+export default function StepSchedule({ state, onDraft, errors, lang, busy, onSubmit, initial, nextLabel }: Props) {
   const t = ONBOARDING_TEXT[lang];
   const [sched, setSched] = useState<ScheduleData>(() => {
     const s = (initial as { schedule?: ScheduleData } | null)?.schedule ?? state.data.schedule ?? DEFAULT_SCHEDULE;
@@ -75,7 +75,7 @@ export default function StepSchedule({ state, onDraft, errors, lang, busy, onSub
         </ul>
       </Card>
       <div className="flex justify-end">
-        <PrimaryButton onClick={() => onSubmit({ schedule: sched })} disabled={busy} className="w-full sm:w-auto">{busy ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : t.next}</PrimaryButton>
+        <PrimaryButton onClick={() => onSubmit({ schedule: sched })} disabled={busy} className="w-full sm:w-auto">{busy ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : nextLabel ?? t.next}</PrimaryButton>
       </div>
     </>
   );

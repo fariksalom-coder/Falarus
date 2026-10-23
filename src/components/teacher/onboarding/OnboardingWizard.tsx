@@ -35,6 +35,8 @@ export type StepProps = {
   errors: Record<string, string>;
   lang: 'uz' | 'ru';
   token: string;
+  /** Asosiy tugma matni: tuzatish rejimida «Saqlash va tekshiruvga yuborish». */
+  nextLabel?: string;
 };
 
 const DRAFT_KEY = (step: number) => `falarus.teacherOnboarding.draft.${step}`;
@@ -136,6 +138,9 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
   const passed = (n: number) => n < state.step || state.status !== 'draft' || (n === 8 && state.data.terms_accepted);
   const done = (n: number) => passed(n) && Object.keys(validateStep(n, state.data, state.settings)).length === 0;
   const isLast = step === visible[visible.length - 1];
+  // Admin tuzatishga qaytargan: tuzatilgan qadam saqlangach anketa darhol qayta yuboriladi —
+  // qolgan qadamlarni bittalab «Saqlash va davom etish» bilan bosib chiqish shart emas.
+  const revision = state.status === 'needs_revision';
 
   /** «Saqlash va davom etish»: klientda tekshirib, serverga to'liq saqlash. */
   const saveAndNext = async (body: unknown) => {
@@ -153,6 +158,7 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
       clearDraft(step);
       setState(s);
       setErrors({});
+      if (revision) { await submit(); return; }
       const nextVisible = stepsForPath((s.data.personal.path || null) as OnboardingPath | null).find((n) => n > step);
       if (nextVisible) goTo(nextVisible);
     } catch (e) {
@@ -163,19 +169,20 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
     }
   };
 
-  const submit = async () => {
+  async function submit() {
     setBusy(true); setFormError('');
     try {
       setState(await submitOnboarding(token));
+      requestAnimationFrame(() => top.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     } catch (e) {
       if (e instanceof OnboardingError && typeof e.extra.step === 'number') { goTo(e.extra.step); setFormError(t.notReady(e.extra.step)); }
       else setFormError(e instanceof Error ? e.message : 'Xatolik');
     } finally {
       setBusy(false);
     }
-  };
+  }
 
-  const props: StepProps = { state, setState, onDraft, errors, lang, token };
+  const props: StepProps = { state, setState, onDraft, errors, lang, token, nextLabel: revision ? t.resubmit : undefined };
   const formProps = { ...props, busy, onSubmit: saveAndNext };
 
   return (
@@ -189,11 +196,11 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
 
       <fieldset disabled={locked} className="min-w-0 space-y-4 disabled:opacity-70">
         {step === 1 && <StepPersonal {...formProps} key={`1-${state.status}`} initial={readDraft(1)} />}
-        {step === 2 && <StepPhoto {...props} onNext={() => goTo(visible.find((n) => n > 2) ?? 2)} />}
+        {step === 2 && <StepPhoto {...props} onNext={() => (revision ? void submit() : goTo(visible.find((n) => n > 2) ?? 2))} />}
         {step === 3 && <StepCertification {...formProps} initial={readDraft(3)} />}
         {step === 4 && <StepEducation {...formProps} initial={readDraft(4)} />}
         {step === 5 && <StepAbout {...formProps} initial={readDraft(5)} />}
-        {step === 6 && <StepVideo {...props} onNext={() => goTo(7)} />}
+        {step === 6 && <StepVideo {...props} onNext={() => (revision ? void submit() : goTo(7))} />}
         {step === 7 && <StepSchedule {...formProps} initial={readDraft(7)} />}
         {step === 8 && <StepPricing {...formProps} initial={readDraft(8)} />}
       </fieldset>
@@ -202,13 +209,13 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <GhostButton onClick={() => goTo(visible.filter((n) => n < step).at(-1) ?? step)} disabled={step === visible[0] || busy}>{t.back}</GhostButton>
-        {isLast && !locked && state.status !== 'active' && (
+        {isLast && !locked && state.status !== 'active' && !revision && (
           <PrimaryButton onClick={() => void submit()} disabled={busy || state.ready_step !== null}>
             {busy ? <Loader2 className="mx-auto h-4 w-4 animate-spin" /> : t.submit}
           </PrimaryButton>
         )}
       </div>
-      {isLast && !locked && state.status !== 'active' && state.ready_step !== null && (
+      {isLast && !locked && state.status !== 'active' && !revision && state.ready_step !== null && (
         <p className="text-right text-[12px] text-app-text-muted">{t.notReady(state.ready_step)}</p>
       )}
     </div>
@@ -336,7 +343,7 @@ function StatusBanner({ state, lang, onFix }: { state: OnboardingState; lang: 'u
   const tone = {
     pending_review: { icon: Clock3, cls: 'border-[#BFDBFE] bg-[#EFF6FF] text-[#1E3A8A]', title: t.statusPending, hint: t.statusPendingHint },
     active: { icon: BadgeCheck, cls: 'border-[#BBF7D0] bg-[#F0FDF4] text-[#14532D]', title: t.statusActive, hint: t.statusActiveHint },
-    needs_revision: { icon: AlertTriangle, cls: 'border-[#FDE68A] bg-[#FFFBEB] text-[#78350F]', title: t.statusRevision, hint: '' },
+    needs_revision: { icon: AlertTriangle, cls: 'border-[#FDE68A] bg-[#FFFBEB] text-[#78350F]', title: t.statusRevision, hint: t.revisionHint },
     rejected: { icon: AlertTriangle, cls: 'border-[#FECACA] bg-[#FEF2F2] text-[#7F1D1D]', title: t.statusRejected, hint: '' },
   }[state.status];
   const Icon = tone.icon;

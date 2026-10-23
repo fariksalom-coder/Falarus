@@ -27,7 +27,7 @@ function fileDuration(file: Blob): Promise<number | null> {
   });
 }
 
-export default function StepVideo({ state, setState, lang, token, onNext }: StepProps & { onNext: () => void }) {
+export default function StepVideo({ state, setState, lang, token, onNext, nextLabel }: StepProps & { onNext: () => void }) {
   const t = ONBOARDING_TEXT[lang];
   const [mode, setMode] = useState<'idle' | 'camera' | 'recorded'>('idle');
   const [recording, setRecording] = useState(false);
@@ -175,7 +175,7 @@ export default function StepVideo({ state, setState, lang, token, onNext }: Step
               <input type="file" accept="video/mp4,video/quicktime,video/webm" className="sr-only" onChange={(e) => { void pickFile(e.target.files?.[0]); e.target.value = ''; }} />
             </label>
           </div>
-          {current && !uploading && <GhostButton onClick={onNext}>{t.next}</GhostButton>}
+          {current && !uploading && <GhostButton onClick={onNext}>{nextLabel ?? t.next}</GhostButton>}
         </div>
       )}
 

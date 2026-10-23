@@ -61,7 +61,7 @@ function YearSelect({ value, onChange, label, error }: { value: number | null; o
 
 /* ───────────────────────── 1. Shaxsiy ma'lumotlar ───────────────────────── */
 
-export function StepPersonal({ state, onDraft, errors, lang, busy, onSubmit, initial }: FormProps) {
+export function StepPersonal({ state, onDraft, errors, lang, busy, onSubmit, initial, nextLabel }: FormProps) {
   const t = ONBOARDING_TEXT[lang];
   // Telefon bo'sh bo'lsa server ro'yxatdan o'tgan raqamni taklif qiladi (toData).
   const [v, setV] = useState<PersonalData>(() => ({ ...(state.data.personal as PersonalData), ...((initial as Partial<PersonalData>) ?? {}) }));
@@ -130,7 +130,7 @@ export function StepPersonal({ state, onDraft, errors, lang, busy, onSubmit, ini
         </div>
         {errors.path && <p className="text-[12px] font-semibold text-[#C23A3F]">{errors.path}</p>}
       </Section>
-      <Footer busy={busy} onClick={() => onSubmit(v)} label={t.next} />
+      <Footer busy={busy} onClick={() => onSubmit(v)} label={nextLabel ?? t.next} />
     </>
   );
 }
@@ -139,7 +139,7 @@ export function StepPersonal({ state, onDraft, errors, lang, busy, onSubmit, ini
 
 const emptyCert = (): CertificateRow => ({ title: '', institution: '', year_from: null, year_to: null, document_ids: [] });
 
-export function StepCertification({ state, setState, onDraft, errors, lang, token, busy, onSubmit, initial }: FormProps) {
+export function StepCertification({ state, setState, onDraft, errors, lang, token, busy, onSubmit, initial, nextLabel }: FormProps) {
   const t = ONBOARDING_TEXT[lang];
   const [rows, setRows] = useState<CertificateRow[]>(() => {
     const init = (initial as { certificates?: CertificateRow[] } | null)?.certificates ?? state.data.certificates;
@@ -202,7 +202,7 @@ export function StepCertification({ state, setState, onDraft, errors, lang, toke
         {fileError && <ErrorNote text={fileError} />}
         {rows.length < 10 && <GhostButton onClick={() => setRows((x) => [...x, emptyCert()])}><Plus className="mr-1 inline h-4 w-4" />{t.addCert}</GhostButton>}
       </Section>
-      <Footer busy={busy} onClick={() => onSubmit({ certificates: rows })} label={t.next} />
+      <Footer busy={busy} onClick={() => onSubmit({ certificates: rows })} label={nextLabel ?? t.next} />
     </>
   );
 }
@@ -223,7 +223,7 @@ function DocRow({ doc, id, lang, onOpen, onRemove }: { doc?: OnboardingDocument;
 
 const emptyEdu = (): EducationRow => ({ institution: '', specialty: '', degree: '', year_from: null, year_to: null });
 
-export function StepEducation({ state, onDraft, errors, lang, busy, onSubmit, initial }: FormProps) {
+export function StepEducation({ state, onDraft, errors, lang, busy, onSubmit, initial, nextLabel }: FormProps) {
   const t = ONBOARDING_TEXT[lang];
   const [rows, setRows] = useState<EducationRow[]>(() => (initial as { education?: EducationRow[] } | null)?.education ?? state.data.education);
   useAutosave({ education: rows }, onDraft);
@@ -252,14 +252,14 @@ export function StepEducation({ state, onDraft, errors, lang, busy, onSubmit, in
         ))}
         {rows.length < 10 && <GhostButton onClick={() => setRows((x) => [...x, emptyEdu()])}><Plus className="mr-1 inline h-4 w-4" />{t.addEdu}</GhostButton>}
       </Section>
-      <Footer busy={busy} onClick={() => onSubmit({ education: rows })} label={t.next} />
+      <Footer busy={busy} onClick={() => onSubmit({ education: rows })} label={nextLabel ?? t.next} />
     </>
   );
 }
 
 /* ───────────────────────── 5. O'zim haqimda ───────────────────────── */
 
-export function StepAbout({ state, onDraft, errors, lang, token, busy, onSubmit, initial }: FormProps) {
+export function StepAbout({ state, onDraft, errors, lang, token, busy, onSubmit, initial, nextLabel }: FormProps) {
   const t = ONBOARDING_TEXT[lang];
   const init = initial as { answers?: AboutAnswers; about?: string } | null;
   const [answers, setAnswers] = useState<AboutAnswers>(init?.answers ?? state.data.about_answers);
@@ -296,14 +296,14 @@ export function StepAbout({ state, onDraft, errors, lang, token, busy, onSubmit,
           <textarea rows={9} maxLength={ABOUT_MAX} className={`${textareaClass} ${errors.about ? inputErrorClass : ''}`} value={about} onChange={(e) => setAbout(e.target.value)} />
         </Field>
       </Section>
-      <Footer busy={busy} onClick={() => onSubmit({ answers, about })} label={t.next} />
+      <Footer busy={busy} onClick={() => onSubmit({ answers, about })} label={nextLabel ?? t.next} />
     </>
   );
 }
 
 /* ───────────────────────── 8. Narx va shartlar ───────────────────────── */
 
-export function StepPricing({ state, onDraft, errors, lang, busy, onSubmit, initial }: FormProps) {
+export function StepPricing({ state, onDraft, errors, lang, busy, onSubmit, initial, nextLabel }: FormProps) {
   const t = ONBOARDING_TEXT[lang];
   const s = state.settings;
   const init = initial as { lesson_price_uzs?: number | null; terms_accepted?: boolean } | null;
@@ -333,7 +333,7 @@ export function StepPricing({ state, onDraft, errors, lang, busy, onSubmit, init
         </label>
         {errors.terms && <p className="text-[12px] font-semibold text-[#C23A3F]">{errors.terms}</p>}
       </Section>
-      <Footer busy={busy} onClick={() => onSubmit({ lesson_price_uzs: p || null, terms_accepted: agree })} label={t.next} />
+      <Footer busy={busy} onClick={() => onSubmit({ lesson_price_uzs: p || null, terms_accepted: agree })} label={nextLabel ?? t.next} />
     </>
   );
 }

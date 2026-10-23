@@ -8,6 +8,8 @@ const uz = {
   back: 'Orqaga',
   next: 'Saqlash va davom etish',
   submit: 'Tekshiruvga yuborish',
+  resubmit: 'Saqlash va tekshiruvga yuborish',
+  revisionHint: 'Koʻrsatilgan qadamni tuzating va «Saqlash va tekshiruvga yuborish» ni bosing — anketa darhol maʼmuriyatga qaytadi.',
   optional: 'ixtiyoriy',
   // statuses
   statusPending: 'Anketangiz tekshiruvda',
@@ -144,6 +146,8 @@ const ru: typeof uz = {
   back: 'Назад',
   next: 'Сохранить и продолжить',
   submit: 'Отправить на проверку',
+  resubmit: 'Сохранить и отправить на проверку',
+  revisionHint: 'Исправьте указанный шаг и нажмите «Сохранить и отправить на проверку» — анкета сразу вернётся к администрации.',
   optional: 'необязательно',
   statusPending: 'Анкета на проверке',
   statusPendingHint: 'Обычно проверка занимает 1–3 рабочих дня. О решении придёт уведомление.',
