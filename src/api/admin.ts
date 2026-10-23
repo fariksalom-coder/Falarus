@@ -187,7 +187,8 @@ export type AdminTeacherRow = {
   monthly_course_price_currency?: string;
   rating_avg?: number;
   rating_count?: number;
-  listing_paid_until: string | null;
+  lesson_price_uzs?: number | null;
+  onboarding_path?: 'certified' | 'experienced' | null;
   is_recommended?: boolean;
   telegram_username: string | null;
   telegram_url: string | null;

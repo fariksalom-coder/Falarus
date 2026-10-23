@@ -23,6 +23,7 @@ import {
   UserCog,
   ChartColumn,
   Route as RouteIcon,
+  BadgeCheck,
 } from 'lucide-react';
 import { getAdminUnreadCount } from '../../api/admin';
 import './admin-workspace.css';
@@ -44,6 +45,7 @@ const nav = [
   { to: adminPath('/onboarding'), label: "So'rovnoma", icon: ClipboardList },
   { to: adminPath('/kiosk'), label: 'Test va chegirmalar', icon: ClipboardList },
   { to: adminPath('/teachers'), label: "O'qituvchilar", icon: GraduationCap },
+  { to: adminPath('/teacher-applications'), label: "O'qituvchi arizalari", icon: BadgeCheck },
   { to: adminPath('/teacher-trials'), label: 'Sinov darslari', icon: ClipboardList },
   { to: adminPath('/meet-rooms'), label: 'Video xonalar', icon: Video },
   { to: adminPath('/teacher-documents'), label: 'Hujjat tekshiruvi', icon: ClipboardList },

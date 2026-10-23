@@ -3,7 +3,6 @@ import multer from 'multer';
 import type { DbClient } from '../types/dbClient';
 import {
   getCourseProductPrice,
-  getTeacherListingPriceUzs,
   getTeacherTrialPrice,
   isCourseProductCode,
   isCurrencyCode,
@@ -46,9 +45,7 @@ import { queueReferralSource } from '../services/referralProgram.service.js';
 import { appleAccountToken } from '../services/appleStore.service';
 import {
   activateTeacherMarketplacePayment,
-  ensureTeacherListingSubscription,
   linkTeacherTrialPayment,
-  parseTeacherListingPlanCode,
   parseTeacherTrialId,
 } from '../services/teacherMarketplace.service.js';
 
@@ -258,26 +255,14 @@ export function createPaymentRoutes(
         return res.status(400).json({ error: 'Chek yoki skrinshot faylini yuklang' });
       }
 
-      const listingPlanCode =
-        productCode === 'teacher_listing' ? parseTeacherListingPlanCode(req.body ?? {}) : null;
       const trialId = productCode === 'teacher_trial' ? parseTeacherTrialId(req.body ?? {}) : null;
-      if (productCode === 'teacher_listing' && !listingPlanCode) {
-        return res.status(400).json({ error: 'listing_plan_code kerak' });
+      // 2026-10-23: listing to'lovi to'xtatildi — platforma darslardan komissiya oladi.
+      if (productCode === 'teacher_listing') {
+        return res.status(410).json({ error: "Ro'yxat to'lovi endi talab qilinmaydi" });
       }
       if (productCode === 'teacher_trial' && !trialId) {
         return res.status(400).json({ error: 'trial_id kerak' });
       }
-      if (productCode === 'teacher_listing') {
-        const { data: account } = await supabase
-          .from('users')
-          .select('account_type')
-          .eq('id', userId)
-          .maybeSingle();
-        if ((account as { account_type?: string } | null)?.account_type !== 'teacher') {
-          return res.status(403).json({ error: "Bu to'lov faqat o'qituvchilar uchun" });
-        }
-      }
-
       let { data: pending } = await supabase
         .from('payments')
         .select('id, payment_channel, created_at, payment_time')
@@ -347,10 +332,6 @@ export function createPaymentRoutes(
       } else if (isCourseProductCode(productCode)) {
         amount = getCourseProductPrice(productCode, currency);
         baseAmount = amount;
-      } else if (productCode === 'teacher_listing' && listingPlanCode) {
-        amount = getTeacherListingPriceUzs(listingPlanCode);
-        baseAmount = amount;
-        discountMeta = { listing_plan_code: listingPlanCode };
       } else if (productCode === 'teacher_trial') {
         amount = getTeacherTrialPrice(currency);
         baseAmount = amount;
@@ -406,15 +387,6 @@ export function createPaymentRoutes(
           return res.status(500).json({ error: insertErr.message });
         }
         const paymentId = Number((row as any).id);
-        if (productCode === 'teacher_listing' && listingPlanCode) {
-          try {
-            await ensureTeacherListingSubscription(supabase, userId, paymentId, listingPlanCode);
-          } catch (subErr) {
-            await supabase.from('payments').delete().eq('id', paymentId);
-            const message = subErr instanceof Error ? subErr.message : 'Obuna yaratilmadi';
-            return res.status(400).json({ error: message });
-          }
-        }
         if (productCode === 'teacher_trial' && trialId) {
           try {
             await linkTeacherTrialPayment(supabase, userId, trialId, paymentId, currency);

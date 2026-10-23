@@ -16,11 +16,11 @@ import {
   fmtDate,
   fmtSum,
   fmtTime,
-  daysUntil,
   minutesUntil,
   tashkentParts,
 } from '../ui';
 import { AddTimeModal } from './scheduleModals';
+import Commission from '../../onboarding/Commission';
 
 /** Sinov darsi bo'lsa o'quvchi kartochkasiga, sessiya bo'lsa video xonaga. */
 export function useOpenLesson() {
@@ -52,8 +52,6 @@ export default function Dashboard() {
   const hour = tashkentParts(new Date()).hour;
   const greeting = hour < 12 ? t.greetingMorning : hour < 18 ? t.greetingDay : t.greetingEvening;
   const name = cabinet?.profile?.first_name || '';
-
-  const daysLeft = daysUntil(cabinet?.profile?.listing_paid_until ?? null);
 
   const next = s.next_lesson;
   const until = minutesUntil(next?.starts_at ?? null, now);
@@ -300,21 +298,7 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {daysLeft != null && daysLeft <= 30 ? (
-            <div className="rounded-[22px] border border-[#F5E3B8] bg-[#FFF8E9] p-5">
-              <p className="text-[13.5px] font-semibold text-[#7A5B10]">
-                {tpl(t.subEndsIn, { days: Math.max(0, daysLeft) })}
-              </p>
-              <p className="mt-1.5 text-[12.5px] leading-[1.6] text-[#8A7134]">{t.subEndsHint}</p>
-              <button
-                type="button"
-                onClick={() => go('subscription')}
-                className="mt-3 min-h-[42px] rounded-[11px] bg-[#E6B33E] px-4 text-[12.5px] font-semibold text-[#3A2A00]"
-              >
-                {t.subRenew}
-              </button>
-            </div>
-          ) : null}
+          <Commission />
         </div>
       </div>
 

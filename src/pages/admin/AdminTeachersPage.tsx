@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BadgeCheck, ExternalLink, Pencil, Phone, Search, X } from 'lucide-react';
+import { adminPath } from '../../constants/adminPath';
 import {
   getAdminTeachers,
   setTeacherRecommended,
@@ -26,9 +28,6 @@ function fmtDate(value: string | null | undefined): string {
   return new Date(value).toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function isActive(value: string | null | undefined): boolean {
-  return !!value && new Date(value) > new Date();
-}
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Qoralama',
@@ -268,7 +267,7 @@ export default function AdminTeachersPage() {
                 <th className="px-4 py-3">Holat</th>
                 <th className="px-4 py-3">Aloqa</th>
                 <th className="px-4 py-3">Tajriba / Narx</th>
-                <th className="px-4 py-3">Ro'yxat muddati</th>
+                <th className="px-4 py-3">Yoʻl</th>
                 <th className="px-4 py-3">Amallar</th>
               </tr>
             </thead>
@@ -339,15 +338,16 @@ export default function AdminTeachersPage() {
                       <td className="px-4 py-3 text-app-text">
                         <div>{row.experience_years ?? 0} yil {row.experience_months ?? 0} oy</div>
                         <div className="font-semibold text-app-text">
-                          {Number(row.monthly_course_price_amount || 0).toLocaleString('ru-RU')}{' '}
-                          {row.monthly_course_price_currency ?? ''}
+                          {row.lesson_price_uzs
+                            ? `${row.lesson_price_uzs.toLocaleString('ru-RU')} soʻm / dars`
+                            : `${Number(row.monthly_course_price_amount || 0).toLocaleString('ru-RU')} ${row.monthly_course_price_currency ?? ''} / oy`}
                         </div>
                       </td>
 
                       <td className="px-4 py-3">
-                        <div className={isActive(row.listing_paid_until) ? 'font-semibold text-emerald-700' : 'font-semibold text-red-600'}>
-                          {fmtDate(row.listing_paid_until)}
-                        </div>
+                        <Link to={adminPath(`/teacher-applications?id=${row.user_id}`)} className="font-semibold text-blue-700 hover:underline">
+                          {row.onboarding_path === 'certified' ? 'Sertifikatli' : row.onboarding_path === 'experienced' ? 'Tajribali' : '—'} · ariza
+                        </Link>
                       </td>
 
                       <td className="px-4 py-3">

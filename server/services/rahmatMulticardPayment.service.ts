@@ -20,12 +20,10 @@ import {
   normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
-import { getTeacherListingPriceUzs, getTeacherTrialPriceUzs } from '../../shared/paymentProducts.js';
+import { getTeacherTrialPriceUzs } from '../../shared/paymentProducts.js';
 import {
   activateTeacherMarketplacePayment,
-  ensureTeacherListingSubscription,
   linkTeacherTrialPayment,
-  parseTeacherListingPlanCode,
   parseTeacherTrialId,
 } from './teacherMarketplace.service.js';
 import {
@@ -145,26 +143,14 @@ export async function createRahmatMulticardPayment(
       }
     }
   }
-  const listingPlanCode =
-    productCode === 'teacher_listing' ? parseTeacherListingPlanCode(body as Record<string, unknown>) : null;
   const trialId = productCode === 'teacher_trial' ? parseTeacherTrialId(body as Record<string, unknown>) : null;
-  if (productCode === 'teacher_listing' && !listingPlanCode) {
-    return { status: 400, json: { error: 'listing_plan_code kerak' } };
+  // 2026-10-23: listing to'lovi to'xtatildi — platforma darslardan komissiya oladi.
+  if (productCode === 'teacher_listing') {
+    return { status: 410, json: { error: "Ro'yxat to'lovi endi talab qilinmaydi" } };
   }
   if (productCode === 'teacher_trial' && !trialId) {
     return { status: 400, json: { error: 'trial_id kerak' } };
   }
-  if (productCode === 'teacher_listing') {
-    const { data: account } = await supabase
-      .from('users')
-      .select('account_type')
-      .eq('id', userId)
-      .maybeSingle();
-    if ((account as { account_type?: string } | null)?.account_type !== 'teacher') {
-      return { status: 403, json: { error: "Bu to'lov faqat o'qituvchilar uchun" } };
-    }
-  }
-
   let { data: pending } = await supabase
     .from('payments')
     .select('id, payment_channel, payment_proof_url, amount, created_at, payment_time')
@@ -236,10 +222,6 @@ export async function createRahmatMulticardPayment(
         offer_label: 'three_month_price_for_six_month_access',
       };
     }
-  } else if (productCode === 'teacher_listing' && listingPlanCode) {
-    amount = getTeacherListingPriceUzs(listingPlanCode);
-    baseAmount = amount;
-    discountMeta = { listing_plan_code: listingPlanCode };
   } else if (productCode === 'teacher_trial') {
     amount = getTeacherTrialPriceUzs();
     baseAmount = amount;
@@ -297,15 +279,6 @@ export async function createRahmatMulticardPayment(
         status: 409,
         json: { error: 'WELCOME_OFFER_ALREADY_USED', message: 'Taklif muddati tugagan yoki allaqachon ishlatilgan.' },
       };
-    }
-  }
-  if (productCode === 'teacher_listing' && listingPlanCode) {
-    try {
-      await ensureTeacherListingSubscription(supabase, userId, paymentId, listingPlanCode);
-    } catch (subErr) {
-      await supabase.from('payments').delete().eq('id', paymentId);
-      const message = subErr instanceof Error ? subErr.message : 'Obuna yaratilmadi';
-      return { status: 400, json: { error: message } };
     }
   }
   if (productCode === 'teacher_trial' && trialId) {

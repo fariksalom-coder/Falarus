@@ -7,7 +7,6 @@ import {
   LogOut,
   BookOpen,
   CalendarDays,
-  FileText,
   HelpCircle,
   Home,
   LayoutGrid,
@@ -21,7 +20,7 @@ import {
   Video,
   Wallet,
   X,
-  Zap,
+  Percent,
 } from 'lucide-react';
 import {
   getPanelNotifications,
@@ -35,9 +34,9 @@ import {
 import { getTeacherCabinet, type TeacherCabinet } from '../api/teachers';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
-import { PANEL_TEXTS, tpl, type PanelLang } from '../components/teacher/panel/lang';
+import { PANEL_TEXTS, type PanelLang } from '../components/teacher/panel/lang';
 import { PanelProvider, type SectionKey } from '../components/teacher/panel/panelContext';
-import { Avatar, Fade, Toast, daysUntil } from '../components/teacher/panel/ui';
+import { Avatar, Fade, Toast } from '../components/teacher/panel/ui';
 import Dashboard from '../components/teacher/panel/sections/Dashboard';
 import Schedule from '../components/teacher/panel/sections/Schedule';
 import Students, { StudentDetail } from '../components/teacher/panel/sections/Students';
@@ -45,7 +44,8 @@ import Lessons from '../components/teacher/panel/sections/Lessons';
 import LessonReport from '../components/teacher/panel/sections/LessonReport';
 import Anketa from '../components/teacher/panel/sections/Anketa';
 import Profile, { Documents, PublicPreview } from '../components/teacher/panel/sections/Profile';
-import Income, { Subscription } from '../components/teacher/panel/sections/Money';
+import Income from '../components/teacher/panel/sections/Money';
+import Commission from '../components/teacher/onboarding/Commission';
 import Messages, { NotificationsDrawer, Reviews } from '../components/teacher/panel/sections/Communication';
 import Class from '../components/teacher/panel/sections/Class';
 import Settings, { Help } from '../components/teacher/panel/sections/SettingsHelp';
@@ -74,12 +74,11 @@ const NAV: NavItem[] = [
   { key: 'lessons', label: 'navLessons', icon: BookOpen, group: 'work' },
   { key: 'class', label: 'navClass', icon: Video, group: 'work' },
   { key: 'income', label: 'navIncome', icon: Wallet, group: 'cabinet' },
-  { key: 'subscription', label: 'navSubscription', icon: Zap, group: 'cabinet' },
+  { key: 'subscription', label: 'navSubscription', icon: Percent, group: 'cabinet' },
   { key: 'messages', label: 'navMessages', icon: MessageSquare, group: 'cabinet' },
   { key: 'reviews', label: 'navReviews', icon: Star, group: 'cabinet' },
   { key: 'profile', label: 'navProfile', icon: User, group: 'profile' },
   { key: 'anketa', label: 'navAnketa', icon: BadgeCheck, group: 'profile' },
-  { key: 'documents', label: 'navDocuments', icon: FileText, group: 'profile' },
   { key: 'settings', label: 'navSettings', icon: SettingsIcon, group: 'profile' },
   { key: 'help', label: 'navHelp', icon: HelpCircle, group: 'profile' },
 ];
@@ -274,11 +273,8 @@ export default function TeacherPanelPage() {
             ))}
           </nav>
 
-          <SubscriptionCard
-            paidUntil={cabinet?.profile?.listing_paid_until ?? null}
-            onClick={() => go('subscription')}
-            t={t}
-          />
+          {/* Listing obunasi o'rniga — joriy komissiya stavkasi (onboarding v2). */}
+          <Commission compact />
 
           {/*
            * Chiqish menyuda turadi: ilgari u faqat "Sozlamalar" ichida edi va
@@ -402,7 +398,7 @@ export default function TeacherPanelPage() {
               {section === 'report' && param ? <LessonReport trialId={param} /> : null}
               {section === 'class' ? <Class /> : null}
               {section === 'income' ? <Income /> : null}
-              {section === 'subscription' ? <Subscription /> : null}
+              {section === 'subscription' ? <Commission /> : null}
               {section === 'messages' ? <Messages /> : null}
               {section === 'reviews' ? <Reviews /> : null}
               {section === 'profile' ? <Profile /> : null}
@@ -531,37 +527,6 @@ export default function TeacherPanelPage() {
         {toastText ? <Toast text={toastText} /> : null}
       </div>
     </PanelProvider>
-  );
-}
-
-function SubscriptionCard({
-  paidUntil,
-  onClick,
-  t,
-}: {
-  paidUntil: string | null;
-  onClick: () => void;
-  t: (typeof PANEL_TEXTS)['uz'];
-}) {
-  const days = daysUntil(paidUntil) ?? 0;
-  const active = days > 0;
-  return (
-    <div className="rounded-[16px] bg-app-surface/7 p-3.5">
-      <div className="flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${active ? 'bg-[#6CE0A0]' : 'bg-[#E6B33E]'}`} />
-        <p className="text-[12.5px] font-semibold text-white">{t.subscriptionTitle}</p>
-      </div>
-      <p className="mt-1.5 text-[11.5px] leading-[1.5] text-white/55">
-        {active ? tpl(t.subEndsIn, { days }) : t.subInactive}
-      </p>
-      <button
-        type="button"
-        onClick={onClick}
-        className="mt-2.5 w-full rounded-[10px] bg-[#E6B33E] py-2.5 text-[12px] font-semibold text-[#3A2A00]"
-      >
-        {t.subRenew}
-      </button>
-    </div>
   );
 }
 

@@ -1320,6 +1320,23 @@ async function startServer() {
   const { createTeacherRoutes } = await import('./server/routes/teacherRoutes');
   app.use('/api', createTeacherRoutes(supabase, authenticate));
 
+  // O'qituvchi onboardingi v2: 8 qadam, yopiq hujjatlar, bo'laklab video, moderatsiya.
+  const { createTeacherOnboardingRoutes } = await import('./server/routes/teacherOnboardingRoutes');
+  const { geminiChat } = await import('./server/lib/gemini');
+  app.use('/api', createTeacherOnboardingRoutes(authenticate, {
+    uploadsDir: UPLOADS_DIR,
+    privateDir: (await import('./server/lib/privateUploads')).PRIVATE_UPLOADS_DIR,
+    publicUrl: toAbsolutePublicUrl,
+    generateAbout: (answers, lang) => geminiChat({
+      system: lang === 'ru'
+        ? 'Ты помогаешь преподавателю русского языка написать текст «О себе» для профиля на платформе FalaRus.uz. Пиши от первого лица, по-русски, тепло и конкретно, 500–1200 символов, 2–4 абзаца. Используй только факты из ответов, ничего не придумывай (никаких цифр, наград и гарантий, которых нет в ответах). Без заголовков, списков и эмодзи.'
+        : "Siz rus tili o'qituvchisiga FalaRus.uz platformasidagi profil uchun «O'zim haqimda» matnini yozishda yordam berasiz. Birinchi shaxsda, o'zbek tilida (lotin yozuvida), samimiy va aniq yozing, 500–1200 belgi, 2–4 xatboshi. Faqat javoblardagi faktlardan foydalaning, hech narsa o'ylab topmang (javoblarda yo'q raqam, mukofot va kafolatlar yozilmasin). Sarlavha, ro'yxat va emoji ishlatmang.",
+      user: Object.entries(answers).map(([k, v]) => `${k}: ${v}`).join('\n'),
+      temperature: 0.6,
+      maxTokens: 900,
+    }),
+  }));
+
   const { createCommunityRoutes } = await import('./server/routes/communityRoutes');
   app.use('/api', createCommunityRoutes(supabase, authenticate));
 
@@ -1504,110 +1521,10 @@ async function startServer() {
     }
   });
 
-  /*
-   * O'QITUVCHI HUJJATLARI (anketa: pasport nusxasi, diplom, sertifikat).
-   *
-   * Sertifikat rasmidan farqi: PDF ham qabul qilinadi va fayl bazaga
-   * yoziladi — moderator tekshiruvidan o'tishi kerak, o'qituvchi uni
-   * o'zi "tasdiqlangan" qila olmaydi.
-   */
-  const TEACHER_DOC_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-  const TEACHER_DOC_MAX = 8 * 1024 * 1024;
-  const TEACHER_DOC_KINDS = ['passport', 'diploma', 'certificate', 'other'];
-
-  function parseTeacherDocument(
-    req: express.Request
-  ): Promise<{ file: { buffer: Buffer; mimetype: string; name: string } | null; kind: string }> {
-    return new Promise((resolve, reject) => {
-      const contentType = req.headers['content-type'];
-      if (!contentType || !contentType.includes('multipart/form-data')) {
-        reject(new Error('Fayl multipart/form-data bilan yuborilsin'));
-        return;
-      }
-      let file: { buffer: Buffer; mimetype: string; name: string } | null = null;
-      let kind = 'other';
-      const chunks: Buffer[] = [];
-      const bb = Busboy({ headers: { 'content-type': contentType } });
-      bb.on('field', (name, value) => {
-        if (name === 'kind' && TEACHER_DOC_KINDS.includes(value)) kind = value;
-      });
-      bb.on('file', (name, stream, info) => {
-        if (name !== 'file') {
-          stream.resume();
-          return;
-        }
-        if (!TEACHER_DOC_MIMES.includes(info.mimeType)) {
-          stream.resume();
-          reject(new Error('Faqat JPG, PNG, WEBP yoki PDF ruxsat etiladi'));
-          return;
-        }
-        stream.on('data', (c: Buffer) => chunks.push(c));
-        stream.on('end', () => {
-          const buffer = Buffer.concat(chunks);
-          if (buffer.length > TEACHER_DOC_MAX) {
-            reject(new Error('Fayl hajmi 8 MB dan oshmasligi kerak'));
-            return;
-          }
-          file = { buffer, mimetype: info.mimeType, name: String(info.filename ?? '').slice(0, 120) };
-        });
-        stream.on('error', reject);
-      });
-      bb.on('error', reject);
-      bb.on('close', () => resolve({ file, kind }));
-      req.pipe(bb);
-    });
-  }
-
-  app.post('/api/teacher/me/panel/documents', authenticate, async (req: any, res) => {
-    const userId = Number(req.userId);
-    try {
-      const { data: u } = await supabase
-        .from('users')
-        .select('id, account_type')
-        .eq('id', userId)
-        .maybeSingle();
-      if ((u as any)?.account_type !== 'teacher') {
-        return res.status(403).json({ error: "Bu bo'lim faqat o'qituvchilar uchun" });
-      }
-
-      const { file, kind } = await parseTeacherDocument(req);
-      if (!file) return res.status(400).json({ error: 'Fayl yuklanmadi' });
-
-      const ext =
-        file.mimetype === 'application/pdf'
-          ? 'pdf'
-          : file.mimetype === 'image/png'
-            ? 'png'
-            : file.mimetype === 'image/webp'
-              ? 'webp'
-              : 'jpg';
-      const objectPath = `${userId}/doc-${kind}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
-      await ensurePublicStorageBucket(USER_AVATAR_BUCKET);
-      const { error: upErr } = await supabase.storage
-        .from(USER_AVATAR_BUCKET)
-        .upload(objectPath, file.buffer, { contentType: file.mimetype, upsert: true });
-      if (upErr) throw new Error(upErr.message);
-      const { data: pub } = supabase.storage.from(USER_AVATAR_BUCKET).getPublicUrl(objectPath);
-      const url = pub?.publicUrl;
-      if (!url) throw new Error('Fayl URL olinmadi');
-
-      const { data, error } = await supabase
-        .from('teacher_documents')
-        .insert({
-          teacher_user_id: userId,
-          kind,
-          file_url: toAbsolutePublicUrl(url),
-          original_name: file.name,
-          status: 'pending',
-        })
-        .select('id, kind, file_url, original_name, status, created_at')
-        .single();
-      if (error) throw error;
-      res.status(201).json(data);
-    } catch (e) {
-      console.error('[POST /api/teacher/me/panel/documents]', e);
-      res.status(400).json({ error: e instanceof Error ? e.message : 'Hujjat yuklanmadi' });
-    }
+  // Hujjatlar endi faqat onboarding v2 (3-qadam) orqali va YOPIQ papkaga yuklanadi:
+  // eski yo'l fayllarni ommaviy `user-avatars` bucket'iga qo'yardi.
+  app.post('/api/teacher/me/panel/documents', authenticate, (_req, res) => {
+    res.status(410).json({ error: 'Hujjatni «Anketa» → «Sertifikat» qadamida yuklang' });
   });
 
   /*

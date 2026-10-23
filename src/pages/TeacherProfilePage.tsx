@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Clock, CreditCard, MapPin, Star, Users } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, BookOpen, Clock, CreditCard, MapPin, Star, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import { resolveAssetUrl } from '../api';
 import {
-  bookFreeLessons,
   createTeacherTrialLesson,
   getMyTeacherTrialLesson,
   getTeacherConversations,
@@ -22,7 +21,7 @@ import { usePaymentStatus } from '../hooks/usePaymentStatus';
 import { invalidatePaymentsCache } from '../api/payment';
 import {
   formatTeacherExperience,
-  formatTeacherPrice,
+  formatTeacherListPrice,
   formatTeachingFormat,
   teacherDisplayName,
   teacherInitials,
@@ -33,6 +32,7 @@ import {
   TEACHER_TRIAL_PRODUCT_CODE,
 } from '../../shared/paymentProducts';
 import { useLocale } from '../context/LocaleContext';
+import { normalizeSchedule, upcomingSlotStarts, type ScheduleData } from '../../shared/teacherOnboarding';
 import {
   RecommendedBadge,
   TeacherAchievementsSection,
@@ -52,33 +52,28 @@ const MONTH_UZ = [
 
 type MeetingDay = { dateLabel: string; times: { iso: string; label: string }[] };
 
-/** Haftalik jadvaldan kelgusi 14 kun ichidagi aniq dars boshlanish vaqtlarini yasaydi. */
-function buildMeetingDays(availability: TeacherAvailabilitySlot[] | undefined): MeetingDay[] {
-  if (!availability || availability.length === 0) return [];
-  const now = new Date();
+/**
+ * Jadvaldan kelgusi 14 kundagi aniq dars boshlanish vaqtlari. Jadval o'qituvchining
+ * vaqt zonasida (eski profillarda — Toshkent), vaqtlar O'QUVCHINING soatida ko'rsatiladi.
+ */
+function buildMeetingDays(schedule: ScheduleData | null | undefined, legacy: TeacherAvailabilitySlot[] | undefined): MeetingDay[] {
+  const sched = schedule?.slots?.length
+    ? normalizeSchedule(schedule)
+    : legacy?.length
+      ? normalizeSchedule({ timezone: 'Asia/Tashkent', slots: legacy.map((x) => ({ weekday: Number(x.day) === 0 ? 7 : Number(x.day), start: x.from, end: x.to })) })
+      : null;
+  if (!sched) return [];
   const days: MeetingDay[] = [];
-  for (let i = 0; i < 14 && days.length < 6; i++) {
-    const d = new Date(now);
-    d.setDate(now.getDate() + i);
-    d.setHours(0, 0, 0, 0);
-    const wd = d.getDay();
-    const slots = availability.filter((s) => Number(s.day) === wd);
-    if (slots.length === 0) continue;
-    const times: { iso: string; label: string }[] = [];
-    for (const s of slots) {
-      const fh = Number(String(s.from).split(':')[0]);
-      const th = Number(String(s.to).split(':')[0]);
-      if (!Number.isFinite(fh) || !Number.isFinite(th)) continue;
-      for (let h = fh; h < th; h++) {
-        const dt = new Date(d);
-        dt.setHours(h, 0, 0, 0);
-        if (dt.getTime() <= now.getTime()) continue;
-        times.push({ iso: dt.toISOString(), label: `${String(h).padStart(2, '0')}:00` });
-      }
+  for (const ms of upcomingSlotStarts(sched, Date.now())) {
+    const d = new Date(ms);
+    const label = `${WEEKDAY_UZ[d.getDay()]}, ${d.getDate()}-${MONTH_UZ[d.getMonth()]}`;
+    let day = days.find((x) => x.dateLabel === label);
+    if (!day) {
+      if (days.length >= 6) break;
+      day = { dateLabel: label, times: [] };
+      days.push(day);
     }
-    if (times.length > 0) {
-      days.push({ dateLabel: `${WEEKDAY_UZ[wd]}, ${d.getDate()}-${MONTH_UZ[d.getMonth()]}`, times });
-    }
+    day.times.push({ iso: d.toISOString(), label: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
   }
   return days;
 }
@@ -178,15 +173,13 @@ export default function TeacherProfilePage() {
   const awaitingPaymentConfirmation =
     myTrial?.trial?.status === 'pending_payment' &&
     (pendingTrialPayment != null || myTrial.payment?.status === 'pending');
-  // Bepul davr: o'qituvchining birinchi 3 darsi o'quvchi uchun ham bepul (to'lovsiz).
-  const inFreePeriod = Number(profile?.free_lessons_used ?? 0) < 3;
   // O'quvchi allaqachon bu ustozga yozilganmi (faol dars — to'lov kutmayapti).
   const trialBooked =
     myTrial?.trial != null &&
     myTrial.trial.status !== 'pending_payment' &&
     !String(myTrial.trial.status).includes('completed') &&
     !String(myTrial.trial.status).includes('cancel');
-  const meetingDays = buildMeetingDays(profile?.weekly_availability);
+  const meetingDays = buildMeetingDays(profile?.schedule, profile?.weekly_availability);
   const bookedTime = formatMeetingTime(
     myTrial?.trial?.scheduled_starts_at ?? myTrial?.trial?.requested_starts_at ?? null,
   );
@@ -256,6 +249,7 @@ export default function TeacherProfilePage() {
     if (!token || !profile) throw new Error('Tizimga kirish kerak');
     const trial = await createTeacherTrialLesson(token, profile.user_id, {
       student_message: studentMessage.trim(),
+      ...(selectedSlot ? { requested_starts_at: selectedSlot } : {}),
     });
     setTrialId(trial.id);
     return trial.id;
@@ -267,7 +261,9 @@ export default function TeacherProfilePage() {
       return;
     }
     setBookingError('');
-    setBookingOpen(true);
+    // Jadval bo'lsa — avval vaqt tanlanadi, keyin to'lov.
+    if (meetingDays.length > 0 && !selectedSlot) setSlotOpen(true);
+    else setBookingOpen(true);
   }
 
   async function handlePayRahmat() {
@@ -319,34 +315,6 @@ export default function TeacherProfilePage() {
     }
   }
 
-  // Bepul davr — to'lovsiz yozilish: tanlangan vaqtda uchrashuv ochiladi, chat boshlanadi.
-  async function handleBookFree(slots: string[]) {
-    if (!token) {
-      navigate('/login', { state: { from: location.pathname } });
-      return;
-    }
-    if (!profile) return;
-    setBookingLoading(true);
-    setBookingError('');
-    try {
-      await bookFreeLessons(token, profile.user_id, slots);
-      setSlotOpen(false);
-      setSelectedSlot(null);
-      await loadMyTrial();
-      try {
-        const rows = await getTeacherConversations(token);
-        const c = rows.find((x) => x.teacher_user_id === profile.user_id);
-        setChatConvoId(c ? c.id : null);
-      } catch {
-        /* chat keyin ochiladi */
-      }
-    } catch (e) {
-      setBookingError(e instanceof Error ? e.message : "Yozilishda xatolik yuz berdi");
-    } finally {
-      setBookingLoading(false);
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex min-h-full items-center justify-center bg-app-bg-subtle">
@@ -375,7 +343,7 @@ export default function TeacherProfilePage() {
 
   const name = teacherDisplayName(profile);
   const locationLabel = [profile.city, profile.region].filter(Boolean).join(', ') || t('teachers.notSpecified');
-  const monthlyPrice = formatTeacherPrice(profile.monthly_course_price_amount, profile.monthly_course_price_currency);
+  const priceLabel = formatTeacherListPrice(profile);
   const ratingCount = Number(profile.rating_count ?? 0);
   const ratingAvg = Number(profile.rating_avg ?? 0);
 
@@ -405,9 +373,15 @@ export default function TeacherProfilePage() {
             </div>
           </div>
           <div className="min-w-0 flex-1">
-            {profile.is_recommended ? (
-              <div className="mb-2">
-                <RecommendedBadge />
+            {profile.is_recommended || profile.certified_verified ? (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {profile.is_recommended ? <RecommendedBadge /> : null}
+                {profile.certified_verified ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-app-success-bg px-3 py-1 text-xs font-black text-app-success">
+                    <BadgeCheck className="h-4 w-4" aria-hidden />
+                    Sertifikatli oʻqituvchi
+                  </span>
+                ) : null}
               </div>
             ) : null}
             <h1 className="text-[26px] font-black leading-tight text-app-text sm:text-[30px]">{name}</h1>
@@ -434,10 +408,12 @@ export default function TeacherProfilePage() {
                 <Users className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
                 {t('teachers.experience')} {formatTeacherExperience(profile.experience_years, profile.experience_months)}
               </p>
-              <p className="flex items-center gap-3">
-                <Clock className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
-                {t('teachers.age')}: {profile.age}
-              </p>
+              {profile.age ? (
+                <p className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
+                  {t('teachers.age')}: {profile.age}
+                </p>
+              ) : null}
               <p className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
                 {t('teachers.region')}: {locationLabel}
@@ -448,7 +424,7 @@ export default function TeacherProfilePage() {
               </p>
               <p className="flex items-center gap-3">
                 <CreditCard className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
-                {t('teachers.price')} {monthlyPrice}
+                {t('teachers.price')} {priceLabel}
               </p>
             </div>
           </div>
@@ -478,51 +454,14 @@ export default function TeacherProfilePage() {
                 Darsingiz profilingizdagi «O‘qituvchi bilan uchrashuv» bo‘limida ko‘rinadi. Ustoz bilan yozishuvni quyidagi tugma orqali oching.
               </p>
             </section>
-          ) : inFreePeriod && !slotOpen ? (
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!token) {
-                    navigate('/login', { state: { from: location.pathname } });
-                    return;
-                  }
-                  setBookingError('');
-                  setSelectedSlot(null);
-                  if (meetingDays.length > 0) setSlotOpen(true);
-                  else void handleBookFree([]);
-                }}
-                disabled={bookingLoading}
-                className="flex h-14 w-full items-center justify-center rounded-full bg-app-success text-lg font-extrabold text-white transition active:scale-[0.99] disabled:opacity-60"
-              >
-                {bookingLoading ? t('common.loading') : 'Sinov darsiga yozilish'}
-              </button>
-              {/* Vaqt tanlash oynasi ochilmasdan yozilganda ham (masalan, ustozda
-                  jadval yo'q) xato ko'rinishi shart — aks holda 3 ta ustoz
-                  cheklovi jimgina ishlab, tugma "hech narsa qilmayotgandek"
-                  tuyulardi. */}
-              {bookingError ? (
-                <p className="mt-3 rounded-2xl bg-app-danger-bg px-3 py-2 text-center text-sm font-semibold text-app-danger">
-                  {bookingError}
-                </p>
-              ) : null}
-            </div>
-          ) : inFreePeriod && slotOpen ? (
-            <section className="mt-6 rounded-[20px] border-2 border-app-success/40 bg-app-success-bg p-5">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-app-success px-3 py-1 text-xs font-extrabold text-white">
-                Bepul dars
-              </span>
-              <h2 className="mt-3 text-lg font-extrabold text-app-text">Dars vaqtini tanlang</h2>
-              <p className="mt-1 text-sm font-medium text-app-text-muted">
-                Sizga qulay kun va soatni belgilang.
-              </p>
-
+          ) : slotOpen ? (
+            <section className="mt-6 rounded-[20px] border border-app-border bg-app-surface p-5 shadow-app-soft">
+              <h2 className="text-lg font-extrabold text-app-text">Dars vaqtini tanlang</h2>
+              <p className="mt-1 text-sm font-medium text-app-text-muted">Vaqtlar sizning soatingiz boʻyicha koʻrsatilgan.</p>
               <div className="mt-4 space-y-3">
                 {meetingDays.map((day) => (
                   <div key={day.dateLabel}>
-                    <p className="text-xs font-extrabold uppercase tracking-wide text-app-text-secondary">
-                      {day.dateLabel}
-                    </p>
+                    <p className="text-xs font-extrabold uppercase tracking-wide text-app-text-secondary">{day.dateLabel}</p>
                     <div className="mt-1.5 flex flex-wrap gap-2">
                       {day.times.map((tm) => {
                         const picked = selectedSlot === tm.iso;
@@ -531,11 +470,9 @@ export default function TeacherProfilePage() {
                             key={tm.iso}
                             type="button"
                             onClick={() => setSelectedSlot(picked ? null : tm.iso)}
-                            disabled={bookingLoading}
-                            className={`flex min-w-[64px] items-center justify-center rounded-xl border-2 px-3 py-2 text-sm font-bold transition active:scale-[0.97] disabled:opacity-40 ${
-                              picked
-                                ? 'border-app-success bg-app-success text-white'
-                                : 'border-app-success/40 bg-app-surface text-app-text hover:border-app-success hover:bg-app-success/10'
+                            aria-pressed={picked}
+                            className={`flex min-h-11 min-w-[64px] items-center justify-center rounded-xl border-2 px-3 text-sm font-bold transition active:scale-[0.97] ${
+                              picked ? 'border-app-primary-deep bg-app-primary-deep text-white' : 'border-app-border bg-app-surface text-app-text hover:border-app-primary'
                             }`}
                           >
                             {tm.label}
@@ -546,29 +483,18 @@ export default function TeacherProfilePage() {
                   </div>
                 ))}
               </div>
-
-              {bookingError ? (
-                <p className="mt-3 rounded-2xl bg-app-danger-bg px-3 py-2 text-sm font-semibold text-app-danger">
-                  {bookingError}
-                </p>
-              ) : null}
-
               <button
                 type="button"
-                onClick={() => void handleBookFree(selectedSlot ? [selectedSlot] : [])}
-                disabled={bookingLoading || !selectedSlot}
-                className="mt-4 flex h-13 w-full items-center justify-center rounded-full bg-app-success py-3.5 text-base font-extrabold text-white transition active:scale-[0.98] disabled:opacity-50"
+                onClick={() => { setSlotOpen(false); setBookingOpen(true); }}
+                disabled={!selectedSlot}
+                className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-app-primary-deep text-base font-extrabold text-white transition active:scale-[0.98] disabled:opacity-50"
               >
-                {bookingLoading ? t('common.loading') : 'Darsga yozilish'}
+                Davom etish
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setSlotOpen(false);
-                  setSelectedSlot(null);
-                }}
-                disabled={bookingLoading}
-                className="mt-3 w-full text-center text-sm font-bold text-app-text-muted hover:underline disabled:opacity-50"
+                onClick={() => { setSlotOpen(false); setSelectedSlot(null); }}
+                className="mt-3 min-h-11 w-full text-center text-sm font-bold text-app-text-muted hover:underline"
               >
                 Bekor qilish
               </button>
@@ -579,13 +505,19 @@ export default function TeacherProfilePage() {
               onClick={handleStartBooking}
               className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-app-primary-deep text-lg font-extrabold text-white transition active:scale-[0.99]"
             >
-              {t('teachers.trialBook')} — {trialPriceRub} ₽
+              {t('teachers.trialBook')} — {trialPriceUzs.toLocaleString('uz-UZ')} so'm
             </button>
           ) : (
             <section className="mt-6 rounded-[20px] border border-app-border bg-app-surface p-4 shadow-app-soft">
               <h2 className="text-lg font-extrabold text-app-text">
                 {t('teachers.trialBook')} — {trialPriceRub} ₽
               </h2>
+              {selectedSlot ? (
+                <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-app-bg-subtle px-3 py-1 text-sm font-bold text-app-text">
+                  <Clock className="h-4 w-4 text-app-primary-deep" aria-hidden />
+                  {formatMeetingTime(selectedSlot)}
+                </p>
+              ) : null}
               <p className="mt-2 text-sm font-medium text-app-text-muted">{t('teachers.trialMessageHint')}</p>
               <textarea
                 value={studentMessage}

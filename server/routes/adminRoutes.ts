@@ -8,6 +8,8 @@ import multer from 'multer';
 import { createAdminAuthMiddleware } from '../middleware/adminAuth';
 import { createAdminOnboardingRoutes } from './onboardingRoutes.js';
 import { createAdminUserJourneyRoutes } from './userJourneyRoutes.js';
+import { createAdminTeacherOnboardingRoutes } from './teacherOnboardingRoutes.js';
+import { PRIVATE_UPLOADS_DIR } from '../lib/privateUploads.js';
 import { createAdminController } from '../controllers/adminController';
 import { createAdminGrammarController } from '../controllers/adminGrammarController';
 import { createAdminMeetController } from '../controllers/adminMeetController';
@@ -42,7 +44,8 @@ const TEACHER_OWNER_SELECT = [
   'monthly_course_price_currency',
   'rating_avg',
   'rating_count',
-  'listing_paid_until',
+  'lesson_price_uzs',
+  'onboarding_path',
   'telegram_username',
   'telegram_url',
   'whatsapp_phone_e164',
@@ -98,6 +101,8 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.use(createAdminOnboardingRoutes());
   // Foydalanuvchi yo'li: kirish, 0-kun, kurs videosi
   router.use('/user-journey', createAdminUserJourneyRoutes());
+  // O'qituvchi arizalari (onboarding v2) va komissiya sozlamalari
+  router.use(createAdminTeacherOnboardingRoutes({ privateDir: PRIVATE_UPLOADS_DIR }));
 
   // ─────────────────────────────────────────────────────────────
   // Kunlik kurs kontenti (nazariya, testlar, juftlik, gap tuzish,

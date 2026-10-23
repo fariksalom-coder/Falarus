@@ -11,7 +11,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import {
   formatTeacherExperience,
-  formatTeacherPrice,
+  formatTeacherListPrice,
+  teacherSortPrice,
   teacherDisplayName,
   teacherInitials,
 } from '../utils/teacherDisplay';
@@ -113,7 +114,7 @@ function TeacherCard({ teacher, t }: { teacher: TeacherProfile; t: T }) {
         <p className="mt-1 flex items-center gap-1 text-[11px] font-bold text-app-text">
           <Clock className="h-3.5 w-3.5 shrink-0 text-app-primary-deep" aria-hidden />
           <span className="truncate">
-            {formatTeacherPrice(teacher.monthly_course_price_amount, teacher.monthly_course_price_currency, t)}
+            {formatTeacherListPrice(teacher, t)}
           </span>
         </p>
         <button
@@ -206,10 +207,10 @@ export default function TeachersPage() {
     const sorted = [...rows];
     if (sort === 'priceLow') {
       sorted.sort(
-        (a, b) => (a.monthly_course_price_amount || Infinity) - (b.monthly_course_price_amount || Infinity),
+        (a, b) => (teacherSortPrice(a) ?? Infinity) - (teacherSortPrice(b) ?? Infinity),
       );
     } else if (sort === 'priceHigh') {
-      sorted.sort((a, b) => (b.monthly_course_price_amount || 0) - (a.monthly_course_price_amount || 0));
+      sorted.sort((a, b) => (teacherSortPrice(b) ?? 0) - (teacherSortPrice(a) ?? 0));
     } else if (sort === 'experience') {
       sorted.sort((a, b) => experienceMonths(b) - experienceMonths(a));
     } else if (sort === 'rating') {

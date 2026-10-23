@@ -65,6 +65,25 @@ export function formatTeacherPrice(
   return `${uzs.toLocaleString(languageMeta(locale).bcp47, { maximumFractionDigits: 0 })} ${tr('payment.currency')}/oy`;
 }
 
+/**
+ * Profil narxi: onboarding v2 — bir dars narxi (so'm), eski profillarda — oylik kurs narxi.
+ * Ro'yxat va profil sahifasi bir xil ko'rsatsin.
+ */
+export function formatTeacherListPrice(
+  profile: Pick<TeacherProfile, 'lesson_price_uzs' | 'monthly_course_price_amount' | 'monthly_course_price_currency'>,
+  t?: TranslateFn,
+  locale: AppLocale = DEFAULT_APP_LOCALE,
+): string {
+  if (profile.lesson_price_uzs && profile.lesson_price_uzs > 0) {
+    const tr = resolveT(t, locale);
+    return `${profile.lesson_price_uzs.toLocaleString(languageMeta(locale).bcp47, { maximumFractionDigits: 0 })} ${tr('payment.currency')} / dars`;
+  }
+  return formatTeacherPrice(profile.monthly_course_price_amount, profile.monthly_course_price_currency, t, locale);
+}
+
+/** Saralash uchun: dars narxi (so'm); narxsiz profillar oxirida. */
+export const teacherSortPrice = (p: Pick<TeacherProfile, 'lesson_price_uzs'>) => (p.lesson_price_uzs && p.lesson_price_uzs > 0 ? p.lesson_price_uzs : null);
+
 export function teacherInitials(profile: Pick<TeacherProfile, 'first_name' | 'last_name' | 'display_name'>): string {
   const name = teacherDisplayName(profile);
   return name

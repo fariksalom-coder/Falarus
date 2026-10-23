@@ -62,7 +62,6 @@ function teacherPublicSelect(): string {
     'monthly_course_price_currency',
     'rating_avg',
     'rating_count',
-    'listing_paid_until',
     'education',
     'certificates',
     'achievements',
@@ -71,9 +70,15 @@ function teacherPublicSelect(): string {
     'students_failed',
     'weekly_availability',
     'is_recommended',
-    'free_lessons_used',
     // Tasdiqlangan video-taqdimot (admin tasdiqlaganda to'ldiriladi).
     'video_url',
+    // Onboarding v2: dars narxi (so'm), tekshirilgan sertifikat belgisi, jadval vaqt zonasi bilan.
+    'lesson_price_uzs',
+    'certified_verified',
+    'onboarding_path',
+    'birth_country',
+    'proficiency',
+    'schedule',
   ].join(', ');
 }
 
@@ -447,20 +452,11 @@ export function createTeacherRoutes(
       const { data, error } = await query;
       if (error) throw error;
       /*
-        IKKI SHART HAM BAJARILISHI SHART:
-          1) admin profilni tasdiqlagan (`profile_status = 'active'`),
-          2) listing to'lovi amalda (`listing_paid_until` kelajakda).
-
-        Ilgari bu yerda «3 ta bepul dars» istisnosi bor edi: `free_lessons_used < 3`
-        YOKI to'langan. `free_lessons_used` sukut bo'yicha 0 bo'lgani uchun
-        o'qituvchi hech qachon to'lamasdan ham ro'yxatga tushardi, to'lov muddati
-        tugaganlar esa ro'yxatda qolib ketardi.
+        Katalogda faqat admin tasdiqlagan profil (`profile_status = 'active'`).
+        2026-10-23 dan listing to'lovi yo'q: platforma darslardan komissiya oladi
+        (onboarding v2), shuning uchun `listing_paid_until` endi tekshirilmaydi.
       */
-      const now = Date.now();
-      const visible = ((data ?? []) as any[])
-        .filter((tt) => tt.listing_paid_until && new Date(tt.listing_paid_until).getTime() > now)
-        .slice(0, 50);
-      res.json(visible);
+      res.json(((data ?? []) as any[]).slice(0, 50));
     } catch (e) {
       console.error('[GET /api/teachers]', e);
       res.status(500).json({ error: 'O‘qituvchilar yuklanmadi' });
@@ -487,15 +483,7 @@ export function createTeacherRoutes(
       ]);
       if (error) throw error;
       if (!profile) return res.status(404).json({ error: 'O‘qituvchi topilmadi' });
-      /*
-        Ochiq sahifada ham ro'yxatdagi shartlar amal qiladi. Ilgari bu yerda
-        hech qanday filtr yo'q edi: to'g'ridan-to'g'ri havola bilan `draft`,
-        `pending_review` yoki admin RAD ETGAN profil ham ochilaverardi.
-      */
-      const paidUntil = (profile as any).listing_paid_until;
-      if (!paidUntil || new Date(paidUntil).getTime() <= Date.now()) {
-        return res.status(404).json({ error: 'O‘qituvchi topilmadi' });
-      }
+      // Ochiq sahifa ham faqat tasdiqlangan (active) profil uchun — yuqoridagi filtr.
       res.json({ profile, reviews: reviews ?? [] });
     } catch (e) {
       console.error('[GET /api/teachers/:teacherId]', e);
@@ -875,22 +863,14 @@ export function createTeacherRoutes(
       }
       const { data: teacher } = await supabase
         .from('teacher_profiles')
-        .select('user_id, profile_status, listing_paid_until, free_lessons_used')
+        .select('user_id, profile_status')
         .eq('user_id', teacherId)
         .maybeSingle();
       if (!teacher) return res.status(404).json({ error: 'O‘qituvchi topilmadi' });
 
-      const nowIso = new Date().toISOString();
-      // Bepul davr: o'qituvchining birinchi 3 darsi o'quvchi uchun ham BEPUL.
-      const freeUsed = Number((teacher as any).free_lessons_used ?? 0);
-      const inFreePeriod = freeUsed < 3;
-      const listingActive =
-        !!(teacher as any).listing_paid_until &&
-        String((teacher as any).listing_paid_until) > nowIso;
-      // Dars bron qilish uchun ham ikkala shart kerak: admin tasdig'i va to'langan
-      // listing. `inFreePeriod` endi faqat NARXGA ta'sir qiladi (dastlabki 3 dars
-      // o'quvchi uchun bepul), ro'yxatda turishga emas.
-      if ((teacher as any).profile_status !== 'active' || !listingActive) {
+      // Faqat tasdiqlangan ustozga yoziladi. Sinov darsini o'quvchi HAR DOIM to'laydi,
+      // pul to'liq FalaRus'ga tushadi (onboarding v2 shartlari) — «bepul 3 dars» yo'q.
+      if ((teacher as any).profile_status !== 'active') {
         return res.status(403).json({ error: 'O‘qituvchi hozir ro‘yxatda faol emas' });
       }
 
@@ -944,98 +924,15 @@ export function createTeacherRoutes(
         }
       }
 
-      // Bepul davr: HAR BIR o'quvchi 1 ta bepul dars oladi (3 ta bepul dars = 3 xil o'quvchi).
-      // O'quvchi 1 ta dars vaqtini tanlaydi. free_lessons_used shu yerda (band qilinganda) oshadi.
-      if (inFreePeriod) {
-        // Tanlangan vaqt: slots[] ning birinchisi yoki requested_starts_at.
-        const rawSlots: unknown[] = Array.isArray(req.body?.slots)
-          ? req.body.slots
-          : schedStart
-            ? [schedStart]
-            : [];
-        const chosenIso =
-          rawSlots
-            .map((s) => {
-              const d = new Date(String(s));
-              return Number.isNaN(d.getTime()) ? null : d.toISOString();
-            })
-            .find((x): x is string => x !== null) ?? null;
-        const chosenEnd = chosenIso ? new Date(new Date(chosenIso).getTime() + 60 * 60 * 1000).toISOString() : null;
-
-        // O'quvchining shu ustoz bilan mavjud (bekor qilinmagan) darsi bormi?
-        const { data: existingRows } = await supabase
-          .from('teacher_trial_lessons')
-          .select('*')
-          .eq('teacher_user_id', teacherId)
-          .eq('student_user_id', studentId)
-          .order('created_at', { ascending: false });
-        const existing = ((existingRows as any[]) ?? []).find(
-          (t) => String(t.status) !== 'pending_payment' && !String(t.status).includes('cancel')
-        );
-
-        const nowStamp = new Date().toISOString();
-
-        // Allaqachon bepul darsi bor — yangisini yaratmaymiz (1 o'quvchi = 1 dars). Vaqtni yangilaymiz.
-        if (existing) {
-          const patch: Record<string, unknown> = { updated_at: nowStamp };
-          if (studentMessage) patch.student_message = studentMessage;
-          if (chosenIso) {
-            patch.requested_starts_at = chosenIso;
-            patch.scheduled_starts_at = chosenIso;
-            patch.scheduled_ends_at = chosenEnd;
-          }
-          await supabase.from('teacher_trial_lessons').update(patch).eq('id', Number(existing.id));
-          Object.assign(existing, patch);
-          await shareTrialContactsAndOpenChat(
-            supabase,
-            { id: Number(existing.id), teacher_user_id: teacherId, student_user_id: studentId },
-            { free: true }
-          );
-          return res.status(200).json([existing]);
-        }
-
-        // Yangi bepul dars (1 ta) + o'qituvchining bepul hisoblagichini +1.
-        const { data: freeTrial, error: freeErr } = await supabase
-          .from('teacher_trial_lessons')
-          .insert({
-            teacher_user_id: teacherId,
-            student_user_id: studentId,
-            requested_starts_at: chosenIso,
-            scheduled_starts_at: chosenIso,
-            scheduled_ends_at: chosenEnd,
-            student_phone_e164: asString(req.body?.student_phone_e164 || req.body?.studentPhoneE164) || null,
-            student_email: asString(req.body?.student_email || req.body?.studentEmail) || null,
-            student_message: studentMessage,
-            price_rub_snapshot: 0,
-            rub_to_uzs_rate_snapshot: RUB_TO_UZS_RATE,
-            price_uzs_snapshot: 0,
-            status: 'paid',
-            contact_shared_at: nowStamp,
-            teacher_notified_at: nowStamp,
-          })
-          .select('*')
-          .single();
-        if (freeErr) throw freeErr;
-
-        await supabase
-          .from('teacher_profiles')
-          .update({ free_lessons_used: freeUsed + 1, updated_at: nowStamp })
-          .eq('user_id', teacherId);
-
-        await shareTrialContactsAndOpenChat(
-          supabase,
-          { id: Number((freeTrial as { id: number }).id), teacher_user_id: teacherId, student_user_id: studentId },
-          { free: true }
-        );
-        return res.status(201).json([freeTrial]);
-      }
-
+      // Tanlangan vaqt pullik sinov darsida ham saqlanadi (to'lovdan keyin uchrashuv shu vaqtga).
       const { data, error } = await supabase
         .from('teacher_trial_lessons')
         .insert({
           teacher_user_id: teacherId,
           student_user_id: studentId,
-          requested_starts_at: asString(req.body?.requested_starts_at || req.body?.requestedStartsAt) || null,
+          requested_starts_at: schedStart,
+          scheduled_starts_at: schedStart,
+          scheduled_ends_at: schedStart ? new Date(new Date(schedStart).getTime() + 60 * 60 * 1000).toISOString() : null,
           student_phone_e164: asString(req.body?.student_phone_e164 || req.body?.studentPhoneE164) || null,
           student_email: asString(req.body?.student_email || req.body?.studentEmail) || null,
           student_message: studentMessage,
@@ -1219,8 +1116,6 @@ export function createTeacherRoutes(
         .update({ status: 'completed_by_teacher', completed_by_teacher_at: now, updated_at: now })
         .eq('id', trialId);
 
-      // Eslatma: free_lessons_used endi dars YAKUNLANGANda emas, BEPUL DARS BAND QILINGANda
-      // (POST trial-lessons) oshiriladi — chunki 3 ta bepul dars = 3 xil o'quvchi (har biri 1 ta).
       await supabase.from('teacher_notifications').insert({
         recipient_user_id: Number((trial as any).student_user_id),
         type: 'student_review_available',
@@ -2519,35 +2414,12 @@ export function createTeacherRoutes(
       }));
       const bajarilgan = steps.filter((s) => s.done).length;
 
-      /*
-       * TEKSHIRUVGA YUBORISH — TO'LOVDAN KEYIN.
-       *
-       * O'qituvchi anketani to'ldiradi va hujjatlarni yuklaydi, lekin
-       * moderatorga faqat ro'yxat to'lovi amalga oshgach yuboradi.
-       * To'lov: `teacher_profiles.listing_paid_until` (Rahmat callback
-       * to'ldiradi) yoki tasdiqlangan `teacher_listing` to'lovi.
-       */
-      const paidUntil = p.listing_paid_until ? new Date(String(p.listing_paid_until)) : null;
-      let tolangan = Boolean(paidUntil && paidUntil.getTime() > Date.now());
-      if (!tolangan) {
-        const { data: pay } = await supabase
-          .from('payments')
-          .select('id')
-          .eq('user_id', teacherId)
-          .eq('product_code', 'teacher_listing')
-          .eq('status', 'approved')
-          .limit(1);
-        tolangan = (((pay as any[]) ?? []).length > 0);
-      }
 
       res.json({
         profile: manba,
         contact: { email: u.email ?? null, phone: u.phone ?? null },
-        payment: {
-          paid: tolangan,
-          paid_until: p.listing_paid_until ?? null,
-          first_discount_used: Boolean(p.first_listing_discount_used),
-        },
+        // Listing to'lovi 2026-10-23 dan yo'q: ariza to'lovsiz yuboriladi.
+        payment: { paid: true, paid_until: null, first_discount_used: false },
         documents: (docsRes.data as any[]) ?? [],
         anketa: {
           steps,
@@ -2617,33 +2489,9 @@ export function createTeacherRoutes(
       if (Number.isInteger(step) && step >= 1 && step <= 12) patch.anketa_step = step;
 
       if (body.submit === true) {
-        // Tekshiruvga yuborish faqat to'lovdan keyin — bu qoida SERVERDA
-        // turadi, aks holda tugmani chetlab o'tib so'rov yuborish mumkin.
-        const { data: prof } = await supabase
-          .from('teacher_profiles')
-          .select('listing_paid_until')
-          .eq('user_id', teacherId)
-          .maybeSingle();
-        const until = (prof as any)?.listing_paid_until
-          ? new Date(String((prof as any).listing_paid_until))
-          : null;
-        let tolangan = Boolean(until && until.getTime() > Date.now());
-        if (!tolangan) {
-          const { data: pay } = await supabase
-            .from('payments')
-            .select('id')
-            .eq('user_id', teacherId)
-            .eq('product_code', 'teacher_listing')
-            .eq('status', 'approved')
-            .limit(1);
-          tolangan = (((pay as any[]) ?? []).length > 0);
-        }
-        if (!tolangan) {
-          return res.status(402).json({
-            error: 'Hujjatlarni tekshiruvga yuborish uchun avval roʻyxat toʻlovini amalga oshiring',
-          });
-        }
-        patch.anketa_submitted_at = new Date().toISOString();
+        // Eski 12 qadamli anketa endi tekshiruvga yubormaydi: ariza onboarding v2 orqali
+        // (POST /api/teacher/onboarding/submit), u yerda barcha qadamlar tekshiriladi.
+        return res.status(410).json({ error: 'Anketani yangi «Anketa» boʻlimi orqali yuboring' });
       }
 
       if (Object.keys(patch).length === 0) {

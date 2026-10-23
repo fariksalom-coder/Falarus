@@ -56,3 +56,6 @@ secrets/
 # Private film media/subtitles and standalone generated builds
 var/video-lessons/
 /dist-exercise/
+
+# Yopiq fayllar (o'qituvchi hujjatlari) — hech qachon git/deploy'ga tushmaydi
+private-uploads/

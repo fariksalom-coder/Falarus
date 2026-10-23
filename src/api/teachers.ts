@@ -1,3 +1,4 @@
+import type { ScheduleData } from '../../shared/teacherOnboarding';
 import { apiUrl } from '../api';
 import {
   TEACHER_LISTING_PLAN_MONTH,
@@ -39,7 +40,8 @@ export type TeacherProfile = {
   first_name: string;
   last_name: string;
   display_name: string;
-  age: number;
+  /** Onboarding v2 da so'ralmaydi — eski profillarda bo'lishi mumkin. */
+  age: number | null;
   avatar_url: string | null;
   region: string;
   city: string;
@@ -62,8 +64,6 @@ export type TeacherProfile = {
   preferred_contact_method?: string | null;
   profile_status?: string;
   admin_note?: string | null;
-  first_listing_discount_used?: boolean;
-  listing_paid_until?: string | null;
   rating_avg?: number;
   rating_count?: number;
   created_at?: string;
@@ -82,8 +82,16 @@ export type TeacherProfile = {
   is_recommended?: boolean;
   /** Admin tasdiqlagan video-taqdimot (tasdiqlanmagani ko'rinmaydi). */
   video_url?: string | null;
-  /** O'tilgan bepul darslar soni (3 tadan keyin listing to'lovi shart). */
-  free_lessons_used?: number;
+  // ── Onboarding v2 ─────────────────────────────────────────────
+  /** Bir dars narxi, so'm. */
+  lesson_price_uzs?: number | null;
+  /** Sertifikat hujjatlari admin tomonidan tekshirilgan. */
+  certified_verified?: boolean;
+  onboarding_path?: 'certified' | 'experienced' | null;
+  birth_country?: string | null;
+  proficiency?: string | null;
+  /** Jadval o'qituvchining vaqt zonasida (weekday 1 = dushanba). */
+  schedule?: ScheduleData | null;
 };
 
 export type TeacherTrialLesson = {
@@ -345,22 +353,6 @@ export async function getMyMeetings(token: string): Promise<StudentMeeting[]> {
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || 'Uchrashuvlar yuklanmadi');
   return data;
-}
-
-/** Bepul davrда bir nechta (3 tagacha) dars vaqtini tanlab yozilish. */
-export async function bookFreeLessons(
-  token: string,
-  teacherId: number,
-  slots: string[],
-): Promise<TeacherTrialLesson[]> {
-  const res = await fetch(apiUrl(`/api/teachers/${teacherId}/trial-lessons`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ slots }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Darsga yozilmadi');
-  return Array.isArray(data) ? data : [data];
 }
 
 /** O'quvchining sinov darslari — statistika paneli uchun. */
