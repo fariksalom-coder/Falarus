@@ -165,7 +165,9 @@ const INLINE_SCRIPT_HASHES = inlineScriptHashes().join(' ');
 
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "img-src 'self' data: https:",
+  // `blob:` — tanlangan suratni yuklashdan oldin brauzerda ko'rsatish (o'qituvchi
+  // suratini kesish oynasi); fayl qurilmadan chiqmaydi.
+  "img-src 'self' data: blob: https:",
   // `data:` — ovozni ochish uchun ishlatiladigan jimjit WAV (audioUnlock.ts) va
   // o'yin tovushlari shu ko'rinishda keladi.
   "media-src 'self' data: blob: https:",
