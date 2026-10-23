@@ -3255,7 +3255,15 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
+    // `public/ustoz/` (avatar videosi) kabi papkalar SPA yo'llari bilan bir xil nomda:
+    // papka-redirect (`/ustoz` → `/ustoz/`) o'chiq, aks holda ular SPA'ga yetmay 301 qaytaradi.
+    // Faqat index.html li yagona statik to'plam uchun slash'ni qo'lda qo'shamiz.
+    app.get(LENDING_YOLI, (req, res) => {
+      const q = req.originalUrl.slice(req.path.length);
+      res.redirect(301, `${LENDING_YOLI}/${q}`);
+    });
     app.use(express.static('dist', {
+      redirect: false,
       setHeaders(res, filePath) {
         if (filePath.endsWith('/sw.js') || filePath.endsWith('/index.html')) {
           res.setHeader('Cache-Control', 'no-cache, must-revalidate');

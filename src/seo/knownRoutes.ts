@@ -72,6 +72,7 @@ export function isKnownAppRoute(pathname: string): boolean {
   const patterns: RegExp[] = [
     /^\/help\/[^/]+$/,
     /^\/teachers\/[^/]+$/,
+    /^\/ustozlar\/[^/]+$/,
     new RegExp(`^${ADMIN_BASE_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:/|$)`),
     new RegExp(`^${SUPPORT_CRM_BASE_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:/|$)`),
     /^\/vocabulary\/matnlar\/[^/]+$/,
