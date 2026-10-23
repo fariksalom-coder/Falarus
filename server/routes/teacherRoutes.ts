@@ -441,12 +441,17 @@ export function createTeacherRoutes(
   /*
    * Katalog va ustoz profili faqat platformaga kirganlarga ko'rinadi (2026-10-23).
    * Istisno: mobil ilovaning ESKI to'plami bu so'rovga token qo'shmaydi — ilova
-   * yangilanguncha uning origin'idan (Capacitor) kelgan tokensiz so'rov o'tadi.
-   * Ilova ichida baribir faqat kirgan foydalanuvchi bu sahifani ocha oladi.
+   * yangilanguncha uning tokensiz so'rovi o'tadi. Ilova so'rovni native HTTP orqali
+   * yuboradi, Origin sarlavhasi kelmaydi, shuning uchun User-Agent belgisi ham
+   * tekshiriladi (FalaRusAndroid / FalaRusIOS). Ilova ichida baribir faqat kirgan
+   * foydalanuvchi bu sahifani ocha oladi.
    */
   const NATIVE_APP_ORIGINS = new Set(['https://localhost', 'capacitor://localhost', 'http://localhost']);
+  const NATIVE_APP_UA = /\bFalaRus(Android|IOS)\b/;
+  const isNativeApp = (req: Request) =>
+    NATIVE_APP_ORIGINS.has(String(req.headers.origin || '')) || NATIVE_APP_UA.test(String(req.headers['user-agent'] || ''));
   const requireViewer = (req: Request, res: Response, next: () => void) => {
-    if (!req.headers.authorization && NATIVE_APP_ORIGINS.has(String(req.headers.origin || ''))) return next();
+    if (!req.headers.authorization && isNativeApp(req)) return next();
     return authenticate(req, res, next);
   };
 
