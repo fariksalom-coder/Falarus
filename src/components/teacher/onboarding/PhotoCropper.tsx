@@ -12,22 +12,49 @@ import { ONBOARDING_TEXT } from './text';
 const OUT = 800;
 const MAX_ZOOM = 4;
 /** Tanlanadigan asl fayl chegarasi: kesilgandan keyin u baribir ~150 KB bo'ladi. */
-export const CROP_SOURCE_MAX_BYTES = 40 * 1024 * 1024;
+export const CROP_SOURCE_MAX_BYTES = 50 * 1024 * 1024;
 
 type Lang = 'uz' | 'ru';
 
-/** Faylni rasm sifatida ochadi. HEIC'ni faqat Safari ocha oladi — boshqalarda xato qaytadi. */
-export function loadCropImage(file: File, lang: Lang): Promise<{ img: HTMLImageElement; url: string }> {
-  const t = ONBOARDING_TEXT[lang];
-  if (file.type && !file.type.startsWith('image/')) return Promise.reject(new Error(t.cropNotImage));
-  if (file.size > CROP_SOURCE_MAX_BYTES) return Promise.reject(new Error(t.cropTooBig));
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+const HEIC_LIB = '/vendor/heic-to-1.6.5/heic-to.js';
+
+function openImage(blob: Blob): Promise<{ img: HTMLImageElement; url: string } | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(blob);
     const img = new Image();
-    img.onload = () => (img.naturalWidth && img.naturalHeight ? resolve({ img, url }) : reject(new Error(t.cropCantOpen)));
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(t.cropCantOpen)); };
+    img.onload = () => (img.naturalWidth && img.naturalHeight ? resolve({ img, url }) : (URL.revokeObjectURL(url), resolve(null)));
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
     img.src = url;
   });
+}
+
+/** HEIC/HEIF (iPhone) — faylning 8–12 baytidagi «brand» bo'yicha; turi ko'pincha bo'sh keladi. */
+async function isHeic(file: File) {
+  if (/\.(heic|heif)$/i.test(file.name) || /^image\/hei[cf]/.test(file.type)) return true;
+  const brand = new TextDecoder().decode(await file.slice(8, 12).arrayBuffer());
+  return ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1'].includes(brand);
+}
+
+/**
+ * Faylni rasm sifatida ochadi. JPG, PNG, WEBP, GIF, AVIF, BMP ni brauzer o'zi ochadi;
+ * HEIC'ni faqat Safari — boshqa brauzerda u libheif (WebAssembly, ~3 MB, faqat
+ * kerak bo'lganda yuklanadi) bilan JPEG ga aylantiriladi.
+ */
+export async function loadCropImage(file: File, lang: Lang): Promise<{ img: HTMLImageElement; url: string }> {
+  const t = ONBOARDING_TEXT[lang];
+  if (file.size > CROP_SOURCE_MAX_BYTES) throw new Error(t.cropTooBig);
+  const heic = await isHeic(file).catch(() => false);
+  if (!heic && file.type && !file.type.startsWith('image/')) throw new Error(t.cropNotImage);
+  const direct = await openImage(file);
+  if (direct) return direct;
+  if (!heic) throw new Error(t.cropCantOpen);
+  try {
+    const lib = (await import(/* @vite-ignore */ new URL(HEIC_LIB, window.location.origin).href)) as { heicTo: (o: { blob: Blob; type: string; quality: number }) => Promise<Blob> };
+    const jpeg = await lib.heicTo({ blob: file, type: 'image/jpeg', quality: 0.92 });
+    const converted = await openImage(jpeg);
+    if (converted) return converted;
+  } catch { /* pastdagi umumiy xato */ }
+  throw new Error(t.cropCantOpen);
 }
 
 function frameSize() {

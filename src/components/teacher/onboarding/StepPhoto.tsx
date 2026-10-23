@@ -50,7 +50,7 @@ export default function StepPhoto({ state, setState, lang, token, onNext }: Step
         <div className="flex flex-col gap-2">
           <label className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[16px] bg-app-primary px-5 text-[13px] font-semibold text-white active:scale-[0.98]">
             <Camera className="h-4 w-4" />{current ? t.photoChange : t.photoPick}
-            <input type="file" accept="image/*" className="sr-only" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
+            <input type="file" accept="image/*,.heic,.heif" className="sr-only" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
           </label>
           <p className="text-[11.5px] text-app-text-muted">{t.photoTypes}</p>
           {current && <GhostButton onClick={onNext}>{t.next}</GhostButton>}

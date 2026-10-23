@@ -169,7 +169,9 @@ const contentSecurityPolicy = [
   // `data:` — ovozni ochish uchun ishlatiladigan jimjit WAV (audioUnlock.ts) va
   // o'yin tovushlari shu ko'rinishda keladi.
   "media-src 'self' data: blob: https:",
-  `script-src 'self' ${INLINE_SCRIPT_HASHES} https://telegram.org https://accounts.google.com https://apis.google.com ${MEET_ORIGIN}`,
+  // 'wasm-unsafe-eval' faqat WebAssembly uchun (eval emas): iPhone HEIC suratini
+  // brauzerda ochadigan libheif (public/vendor/heic-to-*) shu bilan ishlaydi.
+  `script-src 'self' 'wasm-unsafe-eval' ${INLINE_SCRIPT_HASHES} https://telegram.org https://accounts.google.com https://apis.google.com ${MEET_ORIGIN}`,
   // Google Fonts uslublar faylini yuklaydi; `font-src` bo'lmasa shriftlar
   // `default-src 'self'` ga tushib bloklanadi.
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
@@ -178,6 +180,8 @@ const contentSecurityPolicy = [
   // `'self'` — o'qituvchilar lendingi (`/oqituvchilarga/`) bosh sahifadagi
   // oynacha ichida ochiladi.
   `frame-src 'self' https://accounts.google.com ${MEET_ORIGIN}`,
+  // HEIC dekoderi blob: worker ichida ishlaydi; 'self' — PWA service worker.
+  "worker-src 'self' blob:",
   "frame-ancestors 'none'",
 ].join('; ') + ';';
 
