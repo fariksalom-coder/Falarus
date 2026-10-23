@@ -276,8 +276,7 @@ export async function createRahmatMulticardPayment(
       .update({ payment_id: paymentId, updated_at: new Date().toISOString() })
       .eq('user_id', userId)
       .is('payment_id', null)
-      .eq('status', 'offer')
-      .gt('offer_expires_at', new Date().toISOString())
+      .or(`and(status.eq.sequence,next_video_index.eq.2),and(status.eq.offer,offer_expires_at.gt.${new Date().toISOString()})`)
       .select('user_id')
       .maybeSingle();
     if (claimErr || !claimed) {
