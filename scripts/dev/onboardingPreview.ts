@@ -25,7 +25,7 @@ await db.exec(`
     admin_note text NOT NULL DEFAULT '', created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
   CREATE TABLE teacher_availability_rules (id bigserial PRIMARY KEY, teacher_user_id integer, weekday smallint, start_time time, end_time time, timezone text);
   CREATE TABLE teacher_notifications (id bigserial PRIMARY KEY, recipient_user_id integer, type text, title text, body text);
-  CREATE TABLE teacher_trial_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, student_user_id integer, status text, scheduled_starts_at timestamptz, scheduled_ends_at timestamptz);
+  CREATE TABLE teacher_trial_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, student_user_id integer, status text, scheduled_starts_at timestamptz, scheduled_ends_at timestamptz, price_uzs_snapshot numeric NOT NULL DEFAULT 73500);
   CREATE TABLE teacher_meet_sessions (id bigserial PRIMARY KEY, teacher_user_id integer, status text);
   CREATE TABLE payments (id bigint PRIMARY KEY);
   INSERT INTO users (id, account_type, phone) VALUES (10, 'teacher', '+998901234567'), (20, 'student', '+998907777777');
@@ -43,6 +43,16 @@ await db.exec(`INSERT INTO users (id, account_type, phone, first_name, last_name
   INSERT INTO teacher_balance_entries (teacher_user_id, kind, amount_uzs, lesson_id, note) VALUES (11, 'lesson', 60300, 1, '1-dars · komissiya 33%');
   INSERT INTO teacher_lessons (teacher_user_id, student_user_id, starts_at, ends_at, price_uzs, status, room_slug, student_message)
     VALUES (11, 20, now() + interval '5 minutes', now() + interval '65 minutes', 90000, 'paid', 'demo-b', 'Patent imtihoniga tayyorlanyapman');`);
+await db.exec(await readFile('db/migrations/214_teacher_catalog_toggle_contacts.sql', 'utf8'));
+// Demo for the admin hub: teacher 12 waiting for review, a withdrawal request, tomorrow's lesson.
+await db.exec(`INSERT INTO users (id, account_type, phone, first_name, last_name) VALUES (12, 'teacher', '+998935556677', 'Madina', 'Rahimova');
+  INSERT INTO teacher_profiles (user_id, first_name, last_name, profile_status, lesson_price_uzs, onboarding_step, onboarding_submitted_at, onboarding_path, contact_phone, contact_telegram, contact_whatsapp)
+  VALUES (12, 'Madina', 'Rahimova', 'pending_review', 85000, 8, now() - interval '3 hours', 'experienced', '+998935556677', '@madina_rus', '+998935556677');
+  INSERT INTO teacher_review_events (teacher_user_id, action, created_at) VALUES (12, 'submitted', now() - interval '3 hours');
+  INSERT INTO teacher_review_events (teacher_user_id, action, actor, created_at) VALUES (11, 'approved', 'admin', now() - interval '5 days'), (11, 'catalog_on', 'admin', now() - interval '5 days');
+  INSERT INTO teacher_withdrawals (teacher_user_id, amount_uzs, card_number, card_holder) VALUES (11, 60000, '8600123412341234', 'SHAHLO KARIMOVA');
+  INSERT INTO teacher_lessons (teacher_user_id, student_user_id, starts_at, ends_at, price_uzs, status, room_slug)
+    VALUES (11, 20, date_trunc('day', now() + interval '1 day') + interval '5 hours', date_trunc('day', now() + interval '1 day') + interval '6 hours', 90000, 'paid', 'demo-c');`);
 const q: OnboardingQuery = (sql, params) => db.query(sql, params as unknown[]);
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'onb-preview-'));
 const deps = { q, uploadsDir: path.join(tmp, 'public'), privateDir: path.join(tmp, 'private'), generateAbout: null };

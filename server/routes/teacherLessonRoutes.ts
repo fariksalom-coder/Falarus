@@ -186,7 +186,7 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
   router.get('/teachers/:teacherId/lesson-slots', h(async (req, res) => {
     const { q } = db();
     const id = Number(req.params.teacherId);
-    const t = (await q(`SELECT user_id, lesson_price_uzs, schedule, terms_accepted_at FROM teacher_profiles WHERE user_id = $1 AND profile_status = 'active'`, [id])).rows[0];
+    const t = (await q(`SELECT user_id, lesson_price_uzs, schedule, terms_accepted_at FROM teacher_profiles WHERE user_id = $1 AND profile_status = 'active' AND catalog_visible`, [id])).rows[0];
     if (!t) throw new HttpError(404, 'Oʻqituvchi topilmadi');
     await q(`UPDATE teacher_lessons SET status = 'expired', updated_at = now() WHERE status = 'pending_payment' AND created_at < now() - ($1::int * interval '1 minute')`, [PENDING_HOLD_MINUTES]);
     const busy = (await q(`SELECT starts_at FROM teacher_lessons WHERE teacher_user_id = $1 AND status IN ('pending_payment', 'paid', 'disputed') AND starts_at > now()
@@ -204,7 +204,7 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     const teacherId = Number(req.params.teacherId);
     const studentId = Number(req.userId);
     if (teacherId === studentId) throw new HttpError(400, 'Oʻzingizga dars band qila olmaysiz');
-    const t = (await q(`SELECT user_id, lesson_price_uzs, schedule, terms_accepted_at FROM teacher_profiles WHERE user_id = $1 AND profile_status = 'active'`, [teacherId])).rows[0];
+    const t = (await q(`SELECT user_id, lesson_price_uzs, schedule, terms_accepted_at FROM teacher_profiles WHERE user_id = $1 AND profile_status = 'active' AND catalog_visible`, [teacherId])).rows[0];
     if (!t?.lesson_price_uzs || !t.schedule || !t.terms_accepted_at) throw new HttpError(409, 'Bu oʻqituvchi hozircha pullik dars qabul qilmaydi');
     const startsAt = new Date(String(req.body?.starts_at ?? ''));
     if (Number.isNaN(startsAt.getTime())) throw new HttpError(400, 'Vaqtni tanlang');
@@ -429,6 +429,34 @@ export function createAdminTeacherMoneyRoutes(deps: LessonDeps = {}): Router {
       return { status: paid ? 'paid' : 'rejected' };
     });
     res.json(out);
+  }));
+
+  /**
+   * Darslar jadvali (admin): pullik va sinov darslari bitta ro'yxatda, vaqt bo'yicha.
+   * ?from=YYYY-MM-DD&to=YYYY-MM-DD (Toshkent sanasi, ikkalasi ham kiradi) &teacher=ID
+   */
+  router.get('/schedule', h(async (req, res) => {
+    const day = (v: unknown, fallback: string) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : fallback);
+    const today = new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10);
+    const from = day(req.query.from, today);
+    const to = day(req.query.to, from);
+    const teacher = Number(req.query.teacher) || null;
+    const { rows } = await db().q(`SELECT * FROM (
+        SELECT 'paid' AS kind, l.id, l.teacher_user_id, l.starts_at, l.ends_at, l.status, l.price_uzs, l.room_slug,
+          p.first_name AS teacher_first_name, p.last_name AS teacher_last_name, s.first_name AS student_first_name, s.last_name AS student_last_name, s.phone AS student_phone
+        FROM teacher_lessons l JOIN teacher_profiles p ON p.user_id = l.teacher_user_id JOIN users s ON s.id = l.student_user_id
+        WHERE l.status NOT IN ('expired', 'pending_payment')
+        UNION ALL
+        SELECT 'trial', t.id, t.teacher_user_id, t.scheduled_starts_at, t.scheduled_ends_at, t.status, round(t.price_uzs_snapshot)::int, NULL,
+          p.first_name, p.last_name, s.first_name, s.last_name, s.phone
+        FROM teacher_trial_lessons t JOIN teacher_profiles p ON p.user_id = t.teacher_user_id JOIN users s ON s.id = t.student_user_id
+        WHERE t.scheduled_starts_at IS NOT NULL AND t.status <> 'pending_payment'
+      ) x
+      WHERE x.starts_at >= ($1::date::timestamp AT TIME ZONE 'Asia/Tashkent') AND x.starts_at < (($2::date + 1)::timestamp AT TIME ZONE 'Asia/Tashkent')
+        AND ($3::int IS NULL OR x.teacher_user_id = $3)
+      ORDER BY x.starts_at ASC LIMIT 500`, [from, to, teacher]);
+    const teachers = (await db().q(`SELECT user_id, first_name, last_name FROM teacher_profiles WHERE profile_status IN ('active', 'paused') ORDER BY first_name, last_name`)).rows;
+    res.json({ from, to, rows, teachers });
   }));
 
   router.get('/lessons', h(async (req, res) => {

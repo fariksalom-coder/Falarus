@@ -109,6 +109,7 @@ function teacherDetailSelect(): string {
 function teacherOwnerSelect(): string {
   return [
     teacherPublicSelect(),
+    'catalog_visible',
     'telegram_username',
     'telegram_url',
     'whatsapp_phone_e164',
@@ -456,6 +457,7 @@ export function createTeacherRoutes(
         .from('teacher_profiles')
         .select(teacherPublicSelect())
         .eq('profile_status', 'active')
+        .eq('catalog_visible', true)
         .order('created_at', { ascending: true })
         .limit(200);
       if (search) {
@@ -464,7 +466,8 @@ export function createTeacherRoutes(
       const { data, error } = await query;
       if (error) throw error;
       /*
-        Katalogda faqat admin tasdiqlagan profil (`profile_status = 'active'`).
+        Katalogda faqat admin tasdiqlagan (`profile_status = 'active'`) VA admin
+        tumbler bilan katalogga chiqargan (`catalog_visible`) profil — migr. 214.
         2026-10-23 dan listing to'lovi yo'q: platforma darslardan komissiya oladi
         (onboarding v2), shuning uchun `listing_paid_until` endi tekshirilmaydi.
       */
@@ -485,6 +488,7 @@ export function createTeacherRoutes(
           .select(teacherDetailSelect())
           .eq('user_id', teacherId)
           .eq('profile_status', 'active')
+          .eq('catalog_visible', true)
           .maybeSingle(),
         supabase
           .from('teacher_student_reviews')

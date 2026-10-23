@@ -1,26 +1,30 @@
 /**
- * O'QITUVCHI ARIZALARI (onboarding v2): tekshiruv va qaror.
+ * O'QITUVCHILAR → «Tekshiruv»: yangi arizalar, tuzatishga qaytarilganlar, anketani
+ * to'ldirayotganlar va umumiy tarix (kim qachon yubordi, kim qaror qildi).
  *
- * Chapda — holat bo'yicha ro'yxat, o'ngda — tanlangan ariza: barcha qadamlar,
+ * O'ngda — tanlangan ariza: aloqa (telefon, Telegram, WhatsApp), barcha qadamlar,
  * yopiq hujjatlar (token bilan ochiladi), video, jadval, narx va rozilik tarixi.
  * Qaror: tasdiqlash / qadamni ko'rsatib qaytarish / rad etish (izoh bilan).
- * Pastda — narx chegaralari va komissiya shkalasi (kodsiz o'zgartiriladi).
+ * Tasdiqlangan o'qituvchi katalogga o'zi chiqmaydi — «O'qituvchilar» tabida tumbler.
  */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, BadgeCheck, CheckCircle2, FileText, Loader2, RotateCcw, Settings2, XCircle } from 'lucide-react';
-import { adminApi, getAdminToken } from '../../lib/adminApi';
-import { apiUrl, resolveAssetUrl } from '../../api';
+import { AlertTriangle, ArrowLeft, BadgeCheck, CheckCircle2, FileText, History, Inbox, Loader2, RotateCcw, Settings2, XCircle } from 'lucide-react';
+import { adminApi, getAdminToken } from '../../../lib/adminApi';
+import { apiUrl, resolveAssetUrl } from '../../../api';
 import {
   COUNTRIES, DEGREES, ERRORS, ONBOARDING_STEPS, PROFICIENCY, ABOUT_QUESTIONS, commissionStatus, validateTiers,
   type CommissionTier, type ErrorCode, type OnboardingData,
-} from '../../../shared/teacherOnboarding';
+} from '../../../../shared/teacherOnboarding';
+import { ContactLinks, EVENT_LABEL, dateTime as date, fmtNum as fmt } from './shared';
 
 type Row = {
   user_id: number; first_name: string; last_name: string; avatar_url: string | null; onboarding_path: string | null; proficiency: string | null;
   birth_country: string | null; profile_status: string; onboarding_step: number; onboarding_submitted_at: string | null; lesson_price_uzs: number | null;
   reviewed_at: string | null; review_step: number | null; phone: string | null; email: string | null;
+  contact_phone: string | null; contact_telegram: string | null; contact_whatsapp: string | null; catalog_visible: boolean;
 };
+type HistoryEvent = { id: number; teacher_user_id: number; action: string; step: number | null; comment: string | null; actor: string | null; created_at: string; first_name: string; last_name: string };
 type Detail = {
   profile: Row & { data: OnboardingData; review_comment: string | null; certified_verified: boolean; video_duration_sec: number | null; terms_version: string | null };
   documents: { id: number; kind: string; original_name: string; mime: string | null; size_bytes: number | null; status: string; private: boolean; file_url: string; created_at: string }[];
@@ -31,13 +35,11 @@ type Detail = {
 };
 type Settings = { price_min_uzs: number; price_max_uzs: number; commission_tiers: CommissionTier[]; terms_version: string; terms: { uz: string[]; ru: string[] } };
 
-const STATUSES = [
-  { key: 'pending_review', label: 'Tekshiruvda' },
-  { key: 'needs_revision', label: 'Tuzatishda' },
-  { key: 'active', label: 'Tasdiqlangan' },
-  { key: 'rejected', label: 'Rad etilgan' },
-  { key: 'draft', label: 'Qoralama' },
-  { key: '', label: 'Hammasi' },
+const VIEWS = [
+  { key: 'pending_review', label: 'Yangi arizalar', icon: Inbox },
+  { key: 'needs_revision', label: 'Tuzatishda', icon: RotateCcw },
+  { key: 'draft', label: 'Toʻldirayotganlar', icon: FileText },
+  { key: 'history', label: 'Tarix', icon: History },
 ] as const;
 const STATUS_LABEL: Record<string, string> = { pending_review: 'Tekshiruvda', needs_revision: 'Tuzatishda', active: 'Tasdiqlangan', rejected: 'Rad etilgan', draft: 'Qoralama', paused: 'Toʻxtatilgan' };
 const STATUS_TONE: Record<string, string> = {
@@ -45,8 +47,6 @@ const STATUS_TONE: Record<string, string> = {
   rejected: 'bg-red-50 text-red-800', draft: 'bg-slate-100 text-slate-700', paused: 'bg-slate-100 text-slate-700',
 };
 const DAYS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
-const fmt = (n: number) => n.toLocaleString('ru-RU').replace(/ /g, ' ');
-const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 const label = (list: { code: string; uz: string }[], code: string | null | undefined) => list.find((x) => x.code === code)?.uz ?? code ?? '—';
 
 async function openPrivate(teacherId: number, docId: number) {
@@ -58,68 +58,70 @@ async function openPrivate(teacherId: number, docId: number) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-export default function AdminTeacherApplicationsPage() {
+export default function ReviewTab({ onCounts }: { onCounts?: (pending: number) => void }) {
   const [params, setParams] = useSearchParams();
-  const status = params.get('status') ?? 'pending_review';
+  const view = VIEWS.some((v) => v.key === params.get('view')) ? params.get('view')! : 'pending_review';
   const selected = Number(params.get('id')) || null;
   const [list, setList] = useState<{ rows: Row[]; counts: Record<string, number> } | null>(null);
   const [error, setError] = useState('');
   const [showSettings, setShowSettings] = useState(false);
 
-  const set = (k: string, v: string | null) => {
+  const set = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
-    if (v) next.set(k, v); else next.delete(k);
+    for (const [k, v] of Object.entries(patch)) { if (v) next.set(k, v); else next.delete(k); }
     setParams(next, { replace: true });
   };
 
   const load = useCallback(() => {
     setError('');
-    adminApi<{ rows: Row[]; counts: Record<string, number> }>(`/teacher-applications${status && status !== 'all' ? `?status=${status}` : ''}`)
-      .then(setList).catch((e) => setError(e instanceof Error ? e.message : 'Xatolik'));
-  }, [status]);
+    const status = view === 'history' ? 'pending_review' : view;
+    adminApi<{ rows: Row[]; counts: Record<string, number> }>(`/teacher-applications?status=${status}`)
+      .then((r) => { setList(r); onCounts?.(r.counts.pending_review ?? 0); })
+      .catch((e) => setError(e instanceof Error ? e.message : 'Xatolik'));
+  }, [view, onCounts]);
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div className="max-w-7xl space-y-5">
-      <header className="flex flex-wrap items-end gap-3">
-        <div className="mr-auto">
-          <h1 className="text-2xl font-semibold text-app-text">Oʻqituvchi arizalari</h1>
-          <p className="mt-1 text-sm text-app-text-muted">8 qadamli anketa: tekshirish, tuzatishga qaytarish, tasdiqlash. Faqat tasdiqlangan profil katalogda chiqadi.</p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-1 overflow-x-auto rounded-2xl border border-app-border bg-app-surface p-1">
+          {VIEWS.map((v) => {
+            const n = v.key === 'history' ? 0 : list?.counts[v.key] ?? 0;
+            const on = view === v.key;
+            return (
+              <button key={v.key} type="button" onClick={() => set({ view: v.key, id: null })} aria-pressed={on}
+                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition ${on ? 'bg-blue-600 text-white' : 'text-app-text hover:bg-app-bg-muted'}`}>
+                <v.icon className="h-4 w-4" />{v.label}
+                {n > 0 && <span className={`rounded-full px-1.5 text-xs tabular-nums ${on ? 'bg-white/25' : v.key === 'pending_review' ? 'bg-red-500 text-white' : 'bg-slate-100'}`}>{n}</span>}
+              </button>
+            );
+          })}
         </div>
-        <button type="button" onClick={() => setShowSettings((v) => !v)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text hover:bg-app-bg-muted">
+        <button type="button" onClick={() => setShowSettings((v) => !v)} className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text hover:bg-app-bg-muted">
           <Settings2 className="h-4 w-4" />Narx va komissiya
         </button>
-      </header>
+      </div>
 
       {showSettings && <SettingsCard />}
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-      <div className="flex gap-1 overflow-x-auto rounded-2xl border border-app-border bg-app-surface p-1">
-        {STATUSES.map((s) => (
-          <button key={s.label} type="button" onClick={() => { set('status', s.key || 'all'); set('id', null); }} aria-pressed={status === (s.key || 'all')}
-            className={`min-h-11 shrink-0 rounded-xl px-3.5 text-sm font-semibold transition ${status === (s.key || 'all') ? 'bg-blue-600 text-white' : 'text-app-text hover:bg-app-bg-muted'}`}>
-            {s.label}{s.key && list?.counts[s.key] ? <span className="ml-1.5 tabular-nums opacity-75">{list.counts[s.key]}</span> : null}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <section className={`rounded-2xl border border-app-border bg-app-surface ${selected ? 'hidden lg:block' : ''}`}>
-          {!list ? <p className="p-6 text-center text-app-text-muted" role="status">Yuklanmoqda…</p>
-            : !list.rows.length ? <p className="p-6 text-center text-slate-400">Ariza yoʻq</p> : (
+      <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <section className={`overflow-hidden rounded-2xl border border-app-border bg-app-surface ${selected ? 'hidden lg:block' : ''}`}>
+          {view === 'history' ? <HistoryList selected={selected} onPick={(id) => set({ id: String(id) })} />
+            : !list ? <p className="p-6 text-center text-app-text-muted" role="status">Yuklanmoqda…</p>
+            : !list.rows.length ? <EmptyQueue view={view} />
+            : (
               <ul className="divide-y divide-app-border">
                 {list.rows.map((r) => (
                   <li key={r.user_id}>
-                    <button type="button" onClick={() => set('id', String(r.user_id))}
+                    <button type="button" onClick={() => set({ id: String(r.user_id) })}
                       className={`flex w-full items-center gap-3 p-3.5 text-left transition hover:bg-app-bg-muted ${selected === r.user_id ? 'bg-blue-50' : ''}`}>
                       <span className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-100">
                         {r.avatar_url ? <img src={resolveAssetUrl(r.avatar_url) ?? r.avatar_url} alt="" className="h-full w-full object-cover" /> : null}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold text-app-text">{r.first_name} {r.last_name}</span>
-                        <span className="block truncate text-xs text-app-text-muted">
-                          {r.onboarding_path === 'certified' ? 'Sertifikatli' : r.onboarding_path === 'experienced' ? 'Tajribali' : '—'} · {r.lesson_price_uzs ? `${fmt(r.lesson_price_uzs)} soʻm` : 'narx yoʻq'}
-                        </span>
+                        <span className="block truncate text-xs text-app-text-muted">{r.contact_phone || r.phone || '—'} · {r.lesson_price_uzs ? `${fmt(r.lesson_price_uzs)} soʻm` : 'narx yoʻq'}</span>
                         <span className="block text-xs text-app-text-muted">{r.onboarding_submitted_at ? `Yuborilgan: ${date(r.onboarding_submitted_at)}` : `Qadam ${r.onboarding_step}/8`}</span>
                       </span>
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${STATUS_TONE[r.profile_status] ?? ''}`}>{STATUS_LABEL[r.profile_status] ?? r.profile_status}</span>
@@ -131,11 +133,55 @@ export default function AdminTeacherApplicationsPage() {
         </section>
 
         <section className={selected ? '' : 'hidden lg:block'}>
-          {selected ? <ApplicationDetail id={selected} onBack={() => set('id', null)} onDecided={load} />
-            : <p className="rounded-2xl border border-dashed border-app-border p-10 text-center text-app-text-muted">Chapdan arizani tanlang</p>}
+          {selected ? <ApplicationDetail id={selected} onBack={() => set({ id: null })} onDecided={load} />
+            : <p className="rounded-2xl border border-dashed border-app-border p-10 text-center text-app-text-muted">{view === 'history' ? 'Tarixdan oʻqituvchini tanlang' : 'Chapdan arizani tanlang'}</p>}
         </section>
       </div>
     </div>
+  );
+}
+
+function EmptyQueue({ view }: { view: string }) {
+  const text = view === 'pending_review'
+    ? ['Yangi ariza yoʻq', 'Oʻqituvchi anketani yuborishi bilan shu yerda chiqadi.']
+    : view === 'needs_revision' ? ['Tuzatishda hech kim yoʻq', 'Qaytarilgan arizalar oʻqituvchi qayta yuborguncha shu yerda turadi.']
+    : ['Hech kim anketa toʻldirmayapti', 'Roʻyxatdan oʻtib, anketani oxirigacha yubormaganlar shu yerda.'];
+  return (
+    <div className="flex flex-col items-center gap-2 p-10 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle2 className="h-6 w-6" /></span>
+      <p className="font-semibold text-app-text">{text[0]}</p>
+      <p className="text-sm text-app-text-muted">{text[1]}</p>
+    </div>
+  );
+}
+
+function HistoryList({ selected, onPick }: { selected: number | null; onPick: (id: number) => void }) {
+  const [rows, setRows] = useState<HistoryEvent[] | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    adminApi<{ rows: HistoryEvent[] }>('/teacher-applications/events?limit=200').then((r) => setRows(r.rows)).catch((e) => setError(e instanceof Error ? e.message : 'Xatolik'));
+  }, []);
+  if (error) return <p role="alert" className="p-4 text-sm text-red-700">{error}</p>;
+  if (!rows) return <p className="p-6 text-center text-app-text-muted" role="status">Yuklanmoqda…</p>;
+  if (!rows.length) return <p className="p-6 text-center text-app-text-muted">Tarix boʻsh</p>;
+  return (
+    <ol className="max-h-[70vh] divide-y divide-app-border overflow-y-auto">
+      {rows.map((e) => {
+        const ev = EVENT_LABEL[e.action] ?? { text: e.action, tone: 'bg-slate-100 text-slate-700' };
+        return (
+          <li key={e.id}>
+            <button type="button" onClick={() => onPick(e.teacher_user_id)} className={`w-full p-3.5 text-left transition hover:bg-app-bg-muted ${selected === e.teacher_user_id ? 'bg-blue-50' : ''}`}>
+              <span className="flex items-center gap-2">
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${ev.tone}`}>{ev.text}{e.step ? ` · ${e.step}-qadam` : ''}</span>
+                <span className="ml-auto text-xs tabular-nums text-app-text-muted">{date(e.created_at)}</span>
+              </span>
+              <span className="mt-1 block truncate text-sm font-semibold text-app-text">{e.first_name} {e.last_name}</span>
+              <span className="block truncate text-xs text-app-text-muted">{e.actor ? `${e.actor}` : 'oʻqituvchi'}{e.comment ? ` — «${e.comment}»` : ''}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -206,7 +252,8 @@ function ApplicationDetail({ id, onBack, onDecided }: { id: number; onBack: () =
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-lg font-bold text-app-text">{data.personal.first_name} {data.personal.last_name}</p>
-          <p className="text-sm text-app-text-muted">{p.phone ?? ''} {p.email ? `· ${p.email}` : ''}</p>
+          <ContactLinks phone={p.contact_phone || p.phone} telegram={p.contact_telegram} whatsapp={p.contact_whatsapp} className="mt-1" />
+          {p.email && <p className="mt-1 text-xs text-app-text-muted">{p.email}{p.phone && p.contact_phone && p.phone !== p.contact_phone ? ` · roʻyxatdan oʻtgan raqam: ${p.phone}` : ''}</p>}
           <p className="mt-1 flex flex-wrap gap-2 text-xs">
             <span className={`rounded-full px-2 py-0.5 font-bold ${STATUS_TONE[p.profile_status] ?? ''}`}>{STATUS_LABEL[p.profile_status] ?? p.profile_status}</span>
             <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">{data.personal.path === 'certified' ? 'Sertifikatli yoʻl' : 'Tajribali yoʻl'}</span>
@@ -283,7 +330,11 @@ function ApplicationDetail({ id, onBack, onDecided }: { id: number; onBack: () =
 
       <section className="space-y-3 rounded-2xl border-2 border-blue-200 bg-blue-50/40 p-4">
         <h3 className="text-sm font-bold text-app-text">Qaror</h3>
-        {p.profile_status !== 'pending_review' && <p className="text-xs text-app-text-muted">Ariza hozir «{STATUS_LABEL[p.profile_status] ?? p.profile_status}» holatida — qarorni baribir oʻzgartirish mumkin.</p>}
+        {p.profile_status === 'active' ? (
+          <p className="rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+            Tasdiqlangan. Katalogda {p.catalog_visible ? 'koʻrinmoqda' : 'hali koʻrinmaydi — «Oʻqituvchilar» tabida tumblerni yoqing'}.
+          </p>
+        ) : p.profile_status !== 'pending_review' && <p className="text-xs text-app-text-muted">Ariza hozir «{STATUS_LABEL[p.profile_status] ?? p.profile_status}» holatida — qarorni baribir oʻzgartirish mumkin.</p>}
         <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Izoh (qaytarish va rad etish uchun shart): nimani tuzatish kerak"
           className="w-full rounded-xl border border-app-border bg-app-surface p-3 text-sm text-app-text" />
         <div className="flex flex-wrap items-center gap-2">
@@ -315,7 +366,7 @@ function ApplicationDetail({ id, onBack, onDecided }: { id: number; onBack: () =
         <Block title="Tarix">
           <ol className="space-y-1.5 text-sm">
             {d.events.map((e, i) => (
-              <li key={i} className="text-app-text"><span className="text-app-text-muted">{date(e.created_at)}</span> · {{ submitted: 'Yuborildi', approved: 'Tasdiqlandi', rejected: 'Rad etildi', needs_revision: `Tuzatishga (${e.step}-qadam)` }[e.action] ?? e.action}{e.actor ? ` · ${e.actor}` : ''}{e.comment ? ` — «${e.comment}»` : ''}</li>
+              <li key={i} className="text-app-text"><span className="text-app-text-muted">{date(e.created_at)}</span> · {EVENT_LABEL[e.action]?.text ?? e.action}{e.step ? ` (${e.step}-qadam)` : ''}{e.actor ? ` · ${e.actor}` : ''}{e.comment ? ` — «${e.comment}»` : ''}</li>
             ))}
           </ol>
         </Block>

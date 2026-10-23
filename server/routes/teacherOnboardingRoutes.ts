@@ -35,6 +35,8 @@ import {
   firstInvalidStep,
   nextStep,
   normalizeAnswers,
+  normalizePhone,
+  normalizeTelegram,
   normalizeCertificates,
   normalizeEducation,
   normalizeSchedule,
@@ -139,7 +141,7 @@ async function defaultProbe(file: string): Promise<{ duration: number | null; ha
 const PROFILE_COLS = `user_id, first_name, last_name, birth_country, subject, proficiency, onboarding_path, avatar_url,
   certificates, education, about_answers, about, headline, video_url, video_duration_sec, schedule, weekly_availability,
   lesson_price_uzs, terms_version, terms_accepted_at, onboarding_step, onboarding_submitted_at, profile_status,
-  review_comment, review_step, reviewed_at, certified_verified`;
+  review_comment, review_step, reviewed_at, certified_verified, contact_phone, contact_telegram, contact_whatsapp`;
 
 async function loadSettings(q: OnboardingQuery): Promise<OnboardingSettings> {
   const { rows } = await q('SELECT price_min_uzs, price_max_uzs, commission_tiers, terms_version FROM teacher_onboarding_settings WHERE id');
@@ -174,6 +176,8 @@ function toData(row: any, termsVersion: string): OnboardingData {
     personal: {
       first_name: row?.first_name ?? '', last_name: row?.last_name ?? '', birth_country: row?.birth_country ?? '',
       subject: row?.subject ?? 'russian', proficiency: row?.proficiency ?? '', path: (row?.onboarding_path ?? '') as OnboardingPath | '',
+      // Telefon bo'sh bo'lsa — ro'yxatdan o'tgan raqam taklif qilinadi.
+      contact_phone: row?.contact_phone ?? row?.account_phone ?? '', contact_telegram: row?.contact_telegram ?? '', contact_whatsapp: row?.contact_whatsapp ?? '',
     },
     avatar_url: row?.avatar_url || null,
     certificates: legacyCertificates(row?.certificates),
@@ -224,10 +228,11 @@ export function createTeacherOnboardingRoutes(
   async function teacher(req: any) {
     if (!q) throw new HttpError(503, 'Baza ulanmagan');
     const id = Number(req.userId);
-    const u = await q('SELECT account_type FROM users WHERE id = $1', [id]);
+    const u = await q('SELECT account_type, phone FROM users WHERE id = $1', [id]);
     if (u.rows[0]?.account_type !== 'teacher') throw new HttpError(403, 'Bu boʻlim faqat oʻqituvchilar uchun');
     const p = await q(`SELECT ${PROFILE_COLS} FROM teacher_profiles WHERE user_id = $1`, [id]);
-    return { id, row: p.rows[0] ?? null };
+    const account_phone = u.rows[0]?.phone ?? null;
+    return { id, row: p.rows[0] ? { ...p.rows[0], account_phone } : null, account_phone };
   }
   function needRow(row: unknown) {
     if (!row) throw new HttpError(409, 'Avval 1-qadamni (shaxsiy maʼlumotlar) saqlang', { step: 1 });
@@ -242,6 +247,10 @@ export function createTeacherOnboardingRoutes(
   async function state(id: number, row: any) {
     const settings = await loadSettings(q!);
     const data = toData(row, settings.terms_version);
+    // Telefon hali yozilmagan bo'lsa — ro'yxatdan o'tgan raqam taklif qilinadi (anketa yo'q bo'lsa ham).
+    if (!data.personal.contact_phone) {
+      data.personal.contact_phone = row?.account_phone ?? (await q!('SELECT phone FROM users WHERE id = $1', [id])).rows[0]?.phone ?? '';
+    }
     const docs = row ? (await q!(`SELECT id, original_name, mime, size_bytes, status, created_at FROM teacher_documents
       WHERE teacher_user_id = $1 AND private_path IS NOT NULL ORDER BY id`, [id])).rows : [];
     const lessons = row ? await completedLessons(q!, id) : 0;
@@ -281,6 +290,8 @@ export function createTeacherOnboardingRoutes(
     if (step === 1) next.personal = {
       first_name: String(b.first_name ?? '').trim(), last_name: String(b.last_name ?? '').trim(), birth_country: String(b.birth_country ?? ''),
       subject: String(b.subject ?? 'russian'), proficiency: String(b.proficiency ?? ''), path: b.path === 'certified' || b.path === 'experienced' ? b.path : '',
+      contact_phone: String(b.contact_phone ?? '').trim().slice(0, 40), contact_telegram: String(b.contact_telegram ?? '').trim().slice(0, 80),
+      contact_whatsapp: String(b.contact_whatsapp ?? '').trim().slice(0, 40),
     };
     if (step === 3) next.certificates = normalizeCertificates(b.certificates);
     if (step === 4) next.education = normalizeEducation(b.education);
@@ -308,13 +319,19 @@ export function createTeacherOnboardingRoutes(
     if (step === 1) {
       const p = next.personal;
       const subjectLabel = SUBJECTS.find((s) => s.code === p.subject)?.uz ?? 'Rus tili';
-      await q!(`INSERT INTO teacher_profiles (user_id, first_name, last_name, birth_country, subject, proficiency, onboarding_path, subjects, onboarding_step, onboarding_v2_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, ARRAY[$8::text], $9, now())
+      // Aloqa: to'g'ri bo'lsa normal ko'rinishda, qoralamada esa yozilganicha saqlanadi.
+      const phone = normalizePhone(p.contact_phone) ?? (p.contact_phone || null);
+      const tg = normalizeTelegram(p.contact_telegram) ?? (p.contact_telegram || null);
+      const wa = normalizePhone(p.contact_whatsapp) ?? (p.contact_whatsapp || null);
+      await q!(`INSERT INTO teacher_profiles (user_id, first_name, last_name, birth_country, subject, proficiency, onboarding_path, subjects, onboarding_step, onboarding_v2_at,
+          contact_phone, contact_telegram, contact_whatsapp)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, ARRAY[$8::text], $9, now(), $10, $11, $12)
         ON CONFLICT (user_id) DO UPDATE SET first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, birth_country = EXCLUDED.birth_country,
           subject = EXCLUDED.subject, proficiency = EXCLUDED.proficiency, onboarding_path = EXCLUDED.onboarding_path,
+          contact_phone = EXCLUDED.contact_phone, contact_telegram = EXCLUDED.contact_telegram, contact_whatsapp = EXCLUDED.contact_whatsapp,
           subjects = CASE WHEN cardinality(teacher_profiles.subjects) = 0 THEN EXCLUDED.subjects ELSE teacher_profiles.subjects END,
           onboarding_step = GREATEST(teacher_profiles.onboarding_step, EXCLUDED.onboarding_step), updated_at = now()`,
-      [id, p.first_name || '—', p.last_name || '—', p.birth_country || null, p.subject || 'russian', p.proficiency || null, p.path || null, subjectLabel, Math.max(1, advance)]);
+      [id, p.first_name || '—', p.last_name || '—', p.birth_country || null, p.subject || 'russian', p.proficiency || null, p.path || null, subjectLabel, Math.max(1, advance), phone, tg, wa]);
     } else if (step === 3) {
       // Eski profil ko'rinishi uchun issuer/year ham yoziladi.
       const rows = next.certificates.map((c) => ({ ...c, issuer: c.institution, year: c.year_to ? String(c.year_to) : '', image_url: '' }));
@@ -571,7 +588,8 @@ export function createAdminTeacherOnboardingRoutes(deps: OnboardingDeps = {}): R
   router.get('/teacher-applications', h(async (req, res) => {
     const status = typeof req.query.status === 'string' && req.query.status ? req.query.status : null;
     const { rows } = await db()(`SELECT p.user_id, p.first_name, p.last_name, p.avatar_url, p.onboarding_path, p.proficiency, p.birth_country,
-        p.profile_status, p.onboarding_step, p.onboarding_submitted_at, p.lesson_price_uzs, p.reviewed_at, p.review_step, u.phone, u.email
+        p.profile_status, p.onboarding_step, p.onboarding_submitted_at, p.lesson_price_uzs, p.reviewed_at, p.review_step, u.phone, u.email,
+        p.contact_phone, p.contact_telegram, p.contact_whatsapp, p.catalog_visible
       FROM teacher_profiles p JOIN users u ON u.id = p.user_id
       WHERE ($1::text IS NULL OR p.profile_status = $1)
       ORDER BY (p.profile_status = 'pending_review') DESC, p.onboarding_submitted_at DESC NULLS LAST, p.updated_at DESC LIMIT 300`, [status]);
@@ -579,9 +597,45 @@ export function createAdminTeacherOnboardingRoutes(deps: OnboardingDeps = {}): R
     res.json({ rows, counts: Object.fromEntries(counts.rows.map((r) => [r.profile_status, r.n])) });
   }));
 
+  /** Hamma o'qituvchilar bo'yicha tekshiruv tarixi: kim qachon yubordi, kim tasdiqladi/qaytardi. */
+  router.get('/teacher-applications/events', h(async (req, res) => {
+    const limit = Math.min(500, Math.max(10, Number(req.query.limit) || 150));
+    const { rows } = await db()(`SELECT e.id, e.teacher_user_id, e.action, e.step, e.comment, e.actor, e.created_at, p.first_name, p.last_name
+      FROM teacher_review_events e JOIN teacher_profiles p ON p.user_id = e.teacher_user_id ORDER BY e.created_at DESC LIMIT $1`, [limit]);
+    res.json({ rows });
+  }));
+
+  /**
+   * Tasdiqlangan o'qituvchilar (katalog boshqaruvi): aloqa, tumbler holati va darslar soni.
+   * `paused` — eski «to'xtatilgan» holat, ular ham shu ro'yxatda (tumbler o'chiq).
+   */
+  router.get('/teacher-catalog', h(async (_req, res) => {
+    const { rows } = await db()(`SELECT p.user_id, p.first_name, p.last_name, p.avatar_url, p.profile_status, p.catalog_visible, p.catalog_visible_changed_at,
+        p.reviewed_at, p.lesson_price_uzs, p.contact_phone, p.contact_telegram, p.contact_whatsapp, u.phone, u.email,
+        (SELECT count(*)::int FROM teacher_lessons l WHERE l.teacher_user_id = p.user_id AND l.status = 'completed') AS lessons_done,
+        (SELECT count(*)::int FROM teacher_lessons l WHERE l.teacher_user_id = p.user_id AND l.status IN ('paid', 'disputed') AND l.starts_at > now()) AS lessons_upcoming
+      FROM teacher_profiles p JOIN users u ON u.id = p.user_id
+      WHERE p.profile_status IN ('active', 'paused')
+      ORDER BY p.catalog_visible ASC, p.reviewed_at DESC NULLS LAST, p.user_id DESC`);
+    res.json({ rows });
+  }));
+
+  /** Katalog tumbleri: faqat tasdiqlangan o'qituvchi yoqiladi. Har o'zgarish tarixga yoziladi. */
+  router.post('/teacher-applications/:id/catalog', h(async (req, res) => {
+    const id = Number(req.params.id);
+    const visible = req.body?.visible === true;
+    const upd = await db()(`UPDATE teacher_profiles SET catalog_visible = $2, catalog_visible_changed_at = now(), catalog_visible_changed_by = $3,
+        profile_status = CASE WHEN $2 AND profile_status = 'paused' THEN 'active' ELSE profile_status END, updated_at = now()
+      WHERE user_id = $1 AND profile_status IN ('active', 'paused') RETURNING user_id, catalog_visible, profile_status`, [id, visible, actor(req)]);
+    if (!upd.rows[0]) throw new HttpError(409, 'Avval anketani tasdiqlang — katalogga faqat tasdiqlangan oʻqituvchi chiqadi');
+    await db()(`INSERT INTO teacher_review_events (teacher_user_id, action, actor) VALUES ($1, $2, $3)`, [id, visible ? 'catalog_on' : 'catalog_off', actor(req)]);
+    if (visible) await notifyTeacher(db(), id, 'Profilingiz katalogda', 'Endi oʻquvchilar sizni oʻqituvchilar roʻyxatida koʻradi va darsga yozila oladi.');
+    res.json(upd.rows[0]);
+  }));
+
   router.get('/teacher-applications/:id', h(async (req, res) => {
     const id = Number(req.params.id);
-    const p = await db()(`SELECT ${PROFILE_COLS.split(',').map((c) => `p.${c.trim()}`).join(', ')}, u.phone, u.email
+    const p = await db()(`SELECT ${PROFILE_COLS.split(',').map((c) => `p.${c.trim()}`).join(', ')}, p.catalog_visible, u.phone, u.email
       FROM teacher_profiles p JOIN users u ON u.id = p.user_id WHERE p.user_id = $1`, [id]);
     if (!p.rows[0]) throw new HttpError(404, 'Topilmadi');
     const settings = await loadSettings(db());
@@ -626,7 +680,7 @@ export function createAdminTeacherOnboardingRoutes(deps: OnboardingDeps = {}): R
     await db()(`INSERT INTO teacher_review_events (teacher_user_id, action, step, comment, actor) VALUES ($1, $2, $3, $4, $5)`,
       [id, decision === 'approve' ? 'approved' : decision === 'reject' ? 'rejected' : 'needs_revision', decision === 'revision' ? step : null, comment || null, actor(req)]);
     const titles = {
-      approve: ['Anketangiz tasdiqlandi 🎉', 'Profilingiz endi oʻqituvchilar katalogida koʻrinadi.'],
+      approve: ['Anketangiz tasdiqlandi 🎉', 'Kabinetingiz ochildi. Profilingiz katalogga maʼmuriyat yoqqanidan keyin chiqadi.'],
       reject: ['Anketa rad etildi', comment],
       revision: [`Anketani tuzatish kerak (${step}-qadam)`, comment],
     } as const;

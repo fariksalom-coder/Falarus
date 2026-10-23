@@ -63,6 +63,8 @@ export type TeacherProfile = {
   public_email?: string | null;
   preferred_contact_method?: string | null;
   profile_status?: string;
+  /** Admin katalog tumbleri (migr. 214): tasdiqlangan, lekin hali ko'rinmasligi mumkin. */
+  catalog_visible?: boolean;
   admin_note?: string | null;
   rating_avg?: number;
   rating_count?: number;

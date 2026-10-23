@@ -204,27 +204,6 @@ export type AdminTeacherRow = {
   updated_at: string;
 };
 
-export type AdminTeacherTrialRow = {
-  id: number;
-  teacher_user_id: number;
-  student_user_id: number;
-  payment_id: number | null;
-  requested_starts_at: string | null;
-  scheduled_starts_at: string | null;
-  status: string;
-  student_phone_e164: string | null;
-  student_email: string | null;
-  student_message: string;
-  price_rub_snapshot: number;
-  price_uzs_snapshot: number;
-  paid_currency: string | null;
-  contact_shared_at: string | null;
-  teacher_notified_at: string | null;
-  completed_by_teacher_at: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
 export type AdminSupportRow = {
   id: number;
   user_id: number;
@@ -477,45 +456,6 @@ export async function getClickPaymentLogs(): Promise<AdminClickPaymentLogRow[]> 
 
 export async function getAdminTeachers(): Promise<AdminTeacherRow[]> {
   return adminApi<AdminTeacherRow[]>('/teachers');
-}
-
-export async function updateTeacherStatus(
-  userId: number,
-  status: 'draft' | 'pending_review' | 'active' | 'paused' | 'rejected',
-  adminNote?: string | null
-): Promise<void> {
-  await adminApi(`/teachers/${userId}/status`, {
-    method: 'POST',
-    body: JSON.stringify({ status, admin_note: adminNote ?? null }),
-  });
-}
-
-/** FalaRus tavsiyasini yoqadi/o'chiradi. */
-/**
- * Admin o'qituvchi anketasini o'zi to'ldiradi yoki tuzatadi.
- *
- * Anketa yozuvi hali bo'lmasa server uni yaratadi (`draft` holatida), ya'ni
- * kabinетga hech qachon kirmagan o'qituvchi uchun ham ishlaydi.
- */
-export async function updateTeacherProfile(
-  userId: number,
-  patch: Record<string, unknown>
-): Promise<{ ok: boolean; created: boolean }> {
-  return adminApi(`/teachers/${userId}/profile`, {
-    method: 'PATCH',
-    body: JSON.stringify(patch),
-  });
-}
-
-export async function setTeacherRecommended(userId: number, recommended: boolean): Promise<void> {
-  await adminApi(`/teachers/${userId}/recommend`, {
-    method: 'POST',
-    body: JSON.stringify({ recommended }),
-  });
-}
-
-export async function getAdminTeacherTrials(): Promise<AdminTeacherTrialRow[]> {
-  return adminApi<AdminTeacherTrialRow[]>('/teacher-trials');
 }
 
 // --- Referral program
@@ -795,60 +735,6 @@ export async function updateAdminMeetRoom(
 
 export async function deleteAdminMeetRoom(id: number): Promise<void> {
   await adminApi(`/meet-rooms/${id}`, { method: 'DELETE' });
-}
-
-/** O'qituvchi yuklagan hujjatlar — admin tekshiruvi uchun. */
-export type AdminTeacherDocument = {
-  id: number;
-  teacher_user_id: number;
-  teacher_name: string;
-  kind: string;
-  file_url: string;
-  original_name: string;
-  status: string;
-  admin_note: string;
-  created_at: string;
-};
-
-/** To'liq tekshiruv: o'qituvchining anketasi, hujjatlari, videosi va cheki. */
-export type AdminTeacherReview = {
-  user_id: number;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  profile_status: string;
-  admin_note: string;
-  anketa_submitted_at: string | null;
-  listing_paid_until: string | null;
-  avatar_url: string | null;
-  profile: Record<string, unknown>;
-  documents: AdminTeacherDocument[];
-  payments: Array<{
-    id: number;
-    amount: number;
-    currency: string;
-    status: string;
-    proof_url: string | null;
-    created_at: string;
-    approved_at: string | null;
-  }>;
-};
-
-export async function getAdminTeacherReview(
-  status: string
-): Promise<{ status: string; teachers: AdminTeacherReview[] }> {
-  return adminApi(`/teacher-review?status=${status}`);
-}
-
-export async function setAdminTeacherDocumentStatus(
-  id: number,
-  status: 'approved' | 'rejected' | 'pending',
-  adminNote: string
-): Promise<{ success: boolean }> {
-  return adminApi(`/teacher-documents/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status, admin_note: adminNote }),
-  });
 }
 
 /* ------------------------------------------------------------------ *

@@ -1,12 +1,14 @@
 /**
- * O'QITUVCHI TO'LOVLARI: pul yechish arizalari (qo'lda o'tkaziladi) va pullik darslar
- * (munozarali — hal qilish, bekor qilingan — pulni qaytarish).
+ * O'QITUVCHILAR → «To'lovlar»: o'quvchilar individual darslar uchun to'lagan pul
+ * (munozarali — hal qilish, bekor qilingan — qaytarish) va o'qituvchilarning pul
+ * yechish arizalari (pul qo'lda o'tkaziladi, keyin «O'tkazildi» bosiladi).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Check, Copy, Loader2, X } from 'lucide-react';
-import { adminApi } from '../../lib/adminApi';
-import { LESSON_STATUS_LABEL, type LessonStatus } from '../../../shared/teacherLessons';
+import { adminApi } from '../../../lib/adminApi';
+import { LESSON_STATUS_LABEL, type LessonStatus } from '../../../../shared/teacherLessons';
+import { dateTime as date, fmtSum as fmt } from './shared';
 
 type Withdrawal = {
   id: number; teacher_user_id: number; first_name: string; last_name: string; phone: string | null; amount_uzs: number; card_number: string;
@@ -18,26 +20,29 @@ type Lesson = {
   commission_percent: number | null; teacher_amount_uzs: number | null; platform_amount_uzs: number | null; lesson_number: number | null;
 };
 
-const fmt = (n: number) => `${Math.round(Number(n)).toLocaleString('ru-RU').replace(/ /g, ' ')} soʻm`;
-const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 const card = (c: string) => c.replace(/(\d{4})(?=\d)/g, '$1 ');
 
-export default function AdminTeacherMoneyPage() {
+export default function PaymentsTab({ onCounts }: { onCounts?: (requested: number) => void }) {
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'lessons' ? 'lessons' : 'withdrawals';
+  const view = params.get('pay') === 'withdrawals' ? 'withdrawals' : 'students';
+  const [requested, setRequested] = useState(0);
+  useEffect(() => {
+    adminApi<{ totals: { status: string; n: number }[] }>('/teacher-money/withdrawals?status=requested')
+      .then((r) => { const n = r.totals.find((x) => x.status === 'requested')?.n ?? 0; setRequested(n); onCounts?.(n); }).catch(() => {});
+  }, [onCounts, view]);
+  const go = (v: string) => { const next = new URLSearchParams(params); next.set('pay', v); setParams(next, { replace: true }); };
   return (
-    <div className="max-w-6xl space-y-5">
-      <header>
-        <h1 className="text-2xl font-semibold text-app-text">Oʻqituvchi toʻlovlari</h1>
-        <p className="mt-1 text-sm text-app-text-muted">Platforma orqali oʻtgan darslar, oʻqituvchi balansi va pul yechish arizalari. Pul qoʻlda oʻtkaziladi, keyin «Oʻtkazildi» bosiladi.</p>
-      </header>
-      <div className="flex gap-1 rounded-2xl border border-app-border bg-app-surface p-1">
-        {([['withdrawals', 'Pul yechish arizalari'], ['lessons', 'Darslar']] as const).map(([k, l]) => (
-          <button key={k} type="button" onClick={() => setParams({ tab: k }, { replace: true })} aria-pressed={tab === k}
-            className={`min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold ${tab === k ? 'bg-blue-600 text-white' : 'text-app-text hover:bg-app-bg-muted'}`}>{l}</button>
+    <div className="space-y-4">
+      <div className="flex gap-1 rounded-2xl border border-app-border bg-app-surface p-1 sm:w-fit">
+        {([['students', 'Oʻquvchilar toʻlovlari'], ['withdrawals', 'Pul yechish arizalari']] as const).map(([k, l]) => (
+          <button key={k} type="button" onClick={() => go(k)} aria-pressed={view === k}
+            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold ${view === k ? 'bg-blue-600 text-white' : 'text-app-text hover:bg-app-bg-muted'}`}>
+            {l}
+            {k === 'withdrawals' && requested > 0 && <span className={`rounded-full px-1.5 text-xs tabular-nums ${view === k ? 'bg-white/25' : 'bg-red-500 text-white'}`}>{requested}</span>}
+          </button>
         ))}
       </div>
-      {tab === 'withdrawals' ? <Withdrawals /> : <Lessons />}
+      {view === 'withdrawals' ? <Withdrawals /> : <Lessons />}
     </div>
   );
 }
@@ -117,7 +122,7 @@ function Withdrawals() {
 }
 
 function Lessons() {
-  const [filter, setFilter] = useState('attention');
+  const [filter, setFilter] = useState('all');
   const [data, setData] = useState<{ rows: Lesson[]; sums: { completed: number; platform: number; teachers: number; attention: number } } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -152,7 +157,7 @@ function Lessons() {
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        {([['attention', `Eʼtibor kerak${data?.sums.attention ? ` · ${data.sums.attention}` : ''}`], ['upcoming', 'Toʻlangan, kutilmoqda'], ['completed', 'Oʻtkazilgan'], ['all', 'Hammasi']] as const).map(([k, l]) => (
+        {([['all', 'Hammasi'], ['upcoming', 'Toʻlangan, dars kutilmoqda'], ['completed', 'Dars oʻtgan'], ['attention', `Eʼtibor kerak${data?.sums.attention ? ` · ${data.sums.attention}` : ''}`]] as const).map(([k, l]) => (
           <button key={k} type="button" onClick={() => setFilter(k)} aria-pressed={filter === k}
             className={`min-h-11 rounded-xl border px-3 text-sm font-semibold ${filter === k ? 'border-blue-600 bg-blue-50 text-blue-800' : 'border-app-border bg-app-surface text-app-text'}`}>{l}</button>
         ))}

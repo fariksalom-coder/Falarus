@@ -102,13 +102,20 @@ export const ERRORS = {
   timezone: { uz: 'Vaqt zonasini tanlang', ru: 'Выберите часовой пояс' },
   price: { uz: 'Narx ruxsat etilgan oraliqda boʻlsin', ru: 'Цена вне допустимого диапазона' },
   terms: { uz: 'Shartlarga rozilik bering', ru: 'Подтвердите согласие с условиями' },
+  phone: { uz: 'Raqamni mamlakat kodi bilan yozing: +998 90 123 45 67', ru: 'Номер с кодом страны: +998 90 123 45 67' },
+  telegram: { uz: 'Telegram: @username yoki telefon raqam', ru: 'Telegram: @username или номер телефона' },
+  messenger: { uz: 'Telegram yoki WhatsApp — kamida bittasini yozing', ru: 'Укажите Telegram или WhatsApp — хотя бы один' },
 } as const;
 export type ErrorCode = keyof typeof ERRORS;
 export type FieldErrors = Record<string, ErrorCode>;
 
 /* ─────────────────────────── Ma'lumot turlari ─────────────────────────── */
 
-export type PersonalData = { first_name: string; last_name: string; birth_country: string; subject: string; proficiency: string; path: OnboardingPath | '' };
+export type PersonalData = {
+  first_name: string; last_name: string; birth_country: string; subject: string; proficiency: string; path: OnboardingPath | '';
+  /** Aloqa — faqat admin ko'radi (o'quvchiga ko'rsatilmaydi). Telefon shart, Telegram yoki WhatsApp — kamida bittasi. */
+  contact_phone: string; contact_telegram: string; contact_whatsapp: string;
+};
 export type CertificateRow = { title: string; institution: string; year_from: number | null; year_to: number | null; document_ids: number[] };
 export type EducationRow = { institution: string; specialty: string; degree: string; year_from: number | null; year_to: number | null };
 export const ABOUT_QUESTIONS = [
@@ -152,7 +159,29 @@ export function validatePersonal(d: Partial<PersonalData>): FieldErrors {
   if (!SUBJECTS.some((c) => c.code === d.subject)) e.subject = 'choose';
   if (!PROFICIENCY.some((c) => c.code === d.proficiency)) e.proficiency = 'choose';
   if (d.path !== 'certified' && d.path !== 'experienced') e.path = 'path';
+  if (!normalizePhone(d.contact_phone)) e.contact_phone = str(d.contact_phone) ? 'phone' : 'required';
+  const tg = str(d.contact_telegram), wa = str(d.contact_whatsapp);
+  if (tg && !normalizeTelegram(tg)) e.contact_telegram = 'telegram';
+  if (wa && !normalizePhone(wa)) e.contact_whatsapp = 'phone';
+  if (!tg && !wa) e.contact_telegram = 'messenger';
   return e;
+}
+
+/** «+998 90 123-45-67», «998901234567», «90 123 45 67» → «+998901234567». Noto'g'ri bo'lsa — null. */
+export function normalizePhone(v: unknown): string | null {
+  const raw = str(v);
+  if (!raw || /[^\d\s()+-]/.test(raw)) return null;
+  let d = raw.replace(/\D/g, '');
+  if (d.length === 9 && !raw.trim().startsWith('+')) d = `998${d}`;
+  return d.length >= 10 && d.length <= 15 ? `+${d}` : null;
+}
+
+/** Telegram: «@username», «t.me/username» → «@username»; telefon raqam ham bo'ladi. */
+export function normalizeTelegram(v: unknown): string | null {
+  const raw = str(v).replace(/^https?:\/\/(www\.)?/i, '').replace(/^t(elegram)?\.me\//i, '@');
+  const user = raw.startsWith('@') ? raw.slice(1) : raw;
+  if (/^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(user)) return `@${user}`;
+  return normalizePhone(raw);
 }
 
 export function normalizeCertificates(rows: unknown): CertificateRow[] {

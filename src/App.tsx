@@ -90,12 +90,13 @@ function AppRoutes() {
             <Route path="support" element={renderLazyPage('./pages/admin/AdminSupportPage.tsx')} />
             <Route path="payment-methods" element={renderLazyPage('./pages/admin/AdminPaymentMethodsPage.tsx')} />
             <Route path="tariff-pricing" element={renderLazyPage('./pages/admin/AdminTariffPricingPage.tsx')} />
-            <Route path="teachers" element={renderLazyPage('./pages/admin/AdminTeachersPage.tsx')} />
-            <Route path="teacher-money" element={renderLazyPage('./pages/admin/AdminTeacherMoneyPage.tsx')} />
-            <Route path="teacher-applications" element={renderLazyPage('./pages/admin/AdminTeacherApplicationsPage.tsx')} />
-            <Route path="teacher-trials" element={renderLazyPage('./pages/admin/AdminTeacherTrialsPage.tsx')} />
+            <Route path="teachers" element={renderLazyPage('./pages/admin/AdminTeacherHubPage.tsx')} />
+            {/* Eski bo'limlar yagona «O'qituvchilar» bo'limiga birlashtirildi (2026-10-23). */}
+            <Route path="teacher-applications" element={<Navigate to="../teachers?tab=review" replace />} />
+            <Route path="teacher-documents" element={<Navigate to="../teachers?tab=review" replace />} />
+            <Route path="teacher-money" element={<Navigate to="../teachers?tab=payments" replace />} />
+            <Route path="teacher-trials" element={<Navigate to="../teachers?tab=lessons" replace />} />
             <Route path="meet-rooms" element={renderLazyPage('./pages/admin/AdminMeetRoomsPage.tsx')} />
-            <Route path="teacher-documents" element={renderLazyPage('./pages/admin/AdminTeacherDocumentsPage.tsx')} />
             <Route path="chat-moderation" element={renderLazyPage('./pages/admin/AdminChatModerationPage.tsx')} />
             <Route path="onboarding" element={renderLazyPage('./pages/admin/AdminOnboardingPage.tsx')} />
             <Route path="content" element={renderLazyPage('./pages/admin/AdminContentPage.tsx')} />

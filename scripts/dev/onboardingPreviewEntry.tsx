@@ -1,4 +1,4 @@
-// Local preview only: the onboarding wizard (/onb) and the admin applications page (/onb-admin).
+// Local preview only: the onboarding wizard (/onb) and the admin teachers hub (/onb-admin).
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -8,8 +8,7 @@ import { PanelProvider } from '../../src/components/teacher/panel/panelContext';
 import { PANEL_TEXTS, type PanelLang } from '../../src/components/teacher/panel/lang';
 import OnboardingWizard from '../../src/components/teacher/onboarding/OnboardingWizard';
 import Commission from '../../src/components/teacher/onboarding/Commission';
-import AdminTeacherApplicationsPage from '../../src/pages/admin/AdminTeacherApplicationsPage';
-import AdminTeacherMoneyPage from '../../src/pages/admin/AdminTeacherMoneyPage';
+import AdminTeacherHubPage from '../../src/pages/admin/AdminTeacherHubPage';
 import Balance from '../../src/components/teacher/panel/sections/Balance';
 import BookLessonCard from '../../src/components/teacher/BookLessonCard';
 import MyLessonsPanel from '../../src/components/teacher/MyLessonsPanel';
@@ -36,7 +35,6 @@ function Teacher() {
 
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
-    {location.pathname.startsWith('/onb-admin') ? <div className="min-h-screen bg-app-bg-subtle p-4"><AdminTeacherApplicationsPage /></div>
-      : location.pathname.startsWith('/onb-money') ? <div className="min-h-screen bg-app-bg-subtle p-4"><AdminTeacherMoneyPage /></div> : <Teacher />}
+    {location.pathname.startsWith('/onb-admin') || location.pathname.startsWith('/onb-money') ? <div className="min-h-screen bg-app-bg-subtle p-4"><AdminTeacherHubPage /></div> : <Teacher />}
   </BrowserRouter>,
 );

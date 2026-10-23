@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FileText, Loader2, Plus, Sparkles, Trash2, Upload } from 'lucide-react';
 import { Card, ErrorNote, Field, GhostButton, PrimaryButton, inputClass, inputErrorClass, textareaClass } from '../panel/ui';
 import {
-  ABOUT_MAX, ABOUT_QUESTIONS, COUNTRIES, DEGREES, PROFICIENCY, SUBJECTS, commissionStatus, teacherNet,
+  ABOUT_MAX, ABOUT_QUESTIONS, COUNTRIES, DEGREES, PROFICIENCY, SUBJECTS,
   type AboutAnswers, type CertificateRow, type EducationRow, type PersonalData,
 } from '../../../../shared/teacherOnboarding';
 import { deleteDocument, generateAbout, openDocument, uploadDocument, type OnboardingDocument } from '../../../api/teacherOnboarding';
@@ -63,9 +63,11 @@ function YearSelect({ value, onChange, label, error }: { value: number | null; o
 
 export function StepPersonal({ state, onDraft, errors, lang, busy, onSubmit, initial }: FormProps) {
   const t = ONBOARDING_TEXT[lang];
+  // Telefon bo'sh bo'lsa server ro'yxatdan o'tgan raqamni taklif qiladi (toData).
   const [v, setV] = useState<PersonalData>(() => ({ ...(state.data.personal as PersonalData), ...((initial as Partial<PersonalData>) ?? {}) }));
   useAutosave(v, onDraft);
   const set = (k: keyof PersonalData, value: string) => setV((p) => ({ ...p, [k]: value }));
+  const waSame = Boolean(v.contact_phone) && v.contact_whatsapp === v.contact_phone;
   return (
     <>
       <Section title={ONBOARDING_TEXT[lang].title}>
@@ -94,6 +96,27 @@ export function StepPersonal({ state, onDraft, errors, lang, busy, onSubmit, ini
             </div>
           </Field>
         </div>
+      </Section>
+      <Section title={t.contactTitle} hint={t.contactHint}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={t.contactPhone} error={errors.contact_phone} className="sm:col-span-2">
+            <input className={cls(errors.contact_phone)} type="tel" inputMode="tel" autoComplete="tel" maxLength={24} placeholder="+998 90 123 45 67"
+              value={v.contact_phone ?? ''} onChange={(e) => setV((p) => ({ ...p, contact_phone: e.target.value, contact_whatsapp: waSame ? e.target.value : p.contact_whatsapp }))} />
+          </Field>
+          <Field label={t.contactTelegram} error={errors.contact_telegram}>
+            <input className={cls(errors.contact_telegram)} autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={60} placeholder={t.contactTelegramPh}
+              value={v.contact_telegram ?? ''} onChange={(e) => set('contact_telegram', e.target.value)} />
+          </Field>
+          <Field label={t.contactWhatsapp} error={errors.contact_whatsapp}>
+            <input className={cls(errors.contact_whatsapp)} type="tel" inputMode="tel" maxLength={24} placeholder="+998 90 123 45 67"
+              value={v.contact_whatsapp ?? ''} onChange={(e) => set('contact_whatsapp', e.target.value)} />
+            <label className="mt-1.5 inline-flex min-h-11 cursor-pointer items-center gap-2 text-[12.5px] font-semibold text-app-text">
+              <input type="checkbox" checked={waSame} onChange={(e) => set('contact_whatsapp', e.target.checked ? v.contact_phone : '')} className="h-5 w-5 accent-[#2563EB]" />
+              {t.contactSamePhone}
+            </label>
+          </Field>
+        </div>
+        {!errors.contact_telegram && !errors.contact_whatsapp && <p className="text-[12px] text-app-text-muted">{t.contactOneOf}</p>}
       </Section>
       <Section title={t.pathTitle}>
         <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={t.pathTitle}>
@@ -289,7 +312,6 @@ export function StepPricing({ state, onDraft, errors, lang, busy, onSubmit, init
   const p = Number(price.replace(/\D/g, '')) || 0;
   // Draft: rozilik belgisini qoralamaga yozmaymiz — u faqat to'liq saqlashda (sana + versiya bilan) qayd etiladi.
   useAutosave({ lesson_price_uzs: p || null }, onDraft);
-  const c = commissionStatus(state.commission.completed, s.commission_tiers);
   const termsChanged = Boolean(state.data.lesson_price_uzs) && !state.data.terms_accepted && state.status !== 'draft';
 
   return (
@@ -299,16 +321,6 @@ export function StepPricing({ state, onDraft, errors, lang, busy, onSubmit, init
           <input inputMode="numeric" className={`${cls(errors.lesson_price_uzs)} text-[18px] font-bold tabular-nums`} value={p ? fmt(p) : ''} placeholder={fmt(80_000)}
             onChange={(e) => setPrice(e.target.value.replace(/\D/g, '').slice(0, 7))} />
         </Field>
-        <div className="grid gap-3 rounded-[16px] bg-app-bg-subtle p-4 sm:grid-cols-2">
-          <div>
-            <p className="text-[12px] text-app-text-muted">{t.youGet}</p>
-            <p className="text-[22px] font-bold tabular-nums text-[#17803D]">{p ? `${fmt(teacherNet(p, c.percent))} ${t.sum}` : '—'}</p>
-          </div>
-          <div className="sm:text-right">
-            <p className="text-[12px] text-app-text-muted">{t.commissionNow(c.percent)}</p>
-            <p className="text-[13px] text-app-text">{p ? `−${fmt(p - teacherNet(p, c.percent))} ${t.sum}` : ''}</p>
-          </div>
-        </div>
       </Section>
       <Section title={t.termsTitle}>
         {termsChanged && <p className="rounded-[12px] bg-[#FFFBEB] p-3 text-[12.5px] font-semibold text-[#78350F]">{t.termsNew}</p>}
