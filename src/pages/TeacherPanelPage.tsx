@@ -36,20 +36,22 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { PANEL_TEXTS, type PanelLang } from '../components/teacher/panel/lang';
 import { PanelProvider, type SectionKey } from '../components/teacher/panel/panelContext';
-import { Avatar, Fade, Toast } from '../components/teacher/panel/ui';
+import { Avatar, Fade, Skeleton, Toast } from '../components/teacher/panel/ui';
 import Dashboard from '../components/teacher/panel/sections/Dashboard';
 import Schedule from '../components/teacher/panel/sections/Schedule';
 import Students, { StudentDetail } from '../components/teacher/panel/sections/Students';
 import Lessons from '../components/teacher/panel/sections/Lessons';
 import LessonReport from '../components/teacher/panel/sections/LessonReport';
 import Anketa from '../components/teacher/panel/sections/Anketa';
+import OnboardingWizard from '../components/teacher/onboarding/OnboardingWizard';
+import { ONBOARDING_TEXT } from '../components/teacher/onboarding/text';
 import Profile, { Documents, PublicPreview } from '../components/teacher/panel/sections/Profile';
 import Balance from '../components/teacher/panel/sections/Balance';
 import Commission from '../components/teacher/onboarding/Commission';
 import Messages, { NotificationsDrawer, Reviews } from '../components/teacher/panel/sections/Communication';
 import Class from '../components/teacher/panel/sections/Class';
 import Settings, { Help } from '../components/teacher/panel/sections/SettingsHelp';
-import { TEACHER_LOGIN_PATH, TEACHER_REGISTER_PATH } from '../constants/teacherPaths';
+import { TEACHER_BRAND_GRADIENT, TEACHER_LOGIN_PATH, TEACHER_REGISTER_PATH } from '../constants/teacherPaths';
 
 /**
  * O'qituvchi paneli — prototip ("Кабинет преподавателя") asosida qayta yozilgan.
@@ -113,6 +115,7 @@ export default function TeacherPanelPage() {
   const [param, setParam] = useState<number | null>(null);
   const [summary, setSummary] = useState<PanelSummary | null>(null);
   const [cabinet, setCabinet] = useState<TeacherCabinet | null>(null);
+  const [cabinetState, setCabinetState] = useState<'loading' | 'ok' | 'error'>('loading');
   const [notifications, setNotifications] = useState<PanelNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -138,7 +141,12 @@ export default function TeacherPanelPage() {
     void getPanelSummary(token)
       .then(setSummary)
       .catch((e: Error) => setError(e.message));
-    void getTeacherCabinet(token).then(setCabinet).catch(() => undefined);
+    void getTeacherCabinet(token)
+      .then((c) => {
+        setCabinet(c);
+        setCabinetState('ok');
+      })
+      .catch(() => setCabinetState((prev) => (prev === 'ok' ? prev : 'error')));
     void getPanelNotifications(token)
       .then((r) => {
         setNotifications(r.notifications);
@@ -209,6 +217,38 @@ export default function TeacherPanelPage() {
         primary={{ label: t.gateHome, onClick: () => navigate('/') }}
         secondary={{ label: t.gateLogin, onClick: () => navigate(TEACHER_LOGIN_PATH) }}
       />
+    );
+  }
+
+  /*
+   * Anketa tasdiqlanmaguncha (yangi ro'yxatdan o'tgan o'qituvchi, tekshiruvda, tuzatishda)
+   * kabinet bo'limlari ko'rinmaydi — faqat anketa yo'li. Holat noma'lum paytda panelni
+   * ko'rsatmaymiz, aks holda yangi o'qituvchi bir lahza to'liq kabinetni ko'rib qolardi.
+   */
+  if (cabinetState === 'loading') {
+    return (
+      <div className="min-h-screen bg-app-bg-muted px-4 py-8">
+        <div className="mx-auto max-w-3xl"><Skeleton rows={6} /></div>
+      </div>
+    );
+  }
+  if (cabinetState === 'error') {
+    return (
+      <Gate
+        title={t.loadError}
+        text={t.loadErrorText}
+        primary={{ label: t.retry, onClick: refresh }}
+        secondary={{ label: t.logout, onClick: () => { logout(); navigate('/'); } }}
+      />
+    );
+  }
+  const profileStatus = String(cabinet?.profile?.profile_status ?? 'draft');
+  if (profileStatus !== 'active' && profileStatus !== 'paused') {
+    return (
+      <PanelProvider value={ctx}>
+        <OnboardingOnly lang={lang} setLang={setLang} onLogout={() => { logout(); navigate('/'); }} logoutLabel={t.logout} />
+        {toastText ? <Toast text={toastText} /> : null}
+      </PanelProvider>
     );
   }
 
@@ -528,6 +568,43 @@ export default function TeacherPanelPage() {
         {toastText ? <Toast text={toastText} /> : null}
       </div>
     </PanelProvider>
+  );
+}
+
+/** Anketa tasdiqlanguncha yagona ekran: logotip, til, chiqish va 8 qadamli yo'l. */
+function OnboardingOnly({ lang, setLang, onLogout, logoutLabel }: {
+  lang: PanelLang; setLang: (l: PanelLang) => void; onLogout: () => void; logoutLabel: string;
+}) {
+  return (
+    <div className="teacher-workspace min-h-screen bg-app-bg-muted">
+      <header className="sticky top-0 z-30 border-b border-app-border bg-app-surface/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur">
+        <div className="mx-auto flex h-[60px] max-w-3xl items-center gap-3 px-4">
+          <span className="flex h-9 w-9 items-center justify-center rounded-[11px] text-[16px] font-bold text-white" style={{ background: TEACHER_BRAND_GRADIENT }}>F</span>
+          <span className="min-w-0">
+            <span className="block text-[15px] font-bold leading-none text-app-text">FalaRus Ustoz</span>
+            <span className="mt-1 block truncate text-[11px] text-app-text-muted">{ONBOARDING_TEXT[lang].title}</span>
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="flex gap-0.5 rounded-full bg-app-bg-muted p-[3px]">
+              {(['ru', 'uz'] as const).map((l) => (
+                <button key={l} type="button" onClick={() => setLang(l)}
+                  className={`min-h-[36px] rounded-full px-3 text-[12px] font-semibold transition ${lang === l ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted'}`}>
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={onLogout} aria-label={logoutLabel} title={logoutLabel}
+              className="flex h-11 w-11 items-center justify-center rounded-full text-app-text-muted transition hover:bg-app-bg-muted hover:text-app-text active:scale-95">
+              <LogOut className="h-[18px] w-[18px]" />
+            </button>
+          </div>
+        </div>
+      </header>
+      <motion.main initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+        className="mx-auto w-full max-w-3xl px-4 py-5 pb-[max(env(safe-area-inset-bottom,0px),20px)] lg:py-8">
+        <OnboardingWizard focus />
+      </motion.main>
+    </div>
   );
 }
 

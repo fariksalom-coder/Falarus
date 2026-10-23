@@ -106,6 +106,15 @@ const uz = {
   readyHint: 'Anketani tekshiruvga yuboring. Tasdiqlangandan keyin profilingiz katalogda chiqadi.',
   notReady: (n: number) => `${n}-qadam toʻliq emas`,
   sum: 'soʻm',
+  // yo'l xaritasi (anketa tasdiqlanguncha kabinet o'rniga)
+  journeyKicker: 'FalaRus Ustoz · birinchi qadamlar',
+  journeyTitle: (n: number) => `Dars berishni boshlash uchun ${n} qadam`,
+  journeyHint: 'Anketani ketma-ket toʻldiring — har qadam avtomatik saqlanadi. Keyin maʼmuriyat tekshiradi va profilingiz oʻquvchilarga ochiladi.',
+  journeyProgress: (d: number, n: number) => `${d} / ${n} bajarildi`,
+  journeyGoal: 'Dars berish',
+  journeyGoalReview: 'Tekshiruvda',
+  journeyLocked: 'Kabinetning qolgan boʻlimlari anketa tasdiqlangach ochiladi.',
+  journeyNow: 'Hozir',
 };
 
 const ru: typeof uz = {
@@ -205,6 +214,14 @@ const ru: typeof uz = {
   readyHint: 'Отправьте анкету на проверку. После одобрения профиль появится в каталоге.',
   notReady: (n) => `Шаг ${n} заполнен не полностью`,
   sum: 'сум',
+  journeyKicker: 'FalaRus Ustoz · первые шаги',
+  journeyTitle: (n: number) => `${n} шагов, чтобы начать преподавать`,
+  journeyHint: 'Заполните анкету по порядку — каждый шаг сохраняется автоматически. Затем администрация проверит её, и профиль станет виден ученикам.',
+  journeyProgress: (d: number, n: number) => `Выполнено ${d} из ${n}`,
+  journeyGoal: 'Преподавание',
+  journeyGoalReview: 'На проверке',
+  journeyLocked: 'Остальные разделы кабинета откроются после одобрения анкеты.',
+  journeyNow: 'Сейчас',
 };
 
 export const ONBOARDING_TEXT = { uz, ru };

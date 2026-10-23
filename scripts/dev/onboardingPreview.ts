@@ -59,5 +59,5 @@ app.use('/api/admin/teacher-money', createAdminTeacherMoneyRoutes({ q, tx }));
 const vite = await createServer({ configFile: false, plugins: [react(), tailwindcss()], define: { 'import.meta.env.VITE_API_URL': '""' }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
 app.use(vite.middlewares);
 const html = await readFile('scripts/dev/onboarding-preview.html', 'utf8');
-app.get(['/onb', '/onb-admin', '/onb-commission', '/onb-balance', '/onb-book', '/onb-money'], async (req, res) => res.type('html').send(await vite.transformIndexHtml(req.originalUrl, html)));
+app.get(['/onb', '/onb-focus', '/onb-admin', '/onb-commission', '/onb-balance', '/onb-book', '/onb-money'], async (req, res) => res.type('html').send(await vite.transformIndexHtml(req.originalUrl, html)));
 app.listen(3003, '0.0.0.0', () => console.log('Onboarding preview: http://localhost:3003/onb  admin: /onb-admin'));

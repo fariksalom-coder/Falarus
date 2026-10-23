@@ -27,6 +27,7 @@ function Teacher() {
         {location.pathname === '/onb-commission' ? <div className="mx-auto max-w-md"><Commission /></div>
           : location.pathname === '/onb-balance' ? <div className="mx-auto max-w-3xl"><Balance /></div>
           : location.pathname === '/onb-book' ? <div className="mx-auto max-w-[820px]"><MyLessonsPanel token="preview" /><BookLessonCard teacherId={11} token="preview" /></div>
+          : location.pathname === '/onb-focus' ? <OnboardingWizard focus />
           : <OnboardingWizard />}
       </div>
     </PanelProvider>
