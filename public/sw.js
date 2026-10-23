@@ -12,8 +12,10 @@
  * `notificationclick`) — ilova yopiq bo'lganda ham xabar keladi.
  * v22: push kelganda ochiq oynalarga xabar beriladi — qo'ng'iroq ekrani
  * darhol ko'tariladi va JIRINGLAYDI (SW o'zi ovoz chiqara olmaydi).
+ * v48: `/ig/` (Instagram paneli, alohida ilova) keshdan chiqarildi — uning
+ * `/ig/api/auth/me` javobi keshda qotib, 2FA sahifasi abadiy yuklanardi.
  */
-const CACHE_NAME = 'falarus-pwa-v47';
+const CACHE_NAME = 'falarus-pwa-v48';
 
 const STATIC_ASSETS = [
   '/',
@@ -45,6 +47,8 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+  // Instagram paneli — alohida ilova va API; uni bu SW umuman ushlamaydi.
+  if (url.pathname.startsWith('/ig/')) return;
   // User avatars and other uploads must always hit the network (avoid stale HTML/error bodies).
   if (url.pathname.startsWith('/uploads/')) return;
 
