@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { loginWithGoogle, loginWithPassword, type AuthUser } from '../api/auth';
 import { EMAIL_REGEX } from '../constants/authStrings';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +31,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const refFromUrl = searchParams.get('ref') ?? '';
+  const fromState = (useLocation().state as { from?: unknown } | null)?.from;
+  const returnTo = typeof fromState === 'string' ? fromState : null;
   const { login } = useAuth();
   const { t } = useLocale();
 
@@ -59,6 +61,7 @@ export default function LoginPage() {
           pathAfterAuth({
             isRegistration: Boolean(data.isNewUser),
             onboardingCompleted: user.onboardingCompleted,
+            returnTo,
           }),
           { replace: true },
         );
@@ -146,6 +149,7 @@ export default function LoginPage() {
         pathAfterAuth({
           isRegistration: false,
           onboardingCompleted: user.onboardingCompleted,
+          returnTo,
         }),
         { replace: true },
       );

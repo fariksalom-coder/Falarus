@@ -162,16 +162,17 @@ export default function TeachersPage() {
   const [sort, setSort] = useState<SortKey>('relevance');
 
   useEffect(() => {
+    if (!token) return;
     let mounted = true;
     setLoading(true);
-    listTeachers()
+    listTeachers(token)
       .then((rows) => mounted && setTeachers(rows))
       .catch((e: Error) => mounted && setError(e.message))
       .finally(() => mounted && setLoading(false));
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (!token) {

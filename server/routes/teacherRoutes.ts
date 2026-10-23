@@ -437,7 +437,19 @@ export function createTeacherRoutes(
 ): Router {
   const router = Router();
 
-  router.get('/teachers', async (req, res) => {
+  /*
+   * Katalog va ustoz profili faqat platformaga kirganlarga ko'rinadi (2026-10-23).
+   * Istisno: mobil ilovaning ESKI to'plami bu so'rovga token qo'shmaydi — ilova
+   * yangilanguncha uning origin'idan (Capacitor) kelgan tokensiz so'rov o'tadi.
+   * Ilova ichida baribir faqat kirgan foydalanuvchi bu sahifani ocha oladi.
+   */
+  const NATIVE_APP_ORIGINS = new Set(['https://localhost', 'capacitor://localhost', 'http://localhost']);
+  const requireViewer = (req: Request, res: Response, next: () => void) => {
+    if (!req.headers.authorization && NATIVE_APP_ORIGINS.has(String(req.headers.origin || ''))) return next();
+    return authenticate(req, res, next);
+  };
+
+  router.get('/teachers', requireViewer, async (req, res) => {
     try {
       const search = asString(req.query.q);
       let query = supabase
@@ -463,7 +475,7 @@ export function createTeacherRoutes(
     }
   });
 
-  router.get('/teachers/:teacherId', async (req, res) => {
+  router.get('/teachers/:teacherId', requireViewer, async (req, res) => {
     try {
       const teacherId = Number(req.params.teacherId);
       if (!Number.isFinite(teacherId)) return res.status(400).json({ error: 'teacherId noto‘g‘ri' });
@@ -483,7 +495,7 @@ export function createTeacherRoutes(
       ]);
       if (error) throw error;
       if (!profile) return res.status(404).json({ error: 'O‘qituvchi topilmadi' });
-      // Ochiq sahifa ham faqat tasdiqlangan (active) profil uchun — yuqoridagi filtr.
+      // Profil sahifasi ham faqat tasdiqlangan (active) profil uchun — yuqoridagi filtr.
       res.json({ profile, reviews: reviews ?? [] });
     } catch (e) {
       console.error('[GET /api/teachers/:teacherId]', e);

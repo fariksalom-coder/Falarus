@@ -196,8 +196,8 @@ export type TeacherPublicDetail = {
   reviews: TeacherStudentReview[];
 };
 
-export async function listTeachers(): Promise<TeacherProfile[]> {
-  const res = await fetch(apiUrl('/api/teachers'));
+export async function listTeachers(token: string): Promise<TeacherProfile[]> {
+  const res = await fetch(apiUrl('/api/teachers'), { headers: authHeaders(token) });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || "O'qituvchilar yuklanmadi");
   return data;
@@ -240,8 +240,8 @@ export async function submitTeacherReview(
   }
 }
 
-export async function getTeacherPublicDetail(teacherId: number): Promise<TeacherPublicDetail> {
-  const res = await fetch(apiUrl(`/api/teachers/${teacherId}`));
+export async function getTeacherPublicDetail(token: string, teacherId: number): Promise<TeacherPublicDetail> {
+  const res = await fetch(apiUrl(`/api/teachers/${teacherId}`), { headers: authHeaders(token) });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || "O'qituvchi yuklanmadi");
   return data;

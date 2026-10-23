@@ -209,6 +209,7 @@ export default function TeacherProfilePage() {
       setLoading(false);
       return;
     }
+    if (!token) return;
     const id = Number(teacherId);
     if (!Number.isFinite(id)) {
       setError(t('teachers.notFound'));
@@ -217,7 +218,7 @@ export default function TeacherProfilePage() {
     }
     let mounted = true;
     setLoading(true);
-    getTeacherPublicDetail(id)
+    getTeacherPublicDetail(token, id)
       .then((data) => {
         if (!mounted) return;
         setProfile(data.profile);
@@ -228,7 +229,7 @@ export default function TeacherProfilePage() {
     return () => {
       mounted = false;
     };
-  }, [teacherId]);
+  }, [teacherId, token]);
 
   useEffect(() => {
     void loadMyTrial();
@@ -583,7 +584,7 @@ export default function TeacherProfilePage() {
               onSubmitted={async () => {
                 setReviewDone(true);
                 try {
-                  const d = await getTeacherPublicDetail(Number(teacherId));
+                  const d = await getTeacherPublicDetail(token, Number(teacherId));
                   setProfile(d.profile);
                   setReviews(d.reviews);
                 } catch {

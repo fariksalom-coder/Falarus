@@ -20,7 +20,7 @@ import { renderLazyPage } from './routeModules';
 import { ADMIN_BASE_PATH, adminPath } from './constants/adminPath';
 import { SUPPORT_CRM_BASE_PATH, supportCrmPath } from './constants/supportCrmPath';
 import { SupportCrmAuthProvider } from './context/SupportCrmAuthContext';
-import LegacyTeacherRedirect from './components/LegacyTeacherRedirect';
+import LegacyTeacherRedirect, { LoginRedirect } from './components/LegacyTeacherRedirect';
 import { TEACHER_CABINET_PATH } from './constants/teacherPaths';
 
 
@@ -135,10 +135,9 @@ function AppRoutes() {
           <Route path="/login" element={renderLazyPage('./pages/LoginPage.tsx')} />
           <Route path="/register" element={renderLazyPage('./pages/RegisterPage.tsx')} />
           <Route path="/forgot-password" element={renderLazyPage('./pages/ForgotPasswordPage.tsx')} />
-          <Route path="/ustozlar" element={renderLazyPage('./pages/TeachersPage.tsx')} />
-          <Route path="/ustozlar/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
-          <Route path="/teachers" element={<LegacyTeacherRedirect to="list" />} />
-          <Route path="/teachers/:teacherId" element={<LegacyTeacherRedirect to="profile" />} />
+          {/* Ustozlar katalogi va profillari faqat platformaga kirganlarga ochiq. */}
+          <Route path="/ustozlar/*" element={<LoginRedirect />} />
+          <Route path="/teachers/*" element={<LoginRedirect />} />
           <Route path="*" element={<NotFoundPage />} />
         </>
       ) : user.accountType === 'teacher' ? (
