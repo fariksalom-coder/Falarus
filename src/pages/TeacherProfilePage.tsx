@@ -1,654 +1,197 @@
-import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, BookOpen, Clock, CreditCard, MapPin, Star, Users } from 'lucide-react';
-import { motion } from 'motion/react';
-import { resolveAssetUrl } from '../api';
-import {
-  createTeacherTrialLesson,
-  getMyTeacherTrialLesson,
-  getTeacherConversations,
-  getTeacherPublicDetail,
-  type MyTeacherTrialLessonResponse,
-  type TeacherAvailabilitySlot,
-  type TeacherProfile,
-  type TeacherStudentReview,
-} from '../api/teachers';
-import TeacherChatModal from '../components/teacher/TeacherChatModal';
-import { MessageSquare } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { openRahmatCheckout } from '../api/rahmat';
-import { usePaymentStatus } from '../hooks/usePaymentStatus';
-import { invalidatePaymentsCache } from '../api/payment';
-import {
-  formatTeacherExperience,
-  formatTeacherListPrice,
-  formatTeachingFormat,
-  teacherDisplayName,
-  teacherInitials,
-} from '../utils/teacherDisplay';
-import {
-  getTeacherTrialPriceRub,
-  getTeacherTrialPriceUzs,
-  TEACHER_TRIAL_PRODUCT_CODE,
-} from '../../shared/paymentProducts';
-import { useLocale } from '../context/LocaleContext';
-import { normalizeSchedule, upcomingSlotStarts, type ScheduleData } from '../../shared/teacherOnboarding';
-import {
-  RecommendedBadge,
-  TeacherAchievementsSection,
-  TeacherCertificatesSection,
-  TeacherEducationSection,
-  TeacherResults,
-  TeacherSchedule,
-} from '../components/teacher/TeacherProfileSections';
-import { DEMO_TEACHER_PROFILE, DEMO_TEACHER_REVIEWS } from '../components/teacher/teacherDemoProfile';
-import TeacherReviewForm from '../components/teacher/TeacherReviewForm';
-import BookLessonCard from '../components/teacher/BookLessonCard';
-import { TEACHERS_LIST_PATH, teacherProfilePath } from '../constants/teacherPaths';
-
-const WEEKDAY_UZ = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
-const MONTH_UZ = [
-  'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-  'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr',
-];
-
-type MeetingDay = { dateLabel: string; times: { iso: string; label: string }[] };
-
 /**
- * Jadvaldan kelgusi 14 kundagi aniq dars boshlanish vaqtlari. Jadval o'qituvchining
- * vaqt zonasida (eski profillarda — Toshkent), vaqtlar O'QUVCHINING soatida ko'rsatiladi.
+ * O'QUVCHI: USTOZ PROFILI (2026-10-24).
+ *
+ * Tartib: video-taqdimot → asosiy ma'lumot va «Vaqt tanlash» → men haqimda, tillar,
+ * yo'nalishlar, ta'lim → baholar (4 mezon) va sharhlar → 7 kunlik jadval (bugundan).
+ * Vaqt tanlanganda BookingSheet: tafsilot → Rahmat → band qilindi.
  */
-function buildMeetingDays(schedule: ScheduleData | null | undefined, legacy: TeacherAvailabilitySlot[] | undefined): MeetingDay[] {
-  const sched = schedule?.slots?.length
-    ? normalizeSchedule(schedule)
-    : legacy?.length
-      ? normalizeSchedule({ timezone: 'Asia/Tashkent', slots: legacy.map((x) => ({ weekday: Number(x.day) === 0 ? 7 : Number(x.day), start: x.from, end: x.to })) })
-      : null;
-  if (!sched) return [];
-  const days: MeetingDay[] = [];
-  for (const ms of upcomingSlotStarts(sched, Date.now())) {
-    const d = new Date(ms);
-    const label = `${WEEKDAY_UZ[d.getDay()]}, ${d.getDate()}-${MONTH_UZ[d.getMonth()]}`;
-    let day = days.find((x) => x.dateLabel === label);
-    if (!day) {
-      if (days.length >= 6) break;
-      day = { dateLabel: label, times: [] };
-      days.push(day);
-    }
-    day.times.push({ iso: d.toISOString(), label: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
-  }
-  return days;
-}
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, BookOpen, CalendarClock, GraduationCap, Languages, Target, Users } from 'lucide-react';
+import { resolveAssetUrl } from '../api';
+import { useAuth } from '../context/AuthContext';
+import { fmtSum } from '../api/teacherLessons';
+import { getMarketTeacher, type MarketTeacherDetail } from '../api/teacherMarket';
+import { DEGREES } from '../../shared/teacherOnboarding';
+import { LevelBadge, PathBadge, RatingLine, TeacherPhoto, experienceText, langLabel, slotLabel, specLabel } from '../components/teacher/market/parts';
+import WeekSlots from '../components/teacher/market/WeekSlots';
+import BookingSheet from '../components/teacher/market/BookingSheet';
+import ReviewsSection from '../components/teacher/market/ReviewsSection';
+import { TEACHERS_LIST_PATH } from '../constants/teacherPaths';
 
-/** ISO vaqtni "Dushanba, 28-iyul · 10:00" ko'rinishida chiqaradi. */
-function formatMeetingTime(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${WEEKDAY_UZ[d.getDay()]}, ${d.getDate()}-${MONTH_UZ[d.getMonth()]} · ${hh}:${mm}`;
-}
-
-function ProfileAvatar({ profile }: { profile: TeacherProfile }) {
-  const url = resolveAssetUrl(profile.avatar_url);
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  if (url && failedUrl !== url) {
-    return (
-      <img
-        src={url}
-        onError={() => setFailedUrl(url)}
-        alt={teacherDisplayName(profile)}
-        className="h-full w-full object-cover object-[center_35%]"
-        decoding="async"
-      />
-    );
-  }
+function Block({ id, title, icon: Icon, children }: { id?: string; title: string; icon: typeof Users; children: React.ReactNode }) {
   return (
-    <div
-      className="flex h-full w-full items-center justify-center text-3xl font-black text-white"
-      style={{ background: 'var(--app-brand-gradient)' }}
-    >
-      {teacherInitials(profile)}
-    </div>
-  );
-}
-
-function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
-  const full = Math.max(0, Math.min(5, Math.round(rating)));
-  return (
-    <span className="inline-flex" aria-label={`${rating.toFixed(1)} / 5`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          style={{ width: size, height: size }}
-          className={i < full ? 'fill-app-accent text-app-accent' : 'text-app-border-strong'}
-          aria-hidden
-        />
-      ))}
-    </span>
-  );
-}
-
-function ReviewCard({ review }: { review: TeacherStudentReview }) {
-  const { t } = useLocale();
-  const text = review.opinion?.trim() || review.what_liked?.trim() || t('teachers.reviewPlaceholder');
-  return (
-    <article className="w-[min(88vw,380px)] shrink-0 rounded-[18px] bg-app-surface px-5 py-4 shadow-app-soft ring-1 ring-app-border">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-extrabold text-app-text">{t('teachers.student')}</h3>
-        <Stars rating={Number(review.rating)} size={18} />
-      </div>
-      <p className="mt-3 text-sm font-medium leading-relaxed text-app-text-muted">{text}</p>
-    </article>
+    <section id={id} className="scroll-mt-4 rounded-[24px] border border-app-border/70 bg-app-surface p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+      <h2 className="mb-3 flex items-center gap-2 text-[17px] font-black text-app-text"><Icon className="h-5 w-5 text-app-primary" />{title}</h2>
+      {children}
+    </section>
   );
 }
 
 export default function TeacherProfilePage() {
+  const { teacherId } = useParams();
+  const id = Number(teacherId);
+  const { token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { teacherId } = useParams();
-  const { token, user } = useAuth();
-  const { t } = useLocale();
-  const { payments, refreshPayments } = usePaymentStatus();
-  const [profile, setProfile] = useState<TeacherProfile | null>(null);
-  const [myTrial, setMyTrial] = useState<MyTeacherTrialLessonResponse | null>(null);
-  const [reviews, setReviews] = useState<TeacherStudentReview[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [t, setT] = useState<MarketTeacherDetail | null>(null);
   const [error, setError] = useState('');
-  const [bookingOpen, setBookingOpen] = useState(false);
-  const [slotOpen, setSlotOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [studentMessage, setStudentMessage] = useState('');
-  const [trialId, setTrialId] = useState<number | null>(null);
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [bookingError, setBookingError] = useState('');
-  const [reviewDone, setReviewDone] = useState(false);
-  const [chatConvoId, setChatConvoId] = useState<number | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
 
-  const trialPriceRub = getTeacherTrialPriceRub();
-  const trialPriceUzs = getTeacherTrialPriceUzs();
-  const pendingTrialPayment = payments.find(
-    (payment) => payment.product_code === TEACHER_TRIAL_PRODUCT_CODE && payment.status === 'pending',
-  );
-  const awaitingPaymentConfirmation =
-    myTrial?.trial?.status === 'pending_payment' &&
-    (pendingTrialPayment != null || myTrial.payment?.status === 'pending');
-  // O'quvchi allaqachon bu ustozga yozilganmi (faol dars — to'lov kutmayapti).
-  const trialBooked =
-    myTrial?.trial != null &&
-    myTrial.trial.status !== 'pending_payment' &&
-    !String(myTrial.trial.status).includes('completed') &&
-    !String(myTrial.trial.status).includes('cancel');
-  const meetingDays = buildMeetingDays(profile?.schedule, profile?.weekly_availability);
-  const bookedTime = formatMeetingTime(
-    myTrial?.trial?.scheduled_starts_at ?? myTrial?.trial?.requested_starts_at ?? null,
-  );
+  const load = useCallback(() => {
+    if (!token || !Number.isInteger(id)) return;
+    getMarketTeacher(token, id).then(setT).catch((e: Error) => setError(e.message));
+  }, [token, id]);
+  useEffect(() => { load(); }, [load]);
 
-  async function loadMyTrial() {
-    // `teacherId` "namuna" ham bo'lishi mumkin (demo profil) — u holda
-    // `Number(...)` NaN beradi va serverga /api/teachers/NaN/... ketadi.
-    const id = Number(teacherId);
-    if (!token || !Number.isFinite(id) || id <= 0) return;
-    try {
-      const data = await getMyTeacherTrialLesson(token, id);
-      setMyTrial(data);
-      if (data.trial?.id) setTrialId(data.trial.id);
-    } catch {
-      setMyTrial(null);
-    }
-  }
-
-  const isDemo = teacherId === 'namuna';
-
+  // Katalogdagi «Darsga yozilish» → #jadval: ma'lumot yuklangach jadvalga suriladi.
   useEffect(() => {
-    if (isDemo) {
-      setProfile(DEMO_TEACHER_PROFILE);
-      setReviews(DEMO_TEACHER_REVIEWS);
-      setLoading(false);
-      return;
-    }
-    if (!token) return;
-    const id = Number(teacherId);
-    if (!Number.isFinite(id)) {
-      setError(t('teachers.notFound'));
-      setLoading(false);
-      return;
-    }
-    let mounted = true;
-    setLoading(true);
-    getTeacherPublicDetail(token, id)
-      .then((data) => {
-        if (!mounted) return;
-        setProfile(data.profile);
-        setReviews(data.reviews);
-      })
-      .catch((e: Error) => mounted && setError(e.message))
-      .finally(() => mounted && setLoading(false));
-    return () => {
-      mounted = false;
-    };
-  }, [teacherId, token]);
+    if (t && location.hash === '#jadval') requestAnimationFrame(() => document.getElementById('jadval')?.scrollIntoView({ behavior: 'smooth' }));
+  }, [t, location.hash]);
 
-  useEffect(() => {
-    void loadMyTrial();
-    void refreshPayments();
-  }, [token, teacherId]);
+  const toSchedule = () => document.getElementById('jadval')?.scrollIntoView({ behavior: 'smooth' });
+  const back = () => (window.history.length > 1 ? navigate(-1) : navigate(TEACHERS_LIST_PATH));
 
-  // Bu o'qituvchi bilan ochilgan chat bormi (to'lovdan keyin avtomat ochiladi).
-  useEffect(() => {
-    if (!token || !profile || isDemo) return;
-    getTeacherConversations(token)
-      .then((rows) => {
-        const c = rows.find((x) => x.teacher_user_id === profile.user_id);
-        setChatConvoId(c ? c.id : null);
-      })
-      .catch(() => {});
-  }, [token, profile?.user_id, isDemo]);
-
-  async function ensureTrialLesson(): Promise<number> {
-    if (trialId != null) return trialId;
-    if (!token || !profile) throw new Error('Tizimga kirish kerak');
-    const trial = await createTeacherTrialLesson(token, profile.user_id, {
-      student_message: studentMessage.trim(),
-      ...(selectedSlot ? { requested_starts_at: selectedSlot } : {}),
-    });
-    setTrialId(trial.id);
-    return trial.id;
-  }
-
-  function handleStartBooking() {
-    if (!token) {
-      navigate('/login', { state: { from: location.pathname } });
-      return;
-    }
-    setBookingError('');
-    // Jadval bo'lsa — avval vaqt tanlanadi, keyin to'lov.
-    if (meetingDays.length > 0 && !selectedSlot) setSlotOpen(true);
-    else setBookingOpen(true);
-  }
-
-  async function handlePayRahmat() {
-    if (!token || !profile) return;
-    setBookingLoading(true);
-    setBookingError('');
-    try {
-      const id = await ensureTrialLesson();
-      await openRahmatCheckout({
-        token,
-        productCode: TEACHER_TRIAL_PRODUCT_CODE,
-        trialId: id,
-        afterCreate: async () => {
-          if (token) invalidatePaymentsCache(token);
-          await refreshPayments();
-          await loadMyTrial();
-        },
-      });
-    } catch (e) {
-      const err = e as Error & { code?: string };
-      setBookingError(
-        err.code === 'PENDING_PAYMENT'
-          ? t('teachers.trialPaymentPending')
-          : err.message || t('teachers.trialRahmatStartError'),
-      );
-    } finally {
-      setBookingLoading(false);
-    }
-  }
-
-  async function handlePayRub() {
-    if (!token || !profile) return;
-    setBookingLoading(true);
-    setBookingError('');
-    try {
-      const id = await ensureTrialLesson();
-      navigate('/payment', {
-        state: {
-          productCode: TEACHER_TRIAL_PRODUCT_CODE,
-          productLabel: 'Sinov darsi',
-          trialId: id,
-          currency: 'RUB',
-          returnTo: teacherProfilePath(profile.user_id),
-        },
-      });
-    } catch (e) {
-      setBookingError(e instanceof Error ? e.message : t('teachers.trialPaymentNavError'));
-      setBookingLoading(false);
-    }
-  }
-
-  if (loading) {
+  if (error) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-app-bg-subtle">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-app-primary-deep border-t-transparent" />
+      <div className="min-h-full bg-app-bg-subtle px-4 pt-4">
+        <div className="mx-auto max-w-[880px] rounded-[24px] bg-app-surface p-8 text-center shadow-app-soft">
+          <p className="font-black text-app-text">{error}</p>
+          <button type="button" onClick={() => navigate(TEACHERS_LIST_PATH)} className="mt-4 min-h-11 rounded-2xl bg-app-primary-deep px-5 text-sm font-black text-white">Ustozlar roʻyxati</button>
+        </div>
+      </div>
+    );
+  }
+  if (!t) {
+    return (
+      <div className="min-h-full space-y-3 bg-app-bg-subtle px-4 pt-4" aria-busy="true">
+        <div className="mx-auto max-w-[880px] space-y-3">
+          <div className="aspect-video animate-pulse rounded-[24px] bg-app-surface" />
+          <div className="h-48 animate-pulse rounded-[24px] bg-app-surface" />
+        </div>
       </div>
     );
   }
 
-  if (error || !profile) {
-    return (
-      <div className="min-h-full bg-app-bg-subtle px-4 py-8">
-        <button
-          type="button"
-          onClick={() => navigate(TEACHERS_LIST_PATH)}
-          className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text"
-          aria-label={t('common.back')}
-        >
-          <ArrowLeft className="h-6 w-6" aria-hidden />
-        </button>
-        <p className="rounded-2xl border border-app-danger/30 bg-app-danger-bg px-4 py-6 text-center text-sm font-semibold text-app-danger">
-          {error || t('teachers.notFound')}
-        </p>
-      </div>
-    );
-  }
-
-  const name = teacherDisplayName(profile);
-  const locationLabel = [profile.city, profile.region].filter(Boolean).join(', ') || t('teachers.notSpecified');
-  const priceLabel = formatTeacherListPrice(profile);
-  const ratingCount = Number(profile.rating_count ?? 0);
-  const ratingAvg = Number(profile.rating_avg ?? 0);
+  const name = `${t.first_name} ${t.last_name}`.trim();
+  const exp = experienceText(t.experience_years);
+  const video = resolveAssetUrl(t.video_url);
 
   return (
-    <div className="min-h-full bg-app-bg-subtle pb-8">
-      <main className="mx-auto w-full max-w-[820px]">
-        <header className="px-4 pt-2">
-          <button
-            type="button"
-            onClick={() => navigate(TEACHERS_LIST_PATH)}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text transition hover:bg-app-row-hover"
-            aria-label={t('common.back')}
-          >
-            <ArrowLeft className="h-6 w-6" aria-hidden />
+    <div className="min-h-full bg-app-bg-subtle px-4 pb-28 pt-2 lg:pb-10">
+      <main className="mx-auto w-full max-w-[880px] space-y-4">
+        <button type="button" onClick={back} className="inline-flex min-h-11 items-center gap-2 rounded-xl pr-3 text-sm font-bold text-app-text-muted hover:text-app-text">
+          <ArrowLeft className="h-4 w-4" />Ustozlar
+        </button>
+
+        {video && (
+          <video src={video} controls playsInline preload="metadata" poster={resolveAssetUrl(t.avatar_url) ?? undefined}
+            className="aspect-video w-full rounded-[24px] bg-black object-contain shadow-[0_14px_34px_rgba(148,163,184,0.2)]">
+            <track kind="captions" />
+          </video>
+        )}
+
+        <section className="rounded-[24px] border border-app-border/70 bg-app-surface p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
+          <div className="flex gap-4">
+            <TeacherPhoto url={t.avatar_url} name={name} className="h-[88px] w-[88px] rounded-2xl sm:h-[112px] sm:w-[112px]" />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[22px] font-black leading-tight text-app-text sm:text-[28px]">{name}</h1>
+              <div className="mt-1"><RatingLine avg={t.rating_avg} count={t.rating_count} /></div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <LevelBadge level={t.level} />
+                <PathBadge certified={t.certified} />
+                {exp && <span className="inline-flex items-center rounded-full bg-app-bg-subtle px-2 py-0.5 text-[11px] font-black text-app-text">{exp}</span>}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            {[
+              { v: t.price_uzs ? fmtSum(t.price_uzs).replace(' soʻm', '') : '—', l: `soʻm · ${t.lesson_minutes} daqiqa` },
+              { v: String(t.active_students), l: 'faol oʻquvchi' },
+              { v: String(t.lessons_done), l: 'dars oʻtgan' },
+            ].map((x) => (
+              <div key={x.l} className="rounded-2xl bg-app-bg-subtle px-2 py-3">
+                <p className="whitespace-nowrap text-[15px] font-black tabular-nums text-app-text sm:text-lg">{x.v}</p>
+                <p className="text-[11px] font-semibold text-app-text-muted sm:text-xs">{x.l}</p>
+              </div>
+            ))}
+          </div>
+
+          <button type="button" onClick={toSchedule} disabled={!t.bookable}
+            className="mt-4 hidden h-12 w-full items-center justify-center gap-2 rounded-2xl bg-app-primary-deep text-[15px] font-black text-white shadow-app-soft transition hover:brightness-110 active:scale-[0.98] disabled:bg-slate-200 disabled:text-slate-500 lg:flex">
+            <CalendarClock className="h-5 w-5" />{t.bookable ? 'Vaqt tanlab darsga yozilish' : 'Hozircha dars qabul qilmaydi'}
           </button>
-        </header>
+        </section>
 
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 240, damping: 26 }}
-          className="mt-4 flex flex-col gap-5 px-4 sm:flex-row sm:items-start"
-        >
-          <div className="mx-auto w-[140px] shrink-0 overflow-hidden rounded-[20px] bg-app-surface shadow-app-soft ring-1 ring-app-border sm:mx-0">
-            <div className="aspect-square">
-              <ProfileAvatar profile={profile} />
-            </div>
+        {t.about && (
+          <Block title="Men haqimda" icon={Users}>
+            <p className="whitespace-pre-line text-[15px] leading-relaxed text-app-text">{t.about}</p>
+          </Block>
+        )}
+
+        {(t.languages.length > 0 || t.specializations.length > 0) && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {t.languages.length > 0 && (
+              <Block title="Qaysi tillarda gaplashadi" icon={Languages}>
+                <ul className="flex flex-wrap gap-2">{t.languages.map((l) => <li key={l.code} className="rounded-full bg-app-bg-subtle px-3 py-1.5 text-[13px] font-bold text-app-text">{langLabel(l)}</li>)}</ul>
+              </Block>
+            )}
+            {t.specializations.length > 0 && (
+              <Block title="Yoʻnalishlar" icon={Target}>
+                <ul className="flex flex-wrap gap-2">{t.specializations.map((s) => <li key={s} className="rounded-full bg-app-icon-bg px-3 py-1.5 text-[13px] font-bold text-app-primary-deep">{specLabel(s)}</li>)}</ul>
+              </Block>
+            )}
           </div>
-          <div className="min-w-0 flex-1">
-            {profile.is_recommended || profile.certified_verified ? (
-              <div className="mb-2 flex flex-wrap gap-2">
-                {profile.is_recommended ? <RecommendedBadge /> : null}
-                {profile.certified_verified ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-app-success-bg px-3 py-1 text-xs font-black text-app-success">
-                    <BadgeCheck className="h-4 w-4" aria-hidden />
-                    Sertifikatli oʻqituvchi
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-            <h1 className="text-[26px] font-black leading-tight text-app-text sm:text-[30px]">{name}</h1>
-            <div className="mt-2 flex items-center gap-2">
-              {ratingCount > 0 ? (
-                <>
-                  <Stars rating={ratingAvg} size={18} />
-                  <span className="text-sm font-black text-app-text">{ratingAvg.toFixed(1)}</span>
-                  <span className="text-sm font-semibold text-app-text-secondary">
-                    ({t('teachers.reviewsCount', { count: ratingCount })})
-                  </span>
-                </>
-              ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-app-accent-bg px-2.5 py-0.5 text-xs font-black text-app-accent-text">
-                  {t('teachers.ratingNew')}
-                </span>
-              )}
-            </div>
-            {profile.headline ? (
-              <p className="mt-2 text-base font-semibold text-app-text-muted">{profile.headline}</p>
-            ) : null}
-            <div className="mt-4 space-y-2.5 text-[15px] font-bold text-app-text">
-              <p className="flex items-center gap-3">
-                <Users className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
-                {t('teachers.experience')} {formatTeacherExperience(profile.experience_years, profile.experience_months)}
-              </p>
-              {profile.age ? (
-                <p className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
-                  {t('teachers.age')}: {profile.age}
-                </p>
-              ) : null}
-              <p className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
-                {t('teachers.region')}: {locationLabel}
-              </p>
-              <p className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
-                {t('teachers.lessonFormat')}: {formatTeachingFormat(profile.teaching_format)}
-              </p>
-              <p className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 shrink-0 text-app-primary-deep" aria-hidden />
-                {t('teachers.price')} {priceLabel}
-              </p>
-            </div>
-          </div>
-        </motion.section>
+        )}
 
-        <div className="px-4">
-          {awaitingPaymentConfirmation ? (
-            <section className="mt-6 rounded-[20px] border-2 border-app-warning/40 bg-app-warning-bg p-5">
-              <h2 className="text-lg font-extrabold text-app-warning">{t('teachers.trialPending')}</h2>
-              <p className="mt-2 text-sm font-medium leading-relaxed text-app-text">
-                {t('teachers.trialPendingBody')}
-              </p>
-              <Link to="/payment-history" className="mt-4 inline-flex text-sm font-bold text-app-primary-deep hover:underline">
-                {t('payment.historyTitle')}
-              </Link>
-            </section>
-          ) : trialBooked ? (
-            <section className="mt-6 rounded-[20px] border-2 border-app-success/40 bg-app-success-bg p-5 text-center">
-              <h2 className="text-lg font-extrabold text-app-success">Siz darsga yozildingiz!</h2>
-              {bookedTime ? (
-                <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-app-surface px-4 py-1.5 text-sm font-bold text-app-text shadow-app-soft">
-                  <Clock className="h-4 w-4 text-app-primary-deep" aria-hidden />
-                  {bookedTime}
-                </p>
-              ) : null}
-              <p className="mt-3 text-sm font-medium leading-relaxed text-app-text">
-                Darsingiz profilingizdagi «O‘qituvchi bilan uchrashuv» bo‘limida ko‘rinadi. Ustoz bilan yozishuvni quyidagi tugma orqali oching.
-              </p>
-            </section>
-          ) : slotOpen ? (
-            <section className="mt-6 rounded-[20px] border border-app-border bg-app-surface p-5 shadow-app-soft">
-              <h2 className="text-lg font-extrabold text-app-text">Dars vaqtini tanlang</h2>
-              <p className="mt-1 text-sm font-medium text-app-text-muted">Vaqtlar sizning soatingiz boʻyicha koʻrsatilgan.</p>
-              <div className="mt-4 space-y-3">
-                {meetingDays.map((day) => (
-                  <div key={day.dateLabel}>
-                    <p className="text-xs font-extrabold uppercase tracking-wide text-app-text-secondary">{day.dateLabel}</p>
-                    <div className="mt-1.5 flex flex-wrap gap-2">
-                      {day.times.map((tm) => {
-                        const picked = selectedSlot === tm.iso;
-                        return (
-                          <button
-                            key={tm.iso}
-                            type="button"
-                            onClick={() => setSelectedSlot(picked ? null : tm.iso)}
-                            aria-pressed={picked}
-                            className={`flex min-h-11 min-w-[64px] items-center justify-center rounded-xl border-2 px-3 text-sm font-bold transition active:scale-[0.97] ${
-                              picked ? 'border-app-primary-deep bg-app-primary-deep text-white' : 'border-app-border bg-app-surface text-app-text hover:border-app-primary'
-                            }`}
-                          >
-                            {tm.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => { setSlotOpen(false); setBookingOpen(true); }}
-                disabled={!selectedSlot}
-                className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-app-primary-deep text-base font-extrabold text-white transition active:scale-[0.98] disabled:opacity-50"
-              >
-                Davom etish
-              </button>
-              <button
-                type="button"
-                onClick={() => { setSlotOpen(false); setSelectedSlot(null); }}
-                className="mt-3 min-h-11 w-full text-center text-sm font-bold text-app-text-muted hover:underline"
-              >
-                Bekor qilish
-              </button>
-            </section>
-          ) : !bookingOpen ? (
-            <button
-              type="button"
-              onClick={handleStartBooking}
-              className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-app-primary-deep text-lg font-extrabold text-white transition active:scale-[0.99]"
-            >
-              {t('teachers.trialBook')} — {trialPriceUzs.toLocaleString('uz-UZ')} so'm
-            </button>
-          ) : (
-            <section className="mt-6 rounded-[20px] border border-app-border bg-app-surface p-4 shadow-app-soft">
-              <h2 className="text-lg font-extrabold text-app-text">
-                {t('teachers.trialBook')} — {trialPriceRub} ₽
-              </h2>
-              {selectedSlot ? (
-                <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-app-bg-subtle px-3 py-1 text-sm font-bold text-app-text">
-                  <Clock className="h-4 w-4 text-app-primary-deep" aria-hidden />
-                  {formatMeetingTime(selectedSlot)}
-                </p>
-              ) : null}
-              <p className="mt-2 text-sm font-medium text-app-text-muted">{t('teachers.trialMessageHint')}</p>
-              <textarea
-                value={studentMessage}
-                onChange={(e) => setStudentMessage(e.target.value)}
-                rows={3}
-                placeholder={t('teachers.trialMessagePlaceholder')}
-                className="mt-3 w-full rounded-2xl border border-app-border bg-app-surface px-3.5 py-3 text-sm text-app-text outline-none transition placeholder:text-app-text-secondary focus:border-app-primary focus:ring-2 focus:ring-app-primary/15"
-              />
-              {bookingError ? (
-                <p className="mt-3 rounded-2xl bg-app-danger-bg px-3 py-2 text-sm font-semibold text-app-danger">
-                  {bookingError}
-                </p>
-              ) : null}
-              <div className="mt-4 space-y-3">
-                <button
-                  type="button"
-                  onClick={() => void handlePayRahmat()}
-                  disabled={bookingLoading}
-                  className="flex h-12 w-full items-center justify-center rounded-full bg-app-primary-deep text-base font-extrabold text-white transition active:scale-[0.98] disabled:opacity-60"
-                >
-                  {bookingLoading ? t('common.loading') : t('teachers.trialPayUzs')}
-                </button>
-                <p className="text-center text-xs font-medium text-app-text-secondary">
-                  {trialPriceUzs.toLocaleString('uz-UZ')} so'm · Rahmat orqali (Click, Payme, Uzum va boshqalar)
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void handlePayRub()}
-                  disabled={bookingLoading}
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-app-primary bg-app-surface text-base font-bold text-app-primary-deep transition active:scale-[0.98] disabled:opacity-60"
-                >
-                  <CreditCard className="h-5 w-5" />
-                  {t('teachers.trialPayRub')} — {trialPriceRub} ₽
-                </button>
-                <p className="text-center text-xs font-medium text-app-text-secondary">{t('teachers.trialRubHint')}</p>
-              </div>
-            </section>
-          )}
-        </div>
-
-        {!isDemo && profile ? <div className="px-4"><BookLessonCard teacherId={profile.user_id} token={token} /></div> : null}
-
-        {chatConvoId != null && user ? (
-          <div className="mt-4 px-4">
-            <button
-              type="button"
-              onClick={() => setChatOpen(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-app-primary bg-app-surface px-5 py-3 text-base font-bold text-app-primary-deep transition active:scale-[0.98]"
-            >
-              <MessageSquare className="h-5 w-5" />
-              Ustoz bilan yozishuv
-            </button>
-          </div>
-        ) : null}
-
-        {!isDemo && token && myTrial?.trial && String(myTrial.trial.status).includes('completed') && !reviewDone ? (
-          <div className="mt-6 px-4">
-            <TeacherReviewForm
-              token={token}
-              trialId={myTrial.trial.id}
-              onSubmitted={async () => {
-                setReviewDone(true);
-                try {
-                  const d = await getTeacherPublicDetail(token, Number(teacherId));
-                  setProfile(d.profile);
-                  setReviews(d.reviews);
-                } catch {
-                  /* refresh ixtiyoriy */
-                }
-              }}
-            />
-          </div>
-        ) : null}
-
-        {profile.video_url ? (
-          <section className="mt-6 px-4">
-            <h2 className="mb-3 text-2xl font-black text-app-text">
-              {t('teachers.videoTitle')}
-            </h2>
-            {/* Videoni admin tekshirib tasdiqlagan bo'lsagina shu yerga tushadi. */}
-            <video
-              src={resolveAssetUrl(profile.video_url) ?? undefined}
-              controls
-              playsInline
-              preload="metadata"
-              className="max-h-[420px] w-full rounded-[20px] bg-black"
-            />
-          </section>
-        ) : null}
-
-        <div className="mt-6 space-y-4 px-4">
-          <TeacherResults profile={profile} />
-          <TeacherSchedule slots={profile.weekly_availability ?? []} />
-          <TeacherEducationSection items={profile.education ?? []} />
-          <TeacherCertificatesSection items={profile.certificates ?? []} />
-          <TeacherAchievementsSection text={profile.achievements ?? ''} />
-        </div>
-
-        {reviews.length > 0 ? (
-          <section className="mt-8 px-4">
-            <h2 className="text-2xl font-black text-app-text">{t('teachers.reviews')}</h2>
-            <div className="-mx-1 mt-4 flex gap-4 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {reviews.map((review) => (
-                <ReviewCard key={review.id} review={review} />
+        {(t.education.length > 0 || t.certificates.length > 0) && (
+          <Block title="Taʼlim va sertifikatlar" icon={GraduationCap}>
+            <ul className="space-y-3">
+              {t.education.map((e, i) => (
+                <li key={`e${i}`} className="text-sm">
+                  <p className="font-bold text-app-text">{e.institution}</p>
+                  <p className="text-app-text-muted">{[DEGREES.find((d) => d.code === e.degree)?.uz, e.specialty, [e.year_from, e.year_to].filter(Boolean).join('–')].filter(Boolean).join(' · ')}</p>
+                </li>
               ))}
-            </div>
-          </section>
-        ) : null}
+              {t.certificates.map((c, i) => (
+                <li key={`c${i}`} className="text-sm">
+                  <p className="font-bold text-app-text">{c.title}</p>
+                  <p className="text-app-text-muted">{[c.institution, c.year].filter(Boolean).join(' · ')}</p>
+                </li>
+              ))}
+            </ul>
+          </Block>
+        )}
 
-        {profile.about ? (
-          <article className="mx-4 mt-6 rounded-[18px] bg-app-surface px-5 py-5 shadow-app-soft ring-1 ring-app-border">
-            <h2 className="text-2xl font-black text-app-text">{t('teachers.about')}</h2>
-            <p className="mt-4 whitespace-pre-wrap text-base font-medium leading-relaxed text-app-text-muted">
-              {profile.about}
-            </p>
-          </article>
-        ) : null}
+        <Block title="Baholar va sharhlar" icon={BookOpen}>
+          {token && <ReviewsSection teacherId={t.user_id} token={token} ratingAvg={t.rating_avg} total={t.reviews_total} criteria={t.criteria} initial={t.reviews} />}
+        </Block>
+
+        <Block id="jadval" title="Boʻsh vaqtlar" icon={CalendarClock}>
+          {t.bookable ? <WeekSlots slots={t.free_slots} onPick={setPicked} />
+            : <p className="rounded-2xl bg-app-bg-subtle p-4 text-center text-sm font-semibold text-app-text-muted">Ustoz hozircha dars qabul qilmaydi.</p>}
+        </Block>
       </main>
 
-      {chatOpen && chatConvoId != null && token && user ? (
-        <TeacherChatModal
-          token={token}
-          conversationId={chatConvoId}
-          currentUserId={user.id}
-          title={`${name} bilan suhbat`}
-          onClose={() => setChatOpen(false)}
-        />
-      ) : null}
+      {/* Telefonda pastki panel: narx va jadvalga o'tish. */}
+      {t.bookable && !picked && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-app-border bg-app-surface/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-[880px] items-center gap-3">
+            <div className="min-w-0">
+              <p className="text-[17px] font-black tabular-nums text-app-text">{t.price_uzs ? fmtSum(t.price_uzs) : '—'}</p>
+              <p className="truncate text-xs font-semibold text-app-text-muted">{t.free_slots[0] ? `Eng yaqin: ${slotLabel(t.free_slots[0])}` : `${t.lesson_minutes} daqiqalik dars`}</p>
+            </div>
+            <button type="button" onClick={toSchedule} className="ml-auto flex h-12 shrink-0 items-center justify-center rounded-2xl bg-app-primary-deep px-5 text-[15px] font-black text-white active:scale-[0.98]">Vaqt tanlash</button>
+          </div>
+        </div>
+      )}
+
+      {picked && token && (
+        <BookingSheet teacher={t} startsAt={picked} token={token} onClose={() => setPicked(null)}
+          onBooked={() => navigate(`${TEACHERS_LIST_PATH}?tab=mine`)}
+          onSlotTaken={load} />
+      )}
     </div>
   );
 }

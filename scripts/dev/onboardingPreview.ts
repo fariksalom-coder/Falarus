@@ -57,6 +57,39 @@ await db.exec(`INSERT INTO users (id, account_type, phone, first_name, last_name
       (11, 20, now() - interval '10 minutes', now() + interval '50 minutes', 90000, 'paid', 'demo-live');
   INSERT INTO teacher_trial_lessons (teacher_user_id, student_user_id, status, scheduled_starts_at, scheduled_ends_at)
     VALUES (12, 20, 'scheduled', date_trunc('day', now() + interval '2 day') + interval '9 hours', date_trunc('day', now() + interval '2 day') + interval '10 hours');`);
+// Student catalog (/ustozlar): columns the real DB already has, chat tables, migration 215 and three teachers.
+await db.exec(`ALTER TABLE teacher_profiles ADD COLUMN IF NOT EXISTS experience_years integer, ADD COLUMN IF NOT EXISTS experience_months integer,
+    ADD COLUMN IF NOT EXISTS languages text[] NOT NULL DEFAULT '{}', ADD COLUMN IF NOT EXISTS rating_avg numeric, ADD COLUMN IF NOT EXISTS rating_count integer NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+  CREATE TABLE teacher_conversations (id bigserial PRIMARY KEY, trial_lesson_id bigint, teacher_user_id integer NOT NULL, student_user_id integer NOT NULL,
+    status text NOT NULL DEFAULT 'active', last_message_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());`);
+await db.exec(await readFile('db/migrations/215_teacher_market_reviews.sql', 'utf8'));
+await db.exec(`UPDATE teacher_profiles SET experience_years = 8, specializations = '{migration,conversation}', languages = '{uz:native,ru:C2,en:B1}', catalog_visible = true,
+    about = 'Assalomu alaykum! Men Shahlo, 8 yildan beri rus tilidan dars beraman. Asosan Rossiyaga ishga ketayotganlar bilan ishlayman: patent imtihoni, hujjatlar, ish joyidagi suhbat. Darslarimda koʻp gapiramiz, grammatikani hayotiy misollar bilan tushuntiraman. Birinchi darsda darajangizni aniqlab, shaxsiy reja tuzamiz.'
+    WHERE user_id = 11;
+  INSERT INTO users (id, account_type, phone, first_name, last_name) VALUES (13, 'teacher', '+998901110013', 'Bobur', 'Tursunov'), (14, 'teacher', '+998901110014', 'Nilufar', 'Ahmedova');
+  INSERT INTO users (id, account_type, first_name, last_name) SELECT 100 + g, 'student', (ARRAY['Aziz','Malika','Jasur','Dilfuza','Sardor','Kamola','Otabek','Zarina'])[g], (ARRAY['Karimov','Yusupova','Rahimov','Nazarova','Aliyev','Saidova','Qodirov','Ergasheva'])[g] FROM generate_series(1, 8) g;
+  INSERT INTO teacher_profiles (user_id, first_name, last_name, profile_status, catalog_visible, lesson_price_uzs, terms_accepted_at, terms_version, experience_years, specializations, languages, certified_verified, onboarding_path, about, schedule)
+  VALUES (13, 'Bobur', 'Tursunov', 'active', true, 60000, now(), '2026-10-23', 3, '{beginners,grammar,kids}', '{uz:native,ru:C1}', true, 'certified',
+      'Filologiya fakultetini tamomlaganman, rus tili oʻqituvchisi sertifikatim bor. Noldan boshlovchilar va bolalar bilan ishlashni yaxshi koʻraman. Har bir darsdan keyin uy vazifasi va qisqa takrorlash beriladi.',
+      '{"timezone":"Asia/Tashkent","slots":[{"weekday":1,"start":"18:00","end":"22:00"},{"weekday":3,"start":"18:00","end":"22:00"},{"weekday":5,"start":"18:00","end":"22:00"},{"weekday":6,"start":"09:00","end":"14:00"}]}'),
+    (14, 'Nilufar', 'Ahmedova', 'active', true, 150000, now(), '2026-10-23', 15, '{exam,work,pronunciation}', '{ru:native,uz:C2,en:C1}', false, 'experienced',
+      'Rus tili mening ona tilim. 15 yil davomida TRKI imtihonlariga va xalqaro kompaniyalarda ishlash uchun tayyorlayman. Talaffuz va erkin nutqqa alohida eʼtibor beraman.',
+      '{"timezone":"Europe/Moscow","slots":[{"weekday":1,"start":"08:00","end":"11:00"},{"weekday":2,"start":"08:00","end":"11:00"},{"weekday":4,"start":"13:00","end":"16:00"},{"weekday":7,"start":"10:00","end":"12:00"}]}');
+  INSERT INTO teacher_trial_lessons (teacher_user_id, status) SELECT 14, 'completed' FROM generate_series(1, 120);`);
+// Reviews: 6 for Shahlo and 7 for Nilufar, each on its own completed lesson.
+for (const [teacher, scores] of [[11, [5, 5, 4, 5, 5, 4]], [14, [5, 5, 5, 4, 5, 5, 5]]] as const) {
+  for (let i = 0; i < scores.length; i++) {
+    const student = 101 + i, s = scores[i];
+    const l = await db.query<{ id: number }>(`INSERT INTO teacher_lessons (teacher_user_id, student_user_id, starts_at, ends_at, price_uzs, status, room_slug, completed_at)
+      VALUES ($1::int, $2::int, now() - ($3::text || ' days')::interval, now() - ($3::text || ' days')::interval + interval '50 minutes', 90000, 'completed', $4::text, now()) RETURNING id`,
+    [teacher, student, String(3 + i * 4), `rv-${teacher}-${student}`]);
+    await db.query(`INSERT INTO teacher_lesson_reviews (lesson_id, teacher_user_id, student_user_id, support, honesty, progress, preparation, overall, comment, created_at)
+      VALUES ($1::bigint, $2::int, $3::int, $4::int, 5, $4::int, $5::int, round((($4::int * 2 + 5 + $5::int)::numeric) / 4, 1), $6::text, now() - ($7::text || ' days')::interval)`,
+    [l.rows[0].id, teacher, student, s, Math.max(3, s - (i % 2)), ['Juda sabrli ustoz, har bir savolga tushuntirib beradi.', 'Patent imtihonidan birinchi urinishda oʻtdim, rahmat!', 'Darslar qiziqarli, lekin baʼzan vaqt yetmay qoladi.', '', 'Talaffuzim ancha yaxshilandi. Tavsiya qilaman.', 'Har darsga material tayyorlab keladi.', 'Bir oyda erkin gapira boshladim.'][i] ?? '', String(2 + i * 4)]);
+  }
+  await db.query(`UPDATE teacher_profiles p SET rating_avg = s.a, rating_count = s.n FROM (SELECT round(avg(overall), 1) a, count(*) n FROM teacher_lesson_reviews WHERE teacher_user_id = $1) s WHERE p.user_id = $1`, [teacher]);
+}
 // ONB_SEED=revision: teacher 10 has a complete application that the admin sent back to step 5.
 if (process.env.ONB_SEED === 'revision') {
   const about = 'Men rus tilini oʻn yildan beri oʻrgataman. '.repeat(10);
@@ -81,10 +114,11 @@ app.use('/api', createTeacherOnboardingRoutes((req: any, _res: any, next: any) =
 app.use('/api/admin', createAdminTeacherOnboardingRoutes(deps));
 const tx = <T,>(fn: (q: OnboardingQuery) => Promise<T>) => db.transaction((t) => fn((sql, p) => t.query(sql, p as unknown[]))) as Promise<T>;
 // /onb-balance acts as teacher 11, /onb-book as student 20.
-app.use('/api', createTeacherLessonRoutes((req: any, _res: any, next: any) => { req.userId = String(req.headers.referer ?? '').includes('onb-book') ? 20 : 11; next(); }, { q, tx, meetDomain: 'falarus.uz:8443' }));
+app.use('/api', createTeacherLessonRoutes((req: any, _res: any, next: any) => { req.userId = /onb-book|\/ustozlar/.test(String(req.headers.referer ?? '')) ? 20 : 11; next(); }, { q, tx, meetDomain: 'falarus.uz:8443' }));
 app.use('/api/admin/teacher-money', createAdminTeacherMoneyRoutes({ q, tx }));
 const vite = await createServer({ configFile: false, plugins: [react(), tailwindcss()], define: { 'import.meta.env.VITE_API_URL': '""' }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+app.get('/api/user/me', (_req, res) => res.json({ id: 20, firstName: 'Ali', lastName: 'Valiyev', phone: '+998907777777', totalPoints: 0 }));
 app.use(vite.middlewares);
 const html = await readFile('scripts/dev/onboarding-preview.html', 'utf8');
-app.get(['/onb', '/onb-focus', '/onb-admin', '/onb-commission', '/onb-balance', '/onb-book', '/onb-money'], async (req, res) => res.type('html').send(await vite.transformIndexHtml(req.originalUrl, html)));
+app.get(['/onb', '/onb-focus', '/onb-admin', '/onb-commission', '/onb-balance', '/onb-book', '/onb-money', '/ustozlar', '/ustozlar/:id'], async (req, res) => res.type('html').send(await vite.transformIndexHtml(req.originalUrl, html)));
 app.listen(3003, '0.0.0.0', () => console.log('Onboarding preview: http://localhost:3003/onb  admin: /onb-admin'));

@@ -10,7 +10,8 @@ import { commissionForLesson, type CommissionTier } from './teacherOnboarding';
 
 export type LessonStatus = 'pending_payment' | 'paid' | 'disputed' | 'completed' | 'cancelled' | 'refunded' | 'expired';
 
-export const LESSON_MINUTES = 60;
+/** Dars 50 daqiqa; boshlanish vaqtlari soatbay, keyingi darsgacha 10 daqiqa tanaffus. */
+export const LESSON_MINUTES = 50;
 /** To'lanmagan bron vaqtni shuncha ushlab turadi, keyin bo'shatiladi. */
 export const PENDING_HOLD_MINUTES = 30;
 /** Eng erta bron: hozirdan shuncha vaqt keyin boshlanadigan dars. */
@@ -75,3 +76,57 @@ export function normalizeCardNumber(raw: unknown): string | null {
 }
 
 export const maskCard = (digits: string) => `${digits.slice(0, 4)} •••• •••• ${digits.slice(-4)}`;
+
+/* ─────────────────────────── Ustoz darajasi va baholash ─────────────────────────── */
+
+export type TeacherLevelKey = 'new' | 'tutor' | 'experienced' | 'pro' | 'super';
+
+/**
+ * Daraja platformadagi o'tkazilgan darslar va reyting bilan o'zi oshadi.
+ * Reyting sharti faqat kamida `minReviews` ta sharh bo'lsa hisoblanadi — bitta
+ * 5 yulduzli sharh bilan «Super repetitor» bo'lib qolmasin.
+ */
+export const TEACHER_LEVELS: { key: TeacherLevelKey; uz: string; ru: string; minLessons: number; minRating: number | null }[] = [
+  { key: 'new', uz: 'Yangi ustoz', ru: 'Новый преподаватель', minLessons: 0, minRating: null },
+  { key: 'tutor', uz: 'Repetitor', ru: 'Репетитор', minLessons: 20, minRating: null },
+  { key: 'experienced', uz: 'Tajribali repetitor', ru: 'Опытный репетитор', minLessons: 100, minRating: 4.5 },
+  { key: 'pro', uz: 'Professional', ru: 'Профессионал', minLessons: 500, minRating: 4.7 },
+  { key: 'super', uz: 'Super repetitor', ru: 'Супер-репетитор', minLessons: 1000, minRating: 4.8 },
+];
+export const LEVEL_MIN_REVIEWS = 5;
+
+export function teacherLevel(lessonsDone: number, ratingAvg: number | null | undefined, ratingCount: number | null | undefined) {
+  const rated = Number(ratingCount ?? 0) >= LEVEL_MIN_REVIEWS ? Number(ratingAvg ?? 0) : null;
+  let level = TEACHER_LEVELS[0];
+  for (const l of TEACHER_LEVELS) {
+    if (lessonsDone < l.minLessons) break;
+    if (l.minRating != null && (rated == null || rated < l.minRating)) break;
+    level = l;
+  }
+  return level;
+}
+
+/** O'quvchi darsdan keyin ustozni shu to'rt mezon bo'yicha 1–5 baholaydi. */
+export const REVIEW_CRITERIA = [
+  { key: 'support', uz: 'Qoʻllab-quvvatlash', ru: 'Поддержка', hint: 'Qiyin joyda yordam beradimi, ruhlantiradimi' },
+  { key: 'honesty', uz: 'Halollik', ru: 'Честность', hint: 'Vaqtida keladimi, vaʼdasini bajaradimi' },
+  { key: 'progress', uz: 'Natija', ru: 'Прогресс', hint: 'Darslardan keyin rus tilingiz yaxshilanyaptimi' },
+  { key: 'preparation', uz: 'Darsga tayyorgarlik', ru: 'Подготовка к уроку', hint: 'Dars rejali, materiallar tayyormi' },
+] as const;
+export type ReviewCriterion = (typeof REVIEW_CRITERIA)[number]['key'];
+export const REVIEW_TEXT_MAX = 1500;
+
+/** Baholarni tekshiradi: har bir mezon 1..5 butun son. Noto'g'ri bo'lsa — null. */
+export function normalizeReviewScores(raw: unknown): Record<ReviewCriterion, number> | null {
+  const x = (raw ?? {}) as Record<string, unknown>;
+  const out = {} as Record<ReviewCriterion, number>;
+  for (const c of REVIEW_CRITERIA) {
+    const n = Number(x[c.key]);
+    if (!Number.isInteger(n) || n < 1 || n > 5) return null;
+    out[c.key] = n;
+  }
+  return out;
+}
+
+export const reviewOverall = (s: Record<ReviewCriterion, number>) =>
+  Math.round((REVIEW_CRITERIA.reduce((sum, c) => sum + s[c.key], 0) / REVIEW_CRITERIA.length) * 10) / 10;

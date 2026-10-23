@@ -23,6 +23,8 @@ export type TeacherLesson = {
   teacher_first_name?: string;
   teacher_last_name?: string;
   teacher_avatar_url?: string | null;
+  /** O'quvchining shu darsga qo'ygan bahosi (sharh bo'lsa). */
+  my_review_overall?: number | null;
   student_first_name?: string;
   student_last_name?: string;
 };

@@ -27,6 +27,8 @@ import {
   type MeetSession,
 } from '../services/teacherMeet.service.js';
 
+/** Sinov darsi yopilgan: eski mobil ilova shu xabarni ko'rsatadi. */
+const TRIAL_CLOSED = 'Sinov darsi endi yoʻq. Ustoz profilida qulay vaqtni tanlab, oddiy darsga yoziling.';
 const TRIAL_PRICE_RUB = 490;
 const RUB_TO_UZS_RATE = 150;
 const TRIAL_PRICE_UZS = TRIAL_PRICE_RUB * RUB_TO_UZS_RATE;
@@ -877,6 +879,9 @@ export function createTeacherRoutes(
 
   router.post('/teachers/:teacherId/trial-lessons', authenticate, async (req: any, res) => {
     try {
+      // 2026-10-24 dan sinov darsi yo'q — ustoz profilidan oddiy dars band qilinadi.
+      return res.status(410).json({ error: TRIAL_CLOSED });
+      // eslint-disable-next-line no-unreachable
       const teacherId = Number(req.params.teacherId);
       const studentId = Number(req.userId);
       if (!Number.isFinite(teacherId) || teacherId === studentId) {
@@ -974,6 +979,8 @@ export function createTeacherRoutes(
 
   router.post('/teacher-trials/:trialId/payment', authenticate, async (req: any, res) => {
     try {
+      return res.status(410).json({ error: TRIAL_CLOSED });
+      // eslint-disable-next-line no-unreachable
       const trialId = Number(req.params.trialId);
       const userId = Number(req.userId);
       const currencyRaw = asString(req.body?.currency, 'UZS');

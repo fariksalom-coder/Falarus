@@ -20,12 +20,7 @@ import {
   normalizePaymentProductCode,
 } from '../../shared/paymentProducts.js';
 import { activateApprovedPayment } from '../../shared/paymentActivation.js';
-import { getTeacherTrialPriceUzs } from '../../shared/paymentProducts.js';
-import {
-  activateTeacherMarketplacePayment,
-  linkTeacherTrialPayment,
-  parseTeacherTrialId,
-} from './teacherMarketplace.service.js';
+import { activateTeacherMarketplacePayment } from './teacherMarketplace.service.js';
 import {
   embedFalarusProductInProofUrl,
   inferCourseProductFromPaymentAmount,
@@ -143,13 +138,13 @@ export async function createRahmatMulticardPayment(
       }
     }
   }
-  const trialId = productCode === 'teacher_trial' ? parseTeacherTrialId(body as Record<string, unknown>) : null;
   // 2026-10-23: listing to'lovi to'xtatildi — platforma darslardan komissiya oladi.
   if (productCode === 'teacher_listing') {
     return { status: 410, json: { error: "Ro'yxat to'lovi endi talab qilinmaydi" } };
   }
-  if (productCode === 'teacher_trial' && !trialId) {
-    return { status: 400, json: { error: 'trial_id kerak' } };
+  // 2026-10-24 dan sinov darsi yo'q (faqat oddiy pullik dars).
+  if (productCode === 'teacher_trial') {
+    return { status: 410, json: { error: 'Sinov darsi endi yoʻq. Ustoz profilida oddiy darsga yoziling.' } };
   }
   // Pullik dars: summa bron qatoridan (o'qituvchi narxi bron paytida qotirilgan).
   const lessonId = productCode === 'teacher_lesson' ? Number((body as Record<string, unknown>).lesson_id) || null : null;
@@ -234,10 +229,6 @@ export async function createRahmatMulticardPayment(
         offer_label: 'three_month_price_for_six_month_access',
       };
     }
-  } else if (productCode === 'teacher_trial') {
-    amount = getTeacherTrialPriceUzs();
-    baseAmount = amount;
-    discountMeta = { trial_id: trialId };
   } else if (productCode === 'teacher_lesson') {
     amount = lessonAmount;
     baseAmount = amount;
@@ -295,15 +286,6 @@ export async function createRahmatMulticardPayment(
         status: 409,
         json: { error: 'WELCOME_OFFER_ALREADY_USED', message: 'Taklif muddati tugagan yoki allaqachon ishlatilgan.' },
       };
-    }
-  }
-  if (productCode === 'teacher_trial' && trialId) {
-    try {
-      await linkTeacherTrialPayment(supabase, userId, trialId, paymentId, 'UZS');
-    } catch (subErr) {
-      await supabase.from('payments').delete().eq('id', paymentId);
-      const message = subErr instanceof Error ? subErr.message : "Sinov darsi bog'lanmadi";
-      return { status: 400, json: { error: message } };
     }
   }
   if (productCode === 'teacher_lesson' && lessonId) {

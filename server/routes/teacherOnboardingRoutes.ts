@@ -35,6 +35,9 @@ import {
   firstInvalidStep,
   nextStep,
   normalizeAnswers,
+  normalizeProfileExtra,
+  languagesFromDb,
+  languagesToDb,
   normalizePhone,
   normalizeTelegram,
   normalizeCertificates,
@@ -141,7 +144,8 @@ async function defaultProbe(file: string): Promise<{ duration: number | null; ha
 const PROFILE_COLS = `user_id, first_name, last_name, birth_country, subject, proficiency, onboarding_path, avatar_url,
   certificates, education, about_answers, about, headline, video_url, video_duration_sec, schedule, weekly_availability,
   lesson_price_uzs, terms_version, terms_accepted_at, onboarding_step, onboarding_submitted_at, profile_status,
-  review_comment, review_step, reviewed_at, certified_verified, contact_phone, contact_telegram, contact_whatsapp`;
+  review_comment, review_step, reviewed_at, certified_verified, contact_phone, contact_telegram, contact_whatsapp,
+  experience_years, specializations, languages`;
 
 async function loadSettings(q: OnboardingQuery): Promise<OnboardingSettings> {
   const { rows } = await q('SELECT price_min_uzs, price_max_uzs, commission_tiers, terms_version FROM teacher_onboarding_settings WHERE id');
@@ -184,6 +188,9 @@ function toData(row: any, termsVersion: string): OnboardingData {
     education: legacyEducation(row?.education),
     about_answers: normalizeAnswers(row?.about_answers),
     about: row?.about ?? '',
+    profile: normalizeProfileExtra({
+      experience_years: row?.experience_years, specializations: row?.specializations, languages: languagesFromDb(row?.languages),
+    }),
     video_url: row?.video_url || null,
     video_duration_sec: row?.video_duration_sec ?? null,
     schedule: legacySchedule(row) ?? DEFAULT_SCHEDULE,
@@ -295,7 +302,7 @@ export function createTeacherOnboardingRoutes(
     };
     if (step === 3) next.certificates = normalizeCertificates(b.certificates);
     if (step === 4) next.education = normalizeEducation(b.education);
-    if (step === 5) { next.about_answers = normalizeAnswers(b.answers); next.about = String(b.about ?? '').trim().slice(0, 2000); }
+    if (step === 5) { next.about_answers = normalizeAnswers(b.answers); next.about = String(b.about ?? '').trim().slice(0, 2000); next.profile = normalizeProfileExtra(b.profile); }
     if (step === 7) next.schedule = normalizeSchedule(b.schedule);
     if (step === 8) { next.lesson_price_uzs = Number.isFinite(Number(b.lesson_price_uzs)) ? Math.round(Number(b.lesson_price_uzs)) : null; next.terms_accepted = b.terms_accepted === true; }
 
@@ -341,8 +348,11 @@ export function createTeacherOnboardingRoutes(
       await q!('UPDATE teacher_profiles SET education = $2::jsonb, onboarding_step = $3, updated_at = now() WHERE user_id = $1', [id, JSON.stringify(rows), advance]);
     } else if (step === 5) {
       const headline = next.about.split(/(?<=[.!?])\s/)[0]?.slice(0, 120) ?? '';
+      const extra = next.profile;
       await q!(`UPDATE teacher_profiles SET about_answers = $2::jsonb, about = $3, headline = CASE WHEN headline = '' THEN $4 ELSE headline END,
-        onboarding_step = $5, updated_at = now() WHERE user_id = $1`, [id, JSON.stringify(next.about_answers), next.about, headline, advance]);
+        experience_years = $6, experience_months = CASE WHEN $6::int IS NULL THEN experience_months ELSE 0 END, specializations = $7::text[], languages = $8::text[],
+        onboarding_step = $5, updated_at = now() WHERE user_id = $1`,
+      [id, JSON.stringify(next.about_answers), next.about, headline, advance, extra.experience_years, extra.specializations, languagesToDb(extra.languages)]);
     } else if (step === 7) {
       // Jadval uch joyga yoziladi: yangi `schedule`, profil sahifasidagi `weekly_availability` (0 = yakshanba)
       // va kabinet kalendari ishlatadigan `teacher_availability_rules`.

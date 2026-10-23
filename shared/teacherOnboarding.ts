@@ -69,6 +69,41 @@ export const PROFICIENCY: { code: string; uz: string; ru: string }[] = [
   { code: 'native', uz: 'Ona tili', ru: 'Носитель языка' },
 ];
 
+/** O'quvchi katalogda shu yo'nalishlar bo'yicha saralaydi (ustoz 1–4 tasini tanlaydi). */
+export const SPECIALIZATIONS: { code: string; uz: string; ru: string }[] = [
+  { code: 'beginners', uz: 'Noldan boshlovchilar', ru: 'С нуля' },
+  { code: 'conversation', uz: 'Soʻzlashuv', ru: 'Разговорный' },
+  { code: 'grammar', uz: 'Grammatika', ru: 'Грамматика' },
+  { code: 'migration', uz: 'Patent va migratsiya imtihoni', ru: 'Патент и экзамен для мигрантов' },
+  { code: 'work', uz: 'Ish va biznes uchun', ru: 'Для работы и бизнеса' },
+  { code: 'kids', uz: 'Bolalar uchun', ru: 'Для детей' },
+  { code: 'school', uz: 'Maktab oʻquvchilari', ru: 'Для школьников' },
+  { code: 'exam', uz: 'Imtihonga tayyorgarlik (TRKI)', ru: 'Подготовка к экзаменам (ТРКИ)' },
+  { code: 'pronunciation', uz: 'Talaffuz', ru: 'Произношение' },
+];
+export const SPECIALIZATIONS_MAX = 4;
+
+export const LANGUAGES: { code: string; uz: string; ru: string }[] = [
+  { code: 'uz', uz: 'Oʻzbek', ru: 'Узбекский' },
+  { code: 'ru', uz: 'Rus', ru: 'Русский' },
+  { code: 'en', uz: 'Ingliz', ru: 'Английский' },
+  { code: 'tg', uz: 'Tojik', ru: 'Таджикский' },
+  { code: 'kk', uz: 'Qozoq', ru: 'Казахский' },
+  { code: 'ky', uz: 'Qirgʻiz', ru: 'Киргизский' },
+  { code: 'tk', uz: 'Turkman', ru: 'Туркменский' },
+  { code: 'tr', uz: 'Turk', ru: 'Турецкий' },
+  { code: 'kaa', uz: 'Qoraqalpoq', ru: 'Каракалпакский' },
+];
+export const LANGUAGE_LEVELS: { code: string; uz: string; ru: string }[] = [
+  { code: 'native', uz: 'Ona tili', ru: 'Родной' },
+  { code: 'C2', uz: 'C2 — mukammal', ru: 'C2 — в совершенстве' },
+  { code: 'C1', uz: 'C1 — erkin', ru: 'C1 — свободно' },
+  { code: 'B2', uz: 'B2 — yaxshi', ru: 'B2 — хорошо' },
+  { code: 'B1', uz: 'B1 — oʻrtacha', ru: 'B1 — средне' },
+  { code: 'A2', uz: 'A2 — boshlangʻich', ru: 'A2 — начальный' },
+];
+export type LanguageRow = { code: string; level: string };
+
 export const DEGREES: { code: string; uz: string; ru: string }[] = [
   { code: 'college', uz: 'Kollej / texnikum', ru: 'Колледж / техникум' },
   { code: 'bachelor', uz: 'Bakalavr', ru: 'Бакалавр' },
@@ -86,6 +121,9 @@ export const DEFAULT_TIMEZONE = 'Asia/Tashkent';
 export const ERRORS = {
   required: { uz: 'Toʻldirilishi shart', ru: 'Обязательное поле' },
   name: { uz: 'Faqat harflar, 2–50 belgi', ru: 'Только буквы, 2–50 символов' },
+  experience: { uz: 'Necha yil dars berganingizni yozing (0–60)', ru: 'Укажите стаж в годах (0–60)' },
+  specializations: { uz: '1 tadan 4 tagacha yoʻnalish tanlang', ru: 'Выберите от 1 до 4 направлений' },
+  languages: { uz: 'Kamida bitta tilni darajasi bilan qoʻshing', ru: 'Добавьте хотя бы один язык с уровнем' },
   choose: { uz: 'Roʻyxatdan tanlang', ru: 'Выберите из списка' },
   path: { uz: 'Yoʻlni tanlang', ru: 'Выберите путь' },
   photo: { uz: 'Surat yuklang', ru: 'Загрузите фото' },
@@ -251,6 +289,38 @@ export function validateAbout(answers: AboutAnswers, about: string): FieldErrors
   if (n < ABOUT_MIN || n > ABOUT_MAX) e.about = 'aboutLength';
   return e;
 }
+
+/** Katalog uchun: tajriba yili, yo'nalishlar va bilgan tillar (5-qadamda so'raladi). */
+export type ProfileExtra = { experience_years: number | null; specializations: string[]; languages: LanguageRow[] };
+
+export function normalizeProfileExtra(raw: unknown): ProfileExtra {
+  const x = (raw ?? {}) as Record<string, unknown>;
+  const years = x.experience_years === '' || x.experience_years == null ? null : Number(x.experience_years);
+  const specs = (Array.isArray(x.specializations) ? x.specializations : []).map(String).filter((c) => SPECIALIZATIONS.some((s) => s.code === c));
+  const seen = new Set<string>();
+  const langs = (Array.isArray(x.languages) ? x.languages : []).map((r) => {
+    const o = (r ?? {}) as Record<string, unknown>;
+    return { code: String(o.code ?? ''), level: String(o.level ?? '') };
+  }).filter((r) => LANGUAGES.some((l) => l.code === r.code) && !seen.has(r.code) && seen.add(r.code));
+  return {
+    experience_years: years != null && Number.isFinite(years) ? Math.round(years) : null,
+    specializations: [...new Set(specs)].slice(0, SPECIALIZATIONS_MAX),
+    languages: langs.slice(0, 8),
+  };
+}
+
+export function validateProfileExtra(p: ProfileExtra): FieldErrors {
+  const e: FieldErrors = {};
+  if (p.experience_years == null || p.experience_years < 0 || p.experience_years > 60) e.experience_years = 'experience';
+  if (p.specializations.length < 1 || p.specializations.length > SPECIALIZATIONS_MAX) e.specializations = 'specializations';
+  if (!p.languages.length || p.languages.some((l) => !LANGUAGE_LEVELS.some((v) => v.code === l.level))) e.languages = 'languages';
+  return e;
+}
+
+/** Bazada tillar «ru:native» ko'rinishida (teacher_profiles.languages text[]). */
+export const languagesToDb = (rows: LanguageRow[]) => rows.map((r) => `${r.code}:${r.level}`);
+export const languagesFromDb = (v: unknown): LanguageRow[] =>
+  (Array.isArray(v) ? v : []).map(String).filter((s) => s.includes(':')).map((s) => ({ code: s.split(':')[0], level: s.split(':')[1] }));
 
 export function validateVideo(durationSec: number | null | undefined, url: string | null | undefined): FieldErrors {
   if (!url) return { video: 'video' };
@@ -436,6 +506,7 @@ export type OnboardingData = {
   education: EducationRow[];
   about_answers: AboutAnswers;
   about: string;
+  profile: ProfileExtra;
   video_url: string | null;
   video_duration_sec: number | null;
   schedule: ScheduleData;
@@ -450,7 +521,7 @@ export function validateStep(step: number, d: OnboardingData, s: OnboardingSetti
     case 2: return d.avatar_url ? {} : { avatar_url: 'photo' };
     case 3: return d.personal.path === 'experienced' ? {} : validateCertificates(d.certificates);
     case 4: return validateEducation(d.education);
-    case 5: return validateAbout(d.about_answers, d.about);
+    case 5: return { ...validateProfileExtra(d.profile), ...validateAbout(d.about_answers, d.about) };
     case 6: return validateVideo(d.video_duration_sec, d.video_url);
     case 7: return validateSchedule(d.schedule);
     case 8: return validatePricing(d.lesson_price_uzs, d.terms_accepted, s);

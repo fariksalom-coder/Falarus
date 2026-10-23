@@ -1,7 +1,7 @@
-// Local preview only: the onboarding wizard (/onb) and the admin teachers hub (/onb-admin).
+// Local preview only: the onboarding wizard (/onb), the admin teachers hub (/onb-admin) and the student catalog (/ustozlar, as student 20).
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import '../../src/index.css';
 import '../../src/styles/platform-theme.css';
 import { PanelProvider } from '../../src/components/teacher/panel/panelContext';
@@ -10,8 +10,9 @@ import OnboardingWizard from '../../src/components/teacher/onboarding/Onboarding
 import Commission from '../../src/components/teacher/onboarding/Commission';
 import AdminTeacherHubPage from '../../src/pages/admin/AdminTeacherHubPage';
 import Balance from '../../src/components/teacher/panel/sections/Balance';
-import BookLessonCard from '../../src/components/teacher/BookLessonCard';
-import MyLessonsPanel from '../../src/components/teacher/MyLessonsPanel';
+import { AuthProvider } from '../../src/context/AuthContext';
+import TeachersPage from '../../src/pages/TeachersPage';
+import TeacherProfilePage from '../../src/pages/TeacherProfilePage';
 
 localStorage.setItem('adminToken', 'preview');
 
@@ -25,7 +26,6 @@ function Teacher() {
         </div>
         {location.pathname === '/onb-commission' ? <div className="mx-auto max-w-md"><Commission /></div>
           : location.pathname === '/onb-balance' ? <div className="mx-auto max-w-3xl"><Balance /></div>
-          : location.pathname === '/onb-book' ? <div className="mx-auto max-w-[820px]"><MyLessonsPanel token="preview" /><BookLessonCard teacherId={11} token="preview" /></div>
           : location.pathname === '/onb-focus' ? <OnboardingWizard focus />
           : <OnboardingWizard />}
       </div>
@@ -33,8 +33,17 @@ function Teacher() {
   );
 }
 
+if (location.pathname.startsWith('/ustozlar')) localStorage.setItem('token', 'preview');
+
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
-    {location.pathname.startsWith('/onb-admin') || location.pathname.startsWith('/onb-money') ? <div className="min-h-screen bg-app-bg-subtle p-4"><AdminTeacherHubPage /></div> : <Teacher />}
+    {location.pathname.startsWith('/ustozlar') ? (
+      <AuthProvider>
+        <Routes>
+          <Route path="/ustozlar" element={<TeachersPage />} />
+          <Route path="/ustozlar/:teacherId" element={<TeacherProfilePage />} />
+        </Routes>
+      </AuthProvider>
+    ) : location.pathname.startsWith('/onb-admin') || location.pathname.startsWith('/onb-money') ? <div className="min-h-screen bg-app-bg-subtle p-4"><AdminTeacherHubPage /></div> : <Teacher />}
   </BrowserRouter>,
 );

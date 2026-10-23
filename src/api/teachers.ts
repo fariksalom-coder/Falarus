@@ -185,25 +185,6 @@ export async function sendTeacherChatMessage(
   return data;
 }
 
-export type TeacherStudentReview = {
-  id: number;
-  rating: number;
-  what_liked: string;
-  opinion: string;
-  created_at: string;
-};
-
-export type TeacherPublicDetail = {
-  profile: TeacherProfile;
-  reviews: TeacherStudentReview[];
-};
-
-export async function listTeachers(token: string): Promise<TeacherProfile[]> {
-  const res = await fetch(apiUrl('/api/teachers'), { headers: authHeaders(token) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || "O'qituvchilar yuklanmadi");
-  return data;
-}
 
 /** Sertifikat rasmini yuklaydi, public URL qaytaradi. */
 export async function uploadCertificateImage(token: string, file: File): Promise<string> {
@@ -219,35 +200,6 @@ export async function uploadCertificateImage(token: string, file: File): Promise
   return data.url as string;
 }
 
-export type TeacherReviewPayload = {
-  rating: number;
-  what_liked?: string;
-  opinion?: string;
-};
-
-/** O'quvchi tugallangan sinov darsdan keyin sharh qoldiradi. */
-export async function submitTeacherReview(
-  token: string,
-  trialId: number,
-  payload: TeacherReviewPayload,
-): Promise<void> {
-  const res = await fetch(apiUrl(`/api/teacher-trials/${trialId}/student-review`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    throw new Error(data?.error || 'Sharh saqlanmadi');
-  }
-}
-
-export async function getTeacherPublicDetail(token: string, teacherId: number): Promise<TeacherPublicDetail> {
-  const res = await fetch(apiUrl(`/api/teachers/${teacherId}`), { headers: authHeaders(token) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || "O'qituvchi yuklanmadi");
-  return data;
-}
 
 export type TeacherProfilePayload = Partial<TeacherProfile> & {
   first_name: string;
@@ -289,101 +241,3 @@ export async function createTeacherListingPayment(
   return data;
 }
 
-export type MyTeacherTrialLessonResponse = {
-  trial: TeacherTrialLesson | null;
-  payment: {
-    id: number;
-    status: string;
-    currency: string;
-    amount: number;
-    payment_channel: string | null;
-    created_at: string;
-    product_code?: string;
-    payment_proof_url?: string | null;
-  } | null;
-};
-
-export async function getMyTeacherTrialLesson(
-  token: string,
-  teacherId: number,
-): Promise<MyTeacherTrialLessonResponse> {
-  const res = await fetch(apiUrl(`/api/teachers/${teacherId}/my-trial-lesson`), {
-    headers: authHeaders(token),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Sinov darsi yuklanmadi');
-  return data;
-}
-
-export async function createTeacherTrialLesson(
-  token: string,
-  teacherId: number,
-  body: {
-    student_message?: string;
-    requested_starts_at?: string;
-    student_phone_e164?: string;
-    student_email?: string;
-  } = {},
-): Promise<TeacherTrialLesson> {
-  const res = await fetch(apiUrl(`/api/teachers/${teacherId}/trial-lessons`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Sinov darsi yaratilmadi');
-  return data;
-}
-
-/** O'quvchi profilidagi "O'qituvchi bilan uchrashuv". */
-export type StudentMeeting = {
-  id: number;
-  teacher_user_id: number;
-  teacher_name: string;
-  teacher_avatar_url: string | null;
-  status: string;
-  scheduled_starts_at: string | null;
-  scheduled_ends_at: string | null;
-  timezone: string;
-  conversation_id: number | null;
-  created_at: string;
-};
-
-/** O'quvchining barcha uchrashuvlari (sinov darslari). */
-export async function getMyMeetings(token: string): Promise<StudentMeeting[]> {
-  const res = await fetch(apiUrl('/api/my-meetings'), { headers: authHeaders(token) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Uchrashuvlar yuklanmadi');
-  return data;
-}
-
-/** O'quvchining sinov darslari — statistika paneli uchun. */
-export type MyTrialItem = {
-  trialId: number;
-  teacherUserId: number;
-  teacherName: string | null;
-  teacherPhoto: string | null;
-  monthlyPriceAmount: number | null;
-  monthlyPriceCurrency: string;
-  status: string;
-  scheduledStartsAt: string | null;
-  completedAt: string | null;
-  /** Qachon yozilgan. */
-  bookedAt: string | null;
-  /** Ustoz bilan chat suhbati (bo'lmasa null). */
-  conversationId: number | null;
-};
-
-export type MyTrialsResponse = {
-  items: MyTrialItem[];
-  used: number;
-  limit: number;
-  remaining: number;
-};
-
-export async function getMyTrialLessons(token: string): Promise<MyTrialsResponse> {
-  const res = await fetch(apiUrl('/api/my/trial-lessons'), { headers: authHeaders(token) });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || 'Sinov darslari yuklanmadi');
-  return data as MyTrialsResponse;
-}

@@ -13,7 +13,7 @@ import { AlertTriangle, ArrowLeft, BadgeCheck, CheckCircle2, FileText, History, 
 import { adminApi, getAdminToken } from '../../../lib/adminApi';
 import { apiUrl, resolveAssetUrl } from '../../../api';
 import {
-  COUNTRIES, DEGREES, ERRORS, ONBOARDING_STEPS, PROFICIENCY, ABOUT_QUESTIONS, commissionStatus, validateTiers,
+  COUNTRIES, DEGREES, ERRORS, LANGUAGES, LANGUAGE_LEVELS, ONBOARDING_STEPS, PROFICIENCY, ABOUT_QUESTIONS, SPECIALIZATIONS, commissionStatus, validateTiers,
   type CommissionTier, type ErrorCode, type OnboardingData,
 } from '../../../../shared/teacherOnboarding';
 import { ContactLinks, EVENT_LABEL, dateTime as date, fmtNum as fmt } from './shared';
@@ -329,6 +329,11 @@ function ApplicationDetail({ id, onBack, onDecided }: { id: number; onBack: () =
       </Block>
 
       <Block title="Oʻzi haqida" step={5} errors={err(5)}>
+        <div className="mb-3">
+          <Pair k="Tajriba" v={data.profile.experience_years == null ? '—' : `${data.profile.experience_years} yil`} />
+          <Pair k="Yoʻnalishlar" v={data.profile.specializations.map((c) => SPECIALIZATIONS.find((x) => x.code === c)?.uz ?? c).join(', ') || '—'} />
+          <Pair k="Tillar" v={data.profile.languages.map((l) => `${LANGUAGES.find((x) => x.code === l.code)?.uz ?? l.code} (${LANGUAGE_LEVELS.find((x) => x.code === l.level)?.uz.split(' — ')[0] ?? l.level})`).join(', ') || '—'} />
+        </div>
         <details className="mb-2 text-sm"><summary className="min-h-11 cursor-pointer font-semibold text-blue-700">Savollarga javoblar</summary>
           <dl className="mt-2 space-y-2">{ABOUT_QUESTIONS.map((q) => <div key={q.key}><dt className="text-xs text-app-text-muted">{q.uz}</dt><dd className="text-app-text">{data.about_answers[q.key] ?? '—'}</dd></div>)}</dl>
         </details>

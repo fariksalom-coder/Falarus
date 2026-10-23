@@ -50,7 +50,7 @@ function applyBody(data: OnboardingData, step: number, body: any): OnboardingDat
     case 1: return { ...data, personal: { ...data.personal, ...body } };
     case 3: return { ...data, certificates: body.certificates ?? [] };
     case 4: return { ...data, education: body.education ?? [] };
-    case 5: return { ...data, about_answers: body.answers ?? {}, about: body.about ?? '' };
+    case 5: return { ...data, about_answers: body.answers ?? {}, about: body.about ?? '', profile: body.profile ?? data.profile };
     case 7: return { ...data, schedule: body.schedule };
     case 8: return { ...data, lesson_price_uzs: body.lesson_price_uzs ?? null, terms_accepted: body.terms_accepted === true };
     default: return data;

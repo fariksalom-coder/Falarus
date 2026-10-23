@@ -15,11 +15,13 @@ import crypto from 'node:crypto';
 import { pool } from '../lib/db.js';
 import { MEET_DOMAIN } from '../services/teacherMeet.service.js';
 import {
-  AUTO_COMPLETE_HOURS, LESSON_MINUTES, MIN_LEAD_MINUTES, MIN_WITHDRAWAL_UZS, PENDING_HOLD_MINUTES,
-  canCancel, canComplete, canDispute, joinState, joinWindow, maskCard, normalizeCardNumber, splitLessonPrice,
-  type LessonStatus,
+  AUTO_COMPLETE_HOURS, LESSON_MINUTES, MIN_LEAD_MINUTES, MIN_WITHDRAWAL_UZS, PENDING_HOLD_MINUTES, REVIEW_CRITERIA, REVIEW_TEXT_MAX,
+  canCancel, canComplete, canDispute, joinState, joinWindow, maskCard, normalizeCardNumber, normalizeReviewScores, reviewOverall,
+  splitLessonPrice, teacherLevel, type LessonStatus,
 } from '../../shared/teacherLessons.js';
-import { DEFAULT_SETTINGS, normalizeSchedule, upcomingSlotStarts, validateTiers, type OnboardingSettings } from '../../shared/teacherOnboarding.js';
+import {
+  DEFAULT_SETTINGS, languagesFromDb, normalizeSchedule, upcomingSlotStarts, validateTiers, type OnboardingSettings,
+} from '../../shared/teacherOnboarding.js';
 
 export type LessonQuery = (sql: string, params?: unknown[]) => Promise<{ rows: any[] }>;
 export type LessonDeps = {
@@ -109,7 +111,7 @@ export async function completeLesson(tx: NonNullable<LessonDeps['tx']>, lessonId
 
 /** Rahmat/Click/admin to'lovni tasdiqlaganda (teacherMarketplace.service orqali). */
 export async function activateTeacherLessonPayment(q: LessonQuery, paymentId: number) {
-  const l = (await q(`SELECT id, teacher_user_id, status, starts_at FROM teacher_lessons WHERE payment_id = $1`, [paymentId])).rows[0];
+  const l = (await q(`SELECT id, teacher_user_id, student_user_id, status, starts_at FROM teacher_lessons WHERE payment_id = $1`, [paymentId])).rows[0];
   if (!l || l.status === 'paid' || l.status === 'completed') return;
   try {
     await q(`UPDATE teacher_lessons SET status = 'paid', updated_at = now() WHERE id = $1 AND status IN ('pending_payment', 'expired')`, [l.id]);
@@ -120,8 +122,82 @@ export async function activateTeacherLessonPayment(q: LessonQuery, paymentId: nu
       cancel_reason = 'Toʻlov kech keldi: vaqt band boʻlib qolgan', updated_at = now() WHERE id = $1`, [l.id]);
     return;
   }
+  await ensureConversation(q, l.teacher_user_id, l.student_user_id).catch((e) => console.error('[lessons] conversation', e?.message ?? e));
   await notify(q, l.teacher_user_id, 'lesson_paid', 'Yangi dars band qilindi',
     `Oʻquvchi darsni toʻladi: ${new Date(l.starts_at).toLocaleString('ru-RU', { timeZone: 'Asia/Tashkent' })} (Toshkent).`, l.id);
+}
+
+/** Ustoz va o'quvchi o'rtasidagi yagona chat (to'langan darsdan keyin ochiladi). */
+export async function ensureConversation(q: LessonQuery, teacherId: number, studentId: number): Promise<number> {
+  const r = await q(`INSERT INTO teacher_conversations (teacher_user_id, student_user_id) VALUES ($1, $2)
+    ON CONFLICT (teacher_user_id, student_user_id) WHERE trial_lesson_id IS NULL DO UPDATE SET updated_at = now() RETURNING id`, [teacherId, studentId]);
+  return Number(r.rows[0].id);
+}
+
+/* ───────────── katalog: kartochka va profil uchun ma'lumot ───────────── */
+
+/** Katalogda ko'rinadigan, band qilish mumkin bo'lgan vaqtlar shuncha kun oldinga hisoblanadi. */
+export const MARKET_DAYS = 7;
+
+const MARKET_COLS = `p.user_id, p.first_name, p.last_name, p.avatar_url, p.about, p.headline, p.lesson_price_uzs, p.experience_years,
+  p.specializations, p.languages, p.certified_verified, p.onboarding_path, p.rating_avg, p.rating_count, p.schedule, p.terms_accepted_at,
+  (SELECT count(*) FROM teacher_trial_lessons t WHERE t.teacher_user_id = p.user_id AND t.status IN ('completed', 'completed_by_teacher'))
+    + (SELECT count(*) FROM teacher_meet_sessions s WHERE s.teacher_user_id = p.user_id AND s.status = 'ended')
+    + (SELECT count(*) FROM teacher_lessons l WHERE l.teacher_user_id = p.user_id AND l.status = 'completed') AS lessons_done,
+  (SELECT count(DISTINCT l.student_user_id) FROM teacher_lessons l WHERE l.teacher_user_id = p.user_id
+    AND l.status IN ('paid', 'disputed', 'completed') AND l.starts_at > now() - interval '30 days') AS active_students`;
+
+/** Band vaqtlar (to'lov kutilayotgan bron ham) — o'qituvchilar bo'yicha. */
+async function busyStarts(q: LessonQuery, ids: number[]): Promise<Map<number, Set<number>>> {
+  const out = new Map<number, Set<number>>();
+  if (!ids.length) return out;
+  const { rows } = await q(`SELECT teacher_user_id, starts_at FROM teacher_lessons WHERE teacher_user_id = ANY($1::int[]) AND status IN ('pending_payment', 'paid', 'disputed') AND starts_at > now()
+    UNION ALL SELECT teacher_user_id, scheduled_starts_at FROM teacher_trial_lessons WHERE teacher_user_id = ANY($1::int[]) AND scheduled_starts_at > now()
+      AND status NOT IN ('cancelled', 'refunded', 'pending_payment')`, [ids]);
+  for (const r of rows) {
+    const set = out.get(Number(r.teacher_user_id)) ?? new Set<number>();
+    set.add(new Date(r.starts_at).getTime());
+    out.set(Number(r.teacher_user_id), set);
+  }
+  return out;
+}
+
+function marketShape(r: any, busy: Set<number> | undefined, now = Date.now()) {
+  const schedule = r.schedule ? normalizeSchedule(r.schedule) : null;
+  const bookable = Boolean(r.lesson_price_uzs && schedule && r.terms_accepted_at);
+  const from = now + MIN_LEAD_MINUTES * 60_000;
+  const free = bookable && schedule
+    ? upcomingSlotStarts(schedule, now, MARKET_DAYS + 1).filter((t) => t >= from && t < now + MARKET_DAYS * 86_400_000 && !busy?.has(t))
+    : [];
+  const lessonsDone = Number(r.lessons_done ?? 0);
+  return {
+    user_id: Number(r.user_id), first_name: r.first_name, last_name: r.last_name, avatar_url: r.avatar_url || null,
+    about: r.about || r.headline || '', price_uzs: r.lesson_price_uzs ? Number(r.lesson_price_uzs) : null, lesson_minutes: LESSON_MINUTES,
+    experience_years: r.experience_years == null ? null : Number(r.experience_years),
+    specializations: Array.isArray(r.specializations) ? r.specializations : [], languages: languagesFromDb(r.languages),
+    certified: Boolean(r.certified_verified),
+    rating_avg: r.rating_avg == null ? null : Number(r.rating_avg), rating_count: Number(r.rating_count ?? 0),
+    lessons_done: lessonsDone, active_students: Number(r.active_students ?? 0),
+    level: teacherLevel(lessonsDone, r.rating_avg, r.rating_count).key,
+    bookable, free_slots: free.map((t) => new Date(t).toISOString()),
+  };
+}
+
+const REVIEW_COLS = `r.id, r.overall, r.support, r.honesty, r.progress, r.preparation, r.comment, r.created_at,
+  u.first_name AS student_first_name, u.last_name AS student_last_name, u.avatar_url AS student_avatar_url`;
+/** O'quvchi ismi ochiq sahifada qisqartiriladi: «Aziz K.». */
+const reviewShape = (r: any) => ({
+  id: Number(r.id), overall: Number(r.overall), support: r.support, honesty: r.honesty, progress: r.progress, preparation: r.preparation,
+  comment: r.comment, created_at: r.created_at,
+  student_name: `${String(r.student_first_name ?? '').trim() || 'Oʻquvchi'}${r.student_last_name ? ` ${String(r.student_last_name).trim().charAt(0)}.` : ''}`,
+  student_avatar_url: r.student_avatar_url || null,
+});
+
+/** Sharhlar bo'yicha o'rtacha baho teacher_profiles ga yoziladi (katalog saralashi uchun). */
+async function refreshRating(q: LessonQuery, teacherId: number) {
+  await q(`UPDATE teacher_profiles p SET rating_avg = s.avg, rating_count = s.n, updated_at = now()
+    FROM (SELECT round(avg(overall), 1) AS avg, count(*) AS n FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND NOT hidden) s
+    WHERE p.user_id = $1`, [teacherId]);
 }
 
 /**
@@ -230,12 +306,90 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     }
   }));
 
+  /* ───────────── yangi katalog (faqat kirganlarga) ───────────── */
+
+  router.get('/market/teachers', authenticate, h(async (req, res) => {
+    const { q } = db();
+    const rows = (await q(`SELECT ${MARKET_COLS} FROM teacher_profiles p WHERE p.profile_status = 'active' AND p.catalog_visible ORDER BY p.created_at LIMIT 200`)).rows;
+    const busy = await busyStarts(q, rows.map((r) => Number(r.user_id)));
+    res.json(rows.map((r) => marketShape(r, busy.get(Number(r.user_id)))));
+  }));
+
+  router.get('/market/teachers/:id', authenticate, h(async (req, res) => {
+    const { q } = db();
+    const id = Number(req.params.id);
+    const r = (await q(`SELECT ${MARKET_COLS}, p.video_url, p.education, p.certificates, p.birth_country, p.proficiency
+      FROM teacher_profiles p WHERE p.user_id = $1 AND p.profile_status = 'active' AND p.catalog_visible`, [id])).rows[0];
+    if (!r) throw new HttpError(404, 'Oʻqituvchi topilmadi');
+    const busy = await busyStarts(q, [id]);
+    const criteria = (await q(`SELECT ${REVIEW_CRITERIA.map((c) => `round(avg(${c.key}), 1) AS ${c.key}`).join(', ')}, count(*) AS n
+      FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND NOT hidden`, [id])).rows[0];
+    const reviews = (await q(`SELECT ${REVIEW_COLS} FROM teacher_lesson_reviews r JOIN users u ON u.id = r.student_user_id
+      WHERE r.teacher_user_id = $1 AND NOT r.hidden ORDER BY r.created_at DESC LIMIT 6`, [id])).rows;
+    // Hujjat fayllari ko'rsatilmaydi — faqat nomi va yili.
+    const certificates = (Array.isArray(r.certificates) ? r.certificates : []).map((c: any) => ({
+      title: String(c?.title ?? ''), institution: String(c?.institution ?? c?.issuer ?? ''), year: c?.year_to ?? (Number(c?.year) || null),
+    })).filter((c: { title: string }) => c.title);
+    const education = (Array.isArray(r.education) ? r.education : []).map((e: any) => ({
+      institution: String(e?.institution ?? ''), specialty: String(e?.specialty ?? ''), degree: String(e?.degree ?? ''),
+      year_from: e?.year_from ?? (Number(e?.start_year) || null), year_to: e?.year_to ?? (Number(e?.end_year) || null),
+    })).filter((e: { institution: string }) => e.institution);
+    res.json({
+      ...marketShape(r, busy.get(id)),
+      video_url: r.video_url || null, proficiency: r.proficiency || null, birth_country: r.birth_country || null,
+      certificates: r.onboarding_path === 'certified' || r.certified_verified ? certificates : [], education,
+      criteria: Number(criteria?.n ?? 0) ? Object.fromEntries(REVIEW_CRITERIA.map((c) => [c.key, Number(criteria[c.key])])) : null,
+      reviews: reviews.map(reviewShape), reviews_total: Number(criteria?.n ?? 0),
+    });
+  }));
+
+  router.get('/market/teachers/:id/reviews', authenticate, h(async (req, res) => {
+    const { q } = db();
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+    const limit = Math.min(30, Math.max(1, Number(req.query.limit) || 10));
+    const rows = (await q(`SELECT ${REVIEW_COLS} FROM teacher_lesson_reviews r JOIN users u ON u.id = r.student_user_id
+      WHERE r.teacher_user_id = $1 AND NOT r.hidden ORDER BY r.created_at DESC OFFSET $2 LIMIT $3`, [Number(req.params.id), offset, limit])).rows;
+    res.json(rows.map(reviewShape));
+  }));
+
+  /** Chat faqat ustozdan dars olgan (to'lagan) o'quvchiga ochiladi. */
+  router.post('/market/teachers/:id/chat', authenticate, h(async (req, res) => {
+    const { q } = db();
+    const teacherId = Number(req.params.id);
+    const me = Number(req.userId);
+    const has = (await q(`SELECT 1 FROM teacher_lessons WHERE teacher_user_id = $1 AND student_user_id = $2 AND status IN ('paid', 'disputed', 'completed') LIMIT 1`, [teacherId, me])).rows[0];
+    if (!has) throw new HttpError(403, 'Ustozga yozish birinchi dars toʻlangandan keyin ochiladi');
+    res.json({ conversation_id: await ensureConversation(q, teacherId, me) });
+  }));
+
+  /** Sharh: dars o'tgandan keyin (yakunlangan yoki vaqti tugagan), har darsga bittadan; qayta yozsa yangilanadi. */
+  router.post('/lessons/:id/review', authenticate, h(async (req, res) => {
+    const { q } = db();
+    const { l, role } = await participant(req, Number(req.params.id));
+    if (role !== 'student') throw new HttpError(403, 'Faqat oʻquvchi');
+    const ended = l.status === 'completed' || (l.status === 'paid' && new Date(l.ends_at).getTime() <= Date.now());
+    if (!ended) throw new HttpError(409, 'Sharhni dars oʻtgandan keyin qoldirish mumkin');
+    const scores = normalizeReviewScores(req.body?.scores);
+    if (!scores) throw new HttpError(400, 'Har bir mezonga 1 dan 5 gacha baho qoʻying');
+    const comment = String(req.body?.comment ?? '').trim().slice(0, REVIEW_TEXT_MAX);
+    await q(`INSERT INTO teacher_lesson_reviews (lesson_id, teacher_user_id, student_user_id, support, honesty, progress, preparation, overall, comment)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (lesson_id) DO UPDATE SET support = EXCLUDED.support, honesty = EXCLUDED.honesty, progress = EXCLUDED.progress,
+        preparation = EXCLUDED.preparation, overall = EXCLUDED.overall, comment = EXCLUDED.comment, updated_at = now()`,
+    [l.id, l.teacher_user_id, l.student_user_id, scores.support, scores.honesty, scores.progress, scores.preparation, reviewOverall(scores), comment]);
+    await refreshRating(q, l.teacher_user_id);
+    await notify(q, l.teacher_user_id, 'lesson_review', 'Yangi sharh', `Oʻquvchi darsingizni ${reviewOverall(scores)} ga baholadi.`, l.id);
+    res.json({ ok: true, overall: reviewOverall(scores) });
+  }));
+
   router.get('/my-lessons', authenticate, h(async (req, res) => {
     const { q, tx } = db();
     const id = Number(req.userId);
     await housekeeping(q, tx, { studentId: id });
-    const rows = (await q(`SELECT ${LESSON_COLS}, p.first_name AS teacher_first_name, p.last_name AS teacher_last_name, p.avatar_url AS teacher_avatar_url
+    const rows = (await q(`SELECT ${LESSON_COLS}, p.first_name AS teacher_first_name, p.last_name AS teacher_last_name, p.avatar_url AS teacher_avatar_url,
+        r.overall AS my_review_overall
       FROM teacher_lessons l JOIN teacher_profiles p ON p.user_id = l.teacher_user_id
+      LEFT JOIN teacher_lesson_reviews r ON r.lesson_id = l.id
       WHERE l.student_user_id = $1 AND l.status <> 'expired' ORDER BY l.starts_at DESC LIMIT 100`, [id])).rows;
     res.json(rows.map(shape));
   }));

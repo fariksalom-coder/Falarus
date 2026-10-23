@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FileText, Loader2, Plus, Sparkles, Trash2, Upload } from 'lucide-react';
 import { Card, ErrorNote, Field, GhostButton, PrimaryButton, inputClass, inputErrorClass, textareaClass } from '../panel/ui';
 import {
-  ABOUT_MAX, ABOUT_QUESTIONS, COUNTRIES, DEGREES, PROFICIENCY, SUBJECTS,
-  type AboutAnswers, type CertificateRow, type EducationRow, type PersonalData,
+  ABOUT_MAX, ABOUT_QUESTIONS, COUNTRIES, DEGREES, LANGUAGES, LANGUAGE_LEVELS, PROFICIENCY, SPECIALIZATIONS, SPECIALIZATIONS_MAX, SUBJECTS,
+  type AboutAnswers, type CertificateRow, type EducationRow, type PersonalData, type ProfileExtra,
 } from '../../../../shared/teacherOnboarding';
 import { deleteDocument, generateAbout, openDocument, uploadDocument, type OnboardingDocument } from '../../../api/teacherOnboarding';
 import { ONBOARDING_TEXT } from './text';
@@ -261,11 +261,12 @@ export function StepEducation({ state, onDraft, errors, lang, busy, onSubmit, in
 
 export function StepAbout({ state, onDraft, errors, lang, token, busy, onSubmit, initial, nextLabel }: FormProps) {
   const t = ONBOARDING_TEXT[lang];
-  const init = initial as { answers?: AboutAnswers; about?: string } | null;
+  const init = initial as { answers?: AboutAnswers; about?: string; profile?: ProfileExtra } | null;
   const [answers, setAnswers] = useState<AboutAnswers>(init?.answers ?? state.data.about_answers);
   const [about, setAbout] = useState(init?.about ?? state.data.about);
+  const [profile, setProfile] = useState<ProfileExtra>(init?.profile ?? state.data.profile);
   const [gen, setGen] = useState<'idle' | 'busy' | 'template'>('idle');
-  useAutosave({ answers, about }, onDraft);
+  useAutosave({ answers, about, profile }, onDraft);
   const filled = ABOUT_QUESTIONS.every((q) => (answers[q.key] ?? '').trim().length >= 3);
 
   const build = async () => {
@@ -281,6 +282,7 @@ export function StepAbout({ state, onDraft, errors, lang, token, busy, onSubmit,
 
   return (
     <>
+      <ProfileExtraSection value={profile} onChange={setProfile} errors={errors} lang={lang} />
       <Section title={t.aboutTitle} hint={t.aboutHint}>
         {ABOUT_QUESTIONS.map((q, i) => (
           <Field key={q.key} label={`${i + 1}. ${q[lang]}`} error={errors[`answers.${q.key}`]}>
@@ -296,8 +298,69 @@ export function StepAbout({ state, onDraft, errors, lang, token, busy, onSubmit,
           <textarea rows={9} maxLength={ABOUT_MAX} className={`${textareaClass} ${errors.about ? inputErrorClass : ''}`} value={about} onChange={(e) => setAbout(e.target.value)} />
         </Field>
       </Section>
-      <Footer busy={busy} onClick={() => onSubmit({ answers, about })} label={nextLabel ?? t.next} />
+      <Footer busy={busy} onClick={() => onSubmit({ answers, about, profile })} label={nextLabel ?? t.next} />
     </>
+  );
+}
+
+/** 5-qadam boshi: tajriba yili, 1–4 yo'nalish va tillar (katalog filtri va kartochkasi uchun). */
+function ProfileExtraSection({ value, onChange, errors, lang }: { value: ProfileExtra; onChange: (v: ProfileExtra) => void; errors: Record<string, string>; lang: 'uz' | 'ru' }) {
+  const t = ONBOARDING_TEXT[lang];
+  const toggleSpec = (code: string) => {
+    const has = value.specializations.includes(code);
+    if (!has && value.specializations.length >= SPECIALIZATIONS_MAX) return;
+    onChange({ ...value, specializations: has ? value.specializations.filter((c) => c !== code) : [...value.specializations, code] });
+  };
+  const setLang = (i: number, patch: Partial<ProfileExtra['languages'][number]>) =>
+    onChange({ ...value, languages: value.languages.map((l, j) => (j === i ? { ...l, ...patch } : l)) });
+  const unused = LANGUAGES.filter((l) => !value.languages.some((x) => x.code === l.code));
+  const chip = (on: boolean) => `min-h-11 rounded-[12px] border px-3.5 text-[13px] font-semibold transition active:scale-[0.97] ${on ? 'border-app-brand bg-app-primary text-white' : 'border-app-border-strong bg-app-surface text-app-text'}`;
+
+  return (
+    <Section title={t.extraTitle} hint={t.extraHint}>
+      <Field label={t.experienceYears} error={errors.experience_years}>
+        <div className="flex items-center gap-2">
+          <div className="w-28 shrink-0">
+            <input inputMode="numeric" className={`${cls(errors.experience_years)} text-center text-[17px] font-bold tabular-nums`} placeholder="0"
+              value={value.experience_years ?? ''} onChange={(e) => {
+                const d = e.target.value.replace(/\D/g, '').slice(0, 2);
+                onChange({ ...value, experience_years: d === '' ? null : Number(d) });
+              }} />
+          </div>
+          <span className="text-sm font-semibold text-app-text-muted">{t.yearsUnit}</span>
+        </div>
+      </Field>
+      <Field label={t.specializations(SPECIALIZATIONS_MAX)} error={errors.specializations}>
+        <div className="flex flex-wrap gap-2">
+          {SPECIALIZATIONS.map((s) => {
+            const on = value.specializations.includes(s.code);
+            return <button key={s.code} type="button" aria-pressed={on} onClick={() => toggleSpec(s.code)} className={chip(on)}>{s[lang]}</button>;
+          })}
+        </div>
+      </Field>
+      <Field label={t.languages} error={errors.languages}>
+        <div className="space-y-2">
+          {value.languages.map((l, i) => (
+            <div key={l.code} className="flex items-center gap-2">
+              <select aria-label={t.languages} className={`${inputClass} min-w-0 flex-1`} value={l.code} onChange={(e) => setLang(i, { code: e.target.value })}>
+                {LANGUAGES.filter((x) => x.code === l.code || !value.languages.some((y) => y.code === x.code)).map((x) => <option key={x.code} value={x.code}>{x[lang]}</option>)}
+              </select>
+              <select aria-label={t.languageLevel} className={`${inputClass} min-w-0 flex-1 ${errors.languages && !l.level ? inputErrorClass : ''}`} value={l.level} onChange={(e) => setLang(i, { level: e.target.value })}>
+                <option value="">{t.languageLevel}</option>
+                {LANGUAGE_LEVELS.map((x) => <option key={x.code} value={x.code}>{x[lang]}</option>)}
+              </select>
+              <button type="button" aria-label="×" onClick={() => onChange({ ...value, languages: value.languages.filter((_, j) => j !== i) })}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] text-app-text-muted hover:bg-app-bg-muted"><Trash2 className="h-4 w-4" /></button>
+            </div>
+          ))}
+          {unused.length > 0 && (
+            <GhostButton tone="dark" onClick={() => onChange({ ...value, languages: [...value.languages, { code: unused[0].code, level: '' }] })}>
+              <Plus className="mr-1 inline h-4 w-4" />{t.addLanguage}
+            </GhostButton>
+          )}
+        </div>
+      </Field>
+    </Section>
   );
 }
 
