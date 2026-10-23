@@ -65,6 +65,7 @@ export default function ReviewTab({ onCounts }: { onCounts?: (pending: number) =
   const [list, setList] = useState<{ rows: Row[]; counts: Record<string, number> } | null>(null);
   const [error, setError] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [notice, setNotice] = useState<{ name: string; decision: Decision } | null>(null);
 
   const set = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
@@ -80,6 +81,20 @@ export default function ReviewTab({ onCounts }: { onCounts?: (pending: number) =
       .catch((e) => setError(e instanceof Error ? e.message : 'Xatolik'));
   }, [view, onCounts]);
   useEffect(() => { load(); }, [load]);
+
+  // Navbatda ochiq ariza boshqa holatga o'tgan bo'lsa (tasdiqlangan, qaytarilgan) — URL'dagi
+  // ?id= sahifa yangilanganda uni qayta ochmasin. Tarix ko'rinishi har qanday holatni ko'rsatadi.
+  useEffect(() => {
+    if (!list || view === 'history' || !selected) return;
+    if (!list.rows.some((r) => r.user_id === selected)) set({ id: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
+
+  const onDecided = (decision: Decision, name: string) => {
+    setNotice({ name, decision });
+    if (view !== 'history') set({ id: null });
+    load();
+  };
 
   return (
     <div className="space-y-4">
@@ -103,6 +118,18 @@ export default function ReviewTab({ onCounts }: { onCounts?: (pending: number) =
       </div>
 
       {showSettings && <SettingsCard />}
+      {notice && (
+        <div role="status" className="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-900">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+          <span className="min-w-0 flex-1"><b>{notice.name}</b> — {DECISION_DONE[notice.decision]}</span>
+          {notice.decision === 'approve' && (
+            <button type="button" onClick={() => setParams({ tab: 'teachers' })} className="inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-4 font-bold text-white hover:bg-emerald-700">
+              Oʻqituvchilar tabiga oʻtish
+            </button>
+          )}
+          <button type="button" onClick={() => setNotice(null)} aria-label="Yopish" className="inline-flex h-11 w-11 items-center justify-center rounded-xl hover:bg-emerald-100"><XCircle className="h-5 w-5" /></button>
+        </div>
+      )}
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
       <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
@@ -133,7 +160,7 @@ export default function ReviewTab({ onCounts }: { onCounts?: (pending: number) =
         </section>
 
         <section className={selected ? '' : 'hidden lg:block'}>
-          {selected ? <ApplicationDetail id={selected} onBack={() => set({ id: null })} onDecided={load} />
+          {selected ? <ApplicationDetail id={selected} onBack={() => set({ id: null })} onDecided={onDecided} />
             : <p className="rounded-2xl border border-dashed border-app-border p-10 text-center text-app-text-muted">{view === 'history' ? 'Tarixdan oʻqituvchini tanlang' : 'Chapdan arizani tanlang'}</p>}
         </section>
       </div>
@@ -204,7 +231,14 @@ function Pair({ k, v }: { k: string; v: ReactNode }) {
   return <div className="flex justify-between gap-3 border-b border-app-border py-1.5 text-sm last:border-0"><span className="text-app-text-muted">{k}</span><span className="text-right font-medium text-app-text">{v}</span></div>;
 }
 
-function ApplicationDetail({ id, onBack, onDecided }: { id: number; onBack: () => void; onDecided: () => void }) {
+type Decision = 'approve' | 'reject' | 'revision';
+const DECISION_DONE: Record<Decision, string> = {
+  approve: 'tasdiqlandi. Katalogda koʻrinishi uchun «Oʻqituvchilar» tabida tumblerni yoqing.',
+  revision: 'tuzatishga qaytarildi.',
+  reject: 'rad etildi.',
+};
+
+function ApplicationDetail({ id, onBack, onDecided }: { id: number; onBack: () => void; onDecided: (decision: Decision, name: string) => void }) {
   const [d, setD] = useState<Detail | null>(null);
   const [error, setError] = useState('');
   const [comment, setComment] = useState('');
@@ -221,12 +255,13 @@ function ApplicationDetail({ id, onBack, onDecided }: { id: number; onBack: () =
   }, [id]);
   useEffect(() => { load(); setComment(''); }, [load]);
 
-  const decide = async (decision: 'approve' | 'reject' | 'revision') => {
+  const decide = async (decision: Decision) => {
     if (decision === 'reject' && !window.confirm('Arizani rad etasizmi? Oʻqituvchi qayta yubora olmaydi.')) return;
     setBusy(decision); setError('');
     try {
       await adminApi(`/teacher-applications/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision, comment, step: decision === 'revision' ? step : undefined, certified }) });
-      onDecided(); load(); setComment('');
+      setComment('');
+      onDecided(decision, d ? `${d.profile.data.personal.first_name} ${d.profile.data.personal.last_name}`.trim() : '');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Xatolik');
     } finally {
