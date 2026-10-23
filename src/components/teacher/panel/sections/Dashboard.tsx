@@ -31,6 +31,11 @@ export function useOpenLesson() {
       navigate(`/dars/s/${l.id.replace('session-', '')}`);
       return;
     }
+    // Sinov darsi ham FalaRus video xonasida.
+    if (l.kind === 'trial') {
+      navigate(`/dars/t/${l.id.replace('trial-', '')}`);
+      return;
+    }
     go('class');
   };
 }

@@ -11,13 +11,16 @@ export type SubscriptionTariffType = 'month' | 'three_month' | 'six_month' | 'ye
 export type CourseProductCode = 'patent' | 'vnzh';
 export type TeacherListingProductCode = 'teacher_listing';
 export type TeacherTrialProductCode = 'teacher_trial';
-export type TeacherProductCode = TeacherListingProductCode | TeacherTrialProductCode;
+/** Platforma orqali pullik dars (narx — o'qituvchi belgilagan, bron qatorida qotirilgan). */
+export type TeacherLessonProductCode = 'teacher_lesson';
+export type TeacherProductCode = TeacherListingProductCode | TeacherTrialProductCode | TeacherLessonProductCode;
 export type PaymentProductCode = 'russian' | CourseProductCode | TeacherProductCode;
 export type PaymentProvider = 'manual' | 'click' | 'rahmat';
 
 export const SUBSCRIPTION_PRODUCT_CODE = 'russian' as const;
 export const TEACHER_LISTING_PRODUCT_CODE = 'teacher_listing' as const;
 export const TEACHER_TRIAL_PRODUCT_CODE = 'teacher_trial' as const;
+export const TEACHER_LESSON_PRODUCT_CODE = 'teacher_lesson' as const;
 
 export const TEACHER_LISTING_PLAN_FIRST = 'teacher_listing_first_month_uzs' as const;
 export const TEACHER_LISTING_PLAN_MONTH = 'teacher_listing_month_uzs' as const;
@@ -126,7 +129,7 @@ export function isCourseProductCode(value: unknown): value is CourseProductCode 
 }
 
 export function isTeacherProductCode(value: unknown): value is TeacherProductCode {
-  return value === TEACHER_LISTING_PRODUCT_CODE || value === TEACHER_TRIAL_PRODUCT_CODE;
+  return value === TEACHER_LISTING_PRODUCT_CODE || value === TEACHER_TRIAL_PRODUCT_CODE || value === TEACHER_LESSON_PRODUCT_CODE;
 }
 
 export function isPaymentProductCode(value: unknown): value is PaymentProductCode {
@@ -148,6 +151,7 @@ export function getPaymentProductLabel(productCode: PaymentProductCode): string 
   if (productCode === SUBSCRIPTION_PRODUCT_CODE) return 'Курс русского языка';
   if (productCode === TEACHER_LISTING_PRODUCT_CODE) return 'O‘qituvchi ro‘yxati';
   if (productCode === TEACHER_TRIAL_PRODUCT_CODE) return 'O‘qituvchi bilan sinov darsi';
+  if (productCode === TEACHER_LESSON_PRODUCT_CODE) return 'O‘qituvchi bilan dars';
   return COURSE_PRODUCT_META[productCode].label;
 }
 

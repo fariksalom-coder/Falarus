@@ -22,6 +22,7 @@ export async function createRahmatPayment(
     productCode: PaymentProductCode;
     listingPlanCode?: TeacherListingPlanCode;
     trialId?: number;
+    lessonId?: number;
     welcomeOffer?: boolean;
   }
 ): Promise<RahmatPaymentCreateResponse> {
@@ -36,6 +37,7 @@ export async function createRahmatPayment(
       product_code: payload.productCode,
       listing_plan_code: payload.listingPlanCode ?? null,
       trial_id: payload.trialId ?? null,
+      lesson_id: payload.lessonId ?? null,
       welcome_offer: payload.welcomeOffer === true,
     }),
   });
@@ -80,6 +82,8 @@ export async function openRahmatCheckout(params: {
   tariffType?: SubscriptionTariffType | null;
   listingPlanCode?: TeacherListingPlanCode;
   trialId?: number;
+  /** Pullik dars broni (product_code = teacher_lesson). */
+  lessonId?: number;
   welcomeOffer?: boolean;
   /** To‘lov yaratilgach, redirectdan oldin (masalan, modal yopish / cache yangilash) */
   afterCreate?: () => void | Promise<void>;
@@ -89,6 +93,9 @@ export async function openRahmatCheckout(params: {
   }
   if (params.productCode === 'teacher_listing' && !params.listingPlanCode) {
     throw new Error('To‘lov rejasi topilmadi. Sahifani yangilang.');
+  }
+  if (params.productCode === 'teacher_lesson' && params.lessonId == null) {
+    throw new Error('Dars broni topilmadi. Qayta urinib koʻring.');
   }
   if (params.productCode === 'teacher_trial' && params.trialId == null) {
     throw new Error('Sinov darsi topilmadi. Qayta urinib ko‘ring.');
@@ -100,6 +107,7 @@ export async function openRahmatCheckout(params: {
       productCode: params.productCode,
       listingPlanCode: params.listingPlanCode,
       trialId: params.trialId,
+      lessonId: params.lessonId,
       welcomeOffer: params.welcomeOffer,
     });
     await params.afterCreate?.();

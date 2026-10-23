@@ -159,6 +159,13 @@ export async function joinMeetSession(token: string, sessionId: number): Promise
   return parse<MeetJoinInfo>(res, 'Darsga ulanib bo‘lmadi');
 }
 
+/** Platforma orqali to'langan dars yoki sinov darsi — FalaRus xonasi (faqat ishtirokchilar, vaqtida). */
+export async function joinLessonRoom(token: string, kind: 'lesson' | 'trial', id: number): Promise<MeetJoinInfo> {
+  const path = kind === 'lesson' ? `/api/lessons/${id}/join` : `/api/teacher-trials/${id}/join`;
+  const res = await fetch(apiUrl(path), { headers: authHeaders(token) });
+  return parse<MeetJoinInfo>(res, 'Darsga ulanib bo‘lmadi');
+}
+
 export type RoomJoinInfo = {
   domain: string;
   room_slug: string;

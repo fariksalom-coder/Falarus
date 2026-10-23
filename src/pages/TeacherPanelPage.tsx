@@ -44,7 +44,7 @@ import Lessons from '../components/teacher/panel/sections/Lessons';
 import LessonReport from '../components/teacher/panel/sections/LessonReport';
 import Anketa from '../components/teacher/panel/sections/Anketa';
 import Profile, { Documents, PublicPreview } from '../components/teacher/panel/sections/Profile';
-import Income from '../components/teacher/panel/sections/Money';
+import Balance from '../components/teacher/panel/sections/Balance';
 import Commission from '../components/teacher/onboarding/Commission';
 import Messages, { NotificationsDrawer, Reviews } from '../components/teacher/panel/sections/Communication';
 import Class from '../components/teacher/panel/sections/Class';
@@ -397,7 +397,7 @@ export default function TeacherPanelPage() {
               {section === 'lessons' ? <Lessons /> : null}
               {section === 'report' && param ? <LessonReport trialId={param} /> : null}
               {section === 'class' ? <Class /> : null}
-              {section === 'income' ? <Income /> : null}
+              {section === 'income' ? <Balance /> : null}
               {section === 'subscription' ? <Commission /> : null}
               {section === 'messages' ? <Messages /> : null}
               {section === 'reviews' ? <Reviews /> : null}

@@ -22,5 +22,6 @@ export function appleProductId(productCode: PaymentProductCode, tariffType?: Sub
 }
 
 export function requiresApplePurchase(product: PaymentProductCode): boolean {
-  return product !== 'teacher_trial';
+  // Jonli o'qituvchi bilan darslar (sinov va pullik) — shaxsdan-shaxsga xizmat, App Store 3.1.3(d).
+  return product !== 'teacher_trial' && product !== 'teacher_lesson';
 }

@@ -9,6 +9,10 @@ import { PANEL_TEXTS, type PanelLang } from '../../src/components/teacher/panel/
 import OnboardingWizard from '../../src/components/teacher/onboarding/OnboardingWizard';
 import Commission from '../../src/components/teacher/onboarding/Commission';
 import AdminTeacherApplicationsPage from '../../src/pages/admin/AdminTeacherApplicationsPage';
+import AdminTeacherMoneyPage from '../../src/pages/admin/AdminTeacherMoneyPage';
+import Balance from '../../src/components/teacher/panel/sections/Balance';
+import BookLessonCard from '../../src/components/teacher/BookLessonCard';
+import MyLessonsPanel from '../../src/components/teacher/MyLessonsPanel';
 
 localStorage.setItem('adminToken', 'preview');
 
@@ -20,7 +24,10 @@ function Teacher() {
         <div className="mx-auto mb-3 flex max-w-3xl justify-end gap-2">
           {(['uz', 'ru'] as const).map((l) => <button key={l} type="button" onClick={() => setLang(l)} className="min-h-11 rounded-xl border px-3 text-sm font-semibold">{l}</button>)}
         </div>
-        {location.pathname === '/onb-commission' ? <div className="mx-auto max-w-md"><Commission /></div> : <OnboardingWizard />}
+        {location.pathname === '/onb-commission' ? <div className="mx-auto max-w-md"><Commission /></div>
+          : location.pathname === '/onb-balance' ? <div className="mx-auto max-w-3xl"><Balance /></div>
+          : location.pathname === '/onb-book' ? <div className="mx-auto max-w-[820px]"><MyLessonsPanel token="preview" /><BookLessonCard teacherId={11} token="preview" /></div>
+          : <OnboardingWizard />}
       </div>
     </PanelProvider>
   );
@@ -28,6 +35,7 @@ function Teacher() {
 
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
-    {location.pathname.startsWith('/onb-admin') ? <div className="min-h-screen bg-app-bg-subtle p-4"><AdminTeacherApplicationsPage /></div> : <Teacher />}
+    {location.pathname.startsWith('/onb-admin') ? <div className="min-h-screen bg-app-bg-subtle p-4"><AdminTeacherApplicationsPage /></div>
+      : location.pathname.startsWith('/onb-money') ? <div className="min-h-screen bg-app-bg-subtle p-4"><AdminTeacherMoneyPage /></div> : <Teacher />}
   </BrowserRouter>,
 );

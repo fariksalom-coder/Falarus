@@ -7,6 +7,7 @@ import { getMyMeetings, listTeachers, type StudentMeeting, type TeacherProfile }
 import { RecommendedBadge } from '../components/teacher/TeacherProfileSections';
 import StudentMeetLessons from '../components/meet/StudentMeetLessons';
 import MyTrialLessonsPanel from '../components/teacher/MyTrialLessonsPanel';
+import MyLessonsPanel from '../components/teacher/MyLessonsPanel';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import {
@@ -335,6 +336,8 @@ export default function TeachersPage() {
           {/* Sinov darslari — bitta panel: kim, qachon, holati va amallar.
               Ilgari bu yerda alohida «Dars jadvalim» bo'limi ham bor edi va
               ayni darslarni ikkinchi marta ko'rsatardi; endi u panel ichida. */}
+          {/* Platforma orqali to'langan darslar (FalaRus video xonasi). */}
+          <MyLessonsPanel token={token} />
           <MyTrialLessonsPanel token={token} />
           {/* Video darslar (Jitsi xonalari) — alohida funksiya, takrorlanmaydi. */}
           <StudentMeetLessons />

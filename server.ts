@@ -1320,6 +1320,10 @@ async function startServer() {
   const { createTeacherRoutes } = await import('./server/routes/teacherRoutes');
   app.use('/api', createTeacherRoutes(supabase, authenticate));
 
+  // Pullik darslar (Rahmat orqali, FalaRus video xonasida) va o'qituvchi balansi.
+  const { createTeacherLessonRoutes } = await import('./server/routes/teacherLessonRoutes');
+  app.use('/api', createTeacherLessonRoutes(authenticate));
+
   // O'qituvchi onboardingi v2: 8 qadam, yopiq hujjatlar, bo'laklab video, moderatsiya.
   const { createTeacherOnboardingRoutes } = await import('./server/routes/teacherOnboardingRoutes');
   const { geminiChat } = await import('./server/lib/gemini');

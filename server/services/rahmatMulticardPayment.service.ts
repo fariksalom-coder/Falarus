@@ -151,6 +151,18 @@ export async function createRahmatMulticardPayment(
   if (productCode === 'teacher_trial' && !trialId) {
     return { status: 400, json: { error: 'trial_id kerak' } };
   }
+  // Pullik dars: summa bron qatoridan (o'qituvchi narxi bron paytida qotirilgan).
+  const lessonId = productCode === 'teacher_lesson' ? Number((body as Record<string, unknown>).lesson_id) || null : null;
+  let lessonAmount = 0;
+  if (productCode === 'teacher_lesson') {
+    if (!lessonId) return { status: 400, json: { error: 'lesson_id kerak' } };
+    try {
+      const { prepareLessonPayment } = await import('../routes/teacherLessonRoutes.js');
+      lessonAmount = (await prepareLessonPayment(userId, lessonId)).amount;
+    } catch (e) {
+      return { status: 409, json: { error: e instanceof Error ? e.message : 'Dars topilmadi' } };
+    }
+  }
   let { data: pending } = await supabase
     .from('payments')
     .select('id, payment_channel, payment_proof_url, amount, created_at, payment_time')
@@ -226,6 +238,10 @@ export async function createRahmatMulticardPayment(
     amount = getTeacherTrialPriceUzs();
     baseAmount = amount;
     discountMeta = { trial_id: trialId };
+  } else if (productCode === 'teacher_lesson') {
+    amount = lessonAmount;
+    baseAmount = amount;
+    discountMeta = { lesson_id: lessonId };
   } else {
     amount = getClickAmountForProduct({
       productCode,
@@ -289,6 +305,10 @@ export async function createRahmatMulticardPayment(
       const message = subErr instanceof Error ? subErr.message : "Sinov darsi bog'lanmadi";
       return { status: 400, json: { error: message } };
     }
+  }
+  if (productCode === 'teacher_lesson' && lessonId) {
+    const { linkLessonPayment } = await import('../routes/teacherLessonRoutes.js');
+    await linkLessonPayment(lessonId, paymentId);
   }
   const invoiceId = String(paymentId);
   const amountTiyin = soumToTiyin(amount);

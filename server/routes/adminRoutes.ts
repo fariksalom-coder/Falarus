@@ -9,6 +9,7 @@ import { createAdminAuthMiddleware } from '../middleware/adminAuth';
 import { createAdminOnboardingRoutes } from './onboardingRoutes.js';
 import { createAdminUserJourneyRoutes } from './userJourneyRoutes.js';
 import { createAdminTeacherOnboardingRoutes } from './teacherOnboardingRoutes.js';
+import { createAdminTeacherMoneyRoutes } from './teacherLessonRoutes.js';
 import { PRIVATE_UPLOADS_DIR } from '../lib/privateUploads.js';
 import { createAdminController } from '../controllers/adminController';
 import { createAdminGrammarController } from '../controllers/adminGrammarController';
@@ -103,6 +104,8 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.use('/user-journey', createAdminUserJourneyRoutes());
   // O'qituvchi arizalari (onboarding v2) va komissiya sozlamalari
   router.use(createAdminTeacherOnboardingRoutes({ privateDir: PRIVATE_UPLOADS_DIR }));
+  // Pullik darslar: pul yechish arizalari, munozarali darslar, qaytarishlar
+  router.use('/teacher-money', createAdminTeacherMoneyRoutes());
 
   // ─────────────────────────────────────────────────────────────
   // Kunlik kurs kontenti (nazariya, testlar, juftlik, gap tuzish,

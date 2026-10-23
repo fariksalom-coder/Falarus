@@ -85,6 +85,7 @@ function AppRoutes() {
             <Route path="payment-methods" element={renderLazyPage('./pages/admin/AdminPaymentMethodsPage.tsx')} />
             <Route path="tariff-pricing" element={renderLazyPage('./pages/admin/AdminTariffPricingPage.tsx')} />
             <Route path="teachers" element={renderLazyPage('./pages/admin/AdminTeachersPage.tsx')} />
+            <Route path="teacher-money" element={renderLazyPage('./pages/admin/AdminTeacherMoneyPage.tsx')} />
             <Route path="teacher-applications" element={renderLazyPage('./pages/admin/AdminTeacherApplicationsPage.tsx')} />
             <Route path="teacher-trials" element={renderLazyPage('./pages/admin/AdminTeacherTrialsPage.tsx')} />
             <Route path="meet-rooms" element={renderLazyPage('./pages/admin/AdminMeetRoomsPage.tsx')} />
@@ -147,6 +148,8 @@ function AppRoutes() {
           <Route path="/payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
           <Route path="/payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
           <Route path="/dars/s/:sessionId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="/dars/l/:lessonId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="/dars/t/:trialId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="*" element={<Navigate to="/teacher-cabinet" replace />} />
         </>
@@ -277,6 +280,8 @@ function AppRoutes() {
           </Route>
           {/* Video dars — to'liq ekran, MainLayout'siz. */}
           <Route path="/dars/s/:sessionId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="/dars/l/:lessonId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="/dars/t/:trialId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="*" element={<NotFoundPage />} />
         </>

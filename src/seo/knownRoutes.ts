@@ -85,7 +85,7 @@ export function isKnownAppRoute(pathname: string): boolean {
     // O'yinlar: bosqich xaritasi va daraja/bosqich sahifalari.
     /^\/games\/word-swipe\/\d+\/\d+$/,
     // Video darsxona (xona kodi yoki sessiya bo'yicha).
-    /^\/dars\/(?:s\/)?[^/]+$/,
+    /^\/dars\/(?:[slt]\/)?[^/]+$/,
     // Ommaviy profil.
     /^\/u\/[^/]+$/,
   ];

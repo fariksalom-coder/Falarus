@@ -16,8 +16,7 @@ import {
   GraduationCap,
   MessageCircle,
   Timer,
-  User,
-} from 'lucide-react';
+  User, Video } from 'lucide-react';
 import { getMyTrialLessons, type MyTrialItem, type MyTrialsResponse } from '../../api/teachers';
 import { lessonCountdown, needsCountdown } from '../../utils/lessonCountdown';
 import { formatTeacherPrice } from '../../utils/teacherDisplay';
@@ -226,6 +225,20 @@ export default function MyTrialLessonsPanel({ token }: { token: string | null })
                 </div>
               </div>
 
+              {/* Sinov darsi FalaRus video xonasida: boshlanishidan 10 daqiqa oldin ochiladi. */}
+              {item.scheduledStartsAt && !st.done && !String(item.status).includes('cancel') && item.status !== 'pending_payment' && (() => {
+                const start = new Date(item.scheduledStartsAt).getTime();
+                // Erta bosilsa xona sahifasi «… da ochiladi» deb ko'rsatadi (server ham tekshiradi).
+                if (now > start + 90 * 60_000) return null;
+                return (
+                  <button type="button" onClick={() => navigate(`/dars/t/${item.trialId}`)}
+                    className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl bg-[#17A34A] text-[13.5px] font-black text-white transition active:scale-[0.98] disabled:bg-slate-200 disabled:text-slate-500">
+                    <Video className="h-4 w-4" strokeWidth={2.5} />
+                    Darsga kirish
+                  </button>
+                );
+              })()}
+
               {/* Amallar: suhbat va profil */}
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
@@ -255,7 +268,7 @@ export default function MyTrialLessonsPanel({ token }: { token: string | null })
       </ul>
 
       <p className="border-t border-app-border/70 bg-slate-50/70 px-4 py-2.5 text-[12px] font-semibold leading-snug text-app-text-muted">
-        Sinovdan so‘ng yoqqan ustozni tanlab, uning sahifasidan oylik kursga yoziling.
+        Sinovdan so‘ng yoqqan ustoz sahifasidan darslarni band qiling — toʻlov va dars FalaRus ichida.
       </p>
 
       {chat && token && user ? (

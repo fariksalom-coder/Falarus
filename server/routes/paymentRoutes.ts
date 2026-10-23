@@ -248,6 +248,9 @@ export function createPaymentRoutes(
       if (productCode === 'teacher_listing' && currency !== 'UZS') {
         return res.status(400).json({ error: "Bu to'lov uchun faqat UZS" });
       }
+      if (productCode === 'teacher_lesson') {
+        return res.status(400).json({ error: 'Darsni ilovadagi «Toʻlash» tugmasi (Rahmat) orqali toʻlang' });
+      }
       if (productCode === 'teacher_trial' && currency !== 'UZS' && currency !== 'RUB') {
         return res.status(400).json({ error: "Sinov darsi uchun faqat UZS yoki RUB" });
       }

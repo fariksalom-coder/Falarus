@@ -202,6 +202,7 @@ export default function AdminPaymentsPage() {
                           {(p.payment_channel === 'click_button' ||
                             (p.payment_channel === 'rahmat' &&
                               p.product_code !== 'teacher_trial' &&
+                              p.product_code !== 'teacher_lesson' &&
                               p.product_code !== 'teacher_listing')) && (
                             <span className="text-xs text-app-text-muted">
                               {p.payment_channel === 'rahmat' ? 'Rahmat' : 'Click'} — toʻlov yakunlangacha kuting
@@ -211,6 +212,7 @@ export default function AdminPaymentsPage() {
                             {(p.payment_channel !== 'click_button' &&
                               (p.payment_channel !== 'rahmat' ||
                                 p.product_code === 'teacher_trial' ||
+                                p.product_code === 'teacher_lesson' ||
                                 p.product_code === 'teacher_listing')) && (
                               <button
                                 type="button"

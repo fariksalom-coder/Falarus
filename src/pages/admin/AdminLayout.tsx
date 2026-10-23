@@ -46,6 +46,7 @@ const nav = [
   { to: adminPath('/kiosk'), label: 'Test va chegirmalar', icon: ClipboardList },
   { to: adminPath('/teachers'), label: "O'qituvchilar", icon: GraduationCap },
   { to: adminPath('/teacher-applications'), label: "O'qituvchi arizalari", icon: BadgeCheck },
+  { to: adminPath('/teacher-money'), label: "O'qituvchi to'lovlari", icon: Wallet },
   { to: adminPath('/teacher-trials'), label: 'Sinov darslari', icon: ClipboardList },
   { to: adminPath('/meet-rooms'), label: 'Video xonalar', icon: Video },
   { to: adminPath('/teacher-documents'), label: 'Hujjat tekshiruvi', icon: ClipboardList },

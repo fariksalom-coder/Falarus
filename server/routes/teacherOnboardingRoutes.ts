@@ -20,6 +20,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { pool } from '../lib/db.js';
+import { platformLessonsDone } from './teacherLessonRoutes.js';
 import {
   DEFAULT_SCHEDULE,
   DEFAULT_SETTINGS,
@@ -188,12 +189,9 @@ function toData(row: any, termsVersion: string): OnboardingData {
   };
 }
 
-/** Platformada o'tkazilgan darslar: yakunlangan sinov darslari (TZ bo'yicha ular ham sanaladi) + tugagan video darslar. */
+/** Platformada o'tkazilgan darslar (komissiya pog'onasi): sinov + video sessiya + pullik dars. */
 export async function completedLessons(q: OnboardingQuery, teacherId: number): Promise<number> {
-  const { rows } = await q(
-    `SELECT (SELECT count(*) FROM teacher_trial_lessons WHERE teacher_user_id = $1 AND status IN ('completed', 'completed_by_teacher'))
-          + (SELECT count(*) FROM teacher_meet_sessions WHERE teacher_user_id = $1 AND status = 'ended') AS n`, [teacherId]);
-  return Number(rows[0]?.n ?? 0);
+  return platformLessonsDone(q, teacherId);
 }
 
 async function notifyTeacher(q: OnboardingQuery, teacherId: number, title: string, body: string) {

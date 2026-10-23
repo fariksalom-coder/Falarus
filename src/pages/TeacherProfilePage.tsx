@@ -43,6 +43,7 @@ import {
 } from '../components/teacher/TeacherProfileSections';
 import { DEMO_TEACHER_PROFILE, DEMO_TEACHER_REVIEWS } from '../components/teacher/teacherDemoProfile';
 import TeacherReviewForm from '../components/teacher/TeacherReviewForm';
+import BookLessonCard from '../components/teacher/BookLessonCard';
 
 const WEEKDAY_UZ = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
 const MONTH_UZ = [
@@ -557,6 +558,8 @@ export default function TeacherProfilePage() {
             </section>
           )}
         </div>
+
+        {!isDemo && profile ? <div className="px-4"><BookLessonCard teacherId={profile.user_id} token={token} /></div> : null}
 
         {chatConvoId != null && user ? (
           <div className="mt-4 px-4">

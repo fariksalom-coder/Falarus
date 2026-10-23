@@ -8,6 +8,7 @@ import {
   joinMeetSession,
   type MeetJoinInfo,
   type RoomJoinInfo,
+  joinLessonRoom,
 } from '../api/meet';
 import { useAuth } from '../context/AuthContext';
 
@@ -40,7 +41,7 @@ function formatWhen(value: string | null): string {
  *  /dars/s/:sessionId — belgilangan dars (vaqti kelmagan bo'lsa kiritmaydi)
  */
 export default function MeetRoomPage() {
-  const { roomId, sessionId } = useParams<{ roomId: string; sessionId: string }>();
+  const { roomId, sessionId, lessonId, trialId } = useParams<{ roomId: string; sessionId: string; lessonId: string; trialId: string }>();
   const navigate = useNavigate();
   const { token, user } = useAuth();
   const [view, setView] = useState<RoomView | null>(null);
@@ -59,8 +60,10 @@ export default function MeetRoomPage() {
     setOpensAt(null);
 
     const run = async () => {
-      if (sessionId) {
-        const info: MeetJoinInfo = await joinMeetSession(token, Number(sessionId));
+      if (sessionId || lessonId || trialId) {
+        const info: MeetJoinInfo = sessionId
+          ? await joinMeetSession(token, Number(sessionId))
+          : await joinLessonRoom(token, lessonId ? 'lesson' : 'trial', Number(lessonId ?? trialId));
         if (!mounted) return;
         if (info.type === 'external') {
           setExternalUrl(info.url);
@@ -108,7 +111,7 @@ export default function MeetRoomPage() {
     return () => {
       mounted = false;
     };
-  }, [token, roomId, sessionId]);
+  }, [token, roomId, sessionId, lessonId, trialId]);
 
   if (loading) {
     return (

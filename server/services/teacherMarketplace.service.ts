@@ -255,6 +255,11 @@ export async function activateTeacherMarketplacePayment(
     await activateTeacherTrialPayment(supabase, params.paymentId);
     return;
   }
+  if (params.productCode === 'teacher_lesson') {
+    const { activateTeacherLessonPaymentDefault } = await import('../routes/teacherLessonRoutes.js');
+    await activateTeacherLessonPaymentDefault(params.paymentId);
+    return;
+  }
   if (params.productCode === 'teacher_listing') {
     await activateTeacherListingPayment(supabase, params.paymentId, params.userId);
   }

@@ -77,6 +77,7 @@ async function setup() {
     CREATE TABLE teacher_notifications (id bigserial PRIMARY KEY, recipient_user_id integer, type text, title text, body text);
     CREATE TABLE teacher_trial_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, status text);
     CREATE TABLE teacher_meet_sessions (id bigserial PRIMARY KEY, teacher_user_id integer, status text);
+    CREATE TABLE teacher_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, status text);
     INSERT INTO users (id, account_type) VALUES (10, 'teacher'), (11, 'teacher'), (12, 'student'), (13, 'teacher');
     -- Old teacher: certificate in the old shape, must become the certified path.
     INSERT INTO teacher_profiles (user_id, first_name, last_name, certificates, profile_status) VALUES
