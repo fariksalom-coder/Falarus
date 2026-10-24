@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { AlertCircle, ArrowRight, CheckCircle2, Crown, RefreshCw, ShoppingBag, UserPlus, Users } from 'lucide-react';
+import { adminPath } from '../../constants/adminPath';
 import {
   referralAdmin,
   type AdminReferralFlag,
+  type AdminReferralLeader,
+  type AdminReferralLeaders,
   type AdminReferralLedgerRow,
   type AdminReferralLink,
   type AdminReferralOverview,
@@ -10,11 +14,12 @@ import {
   type ReferralCurrency,
 } from '../../api/admin';
 
-type Tab = 'overview' | 'withdrawals' | 'links' | 'ledger' | 'flags' | 'refund';
+type Tab = 'overview' | 'leaders' | 'withdrawals' | 'links' | 'ledger' | 'flags' | 'refund';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Обзор' },
+  { id: 'leaders', label: 'Лучшие приглашающие' },
+  { id: 'links', label: 'Приглашения' },
   { id: 'withdrawals', label: 'Заявки на вывод' },
-  { id: 'links', label: 'Связи' },
   { id: 'ledger', label: 'Журнал' },
   { id: 'flags', label: 'Сигналы' },
   { id: 'refund', label: 'Возврат' },
@@ -31,6 +36,83 @@ const REVIEW: Record<string, string> = { none: '—', pending: 'На прове�
 
 const btn = 'min-h-9 rounded-lg px-3 text-sm font-semibold disabled:opacity-40';
 const input = 'min-h-9 rounded-lg border border-app-border bg-app-surface px-2 text-sm text-app-text';
+
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?';
+const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
+
+function Avatar({ name, tone = 'blue' }: { name: string; tone?: 'blue' | 'emerald' | 'slate' }) {
+  const cls = tone === 'emerald' ? 'bg-emerald-100 text-emerald-800' : tone === 'slate' ? 'bg-slate-100 text-slate-700' : 'bg-blue-100 text-blue-800';
+  return <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${cls}`}>{initials(name)}</span>;
+}
+
+function Kpi({ icon: Icon, label, value, hint }: { icon: typeof Users; label: string; value: string | number; hint?: string }) {
+  return (
+    <div className="rounded-[24px] border border-app-border bg-app-surface p-4 shadow-app-card">
+      <div className="flex items-center justify-between gap-2"><p className="text-sm text-app-text-muted">{label}</p><Icon className="h-5 w-5 text-blue-600" /></div>
+      <p className="mt-2 text-2xl font-semibold tabular-nums text-app-text">{value}</p>
+      {hint && <p className="mt-1 text-xs text-app-text-muted">{hint}</p>}
+    </div>
+  );
+}
+
+function LeaderCard({ l, rank }: { l: AdminReferralLeader; rank: number }) {
+  const name = l.name || `Пользователь #${l.user_id}`;
+  const medal = rank === 1 ? 'bg-amber-400 text-white' : rank === 2 ? 'bg-slate-400 text-white' : rank === 3 ? 'bg-orange-400 text-white' : 'bg-app-bg-muted text-app-text-muted';
+  return (
+    <Link to={adminPath(`/users/${l.user_id}`)} className="group flex flex-col rounded-[24px] border border-app-border bg-app-surface p-4 shadow-app-card transition hover:-translate-y-0.5 hover:border-blue-200 active:scale-[0.99]">
+      <div className="flex items-center gap-3">
+        <span className={`flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums ${medal}`}>{rank}</span>
+        <Avatar name={name} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-app-text">{name}</p>
+          <p className="truncate text-xs text-app-text-muted">{l.phone ?? `#${l.user_id}`}</p>
+        </div>
+        <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+        <div className="rounded-2xl bg-blue-50 px-2 py-2.5"><p className="text-xl font-bold tabular-nums text-blue-800">{l.invited}</p><p className="text-[11px] font-medium text-blue-800/70">пригласил</p></div>
+        <div className="rounded-2xl bg-emerald-50 px-2 py-2.5"><p className="text-xl font-bold tabular-nums text-emerald-800">{l.purchased}</p><p className="text-[11px] font-medium text-emerald-800/70">купили · {pct(l.purchased, l.invited)}%</p></div>
+      </div>
+      <p className="mt-3 text-xs text-app-text-muted">
+        {l.balances.length ? `Бонус: ${l.balances.map((b) => money(b.earned, b.currency)).join(', ')}` : 'Бонусов пока нет'}
+        {l.last_at ? ` · последнее ${dt(l.last_at)}` : ''}
+      </p>
+    </Link>
+  );
+}
+
+function useLeaders(sort: 'invited' | 'purchased' | 'recent') {
+  const [data, setData] = useState<AdminReferralLeaders | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    setError('');
+    referralAdmin.leaders(sort).then(setData).catch((e) => setError(e instanceof Error ? e.message : 'Ошибка'));
+  }, [sort]);
+  return { data, error };
+}
+
+function Leaders() {
+  const [sort, setSort] = useState<'invited' | 'purchased' | 'recent'>('invited');
+  const { data, error } = useLeaders(sort);
+  const SORT_LABELS = { invited: 'Больше всего приглашений', purchased: 'Больше всего покупок', recent: 'Недавние' } as const;
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Сортировка">
+        {(Object.keys(SORT_LABELS) as (keyof typeof SORT_LABELS)[]).map((k) => (
+          <button key={k} type="button" aria-pressed={sort === k} className={`${btn} min-h-10 ${sort === k ? 'bg-blue-600 text-white' : 'border border-app-border bg-app-surface text-app-text hover:bg-blue-50'}`} onClick={() => setSort(k)}>{SORT_LABELS[k]}</button>
+        ))}
+      </div>
+      {error && <p className="mb-3 flex items-center gap-2 rounded-lg bg-red-50 p-2 text-sm text-red-700"><AlertCircle className="h-4 w-4" />{error}</p>}
+      {!data && !error ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map((i) => <div key={i} className="h-44 animate-pulse rounded-[24px] bg-slate-100" />)}</div>
+      ) : data && data.leaders.length === 0 ? (
+        <p className="rounded-[24px] border border-dashed border-app-border p-8 text-center text-sm text-app-text-muted">Пока никто никого не пригласил.</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{data?.leaders.map((l, i) => <LeaderCard key={l.user_id} l={l} rank={i + 1} />)}</div>
+      )}
+    </div>
+  );
+}
 
 function Panel({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -58,17 +140,34 @@ function useAction(onDone: () => void) {
   return { busy, run, messages };
 }
 
-function Overview() {
+function Overview({ openLeaders }: { openLeaders: () => void }) {
+  const leaders = useLeaders('invited').data;
   const [data, setData] = useState<AdminReferralOverview | null>(null);
   const [confirm, setConfirm] = useState('');
   const load = useCallback(() => { referralAdmin.overview().then(setData).catch(() => setData(null)); }, []);
   useEffect(load, [load]);
   const { busy, run, messages } = useAction(load);
-  if (!data) return <p className="text-sm text-app-text-muted">Загрузка…</p>;
+  if (!data) return <div className="h-48 animate-pulse rounded-[24px] bg-slate-100" aria-busy="true" />;
   const s = data.settings;
+  const t = leaders?.totals;
   return (
     <div className="space-y-4">
       {messages}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi icon={UserPlus} label="Приглашено всего" value={t?.invited ?? '…'} hint={t ? `+${t.invited_30d} за 30 дней` : undefined} />
+        <Kpi icon={ShoppingBag} label="Купили курс" value={t?.purchased ?? '…'} hint={t ? `${pct(t.purchased, t.invited)}% от приглашённых` : undefined} />
+        <Kpi icon={Users} label="Приглашающих" value={t?.inviters ?? '…'} />
+        <Kpi icon={Crown} label="Заявки на вывод" value={data.withdrawals.filter((w) => w.status === 'pending').reduce((n, w) => n + w.count, 0)} hint="новые, ждут решения" />
+      </div>
+      {leaders && leaders.leaders.length > 0 && (
+        <section className="rounded-[24px] border border-app-border bg-app-surface p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-app-text">Топ приглашающих</h2>
+            <button type="button" onClick={openLeaders} className="inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-blue-700">Все <ArrowRight className="h-4 w-4" /></button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">{leaders.leaders.slice(0, 3).map((l, i) => <LeaderCard key={l.user_id} l={l} rank={i + 1} />)}</div>
+        </section>
+      )}
       <Panel title="Статус программы">
         <p className="text-sm text-app-text">
           {s.enabled ? <b className="text-emerald-700">Включена</b> : <b className="text-amber-700">Выключена</b>}
@@ -191,12 +290,26 @@ function Links() {
       </div>
       <div className="space-y-2">
         {rows.map((r) => (
-          <div key={r.id} className="rounded-lg border border-app-border bg-app-surface p-3 text-sm">
-            <p><b>{r.referrer_name || `#${r.referrer_id}`}</b> ({r.referrer_phone ?? '—'}) → <b>{r.referred_name || `#${r.referred_user_id}`}</b> ({r.referred_phone ?? '—'})</p>
-            <p className="text-app-text-muted">
-              {dt(r.created_at)} · {r.outcome ? OUTCOME[r.outcome] : 'Покупки ещё нет'}{r.outcome_reason === 'purchase_before_launch' ? ' (покупка до запуска)' : ''}
-              {r.first_source_type ? ` · первая покупка: ${r.first_source_type === 'payment' ? 'платёж' : 'договор оператора'} #${r.first_source_id}` : ''}
-              {r.rewards?.length ? ` · начислено ${r.rewards.map((x) => money(x.amount, x.currency)).join(', ')}` : ''} · проверка: {REVIEW[r.review_status]}
+          <div key={r.id} className="rounded-[20px] border border-app-border bg-app-surface p-4 text-sm shadow-app-card">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                <Avatar name={r.referrer_name || '#'} />
+                <div className="min-w-0"><p className="truncate font-semibold">{r.referrer_name || `#${r.referrer_id}`}</p><p className="truncate text-xs text-app-text-muted">{r.referrer_phone ?? `#${r.referrer_id}`} · пригласил</p></div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-300" />
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                <Avatar name={r.referred_name || '#'} tone={r.outcome === 'eligible' ? 'emerald' : 'slate'} />
+                <div className="min-w-0"><p className="truncate font-semibold">{r.referred_name || `#${r.referred_user_id}`}</p><p className="truncate text-xs text-app-text-muted">{r.referred_phone ?? `#${r.referred_user_id}`} · {dt(r.created_at)}</p></div>
+              </div>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${r.outcome === 'eligible' ? 'bg-emerald-50 text-emerald-700' : r.outcome ? 'bg-slate-100 text-slate-600' : 'bg-amber-50 text-amber-700'}`}>
+                {r.outcome ? OUTCOME[r.outcome] : 'Ещё не купил'}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-app-text-muted">
+              {r.outcome_reason === 'purchase_before_launch' ? 'Покупка до запуска · ' : ''}
+              {r.first_source_type ? `Первая покупка: ${r.first_source_type === 'payment' ? 'платёж' : 'договор оператора'} #${r.first_source_id}${r.rewards?.length ? ' · ' : ''}` : ''}
+              {r.rewards?.length ? `Начислено ${r.rewards.map((x) => money(x.amount, x.currency)).join(', ')}` : ''}
+              {r.review_status !== 'none' ? `${r.rewards?.length ? ' · ' : ''}Проверка: ${REVIEW[r.review_status]}` : ''}
             </p>
             {r.review_note && <p className="text-app-text-muted">Заметка: {r.review_note}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -280,8 +393,7 @@ function Refund() {
       {messages}
       <Panel title="Зарегистрировать возврат денег">
         <p className="mb-3 text-xs text-app-text-muted">
-          Только для фактически вернувшихся денег (Rahmat/Multicard, оператор, ручной платёж). Возврат через Click в админке
-          регистрируется сам. Бонус отменяется пропорционально; если он уже выплачен — образуется долг. Один и тот же
+          Только для фактически вернувшихся денег (Rahmat/Multicard, оператор, ручной платёж). Бонус отменяется пропорционально; если он уже выплачен — образуется долг. Один и тот же
           идентификатор возврата повторно не учитывается. Статус самого платежа эта форма не меняет.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -316,13 +428,15 @@ export default function AdminReferralsPage() {
   const [tab, setTab] = useState<Tab>('overview');
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-app-text">Реферальная программа</h1>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <h1 className="text-2xl font-semibold text-app-text">Реферальная программа</h1>
+      <p className="mb-4 mt-1 text-sm text-app-text-muted">Кто кого пригласил, кто купил курс, бонусы и их выплата.</p>
+      <div className="-mx-4 mb-5 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
         {TABS.map((t) => (
-          <button key={t.id} className={`${btn} ${tab === t.id ? 'bg-app-primary text-white' : 'bg-app-bg-muted text-app-text'}`} onClick={() => setTab(t.id)}>{t.label}</button>
+          <button key={t.id} type="button" aria-pressed={tab === t.id} className={`${btn} min-h-10 shrink-0 ${tab === t.id ? 'bg-app-primary text-white' : 'border border-app-border bg-app-surface text-app-text hover:bg-blue-50'}`} onClick={() => setTab(t.id)}>{t.label}</button>
         ))}
       </div>
-      {tab === 'overview' && <Overview />}
+      {tab === 'overview' && <Overview openLeaders={() => setTab('leaders')} />}
+      {tab === 'leaders' && <Leaders />}
       {tab === 'withdrawals' && <Withdrawals />}
       {tab === 'links' && <Links />}
       {tab === 'ledger' && <Ledger />}

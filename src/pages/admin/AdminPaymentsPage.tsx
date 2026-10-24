@@ -9,12 +9,6 @@ const STATUS_LABELS: Record<string, string> = {
   refunded: "Qaytarilgan",
 };
 
-const FISCAL_LABELS: Record<string, string> = {
-  pending: "Fiskal: kutilmoqda",
-  success: "Fiskal: OK",
-  failed: "Fiskal: xato",
-};
-
 function paymentChannelLabel(ch: string | null | undefined): string {
   switch (ch) {
     case 'click_button':
@@ -114,9 +108,6 @@ export default function AdminPaymentsPage() {
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">Obuna / kurs</th>
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">Usul</th>
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">Kanal</th>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Click payment id</th>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Fiskal</th>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Fiskal chek</th>
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">Valyuta</th>
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">To'lov vaqti</th>
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">Chek</th>
@@ -141,30 +132,6 @@ export default function AdminPaymentsPage() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-xs text-app-text-muted">{paymentChannelLabel(p.payment_channel)}</td>
-                    <td className="py-3 px-4 font-mono text-xs text-app-text-muted max-w-[140px] truncate" title={p.click_merchant_payment_id ?? ''}>
-                      {p.click_merchant_payment_id ?? '—'}
-                    </td>
-                    <td className="py-3 px-4 text-xs text-app-text-muted">
-                      {p.fiscal_status ? FISCAL_LABELS[p.fiscal_status] ?? p.fiscal_status : '—'}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-xs text-app-text-muted max-w-[180px] truncate" title={p.fiscal_receipt_id ?? ''}>
-                      {p.fiscal_receipt_id ? (
-                        /^https?:\/\//i.test(p.fiscal_receipt_id) ? (
-                          <a
-                            href={p.fiscal_receipt_id}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-app-brand hover:underline"
-                          >
-                            Ochish
-                          </a>
-                        ) : (
-                          p.fiscal_receipt_id
-                        )
-                      ) : (
-                        '—'
-                      )}
-                    </td>
                     <td className="py-3 px-4">{p.currency}</td>
                     <td className="py-3 px-4 text-app-text-muted">
                       {p.payment_time ? new Date(p.payment_time).toLocaleString() : '—'}

@@ -17,7 +17,6 @@ import {
   Star,
   User,
   Users,
-  Video,
   Wallet,
   X,
   Percent,
@@ -49,7 +48,6 @@ import Profile, { Documents, PublicPreview } from '../components/teacher/panel/s
 import Balance from '../components/teacher/panel/sections/Balance';
 import Commission from '../components/teacher/onboarding/Commission';
 import Messages, { NotificationsDrawer, Reviews } from '../components/teacher/panel/sections/Communication';
-import Class from '../components/teacher/panel/sections/Class';
 import Settings, { Help } from '../components/teacher/panel/sections/SettingsHelp';
 import { TEACHER_BRAND_GRADIENT, TEACHER_LOGIN_PATH, TEACHER_REGISTER_PATH } from '../constants/teacherPaths';
 
@@ -75,7 +73,6 @@ const NAV: NavItem[] = [
   { key: 'schedule', label: 'navSchedule', icon: CalendarDays, group: 'work' },
   { key: 'students', label: 'navStudents', icon: Users, group: 'work' },
   { key: 'lessons', label: 'navLessons', icon: BookOpen, group: 'work' },
-  { key: 'class', label: 'navClass', icon: Video, group: 'work' },
   { key: 'income', label: 'navIncome', icon: Wallet, group: 'cabinet' },
   { key: 'subscription', label: 'navSubscription', icon: Percent, group: 'cabinet' },
   { key: 'messages', label: 'navMessages', icon: MessageSquare, group: 'cabinet' },
@@ -90,6 +87,7 @@ const MOBILE_KEYS: SectionKey[] = ['dashboard', 'schedule', 'students', 'lessons
 
 /** Ichki bo'limlar menyuda qaysi band yonib turishini belgilaydi. */
 const NAV_PARENT: Partial<Record<SectionKey, SectionKey>> = {
+  class: 'lessons',
   student: 'students',
   report: 'lessons',
   public: 'profile',
@@ -435,9 +433,9 @@ export default function TeacherPanelPage() {
               {section === 'schedule' ? <Schedule /> : null}
               {section === 'students' ? <Students /> : null}
               {section === 'student' && param ? <StudentDetail studentId={param} /> : null}
-              {section === 'lessons' ? <Lessons /> : null}
+              {/* «Video xona» bo'limi olib tashlandi (2026-10-24): «Darsni boshlash» darslar ro'yxatini ochadi. */}
+              {section === 'lessons' || section === 'class' ? <Lessons /> : null}
               {section === 'report' && param ? <LessonReport trialId={param} /> : null}
-              {section === 'class' ? <Class /> : null}
               {section === 'income' ? <Balance /> : null}
               {section === 'subscription' ? <Commission /> : null}
               {section === 'messages' ? <Messages /> : null}

@@ -2,7 +2,6 @@ import { adminApi } from '../lib/adminApi';
 import type { PaymentProductCode, PaymentProvider } from '../../shared/paymentProducts';
 
 export type RevenueByCurrency = { UZS: number; USD: number; RUB: number };
-export type ClickTodayStats = { total: number; success: number; errors: number };
 
 export type DashboardStats = {
   total_users: number;
@@ -20,7 +19,6 @@ export type DashboardStats = {
   subscriptions_expiring_soon: number;
   referral_payouts_pending: number;
   support_chats_open: number;
-  click_today: ClickTodayStats;
   payment_statuses_this_month: {
     pending: number;
     approved: number;
@@ -79,6 +77,7 @@ export type AdminUserRow = {
     speaking_level: number;
   } | null;
   referral_earnings: number;
+  last_seen_at: string | null;
 };
 
 export type AdminUserProfile = {
@@ -139,19 +138,6 @@ export type AdminCardTokenRow = {
   masked_phone: string | null;
   masked_card: string | null;
   is_active: boolean;
-  created_at: string;
-};
-
-export type AdminClickPaymentLogRow = {
-  id: number;
-  user_id: number | null;
-  subscription_id: number | null;
-  user: string | null;
-  operation: string;
-  click_payment_id: string | null;
-  merchant_trans_id: string | null;
-  error_code: number | null;
-  error_note: string | null;
   created_at: string;
 };
 
@@ -291,6 +277,9 @@ export async function getUsers(params?: {
   registered?: string;
   subscription?: string;
   referral?: boolean;
+  sort?: string;
+  days?: string;
+  active?: string;
 }, signal?: AbortSignal): Promise<{ items: AdminUserRow[]; total: number; page: number; pageSize: number }> {
   const sp = new URLSearchParams();
   if (params?.page) sp.set('page', String(params.page));
@@ -299,6 +288,9 @@ export async function getUsers(params?: {
   if (params?.registered) sp.set('registered', params.registered);
   if (params?.subscription) sp.set('subscription', params.subscription);
   if (params?.referral) sp.set('referral', 'true');
+  if (params?.sort) sp.set('sort', params.sort);
+  if (params?.days) sp.set('days', params.days);
+  if (params?.active) sp.set('active', params.active);
   const q = sp.toString();
   return adminApi(`/users${q ? `?${q}` : ''}`, { signal });
 }
@@ -450,10 +442,6 @@ export async function getCardTokens(): Promise<AdminCardTokenRow[]> {
   return adminApi<AdminCardTokenRow[]>('/card-tokens');
 }
 
-export async function getClickPaymentLogs(): Promise<AdminClickPaymentLogRow[]> {
-  return adminApi<AdminClickPaymentLogRow[]>('/click-payment-logs');
-}
-
 export async function getAdminTeachers(): Promise<AdminTeacherRow[]> {
   return adminApi<AdminTeacherRow[]>('/teachers');
 }
@@ -468,6 +456,14 @@ export type AdminReferralOverview = {
   open_flags: number;
   withdrawals: { status: string; currency: ReferralCurrency; count: number; amount: number }[];
   ledger_mismatches: number;
+};
+export type AdminReferralLeader = {
+  user_id: number; name: string; phone: string | null; invited: number; purchased: number; last_at: string | null;
+  balances: { currency: ReferralCurrency; earned: number; available: number }[];
+};
+export type AdminReferralLeaders = {
+  totals: { invited: number; purchased: number; inviters: number; invited_30d: number };
+  leaders: AdminReferralLeader[];
 };
 export type AdminReferralLink = {
   id: number; created_at: string; status: string; outcome: string | null; outcome_reason: string | null;
@@ -496,6 +492,7 @@ const post = (body: unknown) => ({ method: 'POST', body: JSON.stringify(body) })
 
 export const referralAdmin = {
   overview: () => adminApi<AdminReferralOverview>('/referrals/overview'),
+  leaders: (sort: 'invited' | 'purchased' | 'recent') => adminApi<AdminReferralLeaders>(`/referrals/leaders?sort=${sort}`),
   setEnabled: (enabled: boolean, confirm: string, launchAt?: string) =>
     adminApi<{ enabled: boolean; launch_at: string | null }>('/referrals/settings', { method: 'PUT', body: JSON.stringify({ enabled, confirm, launch_at: launchAt }) }),
   links: (review?: string, q?: string) =>
@@ -669,72 +666,6 @@ export async function updateTariffPrice(data: {
     method: 'PUT',
     body: JSON.stringify(data),
   });
-}
-
-// ─── Video dars xonalari ("met") ────────────────────────────────────────────
-
-export type AdminMeetRoomStatus = 'free' | 'assigned' | 'paused' | 'archived';
-
-export type AdminMeetRoom = {
-  id: number;
-  room_slug: string;
-  provider: string;
-  title: string;
-  note: string;
-  teacher_user_id: number | null;
-  status: AdminMeetRoomStatus;
-  assigned_at: string | null;
-  created_at: string;
-  updated_at: string;
-  teacher_name: string | null;
-  students_count: number;
-  upcoming_sessions: number;
-};
-
-export type AdminMeetSession = {
-  id: number;
-  room_id: number;
-  teacher_user_id: number;
-  title: string;
-  starts_at: string;
-  duration_minutes: number;
-  status: 'scheduled' | 'live' | 'ended' | 'cancelled';
-  created_by: 'teacher' | 'admin';
-};
-
-export async function getAdminMeetRooms(
-  status?: AdminMeetRoomStatus | 'all'
-): Promise<{ domain: string; rooms: AdminMeetRoom[] }> {
-  const qs = status && status !== 'all' ? `?status=${status}` : '';
-  return adminApi<{ domain: string; rooms: AdminMeetRoom[] }>(`/meet-rooms${qs}`);
-}
-
-/** Bir vaqtning o'zida bir nechta xona ochish (count 1..50). */
-export async function createAdminMeetRooms(data: {
-  count?: number;
-  title?: string;
-  note?: string;
-  teacher_user_id?: number | null;
-}): Promise<{ rooms: AdminMeetRoom[] }> {
-  return adminApi<{ rooms: AdminMeetRoom[] }>('/meet-rooms', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-/** Xonani o'qituvchiga yo'naltirish / nomini yoki holatini o'zgartirish. */
-export async function updateAdminMeetRoom(
-  id: number,
-  data: { teacher_user_id?: number | null; title?: string; note?: string; status?: AdminMeetRoomStatus }
-): Promise<{ room: AdminMeetRoom | null }> {
-  return adminApi<{ room: AdminMeetRoom | null }>(`/meet-rooms/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function deleteAdminMeetRoom(id: number): Promise<void> {
-  await adminApi(`/meet-rooms/${id}`, { method: 'DELETE' });
 }
 
 /* ------------------------------------------------------------------ *

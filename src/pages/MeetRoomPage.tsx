@@ -2,14 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, ExternalLink, Lock } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import JitsiRoom from '../components/meet/JitsiRoom';
-import {
-  MeetError,
-  joinMeetRoom,
-  joinMeetSession,
-  type MeetJoinInfo,
-  type RoomJoinInfo,
-  joinLessonRoom,
-} from '../api/meet';
+import { MeetError, joinLessonRoom, type MeetJoinInfo } from '../api/meet';
 import { useAuth } from '../context/AuthContext';
 import { TEACHERS_LIST_PATH, TEACHER_CABINET_PATH } from '../constants/teacherPaths';
 
@@ -38,11 +31,12 @@ function formatWhen(value: string | null): string {
 
 /**
  * Video dars sahifasi.
- *  /dars/:roomId    — o'qituvchining doimiy FalaRus xonasi
- *  /dars/s/:sessionId — belgilangan dars (vaqti kelmagan bo'lsa kiritmaydi)
+ *  /dars/l/:lessonId — platforma orqali to'langan dars
+ *  /dars/t/:trialId  — sinov darsi
+ * Vaqti kelmagan bo'lsa server kiritmaydi va ochilish vaqtini qaytaradi.
  */
 export default function MeetRoomPage() {
-  const { roomId, sessionId, lessonId, trialId } = useParams<{ roomId: string; sessionId: string; lessonId: string; trialId: string }>();
+  const { lessonId, trialId } = useParams<{ lessonId: string; trialId: string }>();
   const navigate = useNavigate();
   const { token, user } = useAuth();
   const [view, setView] = useState<RoomView | null>(null);
@@ -61,39 +55,22 @@ export default function MeetRoomPage() {
     setOpensAt(null);
 
     const run = async () => {
-      if (sessionId || lessonId || trialId) {
-        const info: MeetJoinInfo = sessionId
-          ? await joinMeetSession(token, Number(sessionId))
-          : await joinLessonRoom(token, lessonId ? 'lesson' : 'trial', Number(lessonId ?? trialId));
-        if (!mounted) return;
-        if (info.type === 'external') {
-          setExternalUrl(info.url);
-          // Tashqi havola (Google Meet / Zoom) — to'g'ridan-to'g'ri o'tkazamiz.
-          window.location.replace(info.url);
-          return;
-        }
-        setView({
-          domain: info.domain,
-          roomSlug: info.room_slug,
-          title: info.title || 'Video dars',
-          role: info.role,
-          displayName: info.display_name,
-          email: info.email,
-          subtitle: info.role === 'teacher' ? 'Siz o‘qituvchisiz' : 'Dars davom etmoqda',
-        });
+      const info: MeetJoinInfo = await joinLessonRoom(token, lessonId ? 'lesson' : 'trial', Number(lessonId ?? trialId));
+      if (!mounted) return;
+      if (info.type === 'external') {
+        setExternalUrl(info.url);
+        // Tashqi havola (Google Meet / Zoom) — to'g'ridan-to'g'ri o'tkazamiz.
+        window.location.replace(info.url);
         return;
       }
-
-      const info: RoomJoinInfo = await joinMeetRoom(token, Number(roomId));
-      if (!mounted) return;
       setView({
         domain: info.domain,
         roomSlug: info.room_slug,
-        title: info.room_title || 'Video dars',
+        title: info.title || 'Video dars',
         role: info.role,
         displayName: info.display_name,
         email: info.email,
-        subtitle: info.role === 'teacher' ? 'Siz o‘qituvchisiz' : `O‘qituvchi: ${info.teacher_name}`,
+        subtitle: info.role === 'teacher' ? 'Siz o‘qituvchisiz' : 'Dars davom etmoqda',
       });
     };
 
@@ -112,7 +89,7 @@ export default function MeetRoomPage() {
     return () => {
       mounted = false;
     };
-  }, [token, roomId, sessionId, lessonId, trialId]);
+  }, [token, lessonId, trialId]);
 
   if (loading) {
     return (

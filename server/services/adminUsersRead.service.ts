@@ -7,6 +7,24 @@ function database(): ReadDb {
   if (!pool) throw new Error('Database unavailable');
   return pool;
 }
+/** Kurs bosqichlari bo'yicha filtr: ochilgan eng katta kun shu oraliqda. */
+const DAY_RANGES: Record<string, [number, number]> = {
+  none: [0, 0], '1-30': [1, 30], '31-100': [31, 100], '101-130': [101, 130], '131-181': [131, 181], '182': [182, 100000],
+};
+/** Oxirgi kirish (last_seen_at — autentifikatsiyada yoziladi). */
+const ACTIVITY: Record<string, string> = {
+  today: "u.last_seen_at >= now() - interval '1 day'",
+  week: "u.last_seen_at >= now() - interval '7 days'",
+  idle: "(u.last_seen_at IS NULL OR u.last_seen_at < now() - interval '14 days')",
+};
+/** Tartib — oq ro'yxat, so'rovga matn qo'shilmaydi. `max_day` o'rniga kun ifodasi qo'yiladi. */
+const SORTS: Record<string, string> = {
+  new: 'u.created_at DESC, u.id DESC',
+  old: 'u.created_at ASC, u.id ASC',
+  day_desc: 'max_day DESC, u.created_at DESC, u.id DESC',
+  day_asc: 'max_day ASC, u.created_at DESC, u.id DESC',
+  seen: 'u.last_seen_at DESC NULLS LAST, u.id DESC',
+};
 export function validDay(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !value.startsWith('0000-') && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 }
@@ -36,18 +54,27 @@ export async function readAdminUsers(input: Record<string, unknown>, db = databa
     const phone = digits.length >= 4 ? ` OR regexp_replace(coalesce(u.phone,''), '\\D', '', 'g') LIKE ${bind('%' + digits + '%')}` : '';
     where.push(`(concat_ws(' ', u.first_name, u.last_name) ILIKE ${p} OR u.email ILIKE ${p} OR u.phone ILIKE ${p} OR u.id::text = ${bind(search)}${phone})`);
   }
+  // Kurs bo'yicha qayerga yetgani: eng katta ochilgan kun (0 = boshlamagan).
+  const reached = '(SELECT coalesce(max(d.day_number),0) FROM user_kunlik_day_progress d WHERE d.user_id=u.id)';
+  const range = DAY_RANGES[String(input.days || '')];
+  if (range) where.push(`${reached} BETWEEN ${range[0]} AND ${range[1]}`);
+  const seen = ACTIVITY[String(input.active || '')];
+  if (seen) where.push(seen);
+  const order = SORTS[String(input.sort || '')] ?? SORTS.new;
   const filter = where.join(' AND ');
   // Count and page share a statement snapshot; progress is fetched only for this page.
   const { rows } = await db.query(`WITH total AS (
     SELECT count(*)::int n FROM users u WHERE ${filter}
   ), page AS (
-    SELECT u.id,u.first_name,u.last_name,u.email,u.phone,u.created_at,u.plan_name,u.plan_expires_at,u.total_referral_earned FROM users u WHERE ${filter}
-    ORDER BY u.created_at DESC, u.id DESC LIMIT ${bind(pageSize)} OFFSET ${bind((page - 1) * pageSize)}
+    SELECT u.id,u.first_name,u.last_name,u.email,u.phone,u.created_at,u.plan_name,u.plan_expires_at,u.total_referral_earned,u.last_seen_at,
+      ${reached} AS max_day, row_number() OVER (ORDER BY ${order.replaceAll('max_day', reached)}) AS ord
+    FROM users u WHERE ${filter}
+    ORDER BY ${order.replaceAll('max_day', reached)} LIMIT ${bind(pageSize)} OFFSET ${bind((page - 1) * pageSize)}
   ), items AS (
     SELECT u.id, concat_ws(' ', u.first_name, u.last_name) AS name, u.email, u.phone,
       u.created_at AS registration_date, coalesce(u.plan_name, '—') AS subscription_type,
       CASE WHEN u.plan_expires_at > now() THEN 'active' ELSE 'expired' END subscription_status,
-      coalesce(u.total_referral_earned,0) referral_earnings, coalesce(p.day_number,0) reached_day,
+      coalesce(u.total_referral_earned,0) referral_earnings, coalesce(p.day_number,0) reached_day, u.last_seen_at, u.ord,
       CASE WHEN p.day_number IS NULL THEN NULL ELSE jsonb_build_object(
         'day_number',p.day_number,'grammar_total',3,
         'grammar_done',coalesce(p.grammar_1::int,0)+coalesce(p.grammar_2::int,0)+coalesce(p.grammar_3::int,0),
@@ -56,7 +83,7 @@ export async function readAdminUsers(input: Record<string, unknown>, db = databa
     FROM page u LEFT JOIN LATERAL (
       SELECT * FROM user_kunlik_day_progress WHERE user_id=u.id ORDER BY day_number DESC LIMIT 1
     ) p ON true
-  ) SELECT total.n AS total, coalesce((SELECT jsonb_agg(items ORDER BY registration_date DESC,id DESC) FROM items),'[]'::jsonb) AS items FROM total`, args);
+  ) SELECT total.n AS total, coalesce((SELECT jsonb_agg(to_jsonb(items) - 'ord' ORDER BY ord) FROM items),'[]'::jsonb) AS items FROM total`, args);
   return { ...rows[0], page, pageSize };
 }
 

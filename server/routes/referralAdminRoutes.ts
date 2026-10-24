@@ -66,6 +66,44 @@ export function createReferralAdminRoutes(): Router {
   }));
 
   /**
+   * Leaderboard of inviters: how many people each one brought, how many of
+   * them bought, and the bonus per currency. Sort is whitelisted.
+   */
+  router.get('/leaders', wrap(async (req, res) => {
+    const sorts: Record<string, string> = {
+      invited: 'invited DESC, purchased DESC, last_at DESC',
+      purchased: 'purchased DESC, invited DESC, last_at DESC',
+      recent: 'last_at DESC',
+    };
+    const order = sorts[String(req.query.sort)] ?? sorts.invited;
+    const [rows, totals] = await Promise.all([
+      db().query(
+        `SELECT r.referrer_id AS user_id, concat_ws(' ', u.first_name, u.last_name) AS name, u.phone,
+                count(*)::int AS invited, count(*) FILTER (WHERE r.outcome = 'eligible')::int AS purchased,
+                max(r.created_at) AS last_at,
+                (SELECT coalesce(json_agg(json_build_object('currency', b.currency, 'earned', b.earned_total, 'available', b.available)
+                          ORDER BY b.currency), '[]'::json)
+                   FROM referral_balances b WHERE b.user_id = r.referrer_id AND b.earned_total > 0) AS balances
+         FROM referrals r JOIN users u ON u.id = r.referrer_id
+         GROUP BY r.referrer_id, u.first_name, u.last_name, u.phone
+         ORDER BY ${order} LIMIT 120`),
+      db().query(
+        `SELECT count(*)::int invited, count(*) FILTER (WHERE outcome = 'eligible')::int purchased,
+                count(DISTINCT referrer_id)::int inviters,
+                count(*) FILTER (WHERE created_at >= now() - interval '30 days')::int invited_30d
+         FROM referrals`),
+    ]);
+    res.json({
+      totals: totals.rows[0],
+      leaders: rows.rows.map((r) => ({
+        user_id: num(r.user_id), name: text(r.name, 120), phone: r.phone ?? null, invited: r.invited, purchased: r.purchased,
+        last_at: r.last_at ? new Date(r.last_at).toISOString() : null,
+        balances: (r.balances ?? []).map((b: { currency: string; earned: unknown; available: unknown }) => ({ currency: b.currency, earned: num(b.earned), available: num(b.available) })),
+      })),
+    });
+  }));
+
+  /**
    * Turning the program on is an explicit owner action: the request must carry
    * confirm = "ENABLE". The launch date is set once and never moved afterwards.
    */

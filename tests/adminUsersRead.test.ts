@@ -9,7 +9,7 @@ test('admin users: bounded pages, literal search, private fields, Tashkent dates
   try {
     await db.exec(`CREATE TABLE users(id bigint PRIMARY KEY,first_name text,last_name text,email text,phone text,
       created_at timestamptz,plan_name text,plan_expires_at timestamptz,total_referral_earned numeric,
-      referred_by bigint,is_golden boolean,account_type text,password text);
+      referred_by bigint,is_golden boolean,account_type text,password text,last_seen_at timestamptz);
       CREATE TABLE user_kunlik_day_progress(user_id bigint,day_number integer,grammar_1 boolean,grammar_2 boolean,grammar_3 boolean,words_match boolean,oqish_done boolean,speaking_level integer);
       CREATE TABLE support_chats(id bigint PRIMARY KEY,user_id bigint,admin_last_read_at timestamptz);
       CREATE TABLE support_chat_messages(chat_id bigint,sender_type text,created_at timestamptz);
@@ -40,6 +40,17 @@ test('admin users: bounded pages, literal search, private fields, Tashkent dates
     assert.equal((await readAdminUsers({ pageSize: 999999 }, adapter)).pageSize, 100);
     assert.equal((await readAdminUsers({ page: 100 }, adapter)).items.length, 0);
     assert.equal((await readAdminUsers({}, adapter)).total, 4);
+    // Kurs bosqichi, faollik va tartib: faqat oq ro'yxatdagi qiymatlar.
+    const byDay = await readAdminUsers({ sort: 'day_desc' }, adapter);
+    assert.equal(byDay.items[0].id, 2); assert.equal(byDay.items[0].reached_day, 9);
+    assert.equal((await readAdminUsers({ days: '1-30' }, adapter)).total, 1);
+    assert.equal((await readAdminUsers({ days: 'none' }, adapter)).total, 3);
+    assert.equal((await readAdminUsers({ sort: 'old' }, adapter)).items[0].id, 1);
+    await db.query("UPDATE users SET last_seen_at = now() WHERE id = 4");
+    assert.equal((await readAdminUsers({ active: 'today' }, adapter)).items[0].id, 4);
+    assert.equal((await readAdminUsers({ active: 'idle' }, adapter)).total, 3);
+    assert.equal((await readAdminUsers({ sort: 'seen' }, adapter)).items[0].id, 4);
+    assert.equal((await readAdminUsers({ sort: 'x; DROP TABLE users', days: '1 OR 1=1' }, adapter)).total, 4);
     const report = await readAdminRegistrations('2026-09', adapter);
     assert.equal(report.days.find(r => r.day === '2026-09-01')?.count, 2);
     assert.equal(report.days.find(r => r.day === '2026-09-02')?.count, 1);

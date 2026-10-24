@@ -290,20 +290,6 @@ export function createAdminController(supabase: DbClient) {
         .eq('status', 'approved')
         .gte('created_at', last30Start),
     ]);
-    const { data: clickTodayRows, error: clickTodayError } = await supabase
-      .from('click_payment_logs')
-      .select('error_code, error_note')
-      .gte('created_at', todayStart);
-    const clickRows =
-      clickTodayError && isMissingRelationError(clickTodayError)
-        ? []
-        : (clickTodayRows ?? []);
-    const clickErrors = clickRows.filter((row: any) => {
-      const code = Number(row?.error_code ?? 0);
-      return code !== 0 || Boolean(String(row?.error_note ?? '').trim());
-    }).length;
-    const clickTotal = clickRows.length;
-    const clickSuccess = Math.max(0, clickTotal - clickErrors);
 
     const monthRows = ((paymentsMonthStatusRows as any).data ?? []) as any[];
     const statusCounts = monthRows.reduce<Record<string, number>>((acc, row) => {
@@ -376,11 +362,6 @@ export function createAdminController(supabase: DbClient) {
       subscriptions_expiring_soon: (expiringSubs as any).count ?? 0,
       referral_payouts_pending: (pendingWithdrawals as any).count ?? 0,
       support_chats_open: openSupportChats && !(openSupportChats as any).error ? ((openSupportChats as any).count ?? 0) : 0,
-      click_today: {
-        total: clickTotal,
-        success: clickSuccess,
-        errors: clickErrors,
-      },
       payment_statuses_this_month: {
         pending: statusCounts.pending ?? 0,
         approved: statusCounts.approved ?? 0,
@@ -1000,42 +981,6 @@ export function createAdminController(supabase: DbClient) {
     return res.json(list);
   }
 
-  async function getClickPaymentLogs(_req: Request, res: Response) {
-    const { data: rows, error } = await supabase
-      .from('click_payment_logs')
-      .select('id, user_id, subscription_id, operation, click_payment_id, merchant_trans_id, error_code, error_note, created_at')
-      .order('created_at', { ascending: false })
-      .limit(400);
-    if (error) {
-      if (isMissingRelationError(error)) return res.json([]);
-      console.error('[admin/click-payment-logs]', error);
-      return res.status(500).json({ error: error.message });
-    }
-    const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean))];
-    const { data: users } =
-      userIds.length > 0
-        ? await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds)
-        : { data: [] };
-    const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
-    const list = (rows ?? []).map((r: any) => {
-      const u = r.user_id ? userMap.get(r.user_id) : null;
-      return {
-        id: r.id,
-        user_id: r.user_id,
-        subscription_id: r.subscription_id,
-        user: u ? [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email : null,
-        operation: r.operation,
-        click_payment_id: r.click_payment_id ?? null,
-        merchant_trans_id: r.merchant_trans_id ?? null,
-        error_code: r.error_code ?? null,
-        error_note: r.error_note ?? null,
-        created_at: r.created_at,
-      };
-    });
-    return res.json(list);
-  }
-
-  // --- Support chats (Telegram-like)
   async function getSupportChats(_req: Request, res: Response) {
     const chatsRes = await supabase
       .from('support_chats')
@@ -1769,7 +1714,6 @@ export function createAdminController(supabase: DbClient) {
     refundPayment,
     getSubscriptions,
     getCardTokens,
-    getClickPaymentLogs,
 
     getSupportChats,
     getSupportChatMessages,

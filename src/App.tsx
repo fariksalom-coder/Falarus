@@ -85,7 +85,6 @@ function AppRoutes() {
             <Route path="payments" element={renderLazyPage('./pages/admin/AdminPaymentsPage.tsx')} />
             <Route path="sales-ledger" element={renderLazyPage('./pages/admin/AdminSalesLedgerPage.tsx')} />
             <Route path="operators" element={renderLazyPage('./pages/admin/AdminOperatorsPage.tsx')} />
-            <Route path="click-logs" element={renderLazyPage('./pages/admin/AdminClickLogsPage.tsx')} />
             <Route path="referrals" element={renderLazyPage('./pages/admin/AdminReferralsPage.tsx')} />
             <Route path="support" element={renderLazyPage('./pages/admin/AdminSupportPage.tsx')} />
             <Route path="payment-methods" element={renderLazyPage('./pages/admin/AdminPaymentMethodsPage.tsx')} />
@@ -97,7 +96,9 @@ function AppRoutes() {
             <Route path="teacher-documents" element={<Navigate to="../teachers?tab=review" replace />} />
             <Route path="teacher-money" element={<Navigate to="../teachers?tab=payments" replace />} />
             <Route path="teacher-trials" element={<Navigate to="../teachers?tab=lessons" replace />} />
-            <Route path="meet-rooms" element={renderLazyPage('./pages/admin/AdminMeetRoomsPage.tsx')} />
+            {/* Video xonalar (ishlatilmagan) va Click jurnali 2026-10-24 da olib tashlandi. */}
+            <Route path="meet-rooms" element={<Navigate to="../teachers" replace />} />
+            <Route path="click-logs" element={<Navigate to="../payments" replace />} />
             <Route path="chat-moderation" element={renderLazyPage('./pages/admin/AdminChatModerationPage.tsx')} />
             <Route path="onboarding" element={renderLazyPage('./pages/admin/AdminOnboardingPage.tsx')} />
             <Route path="content" element={renderLazyPage('./pages/admin/AdminContentPage.tsx')} />
@@ -158,10 +159,8 @@ function AppRoutes() {
           <Route path="/payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
           <Route path="/payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
           <Route path="/payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
-          <Route path="/dars/s/:sessionId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="/dars/l/:lessonId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="/dars/t/:trialId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
-          <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="*" element={<Navigate to={TEACHER_CABINET_PATH} replace />} />
         </>
       ) : (
@@ -292,10 +291,8 @@ function AppRoutes() {
             <Route path="reyting" element={<Navigate to="/statistika" replace />} />
           </Route>
           {/* Video dars — to'liq ekran, MainLayout'siz. */}
-          <Route path="/dars/s/:sessionId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="/dars/l/:lessonId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="/dars/t/:trialId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
-          <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
           <Route path="*" element={<NotFoundPage />} />
         </>
       )}

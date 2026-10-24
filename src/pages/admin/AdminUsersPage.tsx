@@ -1,9 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getUsers, type AdminUserRow } from '../../api/admin';
-import { AlertCircle, UserPlus, MessageSquareText, KeyRound, Check, Copy, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, MessageSquareText, KeyRound, Check, Copy, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { adminParolTiklashById } from '../../api/parolTiklash';
 import { adminPath } from '../../constants/adminPath';
+
+const DAY_CHIPS = [
+  { value: '', label: 'Hammasi' },
+  { value: 'none', label: 'Boshlamagan' },
+  { value: '1-30', label: '1–30 kun' },
+  { value: '31-100', label: '31–100 kun' },
+  { value: '101-130', label: '101–130 kun' },
+  { value: '131-181', label: '131–181 kun' },
+  { value: '182', label: 'Kursni tugatgan' },
+];
+
+/** «5 soat oldin», «3 kun oldin» — support uchun aniq sanadan ko'ra tezroq o'qiladi. */
+function lastSeen(iso: string | null): string {
+  if (!iso) return '—';
+  const diff = Date.now() - Date.parse(iso);
+  if (diff < 60_000) return 'hozir';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} daqiqa oldin`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} soat oldin`;
+  const daysAgo = Math.floor(diff / 86_400_000);
+  return daysAgo < 31 ? `${daysAgo} kun oldin` : new Date(iso).toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent' });
+}
 
 export default function AdminUsersPage() {
   const [list, setList] = useState<AdminUserRow[]>([]);
@@ -13,6 +34,9 @@ export default function AdminUsersPage() {
   const page = Math.max(1, Number(params.get('page')) || 1);
   const date = params.get('date') || '';
   const query = params.get('q') || '';
+  const sort = params.get('sort') || '';
+  const days = params.get('days') || '';
+  const active = params.get('active') || '';
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   function filter(key: string, value: string) {
@@ -66,27 +90,44 @@ export default function AdminUsersPage() {
       registered: registered || undefined,
       subscription: subscription || undefined,
       referral: referralOnly || undefined,
+      sort: sort || undefined,
+      days: days || undefined,
+      active: active || undefined,
     }, controller.signal)
       .then(r => { if (!controller.signal.aborted) { setList(r.items); setTotal(r.total); setPageSize(r.pageSize); } })
       .catch((e) => { if (!controller.signal.aborted) setError(e.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); }), 250);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [registered, subscription, referralOnly, page, date, query]);
+  }, [registered, subscription, referralOnly, page, date, query, sort, days, active]);
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h1 className="text-2xl font-semibold text-app-text">Foydalanuvchilar</h1>
-        <Link
-          to={adminPath('/users/create')}
-          className="inline-flex items-center gap-2 rounded-xl bg-app-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-app-primary-deep"
-        >
-          <UserPlus className="h-4 w-4" />
-          Yangi foydalanuvchi
-        </Link>
+      <h1 className="mb-4 text-2xl font-semibold text-app-text">Foydalanuvchilar</h1>
+
+      {/* Kurs bosqichi — bir bosishda: kim qayergacha yetgan. */}
+      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Kurs bosqichi">
+        {DAY_CHIPS.map((c) => (
+          <button key={c.value} type="button" aria-pressed={days === c.value} onClick={() => filter('days', c.value)}
+            className={`min-h-10 shrink-0 rounded-full px-3.5 text-sm font-semibold transition active:scale-[0.97] ${days === c.value ? 'bg-blue-600 text-white' : 'border border-app-border bg-app-surface text-app-text hover:border-blue-200 hover:bg-blue-50'}`}>
+            {c.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
+        <select aria-label="Tartib" value={sort} onChange={(e) => filter('sort', e.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-app-surface px-3 text-sm">
+          <option value="">Avval yangilar</option>
+          <option value="old">Avval eskilar</option>
+          <option value="day_desc">Eng ko‘p kun o‘tganlar</option>
+          <option value="day_asc">Eng kam kun o‘tganlar</option>
+          <option value="seen">Yaqinda kirganlar</option>
+        </select>
+        <select aria-label="Faollik" value={active} onChange={(e) => filter('active', e.target.value)} className="min-h-11 rounded-lg border border-slate-300 bg-app-surface px-3 text-sm">
+          <option value="">Faollik: hammasi</option>
+          <option value="today">Bugun kirgan</option>
+          <option value="week">7 kunda kirgan</option>
+          <option value="idle">14+ kun kirmagan</option>
+        </select>
         <input type="search" aria-label="Ism, telefon yoki email" placeholder="Ism, telefon yoki email" value={query} onChange={e => filter('q', e.target.value)} className="min-h-11 min-w-0 rounded-lg border border-slate-300 px-3 text-sm" />
         <label className="text-xs text-app-text-muted">Ro‘yxatdan o‘tgan sana
           <input type="date" value={date} onChange={e => filter('date', e.target.value)} className="ml-2 min-h-11 rounded-lg border border-slate-300 px-2 text-sm" />
@@ -94,22 +135,22 @@ export default function AdminUsersPage() {
         <select
           value={registered}
           onChange={(e) => { setRegistered(e.target.value); filter('date', ''); }}
-          className="rounded-lg border border-slate-300 bg-app-surface px-3 py-2 text-sm"
+          className="min-h-11 rounded-lg border border-slate-300 bg-app-surface px-3 text-sm"
         >
-          <option value="">All time</option>
-          <option value="today">Today</option>
-          <option value="week">This week</option>
-          <option value="month">This month</option>
+          <option value="">Barcha vaqt</option>
+          <option value="today">Bugun</option>
+          <option value="week">Shu hafta</option>
+          <option value="month">Shu oy</option>
         </select>
         <select
           value={subscription}
           onChange={(e) => { setSubscription(e.target.value); filter('page', ''); }}
-          className="rounded-lg border border-slate-300 bg-app-surface px-3 py-2 text-sm"
+          className="min-h-11 rounded-lg border border-slate-300 bg-app-surface px-3 text-sm"
         >
-          <option value="">All</option>
-          <option value="none">No subscription</option>
-          <option value="monthly">Monthly</option>
-          <option value="yearly">Yearly</option>
+          <option value="">Obuna: hammasi</option>
+          <option value="none">Obunasiz</option>
+          <option value="monthly">1 oylik</option>
+          <option value="yearly">1 yillik</option>
         </select>
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -118,7 +159,7 @@ export default function AdminUsersPage() {
             onChange={(e) => { setReferralOnly(e.target.checked); filter('page', ''); }}
             className="rounded border-slate-300"
           />
-          Referral users only
+          Faqat taklif bilan kelganlar
         </label>
       </div>
 
@@ -131,23 +172,24 @@ export default function AdminUsersPage() {
 
       <div className="rounded-xl border border-app-border bg-app-surface overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-app-text-muted">Loading...</div>
+          <div className="p-8 text-center text-app-text-muted">Yuklanmoqda…</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-app-bg-muted border-b border-app-border">
                 <tr>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">User ID</th>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Name</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">ID</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Ism</th>
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">Email</th>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Phone</th>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Registration date</th>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Subscription</th>
-                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Status</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Telefon</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Ro‘yxatdan o‘tgan</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Tarif</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Obuna</th>
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">Kunlik progress</th>
+                  <th className="text-left py-3 px-4 font-medium text-app-text-muted">Oxirgi kirish</th>
                   <th className="text-right py-3 px-4 font-medium text-app-text-muted">Xabar</th>
                   <th className="text-right py-3 px-4 font-medium text-app-text-muted">Parol</th>
-                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">Referral earnings</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">Referal daromadi</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,7 +215,7 @@ export default function AdminUsersPage() {
                             : 'text-app-text-muted'
                         }
                       >
-                        {u.subscription_status}
+                        {u.subscription_status === 'active' ? 'Faol' : 'Yo‘q'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-app-text">
@@ -193,6 +235,7 @@ export default function AdminUsersPage() {
                         <span className="text-slate-400">Boshlamagan</span>
                       )}
                     </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-app-text-muted">{lastSeen(u.last_seen_at)}</td>
                     <td className="py-3 px-4 text-right">
                       <Link
                         to={`${adminPath('/support')}?userId=${u.id}`}
@@ -220,7 +263,7 @@ export default function AdminUsersPage() {
           </div>
         )}
         {!loading && list.length === 0 && (
-          <div className="p-8 text-center text-app-text-muted">No users found.</div>
+          <div className="p-8 text-center text-app-text-muted">Foydalanuvchi topilmadi.</div>
         )}
       </div>
 

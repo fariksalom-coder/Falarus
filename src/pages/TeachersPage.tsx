@@ -17,7 +17,6 @@ import { SPECIALIZATIONS } from '../../shared/teacherOnboarding';
 import TeacherCard from '../components/teacher/market/TeacherCard';
 import { WD_SHORT } from '../components/teacher/market/parts';
 import MyLessonsPanel from '../components/teacher/MyLessonsPanel';
-import StudentMeetLessons from '../components/meet/StudentMeetLessons';
 import { teacherProfilePath } from '../constants/teacherPaths';
 
 type SortKey = 'recommended' | 'priceLow' | 'priceHigh' | 'rating' | 'soonest';
@@ -135,7 +134,6 @@ export default function TeachersPage() {
         {tab === 'mine' ? (
           <div className="space-y-4">
             {token && <MyLessonsPanel token={token} rows={lessons} reload={loadLessons} onFindTeacher={() => setTab('choose')} />}
-            <StudentMeetLessons />
           </div>
         ) : (
           <>

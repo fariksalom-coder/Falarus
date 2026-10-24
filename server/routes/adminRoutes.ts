@@ -13,7 +13,6 @@ import { createAdminTeacherMoneyRoutes } from './teacherLessonRoutes.js';
 import { PRIVATE_UPLOADS_DIR } from '../lib/privateUploads.js';
 import { createAdminController } from '../controllers/adminController';
 import { createAdminGrammarController } from '../controllers/adminGrammarController';
-import { createAdminMeetController } from '../controllers/adminMeetController';
 import { blockUser, listBlocks, unblockUser } from '../services/chatBlock.service.js';
 import { ochirXabarMediasi } from '../services/mediaTozalash.service.js';
 import { operatorAdminRoutes } from '../operator/admin.js';
@@ -78,7 +77,6 @@ export function createAdminRoutes(supabase: DbClient): Router {
   });
   const ctrl = createAdminController(supabase);
   const grammar = createAdminGrammarController(supabase);
-  const meet = createAdminMeetController(supabase);
 
   router.post('/login', (req, res, next) => ctrl.login(req, res).catch(next));
 
@@ -465,7 +463,6 @@ export function createAdminRoutes(supabase: DbClient): Router {
     }
   });
   router.get('/card-tokens', (req, res, next) => ctrl.getCardTokens(req, res).catch(next));
-  router.get('/click-payment-logs', (req, res, next) => ctrl.getClickPaymentLogs(req, res).catch(next));
   router.use('/referrals', createReferralAdminRoutes());
   router.get('/help/broadcast-preview', (req, res, next) => ctrl.getHelpBroadcastPreview(req, res).catch(next));
   router.post('/help/broadcast', (req, res, next) => ctrl.postHelpBroadcast(req, res).catch(next));
@@ -488,11 +485,6 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.put('/tariff-prices', (req, res, next) => ctrl.updateTariffPrice(req, res).catch(next));
 
   // Video dars xonalari ("met"): admin yaratadi va o'qituvchilarga yo'naltiradi.
-  router.get('/meet-rooms', (req, res, next) => meet.listRooms(req, res).catch(next));
-  router.post('/meet-rooms', (req, res, next) => meet.createRooms(req, res).catch(next));
-  router.patch('/meet-rooms/:id', (req, res, next) => meet.updateRoom(req, res).catch(next));
-  router.delete('/meet-rooms/:id', (req, res, next) => meet.deleteRoom(req, res).catch(next));
-  router.get('/meet-rooms/:id/sessions', (req, res, next) => meet.listRoomSessions(req, res).catch(next));
 
   router.get('/grammar/lessons', (req, res, next) => grammar.listLessons(req, res).catch(next));
   router.get('/grammar/lessons/:lessonId/questions', (req, res, next) => grammar.listQuestions(req, res).catch(next));
