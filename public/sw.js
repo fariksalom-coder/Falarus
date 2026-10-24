@@ -12,10 +12,12 @@
  * `notificationclick`) — ilova yopiq bo'lganda ham xabar keladi.
  * v22: push kelganda ochiq oynalarga xabar beriladi — qo'ng'iroq ekrani
  * darhol ko'tariladi va JIRINGLAYDI (SW o'zi ovoz chiqara olmaydi).
+ * v49: oddiy eslatmalar (`kind: 'xabar'`) — efir qo'ng'irog'ini ko'tarmaydi,
+ *      ochiq oynaga `bildirishnoma` xabari ketadi (ovozli kartani ko'rsatadi).
  * v48: `/ig/` (Instagram paneli, alohida ilova) keshdan chiqarildi — uning
  * `/ig/api/auth/me` javobi keshda qotib, 2FA sahifasi abadiy yuklanardi.
  */
-const CACHE_NAME = 'falarus-pwa-v48';
+const CACHE_NAME = 'falarus-pwa-v49';
 
 const STATIC_ASSETS = [
   '/',
@@ -137,16 +139,18 @@ self.addEventListener('push', (event) => {
 
   const title = data.title || 'FalaRus';
   const url = data.url || '/';
+  // `kind: 'xabar'` — oddiy eslatma (bildirishnomalar bo'limi). Yo'q bo'lsa — efir qo'ng'irog'i.
+  const eslatma = data.kind === 'xabar';
   const options = {
     body: data.body || '',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     tag: data.tag || 'falarus',
     renotify: true,
-    requireInteraction: true,
-    vibrate: [300, 200, 300],
+    requireInteraction: !eslatma,
+    vibrate: eslatma ? [200, 100, 200] : [300, 200, 300],
     data: { url },
-    actions: [{ action: 'join', title: "Qo'shilish" }],
+    actions: [{ action: 'join', title: eslatma ? 'Ochish' : "Qo'shilish" }],
   };
 
   /*
@@ -158,7 +162,8 @@ self.addEventListener('push', (event) => {
   const uygot = self.clients
     .matchAll({ type: 'window', includeUncontrolled: true })
     .then((clientList) => {
-      for (const client of clientList) client.postMessage({ turi: 'efir-qongiroq', url });
+      // Eslatma: ochiq ilova kirish qutisini yangilaydi va ovozni chaladi.
+      for (const client of clientList) client.postMessage({ turi: eslatma ? 'bildirishnoma' : 'efir-qongiroq', url });
     })
     .catch(() => undefined);
 

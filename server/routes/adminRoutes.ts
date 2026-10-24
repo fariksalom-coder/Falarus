@@ -22,6 +22,7 @@ import { enabled as operatorEnabled } from '../operator/service.js';
 import { readAdminUsers, readAdminRegistrations, readAdminUnreadCount } from '../services/adminUsersRead.service.js';
 import { loadUserManageSnapshot } from '../services/adminUserManage.service.js';
 import { createReferralAdminRoutes } from './referralAdminRoutes.js';
+import { createAdminNotificationRoutes } from './notificationRoutes.js';
 
 const TEACHER_OWNER_SELECT = [
   'user_id',
@@ -464,6 +465,7 @@ export function createAdminRoutes(supabase: DbClient): Router {
   });
   router.get('/card-tokens', (req, res, next) => ctrl.getCardTokens(req, res).catch(next));
   router.use('/referrals', createReferralAdminRoutes());
+  router.use('/notifications', createAdminNotificationRoutes());
   router.get('/help/broadcast-preview', (req, res, next) => ctrl.getHelpBroadcastPreview(req, res).catch(next));
   router.post('/help/broadcast', (req, res, next) => ctrl.postHelpBroadcast(req, res).catch(next));
   router.post('/help/users/:userId/messages', (req, res, next) => ctrl.sendHelpDirectUserMessage(req, res).catch(next));

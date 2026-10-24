@@ -5,6 +5,7 @@ import AppNavBar from './AppNavBar';
 import LiveCallOverlay from './live/LiveCallOverlay';
 import PushObunaFon from './live/PushObunaFon';
 import EfirQongiroqSorovi from './live/EfirQongiroqSorovi';
+import VoiceNotificationCard from './notifications/VoiceNotificationCard';
 import UpdateNotice from './UpdateNotice';
 import { mainSectionIndex } from '../constants/mainSectionPaths';
 import { appMainBottomOffsetCss } from '../constants/appLayout';
@@ -101,6 +102,8 @@ export default function MainLayout() {
       <LiveCallOverlay />
       <PushObunaFon />
       <EfirQongiroqSorovi />
+      {/* Matnli va ovozli eslatmalar (admin «Bildirishnomalar» bo'limi). */}
+      <VoiceNotificationCard />
       <div
         className={`min-h-screen app-layout-safe-pad${showNavBar ? ' app-with-navigation' : ''}${unpaidHome ? ' bg-[#0B1220]' : ''}`}
       >

@@ -1282,6 +1282,11 @@ async function startServer() {
   app.use('/api', createWelcomeVideoOfferRoutes(supabase, authenticate));
   // Foydalanuvchi yo'li: 0-kun qadamlari va kurs videosini ko'rish (admin hisoboti uchun)
   app.use('/api', createUserJourneyRoutes(authenticate));
+  // Bildirishnomalar: kirish qutisi (matn + ovoz) va mobil ilova push tokeni.
+  {
+    const { createNotificationRoutes } = await import('./server/routes/notificationRoutes.ts');
+    app.use('/api', createNotificationRoutes(authenticate));
+  }
   app.use('/api/click', createClickMerchantRoutes(supabase));
 
   // Activity / streak (Ketma-ket kunlar)
@@ -3363,6 +3368,19 @@ async function startServer() {
    * Har soatda yuradi va ishga tushgandan bir daqiqa keyin bir marta —
    * qayta ishga tushirishdan keyin uzoq kutib turmasin.
    */
+  /*
+   * BILDIRISHNOMA QOIDALARI — har soatda (02-daqiqada). Qoida o'z soati kelganda
+   * va admin YOQGAN bo'lsa yuboradi; qoidalar o'chiq boshlanadi. Butunlay
+   * o'chirish uchun `DISABLE_NOTIFICATIONS=1`.
+   */
+  if (process.env.DISABLE_NOTIFICATIONS !== '1') {
+    const cronModule = await import('node-cron');
+    const { runScheduledRules } = await import('./server/services/notifications.service.ts');
+    cronModule.default.schedule('2 * * * *', () => {
+      void runScheduledRules().catch((e) => console.error('[bildirishnoma] jadval:', (e as Error).message));
+    });
+  }
+
   if (process.env.DISABLE_MEDIA_CLEANUP !== '1') {
     const cronModule = await import('node-cron');
     const { tozalashniYurgiz } = await import('./server/services/mediaTozalash.service.ts');

@@ -77,6 +77,11 @@ export type PushXabar = {
   url: string;
   /** Bir xil `tag` bilan kelgan bildirishnoma eskisini almashtiradi. */
   tag?: string;
+  /**
+   * `xabar` — oddiy bildirishnoma (eslatma). Yo'q bo'lsa — efir qo'ng'irog'i
+   * (eski xatti-harakat: service worker ochiq oynada qo'ng'iroqni ko'taradi).
+   */
+  kind?: 'xabar';
 };
 
 type Qator = { id: number; endpoint: string; p256dh: string; auth: string };
@@ -138,9 +143,27 @@ export async function obunaSoni(): Promise<{ qurilmalar: number; odamlar: number
   };
 }
 
+/**
+ * Bir nechta foydalanuvchining barcha qurilmalariga (eslatmalar uchun).
+ * Eslatma shoshilinch emas: telefon o'chiq bo'lsa 12 soat ichida yetsa bo'ldi.
+ */
+export async function foydalanuvchilargaYubor(
+  userIds: number[],
+  xabar: PushXabar,
+): Promise<{ yuborildi: number; ochirildi: number; odamlar: number[] }> {
+  if (!pool || !pushSozlanganmi() || userIds.length === 0) return { yuborildi: 0, ochirildi: 0, odamlar: [] };
+  const { rows } = await pool.query<Qator & { user_id: number }>(
+    'SELECT id, user_id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ANY($1::bigint[])',
+    [userIds],
+  );
+  const natija = await qatorlargaYubor(rows, xabar, 12 * 60 * 60);
+  return { ...natija, odamlar: [...new Set(rows.map((r) => Number(r.user_id)))] };
+}
+
 async function qatorlargaYubor(
   rows: Qator[],
   xabar: PushXabar,
+  ttl = 15 * 60,
 ): Promise<{ yuborildi: number; ochirildi: number }> {
   if (!pool || !rows.length) return { yuborildi: 0, ochirildi: 0 };
 
@@ -161,7 +184,7 @@ async function qatorlargaYubor(
           await webpush.sendNotification(
             { endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } },
             payload,
-            { TTL: 15 * 60 },
+            { TTL: ttl },
           );
           yuborildi += 1;
         } catch (err) {

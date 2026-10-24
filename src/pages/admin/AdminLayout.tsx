@@ -2,7 +2,7 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { adminPath } from '../../constants/adminPath';
-import { BookOpen, ChartColumn, CreditCard, Gift, GraduationCap, LayoutDashboard, LogOut, Menu, MessageSquare, Receipt, Users, X } from 'lucide-react';
+import { Bell, BookOpen, ChartColumn, CreditCard, Gift, GraduationCap, LayoutDashboard, LogOut, Menu, MessageSquare, Receipt, Users, X } from 'lucide-react';
 import { getAdminUnreadCount } from '../../api/admin';
 import './admin-workspace.css';
 
@@ -11,7 +11,7 @@ type Section = { label: string; icon: ComponentType<{ className?: string }>; tab
 
 /*
  * Chap menyu — bo'limlar. Bir mavzudagi sahifalar bitta bo'limga yig'ilgan va
- * sahifa tepasida tab bo'lib chiqadi (2026-10-24: 21 banddan 9 taga). Eski
+ * sahifa tepasida tab bo'lib chiqadi (2026-10-24: 21 banddan 9 taga; keyin «Bildirishnomalar» qo'shildi). Eski
  * manzillar o'zgarmagan, shuning uchun saqlangan havolalar ishlayveradi.
  * To'lov usullari, tarif narxlari va kiosk — «Umumiy holat» pastidagi kartalarda.
  */
@@ -36,6 +36,7 @@ const sections: Section[] = [
     { to: adminPath('/support'), label: 'Yozishmalar' },
     { to: adminPath('/chat-moderation'), label: 'Chat nazorati' },
   ] },
+  { label: 'Bildirishnomalar', icon: Bell, tabs: [{ to: adminPath('/notifications'), label: 'Bildirishnomalar' }] },
   { label: 'Referal dasturi', icon: Gift, tabs: [{ to: adminPath('/referrals'), label: 'Referal dasturi' }] },
   { label: 'Kurs kontenti', icon: BookOpen, tabs: [
     { to: adminPath('/content'), label: '182 kunlik kurs' },

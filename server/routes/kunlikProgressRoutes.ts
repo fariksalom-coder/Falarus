@@ -210,6 +210,12 @@ export function createKunlikProgressRoutes(
     catch (error) { console.warn('[kunlik-progress] activity recording failed',error instanceof Error?error.message:'unknown'); }
     if (noop) return { noop: true };
     if (dayNumber > 0) await applyKunlikDayCompletionSideEffects(supabase, userId, wasFullyComplete, nowFullyComplete);
+    // Kun endigina yopildi — ovozli tabrik ilova ichida (qoida yoqilgan bo'lsa).
+    if (dayNumber > 0 && !wasFullyComplete && nowFullyComplete) {
+      void import('../services/notifications.service.js')
+        .then((n) => n.onDayCompleted(userId, dayNumber))
+        .catch((e) => console.warn('[bildirishnoma] kun tabrigi:', e instanceof Error ? e.message : e));
+    }
 
     // Recompute XP for this user so the leaderboard/level reflect the update.
     try {

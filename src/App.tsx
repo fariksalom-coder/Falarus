@@ -86,6 +86,7 @@ function AppRoutes() {
             <Route path="sales-ledger" element={renderLazyPage('./pages/admin/AdminSalesLedgerPage.tsx')} />
             <Route path="operators" element={renderLazyPage('./pages/admin/AdminOperatorsPage.tsx')} />
             <Route path="referrals" element={renderLazyPage('./pages/admin/AdminReferralsPage.tsx')} />
+            <Route path="notifications" element={renderLazyPage('./pages/admin/AdminNotificationsPage.tsx')} />
             <Route path="support" element={renderLazyPage('./pages/admin/AdminSupportPage.tsx')} />
             <Route path="payment-methods" element={renderLazyPage('./pages/admin/AdminPaymentMethodsPage.tsx')} />
             <Route path="tariff-pricing" element={renderLazyPage('./pages/admin/AdminTariffPricingPage.tsx')} />
