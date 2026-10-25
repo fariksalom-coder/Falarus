@@ -139,6 +139,10 @@ export type TeacherConversation = {
   status: string;
   last_message_at: string | null;
   created_at: string;
+  student_name?: string;
+  student_avatar_url?: string | null;
+  teacher_name?: string;
+  teacher_avatar_url?: string | null;
 };
 
 /** Chat xabari. */

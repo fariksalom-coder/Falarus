@@ -99,7 +99,7 @@ export default function Messages() {
   if (loading) return <Skeleton rows={3} />;
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
-  const nameOf = (c: TeacherConversation) => names[c.student_user_id] ?? `#${c.student_user_id}`;
+  const nameOf = (c: TeacherConversation) => c.student_name || names[c.student_user_id] || t.studentRole;
 
   return (
     <div>

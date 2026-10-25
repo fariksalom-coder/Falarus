@@ -32,6 +32,10 @@ export function useOpenLesson() {
       navigate(`/dars/s/${l.id.replace('session-', '')}`);
       return;
     }
+    if (l.kind === 'paid') {
+      navigate(`/dars/l/${l.id.replace('lesson-', '')}`);
+      return;
+    }
     // Sinov darsi ham FalaRus video xonasida.
     if (l.kind === 'trial') {
       navigate(`/dars/t/${l.id.replace('trial-', '')}`);
@@ -45,6 +49,7 @@ export function useOpenLesson() {
 function lessonLink(l: PanelLesson): string | null {
   if (l.kind === 'session') return `${window.location.origin}/dars/s/${l.id.replace('session-', '')}`;
   if (l.kind === 'trial') return `${window.location.origin}/dars/t/${l.id.replace('trial-', '')}`;
+  if (l.kind === 'paid') return `${window.location.origin}/dars/l/${l.id.replace('lesson-', '')}`;
   return null;
 }
 

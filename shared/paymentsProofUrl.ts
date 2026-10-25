@@ -2,6 +2,7 @@ import {
   COURSE_PRODUCT_META,
   isCourseProductCode,
   isPaymentProductCode,
+  isTeacherProductCode,
   normalizePaymentProductCode,
   type CourseProductCode,
   type PaymentProductCode,
@@ -48,11 +49,17 @@ export function resolvePaymentProductFromRow(row: {
   return normalizePaymentProductCode(undefined);
 }
 
-/** Mis-tagged course payments (legacy default `russian`) — infer from UZS amount. */
+/**
+ * Mis-tagged course payments (legacy default `russian`) — infer from UZS amount.
+ * A payment explicitly tagged as a teacher product (lesson, trial, listing) is never re-tagged:
+ * a 1 000 so'm test lesson used to be taken for the VNZh test price and lost its lesson.
+ */
 export function inferCourseProductFromPaymentAmount(row: {
   amount?: number | null;
   currency?: string | null;
+  product_code?: string | null;
 }): CourseProductCode | null {
+  if (isTeacherProductCode(row.product_code)) return null;
   if (String(row.currency ?? '').toUpperCase() !== 'UZS') return null;
   const amount = Number(row.amount);
   if (!Number.isFinite(amount)) return null;

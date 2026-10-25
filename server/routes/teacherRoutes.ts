@@ -1039,6 +1039,45 @@ export function createTeacherRoutes(
     }
   });
 
+  /** Chat ishtirokchilarining ismi: ustoz — profildagi, o'quvchi — hisobdagi ism-familiya. */
+  async function chatNames(rows: any[]) {
+    const studentIds = [...new Set(rows.map((r) => Number(r.student_user_id)))];
+    const teacherIds = [...new Set(rows.map((r) => Number(r.teacher_user_id)))];
+    const [students, teachers] = await Promise.all([
+      studentIds.length ? supabase.from('users').select('id, first_name, last_name, avatar_url').in('id', studentIds) : { data: [] },
+      teacherIds.length ? supabase.from('teacher_profiles').select('user_id, first_name, last_name, avatar_url').in('user_id', teacherIds) : { data: [] },
+    ]);
+    const full = (u: any) => `${u?.first_name ?? ''} ${u?.last_name ?? ''}`.trim();
+    const s = new Map(((students.data as any[]) ?? []).map((u) => [Number(u.id), u]));
+    const t = new Map(((teachers.data as any[]) ?? []).map((u) => [Number(u.user_id), u]));
+    return rows.map((r) => ({
+      ...r,
+      student_name: full(s.get(Number(r.student_user_id))) || 'Oʻquvchi',
+      student_avatar_url: s.get(Number(r.student_user_id))?.avatar_url ?? null,
+      teacher_name: full(t.get(Number(r.teacher_user_id))) || 'Ustoz',
+      teacher_avatar_url: t.get(Number(r.teacher_user_id))?.avatar_url ?? null,
+    }));
+  }
+
+  /** Yangi chat xabari — qabul qiluvchiga bildirishnoma (ustozga kabinet + push, o'quvchiga ilova + push). */
+  async function notifyChatMessage(convo: any, senderId: number, messageId: number, content: string) {
+    const [row] = await chatNames([convo]);
+    const toTeacher = senderId !== Number(convo.teacher_user_id);
+    const from = toTeacher ? row.student_name : row.teacher_name;
+    const recipient = toTeacher ? Number(convo.teacher_user_id) : Number(convo.student_user_id);
+    const body = content.length > 140 ? `${content.slice(0, 137)}…` : content;
+    const title = `Yangi xabar: ${from}`;
+    const url = toTeacher ? '/ustoz/kabinet' : '/ustozlar';
+    if (toTeacher) {
+      await supabase.from('teacher_notifications').insert({ recipient_user_id: recipient, type: 'chat_message', title, body });
+      const push = await import('../services/push.service.js');
+      await push.foydalanuvchigaYubor(recipient, { title, body, url, tag: `chat-${convo.id}`, kind: 'xabar' });
+    } else {
+      const n = await import('../services/notifications.service.js');
+      await n.deliver([recipient], { title, body, url, audio_url: null }, { dedupeKey: `chat:${messageId}` }, await n.livePushers());
+    }
+  }
+
   router.get('/teacher-chat', authenticate, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
@@ -1049,7 +1088,7 @@ export function createTeacherRoutes(
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .limit(50);
       if (error) throw error;
-      res.json(data ?? []);
+      res.json(await chatNames((data as any[]) ?? []));
     } catch (e) {
       console.error('[GET /api/teacher-chat]', e);
       res.status(500).json({ error: 'Chatlar yuklanmadi' });
@@ -1108,6 +1147,8 @@ export function createTeacherRoutes(
         .from('teacher_conversations')
         .update({ last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', conversationId);
+      // Bildirishnoma javobni kechiktirmasin va xato bo'lsa ham xabar yuborilgan bo'lsin.
+      void notifyChatMessage(convo, userId, Number((data as any).id), content).catch((e) => console.error('[teacher-chat] notify', e?.message ?? e));
       res.status(201).json(data);
     } catch (e) {
       console.error('[POST /api/teacher-chat/:conversationId/messages]', e);
@@ -1299,7 +1340,7 @@ export function createTeacherRoutes(
   /** Panel uchun bitta dars ko'rinishi — trial ham, sessiya ham shu shaklga keladi. */
   type PanelDars = {
     id: string;
-    kind: 'trial' | 'session';
+    kind: 'trial' | 'session' | 'paid';
     title: string;
     student_user_id: number | null;
     student_name: string;
@@ -1310,8 +1351,11 @@ export function createTeacherRoutes(
     room_id: number | null;
   };
 
+  /** Pullik dars (migr. 213) — to'lanmagan bron (pending_payment, expired) ko'rsatilmaydi. */
+  const PAID_SHOWN = ['paid', 'disputed', 'completed', 'cancelled', 'refunded'];
+
   async function panelMalumot(supabase: DbClient, teacherId: number) {
-    const [trialsRes, sessionsRes] = await Promise.all([
+    const [trialsRes, sessionsRes, paidRes] = await Promise.all([
       supabase
         .from('teacher_trial_lessons')
         .select('*')
@@ -1325,15 +1369,24 @@ export function createTeacherRoutes(
         .eq('teacher_user_id', teacherId)
         .order('starts_at', { ascending: false })
         .limit(500),
+      supabase
+        .from('teacher_lessons')
+        .select('id, student_user_id, starts_at, ends_at, price_uzs, status, created_at')
+        .eq('teacher_user_id', teacherId)
+        .in('status', PAID_SHOWN)
+        .order('starts_at', { ascending: false })
+        .limit(500),
     ]);
     if (trialsRes.error) throw trialsRes.error;
     if (sessionsRes.error) throw sessionsRes.error;
+    if (paidRes.error) throw paidRes.error;
 
     const trials = ((trialsRes.data as any[]) ?? []).map((r) => ({ ...r }));
     const sessions = ((sessionsRes.data as any[]) ?? []).map((r) => ({ ...r }));
+    const paid = ((paidRes.data as any[]) ?? []).map((r) => ({ ...r }));
 
     // O'quvchi ismlari va darajasi — bitta so'rovda.
-    const ids = [...new Set(trials.map((t) => Number(t.student_user_id)).filter(Number.isFinite))];
+    const ids = [...new Set([...trials, ...paid].map((t) => Number(t.student_user_id)).filter(Number.isFinite))];
     const byId = new Map<number, { name: string; level: string }>();
     if (ids.length) {
       const { data: users } = await supabase
@@ -1357,8 +1410,29 @@ export function createTeacherRoutes(
       confirmByStudent.set(Number((c as any).student_user_id), String((c as any).status));
     }
 
-    return { trials, sessions, byId, confirmByStudent };
+    return { trials, sessions, paid, byId, confirmByStudent };
   }
+
+  function paidToDars(l: any, byId: Map<number, { name: string; level: string }>): PanelDars {
+    const sid = Number(l.student_user_id);
+    const start = new Date(String(l.starts_at)).getTime();
+    const end = l.ends_at ? new Date(String(l.ends_at)).getTime() : start + 50 * 60000;
+    return {
+      id: `lesson-${l.id}`,
+      kind: 'paid',
+      title: 'Dars',
+      student_user_id: Number.isFinite(sid) ? sid : null,
+      student_name: byId.get(sid)?.name ?? 'O‘quvchi',
+      starts_at: String(l.starts_at),
+      duration_minutes: Math.max(10, Math.round((end - start) / 60000)),
+      is_trial: false,
+      status: String(l.status),
+      room_id: null,
+    };
+  }
+
+  /** Pullik darsning o'quvchi uchun ko'rinadigan holati (kelayotgan/o'tgan). */
+  const paidLive = (l: any) => ['paid', 'disputed'].includes(String(l.status));
 
   function trialToDars(t: any, byId: Map<number, { name: string; level: string }>): PanelDars {
     const sid = Number(t.student_user_id);
@@ -1406,7 +1480,7 @@ export function createTeacherRoutes(
     try {
       const teacherId = Number(req.userId);
       if (!(await ensureTeacherAccount(supabase, teacherId, res))) return;
-      const { trials, sessions, byId, confirmByStudent } = await panelMalumot(supabase, teacherId);
+      const { trials, sessions, paid, byId, confirmByStudent } = await panelMalumot(supabase, teacherId);
 
       const now = new Date();
       const bugun = formatDateInAppTimezone(now);
@@ -1417,6 +1491,7 @@ export function createTeacherRoutes(
       const darslar = [
         ...trials.filter((t) => JONLI_TRIAL.includes(String(t.status))).map((t) => trialToDars(t, byId)),
         ...sessions.filter((s) => String(s.status) !== 'cancelled').map(sessionToDars),
+        ...paid.filter((l) => paidLive(l) || String(l.status) === 'completed').map((l) => paidToDars(l, byId)),
       ].filter((d) => d.starts_at);
 
       const bugungi = darslar
@@ -1429,10 +1504,10 @@ export function createTeacherRoutes(
           .sort((a, b) => new Date(a.starts_at!).getTime() - new Date(b.starts_at!).getTime())[0] ?? null;
 
       // O'quvchilar — sinov darsi bergan har bir kishi.
-      const talabaIds = [...new Set(trials.map((t) => Number(t.student_user_id)).filter(Number.isFinite))];
-      const faol = talabaIds.filter((id) => confirmByStudent.get(id) === 'matched_yes').length;
+      const talabaIds = [...new Set([...trials, ...paid].map((t) => Number(t.student_user_id)).filter(Number.isFinite))];
+      const faol = talabaIds.filter((id) => confirmByStudent.get(id) === 'matched_yes' || paid.some((l) => Number(l.student_user_id) === id)).length;
       const yangi = talabaIds.filter((id) => {
-        const birinchi = trials
+        const birinchi = [...trials, ...paid]
           .filter((t) => Number(t.student_user_id) === id)
           .map((t) => new Date(String(t.created_at)).getTime())
           .sort((a, b) => a - b)[0];
@@ -1444,7 +1519,8 @@ export function createTeacherRoutes(
 
       const otkazilgan =
         trials.filter((t) => ['completed', 'completed_by_teacher'].includes(String(t.status))).length +
-        sessions.filter((s) => String(s.status) === 'ended').length;
+        sessions.filter((s) => String(s.status) === 'ended').length +
+        paid.filter((l) => String(l.status) === 'completed').length;
 
       // Daromad — HOZIRCHA faqat sinov darslari to'lovi. Oylik kurs to'lovi
       // bazada o'qituvchi bo'yicha yozilmaydi (keyingi bosqich).
@@ -1481,7 +1557,8 @@ export function createTeacherRoutes(
           note: 'trial_only',
         },
         next_lesson: keyingi,
-        new_students: trials
+        new_students: [...paid, ...trials]
+          .sort((a, b) => new Date(String(b.created_at)).getTime() - new Date(String(a.created_at)).getTime())
           .slice(0, 20)
           .filter((t, i, arr) => arr.findIndex((x) => x.student_user_id === t.student_user_id) === i)
           .slice(0, 5)
@@ -1490,7 +1567,7 @@ export function createTeacherRoutes(
             name: byId.get(Number(t.student_user_id))?.name ?? 'O‘quvchi',
             level: byId.get(Number(t.student_user_id))?.level ?? '',
             status: String(t.status),
-            scheduled_starts_at: t.scheduled_starts_at ? String(t.scheduled_starts_at) : null,
+            scheduled_starts_at: t.scheduled_starts_at ? String(t.scheduled_starts_at) : t.starts_at ? String(t.starts_at) : null,
           })),
       });
     } catch (e) {
@@ -1505,11 +1582,12 @@ export function createTeacherRoutes(
       const teacherId = Number(req.userId);
       if (!(await ensureTeacherAccount(supabase, teacherId, res))) return;
       const filter = String(req.query?.filter ?? 'upcoming');
-      const { trials, sessions, byId } = await panelMalumot(supabase, teacherId);
+      const { trials, sessions, paid, byId } = await panelMalumot(supabase, teacherId);
 
       const hammasi = [
         ...trials.map((t) => trialToDars(t, byId)),
         ...sessions.map(sessionToDars),
+        ...paid.map((l) => paidToDars(l, byId)),
       ];
       const now = Date.now();
       const bugun = formatDateInAppTimezone(new Date());
@@ -1551,12 +1629,14 @@ export function createTeacherRoutes(
       const teacherId = Number(req.userId);
       if (!(await ensureTeacherAccount(supabase, teacherId, res))) return;
       const filter = String(req.query?.filter ?? 'all');
-      const { trials, byId, confirmByStudent } = await panelMalumot(supabase, teacherId);
+      const { trials, paid, byId, confirmByStudent } = await panelMalumot(supabase, teacherId);
 
       const now = Date.now();
       const haftaOldin = now - 7 * 24 * 3600_000;
       const guruh = new Map<number, any[]>();
-      for (const t of trials) {
+      // Pullik dars ham o'quvchi qatoriga qo'shiladi (scheduled_starts_at sifatida starts_at).
+      const qatorlar = [...trials, ...paid.map((l) => ({ ...l, paid_lesson: true, scheduled_starts_at: paidLive(l) ? l.starts_at : null }))];
+      for (const t of qatorlar) {
         const sid = Number(t.student_user_id);
         if (!Number.isFinite(sid)) continue;
         if (!guruh.has(sid)) guruh.set(sid, []);
@@ -1571,6 +1651,7 @@ export function createTeacherRoutes(
         const tugagan = rows.filter((r) =>
           ['completed', 'completed_by_teacher'].includes(String(r.status))
         ).length;
+        const pullik = rows.some((r) => r.paid_lesson);
         const kelayotgan = rows
           .filter((r) => r.scheduled_starts_at && new Date(String(r.scheduled_starts_at)).getTime() > now)
           .map((r) => String(r.scheduled_starts_at))
@@ -1579,7 +1660,7 @@ export function createTeacherRoutes(
         // Holat: oylik kursga o'tgan bo'lsa "faol", trial tugagan-u o'tmagan
         // bo'lsa "tugatgan", aks holda "sinov".
         const holat =
-          tasdiq === 'matched_yes'
+          tasdiq === 'matched_yes' || pullik
             ? 'active'
             : tasdiq === 'matched_no'
               ? 'finished'
@@ -1592,7 +1673,7 @@ export function createTeacherRoutes(
           status: holat,
           is_new: sana[0] >= haftaOldin,
           lessons_done: tugagan,
-          trials_total: rows.length,
+          trials_total: rows.filter((r) => !r.paid_lesson).length,
           next_lesson_at: kelayotgan,
           first_seen_at: new Date(sana[0]).toISOString(),
         };
@@ -1706,7 +1787,7 @@ export function createTeacherRoutes(
       const days = Math.min(Math.max(Number(req.query?.days ?? 7) || 7, 1), 31);
       const to = sanaQoshish(from, days - 1);
 
-      const [rulesRes, excRes, { trials, sessions, byId }] = await Promise.all([
+      const [rulesRes, excRes, { trials, sessions, paid, byId }] = await Promise.all([
         supabase
           .from('teacher_availability_rules')
           .select('*')
@@ -1764,6 +1845,15 @@ export function createTeacherRoutes(
               label: String(s.title ?? '') || 'Onlayn dars',
             };
           }),
+        ...paid.filter(paidLive).map((l) => {
+          const st = new Date(String(l.starts_at)).getTime();
+          return {
+            start: st,
+            end: l.ends_at ? new Date(String(l.ends_at)).getTime() : st + 50 * 60000,
+            trial: false,
+            label: byId.get(Number(l.student_user_id))?.name ?? 'Dars',
+          };
+        }),
       ];
 
       const kunlar = Array.from({ length: days }, (_, i) => {

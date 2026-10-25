@@ -111,10 +111,14 @@ export async function completeLesson(tx: NonNullable<LessonDeps['tx']>, lessonId
 
 /** Rahmat/Click/admin to'lovni tasdiqlaganda (teacherMarketplace.service orqali). */
 export async function activateTeacherLessonPayment(q: LessonQuery, paymentId: number) {
-  const l = (await q(`SELECT id, teacher_user_id, student_user_id, status, starts_at FROM teacher_lessons WHERE payment_id = $1`, [paymentId])).rows[0];
+  // Qayta «To'lash» bosilsa dars yangi to'lovga bog'lanadi — eski hisob to'lansa ham dars
+  // to'lov ichidagi lesson_id orqali topiladi.
+  const l = (await q(`SELECT id, teacher_user_id, student_user_id, status, starts_at FROM teacher_lessons
+    WHERE payment_id = $1 OR id = (SELECT (discount_meta->>'lesson_id')::int FROM payments WHERE id = $1 AND product_code = 'teacher_lesson')
+    ORDER BY (payment_id = $1) DESC LIMIT 1`, [paymentId])).rows[0];
   if (!l || l.status === 'paid' || l.status === 'completed') return;
   try {
-    await q(`UPDATE teacher_lessons SET status = 'paid', updated_at = now() WHERE id = $1 AND status IN ('pending_payment', 'expired')`, [l.id]);
+    await q(`UPDATE teacher_lessons SET status = 'paid', payment_id = $2, updated_at = now() WHERE id = $1 AND status IN ('pending_payment', 'expired')`, [l.id, paymentId]);
   } catch (e: any) {
     // Bron muddati o'tib, vaqtni boshqa o'quvchi olgan — dars bo'lmaydi, pul qaytariladi.
     if (e?.code !== '23505') throw e;

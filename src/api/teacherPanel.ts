@@ -1,9 +1,9 @@
 import { apiUrl } from '../api';
 
-/** O'qituvchi panelidagi bitta dars — sinov darsi ham, onlayn sessiya ham. */
+/** O'qituvchi panelidagi bitta dars — sinov darsi, onlayn sessiya yoki pullik dars (`lesson-<id>`). */
 export type PanelLesson = {
   id: string;
-  kind: 'trial' | 'session';
+  kind: 'trial' | 'session' | 'paid';
   title: string;
   student_user_id: number | null;
   student_name: string;

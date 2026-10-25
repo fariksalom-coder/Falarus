@@ -97,6 +97,7 @@ const ru = {
   helpNotFound: 'Не нашли ответ?',
   helpNotFoundHint: 'Команда FalaRus ответит в Telegram.',
   teacherRole: 'Преподаватель',
+  studentRole: 'Ученик',
 
   /* ── Bildirishnomalar ───────────────────────────────────────────────── */
   notifications: 'Уведомления',
@@ -710,6 +711,7 @@ const uz: PanelDict = {
   helpNotFound: 'Javob topmadingizmi?',
   helpNotFoundHint: 'FalaRus jamoasi Telegram orqali javob beradi.',
   teacherRole: 'Oʻqituvchi',
+  studentRole: 'Oʻquvchi',
 
   /* ── Bildirishnomalar ───────────────────────────────────────────────── */
   notifications: 'Bildirishnomalar',

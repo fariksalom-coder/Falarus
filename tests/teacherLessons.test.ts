@@ -31,7 +31,7 @@ async function setup() {
     CREATE TABLE users (id integer PRIMARY KEY, first_name text, last_name text, account_type text, phone text);
     CREATE TABLE teacher_profiles (user_id integer PRIMARY KEY REFERENCES users(id), first_name text, last_name text, avatar_url text,
       profile_status text, lesson_price_uzs integer, schedule jsonb, terms_accepted_at timestamptz, catalog_visible boolean NOT NULL DEFAULT true);
-    CREATE TABLE payments (id bigint PRIMARY KEY);
+    CREATE TABLE payments (id bigint PRIMARY KEY, product_code text, discount_meta jsonb);
     CREATE TABLE teacher_trial_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, student_user_id integer, status text,
       scheduled_starts_at timestamptz, scheduled_ends_at timestamptz);
     CREATE TABLE teacher_meet_sessions (id bigserial PRIMARY KEY, teacher_user_id integer, status text);
@@ -71,6 +71,23 @@ async function bookAndPay(t: Awaited<ReturnType<typeof setup>>, startMs: number,
   await activateTeacherLessonPayment(t.q, id);
   return b.data.id as number;
 }
+test('a paid first invoice still pays the lesson after the student opened a second one', async () => {
+  const t = await setup();
+  try {
+    const slot = upcomingSlotStarts(SCHEDULE, Date.now() + 2 * 3600_000, 1)[0];
+    t.as(2);
+    const b = await t.call('POST', '/teachers/1/lessons', { starts_at: new Date(slot).toISOString() });
+    await t.q(`INSERT INTO payments (id, product_code, discount_meta) VALUES (501, 'teacher_lesson', $1), (502, 'teacher_lesson', $1)`, [JSON.stringify({ lesson_id: b.data.id })]);
+    // The retry re-linked the lesson to 502; Rahmat then confirms the first invoice, 501.
+    await t.q('UPDATE teacher_lessons SET payment_id = 502 WHERE id = $1', [b.data.id]);
+    await activateTeacherLessonPayment(t.q, 501);
+    const l = (await t.q('SELECT status, payment_id FROM teacher_lessons WHERE id = $1', [b.data.id])).rows[0];
+    assert.deepEqual([l.status, Number(l.payment_id)], ['paid', 501]);
+  } finally {
+    await t.close();
+  }
+});
+
 /** Dars vaqtini o'tmishga surish (sinov uchun). */
 const shift = (t: Awaited<ReturnType<typeof setup>>, id: number, startAgoMin: number) =>
   t.q(`UPDATE teacher_lessons SET starts_at = now() - ($2::int * interval '1 minute'), ends_at = now() - ($2::int * interval '1 minute') + interval '1 hour' WHERE id = $1`, [id, startAgoMin]);
