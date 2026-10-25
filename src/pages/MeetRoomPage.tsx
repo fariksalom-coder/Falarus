@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ExternalLink, Lock } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import JitsiRoom from '../components/meet/JitsiRoom';
+import JitsiRoom, { type JitsiControls, type JitsiMediaState } from '../components/meet/JitsiRoom';
+import VideoDock, { type DockMode } from '../components/meet/VideoDock';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { BoardStage, MaterialsButton, MaterialsDrawer, RoomStatusPill } from '../components/materials/LessonBoard';
 import { useLessonRoom } from '../hooks/useLessonRoom';
 import { roomMaterialOf, type TeacherMaterial } from '../api/teacherMaterials';
@@ -56,6 +58,10 @@ export default function MeetRoomPage() {
   const room = useLessonRoom(token, lessonKind, roomLessonId, Boolean(view));
   const board = room.state;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Telefonda video kichik oynaga o'tadi va mikrofon/kamera doska panelidan boshqariladi.
+  const desktop = useMediaQuery('(min-width: 1024px)');
+  const jitsiControls = useRef<JitsiControls | null>(null);
+  const [media, setMedia] = useState<JitsiMediaState>({ joined: false, audioMuted: true, videoMuted: false });
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const { send } = room;
   const turnPage = useCallback((page: number) => send({ type: 'page', page }), [send]);
@@ -165,9 +171,13 @@ export default function MeetRoomPage() {
     );
   }
 
+  const material = board?.material ?? null;
+  const dockMode: DockMode = !material ? 'full' : desktop ? 'side' : 'pip';
+
   return (
-    <div className="flex h-[100dvh] flex-col bg-[#0C1526]">
-      <header className="flex items-center gap-3 px-4 py-3 pt-[max(env(safe-area-inset-top,0px),12px)]">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#0C1526]">
+      {/* Telefon yotiq turganda (material ochiq) balandlik tor — sarlavha yashiriladi, «ortga» doska qatorida. */}
+      <header className={`flex items-center gap-3 px-4 pt-[max(env(safe-area-inset-top,0px),10px)] ${material ? 'pb-1.5 max-lg:landscape:hidden lg:pb-3' : 'pb-3'}`}>
         <button
           type="button"
           onClick={() => navigate(backTo)}
@@ -181,14 +191,16 @@ export default function MeetRoomPage() {
           <p className="truncate text-xs font-medium text-white/60">{view.subtitle}</p>
         </div>
         <RoomStatusPill status={room.status} closedText={room.closedText} />
-        {view.role === 'teacher' ? <MaterialsButton onClick={() => setDrawerOpen(true)} active={Boolean(board?.material)} /> : null}
+        {view.role === 'teacher' && (!material || desktop) ? (
+          <MaterialsButton onClick={() => setDrawerOpen(true)} active={Boolean(material)} />
+        ) : null}
       </header>
       {roomError ? (
         <p role="alert" className="mx-4 mb-2 rounded-[14px] bg-[#7F1D1D]/50 px-4 py-2.5 text-[13px] font-semibold text-[#FECACA]">{roomError}</p>
       ) : null}
-      {/* Doska chiqsa video yoniga (telefonda — pastga) suriladi; Jitsi qayta yuklanmasin deb daraxtdagi o'rni o'zgarmaydi. */}
-      <div className={`flex min-h-0 flex-1 flex-col gap-2 lg:flex-row ${board?.material ? 'px-2 pb-[max(env(safe-area-inset-bottom,0px),8px)]' : ''}`}>
-        {board?.material ? (
+      {/* Jitsi daraxtdagi o'rnini hech qachon o'zgartirmaydi (VideoDock ichida) — aks holda qo'ng'iroq uziladi. */}
+      <div className={`flex min-h-0 flex-1 flex-col lg:flex-row ${material ? 'lg:gap-3 lg:px-3 lg:pb-3' : ''}`}>
+        {material && board ? (
           <BoardStage
             token={token}
             kind={lessonKind}
@@ -197,9 +209,12 @@ export default function MeetRoomPage() {
             role={view.role}
             onPage={turnPage}
             onClose={() => send({ type: 'show', material: null, page: 1 })}
+            onOpenMaterials={() => setDrawerOpen(true)}
+            onBack={() => navigate(backTo)}
+            call={{ compact: dockMode === 'pip', media, controls: jitsiControls }}
           />
         ) : null}
-        <div className={board?.material ? 'h-[36%] shrink-0 overflow-hidden rounded-[20px] lg:h-auto lg:w-[380px]' : 'min-h-0 flex-1'}>
+        <VideoDock mode={dockMode}>
           <JitsiRoom
             domain={view.domain}
             roomName={view.roomSlug}
@@ -208,14 +223,17 @@ export default function MeetRoomPage() {
             isModerator={view.role === 'teacher'}
             subject={view.title}
             onLeave={() => navigate(backTo, { replace: true })}
+            compact={dockMode === 'pip'}
+            controlsRef={jitsiControls}
+            onMediaState={setMedia}
           />
-        </div>
+        </VideoDock>
       </div>
       {view.role === 'teacher' ? (
         <MaterialsDrawer
           token={token}
           open={drawerOpen}
-          currentId={board?.material?.id ?? null}
+          currentId={material?.id ?? null}
           lessonKind={lessonKind}
           lessonId={roomLessonId}
           onPick={pickMaterial}

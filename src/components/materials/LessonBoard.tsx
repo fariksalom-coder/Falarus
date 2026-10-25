@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { FolderOpen, Loader2, MonitorUp, UploadCloud, WifiOff, X } from 'lucide-react';
+import {
+  ArrowLeft, ChevronLeft, ChevronRight, FolderOpen, Loader2, Mic, MicOff, MonitorUp, UploadCloud, Video, VideoOff, WifiOff, X,
+} from 'lucide-react';
 import MaterialViewer from './MaterialViewer';
-import { KIND_STYLE, PageNav, materialMeta } from './materialUi';
+import { KIND_STYLE, materialMeta } from './materialUi';
+import type { JitsiControls, JitsiMediaState } from '../meet/JitsiRoom';
 import { MATERIAL_ACCEPT } from '../../../shared/teacherMaterials';
 import { getLessonMaterials, getMaterial, getMaterials, uploadMaterial, type TeacherMaterial } from '../../api/teacherMaterials';
 import type { LessonKind, RoomRole, RoomState } from '../../../shared/lessonRoom';
@@ -13,17 +16,32 @@ import type { RoomStatus } from '../../hooks/useLessonRoom';
  * Holat real vaqt kanalida (hooks/useLessonRoom) — bu yerda faqat ko'rinish.
  */
 
-/** Video yonidagi doska maydoni. */
-export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose }: {
+export type CallBar = {
+  /** Video kichik oynada — mikrofon/kamera tugmalari shu panelda. */
+  compact: boolean;
+  media: JitsiMediaState;
+  controls: MutableRefObject<JitsiControls | null>;
+};
+
+/**
+ * Doska: material, sahifa va pastki asboblar paneli.
+ * Telefonda u butun ekranni egallaydi (video tepada kichik oynada), kompyuterda — video yonida.
+ */
+export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose, onOpenMaterials, onBack, call }: {
   token: string | null; kind: LessonKind; lessonId: number; board: RoomState; role: RoomRole;
-  onPage: (page: number) => void; onClose: () => void;
+  onPage: (page: number) => void; onClose: () => void; onOpenMaterials: () => void;
+  /** Telefon yotiq turganda xona sarlavhasi yashiriladi — «ortga» shu qatorda. */
+  onBack: () => void;
+  call: CallBar;
 }) {
   const m = board.material!;
   const pages = m.page_count ?? 0;
   const teacher = role === 'teacher';
+  const paged = m.kind === 'pdf' && pages > 1;
+  const [jumpOpen, setJumpOpen] = useState(false);
 
   useEffect(() => {
-    if (!teacher || m.kind !== 'pdf') return;
+    if (!teacher || !paged) return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -32,7 +50,11 @@ export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [teacher, m.kind, board.page, pages, onPage]);
+  }, [teacher, paged, board.page, pages, onPage]);
+
+  const swipe = teacher && paged
+    ? (dir: 1 | -1) => { const next = board.page + dir; if (next >= 1 && next <= pages) onPage(next); }
+    : undefined;
 
   const S = KIND_STYLE[m.kind];
   return (
@@ -40,10 +62,18 @@ export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] bg-white/[0.04] ring-1 ring-white/10"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0C1526] lg:rounded-[20px] lg:bg-white/[0.04] lg:ring-1 lg:ring-white/10"
       aria-label="Doska"
     >
-      <div className="flex items-center gap-2.5 border-b border-white/10 px-3 py-2">
+      <div className="flex items-center gap-2.5 px-3 py-1.5 max-lg:landscape:pt-[max(env(safe-area-inset-top,0px),6px)] lg:border-b lg:border-white/10 lg:py-2">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Ortga"
+          className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-white/10 text-white active:scale-95 max-lg:landscape:flex"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${S.bg} ${S.fg}`}>
           <S.icon className="h-[18px] w-[18px]" />
         </span>
@@ -57,12 +87,14 @@ export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose
           <button
             type="button"
             onClick={onClose}
-            className="flex min-h-[40px] items-center gap-1.5 rounded-[12px] bg-white/10 px-3 text-[12.5px] font-bold text-white transition hover:bg-white/20 active:scale-95"
+            aria-label="Doskani yopish"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-[12px] bg-white/10 px-3 text-[12.5px] font-bold text-white transition hover:bg-white/20 active:scale-95"
           >
-            <X className="h-4 w-4" /> Yopish
+            <X className="h-4 w-4" /> <span className="hidden sm:inline">Yopish</span>
           </button>
         ) : null}
       </div>
+
       <div className="relative min-h-0 flex-1">
         <MaterialViewer
           token={token}
@@ -72,18 +104,165 @@ export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose
           page={board.page}
           pageCount={m.page_count}
           tone="dark"
+          onSwipe={swipe}
         />
       </div>
-      {m.kind === 'pdf' && pages > 1 ? (
-        <div className="border-t border-white/10 px-3 py-2">
+
+      <RoomToolbar
+        teacher={teacher}
+        page={board.page}
+        pages={paged ? pages : 0}
+        onPage={onPage}
+        onJump={() => setJumpOpen(true)}
+        onOpenMaterials={onOpenMaterials}
+        call={call}
+      />
+      <JumpSheet open={jumpOpen} page={board.page} pages={pages} onGo={(p) => { onPage(p); setJumpOpen(false); }} onClose={() => setJumpOpen(false)} />
+    </motion.section>
+  );
+}
+
+/** Pastki panel: barmoq uchun katta tugmalar (44 px dan kam emas), telefonning pastki chetidan yuqorida. */
+function RoomToolbar({ teacher, page, pages, onPage, onJump, onOpenMaterials, call }: {
+  teacher: boolean; page: number; pages: number; onPage: (p: number) => void; onJump: () => void; onOpenMaterials: () => void; call: CallBar;
+}) {
+  // 375 px da ham 6 ta tugma sig'adi: 44 px (barmoq uchun eng kami), kengroq ekranda 48 px.
+  const btn = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-white transition active:scale-95 disabled:opacity-35 disabled:active:scale-100 sm:h-12 sm:w-12';
+  return (
+    <div className="flex items-center justify-between gap-1.5 border-t border-white/10 bg-[#0C1526]/95 px-2.5 pb-[max(env(safe-area-inset-bottom,0px),8px)] pt-2 backdrop-blur sm:gap-2 sm:px-3 lg:bg-transparent lg:pb-2">
+      <div className="flex shrink-0 items-center sm:min-w-0 sm:flex-1">
+        {teacher ? (
+          <button type="button" onClick={onOpenMaterials} aria-label="Materiallar" className={`${btn} bg-white/10 hover:bg-white/20`}>
+            <FolderOpen className="h-5 w-5" />
+          </button>
+        ) : null}
+      </div>
+
+      {pages ? (
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
           {teacher ? (
-            <PageNav page={board.page} pages={pages} setPage={onPage} label={`${board.page} / ${pages}`} dark />
-          ) : (
-            <p className="text-center text-[13px] font-extrabold tabular-nums text-white/80">{board.page} / {pages}</p>
-          )}
+            <button type="button" onClick={() => onPage(page - 1)} disabled={page <= 1} aria-label="Oldingi sahifa" className={`${btn} bg-white/10 hover:bg-white/20`}>
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={teacher ? onJump : undefined}
+            disabled={!teacher}
+            aria-label={teacher ? 'Sahifaga oʻtish' : undefined}
+            className="flex h-11 min-w-[62px] items-center justify-center rounded-[14px] px-2 text-[15px] font-extrabold tabular-nums text-white transition enabled:bg-white/[0.06] enabled:hover:bg-white/[0.12] enabled:active:scale-95 sm:h-12 sm:min-w-[76px] sm:px-3"
+          >
+            {page}<span className="mx-1 text-white/45">/</span>{pages}
+          </button>
+          {teacher ? (
+            <button type="button" onClick={() => onPage(page + 1)} disabled={page >= pages} aria-label="Keyingi sahifa" className={`${btn} bg-[#2563EB] hover:bg-[#1D4ED8]`}>
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          ) : null}
         </div>
       ) : null}
-    </motion.section>
+
+      <div className="flex shrink-0 items-center justify-end gap-1.5 sm:min-w-0 sm:flex-1 sm:gap-2">
+        {call.compact && call.media.joined ? (
+          <>
+            <button
+              type="button"
+              onClick={() => call.controls.current?.toggleAudio()}
+              aria-label={call.media.audioMuted ? 'Mikrofonni yoqish' : 'Mikrofonni oʻchirish'}
+              aria-pressed={!call.media.audioMuted}
+              className={`${btn} ${call.media.audioMuted ? 'bg-[#DC2626] hover:bg-[#B91C1C]' : 'bg-white/10 hover:bg-white/20'}`}
+            >
+              {call.media.audioMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => call.controls.current?.toggleVideo()}
+              aria-label={call.media.videoMuted ? 'Kamerani yoqish' : 'Kamerani oʻchirish'}
+              aria-pressed={!call.media.videoMuted}
+              className={`${btn} ${call.media.videoMuted ? 'bg-[#DC2626] hover:bg-[#B91C1C]' : 'bg-white/10 hover:bg-white/20'}`}
+            >
+              {call.media.videoMuted ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+            </button>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** Katta kitobda kerakli sahifaga tez o'tish: surgich + raqam. */
+function JumpSheet({ open, page, pages, onGo, onClose }: {
+  open: boolean; page: number; pages: number; onGo: (p: number) => void; onClose: () => void;
+}) {
+  const [value, setValue] = useState(page);
+  useEffect(() => { if (open) setValue(page); }, [open, page]);
+  const clampPage = (n: number) => Math.max(1, Math.min(pages || 1, Math.round(n) || 1));
+  return (
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          key="jump"
+          className="fixed inset-0 z-[65] flex items-end justify-center bg-[rgba(2,6,23,0.55)] sm:items-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ y: 40 }}
+            animate={{ y: 0 }}
+            exit={{ y: 40 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="Sahifaga oʻtish"
+            className="w-full max-w-[420px] rounded-t-[24px] bg-[#111C30] p-5 pb-[max(env(safe-area-inset-bottom,0px),20px)] text-white ring-1 ring-white/10 sm:rounded-[24px]"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-[16px] font-extrabold">Sahifaga oʻtish</p>
+              <button type="button" onClick={onClose} aria-label="Yopish" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 active:scale-95">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => { e.preventDefault(); onGo(clampPage(value)); }}
+              className="flex flex-col gap-4"
+            >
+              <div className="flex items-baseline justify-center gap-2">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={pages}
+                  value={value}
+                  onChange={(e) => setValue(Number(e.target.value))}
+                  onFocus={(e) => e.target.select()}
+                  aria-label="Sahifa raqami"
+                  className="w-[120px] rounded-[14px] bg-white/[0.08] py-2 text-center text-[34px] font-black tabular-nums text-white outline-none ring-1 ring-white/15 focus:ring-2 focus:ring-[#3B82F6]"
+                />
+                <span className="text-[17px] font-bold text-white/55">/ {pages}</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={pages}
+                value={clampPage(value)}
+                onChange={(e) => setValue(Number(e.target.value))}
+                aria-label="Sahifa"
+                className="h-10 w-full accent-[#3B82F6]"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => onGo(1)} className="min-h-[48px] rounded-[14px] bg-white/10 text-[14px] font-bold active:scale-[0.98]">Boshiga</button>
+                <button type="button" onClick={() => onGo(pages)} className="min-h-[48px] rounded-[14px] bg-white/10 text-[14px] font-bold active:scale-[0.98]">Oxiriga</button>
+              </div>
+              <button type="submit" className="min-h-[52px] rounded-[14px] bg-[#2563EB] text-[15px] font-extrabold transition hover:bg-[#1D4ED8] active:scale-[0.98]">
+                {clampPage(value)}-sahifaga oʻtish
+              </button>
+            </form>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 

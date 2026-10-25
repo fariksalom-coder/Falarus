@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 
 /**
  * Platforma ichidagi video xona (Jitsi external API).
@@ -7,9 +7,15 @@ import { useEffect, useRef, useState } from 'react';
 
 type JitsiApi = {
   dispose: () => void;
-  addEventListener: (event: string, handler: (...args: unknown[]) => void) => void;
+  addEventListener: (event: string, handler: (...args: any[]) => void) => void;
   executeCommand: (command: string, ...args: unknown[]) => void;
+  isAudioMuted: () => Promise<boolean>;
+  isVideoMuted: () => Promise<boolean>;
 };
+
+/** Tashqaridan boshqarish (dars xonasining o'z tugmalari — video kichik oynada bo'lganda). */
+export type JitsiControls = { toggleAudio: () => void; toggleVideo: () => void };
+export type JitsiMediaState = { joined: boolean; audioMuted: boolean; videoMuted: boolean };
 
 declare global {
   interface Window {
@@ -69,6 +75,13 @@ export type JitsiRoomProps = {
    * bo'lmaydi, ya'ni support uni o'chira yoki chiqarib yubora oladi.
    */
   mode?: 'meet' | 'viewer';
+  /**
+   * Kichik oyna rejimi (darsda material ochiq, telefon): Jitsi'ning o'z tugmalari va o'z
+   * kichik oynasi yashiriladi — mikrofon/kamerani xona o'z tugmalari bilan boshqaradi.
+   */
+  compact?: boolean;
+  controlsRef?: MutableRefObject<JitsiControls | null>;
+  onMediaState?: (state: JitsiMediaState) => void;
 };
 
 /** Efir tomoshabinida ovoz/kamera tugmalari yo'q — faqat kuzatish va chat. */
@@ -95,12 +108,21 @@ export default function JitsiRoom({
   subject,
   onLeave,
   mode = 'meet',
+  compact = false,
+  controlsRef,
+  onMediaState,
 }: JitsiRoomProps) {
   const viewer = mode === 'viewer';
   const containerRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<JitsiApi | null>(null);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const filmstripVisible = useRef(true);
+  const media = useRef<JitsiMediaState>({ joined: false, audioMuted: true, videoMuted: false });
+  const mediaCb = useRef(onMediaState);
+  mediaCb.current = onMediaState;
+  const toolbar = viewer ? VIEWER_TOOLBAR : MEET_TOOLBAR;
 
   useEffect(() => {
     let disposed = false;
@@ -121,6 +143,7 @@ export default function JitsiRoom({
             startWithVideoMuted: viewer,
             defaultLanguage: 'ru',
             subject: subject ?? '',
+            toolbarButtons: viewer ? VIEWER_TOOLBAR : MEET_TOOLBAR,
           },
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
@@ -133,6 +156,25 @@ export default function JitsiRoom({
         });
         apiRef.current = api;
         setReady(true);
+        const report = (patch: Partial<JitsiMediaState>) => {
+          media.current = { ...media.current, ...patch };
+          mediaCb.current?.(media.current);
+        };
+        api.addEventListener('videoConferenceJoined', () => {
+          setJoined(true);
+          void Promise.all([api.isAudioMuted(), api.isVideoMuted()])
+            .then(([audioMuted, videoMuted]) => report({ joined: true, audioMuted, videoMuted }))
+            .catch(() => report({ joined: true }));
+        });
+        api.addEventListener('audioMuteStatusChanged', (e: { muted: boolean }) => report({ audioMuted: Boolean(e?.muted) }));
+        api.addEventListener('videoMuteStatusChanged', (e: { muted: boolean }) => report({ videoMuted: Boolean(e?.muted) }));
+        api.addEventListener('filmstripDisplayChanged', (e: { visible: boolean }) => { filmstripVisible.current = Boolean(e?.visible); });
+        if (controlsRef) {
+          controlsRef.current = {
+            toggleAudio: () => api.executeCommand('toggleAudio'),
+            toggleVideo: () => api.executeCommand('toggleVideo'),
+          };
+        }
         if (onLeave) {
           api.addEventListener('readyToClose', onLeave);
           api.addEventListener('videoConferenceLeft', onLeave);
@@ -146,9 +188,22 @@ export default function JitsiRoom({
       disposed = true;
       apiRef.current?.dispose();
       apiRef.current = null;
+      if (controlsRef) controlsRef.current = null;
+      setJoined(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain, roomName, viewer]);
+
+  // Kichik oynada Jitsi tugmalari va o'z kichik oynasi (o'zingizning kamerangiz) xalaqit beradi.
+  useEffect(() => {
+    const api = apiRef.current;
+    if (!api || !joined || viewer) return;
+    api.executeCommand('overwriteConfig', { toolbarButtons: compact ? [] : toolbar });
+    if (compact === filmstripVisible.current) {
+      api.executeCommand('toggleFilmStrip');
+      filmstripVisible.current = !compact;
+    }
+  }, [compact, joined, viewer, toolbar]);
 
   if (error) {
     return (

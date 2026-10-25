@@ -188,3 +188,11 @@ test('two WebSocket endpoints share one HTTP server (lesson room next to the liv
     await new Promise<void>((r) => server.close(() => r()));
   }
 });
+
+test('page turns stop at the last page of the material on the board', async () => {
+  const { applyRoomOp, emptyRoomState } = await import('../shared/lessonRoom');
+  const shown = applyRoomOp(emptyRoomState(), { type: 'show', material: { id: 1, title: 'k', kind: 'pdf', mime: 'application/pdf', size_bytes: 1, page_count: 12 }, page: 1 });
+  assert.equal(applyRoomOp(shown, { type: 'page', page: 99 }).page, 12);
+  assert.equal(applyRoomOp(shown, { type: 'page', page: 0 }).page, 1);
+  assert.equal(applyRoomOp(emptyRoomState(), { type: 'page', page: 5 }).page, 1, 'no material — nothing to turn');
+});

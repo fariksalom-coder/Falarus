@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { FileAudio, Loader2 } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { FileAudio, Loader2, ZoomOut } from 'lucide-react';
 import { PAGE_WIDTHS, type MaterialKind, type PageWidth } from '../../../shared/teacherMaterials';
 import { fetchMaterialBlob, loadPageUrl, type MaterialSource } from '../../api/teacherMaterials';
+import { useZoomPan } from './useZoomPan';
 
 /**
  * Dars materialini ko'rsatadi. PDF va rasm — server chizgan yengil sahifa rasmlari (WebP):
@@ -23,6 +24,10 @@ export type MaterialViewerProps = {
   tone?: 'light' | 'dark';
   loadingText?: string;
   errorText?: string;
+  /** Kattalashtirilmagan sahifada tez gorizontal surish (o'qituvchi varaqlaydi). */
+  onSwipe?: (dir: 1 | -1) => void;
+  /** Sahifa ustidagi qatlam (chizmalar, lazer) — sahifa bilan birga kattalashadi. */
+  overlay?: ReactNode;
 };
 
 /** Ekranga mos eng kichik yetarli o'lcham (retina hisobga olinadi). */
@@ -33,51 +38,64 @@ function widthFor(cssWidth: number): PageWidth {
 
 export default function MaterialViewer({
   token, source, kind, title, page = 1, pageCount, tone = 'light', loadingText = 'Yuklanmoqda…', errorText = 'Faylni ochib boʻlmadi',
+  onSwipe, overlay,
 }: MaterialViewerProps) {
   const dark = tone === 'dark';
   if (kind === 'pdf' || kind === 'image') {
     return (
       <PageView
         token={token} source={source} page={kind === 'image' ? 1 : page} pageCount={kind === 'image' ? 1 : pageCount ?? null}
-        title={title} dark={dark} loadingText={loadingText} errorText={errorText}
+        title={title} dark={dark} loadingText={loadingText} errorText={errorText} onSwipe={onSwipe} overlay={overlay}
       />
     );
   }
   return <MediaView token={token} source={source} kind={kind} title={title} dark={dark} loadingText={loadingText} errorText={errorText} />;
 }
 
-function PageView({ token, source, page, pageCount, title, dark, loadingText, errorText }: {
-  token: string | null; source: MaterialSource; page: number; pageCount: number | null; title: string; dark: boolean; loadingText: string; errorText: string;
+function PageView({ token, source, page, pageCount, title, dark, loadingText, errorText, onSwipe, overlay }: {
+  token: string | null; source: MaterialSource; page: number; pageCount: number | null; title: string; dark: boolean;
+  loadingText: string; errorText: string; onSwipe?: (dir: 1 | -1) => void; overlay?: ReactNode;
 }) {
-  const boxRef = useRef<HTMLDivElement | null>(null);
+  const sourceKey = JSON.stringify(source);
+  const zoom = useZoomPan(`${sourceKey}:${page}`, onSwipe);
+  const [box, setBox] = useState({ w: 0, h: 0 });
   const [width, setWidth] = useState<PageWidth | null>(null);
-  const [shown, setShown] = useState<{ key: string; url: string } | null>(null);
+  const [shown, setShown] = useState<{ key: string; url: string; ratio: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const sourceKey = JSON.stringify(source);
 
-  // O'lcham faqat kattalashganda almashadi — telefonni burganda sahifa qayta yuklanib turmasin.
   useEffect(() => {
-    const el = boxRef.current;
+    const el = zoom.boxRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => {
-      const next = widthFor(e.contentRect.width);
-      setWidth((w) => (w == null || next > w ? next : w));
-    });
+    const ro = new ResizeObserver(([e]) => setBox({ w: e.contentRect.width, h: e.contentRect.height }));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [zoom.boxRef]);
+
+  // Rasm o'lchami faqat kattalashadi — telefonni burganda sahifa qayta yuklanib turmasin.
+  // Kattalashtirilganda tiniqroq nusxa olinadi.
+  useEffect(() => {
+    if (!box.w) return;
+    const next = widthFor(box.w * Math.min(zoom.scale, 2));
+    setWidth((w) => (w == null || next > w ? next : w));
+  }, [box.w, zoom.scale]);
 
   useEffect(() => {
     if (!token || !width) return;
     let alive = true;
-    const key = `${sourceKey}:${page}:${width}`;
+    const key = `${sourceKey}:${page}`;
     setLoading(true);
     setError(false);
     loadPageUrl(token, source, page, width)
-      .then((url) => {
+      .then((url) => new Promise<{ url: string; ratio: number }>((ok, bad) => {
+        const img = new Image();
+        img.onload = () => ok({ url, ratio: img.naturalWidth / Math.max(1, img.naturalHeight) });
+        img.onerror = bad;
+        img.src = url;
+      }))
+      .then(({ url, ratio }) => {
         if (!alive) return;
-        setShown({ key, url });
+        setShown({ key, url, ratio });
         setLoading(false);
         // Keyingi va oldingi sahifa oldindan — varaqlash bir zumda bo'lsin.
         for (const n of [page + 1, page - 1]) {
@@ -89,24 +107,57 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, sourceKey, page, width, pageCount]);
 
+  // Sahifa maydoni: konteynerga sig'adigan eng katta to'rtburchak (chizmalar shu o'lchamga bog'lanadi).
+  const pad = 8;
+  const fit = shown && box.w && box.h
+    ? (() => {
+        const w = Math.max(1, box.w - pad * 2);
+        const h = Math.max(1, box.h - pad * 2);
+        return w / h > shown.ratio ? { w: h * shown.ratio, h } : { w, h: w / shown.ratio };
+      })()
+    : null;
+
   return (
-    <div ref={boxRef} className="relative flex h-full w-full items-center justify-center overflow-hidden p-2">
+    <div
+      ref={zoom.boxRef}
+      {...zoom.handlers}
+      className="relative h-full w-full touch-none select-none overflow-hidden"
+      style={{ cursor: zoom.scale > 1 ? (zoom.gesturing ? 'grabbing' : 'grab') : undefined }}
+    >
       {error && !shown ? (
-        <p className={`px-6 text-center text-[14px] font-semibold ${dark ? 'text-white/70' : 'text-app-text-muted'}`}>{errorText}</p>
+        <p className={`absolute inset-0 flex items-center justify-center px-6 text-center text-[14px] font-semibold ${dark ? 'text-white/70' : 'text-app-text-muted'}`}>{errorText}</p>
       ) : null}
-      {shown ? (
-        <img
-          key={shown.key}
-          src={shown.url}
-          alt={pageCount && pageCount > 1 ? `${title} — ${page}` : title}
-          draggable={false}
-          className={`max-h-full max-w-full select-none rounded-[8px] bg-white object-contain shadow-[0_14px_34px_rgba(15,23,42,0.18)] transition-opacity duration-150 ${loading ? 'opacity-70' : 'opacity-100'}`}
-        />
+      {shown && fit ? (
+        <div
+          className="absolute inset-0 flex items-center justify-center will-change-transform"
+          style={{ transform: zoom.transform, transition: zoom.gesturing ? 'none' : 'transform 180ms ease-out' }}
+        >
+          <div className="relative overflow-hidden rounded-[6px] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.18)]" style={{ width: fit.w, height: fit.h }}>
+            <img
+              key={shown.key}
+              src={shown.url}
+              alt={pageCount && pageCount > 1 ? `${title} — ${page}` : title}
+              draggable={false}
+              className={`h-full w-full transition-opacity duration-150 ${loading ? 'opacity-70' : 'opacity-100'}`}
+            />
+            {overlay}
+          </div>
+        </div>
       ) : null}
       {loading && !shown ? <div className="absolute inset-0 flex items-center justify-center"><Spinner dark={dark} text={loadingText} /></div> : null}
-      {loading && shown ? <Loader2 className={`absolute right-3 top-3 h-5 w-5 animate-spin ${dark ? 'text-white/70' : 'text-app-text-muted'}`} /> : null}
+      {loading && shown ? <Loader2 className={`pointer-events-none absolute right-3 top-3 h-5 w-5 animate-spin ${dark ? 'text-white/70' : 'text-app-text-muted'}`} /> : null}
+      {zoom.scale > 1 ? (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={zoom.reset}
+          className="absolute bottom-3 right-3 flex min-h-[40px] items-center gap-1.5 rounded-full bg-[#0F172A]/80 px-3.5 text-[12.5px] font-bold text-white backdrop-blur transition active:scale-95"
+        >
+          <ZoomOut className="h-4 w-4" /> {Math.round(zoom.scale * 100)}%
+        </button>
+      ) : null}
       {error && shown ? (
-        <p className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#7F1D1D]/80 px-3 py-1.5 text-[12px] font-bold text-white">{errorText}</p>
+        <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#7F1D1D]/80 px-3 py-1.5 text-[12px] font-bold text-white">{errorText}</p>
       ) : null}
     </div>
   );

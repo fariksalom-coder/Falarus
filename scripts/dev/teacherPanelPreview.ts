@@ -233,9 +233,11 @@ app.use('/api', createTeacherMaterialRoutes((req: any, _res: any, next: any) => 
   privateDir: fs.mkdtempSync(path.join(os.tmpdir(), 'materials-preview-')),
   room: () => room,
 }));
+const PREVIEW_ROOM = `falarus-preview-${Math.random().toString(36).slice(2, 10)}`;
 json('/api/lessons/:id/join', (req) => {
   const student = previewUser(req) === 22;
-  return { type: 'jitsi', domain: 'localhost:9', room_slug: 'preview', title: 'FalaRus darsi', starts_at: at(-0.1), role: student ? 'student' : 'teacher',
+  // PREVIEW_JITSI=falarus.uz:8443 — haqiqiy video server bilan sinash (xona nomi tasodifiy).
+  return { type: 'jitsi', domain: process.env.PREVIEW_JITSI || 'localhost:9', room_slug: PREVIEW_ROOM, title: 'FalaRus darsi', starts_at: at(-0.1), role: student ? 'student' : 'teacher',
     display_name: student ? 'Malika Tosheva' : 'Dilnoza Saidova', email: null };
 });
 app.all('/api/*', (_req, res) => res.json({}));
