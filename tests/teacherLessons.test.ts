@@ -220,3 +220,11 @@ test('trial lessons get a private FalaRus room too', async () => {
     await t.close();
   }
 });
+
+test('the video room password is the same for both participants and differs between rooms', async () => {
+  const { meetRoomPassword } = await import('../server/services/teacherMeet.service');
+  const a = meetRoomPassword('falarus-dars-aaa');
+  assert.equal(a, meetRoomPassword('falarus-dars-aaa'));
+  assert.notEqual(a, meetRoomPassword('falarus-dars-bbb'));
+  assert.match(a, /^[\w-]{16}$/);
+});

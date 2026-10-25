@@ -15,6 +15,7 @@ import { TEACHERS_LIST_PATH, TEACHER_CABINET_PATH } from '../constants/teacherPa
 type RoomView = {
   domain: string;
   roomSlug: string;
+  roomPassword: string | null;
   title: string;
   role: 'teacher' | 'student';
   displayName: string;
@@ -96,6 +97,7 @@ export default function MeetRoomPage() {
       setView({
         domain: info.domain,
         roomSlug: info.room_slug,
+        roomPassword: info.room_password ?? null,
         title: info.title || 'Video dars',
         role: info.role,
         displayName: info.display_name,
@@ -217,6 +219,7 @@ export default function MeetRoomPage() {
           <JitsiRoom
             domain={view.domain}
             roomName={view.roomSlug}
+            roomPassword={view.roomPassword}
             displayName={view.displayName}
             email={view.email}
             isModerator={view.role === 'teacher'}

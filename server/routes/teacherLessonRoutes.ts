@@ -13,7 +13,7 @@
 import { Router, type Request, type Response } from 'express';
 import crypto from 'node:crypto';
 import { pool } from '../lib/db.js';
-import { MEET_DOMAIN } from '../services/teacherMeet.service.js';
+import { MEET_DOMAIN, meetRoomPassword } from '../services/teacherMeet.service.js';
 import {
   AUTO_COMPLETE_HOURS, LESSON_MINUTES, MIN_LEAD_MINUTES, MIN_WITHDRAWAL_UZS, PENDING_HOLD_MINUTES, REVIEW_CRITERIA, REVIEW_TEXT_MAX,
   canCancel, canComplete, canDispute, joinState, joinWindow, maskCard, normalizeCardNumber, normalizeReviewScores, reviewOverall,
@@ -415,7 +415,7 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     if (state === 'late') throw new HttpError(410, 'Dars vaqti tugagan');
     const u = await userOf(Number(req.userId));
     res.json({
-      type: 'jitsi', domain: meetDomain, room_slug: l.room_slug, title: 'FalaRus darsi', starts_at: l.starts_at, role,
+      type: 'jitsi', domain: meetDomain, room_slug: l.room_slug, room_password: meetRoomPassword(l.room_slug), title: 'FalaRus darsi', starts_at: l.starts_at, role,
       display_name: `${u?.first_name ?? ''} ${u?.last_name ?? ''}`.trim() || (role === 'teacher' ? 'Oʻqituvchi' : 'Oʻquvchi'), email: null,
     });
   }));
@@ -466,7 +466,7 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     }
     const role = t.teacher_user_id === me ? 'teacher' : 'student';
     const u = await userOf(me);
-    res.json({ type: 'jitsi', domain: meetDomain, room_slug: slug, title: 'Sinov darsi', starts_at: t.scheduled_starts_at, role,
+    res.json({ type: 'jitsi', domain: meetDomain, room_slug: slug, room_password: meetRoomPassword(slug), title: 'Sinov darsi', starts_at: t.scheduled_starts_at, role,
       display_name: `${u?.first_name ?? ''} ${u?.last_name ?? ''}`.trim() || (role === 'teacher' ? 'Oʻqituvchi' : 'Oʻquvchi'), email: null });
   }));
 

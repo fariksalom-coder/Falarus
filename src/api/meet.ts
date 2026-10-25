@@ -53,6 +53,8 @@ export type MeetJoinInfo =
       type: 'jitsi';
       domain: string;
       room_slug: string;
+      /** Xona paroli: birinchi kirgan qulflaydi, ikkinchisi avtomatik kiritadi. */
+      room_password?: string;
       title: string;
       starts_at: string;
       role: 'teacher' | 'student';

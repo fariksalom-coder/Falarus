@@ -80,6 +80,11 @@ export type JitsiRoomProps = {
    * kichik oynasi yashiriladi — mikrofon/kamerani xona o'z tugmalari bilan boshqaradi.
    */
   compact?: boolean;
+  /**
+   * Xona paroli (faqat dars ishtirokchilariga beriladi). Moderator bo'lgan tomon xonani shu bilan
+   * qulflaydi, kech kirgan tomondan Jitsi so'raganda avtomatik kiritiladi.
+   */
+  roomPassword?: string | null;
   controlsRef?: MutableRefObject<JitsiControls | null>;
   onMediaState?: (state: JitsiMediaState) => void;
 };
@@ -109,6 +114,7 @@ export default function JitsiRoom({
   onLeave,
   mode = 'meet',
   compact = false,
+  roomPassword = null,
   controlsRef,
   onMediaState,
 }: JitsiRoomProps) {
@@ -160,7 +166,14 @@ export default function JitsiRoom({
           media.current = { ...media.current, ...patch };
           mediaCb.current?.(media.current);
         };
-        api.addEventListener('videoConferenceJoined', () => {
+        let myId = '';
+        const lock = () => { if (roomPassword) api.executeCommand('password', roomPassword); };
+        api.addEventListener('passwordRequired', lock);
+        api.addEventListener('participantRoleChanged', (e: { id: string; role: string }) => {
+          if (e?.role === 'moderator' && (!myId || e.id === myId)) lock();
+        });
+        api.addEventListener('videoConferenceJoined', (e: { id?: string }) => {
+          myId = String(e?.id ?? '');
           setJoined(true);
           void Promise.all([api.isAudioMuted(), api.isVideoMuted()])
             .then(([audioMuted, videoMuted]) => report({ joined: true, audioMuted, videoMuted }))
