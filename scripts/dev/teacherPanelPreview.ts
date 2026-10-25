@@ -225,6 +225,7 @@ await pg.exec(`
 `);
 await pg.exec(fs.readFileSync('db/migrations/218_teacher_lesson_materials.sql', 'utf8'));
 await pg.exec(fs.readFileSync('db/migrations/219_teacher_material_pages.sql', 'utf8'));
+await pg.exec(fs.readFileSync('db/migrations/220_teacher_lesson_ink.sql', 'utf8'));
 const previewUser = (req: express.Request) => (String(req.headers.authorization ?? '').endsWith('preview-student') ? 22 : 11);
 const previewQ = (sql: string, params?: unknown[]) => pg.query(sql, params as unknown[]);
 const room = createLessonRoomServer({ q: previewQ, verifyToken: (t) => (t === 'preview-student' ? 22 : t === 'preview' ? 11 : null) });

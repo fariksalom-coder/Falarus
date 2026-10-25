@@ -15,7 +15,7 @@ import { pool } from '../lib/db.js';
 import { registerWsRoute } from '../lib/wsRoutes.js';
 import { checkLessonAccess, LessonAccessError, parseLessonKind, type AccessQuery } from './lessonRoomAccess.js';
 import {
-  ROOM_CLOSE, ROOM_WS_PATH, applyRoomOp, canApply, emptyRoomState, parseRoomOp, validUnit,
+  INK_MAX_STROKES_PER_PAGE, ROOM_CLOSE, ROOM_WS_PATH, applyRoomOp, canApply, canDraw, emptyRoomState, inkKeyOf, parseDraft, parseRoomOp, validUnit,
   type ClientMessage, type LessonKind, type Presence, type RoomMaterial, type RoomOp, type RoomRole, type RoomState, type ServerMessage,
 } from '../../shared/lessonRoom.js';
 
@@ -26,7 +26,8 @@ export type RoomDeps = {
   now?: () => number;
 };
 
-type Conn = { ws: WebSocket; userId: number; role: RoomRole; alive: boolean; laser: { at: number; n: number } };
+type Bucket = { at: number; n: number };
+type Conn = { ws: WebSocket; userId: number; role: RoomRole; alive: boolean; laser: Bucket; draft: Bucket };
 
 type Room = {
   key: string;
@@ -40,13 +41,19 @@ type Room = {
   recent: Map<string, number>;
   /** O'zgarishlar ketma-ket qayta ishlanadi — bazadan material o'qish tartibni buzmasin. */
   queue: Promise<void>;
+  /** Bazaga hali yozilmagan chizma sahifalari (yozuv bir oz kechiktirib, guruhlab qilinadi). */
+  dirtyInk: Set<string>;
+  inkTimer: ReturnType<typeof setTimeout> | null;
 };
 
 const HELLO_TIMEOUT_MS = 10_000;
 const HEARTBEAT_MS = 25_000;
 const RECENT_OPS = 500;
 const LASER_PER_SECOND = 40;
-const MAX_MESSAGE_BYTES = 64 * 1024;
+const DRAFTS_PER_SECOND = 40;
+/** Sahifani tozalashni bekor qilish yuzlab chiziqni bir xabarda qaytaradi. */
+const MAX_MESSAGE_BYTES = 512 * 1024;
+const INK_SAVE_DELAY_MS = 600;
 
 const defaultVerify = (token: string): number | null => {
   try {
@@ -88,7 +95,7 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     if (existing) return existing;
     await pendingSaves.get(key);
     const state = emptyRoomState();
-    const b = q ? (await q(`SELECT b.page, b.version, b.student_can_draw, m.id, m.title, m.kind, m.mime, m.size_bytes, m.page_count
+    const b = q ? (await q(`SELECT b.page, b.version, b.student_can_draw, b.blank, b.blank_count, m.id, m.title, m.kind, m.mime, m.size_bytes, m.page_count
       FROM teacher_lesson_boards b LEFT JOIN teacher_materials m ON m.id = b.material_id
       WHERE b.lesson_kind = $1 AND b.lesson_id = $2`, [kind, lessonId])).rows[0] : null;
     if (b) {
@@ -96,28 +103,71 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
       state.page = Number(b.page) || 1;
       state.studentCanDraw = Boolean(b.student_can_draw);
       state.seq = Number(b.version) || 0;
+      state.blank = b.blank == null ? null : Number(b.blank);
+      state.blankCount = Number(b.blank_count) || 0;
+    }
+    if (q) {
+      for (const r of (await q('SELECT page_key, strokes FROM teacher_lesson_ink WHERE lesson_kind = $1 AND lesson_id = $2', [kind, lessonId])).rows) {
+        if (Array.isArray(r.strokes) && r.strokes.length) state.ink[r.page_key] = r.strokes;
+      }
     }
     // Ikki klient bir vaqtda kirsa, ikkinchisi birinchisi yaratgan xonani oladi.
     const raced = rooms.get(key);
     if (raced) return raced;
-    const room: Room = { key, kind, lessonId, teacherId, closesAt, state, conns: new Set(), recent: new Map(), queue: Promise.resolve() };
+    const room: Room = {
+      key, kind, lessonId, teacherId, closesAt, state, conns: new Set(), recent: new Map(), queue: Promise.resolve(),
+      dirtyInk: new Set(), inkTimer: null,
+    };
     rooms.set(key, room);
     return room;
+  }
+
+  /** Yozuvlar xona bo'yicha ketma-ket — eski holat yangisining ustiga yozilib qolmasin. */
+  function chain(room: Room, write: () => Promise<unknown>) {
+    const chained = (pendingSaves.get(room.key) ?? Promise.resolve())
+      .then(write)
+      .then(() => undefined, (e) => console.error('[lessonRoom] save', e?.message ?? e));
+    pendingSaves.set(room.key, chained);
+    void chained.then(() => { if (pendingSaves.get(room.key) === chained) pendingSaves.delete(room.key); });
   }
 
   function save(room: Room) {
     if (!q) return;
     const s = room.state;
-    const write = q(`INSERT INTO teacher_lesson_boards (lesson_kind, lesson_id, material_id, page, student_can_draw, version)
-      VALUES ($1, $2, $3, $4, $5, $6)
+    const params = [room.kind, room.lessonId, s.material?.id ?? null, s.page, s.studentCanDraw, s.seq, s.blank, s.blankCount];
+    chain(room, () => q(`INSERT INTO teacher_lesson_boards (lesson_kind, lesson_id, material_id, page, student_can_draw, version, blank, blank_count)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       ON CONFLICT (lesson_kind, lesson_id) DO UPDATE SET material_id = EXCLUDED.material_id, page = EXCLUDED.page,
-        student_can_draw = EXCLUDED.student_can_draw, version = EXCLUDED.version, updated_at = now()`,
-    [room.kind, room.lessonId, s.material?.id ?? null, s.page, s.studentCanDraw, s.seq])
-      .then(() => undefined, (e) => console.error('[lessonRoom] save', e?.message ?? e));
-    const chained = (pendingSaves.get(room.key) ?? Promise.resolve()).then(() => write);
-    pendingSaves.set(room.key, chained);
-    void chained.then(() => { if (pendingSaves.get(room.key) === chained) pendingSaves.delete(room.key); });
+        student_can_draw = EXCLUDED.student_can_draw, version = EXCLUDED.version, blank = EXCLUDED.blank,
+        blank_count = EXCLUDED.blank_count, updated_at = now()`, params));
   }
+
+  /** Chizmalar har chiziqda emas, qisqa tanaffusdan keyin sahifa bo'yicha yoziladi. */
+  function flushInk(room: Room) {
+    if (room.inkTimer) { clearTimeout(room.inkTimer); room.inkTimer = null; }
+    if (!q || !room.dirtyInk.size) return;
+    const rows = [...room.dirtyInk].map((key) => [key, JSON.stringify(room.state.ink[key] ?? [])] as const);
+    room.dirtyInk.clear();
+    chain(room, async () => {
+      for (const [key, strokes] of rows) {
+        await q(`INSERT INTO teacher_lesson_ink (lesson_kind, lesson_id, page_key, strokes) VALUES ($1, $2, $3, $4::jsonb)
+          ON CONFLICT (lesson_kind, lesson_id, page_key) DO UPDATE SET strokes = EXCLUDED.strokes, updated_at = now()`,
+        [room.kind, room.lessonId, key, strokes]);
+      }
+    });
+  }
+
+  function markInk(room: Room, key: string) {
+    room.dirtyInk.add(key);
+    if (!room.inkTimer) room.inkTimer = setTimeout(() => flushInk(room), INK_SAVE_DELAY_MS);
+  }
+
+  /** Sekundiga cheklov (lazer, chizilayotgan chiziq) — oshgani jimgina tashlanadi. */
+  const allow = (b: Bucket, perSecond: number) => {
+    const t = now();
+    if (t - b.at >= 1000) { b.at = t; b.n = 0; }
+    return ++b.n <= perSecond;
+  };
 
   /** Material shu xonaning o'qituvchisiga tegishli va tayyormi — tafsilotini bazadan oladi. */
   async function resolveMaterial(room: Room, id: number): Promise<RoomMaterial | 'not_ready' | null> {
@@ -132,7 +182,17 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     if (seen !== undefined) return send(conn.ws, { t: 'ack', id, seq: seen });
     let op: RoomOp | null = parseRoomOp(raw);
     if (!op) return send(conn.ws, { t: 'reject', id, error: 'Notoʻgʻri amal' });
-    if (!canApply(conn.role, op, room.state)) return send(conn.ws, { t: 'reject', id, error: 'Bu amal faqat oʻqituvchiga ruxsat etilgan' });
+    if (!canApply(conn.role, op, room.state)) {
+      return send(conn.ws, { t: 'reject', id, error: op.type === 'ink' ? 'Chizishga ruxsat yoʻq' : 'Bu amal faqat oʻqituvchiga ruxsat etilgan' });
+    }
+    if (op.type === 'ink') {
+      // Kim chizgani server tomonidan yoziladi — o'quvchi o'qituvchining chizmasini o'chira olmasin.
+      if (op.add) op = { ...op, add: op.add.map((st) => ({ ...st, by: conn.role })) };
+      const after = applyRoomOp(room.state, op);
+      if ((after.ink[op.key]?.length ?? 0) > INK_MAX_STROKES_PER_PAGE) {
+        return send(conn.ws, { t: 'reject', id, error: 'Bu sahifada chizma juda koʻp — tozalang yoki yangi varaq oching' });
+      }
+    }
     if (op.type === 'show' && op.material) {
       const material = await resolveMaterial(room, op.material.id);
       if (material === 'not_ready') return send(conn.ws, { t: 'reject', id, error: 'Material hali tayyorlanmoqda — biroz kuting' });
@@ -145,12 +205,15 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     send(conn.ws, { t: 'ack', id, seq: room.state.seq });
     // Yuboruvchining boshqa oynalari ham yangilansin — `op` ni hamma oladi, yuboruvchi ack'ni.
     broadcast(room, { t: 'op', seq: room.state.seq, op }, conn);
+    if (op.type === 'ink') markInk(room, op.key);
+    // Chizma — sahifa holatini o'zgartirmaydi; ruxsat va tartib raqami baribir saqlanadi.
     save(room);
   }
 
   function leave(room: Room, conn: Conn) {
     if (!room.conns.delete(conn)) return;
     if (room.conns.size === 0) {
+      flushInk(room);
       rooms.delete(room.key);
     } else {
       broadcast(room, { t: 'presence', presence: presenceOf(room) });
@@ -184,7 +247,7 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
           if (ws.readyState !== WebSocket.OPEN) return;
           clearTimeout(helloTimer);
           room = r;
-          conn = { ws, userId, role: access.role, alive: true, laser: { at: 0, n: 0 } };
+          conn = { ws, userId, role: access.role, alive: true, laser: { at: 0, n: 0 }, draft: { at: 0, n: 0 } };
           r.conns.add(conn);
           send(ws, { t: 'state', state: r.state, role: access.role, presence: presenceOf(r) });
           broadcast(r, { t: 'presence', presence: presenceOf(r) }, conn);
@@ -203,12 +266,14 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
         if (!id) return;
         r.queue = r.queue.then(() => handleOp(r, c, id, msg.op)).catch((e) => console.error('[lessonRoom] op', e));
       } else if (msg.t === 'laser') {
-        if (c.role !== 'teacher') return;
-        const t = now();
-        if (t - c.laser.at >= 1000) c.laser = { at: t, n: 0 };
-        if (++c.laser.n > LASER_PER_SECOND) return;
+        if (c.role !== 'teacher' || !allow(c.laser, LASER_PER_SECOND)) return;
         if ('end' in msg) broadcast(r, { t: 'laser', end: true }, c);
         else if (validUnit(msg.x) && validUnit(msg.y)) broadcast(r, { t: 'laser', x: msg.x, y: msg.y }, c);
+      } else if (msg.t === 'draft') {
+        // Chizilayotgan chiziq: faqat chizish huquqi borlardan, faqat hozirgi sahifaga, saqlanmaydi.
+        const d = parseDraft(msg);
+        if (!d || !canDraw(c.role, r.state) || d.key !== inkKeyOf(r.state) || !allow(c.draft, DRAFTS_PER_SECOND)) return;
+        broadcast(r, { ...d, by: c.role }, c);
       } else if (msg.t === 'ping') {
         send(ws, { t: 'pong', c: Number(msg.c) || 0, s: now() });
       }

@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, FolderOpen, Loader2, Mic, MicOff, MonitorUp, UploadCloud, Video, VideoOff, WifiOff, X,
+  ArrowLeft, ChevronLeft, ChevronRight, FolderOpen, Loader2, Mic, MicOff, MonitorUp, StickyNote, UploadCloud, Video, VideoOff, WifiOff, X,
 } from 'lucide-react';
 import MaterialViewer from './MaterialViewer';
 import { KIND_STYLE, materialMeta } from './materialUi';
 import type { JitsiControls, JitsiMediaState } from '../meet/JitsiRoom';
 import { MATERIAL_ACCEPT } from '../../../shared/teacherMaterials';
 import { getLessonMaterials, getMaterial, getMaterials, uploadMaterial, type TeacherMaterial } from '../../api/teacherMaterials';
-import type { LessonKind, RoomRole, RoomState } from '../../../shared/lessonRoom';
-import type { RoomStatus } from '../../hooks/useLessonRoom';
+import type { LessonKind } from '../../../shared/lessonRoom';
+import type { LessonRoom, RoomStatus } from '../../hooks/useLessonRoom';
+import { InkLayer } from './InkLayer';
+import { InkBar, TextSheet } from './BoardTools';
+import { useBoardInk } from './useBoardInk';
 
 /**
  * Dars doskasi: o'qituvchi materialni chiqaradi va varaqlaydi, o'quvchi ekrani ergashadi.
@@ -24,39 +27,60 @@ export type CallBar = {
 };
 
 /**
- * Doska: material, sahifa va pastki asboblar paneli.
+ * Doska: material yoki oq varaq, ustida chizmalar, chizish asboblari va pastki panel.
  * Telefonda u butun ekranni egallaydi (video tepada kichik oynada), kompyuterda — video yonida.
  */
-export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose, onOpenMaterials, onBack, call }: {
-  token: string | null; kind: LessonKind; lessonId: number; board: RoomState; role: RoomRole;
-  onPage: (page: number) => void; onClose: () => void; onOpenMaterials: () => void;
+export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMaterials, onBack, call }: {
+  token: string | null; kind: LessonKind; lessonId: number; room: LessonRoom;
+  onClose: () => void; onOpenMaterials: () => void;
   /** Telefon yotiq turganda xona sarlavhasi yashiriladi — «ortga» shu qatorda. */
   onBack: () => void;
   call: CallBar;
 }) {
-  const m = board.material!;
-  const pages = m.page_count ?? 0;
-  const teacher = role === 'teacher';
-  const paged = m.kind === 'pdf' && pages > 1;
+  const board = room.state!;
+  const { send } = room;
+  const teacher = room.role === 'teacher';
+  const m = board.material;
+  const blank = board.blank;
+  const page = blank ?? board.page;
+  const pages = blank !== null ? board.blankCount : m?.kind === 'pdf' ? m.page_count ?? 0 : 0;
+  const paged = pages > 1;
   const [jumpOpen, setJumpOpen] = useState(false);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const ink = useBoardInk(room, board, overlayRef);
+  const onPage = useCallback((p: number) => send({ type: 'page', page: p }), [send]);
 
   useEffect(() => {
     if (!teacher || !paged) return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if ((e.key === 'ArrowRight' || e.key === 'PageDown') && board.page < pages) onPage(board.page + 1);
-      if ((e.key === 'ArrowLeft' || e.key === 'PageUp') && board.page > 1) onPage(board.page - 1);
+      if ((e.key === 'ArrowRight' || e.key === 'PageDown') && page < pages) onPage(page + 1);
+      if ((e.key === 'ArrowLeft' || e.key === 'PageUp') && page > 1) onPage(page - 1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [teacher, paged, board.page, pages, onPage]);
+  }, [teacher, paged, page, pages, onPage]);
 
-  const swipe = teacher && paged
-    ? (dir: 1 | -1) => { const next = board.page + dir; if (next >= 1 && next <= pages) onPage(next); }
+  // O'quvchiga ruxsat berilganda bir marta eslatma.
+  const [granted, setGranted] = useState(false);
+  const wasAllowed = useRef(board.studentCanDraw);
+  useEffect(() => {
+    if (!teacher && board.studentCanDraw && !wasAllowed.current) {
+      setGranted(true);
+      const t = window.setTimeout(() => setGranted(false), 3500);
+      wasAllowed.current = true;
+      return () => window.clearTimeout(t);
+    }
+    wasAllowed.current = board.studentCanDraw;
+  }, [teacher, board.studentCanDraw]);
+
+  const swipe = teacher && paged && ink.tool === 'view'
+    ? (dir: 1 | -1) => { const next = page + dir; if (next >= 1 && next <= pages) onPage(next); }
     : undefined;
 
-  const S = KIND_STYLE[m.kind];
+  const S = blank !== null || !m ? null : KIND_STYLE[m.kind];
+  const title = blank !== null ? `Oq varaq ${blank}` : m?.title ?? '';
   return (
     <motion.section
       initial={{ opacity: 0, scale: 0.98 }}
@@ -74,15 +98,30 @@ export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${S.bg} ${S.fg}`}>
-          <S.icon className="h-[18px] w-[18px]" />
-        </span>
+        {S ? (
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${S.bg} ${S.fg}`}>
+            <S.icon className="h-[18px] w-[18px]" />
+          </span>
+        ) : (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white text-[#0F172A]">
+            <StickyNote className="h-[18px] w-[18px]" />
+          </span>
+        )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13.5px] font-extrabold text-white">{m.title}</p>
+          <p className="truncate text-[13.5px] font-extrabold text-white">{title}</p>
           <p className="truncate text-[11.5px] font-semibold text-white/55">
-            {teacher ? 'Oʻquvchi ham shuni koʻrmoqda' : 'Oʻqituvchi koʻrsatmoqda'}
+            {teacher ? 'Oʻquvchi ham shuni koʻrmoqda' : board.studentCanDraw ? 'Siz ham chiza olasiz' : 'Oʻqituvchi koʻrsatmoqda'}
           </p>
         </div>
+        {teacher && blank !== null && m ? (
+          <button
+            type="button"
+            onClick={() => send({ type: 'blank', n: null })}
+            className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-[12px] bg-white/10 px-3 text-[12.5px] font-bold text-white transition hover:bg-white/20 active:scale-95"
+          >
+            <ArrowLeft className="h-4 w-4" /> <span className="max-w-[90px] truncate sm:max-w-[160px]">Materialga</span>
+          </button>
+        ) : null}
         {teacher ? (
           <button
             type="button"
@@ -98,26 +137,51 @@ export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose
       <div className="relative min-h-0 flex-1">
         <MaterialViewer
           token={token}
-          source={{ kind, lessonId, materialId: m.id }}
-          kind={m.kind}
-          title={m.title}
-          page={board.page}
-          pageCount={m.page_count}
+          source={blank !== null || !m ? null : { kind, lessonId, materialId: m.id }}
+          kind={m && blank === null ? m.kind : 'pdf'}
+          title={title}
+          page={page}
+          pageCount={blank !== null ? board.blankCount : m?.page_count ?? null}
           tone="dark"
           onSwipe={swipe}
+          draw={ink.draw}
+          overlay={ink.key ? (r) => <InkLayer ratio={r} strokes={ink.strokes} live={ink.live} laser={ink.laser} rootRef={overlayRef} /> : undefined}
         />
+        <AnimatePresence>
+          {granted ? (
+            <motion.p
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              role="status"
+              className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-[#16A34A] px-4 py-2 text-[13px] font-bold text-white shadow-lg"
+            >
+              Oʻqituvchi chizishga ruxsat berdi
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
       </div>
 
+      {ink.allowed ? (
+        <InkBar
+          ink={ink}
+          teacher={teacher}
+          studentCanDraw={board.studentCanDraw}
+          onPermit={(on) => send({ type: 'permit', studentCanDraw: on })}
+          onBlank={() => send({ type: 'blank', n: board.blankCount + 1 })}
+        />
+      ) : null}
       <RoomToolbar
         teacher={teacher}
-        page={board.page}
+        page={page}
         pages={paged ? pages : 0}
         onPage={onPage}
         onJump={() => setJumpOpen(true)}
         onOpenMaterials={onOpenMaterials}
         call={call}
       />
-      <JumpSheet open={jumpOpen} page={board.page} pages={pages} onGo={(p) => { onPage(p); setJumpOpen(false); }} onClose={() => setJumpOpen(false)} />
+      <JumpSheet open={jumpOpen} page={page} pages={pages} onGo={(p) => { onPage(p); setJumpOpen(false); }} onClose={() => setJumpOpen(false)} />
+      <TextSheet open={Boolean(ink.textAt)} color={ink.color} onCommit={ink.commitText} onCancel={ink.cancelText} />
     </motion.section>
   );
 }
@@ -267,8 +331,10 @@ function JumpSheet({ open, page, pages, onGo, onClose }: {
 }
 
 /** O'qituvchi uchun: «Shu dars uchun» tayyorlanganlar, butun kutubxona yoki darsning o'zida yangi fayl. */
-export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, onPick, onClose }: {
+export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, blankCount, onBlank, onPick, onClose }: {
   token: string | null; open: boolean; lessonKind: LessonKind; lessonId: number; currentId: number | null;
+  /** Shu darsda ochilgan oq varaqlar; `onBlank(n)` — ochish (blankCount + 1 — yangisi). */
+  blankCount: number; onBlank: (n: number) => void;
   onPick: (m: TeacherMaterial) => void; onClose: () => void;
 }) {
   const [items, setItems] = useState<TeacherMaterial[] | null>(null);
@@ -395,6 +461,27 @@ export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, 
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-[max(env(safe-area-inset-bottom,0px),16px)]">
+              <p className="px-2.5 pb-1.5 pt-1 text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-white/45">Oq varaq</p>
+              <div className="mb-2 flex flex-wrap gap-1.5 px-1">
+                <button
+                  type="button"
+                  onClick={() => onBlank(blankCount + 1)}
+                  className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-white px-3.5 text-[13px] font-extrabold text-[#0F172A] transition active:scale-95"
+                >
+                  <StickyNote className="h-4 w-4" /> Yangi oq varaq
+                </button>
+                {Array.from({ length: blankCount }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => onBlank(n)}
+                    aria-label={`Oq varaq ${n}`}
+                    className="flex h-11 min-w-[44px] items-center justify-center rounded-[12px] bg-white/10 px-3 text-[13px] font-bold text-white transition hover:bg-white/20 active:scale-95"
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
               {!items && !error ? (
                 <div className="space-y-2 px-2">{[0, 1, 2].map((i) => <div key={i} className="h-[60px] animate-pulse rounded-[14px] bg-white/[0.06]" />)}</div>
               ) : null}

@@ -6,6 +6,7 @@ import VideoDock, { type DockMode } from '../components/meet/VideoDock';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { BoardStage, MaterialsButton, MaterialsDrawer, RoomStatusPill } from '../components/materials/LessonBoard';
 import { useLessonRoom } from '../hooks/useLessonRoom';
+import { boardOpen } from '../../shared/lessonRoom';
 import { roomMaterialOf, type TeacherMaterial } from '../api/teacherMaterials';
 import { MeetError, joinLessonRoom, type MeetJoinInfo } from '../api/meet';
 import { useAuth } from '../context/AuthContext';
@@ -64,7 +65,6 @@ export default function MeetRoomPage() {
   const [media, setMedia] = useState<JitsiMediaState>({ joined: false, audioMuted: true, videoMuted: false });
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const { send } = room;
-  const turnPage = useCallback((page: number) => send({ type: 'page', page }), [send]);
   const pickMaterial = useCallback((m: TeacherMaterial) => {
     send({ type: 'show', material: roomMaterialOf(m), page: 1 });
     setDrawerOpen(false);
@@ -171,13 +171,14 @@ export default function MeetRoomPage() {
     );
   }
 
-  const material = board?.material ?? null;
-  const dockMode: DockMode = !material ? 'full' : desktop ? 'side' : 'pip';
+  // Doska ochiq: material yoki oq varaq (oq varaqni material yo'q paytda ham ochish mumkin).
+  const boardShown = Boolean(board && boardOpen(board));
+  const dockMode: DockMode = !boardShown ? 'full' : desktop ? 'side' : 'pip';
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#0C1526]">
-      {/* Telefon yotiq turganda (material ochiq) balandlik tor — sarlavha yashiriladi, «ortga» doska qatorida. */}
-      <header className={`flex items-center gap-3 px-4 pt-[max(env(safe-area-inset-top,0px),10px)] ${material ? 'pb-1.5 max-lg:landscape:hidden lg:pb-3' : 'pb-3'}`}>
+      {/* Telefon yotiq turganda (doska ochiq) balandlik tor — sarlavha yashiriladi, «ortga» doska qatorida. */}
+      <header className={`flex items-center gap-3 px-4 pt-[max(env(safe-area-inset-top,0px),10px)] ${boardShown ? 'pb-1.5 max-lg:landscape:hidden lg:pb-3' : 'pb-3'}`}>
         <button
           type="button"
           onClick={() => navigate(backTo)}
@@ -191,24 +192,22 @@ export default function MeetRoomPage() {
           <p className="truncate text-xs font-medium text-white/60">{view.subtitle}</p>
         </div>
         <RoomStatusPill status={room.status} closedText={room.closedText} />
-        {view.role === 'teacher' && (!material || desktop) ? (
-          <MaterialsButton onClick={() => setDrawerOpen(true)} active={Boolean(material)} />
+        {view.role === 'teacher' && (!boardShown || desktop) ? (
+          <MaterialsButton onClick={() => setDrawerOpen(true)} active={boardShown} />
         ) : null}
       </header>
       {roomError ? (
         <p role="alert" className="mx-4 mb-2 rounded-[14px] bg-[#7F1D1D]/50 px-4 py-2.5 text-[13px] font-semibold text-[#FECACA]">{roomError}</p>
       ) : null}
       {/* Jitsi daraxtdagi o'rnini hech qachon o'zgartirmaydi (VideoDock ichida) — aks holda qo'ng'iroq uziladi. */}
-      <div className={`flex min-h-0 flex-1 flex-col lg:flex-row ${material ? 'lg:gap-3 lg:px-3 lg:pb-3' : ''}`}>
-        {material && board ? (
+      <div className={`flex min-h-0 flex-1 flex-col lg:flex-row ${boardShown ? 'lg:gap-3 lg:px-3 lg:pb-3' : ''}`}>
+        {boardShown ? (
           <BoardStage
             token={token}
             kind={lessonKind}
             lessonId={roomLessonId}
-            board={board}
-            role={view.role}
-            onPage={turnPage}
-            onClose={() => send({ type: 'show', material: null, page: 1 })}
+            room={room}
+            onClose={() => send({ type: 'close' })}
             onOpenMaterials={() => setDrawerOpen(true)}
             onBack={() => navigate(backTo)}
             call={{ compact: dockMode === 'pip', media, controls: jitsiControls }}
@@ -233,7 +232,9 @@ export default function MeetRoomPage() {
         <MaterialsDrawer
           token={token}
           open={drawerOpen}
-          currentId={material?.id ?? null}
+          currentId={board?.blank === null ? board?.material?.id ?? null : null}
+          blankCount={board?.blankCount ?? 0}
+          onBlank={(n) => { send({ type: 'blank', n }); setDrawerOpen(false); }}
           lessonKind={lessonKind}
           lessonId={roomLessonId}
           onPick={pickMaterial}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiUrl } from '../api';
 import {
   FINAL_CLOSE_CODES, ROOM_CLOSE, ROOM_WS_PATH, applyRoomOp,
-  type LessonKind, type Presence, type RoomOp, type RoomRole, type RoomState, type ServerMessage,
+  type DraftMessage, type LessonKind, type Presence, type RoomOp, type RoomRole, type RoomState, type ServerMessage,
 } from '../../shared/lessonRoom';
 
 /**
@@ -51,6 +51,7 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
   const pendingRef = useRef(pending);
   pendingRef.current = pending;
   const laserListeners = useRef(new Set<(p: LaserPoint) => void>());
+  const draftListeners = useRef(new Set<(d: DraftMessage & { by: RoomRole }) => void>());
   /** Server soati − brauzer soati (ms): audio sinxroni uchun. */
   const clockOffset = useRef(0);
 
@@ -121,6 +122,9 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
             break;
           case 'laser':
             laserListeners.current.forEach((fn) => fn('end' in m ? null : { x: m.x, y: m.y }));
+            break;
+          case 'draft':
+            draftListeners.current.forEach((fn) => fn(m));
             break;
           case 'pong': {
             const rtt = Date.now() - m.c;
@@ -193,13 +197,24 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
     return () => { laserListeners.current.delete(fn); };
   }, []);
 
+  /** Chizilayotgan chiziq: lazer kabi — navbatga qo'yilmaydi, yakuniy chiziq `send` bilan keladi. */
+  const sendDraft = useCallback((d: Omit<DraftMessage, 't'>) => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'draft', ...d }));
+  }, []);
+
+  const onDraft = useCallback((fn: (d: DraftMessage & { by: RoomRole }) => void) => {
+    draftListeners.current.add(fn);
+    return () => { draftListeners.current.delete(fn); };
+  }, []);
+
   const state = confirmed ? pending.reduce((s, p) => applyRoomOp(s, p.op), confirmed) : null;
 
   return {
     state, role, presence, status, closedText, error,
     /** Hali serverga yetmagan o'zgarishlar bormi (ekranda «saqlanmoqda»). */
     syncing: pending.length > 0,
-    send, sendLaser, onLaser,
+    send, sendLaser, onLaser, sendDraft, onDraft,
     serverNow: () => Date.now() + clockOffset.current,
     clearError: () => setError(''),
   };

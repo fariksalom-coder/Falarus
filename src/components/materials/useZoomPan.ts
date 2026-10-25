@@ -6,7 +6,16 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPoi
  *  - kattalashganda bir barmoq bilan surish;
  *  - 1× da tez gorizontal surish — sahifa almashtirish (`onSwipe`, faqat o'qituvchiga beriladi).
  * Sahifa yoki material almashganda (`resetKey`) asl holatga qaytadi.
+ *
+ * Chizish rejimida (`draw`) bir barmoq chizadi, ikki barmoq baribir kattalashtiradi:
+ * ikkinchi barmoq qo'yilsa boshlangan chiziq bekor qilinadi.
  */
+export type DrawHandlers = {
+  down: (clientX: number, clientY: number) => void;
+  move: (clientX: number, clientY: number) => void;
+  up: () => void;
+  cancel: () => void;
+};
 export const MAX_ZOOM = 4;
 const DOUBLE_TAP_MS = 300;
 const SWIPE_PX = 60;
@@ -14,13 +23,15 @@ const SWIPE_PX = 60;
 type View = { s: number; x: number; y: number };
 const IDENTITY: View = { s: 1, x: 0, y: 0 };
 
-export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void) {
+export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void, draw?: DrawHandlers | null) {
   const boxRef = useRef<HTMLDivElement | null>(null);
   const [view, setView] = useState<View>(IDENTITY);
   const viewRef = useRef(view);
   viewRef.current = view;
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const gesture = useRef<{ kind: 'pan' | 'pinch'; start: View; px: number; py: number; dist: number; t: number } | null>(null);
+  const drawRef = useRef(draw);
+  drawRef.current = draw;
+  const gesture = useRef<{ kind: 'pan' | 'pinch' | 'draw'; start: View; px: number; py: number; dist: number; t: number } | null>(null);
   const lastTap = useRef<{ t: number; x: number; y: number } | null>(null);
   const [gesturing, setGesturing] = useState(false);
 
@@ -52,9 +63,13 @@ export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void) {
     try { boxRef.current.setPointerCapture?.(e.pointerId); } catch { /* barmoq allaqachon qo'yib yuborilgan */ }
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const pts = [...pointers.current.values()];
+    if (pts.length === 2 && gesture.current?.kind === 'draw') drawRef.current?.cancel();
     if (pts.length === 2) {
       const mid = local({ clientX: (pts[0].x + pts[1].x) / 2, clientY: (pts[0].y + pts[1].y) / 2 });
       gesture.current = { kind: 'pinch', start: viewRef.current, px: mid.x, py: mid.y, dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), t: Date.now() };
+    } else if (pts.length === 1 && drawRef.current) {
+      gesture.current = { kind: 'draw', start: viewRef.current, px: e.clientX, py: e.clientY, dist: 0, t: Date.now() };
+      drawRef.current.down(e.clientX, e.clientY);
     } else if (pts.length === 1) {
       gesture.current = { kind: 'pan', start: viewRef.current, px: e.clientX, py: e.clientY, dist: 0, t: Date.now() };
     }
@@ -66,6 +81,7 @@ export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void) {
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const g = gesture.current;
     if (!g) return;
+    if (g.kind === 'draw') { drawRef.current?.move(e.clientX, e.clientY); return; }
     const pts = [...pointers.current.values()];
     if (g.kind === 'pinch' && pts.length >= 2) {
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
@@ -80,8 +96,15 @@ export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void) {
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     const g = gesture.current;
     pointers.current.delete(e.pointerId);
+    if (g?.kind === 'draw') {
+      gesture.current = null;
+      setGesturing(false);
+      if (e.type === 'pointercancel') drawRef.current?.cancel();
+      else drawRef.current?.up();
+      return;
+    }
     if (pointers.current.size > 0) {
-      // Chimdishdan bitta barmoq qoldi — surishga o'tamiz.
+      // Chimdishdan keyin qolgan barmoq chizmaydi — faqat suradi.
       const [p] = [...pointers.current.values()];
       gesture.current = { kind: 'pan', start: viewRef.current, px: p.x, py: p.y, dist: 0, t: Date.now() };
       return;

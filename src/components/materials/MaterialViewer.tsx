@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { FileAudio, Loader2, ZoomOut } from 'lucide-react';
 import { PAGE_WIDTHS, type MaterialKind, type PageWidth } from '../../../shared/teacherMaterials';
 import { fetchMaterialBlob, loadPageUrl, type MaterialSource } from '../../api/teacherMaterials';
-import { useZoomPan } from './useZoomPan';
+import { useZoomPan, type DrawHandlers } from './useZoomPan';
+import { BLANK_RATIO } from '../../../shared/lessonRoom';
 
 /**
  * Dars materialini ko'rsatadi. PDF va rasm — server chizgan yengil sahifa rasmlari (WebP):
@@ -14,7 +15,8 @@ import { useZoomPan } from './useZoomPan';
 
 export type MaterialViewerProps = {
   token: string | null;
-  source: MaterialSource;
+  /** null — oq varaq (fayl yo'q). */
+  source: MaterialSource | null;
   kind: MaterialKind;
   title: string;
   /** PDF sahifasi (1 dan). */
@@ -26,8 +28,10 @@ export type MaterialViewerProps = {
   errorText?: string;
   /** Kattalashtirilmagan sahifada tez gorizontal surish (o'qituvchi varaqlaydi). */
   onSwipe?: (dir: 1 | -1) => void;
-  /** Sahifa ustidagi qatlam (chizmalar, lazer) — sahifa bilan birga kattalashadi. */
-  overlay?: ReactNode;
+  /** Sahifa ustidagi qatlam (chizmalar, lazer) — sahifa bilan birga kattalashadi; `ratio` — eni/bo'yi. */
+  overlay?: (ratio: number) => ReactNode;
+  /** Chizish rejimi: bir barmoq chizadi (ikki barmoq baribir kattalashtiradi). */
+  draw?: DrawHandlers | null;
 };
 
 /** Ekranga mos eng kichik yetarli o'lcham (retina hisobga olinadi). */
@@ -38,26 +42,27 @@ function widthFor(cssWidth: number): PageWidth {
 
 export default function MaterialViewer({
   token, source, kind, title, page = 1, pageCount, tone = 'light', loadingText = 'Yuklanmoqda…', errorText = 'Faylni ochib boʻlmadi',
-  onSwipe, overlay,
+  onSwipe, overlay, draw,
 }: MaterialViewerProps) {
   const dark = tone === 'dark';
-  if (kind === 'pdf' || kind === 'image') {
+  if (!source || kind === 'pdf' || kind === 'image') {
     return (
       <PageView
         token={token} source={source} page={kind === 'image' ? 1 : page} pageCount={kind === 'image' ? 1 : pageCount ?? null}
-        title={title} dark={dark} loadingText={loadingText} errorText={errorText} onSwipe={onSwipe} overlay={overlay}
+        title={title} dark={dark} loadingText={loadingText} errorText={errorText} onSwipe={onSwipe} overlay={overlay} draw={draw}
       />
     );
   }
-  return <MediaView token={token} source={source} kind={kind} title={title} dark={dark} loadingText={loadingText} errorText={errorText} />;
+  return <MediaView token={token} source={source!} kind={kind} title={title} dark={dark} loadingText={loadingText} errorText={errorText} />;
 }
 
-function PageView({ token, source, page, pageCount, title, dark, loadingText, errorText, onSwipe, overlay }: {
-  token: string | null; source: MaterialSource; page: number; pageCount: number | null; title: string; dark: boolean;
-  loadingText: string; errorText: string; onSwipe?: (dir: 1 | -1) => void; overlay?: ReactNode;
+function PageView({ token, source, page, pageCount, title, dark, loadingText, errorText, onSwipe, overlay, draw }: {
+  token: string | null; source: MaterialSource | null; page: number; pageCount: number | null; title: string; dark: boolean;
+  loadingText: string; errorText: string; onSwipe?: (dir: 1 | -1) => void; overlay?: (ratio: number) => ReactNode;
+  draw?: DrawHandlers | null;
 }) {
   const sourceKey = JSON.stringify(source);
-  const zoom = useZoomPan(`${sourceKey}:${page}`, onSwipe);
+  const zoom = useZoomPan(`${sourceKey}:${page}`, onSwipe, draw);
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [width, setWidth] = useState<PageWidth | null>(null);
   const [shown, setShown] = useState<{ key: string; url: string; ratio: number } | null>(null);
@@ -81,6 +86,13 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
   }, [box.w, zoom.scale]);
 
   useEffect(() => {
+    // Oq varaq: yuklanadigan narsa yo'q, nisbat doim bir xil (chizmalar har ekranda joyida).
+    if (!source) {
+      setShown({ key: `blank:${page}`, url: '', ratio: BLANK_RATIO });
+      setLoading(false);
+      setError(false);
+      return;
+    }
     if (!token || !width) return;
     let alive = true;
     const key = `${sourceKey}:${page}`;
@@ -122,7 +134,7 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
       ref={zoom.boxRef}
       {...zoom.handlers}
       className="relative h-full w-full touch-none select-none overflow-hidden"
-      style={{ cursor: zoom.scale > 1 ? (zoom.gesturing ? 'grabbing' : 'grab') : undefined }}
+      style={{ cursor: draw ? 'crosshair' : zoom.scale > 1 ? (zoom.gesturing ? 'grabbing' : 'grab') : undefined }}
     >
       {error && !shown ? (
         <p className={`absolute inset-0 flex items-center justify-center px-6 text-center text-[14px] font-semibold ${dark ? 'text-white/70' : 'text-app-text-muted'}`}>{errorText}</p>
@@ -133,14 +145,16 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
           style={{ transform: zoom.transform, transition: zoom.gesturing ? 'none' : 'transform 180ms ease-out' }}
         >
           <div className="relative overflow-hidden rounded-[6px] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.18)]" style={{ width: fit.w, height: fit.h }}>
-            <img
-              key={shown.key}
-              src={shown.url}
-              alt={pageCount && pageCount > 1 ? `${title} — ${page}` : title}
-              draggable={false}
-              className={`h-full w-full transition-opacity duration-150 ${loading ? 'opacity-70' : 'opacity-100'}`}
-            />
-            {overlay}
+            {shown.url ? (
+              <img
+                key={shown.key}
+                src={shown.url}
+                alt={pageCount && pageCount > 1 ? `${title} — ${page}` : title}
+                draggable={false}
+                className={`h-full w-full transition-opacity duration-150 ${loading ? 'opacity-70' : 'opacity-100'}`}
+              />
+            ) : null}
+            {overlay?.(shown.ratio)}
           </div>
         </div>
       ) : null}

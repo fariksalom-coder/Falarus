@@ -21,6 +21,7 @@ async function setup() {
   `);
   await db.exec(await readFile('db/migrations/218_teacher_lesson_materials.sql', 'utf8'));
   await db.exec(await readFile('db/migrations/219_teacher_material_pages.sql', 'utf8'));
+  await db.exec(await readFile('db/migrations/220_teacher_lesson_ink.sql', 'utf8'));
   await db.exec(`INSERT INTO teacher_materials (teacher_user_id, title, kind, mime, size_bytes, private_path) VALUES
     (1, 'Dars 1', 'pdf', 'application/pdf', 100, 'x/1.pdf'), (4, 'Begona', 'pdf', 'application/pdf', 100, 'x/2.pdf')`);
   const q = (sql: string, params?: unknown[]) => db.query(sql, params);
@@ -46,8 +47,10 @@ async function setup() {
     const next = <T extends ServerMessage['t']>(t: T, ms = 3000) => new Promise<Extract<ServerMessage, { t: T }>>((ok, bad) => {
       const i = inbox.findIndex((m) => m.t === t);
       if (i >= 0) return ok(inbox.splice(i, 1)[0] as Extract<ServerMessage, { t: T }>);
-      const timer = setTimeout(() => bad(new Error(`no ${t}`)), ms);
-      waiters.push({ t, ok: (m) => { clearTimeout(timer); ok(m as Extract<ServerMessage, { t: T }>); } });
+      const waiter = { t, ok: (m: ServerMessage) => { clearTimeout(timer); ok(m as Extract<ServerMessage, { t: T }>); } };
+      // Vaqti o'tgan kutish navbatdan olib tashlanadi — keyingi xabarni o'g'irlamasin.
+      const timer = setTimeout(() => { waiters.splice(waiters.indexOf(waiter), 1); bad(new Error(`no ${t}`)); }, ms);
+      waiters.push(waiter);
     });
     const send = (m: unknown) => ws.send(JSON.stringify(m));
     return { ws, next, send, closed, opened, inbox };
@@ -195,4 +198,112 @@ test('page turns stop at the last page of the material on the board', async () =
   assert.equal(applyRoomOp(shown, { type: 'page', page: 99 }).page, 12);
   assert.equal(applyRoomOp(shown, { type: 'page', page: 0 }).page, 1);
   assert.equal(applyRoomOp(emptyRoomState(), { type: 'page', page: 5 }).page, 1, 'no material — nothing to turn');
+});
+
+const stroke = (id: string, x = 0.1) => ({ id, tool: 'pen', color: '#EF4444', size: 4, pts: [x, 0.1, x + 0.1, 0.2] });
+
+test('drawing: teacher draws, the student draws only when allowed, only on the current page and erases only their own', async () => {
+  const t = await setup();
+  try {
+    const teacher = t.connect('t1');
+    const student = t.connect('s2');
+    await teacher.next('state');
+    await student.next('state');
+    teacher.send({ t: 'op', id: 's', op: { type: 'show', material: { id: 1 }, page: 2 } });
+    await student.next('op');
+
+    teacher.send({ t: 'op', id: 'i1', op: { type: 'ink', key: 'm1:2', add: [stroke('a')] } });
+    const drawn = await student.next('op');
+    assert.equal(drawn.op.type === 'ink' && drawn.op.add?.[0].by, 'teacher', 'server stamps the author');
+
+    student.send({ t: 'op', id: 'x1', op: { type: 'ink', key: 'm1:2', add: [stroke('b')] } });
+    assert.equal((await student.next('reject')).id, 'x1', 'no permission yet');
+    student.send({ t: 'draft', key: 'm1:2', id: 'b', tool: 'pen', color: '#EF4444', size: 4, pts: [0.1, 0.1] });
+    await assert.rejects(teacher.next('draft', 200), 'drafts from a student without permission are dropped');
+
+    teacher.send({ t: 'op', id: 'p1', op: { type: 'permit', studentCanDraw: true } });
+    await student.next('op');
+    student.send({ t: 'draft', key: 'm1:2', id: 'b', tool: 'pen', color: '#EF4444', size: 4, pts: [0.1, 0.1, 0.2, 0.2] });
+    const draft = await teacher.next('draft');
+    assert.equal(draft.by, 'student');
+    student.send({ t: 'op', id: 'x2', op: { type: 'ink', key: 'm1:2', add: [stroke('b')] } });
+    assert.equal((await student.next('ack')).id, 'x2');
+    await teacher.next('op');
+
+    student.send({ t: 'op', id: 'x3', op: { type: 'ink', key: 'm1:3', add: [stroke('c')] } });
+    assert.equal((await student.next('reject')).id, 'x3', 'only the page on the board');
+    student.send({ t: 'op', id: 'x4', op: { type: 'ink', key: 'm1:2', remove: ['a'] } });
+    assert.equal((await student.next('reject')).id, 'x4', 'cannot erase the teacher’s ink');
+    student.send({ t: 'op', id: 'x5', op: { type: 'ink', key: 'm1:2', clear: true } });
+    assert.equal((await student.next('reject')).id, 'x5', 'cannot clear the page');
+    student.send({ t: 'op', id: 'x6', op: { type: 'ink', key: 'm1:2', remove: ['b'] } });
+    assert.equal((await student.next('ack')).id, 'x6', 'own stroke can be erased');
+    await teacher.next('op');
+
+    // Hamma chiqdi — chizmalar bazadan qaytadi (yozuv bir oz kechiktirib qilinadi).
+    teacher.ws.close();
+    student.ws.close();
+    await teacher.closed;
+    await student.closed;
+    await new Promise((r) => setTimeout(r, 100));
+    const back = t.connect('s2');
+    const restored = (await back.next('state')).state;
+    assert.deepEqual(restored.ink['m1:2'].map((s) => s.id), ['a']);
+    assert.equal(restored.studentCanDraw, true);
+    back.ws.close();
+  } finally {
+    await t.close();
+  }
+});
+
+test('blank pages: open a new one, move between them, go back to the material, close the board', async () => {
+  const t = await setup();
+  try {
+    const teacher = t.connect('t1');
+    await teacher.next('state');
+    const op = async (id: string, o: unknown) => { teacher.send({ t: 'op', id, op: o }); return (await teacher.next('ack')).seq; };
+    await op('1', { type: 'show', material: { id: 1 }, page: 3 });
+    await op('2', { type: 'blank', n: 1 });
+    await op('3', { type: 'ink', key: 'b1', add: [stroke('w')] });
+    await op('4', { type: 'blank', n: 2 });
+    await op('5', { type: 'page', page: 1 });
+    await op('6', { type: 'blank', n: 9 });
+    const fresh = t.connect('s2');
+    const st = (await fresh.next('state')).state;
+    assert.equal(st.blank, 3, 'a new blank page is always the next number');
+    assert.equal(st.blankCount, 3);
+    assert.equal(st.ink.b1.length, 1);
+    await op('7', { type: 'blank', n: null });
+    const back = await fresh.next('op');
+    assert.equal(back.op.type, 'blank');
+    await op('8', { type: 'close' });
+    await fresh.next('op');
+    teacher.ws.close();
+    await teacher.closed;
+    fresh.ws.close();
+    await fresh.closed;
+    await new Promise((r) => setTimeout(r, 50));
+    const again = t.connect('t1');
+    const s2 = (await again.next('state')).state;
+    assert.equal(s2.material, null);
+    assert.equal(s2.blank, null);
+    assert.equal(s2.blankCount, 3, 'blank pages are kept for the lesson');
+    again.ws.close();
+  } finally {
+    await t.close();
+  }
+});
+
+test('ink ops are validated and page keys follow the board', async () => {
+  const { parseRoomOp, inkKeyOf, emptyRoomState } = await import('../shared/lessonRoom');
+  assert.equal(parseRoomOp({ type: 'ink', key: 'm1:2', add: [{ ...stroke('a'), pts: [0.1] }] }), null, 'odd point list');
+  assert.equal(parseRoomOp({ type: 'ink', key: '../x', add: [stroke('a')] }), null, 'bad key');
+  assert.equal(parseRoomOp({ type: 'ink', key: 'm1:2', add: [{ ...stroke('a'), color: 'red' }] }), null, 'bad colour');
+  const text = parseRoomOp({ type: 'ink', key: 'b1', add: [{ id: 't', tool: 'text', color: '#2563EB', size: 30, pts: [2, -1], text: '  Salom   dunyo ' }] });
+  assert.deepEqual(text && text.type === 'ink' && text.add?.[0].pts, [1, 0], 'points clamped into the page');
+  assert.equal(text && text.type === 'ink' && text.add?.[0].text, 'Salom dunyo');
+  const s = emptyRoomState();
+  assert.equal(inkKeyOf(s), null);
+  assert.equal(inkKeyOf({ ...s, material: { id: 7, title: '', kind: 'audio', mime: '', size_bytes: 1, page_count: null } }), null, 'no ink on audio');
+  assert.equal(inkKeyOf({ ...s, material: { id: 7, title: '', kind: 'image', mime: '', size_bytes: 1, page_count: 1 }, page: 4 }), 'm7:1');
 });
