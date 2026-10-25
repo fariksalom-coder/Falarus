@@ -224,6 +224,7 @@ await pg.exec(`
   INSERT INTO teacher_lessons (teacher_user_id, student_user_id, starts_at, ends_at, status) VALUES (11, 22, now() - interval '5 minutes', now() + interval '45 minutes', 'paid');
 `);
 await pg.exec(fs.readFileSync('db/migrations/218_teacher_lesson_materials.sql', 'utf8'));
+await pg.exec(fs.readFileSync('db/migrations/219_teacher_material_pages.sql', 'utf8'));
 const previewUser = (req: express.Request) => (String(req.headers.authorization ?? '').endsWith('preview-student') ? 22 : 11);
 const previewQ = (sql: string, params?: unknown[]) => pg.query(sql, params as unknown[]);
 const room = createLessonRoomServer({ q: previewQ, verifyToken: (t) => (t === 'preview-student' ? 22 : t === 'preview' ? 11 : null) });

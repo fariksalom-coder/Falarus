@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { FolderOpen, Loader2, MonitorUp, UploadCloud, WifiOff, X } from 'lucide-react';
 import MaterialViewer from './MaterialViewer';
-import { KIND_STYLE, PageNav } from './materialUi';
+import { KIND_STYLE, PageNav, materialMeta } from './materialUi';
 import { MATERIAL_ACCEPT } from '../../../shared/teacherMaterials';
-import { fetchMaterialBlob, formatBytes, getMaterials, uploadMaterial, type TeacherMaterial } from '../../api/teacherMaterials';
+import { getLessonMaterials, getMaterial, getMaterials, uploadMaterial, type TeacherMaterial } from '../../api/teacherMaterials';
 import type { LessonKind, RoomRole, RoomState } from '../../../shared/lessonRoom';
 import type { RoomStatus } from '../../hooks/useLessonRoom';
 
@@ -13,37 +13,14 @@ import type { RoomStatus } from '../../hooks/useLessonRoom';
  * Holat real vaqt kanalida (hooks/useLessonRoom) — bu yerda faqat ko'rinish.
  */
 
-/** Doskadagi fayl: bir marta yuklanadi, keyin xotirada (orqaga qaytilsa darhol ochiladi). */
-function useBoardBlob(token: string | null, kind: LessonKind, lessonId: number, materialId: number | null) {
-  const cache = useRef(new Map<number, Blob>());
-  const [state, setState] = useState<{ id: number | null; blob: Blob | null; error: string }>({ id: null, blob: null, error: '' });
-
-  useEffect(() => {
-    if (!token || materialId == null) { setState({ id: null, blob: null, error: '' }); return; }
-    const hit = cache.current.get(materialId);
-    if (hit) { setState({ id: materialId, blob: hit, error: '' }); return; }
-    let alive = true;
-    setState({ id: materialId, blob: null, error: '' });
-    fetchMaterialBlob(token, { kind, lessonId, materialId })
-      .then((b) => { cache.current.set(materialId, b); if (alive) setState({ id: materialId, blob: b, error: '' }); })
-      .catch((e) => { if (alive) setState({ id: materialId, blob: null, error: e instanceof Error ? e.message : 'Faylni ochib boʻlmadi' }); });
-    return () => { alive = false; };
-  }, [token, kind, lessonId, materialId]);
-
-  return state.id === materialId ? state : { blob: null, error: '' };
-}
-
 /** Video yonidagi doska maydoni. */
 export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose }: {
   token: string | null; kind: LessonKind; lessonId: number; board: RoomState; role: RoomRole;
   onPage: (page: number) => void; onClose: () => void;
 }) {
   const m = board.material!;
-  const { blob, error } = useBoardBlob(token, kind, lessonId, m.id);
-  const [pages, setPages] = useState(0);
+  const pages = m.page_count ?? 0;
   const teacher = role === 'teacher';
-
-  useEffect(() => { setPages(0); }, [m.id]);
 
   useEffect(() => {
     if (!teacher || m.kind !== 'pdf') return;
@@ -87,11 +64,15 @@ export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose
         ) : null}
       </div>
       <div className="relative min-h-0 flex-1">
-        {error ? (
-          <p className="flex h-full items-center justify-center px-6 text-center text-[14px] font-semibold text-white/70">{error}</p>
-        ) : (
-          <MaterialViewer blob={blob} kind={m.kind} title={m.title} page={board.page} onPageCount={setPages} tone="dark" />
-        )}
+        <MaterialViewer
+          token={token}
+          source={{ kind, lessonId, materialId: m.id }}
+          kind={m.kind}
+          title={m.title}
+          page={board.page}
+          pageCount={m.page_count}
+          tone="dark"
+        />
       </div>
       {m.kind === 'pdf' && pages > 1 ? (
         <div className="border-t border-white/10 px-3 py-2">
@@ -106,13 +87,17 @@ export function BoardStage({ token, kind, lessonId, board, role, onPage, onClose
   );
 }
 
-/** O'qituvchi uchun: kutubxonadan materialni tanlash yoki darsning o'zida yangi fayl yuklash. */
-export function MaterialsDrawer({ token, open, currentId, onPick, onClose }: {
-  token: string | null; open: boolean; currentId: number | null; onPick: (m: TeacherMaterial) => void; onClose: () => void;
+/** O'qituvchi uchun: «Shu dars uchun» tayyorlanganlar, butun kutubxona yoki darsning o'zida yangi fayl. */
+export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, onPick, onClose }: {
+  token: string | null; open: boolean; lessonKind: LessonKind; lessonId: number; currentId: number | null;
+  onPick: (m: TeacherMaterial) => void; onClose: () => void;
 }) {
   const [items, setItems] = useState<TeacherMaterial[] | null>(null);
+  const [forLesson, setForLesson] = useState<number[]>([]);
   const [error, setError] = useState('');
   const [upload, setUpload] = useState<{ name: string; progress: number } | null>(null);
+  /** Yuklangan PowerPoint tayyor bo'lishi bilan doskaga chiqariladi. */
+  const [pickWhenReady, setPickWhenReady] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -121,8 +106,33 @@ export function MaterialsDrawer({ token, open, currentId, onPick, onClose }: {
     getMaterials(token)
       .then((l) => { if (alive) { setItems(l.materials); setError(''); } })
       .catch((e) => { if (alive) setError(e instanceof Error ? e.message : 'Xatolik'); });
+    getLessonMaterials(token, lessonKind, lessonId)
+      .then((r) => { if (alive) setForLesson(r.material_ids); })
+      .catch(() => undefined);
     return () => { alive = false; };
-  }, [open, token]);
+  }, [open, token, lessonKind, lessonId]);
+
+  // PowerPoint/Word aylantirilayotgan bo'lsa — holatini so'rab turamiz.
+  const processing = (items ?? []).filter((m) => m.status === 'processing').map((m) => m.id);
+  const processingKey = processing.join(',');
+  useEffect(() => {
+    if (!token || !processingKey) return;
+    const timer = window.setInterval(() => {
+      for (const id of processingKey.split(',').map(Number)) {
+        getMaterial(token, id)
+          .then((m) => setItems((list) => list?.map((x) => (x.id === m.id ? m : x)) ?? list))
+          .catch(() => undefined);
+      }
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [token, processingKey]);
+
+  useEffect(() => {
+    if (pickWhenReady == null) return;
+    const m = items?.find((x) => x.id === pickWhenReady);
+    if (m?.status === 'ready') { setPickWhenReady(null); onPick(m); }
+    if (m?.status === 'failed') { setPickWhenReady(null); setError(m.error ?? 'Faylni ochib boʻlmadi'); }
+  }, [items, pickWhenReady, onPick]);
 
   useEffect(() => {
     if (!open) return;
@@ -138,13 +148,18 @@ export function MaterialsDrawer({ token, open, currentId, onPick, onClose }: {
     try {
       const m = await uploadMaterial(token, file, (progress) => setUpload({ name: file.name, progress }));
       setItems((x) => [m, ...(x ?? [])]);
-      onPick(m);
+      if (m.status === 'ready') onPick(m);
+      else setPickWhenReady(m.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Yuklab boʻlmadi');
     } finally {
       setUpload(null);
     }
   };
+
+  const prepared = forLesson.map((id) => items?.find((m) => m.id === id)).filter((m): m is TeacherMaterial => Boolean(m));
+  const rest = (items ?? []).filter((m) => !forLesson.includes(m.id));
+  const row = (m: TeacherMaterial) => <DrawerItem key={m.id} m={m} on={m.id === currentId} onPick={() => onPick(m)} />;
 
   return (
     <AnimatePresence>
@@ -187,11 +202,16 @@ export function MaterialsDrawer({ token, open, currentId, onPick, onClose }: {
                 className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[14px] border border-dashed border-white/25 text-[13.5px] font-bold text-white/85 transition hover:border-white/50 hover:bg-white/[0.04] active:scale-[0.99] disabled:opacity-60"
               >
                 {upload ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> {Math.round(upload.progress * 100)}% · {upload.name}</>
+                  <><Loader2 className="h-4 w-4 animate-spin" /> {Math.round(upload.progress * 100)}% · <span className="max-w-[180px] truncate">{upload.name}</span></>
                 ) : (
                   <><UploadCloud className="h-[18px] w-[18px]" /> Yangi fayl yuklash</>
                 )}
               </button>
+              {pickWhenReady != null ? (
+                <p className="mt-2 flex items-center gap-2 text-[12.5px] font-semibold text-white/70">
+                  <Loader2 className="h-4 w-4 animate-spin" /> PDF ga aylantirilmoqda — tayyor boʻlishi bilan ochiladi
+                </p>
+              ) : null}
               {error ? <p role="alert" className="mt-2 rounded-[12px] bg-[#7F1D1D]/40 px-3 py-2 text-[12.5px] font-semibold text-[#FECACA]">{error}</p> : null}
             </div>
 
@@ -204,30 +224,44 @@ export function MaterialsDrawer({ token, open, currentId, onPick, onClose }: {
                   Hali material yoʻq. Fayl yuklang yoki kabinetdagi «Materiallar» boʻlimiga oldindan qoʻshing.
                 </p>
               ) : null}
-              {items?.map((m) => {
-                const S = KIND_STYLE[m.kind];
-                const on = m.id === currentId;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => onPick(m)}
-                    className={`mb-1 flex min-h-[60px] w-full items-center gap-3 rounded-[14px] px-2.5 py-2 text-left transition active:scale-[0.99] ${on ? 'bg-[#2563EB]/25 ring-1 ring-[#3B82F6]/60' : 'hover:bg-white/[0.06]'}`}
-                  >
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${S.bg} ${S.fg}`}><S.icon className="h-5 w-5" /></span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-bold">{m.title}</span>
-                      <span className="block text-[11.5px] font-semibold text-white/50">{m.kind.toUpperCase()} · {formatBytes(m.size_bytes)}</span>
-                    </span>
-                    {on ? <span className="shrink-0 rounded-full bg-[#2563EB] px-2.5 py-1 text-[11px] font-extrabold">Doskada</span> : null}
-                  </button>
-                );
-              })}
+              {prepared.length ? (
+                <>
+                  <p className="px-2.5 pb-1.5 pt-1 text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-[#93C5FD]">Shu dars uchun</p>
+                  {prepared.map(row)}
+                  {rest.length ? <p className="px-2.5 pb-1.5 pt-3 text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-white/45">Barcha materiallar</p> : null}
+                </>
+              ) : null}
+              {rest.map(row)}
             </div>
           </motion.aside>
         </motion.div>
       ) : null}
     </AnimatePresence>
+  );
+}
+
+function DrawerItem({ m, on, onPick }: { m: TeacherMaterial; on: boolean; onPick: () => void }) {
+  const S = KIND_STYLE[m.kind];
+  const ready = m.status === 'ready';
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      disabled={!ready}
+      className={`mb-1 flex min-h-[60px] w-full items-center gap-3 rounded-[14px] px-2.5 py-2 text-left transition active:scale-[0.99] disabled:active:scale-100 ${
+        on ? 'bg-[#2563EB]/25 ring-1 ring-[#3B82F6]/60' : ready ? 'hover:bg-white/[0.06]' : 'opacity-60'
+      }`}
+    >
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${S.bg} ${S.fg}`}><S.icon className="h-5 w-5" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13.5px] font-bold">{m.title}</span>
+        <span className="block text-[11.5px] font-semibold text-white/50">
+          {m.status === 'processing' ? 'PDF ga aylantirilmoqda…' : m.status === 'failed' ? 'Ochilmadi' : materialMeta(m)}
+        </span>
+      </span>
+      {m.status === 'processing' ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-white/60" /> : null}
+      {on ? <span className="shrink-0 rounded-full bg-[#2563EB] px-2.5 py-1 text-[11px] font-extrabold">Doskada</span> : null}
+    </button>
   );
 }
 

@@ -1,13 +1,13 @@
 /**
  * DARS MATERIALLARI VA DARS DOSKASI.
  *
- * O'qituvchi o'z kutubxonasiga PDF, rasm, audio va video yuklaydi (private-uploads/,
- * ommaviy havolasiz). Darsda bittasini «doskaga» chiqaradi — o'quvchi ekranida shu
- * fayl va o'qituvchi tanlagan sahifa ko'rinadi.
+ * O'qituvchi o'z kutubxonasiga PDF, PowerPoint/Word (serverda PDF ga aylanadi), rasm, audio va
+ * video yuklaydi (private-uploads/, ommaviy havolasiz) va ularni istalgan darsda qayta ishlatadi.
+ * Darsga oldindan biriktirib qo'yishi ham mumkin («Shu dars uchun»).
  *
- * O'quvchi faylni faqat o'zi qatnashgan darsda, video xona ochiq paytda va faqat
- * hozir doskada turgan materialni ola oladi. Doskani boshqarish — real vaqt kanalida
- * (server/services/lessonRoom.service.ts).
+ * PDF va rasm sahifama-sahifa yengil WebP bo'lib beriladi — telefon butun kitobni yuklamaydi.
+ * O'quvchi faylni faqat o'zi qatnashgan darsda, xona ochiq paytda va faqat hozir doskada turgan
+ * materialni ola oladi. Doskani boshqarish — real vaqt kanalida (server/services/lessonRoom.service.ts).
  */
 import { Router, type Request, type Response } from 'express';
 import Busboy from 'busboy';
@@ -15,10 +15,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pool } from '../lib/db.js';
-import { checkLessonAccess, LessonAccessError, parseLessonKind } from '../services/lessonRoomAccess.js';
+import { checkLessonAccess, LessonAccessError, lessonTeacherId, parseLessonKind } from '../services/lessonRoomAccess.js';
 import type { LessonRoomServer } from '../services/lessonRoom.service.js';
+import { createMaterialPages, pageWidthFor, pagesDirOf, type MaterialPages } from '../services/materialPages.service.js';
 import {
-  MATERIAL_MAX_BYTES, MATERIAL_QUOTA_BYTES, MATERIAL_TITLE_MAX, normalizeMaterialTitle, type MaterialKind,
+  MATERIAL_MAX_BYTES, MATERIAL_QUOTA_BYTES, MATERIAL_TITLE_MAX, OFFICE_EXTENSIONS, normalizeMaterialTitle, type MaterialKind,
 } from '../../shared/teacherMaterials.js';
 
 export type MaterialQuery = (sql: string, params?: unknown[]) => Promise<{ rows: any[] }>;
@@ -27,6 +28,8 @@ export type MaterialDeps = {
   privateDir?: string;
   /** Real vaqt xonalari: doskadagi materialni bilish va o'chirilgan materialni doskadan tushirish. */
   room?: () => LessonRoomServer | null;
+  /** Sahifa rasmlari va PowerPoint/Word aylantirish (sinovlarda almashtiriladi). */
+  pages?: MaterialPages;
 };
 
 const poolQuery: MaterialQuery | null = pool ? (sql, params) => pool!.query(sql, params) : null;
@@ -35,7 +38,8 @@ class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
-const MATERIAL_COLS = 'id, title, kind, mime, size_bytes, original_name, created_at, updated_at';
+const MATERIAL_COLS = 'id, title, kind, mime, size_bytes, original_name, status, page_count, error, source_kind, created_at, updated_at';
+const shapeMaterial = (r: any) => ({ ...r, size_bytes: Number(r.size_bytes), page_count: r.page_count == null ? null : Number(r.page_count) });
 
 /** Fayl turi birinchi baytlardan aniqlanadi — brauzer yuborgan `Content-Type` ga ishonilmaydi. */
 export function sniffMaterial(head: Buffer): { kind: MaterialKind; mime: string; ext: string } | 'office' | null {
@@ -55,7 +59,7 @@ export function sniffMaterial(head: Buffer): { kind: MaterialKind; mime: string;
     return { kind: 'video', mime: 'video/mp4', ext: 'mp4' };
   }
   if (head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3) return { kind: 'video', mime: 'video/webm', ext: 'webm' };
-  // PowerPoint/Word (zip yoki eski OLE) — brauzer ularni ochmaydi.
+  // PowerPoint/Word (zip yoki eski OLE) — serverda PDF ga aylantiriladi.
   if (ascii(0, 4) === 'PK\u0003\u0004' || head.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]))) return 'office';
   return null;
 }
@@ -103,10 +107,12 @@ function receiveFile(req: Request, tmpPath: string, maxBytes: number): Promise<{
 
 /** Fayl nomidan sarlavha: kengaytma va ortiqcha belgilarsiz. */
 const titleFromName = (name: string) => normalizeMaterialTitle(name.replace(/\.[a-z0-9]{1,5}$/i, '').replace(/[_]+/g, ' ')) || 'Material';
+const extOf = (name: string) => (name.match(/\.([a-z0-9]{1,5})$/i)?.[1] ?? '').toLowerCase();
 
 export function createTeacherMaterialRoutes(authenticate: (req: any, res: any, next: any) => void, deps: MaterialDeps = {}): Router {
   const q = deps.q === undefined ? poolQuery : deps.q;
   const privateDir = deps.privateDir ?? path.resolve(process.cwd(), 'private-uploads');
+  const pages = deps.pages ?? createMaterialPages({ q, privateDir });
   const router = Router();
   const h = (fn: (req: any, res: Response) => Promise<unknown>) => (req: Request, res: Response) =>
     fn(req, res).catch((e) => {
@@ -133,13 +139,46 @@ export function createTeacherMaterialRoutes(authenticate: (req: any, res: any, n
     res.sendFile(full, { headers: { 'Content-Type': m.mime }, lastModified: false, etag: false });
   }
 
+  /** PDF sahifasi yoki rasm — WebP. Manzilda material raqami bor, shuning uchun brauzer keshlay oladi. */
+  async function sendPage(req: any, res: Response, m: { private_path: string; kind: string; status: string; page_count: number | null }) {
+    if (m.status !== 'ready') throw new HttpError(409, 'Material hali tayyorlanmoqda');
+    if (m.kind !== 'pdf' && m.kind !== 'image') throw new HttpError(400, 'Bu materialda sahifa yoʻq');
+    const page = Math.floor(Number(req.params.page));
+    const last = m.kind === 'image' ? 1 : Number(m.page_count) || 1;
+    if (!Number.isInteger(page) || page < 1 || page > last) throw new HttpError(404, 'Bunday sahifa yoʻq');
+    let file: string;
+    try {
+      file = await pages.renderPage(m, page, pageWidthFor(req.query.w));
+    } catch (e) {
+      console.error('[materials] render', (e as Error).message);
+      throw new HttpError(422, 'Sahifani koʻrsatib boʻlmadi');
+    }
+    res.setHeader('Content-Type', 'image/webp');
+    res.setHeader('Cache-Control', 'private, max-age=86400, immutable');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.sendFile(file, { lastModified: false, etag: false });
+  }
+
+  async function ownMaterial(req: any) {
+    const id = await teacherId(req);
+    const m = (await db()(`SELECT ${MATERIAL_COLS}, private_path FROM teacher_materials WHERE id = $1 AND teacher_user_id = $2`, [Number(req.params.id), id])).rows[0];
+    if (!m) throw new HttpError(404, 'Material topilmadi');
+    return m;
+  }
+
   /* ───────────── o'qituvchi kutubxonasi ───────────── */
 
   router.get('/teacher/materials', authenticate, h(async (req, res) => {
     const id = await teacherId(req);
     const rows = (await db()(`SELECT ${MATERIAL_COLS} FROM teacher_materials WHERE teacher_user_id = $1 ORDER BY created_at DESC`, [id])).rows;
     const used = rows.reduce((s, r) => s + Number(r.size_bytes), 0);
-    res.json({ materials: rows.map((r) => ({ ...r, size_bytes: Number(r.size_bytes) })), used_bytes: used, quota_bytes: MATERIAL_QUOTA_BYTES, max_file_bytes: MATERIAL_MAX_BYTES });
+    res.json({ materials: rows.map(shapeMaterial), used_bytes: used, quota_bytes: MATERIAL_QUOTA_BYTES, max_file_bytes: MATERIAL_MAX_BYTES });
+  }));
+
+  /** Bitta material — PowerPoint aylantirilayotganda holatini so'rab turish uchun. */
+  router.get('/teacher/materials/:id', authenticate, h(async (req, res) => {
+    const { private_path: _hidden, ...m } = await ownMaterial(req);
+    res.json(shapeMaterial(m));
   }));
 
   router.post('/teacher/materials', authenticate, h(async (req, res) => {
@@ -148,29 +187,45 @@ export function createTeacherMaterialRoutes(authenticate: (req: any, res: any, n
     if (used >= MATERIAL_QUOTA_BYTES) throw new HttpError(413, 'Joy tugadi — keraksiz materiallarni oʻchiring');
     const dir = path.join(privateDir, 'teacher-materials', String(id));
     fs.mkdirSync(dir, { recursive: true });
-    const tmp = path.join(dir, `${crypto.randomBytes(12).toString('hex')}.part`);
+    const base = crypto.randomBytes(12).toString('hex');
+    const tmp = path.join(dir, `${base}.part`);
     const file = await receiveFile(req, tmp, MATERIAL_MAX_BYTES);
+    const drop = (status: number, message: string): never => { fs.rmSync(tmp, { force: true }); throw new HttpError(status, message); };
+    if (used + file.size > MATERIAL_QUOTA_BYTES) drop(413, 'Joy yetmaydi — keraksiz materiallarni oʻchiring');
+
     const type = sniffMaterial(file.head);
-    if (!type || type === 'office') {
-      fs.rmSync(tmp, { force: true });
-      throw new HttpError(415, type === 'office'
-        ? 'PowerPoint va Word fayllarni darsda ochib boʻlmaydi — «Fayl → PDF qilib saqlash» bilan PDF yuklang'
-        : 'Bu fayl turi qoʻllanmaydi: PDF, rasm (JPG, PNG), audio (MP3, M4A) yoki video (MP4) yuklang');
-    }
-    if (used + file.size > MATERIAL_QUOTA_BYTES) {
-      fs.rmSync(tmp, { force: true });
-      throw new HttpError(413, 'Joy yetmaydi — keraksiz materiallarni oʻchiring');
-    }
-    const rel = path.join('teacher-materials', String(id), `${path.basename(tmp, '.part')}.${type.ext}`);
-    fs.renameSync(tmp, path.join(privateDir, rel));
+    const ext = extOf(file.name);
+    if (!type) drop(415, 'Bu fayl turi qoʻllanmaydi: PDF, PowerPoint, Word, rasm (JPG, PNG), audio (MP3, M4A, OGG) yoki video (MP4) yuklang');
+    if (type === 'office' && !(OFFICE_EXTENSIONS as readonly string[]).includes(ext)) drop(415, 'Faqat PowerPoint (pptx, ppt) va Word (docx, doc) fayllar qabul qilinadi');
+
     const title = normalizeMaterialTitle(file.fields.title ?? '') || titleFromName(file.name);
+    const originalName = file.name || `material.${type === 'office' ? ext : type!.ext}`;
+    const rel = path.join('teacher-materials', String(id), `${base}.${type === 'office' ? ext : type!.ext}`);
+    const full = path.join(privateDir, rel);
+    fs.renameSync(tmp, full);
     try {
-      const row = (await db()(`INSERT INTO teacher_materials (teacher_user_id, title, kind, mime, size_bytes, private_path, original_name)
-        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${MATERIAL_COLS}`,
-      [id, title, type.kind, type.mime, file.size, rel, file.name || `material.${type.ext}`])).rows[0];
-      res.status(201).json({ ...row, size_bytes: Number(row.size_bytes) });
+      if (type === 'office') {
+        // Aylantirish bir necha soniya oladi — javob darhol, holat «tayyorlanmoqda».
+        const row = (await db()(`INSERT INTO teacher_materials (teacher_user_id, title, kind, mime, size_bytes, private_path, original_name, status, source_kind)
+          VALUES ($1, $2, 'pdf', 'application/pdf', $3, $4, $5, 'processing', $6) RETURNING ${MATERIAL_COLS}`,
+        [id, title, file.size, rel, originalName, ext])).rows[0];
+        void pages.processOffice(Number(row.id));
+        return res.status(201).json(shapeMaterial(row));
+      }
+      let pageCount: number | null = type!.kind === 'image' ? 1 : null;
+      if (type!.kind === 'pdf') {
+        try {
+          pageCount = await pages.pageCount(full);
+        } catch {
+          throw new HttpError(415, 'PDF ochilmadi: fayl buzilgan yoki parol bilan himoyalangan');
+        }
+      }
+      const row = (await db()(`INSERT INTO teacher_materials (teacher_user_id, title, kind, mime, size_bytes, private_path, original_name, page_count)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING ${MATERIAL_COLS}`,
+      [id, title, type!.kind, type!.mime, file.size, rel, originalName, pageCount])).rows[0];
+      res.status(201).json(shapeMaterial(row));
     } catch (e) {
-      fs.rmSync(path.join(privateDir, rel), { force: true });
+      fs.rmSync(full, { force: true });
       throw e;
     }
   }));
@@ -182,7 +237,7 @@ export function createTeacherMaterialRoutes(authenticate: (req: any, res: any, n
     const row = (await db()(`UPDATE teacher_materials SET title = $3, updated_at = now() WHERE id = $1 AND teacher_user_id = $2 RETURNING ${MATERIAL_COLS}`,
       [Number(req.params.id), id, title])).rows[0];
     if (!row) throw new HttpError(404, 'Material topilmadi');
-    res.json({ ...row, size_bytes: Number(row.size_bytes) });
+    res.json(shapeMaterial(row));
   }));
 
   router.delete('/teacher/materials/:id', authenticate, h(async (req, res) => {
@@ -190,22 +245,56 @@ export function createTeacherMaterialRoutes(authenticate: (req: any, res: any, n
     const row = (await db()('DELETE FROM teacher_materials WHERE id = $1 AND teacher_user_id = $2 RETURNING private_path', [Number(req.params.id), id])).rows[0];
     if (!row) throw new HttpError(404, 'Material topilmadi');
     fs.rmSync(path.resolve(privateDir, row.private_path), { force: true });
+    fs.rmSync(pagesDirOf(privateDir, row.private_path), { recursive: true, force: true });
     deps.room?.()?.materialDeleted(Number(req.params.id));
     res.json({ ok: true });
   }));
 
   router.get('/teacher/materials/:id/file', authenticate, h(async (req, res) => {
+    sendFile(res, await ownMaterial(req));
+  }));
+
+  router.get('/teacher/materials/:id/page/:page', authenticate, h(async (req, res) => {
+    await sendPage(req, res, await ownMaterial(req));
+  }));
+
+  /* ───────────── darsga oldindan biriktirish ───────────── */
+
+  async function ownLesson(req: any) {
     const id = await teacherId(req);
-    const m = (await db()('SELECT private_path, mime, original_name FROM teacher_materials WHERE id = $1 AND teacher_user_id = $2', [Number(req.params.id), id])).rows[0];
-    if (!m) throw new HttpError(404, 'Material topilmadi');
-    sendFile(res, m);
+    const kind = parseLessonKind(req.params.kind);
+    const lessonId = Number(req.params.id);
+    if (!kind || (await lessonTeacherId(db(), kind, lessonId)) !== id) throw new HttpError(404, 'Dars topilmadi');
+    return { teacher: id, kind, lessonId };
+  }
+
+  router.get('/teacher/lesson-materials/:kind/:id', authenticate, h(async (req, res) => {
+    const l = await ownLesson(req);
+    const rows = (await db()(`SELECT material_id FROM teacher_lesson_materials WHERE lesson_kind = $1 AND lesson_id = $2 ORDER BY position, created_at`,
+      [l.kind, l.lessonId])).rows;
+    res.json({ material_ids: rows.map((r) => Number(r.material_id)) });
+  }));
+
+  /** Ro'yxatni to'liq almashtiradi (tartib — yuborilgan tartib). */
+  router.put('/teacher/lesson-materials/:kind/:id', authenticate, h(async (req, res) => {
+    const l = await ownLesson(req);
+    const ids = [...new Set((Array.isArray(req.body?.material_ids) ? req.body.material_ids : []).map(Number).filter((n: number) => Number.isInteger(n) && n > 0))].slice(0, 50) as number[];
+    const own = ids.length
+      ? new Set((await db()('SELECT id FROM teacher_materials WHERE teacher_user_id = $1 AND id = ANY($2::bigint[])', [l.teacher, ids])).rows.map((r) => Number(r.id)))
+      : new Set<number>();
+    const keep = ids.filter((m) => own.has(m));
+    await db()('DELETE FROM teacher_lesson_materials WHERE lesson_kind = $1 AND lesson_id = $2', [l.kind, l.lessonId]);
+    for (const [i, m] of keep.entries()) {
+      await db()('INSERT INTO teacher_lesson_materials (lesson_kind, lesson_id, material_id, position) VALUES ($1, $2, $3, $4)', [l.kind, l.lessonId, m, i]);
+    }
+    res.json({ material_ids: keep });
   }));
 
   /* ───────────── dars doskasi ───────────── */
-  // Doskani boshqarish real vaqt kanalida (lessonRoom.service). Bu yerda faqat fayl beriladi.
+  // Doskani boshqarish real vaqt kanalida (lessonRoom.service). Bu yerda faqat fayl va sahifalar beriladi.
 
-  /** Doskadagi fayl: ikkala ishtirokchi uchun, xona ochiq paytda, faqat hozir ko'rsatilayotgan material. */
-  router.get('/lesson-board/:kind/:id/file', authenticate, h(async (req, res) => {
+  /** Doskadagi material: ikkala ishtirokchi uchun, xona ochiq paytda, faqat hozir ko'rsatilayotgani. */
+  async function boardMaterial(req: any) {
     const kind = parseLessonKind(req.params.kind);
     if (!kind) throw new HttpError(404, 'Dars topilmadi');
     let access;
@@ -221,10 +310,18 @@ export function createTeacherMaterialRoutes(authenticate: (req: any, res: any, n
       [access.kind, access.lessonId])).rows[0]?.material_id ?? null;
     const wanted = req.query.material ? Number(req.query.material) || 0 : null;
     if (current == null || (wanted !== null && Number(current) !== wanted)) throw new HttpError(404, 'Doskada material yoʻq');
-    const m = (await db()('SELECT private_path, mime, original_name FROM teacher_materials WHERE id = $1 AND teacher_user_id = $2',
+    const m = (await db()(`SELECT private_path, mime, original_name, kind, status, page_count FROM teacher_materials WHERE id = $1 AND teacher_user_id = $2`,
       [Number(current), access.teacherId])).rows[0];
     if (!m) throw new HttpError(404, 'Doskada material yoʻq');
-    sendFile(res, m);
+    return m;
+  }
+
+  router.get('/lesson-board/:kind/:id/file', authenticate, h(async (req, res) => {
+    sendFile(res, await boardMaterial(req));
+  }));
+
+  router.get('/lesson-board/:kind/:id/page/:page', authenticate, h(async (req, res) => {
+    await sendPage(req, res, await boardMaterial(req));
   }));
 
   return router;

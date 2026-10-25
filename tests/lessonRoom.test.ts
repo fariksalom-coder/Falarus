@@ -20,6 +20,7 @@ async function setup() {
       (1, 2, now() + interval '1 day', now() + interval '1 day 50 minutes', 'paid');
   `);
   await db.exec(await readFile('db/migrations/218_teacher_lesson_materials.sql', 'utf8'));
+  await db.exec(await readFile('db/migrations/219_teacher_material_pages.sql', 'utf8'));
   await db.exec(`INSERT INTO teacher_materials (teacher_user_id, title, kind, mime, size_bytes, private_path) VALUES
     (1, 'Dars 1', 'pdf', 'application/pdf', 100, 'x/1.pdf'), (4, 'Begona', 'pdf', 'application/pdf', 100, 'x/2.pdf')`);
   const q = (sql: string, params?: unknown[]) => db.query(sql, params);

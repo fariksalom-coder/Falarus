@@ -57,3 +57,11 @@ export async function checkLessonAccess(q: AccessQuery, kind: LessonKind, lesson
     closesAt: joinWindow(starts, ends).closesAt,
   };
 }
+
+/** Darsning o'qituvchisi (vaqt oynasisiz) — materiallarni darsga oldindan biriktirish uchun. */
+export async function lessonTeacherId(q: AccessQuery, kind: LessonKind, lessonId: number): Promise<number | null> {
+  if (!Number.isInteger(lessonId) || lessonId <= 0) return null;
+  const table = kind === 'lesson' ? 'teacher_lessons' : 'teacher_trial_lessons';
+  const r = (await q(`SELECT teacher_user_id FROM ${table} WHERE id = $1`, [lessonId])).rows[0];
+  return r ? Number(r.teacher_user_id) : null;
+}

@@ -57,6 +57,11 @@ const defaultVerify = (token: string): number | null => {
   }
 };
 
+const materialOf = (m: any): RoomMaterial => ({
+  id: Number(m.id), title: m.title, kind: m.kind, mime: m.mime, size_bytes: Number(m.size_bytes),
+  page_count: m.page_count == null ? null : Number(m.page_count),
+});
+
 const CLOSE_FOR: Record<string, number> = { not_found: ROOM_CLOSE.forbidden, unpaid: ROOM_CLOSE.forbidden, early: ROOM_CLOSE.early, closed: ROOM_CLOSE.closed };
 
 export function createLessonRoomServer(deps: RoomDeps = {}) {
@@ -83,11 +88,11 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     if (existing) return existing;
     await pendingSaves.get(key);
     const state = emptyRoomState();
-    const b = q ? (await q(`SELECT b.page, b.version, b.student_can_draw, m.id, m.title, m.kind, m.mime, m.size_bytes
+    const b = q ? (await q(`SELECT b.page, b.version, b.student_can_draw, m.id, m.title, m.kind, m.mime, m.size_bytes, m.page_count
       FROM teacher_lesson_boards b LEFT JOIN teacher_materials m ON m.id = b.material_id
       WHERE b.lesson_kind = $1 AND b.lesson_id = $2`, [kind, lessonId])).rows[0] : null;
     if (b) {
-      state.material = b.id ? { id: Number(b.id), title: b.title, kind: b.kind, mime: b.mime, size_bytes: Number(b.size_bytes) } : null;
+      state.material = b.id ? materialOf(b) : null;
       state.page = Number(b.page) || 1;
       state.studentCanDraw = Boolean(b.student_can_draw);
       state.seq = Number(b.version) || 0;
@@ -114,11 +119,12 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     void chained.then(() => { if (pendingSaves.get(room.key) === chained) pendingSaves.delete(room.key); });
   }
 
-  /** Material shu xonaning o'qituvchisiga tegishlimi — tafsilotini bazadan oladi. */
-  async function resolveMaterial(room: Room, id: number): Promise<RoomMaterial | null> {
+  /** Material shu xonaning o'qituvchisiga tegishli va tayyormi — tafsilotini bazadan oladi. */
+  async function resolveMaterial(room: Room, id: number): Promise<RoomMaterial | 'not_ready' | null> {
     if (!q) return null;
-    const m = (await q('SELECT id, title, kind, mime, size_bytes FROM teacher_materials WHERE id = $1 AND teacher_user_id = $2', [id, room.teacherId])).rows[0];
-    return m ? { id: Number(m.id), title: m.title, kind: m.kind, mime: m.mime, size_bytes: Number(m.size_bytes) } : null;
+    const m = (await q('SELECT id, title, kind, mime, size_bytes, page_count, status FROM teacher_materials WHERE id = $1 AND teacher_user_id = $2', [id, room.teacherId])).rows[0];
+    if (!m) return null;
+    return m.status === 'ready' ? materialOf(m) : 'not_ready';
   }
 
   async function handleOp(room: Room, conn: Conn, id: string, raw: unknown) {
@@ -129,6 +135,7 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     if (!canApply(conn.role, op, room.state)) return send(conn.ws, { t: 'reject', id, error: 'Bu amal faqat oʻqituvchiga ruxsat etilgan' });
     if (op.type === 'show' && op.material) {
       const material = await resolveMaterial(room, op.material.id);
+      if (material === 'not_ready') return send(conn.ws, { t: 'reject', id, error: 'Material hali tayyorlanmoqda — biroz kuting' });
       if (!material) return send(conn.ws, { t: 'reject', id, error: 'Material topilmadi' });
       op = { ...op, material };
     }

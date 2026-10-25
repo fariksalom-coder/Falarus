@@ -1338,9 +1338,16 @@ async function startServer() {
   // Dars materiallari (o'qituvchi kutubxonasi) va darsdagi doska.
   const { createTeacherMaterialRoutes } = await import('./server/routes/teacherMaterialRoutes');
   const { lessonRoomServer } = await import('./server/services/lessonRoom.service');
+  const { createMaterialPages } = await import('./server/services/materialPages.service');
+  const materialsDir = (await import('./server/lib/privateUploads')).PRIVATE_UPLOADS_DIR;
+  const { pool: materialsPool } = await import('./server/lib/db');
+  const materialPages = createMaterialPages({ q: materialsPool ? (sql, params) => materialsPool.query(sql, params) : null, privateDir: materialsDir });
+  // Server qayta ishga tushganda chala qolgan PowerPoint/Word aylantirishlari davom etadi.
+  void materialPages.resume().catch((e) => console.error('[materials] resume', e));
   app.use('/api', createTeacherMaterialRoutes(authenticate, {
-    privateDir: (await import('./server/lib/privateUploads')).PRIVATE_UPLOADS_DIR,
+    privateDir: materialsDir,
     room: lessonRoomServer,
+    pages: materialPages,
   }));
 
   // O'qituvchi onboardingi v2: 8 qadam, yopiq hujjatlar, bo'laklab video, moderatsiya.

@@ -7,11 +7,11 @@ import { motion } from 'motion/react';
 import { Eye, Loader2, MonitorUp, Pencil, Search, Trash2, UploadCloud, X } from 'lucide-react';
 import { usePanel } from '../panelContext';
 import { Card, ErrorNote, GhostButton, Modal, PageHead, Pills, PrimaryButton, ProgressBar, Skeleton, inputClass } from '../ui';
-import MaterialViewer, { renderPdfThumb } from '../../../materials/MaterialViewer';
-import { KIND_STYLE, PageNav } from '../../../materials/materialUi';
+import MaterialViewer from '../../../materials/MaterialViewer';
+import { KIND_STYLE, PageNav, materialMeta } from '../../../materials/materialUi';
 import { MATERIAL_ACCEPT, MATERIAL_TITLE_MAX, type MaterialKind } from '../../../../../shared/teacherMaterials';
 import {
-  deleteMaterial, fetchMaterialBlob, formatBytes, getMaterials, renameMaterial, uploadMaterial,
+  deleteMaterial, formatBytes, getMaterial, getMaterials, loadPageUrl, renameMaterial, uploadMaterial,
   type MaterialLibrary, type TeacherMaterial,
 } from '../../../../api/teacherMaterials';
 
@@ -22,8 +22,9 @@ const TEXT = {
     upload: 'Fayl yuklash',
     drop: 'Fayllarni shu yerga tashlang',
     dropOr: 'yoki kompyuterdan tanlang',
-    formats: 'PDF · JPG, PNG · MP3, M4A · MP4 — har biri 100 MB gacha',
-    officeTip: 'PowerPoint yoki Word? «Fayl → Eksport → PDF» qilib saqlang — darsda sahifama-sahifa varaqlanadi.',
+    formats: 'PDF · PowerPoint · Word · JPG, PNG · MP3, M4A, OGG · MP4 — har biri 100 MB gacha',
+    officeTip: 'PowerPoint va Word fayllar avtomatik PDF ga aylantiriladi (bir necha soniya). Animatsiya va slayddagi video saqlanmaydi.',
+    processing: 'PDF ga aylantirilmoqda…', failed: 'Ochilmadi',
     used: (u: string, q: string) => `${q} dan ${u} ishlatilgan`,
     all: 'Hammasi', pdf: 'PDF', image: 'Rasmlar', audio: 'Audio', video: 'Video',
     search: 'Material nomi boʻyicha qidirish',
@@ -53,8 +54,9 @@ const TEXT = {
     upload: 'Загрузить файл',
     drop: 'Перетащите файлы сюда',
     dropOr: 'или выберите на компьютере',
-    formats: 'PDF · JPG, PNG · MP3, M4A · MP4 — до 100 МБ каждый',
-    officeTip: 'PowerPoint или Word? Сохраните как PDF («Файл → Экспорт → PDF») — на уроке он листается постранично.',
+    formats: 'PDF · PowerPoint · Word · JPG, PNG · MP3, M4A, OGG · MP4 — до 100 МБ каждый',
+    officeTip: 'PowerPoint и Word автоматически превращаются в PDF (несколько секунд). Анимации и видео в слайдах не сохраняются.',
+    processing: 'Превращаем в PDF…', failed: 'Не открылся',
     used: (u: string, q: string) => `Использовано ${u} из ${q}`,
     all: 'Все', pdf: 'PDF', image: 'Картинки', audio: 'Аудио', video: 'Видео',
     search: 'Поиск по названию',
@@ -109,6 +111,20 @@ export default function Materials() {
   }, [token, t.openError]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // PowerPoint/Word aylantirilayotgan bo'lsa — tayyor bo'lguncha holatini so'rab turamiz.
+  const processingKey = (lib?.materials ?? []).filter((m) => m.status === 'processing').map((m) => m.id).join(',');
+  useEffect(() => {
+    if (!processingKey) return;
+    const timer = window.setInterval(() => {
+      for (const id of processingKey.split(',').map(Number)) {
+        getMaterial(token, id)
+          .then((m) => setLib((l) => (l ? { ...l, materials: l.materials.map((x) => (x.id === m.id ? m : x)) } : l)))
+          .catch(() => undefined);
+      }
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [token, processingKey]);
 
   // Ketma-ket yuklanadi: bir vaqtda bitta katta fayl — sekin internetda ham barqaror.
   const addFiles = async (files: File[]) => {
@@ -263,7 +279,7 @@ export default function Materials() {
                       index={i}
                       token={token}
                       kindLabel={t.kindLabel[m.kind]}
-                      labels={{ preview: t.preview, rename: t.rename, remove: t.remove }}
+                      labels={{ preview: t.preview, rename: t.rename, remove: t.remove, processing: t.processing, failed: t.failed }}
                       onPreview={() => setPreview(m)}
                       onRename={() => setRenaming(m)}
                       onRemove={() => setRemoving(m)}
@@ -351,7 +367,7 @@ export default function Materials() {
 
 function MaterialCard({ m, index, token, kindLabel, labels, onPreview, onRename, onRemove }: {
   m: TeacherMaterial; index: number; token: string; kindLabel: string;
-  labels: { preview: string; rename: string; remove: string };
+  labels: { preview: string; rename: string; remove: string; processing: string; failed: string };
   onPreview: () => void; onRename: () => void; onRemove: () => void;
 }) {
   const S = KIND_STYLE[m.kind];
@@ -363,14 +379,19 @@ function MaterialCard({ m, index, token, kindLabel, labels, onPreview, onRename,
       transition={{ type: 'spring', stiffness: 320, damping: 28, delay: Math.min(index, 8) * 0.03 }}
       className="group flex items-center overflow-hidden rounded-[20px] border border-app-border bg-app-surface transition sm:block hover:-translate-y-0.5 hover:border-app-border-strong hover:shadow-[0_14px_34px_rgba(148,163,184,0.16)]"
     >
-      <button type="button" onClick={onPreview} aria-label={labels.preview} className={`relative m-2 flex h-[72px] w-[100px] shrink-0 items-center justify-center overflow-hidden rounded-[14px] sm:m-0 sm:aspect-[16/9] sm:h-auto sm:w-full sm:rounded-none ${S.bg}`}>
+      <button type="button" onClick={onPreview} disabled={m.status !== 'ready'} aria-label={labels.preview} className={`relative m-2 flex h-[72px] w-[100px] shrink-0 items-center justify-center overflow-hidden rounded-[14px] sm:m-0 sm:aspect-[16/9] sm:h-auto sm:w-full sm:rounded-none ${S.bg}`}>
         {thumb ? (
           <img src={thumb} alt="" className={`h-full w-full transition duration-300 group-hover:scale-[1.03] ${m.kind === 'pdf' ? 'object-contain p-1.5 sm:px-3 sm:pb-2 sm:pt-10 drop-shadow-[0_8px_18px_rgba(15,23,42,0.18)]' : 'object-cover'}`} />
         ) : (
           <S.icon className={`h-8 w-8 sm:h-12 sm:w-12 ${S.fg} transition duration-300 group-hover:scale-110`} strokeWidth={1.6} />
         )}
         <span className="absolute left-3 top-3 hidden rounded-full bg-white/90 sm:block px-2.5 py-[3px] text-[11.5px] font-extrabold text-app-text shadow-sm">{kindLabel}</span>
-        <span className="absolute inset-0 flex items-center justify-center bg-[rgba(15,23,42,0.35)] opacity-0 transition group-hover:opacity-100">
+        {m.status === 'processing' ? (
+          <span className="absolute inset-0 flex items-center justify-center bg-white/55 backdrop-blur-[1px]">
+            <Loader2 className="h-6 w-6 animate-spin text-app-primary sm:h-8 sm:w-8" />
+          </span>
+        ) : null}
+        <span className={`absolute inset-0 items-center justify-center bg-[rgba(15,23,42,0.35)] opacity-0 transition group-hover:opacity-100 ${m.status === 'ready' ? 'flex' : 'hidden'}`}>
           <span className="flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[13px] font-extrabold text-app-text">
             <Eye className="h-4 w-4" /> {labels.preview}
           </span>
@@ -379,7 +400,13 @@ function MaterialCard({ m, index, token, kindLabel, labels, onPreview, onRename,
       <div className="flex min-w-0 flex-1 items-center gap-1 py-2 pr-2 sm:gap-2 sm:p-3 sm:pl-4">
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 break-words text-[14px] font-extrabold leading-[1.3] text-app-text" title={m.title}>{m.title}</p>
-          <p className="mt-0.5 text-[12px] font-semibold text-app-text-muted">{formatBytes(m.size_bytes)} · {fmtDay(m.created_at)}</p>
+          {m.status === 'processing' ? (
+            <p className="mt-0.5 text-[12px] font-bold text-app-primary">{labels.processing}</p>
+          ) : m.status === 'failed' ? (
+            <p className="mt-0.5 text-[12px] font-bold text-[#B91C1C]" title={m.error ?? ''}>{labels.failed}</p>
+          ) : (
+            <p className="mt-0.5 text-[12px] font-semibold text-app-text-muted">{materialMeta(m)} · {fmtDay(m.created_at)}</p>
+          )}
         </div>
         <IconButton label={labels.rename} onClick={onRename}><Pencil className="h-[17px] w-[17px]" /></IconButton>
         <IconButton label={labels.remove} onClick={onRemove} danger><Trash2 className="h-[17px] w-[17px]" /></IconButton>
@@ -404,40 +431,21 @@ function IconButton({ children, label, onClick, danger = false }: { children: Re
   );
 }
 
-/** Kartochka rasmi: rasmning o'zi yoki PDF ning birinchi sahifasi (audio/video — belgi). */
+/** Kartochka rasmi: PDF ning birinchi sahifasi yoki rasm — serverdan kichik WebP (audio/video — belgi). */
 function useThumb(token: string, m: TeacherMaterial): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
-    if ((m.kind !== 'image' && m.kind !== 'pdf') || m.size_bytes > 8 * 1024 * 1024) return;
+    if ((m.kind !== 'image' && m.kind !== 'pdf') || m.status !== 'ready') return;
     let alive = true;
-    let objectUrl: string | null = null;
-    fetchMaterialBlob(token, { materialId: m.id })
-      .then(async (b) => {
-        if (m.kind === 'pdf') {
-          const data = await renderPdfThumb(b);
-          if (alive) setUrl(data);
-        } else if (alive) {
-          objectUrl = URL.createObjectURL(b);
-          setUrl(objectUrl);
-        }
-      })
-      .catch(() => {});
-    return () => { alive = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [token, m.id, m.kind, m.size_bytes]);
+    loadPageUrl(token, { materialId: m.id }, 1, 480).then((u) => alive && setUrl(u)).catch(() => {});
+    return () => { alive = false; };
+  }, [token, m.id, m.kind, m.status]);
   return url;
 }
 
 function PreviewModal({ m, token, t, onClose }: { m: TeacherMaterial; token: string; t: (typeof TEXT)['uz']; onClose: () => void }) {
-  const [blob, setBlob] = useState<Blob | null>(null);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(0);
-
-  useEffect(() => {
-    let alive = true;
-    fetchMaterialBlob(token, { materialId: m.id }).then((b) => alive && setBlob(b)).catch((e) => alive && setError(e instanceof Error ? e.message : t.openError));
-    return () => { alive = false; };
-  }, [token, m.id, t.openError]);
+  const pages = m.page_count ?? 0;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -449,13 +457,12 @@ function PreviewModal({ m, token, t, onClose }: { m: TeacherMaterial; token: str
   }, [pages]);
 
   return (
-    <Modal title={m.title} subtitle={`${t.kindLabel[m.kind]} · ${formatBytes(m.size_bytes)}`} onClose={onClose} width={960}>
+    <Modal title={m.title} subtitle={materialMeta(m)} onClose={onClose} width={960}>
       <div className="h-[62vh] overflow-hidden rounded-[16px] bg-app-bg-muted">
-        {error ? (
-          <p className="flex h-full items-center justify-center text-[14px] font-semibold text-app-text-muted">{error}</p>
-        ) : (
-          <MaterialViewer blob={blob} kind={m.kind} title={m.title} page={page} onPageCount={setPages} loadingText={t.loading} errorText={t.openError} />
-        )}
+        <MaterialViewer
+          token={token} source={{ materialId: m.id }} kind={m.kind} title={m.title}
+          page={page} pageCount={m.page_count} loadingText={t.loading} errorText={t.openError}
+        />
       </div>
       {m.kind === 'pdf' && pages > 1 ? <PageNav page={page} pages={pages} setPage={setPage} label={t.page(page, pages)} /> : null}
     </Modal>

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import JitsiRoom from '../components/meet/JitsiRoom';
 import { BoardStage, MaterialsButton, MaterialsDrawer, RoomStatusPill } from '../components/materials/LessonBoard';
 import { useLessonRoom } from '../hooks/useLessonRoom';
+import { roomMaterialOf, type TeacherMaterial } from '../api/teacherMaterials';
 import { MeetError, joinLessonRoom, type MeetJoinInfo } from '../api/meet';
 import { useAuth } from '../context/AuthContext';
 import { TEACHERS_LIST_PATH, TEACHER_CABINET_PATH } from '../constants/teacherPaths';
@@ -58,6 +59,10 @@ export default function MeetRoomPage() {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const { send } = room;
   const turnPage = useCallback((page: number) => send({ type: 'page', page }), [send]);
+  const pickMaterial = useCallback((m: TeacherMaterial) => {
+    send({ type: 'show', material: roomMaterialOf(m), page: 1 });
+    setDrawerOpen(false);
+  }, [send]);
   // Server rad etgan amal haqida qisqa xabar (masalan, material o'chirilgan).
   const { error: roomError, clearError } = room;
   useEffect(() => {
@@ -211,7 +216,9 @@ export default function MeetRoomPage() {
           token={token}
           open={drawerOpen}
           currentId={board?.material?.id ?? null}
-          onPick={(m) => { send({ type: 'show', material: { id: m.id, title: m.title, kind: m.kind, mime: m.mime, size_bytes: m.size_bytes }, page: 1 }); setDrawerOpen(false); }}
+          lessonKind={lessonKind}
+          lessonId={roomLessonId}
+          onPick={pickMaterial}
           onClose={closeDrawer}
         />
       ) : null}

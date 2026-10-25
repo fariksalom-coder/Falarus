@@ -16,7 +16,11 @@ import type { MaterialKind } from './teacherMaterials';
 export type LessonKind = 'lesson' | 'trial';
 export type RoomRole = 'teacher' | 'student';
 
-export type RoomMaterial = { id: number; title: string; kind: MaterialKind; mime: string; size_bytes: number };
+export type RoomMaterial = {
+  id: number; title: string; kind: MaterialKind; mime: string; size_bytes: number;
+  /** PDF sahifalari soni (rasmda 1, audio/videoda null). */
+  page_count: number | null;
+};
 
 export type RoomState = {
   material: RoomMaterial | null;
@@ -75,8 +79,11 @@ export function applyRoomOp(state: RoomState, op: RoomOp): RoomState {
   switch (op.type) {
     case 'show':
       return { ...state, material: op.material, page: op.material ? clampPage(op.page) : 1 };
-    case 'page':
-      return state.material ? { ...state, page: clampPage(op.page) } : state;
+    case 'page': {
+      if (!state.material) return state;
+      const last = state.material.page_count ?? MAX_PAGE;
+      return { ...state, page: Math.min(clampPage(op.page), last) };
+    }
     case 'permit':
       return { ...state, studentCanDraw: op.studentCanDraw };
   }
@@ -93,7 +100,7 @@ export function parseRoomOp(raw: unknown): RoomOp | null {
     if (o.material === null) return { type: 'show', material: null, page: 1 };
     const id = Number((o.material as { id?: unknown } | undefined)?.id);
     if (!Number.isInteger(id) || id <= 0) return null;
-    return { type: 'show', material: { id, title: '', kind: 'pdf', mime: '', size_bytes: 0 }, page: clampPage(o.page) };
+    return { type: 'show', material: { id, title: '', kind: 'pdf', mime: '', size_bytes: 0, page_count: null }, page: clampPage(o.page) };
   }
   if (o.type === 'page') return { type: 'page', page: clampPage(o.page) };
   if (o.type === 'permit' && typeof o.studentCanDraw === 'boolean') return { type: 'permit', studentCanDraw: o.studentCanDraw };
