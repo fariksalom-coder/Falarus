@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../../components/ui/Foundation';
 import CrmDayProgress from '../../components/supportCrm/CrmDayProgress';
+import CrmSellerBadge from '../../components/supportCrm/CrmSellerBadge';
 import {
   getSupportCrmPremiumUsers,
   type PremiumSort,
@@ -105,8 +106,9 @@ export default function SupportCrmPremiumPage() {
                     {formatLastSeenAgo(row.last_seen_at)}
                   </span>
                 </div>
-                <div className="mt-3">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   <CrmDayProgress current_day={row.current_day} completed_days={row.completed_days} />
+                  <CrmSellerBadge seller={row.seller} />
                 </div>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
                   <span className="font-medium text-app-text">

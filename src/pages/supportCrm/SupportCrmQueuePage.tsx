@@ -3,6 +3,7 @@ import {Link,useSearchParams} from 'react-router-dom';
 import {Search,X} from 'lucide-react';
 import {Card} from '../../components/ui/Foundation';
 import CrmDayProgress from '../../components/supportCrm/CrmDayProgress';
+import CrmSellerBadge from '../../components/supportCrm/CrmSellerBadge';
 import {getSupportCrmQueue,type SupportCrmQueueFilter,type SupportCrmQueueRow,type SupportCrmStats} from '../../api/supportCrm';
 import {supportCrmPath} from '../../constants/supportCrmPath';
 import {formatCrmDate,formatLastSeenAgo} from '../../utils/supportCrmFormat';
@@ -46,7 +47,7 @@ export default function SupportCrmQueuePage(){
    {!rows.length?<Card className="p-5 text-sm text-app-muted">{query?'Topilmadi.':'Bu guruh hozircha bo‘sh.'}</Card>:<ul className="space-y-3">
     {rows.map(row=><li key={row.id}><Link to={supportCrmPath(`/users/${row.id}`)} className="block rounded-2xl bg-white p-4 ring-1 ring-app-border hover:ring-blue-500">
      <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold">{[row.first_name,row.last_name].filter(Boolean).join(' ')||`User #${row.id}`}</p><p className="mt-1 text-sm">{row.phone||'—'}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-xs ${tab==='needs_contact'?'bg-amber-50 text-amber-900':'bg-blue-50 text-blue-900'}`}>{formatLastSeenAgo(row.last_activity_at)}</span></div>
-     <div className="mt-3"><CrmDayProgress current_day={row.current_day} completed_days={row.completed_days}/></div>
+     <div className="mt-3 flex flex-wrap items-center gap-2"><CrmDayProgress current_day={row.current_day} completed_days={row.completed_days}/><CrmSellerBadge seller={row.seller}/></div>
      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted"><span>{row.plan_name||'—'}</span>{row.last_contact_at&&<span>{formatCrmDate(row.last_contact_at)} · {channels[row.last_contact_channel??'']??row.last_contact_channel}{row.last_contact_channel_other?` (${row.last_contact_channel_other})`:''}</span>}</div>
      {row.last_contact_at&&<p className={`mt-2 text-xs ${row.contact_activity==='after_contact'?'text-emerald-700':'text-amber-800'}`}>{row.contact_activity==='after_contact'?'Oxirgi aloqadan keyin faollik qayd etilgan':'Oxirgi aloqadan keyin faollik hali qayd etilmagan'}</p>}
     </Link></li>)}

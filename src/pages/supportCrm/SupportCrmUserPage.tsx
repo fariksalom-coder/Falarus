@@ -13,6 +13,7 @@ import {
 import ParolTiklashPanel from '../../components/support/ParolTiklashPanel';
 import { supportCrmPath } from '../../constants/supportCrmPath';
 import { formatCrmDate } from '../../utils/supportCrmFormat';
+import { sellerLabel } from '../../components/supportCrm/CrmSellerBadge';
 
 const CHANNELS: { id: ContactChannel; label: string }[] = [
   { id: 'phone', label: 'Telefon' },
@@ -152,6 +153,7 @@ export default function SupportCrmUserPage() {
         <MiniCard label="Telefon">{u.phone?<><a href={`tel:${u.phone}`} className="break-all font-semibold text-blue-600">{u.phone}</a><button type="button" aria-label="Telefon raqamini nusxalash" className="inline-flex min-h-10 items-center gap-2 text-xs text-blue-600" onClick={async()=>{try{await navigator.clipboard.writeText(u.phone!);setCopyMessage('Nusxalandi');}catch{setCopyMessage('Raqamni belgilang va nusxalang');}}}><Copy size={14}/>{copyMessage||'Nusxalash'}</button></>:'—'}</MiniCard>
         <MiniCard label="Email">{u.email?<a href={`mailto:${u.email}`} className="break-all font-semibold text-blue-600">{u.email}</a>:'—'}</MiniCard>
         <MiniCard label="Tarif"><strong>{u.plan_name||'—'}</strong></MiniCard>
+        <MiniCard label="Kim sotgan"><strong>{sellerLabel(u.seller)}</strong>{u.seller?.sold_at?<span className="text-xs text-app-muted">{formatCrmDate(u.seller.sold_at)}</span>:null}</MiniCard>
         <MiniCard label="Sotib olgan sana"><strong>{u.plan_started_at?formatCrmDate(u.plan_started_at):'—'}</strong></MiniCard>
         <MiniCard label="Qolgan kunlar"><strong className="text-lg tabular-nums">{u.plan_days_left!=null?`${Math.max(0,u.plan_days_left)} kun`:'—'}</strong></MiniCard>
         <MiniCard label="Ro‘yxatdan o‘tgan"><strong>{formatCrmDate(u.created_at)}</strong></MiniCard>

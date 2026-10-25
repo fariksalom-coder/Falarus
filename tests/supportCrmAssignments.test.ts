@@ -13,7 +13,7 @@ test('CRM operators: permanent assignments, scoped API, exclusive queue groups, 
  await db.exec(`CREATE TABLE users(id bigint PRIMARY KEY,first_name text DEFAULT 'Student',last_name text,phone text,email text,plan_name text DEFAULT '3 OY',plan_expires_at timestamptz,last_seen_at timestamptz DEFAULT now()-interval '10 days',created_at timestamptz DEFAULT now()-interval '30 days',total_time_seconds bigint DEFAULT 0,is_golden boolean DEFAULT false,account_type text DEFAULT 'student');
  CREATE TABLE support_crm_agents(id bigserial PRIMARY KEY,login text UNIQUE,password_hash text,name text,active boolean DEFAULT true);
  CREATE TABLE subscriptions(user_id bigint,started_at timestamptz,expires_at timestamptz,status text,plan_type text);
- CREATE TABLE payments(id bigserial,user_id bigint,status text,product_code text,approved_at timestamptz,payment_time timestamptz,created_at timestamptz,tariff_type text);
+ CREATE TABLE payments(id bigserial,user_id bigint,status text,product_code text,approved_at timestamptz,payment_time timestamptz,created_at timestamptz,tariff_type text,amount numeric,payment_channel text);
  CREATE TABLE user_kunlik_day_progress(user_id bigint,day_number int,grammar_1 boolean,grammar_2 boolean,grammar_3 boolean,words_match boolean,phrases_done boolean,oqish_done boolean,suhbat_done boolean,speaking_level int,speaking_tasks_done int,updated_at timestamptz);
  CREATE TABLE user_tasks(user_id bigint,task_id bigint,status text,completed_at timestamptz);
  CREATE TABLE user_activity_dates(user_id bigint,activity_date date);

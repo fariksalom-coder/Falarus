@@ -14,6 +14,13 @@ export type SupportCrmStats = {
 };
 export type SupportCrmQueueFilter = 'needs_contact'|'contacted'|'no_contact_needed';
 
+/** Oxirgi obunani kim sotgan: operator, Rahmat avtoto'lovi, ilova do'koni yoki admin qo'lda. */
+export type SupportCrmSeller = {
+  kind: 'operator' | 'operator_rahmat' | 'rahmat' | 'store' | 'manual';
+  operator_name: string | null;
+  sold_at: string | null;
+};
+
 /** Kurs bo'yicha qayerga yetgani (1-kundan ketma-ket yopilgan kunlar). */
 export type SupportCrmDayProgress = {
   completed_days: number;
@@ -39,6 +46,7 @@ export type SupportCrmQueueRow = SupportCrmDayProgress & {
   bucket:SupportCrmQueueFilter;
   last_activity_at:string|null;
   contact_activity:'after_contact'|'not_recorded'|null;
+  seller: SupportCrmSeller | null;
 };
 
 export type SupportCrmContact = {
@@ -73,6 +81,7 @@ export type SupportCrmUserDetail = {
     idle_hours: number | null;
     idle_days: number;
     premium_active: boolean;
+    seller: SupportCrmSeller | null;
   };
   progress: {
     total_days: number;
@@ -163,6 +172,7 @@ export type SupportCrmPremiumRow = SupportCrmDayProgress & {
   last_seen_at: string | null;
   purchased_at: string | null;
   tariff_type: string | null;
+  seller: SupportCrmSeller | null;
 };
 
 export async function getSupportCrmPremiumUsers(sort: PremiumSort = 'purchase_desc') {
@@ -181,6 +191,7 @@ export type SupportCrmSearchRow = SupportCrmDayProgress & {
   last_seen_at: string | null;
   plan_name: string | null;
   plan_expires_at: string | null;
+  seller: SupportCrmSeller | null;
 };
 
 export async function searchSupportCrmUsers(q: string) {

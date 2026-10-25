@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import CrmDayProgress from './CrmDayProgress';
+import CrmSellerBadge from './CrmSellerBadge';
 import type { SupportCrmSearchRow } from '../../api/supportCrm';
 import { supportCrmPath } from '../../constants/supportCrmPath';
 import { formatCrmDate, formatLastSeenAgo } from '../../utils/supportCrmFormat';
@@ -43,6 +44,7 @@ export default function CrmSearchResultCard({ row }: { row: SupportCrmSearchRow 
         >
           {premium ? 'Premium' : 'Obunasiz'}
         </span>
+        {premium ? <CrmSellerBadge seller={row.seller} /> : null}
       </div>
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-app-muted">
         <span>ro‘yxatdan o‘tgan {formatCrmDate(row.created_at)}</span>

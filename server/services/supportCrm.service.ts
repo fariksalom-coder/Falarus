@@ -136,6 +136,76 @@ export type ContactRow = {
   created_at: string;
 };
 
+/**
+ * Who sold the student's latest Russian course subscription:
+ * an operator contract, a Rahmat payment (with or without an operator's approved claim),
+ * an app store purchase, or a payment entered manually.
+ */
+export type SaleSellerKind = 'operator' | 'operator_rahmat' | 'rahmat' | 'store' | 'manual';
+export type SaleSeller = { kind: SaleSellerKind; operator_name: string | null; sold_at: string | null };
+
+async function operatorLedgerExists(db: Pick<import('pg').Pool, 'query'>): Promise<boolean> {
+  const { rows } = await db.query<{ ok: boolean }>(
+    `SELECT to_regclass('operator_contracts') IS NOT NULL AND to_regclass('operator_rahmat_sales') IS NOT NULL AS ok`
+  );
+  return rows[0]?.ok === true;
+}
+
+export async function loadSaleSellers(userIds: number[]): Promise<Map<number, SaleSeller>> {
+  const result = new Map<number, SaleSeller>();
+  if (userIds.length === 0) return result;
+  const db = requirePool();
+  const withOperators = await operatorLedgerExists(db);
+  // Payments tied to an operator receipt are already counted by that operator's contract.
+  const sql = withOperators
+    ? `
+    WITH sales AS (
+      SELECT c.user_id, c.activated_at AS sold_at, 'operator' AS kind, o.name AS operator_name
+      FROM operator_contracts c
+      JOIN operator_accounts o ON o.id = c.operator_id
+      WHERE c.user_id = ANY($1::bigint[]) AND c.activated_at IS NOT NULL
+        AND COALESCE(c.product_code, 'russian') = 'russian'
+      UNION ALL
+      SELECT p.user_id, COALESCE(p.approved_at, p.payment_time, p.created_at),
+        CASE WHEN rs.operator_id IS NOT NULL THEN 'operator_rahmat'
+             WHEN p.payment_channel = 'rahmat' THEN 'rahmat'
+             WHEN p.payment_channel IN ('google_play', 'app_store') THEN 'store'
+             ELSE 'manual' END,
+        o.name
+      FROM payments p
+      LEFT JOIN operator_rahmat_sales rs ON rs.payment_id = p.id
+      LEFT JOIN operator_accounts o ON o.id = rs.operator_id
+      WHERE p.user_id = ANY($1::bigint[]) AND p.status = 'approved'
+        AND COALESCE(p.product_code, 'russian') = 'russian' AND p.amount > 1
+        AND NOT EXISTS (SELECT 1 FROM operator_receipts r WHERE r.payment_id = p.id)
+    )
+    SELECT DISTINCT ON (user_id) user_id, kind, operator_name, sold_at
+    FROM sales ORDER BY user_id, sold_at DESC NULLS LAST`
+    : `
+    SELECT DISTINCT ON (p.user_id) p.user_id,
+      CASE WHEN p.payment_channel = 'rahmat' THEN 'rahmat'
+           WHEN p.payment_channel IN ('google_play', 'app_store') THEN 'store'
+           ELSE 'manual' END AS kind,
+      NULL AS operator_name, COALESCE(p.approved_at, p.payment_time, p.created_at) AS sold_at
+    FROM payments p
+    WHERE p.user_id = ANY($1::bigint[]) AND p.status = 'approved'
+      AND COALESCE(p.product_code, 'russian') = 'russian' AND p.amount > 1
+    ORDER BY p.user_id, sold_at DESC NULLS LAST`;
+  const { rows } = await db.query<{ user_id: number | string; kind: SaleSellerKind; operator_name: string | null; sold_at: string | null }>(
+    sql,
+    [userIds]
+  );
+  for (const row of rows) {
+    result.set(Number(row.user_id), { kind: row.kind, operator_name: row.operator_name, sold_at: row.sold_at });
+  }
+  return result;
+}
+
+async function withSellers<T extends { id: number | string }>(rows: T[]): Promise<(T & { seller: SaleSeller | null })[]> {
+  const sellers = await loadSaleSellers(rows.map((r) => Number(r.id)));
+  return rows.map((r) => ({ ...r, seller: sellers.get(Number(r.id)) ?? null }));
+}
+
 function requirePool() {
   const db=supportCrmDatabase()??pool;
   if (!db) throw new Error('DATABASE_URL kerak');
@@ -175,7 +245,7 @@ export async function getSupportCrmStats(now=new Date()):Promise<QueueCounts> {
  const result=await requirePool().query(`${queueBaseSql()} SELECT ${countColumns} FROM candidates`,[now.toISOString()]);
  return result.rows[0] as QueueCounts;
 }
-export async function listSupportCrmQueue(opts:{filter?:QueueFilter;limit?:number;offset?:number;q?:string|null;now?:Date}):Promise<{rows:QueueRow[];total:number;counts:QueueCounts}> {
+export async function listSupportCrmQueue(opts:{filter?:QueueFilter;limit?:number;offset?:number;q?:string|null;now?:Date}):Promise<{rows:(QueueRow&{seller:SaleSeller|null})[];total:number;counts:QueueCounts}> {
  const db=requirePool(),now=(opts.now??new Date()).toISOString();
  const filter:QueueFilter=opts.filter==='contacted'||opts.filter==='no_contact_needed'?opts.filter:'needs_contact';
  const limit=Math.min(Math.max(opts.limit??50,1),500),offset=Math.max(opts.offset??0,0);
@@ -188,7 +258,7 @@ export async function listSupportCrmQueue(opts:{filter?:QueueFilter;limit?:numbe
   ORDER BY ${ordering} LIMIT $2 OFFSET $3`,[now,limit,offset,...(search?.values??[])]);
  const count=await db.query(`${queueBaseSql()} SELECT COUNT(*)::int total FROM candidates c WHERE bucket='${filter}' ${countSearch?`AND ${countSearch.sql}`:''}`,[now,...(countSearch?.values??[])]);
  const counts=await getSupportCrmStats(new Date(now));
- return {rows:result.rows,total:Number(count.rows[0]?.total??0),counts};
+ return {rows:await withSellers(result.rows),total:Number(count.rows[0]?.total??0),counts};
 }
 
 /** YYYY-MM-DD (Asia/Tashkent) — shu kunda bog‘langanlar (har bir kontakt). */
@@ -295,6 +365,7 @@ export async function getSupportCrmUser(userId: number): Promise<{
     idle_hours: number | null;
     idle_days: number;
     premium_active: boolean;
+    seller: SaleSeller | null;
   };
   progress: {
     total_days: number;
@@ -467,6 +538,7 @@ export async function getSupportCrmUser(userId: number): Promise<{
       idle_hours: idleHours,
       idle_days: idleDays,
       premium_active: premiumActive,
+      seller: (await loadSaleSellers([u.id])).get(Number(u.id)) ?? null,
     },
     progress: {
       total_days: TOTAL_DAYS,
@@ -578,7 +650,7 @@ export async function listPremiumUsers(opts: {
   sort?: PremiumSort;
   limit?: number;
   offset?: number;
-}): Promise<{ rows: PremiumUserRow[]; total: number }> {
+}): Promise<{ rows: (PremiumUserRow & { seller: SaleSeller | null })[]; total: number }> {
   const db = requirePool();
   const sort: PremiumSort =
     opts.sort === 'purchase_asc' ||
@@ -650,7 +722,7 @@ export async function listPremiumUsers(opts: {
   );
 
   return {
-    rows: rows ?? [],
+    rows: await withSellers(rows ?? []),
     total: Number(totalRes.rows[0]?.total ?? 0),
   };
 }
@@ -674,7 +746,7 @@ const SEARCH_LIMIT = 30;
  * Telefon raqamlari faqat raqamlar bo'yicha solishtiriladi (+998, probel, tire farqi yo'q).
  */
 export async function searchSupportCrmUsers(rawQuery: string | null | undefined): Promise<{
-  rows: SearchUserRow[];
+  rows: (SearchUserRow & { seller: SaleSeller | null })[];
   limit: number;
 }> {
   const db = requirePool();
@@ -705,5 +777,5 @@ export async function searchSupportCrmUsers(rawQuery: string | null | undefined)
     `,
     [SEARCH_LIMIT, ...search.values]
   );
-  return { rows: rows ?? [], limit: SEARCH_LIMIT };
+  return { rows: await withSellers(rows ?? []), limit: SEARCH_LIMIT };
 }
