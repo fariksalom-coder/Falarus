@@ -6,16 +6,18 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../../lib/adminApi';
 import { useSearchParams } from 'react-router-dom';
-import { CalendarDays, ClipboardCheck, GraduationCap, Wallet } from 'lucide-react';
+import { CalendarDays, ClipboardCheck, FilePen, GraduationCap, Wallet } from 'lucide-react';
 
 const ReviewTab = lazy(() => import('./teachers/ReviewTab'));
 const CatalogTab = lazy(() => import('./teachers/CatalogTab'));
 const ScheduleTab = lazy(() => import('./teachers/ScheduleTab'));
 const PaymentsTab = lazy(() => import('./teachers/PaymentsTab'));
+const ChangesTab = lazy(() => import('./teachers/ChangesTab'));
 
 const TABS = [
   { key: 'review', label: 'Tekshiruv', icon: ClipboardCheck },
   { key: 'teachers', label: 'Oʻqituvchilar', icon: GraduationCap },
+  { key: 'changes', label: 'Oʻzgarishlar', icon: FilePen },
   { key: 'lessons', label: 'Darslar', icon: CalendarDays },
   { key: 'payments', label: 'Toʻlovlar', icon: Wallet },
 ] as const;
@@ -27,13 +29,15 @@ export default function AdminTeacherHubPage() {
   const [badges, setBadges] = useState<Partial<Record<TabKey, number>>>({});
   const onReview = useCallback((n: number) => setBadges((b) => ({ ...b, review: n })), []);
   const onPayments = useCallback((n: number) => setBadges((b) => ({ ...b, payments: n })), []);
+  const onChanges = useCallback((n: number) => setBadges((b) => ({ ...b, changes: n })), []);
 
   // Belgichalar: qaysi tab ochiq bo'lishidan qat'i nazar — kutayotgan ariza va pul yechish so'rovlari.
   useEffect(() => {
     adminApi<{ counts: Record<string, number> }>('/teacher-applications?status=pending_review').then((r) => onReview(r.counts.pending_review ?? 0)).catch(() => {});
     adminApi<{ totals: { status: string; n: number }[] }>('/teacher-money/withdrawals?status=requested')
       .then((r) => onPayments(r.totals.find((x) => x.status === 'requested')?.n ?? 0)).catch(() => {});
-  }, [onReview, onPayments]);
+    adminApi<{ pending: number }>('/teacher-revisions?status=pending').then((r) => onChanges(r.pending)).catch(() => {});
+  }, [onReview, onPayments, onChanges]);
 
   // Tab almashganda faqat `tab` qoladi — boshqa tabning filtrlari aralashmasin.
   const go = (key: TabKey) => setParams({ tab: key }, { replace: false });
@@ -42,7 +46,7 @@ export default function AdminTeacherHubPage() {
     <div className="max-w-7xl space-y-5">
       <h1 className="text-2xl font-semibold text-app-text">Oʻqituvchilar</h1>
 
-      <nav className="grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label="Oʻqituvchilar boʻlimlari">
+      <nav className="grid grid-cols-2 gap-2 lg:grid-cols-5" aria-label="Oʻqituvchilar boʻlimlari">
         {TABS.map((t) => {
           const on = tab === t.key;
           const n = badges[t.key] ?? 0;
@@ -61,6 +65,7 @@ export default function AdminTeacherHubPage() {
       <Suspense fallback={<div className="h-48 animate-pulse rounded-2xl bg-slate-100" aria-busy="true" />}>
         {tab === 'review' ? <ReviewTab onCounts={onReview} />
           : tab === 'teachers' ? <CatalogTab />
+          : tab === 'changes' ? <ChangesTab onCounts={onChanges} />
           : tab === 'lessons' ? <ScheduleTab />
           : <PaymentsTab onCounts={onPayments} />}
       </Suspense>

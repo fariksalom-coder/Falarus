@@ -12,7 +12,7 @@ import {
   type ScheduleSlot,
 } from '../../../../api/teacherPanel';
 import { usePanel } from '../panelContext';
-import { WEEKDAYS, WEEKDAYS_SHORT, tpl } from '../lang';
+import { MONTH_NAMES, WEEKDAYS, WEEKDAYS_SHORT, tpl } from '../lang';
 import {
   Card,
   ErrorNote,
@@ -32,14 +32,15 @@ import { AddTimeModal, BlockTimeModal } from './scheduleModals';
 
 type View = 'day' | 'week' | 'month';
 
+// Prototip ranglari: bo'sh — yashil, band — ko'k, sinov — sariq, blok — kulrang.
 const SLOT_STYLE: Record<string, string> = {
-  free: 'border border-dashed border-[#B4E0C6] bg-[#EDF8F1] text-[#12703A]',
-  booked: 'bg-app-primary text-white',
-  trial: 'bg-[#E6B33E] text-[#3A2A00]',
-  blocked:
-    'bg-[repeating-linear-gradient(45deg,#F0EFF7,#F0EFF7_5px,#E7E6F0_5px,#E7E6F0_10px)] text-app-text-muted',
-  past: 'bg-[#F8F8FC] text-[#B3B4C9]',
+  free: 'border border-[#86EFAC] bg-[#DCFCE7] text-[#166534]',
+  booked: 'border border-[#93C5FD] bg-[#DBEAFE] text-[#1E40AF]',
+  trial: 'border border-[#FCD34D] bg-[#FEF3C7] text-[#92400E]',
+  blocked: 'border border-[#CBD5E1] bg-[#E2E8F0] text-[#334155]',
+  past: 'border border-app-bg-subtle bg-[#F8FAFC] text-[#94A3B8]',
 };
+const EMPTY_CELL = 'border border-dashed border-app-border bg-app-surface';
 
 /** "09:00" → daqiqa. */
 function toMin(time: string): number {
@@ -220,17 +221,20 @@ export default function Schedule() {
   const isPast = (date: string, start: string) =>
     date < today || (date === today && toMin(start) + 30 < nowMin);
 
-  const title = useMemo(() => {
-    if (!data) return t.scheduleSubtitle;
+  const period = useMemo(() => {
     if (view === 'day') return `${WEEKDAYS[lang][new Date(`${anchor}T12:00:00Z`).getUTCDay()]}, ${fmtDate(anchor, lang)}`;
-    return `${fmtDate(data.from, lang)} — ${fmtDate(data.to, lang)} · ${t.scheduleSubtitle}`;
-  }, [data, view, anchor, lang, t.scheduleSubtitle]);
+    if (view === 'month') {
+      const m = Number(anchor.slice(5, 7));
+      return `${MONTH_NAMES[lang][m - 1] ?? ''} ${anchor.slice(0, 4)}`;
+    }
+    return data ? `${fmtDate(data.from, lang)} — ${fmtDate(data.to, lang)}` : '…';
+  }, [data, view, anchor, lang]);
 
   return (
     <div>
       <PageHead
         title={t.scheduleTitle}
-        subtitle={title}
+        subtitle={t.scheduleSubtitle}
         actions={
           <>
             <GhostButton onClick={() => setBlockOpen(true)}>{t.blockTime}</GhostButton>
@@ -241,65 +245,68 @@ export default function Schedule() {
 
       {err ? <ErrorNote text={err} /> : null}
 
-      <Card className="mb-4 overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-app-border p-3.5">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex gap-0.5 rounded-[12px] bg-app-bg-muted p-[3px]">
-              {(
-                [
-                  ['day', t.viewDay],
-                  ['week', t.viewWeek],
-                  ['month', t.viewMonth],
-                ] as Array<[View, string]>
-              ).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setView(key)}
-                  className={`min-h-[36px] rounded-[9px] px-4 text-[12.5px] font-semibold transition ${
-                    view === key ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => shift(-1)}
-                className="h-9 w-9 rounded-[9px] bg-app-bg-muted text-app-text"
-                aria-label={t.back}
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                onClick={() => setAnchor(today)}
-                className="min-h-[36px] rounded-[9px] bg-app-bg-muted px-3.5 text-[12.5px] font-semibold text-app-text"
-              >
-                {view === 'week' ? t.weekThis : t.today_}
-              </button>
-              <button
-                type="button"
-                onClick={() => shift(1)}
-                className="h-9 w-9 rounded-[9px] bg-app-bg-muted text-app-text"
-                aria-label={t.next}
-              >
-                ›
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3.5 text-[11.5px] text-app-text-muted">
-            <Legend color="bg-[#EDF8F1] border border-[#B4E0C6]" label={t.slotFree} />
-            <Legend color="bg-app-primary" label={t.slotBooked} />
-            <Legend color="bg-[#E6B33E]" label={t.slotTrial} />
-            <Legend color="bg-[#E7E6F0]" label={t.slotBlocked} />
-          </div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2.5">
+        <div role="tablist" className="flex gap-1 rounded-[14px] bg-app-bg-subtle p-1">
+          {(
+            [
+              ['day', t.viewDay],
+              ['week', t.viewWeek],
+              ['month', t.viewMonth],
+            ] as Array<[View, string]>
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={view === key}
+              onClick={() => setView(key)}
+              className={`min-h-[40px] rounded-[10px] px-4 text-[13.5px] font-bold transition ${
+                view === key ? 'bg-app-surface text-app-text shadow-[0_1px_2px_rgba(15,23,42,0.1)]' : 'text-app-text-muted'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => shift(-1)}
+            className="h-11 w-11 rounded-[12px] border border-app-border bg-app-surface text-[16px] font-extrabold text-app-text transition hover:border-app-border-strong"
+            aria-label={t.back}
+          >
+            ‹
+          </button>
+          <span className="min-w-[130px] text-center text-[14px] font-extrabold text-app-text sm:min-w-[150px]">{period}</span>
+          <button
+            type="button"
+            onClick={() => shift(1)}
+            className="h-11 w-11 rounded-[12px] border border-app-border bg-app-surface text-[16px] font-extrabold text-app-text transition hover:border-app-border-strong"
+            aria-label={t.next}
+          >
+            ›
+          </button>
+          <button
+            type="button"
+            onClick={() => setAnchor(today)}
+            className="min-h-[44px] rounded-[12px] border border-app-border bg-app-surface px-3.5 text-[14px] font-bold text-app-text transition hover:border-app-border-strong"
+          >
+            {t.today_}
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-3.5 text-[12px] font-bold text-app-text-secondary">
+        <Legend color={SLOT_STYLE.free} label={t.slotFree} />
+        <Legend color={SLOT_STYLE.booked} label={t.slotBooked} />
+        <Legend color={SLOT_STYLE.trial} label={t.slotTrial} />
+        <Legend color={SLOT_STYLE.blocked} label={t.slotBlocked} />
+        <Legend color={SLOT_STYLE.past} label={t.slotPast} />
+      </div>
+
+      <Card className="mb-4 overflow-hidden p-3">
+        <p className="mx-1.5 mb-2.5 mt-1 text-[13px] text-app-text-muted">{t.clickEmptyHint}</p>
         {loading ? (
           <div className="p-4">
             <Skeleton rows={3} />
@@ -333,105 +340,81 @@ export default function Schedule() {
         )}
       </Card>
 
-      <p className="mb-4 text-center text-[11.5px] text-app-text-muted">{t.clickEmptyHint}</p>
+      <div className="mb-4 flex flex-wrap items-start gap-4">
+        <Card as="section" className="min-w-0 flex-[1_1_300px] px-5 py-[18px]">
+          <h2 className="text-[17px] font-extrabold text-app-text">{t.weeklyRules}</h2>
+          <p className="mt-0.5 mb-2.5 text-[13px] text-app-text-muted">{t.weeklyRulesHint}</p>
+          {(data?.rules ?? []).length === 0 ? (
+            <p className="border-t border-app-bg-subtle pt-3 text-[13.5px] text-app-text-muted">{t.noWeeklyRules}</p>
+          ) : (
+            <ul>
+              {data!.rules.map((r) => (
+                <li key={r.id} className="flex items-center gap-2.5 border-t border-app-bg-subtle py-2">
+                  <span className="w-[96px] shrink-0 text-[14px] font-bold text-app-text">{WEEKDAYS[lang][r.weekday]}</span>
+                  <span className="min-w-0 flex-1 text-[14px] text-app-text-secondary">
+                    {r.start_time} — {r.end_time}
+                    <span className="ml-1.5 text-[12px] text-app-text-muted">· {r.slot_minutes} {t.minutesShort}</span>
+                  </span>
+                  <DangerChip disabled={busy} onClick={() => void act(() => removeAvailability(token, r.id))}>{t.delete}</DangerChip>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-4">
-          <Card className="p-5">
-            <p className="text-[15.5px] font-semibold text-app-text">{t.weeklyRules}</p>
-            <p className="mt-1 mb-3 text-[12px] text-app-text-muted">{t.weeklyRulesHint}</p>
-            {(data?.rules ?? []).length === 0 ? (
-              <p className="py-4 text-center text-[12.5px] text-app-text-muted">{t.noWeeklyRules}</p>
-            ) : (
-              <ul className="space-y-2">
-                {data!.rules.map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex items-center gap-3 rounded-[13px] border border-app-border bg-app-bg-muted px-3.5 py-3"
-                  >
-                    <span className="min-w-0 flex-1 text-[13px] font-medium text-app-text">
-                      {WEEKDAYS[lang][r.weekday]}
-                      <span className="ml-2 text-[12.5px] font-normal text-app-text-muted">
-                        {r.start_time} — {r.end_time} · {r.slot_minutes} {t.minutesShort}
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void act(() => removeAvailability(token, r.id))}
-                      className="shrink-0 text-[12px] font-semibold text-[#C23A3F] disabled:opacity-50"
-                    >
-                      {t.delete}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          <Card className="p-5">
-            <p className="mb-3 text-[15.5px] font-semibold text-app-text">{t.oneTimeSlots}</p>
-            {(data?.exceptions ?? []).length === 0 ? (
-              <p className="py-4 text-center text-[12.5px] text-app-text-muted">{t.noExceptions}</p>
-            ) : (
-              <ul className="space-y-2">
-                {data!.exceptions.map((x) => (
-                  <li
-                    key={x.id}
-                    className="flex items-center gap-3 rounded-[13px] border border-app-border bg-app-bg-muted px-3.5 py-3"
-                  >
-                    <Tag tone={x.is_available ? 'green' : 'grey'}>
-                      {x.is_available ? t.openTimeTag : t.blockedTag}
-                    </Tag>
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] text-app-text">
-                      {fmtDate(x.date, lang)}
-                      {x.start_time ? ` · ${x.start_time}—${x.end_time}` : ` · ${t.wholeDayBlocked}`}
-                      {x.note ? ` · ${x.note}` : ''}
-                    </span>
+        <Card as="section" className="min-w-0 flex-[1_1_300px] px-5 py-[18px]">
+          <h2 className="mb-2.5 text-[17px] font-extrabold text-app-text">{t.oneTimeSlots}</h2>
+          {(data?.exceptions ?? []).length === 0 ? (
+            <p className="border-t border-app-bg-subtle pt-3 text-[13.5px] text-app-text-muted">{t.noExceptions}</p>
+          ) : (
+            <ul>
+              {data!.exceptions.map((x) => (
+                <li key={x.id} className="flex items-center gap-2.5 border-t border-app-bg-subtle py-2">
+                  <span className="min-w-0 flex-1 text-[14px] text-app-text">
+                    <b>{fmtDate(x.date, lang)}</b>
+                    {x.start_time ? ` · ${x.start_time} — ${x.end_time}` : ` · ${t.wholeDayBlocked}`}
+                    {x.note ? <span className="block text-[12px] text-app-text-muted">{x.note}</span> : null}
+                  </span>
+                  <Tag tone={x.is_available ? 'green' : 'grey'}>{x.is_available ? t.openTimeTag : t.blockedTag}</Tag>
+                  {x.is_available ? (
+                    <DangerChip disabled={busy} onClick={() => void act(() => unblockTime(token, x.id))}>{t.delete}</DangerChip>
+                  ) : (
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => void act(() => unblockTime(token, x.id))}
-                      className="shrink-0 text-[12px] font-semibold text-app-brand disabled:opacity-50"
+                      className="min-h-[40px] shrink-0 rounded-[10px] border border-app-border bg-app-surface px-3 text-[13px] font-bold text-app-text disabled:opacity-50"
                     >
-                      {x.is_available ? t.delete : t.unblock}
+                      {t.unblock}
                     </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
-
-        <Card className="p-5">
-          <p className="mb-3 text-[15.5px] font-semibold text-app-text">{t.historyTitle}</p>
-          {events.length === 0 ? (
-            <p className="py-4 text-center text-[12.5px] text-app-text-muted">{t.historyEmpty}</p>
-          ) : (
-            <ul className="space-y-3">
-              {events.map((e, i) => (
-                <li key={`${e.type}-${e.at}-${i}`} className="flex gap-3">
-                  <span
-                    className={`mt-1.5 h-[7px] w-[7px] shrink-0 rounded-full ${
-                      e.type === 'cancelled'
-                        ? 'bg-[#E9474D]'
-                        : e.type === 'booked'
-                          ? 'bg-app-primary'
-                          : e.type === 'block'
-                            ? 'bg-[#8A8CAE]'
-                            : 'bg-[#17A34A]'
-                    }`}
-                  />
-                  <p className="text-[12.5px] leading-[1.6] text-app-text">
-                    {eventText(e, t, lang)}
-                    <span className="ml-1.5 text-app-text-muted">· {fmtDate(e.at, lang)}</span>
-                  </p>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </Card>
       </div>
+
+      <Card as="section" className="px-5 py-[18px]">
+        <h2 className="mb-2 text-[17px] font-extrabold text-app-text">{t.historyTitle}</h2>
+        {events.length === 0 ? (
+          <p className="border-t border-app-bg-subtle pt-3 text-[13.5px] text-app-text-muted">{t.historyEmpty}</p>
+        ) : (
+          <ul>
+            {events.map((e, i) => (
+              <li key={`${e.type}-${e.at}-${i}`} className="flex gap-3 border-t border-app-bg-subtle py-2">
+                <span
+                  className={`mt-[5px] h-2.5 w-2.5 shrink-0 rounded-full ${
+                    e.type === 'cancelled' ? 'bg-[#DC2626]' : e.type === 'booked' ? 'bg-[#F59E0B]' : e.type === 'block' ? 'bg-[#64748B]' : 'bg-[#16A34A]'
+                  }`}
+                />
+                <span className="min-w-0 flex-1 text-[14px] text-app-text">{eventText(e, t, lang)}</span>
+                <span className="shrink-0 whitespace-nowrap text-[12px] text-app-text-muted">{fmtDate(e.at, lang)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       {addOpen ? (
         <AddTimeModal initial={addOpen} onClose={() => setAddOpen(null)} onSaved={reload} />
@@ -463,41 +446,29 @@ function WeekGrid({
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[820px]">
-        <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] border-b border-app-border">
+      <div className="min-w-[720px]">
+        <div className="mb-1 grid grid-cols-[56px_repeat(7,minmax(0,1fr))] gap-1">
           <div />
           {days.map((d) => (
             <div
               key={d.date}
-              className={`border-l border-app-border px-2 py-3 text-center ${
-                d.date === today ? 'bg-[#F5F3FF]' : ''
+              className={`rounded-[10px] px-1 py-2 text-center text-[13px] font-extrabold ${
+                d.date === today ? 'bg-app-primary text-white' : 'text-app-text-secondary'
               }`}
             >
-              <p className="text-[11.5px] font-medium text-app-text-muted">{WEEKDAYS_SHORT[lang][d.weekday]}</p>
-              <p
-                className={`text-[16px] font-semibold ${
-                  d.date === today ? 'text-app-brand' : 'text-app-text'
-                }`}
-              >
-                {Number(d.date.slice(8, 10))}
-              </p>
+              {WEEKDAYS_SHORT[lang][d.weekday]} {Number(d.date.slice(8, 10))}
             </div>
           ))}
         </div>
 
         {rows.map((time) => (
-          <div key={time} className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))]">
-            <div className="border-b border-[#F6F5FC] px-2.5 py-2 text-right text-[11px] text-app-text-muted">
-              {time}
-            </div>
+          <div key={time} className="mb-1 grid grid-cols-[56px_repeat(7,minmax(0,1fr))] gap-1">
+            <div className="pt-2.5 text-[12px] font-bold text-app-text-muted">{time}</div>
             {days.map((d) => {
               const slot = d.slots.find((s) => s.start === time);
               const past = isPast(d.date, time);
               return (
-                <div
-                  key={`${d.date}-${time}`}
-                  className="h-[54px] border-b border-l border-[#F6F5FC] p-[3px]"
-                >
+                <div key={`${d.date}-${time}`} className="h-11">
                   {slot ? (
                     <SlotCell
                       slot={slot}
@@ -506,14 +477,15 @@ function WeekGrid({
                       onClick={() => onToggle(d.date, time, slot)}
                     />
                   ) : past ? (
-                    <div className="h-full w-full rounded-[9px] bg-[#FCFCFE]" />
+                    <div className={`h-full w-full rounded-[8px] ${SLOT_STYLE.past}`} />
                   ) : (
                     <button
                       type="button"
                       onClick={() => onToggle(d.date, time, null)}
                       title={t.addHere}
-                      className={`h-full w-full rounded-[9px] text-[15px] font-semibold text-transparent transition hover:bg-[#EDF8F1] hover:text-[#17A34A] active:scale-[0.97] ${
-                        busyCell === `${d.date}-${time}` ? 'animate-pulse bg-[#EDF8F1]' : ''
+                      aria-label={`${t.addHere} · ${time}`}
+                      className={`h-full w-full rounded-[8px] text-[15px] font-bold text-transparent transition hover:border-[#86EFAC] hover:bg-[#DCFCE7] hover:text-[#166534] active:scale-[0.97] ${EMPTY_CELL} ${
+                        busyCell === `${d.date}-${time}` ? 'animate-pulse bg-[#DCFCE7]' : ''
                       }`}
                     >
                       +
@@ -553,11 +525,11 @@ function SlotCell({
       onClick={onClick}
       disabled={past && !band}
       title={band ? label : slot.state === 'free' ? t.slotFree : t.slotBlocked}
-      className={`flex h-full w-full flex-col justify-center gap-0.5 overflow-hidden rounded-[9px] px-2 text-left transition hover:brightness-95 active:scale-[0.97] disabled:cursor-default disabled:active:scale-100 ${style} ${
+      className={`flex h-full w-full flex-col justify-center gap-0.5 overflow-hidden rounded-[8px] px-1.5 text-left transition hover:brightness-95 active:scale-[0.97] disabled:cursor-default disabled:active:scale-100 ${style} ${
         past ? 'opacity-60' : ''
       } ${busy ? 'animate-pulse' : ''}`}
     >
-      <span className="truncate text-[11.5px] font-semibold">{label}</span>
+      <span className="truncate text-[12px] font-bold">{label}</span>
       {band ? (
         <span className="truncate text-[10px] opacity-70">
           {slot.start}—{slot.end}
@@ -591,14 +563,14 @@ function DayList({
   }, [day]);
 
   return (
-    <ul className="divide-y divide-[#F6F5FC]">
+    <ul>
       {hours.map((time) => {
         const slot = day?.slots.find((s) => s.start === time) ?? null;
         const past = isPast(date, time);
         return (
-          <li key={time} className="flex items-center gap-3 px-4 py-2.5">
-            <span className="w-[52px] shrink-0 text-[12.5px] font-medium text-app-text-muted">{time}</span>
-            <span className="h-[46px] min-w-0 flex-1">
+          <li key={time} className="flex items-center gap-3 border-t border-app-bg-subtle px-1 py-1.5 first:border-t-0">
+            <span className="w-[52px] shrink-0 text-[14px] font-bold text-app-text-muted">{time}</span>
+            <span className="h-11 min-w-0 flex-1">
               {slot ? (
                 <SlotCell
                   slot={slot}
@@ -607,15 +579,15 @@ function DayList({
                   onClick={() => onToggle(date, time, slot)}
                 />
               ) : past ? (
-                <span className="flex h-full items-center px-2 text-[12px] text-[#C9CADD]">
+                <span className={`flex h-full items-center rounded-[8px] px-3 text-[13px] font-bold ${SLOT_STYLE.past}`}>
                   {t.slotPast}
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={() => onToggle(date, time, null)}
-                  className={`h-full w-full rounded-[10px] border border-dashed border-app-border text-[12px] font-semibold text-app-text-muted transition hover:border-[#17A34A] hover:bg-[#EDF8F1] hover:text-[#17A34A] active:scale-[0.98] ${
-                    busyCell === `${date}-${time}` ? 'animate-pulse border-[#17A34A] bg-[#EDF8F1]' : ''
+                  className={`h-full w-full rounded-[8px] px-3 text-left text-[13px] font-bold text-[#94A3B8] transition hover:border-[#86EFAC] hover:bg-[#DCFCE7] hover:text-[#166534] active:scale-[0.98] ${EMPTY_CELL} ${
+                    busyCell === `${date}-${time}` ? 'animate-pulse bg-[#DCFCE7]' : ''
                   }`}
                 >
                   {t.addHere}
@@ -651,15 +623,16 @@ function MonthGrid({
   const lead = (days[0].weekday + 6) % 7;
 
   return (
-    <div className="p-3">
-      <div className="mb-2 grid grid-cols-7 gap-2">
+    <div className="overflow-x-auto">
+     <div className="min-w-[560px]">
+      <div className="mb-1.5 grid grid-cols-7 gap-1.5">
         {[1, 2, 3, 4, 5, 6, 0].map((w) => (
-          <p key={w} className="text-center text-[11.5px] font-medium text-app-text-muted">
+          <p key={w} className="p-1.5 text-center text-[12px] font-extrabold text-app-text-muted">
             {WEEKDAYS_SHORT[lang][w]}
           </p>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1.5">
         {Array.from({ length: lead }).map((_, i) => (
           <div key={`lead-${i}`} />
         ))}
@@ -671,24 +644,20 @@ function MonthGrid({
               key={d.date}
               type="button"
               onClick={() => onPickDay(d.date)}
-              className={`flex min-h-[86px] flex-col gap-1.5 rounded-[14px] border p-2.5 text-left transition hover:border-app-border-strong ${
-                d.date === today ? 'border-app-brand bg-[#F5F3FF]' : 'border-app-border bg-app-surface'
+              className={`flex min-h-[72px] flex-col gap-1 rounded-[12px] p-2 text-left transition hover:border-app-border-strong ${
+                d.date === today ? 'border-2 border-app-primary bg-[#F0FAF8]' : d.date < today ? 'border border-app-bg-subtle bg-[#F8FAFC] opacity-70' : 'border border-app-bg-subtle bg-app-surface'
               }`}
             >
-              <span
-                className={`text-[14px] font-semibold ${
-                  d.date === today ? 'text-app-brand' : 'text-app-text'
-                }`}
-              >
+              <span className="text-[14px] font-extrabold text-app-text">
                 {Number(d.date.slice(8, 10))}
               </span>
               {lessons > 0 ? (
-                <span className="rounded-full bg-app-icon-bg px-2 py-0.5 text-[10.5px] font-semibold text-app-brand">
+                <span className="text-[12px] font-bold text-[#1E40AF]">
                   {tpl(t.monthLessons, { n: lessons })}
                 </span>
               ) : null}
               {free > 0 ? (
-                <span className="rounded-full bg-[#E7F4EC] px-2 py-0.5 text-[10.5px] font-semibold text-[#17A34A]">
+                <span className="text-[12px] font-bold text-[#166534]">
                   {tpl(t.monthFree, { n: free })}
                 </span>
               ) : null}
@@ -696,6 +665,7 @@ function MonthGrid({
           );
         })}
       </div>
+     </div>
     </div>
   );
 }
@@ -771,8 +741,21 @@ function optimistic(
 function Legend({ color, label }: { color: string; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={`h-[11px] w-[11px] rounded-[4px] ${color}`} />
+      <span className={`h-3 w-3 rounded-[4px] ${color}`} />
       {label}
     </span>
+  );
+}
+
+function DangerChip({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="min-h-[40px] shrink-0 rounded-[10px] bg-[#FEF2F2] px-3 text-[13px] font-bold text-[#B91C1C] transition hover:bg-[#FEE2E2] disabled:opacity-50"
+    >
+      {children}
+    </button>
   );
 }

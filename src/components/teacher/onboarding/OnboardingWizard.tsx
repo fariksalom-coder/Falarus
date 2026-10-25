@@ -14,12 +14,11 @@ import {
 } from 'lucide-react';
 import { usePanel } from '../panel/panelContext';
 import { Card, ErrorNote, GhostButton, PrimaryButton, Skeleton } from '../panel/ui';
-import { TEACHER_BRAND_GRADIENT } from '../../../constants/teacherPaths';
 import {
   ERRORS, ONBOARDING_STEPS, stepsForPath, validateStep, type FieldErrors, type OnboardingData, type OnboardingPath,
 } from '../../../../shared/teacherOnboarding';
 import {
-  getOnboarding, OnboardingError, savePosition, saveStep, submitOnboarding, type FieldError, type OnboardingState,
+  cancelRevision, getOnboarding, OnboardingError, savePosition, saveStep, submitOnboarding, type FieldError, type OnboardingState,
 } from '../../../api/teacherOnboarding';
 import { ONBOARDING_TEXT } from './text';
 import { StepAbout, StepCertification, StepEducation, StepPersonal, StepPricing } from './StepForms';
@@ -59,10 +58,11 @@ function applyBody(data: OnboardingData, step: number, body: any): OnboardingDat
 
 /**
  * `focus` — anketa hali tasdiqlanmagan: kabinet o'rniga yolg'iz shu ekran, tepada katta
- * «yo'l xaritasi». Tasdiqlangan o'qituvchi uchun (kabinetdagi «Anketa» bo'limi) — ixcham ko'rinish.
+ * «yo'l xaritasi». Tasdiqlangan o'qituvchi uchun («Profil» → «Tahrirlash») — tahrir rejimi:
+ * saqlangan qadam moderatsiyaga tushadi, qoralama serverga yuborilmaydi.
  */
-export default function OnboardingWizard({ focus = false }: { focus?: boolean }) {
-  const { token, lang } = usePanel();
+export default function OnboardingWizard({ focus = false, initialStep }: { focus?: boolean; initialStep?: number }) {
+  const { token, lang, toast } = usePanel();
   const t = ONBOARDING_TEXT[lang];
   const [state, setState] = useState<OnboardingState | null>(null);
   const [step, setStep] = useState(1);
@@ -84,10 +84,11 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
     getOnboarding(token).then((s) => {
       if (!alive) return;
       setState(s);
-      setStep(s.status === 'needs_revision' && s.review?.step ? s.review.step : s.step);
+      const editing = s.status === 'active' || s.status === 'paused';
+      setStep(s.status === 'needs_revision' && s.review?.step ? s.review.step : editing ? initialStep ?? 1 : s.step);
     }).catch((e) => alive && setLoadError(e instanceof Error ? e.message : 'Xatolik'));
     return () => { alive = false; };
-  }, [token]);
+  }, [token, initialStep]);
 
   /** Qoralamani serverga yuborish; aloqa bo'lmasa brauzerda qoladi. */
   const flush = useCallback(async () => {
@@ -112,8 +113,12 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
     return () => window.removeEventListener('online', online);
   }, [flush, step]);
 
+  const editingRef = useRef(false);
+  editingRef.current = state?.status === 'active' || state?.status === 'paused';
   const onDraft = useCallback((body: unknown) => {
     writeDraft(step, body);
+    // Tahrir rejimida qoralama faqat brauzerda: server chala ma'lumotni moderatsiyaga olmaydi.
+    if (editingRef.current) return;
     pending.current = { step, body };
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => void flush(), 900);
@@ -141,6 +146,7 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
   // Admin tuzatishga qaytargan: tuzatilgan qadam saqlangach anketa darhol qayta yuboriladi —
   // qolgan qadamlarni bittalab «Saqlash va davom etish» bilan bosib chiqish shart emas.
   const revision = state.status === 'needs_revision';
+  const editing = state.status === 'active' || state.status === 'paused';
 
   /** «Saqlash va davom etish»: klientda tekshirib, serverga to'liq saqlash. */
   const saveAndNext = async (body: unknown) => {
@@ -159,6 +165,7 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
       setState(s);
       setErrors({});
       if (revision) { await submit(); return; }
+      if (editing) { toast(step === 7 ? t.saved : t.editSent); return; }
       const nextVisible = stepsForPath((s.data.personal.path || null) as OnboardingPath | null).find((n) => n > step);
       if (nextVisible) goTo(nextVisible);
     } catch (e) {
@@ -182,12 +189,17 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
     }
   }
 
-  const props: StepProps = { state, setState, onDraft, errors, lang, token, nextLabel: revision ? t.resubmit : undefined };
+  const nextLabel = revision ? t.resubmit : editing ? (step === 7 ? t.editSaveNow : t.editSave) : undefined;
+  const props: StepProps = { state, setState, onDraft, errors, lang, token, nextLabel };
   const formProps = { ...props, busy, onSubmit: saveAndNext };
 
   return (
     <div ref={top} className="mx-auto max-w-3xl space-y-4 pb-24">
-      <StatusBanner state={state} lang={lang} onFix={(n) => goTo(n)} />
+      {editing
+        ? <EditBanner state={state} lang={lang} onCancel={async () => {
+            try { setState(await cancelRevision(token)); } catch (e) { setFormError(e instanceof Error ? e.message : 'Xatolik'); }
+          }} />
+        : <StatusBanner state={state} lang={lang} onFix={(n) => goTo(n)} />}
 
       <JourneyHeader
         focus={focus} lang={lang} step={step} visible={visible} status={state.status} saving={saving}
@@ -196,11 +208,11 @@ export default function OnboardingWizard({ focus = false }: { focus?: boolean })
 
       <fieldset disabled={locked} className="min-w-0 space-y-4 disabled:opacity-70">
         {step === 1 && <StepPersonal {...formProps} key={`1-${state.status}`} initial={readDraft(1)} />}
-        {step === 2 && <StepPhoto {...props} onNext={() => (revision ? void submit() : goTo(visible.find((n) => n > 2) ?? 2))} />}
+        {step === 2 && <StepPhoto {...props} nextLabel={editing ? t.next : props.nextLabel} onNext={() => (revision ? void submit() : goTo(visible.find((n) => n > 2) ?? 2))} />}
         {step === 3 && <StepCertification {...formProps} initial={readDraft(3)} />}
         {step === 4 && <StepEducation {...formProps} initial={readDraft(4)} />}
         {step === 5 && <StepAbout {...formProps} initial={readDraft(5)} />}
-        {step === 6 && <StepVideo {...props} onNext={() => (revision ? void submit() : goTo(7))} />}
+        {step === 6 && <StepVideo {...props} nextLabel={editing ? t.next : props.nextLabel} onNext={() => (revision ? void submit() : goTo(7))} />}
         {step === 7 && <StepSchedule {...formProps} initial={readDraft(7)} />}
         {step === 8 && <StepPricing {...formProps} initial={readDraft(8)} />}
       </fieldset>
@@ -250,8 +262,7 @@ function JourneyHeader({ focus, lang, step, visible, status, saving, done, canOp
   return (
     <Card className="overflow-hidden p-0">
       {focus && (
-        <div className="relative overflow-hidden px-5 pb-6 pt-5 text-white sm:px-7 sm:pt-7" style={{ background: TEACHER_BRAND_GRADIENT }}>
-          <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative overflow-hidden bg-app-primary px-5 pb-6 pt-5 text-white sm:px-7 sm:pt-7">
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/70">{t.journeyKicker}</p>
           <h1 className="mt-1.5 max-w-[520px] text-[22px] font-extrabold leading-tight sm:text-[26px]">
             {review ? t.statusPending : t.journeyTitle(steps.length)}
@@ -285,7 +296,7 @@ function JourneyHeader({ focus, lang, step, visible, status, saving, done, canOp
                   aria-label={`${i + 1}. ${s[lang]}`} title={s[lang]}
                   className="group flex h-11 w-full items-center justify-center outline-none disabled:cursor-not-allowed">
                   <span className={`relative flex items-center justify-center rounded-full transition-all duration-200 group-active:scale-90
-                    ${active ? 'h-10 w-10 sm:h-11 sm:w-11 bg-app-primary text-white shadow-[0_10px_24px_rgba(37,99,235,0.35)] ring-4 ring-[#DBEAFE]'
+                    ${active ? 'h-10 w-10 sm:h-11 sm:w-11 bg-app-primary text-white ring-4 ring-app-icon-bg'
                       : ok ? 'h-7 w-7 sm:h-8 sm:w-8 bg-[#22A552] text-white group-hover:scale-110'
                       : open ? 'h-7 w-7 sm:h-8 sm:w-8 border-2 border-app-border-strong bg-app-surface text-app-text group-hover:border-app-primary'
                       : 'h-7 w-7 sm:h-8 sm:w-8 border-2 border-app-border bg-app-surface text-app-text-muted'}`}>
@@ -335,6 +346,28 @@ function SaveIndicator({ state, lang }: { state: 'idle' | 'saving' | 'saved' | '
       {state === 'offline' && <><CloudOff className="h-3.5 w-3.5" /><span className="max-w-[180px] leading-tight">{t.offline}</span></>}
     </span>
   );
+}
+
+/** Tahrir rejimi: moderatsiya holati bitta ixcham qatorda (katta kartochka emas). */
+function EditBanner({ state, lang, onCancel }: { state: OnboardingState; lang: 'uz' | 'ru'; onCancel: () => void }) {
+  const t = ONBOARDING_TEXT[lang];
+  if (state.revision) {
+    return (
+      <div role="status" className="flex flex-wrap items-center gap-3 rounded-[16px] border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-[#78350F]">
+        <Clock3 className="h-5 w-5 shrink-0" />
+        <p className="min-w-0 flex-1 text-[13px]"><b>{t.revisionPending}.</b> {t.revisionPendingHint}</p>
+        <button type="button" onClick={onCancel} className="min-h-11 rounded-[12px] px-3 text-[13px] font-bold underline-offset-2 hover:underline">{t.revisionCancel}</button>
+      </div>
+    );
+  }
+  if (state.last_revision?.status === 'rejected') {
+    return (
+      <div role="status" className="rounded-[16px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#7F1D1D]">
+        <b>{t.revisionRejected}.</b> {state.last_revision.review_comment ? <>{t.reviewComment}: {state.last_revision.review_comment}</> : null}
+      </div>
+    );
+  }
+  return <p className="px-1 text-[13px] text-app-text-muted">{t.editHint}</p>;
 }
 
 function StatusBanner({ state, lang, onFix }: { state: OnboardingState; lang: 'uz' | 'ru'; onFix: (step: number) => void }) {

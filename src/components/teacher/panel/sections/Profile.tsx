@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Lock } from 'lucide-react';
+import { Check, Lock } from 'lucide-react';
 import {
   deleteTeacherDocument,
   getPanelReviews,
@@ -10,6 +10,10 @@ import {
   type TeacherProfileResponse,
 } from '../../../../api/teacherPanel';
 import { usePanel } from '../panelContext';
+import { getOnboarding, type OnboardingState } from '../../../../api/teacherOnboarding';
+import {
+  LANGUAGES, LANGUAGE_LEVELS, ONBOARDING_STEPS, SPECIALIZATIONS, stepsForPath, validateStep, type OnboardingPath,
+} from '../../../../../shared/teacherOnboarding';
 import { resolveAssetUrl } from '../../../../api';
 import { tpl } from '../lang';
 import {
@@ -18,23 +22,12 @@ import {
   Empty,
   ErrorNote,
   GhostButton,
-  PageHead,
   PrimaryButton,
-  ProgressBar,
   Skeleton,
   Tag,
   fmtDate,
   fmtSum,
 } from '../ui';
-
-/** Qadam nomini panel tilida beradi (server sarlavhasi faqat o'zbekcha). */
-function stepTitle(step: number, t: ReturnType<typeof usePanel>['t']): string {
-  const keys = [
-    t.step1, t.step2, t.step3, t.step4, t.step5, t.step6,
-    t.step7, t.step8, t.step9, t.step10, t.step11, t.step12,
-  ];
-  return keys[step - 1] ?? '';
-}
 
 /** `["A1","A2"]` ko'rinishidagi qiymatni ro'yxatga aylantiradi. */
 function asList(value: unknown): string[] {
@@ -72,93 +65,36 @@ function asRows(value: unknown): Array<Record<string, string>> {
   });
 }
 
-type StatusView = {
-  title: string;
-  text: string;
-  cta: string;
-  target: 'anketa' | 'public' | 'help';
-  bg: string;
-  border: string;
-  fg: string;
-  dot: string;
+/** Qaysi ustun anketaning qaysi qadamiga tegishli (moderatsiyadagi o'zgarishni belgilash uchun). */
+const FIELD_STEP: Record<string, number> = {
+  first_name: 1, last_name: 1, birth_country: 1, subject: 1, proficiency: 1, onboarding_path: 1,
+  contact_phone: 1, contact_telegram: 1, contact_whatsapp: 1, avatar_url: 2, certificates: 3, education: 4,
+  about_answers: 5, about: 5, headline: 5, experience_years: 5, experience_months: 5, specializations: 5, languages: 5,
+  video_url: 6, video_duration_sec: 6, lesson_price_uzs: 8,
 };
-
-function statusView(
-  status: string,
-  adminNote: string,
-  t: ReturnType<typeof usePanel>['t']
-): StatusView {
-  switch (status) {
-    case 'active':
-      return {
-        title: t.stActiveTitle,
-        text: t.stActiveText,
-        cta: t.stActiveCta,
-        target: 'public',
-        bg: 'bg-[#F3FBF6]',
-        border: 'border-[#C7E9D5]',
-        fg: 'text-[#12703A]',
-        dot: 'bg-[#17A34A]',
-      };
-    case 'pending_review':
-      return {
-        title: t.stReviewTitle,
-        text: t.stReviewText,
-        cta: t.stReviewCta,
-        target: 'anketa',
-        bg: 'bg-[#FFFBF0]',
-        border: 'border-[#F5E3B8]',
-        fg: 'text-[#7A5B10]',
-        dot: 'bg-[#E6B33E]',
-      };
-    case 'rejected':
-      return {
-        title: t.stRejectedTitle,
-        text: adminNote || t.stDraftText,
-        cta: t.stRejectedCta,
-        target: 'anketa',
-        bg: 'bg-[#FFF6F6]',
-        border: 'border-[#FBDCDC]',
-        fg: 'text-[#8A3B3E]',
-        dot: 'bg-[#E9474D]',
-      };
-    case 'paused':
-      return {
-        title: t.stPausedTitle,
-        text: adminNote || t.stPausedText,
-        cta: t.stPausedCta,
-        target: 'help',
-        bg: 'bg-[#F7F7FA]',
-        border: 'border-[#DFDFE9]',
-        fg: 'text-app-text',
-        dot: 'bg-[#5B5E86]',
-      };
-    default:
-      return {
-        title: t.stDraftTitle,
-        text: t.stDraftText,
-        cta: t.stDraftCta,
-        target: 'anketa',
-        bg: 'bg-app-bg-muted',
-        border: 'border-app-border-strong',
-        fg: 'text-app-text',
-        dot: 'bg-[#8A8CAE]',
-      };
-  }
-}
 
 /* --------------------------------- Profil --------------------------------- */
 
+/**
+ * Profil = anketa (onboarding v2) ma'lumotlari. To'ldirilganlik faqat joriy 8 qadam bo'yicha
+ * (eski 12 bandli anketa — pasport, manzil, oylik narx — hisoblanmaydi); ixtiyoriy qadam
+ * (masalan, ta'lim) bo'sh bo'lsa ham bajarilgan sanaladi.
+ */
 export default function Profile() {
   const { token, t, lang, go, cabinet } = usePanel();
-  const [data, setData] = useState<TeacherProfileResponse | null>(null);
+  const [state, setState] = useState<OnboardingState | null>(null);
+  const [contact, setContact] = useState<TeacherProfileResponse['contact'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     let alive = true;
-    getTeacherProfile(token)
-      .then((r) => alive && setData(r))
+    Promise.all([getOnboarding(token), getTeacherProfile(token).catch(() => null)])
+      .then(([s, prof]) => {
+        if (!alive) return;
+        setState(s);
+        setContact(prof?.contact ?? null);
+      })
       .catch((e: Error) => alive && setErr(e.message))
       .finally(() => alive && setLoading(false));
     return () => {
@@ -167,236 +103,144 @@ export default function Profile() {
   }, [token]);
 
   if (loading) return <Skeleton rows={4} />;
-  if (!data) return <ErrorNote text={err || t.errorGeneric} />;
+  if (!state) return <ErrorNote text={err || t.errorGeneric} />;
 
+  const d = state.data;
   const p = cabinet?.profile;
-  const name =
-    p?.display_name || `${p?.first_name ?? ''} ${p?.last_name ?? ''}`.trim() || t.teacherRole;
-  const status = statusView(String(p?.profile_status ?? 'draft'), String(p?.admin_note ?? ''), t);
-  const subjects = asList(p?.subjects);
-  const levels = asList(p?.teaching_levels);
+  const name = `${d.personal.first_name} ${d.personal.last_name}`.trim() || t.teacherRole;
+  const inCatalog = p?.profile_status === 'active' && p?.catalog_visible !== false;
   const rating = Number(p?.rating_avg ?? 0);
   const ratingCount = Number(p?.rating_count ?? 0);
-  const contact = data.contact;
-  const passportDone = Boolean(data.profile.passport_number);
-  const missing = data.anketa.steps.filter((s) => !s.done);
-  const videoUrl = String(data.profile.video_url ?? '');
+  const specs = d.profile.specializations.map((c) => SPECIALIZATIONS.find((x) => x.code === c)?.[lang] ?? c);
+  const langs = d.profile.languages.map((l) => {
+    const name = LANGUAGES.find((x) => x.code === l.code)?.[lang] ?? l.code;
+    const level = LANGUAGE_LEVELS.find((x) => x.code === l.level)?.[lang];
+    return level ? `${name} (${level})` : name;
+  });
+  const steps = stepsForPath((d.personal.path || null) as OnboardingPath | null);
+  const isDone = (n: number) => Object.keys(validateStep(n, d, state.settings)).length === 0;
+  const doneCount = steps.filter(isDone).length;
+  const moderated = new Set((state.revision?.fields ?? []).map((f) => FIELD_STEP[f]).filter(Boolean));
 
   return (
-    <div>
-      <PageHead
-        title={t.profileTitle}
-        subtitle={t.profileSubtitle}
-        actions={
-          <GhostButton tone="dark" onClick={() => go('public')}>
-            {t.viewAsStudent}
-          </GhostButton>
-        }
-      />
-
+    <div className="space-y-4">
       {err ? <ErrorNote text={err} /> : null}
+      {state.revision ? (
+        <p role="status" className="rounded-[14px] bg-[#FFFBEB] px-4 py-3 text-[13.5px] font-semibold text-[#92400E]">{t.revisionNote}</p>
+      ) : null}
 
-      <div
-        className={`mb-4 flex flex-col gap-4 rounded-[20px] border p-5 sm:flex-row sm:items-center ${status.bg} ${status.border}`}
-      >
-        <span className={`h-3 w-3 shrink-0 rounded-full ${status.dot}`} />
-        <div className="min-w-0 flex-1">
-          <p className={`text-[16px] font-semibold ${status.fg}`}>{status.title}</p>
-          <p className={`mt-1 text-[13px] leading-[1.65] opacity-80 ${status.fg}`}>{status.text}</p>
-        </div>
-        <GhostButton onClick={() => go(status.target)}>{status.cta}</GhostButton>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-        <div className="space-y-4">
-          <Card className="flex flex-col gap-4 p-5 sm:flex-row">
-            {/* Suratni shu yerdan ham almashtirish mumkin — anketani ochish shart emas. */}
-            <button
-              type="button"
-              onClick={() => go('anketa')}
-              className="group relative self-start rounded-full"
-              title={t.photoReplace}
-            >
-              <Avatar name={name} size={92} url={p?.avatar_url ?? null} />
-              <span className="absolute inset-x-0 bottom-0 rounded-b-full bg-[rgba(23,26,61,0.65)] py-1 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100">
-                {t.edit}
-              </span>
-            </button>
+      <div className="flex flex-wrap items-start gap-4">
+        <Card as="section" className="min-w-0 flex-[1.5_1_400px] p-5">
+          <div className="mb-3.5 flex items-center gap-3.5">
+            <Avatar name={name} size={72} url={d.avatar_url ?? p?.avatar_url ?? null} tone="teal" />
             <div className="min-w-0 flex-1">
-              <p className="text-[20px] font-semibold text-app-text">{name}</p>
-              <p className="mt-1 text-[13px] text-app-text-muted">
-                {p?.experience_years
-                  ? `${tpl(t.yearsExp, { n: p.experience_years })} · `
-                  : ''}
-                {ratingCount > 0
-                  ? `★ ${rating} · ${tpl(t.reviewsCount, { n: ratingCount })}`
-                  : t.noRatingYet}
-              </p>
-              {subjects.length ? (
-                <p className="mt-1.5 text-[12.5px] font-medium text-app-brand">
-                  {subjects.join(' · ')}
-                </p>
-              ) : null}
-              <div className="mt-3 flex flex-wrap gap-2.5">
-                <PrimaryButton onClick={() => go('anketa')}>{t.editAnketa}</PrimaryButton>
-                <GhostButton onClick={() => go('documents')}>{t.myDocuments}</GhostButton>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[16px] font-semibold text-app-text">{t.publicPart}</p>
-              <span className="text-[12px] text-app-text-muted">{t.publicPartHint}</span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InfoBox label={t.fieldSpecialization} value={subjects.join(', ') || t.notFilled} />
-              <InfoBox
-                label={t.fieldLevelsAge}
-                value={levels.length ? levels.join(', ') : t.notFilled}
-              />
-              <InfoBox
-                label={t.fieldPrice}
-                value={
-                  p?.monthly_course_price_amount
-                    ? `${fmtSum(Number(p.monthly_course_price_amount))} ${t.sum}`
-                    : t.notFilled
-                }
-              />
-              <InfoBox
-                label={t.fieldVideo}
-                value={videoUrl ? t.videoUploaded : t.videoMissing}
-                tone={videoUrl ? 'ok' : 'warn'}
-              />
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <div className="mb-3 flex items-center gap-2.5">
-              <Lock className="h-[18px] w-[18px] text-[#2E4BA8]" />
-              <p className="text-[16px] font-semibold text-app-text">{t.privatePart}</p>
-              <span className="text-[12px] text-app-text-muted">{t.privatePartHint}</span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[14px] border border-[#DDE3FA] bg-[#F5F7FF] p-3.5">
-                <p className="text-[11.5px] text-[#6C7DB0]">{t.fieldPassport}</p>
-                <p className="mt-1 text-[12.5px] text-[#22376F]">
-                  {passportDone ? String(data.profile.passport_number) : t.notFilled}
-                </p>
-              </div>
-              <div className="rounded-[14px] border border-[#DDE3FA] bg-[#F5F7FF] p-3.5">
-                <p className="text-[11.5px] text-[#6C7DB0]">{t.fieldContacts}</p>
-                <p className="mt-1 text-[12.5px] break-all text-[#22376F]">
-                  {[contact.phone, contact.email].filter(Boolean).join(' · ') || t.notFilled}
-                </p>
-              </div>
-            </div>
-            <p className="mt-3 text-[12px] leading-[1.65] text-app-text-muted">{t.privateHint}</p>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="p-5">
-            <div className="mb-2 flex items-baseline justify-between">
-              <p className="text-[16px] font-semibold text-app-text">
-                {tpl(t.filledPercent, { pct: data.anketa.completion_percent })}
-              </p>
-              <span className="text-[12px] text-app-text-muted">
-                {tpl(t.ofSteps, { done: data.anketa.done_steps, total: data.anketa.total_steps })}
+              <p className="truncate text-[18px] font-extrabold text-app-text">{name}</p>
+              <span className={`mt-1 inline-flex items-center gap-1.5 text-[12.5px] font-bold ${inCatalog ? 'text-[#166534]' : 'text-app-text-muted'}`}>
+                <span className={`h-[7px] w-[7px] rounded-full ${inCatalog ? 'bg-[#16A34A]' : 'bg-[#94A3B8]'}`} />
+                {inCatalog ? t.catalogOn : t.catalogOff}
               </span>
             </div>
-            <ProgressBar
-              percent={data.anketa.completion_percent}
-              tone={data.anketa.done_steps === data.anketa.total_steps ? 'green' : 'violet'}
-            />
-            {missing.length > 0 ? (
-              <p className="mt-3 rounded-[12px] border border-[#FBDCDC] bg-[#FFF6F6] px-3 py-2 text-[12px] font-semibold text-[#8A3B3E]">
-                {tpl(t.missingCount, { n: missing.length })}
-              </p>
-            ) : null}
-            <ul className="mt-3 space-y-2">
-              {data.anketa.steps.map((s) => (
-                <li
-                  key={s.step}
-                  className={`flex items-center gap-2.5 text-[12.5px] ${
-                    s.done ? 'text-app-text' : 'font-semibold text-[#C23A3F]'
-                  }`}
-                >
-                  <span
-                    className={`w-[18px] text-center font-bold ${
-                      s.done ? 'text-[#17A34A]' : 'text-[#E9474D]'
-                    }`}
-                  >
-                    {s.done ? '✓' : '!'}
-                  </span>
-                  <span className="min-w-0 flex-1">{stepTitle(s.step, t) || s.title}</span>
-                  {!s.done ? (
-                    <button
-                      type="button"
-                      onClick={() => go('anketa')}
-                      className="shrink-0 text-[11.5px] font-semibold text-[#E9474D]"
-                    >
-                      {t.fill} →
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <InfoBox label={t.fieldSpecialization} value={specs.join(', ') || t.notFilled} />
+            <InfoBox label={t.fieldLanguages} value={langs.join(', ') || t.notFilled} />
+            <InfoBox label={t.fieldPrice} value={d.lesson_price_uzs ? `${fmtSum(d.lesson_price_uzs)} ${t.sum}` : t.notFilled} />
+            <InfoBox label={t.fieldExperience} value={d.profile.experience_years != null ? tpl(t.yearsExp, { n: d.profile.experience_years }) : t.notFilled} />
+            <InfoBox label={t.fieldVideo} value={d.video_url ? t.videoUploaded : t.videoMissing} tone={d.video_url ? 'ok' : 'warn'} />
+            <InfoBox label={t.educationBlock} value={d.education.map((e) => e.institution).filter(Boolean).join(', ') || '—'} />
+          </div>
+          {d.about ? <p className="mt-3.5 line-clamp-4 whitespace-pre-line text-[14px] leading-[1.6] text-app-text-secondary">{d.about}</p> : null}
+          <div className="mt-3.5 flex flex-wrap gap-2">
+            <PrimaryButton onClick={() => go('anketa')}>{t.editAnketa}</PrimaryButton>
+            <GhostButton onClick={() => go('public')}>{t.tabPreview}</GhostButton>
+          </div>
+        </Card>
+
+        <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-4">
+          <Card as="section" className="p-5">
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <h2 className="text-[17px] font-extrabold text-app-text">{t.anketaParts}</h2>
+              <span className="text-[12.5px] font-bold tabular-nums text-app-text-muted">{Math.round((doneCount / steps.length) * 100)}%</span>
+            </div>
+            <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-app-bg-subtle">
+              <div className="h-full rounded-full bg-app-primary transition-[width]" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+            </div>
+            <p className="mb-1 text-[12.5px] text-app-text-muted">{tpl(t.filledOf, { done: doneCount, total: steps.length })}</p>
+            <ul className="divide-y divide-app-bg-subtle">
+              {steps.map((n) => {
+                const info = ONBOARDING_STEPS.find((x) => x.step === n)!;
+                const ok = isDone(n);
+                return (
+                  <li key={n} className="flex items-center gap-2.5 py-1.5">
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${ok ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEE2E2] text-[#B91C1C]'}`}>
+                      {ok ? <Check className="h-3 w-3" strokeWidth={3} /> : <span className="text-[11px] font-black">!</span>}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-app-text">
+                      {info[lang]}
+                      {moderated.has(n) ? <span className="ml-1.5 text-[11.5px] font-bold text-[#B45309]">· {t.onModeration}</span> : null}
+                    </span>
+                    <button type="button" onClick={() => go('anketa', n)} className="min-h-[40px] shrink-0 rounded-[10px] px-2 text-[12.5px] font-bold text-app-primary hover:bg-[var(--app-row-hover)]">
+                      {t.changeStep}
                     </button>
-                  ) : null}
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
-            <PrimaryButton onClick={() => go('anketa')} className="mt-4 w-full">
-              {t.continueFilling}
-            </PrimaryButton>
           </Card>
 
-          <Card className="p-5">
-            <p className="mb-2 text-[16px] font-semibold text-app-text">{t.ratingTitle}</p>
+          <Card as="section" className="p-5">
+            <h2 className="mb-2 text-[17px] font-extrabold text-app-text">{t.ratingTitle}</h2>
             {ratingCount > 0 ? (
               <>
-                <div className="flex items-baseline gap-2.5">
-                  <span className="text-[32px] font-semibold text-app-text">{rating}</span>
-                  <span className="text-[14px] text-[#E6B33E]">
-                    {'★'.repeat(Math.round(rating))}
-                  </span>
-                </div>
-                <p className="mt-1 text-[12.5px] text-app-text-muted">
-                  {tpl(t.reviewsCount, { n: ratingCount })}
+                <p className="text-[32px] font-extrabold text-app-text">
+                  {rating.toLocaleString('ru-RU')}{' '}
+                  <span className="text-[16px] text-[#B45309]">{'★'.repeat(Math.round(rating))}</span>
                 </p>
-                <GhostButton onClick={() => go('reviews')} className="mt-3 w-full">
-                  {t.reviewsTitle}
-                </GhostButton>
+                <button type="button" onClick={() => go('reviews')} className="min-h-[44px] text-[14px] font-bold text-app-primary">
+                  {tpl(t.reviewsCount, { n: ratingCount })} →
+                </button>
               </>
             ) : (
-              <p className="py-3 text-[12.5px] text-app-text-muted">{t.noRatingYet}</p>
+              <p className="text-[13.5px] text-app-text-muted">{t.noRatingYet}</p>
             )}
           </Card>
 
-          <Card className="p-5">
-            <p className="mb-2 text-[16px] font-semibold text-app-text">{t.documentsTitle}</p>
-            {data.documents.length === 0 ? (
-              <p className="text-[12.5px] text-app-text-muted">{t.documentsEmpty}</p>
-            ) : (
-              <ul className="space-y-2">
-                {data.documents.slice(0, 4).map((d) => (
-                  <li key={d.id} className="flex items-center gap-2 text-[12.5px] text-app-text">
-                    <span className="min-w-0 flex-1 truncate">{d.original_name || d.kind}</span>
-                    <DocStatus status={d.status} />
-                  </li>
-                ))}
-              </ul>
-            )}
-            <GhostButton onClick={() => go('documents')} className="mt-3 w-full">
-              {t.myDocuments}
-            </GhostButton>
+          <Card as="section" className="p-5">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-[17px] font-extrabold text-app-text">
+                <Lock className="h-4 w-4 text-app-text-muted" />
+                {t.privatePart}
+              </h2>
+              <span className="text-[12px] font-bold text-app-text-muted">{t.privatePartHint}</span>
+            </div>
+            <dl className="mt-1.5 text-[14px]">
+              <div className="flex justify-between gap-3 border-b border-app-bg-subtle py-2.5">
+                <dt className="text-app-text-muted">{t.fieldPhone}</dt>
+                <dd className="font-bold text-app-text">{maskPhone(contact?.phone ?? null) || t.notFilled}</dd>
+              </div>
+              <div className="flex justify-between gap-3 py-2.5">
+                <dt className="text-app-text-muted">Email</dt>
+                <dd className="min-w-0 truncate font-bold text-app-text">{maskEmail(contact?.email ?? null) || t.notFilled}</dd>
+              </div>
+            </dl>
           </Card>
         </div>
       </div>
-
-      <p className="mt-4 text-center text-[11.5px] text-app-text-muted">
-        {data.anketa.submitted_at
-          ? `${t.anketaSent} · ${fmtDate(data.anketa.submitted_at, lang)}`
-          : ''}
-      </p>
     </div>
   );
+}
+
+/** «+998 90 123 45 67» → «+998 •• ••• 45 67»: ekranda to'liq raqam ko'rinmasin. */
+function maskPhone(phone: string | null): string {
+  const d = String(phone ?? '').replace(/\D/g, '');
+  if (d.length < 7) return phone ?? '';
+  return `+${d.slice(0, 3)} •• ••• ${d.slice(-4, -2)} ${d.slice(-2)}`;
+}
+
+function maskEmail(email: string | null): string {
+  const e = String(email ?? '');
+  const at = e.indexOf('@');
+  return at > 1 ? `${e.slice(0, 2)}…${e.slice(at)}` : e;
 }
 
 function InfoBox({
@@ -439,7 +283,8 @@ function DocStatus({ status }: { status: string }) {
 
 /* -------------------------------- Hujjatlar -------------------------------- */
 
-const DOC_KINDS: DocumentKind[] = ['passport', 'diploma', 'certificate', 'other'];
+// Pasport onboarding v2 dan beri so'ralmaydi (2026-10-23).
+const DOC_KINDS: DocumentKind[] = ['diploma', 'certificate', 'other'];
 
 export function Documents() {
   const { token, t, go } = usePanel();
@@ -468,19 +313,7 @@ export function Documents() {
 
   return (
     <div>
-      <PageHead title={t.documentsTitle} subtitle={t.documentsSubtitle} />
       {err ? <ErrorNote text={err} /> : null}
-
-      {/* Hujjat yuklash ochiq, lekin moderatorga yuborish to'lovdan keyin. */}
-      {data && !data.payment?.paid ? (
-        <div className="mb-4 rounded-[16px] border border-[#F5E3B8] bg-[#FFFBF0] p-4">
-          <p className="text-[13.5px] font-semibold text-[#7A5B10]">{t.payNeededTitle}</p>
-          <p className="mt-1 text-[12.5px] leading-[1.7] text-[#8A7134]">{t.payNeededText}</p>
-          <GhostButton className="mt-3" onClick={() => go('anketa')}>
-            {t.payNow}
-          </GhostButton>
-        </div>
-      ) : null}
 
       <div className="mb-4 flex flex-wrap gap-2.5">
         {DOC_KINDS.map((k) => (
@@ -593,27 +426,14 @@ export function PublicPreview() {
   const education = asRows(profile?.profile.education);
   const certificates = asRows(profile?.profile.certificates);
   const achievements = String(profile?.profile.achievements ?? '');
+  // Onboarding v2: bitta dars narxi (eski oylik kurs narxi endi ishlatilmaydi).
+  const price = Number(profile?.profile.lesson_price_uzs ?? 0);
 
   return (
     <div className="mx-auto max-w-[1060px]">
-      <div className="mb-4 flex flex-col gap-3 rounded-[16px] bg-[#171A3D] p-4 text-white sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-[13px] font-medium">{t.previewBanner}</p>
-        <div className="flex gap-2.5">
-          <button
-            type="button"
-            onClick={() => go('anketa')}
-            className="min-h-[40px] rounded-[11px] bg-app-surface/12 px-4 text-[12.5px] font-semibold text-white"
-          >
-            {t.edit}
-          </button>
-          <button
-            type="button"
-            onClick={() => go('profile')}
-            className="min-h-[40px] rounded-[11px] bg-app-surface px-4 text-[12.5px] font-semibold text-app-text"
-          >
-            {t.exitPreview}
-          </button>
-        </div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-app-text-muted">{t.previewBanner}</p>
+        <GhostButton onClick={() => go('anketa')}>{t.edit}</GhostButton>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
@@ -775,19 +595,16 @@ export function PublicPreview() {
         <Card className="p-5">
           <div className="flex items-baseline gap-2">
             <span className="text-[24px] font-semibold text-app-text">
-              {p?.monthly_course_price_amount ? fmtSum(Number(p.monthly_course_price_amount)) : '—'}
+              {price ? fmtSum(price) : '—'}
             </span>
-            <span className="text-[13px] text-app-text-muted">{t.sum}</span>
+            <span className="text-[13px] text-app-text-muted">{t.sum} · 50 min</span>
           </div>
-          <p className="mt-3 rounded-[12px] bg-[#E7F4EC] px-3.5 py-3 text-[12.5px] font-semibold text-[#12703A]">
-            {t.trialFree}
-          </p>
           <button
             type="button"
             disabled
             className="mt-3 min-h-[48px] w-full rounded-[14px] bg-app-primary text-[14px] font-semibold text-white opacity-60"
           >
-            {t.bookTrial}
+            {t.bookLesson}
           </button>
           <button
             type="button"

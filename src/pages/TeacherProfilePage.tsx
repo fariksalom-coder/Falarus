@@ -1,7 +1,7 @@
 /**
  * O'QUVCHI: USTOZ PROFILI (2026-10-24).
  *
- * Tartib: video-taqdimot → asosiy ma'lumot va «Vaqt tanlash» → men haqimda, tillar,
+ * Tartib: asosiy ma'lumot (surat, ism, narx) va «Vaqt tanlash» → video-taqdimot → men haqimda, tillar,
  * yo'nalishlar, ta'lim → baholar (4 mezon) va sharhlar → 7 kunlik jadval (bugundan).
  * Vaqt tanlanganda BookingSheet: tafsilot → Rahmat → band qilindi.
  */
@@ -66,8 +66,8 @@ export default function TeacherProfilePage() {
     return (
       <div className="min-h-full space-y-3 bg-app-bg-subtle px-4 pt-4" aria-busy="true">
         <div className="mx-auto max-w-[880px] space-y-3">
-          <div className="aspect-video animate-pulse rounded-[24px] bg-app-surface" />
           <div className="h-48 animate-pulse rounded-[24px] bg-app-surface" />
+          <div className="aspect-video animate-pulse rounded-[24px] bg-app-surface" />
         </div>
       </div>
     );
@@ -83,13 +83,6 @@ export default function TeacherProfilePage() {
         <button type="button" onClick={back} className="inline-flex min-h-11 items-center gap-2 rounded-xl pr-3 text-sm font-bold text-app-text-muted hover:text-app-text">
           <ArrowLeft className="h-4 w-4" />Ustozlar
         </button>
-
-        {video && (
-          <video src={video} controls playsInline preload="metadata" poster={resolveAssetUrl(t.avatar_url) ?? undefined}
-            className="aspect-video w-full rounded-[24px] bg-black object-contain shadow-[0_14px_34px_rgba(148,163,184,0.2)]">
-            <track kind="captions" />
-          </video>
-        )}
 
         <section className="rounded-[24px] border border-app-border/70 bg-app-surface p-5 shadow-[0_14px_34px_rgba(148,163,184,0.12)]">
           <div className="flex gap-4">
@@ -123,6 +116,13 @@ export default function TeacherProfilePage() {
             <CalendarClock className="h-5 w-5" />{t.bookable ? 'Vaqt tanlab darsga yozilish' : 'Hozircha dars qabul qilmaydi'}
           </button>
         </section>
+
+        {video && (
+          <video src={video} controls playsInline preload="metadata" poster={resolveAssetUrl(t.avatar_url) ?? undefined}
+            className="aspect-video w-full rounded-[24px] bg-black object-contain shadow-[0_14px_34px_rgba(148,163,184,0.2)]">
+            <track kind="captions" />
+          </video>
+        )}
 
         {t.about && (
           <Block title="Men haqimda" icon={Users}>

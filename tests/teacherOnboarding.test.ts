@@ -37,7 +37,8 @@ test('commission tiers follow the spec boundaries', () => {
 test('step rules: names, path, schedule overlaps, about template, terms', () => {
   assert.deepEqual(stepsForPath('experienced'), [1, 2, 4, 5, 6, 7, 8]);
   assert.deepEqual(stepsForPath('certified'), [1, 2, 3, 4, 5, 6, 7, 8]);
-  const ok = { first_name: 'Shahlo', last_name: 'Karimova', birth_country: 'UZ', subject: 'russian', proficiency: 'C1', path: 'certified' as const };
+  const ok = { first_name: 'Shahlo', last_name: 'Karimova', birth_country: 'UZ', subject: 'russian', proficiency: 'C1', path: 'certified' as const,
+    contact_phone: '+998901234567', contact_telegram: '@shahlo', contact_whatsapp: '' };
   assert.deepEqual(validatePersonal(ok), {});
   assert.equal(validatePersonal({ ...ok, first_name: 'A' }).first_name, 'name');
   assert.equal(validatePersonal({ ...ok, last_name: 'Karimova1' }).last_name, 'name');
@@ -67,6 +68,8 @@ async function setup() {
       avatar_url text, region text NOT NULL DEFAULT '', city text NOT NULL DEFAULT '', headline text NOT NULL DEFAULT '', about text NOT NULL DEFAULT '',
       subjects text[] NOT NULL DEFAULT ARRAY[]::text[], education jsonb NOT NULL DEFAULT '[]', certificates jsonb NOT NULL DEFAULT '[]',
       weekly_availability jsonb NOT NULL DEFAULT '[]', video_url text,
+      experience_years integer, experience_months integer, languages text[] NOT NULL DEFAULT ARRAY[]::text[],
+      specializations text[] NOT NULL DEFAULT ARRAY[]::text[],
       profile_status text NOT NULL DEFAULT 'draft', updated_at timestamptz NOT NULL DEFAULT now(),
       CONSTRAINT teacher_profiles_profile_status_check CHECK (profile_status IN ('draft', 'pending_review', 'active', 'paused', 'rejected')));
     CREATE TABLE teacher_documents (id bigserial PRIMARY KEY, teacher_user_id integer NOT NULL REFERENCES teacher_profiles(user_id) ON DELETE CASCADE,
@@ -83,7 +86,9 @@ async function setup() {
     INSERT INTO teacher_profiles (user_id, first_name, last_name, certificates, profile_status) VALUES
       (13, 'Old', 'Teacher', '[{"title":"RKI","issuer":"MGU","year":"2015","image_url":""}]', 'active');
   `);
-  await db.exec(await readFile('db/migrations/212_teacher_onboarding_v2.sql', 'utf8'));
+  for (const m of ['212_teacher_onboarding_v2', '214_teacher_catalog_toggle_contacts', '217_teacher_lesson_payments_profile_revisions']) {
+    await db.exec(await readFile(`db/migrations/${m}.sql`, 'utf8'));
+  }
   const q: OnboardingQuery = (sql, params) => db.query(sql, params as unknown[]);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'onb-'));
   const durations: Record<string, number | null> = {};
@@ -133,6 +138,8 @@ async function uploadVideo(t: Awaited<ReturnType<typeof setup>>, bytes: number, 
   return t.call('POST', `/teacher/onboarding/video/uploads/${init.data.id}/complete`);
 }
 
+const profile = { experience_years: 8, specializations: ['conversation'], languages: [{ code: 'ru', level: 'native' }] };
+const contacts = { contact_phone: '+998901234567', contact_telegram: '@ustoz' };
 const answers = { who: 'Toshkentdanman, filologman', background: 'Maktabda rus tili oʻqituvchisi edim', years: '8 yil', students: 'Boshlangʻich va oʻrta daraja, kattalar', method: 'Har darsda gaplashamiz va xatolarni tushuntiraman', why: 'Sabrli va tushunarli tushuntiraman' };
 const longAbout = 'Men Toshkentdanman. '.repeat(20);
 
@@ -153,7 +160,7 @@ test('experienced path: all steps, reload keeps data, video checks, submit once,
     let s = (await t.call('GET', '/teacher/onboarding')).data;
     assert.equal(s.data.personal.first_name, 'Shahlo');
     assert.equal(s.step, 1);
-    s = (await t.call('PUT', '/teacher/onboarding/steps/1', { first_name: 'Shahlo', last_name: 'Karimova', birth_country: 'UZ', subject: 'russian', proficiency: 'C1', path: 'experienced' })).data;
+    s = (await t.call('PUT', '/teacher/onboarding/steps/1', { first_name: 'Shahlo', last_name: 'Karimova', birth_country: 'UZ', subject: 'russian', proficiency: 'C1', path: 'experienced', ...contacts })).data;
     assert.equal(s.step, 2);
 
     const notImage = await t.call('POST', '/teacher/onboarding/photo', form(PDF, 'me.png'));
@@ -168,7 +175,7 @@ test('experienced path: all steps, reload keeps data, video checks, submit once,
     assert.equal(gen.data.source, 'template', 'AI failure falls back to the template');
     assert.match(gen.data.text, /Toshkentdanman/);
     assert.equal((await t.call('PUT', '/teacher/onboarding/steps/5', { answers, about: 'qisqa' })).data.fields.about.code, 'aboutLength');
-    s = (await t.call('PUT', '/teacher/onboarding/steps/5', { answers, about: longAbout })).data;
+    s = (await t.call('PUT', '/teacher/onboarding/steps/5', { answers, about: longAbout, profile })).data;
     assert.equal(s.step, 6);
 
     const short = await uploadVideo(t, 2048, 42);
@@ -213,7 +220,7 @@ test('experienced path: all steps, reload keeps data, video checks, submit once,
     assert.equal((await t.call('POST', '/admin/teacher-applications/10/decision', { decision: 'revision', step: 5, comment: 'Metodikangizni batafsilroq yozing' })).data.status, 'needs_revision');
     s = (await t.call('GET', '/teacher/onboarding')).data;
     assert.deepEqual([s.status, s.step, s.review.step], ['needs_revision', 5, 5]);
-    await t.call('PUT', '/teacher/onboarding/steps/5', { answers, about: longAbout + ' Har darsda gaplashamiz.' });
+    await t.call('PUT', '/teacher/onboarding/steps/5', { answers, about: longAbout + ' Har darsda gaplashamiz.', profile });
     assert.equal((await t.call('POST', '/teacher/onboarding/submit')).data.status, 'pending_review');
     assert.equal((await t.call('POST', '/admin/teacher-applications/10/decision', { decision: 'approve' })).data.status, 'active');
     const notes = await t.db.query<any>('SELECT title FROM teacher_notifications WHERE recipient_user_id = 10 ORDER BY id');
@@ -235,7 +242,7 @@ test('certified path needs a private certificate scan; settings change asks for 
   const t = await setup();
   try {
     t.as(11);
-    await t.call('PUT', '/teacher/onboarding/steps/1', { first_name: 'Aziz', last_name: 'Rahimov', birth_country: 'RU', subject: 'russian', proficiency: 'native', path: 'certified' });
+    await t.call('PUT', '/teacher/onboarding/steps/1', { first_name: 'Aziz', last_name: 'Rahimov', birth_country: 'RU', subject: 'russian', proficiency: 'native', path: 'certified', ...contacts });
     const s = (await t.call('POST', '/teacher/onboarding/photo', form(PNG, 'a.png'))).data;
     assert.equal(s.step, 3, 'certified path does not skip certification');
     const noDoc = await t.call('PUT', '/teacher/onboarding/steps/3', { certificates: [{ title: 'RKI', institution: 'MGU', year_from: 2012, year_to: 2016, document_ids: [] }] });
@@ -249,7 +256,7 @@ test('certified path needs a private certificate scan; settings change asks for 
     const own = await t.call('GET', `/teacher/onboarding/documents/${doc.data.id}/file`);
     assert.equal(own.status, 200);
     t.as(10);
-    await t.call('PUT', '/teacher/onboarding/steps/1', { first_name: 'Boshqa', last_name: 'Ustoz', birth_country: 'UZ', subject: 'russian', proficiency: 'C1', path: 'certified' });
+    await t.call('PUT', '/teacher/onboarding/steps/1', { first_name: 'Boshqa', last_name: 'Ustoz', birth_country: 'UZ', subject: 'russian', proficiency: 'C1', path: 'certified', ...contacts });
     assert.equal((await t.call('GET', `/teacher/onboarding/documents/${doc.data.id}/file`)).status, 404, 'another teacher cannot read it');
     assert.equal((await t.call('PUT', '/teacher/onboarding/steps/3', { certificates: [{ title: 'Diplom', institution: 'TDPU', document_ids: [doc.data.id] }] })).status, 400, 'nor attach it');
     assert.equal((await t.call('GET', `/admin/teacher-applications/11/documents/${doc.data.id}/file`)).status, 200);
@@ -272,6 +279,69 @@ test('certified path needs a private certificate scan; settings change asks for 
     const oldState = (await t.call('GET', '/teacher/onboarding')).data;
     assert.equal(oldState.data.certificates[0].institution, 'MGU', 'old issuer field is read as institution');
     assert.equal(oldState.data.certificates[0].year_to, 2015);
+  } finally {
+    await t.close();
+  }
+});
+
+test('an approved teacher edits through moderation: nothing reaches the catalog before the admin approves', async () => {
+  const t = await setup();
+  try {
+    await t.db.exec(`INSERT INTO teacher_profiles (user_id, first_name, last_name, about, profile_status, lesson_price_uzs, onboarding_path, subject, proficiency, birth_country, contact_phone, contact_telegram)
+      VALUES (10, 'Shahlo', 'Karimova', 'Eski matn', 'active', 80000, 'experienced', 'russian', 'C1', 'UZ', '+998901234567', '@ustoz');
+      UPDATE users SET avatar_url = '/old.png' WHERE id = 10;`);
+    const live = async () => (await t.db.query<any>('SELECT about, lesson_price_uzs, avatar_url, first_name, terms_accepted_at FROM teacher_profiles WHERE user_id = 10')).rows[0];
+
+    // Autosave does not create a revision; an unchanged step does not either.
+    await t.call('PUT', '/teacher/onboarding/steps/5?draft=1', { answers, about: 'chala', profile });
+    await t.call('PUT', '/teacher/onboarding/steps/1', { first_name: 'Shahlo', last_name: 'Karimova', birth_country: 'UZ', subject: 'russian', proficiency: 'C1', path: 'experienced', ...contacts });
+    assert.equal((await t.call('GET', '/admin/teacher-revisions')).data.pending, 0);
+
+    let s = (await t.call('PUT', '/teacher/onboarding/steps/5', { answers, about: longAbout, profile })).data;
+    assert.equal(s.data.about, longAbout.trim(), 'the teacher sees the new text');
+    assert.deepEqual(s.revision.fields.sort(), ['about', 'about_answers', 'experience_months', 'experience_years', 'headline', 'languages', 'specializations']);
+    s = (await t.call('POST', '/teacher/onboarding/photo', form(PNG, 'me.png'))).data;
+    assert.ok(s.revision.fields.includes('avatar_url'));
+    s = (await t.call('PUT', '/teacher/onboarding/steps/8', { lesson_price_uzs: 95_000, terms_accepted: true })).data;
+    assert.ok(s.revision.fields.includes('lesson_price_uzs'));
+    assert.equal(s.data.lesson_price_uzs, 95_000);
+    await t.call('PUT', '/teacher/onboarding/steps/7', { schedule: { timezone: 'Asia/Tashkent', slots: [{ weekday: 1, start: '09:00', end: '12:00' }] } });
+
+    const before = await live();
+    assert.deepEqual([before.about, before.lesson_price_uzs, before.avatar_url], ['Eski matn', 80000, null], 'catalog still shows the old profile');
+    assert.ok(before.terms_accepted_at, 'consent is recorded at once');
+    assert.equal((await t.db.query<any>('SELECT avatar_url FROM users WHERE id = 10')).rows[0].avatar_url, '/old.png');
+    assert.equal((await t.db.query<any>('SELECT count(*)::int AS n FROM teacher_availability_rules WHERE teacher_user_id = 10')).rows[0].n, 1, 'schedule is not moderated');
+
+    const list = (await t.call('GET', '/admin/teacher-revisions')).data;
+    assert.equal(list.pending, 1);
+    const rev = list.rows[0];
+    assert.equal(rev.before.about, 'Eski matn');
+    assert.equal(rev.changes.lesson_price_uzs, 95_000);
+    assert.equal((await t.call('POST', `/admin/teacher-revisions/${rev.id}/decision`, { decision: 'reject' })).status, 400, 'a reason is required');
+    assert.equal((await t.call('POST', `/admin/teacher-revisions/${rev.id}/decision`, { decision: 'approve' })).data.status, 'approved');
+    assert.equal((await t.call('POST', `/admin/teacher-revisions/${rev.id}/decision`, { decision: 'approve' })).status, 409, 'decided once');
+
+    const after = await live();
+    assert.deepEqual([after.about, after.lesson_price_uzs], [longAbout.trim(), 95_000]);
+    assert.ok(after.avatar_url);
+    assert.equal((await t.db.query<any>('SELECT avatar_url FROM users WHERE id = 10')).rows[0].avatar_url, after.avatar_url);
+    const langs = (await t.db.query<any>('SELECT languages, specializations FROM teacher_profiles WHERE user_id = 10')).rows[0];
+    assert.deepEqual([langs.languages, langs.specializations], [['ru:native'], ['conversation']], 'arrays are applied as arrays');
+    s = (await t.call('GET', '/teacher/onboarding')).data;
+    assert.equal(s.revision, null);
+    assert.equal(s.last_revision.status, 'approved');
+
+    // A rejected or cancelled change never touches the profile.
+    await t.call('PUT', '/teacher/onboarding/steps/8', { lesson_price_uzs: 150_000, terms_accepted: true });
+    const second = (await t.call('GET', '/admin/teacher-revisions')).data.rows[0];
+    await t.call('POST', `/admin/teacher-revisions/${second.id}/decision`, { decision: 'reject', comment: 'Narx juda baland' });
+    assert.equal((await live()).lesson_price_uzs, 95_000);
+    assert.equal((await t.call('GET', '/teacher/onboarding')).data.last_revision.review_comment, 'Narx juda baland');
+    await t.call('PUT', '/teacher/onboarding/steps/8', { lesson_price_uzs: 120_000, terms_accepted: true });
+    assert.equal((await t.call('DELETE', '/teacher/onboarding/revision')).data.revision, null);
+    assert.equal((await t.call('GET', '/admin/teacher-revisions')).data.pending, 0);
+    assert.equal((await live()).lesson_price_uzs, 95_000);
   } finally {
     await t.close();
   }

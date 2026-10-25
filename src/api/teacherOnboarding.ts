@@ -14,6 +14,9 @@ export type OnboardingState = {
   terms: { version: string; uz: string[]; ru: string[] };
   commission: { completed: number; percent: number; next_percent: number | null; lessons_until_next: number | null };
   ready_step: number | null;
+  /** Tasdiqlangan o'qituvchi: moderatsiyani kutayotgan o'zgarishlar (migr. 217). */
+  revision?: { id: number; fields: string[]; created_at: string; updated_at: string } | null;
+  last_revision?: { status: 'approved' | 'rejected'; review_comment: string | null; decided_at: string } | null;
 };
 export type FieldError = { code: ErrorCode; uz: string; ru: string };
 
@@ -38,6 +41,8 @@ export const getOnboarding = (token: string) => call<OnboardingState>(token, '/t
 
 export const saveStep = (token: string, step: number, body: unknown, draft = false) =>
   call<OnboardingState>(token, `/teacher/onboarding/steps/${step}${draft ? '?draft=1' : ''}`, { method: 'PUT', body: JSON.stringify(body) });
+
+export const cancelRevision = (token: string) => call<OnboardingState>(token, '/teacher/onboarding/revision', { method: 'DELETE' });
 
 export const savePosition = (token: string, step: number) =>
   call<{ ok: true }>(token, '/teacher/onboarding/position', { method: 'POST', body: JSON.stringify({ step }) }).catch(() => undefined);

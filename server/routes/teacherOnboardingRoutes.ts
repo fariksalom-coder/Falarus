@@ -9,6 +9,10 @@
  * papkada, faqat egasi va admin oladi; video — bo'laklab yuklanadi (aloqa
  * uzilsa shu joydan davom etadi) va ffprobe bilan davomiyligi tekshiriladi.
  *
+ * Tasdiqlangan (active/paused) o'qituvchi anketani o'zgartirsa, o'zgarish darhol
+ * katalogga chiqmaydi: `teacher_profile_revisions` ga yoziladi va admin tasdiqlagach
+ * qo'llanadi (migr. 217). Jadval va shartlarga rozilik bundan mustasno — darhol.
+ *
  * So'rovlar `JourneyQuery` kabi bitta `q` orqali: testda PGlite beriladi.
  */
 import { Router, type Request, type Response, type NextFunction } from 'express';
@@ -145,7 +149,7 @@ const PROFILE_COLS = `user_id, first_name, last_name, birth_country, subject, pr
   certificates, education, about_answers, about, headline, video_url, video_duration_sec, schedule, weekly_availability,
   lesson_price_uzs, terms_version, terms_accepted_at, onboarding_step, onboarding_submitted_at, profile_status,
   review_comment, review_step, reviewed_at, certified_verified, contact_phone, contact_telegram, contact_whatsapp,
-  experience_years, specializations, languages`;
+  experience_years, experience_months, specializations, languages`;
 
 async function loadSettings(q: OnboardingQuery): Promise<OnboardingSettings> {
   const { rows } = await q('SELECT price_min_uzs, price_max_uzs, commission_tiers, terms_version FROM teacher_onboarding_settings WHERE id');
@@ -200,9 +204,83 @@ function toData(row: any, termsVersion: string): OnboardingData {
   };
 }
 
+/* ─────────────────────────── moderatsiya (migr. 217) ─────────────────────────── */
+
+/** Admin tasdiqlagach qo'llanadigan ustunlar — boshqa kalit hech qachon yozilmaydi. */
+export const REVISION_COLUMNS = [
+  'first_name', 'last_name', 'birth_country', 'subject', 'proficiency', 'onboarding_path',
+  'contact_phone', 'contact_telegram', 'contact_whatsapp', 'certificates', 'education',
+  'about_answers', 'about', 'headline', 'experience_years', 'experience_months', 'specializations', 'languages',
+  'avatar_url', 'video_url', 'video_duration_sec', 'lesson_price_uzs',
+] as const;
+
+const isLive = (row: any) => row?.profile_status === 'active' || row?.profile_status === 'paused';
+
+/** Kalitlar tartibidan qat'i nazar solishtirish uchun. */
+function stable(v: unknown): string {
+  return JSON.stringify(v ?? null, (_k, x) =>
+    x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x);
+}
+
+async function openRevision(q: OnboardingQuery, teacherId: number) {
+  const r = await q(`SELECT id, changes, created_at, updated_at FROM teacher_profile_revisions WHERE teacher_user_id = $1 AND status = 'pending'`, [teacherId]);
+  return r.rows[0] as { id: number; changes: Record<string, unknown>; created_at: string; updated_at: string } | undefined;
+}
+
+/**
+ * O'zgarishni ochiq revisionga qo'shadi. Joriy (ommaviy) qiymatga teng bo'lgan maydon
+ * revisiondan olib tashlanadi; hech narsa qolmasa — revision ham o'chadi.
+ */
+async function stageRevision(q: OnboardingQuery, teacherId: number, live: Record<string, unknown>, fields: Record<string, unknown>) {
+  const open = await openRevision(q, teacherId);
+  const changes: Record<string, unknown> = { ...(open?.changes ?? {}) };
+  for (const [k, v] of Object.entries(fields)) {
+    if (!(REVISION_COLUMNS as readonly string[]).includes(k)) continue;
+    if (stable(v) === stable(live[k])) delete changes[k];
+    else changes[k] = v ?? null;
+  }
+  if (!Object.keys(changes).length) {
+    if (open) await q(`DELETE FROM teacher_profile_revisions WHERE id = $1`, [open.id]);
+    return;
+  }
+  if (open) {
+    await q(`UPDATE teacher_profile_revisions SET changes = $2::jsonb, updated_at = now() WHERE id = $1`, [open.id, JSON.stringify(changes)]);
+  } else {
+    await q(`INSERT INTO teacher_profile_revisions (teacher_user_id, changes) VALUES ($1, $2::jsonb)`, [teacherId, JSON.stringify(changes)]);
+  }
+}
+
 /** Platformada o'tkazilgan darslar (komissiya pog'onasi): sinov + video sessiya + pullik dars. */
 export async function completedLessons(q: OnboardingQuery, teacherId: number): Promise<number> {
   return platformLessonsDone(q, teacherId);
+}
+
+/** Qadam ma'lumoti → teacher_profiles ustunlari (bevosita yozishdagi bilan bir xil shakl). */
+function stagedFields(step: number, next: OnboardingData, row: any): Record<string, unknown> {
+  if (step === 1) {
+    const p = next.personal;
+    return {
+      first_name: p.first_name || '—', last_name: p.last_name || '—', birth_country: p.birth_country || null, subject: p.subject || 'russian',
+      proficiency: p.proficiency || null, onboarding_path: p.path || null,
+      contact_phone: normalizePhone(p.contact_phone) ?? (p.contact_phone || null),
+      contact_telegram: normalizeTelegram(p.contact_telegram) ?? (p.contact_telegram || null),
+      contact_whatsapp: normalizePhone(p.contact_whatsapp) ?? (p.contact_whatsapp || null),
+    };
+  }
+  if (step === 3) return { certificates: next.certificates.map((c) => ({ ...c, issuer: c.institution, year: c.year_to ? String(c.year_to) : '', image_url: '' })) };
+  if (step === 4) return { education: next.education.map((e) => ({ ...e, start_year: e.year_from ? String(e.year_from) : '', end_year: e.year_to ? String(e.year_to) : '' })) };
+  if (step === 5) {
+    const extra = next.profile;
+    return {
+      about_answers: next.about_answers, about: next.about,
+      headline: row?.headline || (next.about.split(/(?<=[.!?])\s/)[0]?.slice(0, 120) ?? ''),
+      experience_years: extra.experience_years,
+      ...(extra.experience_years == null ? {} : { experience_months: 0 }),
+      specializations: extra.specializations, languages: languagesToDb(extra.languages),
+    };
+  }
+  if (step === 8) return { lesson_price_uzs: next.lesson_price_uzs };
+  return {};
 }
 
 async function notifyTeacher(q: OnboardingQuery, teacherId: number, title: string, body: string) {
@@ -253,7 +331,13 @@ export function createTeacherOnboardingRoutes(
 
   async function state(id: number, row: any) {
     const settings = await loadSettings(q!);
-    const data = toData(row, settings.terms_version);
+    // Tasdiqlangan o'qituvchi o'z anketasida moderatsiyani kutayotgan o'zgarishlarini ko'radi.
+    const revision = isLive(row) ? await openRevision(q!, id) : undefined;
+    const lastDecided = isLive(row)
+      ? (await q!(`SELECT status, review_comment, decided_at FROM teacher_profile_revisions
+          WHERE teacher_user_id = $1 AND status IN ('approved', 'rejected') ORDER BY decided_at DESC LIMIT 1`, [id])).rows[0] ?? null
+      : null;
+    const data = toData(revision ? { ...row, ...revision.changes } : row, settings.terms_version);
     // Telefon hali yozilmagan bo'lsa — ro'yxatdan o'tgan raqam taklif qilinadi (anketa yo'q bo'lsa ham).
     if (!data.personal.contact_phone) {
       data.personal.contact_phone = row?.account_phone ?? (await q!('SELECT phone FROM users WHERE id = $1', [id])).rows[0]?.phone ?? '';
@@ -273,6 +357,8 @@ export function createTeacherOnboardingRoutes(
       terms: { version: settings.terms_version, uz: termsText(settings, 'uz'), ru: termsText(settings, 'ru') },
       commission: commissionStatus(lessons, settings.commission_tiers),
       ready_step: firstInvalidStep(data, settings),
+      revision: revision ? { id: Number(revision.id), fields: Object.keys(revision.changes), created_at: revision.created_at, updated_at: revision.updated_at } : null,
+      last_revision: lastDecided,
     };
   }
 
@@ -288,6 +374,8 @@ export function createTeacherOnboardingRoutes(
     const draft = req.query.draft === '1';
     const { id, row } = await teacher(req);
     editable(row);
+    // Tasdiqlangan anketada qoralama saqlanmaydi: chala ma'lumot moderatsiyaga tushmasin.
+    if (draft && isLive(row)) return res.json(await state(id, row));
     const settings = await loadSettings(q!);
     const b = (req.body ?? {}) as Record<string, any>;
     const current = toData(row, settings.terms_version);
@@ -322,6 +410,19 @@ export function createTeacherOnboardingRoutes(
     }
 
     const advance = draft ? Number(row?.onboarding_step ?? 1) : Math.max(Number(row?.onboarding_step ?? 1), nextStep(step, (next.personal.path || null) as OnboardingPath | null));
+
+    if (isLive(row) && step !== 7) {
+      const staged = stagedFields(step, next, row);
+      await stageRevision(q!, id, row, staged);
+      if (step === 8) {
+        // Shartlarga rozilik darhol yoziladi; narx esa moderatsiyadan keyin.
+        await q!(`UPDATE teacher_profiles SET terms_version = $2, terms_accepted_at = now(), updated_at = now() WHERE user_id = $1`, [id, settings.terms_version]);
+        await q!(`INSERT INTO teacher_terms_acceptances (teacher_user_id, terms_version, commission_tiers, lesson_price_uzs, ip) VALUES ($1, $2, $3::jsonb, $4, $5)`,
+          [id, settings.terms_version, JSON.stringify(settings.commission_tiers), next.lesson_price_uzs, String(req.ip ?? '').slice(0, 60)]);
+      }
+      const fresh = (await q!(`SELECT ${PROFILE_COLS} FROM teacher_profiles WHERE user_id = $1`, [id])).rows[0];
+      return res.json(await state(id, { ...fresh, account_phone: row.account_phone }));
+    }
 
     if (step === 1) {
       const p = next.personal;
@@ -401,9 +502,13 @@ export function createTeacherOnboardingRoutes(
     fs.mkdirSync(path.dirname(path.join(uploadsDir, rel)), { recursive: true });
     fs.writeFileSync(path.join(uploadsDir, rel), file.buffer);
     const url = publicUrl(`/uploads/${rel}`);
-    const advance = Math.max(Number(row.onboarding_step), nextStep(2, row.onboarding_path));
-    await q!('UPDATE teacher_profiles SET avatar_url = $2, onboarding_step = $3, updated_at = now() WHERE user_id = $1', [id, url, advance]);
-    await q!('UPDATE users SET avatar_url = $2 WHERE id = $1', [id, url]).catch(() => {});
+    if (isLive(row)) {
+      await stageRevision(q!, id, row, { avatar_url: url });
+    } else {
+      const advance = Math.max(Number(row.onboarding_step), nextStep(2, row.onboarding_path));
+      await q!('UPDATE teacher_profiles SET avatar_url = $2, onboarding_step = $3, updated_at = now() WHERE user_id = $1', [id, url, advance]);
+      await q!('UPDATE users SET avatar_url = $2 WHERE id = $1', [id, url]).catch(() => {});
+    }
     res.json(await state(id, (await q!(`SELECT ${PROFILE_COLS} FROM teacher_profiles WHERE user_id = $1`, [id])).rows[0]));
   }));
 
@@ -537,9 +642,20 @@ export function createTeacherOnboardingRoutes(
     fs.renameSync(file, path.join(uploadsDir, rel));
     const url = publicUrl(`/uploads/${rel}`);
     await q!(`UPDATE teacher_video_uploads SET status = 'done', updated_at = now() WHERE id = $1`, [up.id]);
-    const advance = Math.max(Number(row.onboarding_step), nextStep(6, row.onboarding_path));
-    await q!('UPDATE teacher_profiles SET video_url = $2, video_duration_sec = $3, onboarding_step = $4, updated_at = now() WHERE user_id = $1', [id, url, info.duration, advance]);
+    if (isLive(row)) {
+      await stageRevision(q!, id, row, { video_url: url, video_duration_sec: info.duration });
+    } else {
+      const advance = Math.max(Number(row.onboarding_step), nextStep(6, row.onboarding_path));
+      await q!('UPDATE teacher_profiles SET video_url = $2, video_duration_sec = $3, onboarding_step = $4, updated_at = now() WHERE user_id = $1', [id, url, info.duration, advance]);
+    }
     res.json(await state(id, (await q!(`SELECT ${PROFILE_COLS} FROM teacher_profiles WHERE user_id = $1`, [id])).rows[0]));
+  }));
+
+  /** O'qituvchi moderatsiyani kutayotgan o'zgarishlarini bekor qiladi. */
+  router.delete('/teacher/onboarding/revision', authenticate, h(async (req, res) => {
+    const { id, row } = await teacher(req);
+    await q!(`UPDATE teacher_profile_revisions SET status = 'cancelled', decided_at = now(), updated_at = now() WHERE teacher_user_id = $1 AND status = 'pending'`, [id]);
+    res.json(await state(id, row));
   }));
 
   /* ── Yuborish: idempotent (qayta bosish yangi ariza yaratmaydi) ── */
@@ -696,6 +812,45 @@ export function createAdminTeacherOnboardingRoutes(deps: OnboardingDeps = {}): R
     } as const;
     await notifyTeacher(db(), id, titles[decision as keyof typeof titles][0], titles[decision as keyof typeof titles][1]);
     res.json({ ok: true, status });
+  }));
+
+  /** Tasdiqlangan o'qituvchilarning profil o'zgarishlari (moderatsiya). */
+  router.get('/teacher-revisions', h(async (req, res) => {
+    const status = ['pending', 'approved', 'rejected', 'cancelled'].includes(String(req.query.status)) ? String(req.query.status) : 'pending';
+    const { rows } = await db()(`SELECT r.id, r.teacher_user_id, r.changes, r.status, r.review_comment, r.decided_by, r.created_at, r.updated_at, r.decided_at,
+        p.first_name, p.last_name, p.avatar_url, to_jsonb(p) AS live
+      FROM teacher_profile_revisions r JOIN teacher_profiles p ON p.user_id = r.teacher_user_id
+      WHERE r.status = $1 ORDER BY COALESCE(r.decided_at, r.updated_at) DESC LIMIT 200`, [status]);
+    const pending = await db()(`SELECT count(*)::int AS n FROM teacher_profile_revisions WHERE status = 'pending'`);
+    res.json({
+      pending: pending.rows[0].n,
+      rows: rows.map(({ live, ...r }) => ({ ...r, before: Object.fromEntries(Object.keys(r.changes ?? {}).map((k) => [k, live?.[k] ?? null])) })),
+    });
+  }));
+
+  /** approve — o'zgarishlar katalogga chiqadi; reject — izoh shart, profil o'zgarmaydi. */
+  router.post('/teacher-revisions/:id/decision', h(async (req, res) => {
+    const id = Number(req.params.id);
+    const decision = String(req.body?.decision ?? '');
+    const comment = String(req.body?.comment ?? '').trim().slice(0, 1000);
+    if (decision !== 'approve' && decision !== 'reject') throw new HttpError(400, 'Qaror notoʻgʻri');
+    if (decision === 'reject' && comment.length < 3) throw new HttpError(400, 'Izoh yozing — oʻqituvchi nimani tuzatishini bilishi kerak');
+    const rev = (await db()(`UPDATE teacher_profile_revisions SET status = $2, review_comment = $3, decided_by = $4, decided_at = now(), updated_at = now()
+      WHERE id = $1 AND status = 'pending' RETURNING teacher_user_id, changes`, [id, decision === 'approve' ? 'approved' : 'rejected', comment || null, actor(req)])).rows[0];
+    if (!rev) throw new HttpError(409, 'Bu oʻzgarish boʻyicha qaror oldin qabul qilingan');
+    const teacherId = Number(rev.teacher_user_id);
+    if (decision === 'approve') {
+      const keys = Object.keys(rev.changes ?? {}).filter((k) => (REVISION_COLUMNS as readonly string[]).includes(k));
+      if (keys.length) {
+        await db()(`UPDATE teacher_profiles p SET ${keys.map((k) => `${k} = r.${k}`).join(', ')}, updated_at = now()
+          FROM jsonb_populate_record(NULL::teacher_profiles, $2::jsonb) r WHERE p.user_id = $1`, [teacherId, JSON.stringify(rev.changes)]);
+      }
+      if (keys.includes('avatar_url')) await db()('UPDATE users SET avatar_url = $2 WHERE id = $1', [teacherId, rev.changes.avatar_url]).catch(() => {});
+      await notifyTeacher(db(), teacherId, 'Profil oʻzgarishlari tasdiqlandi', 'Yangi maʼlumotlar endi oʻquvchilarga koʻrinadi.');
+    } else {
+      await notifyTeacher(db(), teacherId, 'Profil oʻzgarishlari qabul qilinmadi', comment);
+    }
+    res.json({ ok: true, status: decision === 'approve' ? 'approved' : 'rejected' });
   }));
 
   router.get('/teacher-onboarding-settings', h(async (_req, res) => {

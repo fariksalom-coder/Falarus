@@ -1,4 +1,3 @@
-import { PageHeader } from '../../ui/Foundation';
 import { useEffect, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { MONTHS, type PanelLang } from './lang';
@@ -154,7 +153,49 @@ export function PageHead({
   subtitle?: string;
   actions?: ReactNode;
 }) {
-  return <PageHeader title={title} description={subtitle} action={actions ? <div className="flex flex-wrap gap-2.5">{actions}</div> : undefined} />;
+  // Prototip: oddiy sarlavha (26/800) + kulrang izoh, amallar o'ngda — umumiy platforma «hero»si emas.
+  return (
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3 lg:mb-5">
+      <div className="min-w-0">
+        <h1 className="text-[24px] font-extrabold leading-tight tracking-[-0.01em] text-app-text lg:text-[26px]">{title}</h1>
+        {subtitle ? <p className="mt-0.5 text-[14px] text-app-text-muted">{subtitle}</p> : null}
+      </div>
+      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+    </div>
+  );
+}
+
+/** Segment-tablar (Balans · Komissiya, Profil · Anketa …). */
+export function SegmentTabs<T extends string>({
+  items,
+  active,
+  onChange,
+}: {
+  items: Array<{ key: T; label: string }>;
+  active: T;
+  onChange: (key: T) => void;
+}) {
+  return (
+    <div role="tablist" className="mb-4 flex w-fit max-w-full gap-1 overflow-x-auto rounded-[14px] bg-app-bg-subtle p-1 lg:mb-5">
+      {items.map((it) => {
+        const on = it.key === active;
+        return (
+          <button
+            key={it.key}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            onClick={() => onChange(it.key)}
+            className={`min-h-[40px] shrink-0 whitespace-nowrap rounded-[10px] px-4 text-[13.5px] font-bold transition active:scale-[0.98] ${
+              on ? 'bg-app-surface text-app-text shadow-[0_1px_2px_rgba(15,23,42,0.1)]' : 'text-app-text-muted hover:text-app-text'
+            }`}
+          >
+            {it.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function PrimaryButton({
@@ -175,7 +216,7 @@ export function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`min-h-[48px] rounded-[16px] bg-app-primary px-[18px] text-[13px] font-semibold text-white transition hover:bg-app-primary-deep active:scale-[0.98] disabled:opacity-50 ${className}`}
+      className={`min-h-[46px] rounded-[12px] bg-app-primary px-[18px] text-[14px] font-bold text-white transition hover:bg-app-primary-deep active:scale-[0.98] disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -196,20 +237,30 @@ export function GhostButton({
   tone?: 'default' | 'danger' | 'dark';
 }) {
   const tones = {
-    default: 'bg-app-surface text-app-text border border-app-border-strong hover:border-app-border-strong',
-    danger: 'bg-app-surface text-[#C23A3F] border border-[#F6D9D9] hover:border-[#E9474D]',
-    dark: 'bg-[#171A3D] text-white border border-[#171A3D] hover:bg-[#25295A]',
+    default: 'bg-app-surface text-app-text border border-app-border hover:border-app-border-strong hover:bg-[var(--app-row-hover)]',
+    danger: 'bg-[#FEF2F2] text-[#B91C1C] border border-[#FEF2F2] hover:border-[#FECACA]',
+    dark: 'bg-[#134E4A] text-white border border-[#134E4A] hover:bg-[#115E59]',
   } as const;
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`min-h-[44px] rounded-[12px] px-[18px] text-[13px] font-semibold transition active:scale-[0.98] disabled:opacity-50 ${tones[tone]} ${className}`}
+      className={`min-h-[44px] rounded-[12px] px-4 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-50 ${tones[tone]} ${className}`}
     >
       {children}
     </button>
   );
+}
+
+export type AvatarTone = 'violet' | 'teal' | 'green' | 'amber' | 'blue' | 'pink' | 'grey' | 'light';
+
+/** Ism bo'yicha barqaror rang — ro'yxatda hamma bir xil ko'rinmasin (prototipdagidek). */
+export function toneFor(name: string): AvatarTone {
+  const palette: AvatarTone[] = ['amber', 'teal', 'blue', 'pink', 'grey'];
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return palette[h % palette.length];
 }
 
 export function Avatar({
@@ -221,14 +272,18 @@ export function Avatar({
   name: string;
   size?: number;
   url?: string | null;
-  tone?: 'violet' | 'green' | 'grey' | 'light';
+  tone?: AvatarTone;
 }) {
-  const tones = {
-    violet: 'bg-app-icon-bg text-app-brand',
-    green: 'bg-[#E7F4EC] text-[#17A34A]',
+  const tones: Record<AvatarTone, string> = {
+    violet: 'bg-[#D5EFEA] text-[#115E59]',
+    teal: 'bg-[#D5EFEA] text-[#115E59]',
+    green: 'bg-[#DCFCE7] text-[#166534]',
+    amber: 'bg-[#FDE68A] text-[#78350F]',
+    blue: 'bg-[#DBEAFE] text-[#1E40AF]',
+    pink: 'bg-[#FCE7F3] text-[#9D174D]',
     grey: 'bg-app-bg-subtle text-app-text-muted',
-    light: 'bg-app-surface/14 text-white',
-  } as const;
+    light: 'bg-white/14 text-white',
+  };
   if (url) {
     return (
       <img
@@ -242,7 +297,7 @@ export function Avatar({
   return (
     <span
       style={{ width: size, height: size, fontSize: Math.max(11, Math.round(size * 0.32)) }}
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${tones[tone]}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-extrabold ${tones[tone]}`}
     >
       {initials(name)}
     </span>
@@ -254,18 +309,20 @@ export function Tag({
   tone = 'violet',
 }: {
   children: ReactNode;
-  tone?: 'violet' | 'green' | 'amber' | 'grey' | 'red';
+  tone?: 'violet' | 'teal' | 'blue' | 'green' | 'amber' | 'grey' | 'red';
 }) {
   const tones = {
-    violet: 'bg-app-icon-bg text-app-brand',
-    green: 'bg-[#E7F4EC] text-[#17A34A]',
-    amber: 'bg-[#FFF4DA] text-[#8A6B12]',
-    grey: 'bg-app-bg-subtle text-app-text-muted',
-    red: 'bg-[#FDECEC] text-[#C23A3F]',
+    violet: 'bg-[#E6F4F1] text-[#115E59]',
+    teal: 'bg-[#E6F4F1] text-[#115E59]',
+    blue: 'bg-[#DBEAFE] text-[#1E40AF]',
+    green: 'bg-[#DCFCE7] text-[#166534]',
+    amber: 'bg-[#FEF3C7] text-[#92400E]',
+    grey: 'bg-[#F1F4F7] text-[#334155]',
+    red: 'bg-[#FEE2E2] text-[#991B1B]',
   } as const;
   return (
     <span
-      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap ${tones[tone]}`}
+      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-[3px] text-[12px] font-bold whitespace-nowrap ${tones[tone]}`}
     >
       {children}
     </span>
@@ -277,21 +334,29 @@ export function StatCard({
   value,
   hint,
   hintTone = 'muted',
+  onClick,
 }: {
   label: string;
   value: string;
   hint?: string;
-  hintTone?: 'muted' | 'green' | 'violet';
+  hintTone?: 'muted' | 'green' | 'violet' | 'amber';
+  onClick?: () => void;
 }) {
-  const tones = { muted: 'text-app-text-muted', green: 'text-[#17A34A]', violet: 'text-app-brand' } as const;
-  return (
-    <div className="rounded-[18px] border border-app-border bg-app-surface p-4">
-      <p className="text-[12.5px] text-app-text-muted">{label}</p>
-      <p className="mt-2 text-[22px] font-semibold tracking-[-0.02em] text-app-text lg:text-[26px]">
-        {value}
-      </p>
-      <p className={`mt-1.5 min-h-[16px] text-[11.5px] font-medium ${tones[hintTone]}`}>{hint ?? ''}</p>
-    </div>
+  const tones = { muted: 'text-app-text-muted', green: 'text-[#166534]', violet: 'text-app-brand', amber: 'text-[#92400E]' } as const;
+  const body = (
+    <>
+      <span className="block text-[13px] font-semibold text-app-text-muted">{label}</span>
+      <span className="mt-1 mb-0.5 block text-[24px] font-extrabold tracking-[-0.01em] text-app-text lg:text-[26px]">{value}</span>
+      <span className={`block min-h-[16px] text-[12px] font-bold ${tones[hintTone]}`}>{hint ?? ''}</span>
+    </>
+  );
+  const cls = 'rounded-[18px] border border-app-border bg-app-surface px-4 py-3.5 text-left';
+  return onClick ? (
+    <button type="button" onClick={onClick} className={`${cls} transition hover:border-app-border-strong hover:shadow-[0_14px_34px_rgba(148,163,184,0.12)] active:scale-[0.98]`}>
+      {body}
+    </button>
+  ) : (
+    <div className={cls}>{body}</div>
   );
 }
 
@@ -313,15 +378,15 @@ export function Pills<T extends string>({
             key={it.key}
             type="button"
             onClick={() => onChange(it.key)}
-            className={`min-h-[40px] shrink-0 rounded-full border px-[18px] text-[12.5px] font-semibold transition ${
+            className={`min-h-[40px] shrink-0 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-bold transition active:scale-[0.97] ${
               on
-                ? 'border-app-brand bg-app-primary text-white'
-                : 'border-app-border-strong bg-app-surface text-app-text-muted hover:border-app-border-strong'
+                ? 'border-app-primary bg-app-primary text-white'
+                : 'border-app-border-strong bg-app-surface text-app-text-secondary hover:border-app-primary'
             }`}
           >
             {it.label}
             {it.count != null ? (
-              <span className={on ? 'ml-1.5 text-white/70' : 'ml-1.5 text-app-text-muted'}>{it.count}</span>
+              <span className="ml-1.5 opacity-70">{it.count}</span>
             ) : null}
           </button>
         );
@@ -350,12 +415,12 @@ export function Chips({
             key={o}
             type="button"
             onClick={() => onToggle(o)}
-            className={`min-h-[40px] border px-4 text-[12.5px] font-medium transition ${
-              square ? 'min-w-[60px] rounded-[12px] font-semibold' : 'rounded-full'
+            className={`min-h-[40px] border px-3.5 text-[13px] font-bold transition active:scale-[0.97] ${
+              square ? 'min-w-[60px] rounded-[12px]' : 'rounded-full'
             } ${
               on
-                ? 'border-app-brand bg-app-primary text-white'
-                : 'border-app-border-strong bg-app-surface text-app-text-muted hover:border-app-border-strong'
+                ? 'border-app-primary bg-app-primary text-white'
+                : 'border-app-border-strong bg-app-surface text-app-text-secondary hover:border-app-primary'
             }`}
           >
             {o}
@@ -368,9 +433,9 @@ export function Chips({
 
 export function ProgressBar({ percent, tone = 'violet' }: { percent: number; tone?: 'violet' | 'green' }) {
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-app-bg-subtle">
+    <div className="h-2 overflow-hidden rounded-full bg-[#E6F4F1]">
       <div
-        className={`h-full rounded-full transition-all ${tone === 'green' ? 'bg-[#17A34A]' : 'bg-app-primary'}`}
+        className={`h-full rounded-full transition-all ${tone === 'green' ? 'bg-[#16A34A]' : 'bg-app-primary'}`}
         style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
       />
     </div>
@@ -393,7 +458,7 @@ export function Field({
 }) {
   return (
     <label className={`flex flex-col gap-1.5 ${className}`}>
-      <span className={`text-[12.5px] font-semibold ${error ? 'text-[#C23A3F]' : 'text-app-text'}`}>
+      <span className={`text-[13.5px] font-bold ${error ? 'text-[#B91C1C]' : 'text-app-text'}`}>
         {label}
         {error ? <span className="ml-1 text-[#E9474D]">*</span> : null}
       </span>
@@ -401,7 +466,7 @@ export function Field({
       {error ? (
         <span className="text-[11.5px] font-semibold text-[#C23A3F]">{error}</span>
       ) : hint ? (
-        <span className="text-[11.5px] text-app-text-muted">{hint}</span>
+        <span className="text-[12px] font-medium text-app-text-muted">{hint}</span>
       ) : null}
     </label>
   );
@@ -411,15 +476,15 @@ export function Field({
 export const inputErrorClass = 'border-[#E9474D] bg-[#FFF8F8]';
 
 export const inputClass =
-  'min-h-[44px] w-full rounded-[12px] border border-app-border-strong bg-app-surface px-3.5 text-[13px] text-app-text outline-none transition focus:border-app-brand';
+  'min-h-[44px] w-full rounded-[12px] border border-app-border-strong bg-app-surface px-3 text-[14px] text-app-text outline-none transition focus:border-app-primary focus:ring-2 focus:ring-[#0F766E]/15';
 
 export const textareaClass =
-  'w-full rounded-[13px] border border-app-border-strong bg-app-surface p-3.5 text-[13px] leading-[1.6] text-app-text outline-none transition focus:border-app-brand';
+  'w-full rounded-[12px] border border-app-border-strong bg-app-surface px-3 py-2.5 text-[14px] leading-[1.55] text-app-text outline-none transition focus:border-app-primary focus:ring-2 focus:ring-[#0F766E]/15';
 
 export function Empty({ text, hint }: { text: string; hint?: string }) {
   return (
-    <div className="rounded-[18px] border border-dashed border-app-border bg-app-surface px-5 py-10 text-center">
-      <p className="text-[13.5px] font-medium text-app-text-muted">{text}</p>
+    <div className="rounded-[20px] border border-dashed border-[#CBD5E1] bg-app-surface px-5 py-8 text-center">
+      <p className="text-[14px] font-semibold text-app-text-muted">{text}</p>
       {hint ? <p className="mx-auto mt-1.5 max-w-[420px] text-[12.5px] text-app-text-muted">{hint}</p> : null}
     </div>
   );
@@ -429,7 +494,7 @@ export function Skeleton({ rows = 3 }: { rows?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-[72px] animate-pulse rounded-[18px] bg-app-surface" />
+        <div key={i} className="h-[72px] animate-pulse rounded-[18px] border border-app-border bg-app-surface" />
       ))}
     </div>
   );
@@ -437,7 +502,7 @@ export function Skeleton({ rows = 3 }: { rows?: number }) {
 
 export function ErrorNote({ text }: { text: string }) {
   return (
-    <p className="mb-3 rounded-[14px] bg-[#FDECEC] px-4 py-3 text-[13px] font-medium text-[#C23A3F]">
+    <p role="alert" className="mb-3 rounded-[14px] bg-[#FEF2F2] px-4 py-3 text-[13.5px] font-semibold text-[#B91C1C]">
       {text}
     </p>
   );
@@ -468,7 +533,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(14,16,45,0.32)] p-0 sm:items-center sm:p-6"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-[rgba(15,23,42,0.45)] p-0 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <motion.div
@@ -477,24 +542,26 @@ export function Modal({
         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
         style={{ maxWidth: width }}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[24px] bg-app-surface p-6 pb-[max(env(safe-area-inset-bottom,0px),24px)] sm:rounded-[24px] sm:pb-6"
+        role="dialog"
+        aria-label={title}
+        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[22px] bg-app-surface p-5 pb-[max(env(safe-area-inset-bottom,0px),20px)] sm:rounded-[22px] sm:pb-5"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[18px] font-semibold text-app-text">{title}</p>
-            {subtitle ? <p className="mt-1 text-[12.5px] text-app-text-muted">{subtitle}</p> : null}
+            <p className="text-[20px] font-extrabold text-app-text">{title}</p>
+            {subtitle ? <p className="mt-0.5 text-[14px] text-app-text-muted">{subtitle}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-bg-muted text-[15px] text-app-text"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F1F4F7] text-[16px] text-app-text transition hover:bg-app-bg-subtle"
             aria-label="close"
           >
             ✕
           </button>
         </div>
         <div className="flex flex-col gap-4">{children}</div>
-        {footer ? <div className="mt-5 flex gap-2.5">{footer}</div> : null}
+        {footer ? <div className="mt-5 flex justify-end gap-2">{footer}</div> : null}
       </motion.div>
     </div>
   );
@@ -505,12 +572,13 @@ export function Toast({ text }: { text: string }) {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-[92px] left-1/2 z-[60] flex -translate-x-1/2 items-center gap-2.5 rounded-[14px] bg-[#12265F] px-5 py-3.5 text-white shadow-[0_12px_30px_rgba(18,38,95,0.28)] lg:bottom-7"
+      role="status"
+      className="fixed bottom-[96px] left-1/2 z-[70] flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-2.5 rounded-[14px] bg-[#0F172A] px-[18px] py-3 text-white shadow-[0_12px_30px_rgba(15,23,42,0.25)] lg:bottom-7"
     >
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#17A34A] text-[11px]">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#16A34A] text-[11px]">
         ✓
       </span>
-      <span className="text-[13px] font-medium">{text}</span>
+      <span className="text-[13.5px] font-bold">{text}</span>
     </motion.div>
   );
 }

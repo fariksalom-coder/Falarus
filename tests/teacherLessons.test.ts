@@ -30,7 +30,7 @@ async function setup() {
   await db.exec(`
     CREATE TABLE users (id integer PRIMARY KEY, first_name text, last_name text, account_type text, phone text);
     CREATE TABLE teacher_profiles (user_id integer PRIMARY KEY REFERENCES users(id), first_name text, last_name text, avatar_url text,
-      profile_status text, lesson_price_uzs integer, schedule jsonb, terms_accepted_at timestamptz);
+      profile_status text, lesson_price_uzs integer, schedule jsonb, terms_accepted_at timestamptz, catalog_visible boolean NOT NULL DEFAULT true);
     CREATE TABLE payments (id bigint PRIMARY KEY);
     CREATE TABLE teacher_trial_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, student_user_id integer, status text,
       scheduled_starts_at timestamptz, scheduled_ends_at timestamptz);

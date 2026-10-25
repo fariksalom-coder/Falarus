@@ -2,24 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
-  BadgeCheck,
   Bell,
   LogOut,
   BookOpen,
   CalendarDays,
-  HelpCircle,
   Home,
   LayoutGrid,
   type LucideIcon,
   MessageSquare,
+  Plus,
   Search,
-  Settings as SettingsIcon,
   Star,
   User,
   Users,
   Wallet,
   X,
-  Percent,
 } from 'lucide-react';
 import {
   getPanelNotifications,
@@ -35,7 +32,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { PANEL_TEXTS, type PanelLang } from '../components/teacher/panel/lang';
 import { PanelProvider, type SectionKey } from '../components/teacher/panel/panelContext';
-import { Avatar, Fade, Skeleton, Toast } from '../components/teacher/panel/ui';
+import { Avatar, Fade, PageHead, SegmentTabs, Skeleton, Toast, toneFor } from '../components/teacher/panel/ui';
+import { AddTimeModal } from '../components/teacher/panel/sections/scheduleModals';
 import Dashboard from '../components/teacher/panel/sections/Dashboard';
 import Schedule from '../components/teacher/panel/sections/Schedule';
 import Students, { StudentDetail } from '../components/teacher/panel/sections/Students';
@@ -49,7 +47,8 @@ import Balance from '../components/teacher/panel/sections/Balance';
 import Commission from '../components/teacher/onboarding/Commission';
 import Messages, { NotificationsDrawer, Reviews } from '../components/teacher/panel/sections/Communication';
 import Settings, { Help } from '../components/teacher/panel/sections/SettingsHelp';
-import { TEACHER_BRAND_GRADIENT, TEACHER_LOGIN_PATH, TEACHER_REGISTER_PATH } from '../constants/teacherPaths';
+import { TEACHER_LOGIN_PATH, TEACHER_REGISTER_PATH } from '../constants/teacherPaths';
+import { FalaRusLogoMark } from '../components/FalaRusLogoMark';
 
 /**
  * O'qituvchi paneli — prototip ("Кабинет преподавателя") asosida qayta yozilgan.
@@ -61,29 +60,42 @@ import { TEACHER_BRAND_GRADIENT, TEACHER_LOGIN_PATH, TEACHER_REGISTER_PATH } fro
 
 const LANG_KEY = 'falarus.teacherPanel.lang';
 
+type PanelLabel = keyof (typeof PANEL_TEXTS)['uz'];
+
 type NavItem = {
   key: SectionKey;
-  label: keyof (typeof PANEL_TEXTS)['uz'];
+  label: PanelLabel;
+  /** Menyuda nom yonidagi kichik izoh (masalan, «Balans · %»). */
+  hint?: PanelLabel;
   icon: LucideIcon;
-  group: 'work' | 'cabinet' | 'profile';
+  group: 'work' | 'cabinet' | 'other';
 };
 
 const NAV: NavItem[] = [
   { key: 'dashboard', label: 'navDashboard', icon: Home, group: 'work' },
   { key: 'schedule', label: 'navSchedule', icon: CalendarDays, group: 'work' },
-  { key: 'students', label: 'navStudents', icon: Users, group: 'work' },
+  { key: 'students', label: 'navStudentsShort', icon: Users, group: 'work' },
   { key: 'lessons', label: 'navLessons', icon: BookOpen, group: 'work' },
-  { key: 'income', label: 'navIncome', icon: Wallet, group: 'cabinet' },
-  { key: 'subscription', label: 'navSubscription', icon: Percent, group: 'cabinet' },
-  { key: 'messages', label: 'navMessages', icon: MessageSquare, group: 'cabinet' },
+  { key: 'messages', label: 'navMessages', icon: MessageSquare, group: 'work' },
+  { key: 'income', label: 'navMoney', hint: 'navMoneyHint', icon: Wallet, group: 'cabinet' },
   { key: 'reviews', label: 'navReviews', icon: Star, group: 'cabinet' },
-  { key: 'profile', label: 'navProfile', icon: User, group: 'profile' },
-  { key: 'anketa', label: 'navAnketa', icon: BadgeCheck, group: 'profile' },
-  { key: 'settings', label: 'navSettings', icon: SettingsIcon, group: 'profile' },
-  { key: 'help', label: 'navHelp', icon: HelpCircle, group: 'profile' },
+  // Profil, anketa, hujjatlar, sozlamalar va yordam — bitta bandda (tablar bilan).
+  { key: 'profile', label: 'navProfileShort', icon: User, group: 'cabinet' },
 ];
 
-const MOBILE_KEYS: SectionKey[] = ['dashboard', 'schedule', 'students', 'lessons'];
+const MOBILE_KEYS: SectionKey[] = ['dashboard', 'schedule', 'students', 'messages'];
+const MOBILE_LABEL: Partial<Record<SectionKey, PanelLabel>> = { dashboard: 'navHomeShort' };
+
+/** «Yana» varag'i (telefon): pastki menyuga sig'magan bo'limlar. */
+const MORE_ITEMS: Array<{ key: SectionKey; label: PanelLabel; sub: PanelLabel }> = [
+  { key: 'lessons', label: 'navLessons', sub: 'moreLessons' },
+  { key: 'income', label: 'navMoney', sub: 'moreMoney' },
+  { key: 'reviews', label: 'navReviews', sub: 'moreReviews' },
+  { key: 'profile', label: 'navProfileShort', sub: 'moreProfile' },
+];
+
+const MONEY_KEYS: SectionKey[] = ['income', 'subscription'];
+const PROFILE_KEYS: SectionKey[] = ['profile', 'anketa', 'documents', 'public', 'settings', 'help'];
 
 /** Ichki bo'limlar menyuda qaysi band yonib turishini belgilaydi. */
 const NAV_PARENT: Partial<Record<SectionKey, SectionKey>> = {
@@ -91,6 +103,11 @@ const NAV_PARENT: Partial<Record<SectionKey, SectionKey>> = {
   student: 'students',
   report: 'lessons',
   public: 'profile',
+  anketa: 'profile',
+  documents: 'profile',
+  settings: 'profile',
+  help: 'profile',
+  subscription: 'income',
 };
 
 function readLang(fallback: PanelLang): PanelLang {
@@ -118,6 +135,7 @@ export default function TeacherPanelPage() {
   const [unread, setUnread] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [toastText, setToastText] = useState('');
   const [query, setQuery] = useState('');
   const [students, setStudents] = useState<PanelStudent[]>([]);
@@ -256,6 +274,12 @@ export default function TeacherPanelPage() {
     t.teacherRole;
   const status = String(cabinet?.profile?.profile_status ?? 'draft');
   const activeNav = NAV_PARENT[section] ?? section;
+  const inBar = MOBILE_KEYS.includes(activeNav);
+  const logoutAndLeave = () => {
+    logout();
+    navigate('/');
+  };
+  const addTimeLabel = t.addFreeTime.replace(/^\+\s*/, '');
 
   const found = query.trim()
     ? students.filter((s) => s.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 6)
@@ -263,27 +287,25 @@ export default function TeacherPanelPage() {
 
   return (
     <PanelProvider value={ctx}>
-      <div className="teacher-workspace min-h-screen bg-app-bg-muted lg:flex">
+      <div className="teacher-workspace min-h-screen lg:flex">
         {/* ── Chap menyu (kompyuter) ─────────────────────────────────────── */}
-        <aside className="sticky top-0 hidden h-screen w-[262px] shrink-0 flex-col gap-6 overflow-y-auto bg-app-primary-deep px-4 py-5 lg:flex">
-          <div className="flex items-center gap-3 px-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-app-primary-mid text-[17px] font-bold text-white">
-              F
-            </span>
-            <span>
-              <span className="block text-[17px] font-bold leading-none text-white">FalaRus</span>
-              <span className="mt-1 block text-[10.5px] uppercase tracking-[0.08em] text-white/45">
-                {t.teacherRole}
-              </span>
+        <aside className="tw-sidebar sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col gap-5 overflow-y-auto px-3 py-5 lg:flex">
+          <div className="flex items-center gap-2.5 px-2">
+            <FalaRusLogoMark size={36} className="rounded-[10px] ring-1 ring-app-border" />
+            <span className="flex flex-col">
+              <span className="text-[16px] font-extrabold leading-[1.1] text-app-text">FalaRus</span>
+              <span className="text-[12px] font-bold text-app-primary">{t.cabinetBrand}</span>
             </span>
           </div>
 
-          <nav className="flex flex-1 flex-col gap-5">
-            {(['work', 'cabinet', 'profile'] as const).map((group) => (
-              <div key={group}>
-                <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/32">
-                  {group === 'work' ? t.groupWork : group === 'cabinet' ? t.groupCabinet : t.groupProfile}
-                </p>
+          <nav aria-label={t.cabinetBrand} className="flex flex-col gap-0.5">
+            {(['work', 'cabinet', 'other'] as const).filter((g) => NAV.some((n) => n.group === g)).map((group) => (
+              <div key={group} className="flex flex-col gap-0.5">
+                {group !== 'work' ? (
+                  <p className="mt-4 mb-1.5 px-3 text-[12px] font-bold uppercase tracking-[0.06em] text-app-text-muted">
+                    {group === 'cabinet' ? t.groupCabinet : t.groupOther}
+                  </p>
+                ) : null}
                 {NAV.filter((n) => n.group === group).map((n) => {
                   const Icon = n.icon;
                   const on = n.key === activeNav;
@@ -292,19 +314,14 @@ export default function TeacherPanelPage() {
                       key={n.key}
                       type="button"
                       onClick={() => go(n.key)}
-                      className={`mb-0.5 flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left text-[13.5px] transition ${
-                        on
-                          ? 'bg-app-surface font-semibold text-[#0E1F52]'
-                          : 'font-medium text-white/72 hover:bg-app-surface/8'
+                      aria-current={on ? 'page' : undefined}
+                      className={`flex min-h-[44px] w-full items-center gap-3 rounded-[12px] px-3 text-left text-[14px] transition ${
+                        on ? 'bg-app-icon-bg font-extrabold text-app-icon-fg' : 'font-semibold text-app-text-secondary hover:bg-[var(--app-row-hover)]'
                       }`}
                     >
-                      <Icon className="h-[19px] w-[19px] shrink-0" strokeWidth={1.7} />
+                      <Icon className="h-5 w-5 shrink-0" strokeWidth={1.8} />
                       <span className="min-w-0 flex-1 truncate">{t[n.label]}</span>
-                      {n.key === 'messages' && unread > 0 ? (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E9474D] px-1.5 text-[11px] font-semibold text-white">
-                          {unread}
-                        </span>
-                      ) : null}
+                      {n.hint ? <span className="text-[12px] font-semibold text-app-text-muted">{t[n.hint]}</span> : null}
                     </button>
                   );
                 })}
@@ -312,60 +329,55 @@ export default function TeacherPanelPage() {
             ))}
           </nav>
 
-          {/* Listing obunasi o'rniga — joriy komissiya stavkasi (onboarding v2). */}
-          <Commission compact />
-
-          {/*
-           * Chiqish menyuda turadi: ilgari u faqat "Sozlamalar" ichida edi va
-           * boshqa hisobga o'tmoqchi bo'lgan odam uni topolmasdi.
-           */}
-          <button
-            type="button"
-            onClick={() => {
-              logout();
-              navigate('/');
-            }}
-            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[12px] bg-app-surface/8 text-[12.5px] font-semibold text-white/70 transition hover:bg-app-surface/12 hover:text-white"
-          >
-            <LogOut className="h-[16px] w-[16px]" />
-            {t.logout}
-          </button>
+          {/* Kim kirgani va holati — pastda, chiqish tugmasi bilan birga. */}
+          <div className="mt-auto flex items-center gap-2 rounded-[14px] border border-app-border p-2.5">
+            <Avatar name={name} url={cabinet?.profile?.avatar_url ?? null} size={38} tone="teal" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-[14px] font-bold text-app-text">{name}</span>
+              <StatusLine status={status} t={t} />
+            </span>
+            <button
+              type="button"
+              onClick={logoutAndLeave}
+              aria-label={t.logout}
+              title={t.logout}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-app-bg-muted text-app-text-muted transition hover:bg-[#FEF2F2] hover:text-[#B91C1C]"
+            >
+              <LogOut className="h-[18px] w-[18px]" />
+            </button>
+          </div>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col pb-[86px] lg:pb-0">
-          {/* ── Tepa qator ──────────────────────────────────────────────── */}
-          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#EBEAF5] bg-app-surface px-4 py-3 pt-[max(env(safe-area-inset-top,0px),12px)] lg:h-[70px] lg:gap-5 lg:px-7 lg:py-0">
-            <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-app-primary text-[15px] font-bold text-white lg:hidden">
-              F
-            </span>
-
-            <div className="relative hidden max-w-[330px] flex-1 lg:block">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2">
-                <Search className="h-[17px] w-[17px] text-app-text-muted" />
-              </span>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t.search}
-                className="h-[42px] w-full rounded-full bg-app-bg-muted pl-11 pr-4 text-[13px] text-app-text outline-none"
-              />
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+          {/* ── Tepa qator: kompyuter ───────────────────────────────────── */}
+          <header className="sticky top-0 z-30 hidden flex-wrap items-center gap-3 border-b border-app-border bg-app-surface px-8 py-3 lg:flex">
+            <div className="relative max-w-[420px] flex-[1_1_260px]">
+              <label className="flex h-11 items-center gap-2.5 rounded-[12px] border border-app-border bg-app-bg-muted px-3.5 text-app-text-muted">
+                <Search className="h-[18px] w-[18px] shrink-0" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t.search}
+                  aria-label={t.search}
+                  className="min-w-0 flex-1 bg-transparent text-[14px] text-app-text outline-none"
+                />
+              </label>
               {query.trim() ? (
-                <div className="absolute left-0 right-0 top-[48px] overflow-hidden rounded-[16px] border border-app-border bg-app-surface shadow-[0_14px_34px_rgba(148,163,184,0.18)]">
+                <div className="absolute left-0 right-0 top-[50px] overflow-hidden rounded-[16px] border border-app-border bg-app-surface shadow-[0_14px_34px_rgba(148,163,184,0.18)]">
                   {found.length === 0 ? (
-                    <p className="px-4 py-3 text-[12.5px] text-app-text-muted">{t.nothingFound}</p>
+                    <p className="px-4 py-3 text-[13px] text-app-text-muted">{t.nothingFound}</p>
                   ) : (
                     found.map((s) => (
                       <button
                         key={s.user_id}
                         type="button"
                         onClick={() => go('student', s.user_id)}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-app-bg-muted"
+                        className="flex min-h-[44px] w-full items-center gap-3 px-4 py-2 text-left hover:bg-[var(--app-row-hover)]"
                       >
-                        <Avatar name={s.name} size={30} />
-                        <span className="min-w-0 flex-1 truncate text-[13px] text-app-text">
-                          {s.name}
-                        </span>
-                        <span className="text-[11.5px] text-app-text-muted">{s.level}</span>
+                        <Avatar name={s.name} size={30} tone={toneFor(s.name)} />
+                        <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-app-text">{s.name}</span>
+                        <span className="text-[12px] font-bold text-app-primary">{s.level}</span>
                       </button>
                     ))
                   )}
@@ -373,59 +385,66 @@ export default function TeacherPanelPage() {
               ) : null}
             </div>
 
-            <div className="ml-auto flex items-center gap-2 lg:gap-3.5">
-              <div className="flex gap-0.5 rounded-full bg-app-bg-muted p-[3px]">
-                {(['ru', 'uz'] as const).map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => setLang(l)}
-                    className={`min-h-[32px] rounded-full px-3 text-[12px] font-semibold transition ${
-                      lang === l ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted'
-                    }`}
-                  >
-                    {l.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-
+            <div className="ml-auto flex items-center gap-2.5">
+              <LangSwitch lang={lang} setLang={setLang} />
+              <BellButton unread={unread} label={t.notifications} onClick={() => setNotifOpen(true)} bordered />
               <button
                 type="button"
-                onClick={() => setNotifOpen(true)}
-                className="relative flex h-10 w-10 items-center justify-center rounded-full bg-app-bg-muted"
-                aria-label={t.notifications}
+                onClick={() => setAddOpen(true)}
+                className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-app-primary px-[18px] text-[14px] font-bold text-white transition hover:bg-app-primary-deep active:scale-[0.98]"
               >
-                <Bell className="h-[19px] w-[19px] text-app-text" strokeWidth={1.7} />
-                {unread > 0 ? (
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-[#E9474D]" />
-                ) : null}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => go('profile')}
-                className="flex items-center gap-2.5 rounded-full p-1 pr-2 transition hover:bg-app-bg-muted"
-              >
-                <Avatar name={name} url={cabinet?.profile?.avatar_url ?? null} size={38} />
-                <span className="hidden text-left lg:block">
-                  <span className="block text-[13px] font-semibold text-app-text">{name}</span>
-                  <span
-                    className={`block text-[11px] font-medium ${
-                      status === 'active' ? 'text-[#17A34A]' : 'text-app-text-muted'
-                    }`}
-                  >
-                    {status === 'active' ? t.stActiveTitle : status === 'pending_review' ? t.stReviewTitle : t.stDraftTitle}
-                  </span>
-                </span>
+                <Plus className="h-[18px] w-[18px]" strokeWidth={2.2} />
+                {addTimeLabel}
               </button>
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-[1180px] px-4 py-5 lg:px-7 lg:py-7">
+          {/* ── Tepa qator: telefon ─────────────────────────────────────── */}
+          <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-app-border bg-app-surface pl-4 pr-3 pt-[env(safe-area-inset-top,0px)] lg:hidden">
+            <FalaRusLogoMark size={32} className="rounded-[9px] ring-1 ring-app-border" />
+            <span className="min-w-0 flex-1 truncate py-[18px] text-[16px] font-extrabold text-app-text">
+              {sectionTitle(section, t)}
+            </span>
+            <LangSwitch lang={lang} setLang={setLang} />
+            <BellButton unread={unread} label={t.notifications} onClick={() => setNotifOpen(true)} />
+          </header>
+
+          <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-[calc(96px+env(safe-area-inset-bottom,0px))] pt-[18px] lg:px-8 lg:pb-12 lg:pt-7">
             {error ? (
-              <p className="mb-4 rounded-[14px] bg-[#FDECEC] px-4 py-3 text-[13px] font-medium text-[#C23A3F]">
+              <p role="alert" className="mb-4 rounded-[14px] bg-[#FEF2F2] px-4 py-3 text-[13.5px] font-semibold text-[#B91C1C]">
                 {error}
               </p>
+            ) : null}
+
+            {/* Pul va Profil — bitta menyu bandi ostida bir nechta tab. */}
+            {MONEY_KEYS.includes(section) ? (
+              <>
+                <PageHead title={t.moneyTitle} subtitle={t.moneySubtitle} />
+                <SegmentTabs<SectionKey>
+                  active={section}
+                  onChange={(k) => go(k)}
+                  items={[
+                    { key: 'income', label: t.tabBalance },
+                    { key: 'subscription', label: t.tabCommission },
+                  ]}
+                />
+              </>
+            ) : PROFILE_KEYS.includes(section) ? (
+              <>
+                <PageHead title={t.profileTitle} subtitle={t.profileSubtitle} />
+                <SegmentTabs<SectionKey>
+                  active={section}
+                  onChange={(k) => go(k)}
+                  items={[
+                    { key: 'profile', label: t.tabProfile },
+                    { key: 'anketa', label: t.tabEdit },
+                    { key: 'documents', label: t.tabDocuments },
+                    { key: 'public', label: t.tabPreview },
+                    { key: 'settings', label: t.navSettings },
+                    { key: 'help', label: t.navHelp },
+                  ]}
+                />
+              </>
             ) : null}
 
             <Fade k={`${section}-${param ?? ''}`}>
@@ -442,105 +461,89 @@ export default function TeacherPanelPage() {
               {section === 'reviews' ? <Reviews /> : null}
               {section === 'profile' ? <Profile /> : null}
               {section === 'public' ? <PublicPreview /> : null}
-              {section === 'anketa' ? <Anketa /> : null}
+              {section === 'anketa' ? <Anketa step={param ?? undefined} /> : null}
               {section === 'documents' ? <Documents /> : null}
               {section === 'settings' ? <Settings /> : null}
               {section === 'help' ? <Help /> : null}
             </Fade>
           </main>
-        </div>
 
-        {/* ── Pastki menyu (telefon) ──────────────────────────────────────── */}
-        <nav
-          className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-app-border bg-app-surface pb-[env(safe-area-inset-bottom,0px)] lg:hidden"
-          aria-label={t.teacherRole}
-        >
-          {MOBILE_KEYS.map((key) => {
-            const item = NAV.find((n) => n.key === key)!;
-            const Icon = item.icon;
-            const on = activeNav === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => go(key)}
-                aria-current={on ? 'page' : undefined}
-                className="relative flex min-h-[62px] flex-1 flex-col items-center justify-center gap-1 outline-none active:scale-[0.96]"
-              >
-                {on ? (
-                  <motion.span
-                    layoutId="teacher-nav-pill"
-                    className="pointer-events-none absolute inset-x-2 inset-y-1.5 rounded-xl bg-app-icon-bg"
-                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                  />
-                ) : null}
-                <Icon
-                  className={`relative h-[20px] w-[20px] ${on ? 'text-app-brand' : 'text-app-text-muted'}`}
-                  strokeWidth={1.8}
-                />
-                <span
-                  className={`relative max-w-full truncate px-1 text-[10px] leading-none ${
-                    on ? 'font-bold text-app-brand' : 'font-medium text-app-text-muted'
+          {/* ── Pastki menyu (telefon) ──────────────────────────────────── */}
+          <nav
+            className="tw-bottom-nav fixed bottom-0 left-0 right-0 z-40 flex px-1 pb-[max(env(safe-area-inset-bottom,0px),10px)] pt-1.5 lg:hidden"
+            aria-label={t.cabinetBrand}
+          >
+            {MOBILE_KEYS.map((key) => {
+              const item = NAV.find((n) => n.key === key)!;
+              const Icon = item.icon;
+              const on = activeNav === key && !moreOpen;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => go(key)}
+                  aria-current={on ? 'page' : undefined}
+                  className={`relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] text-[11px] transition active:scale-[0.96] ${
+                    on ? 'bg-app-icon-bg font-extrabold text-app-primary' : 'font-semibold text-app-text-muted'
                   }`}
                 >
-                  {t[item.label]}
-                </span>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => setMoreOpen(true)}
-            className="flex min-h-[62px] flex-1 flex-col items-center justify-center gap-1 active:scale-[0.96]"
-          >
-            <LayoutGrid className="h-[20px] w-[20px] text-app-text-muted" strokeWidth={1.8} />
-            <span className="text-[10px] font-medium leading-none text-app-text-muted">{t.navMore}</span>
-          </button>
-        </nav>
+                  <Icon className="h-[22px] w-[22px]" strokeWidth={1.9} />
+                  <span className="max-w-full truncate px-1">{t[MOBILE_LABEL[key] ?? item.label]}</span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className={`flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] text-[11px] transition active:scale-[0.96] ${
+                moreOpen || !inBar ? 'bg-app-icon-bg font-extrabold text-app-primary' : 'font-semibold text-app-text-muted'
+              }`}
+            >
+              <LayoutGrid className="h-[22px] w-[22px]" strokeWidth={1.9} />
+              {t.navMore}
+            </button>
+          </nav>
+        </div>
 
         {moreOpen ? (
-          <div className="fixed inset-0 z-50 bg-[rgba(14,16,45,0.32)] lg:hidden" onClick={() => setMoreOpen(false)}>
+          <div className="fixed inset-0 z-50 flex items-end bg-[rgba(15,23,42,0.4)] lg:hidden" onClick={() => setMoreOpen(false)}>
             <motion.div
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 34 }}
               onClick={(e) => e.stopPropagation()}
-              className="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto rounded-t-[24px] bg-app-surface p-5 pb-[max(env(safe-area-inset-bottom,0px),20px)]"
+              className="max-h-[85vh] w-full overflow-y-auto rounded-t-[24px] bg-app-surface px-4 pb-[max(env(safe-area-inset-bottom,0px),24px)] pt-[18px]"
             >
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-[17px] font-semibold text-app-text">{t.navMore}</p>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[18px] font-extrabold text-app-text">{t.navMore}</p>
                 <button
                   type="button"
                   onClick={() => setMoreOpen(false)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-app-bg-muted"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F1F4F7]"
                   aria-label={t.close}
                 >
                   <X className="h-[18px] w-[18px] text-app-text" />
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                {NAV.filter((n) => !MOBILE_KEYS.includes(n.key)).map((n) => {
-                  const Icon = n.icon;
-                  return (
-                    <button
-                      key={n.key}
-                      type="button"
-                      onClick={() => go(n.key)}
-                      className="flex min-h-[64px] items-center gap-3 rounded-[16px] bg-app-bg-muted px-4 text-left"
-                    >
-                      <Icon className="h-[20px] w-[20px] text-app-brand" strokeWidth={1.7} />
-                      <span className="text-[13px] font-semibold text-app-text">{t[n.label]}</span>
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-2 gap-2">
+                {MORE_ITEMS.map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => go(m.key)}
+                    className={`flex min-h-[64px] flex-col items-start justify-center gap-0.5 rounded-[16px] border px-3.5 text-left transition active:scale-[0.98] ${
+                      activeNav === m.key ? 'border-app-primary bg-app-icon-bg' : 'border-app-border bg-app-surface'
+                    }`}
+                  >
+                    <span className="text-[14px] font-extrabold text-app-text">{t[m.label]}</span>
+                    <span className="text-[12px] text-app-text-muted">{t[m.sub]}</span>
+                  </button>
+                ))}
               </div>
-
               <button
                 type="button"
-                onClick={() => {
-                  logout();
-                  navigate('/');
-                }}
-                className="mt-3 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#FFF6F6] text-[13px] font-semibold text-[#C23A3F]"
+                onClick={logoutAndLeave}
+                className="mt-2.5 flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#FEF2F2] text-[14px] font-extrabold text-[#B91C1C]"
               >
                 <LogOut className="h-[18px] w-[18px]" />
                 {t.logout}
@@ -563,9 +566,76 @@ export default function TeacherPanelPage() {
           />
         ) : null}
 
+        {addOpen ? <AddTimeModal onClose={() => setAddOpen(false)} onSaved={refresh} /> : null}
         {toastText ? <Toast text={toastText} /> : null}
       </div>
     </PanelProvider>
+  );
+}
+
+type PanelT = (typeof PANEL_TEXTS)['uz'];
+
+function sectionTitle(section: SectionKey, t: PanelT): string {
+  const key = NAV_PARENT[section] ?? section;
+  if (section === 'student') return t.navStudentsShort;
+  if (MONEY_KEYS.includes(key)) return t.navMoney;
+  if (PROFILE_KEYS.includes(key)) return t.navProfileShort;
+  const item = NAV.find((n) => n.key === key);
+  return item ? t[item.label] : t.cabinetBrand;
+}
+
+function StatusLine({ status, t }: { status: string; t: PanelT }) {
+  const view =
+    status === 'active'
+      ? { text: t.stActiveTitle, dot: 'bg-[#16A34A]', fg: 'text-[#166534]' }
+      : status === 'paused'
+        ? { text: t.stPausedTitle, dot: 'bg-[#64748B]', fg: 'text-app-text-muted' }
+        : status === 'pending_review'
+          ? { text: t.stReviewTitle, dot: 'bg-[#F59E0B]', fg: 'text-[#92400E]' }
+          : { text: t.stDraftTitle, dot: 'bg-[#94A3B8]', fg: 'text-app-text-muted' };
+  return (
+    <span className={`flex items-center gap-1.5 text-[12px] font-bold ${view.fg}`}>
+      <span className={`h-[7px] w-[7px] shrink-0 rounded-full ${view.dot}`} />
+      <span className="truncate">{view.text}</span>
+    </span>
+  );
+}
+
+function LangSwitch({ lang, setLang }: { lang: PanelLang; setLang: (l: PanelLang) => void }) {
+  return (
+    <div role="group" aria-label="RU / UZ" className="flex rounded-[12px] bg-app-bg-subtle p-[3px]">
+      {(['ru', 'uz'] as const).map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => setLang(l)}
+          aria-pressed={lang === l}
+          className={`min-h-[38px] rounded-[9px] px-3 text-[12px] font-extrabold transition ${
+            lang === l ? 'bg-app-surface text-app-text shadow-[0_1px_2px_rgba(15,23,42,0.1)]' : 'text-app-text-muted'
+          }`}
+        >
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function BellButton({ unread, label, onClick, bordered = false }: { unread: number; label: string; onClick: () => void; bordered?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] text-app-text transition hover:bg-[var(--app-row-hover)] ${
+        bordered ? 'border border-app-border bg-app-surface' : 'bg-app-bg-muted'
+      }`}
+    >
+      <Bell className="h-5 w-5" strokeWidth={1.8} />
+      {unread > 0 ? (
+        <span className="absolute right-2.5 top-[9px] h-2 w-2 rounded-full border-2 border-app-surface bg-[#DC2626]" />
+      ) : null}
+    </button>
   );
 }
 
@@ -577,7 +647,7 @@ function OnboardingOnly({ lang, setLang, onLogout, logoutLabel }: {
     <div className="teacher-workspace min-h-screen bg-app-bg-muted">
       <header className="sticky top-0 z-30 border-b border-app-border bg-app-surface/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur">
         <div className="mx-auto flex h-[60px] max-w-3xl items-center gap-3 px-4">
-          <span className="flex h-9 w-9 items-center justify-center rounded-[11px] text-[16px] font-bold text-white" style={{ background: TEACHER_BRAND_GRADIENT }}>F</span>
+          <FalaRusLogoMark size={36} className="rounded-[11px] ring-1 ring-app-border" />
           <span className="min-w-0">
             <span className="block text-[15px] font-bold leading-none text-app-text">FalaRus Ustoz</span>
             <span className="mt-1 block truncate text-[11px] text-app-text-muted">{ONBOARDING_TEXT[lang].title}</span>
@@ -620,9 +690,7 @@ function Gate({
   return (
     <div className="flex min-h-screen items-center justify-center bg-app-bg-muted px-5 py-10">
       <div className="w-full max-w-[360px] rounded-[22px] border border-app-border bg-app-surface p-6 text-center">
-        <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-[14px] bg-app-primary text-[20px] font-bold text-white">
-          F
-        </span>
+        <FalaRusLogoMark size={48} className="mx-auto mb-3 rounded-[14px] ring-1 ring-app-border" />
         <p className="text-[17px] font-semibold text-app-text">{title}</p>
         <p className="mt-1.5 text-[13.5px] text-app-text-muted">{text}</p>
         <button

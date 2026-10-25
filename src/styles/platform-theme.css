@@ -848,3 +848,101 @@ html[data-ambient-motion='on'] .ui-page-header:has(.ambient-toggle)::after {
 @media (prefers-reduced-motion: reduce) {
   html[data-ambient-motion='on'] .ui-page-header:has(.ambient-toggle)::after { animation: none; }
 }
+
+/*
+ * Ustoz kabineti — alohida palitra (prototip «Kabinet ustoza», 2026-10-23):
+ * oq yon menyu, firuza (#0F766E) asosiy rang, betaraf kulrang fon.
+ * Faqat `.teacher-workspace` ichida — o'quvchi ilovasiga ta'sir qilmaydi.
+ */
+.teacher-workspace {
+  --app-bg: #f5f7f9;
+  --app-bg-muted: #f5f7f9;
+  --app-bg-subtle: #eef1f4;
+  --app-surface: #ffffff;
+  --app-surface-elevated: #ffffff;
+  --app-border: #e3e8ee;
+  --app-border-strong: #d5dce4;
+  --app-text: #0f172a;
+  --app-text-muted: #556274;
+  --app-text-secondary: #334155;
+  --app-primary: #0f766e;
+  --app-primary-deep: #115e59;
+  --app-primary-mid: #134e4a;
+  --app-brand: #0f766e;
+  --app-icon-bg: #e6f4f1;
+  --app-icon-fg: #115e59;
+  --app-row-hover: #f1f5f9;
+  --app-row-active: #e6f4f1;
+  --ui-action: #0f766e;
+  --ui-action-hover: #115e59;
+  --ui-focus: #0f766e;
+  --app-accent: #0f766e;
+  --app-accent-bg: #e6f4f1;
+  --app-accent-text: #115e59;
+  /* Kabinetda gradient yo'q: bir xil asosiy rang (eski ko'k-binafsha o'tish ranglarga mos kelmasdi). */
+  --app-brand-gradient: var(--app-primary);
+  --platform-hero: var(--app-primary);
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--app-text);
+  /*
+   * Tailwind `--color-app-*` ni :root da hisoblaydi — pastda --app-* ni almashtirish
+   * utilitalarga yetmaydi. Shu yerda qayta e'lon qilinadi, shunda ular kabinet
+   * palitrasidan (yorug' ham, qorong'i ham) olinadi.
+   */
+  --color-app-bg: var(--app-bg);
+  --color-app-bg-muted: var(--app-bg-muted);
+  --color-app-bg-subtle: var(--app-bg-subtle);
+  --color-app-surface: var(--app-surface);
+  --color-app-surface-elevated: var(--app-surface-elevated);
+  --color-app-border: var(--app-border);
+  --color-app-border-strong: var(--app-border-strong);
+  --color-app-text: var(--app-text);
+  --color-app-text-muted: var(--app-text-muted);
+  --color-app-text-secondary: var(--app-text-secondary);
+  --color-app-primary: var(--app-primary);
+  --color-app-primary-deep: var(--app-primary-deep);
+  --color-app-primary-mid: var(--app-primary-mid);
+  --color-app-brand: var(--app-brand);
+  --color-app-icon-bg: var(--app-icon-bg);
+  --color-app-icon-fg: var(--app-icon-fg);
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-bg: var(--app-accent-bg);
+  --color-app-accent-text: var(--app-accent-text);
+  --color-app-row-hover: var(--app-row-hover);
+  --color-app-row-active: var(--app-row-active);
+}
+.dark .teacher-workspace {
+  --app-bg: #0e1619;
+  --app-bg-muted: #0e1619;
+  --app-bg-subtle: #1b272c;
+  --app-surface: #141f23;
+  --app-surface-elevated: #18252a;
+  --app-border: #26353b;
+  --app-border-strong: #33464d;
+  --app-text: #e6eef0;
+  --app-text-muted: #9fb1b6;
+  --app-text-secondary: #c3d1d4;
+  --app-primary: #14917f;
+  --app-primary-deep: #0f766e;
+  --app-primary-mid: #115e59;
+  --app-brand: #5eead4;
+  --app-icon-bg: #173a36;
+  --app-icon-fg: #99f6e4;
+  --app-row-hover: #1b272c;
+  --app-row-active: #173a36;
+}
+/* Umumiy panel sahnasi (bezak rasmi) va eski to'q yon menyu kabinetga tegmaydi. */
+html[data-panel-scene] .teacher-workspace,
+.teacher-workspace {
+  background-color: var(--app-bg) !important;
+  background-image: none !important;
+}
+.teacher-workspace > aside.tw-sidebar {
+  background: var(--app-surface) !important;
+  border-right: 1px solid var(--app-border);
+}
+.teacher-workspace nav.tw-bottom-nav {
+  background: var(--app-surface);
+  box-shadow: 0 -6px 20px rgb(15 23 42 / 0.05);
+  border-top: 1px solid var(--app-border);
+}

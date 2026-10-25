@@ -19,15 +19,15 @@ import {
   PageHead,
   Pills,
   PrimaryButton,
-  ProgressBar,
   Skeleton,
   Tag,
   fmtDate,
   fmtDateTime,
   fmtTime,
-  inputClass,
   textareaClass,
+  toneFor,
 } from '../ui';
+import { Search } from 'lucide-react';
 
 const STATUS_TONE = { active: 'green', trial: 'amber', finished: 'grey' } as const;
 
@@ -77,12 +77,17 @@ export default function Students() {
           new: counts.new ?? 0,
         })}
         actions={
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.searchStudent}
-            className={`${inputClass} sm:w-[280px]`}
-          />
+          <label className="flex h-11 w-full items-center gap-2.5 rounded-[12px] border border-app-border-strong bg-app-surface px-3.5 text-app-text-muted sm:w-[280px]">
+            <Search className="h-[18px] w-[18px] shrink-0" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t.searchStudent}
+              aria-label={t.searchStudent}
+              className="min-w-0 flex-1 bg-transparent text-[14px] text-app-text outline-none"
+            />
+          </label>
         }
       />
 
@@ -105,51 +110,31 @@ export default function Students() {
       ) : shown.length === 0 ? (
         <Empty text={query ? t.nothingFound : t.studentsEmpty} />
       ) : (
-        <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
-          {shown.map((s) => {
-            const total = Math.max(s.trials_total, 1);
-            return (
-              <button
-                key={s.user_id}
-                type="button"
-                onClick={() => go('student', s.user_id)}
-                className="flex flex-col gap-3.5 rounded-[20px] border border-app-border bg-app-surface p-4 text-left transition hover:border-app-border-strong"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar name={s.name} size={46} tone={s.status === 'active' ? 'green' : 'violet'} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14.5px] font-semibold text-app-text">
-                      {s.name}
-                    </span>
-                    <span className="block text-[11.5px] text-app-text-muted">
-                      {s.level ? `${s.level} · ` : ''}
-                      {s.lessons_done > 0 ? tpl(t.lessonsCount, { n: s.lessons_done }) : t.noLessonsYet}
-                    </span>
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))]">
+          {shown.map((s) => (
+            <button
+              key={s.user_id}
+              type="button"
+              onClick={() => go('student', s.user_id)}
+              className="flex flex-col gap-3 rounded-[20px] border border-app-border bg-app-surface p-4 text-left transition hover:border-app-border-strong hover:shadow-[0_14px_34px_rgba(148,163,184,0.12)] active:scale-[0.99]"
+            >
+              <span className="flex w-full items-center gap-3">
+                <Avatar name={s.name} size={44} tone={toneFor(s.name)} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-extrabold text-app-text">{s.name}</span>
+                  <span className="block text-[12px] text-app-text-muted">
+                    {s.level ? `${tpl(t.levelLabel, { level: s.level })} · ` : ''}
+                    {s.lessons_done > 0 ? tpl(t.lessonsCount, { n: s.lessons_done }) : t.noLessonsYet}
                   </span>
-                  <Tag tone={s.is_new ? 'violet' : STATUS_TONE[s.status]}>
-                    {s.is_new ? t.statusNew : statusLabel(s.status, t)}
-                  </Tag>
-                </div>
-
-                <div>
-                  <div className="mb-1.5 flex justify-between text-[11.5px] text-app-text-muted">
-                    <span>{t.statDone}</span>
-                    <span className="font-semibold text-app-text">
-                      {s.lessons_done} / {s.trials_total}
-                    </span>
-                  </div>
-                  <ProgressBar percent={(s.lessons_done / total) * 100} />
-                </div>
-
-                <div className="flex items-center justify-between border-t border-app-border pt-3">
-                  <span className="text-[11.5px] text-app-text-muted">{t.nextLessonShort}</span>
-                  <span className="text-[12.5px] font-semibold text-app-text">
-                    {s.next_lesson_at ? fmtDateTime(s.next_lesson_at, lang) : t.dash}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+                </span>
+                <Tag tone={s.is_new ? 'teal' : STATUS_TONE[s.status]}>{s.is_new ? t.statusNew : statusLabel(s.status, t)}</Tag>
+              </span>
+              <span className="flex w-full justify-between gap-2 border-t border-app-bg-subtle pt-2.5 text-[13px]">
+                <span className="text-app-text-muted">{t.nextLessonShort}</span>
+                <b className="text-app-text">{s.next_lesson_at ? fmtDateTime(s.next_lesson_at, lang) : t.dash}</b>
+              </span>
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -206,21 +191,19 @@ export function StudentDetail({ studentId }: { studentId: number }) {
       <button
         type="button"
         onClick={() => go('students')}
-        className="text-[13px] font-medium text-app-text-muted hover:text-app-brand"
+        className="min-h-[44px] text-[14px] font-bold text-app-primary"
       >
         {t.allStudents}
       </button>
 
       {err ? <ErrorNote text={err} /> : null}
 
-      <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-        <Avatar name={s.name} size={72} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <p className="text-[20px] font-semibold tracking-[-0.01em] text-app-text">{s.name}</p>
+      <Card as="section" className="flex flex-wrap items-center gap-4 p-5">
+        <Avatar name={s.name} size={64} tone={toneFor(s.name)} />
+        <div className="min-w-0 flex-[1_1_200px]">
+          <h1 className="text-[22px] font-extrabold text-app-text lg:text-[24px]">{s.name}</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-[14px] text-app-text-muted">
             <Tag tone={STATUS_TONE[s.status]}>{statusLabel(s.status, t)}</Tag>
-          </div>
-          <p className="mt-1 text-[13px] text-app-text-muted">
             {s.level ? `${tpl(t.levelLabel, { level: s.level })} · ` : ''}
             {s.first_seen_at ? tpl(t.learningSince, { date: fmtDate(s.first_seen_at, lang) }) : ''}
           </p>
@@ -231,32 +214,41 @@ export function StudentDetail({ studentId }: { studentId: number }) {
         </div>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <MiniStat label={t.statTotal} value={data.stats.total} />
-        <MiniStat label={t.statDone} value={data.stats.done} tone="text-[#17A34A]" />
-        <MiniStat label={t.statCancelled} value={data.stats.cancelled} tone="text-[#E9474D]" />
-        <MiniStat label={t.statUpcoming} value={data.stats.upcoming} />
+        <MiniStat label={t.statDone} value={data.stats.done} tone="text-[#166534]" />
+        <MiniStat label={t.statUpcoming} value={data.stats.upcoming} tone="text-app-primary" />
+        <MiniStat label={t.statCancelled} value={data.stats.cancelled} tone="text-[#B91C1C]" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <Card className="p-5">
-          <p className="mb-3 text-[16px] font-semibold text-app-text">{t.lessonHistory}</p>
+          {s.next_lesson_at ? (
+            <div className="mb-3.5 flex items-center gap-3 rounded-[14px] bg-app-icon-bg px-3.5 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12px] font-bold text-app-primary-deep">{t.nextLesson}</span>
+                <b className="text-[14px] text-app-text">{fmtDateTime(s.next_lesson_at, lang)}</b>
+              </span>
+              <PrimaryButton onClick={() => go('lessons')} className="shrink-0">{t.goToLesson}</PrimaryButton>
+            </div>
+          ) : null}
+          <h2 className="mb-1.5 text-[17px] font-extrabold text-app-text">{t.lessonHistory}</h2>
           {data.lessons.length === 0 ? (
             <p className="py-6 text-center text-[13px] text-app-text-muted">{t.noHistory}</p>
           ) : (
-            <ul className="divide-y divide-[#F6F5FC]">
+            <ul>
               {data.lessons.map((l) => {
                 const done = ['completed', 'completed_by_teacher'].includes(l.status);
                 const cancelled = ['cancelled', 'refunded'].includes(l.status);
                 return (
-                  <li key={l.trial_id} className="flex flex-wrap items-center gap-3 py-3">
-                    <span className="w-[92px] shrink-0 text-[13px] font-medium text-app-text">
+                  <li key={l.trial_id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-app-bg-subtle py-2.5">
+                    <span className="w-[86px] shrink-0 text-[14px] font-bold text-app-text">
                       {fmtDate(l.starts_at ?? l.created_at, lang)}
                     </span>
                     <span className="w-[52px] shrink-0 text-[13px] text-app-text-muted">
                       {l.starts_at ? fmtTime(l.starts_at) : t.dash}
                     </span>
-                    <span className="min-w-[120px] flex-1 truncate text-[13px] text-app-text">
+                    <span className="min-w-[120px] flex-1 truncate text-[14px] text-app-text-secondary">
                       {l.topic || t.noTopic}
                     </span>
                     <Tag tone={done ? 'green' : cancelled ? 'red' : 'violet'}>
@@ -265,7 +257,7 @@ export function StudentDetail({ studentId }: { studentId: number }) {
                     <button
                       type="button"
                       onClick={() => go('report', l.trial_id)}
-                      className="min-h-[36px] shrink-0 rounded-[10px] bg-app-bg-muted px-3 text-[12px] font-semibold text-app-text transition hover:bg-[#EAE9F8]"
+                      className="min-h-[36px] shrink-0 rounded-[10px] border border-app-border bg-app-surface px-3 text-[12px] font-bold text-app-text transition hover:border-app-border-strong"
                     >
                       {t.reportOpen}
                     </button>
@@ -278,7 +270,8 @@ export function StudentDetail({ studentId }: { studentId: number }) {
 
         <div className="space-y-4">
           <Card className="p-5">
-            <p className="mb-3 text-[16px] font-semibold text-app-text">{t.teacherNotes}</p>
+            <h2 className="text-[17px] font-extrabold text-app-text">{t.teacherNotes}</h2>
+            <p className="mb-2.5 text-[12px] text-app-text-muted">{t.notesPrivate}</p>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -297,7 +290,7 @@ export function StudentDetail({ studentId }: { studentId: number }) {
                 {data.notes.map((n) => (
                   <li
                     key={n.id}
-                    className="rounded-[13px] border border-app-border bg-app-bg-muted px-3.5 py-3"
+                    className="rounded-[12px] border border-app-bg-subtle bg-[#F8FAFC] p-3"
                   >
                     <p className="text-[12.5px] leading-[1.65] text-app-text">{n.body}</p>
                     <div className="mt-2 flex items-center justify-between">
@@ -320,21 +313,6 @@ export function StudentDetail({ studentId }: { studentId: number }) {
             )}
           </Card>
 
-          <Card className="p-5">
-            <p className="mb-3 text-[16px] font-semibold text-app-text">{t.nextLesson}</p>
-            {s.next_lesson_at ? (
-              <div className="rounded-[16px] bg-app-icon-bg p-4">
-                <p className="text-[17px] font-semibold text-[#2E2A6B]">
-                  {fmtDateTime(s.next_lesson_at, lang)}
-                </p>
-                <PrimaryButton onClick={() => go('class')} className="mt-3 w-full">
-                  {t.goToLesson}
-                </PrimaryButton>
-              </div>
-            ) : (
-              <p className="py-3 text-center text-[12.5px] text-app-text-muted">{t.noNextLesson}</p>
-            )}
-          </Card>
         </div>
       </div>
     </div>
@@ -343,9 +321,9 @@ export function StudentDetail({ studentId }: { studentId: number }) {
 
 function MiniStat({ label, value, tone = 'text-app-text' }: { label: string; value: number; tone?: string }) {
   return (
-    <div className="rounded-[16px] border border-app-border bg-app-surface p-4">
-      <p className="text-[12px] text-app-text-muted">{label}</p>
-      <p className={`mt-1.5 text-[22px] font-semibold ${tone}`}>{value}</p>
+    <div className="rounded-[16px] border border-app-border bg-app-surface p-3.5">
+      <p className="text-[12px] font-semibold text-app-text-muted">{label}</p>
+      <p className={`mt-1 text-[24px] font-extrabold ${tone}`}>{value}</p>
     </div>
   );
 }

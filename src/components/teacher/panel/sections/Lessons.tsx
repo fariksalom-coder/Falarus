@@ -17,8 +17,17 @@ import {
   Tag,
   fmtDate,
   fmtTime,
+  toneFor,
 } from '../ui';
 import { useOpenLesson } from './Dashboard';
+
+/** Dars holati yorlig'i: tugagan, bekor, hozir ketmoqda yoki rejalashtirilgan. */
+function lessonStatus(l: PanelLesson, t: ReturnType<typeof usePanel>['t']) {
+  if (['completed', 'completed_by_teacher', 'ended'].includes(l.status)) return { label: t.doneTag, tone: 'green' as const, done: true };
+  if (['cancelled', 'refunded'].includes(l.status)) return { label: t.cancelledTag, tone: 'red' as const, done: false };
+  if (l.status === 'live') return { label: t.liveTag, tone: 'teal' as const, done: false };
+  return { label: t.plannedTag, tone: 'blue' as const, done: false };
+}
 
 /** `trial-12` → 12. Sessiyada hisobot bo'lmaydi. */
 function trialIdOf(l: PanelLesson): number | null {
@@ -80,61 +89,55 @@ export default function Lessons() {
       ) : lessons.length === 0 ? (
         <Empty text={t.lessonsEmpty} />
       ) : (
-        <Card className="px-4 py-1 lg:px-5">
-          <div className="hidden grid-cols-[1.4fr_1fr_0.8fr_0.9fr_1fr_auto] gap-3.5 border-b border-app-border py-4 text-[11px] font-semibold uppercase tracking-[0.06em] text-app-text-muted lg:grid">
-            <span>{t.colStudent}</span>
+        <Card as="section" className="px-4 pb-2.5 pt-1.5 lg:px-[18px]">
+          <div className="hidden gap-2.5 py-3 text-[12px] font-bold text-app-text-muted lg:grid lg:grid-cols-[90px_64px_minmax(0,1.4fr)_100px_90px_130px_150px]">
             <span>{t.colDate}</span>
             <span>{t.colTime}</span>
-            <span>{t.colDuration}</span>
+            <span>{t.colStudent}</span>
             <span>{t.colType}</span>
+            <span>{t.colDuration}</span>
+            <span>{t.colStatus}</span>
             <span />
           </div>
 
-          <ul className="divide-y divide-[#F6F5FC]">
+          <ul>
             {lessons.map((l) => {
               const trialId = trialIdOf(l);
-              const showReport = past || l.is_trial;
+              const st = lessonStatus(l, t);
+              // Hisobot dars o'tgach to'ldiriladi; kelayotgan sinov darsida — xonaga kirish.
+              const showReport = (past || st.done) && trialId != null;
+              const live = st.tone === 'teal';
               return (
                 <li
                   key={l.id}
-                  className="flex flex-wrap items-center gap-3 py-3.5 lg:grid lg:grid-cols-[1.4fr_1fr_0.8fr_0.9fr_1fr_auto] lg:gap-3.5"
+                  className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-app-bg-subtle py-2.5 first:border-t-0 lg:grid lg:grid-cols-[90px_64px_minmax(0,1.4fr)_100px_90px_130px_150px] lg:gap-2.5 lg:first:border-t"
                 >
-                  <span className="flex min-w-0 flex-1 items-center gap-3 lg:flex-none">
-                    <Avatar name={l.student_name} size={34} />
+                  <span className="hidden text-[14px] font-bold text-app-text lg:block">{l.starts_at ? fmtDate(l.starts_at, lang) : t.timeNotSet}</span>
+                  <span className="hidden text-[14px] font-bold text-app-text lg:block">{l.starts_at ? fmtTime(l.starts_at) : t.dash}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-2.5 lg:flex-none">
+                    <Avatar name={l.student_name} size={32} tone={toneFor(l.student_name)} />
                     <span className="min-w-0">
-                      <span className="block truncate text-[13.5px] font-medium text-app-text">
-                        {l.student_name}
-                      </span>
-                      <span className="block text-[11.5px] text-app-text-muted lg:hidden">
-                        {l.starts_at ? `${fmtDate(l.starts_at, lang)} · ${fmtTime(l.starts_at)}` : t.timeNotSet}
+                      <span className="block truncate text-[14px] font-semibold text-app-text">{l.student_name}</span>
+                      <span className="block text-[12px] text-app-text-muted lg:hidden">
+                        {l.starts_at ? `${fmtDate(l.starts_at, lang)} · ${fmtTime(l.starts_at)}` : t.timeNotSet} · {l.duration_minutes} {t.minutesShort}
                       </span>
                     </span>
                   </span>
-
-                  <span className="hidden text-[13px] text-app-text lg:block">
-                    {l.starts_at ? fmtDate(l.starts_at, lang) : t.timeNotSet}
+                  <span className="hidden lg:block">
+                    <Tag tone={l.is_trial ? 'amber' : 'grey'}>{l.is_trial ? t.trialTag : t.onlineTag}</Tag>
                   </span>
-                  <span className="hidden text-[13px] text-app-text lg:block">
-                    {l.starts_at ? fmtTime(l.starts_at) : t.dash}
+                  <span className="hidden text-[14px] text-app-text-muted lg:block">{l.duration_minutes} {t.minutesShort}</span>
+                  <span className="lg:block">
+                    <Tag tone={st.tone}>{st.label}</Tag>
                   </span>
-                  <span className="hidden text-[13px] text-app-text-muted lg:block">
-                    {l.duration_minutes} {t.minutesShort}
-                  </span>
-
-                  <span>
-                    <Tag tone={l.is_trial ? 'amber' : 'violet'}>
-                      {l.is_trial ? t.trialTag : t.onlineTag}
-                    </Tag>
-                  </span>
-
                   <button
                     type="button"
-                    onClick={() =>
-                      showReport && trialId ? go('report', trialId) : openLesson(l)
-                    }
-                    className="min-h-[38px] shrink-0 rounded-[10px] bg-app-bg-muted px-3.5 text-[12px] font-semibold text-app-text transition hover:bg-[#EAE9F8]"
+                    onClick={() => (showReport ? go('report', trialId!) : openLesson(l))}
+                    className={`min-h-[40px] shrink-0 whitespace-nowrap rounded-[10px] px-3.5 text-[13px] font-bold transition active:scale-[0.97] lg:justify-self-start ${
+                      live ? 'bg-app-primary text-white hover:bg-app-primary-deep' : 'border border-app-border bg-app-surface text-app-text hover:border-app-border-strong'
+                    }`}
                   >
-                    {showReport && trialId ? t.reportOpen : t.goToLesson}
+                    {showReport ? t.reportOpen : t.goToLesson}
                   </button>
                 </li>
               );

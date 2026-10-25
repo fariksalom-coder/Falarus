@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { TrendingDown } from 'lucide-react';
 import { usePanel } from '../panel/panelContext';
-import { Card, ProgressBar, Skeleton } from '../panel/ui';
+import { Card, Skeleton } from '../panel/ui';
 import { teacherNet, type CommissionTier } from '../../../../shared/teacherOnboarding';
 import { getCommission } from '../../../api/teacherOnboarding';
 
@@ -64,36 +64,41 @@ export default function Commission({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <Card className="space-y-4 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[12.5px] font-semibold text-app-text-muted">{t.title}</p>
-          <p className="text-[28px] font-bold tabular-nums text-app-text">{data.percent}%</p>
-          <p className="text-[12.5px] text-app-text-muted">{t.done(data.completed)}</p>
+    <div className="flex flex-wrap items-start gap-4">
+      <Card as="section" className="flex min-w-0 flex-[1_1_320px] flex-col gap-3.5 p-5">
+        <p className="text-[14px] font-bold text-app-text-muted">{t.title}</p>
+        <p className="text-[44px] font-extrabold leading-none tabular-nums text-app-text">{data.percent}%</p>
+        <p className="text-[14px] text-app-text-muted">{t.done(data.completed)}</p>
+        <div className="h-2.5 overflow-hidden rounded-full bg-app-icon-bg">
+          <div className="h-full rounded-full bg-app-primary transition-all" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
         </div>
-        <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#E8F7EE] text-[#17803D]"><TrendingDown className="h-5 w-5" /></span>
-      </div>
-      <div>
-        <ProgressBar percent={pct} tone="green" />
-        <p className="mt-2 text-[13px] font-semibold text-app-text">
+        <p className="text-[14px] font-bold text-app-text">
           {data.lessons_until_next != null && data.next_percent != null ? t.left(data.lessons_until_next, data.next_percent) : t.floor}
         </p>
-      </div>
-      {data.lesson_price_uzs ? <p className="rounded-[12px] bg-app-bg-subtle p-3 text-[13px] text-app-text">{t.perLesson(data.lesson_price_uzs, teacherNet(data.lesson_price_uzs, data.percent))}</p> : null}
-      <div>
-        <p className="mb-2 text-[12.5px] font-semibold text-app-text">{t.scale}</p>
-        <ul className="divide-y divide-app-border rounded-[14px] border border-app-border">
+        {data.lesson_price_uzs ? (
+          <p className="rounded-[12px] bg-[#F1F5F9] p-3 text-[14px] text-app-text">{t.perLesson(data.lesson_price_uzs, teacherNet(data.lesson_price_uzs, data.percent))}</p>
+        ) : null}
+      </Card>
+      <Card as="section" className="min-w-0 flex-[1_1_320px] p-5">
+        <h2 className="mb-2.5 text-[17px] font-extrabold text-app-text">{t.scale}</h2>
+        <ul className="overflow-hidden rounded-[14px] border border-app-border">
           {rows(data.tiers).map((r) => {
-            const on = r === tier || (r.from === tier.from);
+            const on = r.from === tier.from;
             return (
-              <li key={r.from} className={`flex items-center justify-between px-3.5 py-2.5 text-[13px] ${on ? 'bg-[#F5F8FF] font-bold text-app-text' : 'text-app-text-muted'}`}>
-                <span>{t.range(r.from, r.to)}</span><span className="tabular-nums">{r.percent}%</span>
+              <li
+                key={r.from}
+                className={`flex items-center justify-between border-t border-app-bg-subtle px-3.5 py-3 text-[14px] first:border-t-0 ${
+                  on ? 'bg-app-icon-bg font-extrabold text-app-icon-fg' : 'text-app-text-secondary'
+                }`}
+              >
+                <span>{t.range(r.from, r.to)}</span>
+                <span className="tabular-nums">{r.percent}%</span>
               </li>
             );
           })}
         </ul>
-        <p className="mt-2 text-[12px] text-app-text-muted">{t.trial}</p>
-      </div>
-    </Card>
+        <p className="mt-2.5 text-[13px] text-app-text-muted">{t.trial}</p>
+      </Card>
+    </div>
   );
 }

@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react';
 import { LogOut, Mail, MessageCircle } from 'lucide-react';
 import { requestPasswordReset } from '../../../../api/auth';
-import { patchUserAccount, uploadUserAvatar, bustAvatarUrl, getMe } from '../../../../api/user';
+import { patchUserAccount, getMe } from '../../../../api/user';
 import { adminContact } from '../../../../config/adminContact';
 import { useAuth } from '../../../../context/AuthContext';
 import { usePanel } from '../panelContext';
-import { Avatar, Card, ErrorNote, Field, GhostButton, PageHead, PrimaryButton, inputClass } from '../ui';
+import { Card, ErrorNote, Field, GhostButton, PrimaryButton, inputClass } from '../ui';
 
 export default function Settings() {
-  const { t, lang, setLang, cabinet, token, toast, refresh } = usePanel();
+  const { t, lang, setLang, cabinet, token, toast } = usePanel();
   const { user, logout, updateUser } = useAuth();
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
-    firstName: user?.firstName ?? '',
-    lastName: user?.lastName ?? '',
     phone: user?.phone ?? '',
     email: user?.email ?? '',
   });
@@ -34,87 +32,40 @@ export default function Settings() {
   }, [token]);
 
   const email = user?.email ?? cabinet?.profile?.public_email ?? null;
-  const ism = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || t.teacherRole;
 
   return (
-    <div className="mx-auto max-w-[720px]">
-      <PageHead title={t.settingsTitle} />
+    <div className="flex max-w-[860px] flex-col gap-4">
       {err ? <ErrorNote text={err} /> : null}
 
-      <Card className="mb-4 p-5">
-        <p className="mb-3 text-[15px] font-semibold text-app-text">{t.settingsLanguage}</p>
-        <div className="flex gap-2">
+      <Card as="section" className="flex flex-wrap items-center justify-between gap-3 p-5">
+        <div>
+          <h2 className="text-[17px] font-extrabold text-app-text">{t.settingsLanguage}</h2>
+          <p className="mt-0.5 text-[13px] text-app-text-muted">{t.settingsLanguageHint}</p>
+        </div>
+        <div role="group" aria-label={t.settingsLanguage} className="flex rounded-[14px] bg-app-bg-subtle p-1">
           {(['uz', 'ru'] as const).map((l) => (
             <button
               key={l}
               type="button"
               onClick={() => setLang(l)}
-              className={`min-h-[44px] flex-1 rounded-[12px] border text-[13px] font-semibold transition ${
-                lang === l
-                  ? 'border-app-brand bg-app-primary text-white'
-                  : 'border-app-border-strong bg-app-surface text-app-text-muted'
+              aria-pressed={lang === l}
+              className={`min-h-[44px] rounded-[11px] px-4 text-[14px] font-bold transition ${
+                lang === l ? 'bg-app-surface text-app-text shadow-[0_1px_2px_rgba(15,23,42,0.1)]' : 'text-app-text-muted'
               }`}
             >
-              {l === 'uz' ? "O'zbekcha" : 'Русский'}
+              {l === 'uz' ? 'Oʻzbekcha' : 'Русский'}
             </button>
           ))}
         </div>
       </Card>
 
-      {/* Surat — profil rasmini shu yerdan ham almashtirish mumkin. */}
-      <Card className="mb-4 flex items-center gap-4 p-5">
-        <Avatar name={ism} url={user?.avatarUrl ?? null} size={64} />
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold text-app-text">{t.accPhoto}</p>
-          <p className="mt-0.5 text-[12px] text-app-text-muted">{t.photoFormats}</p>
+      {/* Kirish ma'lumotlari. Ism va surat katalogda ko'rinadi — ular «Tahrirlash»da, moderatsiya bilan. */}
+      <Card as="section" className="flex flex-col gap-3.5 p-5">
+        <div>
+          <h2 className="text-[17px] font-extrabold text-app-text">{t.accEdit}</h2>
+          <p className="mt-0.5 text-[13px] text-app-text-muted">{t.accEditHint}</p>
         </div>
-        <label className="min-h-[44px] cursor-pointer rounded-[12px] bg-app-primary px-4 py-3 text-[12.5px] font-semibold text-white">
-          {user?.avatarUrl ? t.photoReplace : t.photoUpload}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            disabled={busy}
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              e.target.value = '';
-              if (!file) return;
-              setBusy(true);
-              setErr('');
-              try {
-                const me = await uploadUserAvatar(token, file);
-                updateUser({ avatarUrl: bustAvatarUrl(me.avatarUrl) });
-                // Panel tepasidagi va profildagi surat ham darhol yangilansin.
-                refresh();
-                toast(t.photoSaved);
-              } catch (x) {
-                setErr(x instanceof Error ? x.message : t.errorGeneric);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          />
-        </label>
-      </Card>
-
-      {/* Ism, telefon, email — tahrirlanadi. */}
-      <Card className="mb-4 p-5">
-        <p className="mb-3 text-[15px] font-semibold text-app-text">{t.accEdit}</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label={t.fFirstName}>
-            <input
-              value={form.firstName}
-              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t.fLastName}>
-            <input
-              value={form.lastName}
-              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-              className={inputClass}
-            />
-          </Field>
           <Field label={t.settingsPhone}>
             <input
               value={form.phone}
@@ -134,21 +85,17 @@ export default function Settings() {
           </Field>
         </div>
         <PrimaryButton
-          className="mt-3"
+          className="self-start"
           disabled={busy}
           onClick={async () => {
             setBusy(true);
             setErr('');
             try {
               const me = await patchUserAccount(token, {
-                firstName: form.firstName.trim(),
-                lastName: form.lastName.trim(),
                 phone: form.phone.trim(),
                 email: form.email.trim(),
               });
               updateUser({
-                firstName: me.firstName,
-                lastName: me.lastName,
                 phone: me.phone ?? null,
                 email: me.email ?? null,
               });
@@ -165,8 +112,8 @@ export default function Settings() {
       </Card>
 
       {/* Parol — joriy parol bilan tasdiqlanadi. */}
-      <Card className="mb-4 p-5">
-        <p className="mb-3 text-[15px] font-semibold text-app-text">{t.passTitle}</p>
+      <Card as="section" className="flex flex-col gap-3 p-5">
+        <h2 className="text-[17px] font-extrabold text-app-text">{t.passTitle}</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           {parolBor ? (
             <Field label={t.passCurrent}>
@@ -195,8 +142,8 @@ export default function Settings() {
             />
           </Field>
         </div>
-        <PrimaryButton
-          className="mt-3"
+        <GhostButton
+          className="self-start"
           disabled={busy || (parolBor && !pass.current) || !pass.next || pass.next !== pass.repeat}
           onClick={async () => {
             setBusy(true);
@@ -217,9 +164,9 @@ export default function Settings() {
           }}
         >
           {busy ? t.saving : t.passChange}
-        </PrimaryButton>
+        </GhostButton>
 
-        <div className="mt-4 border-t border-app-border pt-4">
+        <div className="mt-1 border-t border-app-bg-subtle pt-3.5">
           <p className="text-[12.5px] text-app-text-muted">
             {email ? t.settingsPasswordHint : t.settingsPasswordNoEmail}
           </p>
@@ -245,22 +192,21 @@ export default function Settings() {
         </div>
       </Card>
 
-      <Card className="p-5">
-        <button
-          type="button"
-          onClick={logout}
-          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#FFF6F6] text-[13px] font-semibold text-[#C23A3F]"
-        >
-          <LogOut className="h-[18px] w-[18px]" />
-          {t.logout}
-        </button>
-      </Card>
+      <button
+        type="button"
+        onClick={logout}
+        className="flex min-h-[48px] items-center gap-2 self-start rounded-[12px] bg-[#FEF2F2] px-[18px] text-[14px] font-extrabold text-[#B91C1C] transition hover:bg-[#FEE2E2]"
+      >
+        <LogOut className="h-[18px] w-[18px]" />
+        {t.logout}
+      </button>
     </div>
   );
 }
 
 export function Help() {
   const { t } = usePanel();
+  const [open, setOpen] = useState(0);
   const items = [
     { q: t.helpQ1, a: t.helpA1 },
     { q: t.helpQ2, a: t.helpA2 },
@@ -269,42 +215,54 @@ export function Help() {
   ];
 
   return (
-    <div className="mx-auto max-w-[720px]">
-      <PageHead title={t.helpTitle} subtitle={t.helpSubtitle} />
+    <div className="flex max-w-[820px] flex-col gap-4">
+      <p className="text-[14px] text-app-text-muted">{t.helpSubtitle}</p>
 
-      <div className="space-y-3">
-        {items.map((it) => (
-          <Card key={it.q} className="p-5">
-            <p className="text-[14px] font-semibold text-app-text">{it.q}</p>
-            <p className="mt-2 text-[13px] leading-[1.7] text-app-text-muted">{it.a}</p>
-          </Card>
-        ))}
-      </div>
+      <Card as="section" className="px-5 py-1.5">
+        {items.map((it, i) => {
+          const on = open === i;
+          return (
+            <div key={it.q} className="border-t border-app-bg-subtle first:border-t-0">
+              <button
+                type="button"
+                onClick={() => setOpen(on ? -1 : i)}
+                aria-expanded={on}
+                className="flex min-h-[56px] w-full items-center justify-between gap-2.5 text-left text-[15px] font-extrabold text-app-text"
+              >
+                {it.q}
+                <span className="text-[20px] text-app-primary">{on ? '−' : '+'}</span>
+              </button>
+              {on ? <p className="mb-3.5 text-[14px] leading-[1.6] text-app-text-secondary">{it.a}</p> : null}
+            </div>
+          );
+        })}
+      </Card>
 
-      <Card className="mt-4 p-5">
-        <p className="mb-3 text-[15px] font-semibold text-app-text">{t.helpContact}</p>
-        <div className="flex flex-wrap gap-2.5">
+      <section className="flex flex-wrap items-center gap-3 rounded-[22px] bg-app-icon-bg p-5">
+        <div className="min-w-0 flex-[1_1_220px]">
+          <p className="text-[15px] font-extrabold text-[#134E4A]">{t.helpNotFound}</p>
+          <p className="mt-0.5 text-[14px] text-[#115E59]">{t.helpNotFoundHint}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <a
             href={adminContact.telegram}
             target="_blank"
             rel="noreferrer"
-            className="flex min-h-[44px] items-center gap-2 rounded-[12px] bg-app-primary px-4 text-[13px] font-semibold text-white"
+            className="flex min-h-[48px] items-center gap-2 rounded-[12px] bg-app-primary px-5 text-[14px] font-extrabold text-white transition hover:bg-app-primary-deep"
           >
             <MessageCircle className="h-[18px] w-[18px]" />
-            Telegram
+            {t.helpContact}
           </a>
           <a
             href={`mailto:${adminContact.email}`}
-            className="flex min-h-[44px] items-center gap-2 rounded-[12px] border border-app-border-strong bg-app-surface px-4 text-[13px] font-semibold text-app-text"
+            aria-label={adminContact.email}
+            className="flex min-h-[48px] items-center gap-2 rounded-[12px] border border-[#CDEAE4] bg-white px-4 text-[14px] font-bold text-[#134E4A]"
           >
             <Mail className="h-[18px] w-[18px]" />
-            {adminContact.email}
+            Email
           </a>
-          <GhostButton onClick={() => window.open(`https://wa.me/${adminContact.whatsapp.replace(/\D/g, '')}`, '_blank')}>
-            WhatsApp
-          </GhostButton>
         </div>
-      </Card>
+      </section>
     </div>
   );
 }

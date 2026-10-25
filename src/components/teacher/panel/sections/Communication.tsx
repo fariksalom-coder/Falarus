@@ -28,6 +28,7 @@ import {
   fmtDateTime,
   fmtTime,
   inputClass,
+  toneFor,
 } from '../ui';
 
 /* --------------------------------- Xabarlar --------------------------------- */
@@ -108,70 +109,73 @@ export default function Messages() {
       {conversations.length === 0 ? (
         <Empty text={t.messagesEmpty} hint={t.messagesHint} />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-          <Card className={`p-2 ${active ? 'max-lg:hidden' : ''}`}>
-            <ul>
-              {conversations.map((c) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => setActiveId(c.id)}
-                    className={`flex w-full items-center gap-3 rounded-[14px] p-3 text-left transition ${
-                      c.id === activeId ? 'bg-app-icon-bg' : 'hover:bg-app-bg-muted'
-                    }`}
-                  >
-                    <Avatar name={nameOf(c)} size={40} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-medium text-app-text">
-                        {nameOf(c)}
-                      </span>
-                      <span className="block text-[11.5px] text-app-text-muted">
-                        {c.last_message_at ? fmtDateTime(c.last_message_at, lang) : ''}
+        <section className="flex min-h-[480px] overflow-hidden rounded-[22px] border border-app-border bg-app-surface lg:min-h-[560px]">
+          <ul className={`min-w-0 overflow-y-auto lg:w-[300px] lg:flex-none lg:border-r lg:border-app-bg-subtle ${active ? 'max-lg:hidden' : 'flex-1'}`}>
+            {conversations.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => setActiveId(c.id)}
+                  className={`flex w-full items-center gap-2.5 border-b border-app-bg-subtle p-3 text-left transition ${
+                    c.id === activeId ? 'lg:bg-app-icon-bg' : 'hover:bg-[var(--app-row-hover)]'
+                  }`}
+                >
+                  <Avatar name={nameOf(c)} size={44} tone={toneFor(nameOf(c))} />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex justify-between gap-1.5">
+                      <b className="truncate text-[14px] text-app-text">{nameOf(c)}</b>
+                      <span className="shrink-0 text-[12px] text-app-text-muted">
+                        {c.last_message_at ? fmtTime(c.last_message_at) : ''}
                       </span>
                     </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </Card>
+                    <span className="block truncate text-[13px] text-app-text-muted">
+                      {c.last_message_at ? fmtDate(c.last_message_at, lang) : ''}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
 
           {active ? (
-            <Card className="flex h-[62vh] flex-col lg:h-[600px]">
-              <div className="flex items-center gap-3 border-b border-app-border p-4">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex items-center gap-2.5 border-b border-app-bg-subtle px-3.5 py-2.5">
                 <button
                   type="button"
                   onClick={() => setActiveId(null)}
-                  className="text-[13px] font-medium text-app-text-muted lg:hidden"
+                  aria-label={t.back}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-app-bg-muted text-[16px] font-extrabold text-app-text lg:hidden"
                 >
                   ←
                 </button>
-                <Avatar name={nameOf(active)} size={36} />
-                <p className="text-[14px] font-semibold text-app-text">{nameOf(active)}</p>
+                <Avatar name={nameOf(active)} size={40} tone={toneFor(nameOf(active))} />
+                <b className="min-w-0 flex-1 truncate text-[14px] text-app-text">{nameOf(active)}</b>
               </div>
 
-              <div className="flex-1 space-y-2.5 overflow-y-auto p-4">
+              <div className="flex max-h-[60vh] min-h-[320px] flex-1 flex-col gap-2 overflow-y-auto bg-[#F8FAFC] p-4 lg:max-h-none">
                 {messages.map((m) => {
                   const mine = m.sender_user_id !== active.student_user_id;
                   return (
-                    <div
-                      key={m.id}
-                      className={`max-w-[80%] rounded-[14px] px-3.5 py-2.5 text-[13px] leading-[1.55] ${
-                        mine
-                          ? 'ml-auto rounded-br-[4px] bg-app-primary text-white'
-                          : 'rounded-bl-[4px] bg-app-bg-muted text-app-text'
-                      }`}
-                    >
-                      {m.content}
-                      <span className={`mt-1 block text-[10.5px] ${mine ? 'text-white/60' : 'text-app-text-muted'}`}>
-                        {fmtTime(m.created_at)}
-                      </span>
+                    <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        className={`max-w-[78%] rounded-[16px] px-3 py-2.5 text-[14px] leading-[1.5] ${
+                          mine
+                            ? 'rounded-br-[4px] bg-app-primary text-white'
+                            : 'rounded-bl-[4px] border border-app-border bg-app-surface text-app-text'
+                        }`}
+                      >
+                        {m.content}
+                        <span className={`mt-0.5 block text-right text-[11px] ${mine ? 'text-[#CDEAE4]' : 'text-app-text-muted'}`}>
+                          {fmtTime(m.created_at)}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
                 <div ref={endRef} />
               </div>
 
-              <div className="flex gap-2 border-t border-app-border p-3">
+              <div className="flex gap-2 border-t border-app-bg-subtle p-2.5">
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -182,24 +186,25 @@ export default function Messages() {
                     }
                   }}
                   placeholder={t.messagePlaceholder}
-                  className={inputClass}
+                  aria-label={t.messagePlaceholder}
+                  className={`${inputClass} min-h-[46px]`}
                 />
                 <button
                   type="button"
                   onClick={() => void send()}
                   disabled={sending || !text.trim()}
-                  className="min-h-[44px] shrink-0 rounded-[12px] bg-app-primary px-4 text-[13px] font-semibold text-white disabled:opacity-50"
+                  className="min-h-[46px] shrink-0 rounded-[12px] bg-app-primary px-[18px] text-[14px] font-bold text-white transition hover:bg-app-primary-deep disabled:opacity-50"
                 >
                   {t.send}
                 </button>
               </div>
-            </Card>
+            </div>
           ) : (
-            <Card className="hidden items-center justify-center p-10 lg:flex">
-              <p className="text-[13px] text-app-text-muted">{t.chooseChat}</p>
-            </Card>
+            <div className="hidden flex-1 items-center justify-center p-10 lg:flex">
+              <p className="text-[14px] text-app-text-muted">{t.chooseChat}</p>
+            </div>
           )}
-        </div>
+        </section>
       )}
     </div>
   );
@@ -233,71 +238,68 @@ export function Reviews() {
 
   return (
     <div>
-      <PageHead
-        title={t.reviewsTitle}
-        subtitle={
-          data && data.rating_count > 0
-            ? `★ ${data.rating_avg} · ${tpl(t.reviewsCount, { n: data.rating_count })}`
-            : t.reviewsHint
-        }
-      />
+      <PageHead title={t.reviewsTitle} subtitle={t.reviewsHint} />
       {err ? <ErrorNote text={err} /> : null}
 
       {!data || data.reviews.length === 0 ? (
         <Empty text={t.reviewsEmpty} hint={t.reviewsHint} />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start">
-          <Card className="p-5">
-            <p className="text-[32px] font-semibold text-app-text">{data.rating_avg}</p>
-            <p className="text-[14px] text-[#E6B33E]">{'★'.repeat(Math.round(data.rating_avg))}</p>
-            <ul className="mt-3 space-y-1.5">
+        <div className="flex flex-col gap-4">
+          <Card as="section" className="flex flex-wrap items-center gap-6 p-5">
+            <div>
+              <p className="text-[44px] font-extrabold leading-none text-app-text">{data.rating_avg.toLocaleString('ru-RU')}</p>
+              <p className="mt-1 text-[18px] tracking-[2px] text-[#B45309]">{'★'.repeat(Math.round(data.rating_avg))}</p>
+              <p className="mt-0.5 text-[13px] text-app-text-muted">{tpl(t.reviewsCount, { n: data.rating_count })}</p>
+            </div>
+            <ul className="flex min-w-0 flex-[1_1_240px] flex-col gap-1.5">
               {[5, 4, 3, 2, 1].map((n) => (
-                <li key={n} className="flex items-center gap-2 text-[12px] text-app-text-muted">
-                  <span className="w-3">{n}</span>
+                <li key={n} className="flex items-center gap-2.5 text-[13px]">
+                  <span className="w-6 font-bold text-app-text">{n}★</span>
                   <span className="h-2 flex-1 overflow-hidden rounded-full bg-app-bg-subtle">
                     <span
-                      className="block h-full rounded-full bg-[#E6B33E]"
+                      className="block h-full rounded-full bg-[#F59E0B]"
                       style={{ width: `${((data.breakdown[String(n)] ?? 0) / max) * 100}%` }}
                     />
                   </span>
-                  <span className="w-5 text-right">{data.breakdown[String(n)] ?? 0}</span>
+                  <span className="w-6 text-right text-app-text-muted">{data.breakdown[String(n)] ?? 0}</span>
                 </li>
               ))}
             </ul>
           </Card>
 
-          <ul className="space-y-3">
+          <ul className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))]">
             {data.reviews.map((r) => (
               <li key={r.id}>
-                <Card className="p-5">
-                  <div className="flex items-center gap-3">
-                    <Avatar name={r.student_name} size={40} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13.5px] font-semibold text-app-text">
-                        {r.student_name}
-                      </p>
-                      <p className="text-[11.5px] text-app-text-muted">{fmtDate(r.created_at, lang)}</p>
-                    </div>
-                    <span className="text-[13px] text-[#E6B33E]">{'★'.repeat(Math.round(r.rating))}</span>
+                <article className="flex h-full flex-col gap-2.5 rounded-[20px] border border-app-border bg-app-surface p-4">
+                  <div className="flex items-center gap-2.5">
+                    <Avatar name={r.student_name} size={40} tone={toneFor(r.student_name)} />
+                    <span className="min-w-0 flex-1">
+                      <b className="block truncate text-[14px] text-app-text">{r.student_name}</b>
+                      <span className="text-[12px] text-app-text-muted">{fmtDate(r.created_at, lang)}</span>
+                    </span>
+                    <span className="shrink-0 font-extrabold text-[#B45309]">
+                      {'★'.repeat(Math.round(r.rating))}
+                      <span className="text-[#CBD5E1]">{'★'.repeat(Math.max(0, 5 - Math.round(r.rating)))}</span>
+                    </span>
                   </div>
-                  {r.opinion || r.what_liked ? (
-                    <p className="mt-2.5 text-[12.5px] leading-[1.7] text-app-text-muted">
-                      {r.opinion || r.what_liked}
+                  {r.what_liked || r.opinion ? (
+                    <p className="text-[14px] leading-[1.55] text-app-text">
+                      <b className="text-[#166534]">{t.reviewLiked}:</b> {r.what_liked || r.opinion}
                     </p>
                   ) : null}
                   {r.what_was_missing ? (
-                    <p className="mt-1.5 text-[12.5px] leading-[1.7] text-app-text-muted">
-                      {t.reviewMissing}: {r.what_was_missing}
+                    <p className="text-[14px] leading-[1.55] text-app-text">
+                      <b className="text-[#92400E]">{t.reviewMissing}:</b> {r.what_was_missing}
                     </p>
                   ) : null}
                   {r.enrolled_monthly_course != null ? (
-                    <span className="mt-2.5 inline-block">
+                    <span className="mt-auto">
                       <Tag tone={r.enrolled_monthly_course ? 'green' : 'grey'}>
                         {r.enrolled_monthly_course ? t.reviewEnrolled : t.reviewNotEnrolled}
                       </Tag>
                     </span>
                   ) : null}
-                </Card>
+                </article>
               </li>
             ))}
           </ul>
@@ -321,20 +323,21 @@ export function NotificationsDrawer({
   const { token, t, lang } = usePanel();
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(14,16,45,0.32)]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(15,23,42,0.4)]" onClick={onClose}>
       <motion.aside
         initial={{ x: 40, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 380, damping: 34 }}
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-[400px] flex-col gap-4 overflow-y-auto bg-app-surface p-5 pt-[max(env(safe-area-inset-top,0px),20px)]"
+        aria-label={t.notifications}
+        className="flex h-full w-full max-w-[400px] flex-col gap-1.5 overflow-y-auto bg-app-surface p-[18px] pt-[max(env(safe-area-inset-top,0px),18px)]"
       >
         <div className="flex items-center justify-between">
-          <p className="text-[18px] font-semibold text-app-text">{t.notifications}</p>
+          <p className="text-[18px] font-extrabold text-app-text">{t.notifications}</p>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-app-bg-muted text-app-text"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F1F4F7] text-app-text"
             aria-label={t.close}
           >
             ✕
@@ -352,27 +355,18 @@ export function NotificationsDrawer({
                   .then(onRead)
                   .catch(() => undefined)
               }
-              className="self-start text-[12.5px] font-semibold text-app-brand"
+              className="min-h-[40px] self-start text-[14px] font-bold text-app-primary"
             >
               {t.markAllRead}
             </button>
-            <ul className="space-y-2.5">
+            <ul className="flex flex-col gap-0.5">
               {notifications.map((n) => (
-                <li
-                  key={n.id}
-                  className={`flex gap-3 rounded-[14px] border border-app-border p-3.5 ${
-                    n.read_at ? 'bg-app-surface' : 'bg-app-bg-muted'
-                  }`}
-                >
-                  <span
-                    className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
-                      n.read_at ? 'bg-[#D9D8EC]' : 'bg-app-primary'
-                    }`}
-                  />
+                <li key={n.id} className={`flex gap-2.5 rounded-[14px] p-3 ${n.read_at ? '' : 'bg-[#F0FAF8]'}`}>
+                  <span className={`mt-[7px] h-2 w-2 shrink-0 rounded-full ${n.read_at ? 'bg-transparent' : 'bg-app-primary'}`} />
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-app-text">{n.title}</p>
-                    <p className="mt-1 text-[12.5px] leading-[1.6] text-app-text-muted">{n.body}</p>
-                    <p className="mt-1.5 text-[11px] text-app-text-muted">
+                    <p className="text-[14px] font-bold text-app-text">{n.title}</p>
+                    {n.body ? <p className="mt-0.5 text-[13.5px] leading-[1.5] text-app-text-secondary">{n.body}</p> : null}
+                    <p className="mt-1 text-[12px] text-app-text-muted">
                       {fmtDateTime(n.created_at, lang)}
                     </p>
                   </div>

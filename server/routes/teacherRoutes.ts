@@ -587,6 +587,11 @@ export function createTeacherRoutes(
         const userAvatar = (userRow as { avatar_url?: string | null } | null)?.avatar_url;
         if (userAvatar) (payload as Record<string, unknown>).avatar_url = userAvatar;
       }
+      // Tasdiqlangan profil faqat kabinetdagi anketa orqali (moderatsiya bilan) o'zgaradi.
+      const liveStatus = (existing as { profile_status?: string | null } | null)?.profile_status;
+      if (liveStatus === 'active' || liveStatus === 'paused') {
+        return res.status(409).json({ error: 'Profilni kabinetdagi «Profil» boʻlimida oʻzgartiring — oʻzgarish moderatsiyadan keyin chiqadi' });
+      }
       (payload as Record<string, unknown>).profile_status = resolveProfileStatusOnSave(
         existing as { profile_status?: string | null; listing_paid_until?: string | null } | null
       );
@@ -2100,6 +2105,12 @@ export function createTeacherRoutes(
       const teacherId = Number(req.userId);
       if (!(await ensureTeacherAccount(supabase, teacherId, res))) return;
       const body = (req.body ?? {}) as Record<string, unknown>;
+      // Tasdiqlangan profil faqat kabinetdagi anketa orqali (moderatsiya bilan) o'zgaradi.
+      const { data: holat } = await supabase.from('teacher_profiles').select('profile_status').eq('user_id', teacherId).maybeSingle();
+      const liveStatus = (holat as { profile_status?: string | null } | null)?.profile_status;
+      if (liveStatus === 'active' || liveStatus === 'paused') {
+        return res.status(409).json({ error: 'Profilni kabinetdagi «Profil» boʻlimida oʻzgartiring — oʻzgarish moderatsiyadan keyin chiqadi' });
+      }
 
       const patch: Record<string, unknown> = {};
       for (const [key, tur] of Object.entries(ANKETA_MAYDON)) {
