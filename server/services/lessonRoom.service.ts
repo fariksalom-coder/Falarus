@@ -185,6 +185,8 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     if (!canApply(conn.role, op, room.state)) {
       return send(conn.ws, { t: 'reject', id, error: op.type === 'ink' ? 'Chizishga ruxsat yoʻq' : 'Bu amal faqat oʻqituvchiga ruxsat etilgan' });
     }
+    // Ijro vaqtini server soati bilan belgilaymiz — o'quvchi o'z soatidagi farqni ping orqali tuzatadi.
+    if (op.type === 'media') op = { ...op, at: now() };
     if (op.type === 'ink') {
       // Kim chizgani server tomonidan yoziladi — o'quvchi o'qituvchining chizmasini o'chira olmasin.
       if (op.add) op = { ...op, add: op.add.map((st) => ({ ...st, by: conn.role })) };

@@ -307,3 +307,57 @@ test('ink ops are validated and page keys follow the board', async () => {
   assert.equal(inkKeyOf({ ...s, material: { id: 7, title: '', kind: 'audio', mime: '', size_bytes: 1, page_count: null } }), null, 'no ink on audio');
   assert.equal(inkKeyOf({ ...s, material: { id: 7, title: '', kind: 'image', mime: '', size_bytes: 1, page_count: 1 }, page: 4 }), 'm7:1');
 });
+
+test('audio playback: the teacher plays, pauses and seeks; times come from the server clock; the student follows', async () => {
+  const t = await setup();
+  try {
+    await t.db.exec(`INSERT INTO teacher_materials (teacher_user_id, title, kind, mime, size_bytes, private_path) VALUES (1, 'Dialog', 'audio', 'audio/mpeg', 100, 'x/3.mp3')`);
+    const teacher = t.connect('t1');
+    const student = t.connect('s2');
+    await teacher.next('state');
+    await student.next('state');
+    teacher.send({ t: 'op', id: 'show', op: { type: 'show', material: { id: 3 }, page: 1 } });
+    const shown = await student.next('op');
+    assert.equal(shown.op.type === 'show' && shown.op.material?.kind, 'audio');
+
+    const before = Date.now();
+    teacher.send({ t: 'op', id: 'play', op: { type: 'media', playing: true, position: 12.5, at: 1 } });
+    const play = await student.next('op');
+    assert.ok(play.op.type === 'media');
+    if (play.op.type === 'media') {
+      assert.equal(play.op.playing, true);
+      assert.equal(play.op.position, 12.5);
+      assert.ok(play.op.at >= before && play.op.at <= Date.now(), 'the client clock (at: 1) is replaced by the server time');
+    }
+
+    student.send({ t: 'op', id: 'nope', op: { type: 'media', playing: false, position: 0, at: 0 } });
+    assert.equal((await student.next('reject')).id, 'nope', 'only the teacher controls playback');
+
+    // Kech kirgan o'quvchi ham ijro holatini darhol oladi.
+    const late = t.connect('s2');
+    const st = (await late.next('state')).state;
+    assert.equal(st.media?.playing, true);
+    assert.equal(st.media?.position, 12.5);
+
+    teacher.send({ t: 'op', id: 'seek', op: { type: 'media', playing: false, position: 99999999, at: 0 } });
+    const paused = await student.next('op');
+    assert.equal(paused.op.type === 'media' && paused.op.position, 6 * 3600, 'position is capped');
+
+    teacher.send({ t: 'op', id: 'pdf', op: { type: 'show', material: { id: 1 }, page: 1 } });
+    await student.next('op');
+    const after = t.connect('s2');
+    assert.equal((await after.next('state')).state.media, null, 'a new material starts paused at zero');
+    for (const c of [teacher, student, late, after]) c.ws.close();
+  } finally {
+    await t.close();
+  }
+});
+
+test('playback position is computed from the server clock', async () => {
+  const { mediaPositionAt, applyRoomOp, emptyRoomState } = await import('../shared/lessonRoom');
+  assert.equal(mediaPositionAt({ playing: true, position: 10, at: 1000 }, 4000), 13);
+  assert.equal(mediaPositionAt({ playing: false, position: 10, at: 1000 }, 4000), 10);
+  assert.equal(mediaPositionAt({ playing: true, position: 10, at: 5000 }, 4000), 10, 'a little clock skew never goes backwards');
+  const pdf = applyRoomOp(emptyRoomState(), { type: 'show', material: { id: 1, title: '', kind: 'pdf', mime: '', size_bytes: 1, page_count: 2 }, page: 1 });
+  assert.equal(applyRoomOp(pdf, { type: 'media', playing: true, position: 1, at: 1 }).media, null, 'no playback for a PDF');
+});

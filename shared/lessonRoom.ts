@@ -43,8 +43,16 @@ export type Stroke = {
   by?: RoomRole;
 };
 
+/**
+ * Audio/video materialni ijro etish holati. `position` — `at` paytidagi joy (soniya),
+ * `at` — server soati (ms). Hozirgi joy: playing ? position + (hozir − at) / 1000 : position.
+ */
+export type MediaPlayback = { playing: boolean; position: number; at: number };
+
 export type RoomState = {
   material: RoomMaterial | null;
+  /** Doskadagi audio/video ijrosi (o'qituvchi boshqaradi); boshqa materialda null. */
+  media: MediaPlayback | null;
   page: number;
   /** Ochiq oq varaq raqami (1 dan); null — material ko'rsatilmoqda. */
   blank: number | null;
@@ -66,7 +74,9 @@ export type RoomOp =
   /** Doskani yopish (oddiy video qo'ng'iroqqa qaytish). */
   | { type: 'close' }
   | { type: 'ink'; key: string; add?: Stroke[]; remove?: string[]; clear?: boolean }
-  | { type: 'permit'; studentCanDraw: boolean };
+  | { type: 'permit'; studentCanDraw: boolean }
+  /** Ijro / pauza / o'tkazish. `at` ni server qo'yadi (klientning soatiga ishonilmaydi). */
+  | { type: 'media'; playing: boolean; position: number; at: number };
 
 export type Presence = { teacher: boolean; student: boolean };
 
@@ -106,6 +116,8 @@ export const FINAL_CLOSE_CODES: number[] = [ROOM_CLOSE.auth, ROOM_CLOSE.forbidde
 export const ROOM_WS_PATH = '/api/lesson-room/ws';
 export const MAX_PAGE = 10_000;
 export const MAX_BLANKS = 50;
+/** Eng uzun audio/video — 6 soat (noto'g'ri qiymat o'ynatgichni buzmasin). */
+export const MAX_MEDIA_SECONDS = 6 * 3600;
 
 /** Chizma cheklovlari: bitta sahifa va bitta chiziq hajmi chegaralangan (xona holati yengil qolsin). */
 export const INK_MAX_STROKES_PER_PAGE = 1500;
@@ -116,7 +128,7 @@ export const INK_MAX_ADD = 400;
 export const BLANK_RATIO = 4 / 3;
 
 export const emptyRoomState = (): RoomState => ({
-  material: null, page: 1, blank: null, blankCount: 0, studentCanDraw: false, ink: {}, seq: 0,
+  material: null, media: null, page: 1, blank: null, blankCount: 0, studentCanDraw: false, ink: {}, seq: 0,
 });
 
 const clampPage = (n: unknown) => Math.max(1, Math.min(MAX_PAGE, Math.floor(Number(n)) || 1));
@@ -136,7 +148,7 @@ export function inkKeyOf(s: Pick<RoomState, 'material' | 'page' | 'blank'>): str
 export function applyRoomOp(state: RoomState, op: RoomOp): RoomState {
   switch (op.type) {
     case 'show':
-      return { ...state, material: op.material, blank: null, page: op.material ? clampPage(op.page) : 1 };
+      return { ...state, material: op.material, media: null, blank: null, page: op.material ? clampPage(op.page) : 1 };
     case 'page': {
       if (state.blank !== null) return { ...state, blank: Math.max(1, Math.min(state.blankCount, Math.floor(op.page) || 1)) };
       if (!state.material) return state;
@@ -149,7 +161,12 @@ export function applyRoomOp(state: RoomState, op: RoomOp): RoomState {
       return { ...state, blank: n, blankCount: Math.max(state.blankCount, n) };
     }
     case 'close':
-      return { ...state, material: null, blank: null, page: 1 };
+      return { ...state, material: null, media: null, blank: null, page: 1 };
+    case 'media': {
+      const kind = state.material?.kind;
+      if (kind !== 'audio' && kind !== 'video') return state;
+      return { ...state, media: { playing: op.playing, position: op.position, at: op.at } };
+    }
     case 'ink': {
       const before = state.ink[op.key] ?? [];
       const removed = new Set(op.remove ?? []);
@@ -233,6 +250,11 @@ export function parseRoomOp(raw: unknown): RoomOp | null {
   }
   if (o.type === 'close') return { type: 'close' };
   if (o.type === 'permit' && typeof o.studentCanDraw === 'boolean') return { type: 'permit', studentCanDraw: o.studentCanDraw };
+  if (o.type === 'media' && typeof o.playing === 'boolean') {
+    const position = Number(o.position);
+    if (!Number.isFinite(position)) return null;
+    return { type: 'media', playing: o.playing, position: Math.max(0, Math.min(MAX_MEDIA_SECONDS, Math.round(position * 1000) / 1000)), at: 0 };
+  }
   if (o.type === 'ink' && isKey(o.key)) {
     const add = o.add === undefined ? [] : Array.isArray(o.add) && o.add.length <= INK_MAX_ADD ? o.add.map(parseStroke) : null;
     const remove = o.remove === undefined ? [] : Array.isArray(o.remove) && o.remove.length <= INK_MAX_STROKES_PER_PAGE ? o.remove : null;
@@ -254,6 +276,11 @@ export function parseDraft(raw: unknown): DraftMessage | null {
   const pts = cleanPoints(o.pts, 400);
   if (!Number.isFinite(size) || size <= 0 || size > 120 || !pts) return null;
   return { t: 'draft', key: o.key, id: o.id, tool: o.tool, color: o.color, size, pts, ...(o.cancel === true ? { cancel: true } : {}) };
+}
+
+/** Ijro holatidan hozirgi joy (soniya), `now` — server soati. */
+export function mediaPositionAt(m: MediaPlayback, now: number): number {
+  return m.playing ? m.position + Math.max(0, now - m.at) / 1000 : m.position;
 }
 
 /** Lazer nuqtasi sahifaga nisbatan 0..1 — har xil ekranda bir joyda turadi. */

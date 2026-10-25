@@ -13,6 +13,7 @@ import type { LessonRoom, RoomStatus } from '../../hooks/useLessonRoom';
 import { InkLayer } from './InkLayer';
 import { InkBar, TextSheet } from './BoardTools';
 import { useBoardInk } from './useBoardInk';
+import { SyncedMedia } from './SyncedMedia';
 
 /**
  * Dars doskasi: o'qituvchi materialni chiqaradi va varaqlaydi, o'quvchi ekrani ergashadi.
@@ -49,6 +50,36 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const ink = useBoardInk(room, board, overlayRef);
   const onPage = useCallback((p: number) => send({ type: 'page', page: p }), [send]);
+  const playable = blank === null && (m?.kind === 'audio' || m?.kind === 'video');
+
+  // Audio/video yangrayotganda mikrofon vaqtincha o'chadi: aks holda karnaydan chiqqan ovoz
+  // mikrofonga kirib, suhbatdoshga aks-sado bo'lib qaytadi. Tugagach — avvalgi holatiga.
+  const callRef = useRef(call);
+  callRef.current = call;
+  const autoMuted = useRef(false);
+  const [micNotice, setMicNotice] = useState(false);
+  const onAudible = useCallback((audible: boolean) => {
+    const c = callRef.current;
+    if (!c.media.joined || !c.controls.current) return;
+    if (audible && !c.media.audioMuted && !autoMuted.current) {
+      autoMuted.current = true;
+      c.controls.current.toggleAudio();
+      setMicNotice(true);
+    } else if (!audible && autoMuted.current) {
+      autoMuted.current = false;
+      setMicNotice(false);
+      if (c.media.audioMuted) c.controls.current.toggleAudio();
+    }
+  }, []);
+  // Foydalanuvchi ijro paytida mikrofonni o'zi yoqsa — keyin uni o'chirib qo'ymaymiz.
+  useEffect(() => {
+    if (autoMuted.current && !call.media.audioMuted) { autoMuted.current = false; setMicNotice(false); }
+  }, [call.media.audioMuted]);
+  useEffect(() => {
+    if (!micNotice) return;
+    const t = window.setTimeout(() => setMicNotice(false), 4000);
+    return () => window.clearTimeout(t);
+  }, [micNotice]);
 
   useEffect(() => {
     if (!teacher || !paged) return;
@@ -135,21 +166,36 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <MaterialViewer
-          token={token}
-          source={blank !== null || !m ? null : { kind, lessonId, materialId: m.id }}
-          kind={m && blank === null ? m.kind : 'pdf'}
-          title={title}
-          page={page}
-          pageCount={blank !== null ? board.blankCount : m?.page_count ?? null}
-          tone="dark"
-          onSwipe={swipe}
-          draw={ink.draw}
-          overlay={ink.key ? (r) => <InkLayer ratio={r} strokes={ink.strokes} live={ink.live} laser={ink.laser} rootRef={overlayRef} /> : undefined}
-        />
+        {playable && m ? (
+          <SyncedMedia
+            token={token}
+            source={{ kind, lessonId, materialId: m.id }}
+            kind={m.kind as 'audio' | 'video'}
+            title={m.title}
+            media={board.media}
+            teacher={teacher}
+            serverNow={room.serverNow}
+            send={send}
+            onAudible={onAudible}
+          />
+        ) : (
+          <MaterialViewer
+            token={token}
+            source={blank !== null || !m ? null : { kind, lessonId, materialId: m.id }}
+            kind={m && blank === null ? m.kind : 'pdf'}
+            title={title}
+            page={page}
+            pageCount={blank !== null ? board.blankCount : m?.page_count ?? null}
+            tone="dark"
+            onSwipe={swipe}
+            draw={ink.draw}
+            overlay={ink.key ? (r) => <InkLayer ratio={r} strokes={ink.strokes} live={ink.live} laser={ink.laser} rootRef={overlayRef} /> : undefined}
+          />
+        )}
         <AnimatePresence>
           {granted ? (
             <motion.p
+              key="granted"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -157,6 +203,18 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
               className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-[#16A34A] px-4 py-2 text-[13px] font-bold text-white shadow-lg"
             >
               Oʻqituvchi chizishga ruxsat berdi
+            </motion.p>
+          ) : null}
+          {micNotice ? (
+            <motion.p
+              key="mic"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              role="status"
+              className="pointer-events-none absolute bottom-3 left-1/2 w-max max-w-[calc(100%-24px)] -translate-x-1/2 rounded-[14px] bg-[#0F172A]/90 px-4 py-2 text-center text-[12.5px] font-bold text-white shadow-lg ring-1 ring-white/15"
+            >
+              Ovoz paytida mikrofon oʻchiq — tugagach yoqiladi
             </motion.p>
           ) : null}
         </AnimatePresence>

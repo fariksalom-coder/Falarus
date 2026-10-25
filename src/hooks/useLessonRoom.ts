@@ -52,8 +52,9 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
   pendingRef.current = pending;
   const laserListeners = useRef(new Set<(p: LaserPoint) => void>());
   const draftListeners = useRef(new Set<(d: DraftMessage & { by: RoomRole }) => void>());
-  /** Server soati − brauzer soati (ms): audio sinxroni uchun. */
+  /** Server soati − brauzer soati (ms): audio sinxroni uchun. Eng tez javobli o'lchov eng aniq. */
   const clockOffset = useRef(0);
+  const clockSamples = useRef<Array<{ rtt: number; offset: number }>>([]);
 
   useEffect(() => {
     if (!enabled || !token || !lessonId) return;
@@ -102,6 +103,10 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
             setStatus('online');
             // Uzilish paytida qilingan o'zgarishlar — qayta yuboriladi (server takrorini taniydi).
             for (const p of pendingRef.current) ws.send(JSON.stringify({ t: 'op', id: p.id, op: p.op }));
+            // Soat farqi darhol: uchta o'lchov, eng tezi olinadi.
+            for (const delay of [0, 400, 800]) {
+              window.setTimeout(() => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'ping', c: Date.now() })); }, delay);
+            }
             break;
           case 'ack': {
             const done = pendingRef.current.find((p) => p.id === m.id);
@@ -128,7 +133,9 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
             break;
           case 'pong': {
             const rtt = Date.now() - m.c;
-            if (rtt >= 0 && rtt < 5000) clockOffset.current = m.s - (m.c + rtt / 2);
+            if (rtt < 0 || rtt > 5000) break;
+            clockSamples.current = [...clockSamples.current, { rtt, offset: m.s - (m.c + rtt / 2) }].slice(-6);
+            clockOffset.current = clockSamples.current.reduce((best, x) => (x.rtt < best.rtt ? x : best)).offset;
             break;
           }
         }
