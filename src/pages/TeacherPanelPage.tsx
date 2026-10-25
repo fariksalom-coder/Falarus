@@ -6,6 +6,7 @@ import {
   LogOut,
   BookOpen,
   CalendarDays,
+  FolderOpen,
   Home,
   LayoutGrid,
   type LucideIcon,
@@ -38,6 +39,7 @@ import Dashboard from '../components/teacher/panel/sections/Dashboard';
 import Schedule from '../components/teacher/panel/sections/Schedule';
 import Students, { StudentDetail } from '../components/teacher/panel/sections/Students';
 import Lessons from '../components/teacher/panel/sections/Lessons';
+import Materials from '../components/teacher/panel/sections/Materials';
 import LessonReport from '../components/teacher/panel/sections/LessonReport';
 import Anketa from '../components/teacher/panel/sections/Anketa';
 import OnboardingWizard from '../components/teacher/onboarding/OnboardingWizard';
@@ -76,6 +78,7 @@ const NAV: NavItem[] = [
   { key: 'schedule', label: 'navSchedule', icon: CalendarDays, group: 'work' },
   { key: 'students', label: 'navStudentsShort', icon: Users, group: 'work' },
   { key: 'lessons', label: 'navLessons', icon: BookOpen, group: 'work' },
+  { key: 'materials', label: 'navMaterials', icon: FolderOpen, group: 'work' },
   { key: 'messages', label: 'navMessages', icon: MessageSquare, group: 'work' },
   { key: 'income', label: 'navMoney', hint: 'navMoneyHint', icon: Wallet, group: 'cabinet' },
   { key: 'reviews', label: 'navReviews', icon: Star, group: 'cabinet' },
@@ -89,6 +92,7 @@ const MOBILE_LABEL: Partial<Record<SectionKey, PanelLabel>> = { dashboard: 'navH
 /** «Yana» varag'i (telefon): pastki menyuga sig'magan bo'limlar. */
 const MORE_ITEMS: Array<{ key: SectionKey; label: PanelLabel; sub: PanelLabel }> = [
   { key: 'lessons', label: 'navLessons', sub: 'moreLessons' },
+  { key: 'materials', label: 'navMaterials', sub: 'moreMaterials' },
   { key: 'income', label: 'navMoney', sub: 'moreMoney' },
   { key: 'reviews', label: 'navReviews', sub: 'moreReviews' },
   { key: 'profile', label: 'navProfileShort', sub: 'moreProfile' },
@@ -455,6 +459,7 @@ export default function TeacherPanelPage() {
               {/* «Video xona» bo'limi olib tashlandi (2026-10-24): «Darsni boshlash» darslar ro'yxatini ochadi. */}
               {section === 'lessons' || section === 'class' ? <Lessons /> : null}
               {section === 'report' && param ? <LessonReport trialId={param} /> : null}
+              {section === 'materials' ? <Materials /> : null}
               {section === 'income' ? <Balance /> : null}
               {section === 'subscription' ? <Commission /> : null}
               {section === 'messages' ? <Messages /> : null}

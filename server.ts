@@ -1335,6 +1335,14 @@ async function startServer() {
   const { createTeacherLessonRoutes } = await import('./server/routes/teacherLessonRoutes');
   app.use('/api', createTeacherLessonRoutes(authenticate));
 
+  // Dars materiallari (o'qituvchi kutubxonasi) va darsdagi doska.
+  const { createTeacherMaterialRoutes } = await import('./server/routes/teacherMaterialRoutes');
+  const { lessonRoomServer } = await import('./server/services/lessonRoom.service');
+  app.use('/api', createTeacherMaterialRoutes(authenticate, {
+    privateDir: (await import('./server/lib/privateUploads')).PRIVATE_UPLOADS_DIR,
+    room: lessonRoomServer,
+  }));
+
   // O'qituvchi onboardingi v2: 8 qadam, yopiq hujjatlar, bo'laklab video, moderatsiya.
   const { createTeacherOnboardingRoutes } = await import('./server/routes/teacherOnboardingRoutes');
   const { geminiChat } = await import('./server/lib/gemini');
@@ -3434,6 +3442,9 @@ async function startServer() {
   // marshrutlari orasida emas, HTTP serverning o'ziga ulanadi.
   const { attachUstozLive } = await import('./server/services/ustozLive.service.ts');
   attachUstozLive(httpServer);
+  // Dars xonasi: doska va materiallarning real vaqt kanali (/api/lesson-room/ws).
+  const { attachLessonRoom } = await import('./server/services/lessonRoom.service.ts');
+  attachLessonRoom(httpServer);
 }
 
 startServer().catch((err) => {

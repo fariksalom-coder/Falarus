@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, ExternalLink, Lock } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import JitsiRoom from '../components/meet/JitsiRoom';
+import { BoardStage, MaterialsButton, MaterialsDrawer, RoomStatusPill } from '../components/materials/LessonBoard';
+import { useLessonRoom } from '../hooks/useLessonRoom';
 import { MeetError, joinLessonRoom, type MeetJoinInfo } from '../api/meet';
 import { useAuth } from '../context/AuthContext';
 import { TEACHERS_LIST_PATH, TEACHER_CABINET_PATH } from '../constants/teacherPaths';
@@ -46,6 +48,23 @@ export default function MeetRoomPage() {
   const [loading, setLoading] = useState(true);
 
   const backTo = user?.accountType === 'teacher' ? TEACHER_CABINET_PATH : TEACHERS_LIST_PATH;
+
+  // Dars xonasining real vaqt kanali: videoga kirish ruxsati olingandan keyin ulanadi.
+  const lessonKind = lessonId ? 'lesson' : 'trial';
+  const roomLessonId = Number(lessonId ?? trialId) || 0;
+  const room = useLessonRoom(token, lessonKind, roomLessonId, Boolean(view));
+  const board = room.state;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const { send } = room;
+  const turnPage = useCallback((page: number) => send({ type: 'page', page }), [send]);
+  // Server rad etgan amal haqida qisqa xabar (masalan, material o'chirilgan).
+  const { error: roomError, clearError } = room;
+  useEffect(() => {
+    if (!roomError) return;
+    const timer = window.setTimeout(clearError, 4000);
+    return () => window.clearTimeout(timer);
+  }, [roomError, clearError]);
 
   useEffect(() => {
     if (!token) return;
@@ -156,18 +175,46 @@ export default function MeetRoomPage() {
           <p className="truncate text-[15px] font-black text-white">{view.title}</p>
           <p className="truncate text-xs font-medium text-white/60">{view.subtitle}</p>
         </div>
+        <RoomStatusPill status={room.status} closedText={room.closedText} />
+        {view.role === 'teacher' ? <MaterialsButton onClick={() => setDrawerOpen(true)} active={Boolean(board?.material)} /> : null}
       </header>
-      <div className="min-h-0 flex-1">
-        <JitsiRoom
-          domain={view.domain}
-          roomName={view.roomSlug}
-          displayName={view.displayName}
-          email={view.email}
-          isModerator={view.role === 'teacher'}
-          subject={view.title}
-          onLeave={() => navigate(backTo, { replace: true })}
-        />
+      {roomError ? (
+        <p role="alert" className="mx-4 mb-2 rounded-[14px] bg-[#7F1D1D]/50 px-4 py-2.5 text-[13px] font-semibold text-[#FECACA]">{roomError}</p>
+      ) : null}
+      {/* Doska chiqsa video yoniga (telefonda — pastga) suriladi; Jitsi qayta yuklanmasin deb daraxtdagi o'rni o'zgarmaydi. */}
+      <div className={`flex min-h-0 flex-1 flex-col gap-2 lg:flex-row ${board?.material ? 'px-2 pb-[max(env(safe-area-inset-bottom,0px),8px)]' : ''}`}>
+        {board?.material ? (
+          <BoardStage
+            token={token}
+            kind={lessonKind}
+            lessonId={roomLessonId}
+            board={board}
+            role={view.role}
+            onPage={turnPage}
+            onClose={() => send({ type: 'show', material: null, page: 1 })}
+          />
+        ) : null}
+        <div className={board?.material ? 'h-[36%] shrink-0 overflow-hidden rounded-[20px] lg:h-auto lg:w-[380px]' : 'min-h-0 flex-1'}>
+          <JitsiRoom
+            domain={view.domain}
+            roomName={view.roomSlug}
+            displayName={view.displayName}
+            email={view.email}
+            isModerator={view.role === 'teacher'}
+            subject={view.title}
+            onLeave={() => navigate(backTo, { replace: true })}
+          />
+        </div>
       </div>
+      {view.role === 'teacher' ? (
+        <MaterialsDrawer
+          token={token}
+          open={drawerOpen}
+          currentId={board?.material?.id ?? null}
+          onPick={(m) => { send({ type: 'show', material: { id: m.id, title: m.title, kind: m.kind, mime: m.mime, size_bytes: m.size_bytes }, page: 1 }); setDrawerOpen(false); }}
+          onClose={closeDrawer}
+        />
+      ) : null}
     </div>
   );
 }

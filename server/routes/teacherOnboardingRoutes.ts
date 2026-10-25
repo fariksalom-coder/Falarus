@@ -102,7 +102,7 @@ const VIDEO_MIME: Record<string, string> = { 'video/mp4': 'mp4', 'video/quicktim
 function readOneFile(req: Request, maxBytes: number): Promise<{ buffer: Buffer; name: string; fields: Record<string, string> }> {
   return new Promise((resolve, reject) => {
     let bb: ReturnType<typeof Busboy>;
-    try { bb = Busboy({ headers: req.headers, limits: { files: 1, fileSize: maxBytes + 1, fields: 10 } }); }
+    try { bb = Busboy({ headers: req.headers, defParamCharset: 'utf8', limits: { files: 1, fileSize: maxBytes + 1, fields: 10 } }); }
     catch { return reject(new HttpError(400, 'Fayl yuborilmadi')); }
     const fields: Record<string, string> = {};
     let result: { buffer: Buffer; name: string } | null = null;

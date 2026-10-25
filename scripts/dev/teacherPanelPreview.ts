@@ -3,12 +3,24 @@
  * No database, no external services: every panel endpoint answers from the fixtures below.
  * Run: npx tsx scripts/dev/teacherPanelPreview.ts  →  http://<lan-ip>:3004/panel
  * (open it via the LAN IP: on localhost the app's apiUrl() points at production).
+ *
+ * Dars materiallari — haqiqiy marshrutlar, xotiradagi baza bilan. Dars xonasi va doska:
+ *   /dars/l/1            — o'qituvchi sifatida
+ *   /dars/l/1?as=student — o'quvchi sifatida (ikkinchi oynada; video ulanmaydi, faqat doska)
  */
 import express from 'express';
 import { createServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { PGlite } from '@electric-sql/pglite';
 import { DEFAULT_SCHEDULE, DEFAULT_SETTINGS } from '../../shared/teacherOnboarding';
+import { createTeacherMaterialRoutes } from '../../server/routes/teacherMaterialRoutes';
+import { createLessonRoomServer } from '../../server/services/lessonRoom.service';
+import { registerWsRoute } from '../../server/lib/wsRoutes';
+import { ROOM_WS_PATH } from '../../shared/lessonRoom';
 
 const H = 3_600_000;
 const now = Date.now();
@@ -202,6 +214,29 @@ json('/api/teacher/onboarding', {
   revision: process.env.PREVIEW_REVISION ? { id: 1, fields: ['about', 'lesson_price_uzs'], created_at: at(-2), updated_at: at(-1) } : null,
   last_revision: null,
 });
+// Dars materiallari: xotiradagi PGlite + vaqtinchalik papka. Token «preview-student» — o'quvchi (22), qolgani — o'qituvchi (11).
+const pg = await PGlite.create();
+await pg.exec(`
+  CREATE TABLE users (id integer PRIMARY KEY, account_type text);
+  CREATE TABLE teacher_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, student_user_id integer, starts_at timestamptz, ends_at timestamptz, status text);
+  CREATE TABLE teacher_trial_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, student_user_id integer, status text, scheduled_starts_at timestamptz, scheduled_ends_at timestamptz);
+  INSERT INTO users VALUES (11, 'teacher'), (22, 'student');
+  INSERT INTO teacher_lessons (teacher_user_id, student_user_id, starts_at, ends_at, status) VALUES (11, 22, now() - interval '5 minutes', now() + interval '45 minutes', 'paid');
+`);
+await pg.exec(fs.readFileSync('db/migrations/218_teacher_lesson_materials.sql', 'utf8'));
+const previewUser = (req: express.Request) => (String(req.headers.authorization ?? '').endsWith('preview-student') ? 22 : 11);
+const previewQ = (sql: string, params?: unknown[]) => pg.query(sql, params as unknown[]);
+const room = createLessonRoomServer({ q: previewQ, verifyToken: (t) => (t === 'preview-student' ? 22 : t === 'preview' ? 11 : null) });
+app.use('/api', createTeacherMaterialRoutes((req: any, _res: any, next: any) => { req.userId = previewUser(req); next(); }, {
+  q: previewQ,
+  privateDir: fs.mkdtempSync(path.join(os.tmpdir(), 'materials-preview-')),
+  room: () => room,
+}));
+json('/api/lessons/:id/join', (req) => {
+  const student = previewUser(req) === 22;
+  return { type: 'jitsi', domain: 'localhost:9', room_slug: 'preview', title: 'FalaRus darsi', starts_at: at(-0.1), role: student ? 'student' : 'teacher',
+    display_name: student ? 'Malika Tosheva' : 'Dilnoza Saidova', email: null };
+});
 app.all('/api/*', (_req, res) => res.json({}));
 
 const vite = await createServer({ configFile: false, plugins: [react(), tailwindcss()], define: { 'import.meta.env.VITE_API_URL': '""' }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
@@ -209,5 +244,6 @@ app.use(vite.middlewares);
 const html = `<!doctype html><html lang="uz"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" /><title>Ustoz kabineti preview</title></head>
 <body><div id="root"></div><script type="module" src="/scripts/dev/teacherPanelPreviewEntry.tsx"></script></body></html>`;
-app.get('/panel', async (req, res) => res.type('html').send(await vite.transformIndexHtml(req.originalUrl, html)));
-app.listen(3004, '0.0.0.0', () => console.log('Teacher panel preview: http://<lan-ip>:3004/panel'));
+app.get(['/panel', '/dars/*'], async (req, res) => res.type('html').send(await vite.transformIndexHtml(req.originalUrl, html)));
+const httpServer = app.listen(3004, '0.0.0.0', () => console.log('Teacher panel preview: http://<lan-ip>:3004/panel'));
+registerWsRoute(httpServer, ROOM_WS_PATH, room.wss);

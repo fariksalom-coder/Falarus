@@ -29,6 +29,7 @@ import { isOperatorFrozen } from '../operator/freeze.js';
 import type { Server } from 'http';
 import jwt from 'jsonwebtoken';
 import { WebSocketServer, WebSocket } from 'ws';
+import { registerWsRoute } from '../lib/wsRoutes.js';
 import { buildLiveLessonInstruction as tizimKorsatmasi, LiveQuestionProgress } from './liveLessonPrompt.js';
 import { pool } from '../lib/db.js';
 import { findUsedPraise } from './liveLessonPraise.js';
@@ -308,8 +309,9 @@ export function attachUstozLive(server: Server): void {
     return;
   }
 
+  // noServer: manzil bo'yicha tarqatish server/lib/wsRoutes.ts da (dars xonasi ham shu serverda).
   const wss = new WebSocketServer({
-    server, path: YOL, maxPayload: 2 * 1024 * 1024,
+    noServer: true, maxPayload: 2 * 1024 * 1024,
     // Check before the handshake completes: do not delay connection listeners
     // and lose the client's initial audio-session message.
     verifyClient: (info, done) => {
@@ -330,6 +332,7 @@ export function attachUstozLive(server: Server): void {
       } catch { done(false, 401, 'Unauthorized'); }
     },
   });
+  registerWsRoute(server, YOL, wss);
 
   wss.on('connection', (klient: WebSocket, req) => {
     // --- Autentifikatsiya -----------------------------------------------
