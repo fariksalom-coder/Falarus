@@ -20,6 +20,7 @@ import { salesHeadAdminRoutes } from '../salesHead/routes.js';
 import { operatorReceipt } from '../operator/routes.js';
 import { enabled as operatorEnabled } from '../operator/service.js';
 import { readAdminUsers, readAdminRegistrations, readAdminUnreadCount } from '../services/adminUsersRead.service.js';
+import { readAdminAttention } from '../services/adminAttention.service.js';
 import { loadUserManageSnapshot } from '../services/adminUserManage.service.js';
 import { createReferralAdminRoutes } from './referralAdminRoutes.js';
 import { createAdminNotificationRoutes } from './notificationRoutes.js';
@@ -241,6 +242,8 @@ export function createAdminRoutes(supabase: DbClient): Router {
     if (error.status === 400) res.status(400).json({ error: error.message }); else next(error);
   }));
   router.get('/help/unread-count', (_req, res, next) => readAdminUnreadCount().then(data => res.json(data)).catch(next));
+  // Chap menyu belgichalari: qaror kutayotgan ishlar soni bo'limlar bo'yicha.
+  router.get('/attention', (_req, res, next) => readAdminAttention().then((data) => res.json(data)).catch(next));
   router.post('/users', (req, res, next) => ctrl.createUser(req, res).catch(next));
   // `lookup` :id dan OLDIN — aks holda "lookup" id deb o‘qiladi.
   router.get('/users/lookup', (req, res, next) => ctrl.lookupUserByPhone(req, res).catch(next));

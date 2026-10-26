@@ -299,7 +299,14 @@ export function getRegistrations(month: string, signal?: AbortSignal) {
   return adminApi<{ days: { day: string; count: number }[]; total: number; timezone: string }>(`/registrations?month=${encodeURIComponent(month)}`, { signal });
 }
 
-export function getAdminUnreadCount() { return adminApi<{ count: number }>('/help/unread-count'); }
+/** Qaror kutayotgan ishlar soni (chap menyu va bo'lim tablari belgichalari uchun). */
+export type AdminAttention = {
+  support: number;
+  teachers: { total: number; applications: number; revisions: number; withdrawals: number; reviews: number; lessons: number };
+  operators: { total: number; receipts: number; rahmat: number; deferrals: number };
+  total: number;
+};
+export function getAdminAttention() { return adminApi<AdminAttention>('/attention'); }
 
 export type AdminCreateUserResponse = {
   user: {

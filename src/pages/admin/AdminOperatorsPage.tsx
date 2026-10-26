@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi, getAdminToken } from '../../lib/adminApi';
 import { apiUrl } from '../../api';
+import { getAdminAttention, type AdminAttention } from '../../api/admin';
 import OperatorSalaryReport from '../../components/admin/OperatorSalaryReport';
 import SalesHeadAdmin from '../../components/admin/SalesHeadAdmin';
 import ReceiptPreview from '../../components/admin/ReceiptPreview';
@@ -9,6 +10,8 @@ const fmt = (x: any) => x ? new Date(x).toLocaleString('uz-UZ', { timeZone: 'Asi
 const names: Record<string, string> = { pending: 'Tekshiruvda', approved: 'Tasdiqlangan', rejected: 'Rad etilgan' };
 export default function AdminOperatorsPage() {
     const [rahmatClaims,setRahmatClaims]=useState<any>({rows:[],more:false});
+    // Tab belgichalari: qaysi tabda qaror kutayotgan ish bor.
+    const [waiting, setWaiting] = useState<AdminAttention['operators'] | null>(null);
     const [deferrals, setDeferrals] = useState<any>({ rows: [], more: false });
     const [ops, setOps] = useState<any[]>([]), [data, setData] = useState<any>({ rows: [], summary: [], debts: [], activity: [] }), [audit, setAudit] = useState<any[]>([]);
     const [tab, setTab] = useState('receipts'), [filter, setFilter] = useState({ operator: '', status: 'pending', from: '', to: '', source: '', tariff: '' }), [offset, setOffset] = useState(0);
@@ -21,6 +24,7 @@ export default function AdminOperatorsPage() {
             const [o, d] = await Promise.all([adminApi<any[]>(base + '/operators'), adminApi<any>(base + '/overview?' + new URLSearchParams({ ...filter, offset: String(offset) }))]);
             setOps(o);
             setData(d);
+            getAdminAttention().then((a) => setWaiting(a.operators)).catch(() => {});
             if(tab==='rahmat') setRahmatClaims(await adminApi<any>(base+'/rahmat-claims?'+new URLSearchParams({operator:filter.operator,status:filter.status,offset:String(offset)})));
             if (tab === 'deferrals') setDeferrals(await adminApi<any>(base + '/deferrals?' + new URLSearchParams({ operator: filter.operator, status: filter.status, offset: String(offset) })));
             if (tab === 'audit')
@@ -54,7 +58,7 @@ export default function AdminOperatorsPage() {
     };
     return <div className="space-y-5 p-4 md:p-6 max-w-[1500px] mx-auto">
   <div><h1 className="text-2xl font-bold">Operatorlar va to‘lovlar</h1><p className="text-sm opacity-70 mt-1">Telegramdan kelgan cheklar. To‘lovni faqat shu yerda admin tasdiqlaydi. Vaqt: Toshkent.</p></div>
-  <div className="flex flex-wrap gap-2">{[['receipts', 'Cheklar'], ['rahmat','Rahmat sotuvlari'], ['deferrals', 'Muddatni ko‘chirish'], ['reports', 'Hisobotlar'], ['salary', 'Maosh va bonuslar'], ['sales-head', 'Sotuv rahbari'], ['accounts', 'Operator hisoblari'], ['audit', 'Amallar jurnali']].map(([key, label]) => <button className={`ui-button ${tab === key ? 'ui-button--primary' : 'ui-button--secondary'}`} key={key} onClick={() => { setTab(key); setOffset(0); }}>{label}</button>)}<button className="ui-button ui-button--secondary" disabled={busy || loading} onClick={() => void load()}>Yangilash</button></div>
+  <div className="flex flex-wrap gap-2">{[['receipts', 'Cheklar'], ['rahmat','Rahmat sotuvlari'], ['deferrals', 'Muddatni ko‘chirish'], ['reports', 'Hisobotlar'], ['salary', 'Maosh va bonuslar'], ['sales-head', 'Sotuv rahbari'], ['accounts', 'Operator hisoblari'], ['audit', 'Amallar jurnali']].map(([key, label]) => { const n = key === 'receipts' ? waiting?.receipts : key === 'rahmat' ? waiting?.rahmat : key === 'deferrals' ? waiting?.deferrals : 0; return <button className={`ui-button ${tab === key ? 'ui-button--primary' : 'ui-button--secondary'}`} key={key} onClick={() => { setTab(key); setOffset(0); }}>{label}{n ? <span className="ml-2 rounded-full bg-red-500 px-1.5 text-xs font-bold tabular-nums text-white">{n}</span> : null}</button>; })}<button className="ui-button ui-button--secondary" disabled={busy || loading} onClick={() => void load()}>Yangilash</button></div>
   {error && <p role="alert" className="rounded-xl bg-red-50 border border-red-300 text-red-800 p-3">{error}</p>}{note && <p role="status" className="rounded-xl bg-green-50 text-green-800 p-3">{note}</p>}
   {['receipts', 'reports'].includes(tab) && <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">{[
                 <select aria-label="Operator" value={filter.operator} onChange={e => change('operator', e.target.value)}><option value="">Barcha operatorlar</option>{ops.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>,

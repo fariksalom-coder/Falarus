@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { adminPath } from '../../constants/adminPath';
 import { Bell, BookOpen, ChartColumn, CreditCard, Gift, GraduationCap, LayoutDashboard, LogOut, Menu, MessageSquare, Receipt, Users, X } from 'lucide-react';
-import { getAdminUnreadCount } from '../../api/admin';
+import { getAdminAttention, type AdminAttention } from '../../api/admin';
 import './admin-workspace.css';
 
 type Tab = { to: string; label: string; match?: (path: string) => boolean };
@@ -54,7 +54,8 @@ export default function AdminLayout() {
   const { logout } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadSupportCount, setUnreadSupportCount] = useState(0);
+  const [attention, setAttention] = useState<AdminAttention | null>(null);
+  const unreadSupportCount = attention?.support ?? 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -63,8 +64,8 @@ export default function AdminLayout() {
     const run = async () => {
       try {
         if (document.visibilityState !== 'hidden') {
-          const result = await getAdminUnreadCount();
-          if (!cancelled) setUnreadSupportCount(result.count);
+          const result = await getAdminAttention();
+          if (!cancelled) setAttention(result);
         }
       } catch {
         // Keep previous counter on transient errors.
@@ -74,7 +75,11 @@ export default function AdminLayout() {
     };
 
     void run();
+    // Admin biror ishni hal qilgach (tasdiqlash, rad etish) belgicha darhol yangilansin.
+    const refresh = () => { if (timer) window.clearTimeout(timer); void run(); };
+    window.addEventListener('admin:attention', refresh);
     return () => {
+      window.removeEventListener('admin:attention', refresh);
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
@@ -120,7 +125,10 @@ export default function AdminLayout() {
           {sections.map((sec) => {
             const on = current === sec;
             const Icon = sec.icon;
-            const support = sec.tabs.some((t) => t.to === adminPath('/support'));
+            // Bo'limdagi qaror kutayotgan ishlar: yozishmalar, operator cheklari, o'qituvchilar.
+            const count = sec.tabs.some((t) => t.to === adminPath('/support')) ? unreadSupportCount
+              : sec.tabs.some((t) => t.to === adminPath('/operators')) ? attention?.operators.total ?? 0
+                : sec.tabs.some((t) => t.to === adminPath('/teachers')) ? attention?.teachers.total ?? 0 : 0;
             return (
               <NavLink
                 key={sec.label}
@@ -132,12 +140,12 @@ export default function AdminLayout() {
               >
                 <Icon className="h-[17px] w-[17px] shrink-0" />
                 <span className="min-w-0 flex-1 leading-snug">{sec.label}</span>
-                {support && unreadSupportCount > 0 ? (
+                {count > 0 ? (
                   <span
                     className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[7px] text-[10px] font-extrabold text-white"
                     style={{ background: '#E5484D' }}
                   >
-                    {unreadSupportCount > 99 ? '99+' : unreadSupportCount}
+                    {count > 99 ? '99+' : count}
                   </span>
                 ) : null}
               </NavLink>

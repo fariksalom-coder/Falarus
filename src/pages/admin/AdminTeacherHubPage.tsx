@@ -5,6 +5,7 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../../lib/adminApi';
+import { getAdminAttention } from '../../api/admin';
 import { useSearchParams } from 'react-router-dom';
 import { CalendarDays, ClipboardCheck, FilePen, GraduationCap, Star, Wallet } from 'lucide-react';
 
@@ -37,10 +38,10 @@ export default function AdminTeacherHubPage() {
   // Belgichalar: qaysi tab ochiq bo'lishidan qat'i nazar — kutayotgan ariza va pul yechish so'rovlari.
   useEffect(() => {
     adminApi<{ counts: Record<string, number> }>('/teacher-applications?status=pending_review').then((r) => onReview(r.counts.pending_review ?? 0)).catch(() => {});
-    adminApi<{ totals: { status: string; n: number }[] }>('/teacher-money/withdrawals?status=requested')
-      .then((r) => onPayments(r.totals.find((x) => x.status === 'requested')?.n ?? 0)).catch(() => {});
     adminApi<{ pending: number }>('/teacher-revisions?status=pending').then((r) => onChanges(r.pending)).catch(() => {});
     adminApi<{ pending: number }>('/teacher-money/reviews?status=pending').then((r) => onReviews(r.pending)).catch(() => {});
+    // To'lovlar tabi: pul yechish arizalari + muammo bildirilgan yoki pul qaytarilishi kerak bo'lgan darslar.
+    getAdminAttention().then((a) => setBadges((b) => ({ ...b, payments: a.teachers.withdrawals + a.teachers.lessons }))).catch(() => {});
   }, [onReview, onPayments, onChanges, onReviews]);
 
   // Tab almashganda faqat `tab` qoladi — boshqa tabning filtrlari aralashmasin.

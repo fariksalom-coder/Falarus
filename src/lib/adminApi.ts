@@ -38,6 +38,10 @@ export async function adminApi<T = unknown>(
 
   const url = apiUrl(`/api/admin${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`);
   const res = await fetch(url, { ...rest, headers: mergedHeaders });
+  // Admin biror narsani o'zgartirdi (tasdiqladi, rad etdi…) — chap menyu belgichalari darhol qayta sanalsin.
+  if (res.ok && (rest.method ?? 'GET').toUpperCase() !== 'GET' && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('admin:attention'));
+  }
 
   if (res.status === 401) {
     clearAdminToken();
