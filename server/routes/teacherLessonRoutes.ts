@@ -214,10 +214,10 @@ const reviewShape = (r: any) => ({
   student_avatar_url: r.student_avatar_url || null,
 });
 
-/** Sharhlar bo'yicha o'rtacha baho teacher_profiles ga yoziladi (katalog saralashi uchun). */
+/** Sharhlar bo'yicha o'rtacha baho teacher_profiles ga yoziladi (katalog saralashi uchun). Tasdiqlangan sharh yo'q — 0 (ustun NOT NULL). */
 async function refreshRating(q: LessonQuery, teacherId: number) {
   await q(`UPDATE teacher_profiles p SET rating_avg = s.avg, rating_count = s.n, updated_at = now()
-    FROM (SELECT round(avg(overall), 1) AS avg, count(*) AS n FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND status = 'approved') s
+    FROM (SELECT coalesce(round(avg(overall), 1), 0) AS avg, count(*) AS n FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND status = 'approved') s
     WHERE p.user_id = $1`, [teacherId]);
 }
 

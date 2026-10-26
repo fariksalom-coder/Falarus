@@ -233,7 +233,7 @@ test('a review confirms the lesson (money reaches the teacher) and stays hidden 
   const t = await setup();
   try {
     await t.db.exec(`
-      ALTER TABLE teacher_profiles ADD COLUMN rating_avg numeric, ADD COLUMN rating_count integer, ADD COLUMN updated_at timestamptz;
+      ALTER TABLE teacher_profiles ADD COLUMN rating_avg numeric NOT NULL DEFAULT 0, ADD COLUMN rating_count integer NOT NULL DEFAULT 0, ADD COLUMN updated_at timestamptz;
       ALTER TABLE users ADD COLUMN avatar_url text;
       CREATE TABLE teacher_conversations (id bigserial PRIMARY KEY, trial_lesson_id bigint, teacher_user_id integer, student_user_id integer);
     `);
