@@ -1333,8 +1333,10 @@ async function startServer() {
   app.use('/api', createTeacherRoutes(supabase, authenticate));
 
   // Pullik darslar (Rahmat orqali, FalaRus video xonasida) va o'qituvchi balansi.
-  const { createTeacherLessonRoutes } = await import('./server/routes/teacherLessonRoutes');
+  const { createTeacherLessonRoutes, startLessonHousekeeping } = await import('./server/routes/teacherLessonRoutes');
   app.use('/api', createTeacherLessonRoutes(authenticate));
+  // O'tgan darslar 24 soatdan keyin o'zi yakunlanadi — o'qituvchi balansi hech kim sahifa ochmasa ham yangilanadi.
+  startLessonHousekeeping();
 
   // Dars materiallari (o'qituvchi kutubxonasi) va darsdagi doska.
   const { createTeacherMaterialRoutes } = await import('./server/routes/teacherMaterialRoutes');

@@ -25,6 +25,10 @@ export type TeacherLesson = {
   teacher_avatar_url?: string | null;
   /** O'quvchining shu darsga qo'ygan bahosi (sharh bo'lsa). */
   my_review_overall?: number | null;
+  /** Sharh holati: admin tasdiqlagandan keyin ochiq sahifaga chiqadi. */
+  my_review_status?: 'pending' | 'approved' | 'rejected' | null;
+  /** Rad etilgan bo'lsa — admin sababi. */
+  my_review_note?: string | null;
   student_first_name?: string;
   student_last_name?: string;
 };
@@ -36,7 +40,8 @@ export type TeacherBalance = {
   earned: number;
   entries: { id: number; kind: 'lesson' | 'withdrawal' | 'withdrawal_return' | 'adjustment'; amount_uzs: number; note: string; created_at: string }[];
   withdrawals: { id: number; amount_uzs: number; card_number: string; card_holder: string; status: 'requested' | 'paid' | 'rejected'; admin_note: string | null; requested_at: string; processed_at: string | null }[];
-  upcoming: { lessons: number; gross_uzs: number };
+  /** To'langan, hali yakunlanmagan darslar: `net_uzs` — o'qituvchi ulushi, `ended` — o'tib bo'lganlari (tasdiq kutilmoqda). */
+  upcoming: { lessons: number; gross_uzs: number; net_uzs: number; ended: number };
   min_withdrawal_uzs: number;
 };
 

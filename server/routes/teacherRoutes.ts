@@ -1088,7 +1088,28 @@ export function createTeacherRoutes(
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .limit(50);
       if (error) throw error;
-      res.json(await chatNames((data as any[]) ?? []));
+      const rows = await chatNames((data as any[]) ?? []);
+      // Ro'yxat uchun: oxirgi xabar va menga kelgan o'qilmaganlar soni.
+      const ids = rows.map((r: any) => Number(r.id));
+      const { data: recent } = ids.length
+        ? await supabase.from('teacher_conversation_messages').select('conversation_id, sender_user_id, content, created_at, read_at')
+          .in('conversation_id', ids).order('created_at', { ascending: false }).limit(1000)
+        : { data: [] };
+      const last = new Map<number, any>();
+      const unread = new Map<number, number>();
+      for (const m of (recent as any[]) ?? []) {
+        const c = Number(m.conversation_id);
+        if (!last.has(c)) last.set(c, m);
+        if (!m.read_at && Number(m.sender_user_id) !== userId) unread.set(c, (unread.get(c) ?? 0) + 1);
+      }
+      res.json(rows.map((r: any) => {
+        const m = last.get(Number(r.id));
+        return {
+          ...r,
+          last_message: m ? { content: String(m.content).slice(0, 140), mine: Number(m.sender_user_id) === userId, created_at: m.created_at } : null,
+          unread: unread.get(Number(r.id)) ?? 0,
+        };
+      }));
     } catch (e) {
       console.error('[GET /api/teacher-chat]', e);
       res.status(500).json({ error: 'Chatlar yuklanmadi' });
@@ -1114,6 +1135,9 @@ export function createTeacherRoutes(
         .order('created_at', { ascending: true })
         .limit(100);
       if (error) throw error;
+      // Ochilgan chat — suhbatdoshdan kelgan xabarlar o'qildi.
+      await supabase.from('teacher_conversation_messages').update({ read_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId).neq('sender_user_id', userId).is('read_at', null);
       res.json(data ?? []);
     } catch (e) {
       console.error('[GET /api/teacher-chat/:conversationId/messages]', e);

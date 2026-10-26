@@ -4,11 +4,12 @@
  * Saralash: tavsiya (daraja → reyting), narx, reyting, eng yaqin bo'sh vaqt.
  * Filtr: yo'nalish, hafta kuni va kun qismi (ustozning keyingi 7 kundagi bo'sh
  * vaqtlari bo'yicha, o'quvchi soatida). Sinov darsi yo'q — oddiy dars band qilinadi.
+ * «Chat» — ustozlar bilan yozishmalar (birinchi to'langan darsdan keyin ochiladi).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { CalendarClock, ChevronDown, Search, SlidersHorizontal, Users, X } from 'lucide-react';
+import { CalendarClock, ChevronDown, MessageCircle, Search, SlidersHorizontal, Users, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { listMarketTeachers, type MarketTeacher } from '../api/teacherMarket';
 import { getMyLessons, type TeacherLesson } from '../api/teacherLessons';
@@ -17,6 +18,8 @@ import { SPECIALIZATIONS } from '../../shared/teacherOnboarding';
 import TeacherCard from '../components/teacher/market/TeacherCard';
 import { WD_SHORT } from '../components/teacher/market/parts';
 import MyLessonsPanel from '../components/teacher/MyLessonsPanel';
+import StudentChatsPanel from '../components/teacher/StudentChatsPanel';
+import { getTeacherConversations } from '../api/teachers';
 import { teacherProfilePath } from '../constants/teacherPaths';
 
 type SortKey = 'recommended' | 'priceLow' | 'priceHigh' | 'rating' | 'soonest';
@@ -47,13 +50,18 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   );
 }
 
+type Tab = 'choose' | 'mine' | 'chat';
 const toggle = <T,>(set: Set<T>, v: T) => { const n = new Set(set); if (n.has(v)) n.delete(v); else n.add(v); return n; };
 
 export default function TeachersPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'mine' ? 'mine' : 'choose';
+  const tabParam = params.get('tab');
+  const tab: Tab = tabParam === 'mine' || tabParam === 'chat' ? tabParam : 'choose';
+  // Darsdan chiqqanda «Darslarim» shu dars bahosi bilan ochiladi (?tab=mine&baho=ID).
+  const askReview = Number(params.get('baho')) || null;
+  const [chatUnread, setChatUnread] = useState(0);
   const [teachers, setTeachers] = useState<MarketTeacher[] | null>(null);
   const [lessons, setLessons] = useState<TeacherLesson[] | null>(null);
   const [error, setError] = useState('');
@@ -76,7 +84,14 @@ export default function TeachersPage() {
   // To'lov yangi oynada — qaytib kelganda darslar ro'yxati yangilansin.
   useEffect(() => { window.addEventListener('focus', loadLessons); return () => window.removeEventListener('focus', loadLessons); }, [loadLessons]);
 
-  const setTab = (next: 'choose' | 'mine') => setParams(next === 'mine' ? { tab: 'mine' } : {}, { replace: true });
+  const setTab = (next: Tab) => setParams(next === 'choose' ? {} : { tab: next }, { replace: true });
+  // Tab belgichasi: chat ochilmagan bo'lsa ham o'qilmagan xabarlar soni ko'rinsin.
+  useEffect(() => {
+    if (!token || !user) return;
+    getTeacherConversations(token)
+      .then((list) => setChatUnread(list.filter((c) => c.student_user_id === user.id).reduce((n, c) => n + (c.unread ?? 0), 0)))
+      .catch(() => {});
+  }, [token, user]);
   const upcomingCount = lessons?.filter((l) => (l.status === 'paid' || l.status === 'disputed') && l.join.closesAt > Date.now()).length ?? 0;
   const filterCount = specs.size + days.size + parts.size;
 
@@ -121,19 +136,23 @@ export default function TeachersPage() {
           <p className="mt-1 text-sm font-medium text-app-text-muted">Rus tili ustozini tanlang va qulay vaqtga darsga yoziling</p>
         </header>
 
-        <div className="mb-4 grid grid-cols-2 gap-1.5 rounded-2xl bg-app-bg-muted p-1">
-          {([['choose', 'Ustoz tanlash', Users], ['mine', 'Darslarim', CalendarClock]] as const).map(([key, label, Icon]) => (
+        <div className="mb-4 grid grid-cols-3 gap-1.5 rounded-2xl bg-app-bg-muted p-1">
+          {([['choose', 'Ustoz tanlash', Users], ['mine', 'Darslarim', CalendarClock], ['chat', 'Chat', MessageCircle]] as const).map(([key, label, Icon]) => (
             <button key={key} type="button" onClick={() => setTab(key)} aria-pressed={tab === key}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-[13px] font-bold transition ${tab === key ? 'bg-app-surface text-app-primary-deep shadow-app-soft' : 'text-app-text-muted'}`}>
-              <Icon className="h-4 w-4" />{label}
+              className={`flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl px-1.5 text-[13px] font-bold transition sm:px-3 ${tab === key ? 'bg-app-surface text-app-primary-deep shadow-app-soft' : 'text-app-text-muted'}`}>
+              {/* 375 px da uchta tab sig'ishi uchun belgi faqat kengroq ekranda. */}
+              <Icon className="hidden h-4 w-4 shrink-0 min-[400px]:block" /><span className="truncate">{label}</span>
               {key === 'mine' && upcomingCount > 0 && <span className="rounded-full bg-app-primary-deep px-1.5 text-[11px] font-black text-white">{upcomingCount}</span>}
+              {key === 'chat' && chatUnread > 0 && <span className="rounded-full bg-[#EF4444] px-1.5 text-[11px] font-black text-white">{chatUnread > 99 ? '99+' : chatUnread}</span>}
             </button>
           ))}
         </div>
 
-        {tab === 'mine' ? (
+        {tab === 'chat' ? (
+          token && <StudentChatsPanel token={token} onUnread={setChatUnread} onFindTeacher={() => setTab('choose')} />
+        ) : tab === 'mine' ? (
           <div className="space-y-4">
-            {token && <MyLessonsPanel token={token} rows={lessons} reload={loadLessons} onFindTeacher={() => setTab('choose')} />}
+            {token && <MyLessonsPanel token={token} rows={lessons} reload={loadLessons} onFindTeacher={() => setTab('choose')} askReview={askReview} />}
           </div>
         ) : (
           <>

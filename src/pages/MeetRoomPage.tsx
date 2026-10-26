@@ -192,6 +192,9 @@ export default function MeetRoomPage() {
     );
   }
 
+  // O'quvchi pullik darsdan chiqqach «Darslarim» ga qaytadi — dars o'tgan bo'lsa baholash oynasi ochiladi.
+  const leaveTo = view.role === 'student' && lessonId ? `${TEACHERS_LIST_PATH}?tab=mine&baho=${lessonId}` : backTo;
+
   // Doska ochiq: material yoki oq varaq (oq varaqni material yo'q paytda ham ochish mumkin).
   const boardShown = Boolean(board && boardOpen(board));
   const chatOverBoard = boardShown && chatFocus && !desktop;
@@ -204,7 +207,7 @@ export default function MeetRoomPage() {
       <header className={`flex items-center gap-3 px-4 pt-[max(env(safe-area-inset-top,0px),10px)] ${boardVisible ? 'pb-1.5 max-lg:landscape:hidden lg:pb-3' : 'pb-3'}`}>
         <button
           type="button"
-          onClick={() => navigate(backTo)}
+          onClick={() => navigate(leaveTo)}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white transition active:scale-95"
           aria-label="Ortga"
         >
@@ -242,7 +245,7 @@ export default function MeetRoomPage() {
             room={room}
             onClose={() => send({ type: 'close' })}
             onOpenMaterials={() => setDrawerOpen(true)}
-            onBack={() => navigate(backTo)}
+            onBack={() => navigate(leaveTo)}
             call={{ compact: dockMode === 'pip', media, controls: jitsiControls, onChat: openChat }}
           />
           </div>
@@ -256,7 +259,7 @@ export default function MeetRoomPage() {
             email={view.email}
             isModerator={view.role === 'teacher'}
             subject={view.title}
-            onLeave={() => navigate(backTo, { replace: true })}
+            onLeave={() => navigate(leaveTo, { replace: true })}
             compact={dockMode === 'pip'}
             controlsRef={jitsiControls}
             onMediaState={setMedia}

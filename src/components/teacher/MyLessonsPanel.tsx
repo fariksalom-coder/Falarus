@@ -2,10 +2,12 @@
  * O'quvchi: «Mening darslarim». Tepada keyingi dars — qancha vaqt qolgani, «Darsga kirish»
  * (xona 10 daqiqa oldin ochiladi) va «Ustozga yozish». Pastda boshqa darslar: to'lanmagan
  * bronni to'lash, bekor qilish, dars bo'lmasa xabar berish, o'tgan darsni baholash.
+ * Baholanmagan o'tgan dars bo'lsa — eng tepada «Darsingiz qanday o'tdi?» kartasi; darsdan chiqqanda
+ * (`askReview`) baholash oynasi o'zi ochiladi. Sharh admin tekshirgandan keyin ochiq sahifaga chiqadi.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, CalendarClock, Loader2, MessageCircle, Star, Video, X } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle2, Loader2, MessageCircle, Star, Video, X } from 'lucide-react';
 import { LESSON_STATUS_LABEL, canCancel, canDispute } from '../../../shared/teacherLessons';
 import { cancelLesson, disputeLesson, fmtSum, roomOpen, type TeacherLesson } from '../../api/teacherLessons';
 import { openTeacherChat } from '../../api/teacherMarket';
@@ -16,6 +18,9 @@ import ReviewDialog from './market/ReviewDialog';
 import { TeacherPhoto, fullDate, hm } from './market/parts';
 
 const ACTIVE = new Set(['paid', 'disputed']);
+/** Shuncha kun ichida o'tgan baholanmagan dars tepada eslatiladi. */
+const REVIEW_PROMPT_DAYS = 14;
+const lessonEnded = (l: TeacherLesson, now: number) => l.status === 'completed' || (l.status === 'paid' && new Date(l.ends_at).getTime() <= now);
 const teacherName = (l: TeacherLesson) => `${l.teacher_first_name ?? ''} ${l.teacher_last_name ?? ''}`.trim() || 'Ustoz';
 
 /** «2 kun 3 soat», «1 soat 15 daqiqa», «12 daqiqa». */
@@ -27,8 +32,10 @@ function untilText(ms: number): string {
   return `${m} daqiqa`;
 }
 
-export default function MyLessonsPanel({ token, rows, reload, onFindTeacher }: {
+export default function MyLessonsPanel({ token, rows, reload, onFindTeacher, askReview = null }: {
   token: string; rows: TeacherLesson[] | null; reload: () => void; onFindTeacher: () => void;
+  /** Darsdan endigina chiqildi — shu dars o'tgan bo'lsa, baholash oynasi darhol ochiladi. */
+  askReview?: number | null;
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -37,6 +44,8 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher }: {
   const [error, setError] = useState('');
   const [chat, setChat] = useState<{ id: number; title: string } | null>(null);
   const [review, setReview] = useState<TeacherLesson | null>(null);
+  const [thanks, setThanks] = useState(false);
+  const asked = useRef(false);
 
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 30_000); return () => window.clearInterval(id); }, []);
 
@@ -48,6 +57,24 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher }: {
       past: list.filter((l) => !(ACTIVE.has(l.status) && l.join.closesAt > now) && l.status !== 'pending_payment'),
     };
   }, [rows, now]);
+
+  // Eng yaqinda o'tgan, hali baholanmagan dars.
+  const toReview = useMemo(() => (rows ?? [])
+    .filter((l) => lessonEnded(l, now) && l.my_review_overall == null && now - new Date(l.ends_at).getTime() < REVIEW_PROMPT_DAYS * 86_400_000)
+    .sort((a, b) => b.ends_at.localeCompare(a.ends_at))[0] ?? null, [rows, now]);
+
+  useEffect(() => {
+    if (asked.current || !askReview || !rows) return;
+    asked.current = true;
+    const l = rows.find((x) => x.id === askReview);
+    if (l && lessonEnded(l, Date.now()) && l.my_review_overall == null) setReview(l);
+  }, [askReview, rows]);
+
+  useEffect(() => {
+    if (!thanks) return;
+    const t = window.setTimeout(() => setThanks(false), 5000);
+    return () => window.clearTimeout(t);
+  }, [thanks]);
 
   const act = async (id: number, fn: () => Promise<unknown>) => {
     setBusy(id); setError('');
@@ -74,6 +101,27 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher }: {
   return (
     <div className="space-y-4">
       {error && <p role="alert" className="rounded-2xl bg-app-danger-bg px-3 py-2 text-sm font-semibold text-app-danger">{error}</p>}
+      {thanks && (
+        <p role="status" className="flex items-center gap-2 rounded-2xl bg-app-success-bg px-4 py-3 text-sm font-semibold text-app-success">
+          <CheckCircle2 className="h-5 w-5 shrink-0" />Rahmat! Bahoingiz yuborildi — tekshiruvdan keyin ustoz sahifasida chiqadi.
+        </p>
+      )}
+
+      {toReview && (
+        <section className="rounded-[24px] border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-app-soft">
+          <div className="flex items-center gap-3">
+            <TeacherPhoto url={toReview.teacher_avatar_url ?? null} name={teacherName(toReview)} className="h-12 w-12 shrink-0 rounded-2xl" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-black text-app-text">Darsingiz qanday oʻtdi?</p>
+              <p className="truncate text-sm text-app-text-muted">{teacherName(toReview)} · {fullDate(toReview.starts_at)}</p>
+            </div>
+          </div>
+          <button type="button" onClick={() => setReview(toReview)}
+            className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 text-[15px] font-black text-white shadow-[0_14px_30px_rgba(245,158,11,0.28)] transition hover:bg-amber-600 active:scale-[0.98]">
+            <Star className="h-5 w-5 fill-white" />Baho qoʻyish
+          </button>
+        </section>
+      )}
 
       {next && (() => {
         const open = roomOpen(next, now);
@@ -145,7 +193,18 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher }: {
               return (
                 <LessonRow key={l.id} l={l}>
                   {ended && (l.my_review_overall != null ? (
-                    <span className="inline-flex min-h-11 items-center gap-1.5 text-[13px] font-bold text-app-text-muted"><Star className="h-4 w-4 fill-amber-400 text-amber-400" />Bahoyingiz: {Number(l.my_review_overall).toFixed(1).replace('.', ',')}</span>
+                    <>
+                      <span className="inline-flex min-h-11 items-center gap-1.5 text-[13px] font-bold text-app-text-muted">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />Bahoyingiz: {Number(l.my_review_overall).toFixed(1).replace('.', ',')}
+                        {l.my_review_status === 'pending' && <span className="rounded-full bg-app-bg-muted px-2 py-0.5 text-[11px] font-bold text-app-text-secondary">tekshiruvda</span>}
+                      </span>
+                      {l.my_review_status === 'rejected' && (
+                        <span className="flex w-full flex-wrap items-center gap-2 rounded-xl bg-app-danger-bg px-3 py-2 text-[12.5px] font-semibold text-app-danger">
+                          Sharh eʼlon qilinmadi{l.my_review_note ? `: ${l.my_review_note}` : ''}
+                          <button type="button" onClick={() => setReview(l)} className="min-h-9 rounded-lg bg-white px-2.5 font-bold text-app-text">Qayta yozish</button>
+                        </span>
+                      )}
+                    </>
                   ) : (
                     <button type="button" onClick={() => setReview(l)} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-amber-50 px-3 text-[13px] font-black text-amber-800"><Star className="h-4 w-4" />Baho qoldirish</button>
                   ))}
@@ -166,7 +225,7 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher }: {
       )}
 
       {chat && user && <TeacherChatModal token={token} conversationId={chat.id} currentUserId={user.id} title={chat.title} onClose={() => setChat(null)} />}
-      {review && <ReviewDialog token={token} lessonId={review.id} teacherName={teacherName(review)} onClose={() => setReview(null)} onDone={() => { setReview(null); reload(); }} />}
+      {review && <ReviewDialog token={token} lessonId={review.id} teacherName={teacherName(review)} onClose={() => setReview(null)} onDone={() => { setReview(null); setThanks(true); reload(); }} />}
     </div>
   );
 }

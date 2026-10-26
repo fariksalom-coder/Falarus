@@ -1,18 +1,19 @@
 /**
  * O'QITUVCHILAR — admin panelidagi yagona bo'lim (2026-10-23 dan eski 5 ta
- * sahifa o'rniga): tekshiruv → katalog tumbleri → darslar jadvali → to'lovlar.
+ * sahifa o'rniga): tekshiruv → katalog tumbleri → darslar jadvali → to'lovlar → o'quvchi sharhlari.
  * Tab URL'da (?tab=…), shuning uchun havola bilan aynan kerakli joy ochiladi.
  */
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../../lib/adminApi';
 import { useSearchParams } from 'react-router-dom';
-import { CalendarDays, ClipboardCheck, FilePen, GraduationCap, Wallet } from 'lucide-react';
+import { CalendarDays, ClipboardCheck, FilePen, GraduationCap, Star, Wallet } from 'lucide-react';
 
 const ReviewTab = lazy(() => import('./teachers/ReviewTab'));
 const CatalogTab = lazy(() => import('./teachers/CatalogTab'));
 const ScheduleTab = lazy(() => import('./teachers/ScheduleTab'));
 const PaymentsTab = lazy(() => import('./teachers/PaymentsTab'));
 const ChangesTab = lazy(() => import('./teachers/ChangesTab'));
+const ReviewsTab = lazy(() => import('./teachers/ReviewsTab'));
 
 const TABS = [
   { key: 'review', label: 'Tekshiruv', icon: ClipboardCheck },
@@ -20,6 +21,7 @@ const TABS = [
   { key: 'changes', label: 'Oʻzgarishlar', icon: FilePen },
   { key: 'lessons', label: 'Darslar', icon: CalendarDays },
   { key: 'payments', label: 'Toʻlovlar', icon: Wallet },
+  { key: 'reviews', label: 'Sharhlar', icon: Star },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 
@@ -30,6 +32,7 @@ export default function AdminTeacherHubPage() {
   const onReview = useCallback((n: number) => setBadges((b) => ({ ...b, review: n })), []);
   const onPayments = useCallback((n: number) => setBadges((b) => ({ ...b, payments: n })), []);
   const onChanges = useCallback((n: number) => setBadges((b) => ({ ...b, changes: n })), []);
+  const onReviews = useCallback((n: number) => setBadges((b) => ({ ...b, reviews: n })), []);
 
   // Belgichalar: qaysi tab ochiq bo'lishidan qat'i nazar — kutayotgan ariza va pul yechish so'rovlari.
   useEffect(() => {
@@ -37,7 +40,8 @@ export default function AdminTeacherHubPage() {
     adminApi<{ totals: { status: string; n: number }[] }>('/teacher-money/withdrawals?status=requested')
       .then((r) => onPayments(r.totals.find((x) => x.status === 'requested')?.n ?? 0)).catch(() => {});
     adminApi<{ pending: number }>('/teacher-revisions?status=pending').then((r) => onChanges(r.pending)).catch(() => {});
-  }, [onReview, onPayments, onChanges]);
+    adminApi<{ pending: number }>('/teacher-money/reviews?status=pending').then((r) => onReviews(r.pending)).catch(() => {});
+  }, [onReview, onPayments, onChanges, onReviews]);
 
   // Tab almashganda faqat `tab` qoladi — boshqa tabning filtrlari aralashmasin.
   const go = (key: TabKey) => setParams({ tab: key }, { replace: false });
@@ -46,7 +50,7 @@ export default function AdminTeacherHubPage() {
     <div className="max-w-7xl space-y-5">
       <h1 className="text-2xl font-semibold text-app-text">Oʻqituvchilar</h1>
 
-      <nav className="grid grid-cols-2 gap-2 lg:grid-cols-5" aria-label="Oʻqituvchilar boʻlimlari">
+      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" aria-label="Oʻqituvchilar boʻlimlari">
         {TABS.map((t) => {
           const on = tab === t.key;
           const n = badges[t.key] ?? 0;
@@ -67,6 +71,7 @@ export default function AdminTeacherHubPage() {
           : tab === 'teachers' ? <CatalogTab />
           : tab === 'changes' ? <ChangesTab onCounts={onChanges} />
           : tab === 'lessons' ? <ScheduleTab />
+          : tab === 'reviews' ? <ReviewsTab onCounts={onReviews} />
           : <PaymentsTab onCounts={onPayments} />}
       </Suspense>
     </div>

@@ -228,3 +228,65 @@ test('the video room password is the same for both participants and differs betw
   assert.notEqual(a, meetRoomPassword('falarus-dars-bbb'));
   assert.match(a, /^[\w-]{16}$/);
 });
+
+test('a review confirms the lesson (money reaches the teacher) and stays hidden until an admin approves it', async () => {
+  const t = await setup();
+  try {
+    await t.db.exec(`
+      ALTER TABLE teacher_profiles ADD COLUMN rating_avg numeric, ADD COLUMN rating_count integer, ADD COLUMN updated_at timestamptz;
+      ALTER TABLE users ADD COLUMN avatar_url text;
+      CREATE TABLE teacher_conversations (id bigserial PRIMARY KEY, trial_lesson_id bigint, teacher_user_id integer, student_user_id integer);
+    `);
+    await t.db.exec(await readFile('db/migrations/215_teacher_market_reviews.sql', 'utf8'));
+    await t.db.exec(await readFile('db/migrations/221_teacher_review_moderation.sql', 'utf8'));
+    const slots = upcomingSlotStarts(SCHEDULE, Date.now() + 2 * 3600_000, 2);
+    const lessonId = await bookAndPay(t, slots[0], 2);
+    const scores = { support: 5, honesty: 5, progress: 4, preparation: 4 };
+
+    t.as(2);
+    assert.equal((await t.call('POST', `/lessons/${lessonId}/review`, { scores, comment: 'Zoʻr' })).status, 409, 'not before the lesson');
+    await shift(t, lessonId, 70);
+    const sent = await t.call('POST', `/lessons/${lessonId}/review`, { scores, comment: 'Zoʻr dars' });
+    assert.equal(sent.status, 200, JSON.stringify(sent.data));
+    assert.equal(sent.data.status, 'pending');
+
+    // The review is the student's confirmation: the lesson is completed and the teacher is paid.
+    const l = (await t.q(`SELECT status, completed_by, teacher_amount_uzs FROM teacher_lessons WHERE id = $1`, [lessonId])).rows[0];
+    assert.equal(l.status, 'completed');
+    assert.equal(l.completed_by, 'student');
+    t.as(1);
+    assert.equal((await t.call('GET', '/teacher/balance')).data.balance, l.teacher_amount_uzs);
+
+    // Not public and not in the rating yet; the student sees it as pending.
+    assert.equal((await t.call('GET', '/market/teachers/1/reviews')).data.length, 0);
+    t.as(2);
+    const mine = (await t.call('GET', '/my-lessons')).data.find((x: any) => x.id === lessonId);
+    assert.equal(mine.my_review_status, 'pending');
+
+    const list = await t.call('GET', '/admin/teacher-money/reviews?status=pending');
+    assert.equal(list.data.pending, 1);
+    const reviewId = list.data.rows[0].id;
+    assert.equal(list.data.rows[0].comment, 'Zoʻr dars');
+    assert.equal((await t.call('POST', `/admin/teacher-money/reviews/${reviewId}/decision`, { decision: 'reject', note: '' })).status, 400, 'a reason is required');
+    assert.equal((await t.call('POST', `/admin/teacher-money/reviews/${reviewId}/decision`, { decision: 'reject', note: 'Shaxsiy maʼlumot bor' })).status, 200);
+    assert.equal((await t.call('POST', `/admin/teacher-money/reviews/${reviewId}/decision`, { decision: 'approve' })).status, 409, 'already decided');
+    const rejected = (await t.call('GET', '/my-lessons')).data.find((x: any) => x.id === lessonId);
+    assert.equal(rejected.my_review_status, 'rejected');
+    assert.equal(rejected.my_review_note, 'Shaxsiy maʼlumot bor');
+
+    // Editing sends it back for review; approval makes it public and counts it in the rating.
+    assert.equal((await t.call('POST', `/lessons/${lessonId}/review`, { scores, comment: 'Yaxshi dars' })).status, 200);
+    assert.equal((await t.call('GET', '/admin/teacher-money/reviews?status=pending')).data.pending, 1);
+    assert.equal((await t.call('POST', `/admin/teacher-money/reviews/${reviewId}/decision`, { decision: 'approve' })).status, 200);
+    const pub = (await t.call('GET', '/market/teachers/1/reviews')).data;
+    assert.equal(pub.length, 1);
+    assert.equal(pub[0].comment, 'Yaxshi dars');
+    const p = (await t.q(`SELECT rating_avg, rating_count FROM teacher_profiles WHERE user_id = 1`)).rows[0];
+    assert.equal(Number(p.rating_count), 1);
+    assert.equal(Number(p.rating_avg), 4.5);
+    const n = (await t.q(`SELECT type FROM teacher_notifications WHERE recipient_user_id = 1 ORDER BY id DESC LIMIT 1`)).rows[0];
+    assert.equal(n.type, 'lesson_review');
+  } finally {
+    await t.close();
+  }
+});

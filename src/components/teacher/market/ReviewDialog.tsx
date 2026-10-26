@@ -70,6 +70,7 @@ export default function ReviewDialog({ token, lessonId, teacherName, onClose, on
           className="mt-4 flex h-12 w-full items-center justify-center rounded-2xl bg-app-primary-deep text-base font-black text-white transition active:scale-[0.98] disabled:opacity-50">
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Bahoni yuborish'}
         </button>
+        <p className="mt-2 text-center text-xs text-app-text-secondary">Sharh maʼmuriyat tekshirgandan keyin ustoz sahifasida chiqadi</p>
       </motion.div>
     </div>,
     document.body,

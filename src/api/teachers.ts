@@ -143,6 +143,10 @@ export type TeacherConversation = {
   student_avatar_url?: string | null;
   teacher_name?: string;
   teacher_avatar_url?: string | null;
+  /** Oxirgi xabar (ro'yxatda ko'rsatish uchun). */
+  last_message?: { content: string; mine: boolean; created_at: string } | null;
+  /** Menga kelgan, hali o'qilmagan xabarlar. */
+  unread?: number;
 };
 
 /** Chat xabari. */

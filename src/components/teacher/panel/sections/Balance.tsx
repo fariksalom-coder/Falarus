@@ -23,7 +23,8 @@ const TEXT = {
     join: 'Darsga kirish', done: 'Dars oʻtdi', history: 'Balans tarixi', withdrawals: 'Pul yechish arizalari',
     wStatus: { requested: 'Koʻrib chiqilmoqda', paid: 'Oʻtkazildi', rejected: 'Rad etildi' },
     kind: { lesson: 'Dars', withdrawal: 'Yechish', withdrawal_return: 'Qaytarildi', adjustment: 'Tuzatish' },
-    auto: 'Belgilanmasa, dars tugagach 24 soatda avtomatik yakunlanadi.',
+    auto: 'Dars oʻquvchi baho qoʻyganda yoki siz «Dars oʻtdi» ni bosganda balansga oʻtadi. Aks holda tugagach 24 soatda avtomatik.',
+    pendingNet: 'Komissiya ayirilgan, sizga tushadigan', awaiting: (n: number) => `${n} ta dars oʻtdi — tasdiq kutilmoqda`,
   },
   ru: {
     title: 'Баланс и уроки', subtitle: 'Уроки, оплаченные через платформу. После урока на баланс зачисляется цена − комиссия.',
@@ -33,8 +34,9 @@ const TEXT = {
     lessons: 'Платные уроки', none: 'Платных уроков пока нет. Ученики выбирают время в вашем профиле и оплачивают.',
     join: 'Войти в урок', done: 'Урок прошёл', history: 'История баланса', withdrawals: 'Заявки на вывод',
     wStatus: { requested: 'На рассмотрении', paid: 'Переведено', rejected: 'Отклонено' },
+    pendingNet: 'За вычетом комиссии, вам', awaiting: (n: number) => `Проведено ${n} — ждёт подтверждения`,
     kind: { lesson: 'Урок', withdrawal: 'Вывод', withdrawal_return: 'Возврат', adjustment: 'Корректировка' },
-    auto: 'Если не отметить, урок закроется автоматически через 24 часа после окончания.',
+    auto: 'Урок зачисляется на баланс, когда ученик ставит оценку или вы нажимаете «Урок прошёл». Иначе — автоматически через 24 часа.',
   },
 };
 
@@ -96,7 +98,9 @@ export default function Balance() {
         </Card>
         <Card className="p-[18px]">
           <p className="text-[13px] font-semibold text-app-text-muted">{t.upcoming(bal.upcoming.lessons)}</p>
-          <p className="mt-1.5 text-[26px] font-extrabold tabular-nums text-app-text lg:text-[28px]">{fmtSum(bal.upcoming.gross_uzs)}</p>
+          <p className="mt-1.5 text-[26px] font-extrabold tabular-nums text-app-text lg:text-[28px]">{fmtSum(bal.upcoming.net_uzs ?? bal.upcoming.gross_uzs)}</p>
+          <p className="mt-1 text-[12px] font-medium text-app-text-muted">{t.pendingNet}</p>
+          {bal.upcoming.ended > 0 && <p className="mt-1.5 text-[12.5px] font-semibold text-[#B45309]">{t.awaiting(bal.upcoming.ended)}</p>}
         </Card>
       </div>
 

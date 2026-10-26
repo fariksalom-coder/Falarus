@@ -5,7 +5,11 @@
  * rahmatMulticardPayment.service), darsga FalaRus video xonasidan kiradi,
  * bekor qiladi yoki muammo bildiradi.
  * O'qituvchi: darslar ro'yxati, «Dars o'tdi», balans va pul yechish arizasi.
- * Admin: arizalarni to'langan/rad deb belgilaydi, munozarali darslarni hal qiladi.
+ * Admin: arizalarni to'langan/rad deb belgilaydi, munozarali darslarni hal qiladi, sharhlarni tekshiradi.
+ *
+ * Dars qachon yakunlanadi (pul o'qituvchi balansiga o'tadi): o'qituvchi «Dars o'tdi» ni bosganda,
+ * o'quvchi sharh qoldirganda (dars bo'lganini tasdiqlagani) yoki tugaganidan 24 soat o'tib —
+ * fon vazifasi (`startLessonHousekeeping`) har 10 daqiqada tekshiradi.
  *
  * Pul harakati (yakunlash, yechish, qaytarish) tranzaksiyada va jurnalga yoziladi;
  * dars uchun yozuv bitta (lesson_id unikal) — ikki marta to'lanmaydi.
@@ -75,7 +79,7 @@ export async function platformLessonsDone(q: LessonQuery, teacherId: number): Pr
 }
 
 /** To'lanmay qolgan bronni bo'shatish va muddati o'tgan darslarni avtomatik yakunlash. */
-async function housekeeping(q: LessonQuery, tx: NonNullable<LessonDeps['tx']>, scope: { teacherId?: number; studentId?: number } = {}) {
+export async function housekeeping(q: LessonQuery, tx: NonNullable<LessonDeps['tx']>, scope: { teacherId?: number; studentId?: number } = {}) {
   await q(`UPDATE teacher_lessons SET status = 'expired', updated_at = now()
     WHERE status = 'pending_payment' AND created_at < now() - ($1::int * interval '1 minute')`, [PENDING_HOLD_MINUTES]);
   const due = await q(`SELECT id FROM teacher_lessons WHERE status = 'paid' AND ends_at < now() - ($1::int * interval '1 hour')
@@ -107,6 +111,19 @@ export async function completeLesson(tx: NonNullable<LessonDeps['tx']>, lessonId
       `Balansingizga ${split.teacher.toLocaleString('ru-RU')} soʻm yozildi (komissiya ${split.percent}%).`, lessonId);
     return { lesson_number: n, ...split };
   });
+}
+
+/**
+ * Fon vazifasi: to'lanmagan bronlarni bo'shatadi va muddati o'tgan darslarni yakunlaydi.
+ * Avval bu faqat kimdir darslar ro'yxatini ochganda ishlardi — o'qituvchi balansi kutib qolardi.
+ */
+export function startLessonHousekeeping(everyMs = 10 * 60_000) {
+  if (!poolQuery || !poolTx) return null;
+  const run = () => housekeeping(poolQuery!, poolTx!).catch((e) => console.error('[lessons] housekeeping', e));
+  const timer = setInterval(run, everyMs);
+  timer.unref();
+  setTimeout(run, 30_000).unref();
+  return timer;
 }
 
 /** Rahmat/Click/admin to'lovni tasdiqlaganda (teacherMarketplace.service orqali). */
@@ -200,7 +217,7 @@ const reviewShape = (r: any) => ({
 /** Sharhlar bo'yicha o'rtacha baho teacher_profiles ga yoziladi (katalog saralashi uchun). */
 async function refreshRating(q: LessonQuery, teacherId: number) {
   await q(`UPDATE teacher_profiles p SET rating_avg = s.avg, rating_count = s.n, updated_at = now()
-    FROM (SELECT round(avg(overall), 1) AS avg, count(*) AS n FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND NOT hidden) s
+    FROM (SELECT round(avg(overall), 1) AS avg, count(*) AS n FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND status = 'approved') s
     WHERE p.user_id = $1`, [teacherId]);
 }
 
@@ -327,9 +344,9 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     if (!r) throw new HttpError(404, 'Oʻqituvchi topilmadi');
     const busy = await busyStarts(q, [id]);
     const criteria = (await q(`SELECT ${REVIEW_CRITERIA.map((c) => `round(avg(${c.key}), 1) AS ${c.key}`).join(', ')}, count(*) AS n
-      FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND NOT hidden`, [id])).rows[0];
+      FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND status = 'approved'`, [id])).rows[0];
     const reviews = (await q(`SELECT ${REVIEW_COLS} FROM teacher_lesson_reviews r JOIN users u ON u.id = r.student_user_id
-      WHERE r.teacher_user_id = $1 AND NOT r.hidden ORDER BY r.created_at DESC LIMIT 6`, [id])).rows;
+      WHERE r.teacher_user_id = $1 AND r.status = 'approved' ORDER BY r.created_at DESC LIMIT 6`, [id])).rows;
     // Hujjat fayllari ko'rsatilmaydi — faqat nomi va yili.
     const certificates = (Array.isArray(r.certificates) ? r.certificates : []).map((c: any) => ({
       title: String(c?.title ?? ''), institution: String(c?.institution ?? c?.issuer ?? ''), year: c?.year_to ?? (Number(c?.year) || null),
@@ -352,7 +369,7 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     const offset = Math.max(0, Number(req.query.offset) || 0);
     const limit = Math.min(30, Math.max(1, Number(req.query.limit) || 10));
     const rows = (await q(`SELECT ${REVIEW_COLS} FROM teacher_lesson_reviews r JOIN users u ON u.id = r.student_user_id
-      WHERE r.teacher_user_id = $1 AND NOT r.hidden ORDER BY r.created_at DESC OFFSET $2 LIMIT $3`, [Number(req.params.id), offset, limit])).rows;
+      WHERE r.teacher_user_id = $1 AND r.status = 'approved' ORDER BY r.created_at DESC OFFSET $2 LIMIT $3`, [Number(req.params.id), offset, limit])).rows;
     res.json(rows.map(reviewShape));
   }));
 
@@ -366,9 +383,13 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     res.json({ conversation_id: await ensureConversation(q, teacherId, me) });
   }));
 
-  /** Sharh: dars o'tgandan keyin (yakunlangan yoki vaqti tugagan), har darsga bittadan; qayta yozsa yangilanadi. */
+  /**
+   * Sharh: dars o'tgandan keyin (yakunlangan yoki vaqti tugagan), har darsga bittadan; qayta yozsa yangilanadi.
+   * Sharh admin tasdiqlagandan keyin ochiq sahifaga chiqadi. Sharh qoldirish — dars bo'lganini tasdiqlash:
+   * dars hali yakunlanmagan bo'lsa shu zahoti yakunlanadi va pul o'qituvchi balansiga o'tadi.
+   */
   router.post('/lessons/:id/review', authenticate, h(async (req, res) => {
-    const { q } = db();
+    const { q, tx } = db();
     const { l, role } = await participant(req, Number(req.params.id));
     if (role !== 'student') throw new HttpError(403, 'Faqat oʻquvchi');
     const ended = l.status === 'completed' || (l.status === 'paid' && new Date(l.ends_at).getTime() <= Date.now());
@@ -379,11 +400,13 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     await q(`INSERT INTO teacher_lesson_reviews (lesson_id, teacher_user_id, student_user_id, support, honesty, progress, preparation, overall, comment)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       ON CONFLICT (lesson_id) DO UPDATE SET support = EXCLUDED.support, honesty = EXCLUDED.honesty, progress = EXCLUDED.progress,
-        preparation = EXCLUDED.preparation, overall = EXCLUDED.overall, comment = EXCLUDED.comment, updated_at = now()`,
+        preparation = EXCLUDED.preparation, overall = EXCLUDED.overall, comment = EXCLUDED.comment, updated_at = now(),
+        status = 'pending', moderation_note = NULL, moderated_at = NULL, moderated_by = NULL`,
     [l.id, l.teacher_user_id, l.student_user_id, scores.support, scores.honesty, scores.progress, scores.preparation, reviewOverall(scores), comment]);
+    // O'zgartirilgan sharh qayta tekshiruvga tushadi — avval tasdiqlangani reytingdan chiqadi.
     await refreshRating(q, l.teacher_user_id);
-    await notify(q, l.teacher_user_id, 'lesson_review', 'Yangi sharh', `Oʻquvchi darsingizni ${reviewOverall(scores)} ga baholadi.`, l.id);
-    res.json({ ok: true, overall: reviewOverall(scores) });
+    if (l.status === 'paid') await completeLesson(tx, l.id, 'student');
+    res.json({ ok: true, overall: reviewOverall(scores), status: 'pending' });
   }));
 
   router.get('/my-lessons', authenticate, h(async (req, res) => {
@@ -391,7 +414,7 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     const id = Number(req.userId);
     await housekeeping(q, tx, { studentId: id });
     const rows = (await q(`SELECT ${LESSON_COLS}, p.first_name AS teacher_first_name, p.last_name AS teacher_last_name, p.avatar_url AS teacher_avatar_url,
-        r.overall AS my_review_overall
+        r.overall AS my_review_overall, r.status AS my_review_status, r.moderation_note AS my_review_note
       FROM teacher_lessons l JOIN teacher_profiles p ON p.user_id = l.teacher_user_id
       LEFT JOIN teacher_lesson_reviews r ON r.lesson_id = l.id
       WHERE l.student_user_id = $1 AND l.status <> 'expired' ORDER BY l.starts_at DESC LIMIT 100`, [id])).rows;
@@ -506,13 +529,25 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
       balanceOf(q, id),
       q(`SELECT id, kind, amount_uzs, lesson_id, withdrawal_id, note, created_at FROM teacher_balance_entries WHERE teacher_user_id = $1 ORDER BY id DESC LIMIT 50`, [id]),
       q(`SELECT id, amount_uzs, card_number, card_holder, status, admin_note, requested_at, processed_at FROM teacher_withdrawals WHERE teacher_user_id = $1 ORDER BY id DESC LIMIT 20`, [id]),
-      q(`SELECT coalesce(sum(price_uzs), 0)::bigint AS gross, count(*)::int AS n FROM teacher_lessons WHERE teacher_user_id = $1 AND status IN ('paid', 'disputed')`, [id]),
+      q(`SELECT price_uzs, ends_at FROM teacher_lessons WHERE teacher_user_id = $1 AND status IN ('paid', 'disputed') ORDER BY starts_at`, [id]),
     ]);
+    // Kutilayotgan pul — o'qituvchi ulushi (komissiya ayirilgan), darslar navbati bo'yicha stavka bilan.
+    const done = await platformLessonsDone(q, id);
+    const tiers = (await settings(q)).commission_tiers;
+    const now = Date.now();
+    let net = 0;
+    let gross = 0;
+    let ended = 0;
+    upcoming.rows.forEach((l, i) => {
+      gross += Number(l.price_uzs);
+      net += splitLessonPrice(Number(l.price_uzs), done + 1 + i, tiers).teacher;
+      if (new Date(l.ends_at).getTime() <= now) ended += 1;
+    });
     res.json({
       ...bal,
       entries: entries.rows,
       withdrawals: withdrawals.rows.map((w) => ({ ...w, card_number: maskCard(w.card_number) })),
-      upcoming: { lessons: upcoming.rows[0].n, gross_uzs: Number(upcoming.rows[0].gross) },
+      upcoming: { lessons: upcoming.rows.length, gross_uzs: gross, net_uzs: net, ended },
       min_withdrawal_uzs: MIN_WITHDRAWAL_UZS,
     });
   }));
@@ -657,6 +692,44 @@ export function createAdminTeacherMoneyRoutes(deps: LessonDeps = {}): Router {
         count(*) FILTER (WHERE status = 'disputed' OR (refund_due AND refunded_at IS NULL))::int AS attention
       FROM teacher_lessons`)).rows[0];
     res.json({ rows, sums });
+  }));
+
+  /* ───────────── sharhlar moderatsiyasi ───────────── */
+
+  /** Sharhlar ro'yxati: holat bo'yicha; `pending` — tekshiruv kutayotganlar soni (belgicha uchun). */
+  router.get('/reviews', h(async (req, res) => {
+    const { q } = db();
+    const status = ['pending', 'approved', 'rejected'].includes(String(req.query.status)) ? String(req.query.status) : 'pending';
+    const rows = (await q(`SELECT r.id, r.lesson_id, r.teacher_user_id, r.student_user_id, r.support, r.honesty, r.progress, r.preparation,
+        r.overall, r.comment, r.status, r.moderation_note, r.moderated_at, r.moderated_by, r.created_at, r.updated_at,
+        l.starts_at, u.first_name AS student_first_name, u.last_name AS student_last_name, u.phone AS student_phone,
+        p.first_name AS teacher_first_name, p.last_name AS teacher_last_name, p.avatar_url AS teacher_avatar_url
+      FROM teacher_lesson_reviews r
+      JOIN teacher_lessons l ON l.id = r.lesson_id
+      JOIN users u ON u.id = r.student_user_id
+      JOIN teacher_profiles p ON p.user_id = r.teacher_user_id
+      WHERE r.status = $1 ORDER BY r.updated_at ${status === 'pending' ? 'ASC' : 'DESC'} LIMIT 100`, [status])).rows;
+    const pending = Number((await q(`SELECT count(*)::int AS n FROM teacher_lesson_reviews WHERE status = 'pending'`)).rows[0].n);
+    res.json({ rows: rows.map((r) => ({ ...r, overall: Number(r.overall) })), pending });
+  }));
+
+  /** Tasdiqlash — sharh ochiq sahifaga chiqadi, reyting yangilanadi, ustozga bildirishnoma; rad etish — sabab o'quvchiga ko'rinadi. */
+  router.post('/reviews/:id/decision', h(async (req, res) => {
+    const { q } = db();
+    const decision = String(req.body?.decision);
+    if (decision !== 'approve' && decision !== 'reject') throw new HttpError(400, 'Qaror notoʻgʻri');
+    const note = String(req.body?.note ?? '').trim().slice(0, 500);
+    if (decision === 'reject' && note.length < 3) throw new HttpError(400, 'Rad etish sababini yozing');
+    const r = (await q(`UPDATE teacher_lesson_reviews SET status = $2, moderation_note = $3, moderated_at = now(), moderated_by = $4, hidden = $5
+      WHERE id = $1 AND status = 'pending' RETURNING id, lesson_id, teacher_user_id, student_user_id, overall`,
+    [Number(req.params.id), decision === 'approve' ? 'approved' : 'rejected', note || null, actor(req), decision === 'reject'])).rows[0];
+    if (!r) throw new HttpError(409, 'Sharh allaqachon koʻrib chiqilgan');
+    await refreshRating(q, r.teacher_user_id);
+    // Rad etilgani o'quvchiga «Darslarim» da sabab bilan ko'rinadi (my_review_note).
+    if (decision === 'approve') {
+      await notify(q, r.teacher_user_id, 'lesson_review', 'Yangi sharh', `Oʻquvchi darsingizni ${Number(r.overall)} ga baholadi.`, Number(r.lesson_id));
+    }
+    res.json({ ok: true });
   }));
 
   /** Munozarali darsni hal qilish: complete — o'qituvchiga to'lanadi; cancel — o'quvchiga qaytariladi. */
