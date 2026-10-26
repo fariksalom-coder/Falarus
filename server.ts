@@ -180,8 +180,9 @@ const contentSecurityPolicy = [
   "font-src 'self' data: https://fonts.gstatic.com",
   `connect-src 'self' https: ${MEET_ORIGIN.replace('https://', 'wss://')}`,
   // `'self'` — o'qituvchilar lendingi (`/oqituvchilarga/`) bosh sahifadagi
-  // oynacha ichida ochiladi.
-  `frame-src 'self' https://accounts.google.com ${MEET_ORIGIN}`,
+  // oynacha ichida ochiladi. `blob:` — admin panelida PDF chek sahifaning o'zida
+  // ko'rsatiladi (fayl brauzer xotirasidan, tashqi manzil emas).
+  `frame-src 'self' blob: https://accounts.google.com ${MEET_ORIGIN}`,
   // HEIC dekoderi blob: worker ichida ishlaydi; 'self' — PWA service worker.
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",

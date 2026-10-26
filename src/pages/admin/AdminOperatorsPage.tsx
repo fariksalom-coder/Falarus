@@ -3,6 +3,7 @@ import { adminApi, getAdminToken } from '../../lib/adminApi';
 import { apiUrl } from '../../api';
 import OperatorSalaryReport from '../../components/admin/OperatorSalaryReport';
 import SalesHeadAdmin from '../../components/admin/SalesHeadAdmin';
+import ReceiptPreview from '../../components/admin/ReceiptPreview';
 const base = '/operator-bot';
 const fmt = (x: any) => x ? new Date(x).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' }) : '—';
 const names: Record<string, string> = { pending: 'Tekshiruvda', approved: 'Tasdiqlangan', rejected: 'Rad etilgan' };
@@ -81,6 +82,7 @@ export default function AdminOperatorsPage() {
       <p>Operator: {r.operator_name}<br/>To‘lov #{r.payment_id}: {r.amount} {r.currency} · {r.tariff_type}<br/>To‘lov holati: {r.payment_status} · {fmt(r.paid_at)}</p>
       <p>So‘rov: {fmt(r.created_at)} · Qaror: {fmt(r.decided_at)}{r.admin_id && ` · Admin #${r.admin_id}`}</p>
       {r.reason && <p>Sabab: {r.reason}</p>}
+      <ReceiptPreview kind="rahmat-claims" id={r.id} actions={r.status==='pending' ? (close)=><><button disabled={busy} className="ui-button ui-button--primary" onClick={()=>{close();setDecision({r,kind:'approved',type:'rahmat'});setReason('');}}>Operatorga biriktirish</button><button disabled={busy} className="ui-button ui-button--secondary" onClick={()=>{close();setDecision({r,kind:'rejected',type:'rahmat'});setReason('');}}>Rad etish</button></> : undefined}/>
       <div className="flex gap-2 flex-wrap"><button disabled={busy} className="ui-button ui-button--secondary" onClick={()=>void download(r.id,'rahmat-claims')}>Chekni yuklash</button>
         {r.status==='pending' && <><button disabled={busy} className="ui-button ui-button--primary" onClick={()=>{setDecision({r,kind:'approved',type:'rahmat'});setReason('');}}>Operatorga biriktirish</button>
         <button disabled={busy} className="ui-button ui-button--secondary" onClick={()=>{setDecision({r,kind:'rejected',type:'rahmat'});setReason('');}}>Rad etish</button></>}
@@ -112,6 +114,7 @@ export default function AdminOperatorsPage() {
    <p>#{r.user_id} {r.first_name} {r.last_name}<br /><span className="text-sm">{r.phone || '—'} · {r.email || '—'}</span></p>
    <dl className="text-sm grid grid-cols-2 gap-2"><dt>Operator</dt><dd>{r.operator_name}</dd><dt>Tarif / manba</dt><dd>{r.tariff === 'month' ? '1 oy' : r.tariff === 'six_month' ? '6 oy' : r.tariff === 'year' ? '1 yil' : '3 oy'} / {r.source}</dd><dt>Jami / tasdiqlangan</dt><dd>{r.total} / {r.paid} {r.currency}</dd><dt>Qarz / tekshiruvda</dt><dd>{r.debt} / {r.pending} {r.currency}</dd><dt>Qarz muddati</dt><dd className={r.due_at && +new Date(r.due_at) < Date.now() && Number(r.debt) > 0 ? 'text-red-600 font-bold' : ''}>{fmt(r.due_at)}</dd><dt>Chek yuklangan</dt><dd>{fmt(r.created_at)}</dd><dt>Admin qarori</dt><dd>{r.admin_id ? `#${r.admin_id} · ${fmt(r.decided_at)}` : 'Kutilmoqda'}</dd><dt>Muzlatilgan</dt><dd>{r.frozen ? 'Ha' : 'Yo‘q'}</dd></dl>
    {r.reason && <p>Sabab: {r.reason}</p>}
+   <ReceiptPreview kind="receipts" id={r.id} actions={r.status === 'pending' ? (close) => <><button className="ui-button ui-button--primary" disabled={busy} onClick={() => { close(); setDecision({ r, kind: 'approved' }); setReason(''); }}>Tasdiqlash</button><button className="ui-button ui-button--secondary" disabled={busy} onClick={() => { close(); setDecision({ r, kind: 'rejected' }); setReason(''); }}>Rad etish</button></> : undefined} />
    <div className="flex flex-wrap gap-2"><button className="ui-button ui-button--secondary" disabled={busy} onClick={() => void download(r.id)}>Chekni yuklash</button>{r.status === 'pending' && <><button className="ui-button ui-button--primary" disabled={busy} onClick={() => { setDecision({ r, kind: 'approved' }); setReason(''); }}>Tasdiqlash</button><button className="ui-button ui-button--secondary" disabled={busy} onClick={() => { setDecision({ r, kind: 'rejected' }); setReason(''); }}>Rad etish</button></>}</div>
    <label className="block text-sm">Shartnomaga mas’ul operator<select className="ml-2 border rounded p-1" defaultValue="" disabled={busy} onChange={e => { const id = e.target.value; if (id)
                 void run(() => post(`/contracts/${r.contract_id}/assign`, { operator_id: Number(id) }), 'Mas’ul operator yangilandi.'); }}><option value="">O‘zgartirish…</option>{ops.filter(o => o.active).map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
