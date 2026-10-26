@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
 
 /**
- * Sahifani kattalashtirish — har kimda o'zi (o'quvchi va o'qituvchi alohida).
+ * Sahifani kattalashtirish. Darsda o'qituvchining kattalashtirishi o'quvchiga uzatiladi (`sync`):
+ * o'qituvchi barmog'i bilan qilgan o'zgarish `onChange` ga keladi, o'quvchida `remote` qo'llanadi.
  *  - ikki barmoq bilan chimdish, ikki marta bosish (1× ↔ 2.5×), kompyuterda Ctrl + g'ildirak;
  *  - kattalashganda bir barmoq bilan surish;
  *  - 1× da tez gorizontal surish — sahifa almashtirish (`onSwipe`, faqat o'qituvchiga beriladi).
@@ -17,17 +18,29 @@ export type DrawHandlers = {
   cancel: () => void;
 };
 export const MAX_ZOOM = 4;
+
+export type View = { s: number; x: number; y: number };
+export type ZoomSync = {
+  /** Foydalanuvchining o'zi qilgan o'zgarish (tashqaridan qo'llangani emas — aks-sado bo'lmasin). */
+  onChange?: (v: View) => void;
+  /** Tashqaridan keladigan ko'rinish (piksellarda); yangi obyekt kelganda qo'llanadi. */
+  remote?: View | null;
+};
 const DOUBLE_TAP_MS = 300;
 const SWIPE_PX = 60;
 
-type View = { s: number; x: number; y: number };
 const IDENTITY: View = { s: 1, x: 0, y: 0 };
 
-export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void, draw?: DrawHandlers | null) {
+export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void, draw?: DrawHandlers | null, sync?: ZoomSync) {
   const boxRef = useRef<HTMLDivElement | null>(null);
-  const [view, setView] = useState<View>(IDENTITY);
+  const [view, setRawView] = useState<View>(IDENTITY);
   const viewRef = useRef(view);
   viewRef.current = view;
+  // Barmoq/g'ildirak bilan qilingan o'zgarish belgilanadi — faqat shular tashqariga uzatiladi.
+  const byUser = useRef(false);
+  const setView = useCallback((next: View | ((v: View) => View)) => { byUser.current = true; setRawView(next); }, []);
+  const onChangeRef = useRef(sync?.onChange);
+  onChangeRef.current = sync?.onChange;
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const drawRef = useRef(draw);
   drawRef.current = draw;
@@ -35,7 +48,13 @@ export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void, dr
   const lastTap = useRef<{ t: number; x: number; y: number } | null>(null);
   const [gesturing, setGesturing] = useState(false);
 
-  useEffect(() => { setView(IDENTITY); }, [resetKey]);
+  useEffect(() => { setRawView(IDENTITY); }, [resetKey]);
+
+  useEffect(() => {
+    if (!byUser.current) return;
+    byUser.current = false;
+    onChangeRef.current?.(view);
+  }, [view]);
 
   /** Kattalashganda sahifa ekrandan butunlay chiqib ketmasin. */
   const clamp = useCallback((v: View): View => {
@@ -46,6 +65,11 @@ export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void, dr
     const maxY = ((s - 1) * el.clientHeight) / 2;
     return { s, x: Math.max(-maxX, Math.min(maxX, v.x)), y: Math.max(-maxY, Math.min(maxY, v.y)) };
   }, []);
+
+  const remote = sync?.remote ?? null;
+  useEffect(() => {
+    if (remote) setRawView(clamp(remote));
+  }, [remote, clamp]);
 
   /** (cx, cy) — konteyner markaziga nisbatan nuqta; shu nuqta barmoq ostida qoladi. */
   const zoomAt = useCallback((from: View, s: number, cx: number, cy: number): View => {

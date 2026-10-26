@@ -361,3 +361,35 @@ test('playback position is computed from the server clock', async () => {
   const pdf = applyRoomOp(emptyRoomState(), { type: 'show', material: { id: 1, title: '', kind: 'pdf', mime: '', size_bytes: 1, page_count: 2 }, page: 1 });
   assert.equal(applyRoomOp(pdf, { type: 'media', playing: true, position: 1, at: 1 }).media, null, 'no playback for a PDF');
 });
+
+test('zoom: the teacher’s zoom and pan reach the student, only for the current page; a late joiner gets the last one', async () => {
+  const t = await setup();
+  try {
+    const teacher = t.connect('t1');
+    const student = t.connect('s2');
+    await teacher.next('state');
+    await student.next('state');
+    teacher.send({ t: 'op', id: 'show', op: { type: 'show', material: { id: 1 }, page: 2 } });
+    await student.next('op');
+
+    teacher.send({ t: 'view', key: 'm1:2', s: 2.5, x: -0.3, y: 0.12 });
+    assert.deepEqual(await student.next('view'), { t: 'view', key: 'm1:2', s: 2.5, x: -0.3, y: 0.12 });
+    await assert.rejects(teacher.next('view', 200), 'not echoed back');
+
+    teacher.send({ t: 'view', key: 'm1:5', s: 2, x: 0, y: 0 });
+    student.send({ t: 'view', key: 'm1:2', s: 3, x: 0, y: 0 });
+    teacher.send({ t: 'view', key: 'm1:2', s: 'big', x: 0, y: 0 });
+    await assert.rejects(student.next('view', 200), 'other page, student and broken views are dropped');
+    await assert.rejects(teacher.next('view', 200), 'student cannot steer the teacher');
+
+    teacher.send({ t: 'view', key: 'm1:2', s: 99, x: 50, y: -50 });
+    assert.deepEqual(await student.next('view'), { t: 'view', key: 'm1:2', s: 4, x: 4, y: -4 }, 'clamped');
+
+    const late = t.connect('s2');
+    await late.next('state');
+    assert.deepEqual(await late.next('view'), { t: 'view', key: 'm1:2', s: 4, x: 4, y: -4 });
+    for (const c of [teacher, student, late]) c.ws.close();
+  } finally {
+    await t.close();
+  }
+});

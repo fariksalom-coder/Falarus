@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ExternalLink, Lock } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Lock, PanelsTopLeft } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import JitsiRoom, { type JitsiControls, type JitsiMediaState } from '../components/meet/JitsiRoom';
+import JitsiRoom, { INITIAL_MEDIA, type JitsiControls, type JitsiMediaState } from '../components/meet/JitsiRoom';
 import VideoDock, { type DockMode } from '../components/meet/VideoDock';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { BoardStage, MaterialsButton, MaterialsDrawer, RoomStatusPill } from '../components/materials/LessonBoard';
@@ -63,7 +63,26 @@ export default function MeetRoomPage() {
   // Telefonda video kichik oynaga o'tadi va mikrofon/kamera doska panelidan boshqariladi.
   const desktop = useMediaQuery('(min-width: 1024px)');
   const jitsiControls = useRef<JitsiControls | null>(null);
-  const [media, setMedia] = useState<JitsiMediaState>({ joined: false, audioMuted: true, videoMuted: false });
+  const [media, setMedia] = useState<JitsiMediaState>(INITIAL_MEDIA);
+  const mediaRef = useRef(media);
+  mediaRef.current = media;
+  // Telefonda doska ochiq paytda video kichik oynada — Jitsi chati (va so'rovnomalar) ko'rinmaydi.
+  // «Chat» bosilsa shu foydalanuvchida video vaqtincha to'liq ekranga chiqadi va chat ochiladi.
+  const [chatFocus, setChatFocus] = useState(false);
+  const openChat = useCallback(() => setChatFocus(true), []);
+  const backToBoard = useCallback(() => {
+    if (mediaRef.current.chatOpen) jitsiControls.current?.toggleChat();
+    setChatFocus(false);
+  }, []);
+  // Doska yopilsa chat rejimi ham tugaydi (keyingi ochilishda to'g'ri doskaga chiqsin).
+  const boardIsOpen = Boolean(board && boardOpen(board));
+  useEffect(() => { if (!boardIsOpen) setChatFocus(false); }, [boardIsOpen]);
+  useEffect(() => {
+    if (!chatFocus) return;
+    // Jitsi tugmalari to'liq oynada qaytguncha biroz kutiladi.
+    const t = window.setTimeout(() => { if (!mediaRef.current.chatOpen) jitsiControls.current?.toggleChat(); }, 300);
+    return () => window.clearTimeout(t);
+  }, [chatFocus]);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const { send } = room;
   const pickMaterial = useCallback((m: TeacherMaterial) => {
@@ -175,12 +194,14 @@ export default function MeetRoomPage() {
 
   // Doska ochiq: material yoki oq varaq (oq varaqni material yo'q paytda ham ochish mumkin).
   const boardShown = Boolean(board && boardOpen(board));
-  const dockMode: DockMode = !boardShown ? 'full' : desktop ? 'side' : 'pip';
+  const chatOverBoard = boardShown && chatFocus && !desktop;
+  const boardVisible = boardShown && !chatOverBoard;
+  const dockMode: DockMode = !boardVisible ? 'full' : desktop ? 'side' : 'pip';
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#0C1526]">
       {/* Telefon yotiq turganda (doska ochiq) balandlik tor — sarlavha yashiriladi, «ortga» doska qatorida. */}
-      <header className={`flex items-center gap-3 px-4 pt-[max(env(safe-area-inset-top,0px),10px)] ${boardShown ? 'pb-1.5 max-lg:landscape:hidden lg:pb-3' : 'pb-3'}`}>
+      <header className={`flex items-center gap-3 px-4 pt-[max(env(safe-area-inset-top,0px),10px)] ${boardVisible ? 'pb-1.5 max-lg:landscape:hidden lg:pb-3' : 'pb-3'}`}>
         <button
           type="button"
           onClick={() => navigate(backTo)}
@@ -194,7 +215,15 @@ export default function MeetRoomPage() {
           <p className="truncate text-xs font-medium text-white/60">{view.subtitle}</p>
         </div>
         <RoomStatusPill status={room.status} closedText={room.closedText} />
-        {view.role === 'teacher' && (!boardShown || desktop) ? (
+        {chatOverBoard ? (
+          <button
+            type="button"
+            onClick={backToBoard}
+            className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-2xl bg-[#2563EB] px-3.5 text-[13.5px] font-bold text-white shadow-[0_18px_44px_rgba(37,99,235,0.28)] transition hover:bg-[#1D4ED8] active:scale-95"
+          >
+            <PanelsTopLeft className="h-4 w-4" /> Doskaga qaytish
+          </button>
+        ) : view.role === 'teacher' && (!boardShown || desktop) ? (
           <MaterialsButton onClick={() => setDrawerOpen(true)} active={boardShown} />
         ) : null}
       </header>
@@ -204,6 +233,8 @@ export default function MeetRoomPage() {
       {/* Jitsi daraxtdagi o'rnini hech qachon o'zgartirmaydi (VideoDock ichida) — aks holda qo'ng'iroq uziladi. */}
       <div className={`flex min-h-0 flex-1 flex-col lg:flex-row ${boardShown ? 'lg:gap-3 lg:px-3 lg:pb-3' : ''}`}>
         {boardShown ? (
+          // Chat ochilganda doska yashiriladi, lekin o'chirilmaydi — qaytganda sahifa va kattalashtirish joyida.
+          <div className={boardVisible ? 'contents' : 'hidden'}>
           <BoardStage
             token={token}
             kind={lessonKind}
@@ -212,8 +243,9 @@ export default function MeetRoomPage() {
             onClose={() => send({ type: 'close' })}
             onOpenMaterials={() => setDrawerOpen(true)}
             onBack={() => navigate(backTo)}
-            call={{ compact: dockMode === 'pip', media, controls: jitsiControls }}
+            call={{ compact: dockMode === 'pip', media, controls: jitsiControls, onChat: openChat }}
           />
+          </div>
         ) : null}
         <VideoDock mode={dockMode}>
           <JitsiRoom

@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { FileAudio, Loader2, ZoomOut } from 'lucide-react';
 import { PAGE_WIDTHS, type MaterialKind, type PageWidth } from '../../../shared/teacherMaterials';
 import { fetchMaterialBlob, loadPageUrl, type MaterialSource } from '../../api/teacherMaterials';
-import { useZoomPan, type DrawHandlers } from './useZoomPan';
+import { useZoomPan, type DrawHandlers, type View } from './useZoomPan';
 import { BLANK_RATIO } from '../../../shared/lessonRoom';
 
 /**
@@ -32,7 +32,11 @@ export type MaterialViewerProps = {
   overlay?: (ratio: number) => ReactNode;
   /** Chizish rejimi: bir barmoq chizadi (ikki barmoq baribir kattalashtiradi). */
   draw?: DrawHandlers | null;
+  /** Kattalashtirishni uzatish: siljish sahifa eni/bo'yiga nisbatan (har ekranda bir joy). */
+  zoomSync?: PageZoomSync;
 };
+
+export type PageZoomSync = { onChange?: (v: View) => void; remote?: View | null };
 
 /** Ekranga mos eng kichik yetarli o'lcham (retina hisobga olinadi). */
 function widthFor(cssWidth: number): PageWidth {
@@ -42,7 +46,7 @@ function widthFor(cssWidth: number): PageWidth {
 
 export default function MaterialViewer({
   token, source, kind, title, page = 1, pageCount, tone = 'light', loadingText = 'Yuklanmoqda…', errorText = 'Faylni ochib boʻlmadi',
-  onSwipe, overlay, draw,
+  onSwipe, overlay, draw, zoomSync,
 }: MaterialViewerProps) {
   const dark = tone === 'dark';
   if (!source || kind === 'pdf' || kind === 'image') {
@@ -50,24 +54,49 @@ export default function MaterialViewer({
       <PageView
         token={token} source={source} page={kind === 'image' ? 1 : page} pageCount={kind === 'image' ? 1 : pageCount ?? null}
         title={title} dark={dark} loadingText={loadingText} errorText={errorText} onSwipe={onSwipe} overlay={overlay} draw={draw}
+        zoomSync={zoomSync}
       />
     );
   }
   return <MediaView token={token} source={source!} kind={kind} title={title} dark={dark} loadingText={loadingText} errorText={errorText} />;
 }
 
-function PageView({ token, source, page, pageCount, title, dark, loadingText, errorText, onSwipe, overlay, draw }: {
+function PageView({ token, source, page, pageCount, title, dark, loadingText, errorText, onSwipe, overlay, draw, zoomSync }: {
   token: string | null; source: MaterialSource | null; page: number; pageCount: number | null; title: string; dark: boolean;
   loadingText: string; errorText: string; onSwipe?: (dir: 1 | -1) => void; overlay?: (ratio: number) => ReactNode;
-  draw?: DrawHandlers | null;
+  draw?: DrawHandlers | null; zoomSync?: PageZoomSync;
 }) {
   const sourceKey = JSON.stringify(source);
-  const zoom = useZoomPan(`${sourceKey}:${page}`, onSwipe, draw);
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [width, setWidth] = useState<PageWidth | null>(null);
   const [shown, setShown] = useState<{ key: string; url: string; ratio: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // Sahifa maydoni: konteynerga sig'adigan eng katta to'rtburchak (chizmalar shu o'lchamga bog'lanadi).
+  const pad = 8;
+  const fit = shown && box.w && box.h
+    ? (() => {
+        const w = Math.max(1, box.w - pad * 2);
+        const h = Math.max(1, box.h - pad * 2);
+        return w / h > shown.ratio ? { w: h * shown.ratio, h } : { w, h: w / shown.ratio };
+      })()
+    : null;
+
+  // Uzatishda siljish sahifa o'lchamiga bo'linadi, qabul qilishda — o'z sahifa o'lchamiga ko'paytiriladi.
+  const fitW = fit?.w ?? 0;
+  const fitH = fit?.h ?? 0;
+  const remoteUnit = zoomSync?.remote ?? null;
+  const remote = useMemo(
+    () => (remoteUnit && fitW ? { s: remoteUnit.s, x: remoteUnit.x * fitW, y: remoteUnit.y * fitH } : null),
+    [remoteUnit, fitW, fitH],
+  );
+  const onZoomChange = zoomSync?.onChange;
+  const sync = useMemo(() => ({
+    remote,
+    onChange: onZoomChange && fitW ? (v: View) => onZoomChange({ s: v.s, x: v.x / fitW, y: v.y / fitH }) : undefined,
+  }), [remote, onZoomChange, fitW, fitH]);
+  const zoom = useZoomPan(`${sourceKey}:${page}`, onSwipe, draw, sync);
 
   useEffect(() => {
     const el = zoom.boxRef.current;
@@ -118,16 +147,6 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, sourceKey, page, width, pageCount]);
-
-  // Sahifa maydoni: konteynerga sig'adigan eng katta to'rtburchak (chizmalar shu o'lchamga bog'lanadi).
-  const pad = 8;
-  const fit = shown && box.w && box.h
-    ? (() => {
-        const w = Math.max(1, box.w - pad * 2);
-        const h = Math.max(1, box.h - pad * 2);
-        return w / h > shown.ratio ? { w: h * shown.ratio, h } : { w, h: w / shown.ratio };
-      })()
-    : null;
 
   return (
     <div

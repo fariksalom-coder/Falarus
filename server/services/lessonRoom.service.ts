@@ -15,8 +15,8 @@ import { pool } from '../lib/db.js';
 import { registerWsRoute } from '../lib/wsRoutes.js';
 import { checkLessonAccess, LessonAccessError, parseLessonKind, type AccessQuery } from './lessonRoomAccess.js';
 import {
-  INK_MAX_STROKES_PER_PAGE, ROOM_CLOSE, ROOM_WS_PATH, applyRoomOp, canApply, canDraw, emptyRoomState, inkKeyOf, parseDraft, parseRoomOp, validUnit,
-  type ClientMessage, type LessonKind, type Presence, type RoomMaterial, type RoomOp, type RoomRole, type RoomState, type ServerMessage,
+  INK_MAX_STROKES_PER_PAGE, ROOM_CLOSE, ROOM_WS_PATH, applyRoomOp, canApply, canDraw, emptyRoomState, inkKeyOf, parseDraft, parseRoomOp, parseView, validUnit,
+  type BoardView, type ClientMessage, type LessonKind, type Presence, type RoomMaterial, type RoomOp, type RoomRole, type RoomState, type ServerMessage,
 } from '../../shared/lessonRoom.js';
 
 export type RoomDeps = {
@@ -27,7 +27,7 @@ export type RoomDeps = {
 };
 
 type Bucket = { at: number; n: number };
-type Conn = { ws: WebSocket; userId: number; role: RoomRole; alive: boolean; laser: Bucket; draft: Bucket };
+type Conn = { ws: WebSocket; userId: number; role: RoomRole; alive: boolean; laser: Bucket; draft: Bucket; view: Bucket };
 
 type Room = {
   key: string;
@@ -44,6 +44,8 @@ type Room = {
   /** Bazaga hali yozilmagan chizma sahifalari (yozuv bir oz kechiktirib, guruhlab qilinadi). */
   dirtyInk: Set<string>;
   inkTimer: ReturnType<typeof setTimeout> | null;
+  /** O'qituvchining oxirgi kattalashtirishi — kech kirgan o'quvchi ham shu joyni ko'rsin (saqlanmaydi). */
+  view: BoardView | null;
 };
 
 const HELLO_TIMEOUT_MS = 10_000;
@@ -51,6 +53,7 @@ const HEARTBEAT_MS = 25_000;
 const RECENT_OPS = 500;
 const LASER_PER_SECOND = 40;
 const DRAFTS_PER_SECOND = 40;
+const VIEWS_PER_SECOND = 30;
 /** Sahifani tozalashni bekor qilish yuzlab chiziqni bir xabarda qaytaradi. */
 const MAX_MESSAGE_BYTES = 512 * 1024;
 const INK_SAVE_DELAY_MS = 600;
@@ -116,7 +119,7 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     if (raced) return raced;
     const room: Room = {
       key, kind, lessonId, teacherId, closesAt, state, conns: new Set(), recent: new Map(), queue: Promise.resolve(),
-      dirtyInk: new Set(), inkTimer: null,
+      dirtyInk: new Set(), inkTimer: null, view: null,
     };
     rooms.set(key, room);
     return room;
@@ -249,9 +252,10 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
           if (ws.readyState !== WebSocket.OPEN) return;
           clearTimeout(helloTimer);
           room = r;
-          conn = { ws, userId, role: access.role, alive: true, laser: { at: 0, n: 0 }, draft: { at: 0, n: 0 } };
+          conn = { ws, userId, role: access.role, alive: true, laser: { at: 0, n: 0 }, draft: { at: 0, n: 0 }, view: { at: 0, n: 0 } };
           r.conns.add(conn);
           send(ws, { t: 'state', state: r.state, role: access.role, presence: presenceOf(r) });
+          if (r.view && r.view.key === inkKeyOf(r.state)) send(ws, { t: 'view', ...r.view });
           broadcast(r, { t: 'presence', presence: presenceOf(r) }, conn);
         } catch (e) {
           if (e instanceof LessonAccessError) return ws.close(CLOSE_FOR[e.reason], e.message);
@@ -276,6 +280,12 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
         const d = parseDraft(msg);
         if (!d || !canDraw(c.role, r.state) || d.key !== inkKeyOf(r.state) || !allow(c.draft, DRAFTS_PER_SECOND)) return;
         broadcast(r, { ...d, by: c.role }, c);
+      } else if (msg.t === 'view') {
+        // Kattalashtirish: faqat o'qituvchidan, faqat hozirgi sahifa uchun.
+        const v = parseView(msg);
+        if (c.role !== 'teacher' || !v || v.key !== inkKeyOf(r.state) || !allow(c.view, VIEWS_PER_SECOND)) return;
+        r.view = v;
+        broadcast(r, { t: 'view', ...v }, c);
       } else if (msg.t === 'ping') {
         send(ws, { t: 'pong', c: Number(msg.c) || 0, s: now() });
       }

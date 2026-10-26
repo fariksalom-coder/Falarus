@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, FolderOpen, Loader2, Mic, MicOff, MonitorUp, StickyNote, UploadCloud, Video, VideoOff, WifiOff, X,
+  ArrowLeft, ChevronLeft, ChevronRight, FolderOpen, Loader2, MessageCircle, Mic, MicOff, MonitorUp, StickyNote, UploadCloud, Video, VideoOff, WifiOff, X,
 } from 'lucide-react';
 import MaterialViewer from './MaterialViewer';
 import { KIND_STYLE, materialMeta } from './materialUi';
 import type { JitsiControls, JitsiMediaState } from '../meet/JitsiRoom';
 import { MATERIAL_ACCEPT } from '../../../shared/teacherMaterials';
 import { getLessonMaterials, getMaterial, getMaterials, uploadMaterial, type TeacherMaterial } from '../../api/teacherMaterials';
-import type { LessonKind } from '../../../shared/lessonRoom';
+import { inkKeyOf, type LessonKind } from '../../../shared/lessonRoom';
 import type { LessonRoom, RoomStatus } from '../../hooks/useLessonRoom';
 import { InkLayer } from './InkLayer';
 import { InkBar, TextSheet } from './BoardTools';
@@ -25,6 +25,8 @@ export type CallBar = {
   compact: boolean;
   media: JitsiMediaState;
   controls: MutableRefObject<JitsiControls | null>;
+  /** Chat va so'rovnomalarni ochish (telefonda video kichik oynada bo'lganda). */
+  onChat?: () => void;
 };
 
 /**
@@ -51,6 +53,19 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
   const ink = useBoardInk(room, board, overlayRef);
   const onPage = useCallback((p: number) => send({ type: 'page', page: p }), [send]);
   const playable = blank === null && (m?.kind === 'audio' || m?.kind === 'video');
+
+  // Kattalashtirish: o'qituvchi qanday kattalashtirsa/sursa, o'quvchida ham shunday.
+  const viewKey = inkKeyOf(board);
+  const { sendView, view: teacherView } = room;
+  const zoomSync = useMemo(() => {
+    if (!viewKey) return undefined;
+    if (teacher) return { onChange: (v: { s: number; x: number; y: number }) => sendView({ key: viewKey, ...v }) };
+    return { remote: teacherView && teacherView.key === viewKey ? teacherView : null };
+  }, [viewKey, teacher, sendView, teacherView]);
+  // Yangi sahifa asl o'lchamda ochiladi — o'quvchida ilgari shu sahifaga qolgan kattalashtirish qaytmasin.
+  useEffect(() => {
+    if (teacher && viewKey) sendView({ key: viewKey, s: 1, x: 0, y: 0 });
+  }, [teacher, viewKey, sendView]);
 
   // Audio/video yangrayotganda mikrofon vaqtincha o'chadi: aks holda karnaydan chiqqan ovoz
   // mikrofonga kirib, suhbatdoshga aks-sado bo'lib qaytadi. Tugagach — avvalgi holatiga.
@@ -189,6 +204,7 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
             tone="dark"
             onSwipe={swipe}
             draw={ink.draw}
+            zoomSync={zoomSync}
             overlay={ink.key ? (r) => <InkLayer ratio={r} strokes={ink.strokes} live={ink.live} laser={ink.laser} rootRef={overlayRef} /> : undefined}
           />
         )}
@@ -248,7 +264,7 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
 function RoomToolbar({ teacher, page, pages, onPage, onJump, onOpenMaterials, call }: {
   teacher: boolean; page: number; pages: number; onPage: (p: number) => void; onJump: () => void; onOpenMaterials: () => void; call: CallBar;
 }) {
-  // 375 px da ham 6 ta tugma sig'adi: 44 px (barmoq uchun eng kami), kengroq ekranda 48 px.
+  // 375 px da ham 7 ta tugma sig'adi: 44 px (barmoq uchun eng kami), kengroq ekranda 48 px.
   const btn = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-white transition active:scale-95 disabled:opacity-35 disabled:active:scale-100 sm:h-12 sm:w-12';
   return (
     <div className="flex items-center justify-between gap-1.5 border-t border-white/10 bg-[#0C1526]/95 px-2.5 pb-[max(env(safe-area-inset-bottom,0px),8px)] pt-2 backdrop-blur sm:gap-2 sm:px-3 lg:bg-transparent lg:pb-2">
@@ -272,7 +288,7 @@ function RoomToolbar({ teacher, page, pages, onPage, onJump, onOpenMaterials, ca
             onClick={teacher ? onJump : undefined}
             disabled={!teacher}
             aria-label={teacher ? 'Sahifaga oʻtish' : undefined}
-            className="flex h-11 min-w-[62px] items-center justify-center rounded-[14px] px-2 text-[15px] font-extrabold tabular-nums text-white transition enabled:bg-white/[0.06] enabled:hover:bg-white/[0.12] enabled:active:scale-95 sm:h-12 sm:min-w-[76px] sm:px-3"
+            className="flex h-11 min-w-[54px] items-center justify-center rounded-[14px] px-2 text-[15px] font-extrabold tabular-nums text-white transition enabled:bg-white/[0.06] enabled:hover:bg-white/[0.12] enabled:active:scale-95 sm:h-12 sm:min-w-[76px] sm:px-3"
           >
             {page}<span className="mx-1 text-white/45">/</span>{pages}
           </button>
@@ -284,9 +300,19 @@ function RoomToolbar({ teacher, page, pages, onPage, onJump, onOpenMaterials, ca
         </div>
       ) : null}
 
-      <div className="flex shrink-0 items-center justify-end gap-1.5 sm:min-w-0 sm:flex-1 sm:gap-2">
+      <div className="flex shrink-0 items-center justify-end gap-1 sm:min-w-0 sm:flex-1 sm:gap-2">
         {call.compact && call.media.joined ? (
           <>
+            {call.onChat ? (
+              <button type="button" onClick={call.onChat} aria-label="Chat va soʻrovnomalar" className={`${btn} relative bg-white/10 hover:bg-white/20`}>
+                <MessageCircle className="h-5 w-5" />
+                {call.media.unread > 0 ? (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#EF4444] px-1 text-[11px] font-extrabold tabular-nums text-white ring-2 ring-[#0C1526]">
+                    {call.media.unread > 9 ? '9+' : call.media.unread}
+                  </span>
+                ) : null}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => call.controls.current?.toggleAudio()}

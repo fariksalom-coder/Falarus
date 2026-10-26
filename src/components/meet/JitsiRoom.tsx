@@ -14,8 +14,10 @@ type JitsiApi = {
 };
 
 /** Tashqaridan boshqarish (dars xonasining o'z tugmalari — video kichik oynada bo'lganda). */
-export type JitsiControls = { toggleAudio: () => void; toggleVideo: () => void };
-export type JitsiMediaState = { joined: boolean; audioMuted: boolean; videoMuted: boolean };
+export type JitsiControls = { toggleAudio: () => void; toggleVideo: () => void; toggleChat: () => void };
+/** `chatOpen`, `unread` — Jitsi chati (unda so'rovnomalar ham bor). */
+export type JitsiMediaState = { joined: boolean; audioMuted: boolean; videoMuted: boolean; chatOpen: boolean; unread: number };
+export const INITIAL_MEDIA: JitsiMediaState = { joined: false, audioMuted: true, videoMuted: false, chatOpen: false, unread: 0 };
 
 declare global {
   interface Window {
@@ -125,7 +127,7 @@ export default function JitsiRoom({
   const [ready, setReady] = useState(false);
   const [joined, setJoined] = useState(false);
   const filmstripVisible = useRef(true);
-  const media = useRef<JitsiMediaState>({ joined: false, audioMuted: true, videoMuted: false });
+  const media = useRef<JitsiMediaState>(INITIAL_MEDIA);
   const mediaCb = useRef(onMediaState);
   mediaCb.current = onMediaState;
   const toolbar = viewer ? VIEWER_TOOLBAR : MEET_TOOLBAR;
@@ -181,11 +183,15 @@ export default function JitsiRoom({
         });
         api.addEventListener('audioMuteStatusChanged', (e: { muted: boolean }) => report({ audioMuted: Boolean(e?.muted) }));
         api.addEventListener('videoMuteStatusChanged', (e: { muted: boolean }) => report({ videoMuted: Boolean(e?.muted) }));
+        api.addEventListener('chatUpdated', (e: { isOpen?: boolean; unreadCount?: number }) => {
+          report({ chatOpen: Boolean(e?.isOpen), unread: Math.max(0, Number(e?.unreadCount) || 0) });
+        });
         api.addEventListener('filmstripDisplayChanged', (e: { visible: boolean }) => { filmstripVisible.current = Boolean(e?.visible); });
         if (controlsRef) {
           controlsRef.current = {
             toggleAudio: () => api.executeCommand('toggleAudio'),
             toggleVideo: () => api.executeCommand('toggleVideo'),
+            toggleChat: () => api.executeCommand('toggleChat'),
           };
         }
         if (onLeave) {

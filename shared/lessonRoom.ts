@@ -10,6 +10,7 @@
  *   server → {t:'ack', id, seq} yuboruvchiga, {t:'op', seq, op} qolganlarga
  *   klient → {t:'draft', …}                           chizilayotgan chiziq (saqlanmaydi, faqat uzatiladi)
  *   klient → {t:'laser', x, y} / {t:'laser', end:true} — saqlanmaydi, faqat uzatiladi
+ *   klient → {t:'view', key, s, x, y}                o'qituvchi sahifani kattalashtirdi/surdi — o'quvchi ergashadi
  *   klient → {t:'ping', c} → server {t:'pong', c, s}  — soat farqi (audio sinxroni uchun)
  *
  * Chizmalar sahifaga nisbatan 0..1 koordinatada saqlanadi — har xil ekranda bir joyda turadi.
@@ -80,6 +81,13 @@ export type RoomOp =
 
 export type Presence = { teacher: boolean; student: boolean };
 
+/**
+ * O'qituvchining sahifa ko'rinishi: `s` — kattalashtirish (1..MAX_VIEW_SCALE), `x`, `y` — siljish
+ * sahifa eni/bo'yiga nisbatan (ekran o'lchamidan qat'i nazar bir joy). `key` — qaysi sahifa (`inkKeyOf`).
+ */
+export type BoardView = { key: string; s: number; x: number; y: number };
+export const MAX_VIEW_SCALE = 4;
+
 /** Chizilayotgan chiziqning yangi nuqtalari (barmoq hali ko'tarilmagan). `cancel` — chiziq bekor qilindi. */
 export type DraftMessage = { t: 'draft'; key: string; id: string; tool: InkTool; color: string; size: number; pts: number[]; cancel?: boolean };
 
@@ -89,6 +97,7 @@ export type ClientMessage =
   | DraftMessage
   | { t: 'laser'; x: number; y: number }
   | { t: 'laser'; end: true }
+  | ({ t: 'view' } & BoardView)
   | { t: 'ping'; c: number };
 
 export type ServerMessage =
@@ -99,6 +108,7 @@ export type ServerMessage =
   | (DraftMessage & { by: RoomRole })
   | { t: 'laser'; x: number; y: number }
   | { t: 'laser'; end: true }
+  | ({ t: 'view' } & BoardView)
   | { t: 'presence'; presence: Presence }
   | { t: 'pong'; c: number; s: number };
 
@@ -285,3 +295,13 @@ export function mediaPositionAt(m: MediaPlayback, now: number): number {
 
 /** Lazer nuqtasi sahifaga nisbatan 0..1 — har xil ekranda bir joyda turadi. */
 export const validUnit = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 1;
+
+/** Ko'rinish xabarini tekshiradi (siljish sahifadan uzoqqa ketmasin). */
+export function parseView(raw: unknown): BoardView | null {
+  const o = raw as Record<string, unknown> | null;
+  if (!o || !isKey(o.key)) return null;
+  const s = Number(o.s), x = Number(o.x), y = Number(o.y);
+  if (![s, x, y].every(Number.isFinite)) return null;
+  const lim = (n: number) => round4(Math.max(-MAX_VIEW_SCALE, Math.min(MAX_VIEW_SCALE, n)));
+  return { key: o.key, s: round4(Math.max(1, Math.min(MAX_VIEW_SCALE, s))), x: lim(x), y: lim(y) };
+}

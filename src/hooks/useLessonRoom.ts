@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiUrl } from '../api';
 import {
   FINAL_CLOSE_CODES, ROOM_CLOSE, ROOM_WS_PATH, applyRoomOp,
-  type DraftMessage, type LessonKind, type Presence, type RoomOp, type RoomRole, type RoomState, type ServerMessage,
+  type BoardView, type DraftMessage, type LessonKind, type Presence, type RoomOp, type RoomRole, type RoomState, type ServerMessage,
 } from '../../shared/lessonRoom';
 
 /**
@@ -46,6 +46,8 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
   const [status, setStatus] = useState<RoomStatus>('connecting');
   const [closedText, setClosedText] = useState('');
   const [error, setError] = useState('');
+  /** O'qituvchining kattalashtirishi (o'quvchi ekrani ergashadi). */
+  const [view, setView] = useState<BoardView | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const pendingRef = useRef(pending);
@@ -131,6 +133,9 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
           case 'draft':
             draftListeners.current.forEach((fn) => fn(m));
             break;
+          case 'view':
+            setView({ key: m.key, s: m.s, x: m.x, y: m.y });
+            break;
           case 'pong': {
             const rtt = Date.now() - m.c;
             if (rtt < 0 || rtt > 5000) break;
@@ -215,13 +220,33 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
     return () => { draftListeners.current.delete(fn); };
   }, []);
 
+  /**
+   * Kattalashtirish: barmoq harakatida juda tez-tez keladi — 60 ms da bittadan yuboriladi,
+   * oxirgisi albatta yetadi (aks holda o'quvchi oraliq holatda qolib ketardi).
+   */
+  const viewQueue = useRef<{ next: BoardView | null; timer: number | null }>({ next: null, timer: null });
+  const sendView = useCallback((v: BoardView) => {
+    const qv = viewQueue.current;
+    qv.next = v;
+    if (qv.timer !== null) return;
+    const flush = () => {
+      const ws = wsRef.current;
+      if (qv.next && ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: 'view', ...qv.next }));
+      qv.next = null;
+      qv.timer = null;
+    };
+    flush();
+    qv.timer = window.setTimeout(() => { qv.timer = null; if (qv.next) sendView(qv.next); }, 60);
+  }, []);
+  useEffect(() => () => { if (viewQueue.current.timer !== null) window.clearTimeout(viewQueue.current.timer); }, []);
+
   const state = confirmed ? pending.reduce((s, p) => applyRoomOp(s, p.op), confirmed) : null;
 
   return {
     state, role, presence, status, closedText, error,
     /** Hali serverga yetmagan o'zgarishlar bormi (ekranda «saqlanmoqda»). */
     syncing: pending.length > 0,
-    send, sendLaser, onLaser, sendDraft, onDraft,
+    send, sendLaser, onLaser, sendDraft, onDraft, view, sendView,
     serverNow: () => Date.now() + clockOffset.current,
     clearError: () => setError(''),
   };
