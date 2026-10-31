@@ -73,11 +73,11 @@ function SettingsForm() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="font-bold">Bonuslar</h3>
           <select className="rounded-xl border border-slate-300 bg-white p-2 text-sm text-slate-900" value={form.bonusPeriod} onChange={(e) => set({ bonusPeriod: e.target.value === 'day' ? 'day' : 'month' })}>
-            <option value="month">Oylik jami sotuvga qarab</option>
             <option value="day">Har kungi sotuvga qarab</option>
+            <option value="month">Oylik jami sotuvga qarab</option>
           </select>
         </div>
-        <p className="text-xs opacity-70">Eng yuqori erishilgan pog‘ona bonusi beriladi (pog‘onalar qo‘shilmaydi). Bonus 0 bo‘lsa — berilmaydi.</p>
+        <p className="text-xs opacity-70">{form.bonusPeriod === 'day' ? 'Har bir kun alohida: o‘sha kuni erishilgan eng yuqori pog‘ona bonusi beriladi, oy davomida kunlar bonusi qo‘shiladi.' : 'Oy oxiridagi jami sotuvga qarab eng yuqori pog‘ona bonusi beriladi (pog‘onalar qo‘shilmaydi).'} Bonus 0 bo‘lsa — pog‘ona hisobga olinmaydi.</p>
         {form.tiers.map((tier, i) => (
           <div key={i} className="grid grid-cols-[1fr_1fr_44px] items-end gap-3">
             <label className="text-sm">Sotuvlar soni (dan)

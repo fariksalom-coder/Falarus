@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Award, CalendarDays, ChartColumnIncreasing, Clock3, PieChart, Trophy, Users, Wallet } from 'lucide-react';
-import type { SalesHeadDashboard, SalesHeadOperatorStats } from '../../../shared/salesHead';
+import { reachedTier, type SalesHeadDashboard, type SalesHeadOperatorStats } from '../../../shared/salesHead';
 import { tariffLabel } from '../../../shared/salesLedger';
 import { Card, ChannelBadge, EmptyState, MoneyStack, TARIFF_COLORS, channelColor, formatDayShort, formatMoney, isEmptyMoney } from '../admin/salesLedger/ui';
 import { Donut } from '../admin/salesLedger/Donut';
@@ -91,7 +91,7 @@ function SalaryCard({ data }: { data: SalesHeadDashboard }) {
         <dl className="mt-1 grid gap-2 text-[14px]">
           <Row label="Фиксированная часть" value={uzs(salary.fixedSalary)} />
           <Row label={`Продажи операторов: ${salary.countedSales} × ${uzs(salary.perSale)}`} value={uzs(salary.salesAmount)} />
-          <Row label={salary.bonusPeriod === 'day' ? 'Бонус (за каждый день)' : salary.currentTier ? `Бонус за ${salary.currentTier.sales}+ продаж` : 'Бонус'}
+          <Row label={salary.bonusPeriod === 'day' ? `Бонус за дни с планом: ${salary.bonusDays.length}` : salary.currentTier ? `Бонус за ${salary.currentTier.sales}+ продаж` : 'Бонус'}
             value={uzs(salary.bonusAmount)} accent />
         </dl>
         <p className="text-[12.5px] text-slate-500">
@@ -105,16 +105,29 @@ function SalaryCard({ data }: { data: SalesHeadDashboard }) {
         {hasTiers ? (
           <>
             <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {salary.tiers.map((tier) => {
-                const reached = salary.bonusPeriod === 'month' && salary.countedSales >= tier.sales;
+              {salary.tiers.filter((tier) => tier.amount > 0).map((tier) => {
+                const daysReached = salary.bonusDays.filter((d) => reachedTier(salary.tiers, d.sales)?.sales === tier.sales).length;
+                const reached = salary.bonusPeriod === 'month' ? salary.currentTier?.sales === tier.sales : daysReached > 0;
                 return (
                   <li key={tier.sales} className={`rounded-2xl px-3 py-2.5 text-center ring-1 ${reached ? 'bg-emerald-50 text-emerald-800 ring-emerald-200' : 'bg-white text-slate-600 ring-slate-200'}`}>
-                    <p className="text-[12px] font-semibold">{tier.sales}+ продаж</p>
+                    <p className="text-[12px] font-semibold">{tier.sales}+ {salary.bonusPeriod === 'day' ? 'в день' : 'продаж'}</p>
                     <p className="mt-0.5 text-[13.5px] font-bold tabular-nums">{uzs(tier.amount)}</p>
+                    {salary.bonusPeriod === 'day' && <p className="mt-0.5 text-[11.5px] tabular-nums opacity-80">{daysReached} дн.</p>}
                   </li>
                 );
               })}
             </ul>
+            {salary.bonusPeriod === 'day' && (salary.bonusDays.length > 0 ? (
+              <ul className="flex flex-wrap gap-1.5" aria-label="Дни с бонусом">
+                {salary.bonusDays.map((d) => (
+                  <li key={d.day} className="rounded-full bg-white px-2.5 py-1 text-[12px] text-slate-700 ring-1 ring-slate-200 tabular-nums">
+                    {formatDayShort(d.day)} · {d.sales} {salesWord(d.sales)} · <b className="text-emerald-700">+{uzs(d.amount)}</b>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[13px] text-slate-600">В этом месяце пока нет дня, когда достигнут план по продажам.</p>
+            ))}
             {salary.bonusPeriod === 'month' && (next ? (
               <div>
                 <div className="h-2.5 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label="Прогресс до следующего бонуса">

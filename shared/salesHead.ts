@@ -22,7 +22,7 @@ export const DEFAULT_SALES_HEAD_SETTINGS: SalesHeadSettings = {
   fixedSalary: 2_000_000,
   perSale: 20_000,
   includeRahmatClaims: false,
-  bonusPeriod: 'month',
+  bonusPeriod: 'day',
   tiers: [5, 15, 20, 30].map((sales) => ({ sales, amount: 0 })),
 };
 
@@ -55,10 +55,16 @@ export function parseSalesHeadSettings(raw: unknown): SalesHeadSettings {
   };
 }
 
-/** Eng yuqori erishilgan pog'ona (pog'onalar yig'ilmaydi). */
+/**
+ * Eng yuqori erishilgan pog'ona (pog'onalar yig'ilmaydi).
+ * Bonusi 0 bo'lgan pog'ona to'ldirilmagan hisoblanadi va o'tkazib yuboriladi —
+ * aks holda 30 → 0 pog'onasi 5 → 100 000 ni "yopib" qo'yardi.
+ */
 export function reachedTier(tiers: SalesHeadBonusTier[], sales: number): SalesHeadBonusTier | null {
-  return [...tiers].sort((a, b) => b.sales - a.sales).find((t) => sales >= t.sales) ?? null;
+  return [...tiers].filter((t) => t.amount > 0).sort((a, b) => b.sales - a.sales).find((t) => sales >= t.sales) ?? null;
 }
+
+export type SalesHeadBonusDay = { day: string; sales: number; amount: number };
 
 export type SalesHeadSalary = {
   fixedSalary: number;
@@ -69,6 +75,8 @@ export type SalesHeadSalary = {
   totalAmount: number;
   bonusPeriod: SalesHeadBonusPeriod;
   tiers: SalesHeadBonusTier[];
+  /** Kunlik rejimda: bonus olgan kunlar (sana tartibida). */
+  bonusDays: SalesHeadBonusDay[];
   /** Oylik rejimda: erishilgan va keyingi pog'ona. */
   currentTier: SalesHeadBonusTier | null;
   nextTier: SalesHeadBonusTier | null;
@@ -79,11 +87,17 @@ export type SalesHeadSalary = {
 export function salesHeadSalary(settings: SalesHeadSettings, dailyCounts: Record<string, number>): SalesHeadSalary {
   const countedSales = Object.values(dailyCounts).reduce((sum, n) => sum + n, 0);
   const tiers = [...settings.tiers].sort((a, b) => a.sales - b.sales);
+  const bonusDays = settings.bonusPeriod === 'day'
+    ? Object.entries(dailyCounts)
+      .map(([day, sales]) => ({ day, sales, amount: reachedTier(tiers, sales)?.amount ?? 0 }))
+      .filter((d) => d.amount > 0)
+      .sort((a, b) => a.day.localeCompare(b.day))
+    : [];
   const bonusAmount = settings.bonusPeriod === 'day'
-    ? Object.values(dailyCounts).reduce((sum, n) => sum + (reachedTier(tiers, n)?.amount ?? 0), 0)
+    ? bonusDays.reduce((sum, d) => sum + d.amount, 0)
     : reachedTier(tiers, countedSales)?.amount ?? 0;
   const currentTier = settings.bonusPeriod === 'month' ? reachedTier(tiers, countedSales) : null;
-  const nextTier = settings.bonusPeriod === 'month' ? tiers.find((t) => countedSales < t.sales) ?? null : null;
+  const nextTier = settings.bonusPeriod === 'month' ? tiers.find((t) => t.amount > 0 && countedSales < t.sales) ?? null : null;
   const salesAmount = countedSales * settings.perSale;
   return {
     fixedSalary: settings.fixedSalary,
@@ -94,6 +108,7 @@ export function salesHeadSalary(settings: SalesHeadSettings, dailyCounts: Record
     totalAmount: settings.fixedSalary + salesAmount + bonusAmount,
     bonusPeriod: settings.bonusPeriod,
     tiers,
+    bonusDays,
     currentTier,
     nextTier,
     remainingToNext: nextTier ? nextTier.sales - countedSales : 0,

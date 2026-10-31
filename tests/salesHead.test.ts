@@ -13,7 +13,7 @@ const settings = (patch: Partial<typeof DEFAULT_SALES_HEAD_SETTINGS> = {}) => ({
 });
 
 test('sales head salary: fixed + per operator sale + highest monthly tier', () => {
-  const s = salesHeadSalary(settings(), { '2026-10-01': 10, '2026-10-02': 6 });
+  const s = salesHeadSalary(settings({ bonusPeriod: 'month' }), { '2026-10-01': 10, '2026-10-02': 6 });
   assert.equal(s.countedSales, 16);
   assert.equal(s.salesAmount, 320_000);
   assert.equal(s.bonusAmount, 300_000, 'tiers do not stack');
@@ -26,7 +26,19 @@ test('sales head salary: fixed + per operator sale + highest monthly tier', () =
 test('sales head salary: daily bonus period sums each day separately', () => {
   const s = salesHeadSalary(settings({ bonusPeriod: 'day' }), { a: 5, b: 4, c: 15 });
   assert.equal(s.bonusAmount, 100_000 + 300_000);
+  assert.deepEqual(s.bonusDays, [{ day: 'a', sales: 5, amount: 100_000 }, { day: 'c', sales: 15, amount: 300_000 }]);
   assert.equal(s.nextTier, null);
+});
+
+test('sales head salary: tiers with a zero bonus are skipped, not used as the reached tier', () => {
+  // Prod config 2026-10: only "5 a day" was filled in, 15/20/30 left at 0 — bonus used to be 0.
+  const tiers = [{ sales: 5, amount: 100_000 }, { sales: 15, amount: 0 }, { sales: 20, amount: 0 }, { sales: 30, amount: 0 }];
+  const daily = salesHeadSalary(settings({ bonusPeriod: 'day', tiers }), { '2026-10-01': 4, '2026-10-02': 7, '2026-10-03': 22 });
+  assert.equal(daily.bonusAmount, 200_000, 'every day with 5+ sales earns the 5-tier bonus');
+  const monthly = salesHeadSalary(settings({ bonusPeriod: 'month', tiers }), { all: 96 });
+  assert.equal(monthly.bonusAmount, 100_000);
+  assert.deepEqual(monthly.currentTier, { sales: 5, amount: 100_000 });
+  assert.equal(monthly.nextTier, null);
 });
 
 test('sales head settings validation sorts tiers and rejects bad input', () => {
