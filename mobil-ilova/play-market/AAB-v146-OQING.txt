@@ -1,0 +1,33 @@
+FalaRus146 — foydalanuvchi talabiga binoan ilova ichidagi yosh/safety gate
+olib tashlandi. Odatdagi App ochiladi. Chat, ustozlar, avatar va Диалоги bor.
+Server o‘zgartirilmagan. Yuborilgan yangi kod asosidagi dizayn saqlangan.
+
+YOSH CHEGARASI:18+ target audience.16+tanlamang:16–17voyaga yetmaganlar.
+Bu IARC kontent reytingini qo‘lda18qilish degani emas; savolnomaga haqiqiy
+javoblar beriladi va reytingni IARC hisoblaydi.
+
+PLAY CONSOLEDA MAJBURIY SOZLASH — hozir agent bu sozlamani o‘zgartirmagan.
+Мониторинг и улучшение → Правила и программы → Контент приложения.
+Target audience and content / Целевая аудитория и контент → Manage.
+Faqat18 and over guruhini tanlang; boshqa yosh guruhlarini olib tashlang.
+Restrict Minor Access — Google voyaga yetmagan deb aniqlagan foydalanuvchilar
+kirishini cheklash belgisini yoqing.18+only tanlanganda ko‘rsatiladi.
+Tavsif, reklama, privacy va App access haqiqiy kattalar auditoriyasiga mos
+bo‘lsin. Ijtimoiy imkoniyatlar mavjudligini to‘g‘ri ko‘rsating.
+Rasmiy manba: https://support.google.com/googleplay/android-developer/answer/9867159?hl=en
+
+Muhim: ilova ichida yosh tekshiruvi yo‘q;146o‘z-o‘zidan bolalarni bloklamaydi.
+Play Console cheklovi Google Playdagi tarqatishga tegishli. APKni boshqa
+yo‘l bilan o‘rnatish yoki jonli saytga kirish bu build bilan cheklanmagan.
+Bu Google radidagi bolalar himoyasini kodda to‘liq joriy qilish yechimi emas,
+haqiqatan faqat kattalarga mo‘ljallangan auditoriyaga o‘tish varianti.
+Google auditoriya haqiqiyligini va boshqa talablarni qayta baholaydi;
+auditoriyani almashtirish tasdiqni kafolatlamaydi. Console sozlamalaridan
+oldin146ni “muammo hal bo‘ldi” deb yubormang.
+
+Telefonda146APKni sinang; tug‘ilgan sana va oldingi yopiq chat ekrani
+chiqmasligi, chat/ustozlar/o‘yin/darslar ochilishini tekshiring.
+Haqiqiy telefondagi tekshiruv va Google review hali bajarilmagan.
+145va144APK/AABlarni ishlatmang. Fayllar TAYYOR-v146papkasida.
+18+sozlash boshqa UGC report/block, AI, billing va privacy talablarini
+bekor qilmaydi; oldingi auditdagi tegishli masalalar ochiq.

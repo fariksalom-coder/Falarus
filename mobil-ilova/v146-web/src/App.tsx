@@ -1,0 +1,305 @@
+import { HelmetProvider } from 'react-helmet-async';
+import { BrowserRouter as Router, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { AnalyticsScripts } from './components/AnalyticsScripts';
+import { GlobalSeo } from './components/GlobalSeo';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { AchievementCelebrationProvider } from './context/AchievementCelebrationContext';
+import { LocaleProvider } from './context/LocaleContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { TextScaleProvider } from './context/TextScaleContext';
+import { AccessProvider } from './context/AccessContext';
+import { PaymentStatusProvider } from './context/PaymentStatusContext';
+import { AdminAuthProvider } from './context/AdminAuthContext';
+import MainLayout from './components/MainLayout';
+import { PanelSceneProvider } from './components/ui/PanelScene';
+import NotFoundPage from './pages/NotFoundPage';
+import KunlikRejaRedirect from './components/KunlikRejaRedirect';
+import GameGate from './components/games/GameGate';
+import { renderLazyPage } from './routeModules';
+import { ADMIN_BASE_PATH, adminPath } from './constants/adminPath';
+import { SUPPORT_CRM_BASE_PATH, supportCrmPath } from './constants/supportCrmPath';
+import { SupportCrmAuthProvider } from './context/SupportCrmAuthContext';
+
+
+function AppRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-app-bg">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-[#0B2A6B]" />
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/test-russkogo" element={renderLazyPage('./pages/KioskPage.tsx')} />
+      <Route path="/kiosk" element={<Navigate to="/test-russkogo" replace />} />
+      <Route path="/operator-reset" element={renderLazyPage('./pages/OperatorResetPage.tsx')} />
+      <Route path="/operator-app" element={renderLazyPage('./pages/OperatorMiniAppPage.tsx')} />
+      <Route path="/dev/robot-preview" element={renderLazyPage('./pages/RobotPreviewPage.tsx')} />
+      <Route path="/huquqiy/ommaviy-oferta" element={renderLazyPage('./pages/legal/LegalOfferPage.tsx')} />
+      <Route path="/huquqiy/maxfiylik" element={renderLazyPage('./pages/legal/LegalPrivacyPage.tsx')} />
+      <Route path="/huquqiy/qaytarish" element={renderLazyPage('./pages/legal/LegalRefundPage.tsx')} />
+      <Route path="/promo/russian" element={renderLazyPage('./pages/PromoRussianPage.tsx')} />
+      <Route path="/teacher-login" element={renderLazyPage('./pages/TeacherLoginPage.tsx')} />
+      <Route path="/teacher-register" element={renderLazyPage('./pages/TeacherRegisterPage.tsx')} />
+      <Route path="/teacher-cabinet" element={renderLazyPage('./pages/TeacherPanelPage.tsx')} />
+      <Route
+        path={ADMIN_BASE_PATH}
+        element={
+          <AdminAuthProvider>
+            <Outlet />
+          </AdminAuthProvider>
+        }
+      >
+        <Route index element={<Navigate to={adminPath('/dashboard')} replace />} />
+        <Route path="login" element={renderLazyPage('./pages/admin/AdminLoginPage.tsx')} />
+        {/*
+          Admin qobig'i ham LAZY. Ilgari `AdminGuard` bilan `AdminLayout`
+          statik import qilinardi va shuning uchun butun admin chunki (~170 KB)
+          HAR BIR tashrifchiga — ro'yxatdan o'tayotgan oddiy o'quvchiga ham —
+          yuklanardi. Endi u faqat admin yo'liga kirilganda keladi.
+        */}
+        <Route element={renderLazyPage('./pages/admin/AdminGuard.tsx')}>
+          <Route element={renderLazyPage('./pages/admin/AdminLayout.tsx')}>
+            <Route path="dictation" element={renderLazyPage('./pages/admin/AdminDictationPage.tsx')} />
+            <Route path="video-lessons" element={renderLazyPage('./pages/admin/AdminVideoLessonsPage.tsx')} />
+            <Route path="kiosk" element={renderLazyPage('./pages/admin/AdminKioskPage.tsx')} />
+            <Route path="dashboard" element={renderLazyPage('./pages/admin/AdminDashboardPage.tsx')} />
+            <Route path="users" element={renderLazyPage('./pages/admin/AdminUsersPage.tsx')} />
+            <Route path="users/manage" element={renderLazyPage('./pages/admin/AdminUserManagePage.tsx')} />
+            <Route path="users/create" element={renderLazyPage('./pages/admin/AdminCreateUserPage.tsx')} />
+            <Route path="users/:id" element={renderLazyPage('./pages/admin/AdminUserProfilePage.tsx')} />
+            <Route path="payments" element={renderLazyPage('./pages/admin/AdminPaymentsPage.tsx')} />
+            <Route path="sales-ledger" element={renderLazyPage('./pages/admin/AdminSalesLedgerPage.tsx')} />
+            <Route path="operators" element={renderLazyPage('./pages/admin/AdminOperatorsPage.tsx')} />
+            <Route path="click-logs" element={renderLazyPage('./pages/admin/AdminClickLogsPage.tsx')} />
+            <Route path="referrals" element={renderLazyPage('./pages/admin/AdminReferralsPage.tsx')} />
+            <Route path="support" element={renderLazyPage('./pages/admin/AdminSupportPage.tsx')} />
+            <Route path="payment-methods" element={renderLazyPage('./pages/admin/AdminPaymentMethodsPage.tsx')} />
+            <Route path="tariff-pricing" element={renderLazyPage('./pages/admin/AdminTariffPricingPage.tsx')} />
+            <Route path="teachers" element={renderLazyPage('./pages/admin/AdminTeachersPage.tsx')} />
+            <Route path="teacher-trials" element={renderLazyPage('./pages/admin/AdminTeacherTrialsPage.tsx')} />
+            <Route path="meet-rooms" element={renderLazyPage('./pages/admin/AdminMeetRoomsPage.tsx')} />
+            <Route path="teacher-documents" element={renderLazyPage('./pages/admin/AdminTeacherDocumentsPage.tsx')} />
+            <Route path="chat-moderation" element={renderLazyPage('./pages/admin/AdminChatModerationPage.tsx')} />
+            <Route path="onboarding" element={renderLazyPage('./pages/admin/AdminOnboardingPage.tsx')} />
+            <Route path="content" element={renderLazyPage('./pages/admin/AdminContentPage.tsx')} />
+            <Route path="sql" element={renderLazyPage('./pages/admin/AdminSqlPage.tsx')} />
+          </Route>
+        </Route>
+      </Route>
+
+      <Route
+        path={SUPPORT_CRM_BASE_PATH}
+        element={
+          <SupportCrmAuthProvider>
+            <Outlet />
+          </SupportCrmAuthProvider>
+        }
+      >
+        <Route index element={<Navigate to={supportCrmPath('/dashboard')} replace />} />
+        <Route path="login" element={renderLazyPage('./pages/supportCrm/SupportCrmLoginPage.tsx')} />
+        <Route element={renderLazyPage('./pages/supportCrm/SupportCrmGuard.tsx')}>
+          <Route element={renderLazyPage('./pages/supportCrm/SupportCrmLayout.tsx')}>
+            <Route path="dashboard" element={renderLazyPage('./pages/supportCrm/SupportCrmDashboardPage.tsx')} />
+            <Route path="search" element={renderLazyPage('./pages/supportCrm/SupportCrmSearchPage.tsx')} />
+            <Route path="queue" element={renderLazyPage('./pages/supportCrm/SupportCrmQueuePage.tsx')} />
+            <Route path="premium" element={renderLazyPage('./pages/supportCrm/SupportCrmPremiumPage.tsx')} />
+            <Route path="users/:id" element={renderLazyPage('./pages/supportCrm/SupportCrmUserPage.tsx')} />
+          </Route>
+        </Route>
+      </Route>
+
+      {!user ? (
+        <>
+          <Route path="/" element={renderLazyPage('./pages/LandingPage.tsx')} />
+          <Route path="/auth" element={<Navigate to="/login" replace />} />
+          <Route path="/welcome" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={renderLazyPage('./pages/LoginPage.tsx')} />
+          <Route path="/register" element={renderLazyPage('./pages/RegisterPage.tsx')} />
+          <Route path="/forgot-password" element={renderLazyPage('./pages/ForgotPasswordPage.tsx')} />
+          <Route path="/teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+          <Route path="/teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+          <Route path="*" element={<NotFoundPage />} />
+        </>
+      ) : user.accountType === 'teacher' ? (
+        /*
+         * O'qituvchi o'quvchi ILOVASIGA kirmaydi (darslar, kunlik reja), lekin
+         * SAYTNING ommaviy qismi unga ham ochiq: bosh sahifa va o'qituvchilar
+         * ro'yxati. Ilgari har qanday manzil kabinetga majburan qaytarilardi —
+         * o'qituvchi falarus.uz ni ocholmay qolardi.
+         */
+        <>
+          <Route path="/" element={renderLazyPage('./pages/LandingPage.tsx')} />
+          <Route path="/teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+          <Route path="/teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+          <Route path="/payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
+          <Route path="/payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
+          <Route path="/payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
+          <Route path="/dars/s/:sessionId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="*" element={<Navigate to="/teacher-cabinet" replace />} />
+        </>
+      ) : (
+        <>
+          <Route path="/onboarding" element={renderLazyPage('./pages/OnboardingPage.tsx')} />
+          <Route path="/" element={<MainLayout />}>
+            {/*
+              ILOVANING BIRINCHI EKRANI — XARITA.
+              O'quvchi ilovani ochganda 182 kunlik yo'lni ko'radi va qayerda
+              turganini darhol biladi. Kunni bosgach o'sha kunning bloklari
+              (`HomePage`) ochiladi — ular endi bir pog'ona pastda.
+              `kunlik-reja/xarita` eski havolalar uchun qoldirildi.
+            */}
+            <Route index element={renderLazyPage('./pages/LearningStartPage.tsx')} />
+            <Route path="kurs-haqida" element={renderLazyPage('./pages/CourseInfoPage.tsx')} />
+            <Route path="kunlik-reja" element={<KunlikRejaRedirect />} />
+            <Route path="kunlik-reja/xarita" element={renderLazyPage('./pages/DailyCourseMapPage.tsx')} />
+            <Route path="kunlik-reja/kun/:dayNum" element={renderLazyPage('./pages/HomePage.tsx')} />
+            <Route
+              path="kunlik-reja/kun/:dayNum/takrorlash"
+              element={renderLazyPage('./pages/KunlikTakrorlashPage.tsx')}
+            />
+            <Route
+              path="kunlik-reja/kun/:dayNum/grammatika/test-variantlar"
+              element={renderLazyPage('./pages/DailyGrammarRuleMcqPage.tsx')}
+            />
+            <Route
+              path="kunlik-reja/kun/:dayNum/grammatika/juftlik"
+              element={renderLazyPage('./pages/DailyGrammarMatchPage.tsx')}
+            />
+            <Route
+              path="kunlik-reja/kun/:dayNum/grammatika/gap-tuzish"
+              element={renderLazyPage('./pages/DailyGrammarSentenceArrangePage.tsx')}
+            />
+            <Route
+              path="kunlik-reja/kun/:dayNum/lugat/tanishish"
+              element={renderLazyPage('./pages/DailyVocabTanishishPage.tsx')}
+            />
+            <Route path="kunlik-reja/kun/:dayNum/lugat/test" element={renderLazyPage('./pages/DailyVocabTestPage.tsx')} />
+            <Route path="kunlik-reja/kun/:dayNum/lugat/juftlik" element={renderLazyPage('./pages/DailyVocabPairsPage.tsx')} />
+            <Route path="kunlik-reja/kun/:dayNum/lugat/iboralar" element={renderLazyPage('./pages/DailyVocabPhrasesPage.tsx')} />
+            <Route
+              path="kunlik-reja/kun/:dayNum/oqish/savollar"
+              element={renderLazyPage('./pages/DailyReadingQuestionsPage.tsx')}
+            />
+            <Route
+              path="kunlik-reja/kun/:dayNum/gapirish/tarjima"
+              element={renderLazyPage('./pages/DailyKunSectionPage.tsx', {
+                sectionOverride: 'gapirish',
+                speakingSub: 'tarjima',
+              })}
+            />
+            <Route
+              path="kunlik-reja/kun/:dayNum/gapirish/topshiriqlar"
+              element={renderLazyPage('./pages/DailySpeakingTasksPage.tsx')}
+            />
+            <Route path="kunlik-reja/kun/:dayNum/:section" element={renderLazyPage('./pages/DailyKunSectionPage.tsx')} />
+            <Route path="partner" element={renderLazyPage('./pages/PartnerPage.tsx')} />
+            <Route path="games" element={renderLazyPage('./pages/GamesPage.tsx')} />
+            <Route path="games/dialogue" element={renderLazyPage('./pages/SituationsGamePage.tsx')} />
+            <Route path="games/dictation" element={renderLazyPage('./pages/DictationPage.tsx')} />
+            <Route path="games/dictation/:topicId" element={<GameGate game="dictation">{renderLazyPage('./pages/DictationPage.tsx')}</GameGate>} />
+            {/*
+              O'yinlar to'lov qilmaganlar uchun 3 marta ochiladi — hisob
+              serverda yuritiladi (`GameGate`). Xarita va yo'naltirish
+              sahifalari hisobga kirmaydi: ular o'yinning o'zi emas.
+            */}
+            <Route
+              path="games/soz-zanjiri"
+              element={
+                <GameGate game="soz-zanjiri">
+                  {renderLazyPage('./pages/WordChainGamePage.tsx')}
+                </GameGate>
+              }
+            />
+            <Route
+              path="games/soz-savati"
+              element={
+                <GameGate game="soz-savati">
+                  {renderLazyPage('./pages/WordRiseGamePage.tsx')}
+                </GameGate>
+              }
+            />
+            <Route
+              path="games/fel-ustasi"
+              element={
+                <GameGate game="fel-ustasi">
+                  {renderLazyPage('./pages/VerbConjugationGamePage.tsx')}
+                </GameGate>
+              }
+            />
+            <Route path="games/word-swipe" element={renderLazyPage('./pages/WordSwipeRedirectPage.tsx')} />
+            <Route path="games/word-swipe/xarita" element={renderLazyPage('./pages/WordSwipeMapPage.tsx')} />
+            <Route
+              path="games/word-swipe/:levelNumber/:stageNumber"
+              element={
+                <GameGate game="word-swipe">
+                  {renderLazyPage('./pages/WordSwipeGamePage.tsx')}
+                </GameGate>
+              }
+            />
+            <Route path="teachers" element={renderLazyPage('./pages/TeachersPage.tsx')} />
+            <Route path="teachers/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
+            <Route path="help" element={renderLazyPage('./pages/HelpPage.tsx')} />
+            <Route path="jonli-efir" element={renderLazyPage('./pages/LiveStreamPage.tsx')} />
+            <Route path="support/parol" element={renderLazyPage('./pages/SupportParolPage.tsx')} />
+            <Route path="help/:chatId" element={renderLazyPage('./pages/HelpPage.tsx')} />
+            <Route path="profile" element={renderLazyPage('./pages/ProfilePage.tsx')} />
+            <Route path="profile/anketa" element={renderLazyPage('./pages/PartnerProfilePage.tsx')} />
+            <Route path="profile/settings" element={renderLazyPage('./pages/ProfileSettingsPage.tsx')} />
+            <Route path="profile/parol" element={renderLazyPage('./pages/ParolOzgartirishPage.tsx')} />
+            <Route path="u/:userId" element={renderLazyPage('./pages/PublicProfilePage.tsx')} />
+            <Route path="invite" element={renderLazyPage('./pages/InvitePage.tsx')} />
+            <Route path="statistika" element={renderLazyPage('./pages/StatistikaPage.tsx')} />
+            <Route path="kurslar" element={renderLazyPage('./pages/CoursesPage.tsx')} />
+            <Route path="kurslar/patent" element={renderLazyPage('./pages/PatentCoursePage.tsx')} />
+            <Route path="kurslar/patent/:variantNumber" element={renderLazyPage('./pages/PatentCourseVariantPage.tsx')} />
+            <Route path="kurslar/vnzh" element={renderLazyPage('./pages/VnzhCoursePage.tsx')} />
+            <Route path="kurslar/vnzh/:sectionSlug" element={renderLazyPage('./pages/VnzhCourseSectionPage.tsx')} />
+            <Route path="kurslar/vnzh/:sectionSlug/:taskSlug" element={renderLazyPage('./pages/VnzhCourseTaskPage.tsx')} />
+            <Route path="tariflar" element={<Navigate to="/kurs-haqida" replace />} />
+            <Route path="pricing" element={<Navigate to="/kurs-haqida" replace />} />
+            <Route path="payment" element={renderLazyPage('./pages/PaymentPage.tsx')} />
+            <Route path="payment/rahmat/done" element={renderLazyPage('./pages/RahmatReturnPage.tsx')} />
+            <Route path="payment-history" element={renderLazyPage('./pages/PaymentHistoryPage.tsx')} />
+            <Route path="reyting" element={<Navigate to="/statistika" replace />} />
+          </Route>
+          {/* Video dars — to'liq ekran, MainLayout'siz. */}
+          <Route path="/dars/s/:sessionId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="/dars/:roomId" element={renderLazyPage('./pages/MeetRoomPage.tsx')} />
+          <Route path="*" element={<NotFoundPage />} />
+        </>
+      )}
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <HelmetProvider>
+      <LocaleProvider>
+      <ThemeProvider>
+        <TextScaleProvider>
+        <AuthProvider>
+        <Router>
+          <GlobalSeo />
+          <AnalyticsScripts />
+          <AccessProvider>
+            <PaymentStatusProvider>
+                <AchievementCelebrationProvider>
+                  <PanelSceneProvider><AppRoutes /></PanelSceneProvider>
+                </AchievementCelebrationProvider>
+            </PaymentStatusProvider>
+          </AccessProvider>
+        </Router>
+        </AuthProvider>
+        </TextScaleProvider>
+      </ThemeProvider>
+      </LocaleProvider>
+    </HelmetProvider>
+  );
+}

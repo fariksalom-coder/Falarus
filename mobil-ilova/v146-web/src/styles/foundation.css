@@ -1,0 +1,350 @@
+/* Shared semantic primitives. Existing pages opt in without broad CSS overrides. */
+:root {
+  --ui-radius-card: 24px;
+  --ui-radius-control: 16px;
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 16px;
+  --ui-space-4: 24px;
+  --ui-space-5: 32px;
+  --ui-focus: #2563eb;
+  --ui-action: #0b2a6b;
+  --ui-action-hover: #123a8f;
+}
+.dark {
+  --ui-focus: #91b6ff;
+  --ui-action: #244e9d;
+  --ui-action-hover: #2e5caf;
+  --ui-success-ink: #79e8a7;
+  --ui-danger-ink: #ffa5ae;
+}
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    background 0.16s,
+    transform 0.16s;
+  text-decoration: none;
+}
+.ui-button--primary {
+  background: var(--ui-action);
+  color: #fff;
+}
+.ui-button--primary:hover {
+  background: var(--ui-action-hover);
+}
+.ui-button--secondary {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-color: var(--app-border-strong);
+}
+.ui-button--secondary:hover,
+.ui-button--ghost:hover {
+  background: var(--app-bg-subtle);
+}
+.ui-button--ghost {
+  color: var(--app-text-muted);
+  background: transparent;
+}
+.ui-button--danger {
+  background: #b42332;
+  color: #fff;
+}
+.ui-button--danger:hover {
+  background: #921c29;
+}
+.ui-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.ui-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ui-button:focus-visible,
+.ui-field input:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+.ui-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--ui-radius-card);
+  padding: 24px;
+  box-shadow: var(--app-shadow-card);
+  min-width: 0;
+}
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+  background: var(--app-icon-bg);
+  color: var(--app-text-muted);
+}
+.ui-badge--success {
+  background: var(--app-success-bg);
+  color: var(--ui-success-ink, var(--app-success-text));
+}
+.ui-badge--warning {
+  background: var(--app-warning-bg);
+  color: var(--app-warning);
+}
+.ui-badge--danger {
+  background: var(--app-danger-bg);
+  color: var(--ui-danger-ink, var(--app-danger));
+}
+.ui-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.ui-page-header h1 {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  color: var(--app-text);
+}
+.ui-eyebrow {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+.ui-description {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: var(--app-text-muted);
+}
+.ui-field {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+.ui-field label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.ui-field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: var(--ui-radius-control);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font: inherit;
+  font-size: 16px;
+}
+.ui-field input[aria-invalid="true"] {
+  border-color: var(--ui-danger-ink, var(--app-danger));
+}
+.ui-field p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+.ui-field .ui-field-error {
+  color: var(--ui-danger-ink, var(--app-danger));
+}
+.ui-progress {
+  display: block;
+  appearance: none;
+  width: 100%;
+  height: 7px;
+  border: 0;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--app-bg-subtle);
+  color: var(--ui-action);
+}
+.ui-progress::-webkit-progress-bar {
+  background: var(--app-bg-subtle);
+  border-radius: 99px;
+}
+.ui-progress::-webkit-progress-value {
+  background: var(--ui-action);
+  border-radius: 99px;
+}
+.ui-progress::-moz-progress-bar {
+  background: var(--ui-action);
+  border-radius: 99px;
+}
+.ui-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 40px 24px;
+  text-align: center;
+}
+.ui-empty h2 {
+  font-size: 20px;
+}
+.ui-spinner {
+  animation: ui-spin 1s linear infinite;
+}
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 600px) {
+  .ui-page-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .ui-card {
+    padding: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-button {
+    transition: none;
+  }
+  .ui-button:active:not(:disabled) {
+    transform: none;
+  }
+  .ui-spinner {
+    animation: none;
+  }
+}
+
+/* Live application shell. Lesson, game and payment focus routes retain full width. */
+.app-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid var(--app-border);
+  background: var(--app-surface);
+  box-shadow: 0 -4px 24px #0b2a6b08;
+}
+.app-navigation-brand {
+  display: none;
+}
+.app-navigation-items {
+  display: flex;
+  height: 62px;
+  max-width: 820px;
+  margin: auto;
+  padding: 0 4px;
+}
+.app-navigation-link {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.app-navigation-link:hover {
+  background: var(--app-row-hover);
+}
+.app-navigation-link:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: -3px;
+}
+.app-navigation-active {
+  pointer-events: none;
+  position: absolute;
+  inset: 5px 3px;
+  background: var(--app-icon-bg);
+  border-radius: 12px;
+}
+@media (min-width: 1100px) {
+  .app-navigation {
+    top: 0;
+    bottom: 0;
+    right: auto;
+    width: 224px;
+    border-top: 0;
+    border-right: 1px solid var(--app-border);
+    padding: 32px 16px;
+    box-shadow: none;
+    overflow-y: auto;
+  }
+  .app-navigation-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px 36px;
+    color: var(--app-text);
+    font-size: 25px;
+    font-weight: 800;
+  }
+  .app-navigation-brand img {
+    width: 32px;
+    height: 32px;
+  }
+  .app-navigation-brand small {
+    display: block;
+    color: var(--app-text-muted);
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .dark .app-navigation-brand img {
+    filter: brightness(0) invert(1);
+  }
+  .app-navigation-items {
+    height: auto;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0;
+  }
+  .app-navigation-link {
+    flex: none;
+    min-height: 52px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .app-navigation-label {
+    font-size: 13px;
+  }
+  .app-navigation-active {
+    inset: 0;
+  }
+  .app-with-navigation {
+    margin-left: 224px;
+  }
+  .app-with-navigation .nav-scroll-pad {
+    padding-bottom: 24px;
+  }
+}
+
+.iti {
+  --iti-dropdown-bg: var(--app-surface);
+  --iti-border-color: var(--app-border-strong);
+  --iti-hover-color: var(--app-row-hover);
+}
+.auth-theme .iti__selected-country { color:var(--app-text); }
+.dark .auth-theme button img[src*="/auth/eye_"] { filter:brightness(0) invert(1); }

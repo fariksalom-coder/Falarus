@@ -1,0 +1,324 @@
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { ArrowLeft, Inbox, LogIn, Send, UserRound, Users } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
+import {
+  getPartnerStatus,
+  getCachedPartnerStatus,
+  setCachedPartnerStatus,
+  type PartnerStatus,
+} from '../api/partner';
+import PartnerPeopleList from '../components/partner/PartnerPeopleList';
+import PartnerIncomingRequests from '../components/partner/PartnerIncomingRequests';
+import PartnerOutgoingRequests from '../components/partner/PartnerOutgoingRequests';
+import PartnerChat from '../components/partner/PartnerChat';
+import PartnerChatsSection from '../components/partner/PartnerChatsSection';
+import PartnerAdminChat from '../components/partner/PartnerAdminChat';
+import SavolJavobChat from '../components/partner/SavolJavobChat';
+import ReelsFeed from '../components/partner/ReelsFeed';
+
+type PageView = 'loading' | 'guest' | 'hub';
+
+type OverlayView =
+  | null
+  | 'browse'
+  | 'incoming'
+  | 'outgoing'
+  | 'admin-chat'
+  | 'group-chat'
+  | 'reels'
+  | 'partner-chat';
+
+export default function PartnerPage() {
+  const { token, user } = useAuth();
+  const { t } = useLocale();
+  const navigate = useNavigate();
+
+  const [view, setView] = useState<PageView>('loading');
+  const [overlay, setOverlay] = useState<OverlayView>(null);
+  const [status, setStatus] = useState<PartnerStatus | null>(null);
+  const [activeMatchId, setActiveMatchId] = useState<number | null>(null);
+  const loadingStatusRef = useRef(false);
+
+  const normalizeStatus = useCallback((s: PartnerStatus): PartnerStatus => {
+    const matches = Array.isArray(s.matches) ? s.matches : [];
+    const outgoingRequests = Array.isArray(s.outgoingRequests) ? s.outgoingRequests : [];
+    return {
+      ...s,
+      matches,
+      outgoingRequests,
+      outgoingRequestsCount:
+        typeof s.outgoingRequestsCount === 'number' ? s.outgoingRequestsCount : outgoingRequests.length,
+    };
+  }, []);
+
+  const openAnketalar = useCallback(() => {
+    if (!status) return;
+    if (status.hasProfile) {
+      setOverlay('browse');
+      return;
+    }
+    navigate('/profile/anketa');
+  }, [status, navigate]);
+
+  const applyStatusToView = useCallback(
+    (s: PartnerStatus, forceViewTransition = true) => {
+      const normalized = normalizeStatus(s);
+      setStatus(normalized);
+      setActiveMatchId((prev) => {
+        if (!normalized.matches.length) return null;
+        if (prev && normalized.matches.some((m) => m.id === prev)) return prev;
+        return normalized.matches[0].id;
+      });
+
+      if (!forceViewTransition) return;
+
+      setView('hub');
+    },
+    [normalizeStatus]
+  );
+
+  const loadStatus = useCallback(
+    async (forceViewTransition = true) => {
+      if (!token || loadingStatusRef.current) return;
+      loadingStatusRef.current = true;
+      try {
+        const s = await getPartnerStatus(token);
+        if (user?.id) setCachedPartnerStatus(user.id, s);
+        applyStatusToView(s, forceViewTransition);
+      } catch {
+        if (forceViewTransition) {
+          setStatus(null);
+          setView('hub');
+        }
+      } finally {
+        loadingStatusRef.current = false;
+      }
+    },
+    [token, user?.id, applyStatusToView]
+  );
+
+  useEffect(() => {
+    if (!token) {
+      setView('guest');
+      setOverlay(null);
+      return;
+    }
+    if (user?.id) {
+      const cached = getCachedPartnerStatus(user.id);
+      if (cached) applyStatusToView(cached, false);
+    }
+    void loadStatus(true);
+  }, [token, user?.id, loadStatus, applyStatusToView]);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      void loadStatus(false);
+    }, 10000);
+    return () => window.clearInterval(interval);
+  }, [token, loadStatus]);
+
+  const outgoingReceiverIds = status?.outgoingRequests?.map((r) => r.receiver_id) ?? [];
+
+  const shouldHideGlobalNav = overlay !== null;
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('partner-nav-mode', {
+        detail: { hideGlobalNav: shouldHideGlobalNav },
+      })
+    );
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent('partner-nav-mode', {
+          detail: { hideGlobalNav: false },
+        })
+      );
+    };
+  }, [shouldHideGlobalNav]);
+
+  const incomingCount = status?.incomingRequestsCount ?? 0;
+  const outgoingCount = status?.outgoingRequestsCount ?? 0;
+
+  return (
+    <div className="min-h-screen bg-app-bg pb-24">
+      <main
+        className={
+          overlay === 'partner-chat'
+            ? 'mx-auto max-w-4xl px-0 py-0'
+            : 'mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5'
+        }
+      >
+        <AnimatePresence mode="wait">
+          {view === 'loading' && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center justify-center py-20"
+            >
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#0B2A6B] border-t-transparent" />
+            </motion.div>
+          )}
+
+          {view === 'guest' && (
+            <motion.div key="guest" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <div className="rounded-[28px] border border-app-border bg-app-surface p-8 text-center shadow-app-card">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-app-icon-bg">
+                  <LogIn className="h-8 w-8 text-app-primary" />
+                </div>
+                <h2 className="mt-5 text-xl font-bold text-app-text">{t('partner.guestTitle')}</h2>
+                <p className="mt-2 text-sm text-app-text-muted">{t('partner.guestSubtitle')}</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="mt-6 w-full rounded-2xl bg-gradient-to-r from-[#123A8F] to-[#0B2A6B] px-6 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(11,42,107,0.3)]"
+                >
+                  {t('partner.guestLogin')}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {view === 'hub' && status && (
+            <motion.div key="hub" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h1 className="text-2xl font-extrabold tracking-tight text-app-text">{t('partner.title')}</h1>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={openAnketalar}
+                    className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
+                    aria-label={t('partner.profiles')}
+                  >
+                    <Users className="h-5 w-5" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverlay('incoming')}
+                    className="relative flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
+                    aria-label={t('partner.incoming')}
+                  >
+                    <Inbox className="h-5 w-5" aria-hidden />
+                    {incomingCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0B2A6B] px-1 text-[10px] font-bold text-white">
+                        {incomingCount > 9 ? '9+' : incomingCount}
+                      </span>
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverlay('outgoing')}
+                    className="relative flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
+                    aria-label={t('partner.outgoing')}
+                  >
+                    <Send className="h-5 w-5" aria-hidden />
+                    {outgoingCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0B2A6B] px-1 text-[10px] font-bold text-white">
+                        {outgoingCount > 9 ? '9+' : outgoingCount}
+                      </span>
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/profile/anketa')}
+                    className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-app-surface text-app-text shadow-[0_4px_10px_rgba(23,34,74,0.06)] transition hover:-translate-y-0.5 active:scale-[0.97]"
+                    aria-label={t('partner.profiles')}
+                  >
+                    <UserRound className="h-5 w-5" aria-hidden />
+                  </button>
+                </div>
+              </div>
+
+              <PartnerChatsSection
+                matches={status.matches}
+                onOpenAdmin={() => setOverlay('admin-chat')}
+                onOpenGroup={() => setOverlay('group-chat')}
+                onOpenReels={() => setOverlay('reels')}
+                onOpenPartner={(matchId) => {
+                  setActiveMatchId(matchId);
+                  setOverlay('partner-chat');
+                }}
+              />
+
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {overlay === 'browse' && status ? (
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">
+          <div className="mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5">
+            <div className="mb-4 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setOverlay(null)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text-muted shadow-sm"
+                aria-label={t('common.back')}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-app-text">{t('partner.profiles')}</h1>
+                <p className="text-sm text-app-text-muted">{t('partner.profilesSub')}</p>
+              </div>
+            </div>
+            <PartnerPeopleList
+              onRequestSent={() => loadStatus()}
+              incomingCount={incomingCount}
+              outgoingCount={outgoingCount}
+              initiallyRequestedIds={outgoingReceiverIds}
+              onShowIncoming={() => setOverlay('incoming')}
+              onShowOutgoing={() => setOverlay('outgoing')}
+              showRequestNav={false}
+              canSendRequests
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {overlay === 'incoming' ? (
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">
+          <div className="mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5">
+            <PartnerIncomingRequests
+              onBack={() => setOverlay(null)}
+              onAccepted={() => loadStatus()}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {overlay === 'outgoing' ? (
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-app-bg pb-24">
+          <div className="mx-auto max-w-lg px-4 py-4 sm:px-5 sm:py-5">
+            <PartnerOutgoingRequests
+              onBack={() => setOverlay(null)}
+              onUpdated={() => loadStatus()}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {overlay === 'partner-chat' && status && activeMatchId ? (
+        <div className="fixed inset-0 z-40 bg-app-bg">
+          <PartnerChat
+            match={status.matches.find((m) => m.id === activeMatchId) ?? status.matches[0]}
+            onEnded={() => loadStatus()}
+            onBack={() => setOverlay(null)}
+          />
+        </div>
+      ) : null}
+
+      {overlay === 'admin-chat' ? <PartnerAdminChat onBack={() => setOverlay(null)} /> : null}
+      {overlay === 'group-chat' ? (
+        <SavolJavobChat onBack={() => setOverlay(null)} onOpenSupport={() => setOverlay('admin-chat')} />
+      ) : null}
+      {overlay === 'reels' ? <ReelsFeed onBack={() => setOverlay(null)} /> : null}
+    </div>
+  );
+}

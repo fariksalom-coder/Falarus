@@ -1,0 +1,50 @@
+.registration-report { padding: 24px 0; border-block: 1px solid #dfe5ee; color: #172b49; }
+.registration-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.registration-header h2 { font-size: 18px; font-weight: 700; line-height: 1.4; letter-spacing: 0; }
+.registration-header p { margin-top: 4px; color: #62718a; font-size: 12px; }
+.registration-header input { min-height: 44px; max-width: 100%; border: 1px solid #ccd6e4; border-radius: 6px; padding: 8px 12px; background: white; color: #172b49; font-size: 14px; }
+.registration-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 20px 0; max-width: 720px; }
+.registration-totals > div { padding: 0 24px; border-left: 1px solid #dfe5ee; }
+.registration-totals > div:first-child { padding-left: 0; border: 0; }
+.registration-totals dt { color: #62718a; font-size: 12px; line-height: 1.5; }
+.registration-totals dd { margin-top: 4px; font-size: 26px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.registration-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; align-items: start; }
+.registration-chart { display: flex; gap: 10px; height: 256px; min-width: 0; padding-top: 12px; }
+.registration-axis { display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 28px; width: 36px; flex-shrink: 0; color: #62718a; font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
+.registration-plot { position: relative; flex: 1; min-width: 0; }
+.registration-grid { position: absolute; inset: 0 0 28px; border-block: 1px solid #dfe5ee; pointer-events: none; }
+.registration-grid::after { content: ''; position: absolute; top: 50%; width: 100%; border-top: 1px dashed #dfe5ee; }
+.registration-bars { position: relative; display: grid; height: 100%; gap: 3px; }
+.registration-bar-link { display: flex; flex-direction: column; min-width: 0; text-decoration: none; outline-offset: 2px; }
+.registration-bar-space { display: flex; align-items: flex-end; justify-content: center; position: relative; flex: 1; min-height: 0; }
+.registration-bar { display: block; width: 100%; max-width: 28px; background: #3966a6; border-radius: 3px 3px 0 0; min-width: 2px; }
+.registration-bar-link.is-peak .registration-bar { background: #148574; }
+.registration-bar-link:hover .registration-bar, .registration-bar-link:focus-visible .registration-bar { background: #122f61; }
+.registration-bar-link:focus-visible, .registration-list:focus-visible, .registration-list a:focus-visible { outline: 2px solid #2563eb; }
+.registration-day { height: 28px; padding-top: 8px; text-align: center; color: #62718a; font-size: 11px; }
+.registration-tooltip { display: none; position: absolute; z-index: 2; top: 4px; left: 50%; transform: translateX(-50%); white-space: nowrap; background: #172b49; color: white; border-radius: 4px; padding: 5px 8px; font-size: 12px; pointer-events: none; }
+.registration-bar-link:hover .registration-tooltip, .registration-bar-link:focus-visible .registration-tooltip { display: block; }
+.registration-bar-link:first-child .registration-tooltip { left: 0; transform: none; }
+.registration-bar-link:last-child .registration-tooltip { left: auto; right: 0; transform: none; }
+.registration-list { height: 256px; overflow: auto; border-left: 1px solid #dfe5ee; padding-left: 20px; scrollbar-width: thin; }
+.registration-list table { width: 100%; font-size: 13px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.registration-list th { position: sticky; top: 0; z-index: 1; background: #f5f7fa; text-align: left; color: #62718a; font-size: 11px; font-weight: 500; height: 32px; }
+.registration-list th:nth-child(2), .registration-list td:nth-child(2) { text-align: right; }
+.registration-list td { border-bottom: 1px solid #e6ebf2; }
+.registration-list td:nth-child(2) { font-weight: 650; }
+.registration-list td:last-child { width: 44px; }
+.registration-list a { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: #3966a6; border-radius: 4px; }
+.registration-list tr:hover td { background: #edf2f8; }
+.registration-loading { min-height: 200px; display: grid; place-items: center; color: #62718a; font-size: 14px; }
+.registration-error { padding: 16px 0; color: #b42318; font-size: 14px; }
+@media (max-width: 900px) {
+  .registration-body { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .registration-list { border-left: 0; padding-left: 0; height: 220px; }
+}
+@media (max-width: 480px) {
+  .registration-totals > div { padding: 0 10px; }
+  .registration-totals dt { font-size: 11px; }
+  .registration-totals dd { font-size: 22px; }
+  .registration-chart { height: 200px; gap: 6px; }
+  .registration-bars { gap: 2px; }
+}

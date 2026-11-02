@@ -1,0 +1,14 @@
+html .admin-workspace {
+  --app-bg: #f7f8fa;
+  --app-bg-muted: #f1f4f8;
+  --app-surface: #fff;
+  --app-text: #17263b;
+  --app-text-muted: #53647b;
+  --app-primary: #174785;
+  --app-primary-deep: #0b2445;
+  --app-border: #dce3eb;
+  background: #f7f8fa !important;
+}
+html .admin-workspace > aside {
+  background: #0b2445 !important;
+}

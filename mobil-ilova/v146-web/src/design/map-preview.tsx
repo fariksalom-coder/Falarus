@@ -1,0 +1,7 @@
+import {useState} from 'react';
+import {createRoot} from 'react-dom/client';
+import ScrollableCourseMap from '../components/journey/ScrollableCourseMap';
+import {QUESTS,type QuestSlot} from '../utils/kunlikBloklar';
+import '../styles/journey-dashboard.css';
+import './map-preview.css';
+function Preview(){const [selected,setSelected]=useState<number|null>(null),[lesson,setLesson]=useState<QuestSlot|null>(null);const [done,setDone]=useState(0);const currentDay=Math.max(1,Math.min(182,Number(new URLSearchParams(location.search).get('day'))||1));const slots:QuestSlot[]=QUESTS.map((q,i)=>({...q,state:i<done?'done':i===done?'active':'locked',canOpen:i<=done}));return <><ScrollableCourseMap loaded currentDay={currentDay} selectedDay={selected} slots={slots} isDone={n=>n<currentDay} onSelect={setSelected} onLesson={setLesson}/>{lesson&&<div className="preview-dialog-backdrop"><section role="dialog" aria-modal="true" aria-label="Dars local ko‘rinishi" className="preview-dialog"><small>LOCAL UI NAMUNASI</small><h2>{['Grammatika','Lug‘at','O‘qish','Gapirish','Savol-javob'][QUESTS.findIndex(q=>q.id===lesson.id)]}</h2><p>Bu oynada xarita oqimi sinovdan o‘tkaziladi. Haqiqiy ilovada shu tugma tegishli darsni ochadi.</p><button onClick={()=>{setDone(Math.min(5,done+1));setLesson(null);}}>Namunada qadamni yakunlash</button><button onClick={()=>setLesson(null)}>Xaritaga qaytish</button></section></div>}</>};createRoot(document.getElementById('root')!).render(<Preview/>);

@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FalaRus</string>
+    <string name="title_activity_main">FalaRus</string>
+    <string name="package_name">com.falarus.mobile</string>
+    <string name="custom_url_scheme">com.falarus.mobile</string>
+    <string name="server_client_id">76774374355-nipao16d92mfk24kfk5nd11lrji7i07c.apps.googleusercontent.com</string>
+</resources>

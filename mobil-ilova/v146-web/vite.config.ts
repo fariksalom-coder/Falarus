@@ -1,0 +1,173 @@
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import path from 'path';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import type { Plugin } from 'vite';
+import {defineConfig, loadEnv} from 'vite';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SITE_TITLE =
+  'FalaRus — rus tili, patent, ВНЖ, fuqarolik RF | online kurs';
+const SITE_DESCRIPTION =
+  'FalaRus: rus tili kursi — patent imtihoni, ВНЖ, РВП va RF fuqaroligi uchun tayyorlov. Rus tili A1–B2, lug\'at, testlar. O\'zbekiston va migrantlar uchun. Rus tili patent va ВНЖ savollari. Rus tilini noldan o\'rganish, ruscha gapirish. Русский язык для патента, ВНЖ, гражданства РФ и РВП — онлайн-курс для узбеков.';
+const OG_IMAGE_URL = 'https://www.falarus.uz/icons/icon-512.png';
+
+function escapeHtmlAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/\r?\n/g, ' ');
+}
+
+/** Injects seo-keywords.txt into index.html meta + JSON-LD at build/dev time. */
+function seoInjectPlugin(): Plugin {
+  const kwPath = path.resolve(__dirname, 'seo-keywords.txt');
+
+  return {
+    name: 'seo-inject',
+    transformIndexHtml(html) {
+      let keywords = '';
+      try {
+        if (fs.existsSync(kwPath)) {
+          keywords = fs.readFileSync(kwPath, 'utf-8').trim().replace(/\s+/g, ' ');
+        }
+      } catch {
+        /* ignore */
+      }
+
+      const orgLd = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'FalaRus',
+        url: 'https://www.falarus.uz',
+        logo: 'https://www.falarus.uz/icons/icon-512.png',
+        description: SITE_DESCRIPTION,
+        sameAs: ['https://www.instagram.com/falarus'],
+      });
+
+      const websiteLd = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'FalaRus',
+        url: 'https://www.falarus.uz',
+        description: SITE_DESCRIPTION,
+        ...(keywords ? { keywords } : {}),
+      });
+
+      return html
+        .replace(/__SEO_SITE_TITLE__/g, SITE_TITLE)
+        .replace(/__SEO_SITE_TITLE_ESCAPED__/g, escapeHtmlAttr(SITE_TITLE))
+        .replace(/__SEO_SITE_DESCRIPTION_ESCAPED__/g, escapeHtmlAttr(SITE_DESCRIPTION))
+        .replace(/__SEO_META_KEYWORDS_ESCAPED__/g, escapeHtmlAttr(keywords))
+        .replace(/__OG_IMAGE_ESCAPED__/g, escapeHtmlAttr(OG_IMAGE_URL))
+        .replace(/__ORG_LD_JSON__/g, orgLd)
+        .replace(/__WEBSITE_LD_JSON__/g, websiteLd);
+    },
+  };
+}
+
+export default defineConfig(({mode}) => {
+  const env = loadEnv(mode, '.', '');
+  const vitePrefixed = loadEnv(mode, '.', 'VITE_');
+  const courseMediaBase =
+    (vitePrefixed.VITE_COURSE_MEDIA_BASE_URL || env.VITE_COURSE_MEDIA_BASE_URL || '').trim();
+
+  return {
+    plugins: [seoInjectPlugin(), react(), tailwindcss()],
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          crm: path.resolve(__dirname, 'crm.html'),
+          exercise: path.resolve(__dirname, 'exercise.html'),
+        },
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
+              return 'react-vendor';
+            }
+            if (id.includes('node_modules/@supabase')) {
+              return 'supabase-vendor';
+            }
+            if (id.includes('node_modules/lucide-react') || id.includes('node_modules/motion')) {
+              return 'ui-vendor';
+            }
+            if (
+              id.includes('/src/pages/LessonEleven') ||
+              id.includes('/src/pages/LessonFourteen') ||
+              id.includes('/src/pages/LessonFifteen')
+            ) {
+              return 'lessons-mid';
+            }
+            if (
+              id.includes('/src/pages/LessonSeventeen') ||
+              id.includes('/src/pages/LessonEighteen') ||
+              id.includes('/src/pages/LessonNineteen') ||
+              id.includes('/src/pages/LessonTwenty') ||
+              id.includes('/src/pages/LessonTwentyOne') ||
+              id.includes('/src/pages/LessonTwentyTwo') ||
+              id.includes('/src/pages/LessonTwentyThree') ||
+              id.includes('/src/pages/LessonTwentyFour') ||
+              id.includes('/src/pages/GrammarLessonTaskPage')
+            ) {
+              return 'lessons-late';
+            }
+            if (
+              id.includes('/src/pages/Lesson') ||
+              id.includes('/src/pages/Greeting') ||
+              id.includes('/src/pages/MatchingPairs') ||
+              id.includes('/src/pages/SentenceBuilder')
+            ) {
+              return 'lessons-core';
+            }
+            return undefined;
+          },
+        },
+      },
+    },
+    define: {
+      // DIQQAT: GEMINI_API_KEY bu yerga HECH QACHON qo'shilmasin — `define` qiymatni
+      // brauzer bundle'iga inline qiladi va kalit ochiq ko'rinadi. Gemini faqat
+      // serverda chaqiriladi (server/lib/gemini.ts).
+      'process.env.APP_URL': JSON.stringify(env.APP_URL),
+      ...(courseMediaBase
+        ? {'import.meta.env.VITE_COURSE_MEDIA_BASE_URL': JSON.stringify(courseMediaBase)}
+        : {}),
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+    server: {
+      // HMR is disabled in AI Studio via DISABLE_HMR env var.
+      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      hmr: process.env.DISABLE_HMR !== 'true',
+      // Ngrok / Cloudflare Tunnel и др.: иначе Vite режет запрос «host is not allowed».
+      // Точечно: задайте VITE_ALLOWED_HOSTS=host1.ngrok-free.dev,host2.trycloudflare.com
+      allowedHosts: process.env.VITE_ALLOWED_HOSTS
+        ? process.env.VITE_ALLOWED_HOSTS.split(',')
+            .map((h) => h.trim())
+            .filter(Boolean)
+        : true,
+      // Lokal preview uchun: VITE_DEV_API_PROXY=https://falarus.uz bo'lsa, /api'ni
+      // production backend'ga proxy qiladi (haqiqiy ma'lumot bilan ko'rish). Faqat dev.
+      proxy: process.env.VITE_DEV_API_PROXY
+        ? {
+            '/api': {
+              target: process.env.VITE_DEV_API_PROXY,
+              changeOrigin: true,
+              secure: true,
+            },
+          }
+        : undefined,
+      fs: {
+        // Worktrees hoist node_modules to the main repo root — allow serving asset files (flag sprites etc.) from there.
+        allow: [
+          path.resolve(__dirname),
+          path.resolve(__dirname, '../../..'),
+        ],
+      },
+    },
+  };
+});
+

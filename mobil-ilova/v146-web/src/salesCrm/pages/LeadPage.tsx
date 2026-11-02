@@ -1,0 +1,448 @@
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { Check, Phone } from 'lucide-react';
+import { salesCrmApi, type LeadDetail, type OperatorRow } from '../api';
+import { useSalesCrmAuth } from '../auth';
+import { StageMoveModal, type PendingMove, type StageMovePayload } from '../components/KanbanBoard';
+import RetryStatus from '../components/RetryStatus';
+import {
+  SALES_CRM_ANSWERED_RESULTS,
+  SALES_CRM_CALL_RESULT_LABELS,
+  SALES_CRM_KANBAN_COLUMNS,
+  SALES_CRM_NO_ANSWER_RESULTS,
+  SALES_CRM_STATUS_LABELS,
+  SALES_CRM_STATUSES,
+  SALES_FUNNEL_STAGES,
+  statusAfterCallResult,
+  type SalesCrmCallResult,
+  type SalesCrmStatus,
+} from '../../../shared/salesCrm';
+
+function plusHours(h: number): string {
+  return new Date(Date.now() + h * 3600_000).toISOString();
+}
+
+function tonight(): string {
+  const d = new Date();
+  d.setHours(20, 0, 0, 0);
+  if (d.getTime() < Date.now()) d.setDate(d.getDate() + 1);
+  return d.toISOString();
+}
+
+function tomorrow18(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(18, 0, 0, 0);
+  return d.toISOString();
+}
+
+export default function LeadPage() {
+  const { id } = useParams();
+  const leadId = Number(id);
+  const { agent } = useSalesCrmAuth();
+  const [data, setData] = useState<LeadDetail | null>(null);
+  const [ops, setOps] = useState<OperatorRow[]>([]);
+  const [err, setErr] = useState('');
+  const [comment, setComment] = useState('');
+  const [quickNote, setQuickNote] = useState('');
+  const [result, setResult] = useState<SalesCrmCallResult>('no_answer');
+  const [nextAt, setNextAt] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [statusErr, setStatusErr] = useState('');
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  const automaticRetry = statusAfterCallResult(result) === 'NO_ANSWER';
+
+  const tel = useMemo(() => {
+    const raw = String(data?.lead.phone || data?.lead.phone_normalized || '');
+    const digits = raw.replace(/\D+/g, '');
+    return digits ? `tel:+${digits}` : null;
+  }, [data]);
+
+  async function reload() {
+    const d = await salesCrmApi.lead(leadId);
+    setData(d);
+  }
+
+  useEffect(() => {
+    if (!Number.isFinite(leadId)) return;
+    void reload().catch((e) => setErr(e instanceof Error ? e.message : 'Xato'));
+    if (agent?.role === 'admin') {
+      void salesCrmApi.operators().then((r) => setOps(r.items.filter((o) => o.role === 'operator')));
+    }
+  }, [leadId, agent?.role]);
+
+  useEffect(() => {
+    if (data?.lead.status !== 'NO_ANSWER' || busy || statusBusy) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void reload().catch(() => {});
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [leadId, data?.lead.status, busy, statusBusy]);
+
+  async function onCallResult(e: FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setErr('');
+    try {
+      const answered = (SALES_CRM_ANSWERED_RESULTS as readonly string[]).includes(result);
+      await salesCrmApi.call(leadId, {
+        answered,
+        result,
+        comment: comment || undefined,
+        nextContactAt: automaticRetry ? null : nextAt || null,
+      });
+      setComment('');
+      setNextAt('');
+      await reload();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'Xato');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Throws so the stage modal can show the error inline. */
+  async function applyStatus(payload: StageMovePayload) {
+    setStatusBusy(true);
+    setStatusErr('');
+    const opts = { comment: payload.comment, nextContactAt: payload.nextContactAt };
+    try {
+      try {
+        await salesCrmApi.setStatus(leadId, payload.status, opts);
+      } catch (ex) {
+        if ((ex as { code?: string }).code !== 'CONFIRM_PAID_DOWNGRADE') throw ex;
+        if (!window.confirm('PAID statusni o‘zgartirasizmi?')) return;
+        await salesCrmApi.setStatus(leadId, payload.status, { ...opts, confirmPaidDowngrade: true });
+      }
+      await reload();
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
+  function pickStatus(status: SalesCrmStatus) {
+    if (!data || status === data.lead.status) return;
+    // Stages that need a comment / next contact go through the same modal as the board.
+    const column = SALES_CRM_KANBAN_COLUMNS.find((c) => c.dropStatus === status);
+    if (column && (column.requireComment || column.requireNextContact)) {
+      setPendingMove({ lead: data.lead, column });
+      return;
+    }
+    void applyStatus({ leadId, status }).catch((ex) =>
+      setStatusErr(ex instanceof Error ? ex.message : 'Status o‘zgarmadi'),
+    );
+  }
+
+  if (!data) {
+    return <p className="text-sm text-slate-500">{err || 'Yuklanmoqda…'}</p>;
+  }
+
+  const lead = data.lead;
+  const name = [lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Nomsiz';
+
+  return (
+    <div className="space-y-4">
+      <Link to="/leads" className="text-sm font-semibold text-blue-600">
+        ← Lidlar
+      </Link>
+
+      <div className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-black">{name}</h2>
+            <p className="mt-1 text-sm text-slate-500">{lead.phone || lead.phone_normalized}</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Manba: {String(lead.source || '—')} ·{' '}
+              {new Date(String(lead.created_at)).toLocaleString('uz-UZ')}
+            </p>
+          </div>
+          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+            {SALES_CRM_STATUS_LABELS[lead.status as SalesCrmStatus] || String(lead.status)}
+          </span>
+        </div>
+
+        <RetryStatus lead={lead} />
+        {!lead.next_contact_at && !['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE', 'LOW_QUALITY'].includes(String(lead.status)) ? (
+          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+            ⚠ Keyingi amal yo‘q
+          </p>
+        ) : null}
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {tel ? (
+            <a
+              href={tel}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 text-sm font-bold text-white"
+            >
+              <Phone size={18} /> Qo‘ng‘iroq
+            </a>
+          ) : (
+            <span className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-100 text-sm text-slate-400">
+              Telefon yo‘q
+            </span>
+          )}
+          <select
+            className="min-h-12 rounded-2xl border border-slate-200 px-3 text-sm font-semibold disabled:opacity-60"
+            value={String(lead.status)}
+            disabled={statusBusy}
+            onChange={(e) => pickStatus(e.target.value as SalesCrmStatus)}
+          >
+            {SALES_CRM_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {SALES_CRM_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {statusErr ? <p className="mt-2 text-sm font-semibold text-red-600">{statusErr}</p> : null}
+
+        {agent?.role === 'admin' ? (
+          <label className="mt-3 block text-xs font-bold text-slate-600">
+            Operator
+            <select
+              className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 px-3 text-sm"
+              value={lead.assigned_operator_id ?? ''}
+              onChange={(e) => {
+                const v = e.target.value ? Number(e.target.value) : null;
+                void salesCrmApi.assign(leadId, v).then(reload);
+              }}
+            >
+              <option value="">Tayinlanmagan</option>
+              {ops.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+
+      <MilestonesCard
+        milestones={data.milestones}
+        onToggle={async (stage, done) => {
+          try {
+            await salesCrmApi.setMilestone(leadId, stage, done);
+            await reload();
+          } catch (ex) {
+            setErr(ex instanceof Error ? ex.message : 'Xato');
+          }
+        }}
+      />
+
+      <form onSubmit={onCallResult} className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <h3 className="text-sm font-bold">Qo‘ng‘iroq natijasi</h3>
+        <select
+          className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 px-3 text-sm"
+          value={result}
+          onChange={(e) => setResult(e.target.value as SalesCrmCallResult)}
+        >
+          <optgroup label="Javob yo‘q">
+            {SALES_CRM_NO_ANSWER_RESULTS.map((r) => (
+              <option key={r} value={r}>
+                {SALES_CRM_CALL_RESULT_LABELS[r]}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Javob berdi">
+            {SALES_CRM_ANSWERED_RESULTS.map((r) => (
+              <option key={r} value={r}>
+                {SALES_CRM_CALL_RESULT_LABELS[r]}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+
+        {result === 'busy' ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[
+              { label: '2 soat', at: plusHours(2) },
+              { label: 'Kechqurun', at: tonight() },
+              { label: 'Ertaga', at: tomorrow18() },
+              { label: '2 kun', at: plusHours(48) },
+              { label: '5 kun', at: plusHours(120) },
+            ].map((b) => (
+              <button
+                key={b.label}
+                type="button"
+                onClick={() => setNextAt(b.at)}
+                className={`min-h-10 rounded-full px-3 text-xs font-bold ${
+                  nextAt === b.at ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {automaticRetry ? (
+          <p className="mt-3 text-sm font-medium text-slate-600">
+            {['NO_ANSWER', 'LOW_QUALITY'].includes(lead.status)
+              ? SALES_CRM_STATUS_LABELS[lead.status as SalesCrmStatus]
+              : Number(lead.no_answer_attempts || 0) >= 4
+                ? '5-urinish: Sifatsiz lidlar'
+                : `Qayta urinish: ${[2, 4, 12, 24][Number(lead.no_answer_attempts || 0)]} soat`}
+          </p>
+        ) : <label className="mt-3 block text-xs font-bold text-slate-600">
+          Keyingi kontakt
+          <input
+            type="datetime-local"
+            className="mt-1 min-h-11 w-full rounded-2xl border border-slate-200 px-3 text-sm"
+            value={nextAt ? toLocalInput(nextAt) : ''}
+            onChange={(e) => setNextAt(e.target.value ? new Date(e.target.value).toISOString() : '')}
+          />
+        </label>}
+
+        <label className="mt-3 block text-xs font-bold text-slate-600">
+          Izoh
+          <textarea
+            className="mt-1 min-h-[88px] w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+        </label>
+
+        {err ? <p className="mt-2 text-sm text-red-600">{err}</p> : null}
+
+        <button
+          type="submit"
+          disabled={busy || (automaticRetry && ['NO_ANSWER', 'LOW_QUALITY'].includes(lead.status))}
+          className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-blue-600 text-sm font-bold text-white disabled:opacity-60"
+        >
+          Saqlash
+        </button>
+      </form>
+
+      <section className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <h3 className="text-sm font-bold">Tarix</h3>
+        <ul className="mt-3 space-y-3">
+          {data.events.map((ev) => (
+            <li key={ev.id} className="border-l-2 border-slate-200 pl-3 text-sm">
+              <p className="text-[11px] text-slate-400">
+                {new Date(ev.created_at).toLocaleString('uz-UZ')}
+                {ev.actor_name ? ` · ${ev.actor_name}` : ''}
+              </p>
+              <p className="font-semibold">{ev.event_type === 'no_answer_retry'
+                ? 'Javobsiz qo‘ng‘iroq'
+                : ev.event_type === 'no_answer_returned' ? 'Yangi lidlarga qaytarildi' : ev.event_type}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <h3 className="text-sm font-bold">Izohlar</h3>
+        <form
+          className="mt-2 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!quickNote.trim()) return;
+            void salesCrmApi.comment(leadId, quickNote).then(() => {
+              setQuickNote('');
+              return reload();
+            });
+          }}
+        >
+          <input
+            className="min-h-11 flex-1 rounded-2xl border border-slate-200 px-3 text-sm"
+            placeholder="Yangi izoh…"
+            value={quickNote}
+            onChange={(e) => setQuickNote(e.target.value)}
+          />
+          <button type="submit" className="min-h-11 rounded-2xl bg-slate-900 px-4 text-sm font-bold text-white">
+            +
+          </button>
+        </form>
+        <ul className="mt-3 space-y-2">
+          {data.comments.map((c) => (
+            <li key={c.id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
+              <p className="text-[11px] text-slate-400">
+                {new Date(c.created_at).toLocaleString('uz-UZ')} · {c.agent_name}
+              </p>
+              <p>{c.comment}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {pendingMove ? (
+        <StageMoveModal
+          pending={pendingMove}
+          busy={statusBusy}
+          onClose={() => setPendingMove(null)}
+          onSubmit={async (payload) => {
+            await applyStatus(payload);
+            setPendingMove(null);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function MilestonesCard({
+  milestones,
+  onToggle,
+}: {
+  milestones: LeadDetail['milestones'];
+  onToggle: (stage: 'presentation' | 'support_group', done: boolean) => Promise<void>;
+}) {
+  const [pending, setPending] = useState<string | null>(null);
+  return (
+    <section className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      <h3 className="text-sm font-bold">Voronka</h3>
+      <ol className="mt-3 space-y-1">
+        {SALES_FUNNEL_STAGES.map((s, i) => {
+          const at = milestones?.[s.key] ?? null;
+          const done = Boolean(at);
+          const manualKey = s.manual ? (s.key as 'presentation' | 'support_group') : null;
+          return (
+            <li key={s.key} className="flex min-h-11 items-center gap-3">
+              <span
+                className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  done ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
+                }`}
+              >
+                {done ? <Check size={14} strokeWidth={3} /> : i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-semibold ${done ? 'text-slate-900' : 'text-slate-500'}`}>{s.label}</p>
+                <p className="text-[11px] text-slate-400">
+                  {at ? new Date(at).toLocaleString('uz-UZ') : s.hint}
+                </p>
+              </div>
+              {manualKey ? (
+                <button
+                  type="button"
+                  disabled={pending === manualKey}
+                  onClick={async () => {
+                    setPending(manualKey);
+                    await onToggle(manualKey, !done);
+                    setPending(null);
+                  }}
+                  className={`min-h-10 shrink-0 rounded-2xl px-3 text-xs font-bold transition active:scale-95 disabled:opacity-60 ${
+                    done
+                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {done ? 'Bekor qilish' : 'Belgilash'}
+                </button>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

@@ -1,0 +1,20 @@
+.course-info-shell { width: 100%; max-width: 600px; margin: 0 auto; padding-bottom: 16px; }
+@media (min-width: 768px) {
+  .course-info-shell { max-width: 900px; padding: 16px 16px 24px; }
+  .course-info-countdown { justify-content: space-between; }
+  .course-info-plans label { min-height: 80px; }
+}
+@media (min-width: 1100px) {
+  .course-info-shell { max-width: 1280px; display: grid; grid-template-columns: minmax(0,1.65fr) minmax(320px,1fr); align-items: start; gap: 20px 24px; padding: 24px 32px; }
+  .course-info-shell > * { grid-column: 1 / -1; min-width: 0; }
+  .course-info-shell > header { padding: 0; }
+  .course-info-countdown { margin: 0; padding: 12px 20px; }
+  .course-info-shell > .course-info-player { grid-column: 1; grid-row: 3; width: 100%; margin: 0; }
+  .course-info-shell > .course-info-plans { grid-column: 2; grid-row: 3; padding: 0; }
+  .course-info-plans label { min-height: 84px; }
+  .course-info-shell > section[aria-label='Maxsus taklif'] { margin: 0; }
+}
+@media (max-width: 360px) {
+  .course-info-countdown { gap: 8px; padding: 8px; }
+  .course-info-plans label { padding-left: 8px; padding-right: 8px; }
+}

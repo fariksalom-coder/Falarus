@@ -1,0 +1,123 @@
+import { apiUrl } from '../api';
+import { prepareAvatarFile } from '../utils/imageResize';
+import type { UserGender } from '../components/UserAvatar';
+
+export type UserMe = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  level: string;
+  onboarded: number;
+  /** So'rovnoma to'ldirilganmi (eski foydalanuvchilarda `false`). */
+  onboardingCompleted?: boolean;
+  progress: number;
+  totalPoints?: number;
+  planName?: string | null;
+  planExpiresAt?: string | null;
+  billingNoticeUz?: string | null;
+  accessFrozen?: boolean;
+  accountType?: string | null;
+  avatarUrl?: string | null;
+  gender?: UserGender;
+  /** Paroli bormi. Google/Telegram orqali kirganlarda `false` bo'ladi. */
+  hasPassword?: boolean;
+};
+
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+const MAX_AVATAR_BYTES = 4 * 1024 * 1024;
+
+function validateAvatarFile(file: File): void {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    throw new Error('Faqat JPG, PNG yoki WEBP ruxsat etiladi');
+  }
+  if (file.size > MAX_AVATAR_BYTES) {
+    throw new Error('Rasm hajmi 4 MB dan oshmasligi kerak');
+  }
+}
+
+/** Joriy foydalanuvchi profili. */
+export async function getMe(token: string): Promise<UserMe> {
+  const res = await fetch(apiUrl('/api/user/me'), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Profil yuklanmadi');
+  return data as UserMe;
+}
+
+export async function uploadUserAvatar(token: string, file: File): Promise<UserMe> {
+  validateAvatarFile(file);
+  // Yuklashdan oldin kvadrat qirqib, 512px ga keltiramiz: profilda xira
+  // ko'rinmasin va sekin internetda tez yuklansin.
+  const prepared = await prepareAvatarFile(file);
+  const form = new FormData();
+  form.append('image', prepared);
+  const res = await fetch(apiUrl('/api/user/avatar'), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof data.error === 'string' ? data.error : 'Rasm yuklanmadi');
+  }
+  return data as UserMe;
+}
+
+export async function patchUserAccount(
+  token: string,
+  body: Partial<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    gender: UserGender;
+    currentPassword: string;
+    newPassword: string;
+    newPasswordConfirm: string;
+  }>
+): Promise<UserMe> {
+  const res = await fetch(apiUrl('/api/user/account'), {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof data.error === 'string' ? data.error : 'Xatolik yuz berdi');
+  }
+  return data as UserMe;
+}
+
+export function bustAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return `${url.split('?')[0]}?v=${Date.now()}`;
+}
+
+export async function removeUserAvatar(token: string): Promise<UserMe> {
+  const res = await fetch(apiUrl('/api/user/avatar'), {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof data.error === 'string' ? data.error : 'Rasm o‘chirilmadi');
+  }
+  return data as UserMe;
+}
+
+export async function deleteUserAccount(token: string): Promise<void> {
+  const res = await fetch(apiUrl('/api/user/account'), {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(typeof data.error === 'string' ? data.error : 'Hisobni o‘chirib bo‘lmadi');
+  }
+}
