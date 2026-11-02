@@ -1,6 +1,6 @@
 import { eligibleRahmatSql, submitRahmatClaim } from './rahmatClaims.js';
 import { latestDeferralSql, requestDebtDeferral, submitDebtReceipt } from './debtActions.js';
-import { operatorSalaries, salaryForCourses } from './salary.js';
+import { isTeamOperator, operatorSalaries, salaryForCourses, TEAM_PER_SALE_UZS, teamFund, teamFundForSales } from './salary.js';
 import { dueDebts, reminderSlot, REMINDER_HOURS } from './reminders.js';
 import { Router } from 'express';
 import multer from 'multer';
@@ -337,9 +337,22 @@ export function operatorMiniAppRoutes() {
     )).rows;
     const credited = (await operatorSalaries(pool!, range.from, range.to, op.id)).get(op.id);
     const salaryDays = credited?.days ?? [];
+    const fund = isTeamOperator(op.id) ? await teamFund(pool!, range.from, range.to) : null;
+    const team = Boolean(fund && salaryDays.some((d) => d.scheme === 'team'));
+    // Next shared-fund tier counts today's company sales (meaningful on the «Bugun» tab).
+    const fundToday = teamFundForSales(fund?.days.find((d) => d.day === appDate())?.sales ?? 0);
     const salary = {
       ...salaryForCourses(credited?.soldCourses ?? 0),
+      ...(team && fund ? {
+        perCourseAmount: TEAM_PER_SALE_UZS,
+        tiers: fund.tiers,
+        nextTarget: fundToday.nextTarget,
+        nextBonusAmount: fundToday.nextAmount,
+        remainingToNext: fundToday.remainingToNext,
+      } : {}),
+      scheme: team ? 'team' as const : 'personal' as const,
       bonusAmount: credited?.bonusAmount ?? 0,
+      baseAmount: credited?.baseAmount ?? 0,
       totalAmount: credited?.totalAmount ?? 0,
       pendingCourses: credited?.pendingCourses ?? 0,
     };
@@ -354,7 +367,7 @@ export function operatorMiniAppRoutes() {
       p.amount,p.currency,p.tariff_type,COALESCE(p.payment_time,p.created_at) paid_at,p.status payment_status,
       u.first_name,u.last_name FROM operator_rahmat_claims a JOIN payments p ON p.id=a.payment_id JOIN users u ON u.id=p.user_id
       WHERE a.operator_id=$1 AND a.created_at>=$2 AND a.created_at<$3 ORDER BY a.id DESC LIMIT 50`,[op.id,range.from,range.to])).rows;
-    res.json({ range, payments, debts, history, actions, salesDays, salesMonth, salary, salaryDays, salaryTariffs, rahmatClaims });
+    res.json({ range, payments, debts, history, actions, salesDays, salesMonth, salary, salaryDays, salaryTariffs, rahmatClaims, teamFund: fund });
   }));
 
   router.get('/customers', miniWrap(async (req, res) => {

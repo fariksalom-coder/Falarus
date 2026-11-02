@@ -61,8 +61,17 @@ type StatsResponse = {
     remainingToNext: number;
     tiers: Array<{ courses: number; amount: number }>;
     pendingCourses: number;
+    /** team: paid from every company sale, bonuses go to the shared fund. */
+    scheme?: 'team' | 'personal';
   };
-  salaryDays: Array<{ day: string; soldCourses: number; baseAmount: number; bonusAmount: number; totalAmount: number }>;
+  salaryDays: Array<{ day: string; soldCourses: number; baseAmount: number; bonusAmount: number; totalAmount: number; scheme?: 'team' | 'personal' }>;
+  teamFund?: {
+    perSale: number;
+    sales: number;
+    pending: number;
+    amount: number;
+    days: Array<{ day: string; sales: number; pending: number; fund: number }>;
+  } | null;
   salaryTariffs: Array<{ tariff: string; sold_courses: number }>;
   debts: Array<{
     currency: string;
@@ -804,15 +813,28 @@ export default function OperatorMiniAppPage() {
               <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{statsError}</p>
             ) : !stats ? (
               <p role="status" className="py-8 text-center text-sm text-slate-500">Yuklanmoqda...</p>
-            ) : tab === 'salary' ? (
+            ) : tab === 'salary' ? (() => {
+              const team = stats.salary.scheme === 'team';
+              const unit = team ? 'sotuv' : 'kurs';
+              const fundByDay = new Map((stats.teamFund?.days ?? []).map((d) => [d.day, d.fund]));
+              return (
               <>
                 <section className="rounded-2xl bg-[#071B3A] p-4 text-white shadow-lg shadow-slate-900/15">
                   <p className="text-[11px] font-black uppercase tracking-[0.16em] text-blue-100/70">{stats?.range.label || 'Davr'} maoshi</p>
                   <p className="mt-2 break-words text-2xl font-black">{moneyText(stats?.salary.totalAmount ?? 0, 'UZS')}</p>
                   <p className="mt-1 text-sm font-bold text-blue-100/80">
-                    {stats?.salary.soldCourses ?? 0} ta kurs · {moneyText(stats?.salary.perCourseAmount ?? 30000, 'UZS')} / kurs
+                    {stats?.salary.soldCourses ?? 0} ta {unit}{team ? ' (jamoa)' : ''} · {moneyText(stats?.salary.perCourseAmount ?? 30000, 'UZS')} / {unit}
                   </p>
-                  {stats?.salary.pendingCourses ? (
+                  {team ? (
+                    <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-blue-50">
+                      Har bir sotuv hisobga olinadi: operator, Rahmat, qo‘lda yoki admin orqali — kim sotganidan qat’i nazar.
+                    </p>
+                  ) : null}
+                  {team && stats.teamFund?.pending ? (
+                    <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-blue-50">
+                      Tekshiruvda yana {stats.teamFund.pending} ta sotuv — admin tasdiqlasa, chek yuborilgan kunga qo‘shiladi.
+                    </p>
+                  ) : !team && stats?.salary.pendingCourses ? (
                     <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-blue-50">
                       Tekshiruvda yana {stats.salary.pendingCourses} ta kurs — admin tasdiqlasa, chek yuborilgan kunga qo‘shiladi.
                     </p>
@@ -828,7 +850,7 @@ export default function OperatorMiniAppPage() {
                 </section>:null}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-2xl bg-white p-3 shadow-sm">
-                    <p className="text-[11px] font-black uppercase text-slate-400">Kurs</p>
+                    <p className="text-[11px] font-black uppercase text-slate-400">{team ? 'Sotuv' : 'Kurs'}</p>
                     <p className="mt-1 text-xl font-black text-[#071B3A]">{stats?.salary.soldCourses ?? 0}</p>
                   </div>
                   <div className="rounded-2xl bg-white p-3 shadow-sm">
@@ -836,8 +858,8 @@ export default function OperatorMiniAppPage() {
                     <p className="mt-1 text-sm font-black text-[#071B3A]">{moneyText(stats?.salary.baseAmount ?? 0, 'UZS')}</p>
                   </div>
                   <div className="rounded-2xl bg-white p-3 shadow-sm">
-                    <p className="text-[11px] font-black uppercase text-slate-400">Bonus</p>
-                    <p className="mt-1 text-sm font-black text-emerald-600">{moneyText(stats?.salary.bonusAmount ?? 0, 'UZS')}</p>
+                    <p className="text-[11px] font-black uppercase text-slate-400">{team ? 'Umumiy fond' : 'Bonus'}</p>
+                    <p className="mt-1 text-sm font-black text-emerald-600">{moneyText(team ? stats.teamFund?.amount ?? 0 : stats?.salary.bonusAmount ?? 0, 'UZS')}</p>
                   </div>
                 </div>
 
@@ -845,16 +867,27 @@ export default function OperatorMiniAppPage() {
                   <h2 className="text-sm font-black text-[#071B3A]">Hisob-kitob</h2>
                   <div className="mt-3 space-y-2 text-sm font-bold text-slate-700">
                     <div className="flex justify-between rounded-xl bg-slate-50 p-3">
-                      <span>{stats?.salary.soldCourses ?? 0} kurs × {moneyText(stats?.salary.perCourseAmount ?? 30000, 'UZS')}</span>
+                      <span>{stats?.salary.soldCourses ?? 0} {unit} × {moneyText(stats?.salary.perCourseAmount ?? 30000, 'UZS')}</span>
                       <strong>{moneyText(stats?.salary.baseAmount ?? 0, 'UZS')}</strong>
                     </div>
-                    <div className="flex justify-between rounded-xl bg-emerald-50 p-3 text-emerald-700">
-                      <span>Bonus</span>
-                      <strong>{moneyText(stats?.salary.bonusAmount ?? 0, 'UZS')}</strong>
-                    </div>
+                    {team ? (
+                      <div className="rounded-xl bg-emerald-50 p-3 text-emerald-700">
+                        <div className="flex justify-between">
+                          <span>Umumiy bonus fondi</span>
+                          <strong>{moneyText(stats.teamFund?.amount ?? 0, 'UZS')}</strong>
+                        </div>
+                        <p className="mt-1 text-xs font-semibold">Jamoaning umumiy fondi, hozircha bo‘linmaydi.</p>
+                      </div>
+                    ) : null}
+                    {!team || stats.salary.bonusAmount ? (
+                      <div className="flex justify-between rounded-xl bg-emerald-50 p-3 text-emerald-700">
+                        <span>{team ? 'Shaxsiy bonus (1-noyabrgacha)' : 'Bonus'}</span>
+                        <strong>{moneyText(stats?.salary.bonusAmount ?? 0, 'UZS')}</strong>
+                      </div>
+                    ) : null}
                     {period === 'today' && (stats?.salary.nextTarget ? (
                       <p className="rounded-xl bg-blue-50 p-3 text-xs font-black text-blue-700">
-                        Keyingi bonus: yana {stats.salary.remainingToNext} ta kurs → {moneyText(stats.salary.nextBonusAmount ?? 0, 'UZS')}
+                        Keyingi bonus: yana {stats.salary.remainingToNext} ta {unit} → {moneyText(stats.salary.nextBonusAmount ?? 0, 'UZS')}{team ? ' (umumiy fond)' : ''}
                       </p>
                     ) : (
                       <p className="rounded-xl bg-emerald-50 p-3 text-xs font-black text-emerald-700">Eng yuqori bonus olindi.</p>
@@ -863,11 +896,11 @@ export default function OperatorMiniAppPage() {
                 </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <h2 className="text-sm font-black text-[#071B3A]">Kunlik bonus</h2>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
+                  <h2 className="text-sm font-black text-[#071B3A]">{team ? 'Umumiy bonus fondi — kunlik jamoa sotuvi' : 'Kunlik bonus'}</h2>
+                  <div className={`mt-2 grid gap-2 ${(stats?.salary.tiers ?? []).length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                     {(stats?.salary.tiers ?? []).map((tier) => (
                       <div key={tier.courses} className={`rounded-xl p-3 text-center ${period === 'today' && Number(stats?.salary.soldCourses ?? 0) >= tier.courses ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-500'}`}>
-                        <p className="text-lg font-black">{tier.courses} ta</p>
+                        <p className="text-lg font-black">{tier.courses}{team ? '+' : ''} ta</p>
                         <p className="text-xs font-black">{moneyText(tier.amount, 'UZS')}</p>
                       </div>
                     ))}
@@ -884,14 +917,17 @@ export default function OperatorMiniAppPage() {
                           <strong>{moneyText(item.totalAmount, 'UZS')}</strong>
                         </div>
                         <p className="mt-1 text-xs font-bold text-slate-500">
-                          {item.soldCourses} ta kurs · asosiy {moneyText(item.baseAmount, 'UZS')} · bonus {moneyText(item.bonusAmount, 'UZS')}
+                          {item.scheme === 'team'
+                            ? `${item.soldCourses} ta sotuv (jamoa) · umumiy fond ${moneyText(fundByDay.get(item.day) ?? 0, 'UZS')}`
+                            : `${item.soldCourses} ta kurs · asosiy ${moneyText(item.baseAmount, 'UZS')} · bonus ${moneyText(item.bonusAmount, 'UZS')}`}
                         </p>
                       </div>
-                    )) : <p className="text-sm font-semibold text-slate-500">Bu davrda tasdiqlangan kurs yo‘q.</p>}
+                    )) : <p className="text-sm font-semibold text-slate-500">Bu davrda tasdiqlangan {unit} yo‘q.</p>}
                   </div>
                 </section>
               </>
-            ) : (
+              );
+            })() : (
               <>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-2xl bg-white p-3 shadow-sm">

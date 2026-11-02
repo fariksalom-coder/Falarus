@@ -33,9 +33,9 @@ test('Rahmat attribution: authenticated submission, admin approval, single reven
       INSERT INTO payments(id,user_id,amount,currency,tariff_type,payment_channel,status,product_code,payment_time)
       VALUES(1,1,530000,'UZS','three_month','rahmat','approved','russian','2026-10-02T20:00:00Z'),
       (2,1,4000,'RUB','month','rahmat','pending','russian',now()),
-      (3,1,4000,'RUB','month','manual','approved','russian',now()),
+      (3,1,4000,'RUB','month','manual','approved','russian','2026-10-05T10:00:00Z'),
       (4,1,4000,'RUB','month','rahmat','approved','patent',now()),
-      (5,2,4000,'RUB','month','rahmat','approved','russian',now());`);
+      (5,2,4000,'RUB','month','rahmat','approved','russian','2026-10-05T10:00:00Z');`);
     const before=(await db.query('SELECT * FROM users ORDER BY id')).rows;
     const {operatorMiniAppRoutes}=await import('../server/operator/miniApp.js');
     const {operatorAdminRoutes}=await import('../server/operator/admin.js');

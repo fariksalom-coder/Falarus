@@ -13,7 +13,16 @@ type SalaryRow = {
   pendingCourses?: number;
   pending?: Record<string, number>;
   tariffs?: Array<{ tariff: string; sold_courses: number }>;
-  days?: Array<{ day: string; soldCourses: number; baseAmount: number; bonusAmount: number; totalAmount: number }>;
+  days?: Array<{ day: string; soldCourses: number; baseAmount: number; bonusAmount: number; totalAmount: number; scheme?: 'team' | 'personal' }>;
+};
+
+type TeamFund = {
+  perSale: number;
+  tiers: Array<{ courses: number; amount: number }>;
+  sales: number;
+  pending: number;
+  amount: number;
+  days: Array<{ day: string; sales: number; pending: number; fund: number }>;
 };
 
 type SalaryReport = {
@@ -22,6 +31,7 @@ type SalaryReport = {
   perCourse: number;
   tiers: Array<{ courses: number; amount: number }>;
   rows: SalaryRow[];
+  teamFund?: TeamFund;
 };
 
 const TARIFF_LABELS: Record<string, string> = { month: '1 oy', three_month: '3 oy', six_month: '6 oy', year: '1 yil' };
@@ -84,6 +94,8 @@ export default function OperatorSalaryReport() {
           {(report?.tiers ?? []).map((t) => `${t.courses}+ kurs → ${money(t.amount)}`).join(', ')}.
         </p>
       </div>
+
+      {report?.teamFund?.days.length ? <TeamFundView fund={report.teamFund} /> : null}
 
       {error && <p role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-red-800">{error}</p>}
       {loading ? (
@@ -155,5 +167,28 @@ function SalaryRowView({ row, expanded, onToggle }: { row: SalaryRow; expanded: 
         </tr>
       ))}
     </>
+  );
+}
+
+/** Noyabrdan: har sotuvdan jamoa operatorlariga bir xil stavka, kunlik bonus — bitta umumiy fond. */
+function TeamFundView({ fund }: { fund: TeamFund }) {
+  return (
+    <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="font-bold">Umumiy bonus fondi (jamoa)</h3>
+        <p className="text-xl font-black">{money(fund.amount)}</p>
+      </div>
+      <p className="mt-1 text-xs">
+        Kompaniyaning barcha sotuvlari: {fund.sales} ta{fund.pending ? ` (+${fund.pending} tekshiruvda)` : ''}. Jamoa operatorlari har sotuvdan {money(fund.perSale)} oladi.
+        Fond kunlik: {fund.tiers.map((t) => `${t.courses}+ → ${money(t.amount)}`).join(', ')}. Hozircha bo‘linmaydi.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        {fund.days.map((d) => (
+          <span key={d.day} className={`rounded-lg px-2 py-1 ${d.fund ? 'bg-emerald-600 text-white' : 'bg-white'}`}>
+            {d.day.slice(5)}: {d.sales} ta{d.fund ? ` · ${money(d.fund)}` : ''}
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }

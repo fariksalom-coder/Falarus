@@ -1,5 +1,5 @@
 import { decideRahmatClaim } from './rahmatClaims.js';
-import { operatorSalaries, SALARY_BONUSES_UZS, SALARY_PER_COURSE_UZS } from './salary.js';
+import { operatorSalaries, SALARY_BONUSES_UZS, SALARY_PER_COURSE_UZS, teamFund } from './salary.js';
 import { readMiniReceipt } from './miniApp.js';
 import { decideDebtDeferral } from './debtActions.js';
 import { Router } from 'express';
@@ -119,13 +119,13 @@ export function operatorAdminRoutes() {
             throw new Error('Sana noto‘g‘ri.');
         // Tashkent calendar days, both ends inclusive.
         const range = (await pool!.query(`SELECT ($1::date::timestamp AT TIME ZONE 'Asia/Tashkent') "from",(($2::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent') "to"`, [from, to])).rows[0];
-        const salaries = await operatorSalaries(pool!, range.from, range.to);
+        const [salaries, fund] = await Promise.all([operatorSalaries(pool!, range.from, range.to), teamFund(pool!, range.from, range.to)]);
         const operators = (await pool!.query('SELECT id,name,active FROM operator_accounts ORDER BY id')).rows;
         const rows = operators
             .map((o: any) => ({ operator_id: Number(o.id), name: o.name, active: o.active, ...salaries.get(Number(o.id)) }))
             .filter((r: any) => r.active || r.soldCourses || r.pendingCourses);
         res.set('Cache-Control', 'no-store');
-        res.json({ from, to, perCourse: SALARY_PER_COURSE_UZS, tiers: SALARY_BONUSES_UZS, rows });
+        res.json({ from, to, perCourse: SALARY_PER_COURSE_UZS, tiers: SALARY_BONUSES_UZS, rows, teamFund: fund });
     }));
     router.get('/rahmat-claims', wrap(async (req:any,res:any)=>{
         const op=Number(req.query.operator)||null;
