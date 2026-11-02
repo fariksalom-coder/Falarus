@@ -2,6 +2,7 @@ import { NativePurchases, PURCHASE_TYPE, type Transaction } from '@capgo/native-
 import { apiUrl } from '../api';
 import { APPLE_PRODUCTS, isAppleProductId, type AppleProductId } from '../../shared/appleProducts';
 import { invalidateCacheByPrefix } from '../utils/requestCache';
+import { clearCachedAccess } from '../api/access';
 import { isNativeIOS } from './platform';
 
 const confirmations = new Map<string, Promise<void>>();
@@ -29,7 +30,7 @@ export async function confirmAppleTransaction(token: string, transaction: Transa
       throw new Error(message);
     }
     invalidateCacheByPrefix('');
-    sessionStorage.removeItem('vocab_access');
+    clearCachedAccess();
     // Content has been granted durably by the server before finishing StoreKit.
     await NativePurchases.acknowledgePurchase({ purchaseToken: transaction.transactionId });
   })();

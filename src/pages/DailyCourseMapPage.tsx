@@ -85,7 +85,7 @@ export default function DailyCourseMapPage() {
         <dl className="journey-stats"><div><dt>Hozir</dt><dd>{currentDay}-kun</dd></div><div><dt>O'tilgan</dt><dd>{completed.size} <small>/ {TOTAL_DAYS}</small></dd></div></dl>
       </header>
       <div className="journey-side">
-        {!premium && !golden && <button className="journey-tariffs" onClick={() => navigate('/kurs-haqida')}>
+        {accessLoaded && !premium && !golden && <button className="journey-tariffs" onClick={() => navigate('/kurs-haqida')}>
           <span className="journey-tariff-icon"><Sparkles size={22} /></span>
           <span className="journey-tariff-copy"><strong>Tariflarni ko'rish</strong><small>1 / 3 / 6 oy · Rahmat orqali to'lov</small></span>
           <span className="journey-tariff-arrow"><ArrowRight size={18} /></span>
@@ -111,7 +111,7 @@ export default function DailyCourseMapPage() {
             <div ref={day === focusDay ? currentRef : undefined} className="journey-day" style={{ left: `${x / 390 * 100}%`, top: y - 32 }}>
               {loaded && day === focusDay && !done && <div className="journey-hand journey-day-hand"><TrialHandAnimation /></div>}
               <button disabled={!loaded || !accessLoaded} onClick={() => openDay(day)} aria-label={`Kun ${day}${available ? '' : ' (yopiq)'}`} aria-current={active ? 'step' : undefined} className={`journey-node${done ? ' is-done' : active ? ' is-current' : available ? ' is-available' : ''}`}>
-                {done ? <Check size={25} /> : available ? day : <Lock size={22} />}
+                {done ? <Check size={25} /> : available || !accessLoaded ? day : <Lock size={22} />}
               </button><span>{day}-kun</span>
             </div>
           </div>;

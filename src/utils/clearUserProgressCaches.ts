@@ -47,6 +47,7 @@ function clearLocalStorageProgress(): void {
         key === 'falarus.verbGame.best' ||
         key === 'falarus:dailyVocabProgress:v1' ||
         key === 'falarus:ai-consent:v1' ||
+        key === 'falarus:access:v1' ||
         key.startsWith('vocab-') ||
         key.startsWith('vocab_stats_')
       ) {

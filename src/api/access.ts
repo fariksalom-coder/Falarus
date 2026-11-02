@@ -23,15 +23,24 @@ function authHeaders(token: string | null): HeadersInit {
   return h;
 }
 
-const CACHE_ACCESS = 'vocab_access';
+/*
+ * Last known access lives in localStorage, not sessionStorage: the mobile app starts a new session on every
+ * launch, and without it a paying user saw locks and "Tariflarni ko'rish" until /api/user/access answered.
+ * The entry is bound to the token, so another account on the same phone never reads it.
+ */
+export const CACHE_ACCESS = 'falarus:access:v1';
 const ACCESS_REQUEST_TTL_MS = 30_000;
+
+const cacheOwner = (token: string | null) => (token ? token.slice(-24) : '');
 
 export function getCachedAccess(): AccessInfo | null {
   try {
-    const raw = sessionStorage.getItem(CACHE_ACCESS);
+    const raw = localStorage.getItem(CACHE_ACCESS);
     if (!raw) return null;
-    const data = JSON.parse(raw) as AccessInfo;
-    return data && typeof data.subscription_active === 'boolean' ? data : null;
+    const entry = JSON.parse(raw) as { owner?: string; data?: AccessInfo };
+    const owner = cacheOwner(localStorage.getItem('token'));
+    const data = entry?.data;
+    return owner && entry.owner === owner && data && typeof data.subscription_active === 'boolean' ? data : null;
   } catch {
     return null;
   }
@@ -39,7 +48,16 @@ export function getCachedAccess(): AccessInfo | null {
 
 export function setCachedAccess(data: AccessInfo): void {
   try {
-    sessionStorage.setItem(CACHE_ACCESS, JSON.stringify(data));
+    const owner = cacheOwner(localStorage.getItem('token'));
+    if (owner) localStorage.setItem(CACHE_ACCESS, JSON.stringify({ owner, data }));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearCachedAccess(): void {
+  try {
+    localStorage.removeItem(CACHE_ACCESS);
   } catch {
     /* ignore */
   }

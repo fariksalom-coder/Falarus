@@ -69,7 +69,8 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
       setAccessState(normalized);
       setCachedAccess(normalized);
     } catch {
-      setAccessState(defaultAccess);
+      // Offline or a server hiccup must not lock a paying user out: keep the last known access.
+      setAccessState((prev) => prev ?? defaultAccess);
     } finally {
       setAccessLoaded(true);
     }
@@ -94,7 +95,7 @@ export function AccessProvider({ children }: { children: React.ReactNode }) {
         setAccessState(normalized);
         setCachedAccess(normalized);
       })
-      .catch(() => setAccessState(defaultAccess))
+      .catch(() => setAccessState((prev) => prev ?? defaultAccess))
       .finally(() => setAccessLoaded(true));
   }, [token, user?.planExpiresAt]);
 
