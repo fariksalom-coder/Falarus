@@ -17,6 +17,9 @@ import { getSentenceArrangeDisplayPrompt } from '../utils/sentenceArrangeDisplay
 import { isSentenceArrangeCorrect } from '../../shared/sentenceArrangeAnswer';
 import { playCorrectSound, playWrongSound } from '../utils/sound';
 
+/** Ikki marta xato tuzgan o'quvchi javobni topolmay qolib ketmasin. */
+const SHOW_ANSWER_AFTER_WRONG = 2;
+
 type PoolItem = { id: string; word: string; used: boolean };
 
 const shuffle = <T,>(items: T[]): T[] => {
@@ -50,6 +53,8 @@ export default function DailyGrammarSentenceArrangePage() {
   const [sentenceAnswer, setSentenceAnswer] = useState<string[]>([]);
   const [checkStatus, setCheckStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
   const [feedback, setFeedback] = useState('');
+  /** Joriy gapdagi noto'g'ri tekshiruvlar; ikkinchisidan keyin to'g'ri javob ko'rsatiladi. */
+  const [wrongChecks, setWrongChecks] = useState(0);
   const [finished, setFinished] = useState(false);
   /** Oxirgi gapdan keyin progress serverga yozilmoqda — tugma ikki marta bosilmasin. */
   const [advancing, setAdvancing] = useState(false);
@@ -138,6 +143,7 @@ export default function DailyGrammarSentenceArrangePage() {
     setSentenceAnswer([]);
     setCheckStatus('idle');
     setFeedback('');
+    setWrongChecks(0);
   }, [taskIndex, current, finished]);
 
   const progress = useMemo(() => {
@@ -178,6 +184,7 @@ export default function DailyGrammarSentenceArrangePage() {
       playCorrectSound();
     } else {
       setCheckStatus('wrong');
+      setWrongChecks((n) => n + 1);
       setFeedback("Noto'g'ri. Yana urinib ko‘ring yoki «Tozalash» bilan boshidan.");
       playWrongSound();
     }
@@ -336,6 +343,14 @@ export default function DailyGrammarSentenceArrangePage() {
                 >
                   {checkStatus === 'correct' ? '✓' : checkStatus === 'wrong' ? '✕' : '💡'} {feedback}
                 </span>
+              </div>
+            ) : null}
+
+            {wrongChecks >= SHOW_ANSWER_AFTER_WRONG && checkStatus !== 'correct' ? (
+              <div className="msg-pop mt-3 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-center">
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#15803D]">To‘g‘ri javob</p>
+                <p className="grammar-heading mt-1 text-[17px] leading-snug text-[#14532D]">{current.answerRu}</p>
+                <p className="mt-1 text-xs font-semibold text-[#15803D]">Shu tartibda so‘zlarni tanlang.</p>
               </div>
             ) : null}
 
