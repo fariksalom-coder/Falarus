@@ -924,7 +924,8 @@ async function startServer() {
       return res.status(401).json({ error: "Email, telefon yoki parol noto'g'ri" });
     }
     if ((user.account_type as string | null | undefined) === 'teacher') {
-      return res.status(403).json({ error: "O'qituvchi kabinetiga alohida login orqali kiring" });
+      // Parol to'g'ri: klient shu kod bo'yicha o'qituvchi kabinetiga o'zi kiradi.
+      return res.status(403).json({ error: "O'qituvchi kabinetiga alohida login orqali kiring", code: 'teacher_account' });
     }
     noteLogin(Number(user.id));
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: TOKEN_TTL_SECONDS });

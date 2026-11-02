@@ -51,6 +51,9 @@ async function parseAuthResponse(res: Response): Promise<AuthResponse> {
   }
 }
 
+/** O'quvchi kirishida o'qituvchi hisobi va to'g'ri parol: o'qituvchi kabinetiga o'tish kerak. */
+export class TeacherAccountError extends Error {}
+
 export async function loginWithPassword(identifier: string, password: string): Promise<AuthResponse> {
   const res = await fetch(apiUrl('/api/auth/login'), {
     method: 'POST',
@@ -58,7 +61,10 @@ export async function loginWithPassword(identifier: string, password: string): P
     body: JSON.stringify({ identifier, password }),
   });
   const data = await parseAuthResponse(res);
-  if (!res.ok) throw new Error(data.error || 'Xatolik yuz berdi');
+  if (!res.ok) {
+    if ((data as { code?: string }).code === 'teacher_account') throw new TeacherAccountError(data.error || 'Xatolik yuz berdi');
+    throw new Error(data.error || 'Xatolik yuz berdi');
+  }
   if (!data.token || !data.user) throw new Error('Xatolik yuz berdi');
   return data;
 }

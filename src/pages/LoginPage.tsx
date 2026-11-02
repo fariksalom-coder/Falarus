@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { loginWithGoogle, loginWithPassword, type AuthUser } from '../api/auth';
+import { loginTeacherWithPassword, loginWithGoogle, loginWithPassword, TeacherAccountError, type AuthUser } from '../api/auth';
+import { TEACHER_CABINET_PATH } from '../constants/teacherPaths';
 import { EMAIL_REGEX } from '../constants/authStrings';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
@@ -154,6 +155,17 @@ export default function LoginPage() {
         { replace: true },
       );
     } catch (err) {
+      // Ilovada o'qituvchi uchun alohida kirish sahifasiga yo'l yo'q — shu yerning o'zidan kabinetga kiritamiz.
+      if (err instanceof TeacherAccountError) {
+        try {
+          const teacher = await loginTeacherWithPassword(identifier, password);
+          login(teacher.token!, normalizeAuthUser(teacher.user!));
+          navigate(TEACHER_CABINET_PATH, { replace: true });
+          return;
+        } catch (teacherErr) {
+          err = teacherErr;
+        }
+      }
       setFormError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {
       setSubmitting(false);
