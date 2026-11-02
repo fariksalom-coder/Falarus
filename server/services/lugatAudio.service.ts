@@ -78,6 +78,25 @@ async function silence(output: string, seconds: number) {
   await run('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', `anullsrc=r=${RATE}:cl=mono`, '-t', String(seconds), output]);
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Gemini ba'zan bitta so'zga ovozsiz javob qaytaradi; shunda tts.service
+ * manbani ~2 daqiqaga uxlatadi. Butun kun shu bitta so'z tufayli yiqilmasin:
+ * kutib, qayta urinamiz (fon ishi, shoshilinch emas).
+ */
+async function speakRetry(text: string, opts: Parameters<typeof speak>[1]) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await speak(text, opts);
+    } catch (e) {
+      if (attempt >= 4) throw e;
+      const sleeping = e instanceof Error && /vaqtincha/.test(e.message);
+      await sleep(sleeping ? 130_000 : 5_000);
+    }
+  }
+}
+
 const ext = (mime: string) => (mime.includes('wav') ? 'wav' : mime.includes('ogg') ? 'ogg' : 'mp3');
 
 async function build(key: string, words: LugatAudioWord[]): Promise<LugatAudio> {
@@ -92,8 +111,8 @@ async function build(key: string, words: LugatAudioWord[]): Promise<LugatAudio> 
     let t = 0;
     for (const [i, w] of words.entries()) {
       // Ketma-ket: Gemini sessiyasi bitta, parallel so'rovlar uni bandlab qo'yadi.
-      const uz = await speak(w.wordUz, { ohang: 'ustoz', fon: true });
-      const ru = await speak(w.wordRu, { ohang: 'sozlar', fon: true });
+      const uz = await speakRetry(w.wordUz, { ohang: 'ustoz', fon: true });
+      const ru = await speakRetry(w.wordRu, { ohang: 'sozlar', fon: true });
       const uzRaw = path.join(tmp, `${i}-uz.${ext(uz.mime)}`);
       const ruRaw = path.join(tmp, `${i}-ru.${ext(ru.mime)}`);
       await fs.promises.writeFile(uzRaw, uz.audio);
