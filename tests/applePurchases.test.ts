@@ -22,7 +22,6 @@ function setup(options: { serverFails?: boolean; purchases?: Transaction[] } = {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   vm.runInNewContext(source, { module: mod, exports: mod.exports, Date, Map, Set, Error,
-    sessionStorage: { removeItem: () => calls.push('clearAccess') },
     fetch: async (url: string) => {
       if (url.endsWith('/account')) { calls.push('account'); return { ok: true, json: async () => ({ appAccountToken: 'account-uuid' }) }; }
       calls.push('confirm');
@@ -34,6 +33,7 @@ function setup(options: { serverFails?: boolean; purchases?: Transaction[] } = {
       if (id === '../../shared/appleProducts') return { APPLE_PRODUCTS, isAppleProductId };
       if (id === './platform') return { isNativeIOS: () => true };
       if (id === '../utils/requestCache') return { invalidateCacheByPrefix: () => calls.push('invalidate') };
+      if (id === '../api/access') return { clearCachedAccess: () => calls.push('clearAccess') };
       throw new Error(`Unexpected import: ${id}`);
     },
   });

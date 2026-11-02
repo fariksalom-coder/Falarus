@@ -3138,13 +3138,16 @@ async function startServer() {
         let referenceAnswer = '';
         let persistTaskId: number | null = null;
 
+        let references: string[] = [];
         if (uzInline) {
-          if (!access.subscription_active && kunlikDayNumber != null && kunlikDayNumber > 0) {
-            const { data: prompt, error } = await supabase.from('daily_practice_prompts').select('id')
-              .eq('day_number',kunlikDayNumber).eq('uz_text',uzInline).limit(1).maybeSingle();
-            if (error) throw error;
-            if (!prompt) return res.status(403).json({ error: 'Faqat o‘tilgan kunning topshiriqlarini takrorlash mumkin' });
+          let promptQuery = supabase.from('daily_practice_prompts').select('id, ru_reference').eq('uz_text', uzInline);
+          if (kunlikDayNumber != null) promptQuery = promptQuery.eq('day_number', kunlikDayNumber);
+          const { data: prompt, error } = await promptQuery.limit(1).maybeSingle();
+          if (error) throw error;
+          if (!access.subscription_active && kunlikDayNumber != null && kunlikDayNumber > 0 && !prompt) {
+            return res.status(403).json({ error: 'Faqat o‘tilgan kunning topshiriqlarini takrorlash mumkin' });
           }
+          references = Array.isArray(prompt?.ru_reference) ? prompt.ru_reference.map(String) : [];
           uzText = uzInline;
         } else {
           if (!access.subscription_active && kunlikDayNumber != null && kunlikDayNumber > 0) return res.status(403).json({ error: 'Obuna kerak' });
@@ -3173,7 +3176,7 @@ async function startServer() {
                 correct_answer: '',
                 mistakes: [],
               }
-            : await checkTranslation(uzText, userAnswer, attempt, shownAnswer);
+            : await checkTranslation(uzText, userAnswer, attempt, shownAnswer, references);
 
         if (persistTaskId !== null) {
           await supabase.from('speaking_results').insert({

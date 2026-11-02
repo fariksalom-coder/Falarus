@@ -22,6 +22,8 @@ export type DailyGrammarSentenceArrange = {
   promptText: string;
   wordBank: string[];
   answerRu: string;
+  /** Boshqa to'g'ri tartiblar: rus tilida so'z tartibi erkin, bitta kalit to'g'ri javobni rad etardi. */
+  altAnswers: string[];
   sortOrder: number;
 };
 

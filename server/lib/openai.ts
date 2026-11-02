@@ -364,13 +364,19 @@ export async function checkTranslation(
   userAnswer: string,
   attempt: number = 1,
   /** Ekranda o'quvchiga allaqachon ko'rsatilgan to'g'ri javob (bo'lsa). */
-  shownAnswer: string = ''
+  shownAnswer: string = '',
+  /**
+   * Bazadagi to'g'ri tarjimalar (`daily_practice_prompts.ru_reference`). Hukmni ular chiqarmaydi —
+   * boshqacha aytgan o'quvchi ham to'g'ri bo'lishi mumkin. Ular modelga so'zlarning ma'nosini
+   * ko'rsatadi: gpt-4o-mini «sochiq» (полотенце) ni «soch» (волосы) deb tarjima qilib, to'g'ri javobni xato degan.
+   */
+  references: string[] = []
 ): Promise<TranslationCheckResult> {
   /*
    * KO'RSATILGAN JAVOBNI QAYTARISH — har doim to'g'ri.
    * AI'ga umuman bormaymiz: o'z ko'rsatgan javobini xato deyish mumkin emas.
    */
-  if (shownAnswer && sameRuAnswer(userAnswer, shownAnswer)) {
+  if ((shownAnswer && sameRuAnswer(userAnswer, shownAnswer)) || references.some((r) => sameRuAnswer(userAnswer, r))) {
     return {
       status: 'correct',
       feedback: "Barakalla! Endi shu gapni yodda saqlang.",
@@ -385,7 +391,9 @@ export async function checkTranslation(
 Ты — доброжелательный преподаватель русского языка для узбекских студентов.
 Это УСТНОЕ упражнение: студент вслух переводит узбекскую фразу на русский.
 
-Эталонного ответа НЕТ. Оценивай сам, по смыслу узбекской фразы.
+Оценивай по смыслу узбекской фразы. Если даны «Правильные переводы» — это проверенные
+примеры: по ним понятно, что значат узбекские слова. Они НЕ единственно верные —
+другие слова, порядок и конструкции с тем же смыслом тоже "correct".
 
 Ответ приходит из РАСПОЗНАВАНИЯ РЕЧИ. Поэтому регистр букв, заглавные буквы,
 точки, запятые и восклицательные знаки НЕ ОЦЕНИВАЮТСЯ ВООБЩЕ.
@@ -507,8 +515,10 @@ meaning_conveyed — сначала ответь именно на него: п�
 языка тот же смысл? Если true, то status ОБЯЗАН быть "correct".
 `;
 
+  const refs = references.map((r) => r.trim()).filter(Boolean);
+  const referenceLine = refs.length ? `\nПравильные переводы (примеры, не единственные): ${refs.join(' | ')}` : '';
   const userPrompt = `
-Uzbek original: ${uzText}
+Uzbek original: ${uzText}${referenceLine}
 Student answer: ${userAnswer}
 Attempt: ${attempt}
 
@@ -547,7 +557,7 @@ Feedback должен помочь ученику самому найти пра
   const firstVerdict = status;
   if (status === 'wrong' && sameRuAnswer(userAnswer, aiCorrectAnswer)) status = 'correct';
   if (status === 'wrong' && truthy(parsed.meaning_conveyed) === true) status = 'correct';
-  if (status === 'wrong' && (await secondOpinionMeaningOk(uzText, userAnswer, 'translation'))) {
+  if (status === 'wrong' && (await secondOpinionMeaningOk(uzText + referenceLine, userAnswer, 'translation'))) {
     status = 'correct';
   }
 
@@ -564,13 +574,13 @@ Feedback должен помочь ученику самому найти пра
     };
   }
 
-  // 2-xatodan boshlab modelning O'Z varianti ko'rsatiladi (bazadan emas).
+  // 2-xatodan boshlab to'g'ri javob ko'rsatiladi: bazadagi tekshirilgan tarjima, bo'lmasa modelniki.
   return {
     status,
     feedback: String(parsed.message_uz ?? '').trim(),
     error_explanation: errorExplanation,
     hint: String(parsed.hint_uz ?? '').trim(),
-    correct_answer: attempt >= SPEAKING_ATTEMPTS_BEFORE_SKIP ? aiCorrectAnswer : '',
+    correct_answer: attempt >= SPEAKING_ATTEMPTS_BEFORE_SKIP ? refs[0] || aiCorrectAnswer : '',
     mistakes: normalizeMistakes(parsed.mistakes),
   };
 }

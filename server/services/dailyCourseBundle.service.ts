@@ -114,7 +114,7 @@ export async function fetchDailyCourseDayBundle(
       .order('pair_sort_order', { ascending: true }),
     sb
       .from('daily_grammar_sentence_arrange')
-      .select('id, prompt_lang, prompt_text, word_bank, answer_ru, sort_order')
+      .select('id, prompt_lang, prompt_text, word_bank, answer_ru, alt_answers, sort_order')
       .eq('day_number', dayNumber)
       .order('sort_order', { ascending: true }),
     sb
@@ -207,6 +207,7 @@ export async function fetchDailyCourseDayBundle(
       promptText: String(row.prompt_text ?? ''),
       wordBank: parseWordBank(row.word_bank),
       answerRu: String(row.answer_ru ?? ''),
+      altAnswers: Array.isArray(row.alt_answers) ? row.alt_answers.map(String).filter((s) => s.trim() !== '') : [],
       sortOrder: Number(row.sort_order ?? 0),
     }),
   );

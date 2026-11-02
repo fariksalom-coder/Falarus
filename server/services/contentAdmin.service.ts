@@ -145,6 +145,7 @@ export const RESOURCES: ResourceDef[] = [
       },
       { name: 'answer_ru', label: "To'g'ri javob (rus)", type: 'text', inTable: true, required: true },
       { name: 'word_bank', label: "So'zlar banki", type: 'stringArray', inTable: true, required: true },
+      { name: 'alt_answers', label: "Boshqa to'g'ri javoblar (so'z tartibi)", type: 'stringArray' },
       { name: 'sort_order', label: 'Tartib', type: 'int', min: 0 },
     ],
   },
@@ -157,6 +158,7 @@ export const RESOURCES: ResourceDef[] = [
     orderColumn: 'sort_order',
     fields: [
       { name: 'uz_text', label: "O'zbekcha topshiriq", type: 'text', inTable: true, required: true },
+      { name: 'ru_reference', label: "To'g'ri tarjimalar (AI tekshiruvi uchun namuna)", type: 'stringArray' },
       { name: 'sort_order', label: 'Tartib', type: 'int', min: 0 },
     ],
   },

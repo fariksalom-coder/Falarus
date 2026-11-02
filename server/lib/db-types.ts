@@ -92,6 +92,7 @@ export interface DailyGrammarMcqs {
 }
 
 export interface DailyGrammarSentenceArrange {
+  alt_answers: Generated<string[]>;
   answer_ru: string;
   created_at: Generated<Timestamp>;
   day_number: number;
@@ -113,6 +114,7 @@ export interface DailyPracticePrompts {
   created_at: Generated<Timestamp>;
   day_number: number;
   id: Generated<Int8>;
+  ru_reference: Generated<string[]>;
   sort_order: Generated<number>;
   uz_text: string;
 }

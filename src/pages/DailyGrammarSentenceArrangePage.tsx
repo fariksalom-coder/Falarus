@@ -14,7 +14,7 @@ import {
 import { useKunlikProgress } from '../hooks/useKunlikProgress';
 import { isKunlikGrammarFullyDone } from '../../shared/kunlikProgressMerge';
 import { getSentenceArrangeDisplayPrompt } from '../utils/sentenceArrangeDisplayPrompt';
-import { normSentenceArrangeAnswer } from '../../shared/sentenceArrangeAnswer';
+import { isSentenceArrangeCorrect } from '../../shared/sentenceArrangeAnswer';
 import { playCorrectSound, playWrongSound } from '../utils/sound';
 
 type PoolItem = { id: string; word: string; used: boolean };
@@ -171,8 +171,7 @@ export default function DailyGrammarSentenceArrangePage() {
       setCheckStatus('wrong');
       return;
     }
-    const built = normSentenceArrangeAnswer(sentenceAnswer.join(' '));
-    const ok = built === normSentenceArrangeAnswer(current.answerRu);
+    const ok = isSentenceArrangeCorrect(sentenceAnswer.join(' '), current.answerRu, current.altAnswers);
     if (ok) {
       setCheckStatus('correct');
       setFeedback("To'g'ri!");
