@@ -71,6 +71,7 @@ import {
   isValidDailyCourseDay,
 } from './shared/dailyCourseDay.ts';
 import { getAccessInfo, getActiveSubscription } from './server/services/subscription.service.ts';
+import { lugatAudioKey, prepareLugatAudio, readyLugatAudio } from './server/services/lugatAudio.service.ts';
 import { mergeRussianPlanForMeResponse } from './shared/russianProfilePlan.ts';
 import { createIpRateLimitMiddleware, enforceRateLimit } from './server/lib/rateLimit.ts';
 import { routePartnerRequest } from './server/services/partner.service.ts';
@@ -2486,6 +2487,33 @@ async function startServer() {
       return res.status(500).json({ error: result.error });
     }
     res.json(result.bundle);
+  });
+
+  /*
+   * Kun lug'atini tinglash: har so'z avval o'zbekcha, keyin ruscha.
+   * Fayl birinchi so'rovda fonda tayyorlanadi — `ready: false` bo'lsa
+   * klient bir necha soniyadan keyin qayta so'raydi.
+   */
+  app.get('/api/daily-course/day/:dayNumber/lugat-audio', authenticate, async (req: any, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const dayNumber = Number(req.params.dayNumber);
+    if (!isValidDailyCourseDay(dayNumber)) return res.status(400).json({ error: 'Kun raqami noto‘g‘ri' });
+    const access = await getAccessInfo(supabase, Number(req.userId));
+    if (!canAccessKunlikDay(dayNumber, access)) return res.status(403).json({ error: 'Obuna kerak' });
+    const { data, error } = await supabase
+      .from('daily_vocab_words')
+      .select('word_uz, word_ru, sort_order')
+      .eq('day_number', dayNumber)
+      .order('sort_order', { ascending: true });
+    if (error) return res.status(500).json({ error: 'Lug‘at yuklanmadi' });
+    const words = (data ?? [])
+      .map((row: any) => ({ wordUz: String(row.word_uz ?? '').trim(), wordRu: String(row.word_ru ?? '').trim() }))
+      .filter((w: { wordUz: string; wordRu: string }) => w.wordUz && w.wordRu);
+    if (!words.length) return res.json({ ready: false, empty: true });
+    const ready = await readyLugatAudio(lugatAudioKey(words));
+    if (ready) return res.json({ ready: true, url: `/uploads/lugat-audio/${ready.key}.mp3`, duration: ready.duration, items: ready.items });
+    prepareLugatAudio(words).catch((e) => console.error('[lugat-audio]', dayNumber, e instanceof Error ? e.message : e));
+    res.json({ ready: false });
   });
 
   // Standalone /api/vocabulary endpoints were removed when the product

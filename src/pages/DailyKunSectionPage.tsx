@@ -14,6 +14,7 @@ import {
 } from '../../shared/dailyCourseDay';
 import { isKunlikDayReadyForSuhbat } from '../../shared/kunlikDayCompletion';
 import { VocabularyTaskList } from '../components/vocabulary/VocabularyTaskList';
+import { LugatAudioPlayer } from '../components/vocabulary/LugatAudioPlayer';
 import { InteractiveDailyReading } from '../components/daily/InteractiveDailyReading';
 import SpeakingExercise from '../components/speaking/SpeakingExercise';
 import UstozDoska from '../components/lesson/UstozDoska';
@@ -1831,6 +1832,7 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
   const base = `/kunlik-reja/kun/${dayNumber}/lugat`;
 
   return (
+    <>
     <VocabularyTaskList
       partTitle={t('kunlik.vocabWords')}
       learnedWords={learnedWords}
@@ -1854,6 +1856,8 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
       onOpenStep4={() => navigate(`${base}/iboralar`)}
       wordPreviews={w?.words?.map((row) => row.wordRu).filter(Boolean) ?? []}
     />
+    <LugatAudioPlayer dayNumber={dayNumber} />
+    </>
   );
 }
 
