@@ -160,29 +160,15 @@ async function pickRoundRobinOperator(): Promise<number | null> {
   return chosen;
 }
 
-async function pickFirstOperator(): Promise<number | null> {
-  const db = requirePool();
-  const { rows } = await db.query<{ id: number }>(
-    `SELECT id FROM sales_crm_agents
-     WHERE active = true AND role = 'operator'
-     ORDER BY id ASC
-     LIMIT 1`,
-  );
-  return rows[0]?.id ?? null;
-}
-
+/** 2026-11-03 dan sayt (promo) lidlari ham barcha faol operatorlar orasida navbat bilan. */
 async function pickPromoOperator(): Promise<number | null> {
   const db = requirePool();
-  const firstOperatorId = await pickFirstOperator();
   const { rows: ops } = await db.query<{ id: number }>(
     `SELECT id FROM sales_crm_agents
-     WHERE active = true
-       AND role = 'operator'
-       AND ($1::bigint IS NULL OR id <> $1)
+     WHERE active = true AND role = 'operator'
      ORDER BY id ASC`,
-    [firstOperatorId],
   );
-  if (!ops.length) return firstOperatorId;
+  if (!ops.length) return null;
   const cursor = Number(await getSetting('promo_round_robin_cursor')) || 0;
   const idx = Math.abs(cursor) % ops.length;
   const chosen = ops[idx].id;
@@ -194,7 +180,8 @@ async function pickOperatorForLead(params: {
   assignment?: 'default' | 'registration' | 'promo';
 }): Promise<{ operatorId: number | null; mode: string }> {
   if (params.assignment === 'registration') {
-    return { operatorId: await pickFirstOperator(), mode: 'registration_first_operator' };
+    // Ro'yxatdan o'tganlar ham uchala operatorga navbat bilan (avval faqat birinchisiga).
+    return { operatorId: await pickRoundRobinOperator(), mode: 'registration_round_robin' };
   }
   if (params.assignment === 'promo') {
     return { operatorId: await pickPromoOperator(), mode: 'promo_round_robin' };
