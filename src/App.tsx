@@ -22,6 +22,7 @@ import { SUPPORT_CRM_BASE_PATH, supportCrmPath } from './constants/supportCrmPat
 import { SupportCrmAuthProvider } from './context/SupportCrmAuthContext';
 import LegacyTeacherRedirect, { LoginRedirect } from './components/LegacyTeacherRedirect';
 import { TEACHER_CABINET_PATH } from './constants/teacherPaths';
+import { isNativeApp } from './native/platform';
 
 
 function AppRoutes() {
@@ -152,7 +153,8 @@ function AppRoutes() {
          * o'qituvchi falarus.uz ni ocholmay qolardi.
          */
         <>
-          <Route path="/" element={renderLazyPage('./pages/LandingPage.tsx')} />
+          {/* Ilovada sayt bosh sahifasi yo'q (faqat mehmon uchun kirish ekrani) — ustoz to'g'ri kabinetga. */}
+          <Route path="/" element={isNativeApp() ? <Navigate to={TEACHER_CABINET_PATH} replace /> : renderLazyPage('./pages/LandingPage.tsx')} />
           <Route path="/ustozlar" element={renderLazyPage('./pages/TeachersPage.tsx')} />
           <Route path="/ustozlar/:teacherId" element={renderLazyPage('./pages/TeacherProfilePage.tsx')} />
           <Route path="/teachers" element={<LegacyTeacherRedirect to="list" />} />

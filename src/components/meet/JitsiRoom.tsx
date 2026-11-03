@@ -126,6 +126,8 @@ export default function JitsiRoom({
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [joined, setJoined] = useState(false);
+  /** Ulanish uzilsa xona shu raqamni oshirib qaytadan quriladi. */
+  const [attempt, setAttempt] = useState(0);
   const filmstripVisible = useRef(true);
   const media = useRef<JitsiMediaState>(INITIAL_MEDIA);
   const mediaCb = useRef(onMediaState);
@@ -134,6 +136,27 @@ export default function JitsiRoom({
 
   useEffect(() => {
     let disposed = false;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let waitVisible: (() => void) | null = null;
+    /*
+     * Telefonda fayl tanlash yoki boshqa ilovaga o'tish WebView'ni to'xtatadi: Jitsi
+     * WebSocket uziladi va u fonda 3 marta urinib taslim bo'ladi («Вы отключены»).
+     * Ilovaga qaytgach xonani o'zimiz qayta quramiz — dars sahifasidan chiqarmasdan.
+     */
+    const reconnect = (delayMs: number) => {
+      if (disposed || reconnectTimer || waitVisible) return;
+      const run = () => {
+        reconnectTimer = setTimeout(() => { if (!disposed) setAttempt((n) => n + 1); }, delayMs);
+      };
+      if (document.visibilityState === 'visible') { run(); return; }
+      waitVisible = () => {
+        if (document.visibilityState !== 'visible') return;
+        document.removeEventListener('visibilitychange', waitVisible!);
+        waitVisible = null;
+        run();
+      };
+      document.addEventListener('visibilitychange', waitVisible);
+    };
 
     void loadJitsiScript(domain)
       .then(() => {
@@ -194,10 +217,17 @@ export default function JitsiRoom({
             toggleChat: () => api.executeCommand('toggleChat'),
           };
         }
-        if (onLeave) {
-          api.addEventListener('readyToClose', onLeave);
-          api.addEventListener('videoConferenceLeft', onLeave);
-        }
+        api.addEventListener('errorOccurred', (e: { error?: { isFatal?: boolean } }) => {
+          if (e?.error?.isFatal) reconnect(1500);
+        });
+        // Faqat o'zi «tugatish»ni bossa chiqamiz. `videoConferenceLeft` qayta ulanishda ham
+        // keladi — u darsdan haydab chiqarmasin; tugatishda undan keyin `readyToClose` keladi.
+        if (onLeave) api.addEventListener('readyToClose', onLeave);
+        api.addEventListener('videoConferenceLeft', () => {
+          setJoined(false);
+          report({ joined: false });
+          reconnect(3000);
+        });
       })
       .catch((e: unknown) => {
         if (!disposed) setError(e instanceof Error ? e.message : 'Video xizmati yuklanmadi');
@@ -205,13 +235,15 @@ export default function JitsiRoom({
 
     return () => {
       disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (waitVisible) document.removeEventListener('visibilitychange', waitVisible);
       apiRef.current?.dispose();
       apiRef.current = null;
       if (controlsRef) controlsRef.current = null;
       setJoined(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain, roomName, viewer]);
+  }, [domain, roomName, viewer, attempt]);
 
   // Kichik oynada Jitsi tugmalari va o'z kichik oynasi (o'zingizning kamerangiz) xalaqit beradi.
   useEffect(() => {

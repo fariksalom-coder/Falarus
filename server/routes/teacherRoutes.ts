@@ -1437,6 +1437,16 @@ export function createTeacherRoutes(
     return { trials, sessions, paid, byId, confirmByStudent };
   }
 
+  /**
+   * pg `timestamptz` ni Date qilib beradi; `String(Date)` esa «Tue Nov 03 2026 …» bo'lib,
+   * kabinet uni o'qiy olmay vaqt o'rniga «—» ko'rsatardi. Doim ISO qaytaramiz.
+   */
+  function isoTime(v: unknown): string | null {
+    if (v == null || v === '') return null;
+    const d = v instanceof Date ? v : new Date(String(v));
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+
   function paidToDars(l: any, byId: Map<number, { name: string; level: string }>): PanelDars {
     const sid = Number(l.student_user_id);
     const start = new Date(String(l.starts_at)).getTime();
@@ -1447,7 +1457,7 @@ export function createTeacherRoutes(
       title: 'Dars',
       student_user_id: Number.isFinite(sid) ? sid : null,
       student_name: byId.get(sid)?.name ?? 'O‘quvchi',
-      starts_at: String(l.starts_at),
+      starts_at: isoTime(l.starts_at),
       duration_minutes: Math.max(10, Math.round((end - start) / 60000)),
       is_trial: false,
       status: String(l.status),
@@ -1466,7 +1476,7 @@ export function createTeacherRoutes(
       title: 'Sinov darsi',
       student_user_id: Number.isFinite(sid) ? sid : null,
       student_name: byId.get(sid)?.name ?? 'O‘quvchi',
-      starts_at: t.scheduled_starts_at ? String(t.scheduled_starts_at) : null,
+      starts_at: isoTime(t.scheduled_starts_at),
       duration_minutes:
         t.scheduled_starts_at && t.scheduled_ends_at
           ? Math.max(
@@ -1491,7 +1501,7 @@ export function createTeacherRoutes(
       title: String(s.title ?? '') || 'Onlayn dars',
       student_user_id: null,
       student_name: String(s.title ?? '') || 'Guruh darsi',
-      starts_at: s.starts_at ? String(s.starts_at) : null,
+      starts_at: isoTime(s.starts_at),
       duration_minutes: Number(s.duration_minutes ?? 60),
       is_trial: false,
       status: String(s.status),
@@ -1522,9 +1532,12 @@ export function createTeacherRoutes(
         .filter((d) => formatDateInAppTimezone(new Date(d.starts_at!)) === bugun)
         .sort((a, b) => new Date(a.starts_at!).getTime() - new Date(b.starts_at!).getTime());
 
+      // Boshlangan, lekin hali tugamagan dars ham «keyingi» bo'lib qoladi — aks holda
+      // dars boshlangan zahoti kartochka «dars yo'q» deydi va «Darsga o'tish» yo'qoladi.
       const keyingi =
         darslar
-          .filter((d) => new Date(d.starts_at!).getTime() > now.getTime())
+          .filter((d) => String(d.status) !== 'completed'
+            && new Date(d.starts_at!).getTime() + Number(d.duration_minutes || 60) * 60_000 > now.getTime())
           .sort((a, b) => new Date(a.starts_at!).getTime() - new Date(b.starts_at!).getTime())[0] ?? null;
 
       // O'quvchilar — sinov darsi bergan har bir kishi.
@@ -1591,7 +1604,7 @@ export function createTeacherRoutes(
             name: byId.get(Number(t.student_user_id))?.name ?? 'O‘quvchi',
             level: byId.get(Number(t.student_user_id))?.level ?? '',
             status: String(t.status),
-            scheduled_starts_at: t.scheduled_starts_at ? String(t.scheduled_starts_at) : t.starts_at ? String(t.starts_at) : null,
+            scheduled_starts_at: isoTime(t.scheduled_starts_at) ?? isoTime(t.starts_at),
           })),
       });
     } catch (e) {
@@ -2458,7 +2471,7 @@ export function createTeacherRoutes(
       const studentId = Number(req.params?.studentId);
       if (!Number.isFinite(studentId)) return res.status(400).json({ error: 'ID notoʻgʻri' });
 
-      const [trialsRes, userRes, notesRes, convRes, confirmRes] = await Promise.all([
+      const [trialsRes, userRes, notesRes, convRes, confirmRes, paidRes] = await Promise.all([
         supabase
           .from('teacher_trial_lessons')
           .select('*')
@@ -2492,12 +2505,22 @@ export function createTeacherRoutes(
           .eq('teacher_user_id', teacherId)
           .eq('student_user_id', studentId)
           .limit(1),
+        supabase
+          .from('teacher_lessons')
+          .select('id, starts_at, ends_at, status, created_at')
+          .eq('teacher_user_id', teacherId)
+          .eq('student_user_id', studentId)
+          .in('status', ['paid', 'disputed', 'completed'])
+          .limit(200),
       ]);
       if (trialsRes.error) throw trialsRes.error;
+      if (paidRes.error) throw paidRes.error;
 
       const trials = ((trialsRes.data as any[]) ?? []).map((r) => ({ ...r }));
-      // O'qituvchi faqat O'ZIGA sinov darsi bergan o'quvchini ochadi.
-      if (trials.length === 0) return res.status(404).json({ error: 'Oʻquvchi topilmadi' });
+      const paidLessons = ((paidRes.data as any[]) ?? []).map((r) => ({ ...r }));
+      // O'qituvchi faqat O'ZIGA sinov yoki pullik dars olgan o'quvchini ochadi
+      // (ro'yxat va bugungi jadval pullik o'quvchini ham ko'rsatadi).
+      if (trials.length === 0 && paidLessons.length === 0) return res.status(404).json({ error: 'Oʻquvchi topilmadi' });
 
       const u = (userRes.data as any) ?? {};
       const ism = `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || 'Oʻquvchi';
@@ -2522,6 +2545,7 @@ export function createTeacherRoutes(
       const kelayotgan = trials.filter(
         (t) => t.scheduled_starts_at && new Date(String(t.scheduled_starts_at)).getTime() > now
       );
+      const pullikKelayotgan = paidLessons.filter((l) => l.status === 'paid' && new Date(String(l.ends_at)).getTime() > now);
 
       res.json({
         student: {
@@ -2530,25 +2554,26 @@ export function createTeacherRoutes(
           level: String(u.level ?? ''),
           status: tasdiq === 'matched_yes' ? 'active' : tasdiq === 'matched_no' ? 'finished' : 'trial',
           first_seen_at:
-            trials
-              .map((t) => String(t.created_at))
+            [...trials, ...paidLessons]
+              .map((t) => isoTime(t.created_at))
+              .filter(Boolean)
               .sort()[0] ?? null,
           next_lesson_at:
-            kelayotgan
-              .map((t) => String(t.scheduled_starts_at))
+            [...kelayotgan.map((t) => isoTime(t.scheduled_starts_at)), ...pullikKelayotgan.map((l) => isoTime(l.starts_at))]
+              .filter(Boolean)
               .sort()[0] ?? null,
         },
         stats: {
-          total: trials.length,
-          done: tugagan,
+          total: trials.length + paidLessons.length,
+          done: tugagan + paidLessons.filter((l) => l.status === 'completed').length,
           cancelled: bekor,
-          upcoming: kelayotgan.length,
+          upcoming: kelayotgan.length + pullikKelayotgan.length,
         },
         lessons: trials.map((t) => {
           const f = hisobotlar.get(Number(t.id)) ?? null;
           return {
             trial_id: Number(t.id),
-            starts_at: t.scheduled_starts_at ? String(t.scheduled_starts_at) : null,
+            starts_at: isoTime(t.scheduled_starts_at),
             status: String(t.status),
             created_at: String(t.created_at),
             duration_minutes:
@@ -2981,7 +3006,7 @@ export function createTeacherRoutes(
             type: 'cancelled',
             at: String(t.updated_at ?? t.created_at),
             student_name: ism,
-            date: t.scheduled_starts_at ? String(t.scheduled_starts_at) : null,
+            date: isoTime(t.scheduled_starts_at),
           });
         } else if (t.scheduled_starts_at) {
           hodisalar.push({
