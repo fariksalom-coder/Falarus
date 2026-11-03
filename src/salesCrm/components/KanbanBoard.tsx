@@ -314,8 +314,9 @@ function KanbanCard({
   const phone = formatSalesPhone(lead.phone || lead.phone_normalized);
   const sourceParts = [lead.source, lead.utm_source, lead.campaign || lead.utm_content || lead.ad].filter(Boolean);
   const sourceLabel = sourceParts.join(' · ');
-  const created = lead.created_at
-    ? new Date(lead.created_at).toLocaleString('uz-UZ', {
+  const registeredAt = lead.registered_at ?? lead.created_at;
+  const created = registeredAt
+    ? new Date(registeredAt).toLocaleString('uz-UZ', {
         day: '2-digit',
         month: '2-digit',
         hour: '2-digit',

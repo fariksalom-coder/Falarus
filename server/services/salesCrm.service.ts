@@ -72,6 +72,27 @@ function operatorVisibleLeadSql(alias = ''): string {
   )`;
 }
 
+/**
+ * 2026-11-03 dan CRM «toza varaq»: shu kungacha ishlangan lidlar (status NEW emas)
+ * doskada va qo'ng'iroqlarda ko'rinmaydi. Bazadan hech narsa o'chirilmaydi —
+ * qidiruv va lid sahifasi ularni baribir ochadi. Eski lid bilan yangidan
+ * ishlansa (operator harakati shu kundan keyin), u yana ko'rinadi.
+ */
+export const SALES_FRESH_START = '2026-11-03';
+const FRESH_START_SQL = `(TIMESTAMP '${SALES_FRESH_START} 00:00' AT TIME ZONE 'Asia/Tashkent')`;
+
+function freshLeadSql(alias = ''): string {
+  const p = alias ? `${alias}.` : '';
+  return `(
+    ${p}status IN ('NEW','TO_CALL','CALLED','ANSWERED')
+    OR ${p}created_at >= ${FRESH_START_SQL}
+    OR EXISTS (
+      SELECT 1 FROM sales_crm_events fe
+      WHERE fe.lead_id = ${p}id AND fe.actor_id IS NOT NULL AND fe.created_at >= ${FRESH_START_SQL}
+    )
+  )`;
+}
+
 export type LeadListFilters = {
   status?: SalesCrmStatus | SalesCrmStatus[];
   operatorId?: number | null;
@@ -572,6 +593,8 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
 
   // Old ad leads are hidden from the board for admins too.
   where.push(operatorVisibleLeadSql('l'));
+  // Qidiruvda eski lidlar ham topilsin.
+  if (!filters.q?.trim()) where.push(freshLeadSql('l'));
   if (filters.scopeOperatorId) {
     add('l.assigned_operator_id = ?', filters.scopeOperatorId);
   } else if (filters.operatorId != null) {
@@ -628,7 +651,7 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
        l.no_answer_attempts, l.no_answer_retry_at,
        l.paid_amount, l.paid_currency, l.paid_at, l.support_group_at,
        acc.access_at, fl.first_login_at,
-       l.created_at, l.updated_at,
+       l.created_at, l.updated_at, u.created_at AS registered_at,
        u.first_name, u.last_name, u.phone, u.email,
        a.name AS operator_name
      FROM sales_crm_leads l
@@ -666,6 +689,9 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
      ) fl ON true
      WHERE ${whereSql}
      ORDER BY
+       -- «Yangi» lidlar ro'yxatdan o'tgan sanasi bo'yicha, eng yangisi tepada.
+       CASE WHEN l.status IN ('NEW','TO_CALL','CALLED','ANSWERED') THEN 1 ELSE 0 END,
+       CASE WHEN l.status IN ('NEW','TO_CALL','CALLED','ANSWERED') THEN u.created_at END DESC NULLS LAST,
        CASE WHEN l.next_contact_at IS NOT NULL AND l.next_contact_at < now() THEN 0 ELSE 1 END,
        l.next_contact_at NULLS LAST,
        l.created_at DESC
@@ -1041,6 +1067,8 @@ export async function listTasks(params: {
     if (params.scopeOperatorId) add('l.assigned_operator_id = ?', params.scopeOperatorId);
   }
   where.push(`l.status NOT IN ('PAID','ARCHIVED','NOT_INTERESTED','INVALID_PHONE','LOW_QUALITY')`);
+  // Toza varaqdan oldingi qo'ng'iroq rejalari ko'rinmaydi.
+  where.push(`t.created_at >= ${FRESH_START_SQL}`);
 
   if (params.bucket === 'overdue') {
     where.push(`t.status = 'open' AND t.scheduled_at < now()`);
@@ -1102,7 +1130,7 @@ export async function getTaskSummary(scopeOperatorId?: number | null) {
        count(*) FILTER (WHERE t.status = 'open')::int AS open_total
      FROM sales_crm_tasks t
      ${leadJoin}
-     WHERE 1=1${opFilter}`,
+     WHERE t.created_at >= ${FRESH_START_SQL}${opFilter}`,
     params,
   );
   return rows[0];

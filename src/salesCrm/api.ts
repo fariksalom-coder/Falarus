@@ -260,6 +260,8 @@ export type LeadRow = {
   no_answer_retry_at?: string | null;
   last_contact_at: string | null;
   created_at: string;
+  /** Foydalanuvchi ro'yxatdan o'tgan vaqt. */
+  registered_at?: string | null;
   support_group_at?: string | null;
   access_at?: string | null;
   first_login_at?: string | null;
