@@ -692,8 +692,9 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
      ) fl ON true
      WHERE ${whereSql}
      ORDER BY
-       -- Vaqti kelgan qo'ng'iroqlar (shu jumladan «Ko'tarmadi»dan qaytganlar) doim tepada.
-       CASE WHEN l.next_contact_at IS NOT NULL AND l.next_contact_at < now() THEN 0 ELSE 1 END,
+       -- Vaqti kelgan qo'ng'iroqlar (shu jumladan «Ko'tarmadi»dan qaytganlar) doim tepada;
+       -- toza varaqdan oldingi muddati o'tganlar ro'yxatdan o'tgan sanasi bo'yicha turadi.
+       CASE WHEN l.next_contact_at >= ${FRESH_START_SQL} AND l.next_contact_at < now() THEN 0 ELSE 1 END,
        -- Ishlanayotgan bosqichlar doska limitiga sig'sin, keyin «Yangi» —
        -- ro'yxatdan o'tgan sanasi bo'yicha, eng yangisi tepada.
        CASE WHEN l.status IN ('NEW','TO_CALL','CALLED','ANSWERED') THEN 1 ELSE 0 END,
