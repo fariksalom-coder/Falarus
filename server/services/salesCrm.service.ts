@@ -50,16 +50,12 @@ function leadFlowSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
   return '1=1';
 }
 
-function leadFlowOwnerSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
-  const p = alias ? `${alias}.` : '';
-  const firstOperator = `(
-    SELECT id FROM sales_crm_agents
-    WHERE active = true AND role = 'operator'
-    ORDER BY id ASC
-    LIMIT 1
-  )`;
-  if (flow === 'promo') return `${p}assigned_operator_id IS DISTINCT FROM ${firstOperator}`;
-  if (flow === 'platform') return `${p}assigned_operator_id = ${firstOperator}`;
+/**
+ * 2026-11-03 gacha «Platforma» faqat birinchi operatorniki, «Sayt» qolganlarniki edi.
+ * Endi lidlar uchala operatorga bo'linadi — tab faqat manbaga qarab (leadFlowSql);
+ * kim ishlashi `assigned_operator_id` va operator doirasi bilan belgilanadi.
+ */
+function leadFlowOwnerSql(_flow?: SalesCrmLeadFlow | null, _alias = ''): string {
   return '1=1';
 }
 
