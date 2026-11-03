@@ -124,6 +124,14 @@ test('no-answer retries: persistent 2/4/12/24h cycle, fifth failure, scope and a
     assert.equal((await lead(4)).no_answer_retry_at, null);
     assert.equal((await lead(4)).next_contact_at, null);
     assert.ok((await lead(4)).presentation_at);
+    // A warm lead that misses a call keeps its stage instead of cycling back to "Yangi".
+    const warm = await logCall({ leadId: 4, operatorId: 2, answered: false, result: 'no_answer' });
+    assert.equal(warm.status, 'THINKING');
+    assert.equal((await lead(4)).status, 'THINKING');
+    assert.equal((await lead(4)).no_answer_retry_at, null);
+    assert.ok(Math.abs(new Date((await lead(4)).next_contact_at).getTime() - Date.now() - 2 * 3600_000) < 5000);
+    assert.equal((await openTasks(4)).length, 1);
+    assert.equal(await returnDueNoAnswerLeads(), 0);
 
     await db.exec(`INSERT INTO sales_crm_leads(user_id,status,assigned_operator_id,no_answer_attempts)
       VALUES (5,'NEW',2,4)`);

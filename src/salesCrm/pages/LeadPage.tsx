@@ -36,6 +36,60 @@ function tomorrow18(): string {
   return d.toISOString();
 }
 
+type HistoryItem = { key: string; at: string; title: string; note?: string | null; who?: string | null; auto: boolean };
+
+const statusLabel = (v: unknown) =>
+  typeof v === 'string' ? SALES_CRM_STATUS_LABELS[v as SalesCrmStatus] ?? v : '—';
+const shortTime = (v: unknown) =>
+  typeof v === 'string' && v ? new Date(v).toLocaleString('uz-UZ', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+
+/** Voqealar va qo'ng'iroqlar bitta tasmada; operator kodlarni emas, nima bo'lganini ko'radi. */
+function leadHistory(data: LeadDetail): HistoryItem[] {
+  const items: HistoryItem[] = [];
+  for (const ev of data.events) {
+    // Qo'ng'iroq natijasi va izohi pastdagi `calls` dan to'liqroq chiqadi.
+    if (ev.event_type === 'call_logged') continue;
+    const p = (ev.payload && typeof ev.payload === 'object' ? ev.payload : {}) as Record<string, unknown>;
+    let title = ev.event_type;
+    let note: string | null = null;
+    switch (ev.event_type) {
+      case 'lead_created': title = 'Lid yaratildi'; note = p.source ? `Manba: ${String(p.source)}` : null; break;
+      case 'assigned': title = 'Operatorga biriktirildi'; break;
+      case 'status_changed': title = `Bosqich: ${statusLabel(p.from)} → ${statusLabel(p.to)}`; break;
+      case 'status_restored': title = `Bosqich tiklandi: ${statusLabel(p.from)} → ${statusLabel(p.to)}`; break;
+      case 'no_answer_retry':
+        title = p.to === 'LOW_QUALITY'
+          ? `Ko‘tarmadi (${String(p.attempt ?? '')}-marta) → Sifatsiz lidlarga o‘tdi`
+          : `Ko‘tarmadi (${String(p.attempt ?? '')}-urinish). Qayta qo‘ng‘iroq: ${shortTime(p.retry_at)}`;
+        break;
+      case 'no_answer_returned': title = 'Qayta qo‘ng‘iroq vaqti keldi → Yangi lidlarga qaytdi'; break;
+      case 'lead_refreshed':
+        title = p.resurfaced ? 'Qayta ariza qoldirdi → Yangi lidlarga qaytdi' : 'Ariza ma’lumoti yangilandi';
+        note = p.source ? `Manba: ${String(p.source)}` : null;
+        break;
+      case 'duplicate_registration': title = 'Shu raqam bilan yana ro‘yxatdan o‘tdi'; break;
+      case 'paid': title = 'To‘lov qildi'; note = p.amount ? `${Number(p.amount).toLocaleString('uz-UZ')} ${String(p.currency ?? '')}` : null; break;
+      case 'task_scheduled': title = `Qo‘ng‘iroq rejalandi: ${shortTime(p.scheduled_at)}`; break;
+      case 'task_done': title = 'Rejadagi qo‘ng‘iroq bajarildi'; break;
+      case 'milestone': title = p.done ? 'Taqdimot o‘tkazildi' : 'Taqdimot belgisi olib tashlandi'; break;
+      case 'comment': title = 'Izoh yozildi'; note = typeof p.preview === 'string' ? p.preview : null; break;
+    }
+    items.push({ key: `e${ev.id}`, at: ev.created_at, title, note, who: ev.actor_name, auto: !ev.actor_name });
+  }
+  for (const c of data.calls) {
+    const result = SALES_CRM_CALL_RESULT_LABELS[c.result as SalesCrmCallResult] ?? c.result;
+    items.push({
+      key: `c${c.id}`,
+      at: c.called_at,
+      title: `Qo‘ng‘iroq: ${result}`,
+      note: c.comment,
+      who: c.operator_name,
+      auto: false,
+    });
+  }
+  return items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+}
+
 export default function LeadPage() {
   const { id } = useParams();
   const leadId = Number(id);
@@ -52,6 +106,8 @@ export default function LeadPage() {
   const [statusBusy, setStatusBusy] = useState(false);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const automaticRetry = statusAfterCallResult(result) === 'NO_ANSWER';
+
+  const history = useMemo(() => (data ? leadHistory(data) : []), [data]);
 
   const tel = useMemo(() => {
     const raw = String(data?.lead.phone || data?.lead.phone_normalized || '');
@@ -283,6 +339,8 @@ export default function LeadPage() {
           <p className="mt-3 text-sm font-medium text-slate-600">
             {['NO_ANSWER', 'LOW_QUALITY'].includes(lead.status)
               ? SALES_CRM_STATUS_LABELS[lead.status as SalesCrmStatus]
+              : ['CALLBACK', 'THINKING', 'PAYMENT_PENDING', 'FOLLOW_UP'].includes(lead.status)
+                ? `«${SALES_CRM_STATUS_LABELS[lead.status as SalesCrmStatus]}» bosqichida qoladi, 2 soatdan keyin qayta qo‘ng‘iroq`
               : Number(lead.no_answer_attempts || 0) >= 4
                 ? '5-urinish: Sifatsiz lidlar'
                 : `Qayta urinish: ${[2, 4, 12, 24][Number(lead.no_answer_attempts || 0)]} soat`}
@@ -319,16 +377,16 @@ export default function LeadPage() {
 
       <section className="rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200">
         <h3 className="text-sm font-bold">Tarix</h3>
+        {history.length === 0 ? <p className="mt-3 text-sm text-slate-500">Hali hech narsa bo‘lmagan.</p> : null}
         <ul className="mt-3 space-y-3">
-          {data.events.map((ev) => (
-            <li key={ev.id} className="border-l-2 border-slate-200 pl-3 text-sm">
+          {history.map((h) => (
+            <li key={h.key} className={`border-l-2 pl-3 text-sm ${h.auto ? 'border-amber-300' : 'border-slate-200'}`}>
               <p className="text-[11px] text-slate-400">
-                {new Date(ev.created_at).toLocaleString('uz-UZ')}
-                {ev.actor_name ? ` · ${ev.actor_name}` : ''}
+                {new Date(h.at).toLocaleString('uz-UZ')}
+                {h.who ? ` · ${h.who}` : h.auto ? ' · avtomatik' : ''}
               </p>
-              <p className="font-semibold">{ev.event_type === 'no_answer_retry'
-                ? 'Javobsiz qo‘ng‘iroq'
-                : ev.event_type === 'no_answer_returned' ? 'Yangi lidlarga qaytarildi' : ev.event_type}</p>
+              <p className="font-semibold">{h.title}</p>
+              {h.note ? <p className="mt-0.5 whitespace-pre-wrap text-slate-600">{h.note}</p> : null}
             </li>
           ))}
         </ul>

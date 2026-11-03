@@ -39,6 +39,9 @@ export type SalesCrmAgentRole = 'admin' | 'operator';
 export type SalesCrmLeadFlow = 'promo' | 'platform';
 
 const SALES_CRM_TERMINAL_STATUSES = ['PAID', 'ARCHIVED', 'NOT_INTERESTED', 'INVALID_PHONE', 'LOW_QUALITY'] as const;
+/** Operator allaqachon gaplashgan bosqichlar. */
+const WARM_STATUSES = ['CALLBACK', 'THINKING', 'PAYMENT_PENDING', 'FOLLOW_UP'] as const;
+const WARM_NO_ANSWER_RETRY_MS = 2 * 3600_000;
 
 function leadFlowSql(flow?: SalesCrmLeadFlow | null, alias = ''): string {
   const p = alias ? `${alias}.` : '';
@@ -689,10 +692,12 @@ export async function listSalesLeads(filters: LeadListFilters, db: Pick<Pool, 'q
      ) fl ON true
      WHERE ${whereSql}
      ORDER BY
-       -- «Yangi» lidlar ro'yxatdan o'tgan sanasi bo'yicha, eng yangisi tepada.
+       -- Vaqti kelgan qo'ng'iroqlar (shu jumladan «Ko'tarmadi»dan qaytganlar) doim tepada.
+       CASE WHEN l.next_contact_at IS NOT NULL AND l.next_contact_at < now() THEN 0 ELSE 1 END,
+       -- Ishlanayotgan bosqichlar doska limitiga sig'sin, keyin «Yangi» —
+       -- ro'yxatdan o'tgan sanasi bo'yicha, eng yangisi tepada.
        CASE WHEN l.status IN ('NEW','TO_CALL','CALLED','ANSWERED') THEN 1 ELSE 0 END,
        CASE WHEN l.status IN ('NEW','TO_CALL','CALLED','ANSWERED') THEN u.created_at END DESC NULLS LAST,
-       CASE WHEN l.next_contact_at IS NOT NULL AND l.next_contact_at < now() THEN 0 ELSE 1 END,
        l.next_contact_at NULLS LAST,
        l.created_at DESC
      LIMIT ${lim} OFFSET ${off}`,
@@ -728,6 +733,9 @@ export async function getSalesLead(leadId: number, scopeOperatorId?: number | nu
      FROM sales_crm_events e
      LEFT JOIN sales_crm_agents a ON a.id = e.actor_id
      WHERE e.lead_id = $1
+       -- 29–30.09 dagi Sheets sinxron xatosi 103 lidga ~1000 tadan bir xil yozuv qo'shgan;
+       -- ular haqiqiy tarixni 200 talik chegaradan siqib chiqarmasin.
+       AND NOT (e.event_type = 'lead_refreshed' AND e.created_at < TIMESTAMPTZ '2026-10-01 00:00+05')
      ORDER BY e.created_at DESC
      LIMIT 200`,
     [leadId],
@@ -986,7 +994,7 @@ export async function logCall(params: {
     if (!leadRows[0]) throw Object.assign(new Error('Lead topilmadi'), { status: 404 });
 
     let nextStatus: SalesCrmStatus = statusAfterCallResult(params.result);
-    const automaticRetry = nextStatus === 'NO_ANSWER';
+    let automaticRetry = nextStatus === 'NO_ANSWER';
     if (automaticRetry && ['NO_ANSWER', 'LOW_QUALITY'].includes(leadRows[0].status)) {
       return { status: leadRows[0].status, nextContactAt: leadRows[0].next_contact_at };
     }
@@ -994,6 +1002,13 @@ export async function logCall(params: {
       throw Object.assign(new Error('To‘langan lid bosqichini avval tasdiqlab o‘zgartiring'), { status: 409 });
     }
     let nextAt: string | null = null;
+    // Gaplashilgan lid trubkani olmasa bosqichi yo'qolmasin: «Ko'tarmadi» → «Yangi»
+    // aylanmasiga tushmaydi, o'z ustunida qolib qayta qo'ng'iroq rejalanadi.
+    if (automaticRetry && (WARM_STATUSES as readonly string[]).includes(leadRows[0].status)) {
+      nextStatus = leadRows[0].status as SalesCrmStatus;
+      automaticRetry = false;
+      nextAt = params.nextContactAt ? null : new Date(Date.now() + WARM_NO_ANSWER_RETRY_MS).toISOString();
+    }
     if (params.nextContactAt && !automaticRetry) {
       const d = new Date(params.nextContactAt);
       if (Number.isNaN(d.getTime())) throw Object.assign(new Error('Noto‘g‘ri sana'), { status: 400 });
