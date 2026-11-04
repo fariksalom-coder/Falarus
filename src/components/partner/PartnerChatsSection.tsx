@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
-import { AtSign, Headphones, MessageCircle, Users, Clapperboard } from 'lucide-react';
+import { AtSign, Headphones, MessageCircle, Clapperboard } from 'lucide-react';
 import { getHelpChats, type HelpChatListItem } from '../../api/help';
-import { getSavolJavobSummary, type SavolJavobSummary } from '../../api/communityChat';
+import {
+  getSavolJavobSummary,
+  PremiumRequiredError,
+  type ChatGroup,
+  type SavolJavobSummary,
+} from '../../api/communityChat';
 import { useAuth } from '../../context/AuthContext';
+import { useAccess } from '../../context/AccessContext';
+import { GROUP_LOOK } from './SavolJavobChat';
 import { resolveAssetUrl } from '../../api';
 import { useLocale } from '../../context/LocaleContext';
 import type { PartnerMatch } from '../../api/partner';
@@ -27,19 +34,104 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
+type GroupRowProps = {
+  group: ChatGroup;
+  title: string;
+  /** Xulosa hali yuklanmagan bo'lsa ko'rinadigan matn. */
+  fallback: string;
+  summary: SavolJavobSummary | null;
+  onOpen: () => void;
+};
+
+/** Guruh chati qatori — savol-javob va premium uchun bir xil. */
+function GroupChatRow({ group, title, fallback, summary, onOpen }: GroupRowProps) {
+  const { t } = useLocale();
+  const look = GROUP_LOOK[group];
+  const Icon = look.Icon;
+  const mentions = Number(summary?.mention_count ?? 0);
+  const unread = Number(summary?.unread_count ?? 0);
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex items-center gap-[13px] rounded-[18px] bg-app-surface px-[14px] py-[13px] text-left shadow-[0_6px_14px_rgba(23,34,74,0.05)] transition hover:-translate-y-0.5 active:scale-[0.99]"
+    >
+      <div
+        className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[16px] text-white"
+        style={{ background: look.gradient }}
+      >
+        <Icon className="h-5 w-5" aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between">
+          <p className="truncate text-[15px] font-black text-app-text">{title}</p>
+          <span className="ml-2 shrink-0 text-[11px] font-bold text-[#A7B1C6]">
+            {formatListTime(summary?.last_message?.created_at ?? null, t('common.today'))}
+          </span>
+        </div>
+        {mentions > 0 ? (
+          <p className="mt-[2px] flex items-center gap-1 truncate text-[12.5px] font-black text-[#B45309]">
+            <AtSign className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t('partner.mentionAlert')}
+          </p>
+        ) : (
+          <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
+            {summary
+              ? t('partner.membersOnline', {
+                  members: summary.member_count,
+                  online: summary.online_count,
+                })
+              : fallback}
+          </p>
+        )}
+      </div>
+      {mentions > 0 ? (
+        <span
+          className="inline-flex h-5 items-center justify-center gap-0.5 rounded-full px-1.5 text-[11px] font-black text-white"
+          style={{ background: '#F59E0B' }}
+        >
+          <AtSign className="h-3 w-3" aria-hidden />
+          {mentions}
+        </span>
+      ) : unread > 0 ? (
+        <span
+          className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
+          style={{ background: look.accent }}
+        >
+          {unread}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
 type Props = {
   matches: PartnerMatch[];
   onOpenAdmin: () => void;
   onOpenGroup: () => void;
+  onOpenPremiumGroup: () => void;
   onOpenReels: () => void;
   onOpenPartner: (matchId: number) => void;
 };
 
-export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup, onOpenReels, onOpenPartner }: Props) {
+export default function PartnerChatsSection({
+  matches,
+  onOpenAdmin,
+  onOpenGroup,
+  onOpenPremiumGroup,
+  onOpenReels,
+  onOpenPartner,
+}: Props) {
   const { token, user } = useAuth();
   const { t } = useLocale();
+  const { access } = useAccess();
+  const isPremium = access?.subscription_active === true;
   const [adminChat, setAdminChat] = useState<HelpChatListItem | null>(null);
   const [groupSummary, setGroupSummary] = useState<SavolJavobSummary | null>(null);
+  const [premiumSummary, setPremiumSummary] = useState<SavolJavobSummary | null>(null);
+  /** Server obunani tasdiqlamasa (masalan, muddati hozirgina tugagan) — qator yashiriladi. */
+  const [premiumDenied, setPremiumDenied] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const helpLastSeenKey = user ? `help_last_seen_at_${user.id}` : null;
@@ -51,32 +143,42 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
     if (!token) return;
     let mounted = true;
     setLoading(true);
-    Promise.all([getHelpChats(token), getSavolJavobSummary(token)])
-      .then(([chats, summary]) => {
+
+    const loadPremium = () => {
+      if (!isPremium) return;
+      void getSavolJavobSummary(token, 'premium')
+        .then((summary) => {
+          if (!mounted) return;
+          setPremiumSummary(summary);
+          setPremiumDenied(false);
+        })
+        .catch((e) => {
+          if (mounted && e instanceof PremiumRequiredError) setPremiumDenied(true);
+        });
+    };
+
+    const load = () =>
+      Promise.all([getHelpChats(token), getSavolJavobSummary(token)]).then(([chats, summary]) => {
         if (!mounted) return;
         setAdminChat(chats[0] ?? null);
         setGroupSummary(summary);
-      })
+      });
+
+    load()
       .catch(() => {})
       .finally(() => mounted && setLoading(false));
+    loadPremium();
 
     const timer = window.setInterval(() => {
-      void Promise.all([getHelpChats(token), getSavolJavobSummary(token)])
-        .then(([chats, summary]) => {
-          if (!mounted) return;
-          setAdminChat(chats[0] ?? null);
-          setGroupSummary(summary);
-        })
-        .catch(() => {});
+      void load().catch(() => {});
+      loadPremium();
     }, 12000);
 
     return () => {
       mounted = false;
       window.clearInterval(timer);
     };
-  }, [token]);
-
-  const groupMentions = Number(groupSummary?.mention_count ?? 0);
+  }, [token, isPremium]);
 
   const adminUnread =
     adminChat &&
@@ -120,58 +222,24 @@ export default function PartnerChatsSection({ matches, onOpenAdmin, onOpenGroup,
         ) : null}
       </button>
 
-      {/* Group chat */}
-      <button
-        type="button"
-        onClick={onOpenGroup}
-        className="flex items-center gap-[13px] rounded-[18px] bg-app-surface px-[14px] py-[13px] text-left shadow-[0_6px_14px_rgba(23,34,74,0.05)] transition hover:-translate-y-0.5 active:scale-[0.99]"
-      >
-        <div
-          className="flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-[16px] text-white"
-          style={{ background: 'linear-gradient(145deg, #0EA5A5, #0C7A7A)' }}
-        >
-          <Users className="h-5 w-5" aria-hidden />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between">
-            <p className="truncate text-[15px] font-black text-app-text">{t('partner.groupChat')}</p>
-            <span className="ml-2 shrink-0 text-[11px] font-bold text-[#A7B1C6]">
-              {formatListTime(groupSummary?.last_message?.created_at ?? null, t('common.today'))}
-            </span>
-          </div>
-          {groupMentions > 0 ? (
-            <p className="mt-[2px] flex items-center gap-1 truncate text-[12.5px] font-black text-[#B45309]">
-              <AtSign className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              {t('partner.mentionAlert')}
-            </p>
-          ) : (
-            <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
-              {groupSummary
-                ? t('partner.membersOnline', {
-                    members: groupSummary.member_count,
-                    online: groupSummary.online_count,
-                  })
-                : t('partner.groupFallback')}
-            </p>
-          )}
-        </div>
-        {groupMentions > 0 ? (
-          <span
-            className="inline-flex h-5 items-center justify-center gap-0.5 rounded-full px-1.5 text-[11px] font-black text-white"
-            style={{ background: '#F59E0B' }}
-          >
-            <AtSign className="h-3 w-3" aria-hidden />
-            {groupMentions}
-          </span>
-        ) : Number(groupSummary?.unread_count ?? 0) > 0 ? (
-          <span
-            className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
-            style={{ background: '#0EA5A5' }}
-          >
-            {groupSummary!.unread_count}
-          </span>
-        ) : null}
-      </button>
+      <GroupChatRow
+        group="savol-javob"
+        title={t('partner.groupChat')}
+        fallback={t('partner.groupFallback')}
+        summary={groupSummary}
+        onOpen={onOpenGroup}
+      />
+
+      {/* Premium guruh — faqat amaldagi obunasi borlarga ko'rinadi. */}
+      {isPremium && !premiumDenied ? (
+        <GroupChatRow
+          group="premium"
+          title={t('partner.premiumChat')}
+          fallback={t('partner.premiumChatSub')}
+          summary={premiumSummary}
+          onOpen={onOpenPremiumGroup}
+        />
+      ) : null}
 
       {/* RELS — qisqa videolar lentasi. Savol-javob guruhidan keyin turadi. */}
       <button

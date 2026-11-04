@@ -5,7 +5,7 @@ import { motion, useMotionValue, useTransform, type PanInfo } from 'motion/react
 import ChatMedia from './ChatMedia';
 import ChatMediaComposer, { type ComposerRejim } from './ChatMediaComposer';
 import MessageReactions from './MessageReactions';
-import { ArrowLeft, AtSign, Clapperboard, Headphones, ImagePlus, Lock, Mic, MoreVertical, Pencil, Send, SmilePlus, Trash2, Users, Video, X } from 'lucide-react';
+import { ArrowLeft, AtSign, Clapperboard, Crown, Headphones, ImagePlus, Lock, Mic, MoreVertical, Pencil, Send, SmilePlus, Trash2, Users, Video, X } from 'lucide-react';
 import {
   getSavolJavobLiveState,
   getSavolJavobMessages,
@@ -27,6 +27,7 @@ import {
   editGroupMessage,
   deleteGroupMessage,
   type ChatBlock,
+  type ChatGroup,
   type SavolJavobLiveState,
   type SavolJavobMember,
   type SavolJavobMessage,
@@ -39,6 +40,8 @@ import ChatAvatar from '../ChatAvatar';
 
 type Props = {
   onBack: () => void;
+  /** Qaysi guruh ochiladi. Standart — umumiy savol-javob. */
+  group?: ChatGroup;
   /** Bloklangan odam faqat Support'ga yoza oladi — shu tugma o'sha chatni ochadi. */
   onOpenSupport?: () => void;
 };
@@ -248,9 +251,17 @@ function MessageBody({
   );
 }
 
-export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
+/** Guruhlarning ko'rinishdagi farqi — mantiq va imkoniyatlar bir xil. */
+export const GROUP_LOOK: Record<ChatGroup, { gradient: string; accent: string; Icon: typeof Users }> = {
+  'savol-javob': { gradient: 'linear-gradient(145deg, #0EA5A5, #0C7A7A)', accent: '#0EA5A5', Icon: Users },
+  premium: { gradient: 'linear-gradient(145deg, #F59E0B, #D97706)', accent: '#D97706', Icon: Crown },
+};
+
+export default function SavolJavobChat({ onBack, onOpenSupport, group = 'savol-javob' }: Props) {
   const { token, user } = useAuth();
   const { t } = useLocale();
+  const look = GROUP_LOOK[group];
+  const GroupIcon = look.Icon;
   const [messages, setMessages] = useState<SavolJavobMessage[]>([]);
   const [live, setLive] = useState<SavolJavobLiveState>({
     member_count: 0,
@@ -298,12 +309,12 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
   const refreshLive = useCallback(async () => {
     if (!token) return;
     try {
-      const state = await getSavolJavobLiveState(token);
+      const state = await getSavolJavobLiveState(token, group);
       setLive(state);
     } catch {
       /* ignore polling errors */
     }
-  }, [token]);
+  }, [token, group]);
 
   const setTyping = useCallback(
     async (typing: boolean) => {
@@ -311,19 +322,19 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
       if (isTypingRef.current === typing) return;
       isTypingRef.current = typing;
       try {
-        await setSavolJavobTyping(token, typing);
+        await setSavolJavobTyping(token, typing, group);
       } catch {
         /* ignore */
       }
     },
-    [token]
+    [token, group]
   );
 
   useEffect(() => {
     if (!token) return;
     let mounted = true;
     setLoading(true);
-    Promise.all([getSavolJavobMessages(token), getSavolJavobLiveState(token)])
+    Promise.all([getSavolJavobMessages(token, undefined, group), getSavolJavobLiveState(token, group)])
       .then(([rows, state]) => {
         if (!mounted) return;
         setMessages(rows);
@@ -331,9 +342,9 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
       })
       .catch((e: Error) => mounted && setError(e.message))
       .finally(() => mounted && setLoading(false));
-    void markSavolJavobRead(token).catch(() => {});
-    void pingSavolJavobPresence(token).catch(() => {});
-    void getSavolJavobSummary(token)
+    void markSavolJavobRead(token, group).catch(() => {});
+    void pingSavolJavobPresence(token, group).catch(() => {});
+    void getSavolJavobSummary(token, group)
       .then((sum) => {
         if (!mounted) return;
         setBlock(sum.block ?? null);
@@ -342,7 +353,7 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
       .catch(() => {});
 
     const msgTimer = window.setInterval(() => {
-      void getSavolJavobMessages(token)
+      void getSavolJavobMessages(token, undefined, group)
         .then((rows) => mounted && setMessages(rows))
         .catch(() => {});
     }, 4000);
@@ -352,7 +363,7 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
     }, 2500);
 
     const presenceTimer = window.setInterval(() => {
-      void pingSavolJavobPresence(token).catch(() => {});
+      void pingSavolJavobPresence(token, group).catch(() => {});
     }, 25_000);
 
     return () => {
@@ -362,9 +373,9 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
       window.clearInterval(presenceTimer);
       if (typingStopTimerRef.current) window.clearTimeout(typingStopTimerRef.current);
       if (mentionCloseTimerRef.current) window.clearTimeout(mentionCloseTimerRef.current);
-      void setSavolJavobTyping(token, false).catch(() => {});
+      void setSavolJavobTyping(token, false, group).catch(() => {});
     };
-  }, [token, refreshLive]);
+  }, [token, refreshLive, group]);
 
   // First render → jump to bottom instantly. After that only scroll on new content
   // if the user is already near the bottom (stickToBottomRef tracks their intent).
@@ -411,7 +422,7 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
     }
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      void searchSavolJavobMembers(token, mention.query.trim(), controller.signal)
+      void searchSavolJavobMembers(token, mention.query.trim(), controller.signal, group)
         .then((rows) => {
           setMentionResults(rows);
           setMentionIndex(0);
@@ -422,7 +433,7 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [token, mention]);
+  }, [token, mention, group]);
 
   const syncMention = useCallback((value: string, caret: number) => {
     setMention(findActiveMention(value, caret, pickedRef.current));
@@ -518,11 +529,11 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
     setSending(true);
     setError('');
     try {
-      const created = await sendSavolJavobMessage(token, content);
+      const created = await sendSavolJavobMessage(token, content, group);
       // User just sent → always jump to bottom.
       stickToBottomRef.current = true;
       setMessages((prev) => [...prev, created]);
-      void markSavolJavobRead(token).catch(() => {});
+      void markSavolJavobRead(token, group).catch(() => {});
       void refreshLive();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.loadError'));
@@ -554,12 +565,12 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
     setError('');
     const izoh = text.trim() ? serializeMentions(text.trim(), pickedRef.current) : '';
     try {
-      const created = await sendSavolJavobMedia(token, { kind, file, fileName, content: izoh, ms });
+      const created = await sendSavolJavobMedia(token, { kind, file, fileName, content: izoh, ms }, group);
       stickToBottomRef.current = true;
       setMessages((prev) => [...prev, created]);
       setText('');
       pickedRef.current = [];
-      void markSavolJavobRead(token).catch(() => {});
+      void markSavolJavobRead(token, group).catch(() => {});
       void refreshLive();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.loadError'));
@@ -669,7 +680,7 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
       }),
     );
     try {
-      const javob = await toggleMessageReaction(token, messageId, emoji);
+      const javob = await toggleMessageReaction(token, messageId, emoji, group);
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, reactions: javob.reactions } : m)),
       );
@@ -693,7 +704,7 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
     setError('');
     try {
       await fn();
-      const rows = await getSavolJavobMessages(token);
+      const rows = await getSavolJavobMessages(token, undefined, group);
       setMessages(rows);
       setMenyu(null);
       setTahrir(null);
@@ -719,9 +730,9 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
         </button>
         <div
           className="flex h-11 w-11 items-center justify-center rounded-[14px] text-white"
-          style={{ background: 'linear-gradient(145deg, #0EA5A5, #0C7A7A)' }}
+          style={{ background: look.gradient }}
         >
-          <Users className="h-5 w-5" />
+          <GroupIcon className="h-5 w-5" />
         </div>
         {canModerate ? (
           <button
@@ -735,7 +746,9 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
           </button>
         ) : null}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-extrabold text-app-text">{t('partner.groupChat')}</p>
+          <p className="truncate text-[15px] font-extrabold text-app-text">
+            {group === 'premium' ? t('partner.premiumChat') : t('partner.groupChat')}
+          </p>
           <p className="text-[11.5px] font-bold text-[#35C06E]">
             {formatMembersLine(live.member_count, live.online_count, t)}
           </p>
@@ -745,7 +758,10 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
       <div ref={scrollRef} onScroll={handleScrollContainer} className="flex-1 overflow-y-auto px-3.5 py-4">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="h-9 w-9 animate-spin rounded-full border-2 border-[#0EA5A5] border-t-transparent" />
+            <div
+              className="h-9 w-9 animate-spin rounded-full border-2 border-t-transparent"
+              style={{ borderColor: look.accent, borderTopColor: 'transparent' }}
+            />
           </div>
         ) : (
           <div className="mx-auto flex max-w-lg flex-col gap-3">
@@ -1067,7 +1083,8 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
               type="button"
               onClick={() => void handleSend()}
               disabled={sending || yuklanmoqda}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0EA5A5] text-white shadow-md disabled:opacity-50"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-50"
+              style={{ background: look.accent }}
               aria-label={t('common.send')}
             >
               <Send className="h-5 w-5" />
@@ -1077,7 +1094,8 @@ export default function SavolJavobChat({ onBack, onOpenSupport }: Props) {
               type="button"
               onClick={() => setMediaRejim('voice')}
               disabled={yuklanmoqda}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0EA5A5] text-white shadow-md disabled:opacity-50"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-md transition active:scale-95 disabled:opacity-50"
+              style={{ background: look.accent }}
               aria-label="Ovozli xabar"
             >
               <Mic className="h-5 w-5" />

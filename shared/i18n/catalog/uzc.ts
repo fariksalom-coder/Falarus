@@ -116,6 +116,8 @@ const uzc: MessageCatalog = {
     outgoing: 'Чиқувчи сўровлар',
     adminChat: 'Support',
     groupChat: 'Савол-жавоб гуруҳи',
+    premiumChat: 'Премиум гуруҳ',
+    premiumChatSub: 'Фақат премиум аъзолар учун ёпиқ гуруҳ',
     partnerChat: 'Шерик билан ёзишма',
     noRequests: 'Ҳозирча сўровлар ёқ',
     noProfiles: 'Ҳозирча анкеталар ёқ',

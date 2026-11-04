@@ -693,6 +693,8 @@ export type AdminChatBlock = {
 
 export type AdminCommunityMessage = {
   id: number;
+  /** `savol_javob` yoki `premium`. */
+  group_code?: string;
   sender_user_id: number;
   sender_name: string;
   content: string;

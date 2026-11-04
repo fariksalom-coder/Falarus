@@ -98,6 +98,8 @@ const ru: DeepPartial<MessageCatalog> = {
     outgoing: 'Исходящие запросы',
     adminChat: 'Support',
     groupChat: 'Группа вопрос-ответ',
+    premiumChat: 'Премиум группа',
+    premiumChatSub: 'Закрытая группа только для премиум-участников',
     mentionAlert: 'Вас отметили',
     mentionEmpty: 'Никого не найдено',
     mentionTitle: 'Кого отметить?',

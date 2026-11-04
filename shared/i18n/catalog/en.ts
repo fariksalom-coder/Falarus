@@ -98,6 +98,8 @@ const en: DeepPartial<MessageCatalog> = {
     outgoing: 'Outgoing requests',
     adminChat: 'Support',
     groupChat: 'Q&A group',
+    premiumChat: 'Premium group',
+    premiumChatSub: 'Private group for premium members only',
     mentionAlert: 'You were mentioned',
     mentionEmpty: 'Nobody found',
     mentionTitle: 'Who do you mean?',

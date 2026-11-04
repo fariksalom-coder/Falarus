@@ -7,6 +7,16 @@ function authHeaders(token: string) {
   };
 }
 
+/** Guruh chati — URL'dagi qism. `premium` faqat amaldagi obunasi borlarga ochiq. */
+export type ChatGroup = 'savol-javob' | 'premium';
+
+function groupUrl(group: ChatGroup, path: string): string {
+  return apiUrl(`/api/community/${group}${path}`);
+}
+
+/** Server premium guruhni obunasizlarga shu xato bilan yopadi. */
+export class PremiumRequiredError extends Error {}
+
 export type SavolJavobMessage = {
   id: number;
   group_code: string;
@@ -111,17 +121,26 @@ export type SavolJavobLiveState = {
   typing_users: SavolJavobTypingUser[];
 };
 
-export async function getSavolJavobSummary(token: string): Promise<SavolJavobSummary> {
-  const res = await fetch(apiUrl('/api/community/savol-javob/summary'), {
+export async function getSavolJavobSummary(
+  token: string,
+  group: ChatGroup = 'savol-javob',
+): Promise<SavolJavobSummary> {
+  const res = await fetch(groupUrl(group, '/summary'), {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
+  if (res.status === 403 && data?.code === 'premium_required') {
+    throw new PremiumRequiredError(data.error);
+  }
   if (!res.ok) throw new Error(data?.error || 'Guruh yuklanmadi');
   return data;
 }
 
-export async function getSavolJavobLiveState(token: string): Promise<SavolJavobLiveState> {
-  const res = await fetch(apiUrl('/api/community/savol-javob/live'), {
+export async function getSavolJavobLiveState(
+  token: string,
+  group: ChatGroup = 'savol-javob',
+): Promise<SavolJavobLiveState> {
+  const res = await fetch(groupUrl(group, '/live'), {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
@@ -129,8 +148,8 @@ export async function getSavolJavobLiveState(token: string): Promise<SavolJavobL
   return data;
 }
 
-export async function pingSavolJavobPresence(token: string): Promise<void> {
-  const res = await fetch(apiUrl('/api/community/savol-javob/presence'), {
+export async function pingSavolJavobPresence(token: string, group: ChatGroup = 'savol-javob'): Promise<void> {
+  const res = await fetch(groupUrl(group, '/presence'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({}),
@@ -141,8 +160,12 @@ export async function pingSavolJavobPresence(token: string): Promise<void> {
   }
 }
 
-export async function setSavolJavobTyping(token: string, typing: boolean): Promise<void> {
-  const res = await fetch(apiUrl('/api/community/savol-javob/typing'), {
+export async function setSavolJavobTyping(
+  token: string,
+  typing: boolean,
+  group: ChatGroup = 'savol-javob',
+): Promise<void> {
+  const res = await fetch(groupUrl(group, '/typing'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ typing }),
@@ -153,9 +176,13 @@ export async function setSavolJavobTyping(token: string, typing: boolean): Promi
   }
 }
 
-export async function getSavolJavobMessages(token: string, beforeId?: number): Promise<SavolJavobMessage[]> {
+export async function getSavolJavobMessages(
+  token: string,
+  beforeId?: number,
+  group: ChatGroup = 'savol-javob',
+): Promise<SavolJavobMessage[]> {
   const qs = beforeId ? `?before_id=${beforeId}` : '';
-  const res = await fetch(apiUrl(`/api/community/savol-javob/messages${qs}`), {
+  const res = await fetch(groupUrl(group, `/messages${qs}`), {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
@@ -163,9 +190,9 @@ export async function getSavolJavobMessages(token: string, beforeId?: number): P
   return data;
 }
 
-/** Pastki menyudagi nishon uchun yengil so'rov. */
+/** Pastki menyudagi nishon uchun yengil so'rov — ochiq guruhlar yig'indisi. */
 export async function getSavolJavobMentionCount(token: string): Promise<number> {
-  const res = await fetch(apiUrl('/api/community/savol-javob/mentions'), {
+  const res = await fetch(apiUrl('/api/community/mentions'), {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
@@ -177,10 +204,11 @@ export async function getSavolJavobMentionCount(token: string): Promise<number> 
 export async function searchSavolJavobMembers(
   token: string,
   query: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  group: ChatGroup = 'savol-javob',
 ): Promise<SavolJavobMember[]> {
   const res = await fetch(
-    apiUrl(`/api/community/savol-javob/members?q=${encodeURIComponent(query)}`),
+    groupUrl(group, `/members?q=${encodeURIComponent(query)}`),
     { headers: { Authorization: `Bearer ${token}` }, signal }
   );
   const data = await res.json();
@@ -188,8 +216,12 @@ export async function searchSavolJavobMembers(
   return data;
 }
 
-export async function sendSavolJavobMessage(token: string, content: string): Promise<SavolJavobMessage> {
-  const res = await fetch(apiUrl('/api/community/savol-javob/messages'), {
+export async function sendSavolJavobMessage(
+  token: string,
+  content: string,
+  group: ChatGroup = 'savol-javob',
+): Promise<SavolJavobMessage> {
+  const res = await fetch(groupUrl(group, '/messages'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ content }),
@@ -210,6 +242,7 @@ export async function sendSavolJavobMessage(token: string, content: string): Pro
 export async function sendSavolJavobMedia(
   token: string,
   input: { kind: MediaKind; file: Blob; fileName: string; content?: string; ms?: number | null },
+  group: ChatGroup = 'savol-javob',
 ): Promise<SavolJavobMessage> {
   const fd = new FormData();
   fd.append('kind', input.kind);
@@ -217,7 +250,7 @@ export async function sendSavolJavobMedia(
   if (input.content) fd.append('content', input.content);
   if (input.ms != null) fd.append('ms', String(Math.round(input.ms)));
 
-  const res = await fetch(apiUrl('/api/community/savol-javob/media'), {
+  const res = await fetch(groupUrl(group, '/media'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: fd,
@@ -239,8 +272,9 @@ export async function toggleMessageReaction(
   token: string,
   messageId: number,
   emoji: string,
+  group: ChatGroup = 'savol-javob',
 ): Promise<{ message_id: number; reactions: MessageReaction[] }> {
-  const res = await fetch(apiUrl(`/api/community/savol-javob/messages/${messageId}/reactions`), {
+  const res = await fetch(groupUrl(group, `/messages/${messageId}/reactions`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ emoji }),
@@ -314,8 +348,8 @@ export async function uploadReactionImage(
   return res.json();
 }
 
-export async function markSavolJavobRead(token: string): Promise<void> {
-  const res = await fetch(apiUrl('/api/community/savol-javob/read'), {
+export async function markSavolJavobRead(token: string, group: ChatGroup = 'savol-javob'): Promise<void> {
+  const res = await fetch(groupUrl(group, '/read'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({}),

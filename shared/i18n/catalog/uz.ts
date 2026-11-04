@@ -115,6 +115,8 @@ const uz: MessageCatalog = {
     outgoing: "Chiquvchi so'rovlar",
     adminChat: 'Support',
     groupChat: 'Savol-javob guruhi',
+    premiumChat: 'Premium guruh',
+    premiumChatSub: 'Faqat premium a\'zolar uchun yopiq guruh',
     partnerChat: 'Sherik bilan yozishma',
     noRequests: "Hozircha so'rovlar yo'q",
     noProfiles: "Hozircha anketalar yo'q",

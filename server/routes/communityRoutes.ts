@@ -19,8 +19,34 @@ import {
   listBlocks,
   unblockUser,
 } from '../services/chatBlock.service.js';
+import { getAccessInfo } from '../services/subscription.service.js';
 
-const GROUP_CODE = 'savol_javob';
+/*
+ * GURUH CHATLARI.
+ *
+ * Barcha guruhlar bitta jadvallar to'plamida yashaydi va `group_code`
+ * bilan ajratiladi. URL'da chiziqcha (`savol-javob`), bazada pastki
+ * chiziq (`savol_javob`) — eski klientlar buzilmasin, shu saqlangan.
+ *
+ * `premium` — faqat amaldagi obunasi borlar (va oltin support hisobi)
+ * uchun. Obuna tugashi bilan odam guruhga kira olmaydi: tekshiruv har
+ * so'rovda `getAccessInfo` orqali (90 s keshlangan) bajariladi, ya'ni
+ * alohida "a'zolar ro'yxati"ni sinxron tutish shart emas.
+ */
+type GuruhKodi = 'savol_javob' | 'premium';
+
+const GURUHLAR: Record<GuruhKodi, { title: string; premium: boolean }> = {
+  savol_javob: { title: 'SAVOL-JAVOB', premium: false },
+  premium: { title: 'PREMIUM', premium: true },
+};
+
+const GURUH_SLUGLARI: Record<string, GuruhKodi> = {
+  'savol-javob': 'savol_javob',
+  premium: 'premium',
+};
+
+/** Rels kommentariyalari va foydalanuvchi kartasi faqat shu guruhga bog'liq. */
+const GROUP_CODE: GuruhKodi = 'savol_javob';
 const MAX_CONTENT = 2000;
 const DEFAULT_LIMIT = 80;
 const ONLINE_WINDOW_MS = 90_000;
@@ -201,22 +227,38 @@ function typingSinceIso(): string {
   return new Date(Date.now() - TYPING_WINDOW_MS).toISOString();
 }
 
-async function touchPresence(supabase: DbClient, userId: number): Promise<void> {
+async function touchPresence(supabase: DbClient, userId: number, groupCode: GuruhKodi): Promise<void> {
   const now = new Date().toISOString();
   await supabase.from('community_group_presence').upsert(
-    { user_id: userId, group_code: GROUP_CODE, last_seen_at: now },
+    { user_id: userId, group_code: groupCode, last_seen_at: now },
     { onConflict: 'user_id,group_code' }
   );
 }
 
-async function fetchGroupStats(supabase: DbClient) {
+/**
+ * Premium a'zo filtri — `plan_expires_at` hali o'tmagan yoki oltin hisob,
+ * admin muzlatmagan. Sanash va "@" qidiruvi uchun yetarli; kirish
+ * huquqining o'zi esa `getAccessInfo` bilan aniq tekshiriladi.
+ */
+function premiumOrFiltri(): string {
+  return `plan_expires_at.gt.${new Date().toISOString()},is_golden.eq.true`;
+}
+
+async function fetchGroupStats(supabase: DbClient, groupCode: GuruhKodi) {
   const sinceOnline = onlineSinceIso();
+  const azolar = GURUHLAR[groupCode].premium
+    ? supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .is('access_frozen_at', null)
+        .or(premiumOrFiltri())
+    : supabase.from('users').select('*', { count: 'exact', head: true });
   const [{ count: memberCount }, { count: onlineCount }] = await Promise.all([
-    supabase.from('users').select('*', { count: 'exact', head: true }),
+    azolar,
     supabase
       .from('community_group_presence')
       .select('*', { count: 'exact', head: true })
-      .eq('group_code', GROUP_CODE)
+      .eq('group_code', groupCode)
       .gt('last_seen_at', sinceOnline),
   ]);
   return {
@@ -225,12 +267,12 @@ async function fetchGroupStats(supabase: DbClient) {
   };
 }
 
-async function fetchTypingUsers(supabase: DbClient, excludeUserId: number) {
+async function fetchTypingUsers(supabase: DbClient, excludeUserId: number, groupCode: GuruhKodi) {
   const sinceTyping = typingSinceIso();
   const { data: typingRows, error } = await supabase
     .from('community_group_typing')
     .select('user_id, updated_at')
-    .eq('group_code', GROUP_CODE)
+    .eq('group_code', groupCode)
     .gt('updated_at', sinceTyping)
     .neq('user_id', excludeUserId);
   if (error) throw error;
@@ -254,7 +296,8 @@ async function fetchTypingUsers(supabase: DbClient, excludeUserId: number) {
 async function countUnreadMentions(
   supabase: DbClient,
   userId: number,
-  lastReadAt: string | null
+  lastReadAt: string | null,
+  groupCode: GuruhKodi,
 ): Promise<number> {
   /*
    * IKKI XIL BELGI HISOBLANADI:
@@ -270,7 +313,8 @@ async function countUnreadMentions(
     let query = supabase
       .from('community_group_messages')
       .select('*', { count: 'exact', head: true })
-      .eq('group_code', GROUP_CODE)
+      .eq('group_code', groupCode)
+      .is('deleted_at', null)
       .neq('sender_user_id', userId)
       .like('content', naqsh);
     if (lastReadAt) query = query.gt('created_at', lastReadAt);
@@ -295,11 +339,11 @@ function toMember(row: Record<string, unknown>) {
 }
 
 /** "@" bosilganda ko‘rsatiladigan boshlang‘ich ro‘yxat — guruhda yaqinda yozganlar. */
-async function fetchRecentParticipants(supabase: DbClient, excludeUserId: number) {
+async function fetchRecentParticipants(supabase: DbClient, excludeUserId: number, groupCode: GuruhKodi) {
   const { data: rows } = await supabase
     .from('community_group_messages')
     .select('sender_user_id, created_at')
-    .eq('group_code', GROUP_CODE)
+    .eq('group_code', groupCode)
     .order('created_at', { ascending: false })
     .limit(150);
 
@@ -321,14 +365,18 @@ async function fetchRecentParticipants(supabase: DbClient, excludeUserId: number
   return ordered.filter((id) => byId.has(id)).map((id) => toMember(byId.get(id)!));
 }
 
-async function searchMembers(supabase: DbClient, excludeUserId: number, term: string) {
-  if (!term) return fetchRecentParticipants(supabase, excludeUserId);
+async function searchMembers(supabase: DbClient, excludeUserId: number, term: string, groupCode: GuruhKodi) {
+  if (!term) return fetchRecentParticipants(supabase, excludeUserId, groupCode);
   const like = `${term}%`;
-  const { data, error } = await supabase
+  let query = supabase
     .from('users')
     .select('id, first_name, last_name')
-    .or(`first_name.ilike.${like},last_name.ilike.${like}`)
-    .limit(60);
+    .or(`first_name.ilike.${like},last_name.ilike.${like}`);
+  // Premium guruhda faqat uning a'zolarini belgilash mumkin — begona odamga bildirishnoma ketmasin.
+  if (GURUHLAR[groupCode].premium) {
+    query = query.is('access_frozen_at', null).or(premiumOrFiltri());
+  }
+  const { data, error } = await query.limit(60);
   if (error) throw error;
   return (data ?? [])
     .map((row) => toMember(row as Record<string, unknown>))
@@ -387,6 +435,7 @@ async function normalizeMentions(
 
 async function fetchMessagesWithSenders(
   supabase: DbClient,
+  groupCode: GuruhKodi,
   /** `viewerId` — reaksiyalarda "men bosganmanmi" ni aniqlash uchun. */
   opts: { beforeId?: number; limit?: number; viewerId?: number }
 ) {
@@ -394,7 +443,7 @@ async function fetchMessagesWithSenders(
   let query = supabase
     .from('community_group_messages')
     .select('id, group_code, sender_user_id, content, created_at, edited_at, deleted_at, media_url, media_kind, media_ms, media_deleted_at, reel_id')
-    .eq('group_code', GROUP_CODE)
+    .eq('group_code', groupCode)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -498,15 +547,15 @@ export function createCommunityRoutes(
 ): Router {
   const router = Router();
 
-  router.get('/community/savol-javob/summary', authenticate, async (req: any, res) => {
+  router.get('/community/:group(savol-javob|premium)/summary', authenticate, guruhRuxsati, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
-      await touchPresence(supabase, userId);
+      await touchPresence(supabase, userId, req.groupCode);
       const [{ data: lastRows, error: lastErr }, { data: readRow }, stats] = await Promise.all([
         supabase
           .from('community_group_messages')
           .select('id, content, sender_user_id, created_at')
-          .eq('group_code', GROUP_CODE)
+          .eq('group_code', req.groupCode)
           .is('deleted_at', null)
           .order('created_at', { ascending: false })
           .limit(1),
@@ -514,9 +563,9 @@ export function createCommunityRoutes(
           .from('community_group_reads')
           .select('last_read_at')
           .eq('user_id', userId)
-          .eq('group_code', GROUP_CODE)
+          .eq('group_code', req.groupCode)
           .maybeSingle(),
-        fetchGroupStats(supabase),
+        fetchGroupStats(supabase, req.groupCode),
       ]);
       if (lastErr) throw lastErr;
       const last = (lastRows?.[0] as Record<string, unknown> | undefined) ?? null;
@@ -527,23 +576,23 @@ export function createCommunityRoutes(
           const { count } = await supabase
             .from('community_group_messages')
             .select('*', { count: 'exact', head: true })
-            .eq('group_code', GROUP_CODE)
+            .eq('group_code', req.groupCode)
             .neq('sender_user_id', userId);
           unreadCount = Number(count ?? 0);
         } else {
           const { count } = await supabase
             .from('community_group_messages')
             .select('*', { count: 'exact', head: true })
-            .eq('group_code', GROUP_CODE)
+            .eq('group_code', req.groupCode)
             .gt('created_at', lastReadAt)
             .neq('sender_user_id', userId);
           unreadCount = Number(count ?? 0);
         }
       }
-      const mentionCount = last ? await countUnreadMentions(supabase, userId, lastReadAt) : 0;
+      const mentionCount = last ? await countUnreadMentions(supabase, userId, lastReadAt, req.groupCode) : 0;
       res.json({
-        group_code: GROUP_CODE,
-        title: 'SAVOL-JAVOB',
+        group_code: req.groupCode,
+        title: GURUHLAR[req.groupCode as GuruhKodi].title,
         member_count: stats.member_count,
         online_count: stats.online_count,
         last_message: last
@@ -571,30 +620,60 @@ export function createCommunityRoutes(
    * Ataylab yengil (2 ta so‘rov) va `touchPresence` chaqirmaydi:
    * aks holda ilovaning istalgan sahifasidagi odam "onlayn" bo‘lib qolardi.
    */
-  router.get('/community/savol-javob/mentions', authenticate, async (req: any, res) => {
+  router.get('/community/:group(savol-javob|premium)/mentions', authenticate, guruhRuxsati, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
       const { data: readRow } = await supabase
         .from('community_group_reads')
         .select('last_read_at')
         .eq('user_id', userId)
-        .eq('group_code', GROUP_CODE)
+        .eq('group_code', req.groupCode)
         .maybeSingle();
       const lastReadAt = readRow ? String((readRow as any).last_read_at) : null;
-      res.json({ mention_count: await countUnreadMentions(supabase, userId, lastReadAt) });
+      res.json({ mention_count: await countUnreadMentions(supabase, userId, lastReadAt, req.groupCode) });
     } catch (e) {
       console.error('[GET /api/community/savol-javob/mentions]', e);
       res.status(500).json({ error: 'Belgilashlar yuklanmadi' });
     }
   });
 
-  router.get('/community/savol-javob/live', authenticate, async (req: any, res) => {
+  /**
+   * Barcha ochiq guruhlardagi belgilashlar yig'indisi — pastki menyu nishoni.
+   * Premium guruh faqat obunasi borlarga qo'shiladi.
+   */
+  router.get('/community/mentions', authenticate, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
-      await touchPresence(supabase, userId);
+      const access = await getAccessInfo(supabase, userId);
+      const guruhlar = (Object.keys(GURUHLAR) as GuruhKodi[]).filter(
+        (g) => !GURUHLAR[g].premium || access.subscription_active,
+      );
+      const { data: reads } = await supabase
+        .from('community_group_reads')
+        .select('group_code, last_read_at')
+        .eq('user_id', userId)
+        .in('group_code', guruhlar);
+      const readByGroup = new Map<string, string>();
+      for (const r of (reads ?? []) as Array<{ group_code: string; last_read_at: string }>) {
+        readByGroup.set(String(r.group_code), String(r.last_read_at));
+      }
+      const sonlar = await Promise.all(
+        guruhlar.map((g) => countUnreadMentions(supabase, userId, readByGroup.get(g) ?? null, g)),
+      );
+      res.json({ mention_count: sonlar.reduce((a, b) => a + b, 0) });
+    } catch (e) {
+      console.error('[GET /api/community/mentions]', e);
+      res.status(500).json({ error: 'Belgilashlar yuklanmadi' });
+    }
+  });
+
+  router.get('/community/:group(savol-javob|premium)/live', authenticate, guruhRuxsati, async (req: any, res) => {
+    try {
+      const userId = Number(req.userId);
+      await touchPresence(supabase, userId, req.groupCode);
       const [stats, typingUsers] = await Promise.all([
-        fetchGroupStats(supabase),
-        fetchTypingUsers(supabase, userId),
+        fetchGroupStats(supabase, req.groupCode),
+        fetchTypingUsers(supabase, userId, req.groupCode),
       ]);
       res.json({
         member_count: stats.member_count,
@@ -607,10 +686,10 @@ export function createCommunityRoutes(
     }
   });
 
-  router.post('/community/savol-javob/presence', authenticate, async (req: any, res) => {
+  router.post('/community/:group(savol-javob|premium)/presence', authenticate, guruhRuxsati, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
-      await touchPresence(supabase, userId);
+      await touchPresence(supabase, userId, req.groupCode);
       res.json({ success: true });
     } catch (e) {
       console.error('[POST /api/community/savol-javob/presence]', e);
@@ -618,14 +697,14 @@ export function createCommunityRoutes(
     }
   });
 
-  router.post('/community/savol-javob/typing', authenticate, async (req: any, res) => {
+  router.post('/community/:group(savol-javob|premium)/typing', authenticate, guruhRuxsati, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
       const typing = req.body?.typing === true;
       const now = new Date().toISOString();
       if (typing) {
         const { error } = await supabase.from('community_group_typing').upsert(
-          { user_id: userId, group_code: GROUP_CODE, updated_at: now },
+          { user_id: userId, group_code: req.groupCode, updated_at: now },
           { onConflict: 'user_id,group_code' }
         );
         if (error) throw error;
@@ -634,9 +713,9 @@ export function createCommunityRoutes(
           .from('community_group_typing')
           .delete()
           .eq('user_id', userId)
-          .eq('group_code', GROUP_CODE);
+          .eq('group_code', req.groupCode);
       }
-      await touchPresence(supabase, userId);
+      await touchPresence(supabase, userId, req.groupCode);
       res.json({ success: true });
     } catch (e) {
       console.error('[POST /api/community/savol-javob/typing]', e);
@@ -644,11 +723,11 @@ export function createCommunityRoutes(
     }
   });
 
-  router.get('/community/savol-javob/members', authenticate, async (req: any, res) => {
+  router.get('/community/:group(savol-javob|premium)/members', authenticate, guruhRuxsati, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
       const term = sanitizeSearchTerm(asString(req.query?.q));
-      const members = await searchMembers(supabase, userId, term);
+      const members = await searchMembers(supabase, userId, term, req.groupCode);
       res.json(members);
     } catch (e) {
       console.error('[GET /api/community/savol-javob/members]', e);
@@ -656,12 +735,12 @@ export function createCommunityRoutes(
     }
   });
 
-  router.get('/community/savol-javob/messages', authenticate, async (req: any, res) => {
+  router.get('/community/:group(savol-javob|premium)/messages', authenticate, guruhRuxsati, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
-      await touchPresence(supabase, userId);
+      await touchPresence(supabase, userId, req.groupCode);
       const beforeId = req.query.before_id != null ? Number(req.query.before_id) : undefined;
-      const messages = await fetchMessagesWithSenders(supabase, { beforeId, viewerId: userId });
+      const messages = await fetchMessagesWithSenders(supabase, req.groupCode, { beforeId, viewerId: userId });
       res.json(messages);
     } catch (e) {
       console.error('[GET /api/community/savol-javob/messages]', e);
@@ -669,7 +748,7 @@ export function createCommunityRoutes(
     }
   });
 
-  router.post('/community/savol-javob/messages', authenticate, async (req: any, res) => {
+  router.post('/community/:group(savol-javob|premium)/messages', authenticate, guruhRuxsati, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
       // O'qish rejimidagi odam guruhga yozolmaydi (Support kanali ochiq qoladi).
@@ -691,7 +770,7 @@ export function createCommunityRoutes(
       }
       const { data, error } = await supabase
         .from('community_group_messages')
-        .insert({ group_code: GROUP_CODE, sender_user_id: userId, content })
+        .insert({ group_code: req.groupCode, sender_user_id: userId, content })
         .select('id, group_code, sender_user_id, content, created_at')
         .single();
       if (error) throw error;
@@ -699,8 +778,8 @@ export function createCommunityRoutes(
         .from('community_group_typing')
         .delete()
         .eq('user_id', userId)
-        .eq('group_code', GROUP_CODE);
-      await touchPresence(supabase, userId);
+        .eq('group_code', req.groupCode);
+      await touchPresence(supabase, userId, req.groupCode);
       const { data: user } = await supabase
         .from('users')
         .select('id, first_name, last_name, avatar_url, gender')
@@ -709,7 +788,7 @@ export function createCommunityRoutes(
       const u = (user ?? {}) as Record<string, unknown>;
       res.status(201).json({
         id: Number((data as any).id),
-        group_code: GROUP_CODE,
+        group_code: req.groupCode,
         sender_user_id: userId,
         sender_name: fullNameFromUser(u),
         sender_avatar_url: u.avatar_url ? String(u.avatar_url) : null,
@@ -731,8 +810,9 @@ export function createCommunityRoutes(
    * bo'lib qoladi (faqat rasm yoki ovoz yuborish mumkin).
    */
   router.post(
-    '/community/savol-javob/media',
+    '/community/:group(savol-javob|premium)/media',
     authenticate,
+    guruhRuxsati,
     yozishRuxsati,
     faylQabul('file'),
     async (req: any, res) => {
@@ -773,7 +853,7 @@ export function createCommunityRoutes(
           : '';
 
         const ext = MEDIA_KENGAYTMA[file.mimetype] ?? 'bin';
-        const yol = `${GROUP_CODE}/${userId}/${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+        const yol = `${req.groupCode}/${userId}/${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
 
         const { data: buckets } = await supabase.storage.listBuckets();
         if (!(buckets ?? []).some((b: { name: string }) => b.name === MEDIA_BUCKET)) {
@@ -793,7 +873,7 @@ export function createCommunityRoutes(
         const { data, error } = await supabase
           .from('community_group_messages')
           .insert({
-            group_code: GROUP_CODE,
+            group_code: req.groupCode,
             sender_user_id: userId,
             content,
             media_url: mediaUrl,
@@ -822,8 +902,8 @@ export function createCommunityRoutes(
           .from('community_group_typing')
           .delete()
           .eq('user_id', userId)
-          .eq('group_code', GROUP_CODE);
-        await touchPresence(supabase, userId);
+          .eq('group_code', req.groupCode);
+        await touchPresence(supabase, userId, req.groupCode);
 
         const { data: user } = await supabase
           .from('users')
@@ -834,7 +914,7 @@ export function createCommunityRoutes(
 
         return res.status(201).json({
           id: Number((data as any).id),
-          group_code: GROUP_CODE,
+          group_code: req.groupCode,
           sender_user_id: userId,
           sender_name: fullNameFromUser(u),
           sender_avatar_url: u.avatar_url ? String(u.avatar_url) : null,
@@ -864,8 +944,9 @@ export function createCommunityRoutes(
    * aralashish. Bloklashning ma'nosi shu.
    */
   router.post(
-    '/community/savol-javob/messages/:id/reactions',
+    '/community/:group(savol-javob|premium)/messages/:id/reactions',
     authenticate,
+    guruhRuxsati,
     async (req: any, res) => {
       try {
         const userId = Number(req.userId);
@@ -886,6 +967,7 @@ export function createCommunityRoutes(
           .from('community_group_messages')
           .select('id, deleted_at')
           .eq('id', messageId)
+          .eq('group_code', req.groupCode)
           .maybeSingle();
         if (!xabar || (xabar as { deleted_at?: string | null }).deleted_at) {
           return res.status(404).json({ error: 'Xabar topilmadi' });
@@ -956,7 +1038,7 @@ export function createCommunityRoutes(
           xarita.set(e, bor);
         }
 
-        await touchPresence(supabase, userId);
+        await touchPresence(supabase, userId, req.groupCode);
         return res.json({
           message_id: messageId,
           reactions: [...xarita.values()].sort(
@@ -971,7 +1053,7 @@ export function createCommunityRoutes(
   );
 
   /** Chatda ko'rsatiladigan emojilar — klient qattiq yozmasin. */
-  router.get('/community/savol-javob/reactions/available', authenticate, async (_req, res) => {
+  router.get('/community/:group(savol-javob|premium)/reactions/available', authenticate, guruhRuxsati, async (_req, res) => {
     try {
       res.json({ emojis: await faolReaksiyalar(supabase), max: MAX_REAKSIYA });
     } catch (e) {
@@ -1202,16 +1284,16 @@ export function createCommunityRoutes(
     }
   });
 
-  router.post('/community/savol-javob/read', authenticate, async (req: any, res) => {
+  router.post('/community/:group(savol-javob|premium)/read', authenticate, guruhRuxsati, async (req: any, res) => {
     try {
       const userId = Number(req.userId);
       const now = new Date().toISOString();
       const { error } = await supabase.from('community_group_reads').upsert(
-        { user_id: userId, group_code: GROUP_CODE, last_read_at: now },
+        { user_id: userId, group_code: req.groupCode, last_read_at: now },
         { onConflict: 'user_id,group_code' }
       );
       if (error) throw error;
-      await touchPresence(supabase, userId);
+      await touchPresence(supabase, userId, req.groupCode);
       res.json({ success: true });
     } catch (e) {
       console.error('[POST /api/community/savol-javob/read]', e);
@@ -1234,6 +1316,37 @@ export function createCommunityRoutes(
    * yuklay olardi. Endi tekshiruv `faylQabul` dan OLDIN turadi va
    * ruxsatsiz so'rovda bayt ham o'qilmaydi.
    */
+  /*
+   * GURUHGA KIRISH RUXSATI.
+   *
+   * URL'dagi guruhni bazadagi kodga aylantiradi (`req.groupCode`) va
+   * premium guruhda amaldagi obunani tekshiradi. Fayl yuklanadigan
+   * yo'llarda `faylQabul` dan OLDIN turadi — obunasiz odam 60 MB lik
+   * faylni serverga o'qitolmasin.
+   */
+  async function guruhRuxsati(req: any, res: any, next: () => void): Promise<void> {
+    const groupCode = GURUH_SLUGLARI[String(req.params.group ?? '')];
+    if (!groupCode) {
+      res.status(404).json({ error: 'Guruh topilmadi' });
+      return;
+    }
+    if (GURUHLAR[groupCode].premium) {
+      try {
+        const access = await getAccessInfo(supabase, Number(req.userId));
+        if (!access.subscription_active) {
+          res.status(403).json({ error: 'Bu guruh faqat premium a\'zolar uchun', code: 'premium_required' });
+          return;
+        }
+      } catch (e) {
+        console.error('[community premium gate]', e);
+        res.status(500).json({ error: 'Ruxsat tekshirilmadi' });
+        return;
+      }
+    }
+    req.groupCode = groupCode;
+    next();
+  }
+
   async function yozishRuxsati(req: any, res: any, next: () => void): Promise<void> {
     const ruxsat = await checkCanWrite(supabase, Number(req.userId));
     if (ruxsat.ok === false) {
@@ -1585,7 +1698,7 @@ export function createCommunityRoutes(
         .single();
       if (error) throw error;
 
-      await touchPresence(supabase, userId);
+      await touchPresence(supabase, userId, GROUP_CODE);
       const { data: user } = await supabase
         .from('users')
         .select('id, first_name, last_name, avatar_url')

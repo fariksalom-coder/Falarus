@@ -101,6 +101,7 @@ function MessageRow({ m, blocked, busy, editing, onEdit, onSaveEdit, onCancelEdi
         <div className="relative inline-block max-w-full rounded-2xl rounded-tl-md bg-app-surface px-3.5 py-2 shadow-sm ring-1 ring-app-border">
           <p className="flex flex-wrap items-baseline gap-x-2 text-[13px] font-bold text-app-text">
             {m.sender_name}<span className="text-[11px] font-semibold text-slate-400">#{m.sender_user_id}</span>
+            {m.group_code === 'premium' && <span className="rounded-full bg-amber-50 px-1.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">premium</span>}
             {blocked && <span className="rounded-full bg-amber-100 px-1.5 text-[10px] font-bold text-amber-800">bloklangan</span>}
           </p>
           {editing ? (

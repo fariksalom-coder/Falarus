@@ -120,6 +120,8 @@ export type MessageCatalog = {
     outgoing: string;
     adminChat: string;
     groupChat: string;
+    premiumChat: string;
+    premiumChatSub: string;
     partnerChat: string;
     noRequests: string;
     noProfiles: string;

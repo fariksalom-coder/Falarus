@@ -332,12 +332,12 @@ export function createAdminRoutes(supabase: DbClient): Router {
       const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 200);
       const { data, error } = await supabase
         .from('community_group_messages')
-        .select('id, sender_user_id, content, created_at, edited_at')
+        .select('id, group_code, sender_user_id, content, created_at, edited_at')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(limit);
       if (error) throw error;
-      const rows = (data ?? []) as Array<{ id: number; sender_user_id: number; content: string; created_at: string; edited_at: string | null }>;
+      const rows = (data ?? []) as Array<{ id: number; group_code: string; sender_user_id: number; content: string; created_at: string; edited_at: string | null }>;
       const ids = [...new Set(rows.map((r) => Number(r.sender_user_id)))];
       const { data: users } = ids.length
         ? await supabase.from('users').select('id, first_name, last_name').in('id', ids)
