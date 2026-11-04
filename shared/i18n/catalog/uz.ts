@@ -117,6 +117,8 @@ const uz: MessageCatalog = {
     groupChat: 'Savol-javob guruhi',
     premiumChat: 'Premium guruh',
     premiumChatSub: 'Faqat premium a\'zolar uchun yopiq guruh',
+    premiumLocked: 'Premium a\'zolar guruhi — obuna bilan ochiladi',
+    premiumBuy: 'Premium olish',
     partnerChat: 'Sherik bilan yozishma',
     noRequests: "Hozircha so'rovlar yo'q",
     noProfiles: "Hozircha anketalar yo'q",

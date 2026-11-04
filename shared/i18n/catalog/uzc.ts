@@ -118,6 +118,8 @@ const uzc: MessageCatalog = {
     groupChat: 'Савол-жавоб гуруҳи',
     premiumChat: 'Премиум гуруҳ',
     premiumChatSub: 'Фақат премиум аъзолар учун ёпиқ гуруҳ',
+    premiumLocked: 'Премиум аъзолар гуруҳи — обуна билан очилади',
+    premiumBuy: 'Премиум олиш',
     partnerChat: 'Шерик билан ёзишма',
     noRequests: 'Ҳозирча сўровлар ёқ',
     noProfiles: 'Ҳозирча анкеталар ёқ',

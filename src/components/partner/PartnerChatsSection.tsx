@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { AtSign, Headphones, MessageCircle, Clapperboard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AtSign, Headphones, MessageCircle, Clapperboard, Lock } from 'lucide-react';
 import { getHelpChats, type HelpChatListItem } from '../../api/help';
 import {
   getSavolJavobSummary,
@@ -42,6 +43,51 @@ type GroupRowProps = {
   summary: SavolJavobSummary | null;
   onOpen: () => void;
 };
+
+/**
+ * Obunasiz foydalanuvchi uchun yopiq premium guruh.
+ *
+ * Qator ro'yxatda turaveradi — guruh borligini bilish sotib olishga
+ * undaydi. Bosilganda (yoki tugma) tariflar sahifasi ochiladi.
+ */
+function LockedPremiumRow({ onBuy }: { onBuy: () => void }) {
+  const { t } = useLocale();
+  const look = GROUP_LOOK.premium;
+  const Icon = look.Icon;
+
+  return (
+    <button
+      type="button"
+      onClick={onBuy}
+      aria-label={`${t('partner.premiumChat')} — ${t('partner.premiumBuy')}`}
+      className="group flex items-center gap-[13px] rounded-[18px] bg-app-surface px-[14px] py-[13px] text-left shadow-[0_6px_14px_rgba(23,34,74,0.05)] ring-1 ring-amber-200/70 transition hover:-translate-y-0.5 hover:ring-amber-300 active:scale-[0.99]"
+    >
+      <div className="relative h-[50px] w-[50px] shrink-0">
+        <div
+          className="flex h-full w-full items-center justify-center rounded-[16px] text-white opacity-60 grayscale-[35%]"
+          style={{ background: look.gradient }}
+        >
+          <Icon className="h-5 w-5" aria-hidden />
+        </div>
+        <span className="absolute -bottom-1 -right-1 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-app-text text-white ring-2 ring-white">
+          <Lock className="h-3 w-3" aria-hidden />
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15px] font-black text-app-text">{t('partner.premiumChat')}</p>
+        <p className="mt-[2px] truncate text-[12.5px] font-semibold text-app-text-muted">
+          {t('partner.premiumLocked')}
+        </p>
+      </div>
+      <span
+        className="inline-flex min-h-[32px] shrink-0 items-center rounded-full px-3 text-[12px] font-black text-white shadow-[0_6px_14px_rgba(217,119,6,0.28)] transition group-hover:brightness-105"
+        style={{ background: look.gradient }}
+      >
+        {t('partner.premiumBuy')}
+      </span>
+    </button>
+  );
+}
 
 /** Guruh chati qatori — savol-javob va premium uchun bir xil. */
 function GroupChatRow({ group, title, fallback, summary, onOpen }: GroupRowProps) {
@@ -125,7 +171,8 @@ export default function PartnerChatsSection({
 }: Props) {
   const { token, user } = useAuth();
   const { t } = useLocale();
-  const { access } = useAccess();
+  const navigate = useNavigate();
+  const { access, accessLoaded } = useAccess();
   const isPremium = access?.subscription_active === true;
   const [adminChat, setAdminChat] = useState<HelpChatListItem | null>(null);
   const [groupSummary, setGroupSummary] = useState<SavolJavobSummary | null>(null);
@@ -239,6 +286,9 @@ export default function PartnerChatsSection({
           summary={premiumSummary}
           onOpen={onOpenPremiumGroup}
         />
+      ) : accessLoaded ? (
+        // Obunasiz (yoki server obunani tasdiqlamagan) — yopiq qator va sotib olish.
+        <LockedPremiumRow onBuy={() => navigate('/kurs-haqida')} />
       ) : null}
 
       {/* RELS — qisqa videolar lentasi. Savol-javob guruhidan keyin turadi. */}

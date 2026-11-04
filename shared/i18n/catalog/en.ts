@@ -100,6 +100,8 @@ const en: DeepPartial<MessageCatalog> = {
     groupChat: 'Q&A group',
     premiumChat: 'Premium group',
     premiumChatSub: 'Private group for premium members only',
+    premiumLocked: 'Premium members group — unlocks with a subscription',
+    premiumBuy: 'Get Premium',
     mentionAlert: 'You were mentioned',
     mentionEmpty: 'Nobody found',
     mentionTitle: 'Who do you mean?',

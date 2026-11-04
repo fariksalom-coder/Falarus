@@ -100,6 +100,8 @@ const ru: DeepPartial<MessageCatalog> = {
     groupChat: 'Группа вопрос-ответ',
     premiumChat: 'Премиум группа',
     premiumChatSub: 'Закрытая группа только для премиум-участников',
+    premiumLocked: 'Группа премиум-участников — откроется с подпиской',
+    premiumBuy: 'Купить премиум',
     mentionAlert: 'Вас отметили',
     mentionEmpty: 'Никого не найдено',
     mentionTitle: 'Кого отметить?',

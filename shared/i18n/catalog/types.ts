@@ -122,6 +122,8 @@ export type MessageCatalog = {
     groupChat: string;
     premiumChat: string;
     premiumChatSub: string;
+    premiumLocked: string;
+    premiumBuy: string;
     partnerChat: string;
     noRequests: string;
     noProfiles: string;
