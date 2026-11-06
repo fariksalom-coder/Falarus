@@ -412,6 +412,28 @@ export function createKunlikProgressRoutes(
       });
       if (insErr) throw insErr;
 
+      /*
+       * OXIRGI JAVOB — 4-VAZIFA SHU YERDA YAKUNLANADI.
+       *
+       * Ilgari `phrases_done` faqat alohida `/phrases/finish` so'rovi bilan
+       * yozilardi. U yiqilsa (tarmoq, so'rovlar chegarasi, ilova yopildi) xato
+       * jim yutilardi: qurilmada vazifa yashil, serverda esa bajarilmagan —
+       * hisobdan chiqib kirilganda yoki boshqa qurilmada u yana ko'k turardi.
+       */
+      const { data: barchasi, error: barErr } = await supabase
+        .from('user_phrase_answers')
+        .select('phrase_id, is_correct')
+        .eq('user_id', userId)
+        .in('phrase_id', phrases.map((p) => p.id));
+      if (barErr) throw barErr;
+      const javoblar = (barchasi ?? []) as { phrase_id: number; is_correct: boolean }[];
+      if (javoblar.length >= phrases.length) {
+        await applyDayPatch(userId, dayNumber, {
+          phrases_done: true,
+          phrases_correct: javoblar.filter((r) => r.is_correct).length,
+        });
+      }
+
       res.json({
         correct: isCorrect,
         // Javob berilgandan KEYIN to'g'ri variant aytiladi — o'quvchi

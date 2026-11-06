@@ -20,7 +20,7 @@ import SpeakingExercise from '../components/speaking/SpeakingExercise';
 import UstozDoska from '../components/lesson/UstozDoska';
 import { fetchKunSavollari, type DoskaVazifa, type KunSavol } from '../api/ustozDoska';
 import type { SpeakingTask } from '../api/speaking';
-import type { KunlikDayPatch } from '../api/kunlikProgress';
+import { finishDailyPhrases, type KunlikDayPatch } from '../api/kunlikProgress';
 import { loadDailyVocabProgress } from '../utils/dailyVocabProgress';
 import { xaritaYoli } from '../utils/kunlikNavigation';
 import { useRememberKunlikDay } from '../hooks/useRememberKunlikDay';
@@ -894,8 +894,8 @@ function GrammatikaTanlov({
   qulf: boolean;
 }) {
   const tugagan = jami > 0 && bajarilgan >= jami;
-  // Vazifalar yopiq bo'lsa, asosiy harakat — albatta dars.
-  const darsAsosiy = tugagan || qulf;
+  // Vazifalar yopiq bo'lsa, asosiy harakat — albatta dars. O'tilgan kunda ikkala plitka yashil.
+  const darsAsosiy = !tugagan && qulf;
   /* Yopiq plitka bosilganda sababi ko'rsatiladi (aks holda "ishlamayapti"). */
   const [ogoh, setOgoh] = useState(false);
 
@@ -910,6 +910,11 @@ function GrammatikaTanlov({
     background: 'linear-gradient(150deg, #5B4CE0 0%, #7C3AED 55%, #6D28D9 100%)',
     border: '1.5px solid transparent',
     boxShadow: '0 22px 40px -20px rgba(91,76,224,0.8)',
+  };
+  const yashil: React.CSSProperties = {
+    background: '#F2FDF6',
+    border: '1.5px solid #A7E8C4',
+    boxShadow: '0 14px 30px -22px rgba(34,197,94,0.5)',
   };
   const oq: React.CSSProperties = {
     background: '#FFFFFF',
@@ -952,23 +957,29 @@ function GrammatikaTanlov({
             whileHover={{ y: -3 }}
             whileTap={{ scale: 0.98 }}
             className={plitka}
-            style={darsAsosiy ? toldirilgan : oq}
+            style={tugagan ? yashil : darsAsosiy ? toldirilgan : oq}
           >
             {/* Yumshoq yorug'lik — plitka tekis "qog'oz" bo'lib qolmasin. */}
             <span
               aria-hidden
               className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full"
               style={{
-                background: darsAsosiy ? 'rgba(255,255,255,0.13)' : 'rgba(91,76,224,0.07)',
+                background: tugagan
+                  ? 'rgba(34,197,94,0.08)'
+                  : darsAsosiy
+                    ? 'rgba(255,255,255,0.13)'
+                    : 'rgba(91,76,224,0.07)',
               }}
             />
             <span
               aria-hidden
               className="flex h-[52px] w-[52px] items-center justify-center rounded-[18px]"
               style={
-                darsAsosiy
-                  ? { background: 'rgba(255,255,255,0.18)', color: '#FFFFFF' }
-                  : { background: '#F1EEFC', color: '#5B4CE0' }
+                tugagan
+                  ? { background: '#22C55E', color: '#FFFFFF' }
+                  : darsAsosiy
+                    ? { background: 'rgba(255,255,255,0.18)', color: '#FFFFFF' }
+                    : { background: '#F1EEFC', color: '#5B4CE0' }
               }
             >
               <PlayCircle className="h-[26px] w-[26px]" strokeWidth={2.1} />
@@ -976,7 +987,7 @@ function GrammatikaTanlov({
             <span className="relative">
               <span
                 className="block text-[17px] font-black leading-tight tracking-[-0.01em]"
-                style={{ color: darsAsosiy ? '#FFFFFF' : '#2D1B69' }}
+                style={{ color: tugagan ? '#0F7C3A' : darsAsosiy ? '#FFFFFF' : '#2D1B69' }}
               >
                 Video dars
             </span>
@@ -984,7 +995,7 @@ function GrammatikaTanlov({
                 className="mt-2 h-[18px] w-[18px] transition-transform group-hover:translate-x-1"
                 strokeWidth={2.8}
                 style={{
-                  color: darsAsosiy ? 'rgba(255,255,255,0.85)' : '#C4B8E0',
+                  color: tugagan ? '#5FC98C' : darsAsosiy ? 'rgba(255,255,255,0.85)' : '#C4B8E0',
                 }}
               />
             </span>
@@ -1125,6 +1136,11 @@ function GrammarStepFlow({
 }) {
   /* Kunga avval kirilganini bildiruvchi belgi: bittasi bajarilgan bo'lsa. */
   const mashqBajarilgan = bajarilganMashq > 0;
+  const grammatikaTugagan = jamiMashq > 0 && bajarilganMashq >= jamiMashq;
+  // O'tilgan kunda belgi qurilmaga qayta yoziladi — keyingi kirishda server javobini kutmasin.
+  useEffect(() => {
+    if (grammatikaTugagan) doskaniBelgila(dayNumber);
+  }, [grammatikaTugagan, dayNumber]);
   const [index, setIndex] = useState(0);
   /**
    * `null` — hali hal qilinmagan (birinchi render), `true` — bosqich
@@ -1252,7 +1268,15 @@ function GrammarStepFlow({
    * yon yo'l bor edi va shu sababli kun qayta ochilganda vazifalar darsga
    * kirmasdan ham ochiq turardi. Yon yo'l olib tashlandi.
    */
-  const vazifaQulf = doskaBor && !doskaKorildimi(dayNumber);
+  /*
+   * O'TILGAN KUN HECH QACHON QULFLANMAYDI.
+   *
+   * "Dars ochilgan" belgisi faqat qurilmada saqlanadi: hisobdan chiqilganda
+   * yoki boshqa qurilmadan kirilganda u yo'qoladi. Shunda mashqlarni allaqachon
+   * bajargan o'quvchi takrorlash uchun yana video darsni ochishga majbur bo'lardi.
+   * Barcha mashqlar serverda bajarilgan deb turgan bo'lsa — vazifalar ochiq.
+   */
+  const vazifaQulf = doskaBor && !doskaKorildimi(dayNumber) && !grammatikaTugagan;
 
   /* TANLOV EKRANI — kunga qayta kirilganda. */
   if (tanlandi === null) return <SkeletonRoyxat soni={2} />;
@@ -1785,7 +1809,8 @@ function DailyGrammarMashqlarGrid({
 function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: DailyCourseDayBundle }) {
   const { t } = useLocale();
   const navigate = useNavigate();
-  const { getDay } = useKunlikProgress();
+  const { getDay, loaded } = useKunlikProgress();
+  const { token } = useAuth();
   const w = bundle.vocabulary;
   const totalWords = w?.words?.length ?? 0;
   /*
@@ -1798,6 +1823,24 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
     window.addEventListener('daily-vocab-progress', qaytaChiz);
     return () => window.removeEventListener('daily-vocab-progress', qaytaChiz);
   }, []);
+
+  /*
+   * IBORALAR NATIJASINI SERVERGA YETKAZISH.
+   *
+   * Qurilmada 4-vazifa bajarilgan, serverda esa yo'q bo'lsa — yakunlash
+   * so'rovi o'z vaqtida yetib bormagan. Uni qayta yuboramiz: aks holda
+   * hisobdan chiqib kirilganda yoki boshqa qurilmada vazifa yana ko'k turardi.
+   */
+  const iboraYuborildi = useRef(false);
+  const iboraBor = (w?.phrases?.length ?? 0) > 0;
+  useEffect(() => {
+    if (!loaded || !token || !iboraBor || iboraYuborildi.current) return;
+    if (!loadDailyVocabProgress(dayNumber).step4Completed || getDay(dayNumber).phrases_done) return;
+    iboraYuborildi.current = true;
+    void finishDailyPhrases(token, dayNumber).catch(() => {
+      iboraYuborildi.current = false;
+    });
+  }, [loaded, token, iboraBor, dayNumber, getDay]);
 
   if (!w?.words?.length) {
     return (
