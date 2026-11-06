@@ -15,6 +15,9 @@ import KunlikFreeLimitModal from '../components/KunlikFreeLimitModal';
 import { isKunlikDayRowFullyComplete } from '../../shared/kunlikDayCompletion';
 import { rememberKunlikOpenedDay } from '../utils/kunlikLastDay';
 import { journeyFocusDay } from '../../shared/journeyFocusDay';
+import { aiDebtDays, prefetchCourseDays } from '../offline/courseCache';
+import { getDailyCourseDay } from '../api/dailyCourse';
+import { useAuth } from '../context/AuthContext';
 
 const DAYS = Array.from({ length: TOTAL_DAYS }, (_, i) => i + 1);
 // Source mockup coordinates; alternate the same road rhythm through day 182.
@@ -35,13 +38,35 @@ export default function DailyCourseMapPage() {
     const row = rows.get(day);
     return row && isKunlikDayRowFullyComplete(row, practicePromptCountByDay);
   })), [rows, practicePromptCountByDay]);
-  const currentDay = DAYS.find(day => !completed.has(day)) ?? TOTAL_DAYS;
+  /*
+   * Ochilish uchun "o'tilgan" kunlar: to'liq bajarilganlar + internetsiz AI
+   * bosqichlari qoldirilgan (qarz), qolgan bosqichlari bajarilgan kunlar.
+   * Yashil belgi esa faqat to'liq bajarilganlarga qo'yiladi.
+   */
+  const aiDebt = useMemo(() => aiDebtDays(), [rows]);
+  const passed = useMemo(() => new Set(DAYS.filter(day => {
+    if (completed.has(day)) return true;
+    const row = rows.get(day);
+    return Boolean(aiDebt.has(day) && row && row.grammar_1 && row.grammar_2 && row.grammar_3 && row.words_match && row.oqish_done);
+  })), [completed, rows, aiDebt]);
+  const currentDay = DAYS.find(day => !passed.has(day)) ?? TOTAL_DAYS;
   const currentSlots = loaded ? buildQuestSlots(getRow(rows, currentDay), practicePromptCountByDay.get(currentDay) ?? 0, golden) : [];
   const fraction = completed.has(currentDay) ? 0 : currentSlots.filter(slot => slot.state === 'done').length / Math.max(1, currentSlots.length);
   const pct = Math.min(100, Math.round((completed.size + fraction) / TOTAL_DAYS * 1000) / 10);
   const trialRow = rows.get(0);
   const trialComplete = Boolean(trialRow && isKunlikDayRowFullyComplete(trialRow, practicePromptCountByDay));
   const focusDay = journeyFocusDay(trialComplete, premium || golden, currentDay);
+
+  // Internet bor paytda joriy va keyingi 7 kun qurilmaga yuklab qo'yiladi — keyin internetsiz ham ochiladi.
+  const { token } = useAuth();
+  useEffect(() => {
+    if (!loaded || !accessLoaded || !token) return;
+    if (!premium && !golden) return;
+    const timer = window.setTimeout(() => {
+      void prefetchCourseDays((day) => getDailyCourseDay(token, day), currentDay, TOTAL_DAYS);
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [loaded, accessLoaded, token, premium, golden, currentDay]);
 
   useEffect(() => {
     if (!toast) return;

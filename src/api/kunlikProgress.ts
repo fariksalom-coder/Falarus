@@ -2,6 +2,10 @@ import { voiceRequest } from '../utils/voiceRequest';
 import { requireAIConsent } from '../utils/aiConsent';
 import { apiUrl } from '../api';
 import { publishMyRank, type MyRankResponse } from './leaderboard';
+import { pendingOptimisticPatches, sendOrQueue } from '../offline/outbox';
+import { loadProgress, saveProgress } from '../offline/courseCache';
+import { mergeKunlikDayPatch } from '../../shared/kunlikProgressMerge';
+import { READING_QUESTIONS_PASS_PERCENT } from '../../shared/dailyCourseDay';
 
 /** Bir qator = bir foydalanuvchi + bir kun (1–182). PATCH har safar shu juftlikni yangilaydi (grammar_1 keyin grammar_2 va h.k.). */
 export type KunlikDayProgress = {
@@ -67,18 +71,73 @@ export type KunlikProgressPayload = {
   speakingTaskCounts: Map<number, number>;
 };
 
+/**
+ * Progress — serverdan; internet bo'lmasa QURILMADAGI oxirgi nusxadan.
+ * Ikkala holatda ham hali yuborilmagan (navbatdagi) natijalar ustiga qo'shiladi —
+ * oflayn bajarilgan bosqich xaritada darhol "bajarildi" bo'lib ko'rinadi.
+ */
 export async function fetchKunlikProgress(token: string | null): Promise<KunlikProgressPayload> {
-  const empty = (): KunlikProgressPayload => ({
-    rows: [],
-    practicePromptCounts: new Map(),
-    speakingTaskCounts: new Map(),
-  });
-  if (!token) return empty();
+  const fresh = await fetchKunlikProgressFromServer(token);
+  let payload = fresh;
+  if (fresh) {
+    saveProgress({
+      rows: fresh.rows,
+      practicePromptCounts: [...fresh.practicePromptCounts],
+      speakingTaskCounts: [...fresh.speakingTaskCounts],
+    });
+  } else {
+    const cached = loadProgress();
+    payload = cached
+      ? {
+          rows: cached.rows,
+          practicePromptCounts: new Map(cached.practicePromptCounts),
+          speakingTaskCounts: new Map(cached.speakingTaskCounts),
+        }
+      : null;
+  }
+  if (!payload) return { rows: [], practicePromptCounts: new Map(), speakingTaskCounts: new Map() };
+  return { ...payload, rows: withPendingPatches(payload.rows) };
+}
+
+function withPendingPatches(rows: KunlikDayProgress[]): KunlikDayProgress[] {
+  const pending = pendingOptimisticPatches();
+  if (!pending.length) return rows;
+  const byDay = new Map(rows.map((r) => [r.day_number, { ...r }]));
+  for (const { day, patch } of pending) {
+    const prev = byDay.get(day) ?? emptyDayRow(day);
+    byDay.set(day, { ...prev, ...mergeKunlikDayPatch(prev, patch) } as KunlikDayProgress);
+  }
+  return [...byDay.values()];
+}
+
+function emptyDayRow(day: number): KunlikDayProgress {
+  return {
+    day_number: day,
+    grammar_1: false,
+    grammar_2: false,
+    grammar_3: false,
+    grammar_correct: 0,
+    words_learned: 0,
+    words_correct: 0,
+    words_match: false,
+    phrases_done: false,
+    phrases_correct: 0,
+    text_questions_correct: 0,
+    speaking_tasks_done: 0,
+    oqish_done: false,
+    suhbat_done: false,
+    speaking_level: 0,
+  };
+}
+
+/** `null` — server javob bermadi (internet yo'q yoki xato). */
+async function fetchKunlikProgressFromServer(token: string | null): Promise<KunlikProgressPayload | null> {
+  if (!token) return null;
   try {
     const res = await fetch(apiUrl('/api/kunlik-progress'), {
       headers: authHeaders(token),
     });
-    if (!res.ok) return empty();
+    if (!res.ok) return null;
     const json: unknown = await res.json();
     if (Array.isArray(json)) {
       const rows = json as KunlikDayProgress[];
@@ -105,7 +164,7 @@ export async function fetchKunlikProgress(token: string | null): Promise<KunlikP
     }
     return { rows, practicePromptCounts, speakingTaskCounts };
   } catch {
-    return empty();
+    return null;
   }
 }
 
@@ -115,15 +174,17 @@ export async function patchKunlikDayProgress(
   patch: KunlikDayPatch
 ): Promise<void> {
   if (!token || Object.keys(patch).length === 0) return;
-  try {
-    await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}`), {
-      method: 'PATCH',
-      headers: authHeaders(token),
-      body: JSON.stringify(patch),
-    });
-  } catch {
-    // fire-and-forget
-  }
+  // Internet yo'q — navbatga; qaytgach yuboriladi.
+  await sendOrQueue(token, 'PATCH', `/api/kunlik-progress/${dayNumber}`, patch, {
+    day: dayNumber,
+    optimistic: patch,
+  }).catch(() => undefined);
+}
+
+async function readJson<T>(res: Response, fallbackError: string): Promise<T> {
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string })?.error || fallbackError);
+  return data as T;
 }
 
 /** Bitta javob natijasi — SERVER tekshiradi va QAYD ETADI. */
@@ -152,14 +213,8 @@ export async function startDailyPhrases(
   token: string | null,
   dayNumber: number,
 ): Promise<{ total: number }> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/phrases/start`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: '{}',
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Mashq boshlanmadi');
-  return data as { total: number };
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/phrases/start`, {});
+  return res ? readJson<{ total: number }>(res, 'Mashq boshlanmadi') : { total: 0 };
 }
 
 /**
@@ -171,30 +226,39 @@ export async function answerDailyPhrase(
   dayNumber: number,
   phraseId: number,
   choice: number,
+  /** Kun materialidagi to'g'ri javob — internetsiz shu bilan tekshiriladi. */
+  offlineCorrectIndex?: number,
 ): Promise<PhraseAnswerResult> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/phrases/answer`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ phraseId, choice }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Javob tekshirilmadi');
-  return data as PhraseAnswerResult;
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/phrases/answer`, { phraseId, choice });
+  if (res) return readJson<PhraseAnswerResult>(res, 'Javob tekshirilmadi');
+  return offlineAnswer(choice, offlineCorrectIndex);
+}
+
+/** Oflayn javob: kalit kun materialida. Kalit yo'q bo'lsa — internet kerak. */
+function offlineAnswer(choice: number, correctIndex: number | undefined) {
+  if (typeof correctIndex !== 'number') {
+    throw new Error('Internet yo‘q. Bu savolni tekshirish uchun internetga ulaning.');
+  }
+  return { correct: choice === correctIndex, correctIndex, choice, alreadyAnswered: false };
 }
 
 /** Mashqni yakunlaydi: ball serverdagi javoblardan hisoblanadi. */
 export async function finishDailyPhrases(
   token: string | null,
   dayNumber: number,
+  /** Oflayn natija — qurilmada sanalgan; server keyin javoblardan qayta hisoblaydi. */
+  offline?: { correct: number; total: number },
 ): Promise<PhraseFinishResult> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/phrases/finish`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: '{}',
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/phrases/finish`, {}, {
+    day: dayNumber,
+    optimistic: offline ? { phrases_done: true, phrases_correct: offline.correct } : undefined,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Natija saqlanmadi');
-  const result = data as PhraseFinishResult;
+  if (!res) {
+    const correct = offline?.correct ?? 0;
+    const total = offline?.total ?? 0;
+    return { correct, answered: total, total, best: correct, rank: null };
+  }
+  const result = await readJson<PhraseFinishResult>(res, 'Natija saqlanmadi');
   // Yangi XP/o'rinni butun ilovaga tarqatamiz — bosh sahifadagi raqam
   // sahifani yangilamasdan o'zgaradi.
   if (result.rank) publishMyRank(result.rank);
@@ -223,14 +287,8 @@ export async function startTextQuestions(
   token: string | null,
   dayNumber: number,
 ): Promise<{ total: number }> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/text-questions/start`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: '{}',
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Test boshlanmadi');
-  return data as { total: number };
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/text-questions/start`, {});
+  return res ? readJson<{ total: number }>(res, 'Test boshlanmadi') : { total: 0 };
 }
 
 export async function answerTextQuestion(
@@ -238,29 +296,34 @@ export async function answerTextQuestion(
   dayNumber: number,
   questionId: number,
   choice: number,
+  offlineCorrectIndex?: number,
 ): Promise<TextQuestionAnswerResult> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/text-questions/answer`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ questionId, choice }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Javob tekshirilmadi');
-  return data as TextQuestionAnswerResult;
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/text-questions/answer`, { questionId, choice });
+  if (res) return readJson<TextQuestionAnswerResult>(res, 'Javob tekshirilmadi');
+  return offlineAnswer(choice, offlineCorrectIndex);
 }
 
 export async function finishTextQuestions(
   token: string | null,
   dayNumber: number,
+  offline?: { correct: number; total: number },
 ): Promise<TextQuestionFinishResult> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/text-questions/finish`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: '{}',
+  const local = offline ?? { correct: 0, total: 0 };
+  const percent = local.total > 0 ? Math.round((local.correct / local.total) * 100) : 0;
+  const passed = percent >= READING_QUESTIONS_PASS_PERCENT;
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/text-questions/finish`, {}, {
+    day: dayNumber,
+    optimistic: offline && passed ? { oqish_done: true, text_questions_correct: local.correct } : undefined,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Natija saqlanmadi');
-  return data as TextQuestionFinishResult;
+  if (res) return readJson<TextQuestionFinishResult>(res, 'Natija saqlanmadi');
+  return {
+    correct: local.correct,
+    answered: local.total,
+    total: local.total,
+    percent,
+    passed,
+    passPercent: READING_QUESTIONS_PASS_PERCENT,
+  };
 }
 
 /** Gapirish topshirig'i natijasi — AI baholaydi (etalon javob yo'q). */
@@ -295,10 +358,9 @@ export async function saveDailySpeakingTaskProgress(
   dayNumber: number,
   done: number,
 ): Promise<void> {
-  await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/speaking-tasks/progress`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ done }),
+  await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/speaking-tasks/progress`, { done }, {
+    day: dayNumber,
+    optimistic: { speaking_tasks_done: done },
   }).catch(() => undefined);
 }
 
@@ -335,14 +397,8 @@ export async function startGrammarTest(
   token: string | null,
   dayNumber: number,
 ): Promise<{ total: number }> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/grammar/start`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: '{}',
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Test boshlanmadi');
-  return data as { total: number };
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/grammar/start`, {});
+  return res ? readJson<{ total: number }>(res, 'Test boshlanmadi') : { total: 0 };
 }
 
 /**
@@ -355,14 +411,10 @@ export async function answerGrammarQuestion(
   mcqId: number,
   choice: number,
 ): Promise<GrammarAnswerResult> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/grammar/answer`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ mcqId, choice }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Javob tekshirilmadi');
-  return data as GrammarAnswerResult;
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/grammar/answer`, { mcqId, choice });
+  // Navbatga yozildi — sahifa javobni kalit bo'yicha o'zi tekshiradi.
+  if (!res) return { correct: false, correctIndex: -1, choice, alreadyAnswered: false };
+  return readJson<GrammarAnswerResult>(res, 'Javob tekshirilmadi');
 }
 
 /** Testni yakunlaydi: `grammar_correct` (XP) serverda hisoblanadi. */
@@ -370,14 +422,10 @@ export async function finishGrammarTest(
   token: string | null,
   dayNumber: number,
 ): Promise<GrammarFinishResult> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/grammar/finish`), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: '{}',
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Natija saqlanmadi');
-  return data as GrammarFinishResult;
+  const res = await sendOrQueue(token, 'POST', `/api/kunlik-progress/${dayNumber}/grammar/finish`, {});
+  // Oflayn: ball internet qaytgach serverda hisoblanadi.
+  if (!res) throw new Error('Natija internet qaytganda saqlanadi');
+  return readJson<GrammarFinishResult>(res, 'Natija saqlanmadi');
 }
 
 /** Shu kundagi xato javoblar. */

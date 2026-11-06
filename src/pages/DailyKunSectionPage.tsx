@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type Rea
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
-import { ArrowLeft, ArrowRight, Check, Link2, ListChecks, Lock, PlayCircle, Puzzle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Link2, ListChecks, Lock, PlayCircle, Puzzle, WifiOff } from 'lucide-react';
+import { isOffline, useNetworkStatus } from '../offline/outbox';
+import { deferAiSteps } from '../offline/courseCache';
 import { useAuth } from '../context/AuthContext';
 import { getDailyCourseDay } from '../api/dailyCourse';
 import type { DailyCourseDayBundle, DailyCourseMcq } from '../../shared/dailyCourseDay';
@@ -72,6 +74,7 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
   const [err, setErr] = useState<string | null>(null);
 
   const validSection = SECTIONS.includes(sec as KunlikSection);
+  const { online } = useNetworkStatus();
   const gateEnabled = isValidDailyCourseDay(dayNumber) && validSection;
   const { gatePending } = useKunlikSequentialGate(dayNumber, gateEnabled);
 
@@ -200,10 +203,14 @@ export default function DailyKunSectionPage({ sectionOverride, speakingSub }: Pa
         {!loading && !err && bundle && sec === 'oqish' && (
           <ReadingFromBundle bundle={bundle} dayNumber={dayNumber} />
         )}
-        {!loading && !err && bundle && sec === 'savol-javob' && (
+        {/* AI bosqichlari internetsiz ishlamaydi — tushuntirish va "keyinroq" tugmasi. */}
+        {!loading && !err && bundle && !online && (sec === 'savol-javob' || sec === 'gapirish') && (
+          <OfflineAiCard dayNumber={dayNumber} />
+        )}
+        {!loading && !err && bundle && online && sec === 'savol-javob' && (
           <SuhbatFromBundle dayNumber={dayNumber} bundle={bundle} />
         )}
-        {!loading && !err && bundle && sec === 'gapirish' && (
+        {!loading && !err && bundle && online && sec === 'gapirish' && (
           /*
            * Gapirish bloki IKKI mavzudan iborat: tarjima va ochiq topshiriqlar.
            * Ikkinchi mavzu kontenti yo'q kunlarda ro'yxat ko'rsatilmaydi —
@@ -1137,6 +1144,8 @@ function GrammarStepFlow({
   /* Kunga avval kirilganini bildiruvchi belgi: bittasi bajarilgan bo'lsa. */
   const mashqBajarilgan = bajarilganMashq > 0;
   const grammatikaTugagan = jamiMashq > 0 && bajarilganMashq >= jamiMashq;
+  // Internetsiz AI video dars ochilmaydi — mashqlar unga bog'lanib qolmasin.
+  const { online } = useNetworkStatus();
   // O'tilgan kunda belgi qurilmaga qayta yoziladi — keyingi kirishda server javobini kutmasin.
   useEffect(() => {
     if (grammatikaTugagan) doskaniBelgila(dayNumber);
@@ -1276,7 +1285,7 @@ function GrammarStepFlow({
    * bajargan o'quvchi takrorlash uchun yana video darsni ochishga majbur bo'lardi.
    * Barcha mashqlar serverda bajarilgan deb turgan bo'lsa — vazifalar ochiq.
    */
-  const vazifaQulf = doskaBor && !doskaKorildimi(dayNumber) && !grammatikaTugagan;
+  const vazifaQulf = doskaBor && !doskaKorildimi(dayNumber) && !grammatikaTugagan && online;
 
   /* TANLOV EKRANI — kunga qayta kirilganda. */
   if (tanlandi === null) return <SkeletonRoyxat soni={2} />;
@@ -1834,7 +1843,7 @@ function DailyVocabHub({ dayNumber, bundle }: { dayNumber: number; bundle: Daily
   const iboraYuborildi = useRef(false);
   const iboraBor = (w?.phrases?.length ?? 0) > 0;
   useEffect(() => {
-    if (!loaded || !token || !iboraBor || iboraYuborildi.current) return;
+    if (!loaded || !token || !iboraBor || iboraYuborildi.current || isOffline()) return;
     if (!loadDailyVocabProgress(dayNumber).step4Completed || getDay(dayNumber).phrases_done) return;
     iboraYuborildi.current = true;
     void finishDailyPhrases(token, dayNumber).catch(() => {
@@ -2322,5 +2331,58 @@ function PracticeFromBundle({ bundle, dayNumber }: { bundle: DailyCourseDayBundl
         onBack={() => navigate(xaritaYoli(dayNumber))}
       />
     </>
+  );
+}
+
+/**
+ * Internetsiz AI bosqichi (4 — gapirish, 5 — ustoz bilan suhbat).
+ *
+ * Bu bosqichlarda ovoz va javoblarni sun'iy intellekt tekshiradi — internetsiz
+ * imkonsiz. O'quvchi to'xtab qolmasin: "keyinroq" desa keyingi kun ochiladi,
+ * bosqichlar esa qarz bo'lib qoladi va kun internet bilan bajarilganda yashil bo'ladi.
+ */
+function OfflineAiCard({ dayNumber }: { dayNumber: number }) {
+  const navigate = useNavigate();
+  const [saved, setSaved] = useState(false);
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+      className="rounded-[24px] border border-[#E9E4F8] bg-white p-5 text-center shadow-[0_14px_34px_rgba(148,163,184,0.12)]"
+    >
+      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F1EEFC] text-[#5B4CE0]">
+        <WifiOff className="h-6 w-6" aria-hidden />
+      </span>
+      <h2 className="mt-3 text-[17px] font-black text-[#2D1B69]">Internet kerak</h2>
+      <p className="mx-auto mt-2 max-w-[34ch] text-[13.5px] font-semibold leading-snug text-[#6B5F94]">
+        Gapirish va ustoz bilan suhbatni sun’iy intellekt tekshiradi. Hozir keyingi kunga o‘tishingiz
+        mumkin — bu bosqichlar ro‘yxatda qoladi, internet bilan bajarasiz.
+      </p>
+      {saved ? (
+        <p role="status" className="mt-4 text-[13px] font-bold text-[#0F7C3A]">
+          Belgilandi. Keyingi kun ochiq.
+        </p>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => {
+          deferAiSteps(dayNumber);
+          setSaved(true);
+          navigate(xaritaYoli(dayNumber));
+        }}
+        className="mt-5 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-[#5B4CE0] px-4 text-[14px] font-black text-white shadow-[0_14px_30px_-12px_rgba(91,76,224,0.55)] transition active:scale-[0.98]"
+      >
+        Keyinroq bajaraman
+        <ArrowRight className="h-4 w-4" strokeWidth={2.8} />
+      </button>
+      <button
+        type="button"
+        onClick={() => navigate(xaritaYoli(dayNumber))}
+        className="mt-2 min-h-[44px] w-full text-[13px] font-bold text-[#8B7FAB]"
+      >
+        Xaritaga qaytish
+      </button>
+    </motion.section>
   );
 }

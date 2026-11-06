@@ -1,3 +1,4 @@
+import { aiDebtDays } from '../offline/courseCache';
 import type { KunlikDayProgress } from '../api/kunlikProgress';
 import {
   DAILY_PLAN_PROGRESS_MODE,
@@ -109,6 +110,7 @@ function computeDayPlanQuestProgress(
   reviewVisits: Record<number, true>,
   kunlikRows: Map<number, KunlikDayProgress>,
   practiceTaskCount?: number | null,
+  aiDebt: Set<number> = new Set(),
 ): { done: number; total: number } {
   const serverDone = buildPlanServerDoneChecker(kunlikRows);
   const slice = getKunlikQuestProgressSlice(
@@ -118,6 +120,16 @@ function computeDayPlanQuestProgress(
     kunlikRows.get(day.day),
     practiceTaskCount,
   );
+  /*
+   * AI QARZI: internetsiz o'quvchi 4–5 bosqichni (gapirish, ustoz bilan suhbat)
+   * "keyinroq" deb qoldirgan bo'lsa, qolgan bosqichlar bajarilgach keyingi kun
+   * ochiladi. Bu FAQAT ochilish hisobi — kun o'zi yashil bo'lmaydi.
+   */
+  if (aiDebt.has(day.day)) {
+    const aiSlots = (practiceTaskCount ? 1 : 0) + 1;
+    const aiDone = (slice.speakingDone ? 1 : 0) + (slice.suhbatDone ? 1 : 0);
+    return { done: slice.done + (aiSlots - aiDone), total: slice.total };
+  }
   return { done: slice.done, total: slice.total };
 }
 
@@ -128,9 +140,10 @@ export function findFirstIncompletePlanDay(
   practicePromptCountByDay?: Map<number, number> | null,
 ): number {
   let firstIncomplete = TOTAL_DAYS;
+  const aiDebt = aiDebtDays();
   for (const day of DAILY_PLAN) {
     const pt = practicePromptCountByDay?.get(day.day) ?? 0;
-    const p = computeDayPlanQuestProgress(day, reviewVisits, kunlikRows, pt);
+    const p = computeDayPlanQuestProgress(day, reviewVisits, kunlikRows, pt, aiDebt);
     if (!(p.done >= p.total) && firstIncomplete === TOTAL_DAYS) firstIncomplete = day.day;
   }
   return firstIncomplete;

@@ -52,6 +52,8 @@ export default function DailyVocabPhrasesPage() {
   const [checking, setChecking] = useState(false);
   const [answerError, setAnswerError] = useState('');
   const [correctCount, setCorrectCount] = useState(0);
+  /** Oflayn yakunlash uchun — `useCallback` ichida eskirgan qiymat olinmasin. */
+  const correctRef = useRef(0);
   /** Server tasdiqlagan yakuniy natija. */
   const [serverResult, setServerResult] = useState<{ correct: number; total: number } | null>(null);
   /** Yakunlangach serverdan kelgan umumiy XP va o'rin. */
@@ -96,6 +98,7 @@ export default function DailyVocabPhrasesPage() {
     setChecking(false);
     setAnswerError('');
     setCorrectCount(0);
+    correctRef.current = 0;
     setServerResult(null);
     setStanding(null);
     if (phrases.length > 0) {
@@ -121,7 +124,7 @@ export default function DailyVocabPhrasesPage() {
     savedRef.current = true;
     patchDailyVocabProgress(dayNumber, { step4Completed: true });
     try {
-      const result = await finishDailyPhrases(token, dayNumber);
+      const result = await finishDailyPhrases(token, dayNumber, { correct: correctRef.current, total: phrases.length });
       setServerResult({ correct: result.correct, total: result.total });
       if (result.rank) setStanding({ points: result.rank.points, rank: result.rank.rank });
     } catch {
@@ -139,10 +142,11 @@ export default function DailyVocabPhrasesPage() {
     setChecking(true);
     setAnswerError('');
     try {
-      const res = await answerDailyPhrase(token, dayNumber, current.id, optionIndex);
+      const res = await answerDailyPhrase(token, dayNumber, current.id, optionIndex, current.correctIndex);
       setVerdict({ choice: res.choice, correct: res.correct, correctIndex: res.correctIndex });
       if (res.correct) {
         setCorrectCount((c) => c + 1);
+        correctRef.current += 1;
         playCorrectSound();
       } else {
         playWrongSound();

@@ -52,10 +52,10 @@ export type DailyVocabWord = {
  * Ibora testi: ruscha ibora + 4 ta variant (`daily_phrase_mcqs`).
  * Lug'at bo'limining 4-vazifasi — juftlik topishdan keyin keladi.
  *
- * DIQQAT: `correctIndex` bu yerda ATAYIN YO'Q. Javob kaliti brauzerga
- * yuborilmaydi — har bir javobni server tekshiradi
- * (`POST /api/kunlik-progress/:day/phrases/answer`). Aks holda sahifa
- * kodidan to'g'ri javoblarni oldindan bilib olish mumkin bo'lardi.
+ * Internet bor paytda javobni server tekshiradi va qayd etadi
+ * (`POST /api/kunlik-progress/:day/phrases/answer`). `correctIndex` 2026-11-06
+ * dan materialga qo'shilgan — OFLAYN rejimda mashq shu kalit bilan tekshiriladi
+ * (mahsulot qarori: internetsiz ishlash kalitni yashirishdan muhimroq).
  */
 export type DailyPhraseMcq = {
   id: number;
@@ -63,6 +63,8 @@ export type DailyPhraseMcq = {
   /** Har doim 4 ta: A, B, C, D. */
   options: string[];
   sortOrder: number;
+  /** Oflayn tekshiruv uchun (0–3). */
+  correctIndex?: number;
 };
 
 export type DailyVocabularySection = {
@@ -86,8 +88,8 @@ export type DailyReadingLexeme = {
 /**
  * Matn savoli (`daily_text_questions`) — o'qishdan keyingi tushunish testi.
  *
- * DIQQAT: `correctIndex` ATAYIN yo'q — javob kaliti brauzerga yuborilmaydi,
- * tekshiruv `POST /api/kunlik-progress/:day/text-questions/answer` da bo'ladi.
+ * Internet bor paytda tekshiruv `POST /api/kunlik-progress/:day/text-questions/answer`
+ * da bo'ladi. `correctIndex` — faqat OFLAYN rejim uchun (iboralar bilan bir xil qaror).
  */
 export type DailyTextQuestion = {
   id: number;
@@ -95,6 +97,8 @@ export type DailyTextQuestion = {
   /** Har doim 4 ta: A, B, C, D. */
   options: string[];
   sortOrder: number;
+  /** Oflayn tekshiruv uchun (0–3). */
+  correctIndex?: number;
 };
 
 /** O'qish blokini yakunlash uchun kerakli eng kam foiz. */

@@ -8,6 +8,7 @@ import {
 } from '../api/kunlikProgress';
 import { mergeKunlikDayPatch } from '../../shared/kunlikProgressMerge';
 import { TOTAL_DAYS } from '../data/dailyPlan';
+import { onOutboxFlushed } from '../offline/outbox';
 
 export type { KunlikDayProgress };
 
@@ -79,6 +80,16 @@ export function useKunlikProgress() {
   // Last known full row per day (server state + patches already sent),
   // used to avoid re-sending fields that would not change anything.
   const sentRef = useRef<Map<number, Omit<KunlikDayProgress, 'day_number'>>>(new Map());
+  /** Oflayn navbat serverga yetganda progress qayta o'qiladi. */
+  const [reloadKey, setReloadKey] = useState(0);
+  useEffect(
+    () =>
+      onOutboxFlushed(() => {
+        umumiyKeshniTashla();
+        setReloadKey((k) => k + 1);
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!token) {
@@ -91,7 +102,8 @@ export function useKunlikProgress() {
     }
 
     let cancelled = false;
-    setLoaded(false);
+    // Fondagi qayta o'qish (oflayn navbat yuborilgach) sahifani spinnerga tushirmasin.
+    if (reloadKey === 0) setLoaded(false);
 
     progressniOqi(token)
       .then(({ rows: items, practicePromptCounts, speakingTaskCounts }) => {
@@ -123,7 +135,7 @@ export function useKunlikProgress() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, reloadKey]);
 
   /** Returns the stored row for a day (or defaults). */
   const getDay = useCallback(

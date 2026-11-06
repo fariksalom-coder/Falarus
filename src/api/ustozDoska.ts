@@ -1,3 +1,5 @@
+import { isOffline } from '../offline/outbox';
+import { loadLesson, saveLesson } from '../offline/courseCache';
 import { voiceRequest } from '../utils/voiceRequest';
 import { requireAIConsent } from '../utils/aiConsent';
 import { apiUrl } from '../api';
@@ -196,15 +198,43 @@ async function darsSoroviBir(
   }
 }
 
+/** Qurilmadagi nusxa kaliti — dars matni uzun, shuning uchun qisqa xesh. */
+function oflaynKalit(params: { mavzu: string; nazariya?: string; kun?: number; vazifalar?: DoskaVazifa[] }): string {
+  const s = darsKaliti(params);
+  let h = 5381;
+  for (let i = 0; i < s.length; i += 1) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return `${params.kun ?? 'x'}-${h.toString(36)}`;
+}
+
 async function darsniSora(
   token: string,
   params: { mavzu: string; nazariya?: string; kun?: number; vazifalar?: DoskaVazifa[] },
 ): Promise<DoskaDars> {
+  /*
+   * OFLAYN: bir marta ochilgan dars qurilmada saqlanadi va internetsiz shu
+   * nusxa ko'rsatiladi. Yangi darsni AI yaratadi — u faqat internet bilan.
+   */
+  const kalit = oflaynKalit(params);
+  const saqlangan = () => {
+    const d = loadLesson<DoskaDars>(kalit);
+    if (d) return d;
+    throw new Error('Internet yo‘q. Video darsni internet bilan bir marta oching — keyin u internetsiz ham ochiladi.');
+  };
+  if (isOffline()) return saqlangan();
   try {
-    return await darsSoroviBir(token, params);
+    const dars = await darsSoroviBir(token, params);
+    saveLesson(kalit, dars);
+    return dars;
   } catch (e) {
     if (!uzilishmi(e)) throw e;
-    return darsSoroviBir(token, params);
+    try {
+      const dars = await darsSoroviBir(token, params);
+      saveLesson(kalit, dars);
+      return dars;
+    } catch (e2) {
+      if (uzilishmi(e2)) return saqlangan();
+      throw e2;
+    }
   }
 }
 

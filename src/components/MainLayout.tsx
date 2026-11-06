@@ -1,3 +1,5 @@
+import { WifiOff } from 'lucide-react';
+import { flushOutbox, useNetworkStatus } from '../offline/outbox';
 import { useEffect } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { fetchLeaderboard } from '../api/leaderboard';
@@ -41,11 +43,41 @@ function hideNavBar(path: string): boolean {
   return false;
 }
 
+/**
+ * Internet yo'qligini bildiradi va oflayn bajarilgan, hali yuborilmagan
+ * natijalar sonini ko'rsatadi. Internet qaytgach o'zi yo'qoladi.
+ */
+function OfflineBanner() {
+  const { online, pending } = useNetworkStatus();
+  if (online && pending === 0) return null;
+  return (
+    <div
+      role="status"
+      className="fixed inset-x-0 top-[max(env(safe-area-inset-top,0px),8px)] z-[80] flex justify-center px-4 pointer-events-none"
+    >
+      <span className="inline-flex max-w-full items-center gap-2 rounded-full bg-[#0F172A]/90 px-3.5 py-2 text-[12.5px] font-bold text-white shadow-lg backdrop-blur">
+        <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="truncate">
+          {online
+            ? `Natijalar yuborilmoqda (${pending})…`
+            : pending > 0
+              ? `Internet yo‘q — ${pending} ta natija internet qaytganda saqlanadi`
+              : 'Internet yo‘q — oflayn rejim'}
+        </span>
+      </span>
+    </div>
+  );
+}
+
 export default function MainLayout() {
   const { pathname } = useLocation();
   const { token, user } = useAuth();
   const { access, accessLoaded } = useAccess();
   useHeartbeat(token);
+  // Ilova ochilganda oflayn bajarilgan natijalar serverga yuboriladi.
+  useEffect(() => {
+    if (token) void flushOutbox(token);
+  }, [token]);
   // Reytingni oldindan yuklab qo'yamiz — Statistika ochilganda kutish bo'lmasin.
   useEffect(() => {
     if (!token) return;
@@ -81,6 +113,7 @@ export default function MainLayout() {
 
   return (
     <>
+      <OfflineBanner />
       <style>{`
         .app-layout-safe-pad {
           padding-top: env(safe-area-inset-top, 0px);

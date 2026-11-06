@@ -50,6 +50,8 @@ export default function DailyReadingQuestionsPage() {
   const [checking, setChecking] = useState(false);
   const [answerError, setAnswerError] = useState('');
   const [result, setResult] = useState<TextQuestionFinishResult | null>(null);
+  /** To'g'ri javoblar — oflayn yakunlashda natija shundan hisoblanadi. */
+  const correctRef = useRef(0);
   const savedRef = useRef(false);
 
   const load = useCallback(async () => {
@@ -80,6 +82,7 @@ export default function DailyReadingQuestionsPage() {
   /** Yangi urinish — serverdagi eski javoblar tozalanadi. */
   const resetAttempt = useCallback(async () => {
     savedRef.current = false;
+    correctRef.current = 0;
     setIndex(0);
     setVerdict(null);
     setChecking(false);
@@ -106,8 +109,9 @@ export default function DailyReadingQuestionsPage() {
     setChecking(true);
     setAnswerError('');
     try {
-      const res = await answerTextQuestion(token, dayNumber, current.id, optionIndex);
+      const res = await answerTextQuestion(token, dayNumber, current.id, optionIndex, current.correctIndex);
       setVerdict({ choice: res.choice, correct: res.correct, correctIndex: res.correctIndex });
+      if (res.correct) correctRef.current += 1;
       if (res.correct) playCorrectSound();
       else playWrongSound();
     } catch (e) {
@@ -121,12 +125,12 @@ export default function DailyReadingQuestionsPage() {
     if (savedRef.current) return;
     savedRef.current = true;
     try {
-      setResult(await finishTextQuestions(token, dayNumber));
+      setResult(await finishTextQuestions(token, dayNumber, { correct: correctRef.current, total: questions.length }));
     } catch (e) {
       savedRef.current = false;
       setAnswerError(e instanceof Error ? e.message : 'Natija saqlanmadi');
     }
-  }, [token, dayNumber]);
+  }, [token, dayNumber, questions.length]);
 
   if (!isValidDailyCourseDay(dayNumber)) {
     return (

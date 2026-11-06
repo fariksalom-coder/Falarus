@@ -123,16 +123,16 @@ export async function fetchDailyCourseDayBundle(
       .eq('day_number', dayNumber)
       .order('sort_order', { ascending: true }),
     sb
-      // `correct_index` ATAYIN tanlanmaydi — javob kaliti klientga bormaydi.
+      // `correct_index` — oflayn rejimda tekshirish uchun (internet bilan baribir server tekshiradi).
       .from('daily_phrase_mcqs')
-      .select('id, sort_order, phrase_ru, option_a, option_b, option_c, option_d')
+      .select('id, sort_order, phrase_ru, option_a, option_b, option_c, option_d, correct_index')
       .eq('day_number', dayNumber)
       .order('sort_order', { ascending: true }),
     sb.from('daily_reading_passages').select('title, body_ru, text_id').eq('day_number', dayNumber).maybeSingle(),
     sb
-      // `correct_index` ATAYIN tanlanmaydi — javob kaliti klientga bormaydi.
+      // `correct_index` — oflayn rejimda tekshirish uchun (internet bilan baribir server tekshiradi).
       .from('daily_text_questions')
-      .select('id, sort_order, question_ru, option_a, option_b, option_c, option_d')
+      .select('id, sort_order, question_ru, option_a, option_b, option_c, option_d, correct_index')
       .eq('day_number', dayNumber)
       .order('sort_order', { ascending: true }),
     sb
@@ -234,6 +234,7 @@ export async function fetchDailyCourseDayBundle(
     phraseRu: String(row.phrase_ru ?? ''),
     options: [row.option_a, row.option_b, row.option_c, row.option_d].map((o) => String(o ?? '')),
     sortOrder: row.sort_order != null ? Number(row.sort_order) : idx,
+    correctIndex: row.correct_index != null ? Number(row.correct_index) : undefined,
   }));
 
   const vocabSection: DailyVocabularySection = {
@@ -298,6 +299,7 @@ export async function fetchDailyCourseDayBundle(
     questionRu: String(row.question_ru ?? ''),
     options: [row.option_a, row.option_b, row.option_c, row.option_d].map((o) => String(o ?? '')),
     sortOrder: row.sort_order != null ? Number(row.sort_order) : idx,
+    correctIndex: row.correct_index != null ? Number(row.correct_index) : undefined,
   }));
 
   let reading: DailyReadingSection | null = null;
