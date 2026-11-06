@@ -340,6 +340,13 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 12px;
   overflow: hidden;
 }
+/* Ro'yxatda endi barcha mamlakatlar — u aylantiriladi (ilgari 4 ta edi, `overflow: hidden` yetardi). */
+.intl-phone-field .iti__country-list {
+  max-height: min(300px, 42vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
 
 /* Pulse ring around active quest CTA — subtle, ~2s cadence. */
 @keyframes quest-cta-pulse {

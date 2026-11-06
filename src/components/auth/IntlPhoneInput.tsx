@@ -13,6 +13,12 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
  */
 import intlTelInput from 'intl-tel-input';
 import 'intl-tel-input/styles';
+import { ru as ruLabels, uz as uzLabels } from 'intl-tel-input/i18n';
+import { useLocale } from '../../context/LocaleContext';
+import { languageMeta } from '../../../shared/i18n/languages';
+
+/** Qidiruv va yozuvlar tili: o'zbekcha, ruscha yoki (boshqa tillarda) inglizcha standart. */
+const LABELS_BY_LOCALE: Record<string, typeof uzLabels> = { uz: uzLabels, uzc: uzLabels, tk: uzLabels, ru: ruLabels, tg: ruLabels, ky: ruLabels, kk: ruLabels };
 
 export type IntlPhoneInputHandle = {
   /** E.164 including +, or null if empty/invalid */
@@ -44,6 +50,7 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
   ref
 ) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { locale } = useLocale();
   const itiRef = useRef<ReturnType<typeof intlTelInput> | null>(null);
   const onChangeRef = useRef(onChange);
 
@@ -78,6 +85,9 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
       nationalMode: false,
       formatAsYouType: true,
       countrySearch: true,
+      // Mamlakat nomlari ilova tilida ("Turkmaniston", "Германия").
+      countryNameLocale: languageMeta(locale).bcp47,
+      i18n: LABELS_BY_LOCALE[locale] ?? {},
       fixDropdownWidth: true,
       useFullscreenPopup: false,
       containerClass: 'w-full',
@@ -88,14 +98,29 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
     const handleInput = () => onChangeRef.current?.();
     input.addEventListener('input', handleInput);
     input.addEventListener('countrychange', handleInput);
+    /*
+     * Telefonda ro'yxat ochilganda qidiruv maydoni avtomatik fokuslanib
+     * klaviaturani chiqarardi — klaviatura esa ro'yxatni yopib qo'yardi.
+     * Endi avval ro'yxat ko'rinadi; qidirish uchun maydonni bosish kifoya.
+     */
+    const handleOpen = () => {
+      const touch = window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+      if (!touch) return;
+      window.setTimeout(() => {
+        const el = document.activeElement as HTMLElement | null;
+        if (el?.classList.contains('iti__search-input')) el.blur();
+      }, 0);
+    };
+    input.addEventListener('open:countrydropdown', handleOpen);
 
     return () => {
       input.removeEventListener('input', handleInput);
       input.removeEventListener('countrychange', handleInput);
+      input.removeEventListener('open:countrydropdown', handleOpen);
       iti.destroy();
       itiRef.current = null;
     };
-  }, [initialCountry]);
+  }, [initialCountry, locale]);
 
   return (
     <div className={['intl-phone-field w-full', className].filter(Boolean).join(' ')}>
