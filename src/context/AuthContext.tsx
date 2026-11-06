@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { fetchSessionProfile } from '../api/session';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../api';
 import { bustAvatarUrl } from '../api/user';
 import { clearUserProgressCaches } from '../utils/clearUserProgressCaches';
@@ -67,6 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem('token') ? readCachedUser() : null;
   });
   const [loading, setLoading] = useState(true);
+  // Eski /me so'rovlari login/logout paytida darhol bekor bo'lsin — React effekt tozalashini kutmasdan.
+  const sessionVersion = useRef(0);
 
   useEffect(() => {
     if (!token) {
@@ -75,11 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     let cancelled = false;
+    const version = sessionVersion.current;
+    const isCurrent = () => !cancelled && version === sessionVersion.current;
     const ME_RETRY_MS = [0, 450, 900];
     const MAX_ME_ATTEMPTS = ME_RETRY_MS.length;
 
     const finish = () => {
-      if (!cancelled) setLoading(false);
+      if (isCurrent()) setLoading(false);
     };
 
     const fetchMe = async (attempt: number) => {
@@ -88,16 +93,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           window.setTimeout(resolve, ME_RETRY_MS[attempt] ?? 600);
         });
       }
-      if (cancelled) return;
+      if (!isCurrent()) return;
 
       try {
-        const res = await fetch(apiUrl('/api/user/me'), {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (cancelled) return;
+        // Nativ HTTP qatlami boshqa hisobning keshlangan /me javobini qaytarmasin.
+        const res = await fetchSessionProfile(token);
+        if (!isCurrent()) return;
 
         if (res.ok) {
           const data = (await res.json()) as User;
+          if (!isCurrent()) return;
+          if (!Number.isSafeInteger(data.id) || data.id < 1) throw new Error('Invalid profile');
           const normalized = {
             ...data,
             totalPoints: data.totalPoints ?? 0,
@@ -122,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Server error — keep cached profile if any.
         finish();
       } catch {
-        if (cancelled) return;
+        if (!isCurrent()) return;
         if (attempt + 1 < MAX_ME_ATTEMPTS) {
           void fetchMe(attempt + 1);
           return;
@@ -139,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   const login = (newToken: string, newUser: User) => {
+    sessionVersion.current += 1;
     clearUserProgressCaches();
     localStorage.setItem('token', newToken);
     const normalized = {
@@ -152,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    sessionVersion.current += 1;
     clearUserProgressCaches();
     localStorage.removeItem('token');
     writeCachedUser(null);

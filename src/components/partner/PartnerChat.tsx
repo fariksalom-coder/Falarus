@@ -1,3 +1,5 @@
+import ContentSafetyActions from './ContentSafetyActions';
+import { readPersonalChatBlocks, savePersonalChatBlocks } from '../../utils/communitySafety';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
@@ -75,6 +77,9 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
+  const [blocked, setBlocked] = useState<number[]>(() => user ? readPersonalChatBlocks(localStorage, user.id) : []);
+  useEffect(() => { setBlocked(user ? readPersonalChatBlocks(localStorage, user.id) : []); }, [user?.id]);
   const [loading, setLoading] = useState(true);
   const [ending, setEnding] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -130,15 +135,19 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
   }, [layout.vpHeight, scrollToBottom]);
 
   const handleSend = async () => {
-    if (!token || !text.trim() || sending) return;
+    if (!token || !text.trim() || sending || (partner && blocked.includes(partner.user_id))) return;
+    setSendError('');
     const content = text.trim();
-    setText('');
     setSending(true);
     try {
       const msg = await sendChatMessage(token, match.id, content);
+      setText(current => current.trim() === content ? '' : current);
       markSeen([msg.id]);
       setMessages((prev) => [...prev, msg]);
-    } catch {}
+    } catch (e) {
+      setText(current => current || content);
+      setSendError(e instanceof Error ? e.message : 'Xabar yuborilmadi. Qayta urining.');
+    }
     setSending(false);
   };
 
@@ -187,6 +196,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
           <p className="truncate text-base font-bold text-slate-900">{partner?.display_name ?? t('common.user')}</p>
           <p className="text-xs text-slate-500">{t('partner.partnerLabel')}</p>
         </div>
+        <div className="text-slate-600">{partner ? <ContentSafetyActions authorId={partner.user_id} reference={`Hamkor chati ID: ${match.id}`} onBlocked={id => setBlocked(prev => [...new Set([...prev, id])])} /> : null}</div>
         <button
           type="button"
           onClick={() => setShowEndConfirm(true)}
@@ -213,7 +223,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
           </div>
         )}
         <div className="mx-auto max-w-lg space-y-2.5">
-          {allMessages.map((msg) => {
+          {allMessages.filter(msg => !blocked.includes(msg.sender_id)).map((msg) => {
             const isMine = msg.sender_id === userId;
             return (
               <motion.div
@@ -248,6 +258,11 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
           paddingBottom: layout.isDesktop ? undefined : layout.keyboardOpen ? 4 : 'max(8px, env(safe-area-inset-bottom, 0px))',
         }}
       >
+        {sendError ? <p role="alert" className="mb-2 text-sm text-red-700">{sendError}</p> : null}
+        {partner && blocked.includes(partner.user_id) ? <p role="status" className="mb-2 text-sm text-slate-600">Hamkor bloklangan. <button type="button" className="min-h-11 px-2 font-semibold text-blue-700 underline" onClick={() => {
+          try { if (user && partner) setBlocked(savePersonalChatBlocks(localStorage, user.id, blocked.filter(id => id !== partner.user_id))); }
+          catch { setSendError('Blokni olib tashlab bo‘lmadi. Qayta urining.'); }
+        }}>Blokni olib tashlash</button></p> : null}
         <div className="mx-auto flex w-full max-w-lg gap-2">
           <input
             type="text"
@@ -261,7 +276,7 @@ export default function PartnerChat({ match, onEnded, onBack }: Props) {
           <button
             type="button"
             onClick={handleSend}
-            disabled={sending || !text.trim()}
+            disabled={sending || !text.trim() || !!(partner && blocked.includes(partner.user_id))}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#0B2A6B] text-white shadow-[0_4px_16px_rgba(11,42,107,0.3)] transition-all hover:bg-[#071B5E] disabled:opacity-40"
           >
             <Send className="h-5 w-5" />

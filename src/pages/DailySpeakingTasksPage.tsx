@@ -1,3 +1,4 @@
+import AIConsentRecovery from '../components/AIConsentRecovery';
 /**
  * DailySpeakingTasksPage — 4-blok (gapirish) TESTIDAN KEYIN ochiladigan
  * qo'shimcha topshiriqlar (`daily_speaking_tasks`).
@@ -445,6 +446,7 @@ export default function DailySpeakingTasksPage() {
           {actionError ? (
             <p className="mt-3 text-[13px] font-bold text-[#D14343]">{actionError}</p>
           ) : null}
+          <AIConsentRecovery error={actionError} onAllowed={() => { setActionError(''); recorder.reset(); }} />
         </div>
 
         {/* AI baholashi */}

@@ -1,3 +1,4 @@
+import { assertCommunityTextAllowed } from '../../shared/communityContent';
 import { apiUrl } from '../api';
 
 function authHeaders(token: string | null): HeadersInit {
@@ -243,6 +244,7 @@ export async function sendChatMessage(
   matchId: number,
   content: string
 ): Promise<ChatMessage> {
+  assertCommunityTextAllowed(content);
   const res = await fetch(apiUrl('/api/partner/messages'), {
     method: 'POST',
     headers: authHeaders(token),

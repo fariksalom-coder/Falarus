@@ -1,3 +1,4 @@
+import { COMMUNITY_CONTENT_ERROR, isObjectionableCommunityText } from '../../shared/communityContent.js';
 import { Router, type Request, type Response } from 'express';
 import multer from 'multer';
 import type { DbClient } from '../types/dbClient';
@@ -755,6 +756,7 @@ export function createCommunityRoutes(
       const ruxsat = await checkCanWrite(supabase, userId);
       if (ruxsat.ok === false) return res.status(ruxsat.status).json(ruxsat.body);
       const rawContent = asString(req.body?.content);
+      if (isObjectionableCommunityText(rawContent)) return res.status(422).json({ error: COMMUNITY_CONTENT_ERROR });
       if (!rawContent) return res.status(400).json({ error: 'Xabar bo\'sh bo\'lmasin' });
       if (rawContent.length > MAX_CONTENT) {
         return res.status(400).json({ error: `Xabar ${MAX_CONTENT} belgidan oshmasin` });
@@ -845,6 +847,7 @@ export function createCommunityRoutes(
           Number.isFinite(xomMs) && xomMs > 0 ? Math.min(Math.round(xomMs), 60 * 60 * 1000) : null;
 
         const rawContent = asString(req.body?.content);
+        if (isObjectionableCommunityText(rawContent)) return res.status(422).json({ error: COMMUNITY_CONTENT_ERROR });
         if (rawContent.length > MAX_CONTENT) {
           return res.status(400).json({ error: `Xabar ${MAX_CONTENT} belgidan oshmasin` });
         }
@@ -1487,6 +1490,7 @@ export function createCommunityRoutes(
         }
 
         const caption = asString(req.body?.caption).slice(0, 500);
+        if (isObjectionableCommunityText(caption)) return res.status(422).json({ error: COMMUNITY_CONTENT_ERROR });
         const xomMs = Number(req.body?.ms);
         const durationMs =
           Number.isFinite(xomMs) && xomMs > 0 ? Math.min(Math.round(xomMs), 10 * 60 * 1000) : null;
@@ -1686,6 +1690,7 @@ export function createCommunityRoutes(
 
       const xom = asString(req.body?.content);
       if (!xom) return res.status(400).json({ error: 'Kommentariya bo‘sh bo‘lmasin' });
+      if (isObjectionableCommunityText(xom)) return res.status(422).json({ error: COMMUNITY_CONTENT_ERROR });
       if (xom.length > MAX_CONTENT) {
         return res.status(400).json({ error: `Kommentariya ${MAX_CONTENT} belgidan oshmasin` });
       }
@@ -1825,6 +1830,7 @@ export function createCommunityRoutes(
       const id = Number(req.params.id);
       const content = asString(req.body?.content);
       if (!content) return res.status(400).json({ error: 'Matn bo\'sh bo\'lmasin' });
+      if (isObjectionableCommunityText(content)) return res.status(422).json({ error: COMMUNITY_CONTENT_ERROR });
       if (content.length > MAX_CONTENT) {
         return res.status(400).json({ error: `Xabar ${MAX_CONTENT} belgidan oshmasin` });
       }

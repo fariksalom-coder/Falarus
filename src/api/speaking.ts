@@ -1,3 +1,4 @@
+import { voiceRequest } from '../utils/voiceRequest';
 import { apiUrl } from '../api';
 import { requireAIConsent } from '../utils/aiConsent';
 
@@ -48,16 +49,6 @@ export type SpeakingStats = {
   wrong: number;
 };
 
-async function parseApiError(res: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await res.json()) as { error?: string };
-    if (body?.error && typeof body.error === 'string') return body.error;
-  } catch {
-    /* ignore */
-  }
-  return fallback;
-}
-
 export async function checkSpeakingAnswer(
   token: string,
   taskId: number,
@@ -67,7 +58,7 @@ export async function checkSpeakingAnswer(
   shownAnswer: string = ''
 ): Promise<CheckResult> {
   await requireAIConsent();
-  const res = await fetch(apiUrl('/api/speaking/check'), {
+  return voiceRequest<CheckResult>(apiUrl('/api/speaking/check'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({
@@ -78,8 +69,6 @@ export async function checkSpeakingAnswer(
       ...(shownAnswer ? { shown_answer: shownAnswer } : {}),
     }),
   });
-  if (!res.ok) throw new Error(await parseApiError(res, 'Tekshirishda xatolik'));
-  return res.json();
 }
 
 /**
@@ -100,7 +89,7 @@ export async function checkSpeakingPromptAnswer(
   shownAnswer: string = ''
 ): Promise<CheckResult> {
   await requireAIConsent();
-  const res = await fetch(apiUrl('/api/speaking/check'), {
+  return voiceRequest<CheckResult>(apiUrl('/api/speaking/check'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({
@@ -112,8 +101,6 @@ export async function checkSpeakingPromptAnswer(
       ...(shownAnswer ? { shown_answer: shownAnswer } : {}),
     }),
   });
-  if (!res.ok) throw new Error(await parseApiError(res, 'Tekshirishda xatolik'));
-  return res.json();
 }
 
 /**
@@ -128,7 +115,7 @@ export async function transcribeSpeakingAudio(
   mimeType?: string
 ): Promise<string> {
   await requireAIConsent();
-  const res = await fetch(apiUrl('/api/speaking/transcribe'), {
+  const data = await voiceRequest<{ text?: string }>(apiUrl('/api/speaking/transcribe'), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({
@@ -137,7 +124,6 @@ export async function transcribeSpeakingAudio(
       ...(mimeType ? { mime: mimeType } : {}),
     }),
   });
-  if (!res.ok) throw new Error(await parseApiError(res, "Ovozni tanib bo'lmadi"));
-  const data = await res.json();
+  if (!data.text?.trim()) throw new Error('Ovoz eshitilmadi. Mikrofonni tekshirib, qayta yozing yoki javobni matn bilan kiriting.');
   return data.text;
 }

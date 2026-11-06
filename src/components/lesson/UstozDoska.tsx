@@ -1,3 +1,4 @@
+import AIConsentRecovery from '../AIConsentRecovery';
 import { startLessonConversation, type LessonConversationSession } from '../../api/ustozDoska';
 import { acquireConversationAudio } from '../../utils/conversationAudio';
 /**
@@ -196,6 +197,8 @@ export default function UstozDoska({
    * eski usulda — yozib yuborish orqali — davom etadi.
    */
   const [zaxiraSuhbat, setZaxiraSuhbat] = useState(false);
+  /** Jonli suhbat nega ochilmagani — o'quvchiga ko'rsatiladi (masalan, AI ruxsati yoki mikrofon). */
+  const [liveError, setLiveError] = useState<string | null>(null);
 
   /**
    * Qolgan savol soni. Ekranda ko'rsatiladi, chunki chegaraga urilib qolgan
@@ -737,6 +740,7 @@ export default function UstozDoska({
         >
           <RotateCcw size={16} /> Qayta urinish
         </button>
+        <AIConsentRecovery error={error} onAllowed={() => void darsniBoshla()} />
       </div>
     );
   }
@@ -1028,6 +1032,14 @@ export default function UstozDoska({
                 : `Suhbat chegarasi tugadi. ${Math.ceil(kvota.kutish / 3600)} soatdan keyin ochiladi — dars va mashqlar esa ochiq.`}
             </p>
           ) : null}
+          {faza === 'suhbat' && zaxiraSuhbat && liveError ? (
+            <div className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900" role="status">
+              <p>{liveError}</p>
+              <p className="mt-1">Quyidagi tugma bilan ovozli javob yozib yuborishingiz mumkin.</p>
+              <AIConsentRecovery error={liveError} onAllowed={() => { setLiveError(null); setZaxiraSuhbat(false); }} />
+              <button type="button" className="mt-2 min-h-11 font-semibold underline" onClick={() => { setLiveError(null); setZaxiraSuhbat(false); }}>Jonli suhbatni qayta ochish</button>
+            </div>
+          ) : null}
 
           {/* ---------- 2a. SUHBAT — JONLI (Gemini Live) ---------- */}
           {faza === 'suhbat' && zaxiraSuhbat && lessonSession ? <p className="text-center font-semibold">Suhbat: {Math.floor(sessionSeconds / 60)}:{String(sessionSeconds % 60).padStart(2, '0')}</p> : null}
@@ -1049,6 +1061,7 @@ export default function UstozDoska({
                   // Jonli suhbat ochilmadi: darsni to'xtatmaymiz, eski
                   // yozib-yuborish usuliga o'tamiz.
                   console.warn('[doska] jonli suhbat ishlamadi:', sabab);
+                  setLiveError(sabab);
                   setZaxiraSuhbat(true);
                 }}
               />
@@ -1146,6 +1159,7 @@ export default function UstozDoska({
         {error ? (
           <p className="mt-3 rounded-2xl bg-[#FDECEC] px-3.5 py-2.5 text-[13px] font-semibold text-[#B91C1C]">{error}</p>
         ) : null}
+        <AIConsentRecovery error={error} onAllowed={() => setError(null)} />
       </div>
     </div>
   );

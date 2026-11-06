@@ -7,7 +7,7 @@ import { apiUrl, resolveAssetUrl } from '../api';
 import { bustAvatarUrl, deleteUserAccount, patchUserAccount, removeUserAvatar, uploadUserAvatar } from '../api/user';
 import UserAvatar, { type UserGender } from '../components/UserAvatar';
 import { isNativeIOS } from '../native/platform';
-import { revokeAIConsent } from '../utils/aiConsent';
+import { requireAIConsent, revokeAIConsent } from '../utils/aiConsent';
 
 type MeResponse = {
   id: number;
@@ -333,6 +333,7 @@ export default function ProfileSettingsPage() {
         {isNativeIOS() && <section className="mx-4 mt-4 rounded-2xl border border-app-border p-4">
           <h2 className="font-bold">Maxfiylik</h2>
           <button onClick={() => navigate('/huquqiy/maxfiylik')} className="block min-h-11 underline">Maxfiylik siyosati</button>
+          <button onClick={() => { void requireAIConsent(true).catch(() => {}); }} className="block min-h-11 underline">AI ruxsatini sozlash</button>
           <button onClick={event => { revokeAIConsent(); event.currentTarget.textContent = 'AI ruxsati bekor qilindi'; }} className="block min-h-11 underline">AI ma’lumot yuborish ruxsatini bekor qilish</button>
         </section>}
       </main>

@@ -1,3 +1,5 @@
+import ContentSafetyActions from './ContentSafetyActions';
+import { readPersonalChatBlocks, savePersonalChatBlocks } from '../../utils/communitySafety';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { resolveAssetUrl } from '../../api';
 import { ArrowLeft, Heart, MessageCircle, Plus, Send, Trash2, Video, VolumeX, Volume2, X } from 'lucide-react';
@@ -38,8 +40,13 @@ function sana(iso: string): string {
 }
 
 export default function ReelsFeed({ onBack }: { onBack: () => void }) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  // Shaxsiy blok — bloklangan muallifning relslari va izohlari shu odamga ko'rinmaydi.
+  const [blocked, setBlocked] = useState<number[]>(() => user ? readPersonalChatBlocks(localStorage, user.id) : []);
+  useEffect(() => { setBlocked(user ? readPersonalChatBlocks(localStorage, user.id) : []); }, [user?.id]);
+  const blockAuthor = (id: number) => { setBlocked(prev => [...new Set([...prev, id])]); setKommRels(null); };
   const [reels, setReels] = useState<Reel[]>([]);
+  const visibleReels = reels.filter(r => !blocked.includes(r.author_user_id));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [ovozli, setOvozli] = useState(false);
@@ -120,7 +127,7 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
     );
     for (const v of videoRefs.current.values()) kuzatuvchi.observe(v);
     return () => kuzatuvchi.disconnect();
-  }, [reels]);
+  }, [reels, blocked]);
 
   async function faylTanlandi(f: File | null | undefined) {
     if (!f || !token || yuklanmoqda) return;
@@ -240,6 +247,17 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
         </button> : null}
       </header>
 
+      {blocked.length > 0 ? <details className="shrink-0 bg-slate-900 px-4 py-2 text-white">
+        <summary className="cursor-pointer text-sm">Bloklanganlar ({blocked.length})</summary>
+        <div className="max-h-40 overflow-y-auto">{blocked.map(id => <div key={id} className="flex items-center justify-between gap-3 text-sm">
+          <span>{reels.find(r => r.author_user_id === id)?.author_name || `Foydalanuvchi #${id}`}</span>
+          <button type="button" className="min-h-11 px-2 text-blue-200" onClick={() => {
+            try { if (user) setBlocked(savePersonalChatBlocks(localStorage, user.id, blocked.filter(value => value !== id))); }
+            catch { setError('Blokni olib tashlab bo‘lmadi. Qayta urining.'); }
+          }}>Blokni olib tashlash</button>
+        </div>)}</div>
+      </details> : null}
+
       {error ? (
         <div className="shrink-0 bg-red-600/90 px-4 py-2 text-[13px] font-semibold text-white">
           {error}
@@ -256,7 +274,7 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
       >
         {loading ? (
           <p className="py-16 text-center text-sm text-white/60">Yuklanmoqda…</p>
-        ) : reels.length === 0 ? (
+        ) : visibleReels.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
             <Video className="h-10 w-10 text-white/40" />
             <p className="text-[15px] font-bold text-white">Hali rels yo'q</p>
@@ -265,7 +283,7 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
             </p> : null}
           </div>
         ) : (
-          reels.map((r) => (
+          visibleReels.map((r) => (
             <section
               key={r.id}
               className="relative flex h-full snap-start snap-always items-center justify-center"
@@ -325,6 +343,7 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
                 O'rtada esa hech narsa ustidan tushmaydi va bosh barmoq
                 bilan yetib borish ham qulayroq.
               */}
+              <div className="absolute left-3 top-3 rounded-xl bg-black/60 text-white"><ContentSafetyActions authorId={r.author_user_id} reference={`Reels ID: ${r.id}\nVideo: ${r.video_url}\n${r.caption}`} onBlocked={blockAuthor} /></div>
               <div className="absolute right-3 top-1/2 flex -translate-y-1/2 flex-col items-center gap-4">
                 <button
                   type="button"
@@ -389,7 +408,7 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
                 </p>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {kommlar.map((k) => (
+                  {kommlar.filter(k => !blocked.includes(k.author_user_id)).map((k) => (
                     <div key={k.id} className="flex items-start gap-2">
                       <ChatAvatar url={k.author_avatar_url} ism={k.author_name} olcham={26} />
                       <div className="min-w-0 flex-1">
@@ -397,6 +416,7 @@ export default function ReelsFeed({ onBack }: { onBack: () => void }) {
                         <p className="mt-0.5 whitespace-pre-wrap break-words text-[14px] leading-snug text-pmn-text">
                           {k.content}
                         </p>
+                        <ContentSafetyActions authorId={k.author_user_id} reference={`Reels ID: ${kommRels.id}\nIzoh ID: ${k.id}\n${k.content}`} onBlocked={blockAuthor} />
                       </div>
                     </div>
                   ))}

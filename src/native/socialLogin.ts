@@ -12,7 +12,9 @@ export function initializeNativeSocialLogin(): Promise<void> {
         iOSServerClientId: FALARUS_GOOGLE_WEB_CLIENT_ID,
         mode: 'online',
       },
-      ...(isNativeIOS() ? { apple: { redirectUrl: '', useProperTokenExchange: true } } : {}),
+      // 7.x bridges reliably return the raw Apple code in accessToken.token.
+      // The backend still exchanges and verifies it; this is not an API session token.
+      ...(isNativeIOS() ? { apple: { redirectUrl: '', useProperTokenExchange: false } } : {}),
     }).catch(error => { initialization = null; throw error; });
   }
   return initialization;

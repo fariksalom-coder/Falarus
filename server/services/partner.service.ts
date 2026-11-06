@@ -1,3 +1,4 @@
+import { COMMUNITY_CONTENT_ERROR, isObjectionableCommunityText } from '../../shared/communityContent.js';
 // Express-shaped req/res surface used by this router. Replaces the old
 // @vercel/node types so we don't pull a Vercel runtime dep.
 type RouterReq = {
@@ -408,6 +409,7 @@ async function handleSendMessage(userId: number, req: RouterReq, res: RouterRes)
   const body = parseBody(req.body);
   const matchId = Number(body.match_id);
   const content = String(body.content ?? '').trim();
+  if (isObjectionableCommunityText(content)) return res.status(422).json({ error: COMMUNITY_CONTENT_ERROR });
 
   if (!Number.isFinite(matchId)) return res.status(400).json({ error: 'match_id kerak' });
   if (!content || content.length > 2000) return res.status(400).json({ error: 'Xabar bo\'sh yoki juda uzun' });

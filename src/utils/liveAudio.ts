@@ -1,3 +1,4 @@
+import { resumeAudio } from './resumeAudio';
 import captureWorkletUrl from './liveCapture.worklet?worker&url';
 import { PcmResampler } from './pcmResampler';
 import { PcmPlaybackResampler } from './pcmPlayback';
@@ -51,7 +52,7 @@ export class MikrofonOqimi {
       const ctx = sharedContext ?? new Ctx({ latencyHint: 'interactive' });
       this.ownsContext = !sharedContext;
       this.ctx = ctx;
-      if (ctx.state === 'suspended') await ctx.resume();
+      await resumeAudio(ctx);
       if (generation !== this.generation) return;
       this.manba = ctx.createMediaStreamSource(stream);
       const send = (pcm: Int16Array, peak: number) => {
@@ -134,7 +135,7 @@ export class OvozNavbati {
 
   async tayyorla(): Promise<void> {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') await this.ctx.resume();
+      await resumeAudio(this.ctx);
       return;
     }
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -143,7 +144,7 @@ export class OvozNavbati {
     try { this.ctx = new Ctx({ sampleRate: CHIQISH_HZ, latencyHint: 'interactive' }); }
     catch { this.ctx = new Ctx({ latencyHint: 'interactive' }); }
     this.resampler = new PcmPlaybackResampler(this.ctx.sampleRate);
-    if (this.ctx.state === 'suspended') await this.ctx.resume();
+    await resumeAudio(this.ctx);
   }
 
   qosh(base64: string, tugadi?: () => void): void {

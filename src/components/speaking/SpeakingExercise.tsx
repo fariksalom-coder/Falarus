@@ -1,3 +1,4 @@
+import AIConsentRecovery from '../AIConsentRecovery';
 import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Mic, Loader2, Send, Pencil } from 'lucide-react';
@@ -486,6 +487,7 @@ export default function SpeakingExercise({
           {error}
         </p>
       )}
+      <AIConsentRecovery error={error} onAllowed={handleResetVoice} />
 
       {result && (
         <div className="mt-5">

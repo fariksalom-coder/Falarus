@@ -34,6 +34,8 @@ import {
 } from '../../api/communityChat';
 import { mentionToken, parseMentionParts } from '../../../shared/communityMentions';
 import { useAuth } from '../../context/AuthContext';
+import { getHelpChats, sendHelpChatMessage } from '../../api/help';
+import { communityReportText, readPersonalChatBlocks, savePersonalChatBlocks } from '../../utils/communitySafety';
 import { useLocale } from '../../context/LocaleContext';
 import UserCard from './UserCard';
 import ChatAvatar from '../ChatAvatar';
@@ -285,6 +287,54 @@ export default function SavolJavobChat({ onBack, onOpenSupport, group = 'savol-j
   const [menyu, setMenyu] = useState<SavolJavobMessage | null>(null);
   const [tahrir, setTahrir] = useState<{ id: number; matn: string } | null>(null);
   const [modBusy, setModBusy] = useState(false);
+  /*
+   * SHAXSIY BLOK VA SHIKOYAT (App Store 1.2 talabi).
+   *
+   * Har bir foydalanuvchi boshqa odamni o'zi uchun yashira oladi — ro'yxat
+   * qurilmada, hisob bo'yicha saqlanadi. Shikoyat Support chatiga boradi.
+   */
+  const [personalBlocks, setPersonalBlocks] = useState<number[]>([]);
+  const [reportReason, setReportReason] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  const [showBlocks, setShowBlocks] = useState(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdOrigin = useRef({ x: 0, y: 0 });
+  const cancelHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  };
+  useEffect(() => {
+    setPersonalBlocks(user?.id ? readPersonalChatBlocks(localStorage, user.id) : []);
+    return cancelHold;
+  }, [user?.id]);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(''), 3500);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+  function savePersonalBlocks(ids: number[]) {
+    if (!user?.id) throw new Error('Hisobga qayta kiring');
+    setPersonalBlocks(savePersonalChatBlocks(localStorage, user.id, ids));
+  }
+  async function personalAction(fn: () => Promise<unknown>) {
+    if (modBusy) return;
+    setModBusy(true);
+    setError('');
+    try {
+      await fn();
+      setMenyu(null);
+      setReportReason(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Amal bajarilmadi');
+    } finally {
+      setModBusy(false);
+    }
+  }
+  function openMenu(msg: SavolJavobMessage) {
+    setReportReason(null);
+    setTahrir(null);
+    setMenyu(msg);
+  }
   const lastMentionIdRef = useRef(0);
   const endRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -755,6 +805,30 @@ export default function SavolJavobChat({ onBack, onOpenSupport, group = 'savol-j
         </div>
       </header>
 
+      {notice || personalBlocks.length > 0 ? (
+        <div className="shrink-0 border-b border-app-border bg-app-surface px-4 py-2 text-[12.5px] font-semibold text-app-text-muted">
+          {notice ? <p role="status" className="text-app-text">{notice}</p> : null}
+          {personalBlocks.length > 0 ? (
+            <button type="button" className="min-h-[32px] underline" onClick={() => setShowBlocks((v) => !v)}>
+              Bloklanganlar ({personalBlocks.length})
+            </button>
+          ) : null}
+          {showBlocks
+            ? personalBlocks.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  disabled={modBusy}
+                  className="block min-h-[36px]"
+                  onClick={() => void personalAction(async () => savePersonalBlocks(personalBlocks.filter((v) => v !== id)))}
+                >
+                  Foydalanuvchi #{id} — blokdan chiqarish
+                </button>
+              ))
+            : null}
+        </div>
+      ) : null}
+
       <div ref={scrollRef} onScroll={handleScrollContainer} className="flex-1 overflow-y-auto px-3.5 py-4">
         {loading ? (
           <div className="flex justify-center py-12">
@@ -770,11 +844,26 @@ export default function SavolJavobChat({ onBack, onOpenSupport, group = 'savol-j
                 {t('partner.groupFirstQuestion')}
               </p>
             ) : null}
-            {messages.map((msg) => {
+            {messages.filter((msg) => !personalBlocks.includes(msg.sender_user_id)).map((msg) => {
               const mine = msg.sender_user_id === user?.id;
               const mentionsMe = !mine && user?.id != null && mentionsUser(msg.content, user.id);
               return (
-                <div key={msg.id} className={`group ${mine ? 'flex justify-end' : 'flex items-end gap-2'}`}>
+                <div
+                  key={msg.id}
+                  onContextMenu={(e) => { e.preventDefault(); cancelHold(); openMenu(msg); }}
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    cancelHold();
+                    holdOrigin.current = { x: e.clientX, y: e.clientY };
+                    holdTimer.current = setTimeout(() => openMenu(msg), 550);
+                  }}
+                  onPointerMove={(e) => {
+                    if (Math.hypot(e.clientX - holdOrigin.current.x, e.clientY - holdOrigin.current.y) > 10) cancelHold();
+                  }}
+                  onPointerUp={cancelHold}
+                  onPointerCancel={cancelHold}
+                  className={`group ${mine ? 'flex justify-end' : 'flex items-end gap-2'}`}
+                >
                   {!mine ? (
                     /*
                       Support uchun bu tugma (ma'lumot kartasi ochiladi),
@@ -883,12 +972,12 @@ export default function SavolJavobChat({ onBack, onOpenSupport, group = 'savol-j
                       {mine ? ' ✓✓' : ''}
                     </p>
                   </div>
-                  {canModerate ? (
+                  {canModerate || !mine ? (
                     <button
                       type="button"
-                      onClick={() => setMenyu(msg)}
-                      className="mb-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-app-text-muted transition hover:bg-pmn-pill"
-                      aria-label="Moderatsiya"
+                      onClick={() => openMenu(msg)}
+                      className="mb-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-app-text-muted opacity-60 transition hover:bg-pmn-pill hover:opacity-100"
+                      aria-label={canModerate ? 'Moderatsiya' : 'Xabar amallari'}
                     >
                       <MoreVertical className="h-4 w-4" aria-hidden />
                     </button>
@@ -1261,11 +1350,77 @@ export default function SavolJavobChat({ onBack, onOpenSupport, group = 'savol-j
             className="w-full max-w-lg rounded-[22px] bg-app-surface p-4 shadow-[0_-10px_40px_rgba(15,23,42,0.25)]"
             onClick={(e) => e.stopPropagation()}
           >
+            {error ? <p role="alert" className="mb-2 text-[13px] font-semibold text-red-700">{error}</p> : null}
             <p className="mb-1 text-[13px] font-black text-app-text">{menyu.sender_name}</p>
             <p className="mb-3 line-clamp-2 text-[12.5px] font-semibold text-app-text-muted">
               {menyu.content}
             </p>
 
+            <button
+              type="button"
+              className="mb-2 min-h-[46px] w-full rounded-[14px] bg-pmn-pill text-[13.5px] font-bold text-app-text disabled:opacity-50"
+              disabled={modBusy || !menyu.content}
+              onClick={() => void personalAction(async () => { await navigator.clipboard.writeText(menyu.content); setNotice('Xabar nusxalandi'); })}
+            >
+              Nusxalash
+            </button>
+            {menyu.sender_user_id !== user?.id ? (
+              <>
+                <button
+                  type="button"
+                  className="mb-2 min-h-[46px] w-full rounded-[14px] bg-pmn-pill text-[13.5px] font-bold text-app-text"
+                  disabled={modBusy}
+                  onClick={() => setReportReason('')}
+                >
+                  Shikoyat qilish
+                </button>
+                {reportReason !== null ? (
+                  <div className="mb-3">
+                    <textarea
+                      aria-label="Shikoyat sababi"
+                      maxLength={500}
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      placeholder="Shikoyat sababini yozing"
+                      className="w-full resize-none rounded-[14px] border border-pmn-border bg-pmn-card p-3 text-[14px] text-pmn-text outline-none focus:border-app-primary"
+                    />
+                    <button
+                      type="button"
+                      disabled={modBusy || !reportReason.trim()}
+                      className="mt-2 min-h-[46px] w-full rounded-[14px] bg-app-primary text-[13.5px] font-black text-white disabled:opacity-50"
+                      onClick={() =>
+                        void personalAction(async () => {
+                          const chats = await getHelpChats(token!);
+                          const chatId = chats[0]?.id;
+                          if (!chatId) throw new Error('Support yozishmasi topilmadi');
+                          const groupLabel = group === 'premium' ? 'Premium guruh' : 'Savol-javob guruhi';
+                          await sendHelpChatMessage(token!, chatId, communityReportText(menyu, reportReason, groupLabel));
+                          setNotice('Shikoyat administratorga yuborildi');
+                        })
+                      }
+                    >
+                      Shikoyatni yuborish
+                    </button>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  className="mb-2 min-h-[46px] w-full rounded-[14px] bg-[#FFF4F4] text-[13.5px] font-bold text-[#B23A3F]"
+                  disabled={modBusy}
+                  onClick={() =>
+                    void personalAction(async () => {
+                      savePersonalBlocks([...new Set([...personalBlocks, menyu.sender_user_id])]);
+                      setNotice('Foydalanuvchi bloklandi. Uning xabarlari sizga ko‘rinmaydi.');
+                    })
+                  }
+                >
+                  Foydalanuvchini bloklash
+                </button>
+              </>
+            ) : null}
+
+            {canModerate ? (
+            <>
             {/*
               Menyudan ham kirish mumkin: ismga bosish kichik nishon,
               menyu esa allaqachon ochilgan bo'ladi va bu yerdan
@@ -1356,6 +1511,8 @@ export default function SavolJavobChat({ onBack, onOpenSupport, group = 'savol-j
                 ) : null}
               </div>
             )}
+            </>
+            ) : null}
           </div>
         </div>
       ) : null}

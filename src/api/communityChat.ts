@@ -1,3 +1,4 @@
+import { assertCommunityTextAllowed } from '../../shared/communityContent';
 import { apiUrl } from '../api';
 
 function authHeaders(token: string) {
@@ -221,6 +222,7 @@ export async function sendSavolJavobMessage(
   content: string,
   group: ChatGroup = 'savol-javob',
 ): Promise<SavolJavobMessage> {
+  assertCommunityTextAllowed(content);
   const res = await fetch(groupUrl(group, '/messages'), {
     method: 'POST',
     headers: authHeaders(token),
@@ -244,6 +246,7 @@ export async function sendSavolJavobMedia(
   input: { kind: MediaKind; file: Blob; fileName: string; content?: string; ms?: number | null },
   group: ChatGroup = 'savol-javob',
 ): Promise<SavolJavobMessage> {
+  assertCommunityTextAllowed(input.content ?? '');
   const fd = new FormData();
   fd.append('kind', input.kind);
   fd.append('file', input.file, input.fileName);
@@ -469,6 +472,7 @@ export async function uploadReel(
   token: string,
   input: { file: Blob; fileName: string; caption?: string; ms?: number | null },
 ): Promise<Reel> {
+  assertCommunityTextAllowed(input.caption ?? '');
   const fd = new FormData();
   fd.append('file', input.file, input.fileName);
   if (input.caption) fd.append('caption', input.caption);
@@ -531,6 +535,7 @@ export async function addReelComment(
   id: number,
   content: string,
 ): Promise<ReelComment> {
+  assertCommunityTextAllowed(content);
   const res = await fetch(apiUrl(`/api/community/reels/${id}/comments`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

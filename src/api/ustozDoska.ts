@@ -1,3 +1,4 @@
+import { voiceRequest } from '../utils/voiceRequest';
 import { requireAIConsent } from '../utils/aiConsent';
 import { apiUrl } from '../api';
 import type {
@@ -117,18 +118,12 @@ async function post<T>(
   signal?: AbortSignal,
 ): Promise<T> {
   await requireAIConsent();
-  const res = await fetch(apiUrl(path), {
+  return voiceRequest<T>(apiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
     signal,
   });
-
-  const data = await res.json().catch(() => ({}) as Record<string, unknown>);
-  if (!res.ok) {
-    throw new Error(String((data as { error?: string }).error ?? "Ustoz javob bermadi"));
-  }
-  return data as T;
 }
 
 /*

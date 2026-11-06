@@ -1,3 +1,5 @@
+import { voiceRequest } from '../utils/voiceRequest';
+import { requireAIConsent } from '../utils/aiConsent';
 import { apiUrl } from '../api';
 import { publishMyRank, type MyRankResponse } from './leaderboard';
 
@@ -279,14 +281,12 @@ export async function checkDailySpeakingTask(
   /** Ekranda ko'rsatilgan namuna javob — uni qaytarsa AI'siz to'g'ri sanaladi. */
   shownAnswer: string = '',
 ): Promise<SpeakingTaskCheckResult> {
-  const res = await fetch(apiUrl(`/api/kunlik-progress/${dayNumber}/speaking-tasks/check`), {
+  await requireAIConsent();
+  return voiceRequest<SpeakingTaskCheckResult>(apiUrl(`/api/kunlik-progress/${dayNumber}/speaking-tasks/check`), {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ taskId, answer, attempt, ...(shownAnswer ? { shownAnswer } : {}) }),
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string })?.error || 'Tekshirishda xatolik');
-  return data as SpeakingTaskCheckResult;
 }
 
 /** Bajarilgan topshiriqlar sonini saqlaydi (faqat oshadi). */

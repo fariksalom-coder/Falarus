@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginWithApple } from '../../api/auth';
+import { getMe } from '../../api/user';
 import { useAuth } from '../../context/AuthContext';
 import { nativeAppleCredential } from '../../native/appleAuth';
 import { isNativeIOS } from '../../native/platform';
@@ -16,12 +17,15 @@ export function AppleSignInButton({ disabled = false, onError }: { disabled?: bo
     setBusy(true);
     try {
       const result = await loginWithApple(await nativeAppleCredential());
-      const user = { ...result.user!, progress: result.user!.progress ?? 0 };
+      // Complete server session verification before switching authenticated routes.
+      const profile = await getMe(result.token!);
+      if (profile.id !== result.user!.id) throw new Error('Kirish sessiyasi mos kelmadi. Qayta urinib ko‘ring.');
+      const user = { ...profile, progress: profile.progress ?? 0 };
       login(result.token!, user);
       navigate(pathAfterAuth({ isRegistration: result.isNewUser, onboardingCompleted: user.onboardingCompleted }), { replace: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Apple orqali kirib bo‘lmadi.';
-      if (!/cancel|bekor|1001/i.test(message)) onError(message);
+      if (!/cancel(?:led|ed)|foydalanuvchi.*bekor|ASAuthorizationError.*1001/i.test(message)) onError(message);
     } finally { setBusy(false); }
   }
   return <button type="button" disabled={disabled || busy} aria-busy={busy}

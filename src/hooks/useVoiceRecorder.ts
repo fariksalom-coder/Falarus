@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { microphoneError } from '../utils/microphoneError';
 
 export type VoiceRecorderState = {
   isRecording: boolean;
+  isStarting: boolean;
   audioBlob: Blob | null;
   error: string | null;
   elapsedSeconds: number;
@@ -21,6 +23,7 @@ type Session = {
 
 export function useVoiceRecorder(maxDurationMs = 15_000): VoiceRecorderState {
   const [isRecording, setIsRecording] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -52,7 +55,7 @@ export function useVoiceRecorder(maxDurationMs = 15_000): VoiceRecorderState {
   const stopRecording = useCallback(() => {
     const session = sessionRef.current;
     if (!session) return;
-    if (!session.recorder) { cancel(); setIsRecording(false); return; }
+    if (!session.recorder) { cancel(); setIsStarting(false); setIsRecording(false); return; }
     session.timers.forEach(clearTimeout);
     session.timers = [];
     // Keep this session owned until its final dataavailable + stop events arrive.
@@ -64,8 +67,12 @@ export function useVoiceRecorder(maxDurationMs = 15_000): VoiceRecorderState {
     if (sessionRef.current) return;
     const session: Session = { recorder: null, stream: null, context: null, timers: [], cancelled: false };
     sessionRef.current = session;
+    setIsStarting(true);
     setError(null); setAudioBlob(null); setElapsedSeconds(0); setAudioLevel(0);
     try {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+        throw new Error('Recording unavailable');
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: {
         echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1,
       } });
@@ -91,6 +98,7 @@ export function useVoiceRecorder(maxDurationMs = 15_000): VoiceRecorderState {
         cancel(); setIsRecording(false); setAudioLevel(0); setError("Ovoz yozib bo'lmadi");
       };
       recorder.start(1000);
+      setIsStarting(false);
       setIsRecording(true);
       const startedAt = Date.now();
       session.timers.push(setInterval(() => setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000)), 500));
@@ -117,14 +125,14 @@ export function useVoiceRecorder(maxDurationMs = 15_000): VoiceRecorderState {
       if (sessionRef.current !== session || session.cancelled) return;
       sessionRef.current = null;
       setIsRecording(false);
-      setError(err instanceof DOMException && err.name === 'NotAllowedError'
-        ? "Mikrofonga ruxsat berilmadi" : "Mikrofonni ochib bo'lmadi. Qayta urinib ko'ring.");
+      setIsStarting(false);
+      setError(microphoneError(err));
     }
   }, [cancel, maxDurationMs, release, stopRecording]);
 
   const reset = useCallback(() => {
-    cancel(); setIsRecording(false); setAudioBlob(null); setError(null); setElapsedSeconds(0); setAudioLevel(0);
+    cancel(); setIsStarting(false); setIsRecording(false); setAudioBlob(null); setError(null); setElapsedSeconds(0); setAudioLevel(0);
   }, [cancel]);
 
-  return { isRecording, audioBlob, error, elapsedSeconds, audioLevel, startRecording, stopRecording, reset };
+  return { isRecording, isStarting, audioBlob, error, elapsedSeconds, audioLevel, startRecording, stopRecording, reset };
 }

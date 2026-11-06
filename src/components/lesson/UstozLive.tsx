@@ -1,3 +1,4 @@
+import { microphoneError } from '../../utils/microphoneError';
 import { requireAIConsent } from '../../utils/aiConsent';
 import { ConversationMicGate } from '../../utils/conversationAudio';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -73,9 +74,12 @@ export default function UstozLive({
   const ovozRef = useRef<OvozNavbati | null>(null);
 
   const generationRef = useRef(0);
+  /** Ruxsat oynasi ochiq turganda ikkinchi ulanish boshlanib ketmasin. */
+  const startingRef = useRef(false);
   const connectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tozala = useCallback(() => {
     generationRef.current++;
+    startingRef.current = false;
     if (connectionTimerRef.current) clearTimeout(connectionTimerRef.current);
     const ws = wsRef.current;
     if (ws) { ws.onopen = null; ws.onmessage = null; ws.onerror = null; ws.onclose = null; }
@@ -90,9 +94,20 @@ export default function UstozLive({
   useEffect(() => tozala, [tozala]);
 
   const boshla = useCallback(async () => {
-    try { await requireAIConsent(); } catch { onZaxira('AI ma’lumot yuborishga ruxsat berilmadi.'); return; }
-    if (!token) { onZaxira('token yo\'q'); return; }
+    if (startingRef.current) return;
+    const consentGeneration = generationRef.current;
+    startingRef.current = true;
+    setHolat('ulanmoqda');
+    try { await requireAIConsent(); } catch (e) {
+      if (consentGeneration !== generationRef.current) return;
+      startingRef.current = false;
+      onZaxira(e instanceof Error ? e.message : 'AI ma’lumot yuborishga ruxsat berilmadi.');
+      return;
+    }
+    if (consentGeneration !== generationRef.current) return;
+    if (!token) { startingRef.current = false; onZaxira('token yo\'q'); return; }
     tozala();
+    startingRef.current = true;
     const generation = generationRef.current;
     const active = () => generation === generationRef.current;
     const micGate = new ConversationMicGate();
@@ -105,11 +120,11 @@ export default function UstozLive({
     try {
       await ovoz.tayyorla();
       if (!active()) { ovoz.yop(); return; }
-    } catch {
+    } catch (e) {
       if (!active()) return;
       tozala();
       setHolat('xato');
-      onZaxira('ovoz chiqishini ochib bo\'lmadi');
+      onZaxira(e instanceof Error ? e.message : 'Ovoz chiqishini ochib bo‘lmadi.');
       return;
     }
     ovozRef.current = ovoz;
@@ -174,12 +189,12 @@ export default function UstozLive({
             setDaraja(mik.daraja);
           }, ovoz.context);
           if (!active()) mik.toxtat();
-        } catch {
+        } catch (e) {
           if (!active()) return;
           // Mikrofonga ruxsat berilmadi — suhbatni davom ettirib bo'lmaydi.
           tozala();
           setHolat('xato');
-          onZaxira('mikrofonga ruxsat berilmadi');
+          onZaxira(microphoneError(e));
         }
         return;
       }
