@@ -1,3 +1,4 @@
+import { invalidateAppConfig } from '../services/appConfig.service.js';
 import type { Request, Response } from 'express';
 import type { DbClient } from '../types/dbClient';
 import bcrypt from 'bcryptjs';
@@ -1479,6 +1480,8 @@ export function createAdminController(supabase: DbClient) {
       console.error('[admin/tariff-prices update]', error);
       return res.status(500).json({ error: error.message });
     }
+    // Yangi narx sayt va ilovalarda darhol ko'rinsin, keyingi to'lov ham shu narx bilan.
+    invalidateAppConfig();
     return res.json({ success: true });
   }
 

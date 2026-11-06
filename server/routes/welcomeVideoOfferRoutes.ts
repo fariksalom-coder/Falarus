@@ -1,5 +1,12 @@
 import { Router, type Request, type Response } from 'express';
 import type { DbClient } from '../types/dbClient';
+import { getAppConfig } from '../services/appConfig.service.js';
+
+/** Taklif muddati va ochilish oynasi — bazadan (admin panel). */
+async function offerTiming(db: DbClient) {
+  const { welcomeOffer } = await getAppConfig(db);
+  return { offerMs: welcomeOffer.offerMinutes * 60_000, eligibilityMs: welcomeOffer.eligibilityMinutes * 60_000 };
+}
 import { getWelcomeVideoOfferExpiresAt, isWelcomeVideoOfferOpen, isWelcomeVideoSequenceEligible } from '../../shared/welcomeVideoOffer';
 
 type OfferRow = {
@@ -33,7 +40,8 @@ async function getOrCreateOffer(db: DbClient, userId: number): Promise<OfferRow>
   const { data: user, error: userErr } = await db.from('users').select('created_at').eq('id', userId).maybeSingle();
   if (userErr) throw userErr;
   if (!user?.created_at) throw new Error('User registration time is missing');
-  const status = isWelcomeVideoSequenceEligible(String(user.created_at)) ? 'sequence' : 'standard';
+  const { eligibilityMs } = await offerTiming(db);
+  const status = isWelcomeVideoSequenceEligible(String(user.created_at), Date.now(), eligibilityMs) ? 'sequence' : 'standard';
   const { data: inserted, error: insertErr } = await db
     .from('welcome_video_offers')
     .insert({ user_id: userId, status, next_video_index: 0 })
@@ -68,7 +76,7 @@ export function createWelcomeVideoOfferRoutes(
       const now = new Date();
       let query = db.from('welcome_video_offers').update({
         status: 'offer', next_video_index: 3,
-        offer_expires_at: getWelcomeVideoOfferExpiresAt(now.getTime()),
+        offer_expires_at: getWelcomeVideoOfferExpiresAt(now.getTime(), (await offerTiming(db)).offerMs),
         updated_at: now.toISOString(),
       }).eq('user_id', userId).eq('status', row.status);
       // Compare the prior expiry too: simultaneous refreshes cannot extend the window.
@@ -129,7 +137,7 @@ export function createWelcomeVideoOfferRoutes(
       if (row.status !== 'sequence' || Number(row.next_video_index) !== index) return res.json(toClientState(row));
       const now = new Date();
       const patch = index === 2
-        ? { status: 'offer', next_video_index: 3, offer_expires_at: getWelcomeVideoOfferExpiresAt(now.getTime()), updated_at: now.toISOString() }
+        ? { status: 'offer', next_video_index: 3, offer_expires_at: getWelcomeVideoOfferExpiresAt(now.getTime(), (await offerTiming(db)).offerMs), updated_at: now.toISOString() }
         : { next_video_index: index + 1, updated_at: now.toISOString() };
       const { data: updated, error } = await db.from('welcome_video_offers').update(patch)
         .eq('user_id', userId).eq('status', 'sequence').eq('next_video_index', index)

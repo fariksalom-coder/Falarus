@@ -1,7 +1,6 @@
 import '../styles/course-special-offer.css';
 import '../styles/course-info-responsive.css';
-import { resolveAssetUrl } from '../api';
-import { isNativeApp } from '../native/platform';
+import { mediaUrl, useAppConfig } from '../api/appConfig';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Play, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -10,12 +9,11 @@ import { openRahmatCheckout } from '../api/rahmat';
 import RussiaPaymentGuide from '../components/pricing/RussiaPaymentGuide';
 import { getWelcomeVideoOffer, replayWelcomeVideoOffer } from '../api/welcomeVideoOffer';
 import { createVideoTracker, trackJourneyStep } from '../api/journey';
-import { COURSE_VIDEO_SRC, COURSE_VIDEO_DURATION_SECONDS, secondsUntilCourseBonus } from '../../shared/courseOfferPlayback';
-import { RUSSIAN_TARIFF_PLANS_RUB, formatRubAmount, formatRussianTariffUzsMing, type RussianTariffCode } from '../../shared/russianTariffs';
+import { COURSE_VIDEO_DURATION_SECONDS } from '../../shared/courseOfferPlayback';
+import { secondsUntilBonus } from '../../shared/appConfig';
+import { formatRubAmount, formatRussianTariffUzsMing, type RussianTariffCode } from '../../shared/russianTariffs';
 
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-const monthlyPlan = RUSSIAN_TARIFF_PLANS_RUB.find(p => p.code === 'month')!;
-const offerPlan = RUSSIAN_TARIFF_PLANS_RUB.find(p => p.code === 'three_month')!;
 
 
 export default function CourseInfoPage() {
@@ -24,6 +22,8 @@ export default function CourseInfoPage() {
 
 function WebCourseInfoPage() {
   const { token } = useAuth();
+  // Narxlar, taklif shartlari va video — bazadan (admin panel), ilova yangilanmasdan o'zgaradi.
+  const { plans, welcomeOffer: offer, media } = useAppConfig();
   const video = useRef<HTMLVideoElement>(null);
   const requested = useRef(false);
   const maxPlayed = useRef(0);
@@ -39,7 +39,7 @@ function WebCourseInfoPage() {
     return () => { document.removeEventListener('visibilitychange', hide); tracker.leave(); tracker.attach(null); };
   }, [tracker]);
   const [selectedTariff, setSelectedTariff] = useState<RussianTariffCode>('six_month');
-  const selectedPlan = RUSSIAN_TARIFF_PLANS_RUB.find(plan => plan.code === selectedTariff)!;
+  const selectedPlan = plans.find(plan => plan.code === selectedTariff) ?? plans[plans.length - 1];
   const [speed, setSpeed] = useState(1);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
   const applySpeed = () => {
@@ -48,9 +48,10 @@ function WebCourseInfoPage() {
     video.current.playbackRate = speed;
   };
   useEffect(() => { applySpeed(); }, [speed]);
-  // Native shell uses the bundled iPhone-compatible copy; web uses the server asset.
-  const videoSource = isNativeApp() ? '/videos/welcome-android.mp4' : resolveAssetUrl(COURSE_VIDEO_SRC) ?? undefined;
-  const [untilBonus, setUntilBonus] = useState<number | null>(() => secondsUntilCourseBonus(COURSE_VIDEO_DURATION_SECONDS, 0));
+  // Ilovada ham video SAYTDAN olinadi: serverda almashtirilsa, ilovani yangilash shart emas.
+  const videoSource = mediaUrl(media.courseOfferVideo);
+  const posterSource = mediaUrl(media.courseOfferPoster);
+  const [untilBonus, setUntilBonus] = useState<number | null>(() => secondsUntilBonus(COURSE_VIDEO_DURATION_SECONDS, 0, offer.revealSecondsBeforeEnd));
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const [offerLoading, setOfferLoading] = useState(false);
@@ -85,7 +86,7 @@ function WebCourseInfoPage() {
     if (!el) return;
     if (el.seeking) return;
     maxPlayed.current = Math.max(maxPlayed.current, el.currentTime);
-    const remaining = secondsUntilCourseBonus(el.duration, el.currentTime);
+    const remaining = secondsUntilBonus(el.duration, el.currentTime, offer.revealSecondsBeforeEnd);
     if (remaining !== null) setUntilBonus(remaining);
     if (remaining === 0 && !offerError) void reveal();
   };
@@ -102,7 +103,8 @@ function WebCourseInfoPage() {
     finally { setBuying(false); }
   };
   const openGuide = (tariffType: RussianTariffCode, welcomeOffer = false) => { video.current?.pause(); setBuyError(false); setGuide({ tariffType, welcomeOffer }); };
-  const guidePlan = guide && RUSSIAN_TARIFF_PLANS_RUB.find(plan => plan.code === guide.tariffType);
+  const guidePlan = guide && plans.find(plan => plan.code === guide.tariffType);
+  const guidePriceRub = guide?.welcomeOffer ? offer.finalPriceRub : guidePlan?.priceRub ?? 0;
   // A welcome offer that expires while the guide is open falls back to the regular tariff list.
   useEffect(() => { if (guide?.welcomeOffer && left <= 0) setGuide(null); }, [guide, left]);
   return <main className="min-h-[calc(100dvh-80px)] bg-[#F2F5FA] pb-2 text-[#0F172A]"><div className="course-info-shell">
@@ -115,8 +117,8 @@ function WebCourseInfoPage() {
         <span className="flex h-12 w-12 flex-col items-center justify-center rounded-xl border border-blue-100 bg-[#F2F5FF]"><span className="text-2xl font-bold leading-none">{untilBonus == null ? '—' : String(untilBonus % 60).padStart(2, '0')}</span><span className="mt-1 text-[9px] font-semibold leading-none text-slate-500">SEK</span></span>
       </span>
     </div>
-    <div className="course-info-player relative mx-auto aspect-video w-[calc(100%_-_32px)] overflow-hidden rounded-2xl bg-white ring-2 ring-white shadow-sm"><video ref={video} src={videoSource} poster="/videos/welcome-poster.jpg" className="h-full w-full object-contain" controls controlsList="noplaybackrate" playsInline preload="metadata" onSeeking={() => { tracker.onSeeking(); const el = video.current; if (el && el.currentTime > maxPlayed.current + 0.35) el.currentTime = maxPlayed.current; }} onDurationChange={sync} onLoadedData={sync} onLoadedMetadata={() => { applySpeed(); sync(); }} onTimeUpdate={() => { sync(); tracker.onTimeUpdate(); }} onEnded={() => { sync(); tracker.onEnded(); }} onPause={() => tracker.onPause()} onError={() => setMediaError(true)} onPlay={() => { applySpeed(); setNeedsPlay(false); tracker.onPlay(); }} onPlaying={() => setMediaError(false)} />
-      {(needsPlay || mediaError) && <img src="/videos/welcome-poster.jpg" alt="Kurs videosidan lavha" className="pointer-events-none absolute inset-0 h-full w-full object-contain bg-white" />}
+    <div className="course-info-player relative mx-auto aspect-video w-[calc(100%_-_32px)] overflow-hidden rounded-2xl bg-white ring-2 ring-white shadow-sm"><video ref={video} src={videoSource} poster={posterSource} className="h-full w-full object-contain" controls controlsList="noplaybackrate" playsInline preload="metadata" onSeeking={() => { tracker.onSeeking(); const el = video.current; if (el && el.currentTime > maxPlayed.current + 0.35) el.currentTime = maxPlayed.current; }} onDurationChange={sync} onLoadedData={sync} onLoadedMetadata={() => { applySpeed(); sync(); }} onTimeUpdate={() => { sync(); tracker.onTimeUpdate(); }} onEnded={() => { sync(); tracker.onEnded(); }} onPause={() => tracker.onPause()} onError={() => setMediaError(true)} onPlay={() => { applySpeed(); setNeedsPlay(false); tracker.onPlay(); }} onPlaying={() => setMediaError(false)} />
+      {(needsPlay || mediaError) && <img src={posterSource} alt="Kurs videosidan lavha" className="pointer-events-none absolute inset-0 h-full w-full object-contain bg-white" />}
       {needsPlay && !mediaError && <button onClick={() => void play()} aria-label="Videoni boshlash" className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg ring-8 ring-blue-500/25"><Play size={28} fill="currentColor" /></button>}
       <div className="absolute right-2 top-2 z-20">
         <button type="button" aria-label="Video tezligi" aria-expanded={speedMenuOpen} aria-controls="course-video-speeds"
@@ -136,7 +138,7 @@ function WebCourseInfoPage() {
     {mediaError && <p role="alert" className="p-4 text-center">Video yuklanmadi. <button className="underline" onClick={() => { setMediaError(false); video.current?.load(); }}>Qayta urinish</button></p>}
     {left <= 0 && <section aria-label="Tariflar" className="course-info-plans px-4 pb-2 pt-3">
       <fieldset disabled={buying} className="min-w-0"><legend className="mb-2 text-base font-bold">Tarifni tanlang</legend>
-        <div className="flex flex-col gap-2">{RUSSIAN_TARIFF_PLANS_RUB.map(plan => {
+        <div className="flex flex-col gap-2">{plans.map(plan => {
           const selected = selectedTariff === plan.code;
           const monthly = Math.round(plan.priceRub / plan.months);
           return <label key={plan.code} className={'relative flex min-h-[68px] cursor-pointer items-center gap-2 rounded-[22px] border-2 px-3 py-2 transition-colors ' + (selected ? 'border-blue-600 bg-[#F5F8FF]' : 'border-[#E2E8F0] bg-white hover:border-blue-300')}>
@@ -153,21 +155,21 @@ function WebCourseInfoPage() {
     </section>}
     {left > 0 && <section aria-label="Maxsus taklif" className="fr-offer">
       <div className="fr-ring" aria-hidden="true" />
-      <div className="fr-sticker" title="Olti oy uchun oylik RUB tarifiga nisbatan">−{Math.round((1 - offerPlan.priceRub / (monthlyPlan.priceRub * 6)) * 100)}%</div>
-      <div className="fr-head"><span className="fr-eyebrow">MAXSUS TAKLIF</span><h2 className="fr-title">+3 oy bepul</h2></div>
+      {offer.discountPercent > 0 && <div className="fr-sticker" title="Oylik RUB tarifiga nisbatan">−{offer.discountPercent}%</div>}
+      <div className="fr-head"><span className="fr-eyebrow">MAXSUS TAKLIF</span><h2 className="fr-title">{offer.freeMonths > 0 ? `+${offer.freeMonths} oy bepul` : 'Maxsus narx'}</h2></div>
       <div className="fr-prices">
-        <div className="fr-line"><span className="fr-new">{formatRubAmount(offerPlan.priceRub)} ₽</span><span className="fr-old">{formatRubAmount(monthlyPlan.priceRub * 6)} ₽</span></div>
-        <div className="fr-line"><span className="fr-new-sm">{formatRubAmount(offerPlan.priceUzs)} so'm</span><span className="fr-old-sm">{formatRubAmount(monthlyPlan.priceUzs * 6)} so'm</span></div>
+        <div className="fr-line"><span className="fr-new">{formatRubAmount(offer.finalPriceRub)} ₽</span><span className="fr-old">{formatRubAmount(offer.oldPriceRub)} ₽</span></div>
+        <div className="fr-line"><span className="fr-new-sm">{formatRubAmount(offer.finalPriceUzs)} so'm</span><span className="fr-old-sm">{formatRubAmount(offer.oldPriceUzs)} so'm</span></div>
       </div>
       <div className="fr-row"><span className="fr-label">Taklif tugashiga</span><div className="fr-timer" role="timer" aria-label="Taklif tugashiga"><span className="box">{String(Math.floor(left / 60)).padStart(2, '0')}</span><span className="sep">:</span><span className="box">{String(left % 60).padStart(2, '0')}</span></div></div>
-      <button disabled={buying} onClick={() => openGuide('three_month', true)} className="fr-cta">{buying ? '…' : 'Taklifdan foydalanish'}<ArrowRight size={20} strokeWidth={2.4} /></button>
+      <button disabled={buying} onClick={() => openGuide(offer.payTariff, true)} className="fr-cta">{buying ? '…' : 'Taklifdan foydalanish'}<ArrowRight size={20} strokeWidth={2.4} /></button>
     </section>}
     {offerLoading && <p role="status" className="px-4 pb-3 text-center">Taklif tayyorlanmoqda…</p>}
     {offerError && <p role="alert" className="px-4 pb-3 text-center text-red-700">Taklifni yuklab bo'lmadi. <button className="underline" onClick={() => void reveal()}>Qayta urinish</button></p>}
     {expiresAt && left === 0 && <div className="px-4 pb-4 text-center"><p>Taklif muddati tugadi.</p><button onClick={() => { requested.current = false; maxPlayed.current = 0; setOfferError(false); if (video.current) { video.current.currentTime = 0; sync(); void play(); } }} className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4"><RotateCcw size={18} />Qayta ko'rish</button></div>}
 
     {guide && guidePlan && <RussiaPaymentGuide
-      payLabel={'Sotib olish · ' + formatRubAmount(guidePlan.priceRub) + ' ₽'}
+      payLabel={'Sotib olish · ' + formatRubAmount(guidePriceRub) + ' ₽'}
       paying={buying}
       error={buyError}
       onPay={() => void purchase(guide.tariffType, guide.welcomeOffer)}

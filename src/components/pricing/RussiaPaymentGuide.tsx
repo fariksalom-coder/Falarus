@@ -2,12 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, Volume2, X } from 'lucide-react';
-import { resolveAssetUrl } from '../../api';
-import { isNativeApp } from '../../native/platform';
-
-// Serverdan olinadi — serverda almashtirilsa, ilovada ham yangilanadi.
-export const RUSSIA_PAYMENT_GUIDE_VIDEO = isNativeApp() ? '/payment-guide/russia.mp4' : (resolveAssetUrl('/payment-guide/russia.mp4') ?? '/payment-guide/russia.mp4');
-const RUSSIA_PAYMENT_GUIDE_POSTER = isNativeApp() ? '/payment-guide/russia.jpg' : (resolveAssetUrl('/payment-guide/russia.jpg') ?? '/payment-guide/russia.jpg');
+import { mediaUrl, useAppConfig } from '../../api/appConfig';
 
 const STEPS = [
   '«Sotib olish» tugmasini bosing — Rahmat to‘lov sahifasi ochiladi.',
@@ -26,6 +21,10 @@ type RussiaPaymentGuideProps = {
 /** Full-screen "how to pay from Russia" video shown before opening Rahmat checkout. */
 export default function RussiaPaymentGuide({ payLabel, paying, error, onPay, onClose }: RussiaPaymentGuideProps) {
   const video = useRef<HTMLVideoElement>(null);
+  // Video manzili bazadan; ilovada ham saytdan olinadi — serverda almashtirilsa, darhol yangilanadi.
+  const { media } = useAppConfig();
+  const RUSSIA_PAYMENT_GUIDE_VIDEO = mediaUrl(media.paymentGuideVideo);
+  const RUSSIA_PAYMENT_GUIDE_POSTER = mediaUrl(media.paymentGuidePoster);
   const [muted, setMuted] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
 

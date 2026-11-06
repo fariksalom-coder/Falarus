@@ -28,6 +28,7 @@ import {
 } from '../../shared/paymentsProofUrl.js';
 import { invalidateAccessCache } from './subscription.service.js';
 import { resolveRussianTariffQuote } from './promoPricing.service.js';
+import { getAppConfig } from './appConfig.service.js';
 import { canPurchaseWelcomeVideoOffer } from '../../shared/welcomeVideoOffer.js';
 import { recordPaymentEvent, extractRequestMeta } from '../lib/paymentEvents.js';
 import { queueReferralSource } from './referralProgram.service.js';
@@ -94,14 +95,21 @@ export async function createRahmatMulticardPayment(
     };
   }
   const productCode = rawProductCode;
-  const russianTariffType = isSubscriptionTariffType(tariffTypeRaw) ? tariffTypeRaw : null;
+  let russianTariffType = isSubscriptionTariffType(tariffTypeRaw) ? tariffTypeRaw : null;
   if (productCode === 'russian' && !russianTariffType) {
     return { status: 400, json: { error: 'tariff_type kerak: month, three_month, six_month' } };
   }
   const welcomeOfferRequested = body.welcome_offer === true;
-  if (welcomeOfferRequested && (productCode !== 'russian' || russianTariffType !== 'three_month')) {
+  if (welcomeOfferRequested && productCode !== 'russian') {
     return { status: 400, json: { error: 'INVALID_WELCOME_OFFER' } };
   }
+  /*
+   * MAXSUS TAKLIF SHARTLARI BAZADAN (admin panel): qaysi tarif narxi to'lanadi,
+   * qaysi muddat beriladi va taklifning o'z narxi. Mijoz yuborgan tarif
+   * e'tiborga olinmaydi — eski ilovalar doim `three_month` yuboradi.
+   */
+  const welcomeOffer = welcomeOfferRequested ? (await getAppConfig(supabase)).welcomeOffer : null;
+  if (welcomeOffer) russianTariffType = welcomeOffer.payTariff;
   let welcomeOfferPaymentId: number | null = null;
   if (welcomeOfferRequested) {
     const { data: welcomeOffer, error: offerErr } = await supabase
@@ -221,12 +229,15 @@ export async function createRahmatMulticardPayment(
       rate_as_of: quote.rateAsOf ?? null,
       pricing_source: 'rub_catalog_x_cbu',
     };
-    if (welcomeOfferRequested) {
+    if (welcomeOffer) {
+      amount = welcomeOffer.finalPriceUzs;
+      discountAmount = Math.max(0, baseAmount - amount);
       discountMeta = {
         ...discountMeta,
         welcome_video_offer: true,
-        activation_tariff_type: 'six_month',
-        offer_label: 'three_month_price_for_six_month_access',
+        activation_tariff_type: welcomeOffer.accessTariff,
+        offer_label: `${welcomeOffer.payTariff}_price_for_${welcomeOffer.accessTariff}_access`,
+        offer_price_uzs: welcomeOffer.finalPriceUzs,
       };
     }
   } else if (productCode === 'teacher_lesson') {
@@ -293,7 +304,7 @@ export async function createRahmatMulticardPayment(
   }
   const invoiceId = String(paymentId);
   const amountTiyin = soumToTiyin(amount);
-  const ofdName = getPaymentDisplayLabel(productCode, productCode === 'russian' ? (welcomeOfferRequested ? 'six_month' : russianTariffType) : null);
+  const ofdName = getPaymentDisplayLabel(productCode, productCode === 'russian' ? (welcomeOffer ? welcomeOffer.accessTariff : russianTariffType) : null);
   const ofd: MulticardOfdLine[] = [
     {
       qty: 1,

@@ -1,6 +1,6 @@
 import type { DbClient } from '../types/dbClient';
 import type { SubscriptionTariffType } from '../../shared/paymentProducts.js';
-import { getRussianTariffPlanRub } from '../../shared/russianTariffs.js';
+import { getAppConfig } from './appConfig.service.js';
 import { getRubToUzsRate } from './rubUzsRate.service.js';
 
 type Currency = 'UZS' | 'RUB' | 'USD';
@@ -19,10 +19,9 @@ export type RussianTariffQuote = {
 };
 
 /**
- * Rus tili tarifi:
- *  — RUB: katalog (3000 / 4000 / 6000)
- *  — UZS: qat’iy katalog (400_000 / 530_000 / 790_000) — UI dagi summa bilan bir xil
- *  — boshqa: DB `tariff_prices` (legacy)
+ * Rus tili tarifi — narx BAZADAN (`tariff_prices`, admin panelda o'zgartiriladi):
+ *  — RUB va UZS: sahifada ko'rsatilgan summa bilan bir xil (`/api/app-config`);
+ *  — noma'lum tarif: DB `tariff_prices` (legacy).
  */
 export async function resolveRussianTariffQuote(
   supabase: DbClient,
@@ -33,7 +32,7 @@ export async function resolveRussianTariffQuote(
   }
 ): Promise<RussianTariffQuote> {
   void params.userId;
-  const plan = getRussianTariffPlanRub(params.tariffType);
+  const plan = (await getAppConfig(supabase)).plans.find((p) => p.code === params.tariffType) ?? null;
 
   if (plan && params.currency === 'RUB') {
     return {

@@ -19,7 +19,7 @@ import {
   type PaymentProductCode,
   type TeacherListingPlanCode,
 } from '../../shared/paymentProducts';
-import { getRussianTariffPlanRub } from '../../shared/russianTariffs';
+import { useAppConfig } from '../api/appConfig';
 import {
   Copy,
   X,
@@ -82,6 +82,7 @@ export default function PaymentPage() {
 
 function WebPaymentPage() {
   const navigate = useNavigate();
+  const { plans: tariffPlans } = useAppConfig();
   const location = useLocation();
   const { t } = useLocale();
   const { token } = useAuth();
@@ -169,7 +170,7 @@ function WebPaymentPage() {
               }
         );
         if (isRussianCourse && tariffType) {
-          const rubPlan = getRussianTariffPlanRub(tariffType);
+          const rubPlan = tariffPlans.find((p) => p.code === tariffType) ?? null;
           if (currency === 'RUB' && rubPlan) {
             setPrice(rubPlan.priceRub);
             return;
@@ -196,7 +197,7 @@ function WebPaymentPage() {
         setPrice(null);
       })
       .finally(() => setDetailsLoading(false));
-  }, [currency, isRussianCourse, isTeacherListing, isTeacherTrial, listingPlanCode, productCode, tariffType, token]);
+  }, [currency, isRussianCourse, isTeacherListing, isTeacherTrial, listingPlanCode, productCode, tariffType, token, tariffPlans]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

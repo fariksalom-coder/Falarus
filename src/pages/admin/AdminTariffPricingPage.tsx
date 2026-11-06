@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getTariffPrices, updateTariffPrice, type TariffPriceRow } from '../../api/admin';
+import { getAppSettings, getTariffPrices, updateAppSetting, updateTariffPrice, type AdminAppSettings, type TariffPriceRow } from '../../api/admin';
+import type { AppMediaSettings, WelcomeOfferSettings } from '../../../shared/appConfig';
 import { RUSSIAN_TARIFF_PLANS_RUB } from '../../../shared/russianTariffs';
 import { RUB_UZS_FALLBACK_RATE, rubToUzs } from '../../../shared/rubUzs';
-import { AlertCircle, Pencil, X } from 'lucide-react';
+import { AlertCircle, Check, Pencil, X } from 'lucide-react';
 
 const TARIFF_TYPES = ['month', 'three_month', 'six_month'] as const;
 type TariffType = (typeof TARIFF_TYPES)[number];
@@ -104,8 +105,9 @@ export default function AdminTariffPricingPage() {
     <div>
       <h1 className="text-2xl font-semibold text-app-text mb-2">Tarif narxlari</h1>
       <p className="mb-4 max-w-2xl text-sm text-app-text-muted">
-        Asosiy narx — <strong>RUB</strong> (1 / 3 / 6 oy). Rahmat to‘lovi so‘mda yechiladi:
-        RUB × Markaziy bank kursi. UZS ustuni ma’lumot / fallback uchun.
+        Rahmat to‘lovi <strong>UZS</strong> ustunidagi summani yechadi; <strong>RUB</strong> — sahifada
+        ko‘rsatiladigan narx. O‘zgarish sayt va mobil ilovalarda ~1 daqiqada ko‘rinadi —
+        ilovani yangilash shart emas.
       </p>
 
       {error && (
@@ -125,7 +127,7 @@ export default function AdminTariffPricingPage() {
                 <tr>
                   <th className="text-left py-3 px-4 font-medium text-app-text-muted">Tarif</th>
                   <th className="text-right py-3 px-4 font-medium text-app-text-muted">RUB</th>
-                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">UZS (ref.)</th>
+                  <th className="text-right py-3 px-4 font-medium text-app-text-muted">UZS (to‘lov)</th>
                   <th className="text-right py-3 px-4 font-medium text-app-text-muted">Amallar</th>
                 </tr>
               </thead>
@@ -159,6 +161,8 @@ export default function AdminTariffPricingPage() {
         )}
       </div>
 
+      <AppSettingsPanels />
+
       {editModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
@@ -182,7 +186,7 @@ export default function AdminTariffPricingPage() {
               {CURRENCIES.map((curr) => (
                 <div key={curr}>
                   <label className="block text-sm font-medium text-app-text mb-1">
-                    {curr === 'RUB' ? 'RUB (asosiy)' : 'UZS (ma’lumot)'}
+                    {curr === 'RUB' ? 'RUB (sahifadagi narx)' : 'UZS (yechiladigan summa)'}
                   </label>
                   <input
                     type="number"
@@ -223,6 +227,171 @@ export default function AdminTariffPricingPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * MAXSUS TAKLIF VA VIDEOLAR — bazada saqlanadi, ilova yangilanmasdan o'zgaradi.
+ * ------------------------------------------------------------------ */
+
+const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-app-text">{label}</span>
+      {children}
+      {hint ? <span className="mt-1 block text-xs text-app-text-muted">{hint}</span> : null}
+    </label>
+  );
+}
+
+function SaveRow({ saving, saved, onSave }: { saving: boolean; saved: boolean; onSave: () => void }) {
+  return (
+    <div className="mt-4 flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        className="rounded-lg bg-app-primary px-4 py-2 text-sm font-medium text-white hover:bg-app-primary-deep disabled:opacity-50"
+      >
+        {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+      </button>
+      {saved ? (
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
+          <Check className="h-4 w-4" /> Saqlandi
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function AppSettingsPanels() {
+  const [settings, setSettings] = useState<AdminAppSettings | null>(null);
+  const [offer, setOffer] = useState<WelcomeOfferSettings | null>(null);
+  const [media, setMedia] = useState<AppMediaSettings | null>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState<'offer' | 'media' | null>(null);
+  const [saved, setSaved] = useState<'offer' | 'media' | null>(null);
+
+  function load() {
+    getAppSettings()
+      .then((s) => {
+        setSettings(s);
+        const w = s.welcome_offer;
+        setOffer({
+          eligibilityMinutes: w.eligibilityMinutes,
+          offerMinutes: w.offerMinutes,
+          revealSecondsBeforeEnd: w.revealSecondsBeforeEnd,
+          payTariff: w.payTariff,
+          accessTariff: w.accessTariff,
+          priceUzs: w.priceUzs,
+          priceRub: w.priceRub,
+        });
+        setMedia(s.media);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : 'Sozlamalar yuklanmadi'));
+  }
+  useEffect(load, []);
+
+  async function save(key: 'offer' | 'media') {
+    setBusy(key);
+    setError('');
+    setSaved(null);
+    try {
+      if (key === 'offer' && offer) await updateAppSetting('welcome_offer', offer);
+      if (key === 'media' && media) await updateAppSetting('media', media);
+      setSaved(key);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Saqlanmadi');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (!offer || !media || !settings) {
+    return error ? <p className="mt-6 text-sm text-red-700">{error}</p> : null;
+  }
+  const view = settings.welcome_offer;
+  const num = (v: string) => (v.trim() === '' ? null : Number(v));
+
+  return (
+    <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      {error ? <p className="text-sm text-red-700 lg:col-span-2">{error}</p> : null}
+
+      <section className="rounded-xl border border-app-border bg-app-surface p-5">
+        <h2 className="text-lg font-semibold text-app-text">Maxsus taklif (video oxirida)</h2>
+        <p className="mb-4 mt-1 text-sm text-app-text-muted">
+          Hozir: <strong>{view.finalPriceRub.toLocaleString()} ₽</strong> /{' '}
+          <strong>{view.finalPriceUzs.toLocaleString()} so‘m</strong> —{' '}
+          {TARIFF_LABELS[view.accessTariff as TariffType]} kirish
+          {view.freeMonths > 0 ? ` (+${view.freeMonths} oy bepul)` : ''}, −{view.discountPercent}%.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Taklif davomiyligi (daqiqa)" hint="Bonus ochilgach sotib olish uchun vaqt">
+            <input type="number" min={1} className={inputCls} value={offer.offerMinutes}
+              onChange={(e) => setOffer({ ...offer, offerMinutes: Number(e.target.value) })} />
+          </Field>
+          <Field label="Bonus ochilishi (soniya)" hint="Video tugashiga shuncha soniya qolganda">
+            <input type="number" min={0} className={inputCls} value={offer.revealSecondsBeforeEnd}
+              onChange={(e) => setOffer({ ...offer, revealSecondsBeforeEnd: Number(e.target.value) })} />
+          </Field>
+          <Field label="To‘lanadigan tarif narxi">
+            <select className={inputCls} value={offer.payTariff}
+              onChange={(e) => setOffer({ ...offer, payTariff: e.target.value as TariffType })}>
+              {TARIFF_TYPES.map((t) => <option key={t} value={t}>{TARIFF_LABELS[t]}</option>)}
+            </select>
+          </Field>
+          <Field label="Beriladigan muddat">
+            <select className={inputCls} value={offer.accessTariff}
+              onChange={(e) => setOffer({ ...offer, accessTariff: e.target.value as TariffType })}>
+              {TARIFF_TYPES.map((t) => <option key={t} value={t}>{TARIFF_LABELS[t]}</option>)}
+            </select>
+          </Field>
+          <Field label="Taklif narxi, so‘m (ixtiyoriy)" hint="Bo‘sh — to‘lanadigan tarif narxi olinadi">
+            <input type="number" min={0} className={inputCls} value={offer.priceUzs ?? ''}
+              onChange={(e) => setOffer({ ...offer, priceUzs: num(e.target.value) })} />
+          </Field>
+          <Field label="Taklif narxi, ₽ (ixtiyoriy)" hint="Bo‘sh — to‘lanadigan tarif narxi olinadi">
+            <input type="number" min={0} className={inputCls} value={offer.priceRub ?? ''}
+              onChange={(e) => setOffer({ ...offer, priceRub: num(e.target.value) })} />
+          </Field>
+          <Field label="Yangi foydalanuvchi oynasi (daqiqa)" hint="Ro‘yxatdan o‘tgandan keyin video ketma-ketligi ochiq turadi">
+            <input type="number" min={1} className={inputCls} value={offer.eligibilityMinutes}
+              onChange={(e) => setOffer({ ...offer, eligibilityMinutes: Number(e.target.value) })} />
+          </Field>
+        </div>
+        <SaveRow saving={busy === 'offer'} saved={saved === 'offer'} onSave={() => void save('offer')} />
+      </section>
+
+      <section className="rounded-xl border border-app-border bg-app-surface p-5">
+        <h2 className="text-lg font-semibold text-app-text">Videolar</h2>
+        <p className="mb-4 mt-1 text-sm text-app-text-muted">
+          Faylni serverda <code>public/videos</code> yoki <code>public/payment-guide</code> ga qo‘ying va
+          shu yerda yo‘lini yozing. Bir xil nom bilan almashtirilgan fayl ham ilovada o‘zi yangilanadi.
+        </p>
+        <div className="grid gap-4">
+          <Field label="Kurs videosi (bonusli)">
+            <input className={inputCls} value={media.courseOfferVideo}
+              onChange={(e) => setMedia({ ...media, courseOfferVideo: e.target.value })} />
+          </Field>
+          <Field label="Kurs videosi muqovasi">
+            <input className={inputCls} value={media.courseOfferPoster}
+              onChange={(e) => setMedia({ ...media, courseOfferPoster: e.target.value })} />
+          </Field>
+          <Field label="To‘lov yo‘riqnomasi videosi">
+            <input className={inputCls} value={media.paymentGuideVideo}
+              onChange={(e) => setMedia({ ...media, paymentGuideVideo: e.target.value })} />
+          </Field>
+          <Field label="To‘lov yo‘riqnomasi muqovasi">
+            <input className={inputCls} value={media.paymentGuidePoster}
+              onChange={(e) => setMedia({ ...media, paymentGuidePoster: e.target.value })} />
+          </Field>
+        </div>
+        <SaveRow saving={busy === 'media'} saved={saved === 'media'} onSave={() => void save('media')} />
+      </section>
     </div>
   );
 }

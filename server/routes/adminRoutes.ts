@@ -24,6 +24,7 @@ import { readAdminAttention } from '../services/adminAttention.service.js';
 import { loadUserManageSnapshot } from '../services/adminUserManage.service.js';
 import { createReferralAdminRoutes } from './referralAdminRoutes.js';
 import { createAdminNotificationRoutes } from './notificationRoutes.js';
+import { APP_SETTING_KEYS, getAppConfig, saveAppSetting, type AppSettingKey } from '../services/appConfig.service.js';
 
 const TEACHER_OWNER_SELECT = [
   'user_id',
@@ -488,6 +489,27 @@ export function createAdminRoutes(supabase: DbClient): Router {
   router.delete('/payment-methods/:id', (req, res, next) => ctrl.deletePaymentMethod(req, res).catch(next));
   router.get('/tariff-prices', (req, res, next) => ctrl.getTariffPrices(req, res).catch(next));
   router.put('/tariff-prices', (req, res, next) => ctrl.updateTariffPrice(req, res).catch(next));
+  // Maxsus taklif (vaqt, narx) va videolar — ilova yangilanmasdan o'zgaradi.
+  router.get('/app-settings', async (_req, res, next) => {
+    try {
+      const config = await getAppConfig(supabase);
+      res.json({ welcome_offer: config.welcomeOffer, media: config.media, plans: config.plans });
+    } catch (e) {
+      next(e);
+    }
+  });
+  router.put('/app-settings/:key', async (req: any, res, next) => {
+    try {
+      const key = String(req.params.key);
+      if (!(APP_SETTING_KEYS as readonly string[]).includes(key)) {
+        return res.status(400).json({ error: 'Noma’lum sozlama' });
+      }
+      const saved = await saveAppSetting(supabase, key as AppSettingKey, req.body ?? {}, `admin:${req.adminId ?? '?'}`);
+      res.json({ success: true, value: saved });
+    } catch (e) {
+      next(e);
+    }
+  });
 
   // Video dars xonalari ("met"): admin yaratadi va o'qituvchilarga yo'naltiradi.
 

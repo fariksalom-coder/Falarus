@@ -59,6 +59,37 @@ export function getRussianTariffPlanRub(code: string | null | undefined): Russia
   return RUSSIAN_TARIFF_PLANS_RUB.find((p) => p.code === code) ?? null;
 }
 
+export const RUSSIAN_TARIFF_CODES: readonly RussianTariffCode[] = ['month', 'three_month', 'six_month'];
+
+export function isRussianTariffCode(value: unknown): value is RussianTariffCode {
+  return value === 'month' || value === 'three_month' || value === 'six_month';
+}
+
+/** Bazadagi narxlar (admin panel). Berilmagan qiymat — koddagi standart narx. */
+export type RussianTariffPriceOverrides = Partial<Record<RussianTariffCode, { rub?: number; uzs?: number }>>;
+
+/**
+ * Tariflarni BAZADAGI narxlardan quradi.
+ *
+ * "Tejamkorlik" va chegirma foizi 1 oylik RUB narxiga nisbatan hisoblanadi —
+ * admin 1 oylik narxni o'zgartirsa, 3/6 oylik chegirma ham o'zi qayta hisoblanadi.
+ */
+export function buildRussianTariffPlans(overrides: RussianTariffPriceOverrides = {}): RussianTariffRubPlan[] {
+  const valid = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0;
+  const priced = RUSSIAN_TARIFF_PLANS_RUB.map((plan) => ({
+    ...plan,
+    priceRub: valid(overrides[plan.code]?.rub) ? Math.round(overrides[plan.code]!.rub!) : plan.priceRub,
+    priceUzs: valid(overrides[plan.code]?.uzs) ? Math.round(overrides[plan.code]!.uzs!) : plan.priceUzs,
+  }));
+  const monthlyRub = priced.find((p) => p.code === 'month')?.priceRub ?? RUSSIAN_MONTHLY_REFERENCE_RUB;
+  return priced.map((plan) => {
+    const wasRub = monthlyRub * plan.months;
+    const savingsRub = Math.max(0, wasRub - plan.priceRub);
+    const discountPercent = wasRub > 0 && savingsRub > 0 ? Math.round((savingsRub / wasRub) * 100) : 0;
+    return { ...plan, wasRub, savingsRub, discountPercent };
+  });
+}
+
 export function formatRubAmount(n: number): string {
   return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }

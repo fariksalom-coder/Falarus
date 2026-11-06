@@ -1,3 +1,4 @@
+import { useAppConfig } from '../api/appConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Info } from 'lucide-react';
@@ -11,8 +12,8 @@ import { openRahmatCheckout } from '../api/rahmat';
 import {
   formatRubAmount,
   formatRussianTariffUzsMing,
-  RUSSIAN_TARIFF_PLANS_RUB,
   type RussianTariffCode,
+  type RussianTariffRubPlan,
 } from '../../shared/russianTariffs';
 
 const BENEFIT_KEYS = [
@@ -71,10 +72,11 @@ const VOCAB_STEPS = [
 ] as const;
 
 function buildRubPlans(
+  tariffPlans: RussianTariffRubPlan[],
   features: string[],
   popularLabel: string,
 ): PlanCard[] {
-  return RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {
+  return tariffPlans.map((plan) => {
     const perMonth = Math.round(plan.priceRub / plan.months);
     const highlighted = plan.code === 'three_month';
     const hasSavings = plan.savingsRub > 0;
@@ -118,9 +120,11 @@ function WebPricingPage() {
   const [buyingTariff, setBuyingTariff] = useState<RussianTariffCode | null>(null);
 
   const benefits = useMemo(() => BENEFIT_KEYS.map((key) => t(key)), [t]);
+  // Narxlar bazadan (admin panel) — ilova yangilanmasdan o'zgaradi.
+  const { plans: tariffPlans } = useAppConfig();
   const plans = useMemo(
-    () => buildRubPlans(benefits, t('payment.popular')),
-    [benefits, t],
+    () => buildRubPlans(tariffPlans, benefits, t('payment.popular')),
+    [tariffPlans, benefits, t],
   );
 
   const handleSelectPlan = (plan: PlanCard) => {

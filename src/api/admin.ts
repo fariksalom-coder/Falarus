@@ -660,6 +660,23 @@ export type TariffPriceRow = {
   updated_at: string;
 };
 
+/** Maxsus taklif va videolar — ilova yangilanmasdan o'zgaradi (`/api/app-config`). */
+export type AdminAppSettings = {
+  welcome_offer: import('../../shared/appConfig').WelcomeOfferView;
+  media: import('../../shared/appConfig').AppMediaSettings;
+};
+
+export async function getAppSettings(): Promise<AdminAppSettings> {
+  return adminApi<AdminAppSettings>('/app-settings');
+}
+
+export async function updateAppSetting(
+  key: 'welcome_offer' | 'media',
+  value: Record<string, unknown>,
+): Promise<void> {
+  await adminApi(`/app-settings/${key}`, { method: 'PUT', body: JSON.stringify(value) });
+}
+
 export async function getTariffPrices(): Promise<TariffPriceRow[]> {
   return adminApi<TariffPriceRow[]>('/tariff-prices');
 }

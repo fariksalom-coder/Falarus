@@ -24,7 +24,8 @@ import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 import PricingCard from '../components/pricing/PricingCard';
 import { getLegalEntityMeta, LEGAL_PATHS } from '../config/legalPublic';
 import { useAuth } from '../context/AuthContext';
-import { formatRubAmount, formatRussianTariffUzsMing, RUSSIAN_TARIFF_PLANS_RUB } from '../../shared/russianTariffs';
+import { formatRubAmount, formatRussianTariffUzsMing } from '../../shared/russianTariffs';
+import { useAppConfig } from '../api/appConfig';
 
 type LanguageCode = 'en' | 'uz' | 'ru' | 'kk' | 'tg' | 'ky';
 type NavKey = 'home' | 'about' | 'certificates' | 'pricing' | 'contact';
@@ -946,6 +947,7 @@ export default function LandingPage() {
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const { plans: tariffPlans } = useAppConfig();
 
   if (user) return <Navigate to="/" replace />;
 
@@ -1363,7 +1365,7 @@ export default function LandingPage() {
             <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.pricingIntro.title}</h2>
             <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.pricingIntro.description}</p>
             <div className="mx-auto mt-10 grid max-w-[960px] items-stretch gap-6 pt-4 sm:mt-12 sm:grid-cols-3 sm:gap-5">
-              {RUSSIAN_TARIFF_PLANS_RUB.map((plan) => {
+              {tariffPlans.map((plan) => {
                 const hasSavings = plan.savingsRub > 0;
                 const perMonth = Math.round(plan.priceRub / plan.months);
                 const labelUzs = formatRussianTariffUzsMing(plan.priceUzs);

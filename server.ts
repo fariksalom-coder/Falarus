@@ -77,6 +77,7 @@ import { createIpRateLimitMiddleware, enforceRateLimit } from './server/lib/rate
 import { routePartnerRequest } from './server/services/partner.service.ts';
 import { createClickMerchantRoutes, createPaymentRoutes } from './server/routes/paymentRoutes.ts';
 import { createWelcomeVideoOfferRoutes } from './server/routes/welcomeVideoOfferRoutes.ts';
+import { createAppConfigRoutes } from './server/routes/appConfigRoutes.ts';
 import { createUserJourneyRoutes, noteLogin } from './server/routes/userJourneyRoutes.ts';
 import { runClickAutoRenewalCron } from './server/services/clickCardToken.service.ts';
 import { runClickFiscalRetryCron } from './server/services/clickFiscal.service.ts';
@@ -1283,6 +1284,7 @@ async function startServer() {
   // Payment submission (manual proof + Click)
   app.use('/api/payments', createPaymentRoutes(supabase, authenticate));
   app.use('/api', createWelcomeVideoOfferRoutes(supabase, authenticate));
+  app.use('/api', createAppConfigRoutes(supabase));
   // Foydalanuvchi yo'li: 0-kun qadamlari va kurs videosini ko'rish (admin hisoboti uchun)
   app.use('/api', createUserJourneyRoutes(authenticate));
   // Bildirishnomalar: kirish qutisi (matn + ovoz) va mobil ilova push tokeni.
@@ -3325,6 +3327,31 @@ async function startServer() {
       const q = req.originalUrl.slice(req.path.length);
       res.redirect(301, `${LENDING_YOLI}/${q}`);
     });
+    /*
+     * ALMASHTIRILADIGAN VIDEOLAR — `public/` dan TO'G'RIDAN-TO'G'RI.
+     *
+     * Ilgari ular `dist` dan "immutable, 7 kun" bilan berilardi: serverda fayl
+     * almashtirilsa ham telefon bir hafta eskisini ko'rsatardi, yangisi esa
+     * faqat qayta build qilingandan keyin chiqardi. Endi faylni `public/videos`
+     * ga qo'yish kifoya. `/api/app-config` manzilga `?v=<fayl versiyasi>`
+     * qo'shadi — versiyali manzil uzoq keshlanadi, versiyasizi tez-tez tekshiriladi.
+     *
+     * CORP `cross-origin`: mobil ilova (boshqa origin) videoni saytdan o'qiy olsin.
+     */
+    for (const mediaDir of ['videos', 'payment-guide']) {
+      app.use(
+        `/${mediaDir}`,
+        (req, res, next) => {
+          res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+          res.setHeader(
+            'Cache-Control',
+            req.query.v ? 'public, max-age=31536000, immutable' : 'public, max-age=300, must-revalidate',
+          );
+          next();
+        },
+        express.static(path.join('public', mediaDir), { redirect: false, fallthrough: true }),
+      );
+    }
     app.use(express.static('dist', {
       redirect: false,
       setHeaders(res, filePath) {

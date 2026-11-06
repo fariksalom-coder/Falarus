@@ -11,9 +11,14 @@ export function canPurchaseWelcomeVideoOffer(offer: {
     && isWelcomeVideoOfferOpen(offer.offer_expires_at!, now);
 }
 
-export function isWelcomeVideoSequenceEligible(registeredAt: string | number | Date, now = Date.now()): boolean {
+/** `eligibilityMs` — admin panelda sozlanadi (`app_settings.welcome_offer`). */
+export function isWelcomeVideoSequenceEligible(
+  registeredAt: string | number | Date,
+  now = Date.now(),
+  eligibilityMs = WELCOME_VIDEO_ELIGIBILITY_MS,
+): boolean {
   const registeredMs = registeredAt instanceof Date ? registeredAt.getTime() : typeof registeredAt === 'number' ? registeredAt : Date.parse(registeredAt);
-  return Number.isFinite(registeredMs) && now >= registeredMs && now - registeredMs <= WELCOME_VIDEO_ELIGIBILITY_MS;
+  return Number.isFinite(registeredMs) && now >= registeredMs && now - registeredMs <= eligibilityMs;
 }
 
 export function isWelcomeVideoOfferOpen(expiresAt: string | number | Date, now = Date.now()): boolean {
@@ -21,6 +26,7 @@ export function isWelcomeVideoOfferOpen(expiresAt: string | number | Date, now =
   return Number.isFinite(expiresMs) && now < expiresMs;
 }
 
-export function getWelcomeVideoOfferExpiresAt(completedAt = Date.now()): string {
-  return new Date(completedAt + WELCOME_VIDEO_OFFER_MS).toISOString();
+/** `offerMs` — taklif davomiyligi, admin panelda sozlanadi. */
+export function getWelcomeVideoOfferExpiresAt(completedAt = Date.now(), offerMs = WELCOME_VIDEO_OFFER_MS): string {
+  return new Date(completedAt + offerMs).toISOString();
 }
