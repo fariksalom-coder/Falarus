@@ -41,7 +41,9 @@ const config: CapacitorConfig = {
     ],
     allowMixedContent: false,
     backgroundColor: '#0B2A6B',
-    adjustMarginsForEdgeToEdge: 'auto',
+    // 'auto' faqat Android 15+ da ishlaydi; eski telefonlarda WebView status-bar ostiga
+    // kirib, yuqoridagi tugmalar (masalan, til tanlash) kesilardi. Har doim chegara qo'yamiz.
+    adjustMarginsForEdgeToEdge: 'force',
     webContentsDebuggingEnabled: false,
     buildOptions: {
       releaseType: 'APK',
