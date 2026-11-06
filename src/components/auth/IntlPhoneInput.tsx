@@ -29,9 +29,16 @@ type Props = {
   initialCountry?: 'uz' | 'ru' | 'kg' | 'tj';
 };
 
-/**
- * UZ / RU / TJ / KG only — mirrors {@link shared/phoneE164} rules server-side.
+/*
+ * MAMLAKATLAR TARTIBI.
+ *
+ * Tepada — asosiy auditoriya (O'zbekiston, Rossiya, Tojikiston, Qirg'iziston).
+ * Ostida — tez-tez so'raladiganlar (Turkmaniston, Ukraina, Yevropa, AQSh...),
+ * keyin qolgan barcha mamlakatlar alifbo bo'yicha. Ro'yxat uzun bo'lgani
+ * uchun qidiruv yoqilgan. Server ham istalgan haqiqiy raqamni qabul qiladi
+ * ({@link shared/phoneE164}).
  */
+const POPULAR_COUNTRIES = ['tm', 'kz', 'ua', 'az', 'by', 'tr', 'de', 'us', 'gb', 'kr'] as const;
 export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function IntlPhoneInput(
   { disabled, className = '', inputClassName = '', error, onChange, initialCountry = 'uz' },
   ref
@@ -60,20 +67,17 @@ export const IntlPhoneInput = forwardRef<IntlPhoneInputHandle, Props>(function I
     const input = inputRef.current;
     if (!input) return;
 
-    const countryOrder =
-      initialCountry === 'ru'
-        ? (['ru', 'uz', 'tj', 'kg'] as const)
-        : (['uz', 'ru', 'tj', 'kg'] as const);
+    const primary =
+      initialCountry === 'ru' ? (['ru', 'uz', 'tj', 'kg'] as const) : (['uz', 'ru', 'tj', 'kg'] as const);
 
     const iti = intlTelInput(input, {
       initialCountry,
-      onlyCountries: ['uz', 'ru', 'kg', 'tj'],
-      countryOrder: [...countryOrder],
+      countryOrder: [...primary, ...POPULAR_COUNTRIES],
       separateDialCode: true,
       strictMode: true,
       nationalMode: false,
       formatAsYouType: true,
-      countrySearch: false,
+      countrySearch: true,
       fixDropdownWidth: true,
       useFullscreenPopup: false,
       containerClass: 'w-full',

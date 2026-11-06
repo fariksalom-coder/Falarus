@@ -31,3 +31,21 @@ test('parseContactIdentifier: email vs E.164 phone', () => {
   assert.equal(uz.ok, true);
   if (uz.ok) assert.equal(uz.phone, '+998901234567');
 });
+
+test('phone numbers from any country are accepted (Turkmenistan, Ukraine, Europe, USA)', async () => {
+  const { normalizePhoneInputToE164 } = await import('../shared/phoneE164');
+  for (const [raw, iso] of [
+    ['+99365123456', 'TM'],
+    ['+380501234567', 'UA'],
+    ['+4915123456789', 'DE'],
+    ['+12025550123', 'US'],
+  ] as const) {
+    const r = normalizePhoneInputToE164(raw);
+    assert.equal(r.invalid, false, raw);
+    assert.equal(r.countryIso, iso);
+  }
+  // Short local numbers keep the old Uzbek / Russian guesses.
+  assert.equal(normalizePhoneInputToE164('901234567').e164, '+998901234567');
+  assert.equal(normalizePhoneInputToE164('89161234567').e164, '+79161234567');
+  assert.equal(normalizePhoneInputToE164('+99812').invalid, true);
+});

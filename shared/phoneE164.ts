@@ -1,10 +1,16 @@
 /**
- * Phone normalization for UZ / RU / TJ / KG (+998, +7, +992, +996).
+ * Telefon raqamini E.164 ga keltirish — ISTALGAN mamlakat.
+ *
+ * Ilgari faqat UZ / RU / TJ / KG (+998, +7, +992, +996) qabul qilinardi.
+ * 2026-11-06 dan har qanday haqiqiy raqam qabul qilinadi (Turkmaniston,
+ * Ukraina, Yevropa, AQSh va boshqalar) — platforma SMS yubormaydi, ya'ni
+ * xorijiy raqam qo'shimcha xarajat keltirmaydi. Mamlakat kodisiz yozilgan
+ * qisqa raqamlar avvalgidek UZ/RU deb taxmin qilinadi.
  */
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
-/** Allowed ITU-T calling codes (without +). */
-export const ALLOWED_CALLING_CODES = new Set(['998', '7', '992', '996']);
+/** Asosiy mamlakatlar (ro'yxat tepasida turadi). Cheklov emas — boshqalar ham qabul qilinadi. */
+export const PRIMARY_CALLING_CODES = new Set(['998', '7', '992', '996']);
 
 export type PhoneNormalizeResult = {
   e164: string | null;
@@ -71,9 +77,6 @@ export function normalizePhoneInputToE164(raw: string): PhoneNormalizeResult {
 
   const pn = parsePhoneNumberFromString(t);
   if (!pn || !pn.isValid()) return invalid();
-
-  const cc = String(pn.countryCallingCode);
-  if (!ALLOWED_CALLING_CODES.has(cc)) return invalid();
 
   return {
     e164: pn.format('E.164'),
