@@ -1,7 +1,7 @@
 import { memo, useEffect, useState, type MutableRefObject, type RefObject } from 'react';
 import type { Stroke } from '../../../shared/lessonRoom';
 import { Trash2 } from 'lucide-react';
-import { INK_W, TEXT_FONT, TEXT_LINE, strokePath, textBox, textLines, textMaxWidth } from './ink';
+import { INK_W, TEXT_FONT, TEXT_LINE, strokePath, textLines, textMaxWidth } from './ink';
 
 /**
  * Sahifa ustidagi qatlam: saqlangan chizmalar, hozir chizilayotgan chiziqlar (o'ziniki va
@@ -88,8 +88,6 @@ export type TextEditor = {
   onDelete: () => void;
   /** Tahrirlanayotgan yoki surilayotgan eski matn — doskada vaqtincha ko'rinmaydi. */
   hiddenId: string | null;
-  /** Matn asbobida: bosib tahrirlash/surish mumkin bo'lgan matnlar. */
-  editableIds: Set<string>;
 };
 
 export function InkLayer({ ratio, strokes, live, laser, rootRef, editor }: {
@@ -118,18 +116,6 @@ export function InkLayer({ ratio, strokes, live, laser, rootRef, editor }: {
     <div ref={rootRef} className="pointer-events-none absolute inset-0">
       <svg viewBox={`0 0 ${INK_W} ${h}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
         {ordered.map((s) => (s.id === hiddenId ? null : <StrokeShape key={s.id} s={s} ratio={ratio} done />))}
-        {/* Matn asbobida: bosib tahrirlanadigan matnlar yengil ramkada — qayerni bosish kerakligi ko'rinsin. */}
-        {editor ? strokes.filter((s) => s.tool === 'text' && s.id !== hiddenId && editor.editableIds.has(s.id)).map((s) => {
-          const b = textBox(s, ratio);
-          const pad = 6;
-          return (
-            <rect
-              key={`edit-${s.id}`}
-              x={b.x * INK_W - pad} y={b.y * h - pad} width={b.w * INK_W + pad * 2} height={b.h * h + pad * 2}
-              rx={8} fill="none" stroke={s.color} strokeOpacity={0.45} strokeWidth={2} strokeDasharray="6 6"
-            />
-          );
-        }) : null}
         {live.map((s) => <StrokeShape key={`live-${s.id}`} s={s} ratio={ratio} done={false} />)}
       </svg>
       <LaserLayer trail={laser} ratio={ratio} />

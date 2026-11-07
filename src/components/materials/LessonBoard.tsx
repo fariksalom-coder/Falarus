@@ -217,7 +217,7 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
                 editor={ink.tool === 'text' ? {
                   at: ink.textAt, value: ink.textDraft, color: ink.textColor, size: ink.textSize, inputRef: ink.textInputRef,
                   onChange: ink.setTextDraft, onCommit: ink.commitText, onCancel: ink.cancelText, onDelete: ink.deleteText,
-                  hiddenId: ink.hiddenTextId, editableIds: ink.editableIds,
+                  hiddenId: ink.hiddenTextId,
                 } : null}
               />
             ) : undefined}

@@ -374,10 +374,6 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed, key, tool, toUnit, commitText, textAtPoint, overlay, send]);
 
-  const editableIds = useMemo(
-    () => new Set(key && state ? (state.ink[key] ?? []).filter(canEdit).map((st) => st.id) : []),
-    [state, key, canEdit],
-  );
 
   // Navbat ref'da; `undoCount` o'zgarganda komponent qayta chiziladi va tugma holati yangilanadi.
   const canUndo = undoCount > 0 && Boolean(key) && undoStack.current.some((e) => e.key === key);
@@ -416,7 +412,7 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     live, laser,
     textAt, textDraft, setTextDraft, commitText, cancelText, deleteText, textInputRef,
     textSize: editing?.size ?? TOOL_SIZE.text, textColor: editing?.color ?? penColor,
-    hiddenTextId: editing?.id ?? dragged?.from.id ?? null, editableIds,
+    hiddenTextId: editing?.id ?? dragged?.from.id ?? null,
     canUndo, undo, clear,
   };
 }
