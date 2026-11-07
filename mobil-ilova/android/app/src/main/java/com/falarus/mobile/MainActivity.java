@@ -134,18 +134,26 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
                 if (request == null) return;
-                boolean audio = false;
+                /*
+                 * Telefon ruxsatlari allaqachon berilgan bo'lsa — sahifa so'raganining HAMMASI beriladi.
+                 * Ilgari faqat mikrofon berilardi: video dars kamera+mikrofonni birga so'raganda
+                 * kamera tashlab yuborilib, o'quvchi o'zini qora ekranda ko'rardi.
+                 * Biror ruxsat hali berilmagan bo'lsa — Capacitor uni telefondan o'zi so'raydi.
+                 */
+                boolean allGranted = true;
+                boolean known = true;
                 for (String resource : request.getResources()) {
-                    if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) {
-                        audio = true;
-                        break;
+                    String perm;
+                    if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) perm = Manifest.permission.RECORD_AUDIO;
+                    else if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) perm = Manifest.permission.CAMERA;
+                    else { known = false; break; }
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, perm) != PackageManager.PERMISSION_GRANTED) {
+                        allGranted = false;
                     }
                 }
-                if (audio
-                        && ContextCompat.checkSelfPermission(
-                                MainActivity.this, Manifest.permission.RECORD_AUDIO)
-                        == PackageManager.PERMISSION_GRANTED) {
-                    webView.post(() -> request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE}));
+                if (known && allGranted && request.getResources().length > 0) {
+                    final String[] resources = request.getResources();
+                    webView.post(() -> request.grant(resources));
                     return;
                 }
                 super.onPermissionRequest(request);
