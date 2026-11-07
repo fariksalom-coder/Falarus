@@ -5,6 +5,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { initNativeGoogleAuth } from './googleAuth';
 import { isNativeApp } from './platform';
+import { startSystemBarsSync } from './systemBars';
 
 
 /**
@@ -47,6 +48,8 @@ export async function bootstrapNativeShell(): Promise<void> {
   } catch {
     /* emulator yoki eski WebView */
   }
+  // Android: yuqori va pastki tizim panellari sahifa rangida (oq sahifada oq, darsda to'q).
+  if (Capacitor.getPlatform() === 'android') startSystemBarsSync();
 
   try {
     await Keyboard.setResizeMode({ mode: KeyboardResize.Native });

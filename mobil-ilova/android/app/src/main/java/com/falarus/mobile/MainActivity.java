@@ -43,6 +43,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(NotificationSettingsPlugin.class);
+        registerPlugin(SystemBarsPlugin.class);
         super.onCreate(savedInstanceState);
         Window window = getWindow();
         // Barcha Android versiyalarida bir xil: oyna edge-to-edge, WebView chegaralarini Capacitor
