@@ -130,6 +130,13 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     sendDraft({ key, id: d.stroke.id, tool: d.stroke.tool as 'pen' | 'marker', color: d.stroke.color, size: d.stroke.size, pts: fresh });
   }, [key, sendDraft]);
 
+  /**
+   * Shu foydalanuvchi o'zgartira oladigan chizma: o'qituvchi — hammasini, o'quvchi — o'zinikini.
+   * Belgisiz (`by` yo'q) chizma — shu qurilmada hozirgina qo'shilgani: server belgini boshqalarga
+   * yuboradi, yozganning o'ziga esa faqat tasdiq keladi. Shuning uchun u ham «o'ziniki».
+   */
+  const mine = useCallback((st: Stroke) => role === 'teacher' || st.by !== 'teacher', [role]);
+
   /** O'chirgich tegib o'tgan chizmalar (o'quvchi faqat o'zinikini o'chira oladi). */
   const eraseAt = useCallback((x: number, y: number) => {
     const s = stateRef.current;
@@ -138,11 +145,11 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     // Sahifa nisbati qatlamning o'lchamidan (kattalashtirish ikkala tomonga bir xil ta'sir qiladi).
     const r = overlay.current?.getBoundingClientRect();
     const ratio = r && r.height ? r.width / r.height : 1;
-    const hits = (s.ink[key] ?? []).filter((st) => !already.has(st.id) && (role === 'teacher' || st.by === 'student') && hitStroke(st, x, y, ratio));
+    const hits = (s.ink[key] ?? []).filter((st) => !already.has(st.id) && mine(st) && hitStroke(st, x, y, ratio));
     if (!hits.length) return;
     erasing.current.push(...hits);
     send({ type: 'ink', key, remove: hits.map((h) => h.id) });
-  }, [key, overlay, role, send]);
+  }, [key, overlay, mine, send]);
 
   const draw: DrawHandlers | null = useMemo(() => {
     if (!allowed || !key || tool === 'view' || (tool === 'laser' && role !== 'teacher')) return null;
@@ -279,7 +286,7 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
   }, [tool, commitText]);
 
   /** O'quvchi faqat o'zi yozgan matnni o'zgartira oladi, o'qituvchi — hammasini. */
-  const canEdit = useCallback((st: Stroke) => st.tool === 'text' && (role === 'teacher' || st.by === 'student'), [role]);
+  const canEdit = useCallback((st: Stroke) => st.tool === 'text' && mine(st), [mine]);
 
   /** Bosilgan joydagi (eng ustidagi) o'zgartirsa bo'ladigan matn. */
   const textAtPoint = useCallback((x: number, y: number): Stroke | null => {
