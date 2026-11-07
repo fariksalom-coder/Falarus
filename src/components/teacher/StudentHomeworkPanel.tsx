@@ -21,7 +21,12 @@ const KIND = {
 } as const;
 
 const teacherName = (h: Homework) => `${h.teacher?.first_name ?? ''} ${h.teacher?.last_name ?? ''}`.trim() || 'Ustoz';
-const dateUz = (iso: string) => new Date(iso).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', timeZone: 'Asia/Tashkent' });
+const MONTHS_UZ = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
+/** «12-noyabr» (Toshkent vaqti). Brauzerlarning uz-UZ formati «M11 12» chiqaradi — qo'lda yoziladi. */
+const dateUz = (iso: string) => {
+  const d = new Date(new Date(iso).getTime() + 5 * 3600_000);
+  return `${d.getUTCDate()}-${MONTHS_UZ[d.getUTCMonth()]}`;
+};
 
 export default function StudentHomeworkPanel({ token, onCount }: { token: string; onCount?: (n: number) => void }) {
   const [list, setList] = useState<Homework[] | null>(null);
