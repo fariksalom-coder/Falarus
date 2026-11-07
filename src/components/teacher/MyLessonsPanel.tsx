@@ -32,8 +32,8 @@ function untilText(ms: number): string {
   return `${m} daqiqa`;
 }
 
-export default function MyLessonsPanel({ token, rows, reload, onFindTeacher, askReview = null }: {
-  token: string; rows: TeacherLesson[] | null; reload: () => void; onFindTeacher: () => void;
+export default function MyLessonsPanel({ token, rows, failed = false, reload, onFindTeacher, askReview = null }: {
+  token: string; rows: TeacherLesson[] | null; failed?: boolean; reload: () => void; onFindTeacher: () => void;
   /** Darsdan endigina chiqildi — shu dars o'tgan bo'lsa, baholash oynasi darhol ochiladi. */
   askReview?: number | null;
 }) {
@@ -85,6 +85,16 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher, ask
     setChat({ id: r.conversation_id, title: teacherName(l) });
   });
 
+  if (!rows && failed) {
+    return (
+      <section role="alert" className="flex flex-col items-center rounded-[24px] border border-app-border bg-app-surface px-6 py-10 text-center shadow-app-soft">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500"><AlertTriangle className="h-7 w-7" /></span>
+        <p className="mt-3 text-lg font-black text-app-text">Darslar yuklanmadi</p>
+        <p className="mt-1 max-w-xs text-sm text-app-text-muted">Internetni tekshiring va qayta urinib koʻring.</p>
+        <button type="button" onClick={reload} className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-app-primary-deep px-6 text-[15px] font-black text-white active:scale-[0.98]">Qayta urinish</button>
+      </section>
+    );
+  }
   if (!rows) return <div className="h-40 animate-pulse rounded-[24px] bg-app-surface" aria-busy="true" />;
   if (!rows.length) {
     return (

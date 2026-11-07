@@ -77,10 +77,17 @@ export default function TeachersPage() {
     setError('');
     listMarketTeachers(token).then(setTeachers).catch((e: Error) => setError(e.message));
   }, [token]);
+  // Yuklanmasa «darsingiz yoʻq» deb koʻrsatilmaydi: toʻlangan darsi bor oʻquvchi adashib qolardi.
+  const [lessonsFailed, setLessonsFailed] = useState(false);
   const loadLessons = useCallback(() => {
-    if (token) getMyLessons(token).then(setLessons).catch(() => setLessons([]));
+    if (!token) return;
+    getMyLessons(token)
+      .then((rows) => { setLessons(rows); setLessonsFailed(false); })
+      .catch(() => setLessonsFailed(true));
   }, [token]);
   useEffect(() => { loadTeachers(); loadLessons(); }, [loadTeachers, loadLessons]);
+  // «Darslarim» ochilganda roʻyxat har safar yangilanadi (dars yaqinda band qilingan boʻlishi mumkin).
+  useEffect(() => { if (tab === 'mine') loadLessons(); }, [tab, loadLessons]);
   // To'lov yangi oynada — qaytib kelganda darslar ro'yxati yangilansin.
   useEffect(() => { window.addEventListener('focus', loadLessons); return () => window.removeEventListener('focus', loadLessons); }, [loadLessons]);
 
@@ -152,7 +159,7 @@ export default function TeachersPage() {
           token && <StudentChatsPanel token={token} onUnread={setChatUnread} onFindTeacher={() => setTab('choose')} />
         ) : tab === 'mine' ? (
           <div className="space-y-4">
-            {token && <MyLessonsPanel token={token} rows={lessons} reload={loadLessons} onFindTeacher={() => setTab('choose')} askReview={askReview} />}
+            {token && <MyLessonsPanel token={token} rows={lessons} failed={lessonsFailed} reload={loadLessons} onFindTeacher={() => setTab('choose')} askReview={askReview} />}
           </div>
         ) : (
           <>
