@@ -77,6 +77,13 @@ export default function MeetRoomPage() {
   // Doska yopilsa chat rejimi ham tugaydi (keyingi ochilishda to'g'ri doskaga chiqsin).
   const boardIsOpen = Boolean(board && boardOpen(board));
   useEffect(() => { if (!boardIsOpen) setChatFocus(false); }, [boardIsOpen]);
+  // Chatning o'z «X» tugmasi bilan yopilganda ham doskaga qaytiladi (faqat «Doskaga qaytish» emas).
+  const chatWasOpen = useRef(false);
+  useEffect(() => {
+    if (!chatFocus) { chatWasOpen.current = false; return; }
+    if (media.chatOpen) chatWasOpen.current = true;
+    else if (chatWasOpen.current) { chatWasOpen.current = false; setChatFocus(false); }
+  }, [chatFocus, media.chatOpen]);
   useEffect(() => {
     if (!chatFocus) return;
     // Jitsi tugmalari to'liq oynada qaytguncha biroz kutiladi.
