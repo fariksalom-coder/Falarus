@@ -13,7 +13,7 @@ import { cancelLesson, disputeLesson, fmtSum, roomOpen, type TeacherLesson } fro
 import { openTeacherChat } from '../../api/teacherMarket';
 import { openRahmatCheckout } from '../../api/rahmat';
 import { useAuth } from '../../context/AuthContext';
-import TeacherChatModal from './TeacherChatModal';
+import TeacherChatScreen from './TeacherChatScreen';
 import ReviewDialog from './market/ReviewDialog';
 import { TeacherPhoto, fullDate, hm } from './market/parts';
 
@@ -42,7 +42,7 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher, ask
   const [now, setNow] = useState(() => Date.now());
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState('');
-  const [chat, setChat] = useState<{ id: number; title: string } | null>(null);
+  const [chat, setChat] = useState<{ id: number; title: string; avatarUrl: string | null } | null>(null);
   const [review, setReview] = useState<TeacherLesson | null>(null);
   const [thanks, setThanks] = useState(false);
   const asked = useRef(false);
@@ -82,7 +82,7 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher, ask
   };
   const openChat = (l: TeacherLesson) => act(l.id, async () => {
     const r = await openTeacherChat(token, l.teacher_user_id);
-    setChat({ id: r.conversation_id, title: teacherName(l) });
+    setChat({ id: r.conversation_id, title: teacherName(l), avatarUrl: l.teacher_avatar_url ?? null });
   });
 
   if (!rows) return <div className="h-40 animate-pulse rounded-[24px] bg-app-surface" aria-busy="true" />;
@@ -224,7 +224,7 @@ export default function MyLessonsPanel({ token, rows, reload, onFindTeacher, ask
         </section>
       )}
 
-      {chat && user && <TeacherChatModal token={token} conversationId={chat.id} currentUserId={user.id} title={chat.title} onClose={() => setChat(null)} />}
+      {chat && user && <TeacherChatScreen token={token} conversationId={chat.id} currentUserId={user.id} title={chat.title} avatarUrl={chat.avatarUrl} onClose={() => setChat(null)} />}
       {review && <ReviewDialog token={token} lessonId={review.id} teacherName={teacherName(review)} onClose={() => setReview(null)} onDone={() => { setReview(null); setThanks(true); reload(); }} />}
     </div>
   );

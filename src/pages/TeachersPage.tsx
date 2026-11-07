@@ -19,6 +19,7 @@ import TeacherCard from '../components/teacher/market/TeacherCard';
 import { WD_SHORT } from '../components/teacher/market/parts';
 import MyLessonsPanel from '../components/teacher/MyLessonsPanel';
 import StudentChatsPanel from '../components/teacher/StudentChatsPanel';
+import { TEACHER_CHAT_CLOSED_EVENT } from '../components/teacher/TeacherChatScreen';
 import { getTeacherConversations } from '../api/teachers';
 import { teacherProfilePath } from '../constants/teacherPaths';
 
@@ -86,11 +87,18 @@ export default function TeachersPage() {
 
   const setTab = (next: Tab) => setParams(next === 'choose' ? {} : { tab: next }, { replace: true });
   // Tab belgichasi: chat ochilmagan bo'lsa ham o'qilmagan xabarlar soni ko'rinsin.
+  // Chat yopilganda (TEACHER_CHAT_CLOSED_EVENT) va ilovaga qaytilganda qayta hisoblanadi.
   useEffect(() => {
     if (!token || !user) return;
-    getTeacherConversations(token)
-      .then((list) => setChatUnread(list.filter((c) => c.student_user_id === user.id).reduce((n, c) => n + (c.unread ?? 0), 0)))
-      .catch(() => {});
+    const refresh = () => {
+      getTeacherConversations(token)
+        .then((list) => setChatUnread(list.filter((c) => c.student_user_id === user.id).reduce((n, c) => n + (c.unread ?? 0), 0)))
+        .catch(() => {});
+    };
+    refresh();
+    window.addEventListener(TEACHER_CHAT_CLOSED_EVENT, refresh);
+    window.addEventListener('focus', refresh);
+    return () => { window.removeEventListener(TEACHER_CHAT_CLOSED_EVENT, refresh); window.removeEventListener('focus', refresh); };
   }, [token, user]);
   const upcomingCount = lessons?.filter((l) => (l.status === 'paid' || l.status === 'disputed') && l.join.closesAt > Date.now()).length ?? 0;
   const filterCount = specs.size + days.size + parts.size;
