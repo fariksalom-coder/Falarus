@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { CalendarClock, ChevronDown, MessageCircle, Search, SlidersHorizontal, Users, X } from 'lucide-react';
+import { CalendarClock, ChevronDown, ClipboardCheck, MessageCircle, Search, SlidersHorizontal, Users, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { listMarketTeachers, type MarketTeacher } from '../api/teacherMarket';
 import { getMyLessons, type TeacherLesson } from '../api/teacherLessons';
@@ -18,6 +18,7 @@ import { SPECIALIZATIONS } from '../../shared/teacherOnboarding';
 import TeacherCard from '../components/teacher/market/TeacherCard';
 import { WD_SHORT } from '../components/teacher/market/parts';
 import MyLessonsPanel from '../components/teacher/MyLessonsPanel';
+import StudentHomeworkPanel from '../components/teacher/StudentHomeworkPanel';
 import StudentChatsPanel from '../components/teacher/StudentChatsPanel';
 import { getTeacherConversations } from '../api/teachers';
 import { teacherProfilePath } from '../constants/teacherPaths';
@@ -50,7 +51,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   );
 }
 
-type Tab = 'choose' | 'mine' | 'chat';
+type Tab = 'choose' | 'mine' | 'homework' | 'chat';
 const toggle = <T,>(set: Set<T>, v: T) => { const n = new Set(set); if (n.has(v)) n.delete(v); else n.add(v); return n; };
 
 export default function TeachersPage() {
@@ -58,10 +59,12 @@ export default function TeachersPage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const tabParam = params.get('tab');
-  const tab: Tab = tabParam === 'mine' || tabParam === 'chat' ? tabParam : 'choose';
+  const tab: Tab = tabParam === 'mine' || tabParam === 'chat' || tabParam === 'homework' ? tabParam : 'choose';
   // Darsdan chiqqanda «Darslarim» shu dars bahosi bilan ochiladi (?tab=mine&baho=ID).
   const askReview = Number(params.get('baho')) || null;
   const [chatUnread, setChatUnread] = useState(0);
+  // Bajarilmagan uy vazifalari soni (tab belgisi).
+  const [homeworkOpen, setHomeworkOpen] = useState(0);
   const [teachers, setTeachers] = useState<MarketTeacher[] | null>(null);
   const [lessons, setLessons] = useState<TeacherLesson[] | null>(null);
   const [error, setError] = useState('');
@@ -143,19 +146,22 @@ export default function TeachersPage() {
           <p className="mt-1 text-sm font-medium text-app-text-muted">Rus tili ustozini tanlang va qulay vaqtga darsga yoziling</p>
         </header>
 
-        <div className="mb-4 grid grid-cols-3 gap-1.5 rounded-2xl bg-app-bg-muted p-1">
-          {([['choose', 'Ustoz tanlash', Users], ['mine', 'Darslarim', CalendarClock], ['chat', 'Chat', MessageCircle]] as const).map(([key, label, Icon]) => (
+        <div className="mb-4 grid grid-cols-4 gap-1 rounded-2xl bg-app-bg-muted p-1">
+          {([['choose', 'Ustozlar', Users], ['mine', 'Darslarim', CalendarClock], ['homework', 'Vazifalar', ClipboardCheck], ['chat', 'Chat', MessageCircle]] as const).map(([key, label, Icon]) => (
             <button key={key} type="button" onClick={() => setTab(key)} aria-pressed={tab === key}
               className={`flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl px-1.5 text-[13px] font-bold transition sm:px-3 ${tab === key ? 'bg-app-surface text-app-primary-deep shadow-app-soft' : 'text-app-text-muted'}`}>
               {/* 375 px da uchta tab sig'ishi uchun belgi faqat kengroq ekranda. */}
               <Icon className="hidden h-4 w-4 shrink-0 min-[400px]:block" /><span className="truncate">{label}</span>
+              {key === 'homework' && homeworkOpen > 0 && <span className="rounded-full bg-[#16A34A] px-1.5 text-[11px] font-black text-white">{homeworkOpen}</span>}
               {key === 'mine' && upcomingCount > 0 && <span className="rounded-full bg-app-primary-deep px-1.5 text-[11px] font-black text-white">{upcomingCount}</span>}
               {key === 'chat' && chatUnread > 0 && <span className="rounded-full bg-[#EF4444] px-1.5 text-[11px] font-black text-white">{chatUnread > 99 ? '99+' : chatUnread}</span>}
             </button>
           ))}
         </div>
 
-        {tab === 'chat' ? (
+        {tab === 'homework' ? (
+          token && <StudentHomeworkPanel token={token} onCount={setHomeworkOpen} />
+        ) : tab === 'chat' ? (
           token && <StudentChatsPanel token={token} onUnread={setChatUnread} onFindTeacher={() => setTab('choose')} />
         ) : tab === 'mine' ? (
           <div className="space-y-4">

@@ -34,7 +34,8 @@ function decimate(pts: number[]): number[] {
 
 export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: MutableRefObject<HTMLDivElement | null>) {
   const { role, send, sendDraft, sendLaser, onDraft, onLaser } = room;
-  const key = state ? inkKeyOf(state) : null;
+  // Test ochiq paytda doskaga chizilmaydi (ostidagi sahifa ko'rinmaydi).
+  const key = state && !state.quiz ? inkKeyOf(state) : null;
   const allowed = Boolean(key) && canDraw(role, state);
   const [tool, setToolState] = useState<BoardTool>('view');
   const [penColor, setPenColor] = useState<string>(INK_COLORS[1]);

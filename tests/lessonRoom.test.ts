@@ -393,3 +393,53 @@ test('zoom: the teacher’s zoom and pan reach the student, only for the current
     await t.close();
   }
 });
+
+test('teacher opens a test on the board: the student sees no answers, answers once and both see right or wrong', async () => {
+  const t = await setup();
+  try {
+    await t.db.exec(await readFile('db/migrations/227_teacher_tests_homework.sql', 'utf8'));
+    const questions = [
+      { text: 'Привет — bu?', options: ['Salom', 'Xayr', 'Rahmat'], correct: 0, explanation: 'Привет = Salom' },
+      { text: '2 + 2?', options: ['3', '4'], correct: 1 },
+    ];
+    await t.db.query(`INSERT INTO teacher_tests (teacher_user_id, title, questions) VALUES (1, 'Salomlashish', $1::jsonb), (4, 'Begona', $1::jsonb)`, [JSON.stringify(questions)]);
+    const teacher = t.connect('t1');
+    const student = t.connect('s2');
+    await teacher.next('state');
+    await student.next('state');
+
+    teacher.send({ t: 'op', id: 'q0', op: { type: 'quiz', testId: 2 } });
+    assert.equal((await teacher.next('reject')).id, 'q0', 'another teacher’s test');
+
+    teacher.send({ t: 'op', id: 'q1', op: { type: 'quiz', testId: 1 } });
+    const ack = await teacher.next('ack');
+    assert.equal(ack.op?.type === 'quiz' && ack.op.quiz?.questions.length, 2, 'teacher gets the questions in the ack');
+    const shown = await student.next('op');
+    const quiz = shown.op.type === 'quiz' ? shown.op.quiz : undefined;
+    assert.equal(quiz?.title, 'Salomlashish');
+    assert.equal(JSON.stringify(quiz).includes('correct'), false, 'answers are not sent to the student');
+
+    student.send({ t: 'op', id: 's1', op: { type: 'quizAnswer', q: 0, choice: 1, correct: true } });
+    const res = await student.next('ack');
+    assert.equal(res.op?.type === 'quizAnswer' && res.op.correct, false, 'server decides, not the client');
+    assert.equal(res.op?.type === 'quizAnswer' && res.op.right, 0);
+    const seen = await teacher.next('op');
+    assert.equal(seen.op.type === 'quizAnswer' && seen.op.explanation, 'Привет = Salom');
+
+    student.send({ t: 'op', id: 's2', op: { type: 'quizAnswer', q: 0, choice: 0 } });
+    assert.equal((await student.next('reject')).id, 's2', 'one answer per question');
+
+    teacher.send({ t: 'op', id: 'q2', op: { type: 'quizReset', q: 0 } });
+    await teacher.next('ack');
+    await student.next('op');
+    student.send({ t: 'op', id: 's3', op: { type: 'quizAnswer', q: 0, choice: 0 } });
+    assert.equal((await student.next('ack')).op?.type === 'quizAnswer' && true, true, 'after reset the student may answer again');
+
+    student.send({ t: 'op', id: 's4', op: { type: 'quizGo', q: 1 } });
+    assert.equal((await student.next('reject')).id, 's4', 'only the teacher moves between questions');
+    teacher.ws.close();
+    student.ws.close();
+  } finally {
+    await t.close();
+  }
+});

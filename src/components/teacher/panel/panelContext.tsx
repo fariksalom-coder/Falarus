@@ -11,6 +11,7 @@ export type SectionKey =
   | 'student'
   | 'lessons'
   | 'materials'
+  | 'homework'
   | 'report'
   | 'class'
   | 'income'

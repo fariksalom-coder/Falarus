@@ -18,6 +18,7 @@ import {
   INK_MAX_STROKES_PER_PAGE, ROOM_CLOSE, ROOM_WS_PATH, applyRoomOp, canApply, canDraw, emptyRoomState, inkKeyOf, parseDraft, parseRoomOp, parseView, validUnit,
   type BoardView, type ClientMessage, type LessonKind, type Presence, type RoomMaterial, type RoomOp, type RoomRole, type RoomState, type ServerMessage,
 } from '../../shared/lessonRoom.js';
+import { checkAnswer, publicQuestions, type TestQuestion } from '../../shared/teacherTests.js';
 
 export type RoomDeps = {
   q?: AccessQuery | null;
@@ -46,6 +47,8 @@ type Room = {
   inkTimer: ReturnType<typeof setTimeout> | null;
   /** O'qituvchining oxirgi kattalashtirishi — kech kirgan o'quvchi ham shu joyni ko'rsin (saqlanmaydi). */
   view: BoardView | null;
+  /** Doskadagi testning to'g'ri javoblari — faqat serverda (o'quvchiga yuborilmaydi). */
+  quizKey: TestQuestion[] | null;
 };
 
 const HELLO_TIMEOUT_MS = 10_000;
@@ -119,7 +122,7 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     if (raced) return raced;
     const room: Room = {
       key, kind, lessonId, teacherId, closesAt, state, conns: new Set(), recent: new Map(), queue: Promise.resolve(),
-      dirtyInk: new Set(), inkTimer: null, view: null,
+      dirtyInk: new Set(), inkTimer: null, view: null, quizKey: null,
     };
     rooms.set(key, room);
     return room;
@@ -186,7 +189,8 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     let op: RoomOp | null = parseRoomOp(raw);
     if (!op) return send(conn.ws, { t: 'reject', id, error: 'Notoʻgʻri amal' });
     if (!canApply(conn.role, op, room.state)) {
-      return send(conn.ws, { t: 'reject', id, error: op.type === 'ink' ? 'Chizishga ruxsat yoʻq' : 'Bu amal faqat oʻqituvchiga ruxsat etilgan' });
+      const error = op.type === 'ink' ? 'Chizishga ruxsat yoʻq' : op.type === 'quizAnswer' ? 'Bu savolga javob berilgan' : 'Bu amal faqat oʻqituvchiga ruxsat etilgan';
+      return send(conn.ws, { t: 'reject', id, error });
     }
     // Ijro vaqtini server soati bilan belgilaymiz — o'quvchi o'z soatidagi farqni ping orqali tuzatadi.
     if (op.type === 'media') op = { ...op, at: now() };
@@ -198,6 +202,21 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
         return send(conn.ws, { t: 'reject', id, error: 'Bu sahifada chizma juda koʻp — tozalang yoki yangi varaq oching' });
       }
     }
+    if (op.type === 'quiz') {
+      if (op.testId === null) room.quizKey = null;
+      else {
+        const t = q ? (await q('SELECT id, title, questions FROM teacher_tests WHERE id = $1 AND teacher_user_id = $2', [op.testId, room.teacherId])).rows[0] : null;
+        const questions: TestQuestion[] = Array.isArray(t?.questions) ? t.questions : [];
+        if (!t || !questions.length) return send(conn.ws, { t: 'reject', id, error: 'Test topilmadi' });
+        room.quizKey = questions;
+        op = { type: 'quiz', testId: Number(t.id), quiz: { testId: Number(t.id), title: String(t.title), questions: publicQuestions(questions), q: 0, answers: {} } };
+      }
+    }
+    if (op.type === 'quizAnswer') {
+      const result = room.quizKey ? checkAnswer(room.quizKey, op.q, op.choice) : null;
+      if (!result) return send(conn.ws, { t: 'reject', id, error: 'Javob qabul qilinmadi' });
+      op = { type: 'quizAnswer', q: op.q, choice: result.choice, correct: result.correct, right: result.right, ...(result.explanation ? { explanation: result.explanation } : {}) };
+    }
     if (op.type === 'show' && op.material) {
       const material = await resolveMaterial(room, op.material.id);
       if (material === 'not_ready') return send(conn.ws, { t: 'reject', id, error: 'Material hali tayyorlanmoqda — biroz kuting' });
@@ -207,7 +226,9 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
     room.state = { ...applyRoomOp(room.state, op), seq: room.state.seq + 1 };
     room.recent.set(id, room.state.seq);
     if (room.recent.size > RECENT_OPS) room.recent.delete(room.recent.keys().next().value as string);
-    send(conn.ws, { t: 'ack', id, seq: room.state.seq });
+    // Server to'ldirgan o'zgarish (test savollari, javob natijasi, material tafsiloti) yuboruvchiga ham boradi.
+    const enriched = op.type === 'quiz' || op.type === 'quizAnswer' || op.type === 'show';
+    send(conn.ws, enriched ? { t: 'ack', id, seq: room.state.seq, op } : { t: 'ack', id, seq: room.state.seq });
     // Yuboruvchining boshqa oynalari ham yangilansin — `op` ni hamma oladi, yuboruvchi ack'ni.
     broadcast(room, { t: 'op', seq: room.state.seq, op }, conn);
     if (op.type === 'ink') markInk(room, op.key);

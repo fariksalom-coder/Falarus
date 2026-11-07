@@ -95,9 +95,14 @@ export function uploadMaterial(
 /** Material qayerdan olinadi: o'qituvchining kutubxonasi yoki dars doskasi (o'quvchi ham). */
 export type MaterialSource =
   | { materialId: number }
-  | { kind: LessonKind; lessonId: number; materialId: number };
+  | { kind: LessonKind; lessonId: number; materialId: number }
+  /** O'quvchiga berilgan uy vazifasi fayli. */
+  | { homeworkId: number };
 
-const sourceBase = (s: MaterialSource) => ('kind' in s ? `/api/lesson-board/${s.kind}/${s.lessonId}` : `/api/teacher/materials/${s.materialId}`);
+const sourceBase = (s: MaterialSource) => (
+  'homeworkId' in s ? `/api/my-homework/${s.homeworkId}`
+    : 'kind' in s ? `/api/lesson-board/${s.kind}/${s.lessonId}` : `/api/teacher/materials/${s.materialId}`
+);
 // Doskadan: `material` — kutilgan fayl; o'qituvchi shu orada boshqasini chiqargan bo'lsa server 404 beradi.
 const sourceQuery = (s: MaterialSource) => ('kind' in s ? `material=${s.materialId}` : '');
 

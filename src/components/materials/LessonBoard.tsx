@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, FolderOpen, Loader2, MessageCircle, Mic, MicOff, MonitorUp, StickyNote, UploadCloud, Video, VideoOff, WifiOff, X,
+  ArrowLeft, ChevronLeft, ChevronRight, FolderOpen, ListChecks, Loader2, MessageCircle, Mic, MicOff, MonitorUp, StickyNote, UploadCloud, Video, VideoOff, WifiOff, X,
 } from 'lucide-react';
 import MaterialViewer from './MaterialViewer';
 import { KIND_STYLE, materialMeta } from './materialUi';
@@ -14,6 +14,8 @@ import { InkLayer } from './InkLayer';
 import { InkBar } from './BoardTools';
 import { useBoardInk } from './useBoardInk';
 import { SyncedMedia } from './SyncedMedia';
+import { QuizStage } from './QuizStage';
+import { getTests, type TestSummary } from '../../api/teacherTests';
 
 /**
  * Dars doskasi: o'qituvchi materialni chiqaradi va varaqlaydi, o'quvchi ekrani ergashadi.
@@ -97,7 +99,7 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
   }, [micNotice]);
 
   useEffect(() => {
-    if (!teacher || !paged) return;
+    if (!teacher || !paged || board.quiz) return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -106,7 +108,7 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [teacher, paged, page, pages, onPage]);
+  }, [teacher, paged, page, pages, onPage, board.quiz]);
 
   // O'quvchiga ruxsat berilganda bir marta eslatma.
   const [granted, setGranted] = useState(false);
@@ -125,8 +127,9 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
     ? (dir: 1 | -1) => { const next = page + dir; if (next >= 1 && next <= pages) onPage(next); }
     : undefined;
 
-  const S = blank !== null || !m ? null : KIND_STYLE[m.kind];
-  const title = blank !== null ? `Oq varaq ${blank}` : m?.title ?? '';
+  const quiz = board.quiz ?? null;
+  const S = quiz || blank !== null || !m ? null : KIND_STYLE[m.kind];
+  const title = quiz ? quiz.title || 'Test' : blank !== null ? `Oq varaq ${blank}` : m?.title ?? '';
   return (
     <motion.section
       initial={{ opacity: 0, scale: 0.98 }}
@@ -144,7 +147,11 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        {S ? (
+        {quiz ? (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#DCFCE7] text-[#166534]">
+            <ListChecks className="h-[18px] w-[18px]" />
+          </span>
+        ) : S ? (
           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] ${S.bg} ${S.fg}`}>
             <S.icon className="h-[18px] w-[18px]" />
           </span>
@@ -156,10 +163,10 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13.5px] font-extrabold text-white">{title}</p>
           <p className="truncate text-[11.5px] font-semibold text-white/55">
-            {teacher ? 'Oʻquvchi ham shuni koʻrmoqda' : board.studentCanDraw ? 'Siz ham chiza olasiz' : 'Oʻqituvchi koʻrsatmoqda'}
+            {quiz ? (teacher ? 'Oʻquvchi javob bermoqda' : 'Toʻgʻri javobni tanlang') : teacher ? 'Oʻquvchi ham shuni koʻrmoqda' : board.studentCanDraw ? 'Siz ham chiza olasiz' : 'Oʻqituvchi koʻrsatmoqda'}
           </p>
         </div>
-        {teacher && blank !== null && m ? (
+        {teacher && !quiz && blank !== null && m ? (
           <button
             type="button"
             onClick={() => send({ type: 'blank', n: null })}
@@ -171,8 +178,8 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
         {teacher ? (
           <button
             type="button"
-            onClick={onClose}
-            aria-label="Doskani yopish"
+            onClick={quiz ? () => send({ type: 'quiz', testId: null }) : onClose}
+            aria-label={quiz ? 'Testni yopish' : 'Doskani yopish'}
             className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-[12px] bg-white/10 px-3 text-[12.5px] font-bold text-white transition hover:bg-white/20 active:scale-95"
           >
             <X className="h-4 w-4" /> <span className="hidden sm:inline">Yopish</span>
@@ -181,7 +188,9 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
       </div>
 
       <div className="relative min-h-0 flex-1">
-        {playable && m ? (
+        {quiz ? (
+          <QuizStage quiz={quiz} teacher={teacher} token={token} send={send} syncing={room.syncing} />
+        ) : playable && m ? (
           <SyncedMedia
             token={token}
             source={teacher ? { materialId: m.id } : { kind, lessonId, materialId: m.id }}
@@ -253,7 +262,7 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
         </AnimatePresence>
       </div>
 
-      {ink.allowed ? (
+      {ink.allowed && !quiz ? (
         <InkBar
           ink={ink}
           teacher={teacher}
@@ -265,7 +274,7 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
       <RoomToolbar
         teacher={teacher}
         page={page}
-        pages={paged ? pages : 0}
+        pages={paged && !quiz ? pages : 0}
         onPage={onPage}
         onJump={() => setJumpOpen(true)}
         onOpenMaterials={onOpenMaterials}
@@ -431,8 +440,11 @@ function JumpSheet({ open, page, pages, onGo, onClose }: {
 }
 
 /** O'qituvchi uchun: «Shu dars uchun» tayyorlanganlar, butun kutubxona yoki darsning o'zida yangi fayl. */
-export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, blankCount, onBlank, onPick, onClose, onFailed }: {
+export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, blankCount, onBlank, onPick, onClose, onFailed, onQuiz, currentTestId = null }: {
   token: string | null; open: boolean; lessonKind: LessonKind; lessonId: number; currentId: number | null;
+  /** Testni doskaga chiqarish. */
+  onQuiz?: (testId: number) => void;
+  currentTestId?: number | null;
   /** PowerPoint aylanmadi — oyna yopilgan bo'lsa ham o'qituvchi ko'rsin (oynani qayta ochadi). */
   onFailed?: () => void;
   /** Shu darsda ochilgan oq varaqlar; `onBlank(n)` — ochish (blankCount + 1 — yangisi). */
@@ -440,6 +452,7 @@ export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, 
   onPick: (m: TeacherMaterial) => void; onClose: () => void;
 }) {
   const [items, setItems] = useState<TeacherMaterial[] | null>(null);
+  const [tests, setTests] = useState<TestSummary[] | null>(null);
   const [forLesson, setForLesson] = useState<number[]>([]);
   const [error, setError] = useState('');
   const [upload, setUpload] = useState<{ name: string; progress: number } | null>(null);
@@ -456,7 +469,9 @@ export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, 
     getLessonMaterials(token, lessonKind, lessonId)
       .then((r) => { if (alive) setForLesson(r.material_ids); })
       .catch(() => undefined);
+    if (onQuiz) getTests(token).then((l) => { if (alive) setTests(l); }).catch(() => { if (alive) setTests([]); });
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, token, lessonKind, lessonId]);
 
   // PowerPoint/Word aylantirilayotgan bo'lsa — holatini so'rab turamiz.
@@ -584,6 +599,35 @@ export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, 
                   </button>
                 ))}
               </div>
+              {onQuiz ? (
+                <>
+                  <p className="px-2.5 pb-1.5 pt-2 text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-[#86EFAC]">Testlar</p>
+                  {tests === null ? <div className="mx-2 mb-2 h-[52px] animate-pulse rounded-[14px] bg-white/[0.06]" /> : null}
+                  {tests && tests.length === 0 ? (
+                    <p className="px-3 pb-2 text-[12.5px] font-semibold leading-[1.5] text-white/55">
+                      Hali test yoʻq — kabinetdagi «Materiallar → Testlar» boʻlimida tuzing.
+                    </p>
+                  ) : null}
+                  {tests?.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => onQuiz(t.id)}
+                      className={`mb-1 flex min-h-[56px] w-full items-center gap-3 rounded-[14px] px-2.5 py-2 text-left transition active:scale-[0.99] ${
+                        currentTestId === t.id ? 'bg-[#16A34A]/25 ring-1 ring-[#22C55E]/60' : 'hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#DCFCE7] text-[#166534]"><ListChecks className="h-5 w-5" /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13.5px] font-bold">{t.title}</span>
+                        <span className="block text-[11.5px] font-semibold text-white/50">{t.question_count} ta savol</span>
+                      </span>
+                      {currentTestId === t.id ? <span className="shrink-0 rounded-full bg-[#16A34A] px-2.5 py-1 text-[11px] font-extrabold">Doskada</span> : null}
+                    </button>
+                  ))}
+                  <p className="px-2.5 pb-1.5 pt-3 text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-white/45">Fayllar</p>
+                </>
+              ) : null}
               {!items && !error ? (
                 <div className="space-y-2 px-2">{[0, 1, 2].map((i) => <div key={i} className="h-[60px] animate-pulse rounded-[14px] bg-white/[0.06]" />)}</div>
               ) : null}

@@ -97,6 +97,10 @@ export default function MeetRoomPage() {
     send({ type: 'show', material: roomMaterialOf(m), page: 1 });
     setDrawerOpen(false);
   }, [send]);
+  const pickTest = useCallback((testId: number) => {
+    send({ type: 'quiz', testId });
+    setDrawerOpen(false);
+  }, [send]);
   // Server rad etgan amal haqida qisqa xabar (masalan, material o'chirilgan).
   const { error: roomError, clearError } = room;
   useEffect(() => {
@@ -279,6 +283,8 @@ export default function MeetRoomPage() {
           token={token}
           open={drawerOpen}
           onFailed={openDrawer}
+          onQuiz={pickTest}
+          currentTestId={board?.quiz?.testId ?? null}
           currentId={board?.blank === null ? board?.material?.id ?? null : null}
           blankCount={board?.blankCount ?? 0}
           onBlank={(n) => { send({ type: 'blank', n }); setDrawerOpen(false); }}

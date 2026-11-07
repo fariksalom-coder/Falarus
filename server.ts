@@ -1356,6 +1356,9 @@ async function startServer() {
     room: lessonRoomServer,
     pages: materialPages,
   }));
+  // O'qituvchi testlari (darsda doskaga chiqariladi) va uy vazifalari.
+  const { createTeacherTestRoutes } = await import('./server/routes/teacherTestRoutes');
+  app.use('/api', createTeacherTestRoutes(authenticate));
 
   // O'qituvchi onboardingi v2: 8 qadam, yopiq hujjatlar, bo'laklab video, moderatsiya.
   const { createTeacherOnboardingRoutes } = await import('./server/routes/teacherOnboardingRoutes');

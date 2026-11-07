@@ -316,6 +316,25 @@ export function createTeacherMaterialRoutes(authenticate: (req: any, res: any, n
     return m;
   }
 
+  /* ───────────── uy vazifasi fayli (o'quvchi) ───────────── */
+
+  /** O'quvchi faqat o'ziga berilgan vazifadagi faylni ko'radi. */
+  async function homeworkMaterial(req: any) {
+    const m = (await db()(`SELECT m.private_path, m.mime, m.original_name, m.kind, m.status, m.page_count
+      FROM teacher_homework h JOIN teacher_materials m ON m.id = h.material_id
+      WHERE h.id = $1 AND h.student_user_id = $2 AND h.kind = 'file'`, [Number(req.params.id), Number(req.userId)])).rows[0];
+    if (!m) throw new HttpError(404, 'Vazifa fayli topilmadi');
+    return m;
+  }
+
+  router.get('/my-homework/:id/file', authenticate, h(async (req, res) => {
+    sendFile(res, await homeworkMaterial(req));
+  }));
+
+  router.get('/my-homework/:id/page/:page', authenticate, h(async (req, res) => {
+    await sendPage(req, res, await homeworkMaterial(req));
+  }));
+
   router.get('/lesson-board/:kind/:id/file', authenticate, h(async (req, res) => {
     sendFile(res, await boardMaterial(req));
   }));

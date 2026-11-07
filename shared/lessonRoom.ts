@@ -16,6 +16,7 @@
  * Chizmalar sahifaga nisbatan 0..1 koordinatada saqlanadi — har xil ekranda bir joyda turadi.
  */
 import type { MaterialKind } from './teacherMaterials';
+import type { AnswerResult, PublicQuestion } from './teacherTests';
 
 export type LessonKind = 'lesson' | 'trial';
 export type RoomRole = 'teacher' | 'student';
@@ -50,8 +51,24 @@ export type Stroke = {
  */
 export type MediaPlayback = { playing: boolean; position: number; at: number };
 
+/**
+ * Doskadagi test. Savollar to'g'ri javobsiz (o'quvchiga oldindan bilinmasin); o'quvchi tanlagach
+ * server tekshiradi va `answers[q]` ga natijani yozadi — ikkala ekranda bir zumda ko'rinadi.
+ * `answers[q]` da `correct` yo'q bo'lsa — javob yuborilgan, server hali tekshirmagan.
+ */
+export type RoomQuiz = {
+  testId: number;
+  title: string;
+  questions: PublicQuestion[];
+  /** Hozir ko'rsatilayotgan savol (0 dan) — o'qituvchi boshqaradi. */
+  q: number;
+  answers: Record<number, Partial<AnswerResult> & { choice: number }>;
+};
+
 export type RoomState = {
   material: RoomMaterial | null;
+  /** Doskada ochiq test (material va oq varaq ustidan ko'rsatiladi); null — test yo'q. */
+  quiz: RoomQuiz | null;
   /** Doskadagi audio/video ijrosi (o'qituvchi boshqaradi); boshqa materialda null. */
   media: MediaPlayback | null;
   page: number;
@@ -77,7 +94,15 @@ export type RoomOp =
   | { type: 'ink'; key: string; add?: Stroke[]; remove?: string[]; clear?: boolean }
   | { type: 'permit'; studentCanDraw: boolean }
   /** Ijro / pauza / o'tkazish. `at` ni server qo'yadi (klientning soatiga ishonilmaydi). */
-  | { type: 'media'; playing: boolean; position: number; at: number };
+  | { type: 'media'; playing: boolean; position: number; at: number }
+  /** O'qituvchi testni ochadi (`testId`) yoki yopadi (null). Savollarni server bazadan qo'shadi (`quiz`). */
+  | { type: 'quiz'; testId: number | null; quiz?: RoomQuiz }
+  /** Boshqa savolga o'tish. */
+  | { type: 'quizGo'; q: number }
+  /** O'quvchi javobi. Natijani (`correct`, `right`, `explanation`) server qo'shadi. */
+  | { type: 'quizAnswer'; q: number; choice: number; correct?: boolean; right?: number; explanation?: string }
+  /** O'qituvchi savolni qayta ochadi (o'quvchi yana javob bera oladi). */
+  | { type: 'quizReset'; q: number };
 
 export type Presence = { teacher: boolean; student: boolean };
 
@@ -102,7 +127,8 @@ export type ClientMessage =
 
 export type ServerMessage =
   | { t: 'state'; state: RoomState; role: RoomRole; presence: Presence }
-  | { t: 'ack'; id: string; seq: number }
+  /** `op` — server o'zgarishni to'ldirgan bo'lsa (test savollari, javob natijasi), yuboruvchi shuni qo'llaydi. */
+  | { t: 'ack'; id: string; seq: number; op?: RoomOp }
   | { t: 'op'; seq: number; op: RoomOp }
   | { t: 'reject'; id: string; error: string }
   | (DraftMessage & { by: RoomRole })
@@ -138,13 +164,13 @@ export const INK_MAX_ADD = 400;
 export const BLANK_RATIO = 4 / 3;
 
 export const emptyRoomState = (): RoomState => ({
-  material: null, media: null, page: 1, blank: null, blankCount: 0, studentCanDraw: false, ink: {}, seq: 0,
+  material: null, quiz: null, media: null, page: 1, blank: null, blankCount: 0, studentCanDraw: false, ink: {}, seq: 0,
 });
 
 const clampPage = (n: unknown) => Math.max(1, Math.min(MAX_PAGE, Math.floor(Number(n)) || 1));
 
 /** Doska ko'rinadimi (material yoki oq varaq ochiq). */
-export const boardOpen = (s: RoomState) => s.material !== null || s.blank !== null;
+export const boardOpen = (s: RoomState) => s.material !== null || s.blank !== null || Boolean(s.quiz);
 
 /** Hozir ko'rinayotgan sahifaning chizmalar kaliti; audio/video va yopiq doskada — null. */
 export function inkKeyOf(s: Pick<RoomState, 'material' | 'page' | 'blank'>): string | null {
@@ -158,7 +184,7 @@ export function inkKeyOf(s: Pick<RoomState, 'material' | 'page' | 'blank'>): str
 export function applyRoomOp(state: RoomState, op: RoomOp): RoomState {
   switch (op.type) {
     case 'show':
-      return { ...state, material: op.material, media: null, blank: null, page: op.material ? clampPage(op.page) : 1 };
+      return { ...state, material: op.material, quiz: null, media: null, blank: null, page: op.material ? clampPage(op.page) : 1 };
     case 'page': {
       if (state.blank !== null) return { ...state, blank: Math.max(1, Math.min(state.blankCount, Math.floor(op.page) || 1)) };
       if (!state.material) return state;
@@ -168,14 +194,41 @@ export function applyRoomOp(state: RoomState, op: RoomOp): RoomState {
     case 'blank': {
       if (op.n === null) return state.material ? { ...state, blank: null } : state;
       const n = Math.max(1, Math.min(state.blankCount + 1, MAX_BLANKS, Math.floor(op.n) || 1));
-      return { ...state, blank: n, blankCount: Math.max(state.blankCount, n) };
+      return { ...state, quiz: null, blank: n, blankCount: Math.max(state.blankCount, n) };
     }
     case 'close':
-      return { ...state, material: null, media: null, blank: null, page: 1 };
+      return { ...state, material: null, quiz: null, media: null, blank: null, page: 1 };
     case 'media': {
       const kind = state.material?.kind;
       if (kind !== 'audio' && kind !== 'video') return state;
       return { ...state, media: { playing: op.playing, position: op.position, at: op.at } };
+    }
+    case 'quiz': {
+      if (op.testId === null) return { ...state, quiz: null };
+      if (op.quiz) return { ...state, quiz: op.quiz };
+      // O'qituvchi ekranida savollar server javobigacha — bo'sh test (yuklanmoqda).
+      return { ...state, quiz: { testId: op.testId, title: '', questions: [], q: 0, answers: {} } };
+    }
+    case 'quizGo': {
+      const z = state.quiz;
+      if (!z) return state;
+      const last = Math.max(0, z.questions.length - 1);
+      return { ...state, quiz: { ...z, q: Math.max(0, Math.min(z.questions.length ? last : 0, Math.floor(op.q) || 0)) } };
+    }
+    case 'quizAnswer': {
+      const z = state.quiz;
+      if (!z) return state;
+      const prev = z.answers[op.q];
+      // Tekshirilgan javob tekshirilmagan (yo'ldagi) nusxa bilan almashmasin.
+      if (prev && prev.correct !== undefined && op.correct === undefined) return state;
+      const a = { choice: op.choice, ...(op.correct !== undefined ? { correct: op.correct, right: op.right } : {}), ...(op.explanation ? { explanation: op.explanation } : {}) };
+      return { ...state, quiz: { ...z, answers: { ...z.answers, [op.q]: a } } };
+    }
+    case 'quizReset': {
+      const z = state.quiz;
+      if (!z || !z.answers[op.q]) return state;
+      const { [op.q]: _gone, ...rest } = z.answers;
+      return { ...state, quiz: { ...z, answers: rest } };
     }
     case 'ink': {
       const before = state.ink[op.key] ?? [];
@@ -199,6 +252,11 @@ export function applyRoomOp(state: RoomState, op: RoomOp): RoomState {
  */
 export function canApply(role: RoomRole, op: RoomOp, state: RoomState): boolean {
   if (role === 'teacher') return true;
+  // O'quvchi ochiq testdagi savolga bir marta javob beradi (o'qituvchi qayta ochmaguncha).
+  if (op.type === 'quizAnswer') {
+    const z = state.quiz;
+    return Boolean(z && z.questions[op.q] && op.choice >= 0 && op.choice < z.questions[op.q].options.length && !z.answers[op.q]);
+  }
   if (op.type !== 'ink' || !state.studentCanDraw || op.clear || op.key !== inkKeyOf(state)) return false;
   if (op.remove?.length) {
     // Doskada yo'q chizma (o'qituvchi shu lahzada o'chirgan/surgan) — hisobga olinmaydi: aks holda
@@ -264,6 +322,19 @@ export function parseRoomOp(raw: unknown): RoomOp | null {
     return n >= 1 && n <= MAX_BLANKS ? { type: 'blank', n } : null;
   }
   if (o.type === 'close') return { type: 'close' };
+  const int = (v: unknown, max: number) => { const n = Math.floor(Number(v)); return Number.isInteger(n) && n >= 0 && n <= max ? n : null; };
+  if (o.type === 'quiz') {
+    if (o.testId === null) return { type: 'quiz', testId: null };
+    const id = Number(o.testId);
+    return Number.isInteger(id) && id > 0 ? { type: 'quiz', testId: id } : null;
+  }
+  if (o.type === 'quizGo') { const q = int(o.q, 999); return q === null ? null : { type: 'quizGo', q }; }
+  if (o.type === 'quizReset') { const q = int(o.q, 999); return q === null ? null : { type: 'quizReset', q }; }
+  if (o.type === 'quizAnswer') {
+    const q = int(o.q, 999);
+    const choice = int(o.choice, 9);
+    return q === null || choice === null ? null : { type: 'quizAnswer', q, choice };
+  }
   if (o.type === 'permit' && typeof o.studentCanDraw === 'boolean') return { type: 'permit', studentCanDraw: o.studentCanDraw };
   if (o.type === 'media' && typeof o.playing === 'boolean') {
     const position = Number(o.position);

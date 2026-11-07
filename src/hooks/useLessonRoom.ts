@@ -120,7 +120,9 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
           case 'ack': {
             const done = pendingRef.current.find((p) => p.id === m.id);
             setPending((list) => list.filter((p) => p.id !== m.id));
-            if (done) setConfirmed((s) => (s ? { ...applyRoomOp(s, done.op), seq: m.seq } : s));
+            // Server to'ldirgan bo'lsa (test savollari, javob natijasi) — o'shani qo'llaymiz.
+            const applied = m.op ?? done?.op;
+            if (applied) setConfirmed((s) => (s ? { ...applyRoomOp(s, applied), seq: m.seq } : s));
             break;
           }
           case 'reject':
