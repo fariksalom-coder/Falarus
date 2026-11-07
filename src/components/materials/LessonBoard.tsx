@@ -184,7 +184,7 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
         {playable && m ? (
           <SyncedMedia
             token={token}
-            source={{ kind, lessonId, materialId: m.id }}
+            source={teacher ? { materialId: m.id } : { kind, lessonId, materialId: m.id }}
             kind={m.kind as 'audio' | 'video'}
             title={m.title}
             media={board.media}
@@ -196,7 +196,9 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
         ) : (
           <MaterialViewer
             token={token}
-            source={blank !== null || !m ? null : { kind, lessonId, materialId: m.id }}
+            // O'qituvchi o'z faylini o'z manzilidan oladi: doska serverda hali almashmagan bo'lsa ham
+            // («Doskada material yoʻq» xatosi qolmasin). O'quvchi — dars manzilidan (ruxsat tekshiriladi).
+            source={blank !== null || !m ? null : teacher ? { materialId: m.id } : { kind, lessonId, materialId: m.id }}
             kind={m && blank === null ? m.kind : 'pdf'}
             title={title}
             page={page}
@@ -429,8 +431,10 @@ function JumpSheet({ open, page, pages, onGo, onClose }: {
 }
 
 /** O'qituvchi uchun: «Shu dars uchun» tayyorlanganlar, butun kutubxona yoki darsning o'zida yangi fayl. */
-export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, blankCount, onBlank, onPick, onClose }: {
+export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, blankCount, onBlank, onPick, onClose, onFailed }: {
   token: string | null; open: boolean; lessonKind: LessonKind; lessonId: number; currentId: number | null;
+  /** PowerPoint aylanmadi — oyna yopilgan bo'lsa ham o'qituvchi ko'rsin (oynani qayta ochadi). */
+  onFailed?: () => void;
   /** Shu darsda ochilgan oq varaqlar; `onBlank(n)` — ochish (blankCount + 1 — yangisi). */
   blankCount: number; onBlank: (n: number) => void;
   onPick: (m: TeacherMaterial) => void; onClose: () => void;
@@ -474,8 +478,8 @@ export function MaterialsDrawer({ token, open, lessonKind, lessonId, currentId, 
     if (pickWhenReady == null) return;
     const m = items?.find((x) => x.id === pickWhenReady);
     if (m?.status === 'ready') { setPickWhenReady(null); onPick(m); }
-    if (m?.status === 'failed') { setPickWhenReady(null); setError(m.error ?? 'Faylni ochib boʻlmadi'); }
-  }, [items, pickWhenReady, onPick]);
+    if (m?.status === 'failed') { setPickWhenReady(null); setError(m.error ?? 'Faylni ochib boʻlmadi'); onFailed?.(); }
+  }, [items, pickWhenReady, onPick, onFailed]);
 
   useEffect(() => {
     if (!open) return;

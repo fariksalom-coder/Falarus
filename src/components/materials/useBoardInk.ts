@@ -57,7 +57,7 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
   const laser = useMemo(() => new LaserTrail(), []);
 
   const undoStack = useRef<UndoEntry[]>([]);
-  const drawing = useRef<{ stroke: LiveStroke; sent: number; timer: number } | null>(null);
+  const drawing = useRef<{ stroke: LiveStroke; sent: number; timer: number; key: string } | null>(null);
   const erasing = useRef<Stroke[] | null>(null);
   const eraserLast = useRef<{ x: number; y: number } | null>(null);
   const lastLaser = useRef(0);
@@ -68,13 +68,27 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
   const color = tool === 'marker' ? markerColor : penColor;
   const setColor = (c: string) => (tool === 'marker' ? setMarkerColor(c) : setPenColor(c));
 
+  /** Chala chiziqni tashlaydi: taymer to'xtaydi, boshqa tomondagi chizilayotgan nusxa ham o'chadi. */
+  const dropDrawing = () => {
+    const d = drawing.current;
+    drawing.current = null;
+    if (d) {
+      window.clearInterval(d.timer);
+      if (d.key) sendDraft({ key: d.key, id: d.stroke.id, tool: d.stroke.tool as 'pen' | 'marker', color: d.stroke.color, size: d.stroke.size, pts: [], cancel: true });
+    }
+    setLocal(null);
+  };
+
   // Ruxsat olib qo'yilsa yoki sahifa almashsa — chala chiziq va matn oynasi yopiladi.
   useEffect(() => {
     if (!allowed && tool !== 'view') setToolState('view');
+    if (!allowed) dropDrawing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed, tool]);
   useEffect(() => {
-    drawing.current = null;
-    setLocal(null);
+    dropDrawing();
+    // Telefon klaviaturasi ochiq qolib, yozilgani hech qayerga ketmasin.
+    textInputRef.current?.blur();
     textAtRef.current = null;
     setTextAt(null);
     draftRef.current = '';
@@ -82,6 +96,7 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     editingRef.current = null;
     setEditing(null);
     setDragged(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
   // Boshqa tomonning chizilayotgan chiziqlari.
@@ -159,7 +174,7 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
         if (!p) return;
         if (tool === 'pen' || tool === 'marker') {
           const stroke: LiveStroke = { id: newStrokeId(), tool, color, size: TOOL_SIZE[tool], pts: [p.x, p.y] };
-          drawing.current = { stroke, sent: 0, timer: window.setInterval(flushDraft, DRAFT_EVERY_MS) };
+          drawing.current = { stroke, sent: 0, timer: window.setInterval(flushDraft, DRAFT_EVERY_MS), key };
           setLocal({ ...stroke });
         } else if (tool === 'eraser') {
           erasing.current = [];
@@ -385,8 +400,12 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     if (i < 0) return;
     const [e] = undoStack.current.splice(i, 1);
     setUndoCount(undoStack.current.length);
-    if (e.added) send({ type: 'ink', key, remove: e.added.map((s) => s.id) });
-    if (e.removed?.length) send({ type: 'ink', key, add: e.removed.map(({ by: _by, ...s }) => s) });
+    // Bitta amal (o'chirish + qaytarish) — biri rad etilib, doska yarim qaytgan holda qolmasin.
+    // Juda ko'p chizma (tozalangan sahifa) — server cheklovi doirasida bo'laklab yuboriladi.
+    const restore = (e.removed ?? []).map(({ by: _by, ...st }) => st);
+    const CHUNK = 300;
+    send({ type: 'ink', key, ...(e.added?.length ? { remove: e.added.map((st) => st.id) } : {}), ...(restore.length ? { add: restore.slice(0, CHUNK) } : {}) });
+    for (let i = CHUNK; i < restore.length; i += CHUNK) send({ type: 'ink', key, add: restore.slice(i, i + CHUNK) });
   };
 
   /** Butun sahifani tozalash (faqat o'qituvchi) — «orqaga» bilan qaytariladi. */

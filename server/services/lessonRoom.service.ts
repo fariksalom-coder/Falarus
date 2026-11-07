@@ -270,7 +270,11 @@ export function createLessonRoomServer(deps: RoomDeps = {}) {
       if (msg.t === 'op') {
         const id = String(msg.id ?? '').slice(0, 64);
         if (!id) return;
-        r.queue = r.queue.then(() => handleOp(r, c, id, msg.op)).catch((e) => console.error('[lessonRoom] op', e));
+        r.queue = r.queue.then(() => handleOp(r, c, id, msg.op)).catch((e) => {
+          console.error('[lessonRoom] op', e);
+          // Javobsiz qolgan o'zgarish mijozda abadiy «saqlanmoqda» bo'lib, har ulanishda qayta yuborilardi.
+          send(c.ws, { t: 'reject', id, error: 'Server xatosi — qayta urinib koʻring' });
+        });
       } else if (msg.t === 'laser') {
         if (c.role !== 'teacher' || !allow(c.laser, LASER_PER_SECOND)) return;
         if ('end' in msg) broadcast(r, { t: 'laser', end: true }, c);

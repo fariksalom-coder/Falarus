@@ -137,6 +137,11 @@ export default function JitsiRoom({
   useEffect(() => {
     let disposed = false;
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    // Xona qaytadan quriladi — avvalgi holat (tasma, chat ochiqligi, mikrofon) eskirgan.
+    // Aks holda kichik oynada o'z tasmangiz chiqib qolar, «Doskaga qaytish» chatni ochib yuborardi.
+    filmstripVisible.current = true;
+    media.current = INITIAL_MEDIA;
+    mediaCb.current?.(INITIAL_MEDIA);
     let waitVisible: (() => void) | null = null;
     /*
      * Telefonda fayl tanlash yoki boshqa ilovaga o'tish WebView'ni to'xtatadi: Jitsi
@@ -218,7 +223,11 @@ export default function JitsiRoom({
           };
         }
         api.addEventListener('errorOccurred', (e: { error?: { isFatal?: boolean } }) => {
-          if (e?.error?.isFatal) reconnect(1500);
+          if (!e?.error?.isFatal) return;
+          // Tugmalar «ulangan» deb qolib, hech narsa qilmay turmasin.
+          setJoined(false);
+          report({ joined: false });
+          reconnect(1500);
         });
         // Faqat o'zi «tugatish»ni bossa chiqamiz. `videoConferenceLeft` qayta ulanishda ham
         // keladi — u darsdan haydab chiqarmasin; tugatishda undan keyin `readyToClose` keladi.

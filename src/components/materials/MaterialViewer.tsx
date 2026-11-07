@@ -110,7 +110,11 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
     remote,
     onChange: onZoomChange && fitW ? (v: View) => onZoomChange({ s: v.s, x: v.x / fitW, y: v.y / fitH }) : undefined,
   }), [remote, onZoomChange, fitW, fitH]);
-  const zoom = useZoomPan(`${sourceKey}:${page}`, onSwipe, draw, sync);
+  // Yangi sahifa rasmi hali yuklanmagan: eski rasm turibdi — uning ustida yangi sahifaning
+  // chizmalari ko'rinmasin va chizib ham bo'lmasin (chiziq noto'g'ri sahifaga tushardi).
+  const currentKey = source ? `${sourceKey}:${page}` : `blank:${page}`;
+  const stale = Boolean(shown && shown.key !== currentKey);
+  const zoom = useZoomPan(`${sourceKey}:${page}`, onSwipe, stale ? null : draw, sync);
 
   // Sahifa ko'rinadigan joydan baland (klaviatura ochiq) — yuqoriga/pastga suriladi.
   const overflow = fit ? Math.max(0, Math.round(fit.h + pad * 2 - box.h)) : 0;
@@ -200,7 +204,7 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
                 className={`h-full w-full transition-opacity duration-150 ${loading ? 'opacity-70' : 'opacity-100'}`}
               />
             ) : null}
-            {overlay?.(shown.ratio)}
+            {stale ? null : overlay?.(shown.ratio)}
           </div>
         </div>
       ) : null}

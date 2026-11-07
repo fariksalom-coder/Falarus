@@ -91,6 +91,7 @@ export default function MeetRoomPage() {
     return () => window.clearTimeout(t);
   }, [chatFocus]);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
   const { send } = room;
   const pickMaterial = useCallback((m: TeacherMaterial) => {
     send({ type: 'show', material: roomMaterialOf(m), page: 1 });
@@ -277,6 +278,7 @@ export default function MeetRoomPage() {
         <MaterialsDrawer
           token={token}
           open={drawerOpen}
+          onFailed={openDrawer}
           currentId={board?.blank === null ? board?.material?.id ?? null : null}
           blankCount={board?.blankCount ?? 0}
           onBlank={(n) => { send({ type: 'blank', n }); setDrawerOpen(false); }}

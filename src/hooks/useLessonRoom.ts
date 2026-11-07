@@ -21,6 +21,10 @@ const BACKOFF_MS = [500, 1000, 2000, 4000, 8000, 10_000];
 const PING_MS = 15_000;
 /** Shuncha vaqt hech narsa kelmasa, ulanish o'lik deb hisoblanadi (mobil tarmoq jim uzilishi). */
 const SILENCE_MS = 40_000;
+/** Ulanish shuncha vaqtda ochilmasa — tashlab, qaytadan uriniladi (Android'da tarmoq almashganda «osilib» qoladi). */
+const CONNECT_TIMEOUT_MS = 8_000;
+/** Server bundan katta xabarni qabul qilmaydi (512 KB) — ulanishni uzadi. Oldindan to'xtatamiz. */
+const MAX_OP_BYTES = 400_000;
 
 const CLOSE_TEXT: Record<number, string> = {
   [ROOM_CLOSE.auth]: 'Qayta kiring — sessiya tugagan',
@@ -65,6 +69,8 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
     let retryTimer = 0;
     let pingTimer = 0;
     let lastHeard = Date.now();
+    let connectStarted = 0;
+    let lastPing = 0;
 
     const scheduleRetry = () => {
       if (stopped) return;
@@ -88,6 +94,7 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
         return;
       }
       wsRef.current = ws;
+      connectStarted = Date.now();
       ws.onopen = () => {
         lastHeard = Date.now();
         ws.send(JSON.stringify({ t: 'hello', token, kind, lessonId }));
@@ -159,13 +166,20 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
       ws.onerror = () => undefined;
     }
 
-    // Jim uzilishni sezish va soat farqini yangilab turish.
+    // Jim uzilishni sezish, osilib qolgan ulanishni tashlash va soat farqini yangilab turish.
     pingTimer = window.setInterval(() => {
       const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.CONNECTING && Date.now() - connectStarted > CONNECT_TIMEOUT_MS) {
+        // onclose → scheduleRetry
+        ws.close();
+        return;
+      }
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
       if (Date.now() - lastHeard > SILENCE_MS) { ws.close(); return; }
+      if (Date.now() - lastPing < PING_MS) return;
+      lastPing = Date.now();
       ws.send(JSON.stringify({ t: 'ping', c: Date.now() }));
-    }, PING_MS);
+    }, 2_000);
 
     const wake = () => {
       if (stopped) return;
@@ -192,6 +206,12 @@ export function useLessonRoom(token: string | null, kind: LessonKind, lessonId: 
   /** O'zgarish: ekranda darhol, serverga — ulanish bo'lsa hozir, bo'lmasa qayta ulanganda. */
   const send = useCallback((op: RoomOp) => {
     const item = { id: newOpId(), op };
+    // Juda katta o'zgarish server tomonidan qabul qilinmaydi va ulanishni uzadi — navbatga
+    // qo'yilsa, har qayta ulanishda yana yuborilib, xona butunlay to'xtab qolardi.
+    if (JSON.stringify(op).length > MAX_OP_BYTES) {
+      setError('Oʻzgarish juda katta — sahifani boʻlib-boʻlib oʻzgartiring');
+      return;
+    }
     setPending((list) => [...list, item]);
     setError('');
     const ws = wsRef.current;

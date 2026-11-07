@@ -118,7 +118,7 @@ async function getBlob(token: string, url: string): Promise<Blob> {
 /** Butun fayl (audio, video). */
 export function fetchMaterialBlob(token: string, source: MaterialSource): Promise<Blob> {
   const query = sourceQuery(source);
-  return getBlob(token, `${sourceBase(source)}/file${query ? `?${query}` : ''}`);
+  return withRetry(() => getBlob(token, `${sourceBase(source)}/file${query ? `?${query}` : ''}`));
 }
 
 /** Mobil tarmoq uzilsa yoki server band bo'lsa — 3 martagacha qayta urinadi (0.8 s, 2 s, 4 s). */
@@ -129,7 +129,8 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
       return await fn();
     } catch (e) {
       const status = (e as MaterialError).status;
-      const retriable = status === 0 || status >= 500;
+      // 404 — doska serverda hali almashmagan bo'lishi mumkin (o'zgarish va so'rov bir vaqtda): qisqa kutib qayta.
+      const retriable = status === 0 || status >= 500 || (status === 404 && i < 2);
       if (!retriable || i >= delays.length) throw e;
       await new Promise((r) => setTimeout(r, delays[i]));
     }

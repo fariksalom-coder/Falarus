@@ -44,3 +44,11 @@ test('a student may edit or move any board text, but not erase the teacher pen s
   assert.equal(canApply('student', { type: 'ink', key, remove: ['p1'] }, state), false, 'teacher drawing stays');
   assert.equal(canApply('student', edit, { ...state, studentCanDraw: false }), false, 'only with permission');
 });
+
+test('a student edit of text the teacher already removed is not rejected', async () => {
+  const { canApply, emptyRoomState, inkKeyOf } = await import('../shared/lessonRoom');
+  const base = { ...emptyRoomState(), blank: 1, blankCount: 1, studentCanDraw: true };
+  const key = inkKeyOf(base)!;
+  const op = { type: 'ink' as const, key, remove: ['gone'], add: [{ id: 'n1', tool: 'text' as const, color: '#EF4444', size: 34, pts: [0.1, 0.1], text: 'Laziz' }] };
+  assert.equal(canApply('student', op, { ...base, ink: { [key]: [] } }), true);
+});

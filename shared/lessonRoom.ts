@@ -201,8 +201,12 @@ export function canApply(role: RoomRole, op: RoomOp, state: RoomState): boolean 
   if (role === 'teacher') return true;
   if (op.type !== 'ink' || !state.studentCanDraw || op.clear || op.key !== inkKeyOf(state)) return false;
   if (op.remove?.length) {
-    const allowed = new Set((state.ink[op.key] ?? []).filter((s) => s.by === 'student' || s.tool === 'text').map((s) => s.id));
-    if (!op.remove.every((id) => allowed.has(id))) return false;
+    // Doskada yo'q chizma (o'qituvchi shu lahzada o'chirgan/surgan) — hisobga olinmaydi: aks holda
+    // o'quvchining butun o'zgarishi rad etilib, yozgani yo'qolardi.
+    const ink = state.ink[op.key] ?? [];
+    const exists = new Set(ink.map((s) => s.id));
+    const allowed = new Set(ink.filter((s) => s.by === 'student' || s.tool === 'text').map((s) => s.id));
+    if (!op.remove.every((id) => !exists.has(id) || allowed.has(id))) return false;
   }
   return true;
 }
