@@ -1,13 +1,13 @@
 /**
  * O'quvchi: «Chat» — ustozlar bilan yozishmalar bitta joyda. Har bir ustoz — bitta qator
- * (oxirgi xabar, vaqti, o'qilmaganlar soni); bosilsa chat oynasi ochiladi.
+ * (oxirgi xabar, vaqti, o'qilmaganlar soni); bosilsa to'liq ekranli chat ochiladi.
  * Chat birinchi dars to'langandan keyin paydo bo'ladi (server shunda ochadi).
  */
 import { useCallback, useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { getTeacherConversations, type TeacherConversation } from '../../api/teachers';
 import { useAuth } from '../../context/AuthContext';
-import TeacherChatModal from './TeacherChatModal';
+import TeacherChatScreen, { TEACHER_CHAT_CLOSED_EVENT } from './TeacherChatScreen';
 import { TeacherPhoto } from './market/parts';
 
 /** Bugun — soat, shu hafta — kun nomi, undan oldin — sana. */
@@ -45,8 +45,10 @@ export default function StudentChatsPanel({ token, onUnread, onFindTeacher }: {
 
   useEffect(() => {
     load();
-    const id = window.setInterval(load, 20_000);
-    return () => window.clearInterval(id);
+    const id = window.setInterval(() => { if (document.visibilityState === 'visible') load(); }, 20_000);
+    // Chat yopildi (shu yerdan yoki «Mening darslarim»dan) — o'qilganlar hisobi yangilansin.
+    window.addEventListener(TEACHER_CHAT_CLOSED_EVENT, load);
+    return () => { window.clearInterval(id); window.removeEventListener(TEACHER_CHAT_CLOSED_EVENT, load); };
   }, [load]);
 
   if (!rows) return <div className="h-40 animate-pulse rounded-[24px] bg-app-surface" aria-busy="true" />;
@@ -92,8 +94,8 @@ export default function StudentChatsPanel({ token, onUnread, onFindTeacher }: {
         </ul>
       )}
       {open && user && (
-        <TeacherChatModal token={token} conversationId={open.id} currentUserId={user.id} title={open.teacher_name || 'Ustoz'}
-          onClose={() => { setOpen(null); load(); }} />
+        <TeacherChatScreen token={token} conversationId={open.id} currentUserId={user.id} title={open.teacher_name || 'Ustoz'}
+          avatarUrl={open.teacher_avatar_url ?? null} onClose={() => setOpen(null)} />
       )}
     </div>
   );

@@ -166,11 +166,17 @@ export async function getTeacherConversations(token: string): Promise<TeacherCon
   return data;
 }
 
+/**
+ * Chat xabarlari eskidan yangiga. `after` berilmasa — eng yangi 100 tasi;
+ * berilsa — faqat shu id'dan keyingi xabarlar (polling uchun).
+ */
 export async function getTeacherChatMessages(
   token: string,
   conversationId: number,
+  after?: number | null,
 ): Promise<TeacherChatMessage[]> {
-  const res = await fetch(apiUrl(`/api/teacher-chat/${conversationId}/messages`), {
+  const query = after ? `?after=${encodeURIComponent(String(after))}` : '';
+  const res = await fetch(apiUrl(`/api/teacher-chat/${conversationId}/messages${query}`), {
     headers: authHeaders(token),
   });
   const data = await res.json();

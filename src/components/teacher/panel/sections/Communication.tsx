@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { motion } from 'motion/react';
 import {
   getPanelReviews,
@@ -7,13 +7,10 @@ import {
   type PanelNotification,
   type ReviewsResponse,
 } from '../../../../api/teacherPanel';
-import {
-  getTeacherChatMessages,
-  getTeacherConversations,
-  sendTeacherChatMessage,
-  type TeacherChatMessage,
-  type TeacherConversation,
-} from '../../../../api/teachers';
+import { getTeacherConversations, type TeacherConversation } from '../../../../api/teachers';
+import { useTeacherChatThread } from '../../../../hooks/useTeacherChatThread';
+import ChatScreen from '../../../chat/ChatScreen';
+import { ChatComposer, ChatHeader, ChatMessageList, type ChatBubbleMessage } from '../../../chat/ChatThread';
 import { usePanel } from '../panelContext';
 import { tpl } from '../lang';
 import {
@@ -27,79 +24,146 @@ import {
   fmtDate,
   fmtDateTime,
   fmtTime,
-  inputClass,
+  tashkentDate,
   toneFor,
 } from '../ui';
 
 /* --------------------------------- Xabarlar --------------------------------- */
 
+/** Ikki ustunli ko'rinish `lg` dan boshlab; undan torda — ro'yxat, so'ng to'liq ekranli chat. */
+const LG_QUERY = '(min-width: 1024px)';
+/** Ro'yxatdagi oxirgi xabar va o'qilmaganlar soni shu oraliqda yangilanadi. */
+const LIST_POLL_MS = 20_000;
+const DAY_MS = 86_400_000;
+
+function useIsLg(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(LG_QUERY);
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(LG_QUERY).matches,
+    () => true
+  );
+}
+
 export default function Messages() {
   const { token, t, lang } = usePanel();
+  const isLg = useIsLg();
   const [conversations, setConversations] = useState<TeacherConversation[]>([]);
   const [names, setNames] = useState<Record<number, string>>({});
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [messages, setMessages] = useState<TeacherChatMessage[]>([]);
-  const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
-  const endRef = useRef<HTMLDivElement>(null);
+  const thread = useTeacherChatThread(token, activeId);
+
+  const loadConversations = useCallback(
+    () =>
+      getTeacherConversations(token)
+        .then((convos) => {
+          setConversations(convos);
+          setErr('');
+          return convos;
+        })
+        .catch((e: Error) => {
+          setErr(e.message);
+          return null;
+        }),
+    [token]
+  );
 
   useEffect(() => {
     let alive = true;
-    Promise.all([getTeacherConversations(token), getPanelStudents(token, 'all')])
+    Promise.all([loadConversations(), getPanelStudents(token, 'all').catch(() => null)])
       .then(([convos, students]) => {
         if (!alive) return;
-        setConversations(convos);
         const map: Record<number, string> = {};
-        for (const s of students.students) map[s.user_id] = s.name;
+        for (const s of students?.students ?? []) map[s.user_id] = s.name;
         setNames(map);
-        setActiveId((id) => id ?? convos[0]?.id ?? null);
+        // Kompyuterda birinchi yozishma darhol ochiladi; telefonda avval ro'yxat ko'rinadi.
+        if (window.matchMedia(LG_QUERY).matches) setActiveId((id) => id ?? convos?.[0]?.id ?? null);
       })
-      .catch((e: Error) => alive && setErr(e.message))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [token]);
-
-  const loadMessages = useCallback(
-    async (id: number) => {
-      try {
-        setMessages(await getTeacherChatMessages(token, id));
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : t.errorGeneric);
-      }
-    },
-    [token, t.errorGeneric]
-  );
+  }, [token, loadConversations]);
 
   useEffect(() => {
-    if (activeId) void loadMessages(activeId);
-  }, [activeId, loadMessages]);
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void loadConversations();
+    }, LIST_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [loadConversations]);
 
+  // Ochiq yozishmada yangi xabar — ro'yxatdagi oxirgi xabar va vaqt ham darhol yangilansin.
+  const lastMessage = thread.messages[thread.messages.length - 1];
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' });
-  }, [messages]);
+    if (!activeId || !lastMessage || Number(lastMessage.conversation_id) !== activeId) return;
+    setConversations((list) =>
+      list.map((c) =>
+        c.id === activeId
+          ? {
+              ...c,
+              unread: 0,
+              last_message_at: lastMessage.created_at,
+              last_message: {
+                content: lastMessage.content.slice(0, 140),
+                mine: lastMessage.sender_user_id !== c.student_user_id,
+                created_at: lastMessage.created_at,
+              },
+            }
+          : c
+      )
+    );
+  }, [activeId, lastMessage]);
 
-  const send = async () => {
-    if (!activeId || !text.trim()) return;
-    setSending(true);
-    try {
-      await sendTeacherChatMessage(token, activeId, text.trim());
-      setText('');
-      await loadMessages(activeId);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : t.errorGeneric);
-    } finally {
-      setSending(false);
-    }
+  const open = (id: number) => {
+    setActiveId(id);
+    setConversations((list) => list.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
   };
 
-  if (loading) return <Skeleton rows={3} />;
+  const closeThread = useCallback(() => {
+    setActiveId(null);
+    void loadConversations();
+  }, [loadConversations]);
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const nameOf = (c: TeacherConversation) => c.student_name || names[c.student_user_id] || t.studentRole;
+
+  const bubbles = useMemo<ChatBubbleMessage[]>(
+    () =>
+      active
+        ? thread.messages.map((m) => ({
+            id: m.id,
+            content: m.content,
+            created_at: m.created_at,
+            mine: m.sender_user_id !== active.student_user_id,
+          }))
+        : [],
+    [thread.messages, active]
+  );
+
+  const formatDay = useCallback(
+    (iso: string) => {
+      const day = tashkentDate(iso);
+      if (day === tashkentDate()) return t.today;
+      if (day === tashkentDate(new Date(Date.now() - DAY_MS))) return t.chatYesterday;
+      return fmtDate(iso, lang);
+    },
+    [t, lang]
+  );
+  /** Ro'yxatdagi vaqt: bugun — soat, aks holda sana. */
+  const listTime = (iso: string | null | undefined) =>
+    !iso ? '' : tashkentDate(iso) === tashkentDate() ? fmtTime(iso) : fmtDate(iso, lang);
+
+  if (loading) return <Skeleton rows={3} />;
+
+  const activeName = active ? nameOf(active) : '';
+  const activeAvatar = active ? (
+    <Avatar name={activeName} size={40} url={active.student_avatar_url ?? null} tone={toneFor(activeName)} />
+  ) : null;
 
   return (
     <div>
@@ -109,103 +173,101 @@ export default function Messages() {
       {conversations.length === 0 ? (
         <Empty text={t.messagesEmpty} hint={t.messagesHint} />
       ) : (
-        <section className="flex min-h-[480px] overflow-hidden rounded-[22px] border border-app-border bg-app-surface lg:min-h-[560px]">
-          <ul className={`min-w-0 overflow-y-auto lg:w-[300px] lg:flex-none lg:border-r lg:border-app-bg-subtle ${active ? 'max-lg:hidden' : 'flex-1'}`}>
-            {conversations.map((c) => (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => setActiveId(c.id)}
-                  className={`flex w-full items-center gap-2.5 border-b border-app-bg-subtle p-3 text-left transition ${
-                    c.id === activeId ? 'lg:bg-app-icon-bg' : 'hover:bg-[var(--app-row-hover)]'
-                  }`}
-                >
-                  <Avatar name={nameOf(c)} size={44} tone={toneFor(nameOf(c))} />
-                  <span className="min-w-0 flex-1">
-                    <span className="flex justify-between gap-1.5">
-                      <b className="truncate text-[14px] text-app-text">{nameOf(c)}</b>
-                      <span className="shrink-0 text-[12px] text-app-text-muted">
-                        {c.last_message_at ? fmtTime(c.last_message_at) : ''}
+        <section className="flex overflow-hidden rounded-[22px] border border-app-border bg-app-surface lg:h-[min(720px,calc(100dvh-220px))] lg:min-h-[480px]">
+          <ul className="min-w-0 flex-1 overflow-y-auto lg:w-[320px] lg:flex-none lg:border-r lg:border-app-bg-subtle">
+            {conversations.map((c) => {
+              const selected = isLg && c.id === activeId;
+              const unread = c.id === activeId ? 0 : (c.unread ?? 0);
+              const name = nameOf(c);
+              const preview = c.last_message
+                ? `${c.last_message.mine ? t.chatYouPrefix : ''}${c.last_message.content}`
+                : t.chatNoMessagesYet;
+              return (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => open(c.id)}
+                    aria-current={selected ? 'true' : undefined}
+                    className={`flex min-h-[72px] w-full items-center gap-3 border-b border-app-bg-subtle px-3.5 py-3 text-left transition active:bg-app-bg-subtle ${
+                      selected ? 'bg-app-icon-bg' : 'hover:bg-[var(--app-row-hover)]'
+                    }`}
+                  >
+                    <Avatar name={name} size={46} url={c.student_avatar_url ?? null} tone={toneFor(name)} />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline justify-between gap-2">
+                        <b className="truncate text-[15px] text-app-text">{name}</b>
+                        <span className={`shrink-0 text-[12px] font-semibold ${unread ? 'text-app-primary' : 'text-app-text-muted'}`}>
+                          {listTime(c.last_message?.created_at ?? c.last_message_at)}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 flex items-center justify-between gap-2">
+                        <span className={`truncate text-[13.5px] ${unread ? 'font-bold text-app-text' : 'text-app-text-muted'}`}>{preview}</span>
+                        {unread > 0 ? (
+                          <span className="flex h-6 min-w-[24px] shrink-0 items-center justify-center rounded-full bg-app-primary px-1.5 text-[12px] font-extrabold tabular-nums text-white">
+                            {unread > 99 ? '99+' : unread}
+                          </span>
+                        ) : null}
                       </span>
                     </span>
-                    <span className="block truncate text-[13px] text-app-text-muted">
-                      {c.last_message_at ? fmtDate(c.last_message_at, lang) : ''}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
 
-          {active ? (
-            <div className="flex min-w-0 flex-1 flex-col">
-              <div className="flex items-center gap-2.5 border-b border-app-bg-subtle px-3.5 py-2.5">
-                <button
-                  type="button"
-                  onClick={() => setActiveId(null)}
-                  aria-label={t.back}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-app-bg-muted text-[16px] font-extrabold text-app-text lg:hidden"
-                >
-                  ←
-                </button>
-                <Avatar name={nameOf(active)} size={40} tone={toneFor(nameOf(active))} />
-                <b className="min-w-0 flex-1 truncate text-[14px] text-app-text">{nameOf(active)}</b>
-              </div>
-
-              <div className="flex max-h-[60vh] min-h-[320px] flex-1 flex-col gap-2 overflow-y-auto bg-[#F8FAFC] p-4 lg:max-h-none">
-                {messages.map((m) => {
-                  const mine = m.sender_user_id !== active.student_user_id;
-                  return (
-                    <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                      <div
-                        className={`max-w-[78%] rounded-[16px] px-3 py-2.5 text-[14px] leading-[1.5] ${
-                          mine
-                            ? 'rounded-br-[4px] bg-app-primary text-white'
-                            : 'rounded-bl-[4px] border border-app-border bg-app-surface text-app-text'
-                        }`}
-                      >
-                        {m.content}
-                        <span className={`mt-0.5 block text-right text-[11px] ${mine ? 'text-[#CDEAE4]' : 'text-app-text-muted'}`}>
-                          {fmtTime(m.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div ref={endRef} />
-              </div>
-
-              <div className="flex gap-2 border-t border-app-bg-subtle p-2.5">
-                <input
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void send();
-                    }
-                  }}
-                  placeholder={t.messagePlaceholder}
-                  aria-label={t.messagePlaceholder}
-                  className={`${inputClass} min-h-[46px]`}
+          {isLg ? (
+            active ? (
+              <div className="flex min-w-0 flex-1 flex-col">
+                <ChatHeader title={activeName} subtitle={t.studentRole} avatar={activeAvatar} />
+                <ChatMessageList
+                  key={active.id}
+                  messages={bubbles}
+                  loading={thread.loading}
+                  error={thread.loadError}
+                  onRetry={() => void thread.retry()}
+                  emptyText={t.chatThreadEmpty}
+                  retryLabel={t.retry}
+                  formatTime={fmtTime}
+                  formatDay={formatDay}
                 />
-                <button
-                  type="button"
-                  onClick={() => void send()}
-                  disabled={sending || !text.trim()}
-                  className="min-h-[46px] shrink-0 rounded-[12px] bg-app-primary px-[18px] text-[14px] font-bold text-white transition hover:bg-app-primary-deep disabled:opacity-50"
-                >
-                  {t.send}
-                </button>
+                <ChatComposer
+                  key={`composer-${active.id}`}
+                  onSend={thread.send}
+                  sending={thread.sending}
+                  error={thread.sendError}
+                  placeholder={t.messagePlaceholder}
+                  sendLabel={t.send}
+                  autoFocus
+                />
               </div>
-            </div>
-          ) : (
-            <div className="hidden flex-1 items-center justify-center p-10 lg:flex">
-              <p className="text-[14px] text-app-text-muted">{t.chooseChat}</p>
-            </div>
-          )}
+            ) : (
+              <div className="flex flex-1 items-center justify-center p-10">
+                <p className="text-[14px] text-app-text-muted">{t.chooseChat}</p>
+              </div>
+            )
+          ) : null}
         </section>
       )}
+
+      {!isLg && active ? (
+        <ChatScreen
+          key={active.id}
+          title={activeName}
+          subtitle={t.studentRole}
+          avatar={activeAvatar}
+          onClose={closeThread}
+          messages={bubbles}
+          loading={thread.loading}
+          loadError={thread.loadError}
+          onRetry={() => void thread.retry()}
+          onSend={thread.send}
+          sending={thread.sending}
+          sendError={thread.sendError}
+          labels={{ back: t.back, send: t.send, placeholder: t.messagePlaceholder, empty: t.chatThreadEmpty, retry: t.retry }}
+          formatTime={fmtTime}
+          formatDay={formatDay}
+        />
+      ) : null}
     </div>
   );
 }

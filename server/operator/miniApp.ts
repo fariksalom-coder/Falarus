@@ -13,6 +13,7 @@ import { audit, enabled, transaction } from './service.js';
 import { createOperatorCustomer, customerEmail, customerName, customerPhone, matchingCustomer, OPERATOR_INITIAL_CUSTOMER_PASSWORD } from './customer.js';
 import { dueDate, money, paymentFits } from './domain.js';
 import { operatorTariffCatalog, OPERATOR_CURRENCIES } from '../../shared/operatorTariffs.js';
+import { invalidateAccessCache } from '../services/subscription.service.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -24,6 +25,35 @@ const TARIFFS = [
   { code: 'three_month', label: '3 oy' },
   { code: 'six_month', label: '6 oy' },
 ] as const;
+
+/** Same free week the admin panel gives (adminCreateUser.service): access only, no payment row, once per client. */
+export const WEEK_TRIAL_DAYS = 7;
+const WEEK_TRIAL_PLAN = '1 HAFTA';
+
+async function grantWeekTrial(operatorId: number, userId: number): Promise<string> {
+  return transaction(async (c) => {
+    const u = (await c.query('SELECT id,plan_name,plan_expires_at,access_frozen_at FROM users WHERE id=$1 FOR UPDATE', [userId])).rows[0];
+    if (!u) throw new Error('Foydalanuvchi topilmadi.');
+    if (u.access_frozen_at) throw new Error('Bu o‘quvchining kirishi admin tomonidan muzlatilgan.');
+    const given = (await c.query(
+      `SELECT 1 FROM operator_audit WHERE user_id=$1 AND action='week_trial_granted'
+       UNION ALL SELECT 1 FROM users WHERE id=$1 AND plan_name=$2 LIMIT 1`, [userId, WEEK_TRIAL_PLAN])).rowCount;
+    if (given) throw new Error('Bu o‘quvchiga bepul hafta oldin berilgan.');
+    const active = (await c.query(
+      `SELECT max(expires_at) AS until FROM subscriptions WHERE user_id=$1 AND status='active' AND expires_at>now()`, [userId])).rows[0]?.until;
+    const planUntil = u.plan_expires_at && +new Date(u.plan_expires_at) > Date.now() ? u.plan_expires_at : null;
+    const until = active ?? planUntil;
+    if (until) {
+      const date = new Date(until).toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', year: 'numeric' });
+      throw new Error(`O‘quvchida faol obuna bor (${date} gacha). Bepul hafta kerak emas.`);
+    }
+    const expires = new Date(Date.now() + WEEK_TRIAL_DAYS * 86400000);
+    await c.query('UPDATE users SET plan_name=$2,plan_expires_at=$3 WHERE id=$1', [userId, WEEK_TRIAL_PLAN, expires]);
+    await c.query(`INSERT INTO subscriptions(user_id,plan_type,started_at,expires_at,status) VALUES($1,'monthly',now(),$2,'active')`, [userId, expires]);
+    await audit(c, operatorId, null, userId, 'week_trial_granted', { days: WEEK_TRIAL_DAYS, expires_at: expires.toISOString() });
+    return expires.toISOString();
+  });
+}
 
 const SOURCES = ['Instagram', 'Telegram', 'WhatsApp', 'IMO', 'MAX', 'Boshqa'] as const;
 const CURRENCIES = OPERATOR_CURRENCIES;
@@ -445,6 +475,14 @@ export function operatorMiniAppRoutes() {
     });
     res.set('Cache-Control', 'no-store');
     res.json({ user: { id: uid }, initialPassword: OPERATOR_INITIAL_CUSTOMER_PASSWORD });
+  }));
+
+  router.post('/customers/:id/week-trial', miniWrap(async (req, res) => {
+    const userId = asPositiveId(req.params.id);
+    const expiresAt = await grantWeekTrial(req.operator.id, userId);
+    invalidateAccessCache(userId);
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, plan_name: WEEK_TRIAL_PLAN, plan_expires_at: expiresAt });
   }));
 
   router.post('/contracts/:id/deferrals', miniWrap(async (req, res) => {

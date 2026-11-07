@@ -16,58 +16,13 @@ import { resolveAssetUrl } from '../../api';
 import { useLocale } from '../../context/LocaleContext';
 import { usePartnerRealtimeChat } from '../../hooks/usePartnerRealtimeChat';
 import { isRealtimeEnabled } from '../../lib/dbFacadeClient';
+import { useChatLayout } from '../../hooks/useChatLayout';
 
 type Props = {
   match: PartnerMatch;
   onEnded: () => void;
   onBack?: () => void;
 };
-
-const SM_BREAKPOINT = 640;
-const NAV_BAR_HEIGHT = 79;
-
-function useChatLayout() {
-  const [state, setState] = useState(() => {
-    const w = typeof window !== 'undefined' ? window : null;
-    const vv = w?.visualViewport;
-    return {
-      vpHeight: vv?.height ?? w?.innerHeight ?? 800,
-      vpOffsetTop: vv?.offsetTop ?? 0,
-      innerHeight: w?.innerHeight ?? 800,
-      isDesktop: (w?.innerWidth ?? 1024) >= SM_BREAKPOINT,
-    };
-  });
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const update = () => {
-      setState({
-        vpHeight: vv?.height ?? window.innerHeight,
-        vpOffsetTop: vv?.offsetTop ?? 0,
-        innerHeight: window.innerHeight,
-        isDesktop: window.innerWidth >= SM_BREAKPOINT,
-      });
-    };
-    vv?.addEventListener('resize', update);
-    vv?.addEventListener('scroll', update);
-    window.addEventListener('resize', update);
-    return () => {
-      vv?.removeEventListener('resize', update);
-      vv?.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, []);
-
-  const keyboardOpen = !state.isDesktop && state.vpHeight < state.innerHeight - 80;
-
-  const containerStyle: React.CSSProperties = state.isDesktop
-    ? { top: NAV_BAR_HEIGHT, left: 0, right: 0, bottom: 0 }
-    : keyboardOpen
-      ? { top: state.vpOffsetTop, left: 0, right: 0, height: state.vpHeight }
-      : { top: 0, left: 0, right: 0, bottom: 0 };
-
-  return { containerStyle, keyboardOpen, isDesktop: state.isDesktop, vpHeight: state.vpHeight };
-}
 
 export default function PartnerChat({ match, onEnded, onBack }: Props) {
   const { token, user } = useAuth();

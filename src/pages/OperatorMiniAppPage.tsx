@@ -305,6 +305,33 @@ export default function OperatorMiniAppPage() {
   const [statsRevision, setStatsRevision] = useState(0);
   const [openDebtCurrency, setOpenDebtCurrency] = useState<string | null>(null);
 
+  const [trialConfirm, setTrialConfirm] = useState(false);
+  const [trialBusy, setTrialBusy] = useState(false);
+  const selectedHasAccess = Boolean(selected?.plan_expires_at && +new Date(selected.plan_expires_at) > Date.now());
+
+  useEffect(() => { setTrialConfirm(false); }, [selected?.id]);
+
+  async function grantWeekTrial() {
+    if (!selected || trialBusy) return;
+    setTrialBusy(true);
+    setError('');
+    setNote('');
+    try {
+      const res = await api<{ plan_name: string; plan_expires_at: string }>(`/customers/${selected.id}/week-trial`, { method: 'POST' });
+      const updated = { ...selected, plan_name: res.plan_name, plan_expires_at: res.plan_expires_at };
+      setSelected(updated);
+      setResults((list) => list.map((item) => (item.id === updated.id ? { ...item, plan_name: res.plan_name, plan_expires_at: res.plan_expires_at } : item)));
+      setNote(`1 haftalik bepul kirish ochildi: ${fmtDate(res.plan_expires_at)} gacha.`);
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('success');
+    } catch (e: any) {
+      setError(e.message);
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('error');
+    } finally {
+      setTrialBusy(false);
+      setTrialConfirm(false);
+    }
+  }
+
   function debtActionSubmitted(message: string) {
     setNote(message);
     setStatsRevision(value => value + 1);
@@ -720,6 +747,28 @@ export default function OperatorMiniAppPage() {
                   </div>
                 ) : null}
                 {initialPassword && <p className="mt-3 rounded-lg border border-blue-200 bg-white p-3 text-sm">Parol: <strong className="select-all font-mono text-base">{initialPassword}</strong></p>}
+                <p className={`mt-3 inline-flex rounded-lg px-2 py-1 text-xs font-black ${selectedHasAccess ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                  {subscriptionText(selected)}
+                </p>
+                {!selectedHasAccess && (
+                  trialConfirm ? (
+                    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                      <p className="text-sm font-bold text-amber-800">O‘quvchiga 7 kunlik bepul kirish ochilsinmi? Har o‘quvchiga faqat bir marta beriladi.</p>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button className="h-11 rounded-xl border border-slate-200 bg-white text-sm font-black text-slate-600 active:scale-[0.98]" type="button" disabled={trialBusy} onClick={() => setTrialConfirm(false)}>
+                          Bekor qilish
+                        </button>
+                        <button className="h-11 rounded-xl bg-emerald-600 text-sm font-black text-white disabled:opacity-50 active:scale-[0.98]" type="button" disabled={trialBusy} onClick={() => void grantWeekTrial()}>
+                          {trialBusy ? 'Ochilmoqda...' : 'Ha, ochish'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button className="mt-3 h-11 w-full rounded-xl border border-emerald-300 bg-white text-sm font-black text-emerald-700 disabled:opacity-50 active:scale-[0.98]" type="button" disabled={!hasTelegram} onClick={() => setTrialConfirm(true)}>
+                      1 hafta bepul kirish berish
+                    </button>
+                  )
+                )}
               </div>
             )}
 

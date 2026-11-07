@@ -13,6 +13,7 @@ import {
   checkTrialBooking,
   type TrialRowLike,
 } from '../../shared/teacherTrials.js';
+import { TEACHER_CHAT_PAGE_SIZE, hasUnreadFor, parseChatAfterId, toChronological } from '../../shared/teacherChat.js';
 
 /** Sinov darsi yopilgan: eski mobil ilova shu xabarni ko'rsatadi. */
 const TRIAL_CLOSED = 'Sinov darsi endi yoʻq. Ustoz profilida qulay vaqtni tanlab, oddiy darsga yoziling.';
@@ -1128,17 +1129,23 @@ export function createTeacherRoutes(
       if (!convo || ![Number((convo as any).teacher_user_id), Number((convo as any).student_user_id)].includes(userId)) {
         return res.status(404).json({ error: 'Chat topilmadi' });
       }
-      const { data, error } = await supabase
+      // Birinchi yuklash — eng yangi 100 ta; `?after=<id>` (polling) — faqat shundan keyingilari.
+      const after = parseChatAfterId(req.query?.after);
+      const base = supabase
         .from('teacher_conversation_messages')
         .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
-        .limit(100);
+        .eq('conversation_id', conversationId);
+      const { data, error } = after
+        ? await base.gt('id', after).order('id', { ascending: true }).limit(TEACHER_CHAT_PAGE_SIZE)
+        : await base.order('created_at', { ascending: false }).limit(TEACHER_CHAT_PAGE_SIZE);
       if (error) throw error;
-      // Ochilgan chat — suhbatdoshdan kelgan xabarlar o'qildi.
-      await supabase.from('teacher_conversation_messages').update({ read_at: new Date().toISOString() })
-        .eq('conversation_id', conversationId).neq('sender_user_id', userId).is('read_at', null);
-      res.json(data ?? []);
+      const rows = toChronological((data as any[]) ?? []);
+      // Ochilgan chat — suhbatdoshdan kelgan xabarlar o'qildi (faqat o'qilmagani bo'lsa yoziladi).
+      if (hasUnreadFor(rows, userId)) {
+        await supabase.from('teacher_conversation_messages').update({ read_at: new Date().toISOString() })
+          .eq('conversation_id', conversationId).neq('sender_user_id', userId).is('read_at', null);
+      }
+      res.json(rows);
     } catch (e) {
       console.error('[GET /api/teacher-chat/:conversationId/messages]', e);
       res.status(500).json({ error: 'Xabarlar yuklanmadi' });
