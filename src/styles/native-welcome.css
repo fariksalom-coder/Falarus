@@ -3,7 +3,8 @@
 .native-welcome::before,.native-welcome::after { content:""; position:absolute; z-index:-1; border-radius:50%; background:rgba(255,255,255,.08); pointer-events:none; }
 .native-welcome::before { width:220px; height:220px; right:-60px; top:-58px; }
 .native-welcome::after { width:260px; height:260px; left:-82px; bottom:80px; }
-.native-welcome-language { justify-self:end; position:relative; z-index:2; }
+.native-welcome-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; position:relative; z-index:2; }
+.native-welcome-language { position:relative; z-index:2; }
 .native-welcome-language > button { display:flex; align-items:center; gap:8px; min-height:44px; padding:8px 14px; border:1px solid #ffffff40; border-radius:28px; background:#ffffff10; font-weight:600; font-size:14px; }
 .native-welcome-menu { position:absolute; right:0; top:50px; width:180px; padding:6px; border-radius:14px; background:white; color:#102e6b; box-shadow:0 8px 30px #0003; }
 .native-welcome-menu button { display:block; width:100%; min-height:44px; border-radius:8px; text-align:left; padding:8px 12px; }

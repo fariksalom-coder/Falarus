@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import TeacherRecruitBanner from '../components/landing/TeacherRecruitBanner';
+import TeacherEntryLink from '../components/auth/TeacherEntryLink';
 import { SiteLegalFooter } from '../components/legal/SiteLegalFooter';
 import PricingCard from '../components/pricing/PricingCard';
 import { getLegalEntityMeta, LEGAL_PATHS } from '../config/legalPublic';
@@ -968,6 +969,8 @@ export default function LandingPage() {
 
   if (isNativeApp()) return (
     <main className="native-welcome">
+      <div className="native-welcome-top">
+      <TeacherEntryLink variant="pill" />
       <div className="native-welcome-language">
         <button type="button" aria-expanded={languageMenuOpen} onClick={() => setLanguageMenuOpen(open => !open)}>
           {languageCode === 'uz' ? "O‘zbek (lotin)" : language.label}<ChevronDown size={16} />
@@ -975,6 +978,7 @@ export default function LandingPage() {
         {languageMenuOpen && <div className="native-welcome-menu">
           {languages.map(item => <button key={item.code} type="button" aria-pressed={languageCode === item.code} onClick={() => selectLanguage(item.code)}>{item.label}</button>)}
         </div>}
+      </div>
       </div>
       <div className="native-welcome-brand">
         <div className="native-welcome-mark"><img src="/landing/falarus-mark.svg" alt="" /></div>

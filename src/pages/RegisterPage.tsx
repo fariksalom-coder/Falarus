@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import TeacherEntryLink from '../components/auth/TeacherEntryLink';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { registerAccount, type AuthUser } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
@@ -128,6 +129,8 @@ export default function RegisterPage() {
             title={`${t('auth.createAccountTitle')} ✨`}
             onBack={() => navigate('/')}
           />
+
+          <TeacherEntryLink variant="card" />
 
           <div className="grid grid-cols-2 gap-3">
             <AuthTextField

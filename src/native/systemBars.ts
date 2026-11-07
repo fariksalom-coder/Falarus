@@ -21,8 +21,13 @@ function toHex(css: string): string | null {
 function colorAt(y: number): string | null {
   let el = document.elementFromPoint(window.innerWidth / 2, y) as HTMLElement | null;
   while (el) {
-    const hex = toHex(getComputedStyle(el).backgroundColor);
+    const cs = getComputedStyle(el);
+    const hex = toHex(cs.backgroundColor);
     if (hex) return hex;
+    // Gradient fon (masalan, ko'k sarlavha) — undagi birinchi rang olinadi.
+    const fromGradient = cs.backgroundImage.includes('gradient') ? cs.backgroundImage.match(/rgba?\([^)]*\)/) : null;
+    const g = fromGradient ? toHex(fromGradient[0]) : null;
+    if (g) return g;
     el = el.parentElement;
   }
   return toHex(getComputedStyle(document.body).backgroundColor);
