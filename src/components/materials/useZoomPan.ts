@@ -84,6 +84,9 @@ export function useZoomPan(resetKey: string, onSwipe?: (dir: 1 | -1) => void, dr
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!boxRef.current) return;
+    // Chizish/yozish rejimida brauzerning qo'shimcha «sichqoncha» bosishi o'chiriladi: aks holda u
+    // doskaga matn yozish uchun ochilgan maydondan fokusni olib, klaviaturani darhol yopardi.
+    if (drawRef.current) e.preventDefault();
     try { boxRef.current.setPointerCapture?.(e.pointerId); } catch { /* barmoq allaqachon qo'yib yuborilgan */ }
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const pts = [...pointers.current.values()];
