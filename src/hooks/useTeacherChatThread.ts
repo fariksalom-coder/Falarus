@@ -8,6 +8,7 @@ import { lastChatMessageId, mergeChatMessages } from '../../shared/teacherChat';
 
 /** Ochiq chatda yangi xabarlarni tekshirish oralig'i. */
 const POLL_MS = 4000;
+const NO_MESSAGES: TeacherChatMessage[] = [];
 
 /**
  * Ustoz ↔ o'quvchi chatining bitta suhbati: birinchi yuklash, har 4 soniyada faqat
@@ -19,7 +20,8 @@ const POLL_MS = 4000;
  *   kichikroq id'li xabari o'tkazib yuborilardi.
  */
 export function useTeacherChatThread(token: string | null | undefined, conversationId: number | null) {
-  const [messages, setMessages] = useState<TeacherChatMessage[]>([]);
+  /** Xabarlar qaysi suhbatga tegishli — almashganda eski suhbat xabarlari bir lahza ham ko'rinmasin. */
+  const [thread, setThread] = useState<{ id: number | null; list: TeacherChatMessage[] }>({ id: null, list: [] });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [sendError, setSendError] = useState('');
@@ -38,7 +40,7 @@ export function useTeacherChatThread(token: string | null | undefined, conversat
       const rows = await getTeacherChatMessages(token, conversationId);
       if (session !== sessionRef.current) return;
       cursorRef.current = lastChatMessageId(rows);
-      setMessages(rows);
+      setThread({ id: conversationId, list: rows });
     } catch (e) {
       if (session === sessionRef.current) setLoadError(e instanceof Error ? e.message : 'Xabarlar yuklanmadi');
     } finally {
@@ -59,7 +61,7 @@ export function useTeacherChatThread(token: string | null | undefined, conversat
       setLoading(false);
       if (rows.length === 0) return;
       cursorRef.current = Math.max(cursorRef.current ?? 0, lastChatMessageId(rows) ?? 0);
-      setMessages((prev) => mergeChatMessages(prev, rows));
+      setThread((prev) => ({ id: conversationId, list: prev.id === conversationId ? mergeChatMessages(prev.list, rows) : rows }));
     } catch {
       // Polling xatosi jim o'tadi — keyingi urinishda tiklanadi.
     } finally {
@@ -68,8 +70,8 @@ export function useTeacherChatThread(token: string | null | undefined, conversat
   }, [token, conversationId]);
 
   useEffect(() => {
-    setMessages([]);
     cursorRef.current = null;
+    setSendError('');
     void loadInitial();
   }, [loadInitial]);
 
@@ -95,7 +97,7 @@ export function useTeacherChatThread(token: string | null | undefined, conversat
       setSendError('');
       try {
         const msg = await sendTeacherChatMessage(token, conversationId, text);
-        setMessages((prev) => mergeChatMessages(prev, [msg]));
+        setThread((prev) => (prev.id === conversationId ? { id: prev.id, list: mergeChatMessages(prev.list, [msg]) } : prev));
         return true;
       } catch (e) {
         setSendError(e instanceof Error ? e.message : 'Xabar yuborilmadi');
@@ -107,5 +109,14 @@ export function useTeacherChatThread(token: string | null | undefined, conversat
     [token, conversationId, sending],
   );
 
-  return { messages, loading, loadError, sendError, sending, send, retry: loadInitial };
+  const current = thread.id === conversationId;
+  return {
+    messages: current ? thread.list : NO_MESSAGES,
+    loading: loading || (!current && !loadError),
+    loadError,
+    sendError,
+    sending,
+    send,
+    retry: loadInitial,
+  };
 }

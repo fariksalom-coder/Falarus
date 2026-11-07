@@ -531,6 +531,10 @@ const ru = {
   chooseChat: 'Выберите переписку',
   messagePlaceholder: 'Сообщение…',
   send: 'Отправить',
+  chatYesterday: 'Вчера',
+  chatYouPrefix: 'Вы: ',
+  chatNoMessagesYet: 'Сообщений пока нет',
+  chatThreadEmpty: 'Сообщений пока нет. Напишите ученику первым!',
 
   /* ── Sharhlar ───────────────────────────────────────────────────────── */
   reviewsTitle: 'Отзывы',
@@ -1147,6 +1151,10 @@ const uz: PanelDict = {
   chooseChat: 'Yozishmani tanlang',
   messagePlaceholder: 'Xabar…',
   send: 'Yuborish',
+  chatYesterday: 'Kecha',
+  chatYouPrefix: 'Siz: ',
+  chatNoMessagesYet: 'Hali xabar yoʻq',
+  chatThreadEmpty: 'Hali xabar yoʻq. Oʻquvchiga birinchi boʻlib yozing!',
 
   /* ── Sharhlar ───────────────────────────────────────────────────────── */
   reviewsTitle: 'Sharhlar',
