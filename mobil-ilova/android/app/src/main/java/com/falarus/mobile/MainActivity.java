@@ -17,6 +17,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
 import com.getcapacitor.BridgeWebViewClient;
@@ -44,6 +45,11 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(NotificationSettingsPlugin.class);
         super.onCreate(savedInstanceState);
         Window window = getWindow();
+        // Barcha Android versiyalarida bir xil: oyna edge-to-edge, WebView chegaralarini Capacitor
+        // (adjustMarginsForEdgeToEdge: force) va klaviatura plagini beradi. Android 14 va eskisida
+        // shunday bo'lmasa, tepa ikki marta hisoblanib, klaviatura chatning yozish maydonini yopardi.
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.getDecorView().setBackgroundColor(STATUS_BLUE);
         window.setStatusBarColor(STATUS_BLUE);
         window.setNavigationBarColor(NAV_BLUE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

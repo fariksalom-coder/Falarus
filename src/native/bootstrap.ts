@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -37,7 +38,10 @@ export async function bootstrapNativeShell(): Promise<void> {
   );
 
   try {
-    await StatusBar.setOverlaysWebView({ overlay: false });
+    // Android'da oyna har doim edge-to-edge (MainActivity), joylashuvni Capacitor chegaralari beradi.
+    // `overlay: false` uni Android 14 va eskisida bekor qilardi: tepada ikki baravar ko'k chiziq
+    // paydo bo'lardi va klaviatura ochilganda yozish maydoni uning ostida qolardi.
+    if (Capacitor.getPlatform() !== 'android') await StatusBar.setOverlaysWebView({ overlay: false });
     await StatusBar.setBackgroundColor({ color: '#0B2A6B' });
     await StatusBar.setStyle({ style: Style.Dark });
   } catch {
