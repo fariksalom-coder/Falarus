@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { FileAudio, Loader2, ZoomOut } from 'lucide-react';
 import { PAGE_WIDTHS, type MaterialKind, type PageWidth } from '../../../shared/teacherMaterials';
 import { fetchMaterialBlob, loadPageUrl, type MaterialSource } from '../../api/teacherMaterials';
@@ -34,6 +34,12 @@ export type MaterialViewerProps = {
   draw?: DrawHandlers | null;
   /** Kattalashtirishni uzatish: siljish sahifa eni/bo'yiga nisbatan (har ekranda bir joy). */
   zoomSync?: PageZoomSync;
+  /**
+   * Doskaga matn yozilmoqda: klaviatura ochilsa ham sahifa kichraymaydi — o'lchami qotiriladi,
+   * sahifa suriladi (`focusY` — yozilayotgan joy, 0..1, klaviatura ustida ko'rinib tursin).
+   */
+  holdSize?: boolean;
+  focusY?: number | null;
 };
 
 export type PageZoomSync = { onChange?: (v: View) => void; remote?: View | null };
@@ -46,7 +52,7 @@ function widthFor(cssWidth: number): PageWidth {
 
 export default function MaterialViewer({
   token, source, kind, title, page = 1, pageCount, tone = 'light', loadingText = 'Yuklanmoqda…', errorText = 'Faylni ochib boʻlmadi',
-  onSwipe, overlay, draw, zoomSync,
+  onSwipe, overlay, draw, zoomSync, holdSize = false, focusY = null,
 }: MaterialViewerProps) {
   const dark = tone === 'dark';
   if (!source || kind === 'pdf' || kind === 'image') {
@@ -54,20 +60,28 @@ export default function MaterialViewer({
       <PageView
         token={token} source={source} page={kind === 'image' ? 1 : page} pageCount={kind === 'image' ? 1 : pageCount ?? null}
         title={title} dark={dark} loadingText={loadingText} errorText={errorText} onSwipe={onSwipe} overlay={overlay} draw={draw}
-        zoomSync={zoomSync}
+        zoomSync={zoomSync} holdSize={holdSize} focusY={focusY}
       />
     );
   }
   return <MediaView token={token} source={source!} kind={kind} title={title} dark={dark} loadingText={loadingText} errorText={errorText} />;
 }
 
-function PageView({ token, source, page, pageCount, title, dark, loadingText, errorText, onSwipe, overlay, draw, zoomSync }: {
+function PageView({ token, source, page, pageCount, title, dark, loadingText, errorText, onSwipe, overlay, draw, zoomSync, holdSize, focusY }: {
   token: string | null; source: MaterialSource | null; page: number; pageCount: number | null; title: string; dark: boolean;
   loadingText: string; errorText: string; onSwipe?: (dir: 1 | -1) => void; overlay?: (ratio: number) => ReactNode;
-  draw?: DrawHandlers | null; zoomSync?: PageZoomSync;
+  draw?: DrawHandlers | null; zoomSync?: PageZoomSync; holdSize: boolean; focusY: number | null;
 }) {
   const sourceKey = JSON.stringify(source);
   const [box, setBox] = useState({ w: 0, h: 0 });
+  // Matn yozish boshlangan paytdagi o'lcham: klaviatura joyni qisqartirsa ham sahifa shu o'lchamda qoladi.
+  const [heldBox, setHeldBox] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    if (holdSize) setHeldBox((b) => b ?? box);
+    else setHeldBox(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdSize]);
+  const fitBox = heldBox && heldBox.w === box.w && heldBox.h > box.h ? heldBox : box;
   const [width, setWidth] = useState<PageWidth | null>(null);
   const [shown, setShown] = useState<{ key: string; url: string; ratio: number } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,10 +89,10 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
 
   // Sahifa maydoni: konteynerga sig'adigan eng katta to'rtburchak (chizmalar shu o'lchamga bog'lanadi).
   const pad = 8;
-  const fit = shown && box.w && box.h
+  const fit = shown && fitBox.w && fitBox.h
     ? (() => {
-        const w = Math.max(1, box.w - pad * 2);
-        const h = Math.max(1, box.h - pad * 2);
+        const w = Math.max(1, fitBox.w - pad * 2);
+        const h = Math.max(1, fitBox.h - pad * 2);
         return w / h > shown.ratio ? { w: h * shown.ratio, h } : { w, h: w / shown.ratio };
       })()
     : null;
@@ -97,6 +111,19 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
     onChange: onZoomChange && fitW ? (v: View) => onZoomChange({ s: v.s, x: v.x / fitW, y: v.y / fitH }) : undefined,
   }), [remote, onZoomChange, fitW, fitH]);
   const zoom = useZoomPan(`${sourceKey}:${page}`, onSwipe, draw, sync);
+
+  // Sahifa ko'rinadigan joydan baland (klaviatura ochiq) — yuqoriga/pastga suriladi.
+  const overflow = fit ? Math.max(0, Math.round(fit.h + pad * 2 - box.h)) : 0;
+  const [scrollY, setScrollY] = useState(0);
+  const scrollTo = (y: number) => setScrollY(Math.max(0, Math.min(overflow, y)));
+  useEffect(() => { setScrollY((y) => Math.max(0, Math.min(overflow, y))); }, [overflow]);
+  // Yozilayotgan joy klaviatura ustida — ko'rinadigan qismning yuqori uchdan birida tursin.
+  useEffect(() => {
+    if (!overflow || focusY == null || !fit) return;
+    setScrollY(Math.max(0, Math.min(overflow, Math.round(pad + focusY * fit.h - box.h * 0.3))));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusY, overflow, box.h]);
+  const shiftY = overflow / 2 - scrollY;
 
   useEffect(() => {
     const el = zoom.boxRef.current;
@@ -161,7 +188,7 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
       {shown && fit ? (
         <div
           className="absolute inset-0 flex items-center justify-center will-change-transform"
-          style={{ transform: zoom.transform, transition: zoom.gesturing ? 'none' : 'transform 180ms ease-out' }}
+          style={{ transform: `translate3d(0, ${shiftY}px, 0) ${zoom.transform}`, transition: zoom.gesturing ? 'none' : 'transform 180ms ease-out' }}
         >
           <div className="relative overflow-hidden rounded-[6px] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.18)]" style={{ width: fit.w, height: fit.h }}>
             {shown.url ? (
@@ -189,9 +216,68 @@ function PageView({ token, source, page, pageCount, title, dark, loadingText, er
           <ZoomOut className="h-4 w-4" /> {Math.round(zoom.scale * 100)}%
         </button>
       ) : null}
+      {overflow > 0 ? <ScrollRail viewH={box.h} overflow={overflow} value={scrollY} onChange={scrollTo} /> : null}
       {error && shown ? (
         <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-[#7F1D1D]/80 px-3 py-1.5 text-[12px] font-bold text-white">{errorText}</p>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * O'ng tomondagi surish chizig'i: sahifani barmoq bilan yuqoriga/pastga suradi
+ * (klaviatura ochiq paytda doskaning yashirin qismiga yetish uchun). Bosiladigan joy keng — 32 px.
+ */
+function ScrollRail({ viewH, overflow, value, onChange }: { viewH: number; overflow: number; value: number; onChange: (y: number) => void }) {
+  const track = useRef<HTMLDivElement | null>(null);
+  const grab = useRef<number | null>(null);
+  const inset = 8;
+  const trackH = Math.max(1, viewH - inset * 2);
+  const thumbH = Math.max(36, (trackH * viewH) / (viewH + overflow));
+  const thumbTop = overflow ? (value / overflow) * (trackH - thumbH) : 0;
+  const toValue = (clientY: number, offset: number) => {
+    const r = track.current?.getBoundingClientRect();
+    if (!r) return;
+    onChange(((clientY - r.top - offset) / Math.max(1, trackH - thumbH)) * overflow);
+  };
+  const down = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    // Matn yozilayotgan bo'lsa — maydondan chiqmasin (klaviatura yopilmasin, matn joyida qolsin).
+    e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    const r = track.current?.getBoundingClientRect();
+    const y = r ? e.clientY - r.top : 0;
+    // Barmoq "tutqich"ni ushlasa — joyidan suriladi; bo'sh joyga bosilsa — tutqich shu yerga keladi.
+    grab.current = y >= thumbTop && y <= thumbTop + thumbH ? y - thumbTop : thumbH / 2;
+    toValue(e.clientY, grab.current);
+  };
+  const move = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (grab.current == null) return;
+    e.stopPropagation();
+    toValue(e.clientY, grab.current);
+  };
+  const up = (e: ReactPointerEvent<HTMLDivElement>) => { e.stopPropagation(); grab.current = null; };
+  return (
+    <div
+      ref={track}
+      role="scrollbar"
+      aria-orientation="vertical"
+      aria-label="Doskani yuqoriga va pastga surish"
+      aria-valuemin={0}
+      aria-valuemax={Math.round(overflow)}
+      aria-valuenow={Math.round(value)}
+      onPointerDown={down}
+      onPointerMove={move}
+      onPointerUp={up}
+      onPointerCancel={up}
+      className="absolute right-0 z-10 w-8 touch-none"
+      style={{ top: inset, height: trackH }}
+    >
+      <div className="absolute inset-y-0 right-1.5 w-1.5 rounded-full bg-[#0F172A]/20" />
+      <div
+        className="absolute right-0.5 w-3.5 rounded-full bg-[#2563EB] shadow-[0_4px_12px_rgba(37,99,235,0.45)] ring-2 ring-white"
+        style={{ top: thumbTop, height: thumbH }}
+      />
     </div>
   );
 }

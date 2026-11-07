@@ -42,6 +42,11 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
   const [local, setLocal] = useState<LiveStroke | null>(null);
   const [remote, setRemote] = useState<Record<string, LiveStroke & { key: string; seen: number }>>({});
   const [textAt, setTextAt] = useState<{ x: number; y: number } | null>(null);
+  const [textDraft, setTextDraftState] = useState('');
+  // Ref'larda ham: matn oynasidan chiqish (blur) va doskaga yangi bosish bir hodisada kelishi mumkin.
+  const textAtRef = useRef(textAt);
+  const draftRef = useRef('');
+  const textInputRef = useRef<HTMLInputElement | null>(null);
   const [undoCount, setUndoCount] = useState(0);
   const laser = useMemo(() => new LaserTrail(), []);
 
@@ -64,7 +69,10 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
   useEffect(() => {
     drawing.current = null;
     setLocal(null);
+    textAtRef.current = null;
     setTextAt(null);
+    draftRef.current = '';
+    setTextDraftState('');
   }, [key]);
 
   // Boshqa tomonning chizilayotgan chiziqlari.
@@ -203,26 +211,57 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed, key, tool, color, role, toUnit, flushDraft, eraseAt, laser, send, sendDraft, sendLaser]);
 
-  /** Matn asbobi bosishni «chizish» sifatida emas, joy tanlash sifatida oladi. */
+  const setTextDraft = useCallback((v: string) => { draftRef.current = v; setTextDraftState(v); }, []);
+
+  /** Yozilayotgan matnni doskaga qo'yadi (bo'sh bo'lsa — shunchaki yopadi). */
+  const commitText = useCallback(() => {
+    const at = textAtRef.current;
+    const t = draftRef.current.replace(/\s+/g, ' ').trim();
+    textAtRef.current = null;
+    setTextAt(null);
+    draftRef.current = '';
+    setTextDraftState('');
+    if (!t || !at || !key) return;
+    const stroke: Stroke = { id: newStrokeId(), tool: 'text', color: penColor, size: TOOL_SIZE.text, pts: [at.x, at.y], text: t.slice(0, 200) };
+    send({ type: 'ink', key, add: [stroke] });
+    pushUndo({ key, added: [stroke] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, penColor, send]);
+
+  const cancelText = useCallback(() => {
+    textAtRef.current = null;
+    setTextAt(null);
+    draftRef.current = '';
+    setTextDraftState('');
+  }, []);
+
+  // Boshqa asbobga o'tilsa — yozilgan matn yo'qolmasin.
+  useEffect(() => {
+    if (tool !== 'text' && textAtRef.current) commitText();
+  }, [tool, commitText]);
+
+  /**
+   * Matn asbobi: doskaga BIR bosish — shu joyda yozish boshlanadi. Klaviatura shu bosishning
+   * o'zida ochiladi (maydon oldindan tayyor turadi; keyinroq fokus bersak Android klaviaturani ochmaydi).
+   */
   const textDraw: DrawHandlers | null = useMemo(() => {
     if (!allowed || !key || tool !== 'text') return null;
     let at: { x: number; y: number } | null = null;
     return {
       down: (cx, cy) => { at = toUnit(cx, cy); },
       move: () => undefined,
-      up: () => { if (at) setTextAt(at); at = null; },
+      up: () => {
+        if (!at) return;
+        if (textAtRef.current) commitText();
+        const p = at;
+        at = null;
+        textAtRef.current = p;
+        setTextAt(p);
+        textInputRef.current?.focus({ preventScroll: true });
+      },
       cancel: () => { at = null; },
     };
-  }, [allowed, key, tool, toUnit]);
-
-  const commitText = (text: string) => {
-    const t = text.replace(/\s+/g, ' ').trim();
-    if (!t || !textAt || !key) { setTextAt(null); return; }
-    const stroke: Stroke = { id: newStrokeId(), tool: 'text', color: penColor, size: TOOL_SIZE.text, pts: [textAt.x, textAt.y], text: t.slice(0, 200) };
-    send({ type: 'ink', key, add: [stroke] });
-    pushUndo({ key, added: [stroke] });
-    setTextAt(null);
-  };
+  }, [allowed, key, tool, toUnit, commitText]);
 
   // Navbat ref'da; `undoCount` o'zgarganda komponent qayta chiziladi va tugma holati yangilanadi.
   const canUndo = undoCount > 0 && Boolean(key) && undoStack.current.some((e) => e.key === key);
@@ -257,7 +296,7 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     draw: tool === 'text' ? textDraw : draw,
     strokes: key && state ? state.ink[key] ?? [] : [],
     live, laser,
-    textAt, commitText, cancelText: () => setTextAt(null),
+    textAt, textDraft, setTextDraft, commitText, cancelText, textInputRef, textSize: TOOL_SIZE.text, textColor: penColor,
     canUndo, undo, clear,
   };
 }

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Crosshair, Eraser, FilePlus2, Hand, Highlighter, PenLine, Trash2, Type, Undo2, UserPen, X } from 'lucide-react';
+import { Crosshair, Eraser, FilePlus2, Hand, Highlighter, PenLine, Trash2, Type, Undo2, UserPen } from 'lucide-react';
 import type { BoardInk } from './useBoardInk';
 import type { BoardTool } from './ink';
 
@@ -114,66 +114,5 @@ export function InkBar({ ink, teacher, studentCanDraw, onPermit, onBlank }: {
         ) : null}
       </div>
     </div>
-  );
-}
-
-/** Matn yozish oynasi: telefon klaviaturasi bilan qulay — pastdan chiqadi. */
-export function TextSheet({ open, color, onCommit, onCancel }: {
-  open: boolean; color: string; onCommit: (text: string) => void; onCancel: () => void;
-}) {
-  const [value, setValue] = useState('');
-  const input = useRef<HTMLInputElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-    setValue('');
-    const t = window.setTimeout(() => input.current?.focus(), 60);
-    return () => window.clearTimeout(t);
-  }, [open]);
-
-  return (
-    <AnimatePresence>
-      {open ? (
-        <motion.div
-          key="text"
-          className="fixed inset-0 z-[66] flex items-end justify-center bg-[rgba(2,6,23,0.45)] sm:items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onCancel}
-        >
-          <motion.form
-            initial={{ y: 40 }}
-            animate={{ y: 0 }}
-            exit={{ y: 40 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={(e) => { e.preventDefault(); onCommit(value); }}
-            className="w-full max-w-[460px] rounded-t-[24px] bg-[#111C30] p-4 pb-[max(env(safe-area-inset-bottom,0px),16px)] text-white ring-1 ring-white/10 sm:rounded-[24px]"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[15px] font-extrabold">Doskaga matn</p>
-              <button type="button" onClick={onCancel} aria-label="Yopish" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 active:scale-95">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <input
-                ref={input}
-                value={value}
-                maxLength={200}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder="Masalan: я был — men edim"
-                aria-label="Matn"
-                className="min-h-[48px] min-w-0 flex-1 rounded-[14px] bg-white/[0.08] px-3.5 text-[16px] font-bold outline-none ring-1 ring-white/15 focus:ring-2 focus:ring-[#3B82F6]"
-                style={{ color }}
-              />
-              <button type="submit" disabled={!value.trim()} className="min-h-[48px] shrink-0 rounded-[14px] bg-[#2563EB] px-4 text-[14px] font-extrabold transition active:scale-95 disabled:opacity-40">
-                Qoʻshish
-              </button>
-            </div>
-          </motion.form>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
   );
 }

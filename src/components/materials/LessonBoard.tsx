@@ -11,7 +11,7 @@ import { getLessonMaterials, getMaterial, getMaterials, uploadMaterial, type Tea
 import { inkKeyOf, type LessonKind } from '../../../shared/lessonRoom';
 import type { LessonRoom, RoomStatus } from '../../hooks/useLessonRoom';
 import { InkLayer } from './InkLayer';
-import { InkBar, TextSheet } from './BoardTools';
+import { InkBar } from './BoardTools';
 import { useBoardInk } from './useBoardInk';
 import { SyncedMedia } from './SyncedMedia';
 
@@ -205,7 +205,21 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
             onSwipe={swipe}
             draw={ink.draw}
             zoomSync={zoomSync}
-            overlay={ink.key ? (r) => <InkLayer ratio={r} strokes={ink.strokes} live={ink.live} laser={ink.laser} rootRef={overlayRef} /> : undefined}
+            holdSize={Boolean(ink.textAt)}
+            focusY={ink.textAt?.y ?? null}
+            overlay={ink.key ? (r) => (
+              <InkLayer
+                ratio={r}
+                strokes={ink.strokes}
+                live={ink.live}
+                laser={ink.laser}
+                rootRef={overlayRef}
+                editor={ink.tool === 'text' ? {
+                  at: ink.textAt, value: ink.textDraft, color: ink.textColor, size: ink.textSize, inputRef: ink.textInputRef,
+                  onChange: ink.setTextDraft, onCommit: ink.commitText, onCancel: ink.cancelText,
+                } : null}
+              />
+            ) : undefined}
           />
         )}
         <AnimatePresence>
@@ -255,7 +269,6 @@ export function BoardStage({ token, kind, lessonId, room, onClose, onOpenMateria
         call={call}
       />
       <JumpSheet open={jumpOpen} page={page} pages={pages} onGo={(p) => { onPage(p); setJumpOpen(false); }} onClose={() => setJumpOpen(false)} />
-      <TextSheet open={Boolean(ink.textAt)} color={ink.color} onCommit={ink.commitText} onCancel={ink.cancelText} />
     </motion.section>
   );
 }

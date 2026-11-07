@@ -1,4 +1,4 @@
-import { memo, useEffect, useState, type MutableRefObject } from 'react';
+import { memo, useEffect, useState, type MutableRefObject, type RefObject } from 'react';
 import type { Stroke } from '../../../shared/lessonRoom';
 import { INK_W, strokePath } from './ink';
 
@@ -66,15 +66,39 @@ const StrokeShape = memo(function StrokeShape({ s, ratio, done }: { s: LiveStrok
   );
 });
 
-export function InkLayer({ ratio, strokes, live, laser, rootRef }: {
+/** Doskada to'g'ridan-to'g'ri matn yozish (matn asbobi tanlanganda). */
+export type TextEditor = {
+  /** Yozilayotgan joy (0..1); null — maydon tayyor, lekin yashirin. */
+  at: { x: number; y: number } | null;
+  value: string;
+  color: string;
+  /** Matn o'lchami — sahifa enining mingdan bir ulushida (doskadagi matn bilan bir xil). */
+  size: number;
+  inputRef: RefObject<HTMLInputElement | null>;
+  onChange: (v: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+};
+
+export function InkLayer({ ratio, strokes, live, laser, rootRef, editor }: {
   ratio: number;
   strokes: Stroke[];
   /** Chizilayotgan chiziqlar (barmoq hali ko'tarilmagan). */
   live: LiveStroke[];
   laser: LaserTrail;
   rootRef: MutableRefObject<HTMLDivElement | null>;
+  editor?: TextEditor | null;
 }) {
   const h = INK_W / ratio;
+  // Sahifaning haqiqiy eni — yozilayotgan matn doskadagi tayyor matn bilan bir xil o'lchamda chiqsin.
+  const [pageW, setPageW] = useState(0);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setPageW(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [rootRef]);
   // Marker matn ostida qolsin: avval markerlar, keyin pero va matn.
   const ordered = [...strokes.filter((s) => s.tool === 'marker'), ...strokes.filter((s) => s.tool !== 'marker')];
   return (
@@ -84,6 +108,59 @@ export function InkLayer({ ratio, strokes, live, laser, rootRef }: {
         {live.map((s) => <StrokeShape key={`live-${s.id}`} s={s} ratio={ratio} done={false} />)}
       </svg>
       <LaserLayer trail={laser} ratio={ratio} />
+      {editor ? <InlineTextEditor editor={editor} pageW={pageW} /> : null}
+    </div>
+  );
+}
+
+/**
+ * Yozilayotgan matn bosilgan joyning o'zida, tayyor matn ko'rinishida chiqadi.
+ * Ko'rinadigan qism — oddiy matn (eni shu matnga moslashadi), ustida shaffof maydon
+ * (kursor va klaviatura). Enter yoki boshqa joyga bosish — matn doskaga qo'yiladi.
+ */
+function InlineTextEditor({ editor, pageW }: { editor: TextEditor; pageW: number }) {
+  const { at, value, color, size, inputRef, onChange, onCommit, onCancel } = editor;
+  const fontPx = Math.max(12, (size * pageW) / INK_W);
+  const textStyle = {
+    fontSize: fontPx,
+    lineHeight: 1.15,
+    fontWeight: 700,
+    fontFamily: 'Manrope, system-ui, sans-serif',
+  } as const;
+  return (
+    <div
+      className="pointer-events-auto absolute"
+      style={at ? { left: `${at.x * 100}%`, top: `${at.y * 100}%` } : { left: -9999, top: 0, opacity: 0 }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <div
+        className="relative -m-1 rounded-[6px] p-1"
+        style={{ outline: `2px dashed ${color}`, outlineOffset: 1, background: 'rgba(255,255,255,0.55)' }}
+      >
+        <span
+          aria-hidden="true"
+          className="block whitespace-pre"
+          style={{ ...textStyle, color: value ? color : `${color}66`, minWidth: fontPx * 1.2 }}
+        >
+          {value || 'Yozing…'}
+        </span>
+        <input
+          ref={inputRef}
+          value={value}
+          maxLength={200}
+          enterKeyHint="done"
+          autoCapitalize="sentences"
+          aria-label="Doskaga matn"
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
+            else if (e.key === 'Escape') { onCancel(); e.currentTarget.blur(); }
+          }}
+          onBlur={onCommit}
+          className="absolute inset-0 h-full w-full bg-transparent p-1 outline-none"
+          style={{ ...textStyle, color: 'transparent', caretColor: color }}
+        />
+      </div>
     </div>
   );
 }
