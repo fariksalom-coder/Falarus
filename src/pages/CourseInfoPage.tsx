@@ -58,6 +58,9 @@ function WebCourseInfoPage() {
   const [offerError, setOfferError] = useState(false);
   const [mediaError, setMediaError] = useState(false);
   const [needsPlay, setNeedsPlay] = useState(true);
+  // Muqova rasmi topilmasa — singan rasm o'rniga videoning o'z birinchi kadri ko'rinadi.
+  const [posterFailed, setPosterFailed] = useState(false);
+  useEffect(() => { setPosterFailed(false); }, [posterSource]);
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState(false);
   const [guide, setGuide] = useState<{ tariffType: RussianTariffCode; welcomeOffer: boolean } | null>(null);
@@ -117,8 +120,9 @@ function WebCourseInfoPage() {
         <span className="flex h-12 w-12 flex-col items-center justify-center rounded-xl border border-blue-100 bg-[#F2F5FF]"><span className="text-2xl font-bold leading-none">{untilBonus == null ? '—' : String(untilBonus % 60).padStart(2, '0')}</span><span className="mt-1 text-[9px] font-semibold leading-none text-slate-500">SEK</span></span>
       </span>
     </div>
-    <div className="course-info-player relative mx-auto aspect-video w-[calc(100%_-_32px)] overflow-hidden rounded-2xl bg-white ring-2 ring-white shadow-sm"><video ref={video} src={videoSource} poster={posterSource} className="h-full w-full object-contain" controls controlsList="noplaybackrate" playsInline preload="metadata" onSeeking={() => { tracker.onSeeking(); const el = video.current; if (el && el.currentTime > maxPlayed.current + 0.35) el.currentTime = maxPlayed.current; }} onDurationChange={sync} onLoadedData={sync} onLoadedMetadata={() => { applySpeed(); sync(); }} onTimeUpdate={() => { sync(); tracker.onTimeUpdate(); }} onEnded={() => { sync(); tracker.onEnded(); }} onPause={() => tracker.onPause()} onError={() => setMediaError(true)} onPlay={() => { applySpeed(); setNeedsPlay(false); tracker.onPlay(); }} onPlaying={() => setMediaError(false)} />
-      {(needsPlay || mediaError) && <img src={posterSource} alt="Kurs videosidan lavha" className="pointer-events-none absolute inset-0 h-full w-full object-contain bg-white" />}
+    {/* preload="auto": Android ilovasidagi WebView'da "metadata" bilan biroz kutib turgan video ovoz dekoderida xato berib 0:00 da to'xtardi. */}
+    <div className="course-info-player relative mx-auto aspect-video w-[calc(100%_-_32px)] overflow-hidden rounded-2xl bg-white ring-2 ring-white shadow-sm"><video ref={video} src={videoSource} poster={posterSource} className="h-full w-full object-contain" controls controlsList="noplaybackrate" playsInline preload="auto" onSeeking={() => { tracker.onSeeking(); const el = video.current; if (el && el.currentTime > maxPlayed.current + 0.35) el.currentTime = maxPlayed.current; }} onDurationChange={sync} onLoadedData={sync} onLoadedMetadata={() => { applySpeed(); sync(); }} onTimeUpdate={() => { sync(); tracker.onTimeUpdate(); }} onEnded={() => { sync(); tracker.onEnded(); }} onPause={() => tracker.onPause()} onError={(e) => { if (e.currentTarget.error) setMediaError(true); }} onCanPlay={() => setMediaError(false)} onPlay={() => { applySpeed(); setNeedsPlay(false); tracker.onPlay(); }} onPlaying={() => setMediaError(false)} />
+      {(needsPlay || mediaError) && !posterFailed && <img src={posterSource} alt="" onError={() => setPosterFailed(true)} className="pointer-events-none absolute inset-0 h-full w-full object-contain bg-white" />}
       {needsPlay && !mediaError && <button onClick={() => void play()} aria-label="Videoni boshlash" className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg ring-8 ring-blue-500/25"><Play size={28} fill="currentColor" /></button>}
       <div className="absolute right-2 top-2 z-20">
         <button type="button" aria-label="Video tezligi" aria-expanded={speedMenuOpen} aria-controls="course-video-speeds"

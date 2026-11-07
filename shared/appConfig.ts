@@ -105,7 +105,8 @@ export function normalizeWelcomeOffer(raw: unknown): WelcomeOfferSettings {
 /** Faqat sayt ichidagi yo'l (`/videos/...`) yoki https manzil qabul qilinadi. */
 function mediaPath(value: unknown, fallback: string): string {
   const s = typeof value === 'string' ? value.trim() : '';
-  if (/^\/[A-Za-z0-9._~\-/]+$/.test(s) && !s.includes('..')) return s;
+  // `?v=...` — server qo'shadigan fayl versiyasi (keshni yangilash uchun); u ham qabul qilinadi.
+  if (/^\/[A-Za-z0-9._~\-/]+(\?v=[A-Za-z0-9._-]+)?$/.test(s) && !s.includes('..')) return s;
   if (/^https:\/\/[^\s"'<>]+$/i.test(s)) return s;
   return fallback;
 }

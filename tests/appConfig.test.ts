@@ -45,6 +45,9 @@ test('bad settings fall back instead of breaking checkout', () => {
   assert.equal(m.courseOfferVideo, '/videos/welcome-combined.mp4');
   assert.equal(m.paymentGuideVideo, '/payment-guide/russia.mp4');
   assert.equal(normalizeMedia({ courseOfferVideo: '/videos/new-2027.mp4' }).courseOfferVideo, '/videos/new-2027.mp4');
+  // The server appends a file version; the app must keep it, not fall back to the default video.
+  assert.equal(normalizeMedia({ courseOfferVideo: '/videos/new-2027.mp4?v=mupf8dwh-r4zdi' }).courseOfferVideo, '/videos/new-2027.mp4?v=mupf8dwh-r4zdi');
+  assert.equal(normalizeMedia({ courseOfferVideo: '/videos/a.mp4?x=<script>' }).courseOfferVideo, '/videos/welcome-combined.mp4');
 });
 
 test('bonus reveal point is configurable', () => {
