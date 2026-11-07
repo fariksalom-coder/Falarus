@@ -285,19 +285,19 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     if (tool !== 'text' && textAtRef.current) commitText();
   }, [tool, commitText]);
 
-  /** O'quvchi faqat o'zi yozgan matnni o'zgartira oladi, o'qituvchi — hammasini. */
-  const canEdit = useCallback((st: Stroke) => st.tool === 'text' && mine(st), [mine]);
+  /** Doskadagi har qanday matnni (ustozniki ham, o'quvchiniki ham) ikkala tomon tahrirlay oladi. */
+  const canEdit = useCallback((st: Stroke) => st.tool === 'text', []);
 
-  /** Bosilgan joydagi (eng ustidagi) o'zgartirsa bo'ladigan matn. */
+  /** Bosilgan joydagi eng ustidagi matn (bo'lmasa — null). */
   const textAtPoint = useCallback((x: number, y: number): Stroke | null => {
     const s = stateRef.current;
     if (!s || !key) return null;
     const r = overlay.current?.getBoundingClientRect();
     const ratio = r && r.height ? r.width / r.height : 1;
-    const list = (s.ink[key] ?? []).filter(canEdit);
+    const list = (s.ink[key] ?? []).filter((st) => st.tool === 'text');
     for (let i = list.length - 1; i >= 0; i--) if (hitStroke(list[i], x, y, ratio, 0.012)) return list[i];
     return null;
-  }, [key, overlay, canEdit]);
+  }, [key, overlay]);
 
   /**
    * Matn asbobi:
@@ -332,8 +332,10 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
         at = toUnit(cx, cy);
         grab = null;
         if (!at) return;
+        // Matn ustiga yangi matn yozilmaydi: bosilgan joyda matn bo'lsa — o'shani tahrirlash/surish.
         const hit = textAtPoint(at.x, at.y);
-        if (hit) grab = { stroke: hit, dx: at.x - hit.pts[0], dy: at.y - hit.pts[1], moved: false };
+        if (hit && canEdit(hit)) grab = { stroke: hit, dx: at.x - hit.pts[0], dy: at.y - hit.pts[1], moved: false };
+        else if (hit) at = null;
       },
       move: (cx, cy) => {
         if (!grab || !at) return;
@@ -372,7 +374,7 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
       cancel: () => { at = null; grab = null; draggedRef.current = null; setDragged(null); },
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowed, key, tool, toUnit, commitText, textAtPoint, overlay, send]);
+  }, [allowed, key, tool, toUnit, commitText, textAtPoint, canEdit, overlay, send]);
 
 
   // Navbat ref'da; `undoCount` o'zgarganda komponent qayta chiziladi va tugma holati yangilanadi.

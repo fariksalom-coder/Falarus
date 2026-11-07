@@ -25,3 +25,22 @@ test('short text stays on one line and its box grows with the line count', () =>
   assert.ok(many.h > one.h * 2);
   assert.ok(many.x + many.w <= 1);
 });
+
+test('a student may edit or move any board text, but not erase the teacher pen strokes', async () => {
+  const { canApply, emptyRoomState, inkKeyOf } = await import('../shared/lessonRoom');
+  const base = { ...emptyRoomState(), blank: 1, blankCount: 1, studentCanDraw: true };
+  const key = inkKeyOf(base)!;
+  const state = {
+    ...base,
+    ink: {
+      [key]: [
+        { id: 't1', tool: 'text' as const, color: '#EF4444', size: 34, pts: [0.1, 0.1], text: 'Jamshed', by: 'teacher' as const },
+        { id: 'p1', tool: 'pen' as const, color: '#0F172A', size: 7, pts: [0.1, 0.1, 0.2, 0.2], by: 'teacher' as const },
+      ],
+    },
+  };
+  const edit = { type: 'ink' as const, key, remove: ['t1'], add: [{ id: 't2', tool: 'text' as const, color: '#EF4444', size: 34, pts: [0.1, 0.1], text: 'Laziz' }] };
+  assert.equal(canApply('student', edit, state), true, 'teacher text can be replaced');
+  assert.equal(canApply('student', { type: 'ink', key, remove: ['p1'] }, state), false, 'teacher drawing stays');
+  assert.equal(canApply('student', edit, { ...state, studentCanDraw: false }), false, 'only with permission');
+});

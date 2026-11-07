@@ -194,14 +194,15 @@ export function applyRoomOp(state: RoomState, op: RoomOp): RoomState {
 
 /**
  * Kim qaysi o'zgarishni qila oladi. O'qituvchi — hammasini. O'quvchi — ruxsat berilganda faqat
- * hozirgi sahifaga chizadi va faqat o'z chizmalarini o'chiradi (butun sahifani tozalay olmaydi).
+ * hozirgi sahifaga chizadi, o'z chizmalarini o'chiradi va doskadagi MATNLARNI (ustoz yozganini
+ * ham) tahrirlaydi/suradi. Ustozning qalam chizmalarini o'chira olmaydi, sahifani tozalay olmaydi.
  */
 export function canApply(role: RoomRole, op: RoomOp, state: RoomState): boolean {
   if (role === 'teacher') return true;
   if (op.type !== 'ink' || !state.studentCanDraw || op.clear || op.key !== inkKeyOf(state)) return false;
   if (op.remove?.length) {
-    const mine = new Set((state.ink[op.key] ?? []).filter((s) => s.by === 'student').map((s) => s.id));
-    if (!op.remove.every((id) => mine.has(id))) return false;
+    const allowed = new Set((state.ink[op.key] ?? []).filter((s) => s.by === 'student' || s.tool === 'text').map((s) => s.id));
+    if (!op.remove.every((id) => allowed.has(id))) return false;
   }
   return true;
 }
