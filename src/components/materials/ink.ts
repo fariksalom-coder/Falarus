@@ -61,10 +61,82 @@ export function strokePath(s: Pick<Stroke, 'tool' | 'size' | 'pts'>, ratio: numb
   return outlineToPath(outline);
 }
 
-/** Matnning taxminiy chegarasi (0..1) — o'chirgich uchun. */
-function textBox(s: Stroke, ratio: number) {
-  const w = ((s.text?.length ?? 0) * s.size * 0.56) / INK_W;
-  const h = (s.size * 1.25 * ratio) / INK_W;
+/* ───────────── Matn: qatorlarga bo'lish ───────────── */
+
+/** Qatorlar orasidagi masofa (shrift o'lchamiga nisbatan). */
+export const TEXT_LINE = 1.2;
+/** Sahifaning o'ng chetigacha qoldiriladigan bo'sh joy (virtual birlikda). */
+const TEXT_RIGHT_GAP = 14;
+export const TEXT_FONT = 'Manrope, system-ui, sans-serif';
+
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+const widthCache = new Map<string, number>();
+const linesCache = new Map<string, string[]>();
+if (typeof document !== 'undefined' && document.fonts) {
+  // Shrift keyinroq yuklansa — o'lchovlar qayta hisoblanadi (aks holda qatorlar noto'g'ri bo'linadi).
+  document.fonts.addEventListener?.('loadingdone', () => { widthCache.clear(); linesCache.clear(); });
+}
+
+/** Matn eni virtual birlikda (sahifa eni = 1000). Har qurilmada bir xil shrift — bir xil natija. */
+export function textWidth(text: string, size: number): number {
+  const k = `${size}|${text}`;
+  const hit = widthCache.get(k);
+  if (hit != null) return hit;
+  if (measureCtx === undefined) measureCtx = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null;
+  let w = text.length * size * 0.56;
+  if (measureCtx) {
+    measureCtx.font = `700 ${size}px ${TEXT_FONT}`;
+    w = measureCtx.measureText(text).width;
+  }
+  if (widthCache.size > 4000) widthCache.clear();
+  widthCache.set(k, w);
+  return w;
+}
+
+/** Shu joydan sahifaning o'ng chetigacha sig'adigan eng katta en (virtual birlikda). */
+export const textMaxWidth = (size: number, x: number) => Math.max(size * 2, (1 - x) * INK_W - TEXT_RIGHT_GAP);
+
+/**
+ * Uzun matn sahifadan chiqib ketmasin: so'zlar bo'yicha qatorlarga bo'linadi. Juda uzun
+ * so'z (bo'sh joysiz) harflar bo'yicha bo'linadi. Natija saqlanmaydi — har ekranda shu
+ * qoida bilan hisoblanadi, shuning uchun matn hamma joyda bir xil joylashadi.
+ */
+export function textLines(text: string, size: number, x: number): string[] {
+  const maxW = textMaxWidth(size, x);
+  const k = `${size}|${x.toFixed(4)}|${text}`;
+  const hit = linesCache.get(k);
+  if (hit) return hit;
+  const lines: string[] = [];
+  let cur = '';
+  const pushWord = (word: string) => {
+    // So'zning o'zi bir qatorga sig'masa — bo'laklarga.
+    let rest = word;
+    while (textWidth(rest, size) > maxW && rest.length > 1) {
+      let n = rest.length - 1;
+      while (n > 1 && textWidth(rest.slice(0, n), size) > maxW) n -= 1;
+      lines.push(rest.slice(0, n));
+      rest = rest.slice(n);
+    }
+    cur = rest;
+  };
+  for (const word of text.split(' ')) {
+    if (!word) continue;
+    const cand = cur ? `${cur} ${word}` : word;
+    if (textWidth(cand, size) <= maxW) { cur = cand; continue; }
+    if (cur) lines.push(cur);
+    pushWord(word);
+  }
+  if (cur || !lines.length) lines.push(cur);
+  if (linesCache.size > 2000) linesCache.clear();
+  linesCache.set(k, lines);
+  return lines;
+}
+
+/** Matn egallagan to'rtburchak (0..1). */
+export function textBox(s: Pick<Stroke, 'size' | 'pts' | 'text'>, ratio: number) {
+  const lines = textLines(s.text ?? '', s.size, s.pts[0]);
+  const w = Math.max(...lines.map((l) => textWidth(l, s.size)), s.size) / INK_W;
+  const h = (s.size * TEXT_LINE * lines.length * ratio) / INK_W;
   return { x: s.pts[0], y: s.pts[1], w, h };
 }
 

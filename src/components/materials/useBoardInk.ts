@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { INK_MAX_POINTS, canDraw, inkKeyOf, type InkTool, type RoomState, type Stroke } from '../../../shared/lessonRoom';
 import type { LessonRoom } from '../../hooks/useLessonRoom';
-import { INK_COLORS, MARKER_COLORS, TOOL_SIZE, hitStroke, newStrokeId, type BoardTool } from './ink';
+import { INK_COLORS, MARKER_COLORS, TOOL_SIZE, hitStroke, newStrokeId, textBox, type BoardTool } from './ink';
 import { LaserTrail, type LiveStroke } from './InkLayer';
 import type { DrawHandlers } from './useZoomPan';
 
@@ -46,7 +46,13 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
   // Ref'larda ham: matn oynasidan chiqish (blur) va doskaga yangi bosish bir hodisada kelishi mumkin.
   const textAtRef = useRef(textAt);
   const draftRef = useRef('');
-  const textInputRef = useRef<HTMLInputElement | null>(null);
+  const textInputRef = useRef<HTMLTextAreaElement | null>(null);
+  /** Tahrirlanayotgan eski matn (yangi matn yozilayotgan bo'lsa — null). */
+  const [editing, setEditing] = useState<Stroke | null>(null);
+  const editingRef = useRef<Stroke | null>(null);
+  /** Surilayotgan matn: asl nusxa va hozirgi joyi. */
+  const [dragged, setDragged] = useState<{ from: Stroke; pts: [number, number] } | null>(null);
+  const draggedRef = useRef<{ from: Stroke; pts: [number, number] } | null>(null);
   const [undoCount, setUndoCount] = useState(0);
   const laser = useMemo(() => new LaserTrail(), []);
 
@@ -73,6 +79,9 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     setTextAt(null);
     draftRef.current = '';
     setTextDraftState('');
+    editingRef.current = null;
+    setEditing(null);
+    setDragged(null);
   }, [key]);
 
   // Boshqa tomonning chizilayotgan chiziqlari.
@@ -213,55 +222,155 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
 
   const setTextDraft = useCallback((v: string) => { draftRef.current = v; setTextDraftState(v); }, []);
 
-  /** Yozilayotgan matnni doskaga qo'yadi (bo'sh bo'lsa — shunchaki yopadi). */
-  const commitText = useCallback(() => {
-    const at = textAtRef.current;
-    const t = draftRef.current.replace(/\s+/g, ' ').trim();
+  const closeText = () => {
     textAtRef.current = null;
     setTextAt(null);
     draftRef.current = '';
     setTextDraftState('');
-    if (!t || !at || !key) return;
-    const stroke: Stroke = { id: newStrokeId(), tool: 'text', color: penColor, size: TOOL_SIZE.text, pts: [at.x, at.y], text: t.slice(0, 200) };
+    editingRef.current = null;
+    setEditing(null);
+  };
+
+  /**
+   * Yozilganni doskaga qo'yadi. Eski matn tahrirlangan bo'lsa — u yangisiga almashtiriladi
+   * (bitta amal: «orqaga» bilan eski matn qaytadi); bo'shatib qo'yilgan bo'lsa — o'chiriladi.
+   */
+  const commitText = useCallback(() => {
+    const at = textAtRef.current;
+    const old = editingRef.current;
+    const t = draftRef.current.replace(/\s+/g, ' ').trim().slice(0, 200);
+    closeText();
+    if (!at || !key) return;
+    if (old) {
+      if (t === old.text) return;
+      if (!t) {
+        send({ type: 'ink', key, remove: [old.id] });
+        pushUndo({ key, removed: [old] });
+        return;
+      }
+      const next: Stroke = { id: newStrokeId(), tool: 'text', color: old.color, size: old.size, pts: [old.pts[0], old.pts[1]], text: t };
+      send({ type: 'ink', key, add: [next], remove: [old.id] });
+      pushUndo({ key, added: [next], removed: [old] });
+      return;
+    }
+    if (!t) return;
+    const stroke: Stroke = { id: newStrokeId(), tool: 'text', color: penColor, size: TOOL_SIZE.text, pts: [at.x, at.y], text: t };
     send({ type: 'ink', key, add: [stroke] });
     pushUndo({ key, added: [stroke] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, penColor, send]);
 
-  const cancelText = useCallback(() => {
-    textAtRef.current = null;
-    setTextAt(null);
-    draftRef.current = '';
-    setTextDraftState('');
-  }, []);
+  const cancelText = useCallback(() => closeText(), []);
+
+  /** Burchakdagi savat: tahrirlanayotgan matn butunlay o'chadi (yangisi bo'lsa — shunchaki yopiladi). */
+  const deleteText = useCallback(() => {
+    const old = editingRef.current;
+    closeText();
+    textInputRef.current?.blur();
+    if (!old || !key) return;
+    send({ type: 'ink', key, remove: [old.id] });
+    pushUndo({ key, removed: [old] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, send]);
 
   // Boshqa asbobga o'tilsa — yozilgan matn yo'qolmasin.
   useEffect(() => {
     if (tool !== 'text' && textAtRef.current) commitText();
   }, [tool, commitText]);
 
+  /** O'quvchi faqat o'zi yozgan matnni o'zgartira oladi, o'qituvchi — hammasini. */
+  const canEdit = useCallback((st: Stroke) => st.tool === 'text' && (role === 'teacher' || st.by === 'student'), [role]);
+
+  /** Bosilgan joydagi (eng ustidagi) o'zgartirsa bo'ladigan matn. */
+  const textAtPoint = useCallback((x: number, y: number): Stroke | null => {
+    const s = stateRef.current;
+    if (!s || !key) return null;
+    const r = overlay.current?.getBoundingClientRect();
+    const ratio = r && r.height ? r.width / r.height : 1;
+    const list = (s.ink[key] ?? []).filter(canEdit);
+    for (let i = list.length - 1; i >= 0; i--) if (hitStroke(list[i], x, y, ratio, 0.012)) return list[i];
+    return null;
+  }, [key, overlay, canEdit]);
+
   /**
-   * Matn asbobi: doskaga BIR bosish — shu joyda yozish boshlanadi. Klaviatura shu bosishning
-   * o'zida ochiladi (maydon oldindan tayyor turadi; keyinroq fokus bersak Android klaviaturani ochmaydi).
+   * Matn asbobi:
+   *  - bo'sh joyga BIR bosish — shu joyda yozish boshlanadi;
+   *  - eski matnni bosish — uni tahrirlash (eski so'zni o'chirib, yangisini yozish);
+   *  - eski matnni bosib surish — boshqa joyga ko'chirish.
+   * Klaviatura shu bosishning o'zida ochiladi (maydon oldindan tayyor turadi; keyinroq fokus
+   * bersak Android klaviaturani ochmaydi).
    */
   const textDraw: DrawHandlers | null = useMemo(() => {
     if (!allowed || !key || tool !== 'text') return null;
     let at: { x: number; y: number } | null = null;
-    return {
-      down: (cx, cy) => { at = toUnit(cx, cy); },
-      move: () => undefined,
-      up: () => {
-        if (!at) return;
-        if (textAtRef.current) commitText();
-        const p = at;
-        at = null;
-        textAtRef.current = p;
-        setTextAt(p);
-        textInputRef.current?.focus({ preventScroll: true });
-      },
-      cancel: () => { at = null; },
+    let grab: { stroke: Stroke; dx: number; dy: number; moved: boolean } | null = null;
+    const startEditing = (p: { x: number; y: number }, old: Stroke | null) => {
+      if (textAtRef.current) commitText();
+      textAtRef.current = p;
+      setTextAt(p);
+      editingRef.current = old;
+      setEditing(old);
+      const v = old?.text ?? '';
+      draftRef.current = v;
+      setTextDraftState(v);
+      const el = textInputRef.current;
+      if (el) {
+        el.value = v;
+        el.focus({ preventScroll: true });
+        el.setSelectionRange(v.length, v.length);
+      }
     };
-  }, [allowed, key, tool, toUnit, commitText]);
+    return {
+      down: (cx, cy) => {
+        at = toUnit(cx, cy);
+        grab = null;
+        if (!at) return;
+        const hit = textAtPoint(at.x, at.y);
+        if (hit) grab = { stroke: hit, dx: at.x - hit.pts[0], dy: at.y - hit.pts[1], moved: false };
+      },
+      move: (cx, cy) => {
+        if (!grab || !at) return;
+        const p = toUnit(cx, cy);
+        if (!p) return;
+        if (!grab.moved && Math.hypot(p.x - at.x, p.y - at.y) < 0.012) return;
+        grab.moved = true;
+        const r = overlay.current?.getBoundingClientRect();
+        const box = textBox(grab.stroke, r && r.height ? r.width / r.height : 1);
+        // Matn sahifadan chiqib ketmasin.
+        const nx = Math.max(0, Math.min(1 - Math.min(box.w, 0.9), p.x - grab.dx));
+        const ny = Math.max(0, Math.min(1 - box.h, p.y - grab.dy));
+        draggedRef.current = { from: grab.stroke, pts: [nx, ny] };
+        setDragged(draggedRef.current);
+      },
+      up: () => {
+        const p = at;
+        const g = grab;
+        at = null;
+        grab = null;
+        if (!p) return;
+        if (g?.moved) {
+          const d = draggedRef.current;
+          draggedRef.current = null;
+          setDragged(null);
+          if (d && key) {
+            const next: Stroke = { id: newStrokeId(), tool: 'text', color: d.from.color, size: d.from.size, pts: d.pts, text: d.from.text };
+            send({ type: 'ink', key, add: [next], remove: [d.from.id] });
+            pushUndo({ key, added: [next], removed: [d.from] });
+          }
+          return;
+        }
+        if (g) startEditing({ x: g.stroke.pts[0], y: g.stroke.pts[1] }, g.stroke);
+        else startEditing(p, null);
+      },
+      cancel: () => { at = null; grab = null; draggedRef.current = null; setDragged(null); },
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowed, key, tool, toUnit, commitText, textAtPoint, overlay, send]);
+
+  const editableIds = useMemo(
+    () => new Set(key && state ? (state.ink[key] ?? []).filter(canEdit).map((st) => st.id) : []),
+    [state, key, canEdit],
+  );
 
   // Navbat ref'da; `undoCount` o'zgarganda komponent qayta chiziladi va tugma holati yangilanadi.
   const canUndo = undoCount > 0 && Boolean(key) && undoStack.current.some((e) => e.key === key);
@@ -285,9 +394,11 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     pushUndo({ key, removed: all });
   };
 
-  const live = [
+  const live: Array<LiveStroke & { text?: string }> = [
     ...Object.values(remote).filter((d) => d.key === key && !savedIds.has(d.id)),
     ...(local ? [local] : []),
+    // Surilayotgan matn — barmoq ostida.
+    ...(dragged ? [{ ...dragged.from, id: `drag-${dragged.from.id}`, pts: dragged.pts }] : []),
   ];
 
   return {
@@ -296,7 +407,9 @@ export function useBoardInk(room: LessonRoom, state: RoomState | null, overlay: 
     draw: tool === 'text' ? textDraw : draw,
     strokes: key && state ? state.ink[key] ?? [] : [],
     live, laser,
-    textAt, textDraft, setTextDraft, commitText, cancelText, textInputRef, textSize: TOOL_SIZE.text, textColor: penColor,
+    textAt, textDraft, setTextDraft, commitText, cancelText, deleteText, textInputRef,
+    textSize: editing?.size ?? TOOL_SIZE.text, textColor: editing?.color ?? penColor,
+    hiddenTextId: editing?.id ?? dragged?.from.id ?? null, editableIds,
     canUndo, undo, clear,
   };
 }
