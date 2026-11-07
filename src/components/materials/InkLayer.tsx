@@ -195,7 +195,9 @@ function InlineTextEditor({ editor, pageW }: { editor: TextEditor; pageW: number
             onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onMouseDown={(e) => e.preventDefault()}
             onClick={onDelete}
-            className="absolute -right-[22px] -top-[22px] flex h-11 w-11 items-center justify-center"
+            // Savat yozilayotgan matnning ustiga tushmasin: ramkadan tashqarida, uning ustida (sahifa
+            // tepasida yozilsa — pastida). O'ng chetga tekislangan.
+            className={`absolute right-[-6px] flex h-11 w-11 items-center justify-center ${at.y < 0.1 ? 'top-full mt-1' : 'bottom-full mb-1'}`}
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EF4444] text-white shadow-[0_6px_16px_rgba(239,68,68,0.45)] ring-2 ring-white transition active:scale-90">
               <Trash2 className="h-4 w-4" />
