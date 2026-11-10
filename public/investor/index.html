@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FalaRus — для инвесторов</title>
+<meta name="description" content="FalaRus: русский язык для узбекоязычных — уроки, игры, ИИ-преподаватель и маркетплейс учителей. Результаты платформы.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<style>
+  :root {
+    --navy: #16255C;
+    --navy-2: #1E3380;
+    --blue: #2563EB;
+    --blue-soft: #DBEAFE;
+    --gold: #F2C75C;
+    --green: #22A552;
+    --bg: #F8FAFC;
+    --card: #FFFFFF;
+    --border: #E2E8F0;
+    --text: #0F172A;
+    --muted: #64748B;
+    --grid: #E8EDF4;
+    --shadow: 0 14px 34px rgba(148,163,184,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #0B1438;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Stage: one 1280x720 slide scaled to the window ---------- */
+  .viewport { position: fixed; inset: 0; padding-bottom: 64px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .stage { width: 1280px; height: 720px; position: relative; transform-origin: center center; flex: none; }
+  .slide {
+    position: absolute; inset: 0; border-radius: 20px; overflow: hidden;
+    background: var(--bg); padding: 56px 72px 64px;
+    display: flex; flex-direction: column;
+    opacity: 0; transform: translateY(14px); pointer-events: none;
+    transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1);
+  }
+  .slide.active { opacity: 1; transform: none; pointer-events: auto; }
+  .slide.dark { background: radial-gradient(1200px 700px at 85% 0%, #2B44A8 0%, var(--navy) 55%, #0E1A47 100%); color: #fff; }
+
+  /* ---------- Typography ---------- */
+  .eyebrow { font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+  .dark .eyebrow { color: var(--gold); }
+  h1 { font-size: 64px; line-height: 1.04; font-weight: 800; letter-spacing: -0.03em; }
+  h2 { font-size: 40px; line-height: 1.12; font-weight: 800; letter-spacing: -0.02em; max-width: 1020px; }
+  h3 { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 6px; }
+  p, li { font-size: 16px; line-height: 1.5; color: var(--muted); }
+  .dark p, .dark li { color: rgba(255,255,255,.78); }
+  .lead { font-size: 22px; line-height: 1.45; color: var(--muted); max-width: 900px; margin-top: 18px; }
+  .dark .lead { color: rgba(255,255,255,.8); }
+  b, strong { color: var(--text); font-weight: 700; }
+  .dark b, .dark strong { color: #fff; }
+
+  .foot { position: absolute; left: 72px; right: 72px; bottom: 22px; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .dark .foot { color: rgba(255,255,255,.55); }
+
+  /* ---------- Building blocks ---------- */
+  .grid { display: grid; gap: 18px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .split { grid-template-columns: var(--cols); }
+  .tall { flex: 0 0 var(--h); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 24px 26px; box-shadow: var(--shadow); }
+  .dark .card { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); box-shadow: none; }
+  .icon { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue); margin-bottom: 14px; }
+  .icon svg { width: 24px; height: 24px; }
+  .dark .icon { background: rgba(242,199,92,.16); color: var(--gold); }
+
+  .kpi .num { font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: var(--text); }
+  .dark .kpi .num { color: #fff; }
+  .kpi .lbl { margin-top: 10px; font-size: 15px; color: var(--muted); line-height: 1.35; }
+  .dark .kpi .lbl { color: rgba(255,255,255,.72); }
+  .kpi .delta { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--green); background: #E7F6EC; padding: 4px 10px; border-radius: 999px; }
+  .dark .kpi .delta { color: #7EE2A1; background: rgba(41,179,93,.16); }
+
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.18); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  ul.clean { list-style: none; display: grid; gap: 10px; }
+  ul.clean li { position: relative; padding-left: 22px; }
+  ul.clean li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+  .dark ul.clean li::before { background: var(--gold); }
+
+  /* ---------- Charts ---------- */
+  .chart-card { display: flex; flex-direction: column; }
+  .chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .chart-head .big { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+  .chart-head .sub { font-size: 13px; color: var(--muted); }
+  .chart { position: relative; flex: 1; min-height: 200px; }
+  .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .chart .bar { fill: var(--blue); transition: fill .15s; }
+  .chart .bar.partial { fill: url(#hatch); }
+  .chart .hit { fill: transparent; cursor: default; }
+  .chart .hit:hover + .bar, .chart g.col:hover .bar { fill: var(--navy-2); }
+  .chart text { font-size: 12px; fill: var(--muted); }
+  .chart .val { font-size: 12px; font-weight: 700; fill: var(--text); }
+  .chart .gridline { stroke: var(--grid); stroke-width: 1; }
+  .tip {
+    position: absolute; pointer-events: none; z-index: 5; background: var(--text); color: #fff;
+    font-size: 13px; line-height: 1.35; padding: 8px 11px; border-radius: 10px; white-space: nowrap;
+    transform: translate(-50%, calc(-100% - 10px)); opacity: 0; transition: opacity .12s;
+  }
+  .tip b { color: #fff; }
+  .tip.on { opacity: 1; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; background: var(--blue); display: inline-block; }
+  .swatch.hatch { background: repeating-linear-gradient(135deg, var(--blue) 0 2px, #BFD3FB 2px 5px); }
+
+  /* hbar list (geography) */
+  .hlist { display: grid; gap: 12px; }
+  .hrow { display: grid; grid-template-columns: 120px 1fr 64px; align-items: center; gap: 12px; font-size: 15px; }
+  .hrow .track { height: 12px; border-radius: 6px; background: var(--grid); overflow: hidden; }
+  .hrow .fill { height: 100%; border-radius: 6px; background: var(--blue); }
+  .hrow .v { text-align: right; font-weight: 700; color: var(--text); }
+
+  /* tiers table */
+  .tiers { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; }
+  .tiers th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; padding: 0 0 10px; }
+  .tiers td { padding: 10px 0; border-top: 1px solid var(--border); color: var(--text); }
+  .tiers td:last-child, .tiers th:last-child { text-align: right; }
+  .tiers .pct { font-weight: 800; color: var(--blue); }
+
+  .price { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+  .price small { font-size: 15px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+
+  .logo { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 22px; letter-spacing: -0.01em; }
+  .logo svg { width: 40px; height: 40px; }
+
+  .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; }
+  .step { padding: 0 18px 0 0; }
+  .step .n { width: 34px; height: 34px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 800; display: grid; place-items: center; margin-bottom: 14px; font-size: 15px; position: relative; z-index: 1; }
+  .flow::before { content: ""; position: absolute; left: 17px; right: 60px; top: 17px; height: 2px; background: var(--blue-soft); }
+
+  /* ---------- Controls ---------- */
+  .controls { position: fixed; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 10px; z-index: 10; pointer-events: none; }
+  .controls > * { pointer-events: auto; }
+  .btn {
+    min-width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.1); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; gap: 8px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: background .15s, transform .1s;
+  }
+  .btn:hover { background: rgba(255,255,255,.18); }
+  .btn:active { transform: scale(.96); }
+  .btn svg { width: 18px; height: 18px; }
+  .counter { color: rgba(255,255,255,.75); font-size: 14px; align-self: center; min-width: 64px; text-align: center; }
+  .progress { position: fixed; left: 0; top: 0; height: 3px; background: var(--gold); transition: width .35s ease; z-index: 11; }
+
+  /* ---------- Phones / narrow screens: slides stacked, natural height ---------- */
+  @media (max-width: 899px), (max-height: 520px) and (max-width: 1100px) {
+    body { background: var(--bg); }
+    .viewport { position: static; display: block; overflow: visible; padding: 0; }
+    .stage { width: auto; height: auto; transform: none !important; }
+    .slide {
+      position: relative; inset: auto; opacity: 1; transform: none; pointer-events: auto;
+      border-radius: 0; padding: 40px 16px 52px; min-height: auto; border-bottom: 1px solid var(--border);
+    }
+    .slide.dark { border-bottom: 0; }
+    h1 { font-size: 38px; }
+    h2 { font-size: 27px; }
+    .lead { font-size: 17px; }
+    .g2, .g3, .g4, .split { grid-template-columns: 1fr; }
+    .tall { flex: none; }
+    .g4.kpis { grid-template-columns: 1fr 1fr; }
+    .kpi .num { font-size: 32px; }
+    .card { padding: 20px; }
+    .chart { min-height: 220px; height: 220px; }
+    .flow { grid-template-columns: 1fr; gap: 18px; }
+    .flow::before { display: none; }
+    .foot { position: static; margin-top: 24px; flex-direction: column; gap: 4px; }
+    .controls, .progress { display: none; }
+    .hrow { grid-template-columns: 96px 1fr 52px; font-size: 14px; }
+    .spacer { flex: none; height: 24px; }
+    .m-hide { display: none !important; }
+  }
+
+  /* ---------- Print / PDF: one slide per landscape page ---------- */
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    body { background: #fff; }
+    .viewport { position: static; display: block; padding: 0; }
+    .stage { transform: none !important; width: 1280px; height: auto; }
+    .slide { position: relative; opacity: 1; transform: none; width: 1280px; height: 720px; border-radius: 0; page-break-after: always; break-after: page; }
+    .controls, .progress, .tip { display: none !important; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (prefers-reduced-motion: reduce) { .slide { transition: none; } }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="#BFD3FB"></rect>
+      <rect width="2.4" height="6" fill="#2563EB"></rect>
+    </pattern>
+    <symbol id="logo" viewBox="0 0 40 40">
+      <path d="M14.6 5h20.8l-4.4 7.4H10.2z" fill="currentColor"></path>
+      <path d="M14.6 16.4h14.2l-4.4 7.4H10.2z" fill="currentColor"></path>
+      <path d="M10.2 5h6.9l-6.2 30h-6.9z" fill="#F2C75C"></path>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="viewport">
+<main class="stage" id="stage">
+
+  <!-- 1. Title -->
+  <section class="slide dark" data-title="FalaRus">
+    <div class="logo"><svg style="color:#fff"><use href="#logo"></use></svg>FalaRus</div>
+    <div class="spacer"></div>
+    <div class="eyebrow">Платформа для инвесторов · ноябрь 2026</div>
+    <h1>Русский язык для узбекоязычных —<br>через игры, ИИ и живых учителей</h1>
+    <p class="lead">Учим русскому на родном языке ученика: ежедневные уроки, игры, голосовой ИИ-преподаватель, подготовка к экзаменам на патент и ВНЖ и маркетплейс преподавателей.</p>
+    <div class="row" style="margin-top:28px">
+      <span class="pill">Веб · Android · iOS</span>
+      <span class="pill">Запуск — 4 марта 2026</span>
+      <span class="pill" id="pill-users">16 000 пользователей</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>falarus.uz</span><span id="asof-1"></span></div>
+  </section>
+
+  <!-- 2. Problem -->
+  <section class="slide" data-title="Проблема">
+    <div class="eyebrow">Проблема</div>
+    <h2>Русский нужен для работы, документов и жизни в России — а учиться негде и некогда</h2>
+    <div class="spacer"></div>
+    <div class="grid g3">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg></div>
+        <h3>Обязательный экзамен</h3>
+        <p>Для патента на работу и для ВНЖ в России нужно сдать экзамен по русскому языку. Провал — это потеря работы и денег.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Нет времени и денег</h3>
+        <p>Взрослые ученики работают по 10–12 часов. Офлайн-курсы и частные репетиторы — дорого, далеко и по неудобному расписанию.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H8l-4 4z"/><path d="M9 10h.01M12 10h.01M15 10h.01"/></svg></div>
+        <h3>Объяснения не на родном языке</h3>
+        <p>Популярные приложения учат русскому на английском или на самом русском. Начинающему узбекоязычному ученику непонятно и скучно — он бросает.</p>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>FalaRus</span><span>2</span></div>
+  </section>
+
+  <!-- 3. Solution -->
+  <section class="slide" data-title="Решение">
+    <div class="eyebrow">Решение</div>
+    <h2>Одно приложение: учись по 20 минут в день на узбекском — от первых слов до экзамена</h2>
+    <div class="spacer"></div>
+    <div class="grid g4">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h6"/></svg></div>
+        <h3>Ежедневный курс</h3>
+        <p>Слова, грамматика, чтение, диктанты и говорение. Объяснения — на узбекском.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="12" rx="4"/><path d="M7 11v4M5 13h4M15 12h.01M18 14h.01"/></svg></div>
+        <h3>Игры</h3>
+        <p>Свайп слов, цепочки, «корзина слов», спряжение глаголов. Очки, серии дней и рейтинг.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg></div>
+        <h3>ИИ-преподаватель</h3>
+        <p>Голосовой «Устоз» разговаривает с учеником, проверяет перевод и произношение 24/7.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14a6.5 6.5 0 0 1 3 6"/></svg></div>
+        <h3>Живые учителя</h3>
+        <p>Маркетплейс: видеоурок с доской, материалами, тестами и домашними заданиями.</p>
+      </div>
+    </div>
+    <div class="grid g3" style="margin-top:18px">
+      <div class="card kpi"><div class="num">160</div><div class="lbl">жизненных ситуаций-диалогов: банк, врач, работа, документы</div></div>
+      <div class="card kpi"><div class="num">1 098</div><div class="lbl">заданий на говорение и 1 000 диктантов</div></div>
+      <div class="card kpi"><div class="num">Патент · ВНЖ</div><div class="lbl">отдельные курсы подготовки к экзамену по реальным вариантам</div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>FalaRus</span><span>3</span></div>
+  </section>
+
+  <!-- 4. Traction headline -->
+  <section class="slide dark" data-title="Результаты">
+    <div class="eyebrow">Результаты за 8 месяцев</div>
+    <h2 style="color:#fff">С марта 2026 — от нуля до 16 тысяч учеников и 90 млн сум выручки в месяц</h2>
+    <div class="spacer"></div>
+    <div class="grid g4 kpis">
+      <div class="card kpi"><div class="num" data-k="users"></div><div class="lbl">зарегистрированных пользователей</div><span class="delta" data-k="usersDelta"></span></div>
+      <div class="card kpi"><div class="num" data-k="mau"></div><div class="lbl">активных учеников в октябре (MAU)</div><span class="delta" data-k="mauDelta"></span></div>
+      <div class="card kpi"><div class="num" data-k="payers"></div><div class="lbl">платящих клиентов</div><span class="delta" data-k="conv"></span></div>
+      <div class="card kpi"><div class="num" data-k="revTotal"></div><div class="lbl">выручка с запуска, сум</div><span class="delta" data-k="revUsd"></span></div>
+    </div>
+    <div class="grid g3" style="margin-top:18px">
+      <div class="card kpi"><div class="num" data-k="revOct"></div><div class="lbl">выручка за октябрь, сум — лучший месяц</div></div>
+      <div class="card kpi"><div class="num" data-k="hours"></div><div class="lbl">часов обучения на платформе</div></div>
+      <div class="card kpi"><div class="num" data-k="subs"></div><div class="lbl">активных подписок сейчас</div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>Источник: база данных платформы</span><span id="asof-4"></span></div>
+  </section>
+
+  <!-- 5. User growth -->
+  <section class="slide" data-title="Рост пользователей">
+    <div class="eyebrow">Рост</div>
+    <h2>Аудитория удваивается: активных учеников в октябре в 10 раз больше, чем в июне</h2>
+    <div class="spacer"></div>
+    <div class="grid g2 tall" style="--h:380px">
+      <div class="card chart-card">
+        <div class="chart-head"><div><h3>Новые регистрации по месяцам</h3><div class="sub">человек</div></div><div class="big" data-k="regOct"></div></div>
+        <div class="chart" id="chart-reg"></div>
+      </div>
+      <div class="card chart-card">
+        <div class="chart-head"><div><h3>Активные ученики (MAU)</h3><div class="sub">занимались хотя бы один день в месяце</div></div><div class="big" data-k="mau"></div></div>
+        <div class="chart" id="chart-mau"></div>
+      </div>
+    </div>
+    <div class="note"><span class="swatch hatch"></span>Ноябрь — неполный месяц (1–10 ноября)</div>
+    <div class="spacer"></div>
+    <div class="foot"><span>Сейчас: <b data-k="dau"></b> учеников в день · <b data-k="wau"></b> в неделю · <b data-k="mau30"></b> за 30 дней</span><span>5</span></div>
+  </section>
+
+  <!-- 6. Revenue -->
+  <section class="slide" data-title="Выручка">
+    <div class="eyebrow">Выручка</div>
+    <h2>Выручка выросла в 4,8 раза за 4 месяца: с 19 до 90 млн сум в месяц</h2>
+    <div class="spacer"></div>
+    <div class="grid split tall" style="--cols:1.6fr 1fr; --h:400px">
+      <div class="card chart-card">
+        <div class="chart-head"><div><h3>Выручка по месяцам</h3><div class="sub">млн сум, все каналы оплаты</div></div><div class="big" data-k="revOctShort"></div></div>
+        <div class="chart" id="chart-rev"></div>
+        <div class="note"><span class="swatch hatch"></span>Ноябрь — неполный месяц (1–10 ноября)</div>
+      </div>
+      <div class="grid" style="grid-template-rows: repeat(3, 1fr)">
+        <div class="card kpi"><div class="num" data-k="runRate"></div><div class="lbl">годовой темп выручки (октябрь × 12), сум</div></div>
+        <div class="card kpi"><div class="num" data-k="momRev"></div><div class="lbl">рост выручки сентябрь → октябрь</div></div>
+        <div class="card kpi"><div class="num" data-k="arpu"></div><div class="lbl">средний чек на клиента, сум</div></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>Рубли пересчитаны по 150 сум, доллары — по 12 500 сум. Учтены онлайн-оплаты (Rahmat, Click), переводы и рассрочка через операторов.</span><span>6</span></div>
+  </section>
+
+  <!-- 7. Engagement -->
+  <section class="slide" data-title="Вовлечённость">
+    <div class="eyebrow">Вовлечённость</div>
+    <h2>Ученики действительно учатся: в среднем 22 минуты в день</h2>
+    <div class="spacer"></div>
+    <div class="grid split tall" style="--cols:1.3fr 1fr; --h:380px">
+      <div class="card chart-card">
+        <div class="chart-head"><div><h3>Часы обучения по месяцам</h3><div class="sub">суммарно по всем ученикам</div></div><div class="big" data-k="hoursOct"></div></div>
+        <div class="chart" id="chart-hours"></div>
+      </div>
+      <div class="grid g2">
+        <div class="card kpi"><div class="num">51 067</div><div class="lbl">выполненных заданий</div></div>
+        <div class="card kpi"><div class="num">14 346</div><div class="lbl">пройденных ежедневных уроков</div></div>
+        <div class="card kpi"><div class="num">3 954</div><div class="lbl">разговоров с ИИ-преподавателем</div></div>
+        <div class="card kpi"><div class="num">22 мин</div><div class="lbl">среднее время в день на ученика</div></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>Время — за последние 30 дней; задания и уроки — с запуска</span><span>7</span></div>
+  </section>
+
+  <!-- 8. Business model -->
+  <section class="slide" data-title="Как зарабатываем">
+    <div class="eyebrow">Бизнес-модель</div>
+    <h2>Три источника дохода: подписка, экзаменационные курсы и комиссия с уроков учителей</h2>
+    <div class="spacer"></div>
+    <div class="grid g3">
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:8px">1 · Подписка</div>
+        <h3>Курс русского языка</h3>
+        <p style="margin-bottom:14px">Полный доступ к урокам, играм и ИИ-преподавателю.</p>
+        <table class="tiers">
+          <tr><th>Тариф</th><th>Цена</th></tr>
+          <tr><td>1 месяц</td><td><b>400 000 сум</b> · 3 000 ₽</td></tr>
+          <tr><td>3 месяца</td><td><b>530 000 сум</b> · 4 000 ₽</td></tr>
+          <tr><td>6 месяцев</td><td><b>790 000 сум</b> · 6 000 ₽</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:8px">2 · Экзамены</div>
+        <h3>Курсы «Патент» и «ВНЖ»</h3>
+        <p>Отдельная покупка: подготовка к государственному экзамену по русскому языку — тренировочные варианты, аудио, говорение.</p>
+        <div class="spacer"></div>
+        <div class="eyebrow" style="margin:18px 0 8px">Оплата</div>
+        <p>Click, Rahmat, банковский перевод, рассрочка через операторов отдела продаж, покупки в App Store и Google Play.</p>
+      </div>
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:8px">3 · Маркетплейс</div>
+        <h3>Комиссия с каждого урока</h3>
+        <p style="margin-bottom:10px">Учитель сам ставит цену (30 000–500 000 сум). Платформа удерживает комиссию — она снижается с опытом учителя:</p>
+        <table class="tiers">
+          <tr><th>Уроки учителя</th><th>Комиссия</th></tr>
+          <tr><td>1–20</td><td class="pct">33%</td></tr>
+          <tr><td>21–50</td><td class="pct">28%</td></tr>
+          <tr><td>51–200</td><td class="pct">25%</td></tr>
+          <tr><td>201–400</td><td class="pct">22%</td></tr>
+          <tr><td>400+</td><td class="pct">18%</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>Цены — действующие на ноябрь 2026. Пробный урок с учителем — 490 ₽ (73 500 сум).</span><span>8</span></div>
+  </section>
+
+  <!-- 9. Marketplace -->
+  <section class="slide" data-title="Маркетплейс учителей">
+    <div class="eyebrow">Маркетплейс учителей · запущен 23 октября 2026</div>
+    <h2>Учителя приходят за учениками, ученики — за живой практикой. Платформа берёт всё остальное на себя</h2>
+    <div class="spacer"></div>
+    <div class="flow">
+      <div class="step"><div class="n">1</div><h3>Регистрация учителя</h3><p>Анкета, видео-визитка, документы. Модерация командой FalaRus.</p></div>
+      <div class="step"><div class="n">2</div><h3>Ученик выбирает</h3><p>Каталог с ценой, расписанием и отзывами — прямо в приложении.</p></div>
+      <div class="step"><div class="n">3</div><h3>Урок на платформе</h3><p>Видеозвонок, общая доска, презентации, тесты A/B/V/G, чат.</p></div>
+      <div class="step"><div class="n">4</div><h3>Оплата и выплата</h3><p>Ученик платит платформе, учитель получает свою долю на баланс.</p></div>
+    </div>
+    <div class="grid g3" style="margin-top:34px">
+      <div class="card"><h3>Для ученика</h3><p>Проверенный учитель, понятная цена, домашние задания и тесты между уроками.</p></div>
+      <div class="card"><h3>Для учителя</h3><p>Поток учеников из 16 000 пользователей, расписание, платежи и материалы — без собственного маркетинга.</p></div>
+      <div class="card"><h3>Для платформы</h3><p>Комиссия 18–33% с урока и рост удержания: ученик с учителем остаётся дольше.</p></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>Сейчас — пилот: первые учителя и первые оплаченные уроки</span><span>9</span></div>
+  </section>
+
+  <!-- 10. Audience & sales -->
+  <section class="slide" data-title="Аудитория">
+    <div class="eyebrow">Аудитория и продажи</div>
+    <h2>Половина учеников живёт в России, остальные — в Узбекистане и соседних странах</h2>
+    <div class="spacer"></div>
+    <div class="grid g2">
+      <div class="card">
+        <h3 style="margin-bottom:18px">Где живут пользователи</h3>
+        <div class="hlist" id="geo"></div>
+        <p style="margin-top:16px; font-size:13px">По номеру телефона; у 19% страна не определена</p>
+      </div>
+      <div class="grid" style="grid-template-rows: repeat(3, auto)">
+        <div class="card kpi"><div class="num">71%</div><div class="lbl">платящих клиентов — в России: учат язык для работы и документов</div></div>
+        <div class="card kpi"><div class="num">9 027</div><div class="lbl">заявок обработал собственный отдел продаж (CRM) с сентября</div></div>
+        <div class="card kpi"><div class="num" data-k="reg30"></div><div class="lbl">новых регистраций за последние 30 дней</div></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="foot"><span>FalaRus</span><span>10</span></div>
+  </section>
+
+  <!-- 11. Next -->
+  <section class="slide dark" data-title="Дальше">
+    <div class="eyebrow">Что дальше</div>
+    <h2 style="color:#fff">Следующий шаг — масштабировать то, что уже работает</h2>
+    <div class="spacer"></div>
+    <div class="grid g3">
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/></svg></div><h3 style="color:#fff">Маркетплейс</h3><p>Подключить больше проверенных учителей и довести уроки с учителем до заметной доли выручки.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg></div><h3 style="color:#fff">ИИ-преподаватель</h3><p>Больше разговорной практики с ИИ: персональный план, проверка речи, подготовка к экзамену.</p></div>
+      <div class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/><circle cx="12" cy="12" r="9"/></svg></div><h3 style="color:#fff">Новые рынки</h3><p>Та же модель для таджикоязычных и кыргызоязычных учеников — они уже приходят сами.</p></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="row" style="align-items:center; gap:18px">
+      <div class="logo"><svg style="color:#fff"><use href="#logo"></use></svg>FalaRus</div>
+      <span class="pill">falarus.uz</span>
+    </div>
+    <div class="foot"><span id="asof-11"></span><span>11</span></div>
+  </section>
+
+</main>
+</div>
+
+<nav class="controls" aria-label="Навигация по слайдам">
+  <button class="btn" id="prev" aria-label="Предыдущий слайд"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <span class="counter" id="counter"></span>
+  <button class="btn" id="next" aria-label="Следующий слайд"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+  <button class="btn m-hide" id="full" aria-label="Во весь экран"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+</nav>
+
+<script>
+/*
+ * Snapshot of the production database, 10 Nov 2026.
+ * Revenue = approved payments + approved operator (installment) receipts; RUB x150, USD x12 500.
+ * Update these numbers when refreshing the deck.
+ */
+var DATA = {
+  asOf: '10 ноября 2026',
+  months: ['мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя'],
+  partialLast: true,
+  registrations: [339, 165, 304, 1384, 1193, 1290, 4063, 5914, 1346],
+  mau: [164, 63, 62, 621, 957, 1331, 3057, 6306, 1858],
+  revenueUzs: [2074000, 2125000, 1342800, 18890900, 16509250, 32611009, 73491015, 90388001, 20145000],
+  hoursMonths: ['июл', 'авг', 'сен', 'окт', 'ноя'],
+  hours: [558, 1191, 2347, 3660, 1267],
+  usersTotal: 15998,
+  payers: 685,
+  revenueTotalUzs: 257576975,
+  hoursTotal: 9022,
+  activeSubs: 596,
+  dau: 332, wau: 1392, mau30: 4779,
+  reg30: 4228,
+  geo: [['Россия', 8200], ['Узбекистан', 4211], ['Кыргызстан', 249], ['Таджикистан', 244], ['Казахстан', 73]],
+  usdRate: 12500
+};
+
+(function () {
+  var nf = new Intl.NumberFormat('ru-RU');
+  function fmt(n) { return nf.format(Math.round(n)); }
+  function mln(n, d) { return (n / 1e6).toLocaleString('ru-RU', { maximumFractionDigits: d == null ? 1 : d, minimumFractionDigits: 0 }); }
+  var last = DATA.months.length - 1;
+  var oct = last - 1, sep = last - 2;
+
+  var k = {
+    users: fmt(DATA.usersTotal),
+    usersDelta: '+' + fmt(DATA.registrations[oct]) + ' за октябрь',
+    mau: fmt(DATA.mau[oct]),
+    mauDelta: '×' + (DATA.mau[oct] / DATA.mau[sep]).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + ' к сентябрю',
+    payers: fmt(DATA.payers),
+    conv: (DATA.payers / DATA.usersTotal * 100).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + '% конверсия в оплату',
+    revTotal: mln(DATA.revenueTotalUzs, 0) + ' млн',
+    revUsd: '≈ $' + fmt(Math.round(DATA.revenueTotalUzs / DATA.usdRate / 100) * 100),
+    revOct: mln(DATA.revenueUzs[oct], 1) + ' млн',
+    revOctShort: mln(DATA.revenueUzs[oct], 1) + ' млн',
+    hours: fmt(DATA.hoursTotal),
+    hoursOct: fmt(DATA.hours[DATA.hours.length - 2]) + ' ч',
+    subs: fmt(DATA.activeSubs),
+    regOct: fmt(DATA.registrations[oct]),
+    runRate: (DATA.revenueUzs[oct] * 12 / 1e9).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' млрд',
+    momRev: '+' + Math.round((DATA.revenueUzs[oct] / DATA.revenueUzs[sep] - 1) * 100) + '%',
+    arpu: fmt(Math.round(DATA.revenueTotalUzs / DATA.payers / 1000) * 1000),
+    dau: fmt(DATA.dau), wau: fmt(DATA.wau), mau30: fmt(DATA.mau30),
+    reg30: fmt(DATA.reg30)
+  };
+  document.querySelectorAll('[data-k]').forEach(function (el) { var v = k[el.getAttribute('data-k')]; if (v != null) el.textContent = v; });
+  document.getElementById('pill-users').textContent = fmt(DATA.usersTotal) + ' пользователей';
+  ['asof-1', 'asof-4', 'asof-11'].forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = 'Данные на ' + DATA.asOf; });
+
+  // Geography bars
+  var geoMax = DATA.geo[0][1];
+  document.getElementById('geo').innerHTML = DATA.geo.map(function (g) {
+    var pct = Math.round(g[1] / DATA.usersTotal * 100);
+    return '<div class="hrow"><span>' + g[0] + '</span><div class="track"><div class="fill" style="width:' + (g[1] / geoMax * 100).toFixed(1) + '%"></div></div><span class="v">' + (pct >= 1 ? pct + '%' : '<1%') + '</span></div>';
+  }).join('');
+
+  // Single-series bar chart, hover tooltip, last bar hatched when the month is partial.
+  function barChart(id, labels, values, opts) {
+    var host = document.getElementById(id);
+    if (!host) return;
+    var W = Math.max(260, host.clientWidth || 600), H = Math.max(180, host.clientHeight || 260), padL = 6, padR = 6, padT = 22, padB = 26;
+    var n = values.length, max = Math.max.apply(null, values) * 1.08;
+    var slot = (W - padL - padR) / n, bw = Math.min(46, slot * 0.62);
+    var y = function (v) { return padT + (H - padT - padB) * (1 - v / max); };
+    var base = H - padB;
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + opts.aria + '">';
+    [0.5, 1].forEach(function (f) { var gy = y(max / 1.08 * f); svg += '<line class="gridline" x1="0" x2="' + W + '" y1="' + gy + '" y2="' + gy + '"/>'; });
+    svg += '<line x1="0" x2="' + W + '" y1="' + base + '" y2="' + base + '" stroke="#CBD5E1"/>';
+    values.forEach(function (v, i) {
+      var x = padL + slot * i + (slot - bw) / 2, top = y(v), h = Math.max(2, base - top), r = Math.min(4, h / 2);
+      var partial = opts.partialLast && i === n - 1;
+      var d = 'M' + x + ',' + base + 'V' + (top + r) + 'Q' + x + ',' + top + ' ' + (x + r) + ',' + top + 'H' + (x + bw - r) + 'Q' + (x + bw) + ',' + top + ' ' + (x + bw) + ',' + (top + r) + 'V' + base + 'Z';
+      svg += '<g class="col" data-i="' + i + '"><rect class="hit" x="' + (padL + slot * i) + '" y="0" width="' + slot + '" height="' + H + '"/>' +
+        '<path class="bar' + (partial ? ' partial' : '') + '" d="' + d + '"/></g>';
+      if (opts.labelIdx.indexOf(i) >= 0) svg += '<text class="val" x="' + (x + bw / 2) + '" y="' + (top - 7) + '" text-anchor="middle">' + opts.short(v) + '</text>';
+      svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 7) + '" text-anchor="middle">' + labels[i] + '</text>';
+    });
+    svg += '</svg>';
+    host.innerHTML = svg + '<div class="tip"></div>';
+    var tip = host.querySelector('.tip');
+    host.querySelectorAll('g.col').forEach(function (g) {
+      g.addEventListener('mouseenter', function () {
+        var i = +g.getAttribute('data-i');
+        var rect = host.getBoundingClientRect(), bar = g.querySelector('.bar').getBoundingClientRect();
+        tip.innerHTML = '<b>' + opts.full(values[i]) + '</b><br>' + opts.month(i) + (opts.partialLast && i === n - 1 ? ' (1–10)' : '');
+        tip.style.left = (bar.left + bar.width / 2 - rect.left) + 'px';
+        tip.style.top = (bar.top - rect.top) + 'px';
+        tip.classList.add('on');
+      });
+      g.addEventListener('mouseleave', function () { tip.classList.remove('on'); });
+    });
+  }
+  var fullMonths = ['март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь'];
+  var monthOf = function (i) { return fullMonths[i] + ' 2026'; };
+  var thou = function (v) { return v >= 1000 ? (v / 1000).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + 'k' : String(v); };
+  function drawCharts() {
+    barChart('chart-reg', DATA.months, DATA.registrations, { aria: 'Регистрации по месяцам', partialLast: true, labelIdx: [3, 6, 7], short: thou, full: function (v) { return fmt(v) + ' регистраций'; }, month: monthOf });
+    barChart('chart-mau', DATA.months, DATA.mau, { aria: 'Активные ученики по месяцам', partialLast: true, labelIdx: [3, 6, 7], short: thou, full: function (v) { return fmt(v) + ' активных'; }, month: monthOf });
+    barChart('chart-rev', DATA.months, DATA.revenueUzs, { aria: 'Выручка по месяцам', partialLast: true, labelIdx: [3, 5, 6, 7], short: function (v) { return mln(v, 0); }, full: function (v) { return mln(v, 1) + ' млн сум'; }, month: monthOf });
+    barChart('chart-hours', DATA.hoursMonths, DATA.hours, { aria: 'Часы обучения по месяцам', partialLast: true, labelIdx: [0, 3], short: fmt, full: function (v) { return fmt(v) + ' часов'; }, month: function (i) { return fullMonths[i + 4] + ' 2026'; } });
+  }
+  drawCharts();
+  var rt = null;
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(drawCharts, 150); });
+
+  // ---------- Deck navigation ----------
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var cur = 0;
+  function deckMode() { return getComputedStyle(document.querySelector('.controls')).display !== 'none'; }
+  function fit() {
+    if (!deckMode()) { stage.style.transform = ''; return; }
+    var s = Math.min(window.innerWidth / 1280, (window.innerHeight - 84) / 720);
+    stage.style.transform = 'scale(' + s + ')';
+  }
+  function go(i, push) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach(function (s, j) { s.classList.toggle('active', j === cur); s.setAttribute('aria-hidden', j === cur ? 'false' : 'true'); });
+    document.getElementById('counter').textContent = (cur + 1) + ' / ' + slides.length;
+    document.getElementById('progress').style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (push !== false) { try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {} }
+  }
+  document.getElementById('prev').onclick = function () { go(cur - 1); };
+  document.getElementById('next').onclick = function () { go(cur + 1); };
+  document.getElementById('full').onclick = function () {
+    var d = document.documentElement;
+    if (!document.fullscreenElement && d.requestFullscreen) d.requestFullscreen(); else if (document.exitFullscreen) document.exitFullscreen();
+  };
+  document.addEventListener('keydown', function (e) {
+    if (!deckMode()) return;
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].indexOf(e.key) >= 0) { e.preventDefault(); go(cur + 1); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].indexOf(e.key) >= 0) { e.preventDefault(); go(cur - 1); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(slides.length - 1);
+    else if (e.key === 'f') document.getElementById('full').click();
+  });
+  var tx = null;
+  document.addEventListener('touchstart', function (e) { tx = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (tx == null || !deckMode()) return;
+    var dx = e.changedTouches[0].clientX - tx; tx = null;
+    if (Math.abs(dx) > 50) go(cur + (dx < 0 ? 1 : -1));
+  });
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function () { var n = parseInt((location.hash || '').slice(1), 10); if (!isNaN(n) && n - 1 !== cur) go(n - 1, false); });
+  var start = parseInt((location.hash || '').slice(1), 10);
+  go(isNaN(start) ? 0 : start - 1, false);
+  fit();
+})();
+</script>
+</body>
+</html>

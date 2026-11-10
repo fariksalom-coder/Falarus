@@ -4,5 +4,6 @@ Disallow: /admin
 Disallow: /payment
 Disallow: /payment-history
 Disallow: /profile
+Disallow: /investor
 
 Sitemap: https://www.falarus.uz/sitemap.xml

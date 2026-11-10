@@ -231,10 +231,12 @@ const LENDING_YOLI = '/oqituvchilarga';
  * tarqalib ketgan `/oqituvchilarga/` havolalari buzilmasin.
  */
 const TEACHER_INFO_YOLI = '/teacherinfo';
+/** Investorlar uchun taqdimot (statik, indekslanmaydi). */
+const INVESTOR_YOLI = '/investor';
 
 /** Ikkala yo'l ham bir xil statik sahifani beradi, demak sarlavhalar ham bir xil. */
 function lendingSahifasimi(yol: string): boolean {
-  return yol.startsWith(LENDING_YOLI) || yol === TEACHER_INFO_YOLI;
+  return yol.startsWith(LENDING_YOLI) || yol === TEACHER_INFO_YOLI || yol === INVESTOR_YOLI || yol === `${INVESTOR_YOLI}/`;
 }
 
 // Video xonasi alohida manbada (boshqa port) — kamera/mikrofon unga delegatsiya qilinmasa,
@@ -594,6 +596,13 @@ async function startServer() {
   app.get(TEACHER_INFO_YOLI, (_req, res) => {
     const ildiz = isProduction ? 'dist' : 'public';
     res.sendFile(path.resolve(__dirname, ildiz, 'oqituvchilarga', 'index.html'));
+  });
+
+  app.get([INVESTOR_YOLI, `${INVESTOR_YOLI}/`], (_req, res) => {
+    const ildiz = isProduction ? 'dist' : 'public';
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    res.sendFile(path.resolve(__dirname, ildiz, 'investor', 'index.html'));
   });
 
   app.get('/api/health', async (_req, res) => {
