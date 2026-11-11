@@ -71,7 +71,8 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [seoInjectPlugin(), react(), tailwindcss()],
     build: {
-      sourcemap: true,
+      // Mobile builds (MOBILE_BUILD=1) ship inside the app: no source maps there.
+      sourcemap: process.env.MOBILE_BUILD !== '1',
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
