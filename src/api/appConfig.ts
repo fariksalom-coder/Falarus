@@ -41,6 +41,7 @@ function parseConfig(raw: unknown): AppConfig {
     prices,
     welcomeOffer: r.welcomeOffer,
     media: r.media,
+    promo: r.promo,
     updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : null,
   });
 }

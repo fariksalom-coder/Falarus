@@ -9,6 +9,7 @@ import { audit, enqueue, transaction } from './service.js';
 import { paymentFits } from './domain.js';
 import { invalidateAccessCache } from '../services/subscription.service.js';
 import { queueReferralSource } from '../services/referralProgram.service.js';
+import { first1000PromoStatus } from './promo.js';
 export async function decideReceipt(id: number, admin: number, decision: string, reason: string) {
     if (!['approved', 'rejected'].includes(decision))
         throw new Error('Qaror noto‘g‘ri.');
@@ -55,7 +56,7 @@ export async function decideReceipt(id: number, admin: number, decision: string,
         await audit(c, r.operator_id, admin, b.user_id, `receipt_${decision}`, { receipt: id, contract: b.id, amount: r.amount, currency: b.currency, reason });
         const op = (await c.query('SELECT telegram_id FROM operator_accounts WHERE id=$1', [r.operator_id])).rows[0];
         if (op?.telegram_id)
-            await enqueue(c, 'sendMessage', { chat_id: op.telegram_id, text: `Chek #${id}: ${decision === 'approved' ? 'TASDIQLANDI' : 'RAD ETILDI'}\nMijoz #${b.user_id}, ${r.amount} ${b.currency}${reason ? '\nSabab: ' + reason : ''}` }, `decision:${id}`);
+            await enqueue(c, 'sendMessage', { chat_id: op.telegram_id, text: `Chek #${id}: ${decision === 'approved' ? 'TASDIQLANDI' : 'RAD ETILDI'}\nMijoz #${b.user_id}, ${r.amount} ${b.currency}${b.promo ? ' (aksiya −50%)' : ''}${reason ? '\nSabab: ' + reason : ''}` }, `decision:${id}`);
         const balanceAfterDecision = (await c.query('SELECT debt,paid,pending FROM operator_balances WHERE id=$1', [b.id])).rows[0];
         if (Number(balanceAfterDecision.debt) === 0 || (decision === 'rejected' && Number(balanceAfterDecision.paid) === 0 && Number(balanceAfterDecision.pending) === 0))
             await c.query('UPDATE operator_outbox SET delivered_at=now() WHERE contract_id=$1 AND delivered_at IS NULL', [b.id]);
@@ -107,11 +108,11 @@ export function operatorAdminRoutes() {
         const offset = Math.max(0, Math.min(100000, Number(req.query.offset) || 0));
         const args = [op, status, from || null, to || null, source, tariff];
         const filter = `($1::bigint IS NULL OR r.operator_id=$1) AND ($2::text IS NULL OR r.status=$2) AND ($3::date IS NULL OR r.created_at>=($3::date::timestamp AT TIME ZONE 'Asia/Tashkent')) AND ($4::date IS NULL OR r.created_at<(($4::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent')) AND ($5::text IS NULL OR c.source=$5) AND ($6::text IS NULL OR c.tariff=$6)`;
-        const rows = (await pool!.query(`SELECT r.id,r.operator_id,r.amount,r.status,r.reason,r.created_at,r.decided_at,r.admin_id,c.id contract_id,c.user_id,c.currency,c.tariff,c.total,c.source,c.due_at,c.paid,c.debt,c.pending,o.name operator_name,u.first_name,u.last_name,u.phone,u.email,EXISTS(SELECT 1 FROM operator_freezes f WHERE f.user_id=c.user_id) frozen FROM operator_receipts r JOIN operator_balances c ON c.id=r.contract_id JOIN operator_accounts o ON o.id=r.operator_id JOIN users u ON u.id=c.user_id WHERE ${filter} ORDER BY r.id DESC LIMIT 51 OFFSET $7`, [...args, offset])).rows;
+        const rows = (await pool!.query(`SELECT r.id,r.operator_id,r.amount,r.status,r.reason,r.created_at,r.decided_at,r.admin_id,c.id contract_id,c.user_id,c.currency,c.tariff,c.total,c.source,c.due_at,c.paid,c.debt,c.pending,(SELECT oc.promo FROM operator_contracts oc WHERE oc.id=c.id) promo,o.name operator_name,u.first_name,u.last_name,u.phone,u.email,EXISTS(SELECT 1 FROM operator_freezes f WHERE f.user_id=c.user_id) frozen FROM operator_receipts r JOIN operator_balances c ON c.id=r.contract_id JOIN operator_accounts o ON o.id=r.operator_id JOIN users u ON u.id=c.user_id WHERE ${filter} ORDER BY r.id DESC LIMIT 51 OFFSET $7`, [...args, offset])).rows;
         const summary = (await pool!.query(`SELECT r.operator_id,o.name,c.currency,r.status,count(*) receipts,count(distinct c.user_id) clients,sum(r.amount) amount FROM operator_receipts r JOIN operator_contracts c ON c.id=r.contract_id JOIN operator_accounts o ON o.id=r.operator_id WHERE ${filter} GROUP BY r.operator_id,o.name,c.currency,r.status ORDER BY o.name,c.currency`, args)).rows;
         const debts = (await pool!.query(`SELECT c.operator_id,o.name,c.currency,count(*) contracts,count(distinct c.user_id) clients,sum(c.debt) debt,sum(c.debt) FILTER(WHERE c.due_at<now()) overdue,count(*) FILTER(WHERE c.debt=0) settled,count(*) FILTER(WHERE EXISTS(SELECT 1 FROM operator_freezes f WHERE f.contract_id=c.id)) frozen FROM operator_balances c JOIN operator_accounts o ON o.id=c.operator_id WHERE ($1::bigint IS NULL OR c.operator_id=$1) AND ($2::text IS NULL OR c.source=$2) AND ($3::text IS NULL OR c.tariff=$3) AND (c.debt=0 OR c.paid>0 OR c.pending>0) GROUP BY c.operator_id,o.name,c.currency`, [op, source, tariff])).rows;
         const activity = (await pool!.query(`SELECT a.operator_id,o.name,count(*) actions,count(distinct a.user_id) clients FROM operator_audit a JOIN operator_accounts o ON o.id=a.operator_id WHERE ($1::bigint IS NULL OR a.operator_id=$1) AND ($2::date IS NULL OR a.created_at>=($2::date::timestamp AT TIME ZONE 'Asia/Tashkent')) AND ($3::date IS NULL OR a.created_at<(($3::date+1)::timestamp AT TIME ZONE 'Asia/Tashkent')) GROUP BY a.operator_id,o.name`, [op, from || null, to || null])).rows;
-        res.json({ rows: rows.slice(0, 50), more: rows.length > 50, summary, debts, activity });
+        res.json({ rows: rows.slice(0, 50), more: rows.length > 50, summary, debts, activity, promo: await first1000PromoStatus(pool!) });
     }));
     router.get('/salary', wrap(async (req: any, res: any) => {
         const from = String(req.query.from ?? ''), to = String(req.query.to ?? '');

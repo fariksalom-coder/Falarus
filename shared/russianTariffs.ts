@@ -99,3 +99,25 @@ export function formatRussianTariffUzsMing(priceUzs: number): string {
   const ming = Math.round(priceUzs / 1_000);
   return `${ming} ming so‘m`;
 }
+
+/**
+ * Aksiya «birinchi 1000 o‘quvchi»: 3 va 6 oylik tarif −50%.
+ * Faqat ilgari to‘lamagan yangi o‘quvchi uchun; 1000 ta sotuvdan keyin yopiladi.
+ */
+export const FIRST_1000_PROMO = {
+  code: 'first1000',
+  label: 'Aksiya −50%',
+  limit: 1000,
+  prices: {
+    three_month: { rub: 1_990, uzs: 290_000 },
+    six_month: { rub: 2_990, uzs: 435_000 },
+  },
+} as const;
+
+export type PromoTariffCode = keyof typeof FIRST_1000_PROMO.prices;
+
+export function first1000PromoPrice(code: string, currency: string): number | null {
+  const price = (FIRST_1000_PROMO.prices as Record<string, { rub: number; uzs: number }>)[code];
+  if (!price) return null;
+  return currency === 'RUB' ? price.rub : currency === 'UZS' ? price.uzs : null;
+}

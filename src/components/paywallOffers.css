@@ -133,6 +133,7 @@
 .paywall-offer__bonus { margin: 20px 16px 24px; }
 .paywall-offer__bonus-caption { margin-top: 5px; color: #dbe5ff; font-size: 11px; font-weight: 600; }
 .paywall-offer-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.paywall-offer-grid__promo { grid-column: 1 / -1; }
 .paywall-offer--recommended { outline: 2px solid #ffce39; outline-offset: 3px; }
 @media (min-width: 640px) {
   .paywall-offer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }

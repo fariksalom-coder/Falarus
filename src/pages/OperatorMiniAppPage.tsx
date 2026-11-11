@@ -40,7 +40,10 @@ type TariffItem = {
   code: string;
   label: string;
   prices: Array<{ currency: string; amount: number; display: string }>;
+  promoPrices?: Array<{ currency: string; amount: number; display: string }>;
 };
+
+type PromoStatus = { code: string; label: string; limit: number; used: number; left: number };
 
 type StatsResponse = {
   range: { label: string; from: string; to: string };
@@ -280,6 +283,7 @@ export default function OperatorMiniAppPage() {
   const [searchBusy, setSearchBusy] = useState(false);
   const [tariffList, setTariffList] = useState<TariffItem[]>(fallbackTariffs);
   const [currencyList, setCurrencyList] = useState<string[]>(fallbackCurrencies);
+  const [promo, setPromo] = useState<PromoStatus | null>(null);
   const [tab, setTab] = useState<'payment' | 'rahmat' | 'stats' | 'salary'>('payment');
   const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [query, setQuery] = useState('');
@@ -295,6 +299,7 @@ export default function OperatorMiniAppPage() {
     total: String(fallbackTariffs.find((item) => item.code === 'three_month')!.prices.find((item) => item.currency === 'RUB')!.amount),
     amount: String(fallbackTariffs.find((item) => item.code === 'three_month')!.prices.find((item) => item.currency === 'RUB')!.amount),
     dueAt: '',
+    promo: '',
   });
   const [receipt, setReceipt] = useState<File | null>(null);
   const [period, setPeriod] = useState<'today' | 'yesterday' | 'week' | 'month' | 'all' | 'custom'>('today');
@@ -341,7 +346,9 @@ export default function OperatorMiniAppPage() {
   const activeUserId = selected?.id ?? null;
   const isPartial = Number(payment.amount) > 0 && Number(payment.total) > Number(payment.amount);
   const currentTariff = tariffList.find((item) => item.code === payment.tariff) ?? tariffList[0];
-  const currentPrice = currentTariff?.prices.find((item) => item.currency === payment.currency);
+  const currentPrice = (payment.promo ? currentTariff?.promoPrices : currentTariff?.prices)?.find((item) => item.currency === payment.currency);
+  const regularPrice = currentTariff?.prices.find((item) => item.currency === payment.currency);
+  const promoAvailable = Boolean(promo && promo.left > 0);
 
   const selectedLabel = useMemo(() => {
     if (!selected) return '';
@@ -353,16 +360,19 @@ export default function OperatorMiniAppPage() {
     return `${country.dial} ${customer.phoneLocal}`.trim();
   }, [customer.country, customer.phoneLocal]);
 
-  function tariffPrice(tariffCode: string, currency: string) {
-    return tariffList.find((item) => item.code === tariffCode)?.prices.find((item) => item.currency === currency);
+  function tariffPrice(tariffCode: string, currency: string, withPromo: boolean) {
+    const item = tariffList.find((t) => t.code === tariffCode);
+    return (withPromo ? item?.promoPrices : item?.prices)?.find((p) => p.currency === currency);
   }
 
   function applyCatalogPrice(next: Partial<typeof payment>) {
     const tariffCode = next.tariff ?? payment.tariff;
     const currency = next.currency ?? payment.currency;
-    const price = tariffPrice(tariffCode, currency);
+    // The promo only exists for 3 and 6 months: picking 1 month switches it off.
+    const withPromo = Boolean(next.promo ?? payment.promo) && Boolean(tariffPrice(tariffCode, currency, true));
+    const price = tariffPrice(tariffCode, currency, withPromo);
     const total = price?.amount ? String(price.amount) : '';
-    setPayment({ ...payment, ...next, total, amount: total });
+    setPayment({ ...payment, ...next, promo: withPromo ? 'first1000' : '', total, amount: total });
   }
 
   const loadStats = useCallback(async (silent = false) => {
@@ -426,9 +436,10 @@ export default function OperatorMiniAppPage() {
       setReady(true);
       return;
     }
-    api<{ operator: { name: string }; tariffs: TariffItem[]; currencies: string[] }>('/me')
+    api<{ operator: { name: string }; tariffs: TariffItem[]; currencies: string[]; promo?: PromoStatus }>('/me')
       .then((res) => {
         setOperatorName(res.operator.name);
+        setPromo(res.promo ?? null);
         if (res.tariffs?.length) {
           setTariffList(res.tariffs);
           const price = res.tariffs.find((item) => item.code === payment.tariff)?.prices.find((item) => item.currency === payment.currency);
@@ -563,6 +574,7 @@ export default function OperatorMiniAppPage() {
       form.set('receipt', receipt);
       const res = await api<{ receiptId: number }>('/payments', { method: 'POST', body: form });
       setNote(`Chek #${res.receiptId} adminga yuborildi. Holat: tekshiruvda.`);
+      if (payment.promo) setPromo((prev) => prev && { ...prev, used: prev.used + 1, left: Math.max(0, prev.left - 1) });
       setSubmission({ receiptId: res.receiptId, customer: selectedLabel, amount: payment.amount, currency: payment.currency });
       setStats(null);
       setStatsRevision((value) => value + 1);
@@ -776,7 +788,7 @@ export default function OperatorMiniAppPage() {
               <p className="text-sm font-black uppercase tracking-[0.12em] text-slate-500">To‘lov</p>
               <div className="grid grid-cols-3 gap-2">
                 {tariffList.map((item) => {
-                  const price = item.prices.find((p) => p.currency === payment.currency);
+                  const price = (payment.promo && item.promoPrices?.length ? item.promoPrices : item.prices).find((p) => p.currency === payment.currency);
                   return (
                   <button
                     className={`rounded-xl border p-3 text-left ${payment.tariff === item.code ? 'border-[#0B2A6B] bg-[#071B3A] text-white' : 'border-slate-200 bg-slate-50 text-slate-700'}`}
@@ -791,8 +803,26 @@ export default function OperatorMiniAppPage() {
                   );
                 })}
               </div>
+              {promo && (
+                <button
+                  type="button"
+                  aria-pressed={Boolean(payment.promo)}
+                  disabled={!promoAvailable && !payment.promo}
+                  onClick={() => applyCatalogPrice(payment.promo ? { promo: '' } : { promo: 'first1000', ...(payment.tariff === 'month' ? { tariff: 'three_month' } : {}) })}
+                  className={`flex min-h-12 w-full items-center gap-3 rounded-xl border p-3 text-left transition active:scale-[0.98] disabled:opacity-50 ${payment.promo ? 'border-rose-500 bg-rose-50' : 'border-slate-200 bg-white'}`}
+                >
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 text-sm font-black ${payment.promo ? 'border-rose-500 bg-rose-500 text-white' : 'border-slate-300 text-transparent'}`}>✓</span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-sm text-slate-900">50% chegirma bilan to‘ladi</strong>
+                    <span className="block text-xs font-semibold text-slate-500">
+                      {promoAvailable ? `Aksiya: faqat yangi o‘quvchi, 3 yoki 6 oy · ${promo.left} / ${promo.limit} o‘rin qoldi` : `Aksiya tugadi (${promo.limit} o‘rin band)`}
+                    </span>
+                  </span>
+                </button>
+              )}
               <div className="rounded-xl bg-slate-50 p-3 text-sm font-bold text-slate-600">
                 Kurs narxi: <span className="text-[#071B3A]">{currentPrice?.display || 'bu valyutada narx yo‘q'}</span>
+                {payment.promo && regularPrice && <span className="ml-2 text-xs text-slate-400 line-through">{regularPrice.display}</span>}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <label className="block">
@@ -1112,7 +1142,12 @@ export default function OperatorMiniAppPage() {
           setQuery('');
           setResults([]);
           setNote('');
-          setPayment((prev) => ({ ...prev, amount: prev.total, dueAt: '' }));
+          // The next client is not automatically a promo client: back to the regular price.
+          setPayment((prev) => {
+            const regular = tariffList.find((t) => t.code === prev.tariff)?.prices.find((p) => p.currency === prev.currency);
+            const total = prev.promo && regular ? String(regular.amount) : prev.total;
+            return { ...prev, promo: '', total, amount: total, dueAt: '' };
+          });
           setTab('payment');
         }}>Yangi to‘lov</button>
       </dialog>

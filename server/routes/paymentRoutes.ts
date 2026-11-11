@@ -9,6 +9,7 @@ import {
   isPaymentProductCode,
   isSubscriptionTariffType,
   normalizePaymentProductCode,
+  type SubscriptionTariffType,
 } from '../../shared/paymentProducts.js';
 import {
   buildClickErrorResponse,
@@ -34,7 +35,7 @@ import {
   handleClickCardTokenRequest,
 } from '../services/clickCardToken.service.js';
 import { fiscalizePayment } from '../services/clickFiscal.service.js';
-import { resolveRussianTariffQuote } from '../services/promoPricing.service.js';
+import { promoMeta, resolveRussianTariffQuote } from '../services/promoPricing.service.js';
 import { extractRequestMeta, recordPaymentEvent } from '../lib/paymentEvents.js';
 import {
   createRahmatMulticardPayment,
@@ -154,6 +155,8 @@ export function createPaymentRoutes(
         });
         amount = quote.finalAmount;
         baseAmount = quote.baseAmount;
+        discountAmount = quote.discountAmount;
+        discountMeta = promoMeta(quote, discountMeta);
       } else {
         amount = getClickAmountForProduct({
           productCode,
@@ -328,10 +331,12 @@ export function createPaymentRoutes(
         const quote = await resolveRussianTariffQuote(supabase, {
           userId,
           currency,
-          tariffType: tariff_type === 'year' ? 'year' : 'three_month',
+          tariffType: tariff_type as SubscriptionTariffType,
         });
         amount = quote.finalAmount;
         baseAmount = quote.baseAmount;
+        discountAmount = quote.discountAmount;
+        discountMeta = promoMeta(quote, discountMeta);
       } else if (isCourseProductCode(productCode)) {
         amount = getCourseProductPrice(productCode, currency);
         baseAmount = amount;

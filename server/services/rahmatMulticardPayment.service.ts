@@ -27,7 +27,7 @@ import {
   resolvePaymentProductFromRow,
 } from '../../shared/paymentsProofUrl.js';
 import { invalidateAccessCache } from './subscription.service.js';
-import { resolveRussianTariffQuote } from './promoPricing.service.js';
+import { promoMeta, resolveRussianTariffQuote } from './promoPricing.service.js';
 import { getAppConfig } from './appConfig.service.js';
 import { canPurchaseWelcomeVideoOffer } from '../../shared/welcomeVideoOffer.js';
 import { recordPaymentEvent, extractRequestMeta } from '../lib/paymentEvents.js';
@@ -223,17 +223,20 @@ export async function createRahmatMulticardPayment(
     });
     amount = quote.finalAmount;
     baseAmount = quote.baseAmount;
-    discountMeta = {
+    discountAmount = quote.discountAmount;
+    discountMeta = promoMeta(quote, {
       price_rub: quote.priceRub ?? null,
       rub_uzs_rate: quote.rubUzsRate ?? null,
       rate_as_of: quote.rateAsOf ?? null,
       pricing_source: 'rub_catalog_x_cbu',
-    };
+    });
     if (welcomeOffer) {
       amount = welcomeOffer.finalPriceUzs;
       discountAmount = Math.max(0, baseAmount - amount);
+      // The welcome offer replaces the price, so this sale does not take a promo seat.
+      const { promo: _promo, ...withoutPromo } = discountMeta ?? {};
       discountMeta = {
-        ...discountMeta,
+        ...withoutPromo,
         welcome_video_offer: true,
         activation_tariff_type: welcomeOffer.accessTariff,
         offer_label: `${welcomeOffer.payTariff}_price_for_${welcomeOffer.accessTariff}_access`,

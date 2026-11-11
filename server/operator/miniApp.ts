@@ -14,6 +14,7 @@ import { createOperatorCustomer, customerEmail, customerName, customerPhone, mat
 import { dueDate, money, paymentFits } from './domain.js';
 import { operatorTariffCatalog, OPERATOR_CURRENCIES } from '../../shared/operatorTariffs.js';
 import { invalidateAccessCache } from '../services/subscription.service.js';
+import { claimFirst1000Promo, first1000PromoStatus } from './promo.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -251,7 +252,7 @@ export function operatorMiniAppRoutes() {
   router.use(miniAuth);
 
   router.get('/me', miniWrap(async (req, res) => {
-    res.json({ operator: req.operator, tariffs: await tariffCatalog(), sources: SOURCES, currencies: CURRENCIES });
+    res.json({ operator: req.operator, tariffs: await tariffCatalog(), promo: await first1000PromoStatus(pool!), sources: SOURCES, currencies: CURRENCIES });
   }));
 
   router.get('/notifications', miniWrap(async (req, res) => {
@@ -513,10 +514,12 @@ export function operatorMiniAppRoutes() {
     const source = sourceChoice === 'Boshqa' ? normalizeOptionalSource(req.body.otherSource) : sourceChoice;
     const currency = String(req.body.currency ?? '');
     if (!CURRENCIES.includes(currency as any)) throw new Error('Valyuta noto‘g‘ri.');
+    const promo = String(req.body.promo ?? '') === 'first1000' ? 'first1000' : null;
     const catalog = await tariffCatalog();
-    const catalogTotal = catalog
-      .find((item) => item.code === tariff)
-      ?.prices.find((item) => item.currency === currency)?.amount ?? 0;
+    const catalogItem = catalog.find((item) => item.code === tariff);
+    const catalogTotal = (promo ? catalogItem?.promoPrices : catalogItem?.prices)
+      ?.find((item) => item.currency === currency)?.amount ?? 0;
+    if (promo && !catalogTotal) throw new Error('Aksiya faqat 3 va 6 oylik tarifga amal qiladi.');
     if (!catalogTotal) throw new Error('Bu valyuta uchun tarif narxi topilmadi.');
     const total = money(catalogTotal);
     if (money(req.body.total) !== total) throw new Error('Tarif narxi yangilangan. Mini ilovani qayta oching.');
@@ -530,15 +533,18 @@ export function operatorMiniAppRoutes() {
       if ((await c.query('SELECT 1 FROM operator_receipts WHERE file_unique_id=$1', [receipt.uniqueId])).rowCount) {
         throw new Error('Bu chek oldin yuklangan.');
       }
+      if (promo && money(await claimFirst1000Promo(c, userId, tariff, currency)) !== total) {
+        throw new Error('Aksiya narxi yangilangan. Mini ilovani qayta oching.');
+      }
       const contractId = (await c.query(
-        'INSERT INTO operator_contracts(user_id,operator_id,tariff,currency,total,source,due_at) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id',
-        [userId, op.id, tariff, currency, total, source, due],
+        'INSERT INTO operator_contracts(user_id,operator_id,tariff,currency,total,source,due_at,promo) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
+        [userId, op.id, tariff, currency, total, source, due, promo],
       )).rows[0].id;
       const receiptId = (await c.query(
         'INSERT INTO operator_receipts(contract_id,operator_id,amount,file_id,file_unique_id,mime) VALUES($1,$2,$3,$4,$5,$6) RETURNING id',
         [contractId, op.id, amount, receipt.fileId, receipt.uniqueId, receipt.mime],
       )).rows[0].id;
-      await audit(c, op.id, null, userId, 'mini_receipt_submitted', { receipt: receiptId, contract: contractId, amount, currency });
+      await audit(c, op.id, null, userId, 'mini_receipt_submitted', { receipt: receiptId, contract: contractId, amount, currency, promo });
       return { contractId, receiptId };
     });
     res.json({ ok: true, ...result, status: 'pending' });

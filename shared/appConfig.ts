@@ -9,6 +9,7 @@
  * yoki bazada yozuv bo'lmasa ishlatiladi.
  */
 import {
+  FIRST_1000_PROMO,
   buildRussianTariffPlans,
   isRussianTariffCode,
   type RussianTariffCode,
@@ -51,8 +52,47 @@ export type WelcomeOfferView = WelcomeOfferSettings & {
   freeMonths: number;
 };
 
+/** Aksiya «birinchi 1000 yangi o‘quvchi»: 3/6 oylik tarif −50%. */
+export type First1000PromoView = {
+  code: string;
+  limit: number;
+  /** Qolgan o‘rinlar; `null` — server javob bermagan (zaxira). */
+  left: number | null;
+  prices: Partial<Record<RussianTariffCode, { rub: number; uzs: number }>>;
+};
+
+export const DEFAULT_FIRST_1000_PROMO: First1000PromoView = {
+  code: FIRST_1000_PROMO.code,
+  limit: FIRST_1000_PROMO.limit,
+  left: null,
+  prices: { ...FIRST_1000_PROMO.prices },
+};
+
+export function normalizeFirst1000Promo(raw: unknown): First1000PromoView | null {
+  if (raw === null) return null;
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const left = Number(r.left);
+  const prices: First1000PromoView['prices'] = {};
+  const rawPrices = (r.prices && typeof r.prices === 'object' ? r.prices : {}) as Record<string, { rub?: unknown; uzs?: unknown }>;
+  for (const code of ['three_month', 'six_month'] as const) {
+    const fallback = DEFAULT_FIRST_1000_PROMO.prices[code]!;
+    prices[code] = {
+      rub: positiveOrNull(rawPrices[code]?.rub) ?? fallback.rub,
+      uzs: positiveOrNull(rawPrices[code]?.uzs) ?? fallback.uzs,
+    };
+  }
+  return {
+    code: DEFAULT_FIRST_1000_PROMO.code,
+    limit: positiveOrNull(r.limit) ?? DEFAULT_FIRST_1000_PROMO.limit,
+    left: r.left === undefined || r.left === null || !Number.isFinite(left) ? null : Math.max(0, Math.round(left)),
+    prices,
+  };
+}
+
 export type AppConfig = {
   plans: RussianTariffRubPlan[];
+  /** `null` — aksiya tugagan yoki o‘chirilgan. */
+  promo: First1000PromoView | null;
   welcomeOffer: WelcomeOfferView;
   media: AppMediaSettings;
   /** Konfiguratsiya oxirgi o'zgargan vaqt (ISO). */
@@ -145,11 +185,13 @@ export function buildAppConfig(input: {
   prices?: Parameters<typeof buildRussianTariffPlans>[0];
   welcomeOffer?: unknown;
   media?: unknown;
+  promo?: unknown;
   updatedAt?: string | null;
 }): AppConfig {
   const plans = buildRussianTariffPlans(input.prices ?? {});
   return {
     plans,
+    promo: input.promo === undefined ? DEFAULT_FIRST_1000_PROMO : normalizeFirst1000Promo(input.promo),
     welcomeOffer: buildWelcomeOfferView(normalizeWelcomeOffer(input.welcomeOffer), plans),
     media: normalizeMedia(input.media),
     updatedAt: input.updatedAt ?? null,

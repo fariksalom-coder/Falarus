@@ -19,7 +19,7 @@ import {
   type PaymentProductCode,
   type TeacherListingPlanCode,
 } from '../../shared/paymentProducts';
-import { useAppConfig } from '../api/appConfig';
+import { usePricedPlans } from '../hooks/usePricedPlans';
 import {
   Copy,
   X,
@@ -82,7 +82,7 @@ export default function PaymentPage() {
 
 function WebPaymentPage() {
   const navigate = useNavigate();
-  const { plans: tariffPlans } = useAppConfig();
+  const { plans: tariffPlans } = usePricedPlans();
   const location = useLocation();
   const { t } = useLocale();
   const { token } = useAuth();
@@ -173,6 +173,11 @@ function WebPaymentPage() {
           const rubPlan = tariffPlans.find((p) => p.code === tariffType) ?? null;
           if (currency === 'RUB' && rubPlan) {
             setPrice(rubPlan.priceRub);
+            return;
+          }
+          // The server charges the plan's so‘m price (promo included); tariff-prices only knows 3 months / 1 year.
+          if (currency === 'UZS' && rubPlan) {
+            setPrice(rubPlan.priceUzs);
             return;
           }
           const key = tariffType === 'year' ? 'year' : 'three_month';

@@ -26,7 +26,8 @@ import PricingCard from '../components/pricing/PricingCard';
 import { getLegalEntityMeta, LEGAL_PATHS } from '../config/legalPublic';
 import { useAuth } from '../context/AuthContext';
 import { formatRubAmount, formatRussianTariffUzsMing } from '../../shared/russianTariffs';
-import { useAppConfig } from '../api/appConfig';
+import { usePricedPlans } from '../hooks/usePricedPlans';
+import First1000PromoBanner from '../components/pricing/First1000PromoBanner';
 
 type LanguageCode = 'en' | 'uz' | 'ru' | 'kk' | 'tg' | 'ky';
 type NavKey = 'home' | 'about' | 'certificates' | 'pricing' | 'contact';
@@ -948,7 +949,7 @@ export default function LandingPage() {
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const { plans: tariffPlans } = useAppConfig();
+  const { plans: tariffPlans, promo } = usePricedPlans();
 
   if (user) return <Navigate to="/" replace />;
 
@@ -1368,6 +1369,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-[1000px] text-center">
             <h2 className="text-[24px] font-semibold leading-tight sm:text-[32px]">{t.pricingIntro.title}</h2>
             <p className="mx-auto mt-3 max-w-[632px] text-[14px] font-semibold leading-snug text-[#4D4D4D] sm:text-base">{t.pricingIntro.description}</p>
+            <First1000PromoBanner promo={promo} className="mx-auto mt-6 max-w-[520px]" />
             <div className="mx-auto mt-10 grid max-w-[960px] items-stretch gap-6 pt-4 sm:mt-12 sm:grid-cols-3 sm:gap-5">
               {tariffPlans.map((plan) => {
                 const hasSavings = plan.savingsRub > 0;

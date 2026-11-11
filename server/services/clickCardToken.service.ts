@@ -37,7 +37,7 @@ import {
 } from '../../shared/paymentProducts.js';
 import { invalidateAccessCache } from './subscription.service.js';
 import { fiscalizePayment } from './clickFiscal.service.js';
-import { resolveRussianTariffQuote } from './promoPricing.service.js';
+import { promoMeta, resolveRussianTariffQuote } from './promoPricing.service.js';
 import { queueReferralSource } from './referralProgram.service.js';
 
 const MAX_CHARGE_ATTEMPTS = 3;
@@ -421,6 +421,8 @@ export async function handleClickCardTokenPayment(
     });
     amount = quote.finalAmount;
     baseAmount = quote.baseAmount;
+    discountAmount = quote.discountAmount;
+    discountMeta = promoMeta(quote, discountMeta);
   } else if (isCourseProductCode(productCode)) {
     amount = getCourseProductPrice(productCode, 'UZS');
     baseAmount = amount;

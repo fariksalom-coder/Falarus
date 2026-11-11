@@ -107,15 +107,15 @@ async function applyAdminAccessGrants(
       input.amountRussian != null && Number.isFinite(Number(input.amountRussian))
         ? Number(input.amountRussian)
         : 0;
-    if (amount <= 0) {
-        const quote = await resolveRussianTariffQuote(supabase, {
-          userId,
-          currency: 'UZS',
-          tariffType: russianTariff,
-        });
-      amount = quote.finalAmount;
-    }
-    await grantRussianAccess(supabase, userId, russianTariff, adminId, amount);
+    // The admin may type the amount; the promo seat is taken when it is the promo price for a new client.
+    const quote = await resolveRussianTariffQuote(supabase, {
+      userId,
+      currency: 'UZS',
+      tariffType: russianTariff,
+    });
+    if (amount <= 0) amount = quote.finalAmount;
+    const promo = quote.promo && amount === quote.finalAmount ? quote.promo : null;
+    await grantRussianAccess(supabase, userId, russianTariff, adminId, amount, promo);
   }
 
   if (grantPatent) {
@@ -195,6 +195,7 @@ async function insertApprovedPayment(
     tariffType: SubscriptionTariffType | null;
     amount: number;
     currency: string;
+    promo?: string | null;
   }
 ): Promise<void> {
   if (!Number.isFinite(opts.amount) || opts.amount < 0) {
@@ -209,7 +210,7 @@ async function insertApprovedPayment(
     amount: opts.amount,
     base_amount: opts.amount,
     discount_amount: 0,
-    discount_meta: null,
+    discount_meta: opts.promo ? { promo: opts.promo } : null,
     payment_proof_url: null,
     payment_time: now,
     status: 'approved',
@@ -246,7 +247,8 @@ async function grantRussianAccess(
   userId: number,
   tariffType: SubscriptionTariffType,
   adminId: number,
-  amountUzs: number
+  amountUzs: number,
+  promo: string | null = null
 ): Promise<void> {
   if (
     tariffType !== 'month' &&
@@ -269,6 +271,7 @@ async function grantRussianAccess(
     tariffType,
     amount: amountUzs,
     currency: 'UZS',
+    promo,
   });
 }
 

@@ -1,6 +1,8 @@
 import '../styles/course-special-offer.css';
 import '../styles/course-info-responsive.css';
 import { mediaUrl, useAppConfig } from '../api/appConfig';
+import { usePricedPlans } from '../hooks/usePricedPlans';
+import First1000PromoBanner from '../components/pricing/First1000PromoBanner';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Play, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -23,7 +25,8 @@ export default function CourseInfoPage() {
 function WebCourseInfoPage() {
   const { token } = useAuth();
   // Narxlar, taklif shartlari va video — bazadan (admin panel), ilova yangilanmasdan o'zgaradi.
-  const { plans, welcomeOffer: offer, media } = useAppConfig();
+  const { welcomeOffer: offer, media } = useAppConfig();
+  const { plans, promo } = usePricedPlans();
   const video = useRef<HTMLVideoElement>(null);
   const requested = useRef(false);
   const maxPlayed = useRef(0);
@@ -141,6 +144,7 @@ function WebCourseInfoPage() {
     </div>
     {mediaError && <p role="alert" className="p-4 text-center">Video yuklanmadi. <button className="underline" onClick={() => { setMediaError(false); video.current?.load(); }}>Qayta urinish</button></p>}
     {left <= 0 && <section aria-label="Tariflar" className="course-info-plans px-4 pb-2 pt-3">
+      <First1000PromoBanner promo={promo} className="mb-3" />
       <fieldset disabled={buying} className="min-w-0"><legend className="mb-2 text-base font-bold">Tarifni tanlang</legend>
         <div className="flex flex-col gap-2">{plans.map(plan => {
           const selected = selectedTariff === plan.code;
@@ -151,7 +155,7 @@ function WebCourseInfoPage() {
               {selected && <Check size={15} strokeWidth={3} />}
             </span>
             <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><span className="text-base font-bold">{plan.months} oy</span>{plan.discountPercent > 0 && <span title="Har oy alohida xarid qilishga nisbatan (RUB)" className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-800">−{plan.discountPercent}%</span>}</div><p className="mt-1 text-xs text-slate-500">{plan.months === 3 ? '≈ ' : ''}{formatRubAmount(monthly)} ₽ / oy</p></div>
-            <div className="shrink-0 text-right tabular-nums"><p className="text-xl font-bold">{formatRubAmount(plan.priceRub)} ₽</p><p className="mt-1 text-xs text-slate-500">{formatRussianTariffUzsMing(plan.priceUzs)}</p></div>
+            <div className="shrink-0 text-right tabular-nums">{promo && plan.wasRub > plan.priceRub && <p className="text-xs font-semibold text-slate-400 line-through">{formatRubAmount(plan.wasRub)} ₽</p>}<p className="text-xl font-bold">{formatRubAmount(plan.priceRub)} ₽</p><p className="mt-1 text-xs text-slate-500">{formatRussianTariffUzsMing(plan.priceUzs)}</p></div>
           </label>;
         })}</div>
       </fieldset>

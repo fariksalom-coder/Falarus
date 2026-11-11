@@ -12,6 +12,9 @@ import { ArrowRight, Gift, Play, Sparkles, Volume2 } from 'lucide-react';
 import './paywallOffers.css';
 import { useAuth } from '../context/AuthContext';
 import { openRahmatCheckout } from '../api/rahmat';
+import { useAppConfig } from '../api/appConfig';
+import { usePricedPlans } from '../hooks/usePricedPlans';
+import First1000PromoBanner from './pricing/First1000PromoBanner';
 import { completeWelcomeVideo, beginWelcomeVideoVisit, type WelcomeVideoOfferState } from '../api/welcomeVideoOffer';
 import {
   formatRubAmount,
@@ -53,8 +56,10 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
 }
 
-function PaywallPriceCard({ plan, bonus = false, secondsLeft = 0, disabled, busy, recommended = false, onBuy }: {
+function PaywallPriceCard({ plan, regularUzs, bonus = false, secondsLeft = 0, disabled, busy, recommended = false, onBuy }: {
   plan: RussianTariffRubPlan;
+  /** Promo plan: the regular so‘m price to cross out. */
+  regularUzs?: number;
   bonus?: boolean;
   secondsLeft?: number;
   disabled: boolean;
@@ -64,7 +69,7 @@ function PaywallPriceCard({ plan, bonus = false, secondsLeft = 0, disabled, busy
 }) {
   const months = bonus ? 6 : plan.months;
   const wasRub = plan.wasRub / plan.months * months;
-  const wasUzs = RUSSIAN_TARIFF_PLANS_RUB[0].priceUzs * months;
+  const wasUzs = regularUzs ?? RUSSIAN_TARIFF_PLANS_RUB[0].priceUzs * months;
   const discountPercent = Math.round((1 - plan.priceRub / wasRub) * 100);
   const showWas = wasRub > plan.priceRub;
   return (
@@ -110,6 +115,8 @@ export default function UnpaidHomePaywall() {
 
 function WebUnpaidHomePaywall() {
   const { token } = useAuth();
+  const { plans: pricedPlans, promo } = usePricedPlans();
+  const { plans: regularPlans } = useAppConfig();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showTariffs, setShowTariffs] = useState(false);
   const [flowReady, setFlowReady] = useState(false);
@@ -578,10 +585,12 @@ function WebUnpaidHomePaywall() {
               style={{ background: BG }}
             >
               <div className="paywall-offer-grid">
-                {RUSSIAN_TARIFF_PLANS_RUB.map((plan) => (
+                <First1000PromoBanner promo={promo} className="paywall-offer-grid__promo" />
+                {pricedPlans.map((plan) => (
                   <PaywallPriceCard
                     key={plan.code}
                     plan={plan}
+                    regularUzs={promo && plan.wasRub > plan.priceRub ? regularPlans.find((p) => p.code === plan.code)?.priceUzs : undefined}
                     recommended={plan.code === 'three_month' && highlightThreeMonth}
                     disabled={Boolean(buying)}
                     busy={buying === plan.code}

@@ -1,4 +1,5 @@
-import { useAppConfig } from '../api/appConfig';
+import { usePricedPlans } from '../hooks/usePricedPlans';
+import First1000PromoBanner from '../components/pricing/First1000PromoBanner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Info } from 'lucide-react';
@@ -121,7 +122,7 @@ function WebPricingPage() {
 
   const benefits = useMemo(() => BENEFIT_KEYS.map((key) => t(key)), [t]);
   // Narxlar bazadan (admin panel) — ilova yangilanmasdan o'zgaradi.
-  const { plans: tariffPlans } = useAppConfig();
+  const { plans: tariffPlans, promo } = usePricedPlans();
   const plans = useMemo(
     () => buildRubPlans(tariffPlans, benefits, t('payment.popular')),
     [tariffPlans, benefits, t],
@@ -188,6 +189,7 @@ function WebPricingPage() {
             </div>
           ) : null}
 
+          <First1000PromoBanner promo={promo} className="mx-auto mb-4 max-w-xl" />
           <p className="mb-5 text-center text-[12.5px] font-semibold text-pmn-text-muted">
             Narxlar rublda ko‘rsatiladi. To‘lov Rahmat orqali so‘mda — ekrandagi so‘m summasi bo‘yicha.
           </p>

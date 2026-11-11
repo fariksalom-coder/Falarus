@@ -15,6 +15,8 @@ export type AccessInfo = {
   golden?: boolean;
   /** Obuna qachon tugashi (ISO). Muddat banneri shu asosda ko'rsatiladi. */
   subscription_expires_at?: string | null;
+  /** Aksiya «birinchi 1000»: bu o‘quvchiga 3/6 oy chegirmali narxda sotiladi. */
+  promo_eligible?: boolean;
 };
 
 function authHeaders(token: string | null): HeadersInit {
