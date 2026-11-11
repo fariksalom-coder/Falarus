@@ -302,7 +302,11 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             headers.put("Accept-Ranges", "bytes");
             headers.put("Access-Control-Allow-Origin", "*");
             String reason = code == HttpURLConnection.HTTP_PARTIAL ? "Partial Content" : "OK";
-            InputStream body = new DisconnectOnClose(conn.getInputStream(), conn);
+            // WebView Range ni o'zi ham qo'llaydi: javobdagi oqimdan boshlang'ich baytgacha skip() qiladi.
+            // Server esa allaqachon o'sha joydan boshlab bergan — ikki marta o'tkazib yubormaslik uchun
+            // shu birinchi skip ni "bajarildi" deb qaytaramiz (aks holda moov oxirida turgan .m4a ochilmaydi).
+            long alreadySkipped = code == HttpURLConnection.HTTP_PARTIAL ? rangeStart(contentRange) : 0;
+            InputStream body = new DisconnectOnClose(conn.getInputStream(), conn, alreadySkipped);
             conn = null;
             return new WebResourceResponse(mime, null, code, reason, headers, body);
         } catch (Exception ignored) {
@@ -329,9 +333,13 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         private final InputStream in;
         private final HttpURLConnection conn;
 
-        DisconnectOnClose(InputStream in, HttpURLConnection conn) {
+        /** Server Range bo'yicha tashlab yuborgan baytlar: WebView skip() qilganda shuncha "o'tkazilgan" deymiz. */
+        private long serverSkipped;
+
+        DisconnectOnClose(InputStream in, HttpURLConnection conn, long serverSkipped) {
             this.in = in;
             this.conn = conn;
+            this.serverSkipped = Math.max(0, serverSkipped);
         }
 
         @Override
@@ -351,6 +359,11 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
         @Override
         public long skip(long n) throws IOException {
+            if (serverSkipped > 0 && n > 0) {
+                long virtual = Math.min(n, serverSkipped);
+                serverSkipped -= virtual;
+                return virtual + (n > virtual ? in.skip(n - virtual) : 0);
+            }
             return in.skip(n);
         }
 
@@ -366,6 +379,20 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             } finally {
                 conn.disconnect();
             }
+        }
+    }
+
+    /** "bytes 260000-266547/266548" -> 260000; tushunarsiz bo'lsa 0. */
+    private static long rangeStart(String contentRange) {
+        if (contentRange == null) return 0;
+        String v = contentRange.trim();
+        if (v.toLowerCase(Locale.US).startsWith("bytes")) v = v.substring(5).trim();
+        int dash = v.indexOf('-');
+        if (dash <= 0) return 0;
+        try {
+            return Long.parseLong(v.substring(0, dash).trim());
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 
