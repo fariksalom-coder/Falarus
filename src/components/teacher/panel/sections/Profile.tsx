@@ -2,15 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Check, Lock } from 'lucide-react';
 import {
   deleteTeacherDocument,
-  getPanelReviews,
   getTeacherProfile,
-  uploadTeacherDocument,
   type DocumentKind,
-  type ReviewsResponse,
   type TeacherProfileResponse,
 } from '../../../../api/teacherPanel';
 import { usePanel } from '../panelContext';
-import { getOnboarding, type OnboardingState } from '../../../../api/teacherOnboarding';
+import { getMyMarketPreview, type MarketTeacherDetail } from '../../../../api/teacherMarket';
+import TeacherProfileView from '../../market/TeacherProfileView';
+import { deleteDocument, getOnboarding, openDocument, uploadDocument, type OnboardingState } from '../../../../api/teacherOnboarding';
 import {
   LANGUAGES, LANGUAGE_LEVELS, ONBOARDING_STEPS, SPECIALIZATIONS, stepsForPath, validateStep, type OnboardingPath,
 } from '../../../../../shared/teacherOnboarding';
@@ -25,45 +24,8 @@ import {
   PrimaryButton,
   Skeleton,
   Tag,
-  fmtDate,
   fmtSum,
 } from '../ui';
-
-/** `["A1","A2"]` ko'rinishidagi qiymatni ro'yxatga aylantiradi. */
-function asList(value: unknown): string[] {
-  if (Array.isArray(value)) return value.map(String);
-  if (typeof value === 'string' && value.trim().startsWith('[')) {
-    try {
-      const arr = JSON.parse(value);
-      if (Array.isArray(arr)) return arr.map(String);
-    } catch {
-      /* oddiy matn */
-    }
-  }
-  return typeof value === 'string' && value.trim() ? [value] : [];
-}
-
-/** JSON massivdagi obyektlarni o'qiydi (ta'lim, sertifikat). */
-function asRows(value: unknown): Array<Record<string, string>> {
-  const raw =
-    Array.isArray(value)
-      ? value
-      : typeof value === 'string' && value.trim().startsWith('[')
-        ? (() => {
-            try {
-              return JSON.parse(value);
-            } catch {
-              return [];
-            }
-          })()
-        : [];
-  return (Array.isArray(raw) ? raw : []).map((it) => {
-    const r = (it ?? {}) as Record<string, unknown>;
-    const out: Record<string, string> = {};
-    for (const [k, v] of Object.entries(r)) out[k] = v == null ? '' : String(v);
-    return out;
-  });
-}
 
 /** Qaysi ustun anketaning qaysi qadamiga tegishli (moderatsiyadagi o'zgarishni belgilash uchun). */
 const FIELD_STEP: Record<string, number> = {
@@ -283,8 +245,6 @@ function DocStatus({ status }: { status: string }) {
 
 /* -------------------------------- Hujjatlar -------------------------------- */
 
-// Pasport onboarding v2 dan beri so'ralmaydi (2026-10-23).
-const DOC_KINDS: DocumentKind[] = ['diploma', 'certificate', 'other'];
 
 export function Documents() {
   const { token, t, go } = usePanel();
@@ -316,34 +276,33 @@ export function Documents() {
       {err ? <ErrorNote text={err} /> : null}
 
       <div className="mb-4 flex flex-wrap gap-2.5">
-        {DOC_KINDS.map((k) => (
-          <label
-            key={k}
-            className="min-h-[44px] cursor-pointer rounded-[12px] bg-app-icon-bg px-4 py-3 text-[12.5px] font-semibold text-app-brand transition hover:bg-[#E4E0FA]"
-          >
-            {tpl(t.docAdd, { kind: kindLabel(k) })}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                e.target.value = '';
-                if (!file) return;
-                setBusy(true);
-                setErr('');
-                try {
-                  await uploadTeacherDocument(token, k, file);
-                  await load();
-                } catch (x) {
-                  setErr(x instanceof Error ? x.message : t.errorGeneric);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            />
-          </label>
-        ))}
+        {/* Files go to the private store (same as the questionnaire step); the moderator checks them. */}
+        <label
+          className={`min-h-[44px] cursor-pointer rounded-[12px] bg-app-icon-bg px-4 py-3 text-[12.5px] font-semibold text-app-brand transition hover:bg-[#E4E0FA] ${busy ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          {busy ? '…' : tpl(t.docAdd, { kind: kindLabel('certificate') })}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,application/pdf"
+            className="hidden"
+            disabled={busy}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              setBusy(true);
+              setErr('');
+              try {
+                await uploadDocument(token, file);
+                await load();
+              } catch (x) {
+                setErr(x instanceof Error ? x.message : t.errorGeneric);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+        </label>
       </div>
 
       {loading ? (
@@ -359,24 +318,36 @@ export function Documents() {
                   {(d.original_name || 'file').split('.').pop()?.slice(0, 4).toUpperCase()}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <a
-                    href={resolveAssetUrl(d.file_url) ?? undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block truncate text-[13px] font-medium text-app-text hover:text-app-brand"
-                  >
-                    {d.original_name || d.kind}
-                  </a>
+                  {d.file_url ? (
+                    <a
+                      href={resolveAssetUrl(d.file_url) ?? undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block truncate text-[13px] font-medium text-app-text hover:text-app-brand"
+                    >
+                      {d.original_name || d.kind}
+                    </a>
+                  ) : (
+                    // Private file: fetched with the login token, a plain link cannot open it.
+                    <button
+                      type="button"
+                      onClick={() => void openDocument(token, d.id).catch((x) => setErr(x instanceof Error ? x.message : t.errorGeneric))}
+                      className="block max-w-full truncate text-left text-[13px] font-medium text-app-text hover:text-app-brand"
+                    >
+                      {d.original_name || d.kind}
+                    </button>
+                  )}
                   <span className="text-[11.5px] text-app-text-muted">{d.kind}</span>
                 </span>
                 <DocStatus status={d.status} />
-                <button
+                {/* An approved document stays: the profile was approved with it. */}
+                {d.status !== 'approved' && <button
                   type="button"
                   disabled={busy}
                   onClick={async () => {
                     setBusy(true);
                     try {
-                      await deleteTeacherDocument(token, d.id);
+                      await (d.file_url ? deleteTeacherDocument(token, d.id) : deleteDocument(token, d.id));
                       await load();
                     } catch (x) {
                       setErr(x instanceof Error ? x.message : t.errorGeneric);
@@ -387,7 +358,7 @@ export function Documents() {
                   className="shrink-0 text-[12px] font-semibold text-[#C23A3F] disabled:opacity-50"
                 >
                   {t.delete}
-                </button>
+                </button>}
               </li>
             ))}
           </ul>
@@ -400,222 +371,33 @@ export function Documents() {
 /* ----------------------------- Ommaviy ko'rinish ----------------------------- */
 
 export function PublicPreview() {
-  const { token, t, lang, go, cabinet } = usePanel();
-  const [reviews, setReviews] = useState<ReviewsResponse | null>(null);
-  const [profile, setProfile] = useState<TeacherProfileResponse | null>(null);
+  const { token, t, go } = usePanel();
+  const [view, setView] = useState<MarketTeacherDetail | null>(null);
+  const [err, setErr] = useState('');
 
-  useEffect(() => {
-    let alive = true;
-    void getPanelReviews(token)
-      .then((r) => alive && setReviews(r))
-      .catch(() => undefined);
-    void getTeacherProfile(token)
-      .then((r) => alive && setProfile(r))
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, [token]);
-
-  const p = cabinet?.profile;
-  const name = p?.display_name || `${p?.first_name ?? ''} ${p?.last_name ?? ''}`.trim() || t.teacherRole;
-  const subjects = asList(p?.subjects);
-  const levels = asList(p?.teaching_levels);
-  const languages = asList(p?.languages);
-  const about = String(p?.about ?? profile?.profile.about ?? '');
-  const education = asRows(profile?.profile.education);
-  const certificates = asRows(profile?.profile.certificates);
-  const achievements = String(profile?.profile.achievements ?? '');
-  // Onboarding v2: bitta dars narxi (eski oylik kurs narxi endi ishlatilmaydi).
-  const price = Number(profile?.profile.lesson_price_uzs ?? 0);
+  const load = useCallback(() => {
+    setErr('');
+    getMyMarketPreview(token).then(setView).catch((e) => setErr(e instanceof Error ? e.message : t.errorGeneric));
+  }, [token, t.errorGeneric]);
+  useEffect(() => { load(); }, [load]);
 
   return (
-    <div className="mx-auto max-w-[1060px]">
+    <div className="mx-auto max-w-[880px]">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[13px] text-app-text-muted">{t.previewBanner}</p>
         <GhostButton onClick={() => go('anketa')}>{t.edit}</GhostButton>
       </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
-        <div className="space-y-4">
-          <Card className="flex flex-col gap-5 p-6 sm:flex-row">
-            <Avatar name={name} size={120} url={p?.avatar_url ?? null} />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <p className="text-[24px] font-semibold tracking-[-0.02em] text-app-text">{name}</p>
-                {p?.profile_status === 'active' ? <Tag tone="green">{t.stActiveTitle}</Tag> : null}
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-4 text-[13px] text-app-text">
-                {Number(p?.rating_count ?? 0) > 0 ? (
-                  <span>
-                    <span className="text-[#E6B33E]">★</span> {p?.rating_avg}{' '}
-                    <span className="text-app-text-muted">
-                      · {tpl(t.reviewsCount, { n: Number(p?.rating_count ?? 0) })}
-                    </span>
-                  </span>
-                ) : null}
-                {p?.experience_years ? <span>{tpl(t.yearsExp, { n: p.experience_years })}</span> : null}
-                {p?.city ? <span className="text-app-text-muted">{p.city}</span> : null}
-              </div>
-              {subjects.length || levels.length ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {subjects.map((s) => (
-                    <span
-                      key={s}
-                      className="rounded-full bg-app-icon-bg px-3 py-1.5 text-[12px] font-medium text-[#3B357F]"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                  {levels.length ? (
-                    <span className="rounded-full bg-app-bg-muted px-3 py-1.5 text-[12px] font-medium text-app-text-muted">
-                      {levels.join(' — ')}
-                    </span>
-                  ) : null}
-                </div>
-              ) : null}
-              {languages.length ? (
-                <p className="mt-2.5 text-[12.5px] text-app-text-muted">
-                  {t.speaks}: {languages.join(' · ')}
-                </p>
-              ) : null}
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <p className="mb-2 text-[17px] font-semibold text-app-text">{t.aboutTeacher}</p>
-            <p className="whitespace-pre-line text-[13.5px] leading-[1.8] text-app-text">
-              {about || t.emptyAbout}
-            </p>
-          </Card>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Card className="p-6">
-              <p className="mb-2 text-[17px] font-semibold text-app-text">{t.educationBlock}</p>
-              {education.length === 0 ? (
-                <p className="text-[13px] text-app-text-muted">{t.notFilled}</p>
-              ) : (
-                <ul className="space-y-3">
-                  {education.map((e, i) => (
-                    <li key={i}>
-                      <p className="text-[13px] font-semibold text-app-text">{e.institution}</p>
-                      <p className="text-[12.5px] text-app-text-muted">
-                        {[e.specialty, e.degree].filter(Boolean).join(' · ')}
-                      </p>
-                      {e.start_year || e.end_year ? (
-                        <p className="text-[11.5px] text-app-text-muted">
-                          {[e.start_year, e.end_year].filter(Boolean).join(' — ')}
-                        </p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-            <Card className="p-6">
-              <p className="mb-2 text-[17px] font-semibold text-app-text">{t.certificatesBlock}</p>
-              {certificates.length === 0 && !achievements ? (
-                <p className="text-[13px] text-app-text-muted">{t.notFilled}</p>
-              ) : (
-                <>
-                  <ul className="space-y-2.5">
-                    {certificates.map((c, i) => {
-                      const rasm = c.image_url ? resolveAssetUrl(c.image_url) : null;
-                      return (
-                        <li key={i} className="flex items-center gap-2.5">
-                          {rasm ? (
-                            <img
-                              src={rasm}
-                              alt={c.title ?? ''}
-                              className="h-10 w-10 shrink-0 rounded-[9px] object-cover ring-1 ring-[#EFEEF8]"
-                            />
-                          ) : null}
-                          <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-app-text">{c.title}</p>
-                            <p className="text-[11.5px] text-app-text-muted">
-                              {[c.issuer, c.year].filter(Boolean).join(' · ')}
-                            </p>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {achievements ? (
-                    <p className="mt-3 whitespace-pre-line text-[12.5px] leading-[1.7] text-app-text-muted">
-                      {achievements}
-                    </p>
-                  ) : null}
-                </>
-              )}
-            </Card>
-          </div>
-
-          <Card className="p-6">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[17px] font-semibold text-app-text">{t.reviewsBlock}</p>
-              {reviews && reviews.rating_count > 0 ? (
-                <span className="text-[13px] text-app-text-muted">
-                  ★ {reviews.rating_avg} · {tpl(t.reviewsCount, { n: reviews.rating_count })}
-                </span>
-              ) : null}
-            </div>
-            {!reviews || reviews.reviews.length === 0 ? (
-              <p className="text-[13px] text-app-text-muted">{t.reviewsEmpty}</p>
-            ) : (
-              <ul className="space-y-3">
-                {reviews.reviews.slice(0, 5).map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex gap-3 rounded-[16px] border border-app-border bg-app-bg-muted p-4"
-                  >
-                    <Avatar name={r.student_name} size={40} />
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <span className="text-[13px] font-semibold text-app-text">
-                          {r.student_name}
-                        </span>
-                        <span className="text-[11.5px] text-[#E6B33E]">
-                          {'★'.repeat(Math.round(r.rating))}
-                        </span>
-                        <span className="text-[11.5px] text-app-text-muted">
-                          {fmtDate(r.created_at, lang)}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[12.5px] leading-[1.7] text-app-text-muted">
-                        {r.opinion || r.what_liked}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+      {err ? (
+        <div className="space-y-3">
+          <ErrorNote text={err} />
+          <GhostButton onClick={load}>{t.retry}</GhostButton>
         </div>
-
-        <Card className="p-5">
-          <div className="flex items-baseline gap-2">
-            <span className="text-[24px] font-semibold text-app-text">
-              {price ? fmtSum(price) : '—'}
-            </span>
-            <span className="text-[13px] text-app-text-muted">{t.sum} · 50 min</span>
-          </div>
-          <button
-            type="button"
-            disabled
-            className="mt-3 min-h-[48px] w-full rounded-[14px] bg-app-primary text-[14px] font-semibold text-white opacity-60"
-          >
-            {t.bookLesson}
-          </button>
-          <button
-            type="button"
-            disabled
-            className="mt-2 min-h-[44px] w-full rounded-[14px] bg-app-bg-muted text-[13px] font-semibold text-app-text opacity-60"
-          >
-            {t.writeTeacher}
-          </button>
-          <p className="mt-2 text-center text-[11px] text-app-text-muted">{t.previewBanner}</p>
-        </Card>
-      </div>
+      ) : !view ? (
+        <Skeleton rows={4} />
+      ) : (
+        // The same component students see, so the preview cannot drift from the real page.
+        <div className="space-y-4"><TeacherProfileView t={view} token={token} preview /></div>
+      )}
     </div>
   );
 }

@@ -35,6 +35,7 @@ async function setup() {
     CREATE TABLE teacher_trial_lessons (id bigserial PRIMARY KEY, teacher_user_id integer, student_user_id integer, status text,
       scheduled_starts_at timestamptz, scheduled_ends_at timestamptz);
     CREATE TABLE teacher_meet_sessions (id bigserial PRIMARY KEY, teacher_user_id integer, status text);
+    CREATE TABLE teacher_availability_exceptions (id bigserial PRIMARY KEY, teacher_user_id integer, exception_date date, start_time time, end_time time, is_available boolean NOT NULL DEFAULT false);
     CREATE TABLE teacher_notifications (id bigserial PRIMARY KEY, recipient_user_id integer, type text, title text, body text, entity_type text, entity_id bigint);
     CREATE TABLE teacher_onboarding_settings (id boolean PRIMARY KEY DEFAULT true, price_min_uzs int, price_max_uzs int, commission_tiers jsonb, terms_version text);
     INSERT INTO teacher_onboarding_settings VALUES (true, 30000, 500000, '[{"up_to":20,"percent":33},{"up_to":50,"percent":28},{"up_to":200,"percent":25},{"up_to":400,"percent":22},{"up_to":null,"percent":18}]', 'v1');
@@ -96,11 +97,12 @@ test('booking, payment, room, completion with commission, withdrawals', async ()
   const t = await setup();
   try {
     const slots = upcomingSlotStarts(SCHEDULE, Date.now() + 2 * 3600_000, 3);
-    const slots0 = (await t.call('GET', '/teachers/1/lesson-slots')).data;
-    assert.equal(slots0.price_uzs, 100000);
-    assert.equal(slots0.bookable, true);
-
     t.as(2);
+    // A day blocked in the cabinet calendar cannot be booked.
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: SCHEDULE.timezone }).format(new Date(slots[0]));
+    await t.q(`INSERT INTO teacher_availability_exceptions (teacher_user_id, exception_date, is_available) VALUES (1, $1, false)`, [day]);
+    assert.equal((await t.call('POST', '/teachers/1/lessons', { starts_at: new Date(slots[0]).toISOString() })).status, 400, 'blocked day');
+    await t.q('DELETE FROM teacher_availability_exceptions');
     assert.equal((await t.call('POST', '/teachers/1/lessons', { starts_at: new Date(Date.now() + 10 * 60_000).toISOString() })).status, 400, 'too soon');
     assert.equal((await t.call('POST', '/teachers/1/lessons', { starts_at: new Date(slots[0] + 30 * 60_000).toISOString() })).status, 400, 'not on the schedule grid');
     const a = await t.call('POST', '/teachers/1/lessons', { starts_at: new Date(slots[0]).toISOString() });
@@ -109,7 +111,6 @@ test('booking, payment, room, completion with commission, withdrawals', async ()
     assert.equal(a.data.price_uzs, 100000);
     t.as(3);
     assert.equal((await t.call('POST', '/teachers/1/lessons', { starts_at: new Date(slots[0]).toISOString() })).status, 409, 'slot is held');
-    assert.ok((await t.call('GET', '/teachers/1/lesson-slots')).data.busy.includes(new Date(slots[0]).toISOString()));
 
     // An unpaid hold expires after 30 minutes and the slot is free again.
     await t.q(`UPDATE teacher_lessons SET created_at = now() - interval '31 minutes' WHERE id = $1`, [a.data.id]);

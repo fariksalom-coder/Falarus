@@ -24,7 +24,7 @@ import {
   splitLessonPrice, teacherLevel, type LessonStatus,
 } from '../../shared/teacherLessons.js';
 import {
-  DEFAULT_SETTINGS, languagesFromDb, normalizeSchedule, upcomingSlotStarts, validateTiers, type OnboardingSettings,
+  DEFAULT_SETTINGS, languagesFromDb, normalizeSchedule, bookableSlotStarts, validateTiers, type AvailabilityException, type OnboardingSettings,
 } from '../../shared/teacherOnboarding.js';
 
 export type LessonQuery = (sql: string, params?: unknown[]) => Promise<{ rows: any[] }>;
@@ -183,12 +183,28 @@ async function busyStarts(q: LessonQuery, ids: number[]): Promise<Map<number, Se
   return out;
 }
 
-function marketShape(r: any, busy: Set<number> | undefined, now = Date.now()) {
+/** Blocked days and extra open hours from the cabinet calendar, upcoming only, per teacher. */
+async function availabilityExceptions(q: LessonQuery, ids: number[]): Promise<Map<number, AvailabilityException[]>> {
+  const out = new Map<number, AvailabilityException[]>();
+  if (!ids.length) return out;
+  const { rows } = await q(`SELECT teacher_user_id, to_char(exception_date, 'YYYY-MM-DD') AS date,
+      to_char(start_time, 'HH24:MI') AS start, to_char(end_time, 'HH24:MI') AS "end", is_available
+    FROM teacher_availability_exceptions
+    WHERE teacher_user_id = ANY($1::int[]) AND exception_date >= current_date - 1`, [ids]);
+  for (const r of rows) {
+    const list = out.get(Number(r.teacher_user_id)) ?? [];
+    list.push({ date: r.date, start: r.start ?? null, end: r.end ?? null, available: Boolean(r.is_available) });
+    out.set(Number(r.teacher_user_id), list);
+  }
+  return out;
+}
+
+function marketShape(r: any, busy: Set<number> | undefined, exceptions: AvailabilityException[] = [], now = Date.now()) {
   const schedule = r.schedule ? normalizeSchedule(r.schedule) : null;
   const bookable = Boolean(r.lesson_price_uzs && schedule && r.terms_accepted_at);
   const from = now + MIN_LEAD_MINUTES * 60_000;
   const free = bookable && schedule
-    ? upcomingSlotStarts(schedule, now, MARKET_DAYS + 1).filter((t) => t >= from && t < now + MARKET_DAYS * 86_400_000 && !busy?.has(t))
+    ? bookableSlotStarts(schedule, exceptions, now, MARKET_DAYS + 1).filter((t) => t >= from && t < now + MARKET_DAYS * 86_400_000 && !busy?.has(t))
     : [];
   const lessonsDone = Number(r.lessons_done ?? 0);
   return {
@@ -227,12 +243,16 @@ async function refreshRating(q: LessonQuery, teacherId: number) {
  */
 export async function prepareLessonPayment(userId: number, lessonId: number, q: LessonQuery | null = poolQuery): Promise<{ amount: number }> {
   if (!q) throw new Error('Baza ulanmagan');
-  const l = (await q(`SELECT id, status, price_uzs, starts_at FROM teacher_lessons WHERE id = $1 AND student_user_id = $2`, [lessonId, userId])).rows[0];
+  const l = (await q(`SELECT id, status, price_uzs, starts_at, teacher_user_id FROM teacher_lessons WHERE id = $1 AND student_user_id = $2`, [lessonId, userId])).rows[0];
   if (!l) throw new Error('Dars topilmadi');
   if (new Date(l.starts_at).getTime() < Date.now() + 15 * 60_000) throw new Error('Dars vaqti juda yaqin — boshqa vaqtni tanlang');
   if (l.status === 'expired') {
+    // A revived booking takes the teacher's CURRENT price: it may have changed since.
+    const t = (await q(`SELECT lesson_price_uzs FROM teacher_profiles WHERE user_id = $1 AND profile_status = 'active' AND catalog_visible`, [l.teacher_user_id])).rows[0];
+    if (!t?.lesson_price_uzs) throw new Error('Bu oʻqituvchi hozircha pullik dars qabul qilmaydi');
+    l.price_uzs = t.lesson_price_uzs;
     try {
-      await q(`UPDATE teacher_lessons SET status = 'pending_payment', created_at = now(), updated_at = now() WHERE id = $1 AND status = 'expired'`, [lessonId]);
+      await q(`UPDATE teacher_lessons SET status = 'pending_payment', price_uzs = $2, created_at = now(), updated_at = now() WHERE id = $1 AND status = 'expired'`, [lessonId, l.price_uzs]);
     } catch (e: any) {
       if (e?.code === '23505') throw new Error('Bu vaqtni boshqa oʻquvchi band qildi — boshqa vaqtni tanlang');
       throw e;
@@ -279,22 +299,6 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
 
   /* ───────────── o'quvchi ───────────── */
 
-  /** Bron uchun: narx, jadval va band vaqtlar (o'quvchi o'z soatida ko'radi). */
-  router.get('/teachers/:teacherId/lesson-slots', h(async (req, res) => {
-    const { q } = db();
-    const id = Number(req.params.teacherId);
-    const t = (await q(`SELECT user_id, lesson_price_uzs, schedule, terms_accepted_at FROM teacher_profiles WHERE user_id = $1 AND profile_status = 'active' AND catalog_visible`, [id])).rows[0];
-    if (!t) throw new HttpError(404, 'Oʻqituvchi topilmadi');
-    await q(`UPDATE teacher_lessons SET status = 'expired', updated_at = now() WHERE status = 'pending_payment' AND created_at < now() - ($1::int * interval '1 minute')`, [PENDING_HOLD_MINUTES]);
-    const busy = (await q(`SELECT starts_at FROM teacher_lessons WHERE teacher_user_id = $1 AND status IN ('pending_payment', 'paid', 'disputed') AND starts_at > now()
-      UNION SELECT scheduled_starts_at FROM teacher_trial_lessons WHERE teacher_user_id = $1 AND scheduled_starts_at > now() AND status NOT IN ('cancelled', 'refunded', 'pending_payment')`, [id])).rows;
-    res.json({
-      price_uzs: t.lesson_price_uzs, bookable: Boolean(t.lesson_price_uzs && t.schedule && t.terms_accepted_at),
-      schedule: t.schedule ? normalizeSchedule(t.schedule) : null, busy: busy.map((b) => new Date(b.starts_at).toISOString()),
-      min_lead_minutes: MIN_LEAD_MINUTES,
-    });
-  }));
-
   /** Bron: vaqt o'qituvchi jadvalida bo'lishi, bo'sh bo'lishi va kamida 1 soat keyin bo'lishi shart. */
   router.post('/teachers/:teacherId/lessons', authenticate, h(async (req, res) => {
     const { q } = db();
@@ -306,7 +310,8 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
     const startsAt = new Date(String(req.body?.starts_at ?? ''));
     if (Number.isNaN(startsAt.getTime())) throw new HttpError(400, 'Vaqtni tanlang');
     if (startsAt.getTime() < Date.now() + MIN_LEAD_MINUTES * 60_000) throw new HttpError(400, 'Darsni kamida 1 soat oldin band qiling');
-    const allowed = upcomingSlotStarts(normalizeSchedule(t.schedule), Date.now(), 21);
+    const exceptions = (await availabilityExceptions(q, [teacherId])).get(teacherId) ?? [];
+    const allowed = bookableSlotStarts(normalizeSchedule(t.schedule), exceptions, Date.now(), 21);
     if (!allowed.includes(startsAt.getTime())) throw new HttpError(400, 'Bu vaqt oʻqituvchi jadvalida yoʻq');
     await q(`UPDATE teacher_lessons SET status = 'expired', updated_at = now() WHERE status = 'pending_payment' AND created_at < now() - ($1::int * interval '1 minute')`, [PENDING_HOLD_MINUTES]);
     // O'quvchining shu ustozdagi to'lanmagan eski broni bo'shatiladi — bir vaqtda bitta to'lov.
@@ -332,17 +337,20 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
   router.get('/market/teachers', authenticate, h(async (req, res) => {
     const { q } = db();
     const rows = (await q(`SELECT ${MARKET_COLS} FROM teacher_profiles p WHERE p.profile_status = 'active' AND p.catalog_visible ORDER BY p.created_at LIMIT 200`)).rows;
-    const busy = await busyStarts(q, rows.map((r) => Number(r.user_id)));
-    res.json(rows.map((r) => marketShape(r, busy.get(Number(r.user_id)))));
+    const ids = rows.map((r) => Number(r.user_id));
+    const [busy, exceptions] = await Promise.all([busyStarts(q, ids), availabilityExceptions(q, ids)]);
+    res.json(rows.map((r) => marketShape(r, busy.get(Number(r.user_id)), exceptions.get(Number(r.user_id)))));
   }));
 
-  router.get('/market/teachers/:id', authenticate, h(async (req, res) => {
-    const { q } = db();
-    const id = Number(req.params.id);
+  /**
+   * A teacher's page as students see it. `ownPreview`: the teacher's own cabinet
+   * preview, shown whatever the review/catalog status.
+   */
+  async function marketDetail(q: LessonQuery, id: number, ownPreview = false) {
     const r = (await q(`SELECT ${MARKET_COLS}, p.video_url, p.education, p.certificates, p.birth_country, p.proficiency
-      FROM teacher_profiles p WHERE p.user_id = $1 AND p.profile_status = 'active' AND p.catalog_visible`, [id])).rows[0];
+      FROM teacher_profiles p WHERE p.user_id = $1 AND ($2::boolean OR (p.profile_status = 'active' AND p.catalog_visible))`, [id, ownPreview])).rows[0];
     if (!r) throw new HttpError(404, 'Oʻqituvchi topilmadi');
-    const busy = await busyStarts(q, [id]);
+    const [busy, exceptions] = await Promise.all([busyStarts(q, [id]), availabilityExceptions(q, [id])]);
     const criteria = (await q(`SELECT ${REVIEW_CRITERIA.map((c) => `round(avg(${c.key}), 1) AS ${c.key}`).join(', ')}, count(*) AS n
       FROM teacher_lesson_reviews WHERE teacher_user_id = $1 AND status = 'approved'`, [id])).rows[0];
     const reviews = (await q(`SELECT ${REVIEW_COLS} FROM teacher_lesson_reviews r JOIN users u ON u.id = r.student_user_id
@@ -355,13 +363,22 @@ export function createTeacherLessonRoutes(authenticate: (req: any, res: any, nex
       institution: String(e?.institution ?? ''), specialty: String(e?.specialty ?? ''), degree: String(e?.degree ?? ''),
       year_from: e?.year_from ?? (Number(e?.start_year) || null), year_to: e?.year_to ?? (Number(e?.end_year) || null),
     })).filter((e: { institution: string }) => e.institution);
-    res.json({
-      ...marketShape(r, busy.get(id)),
+    return {
+      ...marketShape(r, busy.get(id), exceptions.get(id)),
       video_url: r.video_url || null, proficiency: r.proficiency || null, birth_country: r.birth_country || null,
-      certificates: r.onboarding_path === 'certified' || r.certified_verified ? certificates : [], education,
+      certificates: r.certified_verified ? certificates : [], education,
       criteria: Number(criteria?.n ?? 0) ? Object.fromEntries(REVIEW_CRITERIA.map((c) => [c.key, Number(criteria[c.key])])) : null,
       reviews: reviews.map(reviewShape), reviews_total: Number(criteria?.n ?? 0),
-    });
+    };
+  }
+
+  router.get('/market/teachers/:id', authenticate, h(async (req, res) => {
+    res.json(await marketDetail(db().q, Number(req.params.id)));
+  }));
+
+  /** Cabinet «as students see it»: the same page data for the teacher's own profile. */
+  router.get('/teacher/me/market-preview', authenticate, h(async (req, res) => {
+    res.json(await marketDetail(db().q, Number(req.userId), true));
   }));
 
   router.get('/market/teachers/:id/reviews', authenticate, h(async (req, res) => {

@@ -1,5 +1,4 @@
 import { apiUrl } from '../api';
-import type { ScheduleData } from '../../shared/teacherOnboarding';
 import type { LessonStatus } from '../../shared/teacherLessons';
 
 export type TeacherLesson = {
@@ -33,7 +32,6 @@ export type TeacherLesson = {
   student_last_name?: string;
 };
 
-export type LessonSlots = { price_uzs: number | null; bookable: boolean; schedule: ScheduleData | null; busy: string[]; min_lead_minutes: number };
 
 export type TeacherBalance = {
   balance: number;
@@ -55,7 +53,6 @@ async function call<T>(token: string | null, path: string, init: RequestInit = {
   return data as T;
 }
 
-export const getLessonSlots = (teacherId: number) => call<LessonSlots>(null, `/teachers/${teacherId}/lesson-slots`);
 export const bookLesson = (token: string, teacherId: number, startsAt: string, message: string) =>
   call<TeacherLesson>(token, `/teachers/${teacherId}/lessons`, { method: 'POST', body: JSON.stringify({ starts_at: startsAt, message }) });
 export const getMyLessons = (token: string) => call<TeacherLesson[]>(token, '/my-lessons');

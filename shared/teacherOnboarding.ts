@@ -576,3 +576,44 @@ export function upcomingSlotStarts(schedule: ScheduleData, now: number, days = 1
   }
   return out.sort((a, b) => a - b);
 }
+
+/** A dated change from the teacher's cabinet calendar: a blocked day/range or an extra open range. */
+export type AvailabilityException = {
+  /** YYYY-MM-DD in the schedule's time zone. */
+  date: string;
+  /** HH:MM; both null = the whole day. */
+  start: string | null;
+  end: string | null;
+  available: boolean;
+};
+
+/**
+ * Bookable starts = weekly schedule, minus blocked days/ranges, plus extra open
+ * ranges. Lessons are 60 minutes; a start is blocked when its hour overlaps a
+ * blocked range. Used for the catalog AND for checking a booking.
+ */
+export function bookableSlotStarts(schedule: ScheduleData, exceptions: AvailabilityException[], now: number, days = 14): number[] {
+  if (!exceptions.length) return upcomingSlotStarts(schedule, now, days);
+  const tz = schedule.timezone;
+  const local = new Intl.DateTimeFormat('en-CA', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const where = (t: number) => {
+    const p = Object.fromEntries(local.formatToParts(new Date(t)).filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]));
+    return { date: `${p.year}-${p.month}-${p.day}`, min: Number(p.hour) * 60 + Number(p.minute) };
+  };
+  const blocked = exceptions.filter((e) => !e.available);
+  const isBlocked = (t: number) => {
+    const { date, min } = where(t);
+    return blocked.some((b) => b.date === date && (!b.start || !b.end || (min < minutes(b.end) && minutes(b.start) < min + 60)));
+  };
+  const out = new Set(upcomingSlotStarts(schedule, now, days).filter((t) => !isBlocked(t)));
+  const lastDay = now + days * 86_400_000;
+  for (const e of exceptions) {
+    if (!e.available || !e.start || !e.end) continue;
+    const [y, m, d] = e.date.split('-').map(Number);
+    for (let x = minutes(e.start); x + 60 <= minutes(e.end); x += 60) {
+      const t = zonedToUtc(y, m, d, Math.floor(x / 60), x % 60, tz);
+      if (t > now && t < lastDay && !isBlocked(t)) out.add(t);
+    }
+  }
+  return [...out].sort((a, b) => a - b);
+}

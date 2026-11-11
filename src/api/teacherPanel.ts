@@ -203,13 +203,6 @@ export function getTeacherProfile(token: string): Promise<TeacherProfileResponse
   return send<TeacherProfileResponse>(token, '/api/teacher/me/panel/profile', 'GET');
 }
 
-export function saveTeacherProfile(
-  token: string,
-  patch: Record<string, unknown>
-): Promise<{ success: boolean; saved: string[] }> {
-  return send(token, '/api/teacher/me/panel/profile', 'PUT', patch);
-}
-
 async function send<T>(token: string, path: string, method: string, body?: unknown): Promise<T> {
   const res = await fetch(apiUrl(path), {
     method,

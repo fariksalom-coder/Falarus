@@ -1721,12 +1721,13 @@ async function startServer() {
     try {
       const id = Number(req.params?.id);
       if (!Number.isFinite(id)) return res.status(400).json({ error: 'ID notoʻgʻri' });
-      // Faqat O'ZINING hujjati o'chadi.
+      // Only the teacher's OWN document, and never one the profile was approved with.
       const { error } = await supabase
         .from('teacher_documents')
         .delete()
         .eq('id', id)
-        .eq('teacher_user_id', userId);
+        .eq('teacher_user_id', userId)
+        .neq('status', 'approved');
       if (error) throw error;
       res.json({ success: true });
     } catch (e) {

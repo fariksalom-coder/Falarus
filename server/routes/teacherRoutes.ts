@@ -14,6 +14,7 @@ import {
   type TrialRowLike,
 } from '../../shared/teacherTrials.js';
 import { TEACHER_CHAT_PAGE_SIZE, hasUnreadFor, parseChatAfterId, toChronological } from '../../shared/teacherChat.js';
+import { normalizeSchedule } from '../../shared/teacherOnboarding.js';
 
 /** Sinov darsi yopilgan: eski mobil ilova shu xabarni ko'rsatadi. */
 const TRIAL_CLOSED = 'Sinov darsi endi yoʻq. Ustoz profilida qulay vaqtni tanlab, oddiy darsga yoziling.';
@@ -72,28 +73,11 @@ function teacherPublicSelect(): string {
   ].join(', ');
 }
 
-/**
- * O'qituvchining BITTA profil sahifasi uchun tanlov.
- *
- * Ro'yxatdagi qisqa kartochkadan farqi — aloqa maydonlari qo'shiladi.
- * Ular ataylab faqat shu yerda: `/teachers` ro'yxati yuzlab profilni
- * qaytaradi va telefon/telegramni ommaviy yig'ib olishga yo'l ochmaslik
- * kerak. Tafsilot sahifasi bitta o'qituvchini beradi va u yerda aloqa
- * ma'lumoti sahifaning asosiy maqsadi.
- *
- * DIQQAT: bu ilgari VPS'da `sed` yamog'i sifatida yashardi
- * (`ensure_free_access.sh`), repoda esa yo'q edi — ya'ni har deploy uni
- * o'chirib yuborardi. 2026-08-17 da kodga ko'chirildi.
- */
+/** One teacher's public page (old `/api/teachers/:id`, used by app builds up to 146). */
 function teacherDetailSelect(): string {
-  return [
-    teacherPublicSelect(),
-    'telegram_url',
-    'telegram_username',
-    'public_phone_e164',
-    'public_email',
-    'preferred_contact_method',
-  ].join(', ');
+  // Contacts are no longer public (migration 214): students reach teachers through
+  // the platform chat, and this endpoint is open to old app builds without a login.
+  return teacherPublicSelect();
 }
 
 function teacherOwnerSelect(): string {
@@ -567,116 +551,15 @@ export function createTeacherRoutes(
     }
   });
 
-  router.put('/teacher/me/profile', authenticate, async (req: any, res) => {
-    try {
-      const userId = Number(req.userId);
-      if (!(await ensureTeacherAccount(supabase, userId, res))) return;
-      const payload = normalizeTeacherProfilePayload(req.body ?? {}, userId);
-      const { data: existing } = await supabase
-        .from('teacher_profiles')
-        .select('avatar_url, profile_status, listing_paid_until')
-        .eq('user_id', userId)
-        .maybeSingle();
-      if ((existing as { avatar_url?: string | null } | null)?.avatar_url) {
-        (payload as Record<string, unknown>).avatar_url = (existing as { avatar_url: string }).avatar_url;
-      } else {
-        const { data: userRow } = await supabase
-          .from('users')
-          .select('avatar_url')
-          .eq('id', userId)
-          .maybeSingle();
-        const userAvatar = (userRow as { avatar_url?: string | null } | null)?.avatar_url;
-        if (userAvatar) (payload as Record<string, unknown>).avatar_url = userAvatar;
-      }
-      // Tasdiqlangan profil faqat kabinetdagi anketa orqali (moderatsiya bilan) o'zgaradi.
-      const liveStatus = (existing as { profile_status?: string | null } | null)?.profile_status;
-      if (liveStatus === 'active' || liveStatus === 'paused') {
-        return res.status(409).json({ error: 'Profilni kabinetdagi «Profil» boʻlimida oʻzgartiring — oʻzgarish moderatsiyadan keyin chiqadi' });
-      }
-      (payload as Record<string, unknown>).profile_status = resolveProfileStatusOnSave(
-        existing as { profile_status?: string | null; listing_paid_until?: string | null } | null
-      );
-      const { data, error } = await supabase
-        .from('teacher_profiles')
-        .upsert(payload, { onConflict: 'user_id' })
-        .select(teacherOwnerSelect())
-        .single();
-      if (error) throw error;
-      res.json(data);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Profil saqlanmadi';
-      res.status(400).json({ error: message });
-    }
+  // Old profile forms (app builds up to 146) skipped the questionnaire checks, could send
+  // an incomplete profile to review and overwrote languages; the questionnaire replaces them.
+  router.put('/teacher/me/profile', authenticate, (_req, res) => {
+    res.status(410).json({ error: 'Profilni saytdagi yoki yangi ilovadagi «Anketa» boʻlimida tahrirlang' });
   });
 
-  router.post('/teacher/me/listing-payment', authenticate, async (req: any, res) => {
-    try {
-      const userId = Number(req.userId);
-      if (!(await ensureTeacherAccount(supabase, userId, res))) return;
-      const planCodeRaw = req.body?.plan_code || req.body?.planCode;
-      const planCode = isTeacherListingPlanCode(planCodeRaw)
-        ? planCodeRaw
-        : resolveTeacherListingPlanCode(false);
-      const { data: profile } = await supabase
-        .from('teacher_profiles')
-        .select('user_id')
-        .eq('user_id', userId)
-        .maybeSingle();
-      if (!profile) return res.status(400).json({ error: 'Avval o‘qituvchi anketasini to‘ldiring' });
-
-      const { data: plan, error: planErr } = await supabase
-        .from('teacher_listing_plans')
-        .select('code')
-        .eq('code', planCode)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (planErr) throw planErr;
-      if (!plan) return res.status(404).json({ error: 'Tarif topilmadi' });
-
-      /*
-       * Summa BAZADAN emas, koddan olinadi. `teacher_listing_plans.price_amount`
-       * tarixan drift qilgan (birinchi oy kodi 69 000 bo'lib qolgan edi), va u
-       * admin SQL konsoli orqali o'zgartirilishi ham mumkin. Narxning yagona
-       * manbasi — shared/paymentProducts.ts. Rahmat va chek oqimlari ham
-       * aynan shu funksiyadan oladi, shuning uchun uchala yo'lda summa bir xil.
-       */
-      const amount = getTeacherListingPriceUzs(planCode);
-      const currency = 'UZS';
-      const { data: payment, error: payErr } = await supabase
-        .from('payments')
-        .insert({
-          user_id: userId,
-          tariff_type: null,
-          product_code: 'teacher_listing',
-          currency,
-          amount,
-          base_amount: amount,
-          discount_amount: 0,
-          payment_time: new Date().toISOString(),
-          status: 'pending',
-          payment_channel: 'manual',
-        })
-        .select('id, amount, currency, status')
-        .single();
-      if (payErr || !payment) throw payErr ?? new Error('To‘lov yaratilmadi');
-
-      const { data: subscription, error: subErr } = await supabase
-        .from('teacher_listing_subscriptions')
-        .insert({
-          teacher_user_id: userId,
-          payment_id: Number((payment as any).id),
-          plan_code: planCode,
-          status: 'pending',
-        })
-        .select('*')
-        .single();
-      if (subErr) throw subErr;
-
-      res.status(201).json({ payment, subscription });
-    } catch (e) {
-      console.error('[POST /api/teacher/me/listing-payment]', e);
-      res.status(500).json({ error: 'To‘lov yaratilmadi' });
-    }
+  // The catalog listing fee is no longer charged; this only left stray pending payments.
+  router.post('/teacher/me/listing-payment', authenticate, (_req, res) => {
+    res.status(410).json({ error: 'Katalogga joylashish endi bepul' });
   });
 
   /**
@@ -1992,6 +1875,51 @@ export function createTeacherRoutes(
   });
 
   /** Takrorlanuvchi bo'sh vaqt qo'shish. */
+  /**
+   * The cabinet calendar's weekly rules are the same hours students book from:
+   * after every change the rules are copied into `teacher_profiles.schedule`
+   * (and `weekly_availability`), overlapping ranges merged. Without this a
+   * teacher's new or deleted weekly hours never reached the booking page.
+   */
+  async function syncScheduleFromRules(teacherId: number): Promise<void> {
+    const { data: rules, error } = await supabase
+      .from('teacher_availability_rules')
+      .select('weekday, start_time, end_time')
+      .eq('teacher_user_id', teacherId)
+      .eq('is_active', true);
+    if (error) throw error;
+    const { data: profile } = await supabase.from('teacher_profiles').select('schedule').eq('user_id', teacherId).maybeSingle();
+    const timezone = normalizeSchedule((profile as any)?.schedule).timezone;
+    // rules: 0 = Sunday; schedule: 1..7, 7 = Sunday.
+    const byDay = new Map<number, Array<[number, number]>>();
+    for (const r of (rules as any[]) ?? []) {
+      const from = vaqtDaqiqa(r.start_time);
+      const to = vaqtDaqiqa(r.end_time);
+      if (from == null || to == null || to <= from) continue;
+      const day = Number(r.weekday) === 0 ? 7 : Number(r.weekday);
+      byDay.set(day, [...(byDay.get(day) ?? []), [from, to]]);
+    }
+    const slots: Array<{ weekday: number; start: string; end: string }> = [];
+    for (const [weekday, ranges] of [...byDay.entries()].sort((a, b) => a[0] - b[0])) {
+      ranges.sort((a, b) => a[0] - b[0]);
+      const merged: Array<[number, number]> = [];
+      for (const r of ranges) {
+        const last = merged[merged.length - 1];
+        if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]);
+        else merged.push([...r] as [number, number]);
+      }
+      for (const [from, to] of merged) {
+        slots.push({ weekday, start: daqiqaVaqt(from), end: to >= 23 * 60 + 59 ? '24:00' : daqiqaVaqt(to) });
+      }
+    }
+    const weekly = slots.map((x) => ({ day: x.weekday % 7, from: x.start, to: x.end === '24:00' ? '23:59' : x.end }));
+    const { error: upErr } = await supabase
+      .from('teacher_profiles')
+      .update({ schedule: JSON.stringify({ timezone, slots }), weekly_availability: JSON.stringify(weekly), updated_at: new Date().toISOString() })
+      .eq('user_id', teacherId);
+    if (upErr) throw upErr;
+  }
+
   router.post('/teacher/me/panel/availability', authenticate, async (req: any, res) => {
     try {
       const teacherId = Number(req.userId);
@@ -2025,6 +1953,7 @@ export function createTeacherRoutes(
         .select('*')
         .single();
       if (error) throw error;
+      await syncScheduleFromRules(teacherId);
       res.status(201).json({
         id: Number((data as any).id),
         weekday,
@@ -2051,6 +1980,7 @@ export function createTeacherRoutes(
         .eq('id', id)
         .eq('teacher_user_id', teacherId);
       if (error) throw error;
+      await syncScheduleFromRules(teacherId);
       res.json({ success: true });
     } catch (e) {
       console.error('[DELETE /api/teacher/me/panel/availability/:id]', e);
@@ -2217,7 +2147,8 @@ export function createTeacherRoutes(
         contact: { email: u.email ?? null, phone: u.phone ?? null },
         // Listing to'lovi 2026-10-23 dan yo'q: ariza to'lovsiz yuboriladi.
         payment: { paid: true, paid_until: null, first_discount_used: false },
-        documents: (docsRes.data as any[]) ?? [],
+        // The private file path stays on the server; the teacher opens files by id.
+        documents: ((docsRes.data as any[]) ?? []).map(({ private_path: _path, ...doc }) => doc),
         anketa: {
           steps,
           current_step: Number(p.anketa_step ?? 1),
@@ -2234,84 +2165,8 @@ export function createTeacherRoutes(
   });
 
   /** Anketa maydonlarini saqlash. Faqat ruxsat etilgan maydonlar o'tadi. */
-  router.put('/teacher/me/panel/profile', authenticate, async (req: any, res) => {
-    try {
-      const teacherId = Number(req.userId);
-      if (!(await ensureTeacherAccount(supabase, teacherId, res))) return;
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      // Tasdiqlangan profil faqat kabinetdagi anketa orqali (moderatsiya bilan) o'zgaradi.
-      const { data: holat } = await supabase.from('teacher_profiles').select('profile_status').eq('user_id', teacherId).maybeSingle();
-      const liveStatus = (holat as { profile_status?: string | null } | null)?.profile_status;
-      if (liveStatus === 'active' || liveStatus === 'paused') {
-        return res.status(409).json({ error: 'Profilni kabinetdagi «Profil» boʻlimida oʻzgartiring — oʻzgarish moderatsiyadan keyin chiqadi' });
-      }
-
-      const patch: Record<string, unknown> = {};
-      for (const [key, tur] of Object.entries(ANKETA_MAYDON)) {
-        if (!(key in body)) continue;
-        const raw = body[key];
-        if (tur === 'int') {
-          const n = Number(raw);
-          patch[key] = Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
-        } else if (tur === 'date') {
-          const s = asString(raw);
-          if (s && !/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-            return res.status(400).json({ error: `${key}: sana YYYY-MM-DD koʻrinishida boʻlsin` });
-          }
-          patch[key] = s || null;
-        } else if (tur === 'json') {
-          /*
-           * `subjects`, `teaching_levels`, `languages` — bazada `text[]`
-           * (JSON emas). Ilgari bu yerda `JSON.stringify` qilinardi va
-           * Postgres uni qabul qilmasdi:
-           *   malformed array literal: "[\"Soʻzlashuv rus tili\"]"
-           * Natijada 7 va 8-qadam saqlanmasdan qolardi. Massivning O'ZI
-           * uzatiladi — drayver uni Postgres massiviga aylantiradi.
-           */
-          patch[key] = Array.isArray(raw)
-            ? raw.map((v) => asString(v)).filter(Boolean).slice(0, 30)
-            : [];
-        } else if (tur === 'education') {
-          patch[key] = JSON.stringify(sanitizeEducation(raw));
-        } else if (tur === 'certificates') {
-          patch[key] = JSON.stringify(sanitizeCertificates(raw));
-        } else {
-          patch[key] = asString(raw).slice(0, 2000) || null;
-        }
-      }
-
-      // Yosh — tug'ilgan sanadan. Ommaviy profilda ko'rinadigan `age` ustuni
-      // anketada alohida so'ralmaydi, shuning uchun shu yerda yangilanadi.
-      if (typeof patch.birth_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(patch.birth_date)) {
-        const tugilgan = new Date(`${patch.birth_date}T00:00:00Z`).getTime();
-        const yosh = Math.floor((Date.now() - tugilgan) / (365.25 * 24 * 3600_000));
-        if (yosh >= 16 && yosh <= 99) patch.age = yosh;
-      }
-
-      const step = Number(body.anketa_step);
-      if (Number.isInteger(step) && step >= 1 && step <= 12) patch.anketa_step = step;
-
-      if (body.submit === true) {
-        // Eski 12 qadamli anketa endi tekshiruvga yubormaydi: ariza onboarding v2 orqali
-        // (POST /api/teacher/onboarding/submit), u yerda barcha qadamlar tekshiriladi.
-        return res.status(410).json({ error: 'Anketani yangi «Anketa» boʻlimi orqali yuboring' });
-      }
-
-      if (Object.keys(patch).length === 0) {
-        return res.status(400).json({ error: 'Saqlash uchun maʼlumot yoʻq' });
-      }
-      patch.updated_at = new Date().toISOString();
-
-      const { error } = await supabase
-        .from('teacher_profiles')
-        .update(patch)
-        .eq('user_id', teacherId);
-      if (error) throw error;
-      res.json({ success: true, saved: Object.keys(patch).filter((k) => k !== 'updated_at') });
-    } catch (e) {
-      console.error('[PUT /api/teacher/me/panel/profile]', e);
-      res.status(500).json({ error: 'Profil saqlanmadi' });
-    }
+  router.put('/teacher/me/panel/profile', authenticate, (_req, res) => {
+    res.status(410).json({ error: 'Profilni saytdagi yoki yangi ilovadagi «Anketa» boʻlimida tahrirlang' });
   });
 
   /* --------------------------------------------------------------------------
@@ -2871,7 +2726,23 @@ export function createTeacherRoutes(
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
-      const rows = (data as any[]) ?? [];
+      // Paid-lesson reviews live in teacher_lesson_reviews (the ones the public profile
+      // and the rating use); only moderated (approved) ones are shown, as on the profile.
+      const { data: lessonReviews, error: lessonErr } = await supabase
+        .from('teacher_lesson_reviews')
+        .select('id, student_user_id, overall, comment, created_at')
+        .eq('teacher_user_id', teacherId)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (lessonErr) throw lessonErr;
+      const rows = [
+        ...((data as any[]) ?? []),
+        ...((lessonReviews as any[]) ?? []).map((r) => ({
+          id: -Number(r.id), student_user_id: r.student_user_id, rating: r.overall, what_liked: '', what_was_missing: '',
+          opinion: r.comment ?? '', enrolled_monthly_course: null, created_at: r.created_at,
+        })),
+      ].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
 
       const ids = [...new Set(rows.map((r) => Number(r.student_user_id)).filter(Number.isFinite))];
       const nomlar = new Map<number, string>();
@@ -2899,6 +2770,7 @@ export function createTeacherRoutes(
         rating_count: bahos.length,
         breakdown,
         reviews: rows.map((r) => ({
+          // Paid-lesson reviews get negative ids so the two tables never collide.
           id: Number(r.id),
           student_name: nomlar.get(Number(r.student_user_id)) ?? 'Oʻquvchi',
           rating: Number(r.rating ?? 0),

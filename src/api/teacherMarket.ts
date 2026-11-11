@@ -64,6 +64,8 @@ async function call<T>(token: string, path: string, init: RequestInit = {}): Pro
 
 export const listMarketTeachers = (token: string) => call<MarketTeacher[]>(token, '/market/teachers');
 export const getMarketTeacher = (token: string, id: number) => call<MarketTeacherDetail>(token, `/market/teachers/${id}`);
+/** The teacher's own page as students see it (cabinet preview, any review status). */
+export const getMyMarketPreview = (token: string) => call<MarketTeacherDetail>(token, '/teacher/me/market-preview');
 export const getMarketReviews = (token: string, id: number, offset: number, limit = 10) =>
   call<MarketReview[]>(token, `/market/teachers/${id}/reviews?offset=${offset}&limit=${limit}`);
 export const openTeacherChat = (token: string, teacherId: number) =>

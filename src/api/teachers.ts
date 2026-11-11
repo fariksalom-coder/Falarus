@@ -1,9 +1,5 @@
 import type { ScheduleData } from '../../shared/teacherOnboarding';
 import { apiUrl } from '../api';
-import {
-  TEACHER_LISTING_PLAN_MONTH,
-  type TeacherListingPlanCode,
-} from '../../shared/paymentProducts';
 
 function authHeaders(token: string) {
   return {
@@ -215,43 +211,12 @@ export async function uploadCertificateImage(token: string, file: File): Promise
 }
 
 
-export type TeacherProfilePayload = Partial<TeacherProfile> & {
-  first_name: string;
-  last_name: string;
-  age: number;
-};
-
 export async function getTeacherCabinet(token: string): Promise<TeacherCabinet> {
   const res = await fetch(apiUrl('/api/teacher/me'), {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || "O'qituvchi kabineti yuklanmadi");
-  return data;
-}
-
-export async function saveTeacherProfile(token: string, payload: TeacherProfilePayload): Promise<TeacherProfile> {
-  const res = await fetch(apiUrl('/api/teacher/me/profile'), {
-    method: 'PUT',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Anketa saqlanmadi');
-  return data;
-}
-
-export async function createTeacherListingPayment(
-  token: string,
-  planCode: TeacherListingPlanCode = TEACHER_LISTING_PLAN_MONTH,
-): Promise<{ payment: { id: number; amount: number; currency: string; status: string } }> {
-  const res = await fetch(apiUrl('/api/teacher/me/listing-payment'), {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ plan_code: planCode }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || "To'lov yaratilmadi");
   return data;
 }
 
