@@ -598,6 +598,18 @@ async function startServer() {
     res.sendFile(path.resolve(__dirname, ildiz, 'oqituvchilarga', 'index.html'));
   });
 
+  /**
+   * Android App Links: lets falarus.uz links (Rahmat payment return) open straight in
+   * the app. Fingerprints: Google Play app signing key + our upload key (test builds).
+   * The file lives in public/well-known/ because static serving skips dot folders.
+   */
+  app.get('/.well-known/assetlinks.json', (_req, res) => {
+    const ildiz = isProduction ? 'dist' : 'public';
+    res.type('application/json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.resolve(__dirname, ildiz, 'well-known', 'assetlinks.json'));
+  });
+
   app.get([INVESTOR_YOLI, `${INVESTOR_YOLI}/`], (_req, res) => {
     const ildiz = isProduction ? 'dist' : 'public';
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');

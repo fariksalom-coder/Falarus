@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.falarus.mobile",
+      "sha256_cert_fingerprints": [
+        "F9:B3:FE:F7:9F:4B:FA:5E:4A:A1:D5:6E:F8:D6:BB:A0:61:65:DC:A3:6E:7C:6A:39:FC:0C:6C:2E:1A:44:E9:4D",
+        "75:57:1A:F7:2B:B4:5F:14:DF:B6:B2:76:BE:8E:3E:99:CA:1E:CC:F7:A9:09:62:B7:2F:56:27:3B:97:D5:E4:33"
+      ]
+    }
+  }
+]
